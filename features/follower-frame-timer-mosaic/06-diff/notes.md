@@ -22,6 +22,18 @@ components). Matches mockups `04-preview/mockups/admin-mosaic-timer.html` +
 ## Backend
 - None. `config_json` (style/timer/tiles[].size) flows through `sectionEngine` untouched.
 
+## Amendment 2026-07-02 — expiry no longer hides the frame
+Founder hit a surprise: a frame vanished because its countdown had lapsed (end-time set
+in the past). Behaviour changed so a stale timer never makes a section disappear:
+- **Mobile (`TileSection.js`):** an expired countdown no longer returns `null`.
+  `activeTimer = timer && !cd.expired ? timer : null` — the frame always renders; the
+  countdown (thin bar / boxed) shows only while the timer is live.
+- **Admin (`sections/page.js`):** the timer block warns "⚠ This end time is in the past
+  — the countdown won't show" when `ends_at` is past; helper text now reads "when it hits
+  zero, the countdown just stops showing — the frame stays visible."
+- Also flagged to founder (no code): frame/tile background images must be **PNG/JPG** —
+  React Native `<Image>` can't render SVG.
+
 ## Verification
 - `pnpm qa` GREEN 79 (regression guard; backend untouched).
 - Mobile babel-transform clean; `npx jest` 25/25 incl. existing `TileSection.test.js`

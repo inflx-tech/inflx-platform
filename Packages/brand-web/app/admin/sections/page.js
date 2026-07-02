@@ -711,7 +711,11 @@ export default function SectionsPage() {
                               placeholder="Ends in" className="w-28 text-xs border border-gray-300 rounded px-2 py-1" />
                             {(cfg.timer || {}).ends_at ? <button type="button" onClick={() => patchConfig(id, 'timer', null)} className="text-[11px] font-semibold text-gray-400">clear</button> : null}
                           </div>
-                          <div className="text-[10px] text-gray-400">When it hits zero, the frame disappears from the app.</div>
+                          {(cfg.timer || {}).ends_at && new Date((cfg.timer).ends_at).getTime() < Date.now() ? (
+                            <div className="text-[10px] font-bold text-red-600">⚠ This end time is in the past — the countdown won’t show. Set a future time to run a timer.</div>
+                          ) : (
+                            <div className="text-[10px] text-gray-400">When it hits zero, the countdown just stops showing — the frame stays visible.</div>
+                          )}
                         </div>
                         {/* Banner background (banner style only) */}
                         {cfg.style === 'banner' && (

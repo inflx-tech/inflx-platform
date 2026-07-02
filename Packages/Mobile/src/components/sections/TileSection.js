@@ -25,23 +25,25 @@ export default function TileSection({ section, onTile }) {
   // Optional countdown timer (any Frame style). Hook runs before any early return.
   const timer = cfg.timer && cfg.timer.ends_at ? cfg.timer : null;
   const cd = useCountdown(timer ? timer.ends_at : null);
+  // An expired countdown NO LONGER hides the frame — it just stops showing the timer.
+  // A stale/past end-time should never make a whole section vanish.
+  const activeTimer = timer && !cd.expired ? timer : null;
 
   const tiles = Array.isArray(cfg.tiles) ? cfg.tiles.filter((t) => t && (t.image_url || t.label)) : [];
   if (tiles.length === 0) return null;
-  if (timer && cd.expired) return null;   // frame disappears when the countdown ends
   const style = cfg.style || 'carousel';
 
   const body =
     style === 'banner' ? <BannerStyle section={section} tiles={tiles} onTile={onTile} />
-    : style === 'themed_rail' ? <ThemedRailStyle section={section} tiles={tiles} onTile={onTile} timer={timer} cd={cd} />
+    : style === 'themed_rail' ? <ThemedRailStyle section={section} tiles={tiles} onTile={onTile} timer={activeTimer} cd={cd} />
     : style === 'mosaic' ? <MosaicStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'grid' ? <GridStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'featured' ? <FeaturedStyle section={section} tiles={tiles} onTile={onTile} />
     : <CarouselStyle section={section} tiles={tiles} onTile={onTile} />;
 
   // themed_rail renders its own boxed timer inside the frame header; other styles get the thin bar.
-  if (!timer || style === 'themed_rail') return body;
-  return <View>{<CountdownBar text={cd.text} label={timer.label} />}{body}</View>;
+  if (!activeTimer || style === 'themed_rail') return body;
+  return <View>{<CountdownBar text={cd.text} label={activeTimer.label} />}{body}</View>;
 }
 
 // Themed rail — a themed shell (white / colour / image+scrim) + header (aligned
