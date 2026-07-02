@@ -1,0 +1,20 @@
+{
+  "feature": "dashboard-tab-merges",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'go for dashboard merges' + 'Proceed as planned'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — approved the written merge plan (11->8 tabs, sub-tab structure) in-session; reorg of existing screens, no new mockup",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "E-1 Contracts->Campaigns (list signature strip + per-campaign Contracts tab), E-2 Proposals->Influencers (Discover/Proposals sub-tabs), E-3 Offers->Listings (Products/Offers sub-tabs); old routes redirect. Frontend-only, no backend/migration/OTA. Reviewer SHIP-CLEAN; pnpm qa GREEN. Follow-ups: exact contract-creator id match, per-product offers view, E-4 gallery organize.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

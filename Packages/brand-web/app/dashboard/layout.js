@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 import { notificationApi, brandApi, authApi, tryRefreshToken } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
 
-// 12-item NAV — order + hrefs preserved exactly.
+// NAV — order + hrefs preserved exactly. Contracts folded into Campaigns,
+// Proposals into Influencers, Offers into Listings (products).
 // Window A's future "Subscription" + "Billing" appends slot in below
 // at array-tail without disturbing existing items.
 //
@@ -18,14 +19,11 @@ import Logo from '../../../shared/components/Logo';
 const NAV = [
   { href: '/dashboard',             label: 'Dashboard',   icon: '⌂' },
   { href: '/dashboard/campaigns',   label: 'Campaigns',   icon: '⊟' },
-  { href: '/dashboard/contracts',   label: 'Contracts',   icon: '≡' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '★' },
   { href: '/dashboard/products',    label: 'Listings',    icon: '▤' },
   { href: '/dashboard/meals',       label: 'Meals',       icon: '◉', feature: 'meals' },
   { href: '/dashboard/bookings',    label: 'Bookings',    icon: '▦', feature: 'booking' },
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '▢' },
-  { href: '/dashboard/proposals',   label: 'Proposals',   icon: '✉' },
-  { href: '/dashboard/offers',      label: 'Offers',      icon: '◆' },
   { href: '/dashboard/fulfillment', label: 'Fulfillment', icon: '📦' },
   { href: '/dashboard/returns',     label: 'Returns',     icon: '↩' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
@@ -111,7 +109,7 @@ export default function DashboardLayout({ children }) {
           <Logo tone="light" size="sm" />
         </div>
 
-        {/* 12-item horizontal nav */}
+        {/* horizontal nav */}
         <nav className="flex items-center gap-0.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {NAV.filter(item => !item.feature || features?.[item.feature] === true).map(item => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');

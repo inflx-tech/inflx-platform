@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { campaignApi, brandApi, fmtRupees } from '../../../lib/api';
+import { campaignApi, brandApi, contractApi, fmtRupees } from '../../../lib/api';
 import { QuotaWallModal, useQuotaWall } from '../../../components/QuotaWallModal';
 
 // ─── Status pill config (locked palette) ────────────────────────────────────
@@ -331,6 +331,101 @@ function StatusChip({ label, count, active, onClick }) {
   );
 }
 
+// ─── Contract signature strip (folded from the old /dashboard/contracts page) ─
+// Uses the SAME data source (contractApi.listPending → /contracts/brand/pending)
+// and the SAME bulk-sign action. Each row links to its campaign detail, whose
+// Contracts tab shows the full per-creator breakdown.
+
+function contractLockAmount(c) {
+  const base  = parseFloat(c.influencer_fee || 0);
+  const bonus = parseFloat(c.bonus_amount || 0);
+  const fee   = parseFloat(c.platform_fee_pct || 8);
+  return parseFloat(((base + bonus) * (1 + fee / 100)).toFixed(2));
+}
+
+function ContractSignatureStrip() {
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [signing, setSigning]     = useState(false);
+  const [error, setError]         = useState('');
+
+  const load = useCallback(() => {
+    setLoading(true);
+    contractApi.listPending().then(res => {
+      setLoading(false);
+      if (res.success) setContracts(res.data?.contracts || []);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const totalLock = useMemo(
+    () => contracts.reduce((sum, c) => sum + contractLockAmount(c), 0),
+    [contracts]
+  );
+
+  async function signAll() {
+    const ids = contracts.map(c => c.id);
+    if (ids.length === 0) return;
+    if (!confirm(`Counter-sign ${ids.length} contract${ids.length !== 1 ? 's' : ''} for a total wallet lock of ${fmtRupees(totalLock)}?`)) return;
+    setSigning(true);
+    setError('');
+    const res = await contractApi.bulkSign(ids);
+    setSigning(false);
+    if (!res.success) { setError(res.error?.message || 'Bulk sign failed'); return; }
+    load();
+  }
+
+  if (loading || contracts.length === 0) return null;
+
+  return (
+    <div className="bg-[#0A0A0A] text-white rounded-[14px] px-5 py-4 mb-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="w-8 h-8 rounded-full bg-[#FFC107] text-[#0A0A0A] inline-flex items-center justify-center font-display font-extrabold text-[15px]">≡</span>
+          <div>
+            <div className="font-display font-bold text-[14px]">
+              <span className="font-mono text-[#FFC107]">{contracts.length}</span> contract{contracts.length !== 1 ? 's' : ''} need your signature
+            </div>
+            <div className="text-[11.5px] text-[#A1A1AA] mt-0.5">
+              Influencers have signed — counter-sign to lock funds and start. Total lock <span className="font-mono font-semibold text-white">{fmtRupees(totalLock)}</span>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={signAll}
+          disabled={signing}
+          className="px-4 py-2 text-[12px] font-display font-bold bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] rounded-[10px] transition-colors disabled:opacity-50"
+        >
+          {signing ? 'Signing…' : `Sign all (${contracts.length})`}
+        </button>
+      </div>
+
+      {error && <div className="mt-3 text-[11.5px] text-[#FCA5A5] font-semibold">{error}</div>}
+
+      <div className="mt-3 pt-3 border-t border-white/10 flex flex-col gap-1.5">
+        {contracts.map(c => (
+          <Link
+            key={c.id}
+            href={`/dashboard/campaigns/${c.campaign_id}?tab=contracts`}
+            className="flex items-center justify-between gap-3 rounded-[8px] px-2.5 py-1.5 hover:bg-white/5 transition-colors no-underline"
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="font-mono font-bold text-[12.5px] text-white">@{c.instagram_handle || '—'}</span>
+              <span className="text-[#71717A]">·</span>
+              <span className="text-[11.5px] text-[#A1A1AA] truncate">{c.campaign_name}</span>
+            </span>
+            <span className="flex items-center gap-3 flex-shrink-0">
+              <span className="font-mono font-bold text-[12px] text-[#FFC107]">{fmtRupees(contractLockAmount(c))}</span>
+              <span className="font-mono font-bold text-white">→</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function CampaignsPage() {
@@ -508,6 +603,9 @@ export default function CampaignsPage() {
           {preflighting ? 'Checking…' : 'New campaign'}
         </button>
       </div>
+
+      {/* Contracts awaiting signature (folded from the old Contracts tab) */}
+      <ContractSignatureStrip />
 
       {loading ? (
         <div className="text-center py-12 text-[#71717A] text-sm font-body">Loading campaigns…</div>

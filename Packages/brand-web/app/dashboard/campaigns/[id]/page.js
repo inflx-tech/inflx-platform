@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { campaignApi, deliverableApi, fmtRupees } from '../../../../lib/api';
+import { campaignApi, deliverableApi, contractApi, fmtRupees } from '../../../../lib/api';
 
 /* ════════════════════════════════════════════════════════════════════════════
    Campaign Command Center — full-width hierarchy view.
@@ -61,6 +61,15 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 const nf = (n) => (n == null ? '—' : Number(n).toLocaleString('en-IN'));
+
+/* Wallet lock for a pending contract = (fee + bonus) × (1 + platform_fee_pct/100).
+   Same formula the old Contracts inbox used. */
+function contractLockAmount(c) {
+  const base  = parseFloat(c.influencer_fee || 0);
+  const bonus = parseFloat(c.bonus_amount || 0);
+  const fee   = parseFloat(c.platform_fee_pct || 8);
+  return parseFloat(((base + bonus) * (1 + fee / 100)).toFixed(2));
+}
 
 function MiniStat({ v, k }) {
   return (
@@ -173,6 +182,8 @@ export default function CampaignCommandCenterPage() {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(null);
   const [tab, setTab]                 = useState('hier');
+  const [pendingContracts, setPendingContracts] = useState([]); // this campaign's contracts awaiting brand signature
+  const [signingId, setSigningId]     = useState(null);
   const [openSets, setOpenSets]       = useState({});
   const [openInfs, setOpenInfs]       = useState({});
   const [briefOpen, setBriefOpen]     = useState(false);
@@ -190,7 +201,11 @@ export default function CampaignCommandCenterPage() {
       campaignApi.getConversions(id).catch(() => ({ success: false })),
       campaignApi.get(`${id}/products`).catch(() => ({ success: false })),
       campaignApi.getClicks(id).catch(() => ({ success: false })),
-    ]).then(([campRes, escRes, engRes, convRes, prodRes, clickRes]) => {
+      // Contracts awaiting brand signature (all pending across brand); we filter
+      // to THIS campaign below. Active/completed contracts are derived from the
+      // per-creator ci.status already present in the campaign payload.
+      contractApi.listPending().catch(() => ({ success: false })),
+    ]).then(([campRes, escRes, engRes, convRes, prodRes, clickRes, contractRes]) => {
       if (cancelledRef?.cancelled) return;
       setLoading(false);
       if (campRes.success) setCampaign(campRes.data?.campaign || campRes.data);
@@ -200,6 +215,9 @@ export default function CampaignCommandCenterPage() {
       if (convRes?.success) setConversions(convRes.data);
       if (prodRes?.success) setProductsData(prodRes.data);
       if (clickRes?.success) setClicksData(clickRes.data);
+      if (contractRes?.success) {
+        setPendingContracts((contractRes.data?.contracts || []).filter(c => String(c.campaign_id) === String(id)));
+      }
     });
   }, [id]);
 
@@ -209,6 +227,14 @@ export default function CampaignCommandCenterPage() {
     loadAll(ref).catch(err => { if (!ref.cancelled) { setLoading(false); setError(err.message || 'Network error'); } });
     return () => { ref.cancelled = true; };
   }, [id, loadAll]);
+
+  // Deep-link support: /dashboard/campaigns/:id?tab=contracts opens the tab
+  // directly (used by the campaigns-list signature strip).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (t === 'contracts') setTab('contracts');
+  }, []);
 
   if (loading) {
     return <div className="py-16 text-center text-[#71717A] font-body">Loading campaign…</div>;
@@ -394,6 +420,38 @@ export default function CampaignCommandCenterPage() {
     setBusyId(null);
   }
 
+  /* ── Contract counter-sign (folded from the old Contracts tab) ──────────── */
+  async function signContract(contractId) {
+    setSigningId(contractId);
+    const res = await contractApi.brandSign(contractId);
+    if (res?.success) {
+      showToast('Contract counter-signed — funds locked.');
+      await loadAll();
+    } else {
+      showToast(res?.error?.message || 'Sign failed');
+    }
+    setSigningId(null);
+  }
+
+  // Per-creator contract rows for the Contracts tab. Pending-signature rows come
+  // from the filtered listPending payload (matched by handle); active/completed
+  // are derived from ci.status already in the campaign hierarchy.
+  const pendingByHandle = {};
+  for (const c of pendingContracts) {
+    const h = String(c.instagram_handle || '').replace(/^@/, '').toLowerCase();
+    if (h) pendingByHandle[h] = c;
+  }
+  function contractStateFor(ci) {
+    const handle = String(ci.instagram_handle || ci.handle || ci.influencer_name || ci.name || '').replace(/^@/, '').toLowerCase();
+    const pending = pendingByHandle[handle];
+    if (pending) return { key: 'pending', label: 'Pending your signature', cls: 'bg-[#FFF7CC] text-[#6B5A00]', contractId: pending.id, lock: contractLockAmount(pending) };
+    if (ci.status === 'completed') return { key: 'completed', label: 'Completed', cls: 'bg-[#F4F4F5] text-[#1F1F22]' };
+    if (['contracted', 'active', 'live'].includes(ci.status)) return { key: 'live', label: 'Live', cls: 'bg-[#D1FAE5] text-[#047857]' };
+    return { key: 'draft', label: 'Draft', cls: 'bg-[#F4F4F5] text-[#52525B]' };
+  }
+  const contractRows = allInfluencers.map(ci => ({ ci, state: contractStateFor(ci) }));
+  const pendingCount = contractRows.filter(r => r.state.key === 'pending').length;
+
   /* ════ Render ════ */
   return (
     <div className="font-body">
@@ -497,6 +555,7 @@ export default function CampaignCommandCenterPage() {
         {[
           { k: 'hier', label: 'Hierarchy' },
           ...(productsList.length > 0 ? [{ k: 'prod', label: 'Products', n: productsList.length }] : []),
+          { k: 'contracts', label: 'Contracts', n: pendingCount > 0 ? pendingCount : undefined },
           { k: 'ana', label: 'Analytics' },
         ].map(t => (
           <button key={t.k} onClick={() => setTab(t.k)}
@@ -801,6 +860,63 @@ export default function CampaignCommandCenterPage() {
               ? 'Brand-level offer — every influencer in this campaign promotes the whole catalogue.'
               : 'Each product shows exactly where it lives: set → influencer(s) → category.'}
             {' '}&quot;Live in store&quot; = the influencer has published their note for it.
+          </div>
+        </div>
+      )}
+
+      {/* ════ CONTRACTS ════ */}
+      {tab === 'contracts' && (
+        <div>
+          {contractRows.length === 0 ? (
+            <div className="bg-white border border-[#E4E4E7] rounded-[14px] p-10 text-center text-[#71717A] text-sm">
+              No contracts yet — contracts appear once an influencer accepts and signs.
+            </div>
+          ) : (
+            <div className="bg-white border border-[#E4E4E7] rounded-[14px] overflow-hidden">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#FAFAFA]">
+                    {['INFLUENCER', 'SET', 'FEE / COMMISSION', 'STATUS', ''].map((h, i) => (
+                      <th key={i} className="text-left text-[10px] font-extrabold tracking-[0.5px] text-[#71717A] px-4 py-3 border-b border-[#E4E4E7]">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {contractRows.map(({ ci, state }) => {
+                    const handle = String(ci.instagram_handle || ci.handle || ci.influencer_name || ci.name || '—').replace(/^@/, '');
+                    return (
+                      <tr key={ci.id} className="hover:bg-[#FFFDEB]">
+                        <td className="px-4 py-3 border-b border-[#F4F4F5] text-[12.5px] font-bold text-[#0A0A0A]">@{handle}</td>
+                        <td className="px-4 py-3 border-b border-[#F4F4F5] text-[12px] text-[#52525B]">{ci.set_name || '—'}</td>
+                        <td className="px-4 py-3 border-b border-[#F4F4F5] font-mono text-[12px] text-[#0A0A0A]">
+                          {ci.agreed_fee ? fmtRupees(ci.agreed_fee) : ci.commission_pct ? `${Number(ci.commission_pct)}% commission` : '—'}
+                          {state.key === 'pending' && state.lock != null && (
+                            <span className="block text-[10.5px] text-[#71717A] mt-0.5">locks {fmtRupees(state.lock)}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 border-b border-[#F4F4F5]">
+                          <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${state.cls}`}>{state.label.toUpperCase()}</span>
+                        </td>
+                        <td className="px-4 py-3 border-b border-[#F4F4F5] text-right">
+                          {state.key === 'pending' && (
+                            <button
+                              onClick={() => signContract(state.contractId)}
+                              disabled={signingId === state.contractId}
+                              className="bg-[#0A0A0A] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#FFC107] hover:bg-[#1F1F22] disabled:opacity-50 whitespace-nowrap">
+                              {signingId === state.contractId ? 'Signing…' : 'Counter-sign'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="text-[11px] text-[#A1A1AA] mt-2">
+            Counter-sign contracts influencers have signed to lock funds and start the campaign.
+            Draft = terms not yet finalised · Live = signed &amp; active · Completed = campaign wrapped.
           </div>
         </div>
       )}
