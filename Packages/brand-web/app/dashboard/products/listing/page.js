@@ -37,7 +37,7 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
   : f.facet_role === 'discovery' ? <span className="tag disc">discovery</span>
   : f.facet_role === 'listing_attr' || f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
-const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {} });
+const blankDraft = () => ({ name: '', price: '', mrp: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {} });
 
 // ── My listings browse (contract: listing-fashion-inventory-browse) ──────────
 // The brand's OWN inventory, drilled by the same category tree they listed under.
@@ -508,6 +508,7 @@ export default function DrilldownListingPage() {
     setItems(list => [...list, {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null, sku: draft.sku.trim() || null,
+      mrp: (draft.mrp === '' || draft.mrp == null) ? null : Number(draft.mrp),
       stock: draft.stock === '' ? null : Number(draft.stock),
       description: draft.description.trim() || null,
       images: draft.images, facets: draft.facets,
@@ -547,7 +548,7 @@ export default function DrilldownListingPage() {
     }));
     const payload = {
       name: draft.name.trim(), price: Number(draft.price),
-      mrp: (draft.mrp === '' || draft.mrp == null) ? undefined : Number(draft.mrp),
+      mrp: (draft.mrp === '' || draft.mrp == null) ? null : Number(draft.mrp),
       brand: draft.brand.trim() || null,
       stock: draft.stock === '' ? null : Number(draft.stock),
       description: draft.description.trim() || null,
@@ -707,11 +708,15 @@ export default function DrilldownListingPage() {
                 </div>
               </div>
               <div className="row">
-                <div style={{ width: 130 }}>
+                <div style={{ width: 120 }}>
                   <label className="fl">Price ₹ <span className="req">*</span></label>
                   <input className="t" type="number" value={draft.price} onChange={e => setDraft(d => ({ ...d, price: e.target.value }))} placeholder="0" />
                 </div>
-                <div style={{ width: 110 }}>
+                <div style={{ width: 120 }}>
+                  <label className="fl">MRP ₹ <span className="muted2">(optional)</span></label>
+                  <input className="t" type="number" value={draft.mrp} onChange={e => setDraft(d => ({ ...d, mrp: e.target.value }))} placeholder="—" />
+                </div>
+                <div style={{ width: 100 }}>
                   <label className="fl">Stock</label>
                   <input className="t" type="number" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: e.target.value }))} placeholder="—" />
                 </div>
@@ -793,7 +798,7 @@ export default function DrilldownListingPage() {
             <div className="stepbody review">
               {draft.images[0] && <img className="revimg" src={draft.images[0]} alt="" />}
               <div className="revname">{draft.name || '(unnamed)'}</div>
-              <div className="revmeta">₹{draft.price || '0'}{draft.brand ? ` · ${draft.brand}` : ''}</div>
+              <div className="revmeta">₹{draft.price || '0'}{draft.mrp && Number(draft.mrp) > Number(draft.price) ? <span style={{ textDecoration: 'line-through', color: 'var(--muted3)', marginLeft: 6 }}>₹{draft.mrp}</span> : null}{draft.brand ? ` · ${draft.brand}` : ''}</div>
               {draft.description && <div className="sub" style={{ marginTop: 6 }}>{draft.description}</div>}
               {selectedColors.length > 0 && (
                 <div className="revrow">{selectedColors.map(c => {

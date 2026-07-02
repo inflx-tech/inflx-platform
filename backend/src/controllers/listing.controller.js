@@ -111,12 +111,13 @@ async function insertProducts(brand, node, items) {
 
       const { rows } = await client.query(
         `INSERT INTO brand_products
-           (brand_id, name, price, sku, category_key, super_category, section,
+           (brand_id, name, price, mrp, sku, category_key, super_category, section,
             image_url, description, stock, variants_json, category_node_id, facets, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13::jsonb,true)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,true)
          RETURNING id, name, price, sku, category_node_id`,
-        [brand.id, String(it.name).trim(), Number(it.price), sku,
-         node.vertical, node.segment, node.category,
+        [brand.id, String(it.name).trim(), Number(it.price),
+         (it.mrp != null && it.mrp !== '') ? Number(it.mrp) : null,
+         sku, node.vertical, node.segment, node.category,
          coverImage(it), it.description || null,
          it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
          JSON.stringify(variantsJson), node.id, JSON.stringify(facets)]
@@ -710,7 +711,9 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   }
   const variantsJson = buildVariants(it, existing.sku);
   const image = coverImage(it);
-  const mrp = (it.mrp != null && it.mrp !== '') ? Number(it.mrp) : existing.mrp;
+  // mrp: undefined = leave as-is; null/'' = clear; number = set.
+  const mrp = (it.mrp === undefined) ? existing.mrp
+    : (it.mrp === null || it.mrp === '') ? null : Number(it.mrp);
 
   await db.query(
     `UPDATE brand_products
