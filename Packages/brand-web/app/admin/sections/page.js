@@ -674,8 +674,38 @@ export default function SectionsPage() {
                             <option value="grid">Tile grid (shop by concern)</option>
                             <option value="banner">Themed banner + sub-tiles</option>
                             <option value="mosaic">Mosaic (mixed-size tiles)</option>
+                            <option value="themed_rail">Themed rail (scrollable)</option>
                           </select>
                         </label>
+                        {/* Themed rail — frame look: background (colour/image), title align, tile size */}
+                        {cfg.style === 'themed_rail' && (
+                          <div className="rounded-md border border-amber-200 bg-amber-50/40 p-2 flex flex-col gap-2">
+                            <div className="text-[11px] font-bold text-amber-800">Frame look</div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-semibold text-gray-500">Background</span>
+                              <input type="color" value={(cfg.frame || {}).bg_color || '#ffffff'} onChange={e => patchNested(id, 'frame', 'bg_color', e.target.value)} className="w-8 h-7 border border-gray-300 rounded" />
+                              {(cfg.frame || {}).bg_color ? <button type="button" onClick={() => patchNested(id, 'frame', 'bg_color', null)} className="text-[10px] text-gray-400">no colour</button> : null}
+                              <label className="w-12 h-8 rounded border bg-white flex items-center justify-center overflow-hidden cursor-pointer text-[9px] text-gray-400" title="Upload frame background image">
+                                {(cfg.frame || {}).bg_image_url ? <img src={(cfg.frame).bg_image_url} alt="" className="w-full h-full object-cover" /> : <span>＋ img</span>}
+                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; const res = await uploadAdminStockImage(f); if (res.error) { setMsg({ kind: 'err', text: res.error.message || 'Upload failed' }); return; } patchNested(id, 'frame', 'bg_image_url', res.public_url); }} />
+                              </label>
+                              {(cfg.frame || {}).bg_image_url ? <button type="button" onClick={() => patchNested(id, 'frame', 'bg_image_url', null)} className="text-[10px] text-gray-400">remove img</button> : null}
+                            </div>
+                            <div className="text-[10px] text-gray-400">Image wins over colour. Both blank → white shell.</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-semibold text-gray-500">Title</span>
+                              {[['left', 'Left'], ['center', 'Center']].map(([v, l]) => (
+                                <button key={v} type="button" onClick={() => patchNested(id, 'frame', 'title_align', v)}
+                                  className={`text-[10px] font-bold rounded px-2.5 py-0.5 border ${((cfg.frame || {}).title_align || 'left') === v ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-500 border-gray-300'}`}>{l}</button>
+                              ))}
+                              <span className="text-[10px] font-semibold text-gray-500 ml-2">Tiles</span>
+                              {[['medium', 'Small'], ['large', 'Big']].map(([v, l]) => (
+                                <button key={v} type="button" onClick={() => patchNested(id, 'tile', 'size', v)}
+                                  className={`text-[10px] font-bold rounded px-2.5 py-0.5 border ${((cfg.tile || {}).size || 'medium') === v ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-500 border-gray-300'}`}>{l}</button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {/* Countdown timer (optional) — works on any Frame style */}
                         <div className="rounded-md border border-pink-200 bg-pink-50/50 p-2 flex flex-col gap-1.5">
                           <div className="text-[11px] font-bold text-pink-700">⏳ Countdown timer (optional)</div>

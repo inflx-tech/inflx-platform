@@ -33,13 +33,67 @@ export default function TileSection({ section, onTile }) {
 
   const body =
     style === 'banner' ? <BannerStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'themed_rail' ? <ThemedRailStyle section={section} tiles={tiles} onTile={onTile} timer={timer} cd={cd} />
     : style === 'mosaic' ? <MosaicStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'grid' ? <GridStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'featured' ? <FeaturedStyle section={section} tiles={tiles} onTile={onTile} />
     : <CarouselStyle section={section} tiles={tiles} onTile={onTile} />;
 
-  if (!timer) return body;
+  // themed_rail renders its own boxed timer inside the frame header; other styles get the thin bar.
+  if (!timer || style === 'themed_rail') return body;
   return <View>{<CountdownBar text={cd.text} label={timer.label} />}{body}</View>;
+}
+
+// Themed rail — a themed shell (white / colour / image+scrim) + header (aligned
+// title + optional boxed countdown) + a horizontal scroll of medium|large tiles.
+function ThemedRailStyle({ section, tiles, onTile, timer, cd }) {
+  const cfg = section?.config || {};
+  const frame = cfg.frame || {};
+  const large = (cfg.tile || {}).size === 'large';
+  const hasImg = !!frame.bg_image_url;
+  const col = (frame.bg_color || '').toLowerCase();
+  const themed = hasImg || (col && col !== '#ffffff' && col !== '#fff');
+  const textColor = themed ? '#fff' : T.ink;
+  const align = frame.title_align === 'center' ? 'center' : 'left';
+  return (
+    <View style={s.wrap}>
+      <View style={[s.trShell, hasImg ? null : { backgroundColor: frame.bg_color || '#fff' }, !themed && s.trShellWhite]}>
+        {hasImg ? <Image source={{ uri: frame.bg_image_url }} style={s.trBg} resizeMode="cover" /> : null}
+        {hasImg ? <View style={s.trScrim} /> : null}
+        <View style={s.trHead}>
+          {section.title ? <Text style={[s.trTitle, { color: textColor, textAlign: align }]} numberOfLines={1}>{section.title}</Text> : <View style={{ flex: 1 }} />}
+          {timer && cd?.text ? <CountdownBoxed cd={cd} label={timer.label} onDark={themed} /> : null}
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.trRail}>
+          {tiles.map((t, i) => (
+            <TouchableOpacity key={i} style={large ? s.trTileL : s.trTileM} activeOpacity={0.85} onPress={() => onTile?.(t)}>
+              <View style={[s.trImg, { height: large ? 180 : 120 }]}>
+                {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+                {t.badge ? <View style={s.badge}><Text style={s.badgeTxt}>{t.badge}</Text></View> : null}
+                {large && t.label ? <View style={s.trOv} /> : null}
+                {large && t.label ? <Text style={s.trOvLabel} numberOfLines={1}>{t.label}</Text> : null}
+              </View>
+              {!large && t.label ? <Text style={[s.trMlabel, { color: textColor }]} numberOfLines={2}>{t.label}</Text> : null}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+// Boxed countdown ("Ends in [HH]:[MM]:[SS]") for the themed-rail header.
+function CountdownBoxed({ cd, label, onDark }) {
+  return (
+    <View style={s.cbWrap}>
+      {label ? <Text style={[s.cbLabel, onDark && { color: 'rgba(255,255,255,0.85)' }]} numberOfLines={1}>{label}</Text> : null}
+      <View style={s.cbBox}><Text style={s.cbTxt}>{cd.hh}</Text></View>
+      <Text style={[s.cbSep, onDark && { color: '#fff' }]}>:</Text>
+      <View style={s.cbBox}><Text style={s.cbTxt}>{cd.mm}</Text></View>
+      <Text style={[s.cbSep, onDark && { color: '#fff' }]}>:</Text>
+      <View style={s.cbBox}><Text style={s.cbTxt}>{cd.ss}</Text></View>
+    </View>
+  );
 }
 
 // Client-side countdown. Returns { text, expired }; ticks each second while mounted.
@@ -51,17 +105,19 @@ function useCountdown(endsAt) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [endsAt]);
-  if (!endsAt) return { text: null, expired: false };
-  const end = new Date(endsAt).getTime();
-  if (!Number.isFinite(end)) return { text: null, expired: false };
-  let diff = Math.floor((end - now) / 1000);
-  if (diff <= 0) return { text: '0:00:00', expired: true };
   const pad = (n) => String(n).padStart(2, '0');
+  const blank = { text: null, expired: false, hh: '00', mm: '00', ss: '00' };
+  if (!endsAt) return blank;
+  const end = new Date(endsAt).getTime();
+  if (!Number.isFinite(end)) return blank;
+  let diff = Math.floor((end - now) / 1000);
+  if (diff <= 0) return { text: '0:00:00', expired: true, hh: '00', mm: '00', ss: '00' };
   const d = Math.floor(diff / 86400); diff -= d * 86400;
   const h = Math.floor(diff / 3600); diff -= h * 3600;
   const m = Math.floor(diff / 60); const sec = diff - m * 60;
   const text = d > 0 ? `${d}d ${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`;
-  return { text, expired: false };
+  // hh rolls days into hours for the boxed display (never loses time).
+  return { text, expired: false, hh: pad(d * 24 + h), mm: pad(m), ss: pad(sec) };
 }
 
 function CountdownBar({ text, label }) {
@@ -241,6 +297,27 @@ const s = StyleSheet.create({
   mInner: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: T.line, position: 'relative', justifyContent: 'flex-end' },
   mScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 46, backgroundColor: 'rgba(0,0,0,0.34)' },
   mLabel: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 14, fontFamily: fonts.displayBold },
+
+  // themed rail — shell + header + horizontal tile scroll
+  trShell: { marginHorizontal: 14, borderRadius: 16, overflow: 'hidden', paddingBottom: 12, position: 'relative' },
+  trShellWhite: { borderWidth: 1, borderColor: T.line, backgroundColor: '#fff' },
+  trBg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  trScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.18)' },
+  trHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10, gap: 8 },
+  trTitle: { flex: 1, fontSize: 17, fontFamily: fonts.displayBold, letterSpacing: -0.2 },
+  trRail: { gap: 10, paddingHorizontal: 12 },
+  trTileL: { width: 150 },
+  trTileM: { width: 120 },
+  trImg: { width: '100%', borderRadius: 12, overflow: 'hidden', position: 'relative', justifyContent: 'flex-end', backgroundColor: T.yellowTint, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  trOv: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 44, backgroundColor: 'rgba(0,0,0,0.36)' },
+  trOvLabel: { position: 'absolute', left: 10, right: 10, bottom: 8, color: '#fff', fontSize: 13, fontFamily: fonts.sansBold },
+  trMlabel: { fontSize: 12.5, fontFamily: fonts.sansBold, marginTop: 7 },
+  // boxed countdown (themed-rail header)
+  cbWrap: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  cbLabel: { fontSize: 11, color: T.muted, marginRight: 3, fontFamily: fonts.sansMedium, maxWidth: 90 },
+  cbBox: { backgroundColor: T.pink, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, minWidth: 24, alignItems: 'center' },
+  cbTxt: { color: '#fff', fontSize: 12, fontFamily: fonts.monoBold },
+  cbSep: { color: T.pink, fontSize: 12, fontFamily: fonts.monoBold },
 
   // banner
   banner: { marginHorizontal: 14, borderRadius: 16, overflow: 'hidden', minHeight: 150 },
