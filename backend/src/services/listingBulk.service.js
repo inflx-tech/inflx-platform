@@ -61,6 +61,7 @@ function columnModel(node, facets) {
     { header: 'Name', field: 'name', required: true },
     { header: 'Price', field: 'price', required: true },
     { header: 'Brand', field: 'brand' },
+    { header: 'Description', field: 'description', note: 'optional shopper-facing description' },
     { header: 'Stock', field: 'stock', note: 'base stock (optional)' },
     ...detail.map(f => ({
       header: f.label, field: 'facet', facet: f, required: f.required === 'required',
@@ -234,6 +235,7 @@ function buildItems(rows, node, facets) {
       name: norm(get(first, 'Name')),
       price: norm(get(first, 'Price')),
       brand: norm(get(first, 'Brand')) || null,
+      description: norm(get(first, 'Description')) || null,
       stock: norm(get(first, 'Stock')) || null,
       facets: facetVals,
       variants: variants && variants.length ? variants : undefined,

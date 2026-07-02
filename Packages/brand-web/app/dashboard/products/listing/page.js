@@ -37,7 +37,7 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
   : f.facet_role === 'discovery' ? <span className="tag disc">discovery</span>
   : f.facet_role === 'listing_attr' || f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
-const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', images: [], facets: {}, variants: {} });
+const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {} });
 
 // ── My listings browse (contract: listing-fashion-inventory-browse) ──────────
 // The brand's OWN inventory, drilled by the same category tree they listed under.
@@ -470,6 +470,7 @@ export default function DrilldownListingPage() {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null, sku: draft.sku.trim() || null,
       stock: draft.stock === '' ? null : Number(draft.stock),
+      description: draft.description.trim() || null,
       images: draft.images, facets: draft.facets,
       variants: variants.length ? variants : undefined,
     }]);
@@ -646,6 +647,12 @@ export default function DrilldownListingPage() {
                   <input className="t" value={draft.sku} onChange={e => setDraft(d => ({ ...d, sku: e.target.value }))} placeholder="auto-generated" />
                 </div>
               </div>
+              <div>
+                <label className="fl">Description <span className="muted2">(optional)</span></label>
+                <textarea className="t" rows={3} value={draft.description}
+                  onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
+                  placeholder="Fabric feel, fit, styling tips, care — anything that helps a shopper decide." />
+              </div>
             </div>
           )}
 
@@ -714,6 +721,7 @@ export default function DrilldownListingPage() {
               {draft.images[0] && <img className="revimg" src={draft.images[0]} alt="" />}
               <div className="revname">{draft.name || '(unnamed)'}</div>
               <div className="revmeta">₹{draft.price || '0'}{draft.brand ? ` · ${draft.brand}` : ''}</div>
+              {draft.description && <div className="sub" style={{ marginTop: 6 }}>{draft.description}</div>}
               {selectedColors.length > 0 && (
                 <div className="revrow">{selectedColors.map(c => {
                   const tot = stockKey && draft.variants[c]?.stock ? Object.values(draft.variants[c].stock).reduce((a, b) => a + (Number(b) || 0), 0) : null;
@@ -875,8 +883,9 @@ const CSS = `
 .lst .fl{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin:12px 0 5px}
 .lst .fl .req{color:var(--danger)} .lst .fl .tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:5px}
 .lst .tag.variant{background:var(--variant-pale);color:var(--variant)} .lst .tag.disc{background:var(--disc-pale);color:var(--disc)} .lst .tag.attr{background:var(--info-pale);color:var(--info)}
-.lst input.t,.lst select.t{width:100%;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:10px;font-size:13px;font-family:inherit;color:var(--ink)}
-.lst input.t:focus,.lst select.t:focus{outline:none;border-color:var(--yellow)}
+.lst input.t,.lst select.t,.lst textarea.t{width:100%;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:10px;font-size:13px;font-family:inherit;color:var(--ink)}
+.lst textarea.t{resize:vertical;min-height:72px;line-height:1.5}
+.lst input.t:focus,.lst select.t:focus,.lst textarea.t:focus{outline:none;border-color:var(--yellow)}
 .lst .chips{display:flex;flex-wrap:wrap;gap:6px}
 .lst .chip{padding:7px 12px;border-radius:99px;border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;user-select:none}
 .lst .chip.on{background:var(--ink);border-color:var(--ink);color:#fff} .lst .chip.on.v{background:var(--variant);border-color:var(--variant)}

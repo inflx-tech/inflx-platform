@@ -1,0 +1,22 @@
+{
+  "feature": "listing-product-description",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-07-02",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-07-02",
+  "notes": "Optional Description field for the drill-down add flow (stepper Basics step + Excel bulk column). Founder requested 2026-07-02 ('entire product listing has no description field'); chose Description-now, edit-surface-next, placed on Basics step. UI-governed (brand-web) + backend service. No migration, no controller change (insertProducts already persists it.description). release.released stays false until founder gives explicit deploy go.",
+  "verification": "pnpm qa GREEN, gate 0 (2026-07-02). node --check + JSX parse clean.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
