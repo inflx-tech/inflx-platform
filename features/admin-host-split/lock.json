@@ -1,0 +1,20 @@
+{
+  "feature": "admin-host-split",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: chose Option A + set up admin.inflx.in in Vercel/DNS",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — infra routing change, no UI mockup; Option A approved in-session",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "B-1 Option A: middleware host routing so admin.inflx.in serves only admin and inflx.in/admin redirects to it; dev/QA hosts unchanged. Backend CORS already allows *.inflx.in (no backend change). Safety-reviewed (no loop/lockout/open-redirect); pnpm qa GREEN. Follow-ups: edge JWT gate, Option C extract.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
