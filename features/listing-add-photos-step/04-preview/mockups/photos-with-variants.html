@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Photos with variants — stepper reflow</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #FAFAFA; color: #0A0A0A;
+    font-family: 'Plus Jakarta Sans','Outfit',system-ui,sans-serif; font-size: 13px; }
+  .grid { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: #fff; border: 1px solid #E4E4E7; border-radius: 14px; padding: 16px; }
+  .steps { display: flex; gap: 8px; margin-bottom: 12px; font-size: 11px; font-weight: 700; color: #A1A1AA; }
+  .steps .on { color: #0A0A0A; }
+  .fl { display: block; font-size: 11px; font-weight: 700; color: #1F1F22; margin: 12px 0 5px; }
+  .muted2 { color: #A1A1AA; font-weight: 500; }
+  .req { color: #E8401A; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input.t, textarea.t { width: 100%; background: #fff; border: 1px solid #E4E4E7; border-radius: 9px;
+    padding: 9px; font-size: 12px; font-family: inherit; color: #0A0A0A; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 6px 12px; border-radius: 99px; border: 1px solid #E4E4E7; font-size: 12px; font-weight: 600; }
+  .chip.on { background: #0A0A0A; color: #fff; border-color: #0A0A0A; }
+  .chip.onv { background: #7E22CE; color: #fff; border-color: #7E22CE; }
+  .sec { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #71717A; font-weight: 800; margin: 14px 0 8px; }
+  .vcard { border: 1px solid #E4E4E7; border-radius: 12px; padding: 12px; margin-top: 8px; background: #FAFAFA; }
+  .vhead { font-weight: 800; font-size: 13px; display: flex; align-items: center; gap: 7px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #E4E4E7; background: #F3E8FF; }
+  .cap { font-size: 12px; }
+  .note { font-size: 11px; color: #6B5A00; background: #FFF7CC; border: 1px solid #f0e1a8; border-radius: 9px; padding: 9px 11px; margin-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="card">
+      <div class="steps"><span class="on">1 Basics</span><span>2 Variants</span><span>3 Details</span><span>4 Review</span></div>
+      <div style="font-weight:800;font-size:14px;">Product info — no photos here</div>
+      <div class="row" style="margin-top:6px;">
+        <div style="flex:1;min-width:140px;"><label class="fl">Product name <span class="req">*</span></label><input class="t" value="HRX Cotton T-Shirt" /></div>
+        <div style="flex:1;min-width:120px;"><label class="fl">Brand</label><input class="t" value="HRX" /></div>
+      </div>
+      <div class="row">
+        <div style="width:96px;"><label class="fl">Price ₹ <span class="req">*</span></label><input class="t" value="799" /></div>
+        <div style="width:96px;"><label class="fl">MRP ₹</label><input class="t" value="1299" /></div>
+        <div style="width:80px;"><label class="fl">Stock</label><input class="t" value="30" /></div>
+      </div>
+      <label class="fl">Description <span class="muted2">(optional)</span></label>
+      <textarea class="t">Soft combed-cotton crew tee.</textarea>
+    </div>
+
+    <div class="card">
+      <div class="steps"><span>1 Basics</span><span class="on">2 Variants</span><span>3 Details</span><span>4 Review</span></div>
+      <div style="font-weight:800;font-size:14px;">Colours, sizes — and photos per colour</div>
+      <label class="fl">Colour / Tone <span class="cap" style="color:#7E22CE;">variant</span></label>
+      <div class="chips"><span class="chip onv">Black</span><span class="chip onv">Navy</span><span class="chip">White</span></div>
+      <label class="fl">Size <span class="cap" style="color:#7E22CE;">variant</span></label>
+      <div class="chips"><span class="chip onv">S</span><span class="chip onv">M</span><span class="chip onv">L</span></div>
+
+      <div class="sec">Variant photos &amp; stock — per colour</div>
+      <div class="vcard"><div class="vhead"><span class="dot"></span>Black</div><label class="fl">Photos for Black</label><input class="t" type="file" /></div>
+      <div class="vcard"><div class="vhead"><span class="dot"></span>Navy</div><label class="fl">Photos for Navy</label><input class="t" type="file" /></div>
+
+      <div class="note">No colours for this item type (e.g. free-size or furniture)? Step 2 shows one <b>Product photos</b> uploader instead — photos are still only asked once.</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -388,7 +388,6 @@ export default function DrilldownListingPage() {
   // 'brand' is handled by its own field in ① so it never doubles up in ③.
   const variantFacets = facets.filter(f => f.facet_role === 'variant');
   const detailFacets  = facets.filter(f => f.facet_role !== 'variant' && f.facet_key !== 'brand');
-  const hasVariantStep = variantFacets.length > 0;
   // Required ones lead Step ③; the rest hide under "More details".
   const facetRequired = (f) => {
     if (f.facet_key === SIZE_KEY && leaf?.size_system) return !FREE.has(leaf.size_system);
@@ -401,17 +400,25 @@ export default function DrilldownListingPage() {
   const requiredDetails = detailFacets.filter(facetRequired);
   const optionalDetails = detailFacets.filter(f => !facetRequired(f));
 
+  // Photos now live in Step ② — per-colour when colours are chosen, else a single
+  // product-photo set. At least one photo (either source) is required there.
+  const anyVariantPhoto = selectedColors.some(c => arr(draft.variants[c]?.images).length > 0);
+  const hasAnyPhoto = draft.images.length > 0 || anyVariantPhoto;
+  const reviewImg = draft.images[0] || selectedColors.map(c => arr(draft.variants[c]?.images)[0]).find(Boolean) || null;
+
   // Per-step validation — STRICTER-or-equal to taxonomy.validateItem, so a step
-  // that passes can never fail server-side. (Photos are required here though the
-  // backend treats them as optional — the stepper is the photo-first path.)
+  // that passes can never fail server-side. Step ① is product info only; the photo
+  // requirement moved to Step ② alongside the variants the photos describe.
   const stepErrors = (s) => {
     const e = [];
     if (s === 1) {
       if (!draft.name.trim()) e.push('product name');
       if (draft.price === '' || Number(draft.price) < 0) e.push('price');
-      if (!draft.images.length) e.push('a cover photo');
     }
-    if (s === 2) variantFacets.filter(f => facetRequired(f) && facetEmpty(f)).forEach(f => e.push(f.label));
+    if (s === 2) {
+      variantFacets.filter(f => facetRequired(f) && facetEmpty(f)).forEach(f => e.push(f.label));
+      if (!hasAnyPhoto) e.push('at least one photo');
+    }
     if (s === 3) requiredDetails.filter(f => facetEmpty(f)).forEach(f => e.push(f.label));
     return e;
   };
@@ -420,20 +427,18 @@ export default function DrilldownListingPage() {
   const goNext = () => {
     if (stepBlocked.length) return;          // Next is disabled; the inline hint explains
     setErr('');
-    let n = step + 1;
-    if (n === 2 && !hasVariantStep) n = 3;   // auto-skip Variants when the leaf has none
-    setStep(n);
+    setStep(step + 1);
   };
   const goBack = () => {
     setErr('');
-    let p = step - 1;
-    if (p === 2 && !hasVariantStep) p = 1;
-    setStep(p);
+    setStep(step - 1);
   };
 
+  // Step ② always shows now — it hosts photos (per-colour or a single product set)
+  // for EVERY product, not only ones with variant facets.
   const STEP_DEFS = [
     { n: 1, label: 'Basics' },
-    ...(hasVariantStep ? [{ n: 2, label: 'Variants' }] : []),
+    { n: 2, label: variantFacets.length > 0 ? 'Variants' : 'Photos' },
     { n: 3, label: 'Details' },
     { n: 4, label: 'Review' },
   ];
@@ -486,6 +491,7 @@ export default function DrilldownListingPage() {
     const e = [];
     if (!draft.name.trim()) e.push('name');
     if (draft.price === '' || Number(draft.price) < 0) e.push('price');
+    if (!hasAnyPhoto) e.push('at least one photo');
     for (const f of facets) {
       let req = f.required === 'required';
       if (f.facet_key === SIZE_KEY && leaf.size_system) req = !FREE.has(leaf.size_system);
@@ -680,20 +686,9 @@ export default function DrilldownListingPage() {
             ))}
           </div>
 
-          {/* ① Basics */}
+          {/* ① Basics — product info only; photos moved to Step ② */}
           {step === 1 && (
             <div className="stepbody">
-              <label className="fl">Cover photos (up to 6) — the first is the cover <span className="req">*</span></label>
-              <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
-              <div className="urlrow">
-                <input className="t" placeholder="or paste image URL(s) — comma-separated" value={urlText.cover || ''}
-                  onChange={e => setUrlText(t => ({ ...t, cover: e.target.value }))} />
-                <button className="btn ghost" disabled={ingesting === 'cover'} onClick={() => addImagesFromUrls('cover')}>
-                  {ingesting === 'cover' ? 'Adding…' : 'Add URL'}
-                </button>
-              </div>
-              {uploading === 'cover' && <div className="sub">Uploading…</div>}
-              {draft.images.length > 0 && <div className="imgs">{draft.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
               <div className="row">
                 <div style={{ flex: 1, minWidth: 170 }}>
                   <label className="fl">Product name <span className="req">*</span></label>
@@ -734,11 +729,12 @@ export default function DrilldownListingPage() {
             </div>
           )}
 
-          {/* ② Variants — only the variant-role facets + per-colour pics & stock */}
+          {/* ② Variants + photos — variant facets, then per-colour pics & stock, OR
+                a single product-photo set when the item has no colour variant. */}
           {step === 2 && (
             <div className="stepbody">
               {variantFacets.map(renderFacet)}
-              {selectedColors.length > 0 && (
+              {selectedColors.length > 0 ? (
                 <>
                   <div className="sec">Variant photos &amp; stock — per colour</div>
                   {selectedColors.map(color => {
@@ -772,6 +768,21 @@ export default function DrilldownListingPage() {
                     );
                   })}
                 </>
+              ) : (
+                <>
+                  <div className="sec">Product photos</div>
+                  <label className="fl">Photos (up to 6) — the first is the main image <span className="req">*</span></label>
+                  <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
+                  <div className="urlrow">
+                    <input className="t" placeholder="or paste image URL(s) — comma-separated" value={urlText.cover || ''}
+                      onChange={e => setUrlText(t => ({ ...t, cover: e.target.value }))} />
+                    <button className="btn ghost" disabled={ingesting === 'cover'} onClick={() => addImagesFromUrls('cover')}>
+                      {ingesting === 'cover' ? 'Adding…' : 'Add URL'}
+                    </button>
+                  </div>
+                  {uploading === 'cover' && <div className="sub">Uploading…</div>}
+                  {draft.images.length > 0 && <div className="imgs">{draft.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
+                </>
               )}
             </div>
           )}
@@ -796,7 +807,7 @@ export default function DrilldownListingPage() {
           {/* ④ Review */}
           {step === 4 && (
             <div className="stepbody review">
-              {draft.images[0] && <img className="revimg" src={draft.images[0]} alt="" />}
+              {reviewImg && <img className="revimg" src={reviewImg} alt="" />}
               <div className="revname">{draft.name || '(unnamed)'}</div>
               <div className="revmeta">₹{draft.price || '0'}{draft.mrp && Number(draft.mrp) > Number(draft.price) ? <span style={{ textDecoration: 'line-through', color: 'var(--muted3)', marginLeft: 6 }}>₹{draft.mrp}</span> : null}{draft.brand ? ` · ${draft.brand}` : ''}</div>
               {draft.description && <div className="sub" style={{ marginTop: 6 }}>{draft.description}</div>}

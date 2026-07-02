@@ -1,0 +1,22 @@
+{
+  "feature": "listing-add-photos-step",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-07-02",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-07-02",
+  "notes": "Move photos out of Step 1 and into Step 2 (per-colour, or a single product-photo set when no colour). Founder raised 2026-07-02 that images were asked before variants AND again per colour; chose photos-in-variants-step. Frontend-only reflow of the shared drill-down stepper (add + edit); no backend change (coverImage/buildVariants already handle both photo sources). release.released stays false until founder gives explicit deploy go.",
+  "verification": "pnpm qa GREEN, gate 0 (2026-07-02). listing page JSX parses via Next babel.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
