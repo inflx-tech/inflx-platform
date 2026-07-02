@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fashion inventory browse — My listings</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #FAFAFA; color: #0A0A0A;
+    font-family: 'Plus Jakarta Sans','Outfit',system-ui,sans-serif; font-size: 13px; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-family: 'Outfit',sans-serif; font-size: 22px; font-weight: 700; margin: 0; }
+  .rule { width: 42px; height: 3px; background: #FFC107; border-radius: 2px; margin: 6px 0 10px; }
+  .sub { font-size: 12px; color: #71717A; margin-bottom: 14px; }
+  .tabs { display: flex; gap: 6px; margin: 10px 0 16px; }
+  .tab { padding: 8px 15px; border-radius: 9px; font-size: 12px; font-weight: 800; border: 1px solid #E4E4E7;
+    background: #F4F4F5; color: #71717A; cursor: pointer; }
+  .tab.on { background: #0A0A0A; color: #fff; border-color: #0A0A0A; }
+  .searchbar { display: flex; gap: 8px; margin-bottom: 14px; }
+  .searchbar input { flex: 1; border: 1px solid #E4E4E7; border-radius: 9px; padding: 10px 12px; font-size: 13px; }
+  .crumb { display: flex; gap: 5px; align-items: center; font-size: 12px; color: #71717A; margin: 4px 0 14px; font-weight: 600; }
+  .crumb a { color: #71717A; cursor: pointer; } .crumb b { color: #0A0A0A; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 10px; }
+  .node { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #fff;
+    border: 1px solid #E4E4E7; border-radius: 12px; padding: 13px 14px; cursor: pointer; }
+  .node.leaf { border-left: 3px solid #FFC107; }
+  .node .nm { font-weight: 700; font-size: 13px; } .node .mt { font-size: 10px; color: #A1A1AA; margin-top: 2px; }
+  .badge { font-family: 'JetBrains Mono',monospace; font-size: 11px; font-weight: 800; background: #FFF7CC;
+    color: #6B5A00; border-radius: 99px; padding: 2px 10px; }
+  .prow { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #E4E4E7;
+    border-radius: 11px; padding: 9px 12px; margin-bottom: 7px; }
+  .prow.hid { opacity: .6; border-style: dashed; }
+  .th { width: 42px; height: 42px; border-radius: 9px; background: #F4F4F5; display: flex; align-items: center;
+    justify-content: center; color: #A1A1AA; font-size: 17px; }
+  .pname { font-weight: 700; } .pmeta { font-size: 11px; color: #71717A; }
+  .pprice { font-family: 'JetBrains Mono',monospace; font-weight: 800; margin-left: auto; }
+  .pill { font-family: 'JetBrains Mono',monospace; font-size: 9.5px; font-weight: 800; padding: 3px 9px;
+    border-radius: 99px; text-transform: uppercase; }
+  .pill.live { background: #D1FAE5; color: #047857; } .pill.hid { background: #F4F4F5; color: #71717A; }
+  .act button { padding: 5px 9px; font-size: 11px; font-weight: 700; border-radius: 6px; background: transparent;
+    color: #52525B; border: 0; cursor: pointer; }
+  .act button.danger { color: #B91C1C; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>My Fashion listings</h1>
+    <div class="rule"></div>
+    <div class="sub">Browse everything you listed, organised by the same categories you listed under.</div>
+
+    <div class="tabs">
+      <span class="tab on">My listings</span>
+      <span class="tab">Add products</span>
+    </div>
+
+    <div class="searchbar"><input placeholder="Search your products by name or SKU…" /></div>
+
+    <div class="crumb"><a>Fashion</a> ›  <a>Women</a> ›  <b>Footwear</b></div>
+
+    <div class="grid">
+      <div class="node"><div><div class="nm">Heels</div><div class="mt">16 listed</div></div><span class="badge">16</span></div>
+      <div class="node"><div><div class="nm">Flats &amp; Sandals</div><div class="mt">15 listed</div></div><span class="badge">15</span></div>
+      <div class="node"><div><div class="nm">Sneakers</div><div class="mt">10 listed</div></div><span class="badge">10</span></div>
+    </div>
+
+    <div style="margin-top:18px">
+      <div class="prow">
+        <span class="th">▦</span>
+        <div><div class="pname">Strappy Block Heels</div><div class="pmeta">Black, Tan · 36–38 · FA-HEEL-0007</div></div>
+        <span class="pprice">₹1,499</span>
+        <span class="pill live">Live</span>
+        <div class="act"><button>Hide</button><button class="danger">Remove</button></div>
+      </div>
+      <div class="prow hid">
+        <span class="th">▦</span>
+        <div><div class="pname">Peep-Toe Stilettos</div><div class="pmeta">Red · 37–39 · FA-HEEL-0011</div></div>
+        <span class="pprice">₹2,199</span>
+        <span class="pill hid">Hidden</span>
+        <div class="act"><button>Show</button><button class="danger">Remove</button></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

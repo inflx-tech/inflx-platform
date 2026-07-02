@@ -565,4 +565,78 @@ const getNodeProducts = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts };
+// ── GET /brands/me/listing-tree ───────────────────────────────────────────────
+// Contract: listing-fashion-inventory-browse. The brand's OWN inventory tree —
+// the same drill-down taxonomy they list under, annotated with a per-node
+// product_count (this brand only, any status). Distinct from the public
+// getNodeProducts browse, which is all-brands + live-only for followers.
+const getMyListingTree = asyncHandler(async (req, res) => {
+  const { rows: brows } = await db.query(
+    `SELECT id, category FROM brands WHERE user_id = $1`, [req.user.sub]);
+  const brand = brows[0];
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const cat = String(brand.category || '');
+  const vertical = cat.startsWith('furniture') ? 'furniture'
+    : cat.startsWith('fashion') ? 'fashion'
+    : cat;
+  const tree = await taxonomy.getTree(vertical);
+
+  // One grouped count over the brand's products; roll up the tree client-free.
+  const { rows: cnts } = await db.query(
+    `SELECT category_node_id AS node_id, COUNT(*)::int AS n
+       FROM brand_products
+      WHERE brand_id = $1 AND category_node_id IS NOT NULL
+      GROUP BY category_node_id`,
+    [brand.id]
+  );
+  const leafCount = new Map(cnts.map((r) => [r.node_id, r.n]));
+  const annotate = (node) => {
+    let total = leafCount.get(node.id) || 0;
+    for (const child of (node.children || [])) total += annotate(child);
+    node.product_count = total;
+    return total;
+  };
+  tree.forEach(annotate);
+
+  return success(res, { vertical, tree });
+});
+
+// ── GET /brands/me/listing-nodes/:id/products ─────────────────────────────────
+// Contract: listing-fashion-inventory-browse. This brand's products under a node
+// subtree, ALL statuses (live-first), for the inventory browse. Brand-scoped.
+const getMyNodeProducts = asyncHandler(async (req, res) => {
+  const { rows: brows } = await db.query(
+    `SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
+  const brand = brows[0];
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const node = await taxonomy.getNode(req.params.id);
+  if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+
+  const { rows } = await db.query(
+    `WITH RECURSIVE sub AS (
+       SELECT id FROM category_nodes WHERE id = $1
+       UNION ALL
+       SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id)
+     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.sku, bp.stock,
+            bp.is_active, bp.pushed_to_store, bp.facets, bp.variants_json,
+            bp.category_node_id, bp.created_at,
+            cn.name AS leaf_name, cn.segment, cn.category
+       FROM brand_products bp
+       JOIN category_nodes cn ON cn.id = bp.category_node_id
+      WHERE bp.brand_id = $2 AND bp.category_node_id IN (SELECT id FROM sub)
+      ORDER BY bp.is_active DESC, bp.created_at DESC NULLS LAST`,
+    [node.id, brand.id]
+  );
+
+  return success(res, {
+    node: {
+      id: node.id, name: node.name, segment: node.segment,
+      category: node.category, is_leaf: node.is_leaf,
+    },
+    products: rows,
+  });
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts, getMyListingTree, getMyNodeProducts };

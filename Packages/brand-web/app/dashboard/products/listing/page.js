@@ -39,7 +39,182 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
 const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', images: [], facets: {}, variants: {} });
 
+// ── My listings browse (contract: listing-fashion-inventory-browse) ──────────
+// The brand's OWN inventory, drilled by the same category tree they listed under.
+// Read-only browse; row actions reuse the existing brand product endpoints.
+const money = (v) => (v == null || v === '' ? '—' : '₹' + Number(v).toLocaleString('en-IN'));
+function facetSummary(facets) {
+  if (!facets || typeof facets !== 'object') return '';
+  const bits = [];
+  for (const k of Object.keys(facets)) {
+    const v = facets[k];
+    const vals = Array.isArray(v) ? v : (v ? [v] : []);
+    if (vals.length) bits.push(vals.slice(0, 3).join(', '));
+    if (bits.length >= 2) break;
+  }
+  return bits.join(' · ');
+}
+
+function BrowseListings({ vlabel, onAdd }) {
+  const [tree, setTree] = useState(null);
+  const [level, setLevel] = useState([]);
+  const [crumb, setCrumb] = useState([]);       // [{ name, children }]
+  const [leaf, setLeaf] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pLoading, setPLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState('');
+  const [search, setSearch] = useState('');
+  const [flat, setFlat] = useState(null);
+  const [flatLoading, setFlatLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const r = await brandApi.get('/brands/me/listing-tree');
+      setLoading(false);
+      if (r.success) { setTree(r.data.tree || []); setLevel(r.data.tree || []); }
+      else setErr(r.error?.message || 'Failed to load your listings');
+    })();
+  }, []);
+
+  const loadLeaf = async (node) => {
+    setPLoading(true); setProducts([]);
+    const r = await brandApi.get(`/brands/me/listing-nodes/${node.id}/products`);
+    setPLoading(false);
+    if (r.success) setProducts(r.data.products || []);
+    else setErr(r.error?.message || 'Failed to load products');
+  };
+  const drill = (node) => {
+    setErr('');
+    setCrumb(c => [...c, { name: node.name, children: level }]);
+    if (node.is_leaf) { setLeaf(node); loadLeaf(node); }
+    else setLevel(node.children || []);
+  };
+  const jump = (i) => {
+    setLeaf(null); setProducts([]); setErr('');
+    if (i < 0) { setLevel(tree || []); setCrumb([]); return; }
+    setLevel(crumb[i].children); setCrumb(crumb.slice(0, i));
+  };
+  const reloadFlat = async () => { const r = await brandApi.getProducts(); if (r.success) setFlat(r.data.products || []); };
+  const afterMutation = () => { if (search.trim()) reloadFlat(); else if (leaf) loadLeaf(leaf); };
+  const doToggle = async (p) => {
+    setBusy(p.id);
+    const r = await brandApi.updateProduct(p.id, { is_active: !p.is_active });
+    setBusy('');
+    if (r.success) afterMutation(); else setErr(r.error?.message || 'Update failed');
+  };
+  const doRemove = async (p) => {
+    if (!window.confirm(`Remove "${p.name}" from your listing?`)) return;
+    setBusy(p.id);
+    const r = await brandApi.deleteProduct(p.id);
+    setBusy('');
+    if (r.success) afterMutation(); else setErr(r.error?.message || 'Remove failed');
+  };
+
+  useEffect(() => {
+    if (!search.trim() || flat || flatLoading) return;
+    setFlatLoading(true);
+    brandApi.getProducts()
+      .then(r => { setFlatLoading(false); if (r.success) setFlat(r.data.products || []); })
+      .catch(() => setFlatLoading(false));
+  }, [search, flat, flatLoading]);
+
+  const q = search.trim().toLowerCase();
+  const searching = !!q;
+  const results = searching && flat
+    ? flat.filter(p => (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q))
+    : [];
+
+  const row = (p) => (
+    <div key={p.id} className={'prow' + (p.is_active ? '' : ' hid')}>
+      {p.image_url
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img className="pth" src={p.image_url} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        : <span className="pth ph">▦</span>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="pname">{p.name}</div>
+        <div className="pmeta">{[facetSummary(p.facets), p.sku, (p.stock != null ? `stock ${p.stock}` : null)].filter(Boolean).join(' · ') || '—'}</div>
+      </div>
+      <div className="pprice">
+        {money(p.price)}
+        {p.mrp != null && Number(p.mrp) > Number(p.price) ? <span className="mrp">{money(p.mrp)}</span> : null}
+      </div>
+      <span className={'pill ' + (p.is_active ? 'live' : 'hid')}>{p.is_active ? 'Live' : 'Hidden'}</span>
+      <div className="pact">
+        <button disabled={busy === p.id} onClick={() => doToggle(p)}>{p.is_active ? 'Hide' : 'Show'}</button>
+        {p.is_active && <button className="danger" disabled={busy === p.id} onClick={() => doRemove(p)}>Remove</button>}
+      </div>
+    </div>
+  );
+
+  if (loading) return <div className="sub" style={{ marginTop: 16 }}>Loading your {vlabel} listings…</div>;
+
+  const total = (tree || []).reduce((a, n) => a + (n.product_count || 0), 0);
+  const folders = (level || []).filter(n => (n.product_count || 0) > 0);
+
+  return (
+    <div>
+      <div className="searchbar">
+        <input className="t" placeholder="Search your products by name or SKU…" value={search} onChange={e => setSearch(e.target.value)} />
+        {searching && <button className="btn ghost" onClick={() => setSearch('')}>Clear</button>}
+      </div>
+
+      {err && <div className="err">{err}</div>}
+
+      {searching ? (
+        <>
+          <div className="sec">{flatLoading ? 'Searching…' : `${results.length} match${results.length === 1 ? '' : 'es'}`}</div>
+          {!flatLoading && results.length === 0 && <div className="sub">No products match. Clear search to browse by category.</div>}
+          {results.map(row)}
+        </>
+      ) : total === 0 ? (
+        <div className="empty2">
+          <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>No {vlabel.toLowerCase()} products listed yet</div>
+          <div className="sub" style={{ marginBottom: 12 }}>Once you add products they&apos;ll show here, organised by the category you listed under.</div>
+          <button className="btn ink" onClick={onAdd}>+ Add products</button>
+        </div>
+      ) : (
+        <>
+          <div className="crumb">
+            <a onClick={() => jump(-1)}>{vlabel}</a>
+            {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jump(i)}>{c.name}</a>}</span>)}
+          </div>
+
+          {!leaf && (
+            <div className="grid">
+              {folders.map(n => {
+                const subCats = (n.children || []).filter(c => (c.product_count || 0) > 0).length;
+                return (
+                  <div key={n.id} className={'node' + (n.is_leaf ? ' leaf' : '')} onClick={() => drill(n)}>
+                    <div>
+                      <div className="nm">{n.name}</div>
+                      <div className="mt">{n.is_leaf ? `${n.product_count} listed` : `${subCats} categor${subCats === 1 ? 'y' : 'ies'}`}</div>
+                    </div>
+                    <span className="pbadge">{n.product_count}</span>
+                  </div>
+                );
+              })}
+              {folders.length === 0 && <div className="sub">Nothing listed under here.</div>}
+            </div>
+          )}
+
+          {leaf && (
+            <div style={{ marginTop: 6 }}>
+              <div className="sec">{leaf.name} — {products.length} product{products.length === 1 ? '' : 's'}</div>
+              {pLoading ? <div className="sub">Loading…</div>
+                : products.length === 0 ? <div className="sub">No products under {leaf.name} yet.</div>
+                : products.map(row)}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function DrilldownListingPage() {
+  const [view, setView] = useState('browse');   // 'browse' (My listings) | 'add' (wizard)
   const [vertical, setVertical] = useState('fashion');
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -365,12 +540,22 @@ export default function DrilldownListingPage() {
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
-        <h1>Add products — {vlabel}</h1>
+        <h1>{view === 'browse' ? `My ${vlabel} listings` : `Add products — ${vlabel}`}</h1>
         <a href="/dashboard/products?setup=1" className="setuplink">⚙ Store setup</a>
       </div>
       <div className="rule" />
-      <div className="sub">Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.</div>
+      <div className="sub">{view === 'browse'
+        ? 'Browse everything you listed, organised by the same categories you listed under.'
+        : 'Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.'}</div>
 
+      <div className="tabs">
+        <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>My listings</span>
+        <span className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</span>
+      </div>
+
+      {view === 'browse' && <BrowseListings vlabel={vlabel} onAdd={() => setView('add')} />}
+
+      {view === 'add' && (<>
       <div className="crumb">
         <a onClick={() => jumpTo(-1)}>{vlabel}</a>
         {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jumpTo(i)}>{c.name}</a>}</span>)}
@@ -658,6 +843,7 @@ export default function DrilldownListingPage() {
           )}
         </div>
       )}
+      </>)}
     </div>
   );
 }
@@ -751,4 +937,28 @@ const CSS = `
 .lst .tph.ph{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);color:var(--muted3);font-size:17px}
 .lst .urlrow{display:flex;gap:8px;margin-top:6px}
 .lst .urlrow .t{flex:1}
+/* My-listings browse (contract: listing-fashion-inventory-browse) */
+.lst .tabs{display:flex;gap:6px;margin:10px 0 14px}
+.lst .tab{padding:8px 15px;border-radius:9px;font-size:12px;font-weight:800;border:1px solid var(--border);background:var(--bg);color:var(--muted2);cursor:pointer;user-select:none}
+.lst .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lst .searchbar{display:flex;gap:8px;margin:4px 0 14px}
+.lst .searchbar .t{flex:1}
+.lst .pbadge{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;background:var(--yellow-pale);color:var(--yellow-text);border-radius:99px;padding:2px 10px}
+.lst .prow{display:flex;align-items:center;gap:11px;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:7px}
+.lst .prow.hid{opacity:.6;border-style:dashed}
+.lst .pth{width:44px;height:44px;border-radius:9px;object-fit:cover;border:1px solid var(--border)}
+.lst .pth.ph{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);color:var(--muted3);font-size:18px}
+.lst .pname{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lst .pmeta{font-size:11px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lst .pprice{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;white-space:nowrap}
+.lst .pprice .mrp{color:var(--muted3);text-decoration:line-through;font-weight:600;font-size:11px;margin-left:5px}
+.lst .pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.lst .pill.live{background:var(--success-pale);color:var(--success-text)}
+.lst .pill.hid{background:var(--bg2);color:var(--muted2)}
+.lst .pact{display:flex;gap:4px}
+.lst .pact button{padding:5px 9px;font-size:11px;font-weight:700;border-radius:6px;background:transparent;color:var(--muted);border:0;cursor:pointer;font-family:inherit}
+.lst .pact button:hover:not(:disabled){color:var(--ink);background:var(--bg)}
+.lst .pact button.danger{color:var(--danger-text)}
+.lst .pact button:disabled{opacity:.4;cursor:not-allowed}
+.lst .empty2{background:#FFFDEB;border:1px solid #f0e1a8;border-radius:14px;padding:28px;text-align:center;margin-top:12px}
 `;

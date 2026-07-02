@@ -34,5 +34,8 @@ const brandRouter = Router();
 brandRouter.use(authenticate);
 brandRouter.use(requireRole('brand'));
 brandRouter.post('/products/batch', ctrl.batchCreate);
+// contract: listing-fashion-inventory-browse — brand's own inventory browse
+brandRouter.get('/listing-tree', ctrl.getMyListingTree);
+brandRouter.get('/listing-nodes/:id/products', ctrl.getMyNodeProducts);
 
 module.exports = { publicRouter, brandRouter };
