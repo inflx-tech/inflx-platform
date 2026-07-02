@@ -14,7 +14,7 @@
   "release": {
     "qa_all_green": true,
     "deployed_at": "2026-07-02",
-    "deployed_evidence": "commit 1d006f7 → Vercel admin (mosaic layout + timer block + per-tile size + mosaic preview) + follower OTA v175 (MosaicStyle + useCountdown + CountdownBar in TileSection). No backend/migration. pnpm qa GREEN 79; mobile babel clean + jest 25/25 (TileSection green); admin parses clean.",
+    "deployed_evidence": "commit 1d006f7 → Vercel admin (mosaic layout + timer block + per-tile size + mosaic preview) + follower OTA v175 (MosaicStyle + useCountdown + CountdownBar in TileSection). No backend/migration. pnpm qa GREEN 79; mobile babel clean + jest 25/25 (TileSection green); admin parses clean. AMENDED 2026-07-02 (commit c5bb386 → OTA v179): expired countdown NO LONGER hides the frame (activeTimer = timer && !cd.expired; countdown shows only while live) + admin warns when ends_at is in the past. Founder had a frame vanish on a lapsed timer. Also flagged: frame/tile bg images must be PNG/JPG (RN Image can't render SVG).",
     "released": false,
     "released_by": null,
     "released_at": null,
