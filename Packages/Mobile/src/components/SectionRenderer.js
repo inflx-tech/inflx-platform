@@ -273,6 +273,10 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // in config, not items).
   if (section.type === 'tiles') {
     const onTile = (t) => {
+      // Per-tile destination (admin "On tap →"): category browser / a page / default grid.
+      const d = t.tap_destination;
+      if (d?.type === 'category') return navigation.navigate('CategoryBrowser', { nodeId: d.node_id || null, vertical: d.vertical || ctx.superCategory || null, title: t.label || section.title });
+      if (d?.type === 'page' && d.page_key) return navigation.navigate('FollowerPage', { pageKey: d.page_key, title: t.label || section.title });
       // Inline banner rule (App Builder Frame) wins; else the wired library group.
       const rj = t.rule_json && typeof t.rule_json === 'object'
         && Object.keys(t.rule_json).filter(k => k !== 'business_type').length > 0 ? t.rule_json : null;

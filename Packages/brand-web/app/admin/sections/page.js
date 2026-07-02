@@ -116,27 +116,8 @@ const RULES_BY_SHELF = {
   ],
 };
 
-// A light wireframe of how a template renders — the "see it" step (shape only;
-// real-data preview is a later upgrade).
-function TemplatePreview({ s }) {
-  const cfg = s.config_json || {};
-  const g = 'bg-gray-100 rounded';
-  let inner;
-  if (cfg.kind === 'menu') inner = <div className="space-y-1"><div className={`${g} h-2.5 w-1/3`} /><div className={`${g} h-5`} /><div className={`${g} h-5`} /></div>;
-  else if (s.shelf_type === 'creators' || s.shelf_type === 'category_rail') inner = <div className="flex gap-2">{[0,1,2,3].map(i => <span key={i} className="w-7 h-7 rounded-full bg-gray-200" />)}</div>;
-  else if (s.shelf_type === 'tiles' && cfg.style === 'mosaic') inner = <div className="space-y-1.5"><div className={`${g} h-10`} /><div className="flex gap-1.5"><span className={`${g} h-8 flex-1`} /><span className={`${g} h-8 flex-1`} /></div></div>;
-  else if (s.shelf_type === 'tiles' && cfg.style === 'banner') inner = <div className={`${g} h-12`} />;
-  else if (s.shelf_type === 'tiles' || s.shelf_type === 'nav_tiles') inner = <div className="flex gap-1.5">{[0,1,2,3].map(i => <span key={i} className="w-9 h-9 rounded-lg bg-gray-200" />)}</div>;
-  else if (s.shelf_type === 'banner_gateway') inner = <div className={`${g} h-12`} />;
-  else if (s.shelf_type === 'restaurant_list') inner = <div className="space-y-1"><div className={`${g} h-2.5 w-1/2`} /><div className="flex gap-1.5">{[0,1,2].map(i => <span key={i} className="w-12 h-9 rounded bg-gray-200" />)}</div></div>;
-  else inner = <div className="flex gap-1.5">{[0,1,2].map(i => <span key={i} className="w-12 h-14 rounded bg-gray-200" />)}</div>;
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-2">
-      <div className="text-[10px] text-gray-400 mb-1.5">PREVIEW · {templateLabel(s)}</div>
-      {inner}
-    </div>
-  );
-}
+// (TemplatePreview wireframe removed — the live phone pane on the right shows the
+// real render, so the shape wireframe was redundant. Founder 2026-07-02.)
 
 function slug(t) {
   return String(t || 'section').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 36) || 'section';
@@ -242,6 +223,8 @@ export default function SectionsPage() {
   // Catalogue tree for the current world (fashion/furniture) — feeds the
   // "Category rail (pick from catalogue)" node picker.
   const [catTree, setCatTree] = useState([]);
+  // Tag vocabulary for the current world — feeds the tile rule-builder's tag chips.
+  const [worldTags, setWorldTags] = useState([]);
 
   const loadWorlds = useCallback(() => {
     adminApi.listHomeVerticals().then(res => {
@@ -305,6 +288,13 @@ export default function SectionsPage() {
       });
     } else {
       setCatTree([]);
+    }
+    if (scopeValue) {
+      adminApi.listTagVocabulary?.(scopeValue)
+        .then(res => { if (res?.success) setWorldTags((res.data?.tags || []).filter(t => t.status === 'active')); })
+        .catch(() => setWorldTags([]));
+    } else {
+      setWorldTags([]);
     }
   }, [scopeValue]);
 
@@ -423,7 +413,7 @@ export default function SectionsPage() {
     const shelf = {
       _tmp: tmp, id: null,
       shelf_key: `${slug(p.title)}_${Date.now().toString(36).slice(-4)}`,
-      title: p.title, shelf_type: p.shelf_type, rule: p.rule,
+      title: '', shelf_type: p.shelf_type, rule: p.rule,
       item_type: p.item_type || null, category_key: null,
       item_limit: 8, position: shelves.length, enabled: true,
       config_json: { sub: '', ...(p.config || {}) },
@@ -441,6 +431,9 @@ export default function SectionsPage() {
   };
 
   const publish = async () => {
+    // Every section must be named — the title is the name shown in the app.
+    const unnamed = shelves.find(s => !String(s.title || '').trim());
+    if (unnamed) { setMsg({ kind: 'err', text: 'Give every section a name (shown in the app) before publishing.' }); return; }
     // Phase 3c — a Library Section placement must reference a section.
     const unset = shelves.find(s => s.rule === 'library_products' && !(s.config_json || {}).library_section_id);
     if (unset) { setMsg({ kind: 'err', text: `"${unset.title || 'Library Section'}" — pick a library section before publishing.` }); return; }
@@ -585,7 +578,8 @@ export default function SectionsPage() {
                   <div className="flex-1 min-w-0">
                     {/* Title — inline editable (v2) */}
                     <input value={s.title || ''} onChange={e => update(id, { title: e.target.value })}
-                      className="w-full text-sm font-bold text-gray-900 border-b border-transparent hover:border-gray-200 focus:border-amber-500 focus:outline-none bg-transparent" />
+                      placeholder="Name this section — shown in the app (e.g. Summer Deals)"
+                      className="w-full text-sm font-bold text-gray-900 border-b border-transparent hover:border-gray-200 focus:border-amber-500 focus:outline-none bg-transparent placeholder:text-gray-300 placeholder:font-normal" />
                     <div className="text-[11px] text-gray-500 truncate flex items-center gap-1.5">
                       <span className="truncate">{templateLabel(s)}{s.id ? '' : ' · NEW'}</span>
                       {sectionKind(s) === 'frame'
@@ -615,8 +609,6 @@ export default function SectionsPage() {
                 {/* Config editor (v2) — preview → rule → images */}
                 {isOpen && (
                   <div className="px-3 pb-3 pt-1 border-t border-gray-100 flex flex-col gap-2">
-                    {/* See it */}
-                    <TemplatePreview s={s} />
                     {/* What fills it (rule) — only for data-driven templates with a choice */}
                     {RULES_BY_SHELF[s.shelf_type] && (s.config_json || {}).kind !== 'menu' && (
                       <label className="text-[11px] font-semibold text-gray-600">What fills it? (rule)
@@ -626,7 +618,8 @@ export default function SectionsPage() {
                         </select>
                       </label>
                     )}
-                    {/* On tap, go to… (App Builder D — admin-chosen section-level destination) */}
+                    {/* On tap, go to… (App Builder D) — section-level; frames (tiles) use per-tile destinations below instead */}
+                    {s.shelf_type !== 'tiles' && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-2.5">
                       <div className="text-[11px] font-bold text-amber-800 mb-1.5">On tap, go to…</div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -661,6 +654,7 @@ export default function SectionsPage() {
                       )}
                       <div className="text-[10px] text-gray-400 mt-1.5">“Default” keeps today’s behaviour (this shelf’s See-all). Individual cards always open their own detail.</div>
                     </div>
+                    )}
 
                     {/* Template Catalog #1 — image tiles: per-tile image + label + wired group. */}
                     {s.shelf_type === 'tiles' && (
@@ -774,17 +768,49 @@ export default function SectionsPage() {
                               ))}
                             </div>
                             {mode === 'create' ? (
-                              <div className="p-2 rounded-md bg-amber-50 border border-amber-200 flex flex-col gap-1.5">
-                                <div className="text-[10px] font-semibold text-amber-800">Show products where… (all optional)</div>
-                                <div className="flex gap-1.5 flex-wrap items-center">
-                                  <input type="number" value={rj.price_max ?? ''} onChange={e => patchTileRule(id, ti, 'price_max', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Under ₹" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
-                                  <input type="number" value={rj.min_discount_pct ?? ''} onChange={e => patchTileRule(id, ti, 'min_discount_pct', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Min % off" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
-                                  <input value={rj.brand ?? ''} onChange={e => patchTileRule(id, ti, 'brand', e.target.value)} placeholder="Brand" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
-                                  <input value={(rj.tags || []).join(', ')} onChange={e => patchTileRule(id, ti, 'tags', e.target.value.split(',').map(x => x.trim()).filter(Boolean))} placeholder="tags" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
-                                  <label className="text-[11px] text-gray-600 flex items-center gap-1"><input type="checkbox" checked={!!rj.has_offer} onChange={e => patchTileRule(id, ti, 'has_offer', e.target.checked)} /> has offer</label>
+                              <div className="p-2.5 rounded-md bg-amber-50 border border-amber-200 flex flex-col gap-2">
+                                <div className="text-[10px] font-bold uppercase tracking-wide text-amber-800">Show products where — combine any</div>
+                                {CAT_TREE_WORLDS.has(scopeValue) && (
+                                  <label className="text-[11px] font-semibold text-gray-600">Category
+                                    <select value={rj.subcategory_node_id || ''}
+                                      onChange={e => { const n = catTree.find(x => x.id === e.target.value); patchTileRule(id, ti, 'subcategory_node_id', e.target.value || undefined); patchTileRule(id, ti, 'subcategory_label', n ? n.name : undefined); }}
+                                      className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                                      <option value="">Any category</option>
+                                      {catTree.map(n => <option key={n.id} value={n.id}>{' '.repeat(n.depth * 2)}{n.name}</option>)}
+                                    </select>
+                                  </label>
+                                )}
+                                <label className="text-[11px] font-semibold text-gray-600">Brand
+                                  <input value={rj.brand || ''} onChange={e => patchTileRule(id, ti, 'brand', e.target.value || undefined)} placeholder="e.g. Adidas" className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                                </label>
+                                <div className="flex gap-2">
+                                  <label className="flex-1 text-[11px] font-semibold text-gray-600">Price under ₹
+                                    <input type="number" value={rj.price_max ?? ''} onChange={e => patchTileRule(id, ti, 'price_max', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 499" className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                                  </label>
+                                  <label className="flex-1 text-[11px] font-semibold text-gray-600">Above ₹ <span className="text-gray-400 font-normal">(optional)</span>
+                                    <input type="number" value={rj.price_min ?? ''} onChange={e => patchTileRule(id, ti, 'price_min', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 0" className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                                  </label>
                                 </div>
+                                <label className="text-[11px] font-semibold text-gray-600">At least % off
+                                  <input type="number" value={rj.min_discount_pct ?? ''} onChange={e => patchTileRule(id, ti, 'min_discount_pct', e.target.value === '' ? undefined : Number(e.target.value))} placeholder="e.g. 40" className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                                </label>
+                                {worldTags.length > 0 && (
+                                  <div className="text-[11px] font-semibold text-gray-600">Tags
+                                    <div className="mt-1 flex flex-wrap gap-1.5">
+                                      {worldTags.map(tag => {
+                                        const on = (rj.tags || []).includes(tag.slug);
+                                        return (
+                                          <button key={tag.slug} type="button"
+                                            onClick={() => patchTileRule(id, ti, 'tags', on ? (rj.tags || []).filter(x => x !== tag.slug) : [...(rj.tags || []), tag.slug])}
+                                            className={`text-[10px] font-semibold rounded-full px-2.5 py-0.5 border ${on ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>{tag.label}</button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                                <label className="text-[11px] text-gray-600 flex items-center gap-1.5"><input type="checkbox" checked={!!rj.has_offer} onChange={e => patchTileRule(id, ti, 'has_offer', e.target.checked || undefined)} /> Only products with a live offer</label>
                                 <div className="flex items-center gap-1.5 pt-1.5 border-t border-amber-200">
-                                  <input value={t.__saveName || ''} onChange={e => updateTile(id, ti, { __saveName: e.target.value })} placeholder="Save as… (e.g. Adidas 40%)" className="flex-1 text-[11px] border border-gray-300 rounded px-2 py-1" />
+                                  <input value={t.__saveName || ''} onChange={e => updateTile(id, ti, { __saveName: e.target.value })} placeholder="Save as… (e.g. Jeans under ₹499)" className="flex-1 text-[11px] border border-gray-300 rounded px-2 py-1" />
                                   <button type="button" onClick={() => saveRuleForReuse(id, ti)} className="text-[10px] font-semibold text-amber-700 border border-amber-300 rounded px-2 py-1 whitespace-nowrap">Save for reuse</button>
                                 </div>
                               </div>
@@ -795,6 +821,31 @@ export default function SectionsPage() {
                                 {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
                               </select>
                             )}
+                            {/* When tapped, show… (per-tile destination) */}
+                            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-gray-200">
+                              <span className="text-[10px] font-semibold text-gray-500">On tap →</span>
+                              <select value={(t.tap_destination || {}).type || 'grid'}
+                                onChange={e => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), type: e.target.value } })}
+                                className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+                                <option value="grid">Product grid (this tile&apos;s rule)</option>
+                                <option value="category">Category browser</option>
+                                <option value="page">A page</option>
+                              </select>
+                              {(t.tap_destination || {}).type === 'category' && (
+                                <select value={(t.tap_destination || {}).vertical || ''} onChange={e => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), vertical: e.target.value } })}
+                                  className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+                                  <option value="">— world —</option>
+                                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                              )}
+                              {(t.tap_destination || {}).type === 'page' && (
+                                <select value={(t.tap_destination || {}).page_key || ''} onChange={e => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), page_key: e.target.value } })}
+                                  className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+                                  <option value="">— page —</option>
+                                  {pages.filter(p => p.enabled !== false).map(p => <option key={p.id} value={p.key}>{p.label}</option>)}
+                                </select>
+                              )}
+                            </div>
                           </div>
                           );
                         })}

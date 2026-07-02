@@ -1,0 +1,21 @@
+{
+  "feature": "admin-frame-builder-ux",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-07-02",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-07-02",
+  "notes": "App Builder section-editor clarity pass (founder feedback 2026-07-02). FOUR changes: (1) section naming — blank default + placeholder 'Name this section (shown in app)' + publish blocks until every section named (kills 'Spotlight' default); (2) removed the redundant TemplatePreview wireframe (live phone pane covers it); (3) per-tile 'On tap →' destination dropdown (Product grid / Category browser / A page) stored in tiles[i].tap_destination + section-level chooser hidden for frames + mobile SectionRenderer onTile honors it; (4) labeled tile rule builder mirroring Section Library — Category (tree) · Brand · Price under/above · Min % off · Tags (chips from world vocab) · Only-with-offer, composes 'jeans under ₹499 in Adidas'. Founder picked: labeled form + require-name. NO backend/migration (rides config_json; libraryProducts already honors the keys). Admin sections/page.js + mobile SectionRenderer.js. Deploy = Vercel admin + follower OTA. release.released false.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
