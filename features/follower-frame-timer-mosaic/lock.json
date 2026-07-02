@@ -12,7 +12,9 @@
   "mockup_locked_at": "2026-06-29",
   "notes": "Extends the App Builder Frame tool (shelf_type='tiles') with two deferred P3 looks: a MOSAIC tile layout (per-tile size large/small; large=full-width hero, small=2-up) + an optional COUNTDOWN TIMER (config_json.timer={ends_at,label}; frame hides when it hits zero). Founder 'pls start building' 2026-06-29. Additive: admin (brand-web sections/page.js — mosaic layout option + per-tile size toggle + timer block + mosaic preview) + mobile (TileSection.js — MosaicStyle + useCountdown + CountdownBar). NO backend, NO migration (config_json flows through sectionEngine untouched). Per-tile 3-way destination + server-side expiry gate OUT of v1. Deploy = Vercel admin + follower OTA, no APK. release.released false.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
+    "deployed_at": "2026-07-02",
+    "deployed_evidence": "commit 1d006f7 → Vercel admin (mosaic layout + timer block + per-tile size + mosaic preview) + follower OTA v175 (MosaicStyle + useCountdown + CountdownBar in TileSection). No backend/migration. pnpm qa GREEN 79; mobile babel clean + jest 25/25 (TileSection green); admin parses clean.",
     "released": false,
     "released_by": null,
     "released_at": null,
