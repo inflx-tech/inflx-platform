@@ -13,6 +13,8 @@
   "notes": "App Builder section-editor clarity pass (founder feedback 2026-07-02). FOUR changes: (1) section naming — blank default + placeholder 'Name this section (shown in app)' + publish blocks until every section named (kills 'Spotlight' default); (2) removed the redundant TemplatePreview wireframe (live phone pane covers it); (3) per-tile 'On tap →' destination dropdown (Product grid / Category browser / A page) stored in tiles[i].tap_destination + section-level chooser hidden for frames + mobile SectionRenderer onTile honors it; (4) labeled tile rule builder mirroring Section Library — Category (tree) · Brand · Price under/above · Min % off · Tags (chips from world vocab) · Only-with-offer, composes 'jeans under ₹499 in Adidas'. Founder picked: labeled form + require-name. NO backend/migration (rides config_json; libraryProducts already honors the keys). Admin sections/page.js + mobile SectionRenderer.js. Deploy = Vercel admin + follower OTA. release.released false.",
   "release": {
     "qa_all_green": true,
+    "deployed_at": "2026-07-02",
+    "deployed_evidence": "commit ae42204 → Vercel admin (naming gate + preview removed + labeled rule form + per-tile destination) + follower OTA v177 (SectionRenderer tile onTile honors tap_destination). No backend/migration. pnpm qa GREEN 79; mobile babel clean + jest 25/25; admin parses clean.",
     "released": false,
     "released_by": null,
     "released_at": null,
