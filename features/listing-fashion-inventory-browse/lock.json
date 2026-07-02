@@ -11,7 +11,7 @@
   "mockup_locked_by": "founder",
   "mockup_locked_at": "2026-07-02",
   "notes": "Fashion-first 'My listings' drill-down browse on the listing page. Founder locked the in-chat interactive mock 2026-07-02 (drill-down folders, fashion first, search escape-hatch, reuse today's row actions, tab-on-listing-page placement). UI-governed (brand-web, no Mobile). Additive backend (2 read-only brand-scoped endpoints), no migration. Deployed to Render+Vercel on founder go 2026-07-02 (pnpm qa GREEN 79/gate 0). release.released kept false per program precedent (listing-category-browser): live drill-down not yet runtime-verified — no fashion products seeded in DB; verify with seeded fashion data before attesting released=true.",
-  "verification": "pnpm qa GREEN — 79 passed, gate 0 (2026-07-02). node --check clean; JSX parses via Next babel. Runtime drill-down pending fashion seed data.",
+  "verification": "pnpm qa GREEN — 79 passed, gate 0 (2026-07-02). node --check clean; JSX parses via Next babel. Amended same day to also cover the ListingTemplateLayout/FleetView render path (the screen Charvitha Fashions actually hits) — see 06-diff/notes.md.",
   "release": {
     "qa_all_green": true,
     "released": false,

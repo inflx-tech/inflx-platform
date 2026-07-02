@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { brandApi } from '../../../../lib/api';
 import { getTemplate } from './templateRegistry';
 import * as builtins from './builtinStepComponents';
@@ -100,6 +100,10 @@ export default function ListingTemplateLayout({
     [allSteps]
   );
   const gotoProductWizard = () => { window.location.href = '/dashboard/products/listing'; };
+
+  // Drill-down verticals (fashion/furniture) get a category folder browse of the
+  // inventory instead of one flat list (contract: listing-fashion-inventory-browse).
+  const isDrilldown = /^(fashion|furniture)/.test(template?.category_key || '');
 
   const [currentStep, setCurrentStep] = useState(0);
   const stepConfig = visibleSteps[currentStep];
@@ -466,7 +470,16 @@ export default function ListingTemplateLayout({
       </div>
 
       {/* ═══════ FLEET VIEW ═══════ */}
-      {view === 'fleet' && (
+      {view === 'fleet' && (isDrilldown ? (
+        <DrilldownFleetView
+          flatProducts={myProducts}
+          icon={template.icon}
+          labelPlural={labelPlural}
+          onRemove={handleRemoveProduct}
+          onTogglePush={handleTogglePush}
+          onAdd={gotoProductWizard}
+        />
+      ) : (
         <FleetView
           products={myProducts}
           FleetRow={FleetRow}
@@ -479,7 +492,7 @@ export default function ListingTemplateLayout({
           onAdd={() => { if (!hasProductStep) return gotoProductWizard(); setView('add'); resetWizard(); }}
           onUpload={() => { if (!hasProductStep) return gotoProductWizard(); setView('upload'); }}
         />
-      )}
+      ))}
 
       {editProduct && (
         <CustomiseDishModal
@@ -600,6 +613,129 @@ function DefaultFleetRow({ product, icon, onRemove, onTogglePush }) {
       )}
       <button onClick={onRemove}
         className="text-red-400 hover:text-red-600 text-xs font-semibold ml-2">Remove</button>
+    </div>
+  );
+}
+
+// DrilldownFleetView — inventory browse for fashion/furniture: the brand's own
+// products organised by the category tree they listed under, instead of one flat
+// list (contract: listing-fashion-inventory-browse). Rows reuse DefaultFleetRow so
+// the In-store toggle + Remove behave identically to the flat view. A name/SKU
+// search flattens across the whole catalogue as an escape hatch.
+function DrilldownFleetView({ flatProducts, icon, labelPlural, onRemove, onTogglePush, onAdd }) {
+  const [tree, setTree] = useState(null);
+  const [level, setLevel] = useState([]);
+  const [crumb, setCrumb] = useState([]);
+  const [leaf, setLeaf] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [rowsLoading, setRowsLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let cancel = false;
+    brandApi.get('/brands/me/listing-tree')
+      .then(r => { if (cancel) return; setLoading(false); if (r.success) { setTree(r.data.tree || []); setLevel(r.data.tree || []); } else setErr(r.error?.message || 'Failed to load your inventory'); })
+      .catch(() => { if (!cancel) { setLoading(false); setErr('Failed to load your inventory'); } });
+    return () => { cancel = true; };
+  }, []);
+
+  const loadLeaf = useCallback(async (node) => {
+    setRowsLoading(true); setRows([]);
+    const r = await brandApi.get(`/brands/me/listing-nodes/${node.id}/products`);
+    setRowsLoading(false);
+    if (r.success) setRows(r.data.products || []); else setErr(r.error?.message || 'Failed to load products');
+  }, []);
+
+  const drill = (node) => {
+    setErr('');
+    setCrumb(c => [...c, { name: node.name, children: level }]);
+    if (node.is_leaf) { setLeaf(node); loadLeaf(node); }
+    else setLevel(node.children || []);
+  };
+  const jump = (i) => {
+    setLeaf(null); setRows([]); setErr('');
+    if (i < 0) { setLevel(tree || []); setCrumb([]); return; }
+    setLevel(crumb[i].children); setCrumb(crumb.slice(0, i));
+  };
+  const refetchLeaf = () => { if (leaf) loadLeaf(leaf); };
+  const removeRow = async (id) => { await onRemove(id); refetchLeaf(); };
+  const toggleRow = async (id, next) => { await onTogglePush(id, next); refetchLeaf(); };
+
+  const q = search.trim().toLowerCase();
+  const results = q ? (flatProducts || []).filter(p => (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)) : [];
+  const rowEl = (p) => <DefaultFleetRow key={p.id} product={p} icon={icon} onRemove={() => removeRow(p.id)} onTogglePush={toggleRow} />;
+
+  if (loading) return <div className="text-center text-sm text-gray-400 py-10">Loading your inventory…</div>;
+
+  const total = (tree || []).reduce((a, n) => a + (n.product_count || 0), 0);
+  const folders = (level || []).filter(n => (n.product_count || 0) > 0);
+
+  return (
+    <div>
+      <div className="mb-4">
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Search your products by name or SKU…"
+          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-yellow" />
+      </div>
+
+      {err && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600 mb-3">{err}</div>}
+
+      {q ? (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-400">{results.length} match{results.length === 1 ? '' : 'es'}</p>
+          {results.map(rowEl)}
+          {results.length === 0 && <p className="text-sm text-gray-400">No products match. Clear search to browse by category.</p>}
+        </div>
+      ) : total === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+          <p className="text-4xl mb-3">{icon || '📋'}</p>
+          <p className="text-base font-bold text-gray-700 mb-1">No products listed yet</p>
+          <p className="text-sm text-gray-400 mb-4">Add products and they&apos;ll show here, organised by category.</p>
+          <button onClick={onAdd} className="px-5 py-2.5 bg-yellow text-ink-1 text-sm font-bold rounded-xl hover:bg-yellow-deep transition-colors">➕ Add Item</button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center flex-wrap gap-1 text-sm text-gray-500 mb-4 font-semibold">
+            <button onClick={() => jump(-1)} className="hover:text-gray-900">{labelPlural}</button>
+            {crumb.map((c, i) => (
+              <span key={i} className="flex items-center gap-1">
+                <span className="text-gray-300">›</span>
+                {i === crumb.length - 1 && leaf
+                  ? <span className="text-gray-900">{c.name}</span>
+                  : <button onClick={() => jump(i)} className="hover:text-gray-900">{c.name}</button>}
+              </span>
+            ))}
+          </div>
+
+          {!leaf ? (
+            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}>
+              {folders.map(n => {
+                const subCats = (n.children || []).filter(c => (c.product_count || 0) > 0).length;
+                return (
+                  <button key={n.id} onClick={() => drill(n)}
+                    className={`flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-xl p-3.5 text-left hover:border-yellow transition-colors ${n.is_leaf ? 'border-l-[3px] border-l-yellow' : ''}`}>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-gray-900 truncate">{n.name}</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{n.is_leaf ? `${n.product_count} listed` : `${subCats} categor${subCats === 1 ? 'y' : 'ies'}`}</div>
+                    </div>
+                    <span className="font-mono text-[11px] font-bold rounded-full px-2.5 py-0.5" style={{ backgroundColor: '#FFF7CC', color: '#6B5A00' }}>{n.product_count}</span>
+                  </button>
+                );
+              })}
+              {folders.length === 0 && <p className="text-sm text-gray-400">Nothing listed under here.</p>}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-wide text-gray-400 font-bold">{leaf.name} — {rows.length} product{rows.length === 1 ? '' : 's'}</p>
+              {rowsLoading ? <p className="text-sm text-gray-400">Loading…</p>
+                : rows.length === 0 ? <p className="text-sm text-gray-400">No products under {leaf.name} yet.</p>
+                : rows.map(rowEl)}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

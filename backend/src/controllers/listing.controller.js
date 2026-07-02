@@ -621,7 +621,7 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
        SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id)
      SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.sku, bp.stock,
             bp.is_active, bp.pushed_to_store, bp.facets, bp.variants_json,
-            bp.category_node_id, bp.created_at,
+            bp.category_node_id, bp.created_at, bp.description, bp.section,
             cn.name AS leaf_name, cn.segment, cn.category
        FROM brand_products bp
        JOIN category_nodes cn ON cn.id = bp.category_node_id

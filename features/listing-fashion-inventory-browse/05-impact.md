@@ -16,10 +16,22 @@ where there was none; touches no existing flow. No migration.
   columns that already exist (incl. `category_node_id`, `facets`, `mrp`).
 
 ### Frontend (UI-governed)
-- `Packages/brand-web/app/dashboard/products/listing/page.js` — adds a top-level
-  **My listings / Add products** tab. The entire existing add-wizard is wrapped
-  unchanged under the *Add products* tab. New `BrowseListings` component + browse
-  CSS added to the scoped `.lst` stylesheet.
+Fashion/furniture brands reach their inventory through **two** render paths
+depending on store-setup state — both needed the browse:
+- `Packages/brand-web/app/dashboard/products/listing/page.js` — the drill-down
+  add page (reached after store setup). Adds a **My listings / Add products** tab;
+  the add-wizard is wrapped unchanged. New `BrowseListings` component + `.lst` CSS.
+- `Packages/brand-web/app/dashboard/products/components/ListingTemplateLayout.js`
+  — the listing-engine `FleetView` (reached when store setup isn't complete, e.g.
+  Charvitha Fashions). For drill-down verticals the flat `FleetView` list is
+  replaced by `DrilldownFleetView`: category folders → leaf → rows. Rows REUSE
+  `DefaultFleetRow` (In-store toggle + Remove) so behaviour is identical; a
+  name/SKU search flattens across the catalogue. Non-drill-down verticals keep
+  the flat `FleetView` untouched.
+
+### Backend follow-on
+- `getMyNodeProducts` now also selects `description` + `section` so the reused
+  `DefaultFleetRow` renders its subtitle. Still read-only, still additive.
 
 ## Blast radius / risk
 - **Follower browse:** untouched. The new endpoints are separate handlers; the

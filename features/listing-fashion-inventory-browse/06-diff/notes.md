@@ -41,6 +41,17 @@ drill-down of the same category tree they list under, plus a name/SKU search.
 4. A brand with zero products lands on the empty state, not a blank tree.
 5. Standard (non-drill-down) verticals are unaffected — they never reach this page.
 
+## Amendment — second render path (2026-07-02)
+First pass upgraded only `/dashboard/products/listing` (drill-down add page).
+But a fashion brand whose store setup isn't complete (e.g. Charvitha Fashions)
+renders `ListingWizard → ListingTemplateLayout → FleetView` on `/dashboard/products`
+instead — a different flat list that the first pass never touched (confirmed by
+founder screenshot). Fix: `DrilldownFleetView` added to `ListingTemplateLayout`,
+gated to fashion/furniture, reusing the same deployed endpoints and `DefaultFleetRow`
+(In-store toggle + Remove preserved). Backend `getMyNodeProducts` now also returns
+`description`/`section` for the reused row subtitle. Lesson: this feature has two
+inventory render paths depending on store-setup state; both now show the drill-down.
+
 ## Verification
 - `pnpm qa` GREEN — 79 passed, gate 0 (2026-07-02), zero regression.
 - Backend `node --check` clean; frontend JSX parses via Next's bundled babel.
