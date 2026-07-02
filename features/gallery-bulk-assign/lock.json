@@ -1,0 +1,20 @@
+{
+  "feature": "gallery-bulk-assign",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'Yes — bulk-assign only'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — approved the bulk-select + assign flow in-session; additive to existing gallery, no new mockup",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "E-4 gallery organize: multi-select assets + Select all + a bulk bar (category picker + Assign) that unions the chosen category tag onto every selected asset via the existing mediaGalleryApi.update. Frontend-only, one file, no backend/migration/OTA. Reviewer clean; pnpm qa GREEN. Follow-ups: tag-on-upload, drag-drop, bulk-remove.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

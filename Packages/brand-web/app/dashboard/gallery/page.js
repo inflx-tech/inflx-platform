@@ -177,6 +177,19 @@ const CSS = `
 .gal .ac-actions button.del:hover:not(:disabled){background:var(--danger-pale);color:var(--danger-text)}
 .gal .ac-actions > * + *{border-left:1px solid var(--border-soft)}
 
+/* Selected card + corner checkbox */
+.gal .ac.sel{border-color:var(--yellow);box-shadow:0 0 0 2px var(--yellow-pale)}
+.gal .ac-check{position:absolute;top:8px;left:8px;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:rgba(255,255,255,.9);color:var(--ink);font-size:13px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;font-family:inherit;padding:0;transition:all .12s}
+.gal .ac-check:hover{border-color:var(--ink)}
+.gal .ac-check.on{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+
+/* Bulk-assign action bar */
+.gal .bulk-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--yellow-50);border:1px solid var(--yellow);border-radius:12px;padding:10px 14px;margin-bottom:14px}
+.gal .bulk-bar .bulk-n{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
+.gal .bulk-bar .bulk-sel{padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;font-family:inherit;outline:none;color:var(--ink);background:var(--white);min-width:170px}
+.gal .bulk-bar .bulk-sel:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.gal .bulk-bar .bulk-sel:disabled{opacity:.5;cursor:not-allowed}
+
 /* Compact row card (links + contracts) */
 .gal .rc{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:40px 1fr auto auto auto;gap:12px;align-items:center;margin-bottom:6px;min-height:60px}
 .gal .rc:hover{border-color:var(--ink)}
@@ -293,6 +306,10 @@ function AssetsPanel() {
   const [uploadError, setUploadError] = useState(null);
   const [editingAsset, setEditingAsset] = useState(null);
   const [usage, setUsage]             = useState(null);
+  const [selected, setSelected]       = useState(() => new Set());
+  const [assignTag, setAssignTag]     = useState('');
+  const [assigning, setAssigning]     = useState(false);
+  const [assignError, setAssignError] = useState(null);
   const fileInputRef                  = useRef(null);
 
   async function load() {
@@ -307,6 +324,51 @@ function AssetsPanel() {
   }
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tagFilter]);
+
+  // Reset selection whenever the tag filter changes, so we never keep stale
+  // selected ids that aren't currently visible.
+  useEffect(() => { setSelected(new Set()); setAssignError(null); }, [tagFilter]);
+
+  function toggleSelect(id) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allSelected = assets.length > 0 && selected.size === assets.length;
+
+  function toggleSelectAll() {
+    setSelected(prev => (prev.size === assets.length ? new Set() : new Set(assets.map(a => a.id))));
+  }
+
+  function clearSelection() { setSelected(new Set()); setAssignError(null); }
+
+  async function handleAssign() {
+    if (!assignTag || selected.size === 0) return;
+    setAssigning(true);
+    setAssignError(null);
+    const targets = assets.filter(a => selected.has(a.id));
+    try {
+      const results = await Promise.all(targets.map(a => {
+        const union = Array.from(new Set([...(a.tags || []), assignTag]));
+        return mediaGalleryApi.update(a.id, { tags: union });
+      }));
+      const failed = results.find(r => r && r.success === false);
+      if (failed) {
+        setAssignError(failed.error?.message || 'Some assets could not be updated.');
+      } else {
+        setSelected(new Set());
+        setAssignTag('');
+      }
+    } catch (e) {
+      setAssignError(e?.message || 'Assign failed. Please try again.');
+    }
+    setAssigning(false);
+    await load();
+  }
 
   async function handleFiles(files) {
     if (!files || !files.length) return;
@@ -350,8 +412,35 @@ function AssetsPanel() {
             {opt.label} {tagCounts && <span className="ct">{tagCounts[opt.value] || 0}</span>}
           </button>
         ))}
+        {assets.length > 0 && (
+          <button className="chip" onClick={toggleSelectAll} style={{ marginLeft: 'auto' }}>
+            {allSelected ? 'Deselect all' : 'Select all'}
+          </button>
+        )}
       </div>
 
+      {selected.size > 0 && (
+        <div className="bulk-bar">
+          <span className="bulk-n">{selected.size} selected</span>
+          <select
+            className="bulk-sel"
+            value={assignTag}
+            onChange={(e) => setAssignTag(e.target.value)}
+            disabled={assigning}
+          >
+            <option value="">Choose category…</option>
+            {TAG_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <button className="btn-ink" onClick={handleAssign} disabled={assigning || !assignTag}>
+            {assigning ? 'Assigning…' : 'Assign'}
+          </button>
+          <button className="btn-ghost" onClick={clearSelection} disabled={assigning}>Clear</button>
+        </div>
+      )}
+
+      {assignError && <div className="err">{assignError}</div>}
       {uploadError && <div className="err">{uploadError}</div>}
 
       <div
@@ -378,7 +467,14 @@ function AssetsPanel() {
       ) : (
         <div className="ac-grid">
           {assets.map(a => (
-            <AssetCard key={a.id} asset={a} onEdit={() => setEditingAsset(a)} onDelete={() => handleDelete(a.id)} />
+            <AssetCard
+              key={a.id}
+              asset={a}
+              selected={selected.has(a.id)}
+              onToggleSelect={() => toggleSelect(a.id)}
+              onEdit={() => setEditingAsset(a)}
+              onDelete={() => handleDelete(a.id)}
+            />
           ))}
         </div>
       )}
@@ -390,13 +486,22 @@ function AssetsPanel() {
   );
 }
 
-function AssetCard({ asset, onEdit, onDelete }) {
+function AssetCard({ asset, selected, onToggleSelect, onEdit, onDelete }) {
   const isImage = (asset.file_type || '').startsWith('image/');
   const isVideo = (asset.file_type || '').startsWith('video/');
   const tags = asset.tags || [];
   return (
-    <div className="ac">
+    <div className={`ac${selected ? ' sel' : ''}`}>
       <div className="ac-img">
+        <button
+          type="button"
+          className={`ac-check${selected ? ' on' : ''}`}
+          aria-label={selected ? 'Deselect asset' : 'Select asset'}
+          aria-pressed={selected}
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+        >
+          {selected ? '✓' : ''}
+        </button>
         {isImage && asset.download_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={asset.download_url} alt={asset.title} />
