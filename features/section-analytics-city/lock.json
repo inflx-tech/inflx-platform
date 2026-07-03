@@ -25,7 +25,7 @@
       "migration": "run-125.js on prod 2026-07-03 — section_events created, 0 rows (honest start)",
       "backend": "git push → Render (city merge + event + analytics endpoints)",
       "web": "git push → Vercel (city input + analytics panel)",
-      "mobile_ota": "publish-ota:all post-push (SectionRenderer emit)"
+      "mobile_ota": "published 2026-07-03: follower v181, brand 133, influencer 124, agency 32 (publish-ota:all, Render pre-warmed). Prod smoke: POST /follower/section-event → 204."
     }
   }
 }
