@@ -1,0 +1,29 @@
+{
+  "feature": "design-hero-slider",
+  "spec_version": "1.0.0",
+  "status": "spec-locked",
+  "approved": true,
+  "approved_by": "founder (delegated: 'Go and start P3a', 2026-07-03; program spec Docs/SECTION_SYSTEM_SPEC.md §3 V8)",
+  "approved_at": "2026-07-03T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (reviewed 00-hero-slider-screens.html; 'Can you pls start implementing', 2026-07-03)",
+  "mockup_locked_at": "2026-07-03T11:00:00+05:30",
+  "notes": "Cleanup P3a. UI-governed (brand-web) + Mobile-governed (TileSection): mockup-lock gate before implementation; Maestro mobile-verify (or founder GOVERNANCE_OVERRIDE) before released=true.",
+  "release": {
+    "qa_all_green": true,
+    "qa_report": "qa/reports/2026-07-03T04-43-56-052Z/QA-REPORT.md",
+    "workflow_verify": "11/11 e2e hero walkthrough (real JWT, local stack) + TileSection.test.js 25/25 + RN babel transform clean, 2026-07-03; evidence 06-diff/",
+    "preexisting_failure": "FollowerWalletScreen.test.js suite (jest transform config vs react-native-vector-icons) — untouched by this contract, classified out-of-scope",
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "partial_deploy": {
+      "authorized_by": "founder ('ok pls go and deploy', 2026-07-03)",
+      "web_backend": "SHIPPING NOW — backend TILE_STYLES enum (Render) + wizard hero card (Vercel); admin can build heroes; current follower OTA renders hero_slider as carousel (graceful fallback)",
+      "mobile_ota": "HELD — TileSection renderer committed to git but OTA NOT published; Mobile-governed gate needs Maestro green (no device connected: qa:maestro:doctor RED) or founder GOVERNANCE_OVERRIDE. released flips true only after the OTA ships verified."
+    }
+  }
+}

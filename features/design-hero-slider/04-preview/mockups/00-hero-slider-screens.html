@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Hero slider — both screens</title>
+<style>
+  :root { --ink:#1A1D1F; --yellow:#F8CB46; --muted:#6b7280; --line:#e5e7eb; --pink:#E35694; }
+  * { box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+  body { margin:0; background:#ececef; }
+  .shead { background:var(--ink); color:#fff; padding:10px 24px; font-size:13.5px; font-weight:700; position:sticky; top:0; z-index:5; }
+  .shead span { color:var(--yellow); margin-right:8px; }
+  .screen { padding:24px; display:flex; justify-content:center; gap:28px; }
+  .screen.dark { background:rgba(20,22,25,.45); display:block; }
+
+  /* screen 1 — follower phone */
+  .phone { width:340px; background:#fff; border:9px solid #17181a; border-radius:34px; overflow:hidden; }
+  .search { margin:12px 14px 8px; height:34px; border-radius:999px; background:#f4f4f5; display:flex; align-items:center; padding:0 14px; font-size:11px; color:#8a8f98; }
+  .tabs { display:flex; gap:14px; padding:4px 14px 10px; }
+  .tabs span { font-size:11.5px; color:#8a8f98; }
+  .tabs .on { color:var(--ink); font-weight:800; border-bottom:2.5px solid var(--yellow); padding-bottom:3px; }
+  .hero { margin:4px 14px 6px; border-radius:16px; overflow:hidden; position:relative; height:160px; background:linear-gradient(120deg,#1A1D1F 55%, #3a3325 100%); }
+  .hero .txt { position:absolute; left:16px; bottom:34px; color:#fff; }
+  .hero .eyebrow { font-size:9px; letter-spacing:2px; color:var(--yellow); font-weight:800; }
+  .hero .head { font-size:22px; font-weight:800; line-height:1.05; margin-top:3px; }
+  .hero .cta { display:inline-block; margin-top:8px; background:var(--yellow); color:var(--ink); font-size:10px; font-weight:800; border-radius:999px; padding:5px 12px; }
+  .hero .art { position:absolute; right:-8px; top:10px; width:130px; height:140px; border-radius:14px; background:rgba(248,203,70,.18); border:1px dashed rgba(248,203,70,.5); display:flex; align-items:center; justify-content:center; color:var(--yellow); font-size:9px; text-align:center; }
+  .dots { position:absolute; bottom:10px; left:0; right:0; display:flex; justify-content:center; gap:5px; }
+  .dots i { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.4); }
+  .dots i.on { background:var(--yellow); width:16px; border-radius:999px; }
+  .autonote { text-align:center; font-size:9.5px; color:#8a8f98; margin-bottom:6px; }
+  .rail { display:flex; gap:10px; padding:6px 14px; }
+  .circ { text-align:center; } .circ .c { width:48px; height:48px; border-radius:50%; background:#f4f4f5; }
+  .circ span { font-size:9px; color:#8a8f98; }
+  .shelf { padding:8px 14px; } .shelf b { font-size:13px; }
+  .cards { display:flex; gap:9px; margin-top:8px; }
+  .card { width:92px; } .card .img { height:92px; border-radius:12px; background:#f4f4f5; }
+  .card .l1 { height:7px; width:64px; background:#f0f0f1; border-radius:3px; margin-top:6px; }
+  .note { max-width:280px; font-size:12.5px; color:#444; line-height:1.55; }
+  .note h3 { font-size:14px; margin:0 0 8px; } .note li { margin-bottom:7px; }
+
+  /* screen 2 — wizard editor */
+  .modal { max-width:720px; margin:0 auto; background:#fff; border-radius:16px; padding:22px 26px; }
+  .steps { display:flex; gap:6px; margin-bottom:16px; }
+  .st { flex:1; text-align:center; font-size:12.5px; padding:9px 4px; border-radius:9px; background:#f2f3f5; color:var(--muted); }
+  .st.done { background:#e8f7ee; color:#177245; } .st.on { background:var(--ink); color:#fff; font-weight:700; }
+  h2 { font-size:17px; margin:0 0 3px; } .sub { font-size:12.5px; color:var(--muted); margin-bottom:12px; }
+  .ctx { font-size:12px; background:#fff6e0; border-radius:9px; padding:8px 12px; display:inline-block; margin-bottom:12px; }
+  .panel { border:1.5px solid var(--ink); border-radius:12px; padding:14px; }
+  .panel h4 { margin:0 0 10px; font-size:13px; }
+  .autoplay { display:flex; align-items:center; gap:8px; font-size:12.5px; margin-bottom:12px; }
+  .autoplay input { width:56px; border:1px solid var(--line); border-radius:8px; padding:7px 8px; font-size:13px; }
+  .slide { display:flex; align-items:center; gap:10px; border:1px solid var(--line); background:#fafafa; border-radius:12px; padding:10px; margin-bottom:8px; }
+  .thumb { width:96px; height:48px; border-radius:8px; background:#e9ebee; display:flex; align-items:center; justify-content:center; font-size:9px; color:var(--muted); flex-shrink:0; text-align:center; }
+  .thumb.filled { background:#1A1D1F; color:var(--yellow); font-weight:700; }
+  .f { flex:1; } .f input { width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px; font-size:12px; }
+  .act { font-size:11px; color:var(--muted); margin-top:4px; } .act b { color:var(--ink); }
+  .add { font-size:12px; font-weight:700; color:#8a5a00; border:1px solid #e8c46a; border-radius:9px; padding:7px 12px; background:#fff; display:inline-block; }
+  .hint { font-size:11px; color:var(--muted); margin-top:10px; }
+  .foot { display:flex; justify-content:space-between; margin-top:16px; }
+  .btn { border-radius:10px; padding:10px 18px; font-size:13.5px; font-weight:600; border:1px solid var(--line); background:#fff; }
+  .btn.pri { background:var(--ink); color:#fff; border-color:var(--ink); }
+</style></head><body>
+
+<div class="shead"><span>SCREEN 1 / 2</span> Follower home — the hero slider live</div>
+<div class="screen">
+  <div class="phone">
+    <div style="height:14px"></div>
+    <div class="search">Search products, brands…</div>
+    <div class="tabs"><span class="on">Fashion</span><span>Food</span><span>Furniture</span><span>Beauty</span></div>
+    <div class="hero">
+      <div class="txt"><div class="eyebrow">PAYDAY SALE</div><div class="head">MIN. 50% OFF</div><span class="cta">SHOP NOW</span></div>
+      <div class="art">your 1080×560<br>slide image<br>(full-bleed)</div>
+      <div class="dots"><i class="on"></i><i></i><i></i></div>
+    </div>
+    <div class="autonote">⟳ advances by itself every 4s · swipe to browse (pauses while touching)</div>
+    <div class="rail">
+      <div class="circ"><div class="c"></div><span>Kurtas</span></div>
+      <div class="circ"><div class="c"></div><span>Jeans</span></div>
+      <div class="circ"><div class="c"></div><span>Sarees</span></div>
+      <div class="circ"><div class="c"></div><span>Shoes</span></div>
+    </div>
+    <div class="shelf"><b>Fashion Steals — min 20% off</b>
+      <div class="cards"><div class="card"><div class="img"></div><div class="l1"></div></div>
+      <div class="card"><div class="img"></div><div class="l1"></div></div>
+      <div class="card"><div class="img"></div><div class="l1"></div></div></div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+  <div class="note">
+    <h3>Hero slider — follower view</h3>
+    <ul>
+      <li><b>Full-width slide</b>, ~2:1, 16px corners — your artwork edge to edge (dark slide = placeholder showing text-on-image).</li>
+      <li><b>Dots</b> track the slide; active dot stretches in yellow.</li>
+      <li><b>Auto-advance</b> every 4s (you set the seconds; 0 = manual). Swiping pauses it.</li>
+      <li><b>Each slide has its own action</b> — grid / category / custom page.</li>
+      <li>Schedules like any section — end time passes, the whole hero leaves silently.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="shead"><span>SCREEN 2 / 2</span> Wizard step 2 — slides editor</div>
+<div class="screen dark">
+  <div class="modal">
+    <div class="steps"><div class="st done">1 Design ✓</div><div class="st on">2 Content</div><div class="st">3 Display</div><div class="st">4 Action</div></div>
+    <h2>What fills it?</h2>
+    <div class="sub">A hero slider is your images — each slide is one uploaded artwork with its own action.</div>
+    <div class="ctx">Design: <b>Hero slider</b> · placing on <b>Fashion home</b></div>
+    <div class="panel">
+      <h4>🖼 Slides — upload 1080×560 px (wide, 2:1)</h4>
+      <div class="autoplay">Auto-advance every <input value="4"> seconds <span style="color:var(--muted);font-size:11px">(0 = followers swipe manually)</span></div>
+      <div class="slide"><div class="thumb filled">PAYDAY<br>SALE</div>
+        <div class="f"><input value="Payday Sale"><div class="act">Action (step 4): <b>Product grid — “Min 50% off” rule</b></div></div><span style="color:#c8ccd2">✕</span></div>
+      <div class="slide"><div class="thumb filled" style="background:#E35694;color:#fff">FESTIVE<br>EDIT</div>
+        <div class="f"><input value="The Festive Edit"><div class="act">Action (step 4): <b>Custom page — “Festive Edit”</b></div></div><span style="color:#c8ccd2">✕</span></div>
+      <div class="slide"><div class="thumb">＋ upload<br>1080×560</div>
+        <div class="f"><input placeholder="Label (optional)"><div class="act">Action (step 4): <b>not set — defaults to product grid</b></div></div><span style="color:#c8ccd2">✕</span></div>
+      <span class="add">＋ Add slide</span>
+      <div class="hint">The live phone preview shows your actual uploaded image full-width with dots — what you see is what followers get. Tip: 2–4 slides is the sweet spot.</div>
+    </div>
+    <div class="foot"><button class="btn">← Back</button><button class="btn pri">Next · Display →</button></div>
+  </div>
+</div>
+
+</body></html>

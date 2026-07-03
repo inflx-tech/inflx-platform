@@ -48,7 +48,7 @@ const listSections = asyncHandler(async (req, res) => {
 
 // ── Scheduling + config_json shape validation (mig 124, features/section-scheduling/) ──
 
-const TILE_STYLES = ['carousel', 'featured', 'grid', 'banner', 'mosaic', 'themed_rail'];
+const TILE_STYLES = ['carousel', 'featured', 'grid', 'banner', 'mosaic', 'themed_rail', 'hero_slider'];
 const TAP_TYPES = ['grid', 'category', 'page'];
 const PRESENTATION_TYPES = ['banner', 'hero_tiles'];
 const CONFIG_MAX_BYTES = 20000;

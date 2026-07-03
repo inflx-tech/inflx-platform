@@ -88,7 +88,9 @@ const DESIGN_CATALOG = [
   { id: 'sale_zone', name: 'Sale zone', hint: 'frame + countdown + tiles', group: 'frames',
     base: { shelf_type: 'tiles', rule: 'static', title: 'Deal zone', config: { style: 'themed_rail', tiles: [], timer: { label: 'Ends in' } } },
     fills: ['images'] },
-  { id: 'hero_slider', name: 'Hero slider', hint: 'auto-sliding · arrives in P3', group: 'frames', p3: true },
+  { id: 'hero_slider', name: 'Hero slider', hint: 'full-width auto-sliding', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Hero', config: { style: 'hero_slider', tiles: [], autoplay_ms: 4000 } },
+    fills: ['images'] },
   { id: 'announcement_strip', name: 'Announcement strip', hint: 'thin strip · arrives in P3', group: 'frames', p3: true },
   { id: 'split_banner', name: 'Split banner', hint: 'two tiles 50/50 · arrives in P3', group: 'frames', p3: true },
   // Structure & navigation
@@ -112,8 +114,8 @@ function resolveDesignId(s) {
   const cfg = s.config_json || {};
   if (cfg.design && designById(cfg.design)) return cfg.design;
   if (s.shelf_type === 'tiles') {
-    return ({ carousel: 'image_cards', featured: 'image_cards', grid: 'image_grid', banner: 'banner_with_tiles',
-      mosaic: 'collage', themed_rail: 'sale_zone' })[cfg.style || 'carousel'] || 'image_cards';
+    return ({ hero_slider: 'hero_slider', carousel: 'image_cards', featured: 'image_cards', grid: 'image_grid',
+      banner: 'banner_with_tiles', mosaic: 'collage', themed_rail: 'sale_zone' })[cfg.style || 'carousel'] || 'image_cards';
   }
   if (s.rule === 'library_products' && cfg.presentation_type === 'banner') return 'full_width_banner';
   if (s.shelf_type === 'products' && cfg.kind === 'menu') return 'food_menu';
@@ -224,6 +226,21 @@ function PreviewSection({ s }) {
   if (s.shelf_type === 'tiles') {
     const tiles = (cfg.tiles || []).filter(t => t && (t.image_url || t.label));
     const list = tiles.length ? tiles : [{}, {}];
+    if (cfg.style === 'hero_slider') {
+      const first = tiles[0] || {};
+      const dots = tiles.length ? tiles : [0, 1, 2];
+      return (
+        <div className="px-3 pt-2 pb-2">
+          <div className="rounded-xl overflow-hidden relative" style={{ height: 92, background: '#2C2C2A' }}>
+            {first.image_url ? <img src={first.image_url} alt="" className="w-full h-full object-cover" /> : null}
+            <div className="absolute left-0 right-0 flex justify-center gap-1" style={{ bottom: 8 }}>
+              {dots.slice(0, 5).map((_, i) => <span key={i} className={i === 0 ? 'h-1 rounded-full' : 'h-1 rounded-full'}
+                style={{ width: i === 0 ? 14 : 4, background: i === 0 ? '#F8CB46' : 'rgba(255,255,255,.55)' }} />)}
+            </div>
+          </div>
+        </div>
+      );
+    }
     if ((cfg.style || 'carousel') === 'grid') {
       return <div>{Title}<div className="grid grid-cols-3 gap-1.5 px-3 pb-2">{(tiles.length ? tiles : [{}, {}, {}]).slice(0, 6).map((t, i) => <PreviewBanner key={i} t={t} h={54} />)}</div></div>;
     }
@@ -567,6 +584,15 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
             {contentTabs.includes('images') && (
               <div className="rounded-xl border border-gray-900 p-3 flex flex-col gap-2">
                 <div className="text-xs font-bold text-gray-900">🖼 My images — exactly what you upload</div>
+                {wiz.designId === 'hero_slider' && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-semibold text-gray-500">Auto-advance every</span>
+                    <input type="number" min="0" value={(cfg.autoplay_ms ?? 4000) / 1000}
+                      onChange={e => patchCfg('autoplay_ms', Math.max(0, Math.round(Number(e.target.value) || 0)) * 1000)}
+                      className="w-14 text-xs border border-gray-300 rounded px-2 py-1" />
+                    <span className="text-[10px] text-gray-500">seconds (0 = followers swipe manually) · upload slides 1080×560 px</span>
+                  </div>
+                )}
                 {wiz.designId === 'image_cards' && (
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-semibold text-gray-500">Card size</span>

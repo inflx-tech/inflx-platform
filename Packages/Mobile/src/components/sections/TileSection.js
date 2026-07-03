@@ -16,8 +16,8 @@
  * Props: section { title, config }, onTile(tile).
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { toing as T, fonts } from '../../theme/tokens';
 
 export default function TileSection({ section, onTile }) {
@@ -34,7 +34,8 @@ export default function TileSection({ section, onTile }) {
   const style = cfg.style || 'carousel';
 
   const body =
-    style === 'banner' ? <BannerStyle section={section} tiles={tiles} onTile={onTile} />
+    style === 'hero_slider' ? <HeroSliderStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'banner' ? <BannerStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'themed_rail' ? <ThemedRailStyle section={section} tiles={tiles} onTile={onTile} timer={activeTimer} cd={cd} />
     : style === 'mosaic' ? <MosaicStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'grid' ? <GridStyle section={section} tiles={tiles} onTile={onTile} />
@@ -44,6 +45,62 @@ export default function TileSection({ section, onTile }) {
   // themed_rail renders its own boxed timer inside the frame header; other styles get the thin bar.
   if (!activeTimer || style === 'themed_rail') return body;
   return <View>{<CountdownBar text={cd.text} label={activeTimer.label} />}{body}</View>;
+}
+
+// Hero slider — full-width paged slides that auto-advance (config.autoplay_ms;
+// default 4000ms, 0 = manual only). Pauses while the follower touches it; dots
+// track the active slide; each slide taps through via onTile (grid/category/page).
+// Unknown 'hero_slider' on a pre-OTA build falls through to CarouselStyle above.
+function HeroSliderStyle({ section, tiles, onTile }) {
+  const cfg = section?.config || {};
+  const raw = cfg.autoplay_ms;
+  const autoplay = (raw === 0 || raw === '0') ? 0
+    : (Number.isFinite(Number(raw)) && Number(raw) > 0 ? Number(raw) : 4000);
+  const width = Dimensions.get('window').width;
+  const cardH = Math.round((width - 28) * 0.5185);   // 1080×560 canvas ratio, 14px side margins
+  const [idx, setIdx] = useState(0);
+  const scRef = useRef(null);
+  const idxRef = useRef(0);
+  const pausedRef = useRef(false);
+  useEffect(() => { idxRef.current = idx; }, [idx]);
+
+  useEffect(() => {
+    if (!autoplay || tiles.length < 2) return undefined;
+    const t = setInterval(() => {
+      if (pausedRef.current) return;
+      const next = (idxRef.current + 1) % tiles.length;
+      scRef.current?.scrollTo({ x: next * width, animated: true });
+      setIdx(next);
+    }, autoplay);
+    return () => clearInterval(t);
+  }, [autoplay, tiles.length, width]);
+
+  const onEnd = (e) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (i !== idxRef.current) setIdx(i);
+    pausedRef.current = false;
+  };
+
+  return (
+    <View style={s.heroWrap}>
+      <ScrollView ref={scRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={() => { pausedRef.current = true; }} onMomentumScrollEnd={onEnd} scrollEventThrottle={16}>
+        {tiles.map((t, i) => (
+          <View key={i} style={{ width }}>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => onTile?.(t)} style={[s.heroCard, { height: cardH }]}>
+              {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+              {t.badge ? <View style={s.badge}><Text style={s.badgeTxt}>{t.badge}</Text></View> : null}
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
+      {tiles.length > 1 ? (
+        <View style={s.heroDots} pointerEvents="none">
+          {tiles.map((_, i) => <View key={i} style={[s.heroDot, i === idx ? s.heroDotOn : null]} />)}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 // Themed rail — a themed shell (white / colour / image+scrim) + header (aligned
@@ -267,6 +324,13 @@ const s = StyleSheet.create({
   fallbackTxt: { fontSize: 34, color: T.yellowDeep, fontFamily: fonts.displayBold },
   badge: { position: 'absolute', top: 8, left: 8, backgroundColor: '#fff', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   badgeTxt: { fontSize: 10, color: T.pink, fontFamily: fonts.monoBold },
+
+  // hero slider — full-width paged slides + overlaid dots
+  heroWrap: { backgroundColor: T.white, paddingTop: 14, paddingBottom: 10, position: 'relative' },
+  heroCard: { marginHorizontal: 14, borderRadius: 16, overflow: 'hidden', backgroundColor: T.yellowTint, position: 'relative' },
+  heroDots: { position: 'absolute', bottom: 20, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 5 },
+  heroDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)' },
+  heroDotOn: { width: 16, borderRadius: 999, backgroundColor: '#F8CB46' },
 
   // carousel
   cTile: { width: 132 },
