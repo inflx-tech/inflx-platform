@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Wizard — Step 1 Design</title>
+<style>
+  :root { --ink:#1A1D1F; --yellow:#F8CB46; --muted:#6b7280; --line:#e5e7eb; }
+  * { box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+  body { margin:0; background:rgba(20,22,25,.45); padding:26px; }
+  .modal { max-width:860px; margin:0 auto; background:#fff; border-radius:16px; padding:22px 26px; }
+  .steps { display:flex; gap:6px; margin-bottom:18px; }
+  .st { flex:1; text-align:center; font-size:12.5px; padding:9px 4px; border-radius:9px; background:#f2f3f5; color:var(--muted); }
+  .st.on { background:var(--ink); color:#fff; font-weight:700; }
+  h2 { font-size:17px; margin:0 0 3px; } .sub { font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  h3 { font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:18px 0 8px; }
+  .grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .card { border:1.5px solid var(--line); border-radius:12px; padding:10px; cursor:pointer; }
+  .card.sel { border-color:var(--ink); box-shadow:0 0 0 2px var(--yellow); }
+  .card.p3 { opacity:.45; cursor:not-allowed; position:relative; }
+  .thumb { height:56px; border-radius:8px; background:#f4f5f7; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:3px; padding:6px; }
+  .b { background:#dfe2e7; border-radius:4px; }
+  .nm { font-size:12px; font-weight:600; }
+  .hint { font-size:10.5px; color:var(--muted); margin-top:2px; }
+  .p3chip { position:absolute; top:6px; right:6px; font-size:9.5px; background:#eceef1; color:#6b7280; border-radius:999px; padding:2px 7px; font-weight:700; }
+  .foot { display:flex; justify-content:space-between; margin-top:20px; }
+  .btn { border-radius:10px; padding:10px 18px; font-size:13.5px; font-weight:600; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .btn.pri { background:var(--ink); color:#fff; border-color:var(--ink); }
+</style></head><body>
+<div class="modal">
+  <div class="steps"><div class="st on">1 Design</div><div class="st">2 Content</div><div class="st">3 Display</div><div class="st">4 Action</div></div>
+  <h2>How should it look?</h2>
+  <div class="sub">Pick a design. The next step asks what fills it.</div>
+
+  <h3>Shelves — filled by rules, always fresh</h3>
+  <div class="grid">
+    <div class="card sel"><div class="thumb"><div class="b" style="width:22px;height:34px"></div><div class="b" style="width:22px;height:34px"></div><div class="b" style="width:22px;height:34px"></div></div><div class="nm">Product shelf</div><div class="hint">product cards</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:30px;height:26px"></div><div class="b" style="width:30px;height:26px"></div></div><div class="nm">Deals shelf</div><div class="hint">offer cards</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:24px;height:24px;border-radius:50%"></div><div class="b" style="width:24px;height:24px;border-radius:50%"></div><div class="b" style="width:24px;height:24px;border-radius:50%"></div></div><div class="nm">Creators row</div><div class="hint">story circles</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:30px;height:26px"></div><div class="b" style="width:30px;height:26px"></div></div><div class="nm">Shops row</div><div class="hint">shop cards</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:64px;height:12px"></div></div><div class="nm">Shops list</div><div class="hint">full-width rows</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:64px;height:30px"></div></div><div class="nm">Restaurants list</div><div class="hint">Food world only</div></div>
+  </div>
+
+  <h3>Banners &amp; frames — your images</h3>
+  <div class="grid">
+    <div class="card p3"><span class="p3chip">P3</span><div class="thumb"><div class="b" style="width:70px;height:40px"></div></div><div class="nm">Hero slider</div><div class="hint">auto-sliding · dots</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:70px;height:40px"></div></div><div class="nm">Full-width banner</div><div class="hint">image · rule · offer</div></div>
+    <div class="card p3"><span class="p3chip">P3</span><div class="thumb"><div class="b" style="width:70px;height:12px"></div></div><div class="nm">Announcement strip</div><div class="hint">thin strip</div></div>
+    <div class="card p3"><span class="p3chip">P3</span><div class="thumb"><div class="b" style="width:32px;height:32px"></div><div class="b" style="width:32px;height:32px"></div></div><div class="nm">Split banner</div><div class="hint">two tiles 50/50</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:24px;height:30px"></div><div class="b" style="width:24px;height:30px"></div><div class="b" style="width:24px;height:30px"></div></div><div class="nm">Image cards</div><div class="hint">size S/M · badge</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:15px;height:15px"></div><div class="b" style="width:15px;height:15px"></div><div class="b" style="width:15px;height:15px"></div><div class="b" style="width:15px;height:15px"></div></div><div class="nm">Image grid</div><div class="hint">4 columns</div></div>
+    <div class="card"><div class="thumb" style="background:#efe7f7"><div class="b" style="width:16px;height:20px"></div><div class="b" style="width:16px;height:20px"></div><div class="b" style="width:16px;height:20px"></div></div><div class="nm">Banner with tiles</div><div class="hint">bg + up to 3 tiles</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:66px;height:18px"></div><div class="b" style="width:31px;height:16px"></div><div class="b" style="width:31px;height:16px"></div></div><div class="nm">Collage</div><div class="hint">1 big + 2 small · 2×2</div></div>
+    <div class="card"><div class="thumb" style="background:#fff2cf"><div class="b" style="width:16px;height:22px"></div><div class="b" style="width:16px;height:22px"></div><div class="b" style="width:16px;height:22px"></div></div><div class="nm">Sale zone</div><div class="hint">frame + countdown</div></div>
+  </div>
+
+  <h3>Structure &amp; navigation</h3>
+  <div class="grid">
+    <div class="card"><div class="thumb"><div class="b" style="width:20px;height:20px;border-radius:50%"></div><div class="b" style="width:20px;height:20px;border-radius:50%"></div><div class="b" style="width:20px;height:20px;border-radius:50%"></div></div><div class="nm">Category row</div><div class="hint">“what’s on your mind”</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:24px;height:24px"></div><div class="b" style="width:24px;height:24px"></div></div><div class="nm">Category tiles</div><div class="hint">tap → category or page</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:26px;height:11px;border-radius:999px"></div><div class="b" style="width:26px;height:11px;border-radius:999px"></div></div><div class="nm">Filter chips</div><div class="hint">sort / filter bar</div></div>
+    <div class="card"><div class="thumb"><div class="b" style="width:66px;height:14px"></div></div><div class="nm">Group heading</div><div class="hint">titled color band</div></div>
+  </div>
+
+  <div class="foot"><button class="btn">Cancel</button><button class="btn pri">Next · Content →</button></div>
+</div>
+</body></html>

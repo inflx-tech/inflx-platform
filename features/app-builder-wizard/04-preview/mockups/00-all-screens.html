@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>App Builder wizard — all 5 screens</title>
+<style>
+  :root { --ink:#1A1D1F; --yellow:#F8CB46; --muted:#6b7280; --line:#e5e7eb; --pink:#E35694; }
+  * { box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+  body { margin:0; background:#ececef; color:var(--ink); }
+  .shead { background:var(--ink); color:#fff; padding:10px 24px; font-size:13.5px; font-weight:700; position:sticky; top:0; z-index:5; }
+  .shead span { color:var(--yellow); margin-right:8px; }
+  .screen { padding:22px; } .screen.dark { background:rgba(20,22,25,.45); }
+
+  /* shared */
+  .modal { max-width:860px; margin:0 auto; background:#fff; border-radius:16px; padding:22px 26px; }
+  .modal.narrow { max-width:720px; }
+  .steps { display:flex; gap:6px; margin-bottom:18px; }
+  .st { flex:1; text-align:center; font-size:12.5px; padding:9px 4px; border-radius:9px; background:#f2f3f5; color:var(--muted); }
+  .st.done { background:#e8f7ee; color:#177245; } .st.on { background:var(--ink); color:#fff; font-weight:700; }
+  h2 { font-size:17px; margin:0 0 3px; } .sub { font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  h3 { font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin:18px 0 8px; }
+  .btn { border-radius:10px; padding:10px 18px; font-size:13.5px; font-weight:600; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .btn.pri { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .btn.pub { background:var(--yellow); color:var(--ink); border-color:var(--yellow); font-weight:700; }
+  .foot { display:flex; justify-content:space-between; margin-top:20px; }
+  .in, select { border:1px solid var(--line); border-radius:9px; padding:9px 10px; font-size:13px; background:#fff; }
+  .f label { font-size:11.5px; color:var(--muted); display:block; margin-bottom:4px; font-weight:600; }
+  .frow { display:flex; gap:12px; } .frow.end { align-items:flex-end; }
+  .panel { border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:12px; }
+  .panel h4 { margin:0 0 10px; font-size:13px; }
+  .tog { width:34px; height:19px; border-radius:999px; background:#16a34a; position:relative; display:inline-block; }
+  .tog::after { content:''; position:absolute; right:2px; top:2px; width:15px; height:15px; border-radius:50%; background:#fff; }
+  .tog.off { background:#d1d5db; } .tog.off::after { right:auto; left:2px; }
+  .help { font-size:11.5px; color:var(--muted); margin-top:8px; }
+
+  /* screen 1 — shelf list */
+  .wrap { display:flex; gap:20px; align-items:flex-start; max-width:980px; margin:0 auto; }
+  .main { flex:1; min-width:0; }
+  .tabs { display:flex; gap:8px; margin-bottom:10px; }
+  .tab { padding:8px 14px; border:1px solid var(--line); border-radius:10px; background:#fff; font-size:13px; }
+  .tab.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .worlds { display:flex; gap:6px; margin-bottom:16px; }
+  .w { padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12.5px; }
+  .w.on { background:var(--yellow); border-color:var(--yellow); font-weight:600; }
+  .bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .row { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .drag { color:#c4c7cc; font-size:15px; }
+  .name { flex:1; } .name b { font-size:14px; }
+  .kind { font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .chip { font-size:11px; padding:3px 9px; border-radius:999px; font-weight:600; }
+  .chip.live { background:#e8f7ee; color:#177245; }
+  .chip.sched { background:#fff6e0; color:#8a5a00; }
+  .chip.until { background:#fdeef4; color:var(--pink); }
+  .chip.expired { background:#f1f1f2; color:#8a8f98; }
+  .chip.window { display:inline-block; font-size:11.5px; padding:4px 10px; background:#fdeef4; color:var(--pink); margin-top:10px; }
+  .phone { width:270px; background:#fff; border:1px solid var(--line); border-radius:24px; padding:14px; flex-shrink:0; }
+  .phead { font-size:11px; color:var(--muted); text-align:center; margin-bottom:8px; }
+  .pblock { border:1px dashed #d6d9de; border-radius:10px; padding:10px; margin-bottom:8px; font-size:11px; color:var(--muted); }
+  .note { font-size:11.5px; color:var(--muted); margin-top:14px; }
+
+  /* screen 2 — design catalog */
+  .grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+  .card { border:1.5px solid var(--line); border-radius:12px; padding:10px; }
+  .card.sel { border-color:var(--ink); box-shadow:0 0 0 2px var(--yellow); }
+  .card.p3 { opacity:.45; position:relative; }
+  .thumb { height:56px; border-radius:8px; background:#f4f5f7; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:3px; padding:6px; }
+  .b { background:#dfe2e7; border-radius:4px; }
+  .nm { font-size:12px; font-weight:600; }
+  .hint { font-size:10.5px; color:var(--muted); margin-top:2px; }
+  .p3chip { position:absolute; top:6px; right:6px; font-size:9.5px; background:#eceef1; color:#6b7280; border-radius:999px; padding:2px 7px; font-weight:700; }
+
+  /* screen 3 — content */
+  .ctx { font-size:12px; background:#fff6e0; border-radius:9px; padding:8px 12px; display:inline-block; margin-bottom:14px; }
+  .ktabs { display:flex; gap:8px; margin-bottom:16px; }
+  .kt { flex:1; border:1.5px solid var(--line); border-radius:11px; padding:11px 12px; }
+  .kt.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--yellow); }
+  .kt.lock { opacity:.4; }
+  .kt b { font-size:13px; display:block; } .kt span { font-size:11px; color:var(--muted); }
+  .tags { display:flex; gap:6px; flex-wrap:wrap; }
+  .tag { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:5px 11px; }
+  .tag.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .offer { display:flex; align-items:center; gap:10px; font-size:13px; margin-top:4px; }
+  .match { margin-top:14px; background:#e8f7ee; color:#177245; border-radius:10px; padding:10px 14px; font-size:13px; font-weight:600; }
+  .match span { font-weight:400; color:#2b6647; font-size:12px; }
+  .reuse { font-size:12px; color:var(--muted); margin-top:10px; }
+  .reuse a { color:var(--ink); font-weight:600; }
+
+  /* screen 4 — display */
+  .static { font-size:13px; background:#f7f7f8; border-radius:9px; padding:9px 12px; }
+  .tgl { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .timer { display:flex; align-items:center; gap:8px; font-size:13px; margin-top:10px; }
+
+  /* screen 5 — action */
+  .opt { display:flex; gap:12px; border:1.5px solid var(--line); border-radius:12px; padding:13px 14px; margin-bottom:10px; align-items:flex-start; }
+  .opt.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--yellow); }
+  .radio { width:16px; height:16px; border-radius:50%; border:2px solid #c8ccd2; margin-top:2px; flex-shrink:0; }
+  .opt.on .radio { border-color:var(--ink); background:radial-gradient(circle, var(--ink) 45%, #fff 50%); }
+  .opt b { font-size:13.5px; display:block; } .opt span { font-size:12px; color:var(--muted); }
+  .opt select { margin-top:8px; width:280px; display:block; }
+  .anote { font-size:11.5px; color:var(--muted); margin:4px 0 16px; }
+  .sum { border:1px solid var(--line); background:#fafafa; border-radius:12px; padding:14px 16px; font-size:12.5px; }
+  .sum h4 { margin:0 0 8px; font-size:13px; } .sum div { margin-bottom:4px; }
+</style></head><body>
+
+<div class="shead"><span>SCREEN 1 / 5</span> App Builder — shelf list with schedule chips</div>
+<div class="screen" style="background:#f7f7f8">
+  <div class="wrap">
+    <div class="main">
+      <div class="tabs"><div class="tab on">Home</div><div class="tab">Creator Store</div><div class="tab">Business page</div><div class="tab">Custom page</div></div>
+      <div class="worlds"><div class="w on">Food</div><div class="w">Fashion</div><div class="w">Furniture</div><div class="w">Beauty</div><div class="w">Car rental</div></div>
+      <div class="bar"><div style="font-size:13px;color:var(--muted)">7 sections on Food home</div><button class="btn pri">＋ Add section</button></div>
+      <div class="row"><span class="drag">⠿</span><div class="name"><b>What's on your mind?</b><div class="kind">Category row · fills itself</div></div><span class="chip live">Always on</span><span class="tog"></span></div>
+      <div class="row"><span class="drag">⠿</span><div class="name"><b>Payday Sale</b><div class="kind">Sale zone · your images · countdown</div></div><span class="chip until">Live until Sat 11:59 PM</span><span class="tog"></span></div>
+      <div class="row"><span class="drag">⠿</span><div class="name"><b>Food under ₹400</b><div class="kind">Product shelf · my rule</div></div><span class="chip live">Always on</span><span class="tog"></span></div>
+      <div class="row"><span class="drag">⠿</span><div class="name"><b>Diwali Specials</b><div class="kind">Collage · your images</div></div><span class="chip sched">Starts Oct 25, 6:00 AM</span><span class="tog"></span></div>
+      <div class="row"><span class="drag">⠿</span><div class="name"><b>Famous Restaurants</b><div class="kind">Restaurants list · fills itself</div></div><span class="chip live">Always on</span><span class="tog"></span></div>
+      <div class="row" style="opacity:.6"><span class="drag">⠿</span><div class="name"><b>Monsoon Melas</b><div class="kind">Image cards · your images</div></div><span class="chip expired">Expired Jun 30 — hidden in app</span><span class="tog off"></span></div>
+      <div class="note">Expired sections disappear from the app automatically (no “sale over” state). Rows stay here until you delete them, so a campaign can be re-scheduled.</div>
+    </div>
+    <div class="phone"><div class="phead">Live preview · Food</div>
+      <div class="pblock">Category row — circles rail</div>
+      <div class="pblock" style="background:#fff6e0;height:88px">Sale zone · ⏱ 03:12:44 + tiles</div>
+      <div class="pblock">Product shelf — “Food under ₹400”</div>
+      <div class="pblock">Restaurants list — cards + dishes</div>
+    </div>
+  </div>
+</div>
+
+<div class="shead"><span>SCREEN 2 / 5</span> Wizard · Step 1 Design — the catalog</div>
+<div class="screen dark">
+  <div class="modal">
+    <div class="steps"><div class="st on">1 Design</div><div class="st">2 Content</div><div class="st">3 Display</div><div class="st">4 Action</div></div>
+    <h2>How should it look?</h2><div class="sub">Pick a design. The next step asks what fills it.</div>
+    <h3>Shelves — filled by rules, always fresh</h3>
+    <div class="grid">
+      <div class="card sel"><div class="thumb"><div class="b" style="width:22px;height:34px"></div><div class="b" style="width:22px;height:34px"></div><div class="b" style="width:22px;height:34px"></div></div><div class="nm">Product shelf</div><div class="hint">product cards</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:30px;height:26px"></div><div class="b" style="width:30px;height:26px"></div></div><div class="nm">Deals shelf</div><div class="hint">offer cards</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:24px;height:24px;border-radius:50%"></div><div class="b" style="width:24px;height:24px;border-radius:50%"></div><div class="b" style="width:24px;height:24px;border-radius:50%"></div></div><div class="nm">Creators row</div><div class="hint">story circles</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:30px;height:26px"></div><div class="b" style="width:30px;height:26px"></div></div><div class="nm">Shops row</div><div class="hint">shop cards</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:64px;height:12px"></div></div><div class="nm">Shops list</div><div class="hint">full-width rows</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:64px;height:30px"></div></div><div class="nm">Restaurants list</div><div class="hint">Food world only</div></div>
+    </div>
+    <h3>Banners &amp; frames — your images</h3>
+    <div class="grid">
+      <div class="card p3"><span class="p3chip">P3</span><div class="thumb"><div class="b" style="width:70px;height:40px"></div></div><div class="nm">Hero slider</div><div class="hint">auto-sliding · dots</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:70px;height:40px"></div></div><div class="nm">Full-width banner</div><div class="hint">image · rule · offer</div></div>
+      <div class="card p3"><span class="p3chip">P3</span><div class="thumb"><div class="b" style="width:70px;height:12px"></div></div><div class="nm">Announcement strip</div><div class="hint">thin strip</div></div>
+      <div class="card p3"><span class="p3chip">P3</span><div class="thumb"><div class="b" style="width:32px;height:32px"></div><div class="b" style="width:32px;height:32px"></div></div><div class="nm">Split banner</div><div class="hint">two tiles 50/50</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:24px;height:30px"></div><div class="b" style="width:24px;height:30px"></div><div class="b" style="width:24px;height:30px"></div></div><div class="nm">Image cards</div><div class="hint">size S/M · badge</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:15px;height:15px"></div><div class="b" style="width:15px;height:15px"></div><div class="b" style="width:15px;height:15px"></div><div class="b" style="width:15px;height:15px"></div></div><div class="nm">Image grid</div><div class="hint">4 columns</div></div>
+      <div class="card"><div class="thumb" style="background:#efe7f7"><div class="b" style="width:16px;height:20px"></div><div class="b" style="width:16px;height:20px"></div><div class="b" style="width:16px;height:20px"></div></div><div class="nm">Banner with tiles</div><div class="hint">bg + up to 3 tiles</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:66px;height:18px"></div><div class="b" style="width:31px;height:16px"></div><div class="b" style="width:31px;height:16px"></div></div><div class="nm">Collage</div><div class="hint">1 big + 2 small · 2×2</div></div>
+      <div class="card"><div class="thumb" style="background:#fff2cf"><div class="b" style="width:16px;height:22px"></div><div class="b" style="width:16px;height:22px"></div><div class="b" style="width:16px;height:22px"></div></div><div class="nm">Sale zone</div><div class="hint">frame + countdown</div></div>
+    </div>
+    <h3>Structure &amp; navigation</h3>
+    <div class="grid">
+      <div class="card"><div class="thumb"><div class="b" style="width:20px;height:20px;border-radius:50%"></div><div class="b" style="width:20px;height:20px;border-radius:50%"></div><div class="b" style="width:20px;height:20px;border-radius:50%"></div></div><div class="nm">Category row</div><div class="hint">“what’s on your mind”</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:24px;height:24px"></div><div class="b" style="width:24px;height:24px"></div></div><div class="nm">Category tiles</div><div class="hint">tap → category or page</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:26px;height:11px;border-radius:999px"></div><div class="b" style="width:26px;height:11px;border-radius:999px"></div></div><div class="nm">Filter chips</div><div class="hint">sort / filter bar</div></div>
+      <div class="card"><div class="thumb"><div class="b" style="width:66px;height:14px"></div></div><div class="nm">Group heading</div><div class="hint">titled color band</div></div>
+    </div>
+    <div class="foot"><button class="btn">Cancel</button><button class="btn pri">Next · Content →</button></div>
+  </div>
+</div>
+
+<div class="shead"><span>SCREEN 3 / 5</span> Wizard · Step 2 Content — Automatic / My rule / My images</div>
+<div class="screen dark">
+  <div class="modal">
+    <div class="steps"><div class="st done">1 Design ✓</div><div class="st on">2 Content</div><div class="st">3 Display</div><div class="st">4 Action</div></div>
+    <h2>What fills it?</h2>
+    <div class="sub">Automatic rules run themselves. Your own rule stays fresh as products change. Images show exactly what you upload.</div>
+    <div class="ctx">Design: <b>Deals shelf</b> · placing on <b>Fashion home</b></div>
+    <div class="ktabs">
+      <div class="kt"><b>⚡ Automatic</b><span>built-in rules: Trending now · Biggest discounts · Ending soon · New this week · From creators you follow…</span></div>
+      <div class="kt on"><b>🧩 My rule</b><span>build a filter — it keeps itself up to date</span></div>
+      <div class="kt lock"><b>🖼 My images</b><span>not for this design — pick an image design in step 1</span></div>
+    </div>
+    <div class="panel">
+      <div class="frow" style="margin-bottom:12px">
+        <div class="f" style="flex:1"><label>Name (shown as shelf title)</label><input class="in" style="width:100%" value="Fashion Steals — min 20% off"></div>
+        <div class="f" style="width:180px"><label>Business</label><select style="width:100%"><option>Fashion</option></select></div>
+      </div>
+      <div class="frow" style="margin-bottom:12px">
+        <div class="f" style="flex:1"><label>Sub-category (optional)</label><select style="width:100%"><option>Any — all of Fashion</option></select></div>
+        <div class="f" style="width:110px"><label>Min ₹</label><input class="in" style="width:100%" placeholder="—"></div>
+        <div class="f" style="width:110px"><label>Max ₹</label><input class="in" style="width:100%" value="999"></div>
+        <div class="f" style="width:160px"><label>Sort</label><select style="width:100%"><option>Newest first</option></select></div>
+      </div>
+      <div class="f" style="margin-bottom:12px"><label>Tags (product must carry all)</label>
+        <div class="tags"><span class="tag on">women</span><span class="tag">men</span><span class="tag on">ethnic</span><span class="tag">casual</span><span class="tag">party</span><span class="tag">summer</span></div>
+      </div>
+      <div class="offer"><input type="checkbox" checked> Only products with a live offer, at least <input class="in" style="width:64px" value="20"> % off</div>
+      <div class="match">✓ Matches 34 products right now <span>· sample: Anarkali Kurta ₹899 · Chikankari Set ₹749 · …</span></div>
+      <div class="reuse">This saves to your Section Library as a reusable rule. Or <a href="#">pick an existing rule</a> (12 saved).</div>
+    </div>
+    <div class="foot"><button class="btn">← Back</button><button class="btn pri">Next · Display →</button></div>
+  </div>
+</div>
+
+<div class="shead"><span>SCREEN 4 / 5</span> Wizard · Step 3 Display — placement + schedule</div>
+<div class="screen dark">
+  <div class="modal narrow">
+    <div class="steps"><div class="st done">1 Design ✓</div><div class="st done">2 Content ✓</div><div class="st on">3 Display</div><div class="st">4 Action</div></div>
+    <h2>Where and when does it show?</h2>
+    <div class="sub">Placement comes from where you opened the builder. Schedule is optional.</div>
+    <div class="panel"><h4>Placement</h4>
+      <div class="frow end">
+        <div class="f" style="flex:1"><label>Page</label><div class="static">Home · Fashion world</div></div>
+        <div class="f" style="width:110px"><label>Position</label><input class="in" style="width:100%" value="3"></div>
+        <div class="f"><label>Visible</label><div class="tgl"><span class="tog"></span> Enabled</div></div>
+      </div>
+    </div>
+    <div class="panel"><h4>Schedule (optional)</h4>
+      <div class="frow">
+        <div class="f" style="flex:1"><label>Goes live</label><input class="in" style="width:100%" type="datetime-local" value="2026-07-04T06:00"></div>
+        <div class="f" style="flex:1"><label>Disappears</label><input class="in" style="width:100%" type="datetime-local" value="2026-07-06T23:59"></div>
+      </div>
+      <div class="help">Leave both empty for always on. When “Disappears” passes, the section leaves the app by itself — silently, no “sale over” message.</div>
+      <span class="chip window">⏱ Live Fri 6:00 AM → Sun 11:59 PM (2 days 18 hrs)</span>
+      <div class="timer"><input type="checkbox" checked> Show a countdown on the section (uses the same end time)</div>
+    </div>
+    <div class="foot"><button class="btn">← Back</button><button class="btn pri">Next · Action →</button></div>
+  </div>
+</div>
+
+<div class="shead"><span>SCREEN 5 / 5</span> Wizard · Step 4 Action — tap destination + publish</div>
+<div class="screen dark">
+  <div class="modal narrow">
+    <div class="steps"><div class="st done">1 Design ✓</div><div class="st done">2 Content ✓</div><div class="st done">3 Display ✓</div><div class="st on">4 Action</div></div>
+    <h2>What happens when a follower taps it?</h2>
+    <div class="sub">“See all” on the shelf and taps on the shelf header use this. Products always open their own page.</div>
+    <div class="opt on"><div class="radio"></div><div><b>Product grid</b><span> — opens the full list of everything matching this section’s rule (default)</span></div></div>
+    <div class="opt"><div class="radio"></div><div><b>Category page</b><span> — opens the category browser at a category you pick</span><select disabled><option>Women › Ethnic wear</option></select></div></div>
+    <div class="opt"><div class="radio"></div><div><b>Custom page</b><span> — opens one of your admin-built pages</span><select disabled><option>Summer Sale</option><option>Festive Edit</option></select></div></div>
+    <div class="anote">For image designs (cards, collage, banners), each tile also gets its own Action — set inside the image editor on step 2. This step is the section’s default.</div>
+    <div class="sum">
+      <h4>Ready to publish</h4>
+      <div>Design: <b>Deals shelf</b></div>
+      <div>Content: <b>My rule — “Fashion Steals — min 20% off”</b> (34 matches now)</div>
+      <div>Display: <b>Home · Fashion · position 3</b> · ⏱ Fri 6:00 AM → Sun 11:59 PM · countdown on</div>
+      <div>Action: <b>Product grid</b></div>
+    </div>
+    <div class="foot"><button class="btn">← Back</button><button class="btn pub">Publish — live in ~1 minute</button></div>
+  </div>
+</div>
+
+</body></html>

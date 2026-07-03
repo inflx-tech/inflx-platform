@@ -39,26 +39,98 @@ const SCOPES = [
 // Category shelf scoped to 'food' shows ONLY on the food page.
 const CATEGORIES = ['food', 'fashion', 'furniture', 'beauty', 'car_rental'];
 
-// ＋ Add Section presets → valid {shelf_type, rule, item_type?} (rules exist in
-// sectionRules.service.js). Listing-driven rules populate without offers.
-// kind: 'data' = no rule (fills from context) · 'frame' = image/banner, rule per
-// banner · 'control' = chips bar. `world` limits a preset to one world; `biz`
-// limits it to the Business scope of that world.
-const ADD_PRESETS = [
-  // ── DATA — no rule; the list fills itself from context ──
-  { key: 'category_picker', kind: 'data', label: 'Category rail (pick categories)', shelf_type: 'nav_tiles', rule: 'category_nodes', title: 'Shop by category' },
-  { key: 'products', kind: 'data', label: 'Products rail', shelf_type: 'products', rule: 'products_in_category', item_type: 'products', title: 'Trending Products' },
-  { key: 'brands',   kind: 'data', label: 'Businesses rail', shelf_type: 'brands', rule: 'businesses_in_category', item_type: 'brands', title: 'Top Businesses' },
-  { key: 'creators', kind: 'data', label: 'Creators rail', shelf_type: 'creators', rule: 'creators_smart', title: "Creators you'd love" },
-  { key: 'offers',   kind: 'data', label: 'Offers rail', shelf_type: 'offers', rule: 'top_by_conversions', item_type: 'offers', title: 'Best Deals' },
-  { key: 'restaurant_list', kind: 'data', label: 'Restaurants + dishes', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants', world: 'food' },
-  { key: 'category_rail', kind: 'data', label: 'Food cravings rail', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?", world: 'food' },
-  { key: 'food_menu', kind: 'data', label: 'Menu — collapsible dishes', shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' }, biz: 'food' },
-  // ── FRAME — image / banner; admin sets a rule PER banner (style chosen inside) ──
-  { key: 'frame', kind: 'frame', label: 'Image / banner frame', shelf_type: 'tiles', rule: 'static', title: 'Spotlight', config: { style: 'carousel' } },
-  // ── CONTROLS ──
-  { key: 'controls', kind: 'control', label: 'Chips / filter bar', shelf_type: 'controls', rule: 'static', title: 'Filters' },
+// ── Design Catalog v1 (SECTION_SYSTEM_SPEC §3, LOCKED 2026-07-03) ─────────────
+// One flat catalog with the founder's business names. `base` maps a design to
+// the legacy fields the engine + renderer already understand (aliases — zero
+// payload change); config_json.design records the canonical id on new rows.
+// fills: which Content kinds the wizard offers. p3: renderer arrives in P3 —
+// shown greyed, not creatable. world/biz gates mirror the old preset gating.
+const DESIGN_CATALOG = [
+  // Shelves — filled by rules, always fresh
+  { id: 'product_shelf', name: 'Product shelf', hint: 'product cards', group: 'shelves',
+    base: { shelf_type: 'products', rule: 'products_in_category', item_type: 'products', title: 'Trending Products' },
+    fills: ['auto', 'rule'], autoRules: [['products_in_category', 'Products in this world — newest first']] },
+  { id: 'deals_shelf', name: 'Deals shelf', hint: 'offer cards', group: 'shelves',
+    base: { shelf_type: 'offers', rule: 'top_by_conversions', item_type: 'offers', title: 'Best Deals' },
+    fills: ['auto', 'rule'],
+    autoRules: [['top_by_conversions', 'Best converting offers'], ['top_by_engagement', 'Trending now — clicks + conversions'],
+      ['biggest_discounts', 'Biggest discounts live'], ['ending_soon', 'Ending soon'], ['newest', 'New this week'],
+      ['follow_graph', 'From creators the follower follows'], ['all_offers', 'All live offers']] },
+  { id: 'shops_row', name: 'Shops row', hint: 'shop cards', group: 'shelves',
+    base: { shelf_type: 'brands', rule: 'businesses_in_category', item_type: 'brands', title: 'Top Businesses' },
+    fills: ['auto'], autoRules: [['businesses_in_category', 'Shops in this world'], ['top_by_engagement', 'Trending shops']] },
+  { id: 'shops_list', name: 'Shops list', hint: 'full-width rows', group: 'shelves',
+    base: { shelf_type: 'brands', rule: 'businesses_in_category', item_type: 'brands', title: 'All Businesses', config: { main_list: true } },
+    fills: ['auto'], autoRules: [['businesses_in_category', 'Shops in this world']] },
+  { id: 'creators_row', name: 'Creators row', hint: 'story circles', group: 'shelves',
+    base: { shelf_type: 'creators', rule: 'creators_smart', title: "Creators you'd love" },
+    fills: ['auto'], autoRules: [['creators_smart', 'Smart mix — promote · near · famous · followed'],
+      ['creators_listing', 'Top creators'], ['creators_in_category_listing', 'Creators in this world']] },
+  { id: 'restaurants_list', name: 'Restaurants list', hint: 'cards + dishes · Food', group: 'shelves', world: 'food',
+    base: { shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
+    fills: ['auto'], autoRules: [['restaurants_with_featured', 'Restaurants near the follower + featured dishes']] },
+  { id: 'food_menu', name: 'Menu (food)', hint: 'collapsible dishes', group: 'shelves', biz: 'food',
+    base: { shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' } },
+    fills: ['auto'], autoRules: [['static', "The business's own menu"]] },
+  // Banners & frames — your images
+  { id: 'full_width_banner', name: 'Full-width banner', hint: 'headline + a rule behind it', group: 'frames',
+    base: { shelf_type: 'products', rule: 'library_products', item_type: 'products', title: 'Spotlight',
+      config: { presentation_type: 'banner', banner: {} } },
+    fills: ['rule'] },
+  { id: 'image_cards', name: 'Image cards', hint: 'cards · size S/M', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Spotlight', config: { style: 'carousel', tiles: [] } }, fills: ['images'] },
+  { id: 'image_grid', name: 'Image grid', hint: '4 columns', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Shop by look', config: { style: 'grid', tiles: [] } }, fills: ['images'] },
+  { id: 'banner_with_tiles', name: 'Banner with tiles', hint: 'bg + up to 3 tiles', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Festive picks', config: { style: 'banner', tiles: [] } }, fills: ['images'] },
+  { id: 'collage', name: 'Collage', hint: 'mixed-size tiles', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'The edit', config: { style: 'mosaic', tiles: [] } }, fills: ['images'] },
+  { id: 'sale_zone', name: 'Sale zone', hint: 'frame + countdown + tiles', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Deal zone', config: { style: 'themed_rail', tiles: [], timer: { label: 'Ends in' } } },
+    fills: ['images'] },
+  { id: 'hero_slider', name: 'Hero slider', hint: 'auto-sliding · arrives in P3', group: 'frames', p3: true },
+  { id: 'announcement_strip', name: 'Announcement strip', hint: 'thin strip · arrives in P3', group: 'frames', p3: true },
+  { id: 'split_banner', name: 'Split banner', hint: 'two tiles 50/50 · arrives in P3', group: 'frames', p3: true },
+  // Structure & navigation
+  { id: 'category_row', name: 'Category row', hint: "'what's on your mind' · Food", group: 'structure', world: 'food',
+    base: { shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
+    fills: ['auto'], autoRules: [['world_categories', "This world's craving rail"]] },
+  { id: 'category_tiles', name: 'Category tiles', hint: 'tap → category or page', group: 'structure',
+    base: { shelf_type: 'nav_tiles', rule: 'category_nodes', title: 'Shop by category' }, fills: ['nodes'] },
+  { id: 'filter_chips', name: 'Filter chips', hint: 'sort / filter bar', group: 'structure',
+    base: { shelf_type: 'controls', rule: 'static', title: 'Filters', config: { chips: [] } }, fills: ['chips'] },
 ];
+const DESIGN_GROUPS = [
+  ['shelves', 'Shelves — filled by rules, always fresh'],
+  ['frames', 'Banners & frames — your images'],
+  ['structure', 'Structure & navigation'],
+];
+const designById = (id) => DESIGN_CATALOG.find(d => d.id === id) || null;
+
+// Alias resolver — maps a saved row (legacy fields) to its catalog design.
+function resolveDesignId(s) {
+  const cfg = s.config_json || {};
+  if (cfg.design && designById(cfg.design)) return cfg.design;
+  if (s.shelf_type === 'tiles') {
+    return ({ carousel: 'image_cards', featured: 'image_cards', grid: 'image_grid', banner: 'banner_with_tiles',
+      mosaic: 'collage', themed_rail: 'sale_zone' })[cfg.style || 'carousel'] || 'image_cards';
+  }
+  if (s.rule === 'library_products' && cfg.presentation_type === 'banner') return 'full_width_banner';
+  if (s.shelf_type === 'products' && cfg.kind === 'menu') return 'food_menu';
+  if (s.shelf_type === 'products') return 'product_shelf';
+  if (s.shelf_type === 'offers' || s.shelf_type === 'mixed') return 'deals_shelf';
+  if (s.shelf_type === 'brands') return cfg.main_list ? 'shops_list' : 'shops_row';
+  if (s.shelf_type === 'creators') return 'creators_row';
+  if (s.shelf_type === 'restaurant_list') return 'restaurants_list';
+  if (s.shelf_type === 'category_rail') return 'category_row';
+  if (s.shelf_type === 'nav_tiles') return 'category_tiles';
+  if (s.shelf_type === 'controls') return 'filter_chips';
+  return null;
+}
+function templateLabel(s) {
+  const d = designById(resolveDesignId(s));
+  return d ? d.name : (s.shelf_type || 'Section');
+}
 
 // A section's kind (for the no-rule / needs-rule tag) — derived from shelf_type so
 // it works for already-saved rows too. Only the image/banner Frame needs a rule.
@@ -67,23 +139,30 @@ function sectionKind(s) {
   if (s.shelf_type === 'controls') return 'control';
   return 'data';
 }
-const KIND_GROUPS = [
-  { k: 'data', label: 'Data sections — no rule (fills from context)' },
-  { k: 'frame', label: 'Frame — image / banner (set a rule)' },
-  { k: 'control', label: 'Controls' },
-];
 
-// Friendly template name for a section row (replaces the raw shelf_type·rule).
-const TEMPLATE_NAMES = {
-  products: 'Product rail', creators: 'Creator rail', brands: 'Business rail',
-  tiles: 'Image tiles', category_rail: 'Category rail', restaurant_list: 'Restaurant list',
-  banner_gateway: 'Hero banner', offers: 'Offers rail', mixed: 'Mixed rail',
-  nav_tiles: 'Nav tiles', controls: 'Filter chips',
+// ── Scheduling (mig 124 / features/section-scheduling) ───────────────────────
+const toLocalInput = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
-function templateLabel(s) {
-  if ((s.config_json || {}).kind === 'menu') return 'Menu (food)';
-  if (s.rule === 'category_nodes') return 'Category rail (catalogue)';
-  return TEMPLATE_NAMES[s.shelf_type] || s.shelf_type;
+const fromLocalInput = (v) => {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+};
+// Row chip: where this section is in its live window. null = always on (no chip).
+function scheduleChip(s) {
+  const now = Date.now();
+  const st = s.starts_at ? new Date(s.starts_at).getTime() : null;
+  const en = s.ends_at ? new Date(s.ends_at).getTime() : null;
+  const fmt = (t) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  if (en && en <= now) return { cls: 'bg-gray-100 text-gray-500', text: `Expired ${fmt(en)} — hidden in app` };
+  if (st && st > now) return { cls: 'bg-amber-50 text-amber-700', text: `Starts ${fmt(st)}` };
+  if (en) return { cls: 'bg-pink-50 text-pink-600', text: `Live until ${fmt(en)}` };
+  return null;
 }
 
 // Flatten the nested /listing/tree into an indented pick list (id + name + depth).
@@ -105,7 +184,8 @@ const RULES_BY_SHELF = {
   creators: [
     { v: 'creators_smart', l: 'Smart creators (promote · near · famous · followed)' },
     { v: 'creators_listing', l: 'Top creators' },
-    { v: 'creators_in_category', l: 'Creators in this world' },
+    // offer-gated 'creators_in_category' pruned (P1-CLEAN) — listing twin instead
+    { v: 'creators_in_category_listing', l: 'Creators in this world' },
   ],
   products: [
     { v: 'library_products', l: 'A Section Library group' },
@@ -201,6 +281,488 @@ function MobilePreview({ shelves, scopeValue }) {
   );
 }
 
+// ── Add-Section wizard (contract: features/app-builder-wizard, P2) ───────────
+// One guided flow: 1 Design · 2 Content · 3 Display · 4 Action (founder-locked
+// business language). Operates on a DRAFT shelf; nothing touches the page's
+// shelves until Publish. Edit mode opens an existing row resolved via the
+// design alias map. Deep per-tile fine-tuning stays available in the row's ⚙.
+function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags, pages, worldSections, onFinish, saving }) {
+  if (!wiz) return null;
+  const d = wiz.draft;
+  const cfg = d.config_json || {};
+  const design = designById(wiz.designId);
+  const patch = (p) => setWiz(prev => ({ ...prev, ...p, err: null }));
+  const patchDraft = (p) => setWiz(prev => ({ ...prev, err: null, draft: { ...prev.draft, ...p } }));
+  const patchCfg = (key, value) => setWiz(prev => {
+    const c = { ...(prev.draft.config_json || {}) };
+    if (value === null || value === undefined) delete c[key]; else c[key] = value;
+    return { ...prev, err: null, draft: { ...prev.draft, config_json: c } };
+  });
+  const patchCfgNested = (parent, key, value) => setWiz(prev => {
+    const c = { ...(prev.draft.config_json || {}) };
+    const inner = { ...(c[parent] || {}) };
+    if (value === null || value === undefined || value === '') delete inner[key]; else inner[key] = value;
+    c[parent] = inner;
+    return { ...prev, err: null, draft: { ...prev.draft, config_json: c } };
+  });
+  const tiles = cfg.tiles || [];
+  const patchTile = (idx, p) => setWiz(prev => {
+    const c = { ...(prev.draft.config_json || {}) };
+    const list = [...(c.tiles || [])];
+    list[idx] = { ...list[idx], ...p };
+    c.tiles = list;
+    return { ...prev, err: null, draft: { ...prev.draft, config_json: c } };
+  });
+  const addTile = () => patchCfg('tiles', [...tiles, { image_url: '', label: '', library_section_id: '' }]);
+  const removeTile = (idx) => patchCfg('tiles', tiles.filter((_, i) => i !== idx));
+  const upload = async (file, apply) => {
+    const res = await uploadAdminStockImage(file);
+    if (res.error) { patch({ err: res.error.message || 'Upload failed' }); return; }
+    apply(res.public_url);
+  };
+
+  // Kind-2 inline rule builder (writes section_library on finish).
+  const rj = wiz.ruleDraft || {};
+  const patchRule = (key, value) => {
+    const empty = value === '' || value == null || value === false || (Array.isArray(value) && value.length === 0);
+    const next = { ...rj };
+    if (empty) delete next[key]; else next[key] = value;
+    patch({ ruleDraft: next, preview: null });
+  };
+  const checkMatches = async () => {
+    patch({ preview: { loading: true } });
+    const res = await adminApi.previewSectionLibrary({ business_type: scopeValue || 'ALL', rule_json: rj });
+    if (res.success) patch({ preview: { count: res.data?.count ?? 0, sample: res.data?.sample || [] } });
+    else patch({ preview: { error: res.error?.message || 'Preview unavailable' } });
+  };
+
+  const isTiles = d.shelf_type === 'tiles';
+  const isBannerGateway = wiz.designId === 'full_width_banner';
+  const usesLibraryRule = d.rule === 'library_products';
+  const contentTabs = design?.fills || [];
+  const window_ = { st: d.starts_at ? new Date(d.starts_at) : null, en: d.ends_at ? new Date(d.ends_at) : null };
+  const badWindow = window_.st && window_.en && window_.en.getTime() <= window_.st.getTime();
+  const fmtDT = (t) => t.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
+
+  const pickDesign = (dc) => {
+    if (dc.p3) return;
+    const base = dc.base;
+    patch({
+      designId: dc.id,
+      tab: dc.fills[0],
+      draft: {
+        ...d,
+        shelf_key: d.id ? d.shelf_key : `${slug(dc.name)}_${Date.now().toString(36).slice(-4)}`,
+        shelf_type: base.shelf_type, rule: base.rule, item_type: base.item_type || null,
+        title: d.title || '',
+        config_json: { sub: '', ...(base.config ? JSON.parse(JSON.stringify(base.config)) : {}), design: dc.id },
+      },
+    });
+  };
+
+  const next = () => {
+    if (wiz.step === 2 && !String(d.title || '').trim()) { patch({ err: 'Give the section a name — it shows in the app.' }); return; }
+    patch({ step: wiz.step + 1 });
+  };
+  const finish = async () => {
+    if (!String(d.title || '').trim()) { patch({ err: 'Give the section a name — it shows in the app.', step: 2 }); return; }
+    if (badWindow) { patch({ err: '"Disappears" must be after "Goes live".', step: 3 }); return; }
+    if (isBannerGateway && !(cfg.banner || {}).headline) { patch({ err: 'The banner needs a headline.', step: 2 }); return; }
+    let final = { ...d };
+    // My-rule (create) → save the reusable Section Library rule first, then wire it.
+    if (usesLibraryRule && wiz.ruleMode === 'create') {
+      const conds = Object.keys(rj);
+      if (!conds.length) { patch({ err: 'Add at least one condition to your rule.', step: 2 }); return; }
+      const name = (wiz.ruleName || '').trim() || d.title;
+      const res = await adminApi.createSectionLibrary({ business_type: scopeValue || 'ALL', name, image_url: null, rule_json: rj });
+      if (!res.success) { patch({ err: res.error?.message || 'Could not save the rule.', step: 2 }); return; }
+      const newId = res.data?.section?.id || res.data?.id || '';
+      final = { ...final, config_json: { ...(final.config_json || {}), library_section_id: newId } };
+    }
+    if (usesLibraryRule && wiz.ruleMode !== 'create' && !(final.config_json || {}).library_section_id) {
+      patch({ err: 'Pick a saved rule (or build one).', step: 2 }); return;
+    }
+    onFinish(final, wiz.mode === 'edit');
+  };
+
+  const stepChip = (n, label) => (
+    <div key={n} className={`flex-1 text-center text-[11px] font-semibold rounded-lg py-1.5 ${
+      wiz.step === n ? 'bg-gray-900 text-white' : wiz.step > n ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+      {wiz.step > n ? `${label} ✓` : label}
+    </div>
+  );
+  const destPicker = (td, apply) => (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <select value={(td || {}).type || 'grid'} onChange={e => apply({ ...(td || {}), type: e.target.value })}
+        className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+        <option value="grid">Product grid</option>
+        <option value="category">Category page</option>
+        <option value="page">Custom page</option>
+      </select>
+      {(td || {}).type === 'category' && (
+        <select value={(td || {}).vertical || ''} onChange={e => apply({ ...(td || {}), vertical: e.target.value })}
+          className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+          <option value="">— world —</option>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      )}
+      {(td || {}).type === 'page' && (
+        <select value={(td || {}).page_key || ''} onChange={e => apply({ ...(td || {}), page_key: e.target.value })}
+          className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+          <option value="">— page —</option>
+          {pages.filter(p => p.enabled !== false).map(p => <option key={p.id} value={p.key}>{p.label}</option>)}
+        </select>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/45 overflow-y-auto p-6" onClick={() => setWiz(null)}>
+      <div className="max-w-3xl mx-auto bg-white rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex gap-1.5 mb-4">
+          {stepChip(1, '1 Design')}{stepChip(2, '2 Content')}{stepChip(3, '3 Display')}{stepChip(4, '4 Action')}
+        </div>
+        {wiz.err && <div className="mb-3 px-3 py-2 rounded-lg text-xs font-semibold bg-red-50 text-red-700">{wiz.err}</div>}
+
+        {/* ── 1 · Design ── */}
+        {wiz.step === 1 && (
+          <div>
+            <div className="text-base font-bold text-gray-900">How should it look?</div>
+            <div className="text-[11.5px] text-gray-500 mb-3">Pick a design. The next step asks what fills it.</div>
+            {DESIGN_GROUPS.map(([g, glabel]) => {
+              const cards = DESIGN_CATALOG.filter(dc => dc.group === g
+                && (!dc.world || scopeValue === dc.world)
+                && (!dc.biz || (screen === 'business' && scopeValue === dc.biz)) || (dc.group === g && dc.p3));
+              const seen = new Set(); const list = cards.filter(c => !seen.has(c.id) && seen.add(c.id));
+              if (!list.length) return null;
+              return (
+                <div key={g} className="mb-3">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-gray-400 mb-1.5">{glabel}</div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {list.map(dc => (
+                      <button key={dc.id} type="button" onClick={() => pickDesign(dc)} disabled={!!dc.p3}
+                        className={`text-left rounded-xl border-2 p-2.5 ${dc.p3 ? 'opacity-40 cursor-not-allowed border-gray-200'
+                          : wiz.designId === dc.id ? 'border-gray-900 ring-2 ring-amber-300' : 'border-gray-200 hover:border-gray-400'}`}>
+                        <div className="text-xs font-bold text-gray-900">{dc.name}{dc.p3 ? ' · P3' : ''}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">{dc.hint}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── 2 · Content ── */}
+        {wiz.step === 2 && design && (
+          <div className="flex flex-col gap-3">
+            <div className="text-base font-bold text-gray-900">What fills it?</div>
+            <div className="text-[11px] bg-amber-50 rounded-lg px-3 py-1.5 self-start">Design: <b>{design.name}</b> · placing on <b>{scopeValue || screen}</b></div>
+            <label className="text-[11px] font-semibold text-gray-600">Section name (shown in the app)
+              <input value={d.title || ''} onChange={e => patchDraft({ title: e.target.value })}
+                placeholder="e.g. Fashion Steals — min 20% off"
+                className="mt-0.5 w-full text-sm border border-gray-300 rounded-lg px-2.5 py-1.5" />
+            </label>
+
+            {/* Automatic rules */}
+            {contentTabs.includes('auto') && (
+              <div className={`rounded-xl border p-3 ${wiz.tab === 'auto' ? 'border-gray-900' : 'border-gray-200'}`}
+                onClick={() => { if (wiz.tab !== 'auto') patch({ tab: 'auto', draft: { ...d, rule: design.base.rule, config_json: { ...cfg, library_section_id: undefined } } }); }}>
+                <div className="text-xs font-bold text-gray-900 mb-1">⚡ Automatic — fills itself, always fresh</div>
+                {wiz.tab === 'auto' && (design.autoRules || []).map(([v, l]) => (
+                  <label key={v} className="flex items-center gap-2 text-xs text-gray-700 py-1 cursor-pointer">
+                    <input type="radio" name="autorule" checked={d.rule === v} onChange={() => patchDraft({ rule: v })} />{l}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* My rule (Section Library inline) */}
+            {contentTabs.includes('rule') && (
+              <div className={`rounded-xl border p-3 ${wiz.tab === 'rule' ? 'border-gray-900' : 'border-gray-200'}`}
+                onClick={() => { if (wiz.tab !== 'rule') patch({ tab: 'rule', draft: { ...d, rule: 'library_products' } }); }}>
+                <div className="text-xs font-bold text-gray-900 mb-1">🧩 My rule — build a filter, it keeps itself up to date</div>
+                {wiz.tab === 'rule' && (
+                  <div className="flex flex-col gap-2 mt-1" onClick={e => e.stopPropagation()}>
+                    <div className="flex gap-1.5">
+                      {[['create', 'Build a new rule'], ['pick', 'Use a saved rule']].map(([m, lbl]) => (
+                        <button key={m} type="button" onClick={() => patch({ ruleMode: m })}
+                          className={`text-[11px] font-semibold rounded px-2.5 py-1 border ${((wiz.ruleMode || 'create') === m) ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>{lbl}</button>
+                      ))}
+                    </div>
+                    {(wiz.ruleMode || 'create') === 'pick' ? (
+                      <select value={cfg.library_section_id || ''} onChange={e => patchCfg('library_section_id', e.target.value)}
+                        className="text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                        <option value="">(pick a saved rule)</option>
+                        {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
+                      </select>
+                    ) : (
+                      <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 flex flex-col gap-2">
+                        <input value={wiz.ruleName || ''} onChange={e => patch({ ruleName: e.target.value })}
+                          placeholder="Rule name — saves to your Section Library for reuse"
+                          className="text-[11px] border border-gray-300 rounded px-2 py-1" />
+                        {CAT_TREE_WORLDS.has(scopeValue) && (
+                          <select value={rj.subcategory_node_id || ''} onChange={e => patchRule('subcategory_node_id', e.target.value || undefined)}
+                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                            <option value="">Any category</option>
+                            {catTree.map(n => <option key={n.id} value={n.id}>{' '.repeat(n.depth * 2)}{n.name}</option>)}
+                          </select>
+                        )}
+                        <div className="flex gap-2">
+                          <input type="number" value={rj.price_min ?? ''} onChange={e => patchRule('price_min', e.target.value === '' ? undefined : Number(e.target.value))}
+                            placeholder="Min ₹" className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
+                          <input type="number" value={rj.price_max ?? ''} onChange={e => patchRule('price_max', e.target.value === '' ? undefined : Number(e.target.value))}
+                            placeholder="Max ₹" className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
+                          <input type="number" value={rj.min_discount_pct ?? ''} onChange={e => patchRule('min_discount_pct', e.target.value === '' ? undefined : Number(e.target.value))}
+                            placeholder="Min % off" className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
+                        </div>
+                        {worldTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {worldTags.map(tag => {
+                              const on = (rj.tags || []).includes(tag.slug);
+                              return (
+                                <button key={tag.slug} type="button"
+                                  onClick={() => patchRule('tags', on ? (rj.tags || []).filter(x => x !== tag.slug) : [...(rj.tags || []), tag.slug])}
+                                  className={`text-[10px] font-semibold rounded-full px-2.5 py-0.5 border ${on ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>{tag.label}</button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <label className="text-[11px] text-gray-600 flex items-center gap-1.5">
+                          <input type="checkbox" checked={!!rj.has_offer} onChange={e => patchRule('has_offer', e.target.checked || undefined)} /> Only products with a live offer
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={checkMatches} className="text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">Check matches</button>
+                          {wiz.preview?.loading && <span className="text-[11px] text-gray-400">checking…</span>}
+                          {wiz.preview?.error && <span className="text-[11px] text-gray-400">{wiz.preview.error} — you can still publish</span>}
+                          {wiz.preview && wiz.preview.count != null && (
+                            <span className="text-[11px] font-bold text-green-700">✓ Matches {wiz.preview.count} products{wiz.preview.sample?.length ? ` · e.g. ${wiz.preview.sample.slice(0, 2).map(x => x.name).join(' · ')}` : ''}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {isBannerGateway && (
+                      <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-gray-50 border border-gray-200">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">Banner face</div>
+                        <input value={(cfg.banner || {}).eyebrow || ''} onChange={e => patchCfgNested('banner', 'eyebrow', e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-2 py-1" placeholder="Eyebrow — e.g. SUMMER SALE" />
+                        <input value={(cfg.banner || {}).headline || ''} onChange={e => patchCfgNested('banner', 'headline', e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-2 py-1" placeholder="Headline — e.g. FLAT 20% OFF (required)" />
+                        <input value={(cfg.banner || {}).cta_label || ''} onChange={e => patchCfgNested('banner', 'cta_label', e.target.value)}
+                          className="text-xs border border-gray-300 rounded px-2 py-1" placeholder="Button label — default SHOP NOW" />
+                        <label className="w-20 h-12 rounded border bg-white flex items-center justify-center overflow-hidden cursor-pointer text-[10px] text-gray-400">
+                          {(cfg.banner || {}).image_url ? <img src={(cfg.banner).image_url} alt="" className="w-full h-full object-cover" /> : <span>＋ image</span>}
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f, url => patchCfgNested('banner', 'image_url', url)); }} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* My images */}
+            {contentTabs.includes('images') && (
+              <div className="rounded-xl border border-gray-900 p-3 flex flex-col gap-2">
+                <div className="text-xs font-bold text-gray-900">🖼 My images — exactly what you upload</div>
+                {wiz.designId === 'image_cards' && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold text-gray-500">Card size</span>
+                    {[['carousel', 'Small'], ['featured', 'Medium']].map(([v, l]) => (
+                      <button key={v} type="button" onClick={() => patchCfg('style', v)}
+                        className={`text-[10px] font-bold rounded px-2.5 py-0.5 border ${(cfg.style || 'carousel') === v ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-500 border-gray-300'}`}>{l}</button>
+                    ))}
+                  </div>
+                )}
+                {wiz.designId === 'banner_with_tiles' && (
+                  <label className="w-24 h-14 rounded-lg border bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer text-[10px] text-gray-400" title="Banner background">
+                    {cfg.banner_image_url ? <img src={cfg.banner_image_url} alt="" className="w-full h-full object-cover" /> : <span>＋ background</span>}
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f, url => patchCfg('banner_image_url', url)); }} />
+                  </label>
+                )}
+                {wiz.designId === 'sale_zone' && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-semibold text-gray-500">Frame</span>
+                    <input type="color" value={(cfg.frame || {}).bg_color || '#ffffff'} onChange={e => patchCfgNested('frame', 'bg_color', e.target.value)} className="w-8 h-7 border border-gray-300 rounded" />
+                    <label className="w-14 h-8 rounded border bg-white flex items-center justify-center overflow-hidden cursor-pointer text-[9px] text-gray-400">
+                      {(cfg.frame || {}).bg_image_url ? <img src={(cfg.frame).bg_image_url} alt="" className="w-full h-full object-cover" /> : <span>＋ img</span>}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f, url => patchCfgNested('frame', 'bg_image_url', url)); }} />
+                    </label>
+                    <span className="text-[10px] font-semibold text-gray-500 ml-1">Countdown label</span>
+                    <input value={(cfg.timer || {}).label || ''} onChange={e => patchCfgNested('timer', 'label', e.target.value)}
+                      placeholder="Ends in" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
+                  </div>
+                )}
+                {tiles.map((t, ti) => (
+                  <div key={ti} className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
+                    <label className="w-12 h-12 rounded-lg border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0">
+                      {t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-300 text-lg">＋</span>}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f, url => patchTile(ti, { image_url: url })); }} />
+                    </label>
+                    <input value={t.label || ''} onChange={e => patchTile(ti, { label: e.target.value })} placeholder="Label"
+                      className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
+                    {wiz.designId === 'collage' && (
+                      <select value={t.size || 'small'} onChange={e => patchTile(ti, { size: e.target.value })}
+                        className="text-[11px] border border-gray-300 rounded px-1.5 py-1 bg-white">
+                        <option value="small">Small</option><option value="large">Large</option>
+                      </select>
+                    )}
+                    <button onClick={() => removeTile(ti)} className="text-gray-300 hover:text-red-500">✕</button>
+                  </div>
+                ))}
+                <button onClick={addTile} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">＋ Add image</button>
+                <div className="text-[10px] text-gray-400">Each image can carry its own rule + tap action — set those in step 4 (or later via the row's ⚙).</div>
+              </div>
+            )}
+
+            {/* Category tiles — node picker */}
+            {contentTabs.includes('nodes') && (
+              <div className="rounded-xl border border-gray-900 p-3 flex flex-col gap-2">
+                <div className="text-xs font-bold text-gray-900">Pick categories (tap to add)</div>
+                {!CAT_TREE_WORLDS.has(scopeValue) ? (
+                  <div className="text-[11px] text-gray-400 italic">Category picking works on the fashion &amp; furniture worlds (they have a catalogue tree).</div>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg p-2 max-h-40 overflow-auto text-xs bg-white">
+                    {catTree.map(n => {
+                      const on = (cfg.nodes || []).some(x => x.category_node_id === n.id);
+                      return (
+                        <div key={n.id} style={{ paddingLeft: 6 + n.depth * 14 }}
+                          onClick={() => patchCfg('nodes', on
+                            ? (cfg.nodes || []).filter(x => x.category_node_id !== n.id)
+                            : [...(cfg.nodes || []), { category_node_id: n.id, vertical: scopeValue, label: n.name, icon: '' }])}
+                          className={`py-1 rounded cursor-pointer ${on ? 'bg-amber-100 font-bold text-amber-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                          {n.name}{on ? ' ✓' : ''}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Filter chips */}
+            {contentTabs.includes('chips') && (
+              <label className="text-[11px] font-semibold text-gray-600">Chip labels (comma-separated)
+                <input value={(cfg.chips || []).join(', ')}
+                  onChange={e => patchCfg('chips', e.target.value.split(',').map(x => x.trim()).filter(Boolean))}
+                  className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="e.g. Offers, Nearest, Top Rated" />
+              </label>
+            )}
+          </div>
+        )}
+
+        {/* ── 3 · Display ── */}
+        {wiz.step === 3 && (
+          <div className="flex flex-col gap-3">
+            <div className="text-base font-bold text-gray-900">Where and when does it show?</div>
+            <div className="rounded-xl border border-gray-200 p-3">
+              <div className="text-xs font-bold text-gray-900 mb-2">Placement</div>
+              <div className="flex items-end gap-3 flex-wrap">
+                <div className="text-xs bg-gray-50 rounded-lg px-3 py-2">{SCOPES.find(x => x.key === screen)?.label} · <b>{scopeValue}</b></div>
+                <label className="text-[11px] font-semibold text-gray-600">Items
+                  <input type="number" value={d.item_limit ?? 8} onChange={e => patchDraft({ item_limit: Math.max(0, Math.min(50, Number(e.target.value) || 0)) })}
+                    className="mt-0.5 w-16 text-xs border border-gray-300 rounded px-2 py-1 block" />
+                </label>
+                <label className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5 pb-1">
+                  <input type="checkbox" checked={d.enabled !== false} onChange={e => patchDraft({ enabled: e.target.checked })} /> Visible
+                </label>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gray-200 p-3">
+              <div className="text-xs font-bold text-gray-900 mb-2">Schedule (optional)</div>
+              <div className="flex gap-3 flex-wrap">
+                <label className="text-[11px] font-semibold text-gray-600">Goes live
+                  <input type="datetime-local" value={toLocalInput(d.starts_at)} onChange={e => patchDraft({ starts_at: fromLocalInput(e.target.value) })}
+                    className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block" />
+                </label>
+                <label className="text-[11px] font-semibold text-gray-600">Disappears
+                  <input type="datetime-local" value={toLocalInput(d.ends_at)} onChange={e => patchDraft({ ends_at: fromLocalInput(e.target.value) })}
+                    className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block" />
+                </label>
+              </div>
+              {badWindow && <div className="text-[11px] font-bold text-red-600 mt-1.5">“Disappears” must be after “Goes live”.</div>}
+              {!badWindow && (window_.st || window_.en) && (
+                <div className="inline-block text-[11px] font-semibold rounded-full px-2.5 py-1 bg-pink-50 text-pink-600 mt-1.5">
+                  ⏱ {window_.st ? `Live ${fmtDT(window_.st)}` : 'Live now'} → {window_.en ? fmtDT(window_.en) : 'no end'}
+                </div>
+              )}
+              <div className="text-[10px] text-gray-400 mt-1.5">Leave both empty for always on. When “Disappears” passes, the section leaves the app by itself — silently, no “sale over” message.</div>
+              {isTiles && (
+                <label className="text-[11px] text-gray-700 flex items-center gap-1.5 mt-2">
+                  <input type="checkbox" checked={!!cfg.timer} disabled={!d.ends_at}
+                    onChange={e => patchCfg('timer', e.target.checked ? { label: (cfg.timer || {}).label || 'Ends in' } : null)} />
+                  Show a countdown on the section (uses the same end time){!d.ends_at ? ' — set “Disappears” first' : ''}
+                </label>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 4 · Action ── */}
+        {wiz.step === 4 && (
+          <div className="flex flex-col gap-3">
+            <div className="text-base font-bold text-gray-900">What happens when a follower taps it?</div>
+            {isTiles ? (
+              <div className="rounded-xl border border-gray-200 p-3 flex flex-col gap-2">
+                <div className="text-[11px] text-gray-500">Each image gets its own action:</div>
+                {tiles.map((t, ti) => (
+                  <div key={ti} className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-semibold text-gray-700 w-28 truncate">{t.label || `Image ${ti + 1}`}</span>
+                    {destPicker(t.tap_destination, (td) => patchTile(ti, { tap_destination: td }))}
+                    {((t.tap_destination || {}).type || 'grid') === 'grid' && (
+                      <select value={t.library_section_id || ''} onChange={e => patchTile(ti, { library_section_id: e.target.value })}
+                        className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+                        <option value="">grid of… (pick a rule)</option>
+                        {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                ))}
+                {tiles.length === 0 && <div className="text-[11px] text-gray-400">No images yet — add them in step 2.</div>}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-gray-200 p-3">
+                <div className="text-[11px] text-gray-500 mb-1.5">“See all” and the section header open:</div>
+                {destPicker(cfg.tap_destination, (td) => patchCfg('tap_destination', td))}
+                <div className="text-[10px] text-gray-400 mt-1.5">Product grid (default) shows everything matching this section&apos;s rule. Individual cards always open their own page.</div>
+              </div>
+            )}
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-[11.5px]">
+              <div className="font-bold text-gray-900 mb-1.5 text-xs">Ready to publish</div>
+              <div>Design: <b>{design?.name}</b></div>
+              <div>Content: <b>{wiz.tab === 'rule' ? (wiz.ruleMode === 'pick' ? 'Saved rule' : `My rule — “${wiz.ruleName || d.title}”`) : wiz.tab === 'images' ? `${tiles.length} image${tiles.length === 1 ? '' : 's'}` : (design?.autoRules || []).find(r => r[0] === d.rule)?.[1] || d.rule}</b></div>
+              <div>Display: <b>{SCOPES.find(x => x.key === screen)?.label} · {scopeValue}</b>{(window_.st || window_.en) ? <> · ⏱ {window_.st ? fmtDT(window_.st) : 'now'} → {window_.en ? fmtDT(window_.en) : 'no end'}</> : ' · always on'}</div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-between mt-5">
+          <button onClick={() => wiz.step === 1 || (wiz.mode === 'edit' && wiz.step === 2) ? setWiz(null) : patch({ step: wiz.step - 1 })}
+            className="px-4 py-2 rounded-lg border border-gray-300 text-xs font-semibold text-gray-600">
+            {wiz.step === 1 || (wiz.mode === 'edit' && wiz.step === 2) ? 'Cancel' : '← Back'}
+          </button>
+          {wiz.step < 4 ? (
+            <button onClick={next} disabled={wiz.step === 1 && !wiz.designId}
+              className="px-4 py-2 rounded-lg bg-gray-900 text-white text-xs font-bold disabled:opacity-40">
+              Next · {['', 'Content', 'Display', 'Action'][wiz.step]} →
+            </button>
+          ) : (
+            <button onClick={finish} disabled={saving}
+              className="px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50" style={{ background: '#F8CB46', color: '#1A1D1F' }}>
+              {saving ? 'Publishing…' : 'Publish — live in ~1 minute'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SectionsPage() {
   const [screen, setScreen] = useState('category');
   // App Builder: all three scopes are per-world → always 'vertical'.
@@ -214,7 +776,7 @@ export default function SectionsPage() {
   const [expanded, setExpanded] = useState(null);     // shelf id/key being config-edited
   const [jsonDraft, setJsonDraft] = useState('');
   const [jsonErr, setJsonErr] = useState(null);
-  const [addPreset, setAddPreset] = useState('brands');
+  const [wiz, setWiz] = useState(null);   // Add-Section wizard state (P2)
   const [librarySections, setLibrarySections] = useState([]);
   // Manage Worlds (absorbed Home Builder) — the follower worlds (tabs).
   const [worlds, setWorlds] = useState([]);
@@ -407,19 +969,37 @@ export default function SectionsPage() {
     setJsonErr(null);
   };
 
-  const addSection = () => {
-    const p = ADD_PRESETS.find(x => x.key === addPreset) || ADD_PRESETS[0];
-    const tmp = `tmp_${Math.random().toString(36).slice(2, 8)}`;
-    const shelf = {
-      _tmp: tmp, id: null,
-      shelf_key: `${slug(p.title)}_${Date.now().toString(36).slice(-4)}`,
-      title: '', shelf_type: p.shelf_type, rule: p.rule,
-      item_type: p.item_type || null, category_key: null,
-      item_limit: 8, position: shelves.length, enabled: true,
-      config_json: { sub: '', ...(p.config || {}) },
-    };
-    setShelves(prev => [...prev, shelf]);
-    setExpanded(tmp); setJsonDraft(JSON.stringify(shelf.config_json, null, 2)); setJsonErr(null);
+  // ── Add-Section wizard (P2) — create / edit / finish ──────────────────────
+  const openWizardCreate = () => setWiz({
+    mode: 'create', step: 1, designId: null, tab: null,
+    ruleMode: 'create', ruleDraft: {}, ruleName: '', preview: null, err: null,
+    draft: {
+      _tmp: `tmp_${Math.random().toString(36).slice(2, 8)}`, id: null,
+      shelf_key: 'new_section', title: '', shelf_type: 'tiles', rule: 'static',
+      item_type: null, category_key: null, item_limit: 8,
+      position: shelves.length, enabled: true, starts_at: null, ends_at: null,
+      config_json: { sub: '' },
+    },
+  });
+  const openWizardEdit = (s) => {
+    const did = resolveDesignId(s);
+    const dsn = designById(did);
+    if (!dsn) { toggleExpand(s); return; }   // unknown legacy shape → raw editor
+    const fills = dsn.fills || ['auto'];
+    const tab = (s.rule === 'library_products' && fills.includes('rule')) ? 'rule' : fills[0];
+    setWiz({
+      mode: 'edit', step: 2, designId: did, tab,
+      ruleMode: 'pick', ruleDraft: {}, ruleName: '', preview: null, err: null,
+      draft: JSON.parse(JSON.stringify({ ...s, config_json: { ...(s.config_json || {}), design: did } })),
+    });
+  };
+  const wizardFinish = (final, isEdit) => {
+    const list = isEdit
+      ? shelves.map(x => rowId(x) === rowId(final) ? final : x)
+      : [...shelves, final];
+    setShelves(list);
+    setWiz(null);
+    publishList(list);
   };
 
   const removeShelf = async (s) => {
@@ -430,25 +1010,26 @@ export default function SectionsPage() {
     else setMsg({ kind: 'err', text: res.error?.message || 'Delete failed' });
   };
 
-  const publish = async () => {
+  const publishList = async (list) => {
     // Every section must be named — the title is the name shown in the app.
-    const unnamed = shelves.find(s => !String(s.title || '').trim());
+    const unnamed = list.find(s => !String(s.title || '').trim());
     if (unnamed) { setMsg({ kind: 'err', text: 'Give every section a name (shown in the app) before publishing.' }); return; }
     // Phase 3c — a Library Section placement must reference a section.
-    const unset = shelves.find(s => s.rule === 'library_products' && !(s.config_json || {}).library_section_id);
+    const unset = list.find(s => s.rule === 'library_products' && !(s.config_json || {}).library_section_id);
     if (unset) { setMsg({ kind: 'err', text: `"${unset.title || 'Library Section'}" — pick a library section before publishing.` }); return; }
     // Phase 6 — a Banner-Gateway placement needs a headline.
-    const unsetBanner = shelves.find(s => (s.config_json || {}).presentation_type === 'banner' && !((s.config_json || {}).banner || {}).headline);
+    const unsetBanner = list.find(s => (s.config_json || {}).presentation_type === 'banner' && !((s.config_json || {}).banner || {}).headline);
     if (unsetBanner) { setMsg({ kind: 'err', text: `"${unsetBanner.title || 'Banner'}" — add a banner headline before publishing.` }); return; }
     setSaving(true); setMsg(null);
     const payload = {
       scope_type: scopeType,
       scope_value: scopeType === 'global' ? null : (scopeValue || null),
-      shelves: shelves.map((s, i) => ({
+      shelves: list.map((s, i) => ({
         id: s.id || undefined, shelf_key: s.shelf_key, title: s.title, shelf_type: s.shelf_type,
         rule: s.rule, item_type: s.item_type, category_key: s.category_key,
         item_limit: Number(s.item_limit), position: i, enabled: s.enabled !== false,
         pinned_ref: s.pinned_ref, config_json: s.config_json,
+        starts_at: s.starts_at || null, ends_at: s.ends_at || null,   // mig 124
       })),
     };
     const res = await sectionApi.saveSections(screen, payload);
@@ -460,6 +1041,7 @@ export default function SectionsPage() {
     }
     setSaving(false);
   };
+  const publish = () => publishList(shelves);
 
   const scopeNeedsValue = scopeType !== 'global';
   // Only show Section Library groups for the world being edited (+ ALL-world
@@ -587,8 +1169,11 @@ export default function SectionsPage() {
                         : sectionKind(s) === 'data'
                         ? <span className="shrink-0 text-[9px] font-bold rounded px-1.5 py-0.5 bg-green-50 text-green-700">NO RULE</span>
                         : null}
+                      {(() => { const c = scheduleChip(s); return c ? <span className={`shrink-0 text-[9px] font-bold rounded-full px-1.5 py-0.5 ${c.cls}`}>⏱ {c.text}</span> : null; })()}
                     </div>
                   </div>
+                  <button onClick={() => openWizardEdit(s)} title="Edit in the wizard"
+                    className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-500">✏️</button>
                   <button onClick={() => toggleExpand(s)} title="Edit details"
                     className={`text-xs px-2 py-1 rounded border ${isOpen ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-300 text-gray-500'}`}>⚙</button>
                   <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
@@ -964,6 +1549,21 @@ export default function SectionsPage() {
                         </label>
                       </>
                     )}
+                    {/* Schedule (mig 124) — live window; expired sections leave the app silently */}
+                    <div className="flex gap-3 flex-wrap items-end rounded-lg border border-gray-200 bg-gray-50 p-2">
+                      <label className="text-[11px] font-semibold text-gray-600">Goes live
+                        <input type="datetime-local" value={toLocalInput(s.starts_at)}
+                          onChange={e => update(id, { starts_at: fromLocalInput(e.target.value) })}
+                          className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
+                      </label>
+                      <label className="text-[11px] font-semibold text-gray-600">Disappears
+                        <input type="datetime-local" value={toLocalInput(s.ends_at)}
+                          onChange={e => update(id, { ends_at: fromLocalInput(e.target.value) })}
+                          className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
+                      </label>
+                      <span className="text-[10px] text-gray-400 pb-1">empty = always on · after “Disappears” the section leaves the app silently</span>
+                    </div>
+
                     <label className="text-[11px] font-semibold text-gray-600">Caption (sub)
                       <input value={cfg.sub || ''} onChange={e => patchConfig(id, 'sub', e.target.value)}
                         className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="small grey line under the title" />
@@ -1006,31 +1606,21 @@ export default function SectionsPage() {
         </div>
       )}
 
-      {/* ＋ Add Section */}
+      {/* ＋ Add Section — opens the 4-step wizard (Design · Content · Display · Action) */}
       {!loading && !(scopeNeedsValue && !scopeValue) && (
         <div className="flex items-center gap-2 mt-4">
-          <select value={addPreset} onChange={e => setAddPreset(e.target.value)}
-            className="text-xs border border-gray-300 rounded px-2 py-1.5 bg-white">
-            {KIND_GROUPS.map(g => {
-              const opts = ADD_PRESETS.filter(p => p.kind === g.k
-                && (!p.biz || (screen === 'business' && scopeValue === p.biz))
-                && (!p.world || scopeValue === p.world));
-              if (!opts.length) return null;
-              return (
-                <optgroup key={g.k} label={g.label}>
-                  {opts.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-                </optgroup>
-              );
-            })}
-          </select>
-          <button onClick={addSection}
-            className="px-3 py-1.5 rounded-lg border-2 border-dashed border-amber-600 text-amber-700 text-xs font-bold">
-            ＋ Add Section
+          <button onClick={openWizardCreate}
+            className="px-4 py-2 rounded-lg border-2 border-dashed border-amber-600 text-amber-700 text-xs font-bold">
+            ＋ Add section
           </button>
-          <span className="text-[11px] text-gray-400">added shelves save on Publish</span>
+          <span className="text-[11px] text-gray-400">guided: 1 Design · 2 Content · 3 Display · 4 Action</span>
         </div>
       )}
       </div>
+
+      <AddSectionWizard wiz={wiz} setWiz={setWiz} scopeValue={scopeValue} screen={screen}
+        catTree={catTree} worldTags={worldTags} pages={pages} worldSections={worldSections}
+        onFinish={wizardFinish} saving={saving} />
 
       {/* Live mobile preview — how the sections look in the app */}
       <MobilePreview shelves={shelves} scopeValue={scopeValue} />

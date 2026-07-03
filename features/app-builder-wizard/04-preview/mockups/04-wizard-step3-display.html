@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Wizard — Step 3 Display</title>
+<style>
+  :root { --ink:#1A1D1F; --yellow:#F8CB46; --muted:#6b7280; --line:#e5e7eb; --pink:#E35694; }
+  * { box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+  body { margin:0; background:rgba(20,22,25,.45); padding:26px; }
+  .modal { max-width:720px; margin:0 auto; background:#fff; border-radius:16px; padding:22px 26px; }
+  .steps { display:flex; gap:6px; margin-bottom:18px; }
+  .st { flex:1; text-align:center; font-size:12.5px; padding:9px 4px; border-radius:9px; background:#f2f3f5; color:var(--muted); }
+  .st.done { background:#e8f7ee; color:#177245; } .st.on { background:var(--ink); color:#fff; font-weight:700; }
+  h2 { font-size:17px; margin:0 0 3px; } .sub { font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  .panel { border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:12px; }
+  .panel h4 { margin:0 0 10px; font-size:13px; }
+  .frow { display:flex; gap:12px; align-items:flex-end; }
+  .f label { font-size:11.5px; color:var(--muted); display:block; margin-bottom:4px; font-weight:600; }
+  .in, select { border:1px solid var(--line); border-radius:9px; padding:9px 10px; font-size:13px; background:#fff; }
+  .static { font-size:13px; background:#f7f7f8; border-radius:9px; padding:9px 12px; }
+  .tgl { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .tog { width:34px; height:19px; border-radius:999px; background:#16a34a; position:relative; }
+  .tog::after { content:''; position:absolute; right:2px; top:2px; width:15px; height:15px; border-radius:50%; background:#fff; }
+  .help { font-size:11.5px; color:var(--muted); margin-top:8px; }
+  .chip { display:inline-block; font-size:11.5px; padding:4px 10px; border-radius:999px; background:#fdeef4; color:var(--pink); font-weight:600; margin-top:10px; }
+  .timer { display:flex; align-items:center; gap:8px; font-size:13px; margin-top:10px; }
+  .foot { display:flex; justify-content:space-between; margin-top:18px; }
+  .btn { border-radius:10px; padding:10px 18px; font-size:13.5px; font-weight:600; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .btn.pri { background:var(--ink); color:#fff; border-color:var(--ink); }
+</style></head><body>
+<div class="modal">
+  <div class="steps"><div class="st done">1 Design ✓</div><div class="st done">2 Content ✓</div><div class="st on">3 Display</div><div class="st">4 Action</div></div>
+  <h2>Where and when does it show?</h2>
+  <div class="sub">Placement comes from where you opened the builder. Schedule is optional.</div>
+
+  <div class="panel"><h4>Placement</h4>
+    <div class="frow">
+      <div class="f"><label>Page</label><div class="static">Home · Fashion world</div></div>
+      <div class="f" style="width:110px"><label>Position</label><input class="in" style="width:100%" value="3"></div>
+      <div class="f"><label>Visible</label><div class="tgl"><div class="tog"></div> Enabled</div></div>
+    </div>
+  </div>
+
+  <div class="panel"><h4>Schedule (optional)</h4>
+    <div class="frow">
+      <div class="f"><label>Goes live</label><input class="in" type="datetime-local" value="2026-07-04T06:00"></div>
+      <div class="f"><label>Disappears</label><input class="in" type="datetime-local" value="2026-07-06T23:59"></div>
+    </div>
+    <div class="help">Leave both empty for always on. When “Disappears” passes, the section leaves the app by itself — silently, no “sale over” message.</div>
+    <span class="chip">⏱ Live Fri 6:00 AM → Sun 11:59 PM (2 days 18 hrs)</span>
+    <div class="timer"><input type="checkbox" checked> Show a countdown on the section (uses the same end time)</div>
+  </div>
+
+  <div class="foot"><button class="btn">← Back</button><button class="btn pri">Next · Action →</button></div>
+</div>
+</body></html>

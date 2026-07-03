@@ -1,0 +1,29 @@
+{
+  "feature": "app-builder-wizard",
+  "spec_version": "1.0.0",
+  "status": "spec-locked",
+  "approved": true,
+  "approved_by": "founder (delegated: 'pls go and start P2', 2026-07-03; program spec Docs/SECTION_SYSTEM_SPEC.md §5+§9)",
+  "approved_at": "2026-07-03T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (reviewed 00-all-screens.html; clarity on per-design settings confirmed; 'next we proceed to implementation', 2026-07-03)",
+  "mockup_locked_at": "2026-07-03T09:30:00+05:30",
+  "notes": "Cleanup P2. UI-governed: mockup-lock gate ENFORCED — no implementation until founder reviews 04-preview/mockups/ and mockup_locked is set. Before/after diff gate applies at release.",
+  "release": {
+    "qa_all_green": true,
+    "qa_report": "qa/reports/2026-07-03T04-14-02-253Z/QA-REPORT.md",
+    "workflow_verify": "14/14 e2e wizard walkthrough (real JWT, local backend+DB) + 46/46 admin web suite, 2026-07-03; evidence in 06-diff/",
+    "released": true,
+    "released_by": "founder ('pls go and deploy', 2026-07-03)",
+    "released_at": "2026-07-03T10:30:00+05:30",
+    "deploy": {
+      "class": "production-impacting",
+      "backend": "none (P1 already live)",
+      "web": "git push origin main → Vercel auto-deploys brand-web (admin-only pages)",
+      "mobile_ota": "none (zero follower-app change)",
+      "rollback": "single-commit revert; no data cleanup needed"
+    }
+  }
+}
