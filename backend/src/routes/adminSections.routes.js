@@ -13,6 +13,8 @@ const ctrl = require('../controllers/adminSections.controller');
 const router = Router();
 const adminAuth = [authenticate, requireCapability('sections')];
 
+// P5 (section-analytics-city) — BEFORE /:screen so 'analytics' isn't swallowed.
+router.get('/analytics',  ...adminAuth, ctrl.sectionAnalytics);
 router.get('/:screen',    ...adminAuth, ctrl.listSections);
 router.put('/:screen',    ...adminAuth, ctrl.saveSections);
 router.delete('/id/:id',  ...adminAuth, ctrl.deleteSection);

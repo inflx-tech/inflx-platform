@@ -74,6 +74,8 @@ router.get('/section/creator/:handle/category/:cat', authenticateOptional, ctrl.
 router.get('/page/:key/sections',                    authenticateOptional, ctrl.getPageSections);
 // Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
 router.get('/section-results',                        authenticateOptional, ctrl.getSectionResults);
+// P5 (section-analytics-city): fire-and-forget engagement capture — always 204.
+router.post('/section-event',                         authenticateOptional, ctrl.recordSectionEvent);
 
 // ── Wave 5 — Reviews + ratings ───────────────────────────────────────────────
 // List is public (followers read reviews before visiting); create +

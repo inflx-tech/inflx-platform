@@ -150,7 +150,8 @@ function ChipRow({ section }) {
   );
 }
 
-function HeroOffer({ section, navigation }) {
+function HeroOffer({ section, navigation, onOfferTap }) {
+  const tapOffer = onOfferTap || ((it) => goToOffer(navigation, it));
   const item = section.items[0];
   if (!item) return null;
   // Cream banner per the recolored Home mockup (.banner): terracotta eyebrow,
@@ -162,7 +163,7 @@ function HeroOffer({ section, navigation }) {
     <View>
       <ShelfHeader title={section.title} sub={section.config?.sub} />
       <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
-        <TouchableOpacity activeOpacity={0.92} style={styles.banner} onPress={() => goToOffer(navigation, item)}>
+        <TouchableOpacity activeOpacity={0.92} style={styles.banner} onPress={() => tapOffer(item)}>
           <View style={styles.bannerCopy}>
             <Text style={styles.bannerEyebrow} numberOfLines={1}>{eyebrow}</Text>
             <Text style={styles.bannerTitle} numberOfLines={2}>{headline}</Text>
@@ -178,13 +179,14 @@ function HeroOffer({ section, navigation }) {
   );
 }
 
-function OfferGrid({ section, navigation }) {
+function OfferGrid({ section, navigation, onOfferTap }) {
+  const tapOffer = onOfferTap || ((it) => goToOffer(navigation, it));
   return (
     <View>
       <ShelfHeader title={section.title} sub={section.config?.sub} />
       <View style={styles.grid}>
         {section.items.map((item, i) => (
-          <TouchableOpacity key={item.id || i} activeOpacity={0.85} style={styles.gridCell} onPress={() => goToOffer(navigation, item)}>
+          <TouchableOpacity key={item.id || i} activeOpacity={0.85} style={styles.gridCell} onPress={() => tapOffer(item)}>
             <NewOfferCard
               store={{ name: item.brand?.name, category: item.brand?.category }}
               dealType="shop"
@@ -227,7 +229,22 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // → the shared Results product grid (today's behaviour). Individual cards keep their
   // own detail navigation regardless.
   const dest = section.config?.tap_destination || null;
+  // P5 (section-analytics-city) — fire-and-forget engagement capture. The
+  // screen is derived from the surface context; a dead endpoint can never
+  // affect navigation (recordSectionEvent swallows every failure).
+  const emit = (event, item) => followerApi.recordSectionEvent({
+    section_key: section.key || section.shelf_key || 'unknown',
+    screen: ctx.brandId ? 'business' : ctx.creatorHandle ? 'creator_store' : ctx.superCategory ? 'category' : 'home',
+    scope_value: ctx.superCategory || null,
+    event,
+    entity_type: item?.entity_type || null,
+    entity_id: item?.id != null ? String(item.id) : (item?.label || null),
+  });
+  const tapOffer = (it) => { emit('tap', it); goToOffer(navigation, it); };
+  const tapProduct = (it) => { emit('tap', it); goToProduct(navigation, it); };
+  const tapBrand = (it) => { emit('tap', it); goToBrand(navigation, it); };
   const seeAll = () => {
+    emit('see_all', null);
     if (dest && dest.type === 'category') {
       return navigation.navigate('CategoryBrowser', {
         nodeId: dest.node_id || null,
@@ -273,6 +290,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // in config, not items).
   if (section.type === 'tiles') {
     const onTile = (t) => {
+      emit('tap', { entity_type: 'tile', id: t.library_section_id || null, label: t.label });
       // Per-tile destination (admin "On tap →"): category browser / a page / default grid.
       const d = t.tap_destination;
       if (d?.type === 'category') return navigation.navigate('CategoryBrowser', { nodeId: d.node_id || null, vertical: d.vertical || ctx.superCategory || null, title: t.label || section.title });
@@ -299,7 +317,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // empty-items guard (its content is the tiles in config, not `items`).
   if (section.type === 'hero_tiles') {
     const tiles = Array.isArray(section.config?.tiles) ? section.config.tiles : [];
-    const onTile = (t) => navigation.navigate('SectionResults', {
+    const onTile = (t) => { emit('tap', { entity_type: 'tile', id: t.library_section_id || null, label: t.label }); return navigation.navigate('SectionResults', {
       title: t.label,
       rule: 'library_products',
       item_type: 'products',
@@ -309,13 +327,13 @@ function renderSection(section, navigation, canFollow, context = {}) {
       brand_id: ctx.brandId || null,
       lat: ctx.lat ?? null,
       lng: ctx.lng ?? null,
-    });
+    }); };
     return <HeroTiles section={section} tiles={tiles} onTile={onTile} />;
   }
 
   if ((section.type === 'offers' || section.type === 'mixed') && section.items.length) {
-    if (section.config?.hero) return <HeroOffer section={section} navigation={navigation} />;
-    if (section.config?.grid) return <OfferGrid section={section} navigation={navigation} />;
+    if (section.config?.hero) return <HeroOffer section={section} navigation={navigation} onOfferTap={tapOffer} />;
+    if (section.config?.grid) return <OfferGrid section={section} navigation={navigation} onOfferTap={tapOffer} />;
   }
 
   if (!section.items.length) return null;
@@ -330,7 +348,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
               id: s.id, handle: s.handle, name: s.name, avatar: s.avatar,
               has_live_deal: s.has_live_deal, followers_count: s.followers_count, is_followed: s.is_followed,
             }))}
-            onPressStory={(story) => navigation.navigate('InfluencerStore', { handle: story.handle })}
+            onPressStory={(story) => { emit('tap', { entity_type: 'creator', id: story.id || story.handle }); navigation.navigate('InfluencerStore', { handle: story.handle }); }}
             onPressMore={() => navigation.navigate('Find')}
             showFollow={canFollow}
             onFollow={(story) => { if (story?.id) followerApi.follow(story.id).catch(() => {}); }}
@@ -356,7 +374,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
           <View>
             <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" onSeeAll={seeAll} />
             {section.items.map((item, i) => (
-              <ShelfBrandListRow key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => goToBrand(navigation, item)} />
+              <ShelfBrandListRow key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => tapBrand(item)} />
             ))}
           </View>
         );
@@ -366,7 +384,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
           <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" onSeeAll={seeAll} />
           <Rail>
             {section.items.map((item, i) => (
-              <ShelfBrandCard key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => goToBrand(navigation, item)} />
+              <ShelfBrandCard key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => tapBrand(item)} />
             ))}
           </Rail>
         </View>
@@ -389,7 +407,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
                   brand={item.brand}
                   onPress={ctx.openDish
                     ? () => ctx.openDish(item.product || item, foodCardBrand(item.brand), navigation, 'detail')
-                    : () => goToProduct(navigation, item)}
+                    : () => tapProduct(item)}
                   onAdd={ctx.openDish
                     ? () => ctx.openDish(item.product || item, foodCardBrand(item.brand), navigation, 'add')
                     : undefined}
@@ -401,11 +419,11 @@ function renderSection(section, navigation, canFollow, context = {}) {
                   brand={item.brand}
                   discountValue={item.discount_value}
                   distanceKm={item.distance_km}
-                  onPress={() => goToProduct(navigation, item)}
+                  onPress={() => tapProduct(item)}
                   // ＋ on every shop product card (consistency) → opens the PDP to
                   // pick variant + add (section payload carries no variant data, so
                   // we can't silently add a size-less fashion item).
-                  onAdd={() => goToProduct(navigation, item)}
+                  onAdd={() => tapProduct(item)}
                 />
               )
             ))}
@@ -424,10 +442,10 @@ function renderSection(section, navigation, canFollow, context = {}) {
             <RestaurantSection
               key={rest.id || i}
               restaurant={rest}
-              onOpenStore={(r) => goToBrand(navigation, r)}
+              onOpenStore={(r) => tapBrand(r)}
               onOpenDish={(p, r, mode = 'add') => ctx.openDish
                 ? ctx.openDish(p, { id: r.id, name: r.name, category: r.category || 'restaurant', city: r.city, store_offers: r.store_offers }, navigation, mode)
-                : goToProduct(navigation, { ...p, brand: p.brand || { id: r.id, name: r.name, category: r.category, city: r.city } })}
+                : tapProduct({ ...p, brand: p.brand || { id: r.id, name: r.name, category: r.category, city: r.city } })}
             />
           ))}
         </View>
@@ -447,7 +465,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
                   chip={catLabel(item.brand?.category)}
                   category={item.brand?.category}
                   creator={item.via_creator}
-                  onPress={() => goToOffer(navigation, item)}
+                  onPress={() => tapOffer(item)}
                 />
               ) : (
                 <DealCard
@@ -457,7 +475,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
                   brand={catLabel(item.brand?.category)}
                   category={item.brand?.category}
                   creator={item.via_creator}
-                  onPress={() => goToOffer(navigation, item)}
+                  onPress={() => tapOffer(item)}
                 />
               )
             ))}

@@ -10,6 +10,7 @@
  * products a draft rule catches + a few samples, before the section is saved/placed.
  */
 
+const db = require('../config/db');
 const sectionLibrary = require('../services/sectionLibrary.service');
 const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const { runRule } = require('../services/sectionRules.service');
@@ -61,4 +62,33 @@ const preview = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { list, create, update, preview };
+// GET /v1/admin/section-library/product-search?business_type=&q=
+// Hand-pick search (P4, features/rule-builder-depth/): gated products only
+// (approved brand + pushed_to_store), name ILIKE, optional business scope.
+// Same gates the engine applies at render — what you pick is what can show.
+const productSearch = asyncHandler(async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (q.length < 2) return success(res, { products: [] });
+  const bt = String(req.query.business_type || '').trim();
+  const maps = await categoryTaxonomy.getMaps();
+  const cats = (bt && bt !== 'ALL') ? (maps.membersByKey[bt] || null) : null;
+
+  const params = [`%${q}%`];
+  let catClause = '';
+  if (cats) { params.push(cats); catClause = 'AND b.category = ANY($2)'; }
+  const { rows } = await db.query(
+    `SELECT bp.id, bp.name, bp.price, bp.image_url, b.business_name AS brand_name
+       FROM brand_products bp
+       JOIN brands b  ON b.id = bp.brand_id
+       JOIN users u_b ON u_b.id = b.user_id
+      WHERE u_b.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
+        AND bp.name ILIKE $1
+        ${catClause}
+      ORDER BY bp.created_at DESC
+      LIMIT 20`,
+    params
+  );
+  return success(res, { products: rows });
+});
+
+module.exports = { list, create, update, preview, productSearch };

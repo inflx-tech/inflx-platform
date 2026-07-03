@@ -20,7 +20,10 @@ const SORTS = [
 ];
 const EMPTY = { business_type: '', name: '', image_url: '', sort: 'newest',
   subcategory_node_id: '', subcategory_label: '', tags: [], price_min: '', price_max: '',
-  has_offer: false, min_discount_pct: '' };
+  has_offer: false, min_discount_pct: '',
+  // P4 (rule-builder-depth) — brand + exclude editable here; product_ids
+  // pass-through (hand-pick UI lives in the App Builder wizard).
+  brand: '', exclude_tags: [], product_ids: [] };
 
 // Flatten the nested category tree into indented, selectable rows.
 function flattenTree(roots, depth = 0, out = []) {
@@ -88,6 +91,9 @@ export default function SectionLibraryPage() {
       tags: Array.isArray(r.tags) ? r.tags : [],
       price_min: r.price_min ?? '', price_max: r.price_max ?? '',
       has_offer: r.has_offer === true, min_discount_pct: r.min_discount_pct ?? '',
+      brand: r.brand || '',
+      exclude_tags: Array.isArray(r.exclude_tags) ? r.exclude_tags : [],
+      product_ids: Array.isArray(r.product_ids) ? r.product_ids : [],
     };
     setForm(f); setFormError(null); setPreview(null); setEditing(s);
     loadBusinessMeta(s.business_type);
@@ -111,7 +117,14 @@ export default function SectionLibraryPage() {
     if (f.price_max !== '' && f.price_max != null) rule.price_max = Number(f.price_max);
     if (f.has_offer) rule.has_offer = true;
     if (f.min_discount_pct !== '' && f.min_discount_pct != null) rule.min_discount_pct = Number(f.min_discount_pct);
+    // P4 — never strip the depth keys on edit-save.
+    if (f.brand && f.brand.trim()) rule.brand = f.brand.trim();
+    if (Array.isArray(f.exclude_tags) && f.exclude_tags.length) rule.exclude_tags = f.exclude_tags;
+    if (Array.isArray(f.product_ids) && f.product_ids.length) rule.product_ids = f.product_ids;
     return rule;
+  }
+  function toggleExTag(slug) {
+    setForm(prev => ({ ...prev, exclude_tags: prev.exclude_tags.includes(slug) ? prev.exclude_tags.filter(t => t !== slug) : [...prev.exclude_tags, slug] }));
   }
 
   // Debounced live preview whenever the rule changes.
@@ -128,7 +141,7 @@ export default function SectionLibraryPage() {
     }, 350);
     return () => debRef.current && clearTimeout(debRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing, form.business_type, form.subcategory_node_id, JSON.stringify(form.tags), form.price_min, form.price_max, form.sort, form.has_offer, form.min_discount_pct]);
+  }, [editing, form.business_type, form.subcategory_node_id, JSON.stringify(form.tags), form.price_min, form.price_max, form.sort, form.has_offer, form.min_discount_pct, form.brand, JSON.stringify(form.exclude_tags), JSON.stringify(form.product_ids)]);
 
   async function handleSave() {
     setFormError(null);
@@ -265,10 +278,32 @@ export default function SectionLibraryPage() {
                     {tags.length === 0 && <span className="text-[11px] text-t3 italic">No tags in this business’s vocabulary.</span>}
                   </div>
                 </div>
+                {/* P4 (rule-builder-depth) — exclude tags */}
+                <div>
+                  <label className="block text-[11px] font-bold text-t2 mb-1">Exclude tags <span className="text-t3 font-medium">(hide anything carrying these)</span></label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map(t => (
+                      <button key={t.slug} type="button" onClick={() => toggleExTag(t.slug)}
+                        className={`text-[11px] font-semibold rounded-full px-2.5 py-1 border ${form.exclude_tags.includes(t.slug) ? 'bg-red-700 text-white border-red-700 line-through' : 'bg-white text-t2 border-border'}`}>{t.label}</button>
+                    ))}
+                    {tags.length === 0 && <span className="text-[11px] text-t3 italic">No tags in this business’s vocabulary.</span>}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-[11px] font-bold text-t2 mb-1">Min price ₹</label><input type="number" value={form.price_min} onChange={e => patch({ price_min: e.target.value })} className="w-full border border-border rounded-lg px-3 py-2 text-sm" /></div>
                   <div><label className="block text-[11px] font-bold text-t2 mb-1">Max price ₹</label><input type="number" value={form.price_max} onChange={e => patch({ price_max: e.target.value })} className="w-full border border-border rounded-lg px-3 py-2 text-sm" /></div>
                 </div>
+                {/* P4 — catalogue-brand filter (was silently stripped before; genuinely works now) */}
+                <div>
+                  <label className="block text-[11px] font-bold text-t2 mb-1">Brand <span className="text-t3 font-medium">(optional — the product’s catalogue brand, e.g. Levi’s)</span></label>
+                  <input value={form.brand} onChange={e => patch({ brand: e.target.value })} placeholder="e.g. Adidas" className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
+                </div>
+                {form.product_ids.length > 0 && (
+                  <div className="rounded-lg border border-border bg-surface2 px-3 py-2 text-[11px] text-t2">
+                    🎯 <b>{form.product_ids.length} hand-picked product{form.product_ids.length === 1 ? '' : 's'}</b> (kept on save — edit the picks in the App Builder wizard)
+                    <button type="button" onClick={() => patch({ product_ids: [] })} className="ml-2 text-red-600 font-semibold">clear</button>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-[11px] font-bold text-t2 mb-1">Sort</label>
                     <select value={form.sort} onChange={e => patch({ sort: e.target.value })} className="w-full border border-border rounded-lg px-3 py-2 text-sm">

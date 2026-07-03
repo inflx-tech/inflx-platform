@@ -1776,7 +1776,37 @@ const resolveCoupon = asyncHandler(async (req, res) => {
   });
 });
 
+// POST /v1/follower/section-event — per-section engagement capture (P5,
+// features/section-analytics-city/). Fire-and-forget from the app: ALWAYS 204,
+// invalid payloads are dropped silently (an analytics write must never surface
+// an error to a follower). follower_id captured when a JWT is present.
+const EVENT_KINDS = new Set(['tap', 'see_all']);
+const recordSectionEvent = asyncHandler(async (req, res) => {
+  try {
+    const b = req.body || {};
+    const key = String(b.section_key || '').trim().slice(0, 120);
+    const screen = String(b.screen || '').trim().slice(0, 40);
+    const event = String(b.event || '').trim();
+    if (key && screen && EVENT_KINDS.has(event)) {
+      const follower = req.user?.sub ? await getFollowerByUserId(req.user.sub).catch(() => null) : null;
+      await db.query(
+        `INSERT INTO section_events (section_key, screen, scope_value, city, event, entity_type, entity_id, follower_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [key, screen,
+         b.scope_value ? String(b.scope_value).slice(0, 60) : null,
+         b.city ? String(b.city).toLowerCase().slice(0, 60) : null,
+         event,
+         b.entity_type ? String(b.entity_type).slice(0, 30) : null,
+         b.entity_id ? String(b.entity_id).slice(0, 80) : null,
+         follower?.id || null]
+      );
+    }
+  } catch (e) { console.warn('[section-event] dropped:', e.message); }
+  return res.status(204).end();
+});
+
 module.exports = {
+  recordSectionEvent,
   resolveCoupon,
   getVerticals,
   getDishGroups,

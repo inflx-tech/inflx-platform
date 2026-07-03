@@ -420,6 +420,10 @@ export const followerApi = {
   getMe: () => api.get('/followers/me'),
   updateMe: (data) => api.patch('/followers/me', data),
 
+  // P5 (section-analytics-city) — fire-and-forget engagement capture. Never
+  // awaited by callers, never throws: a dead endpoint can't affect the UX.
+  recordSectionEvent: (data) => { try { api.post('/follower/section-event', data).catch(() => {}); } catch (e) { /* never surfaces */ } },
+
   // Feed (legacy + new) — all accept optional lat/lng for distance
   getFeed: () => api.get('/followers/feed'),
   getHomeFeed: (page = 1, loc = null) => {

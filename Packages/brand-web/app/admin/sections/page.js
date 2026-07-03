@@ -379,6 +379,20 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
     if (res.success) patch({ preview: { count: res.data?.count ?? 0, sample: res.data?.sample || [] } });
     else patch({ preview: { error: res.error?.message || 'Preview unavailable' } });
   };
+  // P4 hand-pick: search gated products; the picked ORDER is the shelf order.
+  const searchPick = async (q) => {
+    patch({ pickSearch: q });
+    if (q.trim().length < 2) { patch({ pickResults: [] }); return; }
+    const res = await adminApi.searchLibraryProducts(scopeValue || 'ALL', q.trim());
+    patch({ pickResults: res.success ? (res.data?.products || []) : [] });
+  };
+  const picked = wiz.picked || [];
+  const setPicked = (list) => {
+    setWiz(prev => ({ ...prev, picked: list, preview: null, err: null,
+      ruleDraft: (() => { const next = { ...(prev.ruleDraft || {}) };
+        if (list.length) next.product_ids = list.map(x => x.id); else delete next.product_ids;
+        return next; })() }));
+  };
 
   const isTiles = d.shelf_type === 'tiles';
   const isBannerGateway = wiz.designId === 'full_width_banner';
@@ -590,9 +604,52 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                             })}
                           </div>
                         )}
+                        <input value={rj.brand || ''} onChange={e => patchRule('brand', e.target.value || undefined)}
+                          placeholder="Brand (optional) — the product's catalogue brand, e.g. Levi's"
+                          className="text-xs border border-gray-300 rounded px-2 py-1" />
+                        {worldTags.length > 0 && (
+                          <div className="text-[11px] font-semibold text-gray-600">Exclude tags — hide anything carrying these
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {worldTags.map(tag => {
+                                const on = (rj.exclude_tags || []).includes(tag.slug);
+                                return (
+                                  <button key={tag.slug} type="button"
+                                    onClick={() => patchRule('exclude_tags', on ? (rj.exclude_tags || []).filter(x => x !== tag.slug) : [...(rj.exclude_tags || []), tag.slug])}
+                                    className={`text-[10px] font-semibold rounded-full px-2.5 py-0.5 border ${on ? 'bg-red-700 text-white border-red-700 line-through' : 'bg-white text-gray-600 border-gray-300'}`}>{tag.label}</button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <label className="text-[11px] text-gray-600 flex items-center gap-1.5">
                           <input type="checkbox" checked={!!rj.has_offer} onChange={e => patchRule('has_offer', e.target.checked || undefined)} /> Only products with a live offer
                         </label>
+                        <div className="text-[11px] font-semibold text-gray-600">Hand-pick products (optional) — your order is the shelf order
+                          <input value={wiz.pickSearch || ''} onChange={e => searchPick(e.target.value)}
+                            placeholder="🔎 Search products… (2+ letters)"
+                            className="mt-1 w-full text-xs border border-gray-300 rounded px-2 py-1" />
+                          {(wiz.pickResults || []).length > 0 && (
+                            <div className="mt-1 border border-gray-200 rounded-lg bg-white max-h-32 overflow-auto">
+                              {(wiz.pickResults || []).filter(r => !picked.some(x => x.id === r.id)).map(r => (
+                                <div key={r.id} onClick={() => { setPicked([...picked, { id: r.id, name: r.name }]); patch({ pickSearch: '', pickResults: [] }); }}
+                                  className="px-2.5 py-1.5 text-xs text-gray-700 cursor-pointer hover:bg-amber-50 flex justify-between">
+                                  <span>{r.name}</span><span className="text-gray-400">₹{r.price} · {r.brand_name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {picked.length > 0 && (
+                            <div className="mt-1.5 flex flex-col gap-1">
+                              {picked.map((x, i) => (
+                                <div key={x.id} className="flex items-center gap-2 text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+                                  <span className="w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center" style={{ background: '#F8CB46' }}>{i + 1}</span>
+                                  <span className="flex-1 truncate font-normal">{x.name || x.id}</span>
+                                  <button type="button" onClick={() => setPicked(picked.filter(y => y.id !== x.id))} className="text-gray-300 hover:text-red-500">✕</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           <button type="button" onClick={checkMatches} className="text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">Check matches</button>
                           {wiz.preview?.loading && <span className="text-[11px] text-gray-400">checking…</span>}
@@ -870,6 +927,7 @@ export default function SectionsPage() {
   const [jsonDraft, setJsonDraft] = useState('');
   const [jsonErr, setJsonErr] = useState(null);
   const [wiz, setWiz] = useState(null);   // Add-Section wizard state (P2)
+  const [analytics, setAnalytics] = useState(null);   // P5 — last-7-days per-section taps
   const [librarySections, setLibrarySections] = useState([]);
   // Manage Worlds (absorbed Home Builder) — the follower worlds (tabs).
   const [worlds, setWorlds] = useState([]);
@@ -934,6 +992,15 @@ export default function SectionsPage() {
   }, []);
 
   useEffect(() => { load(screen, scopeType, scopeValue); }, [screen, scopeType, scopeValue, load]);
+
+  // P5 — per-scope engagement (honest: section_events only; absent = no panel).
+  useEffect(() => {
+    setAnalytics(null);
+    if (!scopeValue) return;
+    adminApi.getSectionAnalytics({ days: 7, screen, scope_value: scopeValue })
+      .then(res => { if (res.success) setAnalytics(res.data?.sections || []); })
+      .catch(() => setAnalytics(null));
+  }, [screen, scopeValue]);
 
   // Load the catalogue tree when the world has one (fashion/furniture).
   useEffect(() => {
@@ -1198,6 +1265,22 @@ export default function SectionsPage() {
         })}
         <button onClick={() => setShowWorlds(v => !v)}
           className="ml-1 text-[11px] font-semibold text-amber-700">⚙ Manage worlds</button>
+        {/* P5 — city override: a city's stack rides ON TOP of the page for
+            followers in that city (same-named sections replaced, new ones added). */}
+        <span className="ml-2 pl-3 border-l border-gray-200 flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-gray-500">📍 City override</span>
+          <input value={cityDraft} onChange={e => setCityDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && cityDraft.trim()) { setScopeType('city'); setScopeValue(cityDraft.trim().toLowerCase()); } }}
+            placeholder="e.g. vijayawada ⏎"
+            className="text-[11px] border border-gray-300 rounded-lg px-2 py-1 w-32" />
+          {scopeType === 'city' && (
+            <>
+              <span className="text-[10px] font-bold rounded-full px-2 py-0.5 bg-blue-50 text-blue-700">editing the {String(scopeValue).toUpperCase()} stack</span>
+              <button onClick={() => { setCityDraft(''); setScopeType('vertical'); setScopeValue(''); }}
+                className="text-[11px] text-gray-400">✕ back to worlds</button>
+            </>
+          )}
+        </span>
       </div>
       )}
 
@@ -1227,6 +1310,33 @@ export default function SectionsPage() {
           msg.kind === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{msg.text}</div>
       )}
 
+      {/* P5 — 📊 last-7-days engagement for this scope (real section_events only) */}
+      {scopeValue && !loading && analytics && analytics.length > 0 && (
+        <div className="mb-3 rounded-xl border border-gray-200 bg-white p-3">
+          <div className="text-xs font-bold text-gray-900 mb-1.5">📊 Last 7 days — taps per section</div>
+          <table className="w-full text-xs">
+            <thead><tr className="text-[10px] uppercase text-gray-400 text-left">
+              <th className="py-1">Section</th><th className="text-right">Taps</th><th className="text-right">See-all</th><th className="text-right">People</th></tr></thead>
+            <tbody>
+              {analytics.map(a => {
+                const shelf = shelves.find(s => s.shelf_key === a.section_key);
+                return (
+                  <tr key={a.section_key} className="border-t border-gray-100">
+                    <td className="py-1.5">{shelf?.title || a.section_key}</td>
+                    <td className="text-right font-bold">{a.taps}</td>
+                    <td className="text-right">{a.see_alls}</td>
+                    <td className="text-right">{a.unique_followers}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div className="text-[10px] text-gray-400 mt-1.5">Counting started with this release — every number is a real recorded tap.</div>
+        </div>
+      )}
+      {scopeValue && !loading && analytics && analytics.length === 0 && (
+        <div className="mb-3 text-[11px] text-gray-400">📊 No taps recorded yet for this scope (counting started with this release).</div>
+      )}
       {scopeValue && !loading && (
         <div className="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">3 · Sections — top to bottom</div>
       )}

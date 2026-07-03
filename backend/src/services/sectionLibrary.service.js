@@ -49,6 +49,28 @@ function validateRule(rule) {
   if (out.price_min != null && out.price_max != null && out.price_min > out.price_max) {
     throw new Error('price_min must be ≤ price_max');
   }
+  // Rule-builder depth (P4, features/rule-builder-depth/):
+  // brand — the product's CATALOGUE brand (facets.brand, e.g. Levi's), not the
+  // seller. The engine supported def.brand all along; this validator stripping
+  // it made the admin Brand field a silent no-op — fixed here.
+  if (r.brand != null && String(r.brand).trim()) out.brand = String(r.brand).trim();
+  // exclude_tags — hide products carrying ANY of these (normalized like tags).
+  if (r.exclude_tags != null) {
+    if (!Array.isArray(r.exclude_tags)) throw new Error('exclude_tags must be an array');
+    const ex = r.exclude_tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+    if (ex.length) out.exclude_tags = Array.from(new Set(ex));
+  }
+  // product_ids — hand-picked products; the admin's order IS the shelf order.
+  if (r.product_ids != null) {
+    if (!Array.isArray(r.product_ids)) throw new Error('product_ids must be an array');
+    const ids = [];
+    for (const raw of r.product_ids) {
+      const id = String(raw).trim();
+      if (id && !ids.includes(id)) ids.push(id);   // dedupe, order-preserving
+    }
+    if (ids.length > 50) throw new Error('product_ids — pick at most 50 products');
+    if (ids.length) out.product_ids = ids;
+  }
   // Offer/discount filters (Phase 3d) — evaluated against live published-to-store offers.
   if (r.has_offer === true || r.has_offer === 'true') out.has_offer = true;
   if (r.min_discount_pct != null && r.min_discount_pct !== '') {

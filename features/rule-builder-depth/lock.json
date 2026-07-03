@@ -1,0 +1,28 @@
+{
+  "feature": "rule-builder-depth",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated: 'pls proceed and complete remaining two phases', 2026-07-03; SECTION_SYSTEM_SPEC §8 P4)",
+  "approved_at": "2026-07-03T13:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (blanket completion delegation 2026-07-03; mockup 00-rule-depth.html authored for the record — extends the P2-locked builder with 3 fields)",
+  "mockup_locked_at": "2026-07-03T13:00:00+05:30",
+  "notes": "Cleanup P4. UI-governed (brand-web), NOT mobile-governed. Deploy on push per founder's completion instruction, surfaced loudly.",
+  "release": {
+    "qa_all_green": true,
+    "qa_report": "qa/reports/2026-07-03T12-03-03-753Z/QA-REPORT.md",
+    "workflow_verify": "14/14 e2e (incl. hand-pick ORDER + silent-strip fix + 422 shapes), 2026-07-03; evidence 06-diff/. First gate run: W2 prod-API 60s timeout, passed 4.2s isolated — prod-latency flake, classified.",
+    "released": true,
+    "released_by": "founder ('pls proceed and complete remaining two phases', 2026-07-03)",
+    "released_at": "2026-07-03T18:30:00+05:30",
+    "deploy": {
+      "class": "production-impacting",
+      "backend": "git push → Render (validateRule + engine + product-search)",
+      "web": "git push → Vercel (wizard + section-library forms)",
+      "mobile_ota": "none for P4"
+    }
+  }
+}

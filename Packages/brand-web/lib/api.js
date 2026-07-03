@@ -659,6 +659,8 @@ export const adminApi = {
   createSectionLibrary:  (data) => api.post('/admin/section-library', data),
   updateSectionLibrary:  (id, data) => api.patch(`/admin/section-library/${id}`, data),
   previewSectionLibrary: (data) => api.post('/admin/section-library/preview', data),
+  searchLibraryProducts: (businessType, q) => api.get(`/admin/section-library/product-search?q=${encodeURIComponent(q)}${businessType ? `&business_type=${encodeURIComponent(businessType)}` : ''}`),
+  getSectionAnalytics:   (params) => api.get(`/admin/sections/analytics?${new URLSearchParams(params)}`),
   getListingTree:        (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
 
   // Creator verification queue (claimed → verified / rejected / reset).

@@ -203,6 +203,33 @@ const saveSections = asyncHandler(async (req, res) => {
   return success(res, { shelves: rows, saved_count: saved.length });
 });
 
+// GET /v1/admin/sections-analytics?days=7&screen=&scope_value=
+// P5 (features/section-analytics-city/): per-section engagement from
+// section_events — taps, see-alls, unique followers. Honest data only:
+// sections with no recorded events simply aren't returned.
+const sectionAnalytics = asyncHandler(async (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 1), 90);
+  const screen = req.query.screen ? String(req.query.screen) : null;
+  const scopeValue = req.query.scope_value ? String(req.query.scope_value) : null;
+  const params = [String(days)];
+  let where = `created_at >= now() - ($1 || ' days')::interval`;
+  if (screen) { params.push(screen); where += ` AND screen = $${params.length}`; }
+  if (scopeValue) { params.push(scopeValue); where += ` AND (scope_value = $${params.length} OR scope_value IS NULL)`; }
+  const { rows } = await db.query(
+    `SELECT section_key,
+            COUNT(*) FILTER (WHERE event = 'tap')::int      AS taps,
+            COUNT(*) FILTER (WHERE event = 'see_all')::int  AS see_alls,
+            COUNT(DISTINCT follower_id) FILTER (WHERE follower_id IS NOT NULL)::int AS unique_followers
+       FROM section_events
+      WHERE ${where}
+      GROUP BY section_key
+      ORDER BY taps DESC, see_alls DESC
+      LIMIT 100`,
+    params
+  );
+  return success(res, { days, sections: rows });
+});
+
 // DELETE /v1/admin/sections/:id
 const deleteSection = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -212,4 +239,4 @@ const deleteSection = asyncHandler(async (req, res) => {
   return success(res, { deleted: rows[0].id });
 });
 
-module.exports = { listSections, saveSections, deleteSection };
+module.exports = { listSections, saveSections, deleteSection, sectionAnalytics };

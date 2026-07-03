@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>P5 — city override + section analytics</title>
+<style>
+  :root { --ink:#1A1D1F; --yellow:#F8CB46; --muted:#6b7280; --line:#e5e7eb; }
+  * { box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+  body { margin:0; background:#f7f7f8; padding:24px; display:flex; justify-content:center; }
+  .main { max-width:640px; width:100%; }
+  h1 { font-size:16px; } .lbl { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#9aa0a8; margin:14px 0 6px; }
+  .worlds { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .w { padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12.5px; }
+  .w.on { background:var(--yellow); border-color:var(--yellow); font-weight:600; }
+  .cityin { display:flex; align-items:center; gap:8px; margin-left:10px; padding-left:12px; border-left:1px solid var(--line); }
+  .cityin input { border:1px solid var(--line); border-radius:9px; padding:6px 10px; font-size:12px; width:150px; }
+  .citychip { font-size:11px; font-weight:700; background:#e6f1fb; color:#185fa5; border-radius:999px; padding:4px 10px; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:12px; }
+  .panel h4 { margin:0 0 8px; font-size:12.5px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { text-align:left; font-size:10px; text-transform:uppercase; color:#9aa0a8; padding:4px 6px; border-bottom:1px solid var(--line); }
+  td { padding:6px; border-bottom:1px solid #f3f3f4; }
+  td.num { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+  .bar { height:5px; border-radius:3px; background:var(--yellow); }
+  .row { background:#fff; border:1px solid var(--line); border-radius:12px; padding:11px 14px; display:flex; align-items:center; gap:10px; margin-top:8px; font-size:13px; }
+  .note { font-size:11px; color:var(--muted); margin-top:10px; line-height:1.5; }
+</style></head><body>
+<div class="main">
+  <h1>🧱 App Builder — P5 additions</h1>
+  <div class="lbl">2 · World — or a city override</div>
+  <div class="worlds">
+    <span class="w on">food</span><span class="w">fashion</span><span class="w">furniture</span>
+    <div class="cityin">📍 City override <input value="vijayawada"> <span class="citychip">editing the VIJAYAWADA stack</span></div>
+  </div>
+  <div class="note">A city stack rides ON TOP of the normal page for followers in that city: same-named sections are replaced, new ones added. Everyone else sees the regular page. Clear the box to go back.</div>
+
+  <div class="panel">
+    <h4>📊 Last 7 days — taps per section (this scope)</h4>
+    <table>
+      <tr><th>Section</th><th style="text-align:right">Taps</th><th style="text-align:right">See-all</th><th style="text-align:right">People</th><th style="width:32%"></th></tr>
+      <tr><td>Payday Sale (Sale zone)</td><td class="num">412</td><td class="num">96</td><td class="num">288</td><td><div class="bar" style="width:100%"></div></td></tr>
+      <tr><td>Food under ₹400</td><td class="num">203</td><td class="num">41</td><td class="num">149</td><td><div class="bar" style="width:49%"></div></td></tr>
+      <tr><td>Famous Restaurants</td><td class="num">117</td><td class="num">12</td><td class="num">98</td><td><div class="bar" style="width:28%"></div></td></tr>
+    </table>
+    <div class="note">Every number = a real recorded tap (new section_events capture — starts counting from this release; no invented history).</div>
+  </div>
+
+  <div class="row">⚡ What's on your mind? <span style="margin-left:auto;font-size:11px;color:#9aa0a8">…normal shelf list continues below…</span></div>
+</div>
+</body></html>

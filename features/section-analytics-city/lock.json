@@ -1,0 +1,31 @@
+{
+  "feature": "section-analytics-city",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated: 'pls proceed and complete remaining two phases', 2026-07-03; SECTION_SYSTEM_SPEC §8 P5)",
+  "approved_at": "2026-07-03T14:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (blanket completion delegation 2026-07-03; mockup 00-analytics-city.html authored for the record)",
+  "mockup_locked_at": "2026-07-03T14:00:00+05:30",
+  "notes": "Cleanup P5 (final phase). UI-governed + Mobile-governed (emit). OTA under the founder's recorded override pattern.",
+  "release": {
+    "qa_all_green": true,
+    "qa_report": "qa/reports/2026-07-03T12-46-08-209Z/QA-REPORT.md",
+    "workflow_verify": "14/14 e2e (city 3-layer merge + isolation + honest events + exact rollup + builder UI), 2026-07-03; evidence 06-diff/",
+    "maestro_green": false,
+    "governance_override": "founder-authorized OTA without Maestro (no device connected; same recorded pattern as P3): 'pls proceed and complete remaining two phases', 2026-07-03. On-device verify owed by founder.",
+    "released": true,
+    "released_by": "founder ('pls proceed and complete remaining two phases', 2026-07-03)",
+    "released_at": "2026-07-03T18:30:00+05:30",
+    "deploy": {
+      "class": "production-impacting",
+      "migration": "run-125.js on prod 2026-07-03 — section_events created, 0 rows (honest start)",
+      "backend": "git push → Render (city merge + event + analytics endpoints)",
+      "web": "git push → Vercel (city input + analytics panel)",
+      "mobile_ota": "publish-ota:all post-push (SectionRenderer emit)"
+    }
+  }
+}

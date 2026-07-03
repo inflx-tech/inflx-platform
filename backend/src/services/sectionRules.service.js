@@ -717,6 +717,14 @@ async function libraryProducts(ctx) {
   let tagsIdx = null;
   if (Array.isArray(def.tags) && def.tags.length) { tagsIdx = ++p; params.push(def.tags); }
 
+  // P4 (rule-builder-depth): exclude_tags — hide products carrying ANY of them.
+  let exTagsIdx = null;
+  if (Array.isArray(def.exclude_tags) && def.exclude_tags.length) { exTagsIdx = ++p; params.push(def.exclude_tags); }
+
+  // P4: hand-picked products — the admin's pick order IS the shelf order.
+  let pickIdx = null;
+  if (Array.isArray(def.product_ids) && def.product_ids.length) { pickIdx = ++p; params.push(def.product_ids); }
+
   let minIdx = null, maxIdx = null;
   if (def.price_min != null) { minIdx = ++p; params.push(def.price_min); }
   if (def.price_max != null) { maxIdx = ++p; params.push(def.price_max); }
@@ -754,7 +762,10 @@ async function libraryProducts(ctx) {
   const sortKey = def.sort === 'price_asc' ? 'bp.price ASC NULLS LAST'
     : def.sort === 'price_desc' ? 'bp.price DESC NULLS LAST'
     : 'bp.created_at DESC NULLS LAST';
-  const orderBy = geo
+  // Hand-picked rules: the admin's order wins over geo/city/sort.
+  const orderBy = pickIdx
+    ? `array_position($${pickIdx}::uuid[], bp.id) ASC`
+    : geo
     ? `dist_km ASC NULLS LAST, ${sortKey}`
     : `${cityBoost(city, cityIdx)} ${sortKey}`;
 
@@ -817,6 +828,8 @@ async function libraryProducts(ctx) {
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
        ${subClause}
        ${tagsIdx ? `AND bp.tags @> $${tagsIdx}` : ''}
+       ${exTagsIdx ? `AND NOT (bp.tags && $${exTagsIdx})` : ''}
+       ${pickIdx ? `AND bp.id = ANY($${pickIdx}::uuid[])` : ''}
        ${minIdx ? `AND bp.price >= $${minIdx}` : ''}
        ${maxIdx ? `AND bp.price <= $${maxIdx}` : ''}
        ${allocIdx ? `AND bp.id = ANY($${allocIdx})` : ''}

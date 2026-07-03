@@ -54,11 +54,24 @@ const SCHEDULE_WINDOW = `(starts_at IS NULL OR starts_at <= now())
         AND (ends_at IS NULL OR ends_at > now())`;
 
 /**
- * Load enabled shelves for (screen, scopeType, scopeValue), merging global base
- * with a city/vertical override layer. An override row replaces a global row
- * with the same (shelf_key, category_key, item_type) identity.
+ * Load enabled shelves for (screen, scopeType, scopeValue), merging layers:
+ * global < vertical(/other scope) < CITY (P5, features/section-analytics-city/).
+ * An upper row replaces a lower row with the same (shelf_key, category_key,
+ * item_type) identity. City rows (scope_type='city', scope_value=lowercased
+ * city) apply to that screen for followers in that city — previously the
+ * schema allowed them but no follower call path could ever merge them.
  */
-async function loadConfig(screen, scopeType = 'global', scopeValue = null) {
+async function loadConfig(screen, scopeType = 'global', scopeValue = null, city = null) {
+  const idOf = (r) => [r.shelf_key, r.category_key || '', r.item_type || ''].join('|');
+  const mergeUp = (base, over) => {
+    if (!over.length) return base;
+    const overridden = new Set(over.map(idOf));
+    return base
+      .filter(r => !overridden.has(idOf(r)))
+      .concat(over.filter(r => r.enabled))
+      .sort((a, b) => a.position - b.position);
+  };
+
   const { rows: globalRows } = await db.query(
     `SELECT * FROM section_config
       WHERE screen = $1 AND scope_type = 'global' AND enabled = true
@@ -66,23 +79,30 @@ async function loadConfig(screen, scopeType = 'global', scopeValue = null) {
       ORDER BY position ASC`,
     [screen]
   );
-  if (scopeType === 'global' || !scopeValue) return globalRows;
+  let merged = globalRows;
 
-  const { rows: overrideRows } = await db.query(
-    `SELECT * FROM section_config
-      WHERE screen = $1 AND scope_type = $2 AND scope_value = $3
-        AND ${SCHEDULE_WINDOW}
-      ORDER BY position ASC`,
-    [screen, scopeType, scopeValue]
-  );
-  if (!overrideRows.length) return globalRows;
+  if (scopeType !== 'global' && scopeType !== 'city' && scopeValue) {
+    const { rows: overrideRows } = await db.query(
+      `SELECT * FROM section_config
+        WHERE screen = $1 AND scope_type = $2 AND scope_value = $3
+          AND ${SCHEDULE_WINDOW}
+        ORDER BY position ASC`,
+      [screen, scopeType, scopeValue]
+    );
+    merged = mergeUp(merged, overrideRows);
+  }
 
-  const idOf = (r) => [r.shelf_key, r.category_key || '', r.item_type || ''].join('|');
-  const overridden = new Set(overrideRows.map(idOf));
-  const merged = globalRows
-    .filter(r => !overridden.has(idOf(r)))
-    .concat(overrideRows.filter(r => r.enabled))
-    .sort((a, b) => a.position - b.position);
+  const cityVal = String((scopeType === 'city' ? scopeValue : city) || '').trim().toLowerCase();
+  if (cityVal) {
+    const { rows: cityRows } = await db.query(
+      `SELECT * FROM section_config
+        WHERE screen = $1 AND scope_type = 'city' AND LOWER(scope_value) = $2
+          AND ${SCHEDULE_WINDOW}
+        ORDER BY position ASC`,
+      [screen, cityVal]
+    );
+    merged = mergeUp(merged, cityRows);
+  }
   return merged;
 }
 
@@ -120,7 +140,7 @@ async function buildSections(opts) {
           lat = null, lng = null, brandId = null } = opts;
 
   const [rows, followedIds, taxMaps] = await Promise.all([
-    loadConfig(screen, scopeType, scopeValue),
+    loadConfig(screen, scopeType, scopeValue, city),
     getFollowedIds(followerId),
     categoryTaxonomy.getMaps(),   // single source: tile → member businesses + labels
   ]);

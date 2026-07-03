@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rule builder — P4 depth (brand · exclude · hand-pick)</title>
+<style>
+  :root { --ink:#1A1D1F; --yellow:#F8CB46; --muted:#6b7280; --line:#e5e7eb; }
+  * { box-sizing:border-box; font-family:system-ui,-apple-system,Segoe UI,sans-serif; }
+  body { margin:0; background:rgba(20,22,25,.45); padding:26px; }
+  .modal { max-width:640px; margin:0 auto; background:#fff; border-radius:16px; padding:22px 26px; }
+  h2 { font-size:15px; margin:0 0 3px; } .sub { font-size:12px; color:var(--muted); margin-bottom:12px; }
+  .panel { background:#fdf6e4; border:1px solid #f0dca6; border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  label { font-size:11px; font-weight:600; color:var(--muted); display:block; }
+  input { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12.5px; margin-top:3px; }
+  .row { display:flex; gap:10px; } .row > div { flex:1; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .chip { font-size:11px; border:1px solid var(--line); border-radius:999px; padding:4px 10px; background:#fff; }
+  .chip.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .chip.ex { background:#fbe9e9; color:#a32d2d; border-color:#f0bcbc; text-decoration:line-through; }
+  .new { font-size:9px; font-weight:800; color:#177245; background:#e8f7ee; border-radius:999px; padding:2px 7px; margin-left:6px; vertical-align:middle; }
+  .pick { border:1px solid var(--line); border-radius:10px; background:#fff; }
+  .pick .res { padding:7px 10px; font-size:12px; border-bottom:1px solid #f3f3f4; display:flex; justify-content:space-between; }
+  .pick .res span { color:var(--muted); font-size:11px; }
+  .picked { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); border-radius:9px; padding:6px 10px; font-size:12px; }
+  .picked b.n { width:16px; height:16px; border-radius:50%; background:var(--yellow); color:var(--ink); font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .picked .x { margin-left:auto; color:#c8ccd2; }
+  .match { background:#e8f7ee; color:#177245; border-radius:9px; padding:8px 12px; font-size:12px; font-weight:600; }
+</style></head><body>
+<div class="modal">
+  <h2>My rule — build a filter <span style="font-weight:400;color:var(--muted)">(wizard step 2 · same fields on the Section Library page)</span></h2>
+  <div class="sub">Existing fields unchanged (category · price · % off · tags · live offer). Three additions:</div>
+  <div class="panel">
+    <div class="row">
+      <div><label>Brand <span class="new">NEW — actually works now</span></label><input value="Levi's" placeholder="e.g. Adidas — the product's catalogue brand"></div>
+      <div><label>Max ₹</label><input value="1999"></div>
+    </div>
+    <div><label>Tags (must have)</label>
+      <div class="chips"><span class="chip on">men</span><span class="chip">women</span><span class="chip on">denim</span><span class="chip">party</span></div>
+    </div>
+    <div><label>Exclude tags <span class="new">NEW</span> — hide anything carrying these</label>
+      <div class="chips"><span class="chip ex">clearance</span><span class="chip">kids</span><span class="chip">summer</span></div>
+    </div>
+    <div><label>Hand-pick products <span class="new">NEW</span> — search &amp; pick; your order is the shelf order</label>
+      <input placeholder="🔎 Search products… e.g. 511 slim">
+      <div class="pick" style="margin-top:6px">
+        <div class="res">511™ Slim Fit Jeans <span>₹1,899 · Levi's Store</span></div>
+        <div class="res">Trucker Jacket <span>₹2,499 · Levi's Store</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
+        <div class="picked"><b class="n">1</b> 511™ Slim Fit Jeans <span class="x">✕</span></div>
+        <div class="picked"><b class="n">2</b> 501® Original <span class="x">✕</span></div>
+      </div>
+    </div>
+    <div class="match">✓ Matches 2 products (your picks, in your order)</div>
+  </div>
+</div>
+</body></html>

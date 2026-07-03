@@ -215,6 +215,8 @@ const sectionLibraryCtrl = require('../controllers/adminSectionLibrary.controlle
 router.get   ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.list);
 router.post  ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.create);
 router.post  ('/section-library/preview', authenticate, requireCapability('libraries'), sectionLibraryCtrl.preview);
+// P4 (rule-builder-depth): hand-pick search — gated products only.
+router.get   ('/section-library/product-search', authenticate, requireCapability('libraries'), sectionLibraryCtrl.productSearch);
 router.patch ('/section-library/:id',     authenticate, requireCapability('libraries'), sectionLibraryCtrl.update);
 
 // Collection Library removed 2026-06-23 (dead/dormant — superseded by Section Library).
