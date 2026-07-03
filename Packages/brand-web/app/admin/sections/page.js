@@ -73,10 +73,9 @@ const DESIGN_CATALOG = [
     base: { shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' } },
     fills: ['auto'], autoRules: [['static', "The business's own menu"]] },
   // Banners & frames — your images
-  { id: 'full_width_banner', name: 'Full-width banner', hint: 'headline + a rule behind it', group: 'frames',
-    base: { shelf_type: 'products', rule: 'library_products', item_type: 'products', title: 'Spotlight',
-      config: { presentation_type: 'banner', banner: {} } },
-    fills: ['rule'] },
+  { id: 'full_width_banner', name: 'Full-width banner', hint: 'your image or a rule', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Spotlight', config: { style: 'fullbleed', tiles: [] } },
+    fills: ['images', 'rule'] },
   { id: 'image_cards', name: 'Image cards', hint: 'cards · size S/M', group: 'frames',
     base: { shelf_type: 'tiles', rule: 'static', title: 'Spotlight', config: { style: 'carousel', tiles: [] } }, fills: ['images'] },
   { id: 'image_grid', name: 'Image grid', hint: '4 columns', group: 'frames',
@@ -91,8 +90,10 @@ const DESIGN_CATALOG = [
   { id: 'hero_slider', name: 'Hero slider', hint: 'full-width auto-sliding', group: 'frames',
     base: { shelf_type: 'tiles', rule: 'static', title: 'Hero', config: { style: 'hero_slider', tiles: [], autoplay_ms: 4000 } },
     fills: ['images'] },
-  { id: 'announcement_strip', name: 'Announcement strip', hint: 'thin strip · arrives in P3', group: 'frames', p3: true },
-  { id: 'split_banner', name: 'Split banner', hint: 'two tiles 50/50 · arrives in P3', group: 'frames', p3: true },
+  { id: 'announcement_strip', name: 'Announcement strip', hint: 'thin full-width strip', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Notice', config: { style: 'strip', tiles: [] } }, fills: ['images'] },
+  { id: 'split_banner', name: 'Split banner', hint: 'two tiles 50/50', group: 'frames',
+    base: { shelf_type: 'tiles', rule: 'static', title: 'Split', config: { style: 'split', tiles: [] } }, fills: ['images'] },
   // Structure & navigation
   { id: 'category_row', name: 'Category row', hint: "'what's on your mind' · Food", group: 'structure', world: 'food',
     base: { shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
@@ -114,7 +115,8 @@ function resolveDesignId(s) {
   const cfg = s.config_json || {};
   if (cfg.design && designById(cfg.design)) return cfg.design;
   if (s.shelf_type === 'tiles') {
-    return ({ hero_slider: 'hero_slider', carousel: 'image_cards', featured: 'image_cards', grid: 'image_grid',
+    return ({ hero_slider: 'hero_slider', strip: 'announcement_strip', split: 'split_banner', fullbleed: 'full_width_banner',
+      carousel: 'image_cards', featured: 'image_cards', grid: 'image_grid',
       banner: 'banner_with_tiles', mosaic: 'collage', themed_rail: 'sale_zone' })[cfg.style || 'carousel'] || 'image_cards';
   }
   if (s.rule === 'library_products' && cfg.presentation_type === 'banner') return 'full_width_banner';
@@ -241,6 +243,31 @@ function PreviewSection({ s }) {
         </div>
       );
     }
+    if (cfg.style === 'strip') {
+      const t = tiles[0] || {};
+      return <div className="px-3 pt-2 pb-2"><div className="rounded-lg overflow-hidden" style={{ height: 30, background: '#fff6e0', border: '1px solid #f0dca6' }}>{t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : null}</div></div>;
+    }
+    if (cfg.style === 'split') {
+      const list = (tiles.length ? tiles : [{}, {}]).slice(0, 2);
+      return <div className="px-3 pt-2 pb-2"><div className="flex gap-2">{list.map((t, i) => <div key={i} className="flex-1 rounded-lg overflow-hidden bg-gray-100" style={{ height: 70 }}>{t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : null}</div>)}</div></div>;
+    }
+    if (cfg.style === 'fullbleed') {
+      const t = tiles[0] || {};
+      return <div className="px-3 pt-2 pb-2"><div className="rounded-lg overflow-hidden bg-gray-800" style={{ height: 100 }}>{t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : null}</div></div>;
+    }
+    if (cfg.style === 'mosaic') {
+      const slot = cfg.slot_template || 'free';
+      const list = tiles.length ? tiles : [{}, {}, {}];
+      const Cell = ({ t, h }) => <div className="rounded overflow-hidden bg-gray-100 flex-1" style={{ height: h }}>{t && t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : null}</div>;
+      if (slot === '2x2') {
+        return <div className="px-3 pt-2 pb-2 grid grid-cols-2 gap-1.5">{list.slice(0, 4).map((t, i) => <Cell key={i} t={t} h={44} />)}</div>;
+      }
+      const smallCount = slot === '1+3' ? 3 : slot === '1big+2small' ? 2 : 2;
+      return <div className="px-3 pt-2 pb-2 flex flex-col gap-1.5">
+        <Cell t={list[0]} h={56} />
+        <div className="flex gap-1.5">{list.slice(1, 1 + smallCount).map((t, i) => <Cell key={i} t={t} h={40} />)}</div>
+      </div>;
+    }
     if ((cfg.style || 'carousel') === 'grid') {
       return <div>{Title}<div className="grid grid-cols-3 gap-1.5 px-3 pb-2">{(tiles.length ? tiles : [{}, {}, {}]).slice(0, 6).map((t, i) => <PreviewBanner key={i} t={t} h={54} />)}</div></div>;
     }
@@ -361,6 +388,23 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   const badWindow = window_.st && window_.en && window_.en.getTime() <= window_.st.getTime();
   const fmtDT = (t) => t.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
 
+  // full_width_banner is the only dual-fill design: image → a fullbleed tile,
+  // rule → the banner-gateway (headline + library rule). Switching the Content
+  // fill reshapes the draft cleanly so a half-configured shape can never ship.
+  const reconfigFill = (targetTab) => {
+    if (wiz.designId === 'full_width_banner') {
+      if (targetTab === 'images') {
+        return { ...d, shelf_type: 'tiles', rule: 'static', item_type: null,
+          config_json: { sub: cfg.sub || '', design: 'full_width_banner', style: 'fullbleed', tiles: cfg.tiles || [] } };
+      }
+      return { ...d, shelf_type: 'products', rule: 'library_products', item_type: 'products',
+        config_json: { sub: cfg.sub || '', design: 'full_width_banner', presentation_type: 'banner', banner: cfg.banner || {}, library_section_id: cfg.library_section_id } };
+    }
+    if (targetTab === 'auto') return { ...d, rule: design.base.rule, config_json: { ...cfg, library_section_id: undefined } };
+    if (targetTab === 'rule') return { ...d, rule: 'library_products' };
+    return d;
+  };
+
   const pickDesign = (dc) => {
     if (dc.p3) return;
     const base = dc.base;
@@ -384,7 +428,7 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   const finish = async () => {
     if (!String(d.title || '').trim()) { patch({ err: 'Give the section a name — it shows in the app.', step: 2 }); return; }
     if (badWindow) { patch({ err: '"Disappears" must be after "Goes live".', step: 3 }); return; }
-    if (isBannerGateway && !(cfg.banner || {}).headline) { patch({ err: 'The banner needs a headline.', step: 2 }); return; }
+    if (usesLibraryRule && cfg.presentation_type === 'banner' && !(cfg.banner || {}).headline) { patch({ err: 'The banner needs a headline.', step: 2 }); return; }
     let final = { ...d };
     // My-rule (create) → save the reusable Section Library rule first, then wire it.
     if (usesLibraryRule && wiz.ruleMode === 'create') {
@@ -498,7 +542,7 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
             {/* My rule (Section Library inline) */}
             {contentTabs.includes('rule') && (
               <div className={`rounded-xl border p-3 ${wiz.tab === 'rule' ? 'border-gray-900' : 'border-gray-200'}`}
-                onClick={() => { if (wiz.tab !== 'rule') patch({ tab: 'rule', draft: { ...d, rule: 'library_products' } }); }}>
+                onClick={() => { if (wiz.tab !== 'rule') patch({ tab: 'rule', draft: reconfigFill('rule') }); }}>
                 <div className="text-xs font-bold text-gray-900 mb-1">🧩 My rule — build a filter, it keeps itself up to date</div>
                 {wiz.tab === 'rule' && (
                   <div className="flex flex-col gap-2 mt-1" onClick={e => e.stopPropagation()}>
@@ -582,8 +626,29 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
 
             {/* My images */}
             {contentTabs.includes('images') && (
-              <div className="rounded-xl border border-gray-900 p-3 flex flex-col gap-2">
+              <div className={`rounded-xl border p-3 flex flex-col gap-2 ${(wiz.tab === 'images' || contentTabs.length === 1) ? 'border-gray-900' : 'border-gray-200'}`}
+                onClick={() => { if (wiz.tab !== 'images' && contentTabs.length > 1) patch({ tab: 'images', draft: reconfigFill('images') }); }}>
                 <div className="text-xs font-bold text-gray-900">🖼 My images — exactly what you upload</div>
+                {(wiz.tab === 'images' || contentTabs.length === 1) && (
+                <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
+                {wiz.designId === 'announcement_strip' && (
+                  <div className="text-[10px] text-gray-500">Upload one thin strip image · 1080×240 px</div>
+                )}
+                {wiz.designId === 'split_banner' && (
+                  <div className="text-[10px] text-gray-500">Upload two square images · 520×520 px · each taps to its own action</div>
+                )}
+                {wiz.designId === 'full_width_banner' && (
+                  <div className="text-[10px] text-gray-500">Upload one edge-to-edge image · 1080×720 px</div>
+                )}
+                {wiz.designId === 'collage' && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-semibold text-gray-500">Layout</span>
+                    {[['free', 'Free'], ['1big+2small', '1 big + 2 small'], ['2x2', '2×2'], ['1+3', '1 + 3']].map(([v, l]) => (
+                      <button key={v} type="button" onClick={() => patchCfg('slot_template', v === 'free' ? null : v)}
+                        className={`text-[10px] font-bold rounded px-2.5 py-0.5 border ${((cfg.slot_template) || 'free') === v ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-500 border-gray-300'}`}>{l}</button>
+                    ))}
+                  </div>
+                )}
                 {wiz.designId === 'hero_slider' && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-semibold text-gray-500">Auto-advance every</span>
@@ -632,7 +697,7 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                     </label>
                     <input value={t.label || ''} onChange={e => patchTile(ti, { label: e.target.value })} placeholder="Label"
                       className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
-                    {wiz.designId === 'collage' && (
+                    {wiz.designId === 'collage' && !cfg.slot_template && (
                       <select value={t.size || 'small'} onChange={e => patchTile(ti, { size: e.target.value })}
                         className="text-[11px] border border-gray-300 rounded px-1.5 py-1 bg-white">
                         <option value="small">Small</option><option value="large">Large</option>
@@ -643,6 +708,8 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                 ))}
                 <button onClick={addTile} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">＋ Add image</button>
                 <div className="text-[10px] text-gray-400">Each image can carry its own rule + tap action — set those in step 4 (or later via the row's ⚙).</div>
+                </div>
+                )}
               </div>
             )}
 

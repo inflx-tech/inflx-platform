@@ -1,0 +1,29 @@
+{
+  "feature": "design-banners",
+  "spec_version": "1.0.0",
+  "status": "spec-locked",
+  "approved": true,
+  "approved_by": "founder (delegated: 'pls proceed to P3b', 2026-07-03; program spec Docs/SECTION_SYSTEM_SPEC.md §3)",
+  "approved_at": "2026-07-03T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (reviewed 00-banner-pack.html; 'ok pls proceed', 2026-07-03)",
+  "mockup_locked_at": "2026-07-03T11:45:00+05:30",
+  "notes": "Cleanup P3b. UI-governed (brand-web) + Mobile-governed (TileSection): mockup-lock before implementation; Maestro (or founder override) before released=true. Mobile OTA batches with P3a's held OTA.",
+  "release": {
+    "qa_all_green": true,
+    "qa_report": "qa/reports/2026-07-03T05-47-04-027Z/QA-REPORT.md",
+    "workflow_verify": "17/17 e2e banner walkthrough (real JWT, local stack) + TileSection.test 5/5 + RN babel clean, 2026-07-03; evidence 06-diff/",
+    "preexisting_failure": "FollowerWalletScreen.test.js (vector-icons jest config) — untouched, out-of-scope (same as P3a)",
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "partial_deploy": {
+      "authorized_by": "founder ('pls go and push', 2026-07-03)",
+      "web_backend": "SHIPPING NOW — backend TILE_STYLES enum (Render) + wizard 2 cards + full_width_banner dual-fill + collage slots (Vercel); all four designs buildable; current follower OTA renders new styles as carousel (graceful)",
+      "mobile_ota": "HELD — TileSection renderer committed but OTA NOT published; batches with P3a's held OTA. One Maestro run (no device connected) or founder GOVERNANCE_OVERRIDE ships P3a+P3b renderers together; released flips true then."
+    }
+  }
+}

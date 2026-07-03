@@ -35,6 +35,9 @@ export default function TileSection({ section, onTile }) {
 
   const body =
     style === 'hero_slider' ? <HeroSliderStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'strip' ? <StripStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'split' ? <SplitStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'fullbleed' ? <FullBleedStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'banner' ? <BannerStyle section={section} tiles={tiles} onTile={onTile} />
     : style === 'themed_rail' ? <ThemedRailStyle section={section} tiles={tiles} onTile={onTile} timer={activeTimer} cd={cd} />
     : style === 'mosaic' ? <MosaicStyle section={section} tiles={tiles} onTile={onTile} />
@@ -99,6 +102,56 @@ function HeroSliderStyle({ section, tiles, onTile }) {
           {tiles.map((_, i) => <View key={i} style={[s.heroDot, i === idx ? s.heroDotOn : null]} />)}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+// Announcement strip — one thin full-width image (1080×240), single tap.
+function StripStyle({ tiles, onTile }) {
+  const t = tiles[0] || {};
+  const width = Dimensions.get('window').width;
+  const h = Math.round((width - 28) * 0.222);
+  return (
+    <View style={s.wrap}>
+      <TouchableOpacity activeOpacity={0.9} onPress={() => onTile?.(t)} style={[s.stripCard, { height: h }]}>
+        {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Split banner — two half-width tiles side by side, each its own tap.
+function SplitStyle({ tiles, onTile }) {
+  const list = tiles.slice(0, 2);
+  return (
+    <View style={s.wrap}>
+      <View style={s.splitRow}>
+        {list.map((t, i) => (
+          <TouchableOpacity key={i} style={s.splitCell} activeOpacity={0.85} onPress={() => onTile?.(t)}>
+            <View style={s.splitImg}>
+              {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+              {t.label ? <View style={s.splitScrim} /> : null}
+              {t.label ? <Text style={s.splitLabel} numberOfLines={1}>{t.label}</Text> : null}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Full-width banner (image fill) — one edge-to-edge image (1080×720), single tap.
+function FullBleedStyle({ tiles, onTile }) {
+  const t = tiles[0] || {};
+  const width = Dimensions.get('window').width;
+  const h = Math.round((width - 28) * 0.667);
+  return (
+    <View style={s.wrap}>
+      <TouchableOpacity activeOpacity={0.9} onPress={() => onTile?.(t)} style={[s.fbCard, { height: h }]}>
+        {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+        {t.label ? <View style={s.fbScrim} /> : null}
+        {t.label ? <Text style={s.fbLabel} numberOfLines={1}>{t.label}</Text> : null}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -188,17 +241,27 @@ function CountdownBar({ text, label }) {
   );
 }
 
-// Mosaic — mixed-size image tiles. size:'large' → full-width hero; else 2-up.
+// Mosaic / collage — free-form (per-tile size) OR a fixed slot_template:
+// '1big+2small' · '2x2' · '1+3'. Absent/'free' = today's per-tile behavior.
 function MosaicStyle({ section, tiles, onTile }) {
+  const slot = (section?.config || {}).slot_template || 'free';
+  const kindOf = (i, t) => {
+    if (slot === '1big+2small') return i === 0 ? 'large' : 'small';
+    if (slot === '2x2') return 'small';
+    if (slot === '1+3') return i === 0 ? 'large' : 'third';
+    return t.size === 'large' ? 'large' : 'small';
+  };
+  const W = { large: s.mCellLarge, small: s.mCellSmall, third: s.mCellThird };
+  const H = { large: 150, small: 112, third: 92 };
   return (
     <View style={s.wrap}>
       <Header section={section} />
       <View style={s.mosaic}>
         {tiles.map((t, i) => {
-          const large = t.size === 'large';
+          const k = kindOf(i, t);
           return (
-            <View key={i} style={[s.mCell, large ? s.mCellLarge : s.mCellSmall]}>
-              <TouchableOpacity style={[s.mInner, { height: large ? 150 : 112 }]} activeOpacity={0.85} onPress={() => onTile?.(t)}>
+            <View key={i} style={[s.mCell, W[k]]}>
+              <TouchableOpacity style={[s.mInner, { height: H[k] }]} activeOpacity={0.85} onPress={() => onTile?.(t)}>
                 {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
                 {t.badge ? <View style={s.badge}><Text style={s.badgeTxt}>{t.badge}</Text></View> : null}
                 {t.label ? <View style={s.mScrim} /> : null}
@@ -332,6 +395,19 @@ const s = StyleSheet.create({
   heroDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)' },
   heroDotOn: { width: 16, borderRadius: 999, backgroundColor: '#F8CB46' },
 
+  // announcement strip — one thin full-width image
+  stripCard: { marginHorizontal: 14, borderRadius: 12, overflow: 'hidden', backgroundColor: T.yellowTint },
+  // split banner — two half-width tiles
+  splitRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 14, paddingTop: 8 },
+  splitCell: { flex: 1 },
+  splitImg: { aspectRatio: 1, borderRadius: 14, overflow: 'hidden', position: 'relative', justifyContent: 'flex-end', backgroundColor: T.yellowTint, borderWidth: 1, borderColor: T.line },
+  splitScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 44, backgroundColor: 'rgba(0,0,0,0.34)' },
+  splitLabel: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 14, fontFamily: fonts.displayBold },
+  // full-width banner (image fill) — one edge-to-edge image
+  fbCard: { marginHorizontal: 14, borderRadius: 16, overflow: 'hidden', backgroundColor: T.yellowTint, position: 'relative', justifyContent: 'flex-end' },
+  fbScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 56, backgroundColor: 'rgba(0,0,0,0.34)' },
+  fbLabel: { position: 'absolute', left: 14, right: 14, bottom: 12, color: '#fff', fontSize: 16, fontFamily: fonts.displayBold },
+
   // carousel
   cTile: { width: 132 },
   cImg: { width: 132, height: 132, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: T.line, position: 'relative' },
@@ -360,6 +436,7 @@ const s = StyleSheet.create({
   mCell: { padding: 4 },
   mCellLarge: { width: '100%' },
   mCellSmall: { width: '50%' },
+  mCellThird: { width: '33.333%' },
   mInner: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: T.line, position: 'relative', justifyContent: 'flex-end' },
   mScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 46, backgroundColor: 'rgba(0,0,0,0.34)' },
   mLabel: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 14, fontFamily: fonts.displayBold },
