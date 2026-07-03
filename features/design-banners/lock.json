@@ -17,13 +17,15 @@
     "workflow_verify": "17/17 e2e banner walkthrough (real JWT, local stack) + TileSection.test 5/5 + RN babel clean, 2026-07-03; evidence 06-diff/",
     "preexisting_failure": "FollowerWalletScreen.test.js (vector-icons jest config) — untouched, out-of-scope (same as P3a)",
     "maestro_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "partial_deploy": {
-      "authorized_by": "founder ('pls go and push', 2026-07-03)",
-      "web_backend": "SHIPPING NOW — backend TILE_STYLES enum (Render) + wizard 2 cards + full_width_banner dual-fill + collage slots (Vercel); all four designs buildable; current follower OTA renders new styles as carousel (graceful)",
-      "mobile_ota": "HELD — TileSection renderer committed but OTA NOT published; batches with P3a's held OTA. One Maestro run (no device connected) or founder GOVERNANCE_OVERRIDE ships P3a+P3b renderers together; released flips true then."
+    "governance_override": "founder-authorized OTA without Maestro (no device connected): 'ok pls go for push OTA', 2026-07-03. On-device verification owed by founder post-OTA.",
+    "released": true,
+    "released_by": "founder ('ok pls go for push OTA', 2026-07-03)",
+    "released_at": "2026-07-03T12:30:00+05:30",
+    "deploy": {
+      "class": "production-impacting",
+      "backend": "Render live (commit 9d66129)",
+      "web": "Vercel live (commit 9d66129)",
+      "mobile_ota": "published 2026-07-03 batched with P3a: follower v180, brand v132, influencer v123, agency v31 (publish-ota:all after Render warmup)"
     }
   }
 }

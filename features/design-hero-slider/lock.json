@@ -17,13 +17,15 @@
     "workflow_verify": "11/11 e2e hero walkthrough (real JWT, local stack) + TileSection.test.js 25/25 + RN babel transform clean, 2026-07-03; evidence 06-diff/",
     "preexisting_failure": "FollowerWalletScreen.test.js suite (jest transform config vs react-native-vector-icons) — untouched by this contract, classified out-of-scope",
     "maestro_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "partial_deploy": {
-      "authorized_by": "founder ('ok pls go and deploy', 2026-07-03)",
-      "web_backend": "SHIPPING NOW — backend TILE_STYLES enum (Render) + wizard hero card (Vercel); admin can build heroes; current follower OTA renders hero_slider as carousel (graceful fallback)",
-      "mobile_ota": "HELD — TileSection renderer committed to git but OTA NOT published; Mobile-governed gate needs Maestro green (no device connected: qa:maestro:doctor RED) or founder GOVERNANCE_OVERRIDE. released flips true only after the OTA ships verified."
+    "governance_override": "founder-authorized OTA without Maestro (no device connected; qa:maestro:doctor RED): 'ok pls go for push OTA', 2026-07-03. On-device verification owed by founder post-OTA.",
+    "released": true,
+    "released_by": "founder ('ok pls go for push OTA', 2026-07-03)",
+    "released_at": "2026-07-03T12:30:00+05:30",
+    "deploy": {
+      "class": "production-impacting",
+      "backend": "Render live (commit 2cafd1b)",
+      "web": "Vercel live (commit 2cafd1b)",
+      "mobile_ota": "published 2026-07-03 batched with P3b: follower v180, brand v132, influencer v123, agency v31 (publish-ota:all; first attempt fetch-failed on cold Render, succeeded after warmup)"
     }
   }
 }
