@@ -46,6 +46,13 @@ function sectionKey(row) {
   return row.shelf_key;
 }
 
+// Schedule window (mig 124, features/section-scheduling/): a shelf is served
+// only while starts_at <= now() < ends_at; NULL = unbounded. Expired sections
+// disappear silently (SECTION_SYSTEM_SPEC §4.1, founder decision #4). A
+// scheduled-out override row no longer suppresses its global base row.
+const SCHEDULE_WINDOW = `(starts_at IS NULL OR starts_at <= now())
+        AND (ends_at IS NULL OR ends_at > now())`;
+
 /**
  * Load enabled shelves for (screen, scopeType, scopeValue), merging global base
  * with a city/vertical override layer. An override row replaces a global row
@@ -55,6 +62,7 @@ async function loadConfig(screen, scopeType = 'global', scopeValue = null) {
   const { rows: globalRows } = await db.query(
     `SELECT * FROM section_config
       WHERE screen = $1 AND scope_type = 'global' AND enabled = true
+        AND ${SCHEDULE_WINDOW}
       ORDER BY position ASC`,
     [screen]
   );
@@ -63,6 +71,7 @@ async function loadConfig(screen, scopeType = 'global', scopeValue = null) {
   const { rows: overrideRows } = await db.query(
     `SELECT * FROM section_config
       WHERE screen = $1 AND scope_type = $2 AND scope_value = $3
+        AND ${SCHEDULE_WINDOW}
       ORDER BY position ASC`,
     [screen, scopeType, scopeValue]
   );
@@ -123,7 +132,12 @@ async function buildSections(opts) {
   // A stray rule='collection' config row falls through to the rule lookup →
   // empty + logged; no special expansion.)
   for (const row of rows) {
-    const cfg = row.config_json || {};
+    const cfg = { ...(row.config_json || {}) };
+    // Honest timer (mig 124): admin enabled a countdown without a time →
+    // the shelf's own ends_at drives it, so the timer dies WITH the section.
+    if (row.ends_at && cfg.timer && typeof cfg.timer === 'object' && !cfg.timer.ends_at) {
+      cfg.timer = { ...cfg.timer, ends_at: row.ends_at };
+    }
     let rowCategoryKey = row.category_key || categoryKey || null;
     let categoryCats = rowCategoryKey ? (taxMaps.membersByKey[rowCategoryKey] || null) : null;
     let ruleDef = null;
@@ -165,6 +179,8 @@ async function buildSections(opts) {
         item_type: row.item_type || null,
         rule: row.rule,
         config: cfg,
+        starts_at: row.starts_at || null,
+        ends_at: row.ends_at || null,
         items: [],
       });
       continue;
@@ -229,6 +245,8 @@ async function buildSections(opts) {
       item_type: row.item_type || null,
       rule: row.rule,
       config: cfg,
+      starts_at: row.starts_at || null,
+      ends_at: row.ends_at || null,
       items,
     });
   }

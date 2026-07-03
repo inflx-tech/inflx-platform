@@ -36,7 +36,7 @@ const listSections = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT id, screen, scope_type, scope_value, shelf_key, title, shelf_type,
             rule, item_type, category_key, item_limit, position, enabled,
-            pinned_ref, config_json, created_at, updated_at
+            pinned_ref, config_json, starts_at, ends_at, created_at, updated_at
        FROM section_config
       WHERE screen = $1 AND scope_type = $2
         AND ($3::text IS NULL OR scope_value = $3)
@@ -45,6 +45,71 @@ const listSections = asyncHandler(async (req, res) => {
   );
   return success(res, { shelves: rows });
 });
+
+// ── Scheduling + config_json shape validation (mig 124, features/section-scheduling/) ──
+
+const TILE_STYLES = ['carousel', 'featured', 'grid', 'banner', 'mosaic', 'themed_rail'];
+const TAP_TYPES = ['grid', 'category', 'page'];
+const PRESENTATION_TYPES = ['banner', 'hero_tiles'];
+const CONFIG_MAX_BYTES = 20000;
+
+function bad(msg, field) { throw new AppError('VALIDATION_ERROR', msg, 422, field); }
+
+// Accepts ISO-8601 (or anything Date can parse unambiguously); null/undefined = unbounded.
+function parseTs(value, field) {
+  if (value == null || value === '') return null;
+  const t = new Date(value);
+  if (!Number.isFinite(t.getTime())) bad(`${field} must be a valid ISO-8601 timestamp`, field);
+  return t;
+}
+
+function validateTapDestination(td, field) {
+  if (td == null) return;
+  if (typeof td !== 'object' || Array.isArray(td)) bad(`${field} must be an object`, field);
+  if (!TAP_TYPES.includes(td.type)) bad(`${field}.type must be one of ${TAP_TYPES.join('|')}`, `${field}.type`);
+  if (td.type === 'category' && !td.category_node_id) bad(`${field}.category_node_id required for type=category`, `${field}.category_node_id`);
+  if (td.type === 'page' && !td.page_key) bad(`${field}.page_key required for type=page`, `${field}.page_key`);
+}
+
+// Tolerant by design: validates KNOWN keys only, unknown keys pass through —
+// the App Builder's raw-JSON editor and legacy shapes must keep saving.
+// Rejects only values that would already fail silently on device today.
+function validateConfigJson(cfg) {
+  if (cfg == null) return;
+  if (typeof cfg !== 'object' || Array.isArray(cfg)) bad('config_json must be an object', 'config_json');
+  if (JSON.stringify(cfg).length > CONFIG_MAX_BYTES) bad(`config_json exceeds ${CONFIG_MAX_BYTES} bytes`, 'config_json');
+
+  if (cfg.style != null && !TILE_STYLES.includes(cfg.style)) {
+    bad(`config_json.style must be one of ${TILE_STYLES.join('|')}`, 'config_json.style');
+  }
+  if (cfg.presentation_type != null && !PRESENTATION_TYPES.includes(cfg.presentation_type)) {
+    bad(`config_json.presentation_type must be one of ${PRESENTATION_TYPES.join('|')}`, 'config_json.presentation_type');
+  }
+  if (cfg.timer != null) {
+    if (typeof cfg.timer !== 'object' || Array.isArray(cfg.timer)) bad('config_json.timer must be an object', 'config_json.timer');
+    if (cfg.timer.ends_at != null) parseTs(cfg.timer.ends_at, 'config_json.timer.ends_at');
+    if (cfg.timer.label != null && typeof cfg.timer.label !== 'string') bad('config_json.timer.label must be a string', 'config_json.timer.label');
+  }
+  validateTapDestination(cfg.tap_destination, 'config_json.tap_destination');
+  if (cfg.tiles != null) {
+    if (!Array.isArray(cfg.tiles)) bad('config_json.tiles must be an array', 'config_json.tiles');
+    cfg.tiles.forEach((t, i) => {
+      const f = `config_json.tiles[${i}]`;
+      if (!t || typeof t !== 'object' || Array.isArray(t)) bad(`${f} must be an object`, f);
+      for (const k of ['image_url', 'label', 'badge', 'library_section_id']) {
+        if (t[k] != null && typeof t[k] !== 'string') bad(`${f}.${k} must be a string`, `${f}.${k}`);
+      }
+      if (t.size != null && !['large', 'small'].includes(t.size)) bad(`${f}.size must be large|small`, `${f}.size`);
+      validateTapDestination(t.tap_destination, `${f}.tap_destination`);
+    });
+  }
+  if (cfg.nodes != null) {
+    if (!Array.isArray(cfg.nodes)) bad('config_json.nodes must be an array', 'config_json.nodes');
+    cfg.nodes.forEach((n, i) => {
+      if (!n || typeof n !== 'object' || Array.isArray(n)) bad(`config_json.nodes[${i}] must be an object`, `config_json.nodes[${i}]`);
+    });
+  }
+}
 
 function validateShelf(s) {
   if (!s || typeof s !== 'object') throw new AppError('VALIDATION_ERROR', 'shelf must be an object', 422);
@@ -57,6 +122,10 @@ function validateShelf(s) {
   if (!Number.isInteger(lim) || lim < 0 || lim > 50) throw new AppError('VALIDATION_ERROR', 'item_limit must be 0–50', 422, 'item_limit');
   const pos = Number(s.position);
   if (!Number.isInteger(pos) || pos < 0) throw new AppError('VALIDATION_ERROR', 'position must be ≥ 0', 422, 'position');
+  const startsAt = parseTs(s.starts_at, 'starts_at');
+  const endsAt = parseTs(s.ends_at, 'ends_at');
+  if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) bad('ends_at must be after starts_at', 'ends_at');
+  validateConfigJson(s.config_json);
 }
 
 // PUT /v1/admin/sections/:screen — upsert/publish the shelves for a scope.
@@ -82,12 +151,13 @@ const saveSections = asyncHandler(async (req, res) => {
           `UPDATE section_config SET
              title=$2, shelf_type=$3, rule=$4, item_type=$5, category_key=$6,
              item_limit=$7, position=$8, enabled=$9, pinned_ref=$10,
-             config_json=COALESCE($11::jsonb, config_json), updated_at=now()
+             config_json=COALESCE($11::jsonb, config_json),
+             starts_at=$14, ends_at=$15, updated_at=now()
            WHERE id=$1 AND screen=$12 AND scope_type=$13
            RETURNING id`,
           [s.id, s.title, s.shelf_type, s.rule, s.item_type || null, s.category_key || null,
            Number(s.item_limit), Number(s.position), s.enabled !== false, s.pinned_ref || null,
-           cfg, screen, scopeType]
+           cfg, screen, scopeType, s.starts_at || null, s.ends_at || null]
         );
         if (!rows[0]) throw new AppError('NOT_FOUND', `shelf ${s.id} not found in this scope`, 404);
         out.push(rows[0].id);
@@ -96,19 +166,22 @@ const saveSections = asyncHandler(async (req, res) => {
         const { rows } = await tx.query(
           `INSERT INTO section_config
              (screen, scope_type, scope_value, shelf_key, title, shelf_type, rule,
-              item_type, category_key, item_limit, position, enabled, pinned_ref, config_json)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+              item_type, category_key, item_limit, position, enabled, pinned_ref, config_json,
+              starts_at, ends_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
            ON CONFLICT (screen, scope_type, COALESCE(scope_value,''), shelf_key,
                         COALESCE(category_key,''), COALESCE(item_type,''))
            DO UPDATE SET title=EXCLUDED.title, shelf_type=EXCLUDED.shelf_type,
              rule=EXCLUDED.rule, item_limit=EXCLUDED.item_limit,
              position=EXCLUDED.position, enabled=EXCLUDED.enabled,
              pinned_ref=EXCLUDED.pinned_ref, config_json=EXCLUDED.config_json,
+             starts_at=EXCLUDED.starts_at, ends_at=EXCLUDED.ends_at,
              updated_at=now()
            RETURNING id`,
           [screen, scopeType, scopeValue, s.shelf_key, s.title, s.shelf_type, s.rule,
            s.item_type || null, s.category_key || null, Number(s.item_limit),
-           Number(s.position), s.enabled !== false, s.pinned_ref || null, cfg]
+           Number(s.position), s.enabled !== false, s.pinned_ref || null, cfg,
+           s.starts_at || null, s.ends_at || null]
         );
         out.push(rows[0].id);
       }
@@ -121,7 +194,7 @@ const saveSections = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT id, screen, scope_type, scope_value, shelf_key, title, shelf_type,
             rule, item_type, category_key, item_limit, position, enabled,
-            pinned_ref, config_json, updated_at
+            pinned_ref, config_json, starts_at, ends_at, updated_at
        FROM section_config
       WHERE screen=$1 AND scope_type=$2 AND ($3::text IS NULL OR scope_value=$3)
       ORDER BY position ASC, created_at ASC`,

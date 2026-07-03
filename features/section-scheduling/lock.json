@@ -1,0 +1,26 @@
+{
+  "feature": "section-scheduling",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated: 'Ok pls go for P1', 2026-07-03; program lock Docs/SECTION_SYSTEM_SPEC.md §9)",
+  "approved_at": "2026-07-03T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Cleanup P1. Backend-only: no mockup-lock / diff gate (no Packages/* code). Deploy gated on explicit founder go (production-impacting).",
+  "release": {
+    "qa_all_green": true,
+    "qa_report": "qa/reports/2026-07-03T02-41-23-626Z/QA-REPORT.md",
+    "workflow_verify": "15/15 local API workflow assertions (02-workflow.md steps 1-9 + regression + cleanup), 2026-07-03",
+    "released": true,
+    "released_by": "founder ('pls go and deploy', 2026-07-03)",
+    "released_at": "2026-07-03T08:15:00+05:30",
+    "deploy": {
+      "class": "production-impacting",
+      "migration": "run-124.js on prod 2026-07-03 — columns added, 9/9 rows both-NULL",
+      "backend": "git push origin main → Render auto-deploy",
+      "web": "none",
+      "mobile_ota": "none (backend-only; payload additive)"
+    }
+  }
+}
