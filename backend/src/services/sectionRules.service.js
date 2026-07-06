@@ -31,6 +31,7 @@ const { buildTracking } = require('../utils/tracking');
 const offerAdapter = require('./brandOffers.adapter');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
 const sectionLibrary = require('./sectionLibrary.service');
+const { resolveProductImage } = require('../utils/productImage');
 
 // OR cutover (contract: listing-section-d0-seams / section-offer-repoint): when
 // SECTION_ENGINE_OFFERS is ON, offer shelves read the brandOffers.adapter (offers
@@ -683,7 +684,10 @@ function mapListedProductItem(r) {
     // Food World 3C-1 — per-dish MRP for the struck "was" price (mig 118). Card
     // shows MRP→price only when mrp > price. Display-only (never order pricing).
     mrp: r.mrp != null ? parseFloat(r.mrp) : null,
-    image_url: r.image_url,
+    // resolve cover from image_url OR variant/facet images so the follower app
+    // never shows a blank card while the brand's edit form shows the photo
+    // (contract: product-image-resolution).
+    image_url: resolveProductImage(r),
     section: r.section,
     veg_flag: r.veg_flag,
     description: r.description,
@@ -778,6 +782,7 @@ async function productsInCategory(ctx) {
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
+           bp.variants_json, bp.facets,
            bp.created_at, bp.badge,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
@@ -921,6 +926,7 @@ async function libraryProducts(ctx) {
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
+           bp.variants_json, bp.facets,
            bp.created_at, bp.badge,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,

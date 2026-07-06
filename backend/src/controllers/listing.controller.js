@@ -21,6 +21,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const taxonomy = require('../services/taxonomy.service');
 const bulk = require('../services/listingBulk.service');
 const imageIngest = require('../services/imageIngest.service');
+const { resolveProductImage } = require('../utils/productImage');
 
 const INGEST_ERR_MSG = {
   bad_scheme: 'Only http/https links are allowed', private_ip: 'That address is not allowed',
@@ -401,7 +402,9 @@ function mapBrowseProduct(r) {
   return {
     entity_type: 'product',
     id: r.id, name: r.name, price, mrp, discount_value: discount,
-    image_url: r.image_url, section: r.section, veg_flag: r.veg_flag, description: r.description,
+    // resolve the cover from image_url OR the variant/facet images the edit form
+    // reads, so browse never shows blank while edit shows a photo (product-image-resolution)
+    image_url: resolveProductImage(r), section: r.section, veg_flag: r.veg_flag, description: r.description,
     badge: r.badge || null, has_addons: r.has_addons === true,
     rating: r.rating != null ? Number(r.rating) : null,
     review_count: r.review_count != null ? Number(r.review_count) : 0,
@@ -636,7 +639,9 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
       id: node.id, name: node.name, segment: node.segment,
       category: node.category, is_leaf: node.is_leaf,
     },
-    products: rows,
+    // brand's own listing browse renders image_url raw — resolve it from the
+    // variant/facet images so a not-yet-covered product isn't blank here either.
+    products: rows.map((r) => ({ ...r, image_url: resolveProductImage(r) })),
   });
 });
 

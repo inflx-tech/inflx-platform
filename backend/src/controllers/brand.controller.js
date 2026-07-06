@@ -9,6 +9,7 @@ const tagsService = require('../services/tags.service');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { resolveProductImage } = require('../utils/productImage');
 const referralService = require('../services/referral.service');
 
 // Category-aware validation using schema
@@ -484,7 +485,9 @@ const createProduct = asyncHandler(async (req, res) => {
       veg_flag || 'na',
       duration_mins ? parseInt(duration_mins, 10) : null,
       variants_json ? JSON.stringify(variants_json) : null,
-      image_url || null,
+      // derive the cover from variant/facet images when image_url is absent, so
+      // the generic create matches the listing wizard (product-image-resolution)
+      image_url || resolveProductImage({ image_url, variants_json }) || null,
       sku || null,
       is_bookable === true || is_bookable === 'true',
       stock != null ? parseInt(stock, 10) : null,

@@ -1,0 +1,21 @@
+{
+  "feature": "product-image-resolution",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"find root cause and fix this issue\", 2026-07-06 — lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "n/a — backend-only read/data fix, no UI surface (prediction doc only); field set for pipeline consistency",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Fix for founder-reported bug: product images blank on listing + follower but visible in edit, 'fixed' by re-save. Root cause = image_url is a derived cover; listing browse + follower read it raw while the edit form falls back to variants_json.colors[].images / cover_images / facets._images. Fix = resolveProductImage() applied at every product read (listing.controller getNodeProducts + mapBrowseProduct; sectionRules productsInCategory + library_products, +variants_json/facets in SELECTs) + create-side derive in brand.controller + dry-run backfill script. Backend-only, no OTA. Prod has 0 broken rows today (already re-saved; staging paused) so preventive; verified media URL 302→presigned R2. Production-impacting — push gated on explicit founder go; backfill --commit separately gated.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
