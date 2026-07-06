@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Phase 1 — Rule options knobs</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f9fafb;margin:0;padding:24px;color:#111}
+  .panel{max-width:640px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin:0 auto 20px}
+  h2{font-size:14px;margin:0 0 12px}
+  .box{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-top:10px}
+  .box.gray{background:#f9fafb}
+  .title{font-size:12px;font-weight:700;margin-bottom:8px}
+  .row{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+  label{font-size:11px;font-weight:600;color:#4b5563;display:block}
+  input[type=number]{font-size:11px;border:1px solid #d1d5db;border-radius:6px;padding:4px 8px;width:80px;display:block;margin-top:2px}
+  .check{display:flex;align-items:center;gap:6px;padding-bottom:4px}
+  .hint{font-size:10px;color:#9ca3af;margin-top:6px}
+</style></head><body>
+
+<div class="panel">
+  <h2>Wizard Step 3 · “Rule options” (shown only when the shelf supports a knob)</h2>
+  <div class="box">
+    <div class="title">Rule options</div>
+    <div class="row">
+      <label>Minimum discount %<input type="number" placeholder="any" value="40"></label>
+      <label class="check"><input type="checkbox" checked> Only shops with a live offer</label>
+      <label>Trending window (days)<input type="number" placeholder="7" value="3"></label>
+    </div>
+    <div class="hint">blank = no filter / default freshness · offers: hides anything below the minimum · shops: keeps only stores running a live offer right now</div>
+  </div>
+  <div class="hint">Deals shelf → shows only “Minimum discount %”. Shops row/list → only the live-offer checkbox. Trending/top rules → only the window input. Others → the whole box hidden.</div>
+</div>
+
+<div class="panel">
+  <h2>Inline editor · same knobs under “What fills it? (rule)”</h2>
+  <div class="box gray">
+    <div class="row">
+      <label>Minimum discount %<input type="number" placeholder="any"></label>
+      <label>Trending window (days)<input type="number" placeholder="7"></label>
+    </div>
+  </div>
+</div>
+
+</body></html>

@@ -1,0 +1,21 @@
+{
+  "feature": "phase1-rule-controls",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"start next phase\", 2026-07-06 — lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — Phase 1 rule options, mockup features/phase1-rule-controls/04-preview/mockups/rule-options.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Phase 1 of the section-rules admin-control program: per-section knobs min_discount_pct (offers shelves, legacy SQL x8 + V2 rankForRule), has_live_offer (shops shelves via anyLiveOfferExists = campaign chain OR store-direct brand_offers), window_days UI exposure (engine plumbing pre-existed). Deploy-inert until an admin sets a knob — all new clauses collapse when keys absent. brand_facet gap investigated and found not real (rule_json.brand already in UI). Production-impacting paths touched (backend + admin web) — push gated on explicit founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

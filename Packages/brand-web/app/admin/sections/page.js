@@ -202,6 +202,9 @@ function flattenTree(roots, depth = 0, out = []) {
 // Worlds that have a drill-down catalogue tree (category_nodes).
 const CAT_TREE_WORLDS = new Set(['fashion', 'furniture']);
 
+// Phase 1 — rules whose freshness window (days) is tunable via config_json.window_days.
+const WINDOWED_RULES = new Set(['top_by_engagement', 'top_by_conversions', 'top_picks', 'creator_top_picks']);
+
 // Phase 0 — “Category browser” destinations need a NODE, not just a world.
 // Self-fetches the tree for whichever world is picked (cached per world) so the
 // wizard, the inline editor and per-tile pickers can all offer real nodes.
@@ -887,6 +890,35 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                 </label>
               </div>
             </div>
+            {(d.shelf_type === 'offers' || d.shelf_type === 'brands' || WINDOWED_RULES.has(d.rule)) && (
+              <div className="rounded-xl border border-gray-200 p-3">
+                <div className="text-xs font-bold text-gray-900 mb-2">Rule options</div>
+                <div className="flex items-end gap-4 flex-wrap">
+                  {d.shelf_type === 'offers' && (
+                    <label className="text-[11px] font-semibold text-gray-600">Minimum discount %
+                      <input type="number" min="0" max="100" value={cfg.min_discount_pct ?? ''} placeholder="any"
+                        onChange={e => patchCfg('min_discount_pct', e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                        className="mt-0.5 w-20 text-xs border border-gray-300 rounded px-2 py-1 block" />
+                    </label>
+                  )}
+                  {d.shelf_type === 'brands' && (
+                    <label className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5 pb-1">
+                      <input type="checkbox" checked={cfg.has_live_offer === true}
+                        onChange={e => patchCfg('has_live_offer', e.target.checked ? true : null)} />
+                      Only shops with a live offer
+                    </label>
+                  )}
+                  {WINDOWED_RULES.has(d.rule) && (
+                    <label className="text-[11px] font-semibold text-gray-600">Trending window (days)
+                      <input type="number" min="1" max="90" value={cfg.window_days ?? ''} placeholder="7"
+                        onChange={e => patchCfg('window_days', e.target.value === '' ? null : Math.max(1, Math.min(90, Number(e.target.value) || 0)))}
+                        className="mt-0.5 w-20 text-xs border border-gray-300 rounded px-2 py-1 block" />
+                    </label>
+                  )}
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1.5">blank = no filter / default freshness · offers: hides anything below the minimum · shops: keeps only stores running a live offer right now</div>
+              </div>
+            )}
             <div className="rounded-xl border border-gray-200 p-3">
               <div className="text-xs font-bold text-gray-900 mb-2">Schedule (optional)</div>
               <div className="flex gap-3 flex-wrap">
@@ -1480,6 +1512,32 @@ export default function SectionsPage() {
                           {RULES_BY_SHELF[s.shelf_type].map(r => <option key={r.v} value={r.v}>{r.l}</option>)}
                         </select>
                       </label>
+                    )}
+                    {/* Phase 1 — per-section rule knobs (offers: min discount · brands: live-offer gate · windowed rules: freshness) */}
+                    {(s.shelf_type === 'offers' || s.shelf_type === 'brands' || WINDOWED_RULES.has(s.rule)) && (
+                      <div className="flex items-end gap-4 flex-wrap rounded-lg border border-gray-200 bg-gray-50 p-2">
+                        {s.shelf_type === 'offers' && (
+                          <label className="text-[11px] font-semibold text-gray-600">Minimum discount %
+                            <input type="number" min="0" max="100" value={cfg.min_discount_pct ?? ''} placeholder="any"
+                              onChange={e => patchConfig(id, 'min_discount_pct', e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                              className="mt-0.5 w-20 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
+                          </label>
+                        )}
+                        {s.shelf_type === 'brands' && (
+                          <label className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5 pb-1">
+                            <input type="checkbox" checked={cfg.has_live_offer === true}
+                              onChange={e => patchConfig(id, 'has_live_offer', e.target.checked ? true : null)} />
+                            Only shops with a live offer
+                          </label>
+                        )}
+                        {WINDOWED_RULES.has(s.rule) && (
+                          <label className="text-[11px] font-semibold text-gray-600">Trending window (days)
+                            <input type="number" min="1" max="90" value={cfg.window_days ?? ''} placeholder="7"
+                              onChange={e => patchConfig(id, 'window_days', e.target.value === '' ? null : Math.max(1, Math.min(90, Number(e.target.value) || 0)))}
+                              className="mt-0.5 w-20 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
+                          </label>
+                        )}
+                      </div>
                     )}
                     {/* On tap, go to… (App Builder D) — section-level; frames (tiles) use per-tile destinations below instead */}
                     {s.shelf_type !== 'tiles' && (

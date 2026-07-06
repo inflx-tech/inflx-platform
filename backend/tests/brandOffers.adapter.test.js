@@ -235,6 +235,12 @@ describe('rankForRule — shelf ordering/scope over a normalized list', () => {
     const home = adapter.rankForRule('all_offers', mixed, { limit: 10 });
     expect(home).toHaveLength(5); // no brandId → unscoped (home behaviour unchanged)
   });
+  test('minDiscountPct knob hides offers below the floor (null-discount too)', () => {
+    const r = adapter.rankForRule('all_offers', items, { minDiscountPct: 25, limit: 10 });
+    expect(r.map(x => x.id).sort()).toEqual(['2', '4']); // dv 40 + 25 stay; 10 + null drop
+    const off = adapter.rankForRule('all_offers', items, { minDiscountPct: 0, limit: 10 });
+    expect(off).toHaveLength(4); // 0/absent → no filter
+  });
 });
 
 describe('offersV2Enabled — flag gating (default OFF)', () => {

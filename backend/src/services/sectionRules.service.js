@@ -43,6 +43,7 @@ async function offersViaAdapter(ruleKey, ctx) {
     followedIds: ctx.followedIds,
     influencerId: ctx.influencer && ctx.influencer.id,
     brandId: ctx.brandId || null,
+    minDiscountPct: minDiscountFrom(ctx),
     limit: ctx.limit || 8,
   });
 }
@@ -185,6 +186,9 @@ async function topByEngagementOffers(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const winIdx = ++p; params.push(windowDays);
   const limIdx = ++p; params.push(limit);
 
@@ -201,6 +205,7 @@ async function topByEngagementOffers(ctx) {
     ${OFFER_FROM}
     ${catClause}
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} score DESC,
              i.followers_count DESC NULLS LAST
     LIMIT $${limIdx}`;
@@ -220,6 +225,9 @@ async function topByConversionsOffers(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const winIdx = ++p; params.push(windowDays);
   const limIdx = ++p; params.push(limit);
 
@@ -231,6 +239,7 @@ async function topByConversionsOffers(ctx) {
     ${OFFER_FROM}
     ${catClause}
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} score DESC,
              i.followers_count DESC NULLS LAST
     LIMIT $${limIdx}`;
@@ -248,6 +257,9 @@ async function topPicks(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const winIdx = ++p; params.push(windowDays);
   const limIdx = ++p; params.push(limit);
 
@@ -261,6 +273,7 @@ async function topPicks(ctx) {
             AND so.saved_at >= now() - ($${winIdx} || ' days')::interval) ) AS score
     ${OFFER_FROM}
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} score DESC,
              i.followers_count DESC NULLS LAST
     LIMIT $${limIdx}`;
@@ -277,12 +290,16 @@ async function newest(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const limIdx = ++p; params.push(limit);
   // Anchor on campaign_influencer creation (campaign_offers has no created_at).
   const sql = `
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} ci.created_at DESC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -314,12 +331,16 @@ async function biggestDiscounts(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const limIdx = ++p; params.push(limit);
   const sql = `
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
       AND co.discount_value IS NOT NULL
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} co.discount_value DESC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -335,6 +356,9 @@ async function endingSoon(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const limIdx = ++p; params.push(limit);
   // Expiry lives on campaign_influencers.offer_expires_at; only future ones.
   const sql = `
@@ -343,6 +367,7 @@ async function endingSoon(ctx) {
       AND ci.offer_expires_at IS NOT NULL
       AND ci.offer_expires_at >= now()
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} ci.offer_expires_at ASC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -361,12 +386,16 @@ async function allOffers(ctx) {
   if (city) params.push(city);
   const brandIdx = ctx.brandId ? ++p : null;
   if (ctx.brandId) params.push(ctx.brandId);
+  const minDisc = minDiscountFrom(ctx);
+  const minDiscIdx = minDisc ? ++p : null;
+  if (minDisc) params.push(minDisc);
   const limIdx = ++p; params.push(limit);
   const sql = `
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
     ${catClause}
     ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+    ${minDiscIdx ? `AND co.discount_value >= $${minDiscIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} ci.created_at DESC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -478,6 +507,25 @@ function liveOfferExists(brandRef) {
            AND c.status  IN ('published','active','live')
            AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
      )`;
+}
+
+// Phase 1 (rule-controls) — "has a live offer" in the V2 era means EITHER a
+// campaign-mediated offer (the legacy chain) OR a store-direct brand_offers row
+// published to the store within its window.
+function anyLiveOfferExists(brandRef) {
+  return `(${liveOfferExists(brandRef)} OR EXISTS (
+        SELECT 1 FROM brand_offers bo
+         WHERE bo.brand_id = ${brandRef}
+           AND bo.published_to_store = true AND bo.status = 'active'
+           AND (bo.store_starts_at IS NULL OR bo.store_starts_at <= now())
+           AND (bo.store_ends_at   IS NULL OR bo.store_ends_at   >= now())
+     ))`;
+}
+
+// Phase 1 — per-section "Minimum discount %" knob (config_json.min_discount_pct).
+function minDiscountFrom(ctx) {
+  const v = Number((ctx.config || {}).min_discount_pct);
+  return Number.isFinite(v) && v > 0 ? v : null;
 }
 
 // Distinct brands a creator partners with (optionally within a category).
@@ -663,6 +711,7 @@ async function businessesInCategory(ctx) {
       JOIN users u_b ON u_b.id = b.user_id
      WHERE u_b.status = 'approved'
        AND EXISTS (SELECT 1 FROM brand_products bp WHERE bp.brand_id = b.id AND bp.is_active = true AND bp.pushed_to_store = true)
+       ${(ctx.config || {}).has_live_offer === true ? `AND ${anyLiveOfferExists('b.id')}` : ''}
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
