@@ -1,0 +1,21 @@
+{
+  "feature": "phase4c-banner-inline-matches",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"push and start 4c\", 2026-07-06 — lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — 4c banner preview, mockup features/phase4c-banner-inline-matches/04-preview/mockups/banner-preview.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Phase 4c (final sub-release of the section-rules admin-control program): rule-banner shows its matches inline. Engine probe limit 1→3 (cache key :preview) attaches ≤3 items to banner_gateway; mobile BannerGateway renders thumbnails + distinct-brands line, guarded for absent items (old backend). Phase 2 items:[] assertion intentionally evolved (documented in 06-diff). Backend half deploys on push and is inert for current bundles; DEVICE RELEASE = publish-ota:all + pnpm qa:maestro green on a connected device, THEN flip released+maestro_green here. released=false until that on-device session.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

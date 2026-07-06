@@ -509,6 +509,11 @@ function CollectionHeader({ section }) {
 function BannerGateway({ section, onPress }) {
   const b = section.config?.banner || {};
   const headline = b.headline || section.title || 'Shop now';
+  // Phase 4c — the engine attaches up to 3 matching items so the banner can
+  // answer "what / from whom?" on its face. Absent items (old backend) →
+  // the classic shell renders unchanged.
+  const preview = Array.isArray(section.items) ? section.items.slice(0, 3) : [];
+  const brandNames = [...new Set(preview.map(p => p?.brand?.name).filter(Boolean))].slice(0, 2);
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
       <TouchableOpacity activeOpacity={0.92} style={styles.banner} onPress={onPress}>
@@ -517,6 +522,20 @@ function BannerGateway({ section, onPress }) {
           {b.eyebrow ? <Text style={styles.bannerEyebrow} numberOfLines={1}>{b.eyebrow}</Text> : null}
           <Text style={styles.bannerTitle} numberOfLines={2}>{headline}</Text>
           {b.sub ? <Text style={styles.bannerSub} numberOfLines={1}>{b.sub}</Text> : null}
+          {preview.length > 0 && (
+            <View style={styles.bannerPreviewRow}>
+              {preview.map((p) => (
+                p?.image_url
+                  ? <Image key={p.id} source={{ uri: p.image_url }} style={styles.bannerThumb} resizeMode="cover" />
+                  : null
+              ))}
+              {brandNames.length > 0 && (
+                <Text style={styles.bannerBrands} numberOfLines={1}>
+                  {`At ${brandNames.join(' · ')}`}
+                </Text>
+              )}
+            </View>
+          )}
           <View style={styles.bannerBtn}><Text style={styles.bannerBtnTxt}>{b.cta_label || 'SHOP NOW'}</Text></View>
         </View>
       </TouchableOpacity>
@@ -600,6 +619,10 @@ const styles = StyleSheet.create({
   },
   bannerBadgeTxt: { fontSize: 10, fontWeight: '800', color: C.onGold, textAlign: 'center', lineHeight: 12, fontFamily: fonts?.sansBold },
   bannerImg: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '44%' },
+  // Phase 4c — matched-items preview on the banner face
+  bannerPreviewRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 6 },
+  bannerThumb: { width: 34, height: 34, borderRadius: 8, backgroundColor: C.soft },
+  bannerBrands: { flex: 1, fontSize: 11, fontWeight: '700', color: C.ink, marginLeft: 4, fontFamily: fonts?.sansBold },
   // Hero + Tiles (Phase 6 C)
   heroBand: {
     marginHorizontal: 16, marginTop: 10, borderRadius: 16,

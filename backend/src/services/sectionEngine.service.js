@@ -263,13 +263,15 @@ async function buildSections(opts) {
       lng != null ? Math.round(lng * 1000) / 1000 : null,
     ]);
 
-    // Banner gateway: probe the rule at limit 1 under the section's own cache key
+    // Banner gateway: probe the rule (limit 3) under the section's own cache key
     // (it already carries brand/creator/city/coords context) — drop when nothing
-    // matches HERE; emit the same shell shape as before when something does.
+    // matches HERE (Phase 2). Phase 4c: the probe results ride along as preview
+    // items so the renderer can show WHAT/WHO matches on the banner face; old
+    // app bundles ignore items on banner_gateway (verified) — back-compatible.
     if (isBannerGateway) {
       let probe = [];
       try {
-        probe = await cache.getOrSet(`${key}:exists`, () => runRule(row.rule, { ...ctx, limit: 1 }));
+        probe = await cache.getOrSet(`${key}:preview`, () => runRule(row.rule, { ...ctx, limit: 3 }));
       } catch (err) {
         console.error(`[sectionEngine] banner probe for shelf '${row.shelf_key}' failed:`, err.message);
         probe = []; // broken probe → hide the banner rather than dead-end the tap
@@ -289,7 +291,7 @@ async function buildSections(opts) {
         config: cfg,
         starts_at: row.starts_at || null,
         ends_at: row.ends_at || null,
-        items: [],
+        items: probe.slice(0, 3),
       });
       continue;
     }

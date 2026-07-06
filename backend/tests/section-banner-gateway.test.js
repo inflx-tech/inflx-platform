@@ -91,7 +91,12 @@ describe('Banner-Gateway hide-when-empty (Phase 2)', () => {
     const kept = byKey(sections, 'banner_match');
     expect(kept).toBeDefined();
     expect(kept.type).toBe('banner_gateway');       // same shell shape as before
-    expect(kept.items).toEqual([]);                 // gateway never pre-fills
+    // Phase 4c — the probe's matches ride along as preview items (≤3) so the
+    // banner can show WHAT/WHO matches on its face.
+    expect(kept.items.length).toBeGreaterThan(0);
+    expect(kept.items.length).toBeLessThanOrEqual(3);
+    expect(kept.items[0].name).toBe('Red Kurti');
+    expect(kept.items[0].brand.name).toBe('Charvitha Fashions');
     expect(kept.config.banner.headline).toBe('banner_match');
 
     expect(byKey(sections, 'banner_dry')).toBeUndefined();        // rule matches nothing → hidden
