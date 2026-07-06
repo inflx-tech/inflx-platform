@@ -13,9 +13,12 @@
   "notes": "Phase 4c (final sub-release of the section-rules admin-control program): rule-banner shows its matches inline. Engine probe limit 1→3 (cache key :preview) attaches ≤3 items to banner_gateway; mobile BannerGateway renders thumbnails + distinct-brands line, guarded for absent items (old backend). Phase 2 items:[] assertion intentionally evolved (documented in 06-diff). Backend half deploys on push and is inert for current bundles; DEVICE RELEASE = publish-ota:all + pnpm qa:maestro green on a connected device, THEN flip released+maestro_green here. released=false until that on-device session.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "maestro_green": false
+    "released": true,
+    "released_by": "founder (\"continue for push and OTA\", 2026-07-06) — OTA published brand v134 / influencer v125 / follower v182 / agency v33",
+    "released_at": "2026-07-06",
+    "maestro_green": false,
+    "maestro_debt": "OWED — no Android device connected at release (qa:maestro:doctor RED, environment). Founder explicitly ordered the OTA. Run `pnpm qa:maestro` on the next device session and flip maestro_green; on-device banner-preview check rides the existing owed verify batch (v180/v181/v182).",
+    "verification": "backend suites 16/16 (section-banner-gateway w/ evolved preview contract + world-rules + allocation-live); pnpm qa GREEN 79/79 gate 0 (qa/reports/2026-07-06T07-17-17-844Z); esbuild JSX parse on SectionRenderer; back-compat verified both directions (old bundle ignores banner items / new bundle guards absent items); backend half deployed via c4600fe push (gov-check green).",
+    "deploy": "SHIPPED 2026-07-06 — backend via c4600fe on main (Render); OTA publish-ota:all after 3 retries (cold-Render TCP reset → cwd slip → stale Metro watcher, caches cleared): brand v134 / influencer v125 / follower v182 / agency v33."
   }
 }
