@@ -1,0 +1,21 @@
+{
+  "feature": "wizard-next-error-visible",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"can you pls check on this\" — Next button unresponsive, 2026-07-06; lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — Next-error mockup features/wizard-next-error-visible/04-preview/mockups/next-error.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Fix: App Builder wizard 'Next · Display' looked unresponsive on step 2. Root cause = patch() trailing err:null swallowed the 'name required' message (and all Publish validation). Fix = keep an explicitly-set err ('err' in p) + red-highlight the empty name field. Admin-web only, no backend/mobile/migration. Production-impacting (Vercel) — push gated on explicit founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

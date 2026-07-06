@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Wizard Next error</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f3f4f6;margin:0;padding:24px;color:#111}
+  .modal{max-width:560px;margin:0 auto;background:#fff;border-radius:16px;padding:20px}
+  .chips{display:flex;gap:6px;margin-bottom:12px}
+  .chip{flex:1;text-align:center;font-size:11px;font-weight:600;border-radius:8px;padding:6px}
+  .on{background:#111;color:#fff}.off{background:#f3f4f6;color:#9ca3af}.done{background:#ecfdf5;color:#047857}
+  .err{background:#fef2f2;color:#b91c1c;font-size:12px;font-weight:600;border-radius:8px;padding:8px 12px;margin-bottom:12px}
+  label{font-size:11px;font-weight:600;color:#4b5563;display:block;margin-bottom:12px}
+  input{width:100%;font-size:14px;border-radius:8px;padding:8px 10px;margin-top:4px;box-sizing:border-box}
+  .bad{border:1px solid #ef4444;background:#fef2f2}
+  .foot{display:flex;justify-content:space-between;margin-top:16px}
+  .btn{font-size:12px;font-weight:700;border-radius:8px;padding:8px 16px}
+  .back{border:1px solid #d1d5db;color:#4b5563;background:#fff}.next{background:#111;color:#fff}
+</style></head><body>
+<div class="modal">
+  <div class="chips"><div class="chip done">1 Design ✓</div><div class="chip on">2 Content</div><div class="chip off">3 Display</div><div class="chip off">4 Action</div></div>
+  <div class="err">Give the section a name — it shows in the app.</div>
+  <div style="font-size:16px;font-weight:700;margin-bottom:10px">What fills it?</div>
+  <label>Section name (shown in the app)
+    <input class="bad" placeholder="e.g. Fashion Steals — min 20% off">
+  </label>
+  <div class="foot"><span class="btn back">← Back</span><span class="btn next">Next · Display →</span></div>
+  <div style="font-size:11px;color:#9ca3af;margin-top:10px">After the fix: clicking Next with an empty name shows this banner + red field instead of doing nothing.</div>
+</div>
+</body></html>

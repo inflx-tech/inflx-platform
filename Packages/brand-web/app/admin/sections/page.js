@@ -389,7 +389,11 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   const d = wiz.draft;
   const cfg = d.config_json || {};
   const design = designById(wiz.designId);
-  const patch = (p) => setWiz(prev => ({ ...prev, ...p, err: null }));
+  // Navigation clears any prior error, but an explicit err in the patch must
+  // survive (else Next/Publish validation messages get swallowed → the button
+  // looks dead when the section name is empty). Only default err→null when the
+  // caller didn't set one.
+  const patch = (p) => setWiz(prev => ({ ...prev, ...p, err: 'err' in p ? p.err : null }));
   const patchDraft = (p) => setWiz(prev => ({ ...prev, err: null, draft: { ...prev.draft, ...p } }));
   const patchCfg = (key, value) => setWiz(prev => {
     const c = { ...(prev.draft.config_json || {}) };
@@ -604,7 +608,7 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
             <label className="text-[11px] font-semibold text-gray-600">Section name (shown in the app)
               <input value={d.title || ''} onChange={e => patchDraft({ title: e.target.value })}
                 placeholder="e.g. Fashion Steals — min 20% off"
-                className="mt-0.5 w-full text-sm border border-gray-300 rounded-lg px-2.5 py-1.5" />
+                className={`mt-0.5 w-full text-sm border rounded-lg px-2.5 py-1.5 ${wiz.err && !String(d.title || '').trim() ? 'border-red-500 bg-red-50' : 'border-gray-300'}`} />
             </label>
 
             {/* Automatic rules */}
