@@ -245,7 +245,7 @@ function normalizeLibraryOffer(row, channel) {
 
 // ── PURE: rank a normalized offer list for a given shelf rule → feed items ────────
 // Ordering/scope per rule. ctx: { categoryKeys?:string[], followedIds?:Set|array,
-// influencerId?:uuid, limit?:number }. Count-based rules (engagement/conversions/
+// influencerId?:uuid, brandId?:uuid, limit?:number }. Count-based rules (engagement/conversions/
 // picks) DEGRADE to discount-then-recency here — the adapter does not yet compute
 // per-offer click/txn counts for assignment-sourced offers (documented; refined later).
 function rankForRule(ruleKey, items, ctx = {}) {
@@ -259,6 +259,11 @@ function rankForRule(ruleKey, items, ctx = {}) {
   if (Array.isArray(ctx.categoryKeys) && ctx.categoryKeys.length) {
     const cats = new Set(ctx.categoryKeys);
     list = list.filter(n => n.brand && cats.has(n.brand.category));
+  }
+
+  // business-page scope — a brand's own page shows only that brand's offers
+  if (ctx.brandId) {
+    list = list.filter(n => n.brand && n.brand.id === ctx.brandId);
   }
 
   const byDiscountDesc = (a, b) => (b.discount_value ?? -Infinity) - (a.discount_value ?? -Infinity);

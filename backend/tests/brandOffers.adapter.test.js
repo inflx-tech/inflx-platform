@@ -228,6 +228,13 @@ describe('rankForRule — shelf ordering/scope over a normalized list', () => {
     expect(r).toHaveLength(2);
     expect(r[0].entity_type).toBe('offer');
   });
+  test('brandId scope (business page) keeps only that brand\'s offers', () => {
+    const mixed = [...items, mk({ id: '5', dv: 60, bid: 'b2' })];
+    const r = adapter.rankForRule('all_offers', mixed, { brandId: 'b2', limit: 10 });
+    expect(r.map(x => x.id)).toEqual(['5']);
+    const home = adapter.rankForRule('all_offers', mixed, { limit: 10 });
+    expect(home).toHaveLength(5); // no brandId → unscoped (home behaviour unchanged)
+  });
 });
 
 describe('offersV2Enabled — flag gating (default OFF)', () => {

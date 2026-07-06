@@ -228,9 +228,9 @@ async function resolveStore(handle) {
     // Phase 2b — show the products ALLOCATED to this creator by the live offer
     // (offer-config snapshot ∪ the campaign set's products_json), automatically.
     // No hand-picking. Any influencer note becomes an optional annotation, never
-    // a visibility gate. pushed_to_store does NOT apply here — allocation is its
-    // own path (a product can show in a creator's store without being pushed to
-    // the brand's own store).
+    // a visibility gate. Phase 0: allocation additionally requires the product to
+    // still be pushed to the brand's store — the publish flow is list → push →
+    // allocate, so un-pushing a product also pulls it from every creator store.
     const ciCfg = r.ci_offer_config || {};
     const allocatedIds = allocatedProductIds(ciCfg, r.products_json);
 
@@ -238,7 +238,8 @@ async function resolveStore(handle) {
     if (allocatedIds.length > 0) {
       const { rows } = await db.query(
         `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
-         FROM brand_products WHERE id = ANY($1) AND is_active = true
+         FROM brand_products
+         WHERE id = ANY($1) AND is_active = true AND pushed_to_store = true
          ORDER BY section, name`,
         [allocatedIds]
       );
@@ -989,7 +990,8 @@ async function getInfluencerStorePreview(influencerId) {
     if (allocatedIds.length > 0) {
       const { rows } = await db.query(
         `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
-         FROM brand_products WHERE id = ANY($1) AND is_active = true
+         FROM brand_products
+         WHERE id = ANY($1) AND is_active = true AND pushed_to_store = true
          ORDER BY section, name`,
         [allocatedIds]
       );

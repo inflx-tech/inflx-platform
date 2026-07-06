@@ -1,0 +1,21 @@
+{
+  "feature": "phase0-section-correctness",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"start phase 0\", 2026-07-05 — lock delegated under standing autonomy)",
+  "approved_at": "2026-07-05",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — Phase 0 guardrails, mockup features/phase0-section-correctness/04-preview/mockups/guardrails.html)",
+  "mockup_locked_at": "2026-07-05",
+  "notes": "Phase 0 of the section-rules admin-control program: A1 brand-scope offer rules on business pages (legacy SQL + V2 adapter, unit-tested), A2 allocated products require pushed_to_store on creator surfaces (resolveStore + preview + libraryProducts), B1 CategoryNodePicker so 'Category browser' tap actions are completable (wizard/inline/per-tile + client pre-checks), B2 schedule guardrails (past-end blocks wizard finish; <6h amber). Production-impacting (backend + admin web) — push gated on explicit founder go per carve-out. No migration, no OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

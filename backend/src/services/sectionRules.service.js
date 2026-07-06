@@ -42,6 +42,7 @@ async function offersViaAdapter(ruleKey, ctx) {
     categoryKeys: categoryFilter(ctx),
     followedIds: ctx.followedIds,
     influencerId: ctx.influencer && ctx.influencer.id,
+    brandId: ctx.brandId || null,
     limit: ctx.limit || 8,
   });
 }
@@ -182,6 +183,8 @@ async function topByEngagementOffers(ctx) {
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const winIdx = ++p; params.push(windowDays);
   const limIdx = ++p; params.push(limit);
 
@@ -197,6 +200,7 @@ async function topByEngagementOffers(ctx) {
             AND ft.created_at >= now() - ($${winIdx} || ' days')::interval) ) AS score
     ${OFFER_FROM}
     ${catClause}
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} score DESC,
              i.followers_count DESC NULLS LAST
     LIMIT $${limIdx}`;
@@ -214,6 +218,8 @@ async function topByConversionsOffers(ctx) {
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const winIdx = ++p; params.push(windowDays);
   const limIdx = ++p; params.push(limit);
 
@@ -224,6 +230,7 @@ async function topByConversionsOffers(ctx) {
           AND ft.created_at >= now() - ($${winIdx} || ' days')::interval) AS score
     ${OFFER_FROM}
     ${catClause}
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} score DESC,
              i.followers_count DESC NULLS LAST
     LIMIT $${limIdx}`;
@@ -239,6 +246,8 @@ async function topPicks(ctx) {
   let p = 0;
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const winIdx = ++p; params.push(windowDays);
   const limIdx = ++p; params.push(limit);
 
@@ -251,6 +260,7 @@ async function topPicks(ctx) {
           WHERE so.offer_id = co.id
             AND so.saved_at >= now() - ($${winIdx} || ' days')::interval) ) AS score
     ${OFFER_FROM}
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} score DESC,
              i.followers_count DESC NULLS LAST
     LIMIT $${limIdx}`;
@@ -265,11 +275,14 @@ async function newest(ctx) {
   let p = 0;
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const limIdx = ++p; params.push(limit);
   // Anchor on campaign_influencer creation (campaign_offers has no created_at).
   const sql = `
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} ci.created_at DESC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -285,9 +298,10 @@ async function followGraph(ctx) {
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
       AND ci.influencer_id = ANY($1)
+      ${ctx.brandId ? 'AND b.id = $3' : ''}
     ORDER BY ci.created_at DESC
     LIMIT $2`;
-  const { rows } = await db.query(sql, [ids, limit]);
+  const { rows } = await db.query(sql, ctx.brandId ? [ids, limit, ctx.brandId] : [ids, limit]);
   return rows.map(mapOfferItem);
 }
 
@@ -298,11 +312,14 @@ async function biggestDiscounts(ctx) {
   let p = 0;
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const limIdx = ++p; params.push(limit);
   const sql = `
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
       AND co.discount_value IS NOT NULL
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} co.discount_value DESC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -316,6 +333,8 @@ async function endingSoon(ctx) {
   let p = 0;
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const limIdx = ++p; params.push(limit);
   // Expiry lives on campaign_influencers.offer_expires_at; only future ones.
   const sql = `
@@ -323,6 +342,7 @@ async function endingSoon(ctx) {
     ${OFFER_FROM}
       AND ci.offer_expires_at IS NOT NULL
       AND ci.offer_expires_at >= now()
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} ci.offer_expires_at ASC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -339,11 +359,14 @@ async function allOffers(ctx) {
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
   if (city) params.push(city);
+  const brandIdx = ctx.brandId ? ++p : null;
+  if (ctx.brandId) params.push(ctx.brandId);
   const limIdx = ++p; params.push(limit);
   const sql = `
     SELECT ${OFFER_COLS}
     ${OFFER_FROM}
     ${catClause}
+    ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
     ORDER BY ${city ? cityBoost(city, cityIdx) : ''} ci.created_at DESC
     LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
@@ -698,8 +721,9 @@ async function productsInCategory(ctx) {
 // (sub-category subtree + tags + price + sort), with SURFACE CONTEXT stacked
 // (Layer 6): creator allocation, brand scope, category, city/geo. The rule def
 // is injected by the engine as ctx.ruleDef (from the placed section's library row).
-// Gate: pushed_to_store on platform/brand surfaces; LIVE ALLOCATION on a creator
-// surface (matches 2a/2b/2c — allocation is the creator-store gate, not push).
+// Gate: pushed_to_store on EVERY surface (Phase 0 — the brand's publish flow is
+// list → push → allocate, so un-pushing must also pull the product from creator
+// surfaces); a creator surface ADDITIONALLY intersects with live allocation.
 async function libraryProducts(ctx) {
   const def = (ctx.ruleDef && typeof ctx.ruleDef === 'object') ? ctx.ruleDef : {};
   const { city, limit = 8 } = ctx;
@@ -824,7 +848,7 @@ async function libraryProducts(ctx) {
          WHERE rr.brand_id = b.id AND rr.status = 'published'
       ) rev ON true
      WHERE u_b.status = 'approved' AND bp.is_active = true
-       ${creatorScoped ? '' : 'AND bp.pushed_to_store = true'}
+       AND bp.pushed_to_store = true
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
        ${subClause}
        ${tagsIdx ? `AND bp.tags @> $${tagsIdx}` : ''}

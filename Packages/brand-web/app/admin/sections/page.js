@@ -169,6 +169,27 @@ function scheduleChip(s) {
   return null;
 }
 
+// Editor guardrail (Phase 0): a past end time means the section can NEVER show —
+// almost always a mistake while composing; a very short window probably is too.
+function scheduleWarning(startsAt, endsAt) {
+  if (!endsAt) return null;
+  const en = new Date(endsAt).getTime();
+  if (Number.isNaN(en)) return null;
+  const mins = Math.round((en - Date.now()) / 60000);
+  if (mins <= 0) return { kind: 'err', text: 'This end time is already in the past — the section will never appear in the app. Clear “Disappears” for always-on.' };
+  if (mins < 360) return { kind: 'warn', text: `Heads up — this section disappears in about ${mins < 60 ? `${mins} min` : `${Math.round(mins / 60)} h`}. Leave “Disappears” empty for always-on.` };
+  return null;
+}
+
+// Phase 0 guardrail: what the backend will reject about a tap destination —
+// caught here so the founder gets a plain-language message before Publish.
+function tapDestinationProblem(td) {
+  if (!td || typeof td !== 'object') return null;
+  if (td.type === 'category' && !td.category_node_id) return '“Category browser” needs the exact category it opens — pick one (the world alone isn’t enough).';
+  if (td.type === 'page' && !td.page_key) return '“A page” needs the page it opens — pick one.';
+  return null;
+}
+
 // Flatten the nested /listing/tree into an indented pick list (id + name + depth).
 function flattenTree(roots, depth = 0, out = []) {
   for (const n of roots || []) {
@@ -180,6 +201,36 @@ function flattenTree(roots, depth = 0, out = []) {
 
 // Worlds that have a drill-down catalogue tree (category_nodes).
 const CAT_TREE_WORLDS = new Set(['fashion', 'furniture']);
+
+// Phase 0 — “Category browser” destinations need a NODE, not just a world.
+// Self-fetches the tree for whichever world is picked (cached per world) so the
+// wizard, the inline editor and per-tile pickers can all offer real nodes.
+const nodeTreeCache = {};
+function CategoryNodePicker({ vertical, value, onChange }) {
+  const [nodes, setNodes] = useState(nodeTreeCache[vertical] || []);
+  useEffect(() => {
+    if (!vertical || !CAT_TREE_WORLDS.has(vertical)) { setNodes([]); return undefined; }
+    if (nodeTreeCache[vertical]) { setNodes(nodeTreeCache[vertical]); return undefined; }
+    let on = true;
+    adminApi.getListingTree(vertical).then(res => {
+      const flat = res.success ? flattenTree(res.data?.tree || res.data || []) : [];
+      nodeTreeCache[vertical] = flat;
+      if (on) setNodes(flat);
+    });
+    return () => { on = false; };
+  }, [vertical]);
+  if (!vertical) return null;
+  if (!CAT_TREE_WORLDS.has(vertical)) {
+    return <span className="text-[10px] text-amber-700">this world has no category tree — use “Product grid” instead</span>;
+  }
+  return (
+    <select value={value || ''} onChange={e => onChange(e.target.value || undefined)}
+      className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+      <option value="">— pick a category (required) —</option>
+      {nodes.map(n => <option key={n.id} value={n.id}>{' '.repeat(n.depth * 2)}{n.name}</option>)}
+    </select>
+  );
+}
 
 // template → which RULES it can use (the explicit "what fills it" step). Templates
 // with a single fixed rule (category_rail / restaurant_list / tiles per-tile / menu)
@@ -442,6 +493,11 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   const finish = async () => {
     if (!String(d.title || '').trim()) { patch({ err: 'Give the section a name — it shows in the app.', step: 2 }); return; }
     if (badWindow) { patch({ err: '"Disappears" must be after "Goes live".', step: 3 }); return; }
+    const schedErr = scheduleWarning(d.starts_at, d.ends_at);
+    if (schedErr && schedErr.kind === 'err') { patch({ err: schedErr.text, step: 3 }); return; }
+    const tdErr = tapDestinationProblem(cfg.tap_destination) ||
+      (cfg.tiles || []).map(t => tapDestinationProblem(t.tap_destination)).find(Boolean);
+    if (tdErr) { patch({ err: tdErr, step: 4 }); return; }
     if (usesLibraryRule && cfg.presentation_type === 'banner' && !(cfg.banner || {}).headline) { patch({ err: 'The banner needs a headline.', step: 2 }); return; }
     let final = { ...d };
     // My-rule (create) → save the reusable Section Library rule first, then wire it.
@@ -468,18 +524,26 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   );
   const destPicker = (td, apply) => (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <select value={(td || {}).type || 'grid'} onChange={e => apply({ ...(td || {}), type: e.target.value })}
+      <select value={(td || {}).type || 'grid'}
+        onChange={e => apply(e.target.value === 'category'
+          ? { ...(td || {}), type: 'category', vertical: (td || {}).vertical || scopeValue }
+          : { ...(td || {}), type: e.target.value })}
         className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
         <option value="grid">Product grid</option>
-        <option value="category">Category page</option>
+        <option value="category">Category browser</option>
         <option value="page">Custom page</option>
       </select>
       {(td || {}).type === 'category' && (
-        <select value={(td || {}).vertical || ''} onChange={e => apply({ ...(td || {}), vertical: e.target.value })}
-          className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
-          <option value="">— world —</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <>
+          <select value={(td || {}).vertical || ''}
+            onChange={e => apply({ ...(td || {}), vertical: e.target.value, category_node_id: undefined })}
+            className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+            <option value="">— world —</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <CategoryNodePicker vertical={(td || {}).vertical || ''} value={(td || {}).category_node_id}
+            onChange={v => apply({ ...(td || {}), category_node_id: v })} />
+        </>
       )}
       {(td || {}).type === 'page' && (
         <select value={(td || {}).page_key || ''} onChange={e => apply({ ...(td || {}), page_key: e.target.value })}
@@ -836,6 +900,10 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                 </label>
               </div>
               {badWindow && <div className="text-[11px] font-bold text-red-600 mt-1.5">“Disappears” must be after “Goes live”.</div>}
+              {!badWindow && (() => {
+                const w = scheduleWarning(d.starts_at, d.ends_at);
+                return w ? <div className={`text-[11px] font-bold mt-1.5 ${w.kind === 'err' ? 'text-red-600' : 'text-amber-700'}`}>{w.text}</div> : null;
+              })()}
               {!badWindow && (window_.st || window_.en) && (
                 <div className="inline-block text-[11px] font-semibold rounded-full px-2.5 py-1 bg-pink-50 text-pink-600 mt-1.5">
                   ⏱ {window_.st ? `Live ${fmtDT(window_.st)}` : 'Live now'} → {window_.en ? fmtDT(window_.en) : 'no end'}
@@ -1180,6 +1248,13 @@ export default function SectionsPage() {
     // Phase 6 — a Banner-Gateway placement needs a headline.
     const unsetBanner = list.find(s => (s.config_json || {}).presentation_type === 'banner' && !((s.config_json || {}).banner || {}).headline);
     if (unsetBanner) { setMsg({ kind: 'err', text: `"${unsetBanner.title || 'Banner'}" — add a banner headline before publishing.` }); return; }
+    // Phase 0 — catch backend-rejected tap destinations with a plain message.
+    for (const s of list) {
+      const cj = s.config_json || {};
+      const tdErr = tapDestinationProblem(cj.tap_destination) ||
+        (cj.tiles || []).map(t => tapDestinationProblem(t.tap_destination)).find(Boolean);
+      if (tdErr) { setMsg({ kind: 'err', text: `"${s.title || 'Section'}" — ${tdErr}` }); return; }
+    }
     setSaving(true); setMsg(null);
     const payload = {
       scope_type: scopeType,
@@ -1424,11 +1499,16 @@ export default function SectionsPage() {
                       </div>
                       {(cfg.tap_destination || {}).type === 'category' && (
                         <label className="block mt-2 text-[11px] font-semibold text-gray-600">Which category?
-                          <select value={(cfg.tap_destination || {}).vertical || ''} onChange={e => patchNested(id, 'tap_destination', 'vertical', e.target.value)}
+                          <select value={(cfg.tap_destination || {}).vertical || ''}
+                            onChange={e => patchConfig(id, 'tap_destination', { ...(cfg.tap_destination || {}), vertical: e.target.value, category_node_id: undefined })}
                             className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
                             <option value="">— pick a world —</option>
                             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                           </select>
+                          <div className="mt-1.5">
+                            <CategoryNodePicker vertical={(cfg.tap_destination || {}).vertical || ''} value={(cfg.tap_destination || {}).category_node_id}
+                              onChange={v => patchNested(id, 'tap_destination', 'category_node_id', v)} />
+                          </div>
                         </label>
                       )}
                       {(cfg.tap_destination || {}).type === 'page' && (
@@ -1624,11 +1704,16 @@ export default function SectionsPage() {
                                 <option value="page">A page</option>
                               </select>
                               {(t.tap_destination || {}).type === 'category' && (
-                                <select value={(t.tap_destination || {}).vertical || ''} onChange={e => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), vertical: e.target.value } })}
-                                  className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
-                                  <option value="">— world —</option>
-                                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
+                                <>
+                                  <select value={(t.tap_destination || {}).vertical || ''}
+                                    onChange={e => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), vertical: e.target.value, category_node_id: undefined } })}
+                                    className="text-[11px] border border-gray-300 rounded px-2 py-1 bg-white">
+                                    <option value="">— world —</option>
+                                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                  </select>
+                                  <CategoryNodePicker vertical={(t.tap_destination || {}).vertical || ''} value={(t.tap_destination || {}).category_node_id}
+                                    onChange={v => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), category_node_id: v } })} />
+                                </>
                               )}
                               {(t.tap_destination || {}).type === 'page' && (
                                 <select value={(t.tap_destination || {}).page_key || ''} onChange={e => updateTile(id, ti, { tap_destination: { ...(t.tap_destination || {}), page_key: e.target.value } })}
@@ -1765,6 +1850,10 @@ export default function SectionsPage() {
                           className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
                       </label>
                       <span className="text-[10px] text-gray-400 pb-1">empty = always on · after “Disappears” the section leaves the app silently</span>
+                      {(() => {
+                        const w = scheduleWarning(s.starts_at, s.ends_at);
+                        return w ? <div className={`w-full text-[11px] font-bold ${w.kind === 'err' ? 'text-red-600' : 'text-amber-700'}`}>{w.text}</div> : null;
+                      })()}
                     </div>
 
                     <label className="text-[11px] font-semibold text-gray-600">Caption (sub)

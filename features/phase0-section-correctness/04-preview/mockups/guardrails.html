@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Phase 0 — App Builder guardrails</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f9fafb;margin:0;padding:24px;color:#111}
+  .panel{max-width:640px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;margin:0 auto 20px}
+  h2{font-size:14px;margin:0 0 12px}
+  .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:8px 0}
+  select,input{font-size:11px;border:1px solid #d1d5db;border-radius:6px;padding:4px 8px;background:#fff}
+  .chip{font-size:11px;font-weight:600;border-radius:8px;padding:6px 8px;border:1px solid #d1d5db;background:#fff}
+  .chip.on{background:#b45309;color:#fff;border-color:#b45309}
+  .err{font-size:11px;font-weight:700;color:#dc2626;margin-top:6px}
+  .warn{font-size:11px;font-weight:700;color:#b45309;margin-top:6px}
+  .hint{font-size:10px;color:#9ca3af;margin-top:6px}
+  .label{font-size:11px;font-weight:600;color:#4b5563;display:block;margin-top:8px}
+</style></head><body>
+
+<div class="panel">
+  <h2>B1 — “Category browser” now has a node picker (wizard + inline + per-tile)</h2>
+  <div class="row">
+    <span class="chip">Default</span><span class="chip">Product grid</span>
+    <span class="chip on">Category browser</span><span class="chip">A page</span>
+  </div>
+  <label class="label">Which category?</label>
+  <div class="row">
+    <select><option>fashion</option><option>furniture</option></select>
+    <select><option>— pick a category (required) —</option><option>Ethnic wear</option><option>&nbsp;&nbsp;Kurtis</option><option>&nbsp;&nbsp;Sarees</option><option>Western</option></select>
+  </div>
+  <div class="hint">world change clears the node · non-tree worlds show: “this world has no category tree — use Product grid instead”</div>
+  <div class="err">Blocked at finish/Publish if node missing: “Category browser” needs the exact category it opens — pick one (the world alone isn’t enough).</div>
+</div>
+
+<div class="panel">
+  <h2>B2 — schedule guardrail (wizard step 3 + inline schedule box)</h2>
+  <div class="row">
+    <label class="label">Goes live <input type="datetime-local"></label>
+    <label class="label">Disappears <input type="datetime-local" value="2026-07-05T11:07"></label>
+  </div>
+  <div class="err">This end time is already in the past — the section will never appear in the app. Clear “Disappears” for always-on.</div>
+  <div class="warn">Heads up — this section disappears in about 40 min. Leave “Disappears” empty for always-on.</div>
+  <div class="hint">red = blocks wizard finish · amber = heads-up only · existing rows: warnings only (cleanup still allowed)</div>
+</div>
+
+</body></html>
