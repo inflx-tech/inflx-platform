@@ -172,6 +172,18 @@ function haversineKm(latIdx, lngIdx, latCol = 'b.lat', lngCol = 'b.lng') {
 }
 const hasCoords = (ctx) => Number.isFinite(ctx?.lat) && Number.isFinite(ctx?.lng);
 
+// A product is "display-ready" if it has a photo ANYWHERE (image_url, variant
+// cover/colours, or the batch facets snapshot). Photo-less products sink below
+// photographed ones so a storefront never leads with placeholder cards
+// (contract: product-image-resolution). Mirrors resolveProductImage in SQL.
+const HAS_PHOTO_SQL = `(
+    (bp.image_url IS NOT NULL AND bp.image_url <> '')
+    OR jsonb_array_length(COALESCE(bp.variants_json->'cover_images','[]'::jsonb)) > 0
+    OR jsonb_array_length(COALESCE(bp.facets->'_images','[]'::jsonb)) > 0
+    OR EXISTS (SELECT 1 FROM jsonb_array_elements(COALESCE(bp.variants_json->'colors','[]'::jsonb)) col
+                WHERE jsonb_array_length(COALESCE(col->'images','[]'::jsonb)) > 0)
+  )`;
+
 // ── Phase 3 (World Rules, mig 126) ──────────────────────────────────────────
 // Per-world location mode for the rule's world. Absent settings = rank_only
 // (the legacy soft-boost behaviour, byte-identical SQL).
@@ -777,8 +789,8 @@ async function productsInCategory(ctx) {
     ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN ${haversineKm(latIdx, lngIdx)} END`
     : `NULL::numeric`;
   const orderBy = geo
-    ? `dist_km ASC NULLS LAST, bp.created_at DESC NULLS LAST`
-    : `${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST`;
+    ? `${HAS_PHOTO_SQL} DESC, dist_km ASC NULLS LAST, bp.created_at DESC NULLS LAST`
+    : `${HAS_PHOTO_SQL} DESC, ${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST`;
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
@@ -879,12 +891,14 @@ async function libraryProducts(ctx) {
   const sortKey = def.sort === 'price_asc' ? 'bp.price ASC NULLS LAST'
     : def.sort === 'price_desc' ? 'bp.price DESC NULLS LAST'
     : 'bp.created_at DESC NULLS LAST';
-  // Hand-picked rules: the admin's order wins over geo/city/sort.
+  // Hand-picked rules: the admin's order wins over geo/city/sort (photos-first
+  // does NOT apply — the admin chose the exact order). Otherwise photographed
+  // products lead so the shelf never opens with placeholder cards.
   const orderBy = pickIdx
     ? `array_position($${pickIdx}::uuid[], bp.id) ASC`
     : geo
-    ? `dist_km ASC NULLS LAST, ${sortKey}`
-    : `${cityBoost(city, cityIdx)} ${sortKey}`;
+    ? `${HAS_PHOTO_SQL} DESC, dist_km ASC NULLS LAST, ${sortKey}`
+    : `${HAS_PHOTO_SQL} DESC, ${cityBoost(city, cityIdx)} ${sortKey}`;
 
   // sub-category match = the node OR any descendant (recursive walk of category_nodes).
   const subClause = subIdx ? `AND bp.category_node_id IN (

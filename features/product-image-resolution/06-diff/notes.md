@@ -22,6 +22,20 @@
   --staging, only writes null rows, never overwrites. Prod dry-run: 72 empty /
   0 fixable (photo-less seeds) — no prod repair needed today.
 
+## Follow-up (2026-07-06): photos-first ordering
+- **Symptom after deploy:** founder still saw no fashion images in the follower
+  app. Diagnosed NOT a bug — the 4 photographed products sat at positions
+  36–39 of a 43-item "Trending Products" rail, behind ~35 photo-less seed
+  products (rail is newest-first; the seeds are newer). Verified via the live
+  endpoint + prod query. Food looked fine only because all food dishes have
+  photos.
+- **Fix:** `HAS_PHOTO_SQL` (image_url OR variant cover/colours OR facets._images)
+  leads the ORDER BY in products_in_category + library_products (NOT hand-picked
+  — admin order wins). Photographed products now open the shelf; placeholder
+  cards sink. Proven on prod data (the 4 T-shirts jump to positions 0–3) and by
+  tests/product-photo-order.test.js (url- AND variant-photographed lead a newer
+  photo-less item).
+
 ## Evidence / honesty
 - Ruled out URL-format theory: stored URLs absolute; /v1/media/assets/:id
   302-redirects to a fresh 1h presigned R2 URL (browser + RN follow it).
