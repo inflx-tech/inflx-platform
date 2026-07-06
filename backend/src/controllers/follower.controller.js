@@ -1715,7 +1715,7 @@ const resolveCoupon = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT ci.id AS campaign_influencer_id, ci.status AS ci_status,
             ci.offer_type, ci.offer_config_json, ci.commission_pct,
-            cs.id AS set_id, cs.products_json,
+            cs.id AS set_id, co.products_json,
             c.id AS campaign_id, c.status AS campaign_status, c.end_date,
             b.id AS brand_id, b.business_name AS brand_name,
             inf.instagram_handle AS creator_handle,
@@ -1740,7 +1740,13 @@ const resolveCoupon = asyncHandler(async (req, res) => {
   // Mirror validateTracking: a shoppable code needs a typed offer or a set offer.
   if (!r.offer_type && !r.offer_id) throw UNAVAILABLE('This code can’t be used for orders.');
 
-  const allocatedIds = followerService.allocatedProductIds(r.offer_config_json || {}, r.products_json);
+  // Phase 4b — scope-aware LIVE allocation (also fixes the genuine defect here:
+  // this query selected cs.products_json, a column that has never existed on
+  // campaign_sets — every coupon resolve 500'd. The offer's own products_json
+  // (co.) was always the intended source.)
+  const allocatedIds = await followerService.resolveAllocatedProductIds({
+    ciCfg: r.offer_config_json || {}, offerProductsJson: r.products_json, brandId: r.brand_id,
+  });
 
   // Light preview label only — placeOrder re-prices authoritatively at checkout.
   const cfg = r.offer_config_json || {};

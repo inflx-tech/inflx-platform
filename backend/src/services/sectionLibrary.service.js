@@ -20,7 +20,7 @@
 
 const db = require('../config/db');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
-const { allocatedProductIds } = require('./follower.service');
+const { resolveAllocatedProductIds } = require('./follower.service');
 
 const SORTS = new Set(['newest', 'price_asc', 'price_desc']);
 
@@ -162,7 +162,8 @@ async function updateSection(id, { business_type, name, image_url, rule_json, st
 async function creatorAllocatedProductIds(influencerId) {
   if (!influencerId) return [];
   const { rows } = await db.query(
-    `SELECT ci.offer_config_json AS ci_cfg, co.products_json AS products_json
+    `SELECT ci.offer_config_json AS ci_cfg, co.products_json AS products_json,
+            c.brand_id AS brand_id
        FROM campaign_influencers ci
        JOIN campaign_sets cs ON cs.id = ci.set_id
        JOIN campaigns c      ON c.id  = cs.campaign_id
@@ -175,7 +176,11 @@ async function creatorAllocatedProductIds(influencerId) {
   );
   const ids = new Set();
   for (const r of rows) {
-    for (const id of allocatedProductIds(r.ci_cfg || {}, r.products_json)) ids.add(id);
+    // Phase 4b — store/category-scoped offers resolve LIVE; hand-picked lists stay frozen.
+    const allocated = await resolveAllocatedProductIds({
+      ciCfg: r.ci_cfg || {}, offerProductsJson: r.products_json, brandId: r.brand_id,
+    });
+    for (const id of allocated) ids.add(id);
   }
   return Array.from(ids);
 }

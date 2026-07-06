@@ -1,0 +1,21 @@
+{
+  "feature": "phase4-live-allocation-overrides",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"pls start phase 4\", 2026-07-06 — lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — 4a location-override UI, mockup features/phase4-live-allocation-overrides/04-preview/mockups/location-override.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Phase 4 sub-releases a+b of the section-rules admin-control program. 4b LIVE allocation: offer_config_json.scope (already written by the brand offer builder) is now honored at read time — 'store'/'category' resolve live (new products auto-flow to creator stores, un-push pulls), 'products'/bogo/bundle stay frozen; readers = resolveStore, creator preview, creatorAllocatedProductIds, resolve-coupon. Includes genuine-defect fix: resolve-coupon selected non-existent cs.products_json (every call 500'd) → co.products_json. 4a per-section world_rules_override (engine merge + validator + Rule-options UI). No migration, no OTA. 4c (banner inline matches, mobile) ships separately. Production-impacting — push gated on explicit founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

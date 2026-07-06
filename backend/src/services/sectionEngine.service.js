@@ -70,6 +70,18 @@ async function getWorldRules(worldKey) {
   return cached || null;
 }
 
+// Phase 4a — a single section may override its world's location behaviour
+// (config_json.world_rules_override): e.g. a "Stores near you" shelf inside a
+// rank-only world, or one shelf opting out of a boundary. Only the three
+// location keys are overridable; an override with no effective mode is a no-op.
+const WR_OVERRIDE_KEYS = ['location_mode', 'radius_km', 'empty_fallback'];
+function mergeWorldRules(base, override) {
+  if (!override || typeof override !== 'object' || Array.isArray(override)) return base;
+  const out = { ...(base || {}) };
+  for (const k of WR_OVERRIDE_KEYS) if (override[k] != null) out[k] = override[k];
+  return out.location_mode ? out : base;
+}
+
 /**
  * Load enabled shelves for (screen, scopeType, scopeValue), merging layers:
  * global < vertical(/other scope) < CITY (P5, features/section-analytics-city/).
@@ -207,9 +219,10 @@ async function buildSections(opts) {
     const isBannerGateway = row.rule === 'library_products' && cfg.presentation_type === 'banner';
     if (isBannerGateway && libUnresolved) continue; // deleted/hidden rule → permanent dead end
 
-    // Phase 3 — the world whose rules govern this row, then its settings.
+    // Phase 3 — the world whose rules govern this row, then its settings;
+    // Phase 4a — a section-level override wins over the world default.
     const rowVertical = scopeType === 'vertical' ? scopeValue : (rowCategoryKey || null);
-    const worldRules = await getWorldRules(rowVertical);
+    const worldRules = mergeWorldRules(await getWorldRules(rowVertical), cfg.world_rules_override);
 
     const ctx = {
       // ── Standardized placement context (App Builder Phase 1) ──────────────

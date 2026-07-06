@@ -148,6 +148,19 @@ describe('World Rules (Phase 3, mig 126)', () => {
     expect(items.map(i => i.name)).toEqual(['Far Kurti']);
   });
 
+  it('Phase 4a — a section override beats the world default (and only for that section)', async () => {
+    // World stays legacy rank_only (no row); ONE shelf opts into a boundary.
+    await query(
+      `UPDATE section_config
+          SET config_json = $1
+        WHERE shelf_key = 'wr_shops' AND scope_value = 'fashion'`,
+      [JSON.stringify({ world_rules_override: { location_mode: 'boundary', radius_km: 50, empty_fallback: 'show_empty' } })]
+    );
+    const res = await fashion(`?lat=${VJA.lat}&lng=${VJA.lng}`);
+    expect(shopNames(res)).toEqual(['NearShop']);                  // overridden shelf: bounded
+    expect(productNames(res)).toEqual(['Far Kurti', 'Near Kurti']); // sibling shelf: world default (rank only)
+  });
+
   it('mode off: location ignored — no distance ranking, no city boost', async () => {
     await setWorldRules('off', null, 'show_nearest');
     const res = await fashion(`?lat=${VJA.lat}&lng=${VJA.lng}`);

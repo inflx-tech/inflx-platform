@@ -91,6 +91,19 @@ function validateConfigJson(cfg) {
     if (cfg.timer.label != null && typeof cfg.timer.label !== 'string') bad('config_json.timer.label must be a string', 'config_json.timer.label');
   }
   validateTapDestination(cfg.tap_destination, 'config_json.tap_destination');
+  // Phase 4a — per-section world-rules override (only the 3 location keys).
+  if (cfg.world_rules_override != null) {
+    const o = cfg.world_rules_override;
+    const f = 'config_json.world_rules_override';
+    if (typeof o !== 'object' || Array.isArray(o)) bad(`${f} must be an object`, f);
+    if (o.location_mode != null && !['boundary', 'rank_only', 'off'].includes(o.location_mode)) {
+      bad(`${f}.location_mode must be boundary|rank_only|off`, `${f}.location_mode`);
+    }
+    if (o.radius_km != null && !(Number(o.radius_km) > 0)) bad(`${f}.radius_km must be > 0`, `${f}.radius_km`);
+    if (o.empty_fallback != null && !['widen', 'show_nearest', 'show_empty'].includes(o.empty_fallback)) {
+      bad(`${f}.empty_fallback must be widen|show_nearest|show_empty`, `${f}.empty_fallback`);
+    }
+  }
   if (cfg.tiles != null) {
     if (!Array.isArray(cfg.tiles)) bad('config_json.tiles must be an array', 'config_json.tiles');
     cfg.tiles.forEach((t, i) => {

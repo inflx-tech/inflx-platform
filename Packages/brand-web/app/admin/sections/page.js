@@ -890,10 +890,29 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                 </label>
               </div>
             </div>
-            {(d.shelf_type === 'offers' || d.shelf_type === 'brands' || WINDOWED_RULES.has(d.rule)) && (
+            {(d.shelf_type === 'offers' || d.shelf_type === 'brands' || d.shelf_type === 'products' || d.shelf_type === 'restaurant_list' || WINDOWED_RULES.has(d.rule)) && (
               <div className="rounded-xl border border-gray-200 p-3">
                 <div className="text-xs font-bold text-gray-900 mb-2">Rule options</div>
                 <div className="flex items-end gap-4 flex-wrap">
+                  {['products', 'brands', 'restaurant_list'].includes(d.shelf_type) && (
+                    <label className="text-[11px] font-semibold text-gray-600">Location
+                      <select value={(cfg.world_rules_override || {}).location_mode || ''}
+                        onChange={e => patchCfg('world_rules_override', e.target.value ? { ...(cfg.world_rules_override || {}), location_mode: e.target.value } : null)}
+                        className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block bg-white">
+                        <option value="">World default</option>
+                        <option value="boundary">Boundary (hard radius)</option>
+                        <option value="rank_only">Rank only</option>
+                        <option value="off">Ignore location</option>
+                      </select>
+                    </label>
+                  )}
+                  {(cfg.world_rules_override || {}).location_mode === 'boundary' && (
+                    <label className="text-[11px] font-semibold text-gray-600">Radius km
+                      <input type="number" min="1" max="500" value={(cfg.world_rules_override || {}).radius_km ?? ''} placeholder="10"
+                        onChange={e => patchCfg('world_rules_override', { ...(cfg.world_rules_override || {}), radius_km: e.target.value === '' ? undefined : Math.max(1, Math.min(500, Number(e.target.value) || 0)) })}
+                        className="mt-0.5 w-20 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
+                    </label>
+                  )}
                   {d.shelf_type === 'offers' && (
                     <label className="text-[11px] font-semibold text-gray-600">Minimum discount %
                       <input type="number" min="0" max="100" value={cfg.min_discount_pct ?? ''} placeholder="any"
@@ -1513,9 +1532,28 @@ export default function SectionsPage() {
                         </select>
                       </label>
                     )}
-                    {/* Phase 1 — per-section rule knobs (offers: min discount · brands: live-offer gate · windowed rules: freshness) */}
-                    {(s.shelf_type === 'offers' || s.shelf_type === 'brands' || WINDOWED_RULES.has(s.rule)) && (
+                    {/* Phase 1 — per-section rule knobs (offers: min discount · brands: live-offer gate · windowed rules: freshness) · Phase 4a location override */}
+                    {(s.shelf_type === 'offers' || s.shelf_type === 'brands' || s.shelf_type === 'products' || s.shelf_type === 'restaurant_list' || WINDOWED_RULES.has(s.rule)) && (
                       <div className="flex items-end gap-4 flex-wrap rounded-lg border border-gray-200 bg-gray-50 p-2">
+                        {['products', 'brands', 'restaurant_list'].includes(s.shelf_type) && (
+                          <label className="text-[11px] font-semibold text-gray-600">Location
+                            <select value={(cfg.world_rules_override || {}).location_mode || ''}
+                              onChange={e => patchConfig(id, 'world_rules_override', e.target.value ? { ...(cfg.world_rules_override || {}), location_mode: e.target.value } : null)}
+                              className="mt-0.5 text-xs border border-gray-300 rounded px-2 py-1 block bg-white">
+                              <option value="">World default</option>
+                              <option value="boundary">Boundary (hard radius)</option>
+                              <option value="rank_only">Rank only</option>
+                              <option value="off">Ignore location</option>
+                            </select>
+                          </label>
+                        )}
+                        {(cfg.world_rules_override || {}).location_mode === 'boundary' && (
+                          <label className="text-[11px] font-semibold text-gray-600">Radius km
+                            <input type="number" min="1" max="500" value={(cfg.world_rules_override || {}).radius_km ?? ''} placeholder="10"
+                              onChange={e => patchConfig(id, 'world_rules_override', { ...(cfg.world_rules_override || {}), radius_km: e.target.value === '' ? undefined : Math.max(1, Math.min(500, Number(e.target.value) || 0)) })}
+                              className="mt-0.5 w-20 text-xs border border-gray-300 rounded px-2 py-1 block bg-white" />
+                          </label>
+                        )}
                         {s.shelf_type === 'offers' && (
                           <label className="text-[11px] font-semibold text-gray-600">Minimum discount %
                             <input type="number" min="0" max="100" value={cfg.min_discount_pct ?? ''} placeholder="any"

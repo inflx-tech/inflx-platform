@@ -193,6 +193,29 @@ function allocatedProductIds(ciCfg, setProductsJson) {
   return Array.from(ids);
 }
 
+// Phase 4b — LIVE allocation: honor the offer's declared SCOPE at read time.
+// The brand's offer builder already writes offer_config_json.scope:
+//   'store'    → ALL of the brand's currently-pushed products (live — new
+//                products flow to creator stores automatically)
+//   'category' → currently-pushed products in that section (live)
+//   'products' / bogo / bundle / absent → the hand-picked snapshot union
+//                (legacy allocatedProductIds, unchanged)
+// Before this, store/category-scoped offers allocated ZERO listed products
+// (their products arrays are empty by design) — the declared scope was ignored.
+async function resolveAllocatedProductIds({ ciCfg, offerProductsJson, brandId }) {
+  const cfg = ciCfg && typeof ciCfg === 'object' ? ciCfg : {};
+  const scope = String(cfg.scope || '').toLowerCase();
+  if (brandId && (scope === 'store' || (scope === 'category' && cfg.category))) {
+    const params = [brandId];
+    let sql = `SELECT id FROM brand_products
+                WHERE brand_id = $1 AND is_active = true AND pushed_to_store = true`;
+    if (scope === 'category') { params.push(cfg.category); sql += ` AND section = $2`; }
+    const { rows } = await db.query(sql, params);
+    return rows.map(r => r.id);
+  }
+  return allocatedProductIds(cfg, offerProductsJson);
+}
+
 async function resolveStore(handle) {
   const { rows: infRows } = await db.query(
     `SELECT i.*, u.name, u.status AS user_status, u.phone
@@ -225,14 +248,15 @@ async function resolveStore(handle) {
   // Fetch products — prioritize published products (with notes), then fill from brand catalog
   const offersWithProducts = [];
   for (const r of offerRows) {
-    // Phase 2b — show the products ALLOCATED to this creator by the live offer
-    // (offer-config snapshot ∪ the campaign set's products_json), automatically.
-    // No hand-picking. Any influencer note becomes an optional annotation, never
-    // a visibility gate. Phase 0: allocation additionally requires the product to
-    // still be pushed to the brand's store — the publish flow is list → push →
-    // allocate, so un-pushing a product also pulls it from every creator store.
+    // Phase 2b — show the products ALLOCATED to this creator by the live offer,
+    // automatically. Any influencer note is an optional annotation, never a
+    // visibility gate. Phase 0: allocation requires pushed_to_store. Phase 4b:
+    // store/category-scoped offers resolve LIVE (new products auto-flow);
+    // hand-picked lists stay frozen.
     const ciCfg = r.ci_offer_config || {};
-    const allocatedIds = allocatedProductIds(ciCfg, r.products_json);
+    const allocatedIds = await resolveAllocatedProductIds({
+      ciCfg, offerProductsJson: r.products_json, brandId: r.brand_id,
+    });
 
     let products = [];
     if (allocatedIds.length > 0) {
@@ -984,8 +1008,10 @@ async function getInfluencerStorePreview(influencerId) {
     // Phase 2b — same allocation source as the follower-facing resolveStore so
     // the creator's preview matches what followers see. (Was: notes-gated with a
     // full brand-catalogue ELSE fallback that leaked every product when the
-    // creator hadn't hand-picked anything.)
-    const allocatedIds = allocatedProductIds(r.ci_offer_config || {}, r.products_json);
+    // creator hadn't hand-picked anything.) Phase 4b: scope-aware + live.
+    const allocatedIds = await resolveAllocatedProductIds({
+      ciCfg: r.ci_offer_config || {}, offerProductsJson: r.products_json, brandId: r.brand_id,
+    });
     let products = [];
     if (allocatedIds.length > 0) {
       const { rows } = await db.query(
@@ -1056,4 +1082,5 @@ module.exports = {
   getBrandStorePreview,
   computeOpenStatus,        // Phase 1 (Dining) — exported so controllers can reuse the helper
   allocatedProductIds,      // Phase 3a — reused by sectionLibrary for creator-surface stacking
+  resolveAllocatedProductIds, // Phase 4b — scope-aware LIVE allocation (store/category)
 };
