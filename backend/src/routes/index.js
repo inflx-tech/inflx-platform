@@ -9,6 +9,7 @@ const agencyRoutes      = require('./agency.routes');
 const referralRoutes    = require('./referral.routes');
 const adminRoutes       = require('./admin.routes');
 const adminSectionsRoutes = require('./adminSections.routes');
+const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 const adminPagesRoutes = require('./adminPages.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
@@ -106,6 +107,9 @@ router.use('/admin/referrals', referralAdminRoutes);
 
 // ── Section Manager admin API (Creator Vibe Phase B — admin only) ────────────
 router.use('/admin/sections', adminSectionsRoutes);
+
+// ── World Rules admin API (Phase 3, mig 126 — admin only) ────────────────────
+router.use('/admin/world-rules', adminWorldRulesRoutes);
 
 // ── Custom-page registry admin API (App Builder — admin only) ────────────────
 router.use('/admin/pages', adminPagesRoutes);

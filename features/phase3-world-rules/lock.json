@@ -1,0 +1,21 @@
+{
+  "feature": "phase3-world-rules",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"push the phase 2 and start phase 3\", 2026-07-06 — lock delegated; per-world-only accepted, per-section override deferred to Phase 4)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — features/phase3-world-rules/04-preview/mockups/world-settings.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Phase 3 of the section-rules admin-control program: per-world World Rules. Mig 126 world_rule_settings (ships EMPTY = legacy rank_only, inert on deploy; prod runner run-126.js MUST run before/with the deploy); engine seam ctx.worldRules + cache-key inclusion + engine-level empty-fallback (widen/show_nearest/show_empty); boundaryClause in the 4 discovery listing rules (coords radius / city match / degrade), curation surfaces exempt; admin API /v1/admin/world-rules + World Settings screen + nav. Offers/creators rules stay rank-only this phase (documented limitation). 3c (flip food→Boundary) = founder action in the new screen post-deploy. Production-impacting — push gated on explicit founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

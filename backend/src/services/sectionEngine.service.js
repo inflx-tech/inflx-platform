@@ -53,6 +53,23 @@ function sectionKey(row) {
 const SCHEDULE_WINDOW = `(starts_at IS NULL OR starts_at <= now())
         AND (ends_at IS NULL OR ends_at > now())`;
 
+// Phase 3 (World Rules, mig 126): per-world engine behaviour — location mode
+// (boundary/rank_only/off), radius, empty-area fallback, freshness default.
+// ABSENT ROW = legacy rank_only behaviour. Cached via ttlCache so an admin
+// save converges within the same TTL window as section edits (~60s).
+async function getWorldRules(worldKey) {
+  if (!worldKey) return null;
+  const cached = await cache.getOrSet(`world_rules:${worldKey}`, async () => {
+    const { rows } = await db.query(
+      `SELECT world_key, location_mode, radius_km, empty_fallback,
+              window_days_default, item_limit_default
+         FROM world_rule_settings WHERE world_key = $1`, [worldKey]
+    );
+    return rows[0] || false; // false (not null) so "no row" is cacheable
+  });
+  return cached || null;
+}
+
 /**
  * Load enabled shelves for (screen, scopeType, scopeValue), merging layers:
  * global < vertical(/other scope) < CITY (P5, features/section-analytics-city/).
@@ -190,13 +207,17 @@ async function buildSections(opts) {
     const isBannerGateway = row.rule === 'library_products' && cfg.presentation_type === 'banner';
     if (isBannerGateway && libUnresolved) continue; // deleted/hidden rule → permanent dead end
 
+    // Phase 3 — the world whose rules govern this row, then its settings.
+    const rowVertical = scopeType === 'vertical' ? scopeValue : (rowCategoryKey || null);
+    const worldRules = await getWorldRules(rowVertical);
+
     const ctx = {
       // ── Standardized placement context (App Builder Phase 1) ──────────────
       // Every rule receives WHERE it is placed so it can self-filter: the same
       // section behaves differently by scope/world/business/viewer. Existing
       // rules ignore the fields they don't use.
       scope: screen,                                       // home | category | offers | creator_store | creator_category | business
-      vertical: scopeType === 'vertical' ? scopeValue : (rowCategoryKey || null), // the world (food/fashion/…)
+      vertical: rowVertical,                               // the world (food/fashion/…)
       brandId,                                             // set when rendering a business page → brand-scoped rules
       city,
       followerId,
@@ -208,8 +229,10 @@ async function buildSections(opts) {
       influencer,
       itemType: row.item_type || null,
       limit: row.item_limit || 8,
-      windowDays: cfg.window_days || 7,
+      // freshness: section override > world default (mig 126) > legacy 7
+      windowDays: cfg.window_days || (worldRules && worldRules.window_days_default) || 7,
       config: cfg,
+      worldRules,                    // Phase 3 — location mode/radius/fallback (null = legacy)
       lat, lng,   // follower coords → distance ranking (listing rules)
     };
 
@@ -220,6 +243,8 @@ async function buildSections(opts) {
       ctx.categoryKey, ctx.limit, city, followerId, influencer?.id || null,
       brandId || null,                  // distinct cache per business page
       cfg.library_section_id || null,   // distinct cache per placed library section
+      // Phase 3 — world-rules state, so an admin mode/radius flip converges in one TTL
+      worldRules ? [worldRules.location_mode, worldRules.radius_km, worldRules.empty_fallback] : null,
       // round coords to ~100m so nearby followers share a cache entry
       lat != null ? Math.round(lat * 1000) / 1000 : null,
       lng != null ? Math.round(lng * 1000) / 1000 : null,
@@ -265,6 +290,23 @@ async function buildSections(opts) {
       } catch (err) {
         console.error(`[sectionEngine] rule '${row.rule}' for shelf '${row.shelf_key}' failed:`, err.message);
         items = []; // graceful — a broken shelf never 500s the feed
+      }
+    }
+
+    // Phase 3 — boundary empty-fallback (one place for every rule): a boundary
+    // world whose shelf resolved empty retries per the world's fallback —
+    // 'widen' = one retry at 2× radius; 'show_nearest' = retry unbounded
+    // (rank-only); 'show_empty' = honest empty. Cached separately.
+    if (!items.length && !libUnresolved && worldRules
+        && worldRules.location_mode === 'boundary' && worldRules.empty_fallback !== 'show_empty') {
+      const relaxed = worldRules.empty_fallback === 'widen'
+        ? { ...worldRules, radius_km: (Number(worldRules.radius_km) || 0) * 2 }
+        : { ...worldRules, location_mode: 'rank_only' };
+      try {
+        items = await cache.getOrSet(`${key}:fb`, () => runRule(row.rule, { ...ctx, worldRules: relaxed }));
+      } catch (err) {
+        console.error(`[sectionEngine] fallback for shelf '${row.shelf_key}' failed:`, err.message);
+        items = [];
       }
     }
 

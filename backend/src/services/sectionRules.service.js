@@ -171,6 +171,34 @@ function haversineKm(latIdx, lngIdx, latCol = 'b.lat', lngCol = 'b.lng') {
 }
 const hasCoords = (ctx) => Number.isFinite(ctx?.lat) && Number.isFinite(ctx?.lng);
 
+// ── Phase 3 (World Rules, mig 126) ──────────────────────────────────────────
+// Per-world location mode for the rule's world. Absent settings = rank_only
+// (the legacy soft-boost behaviour, byte-identical SQL).
+const locationMode = (ctx) => (ctx?.worldRules && ctx.worldRules.location_mode) || 'rank_only';
+
+// Hard boundary WHERE fragment for DISCOVERY listing rules. Never applied on
+// a brand's own page or a creator store (curation surfaces — a share link
+// from another city must still open a full page). With coords + radius:
+// haversine <= radius_km (rows lacking coords are excluded — a boundary
+// can't vouch for them). No coords but a city: exact city match. Neither:
+// '' — degrades to rank-only rather than guessing.
+function boundaryClause(ctx, params, nextIdx, { latCol = 'b.lat', lngCol = 'b.lng', cityCol = 'u_b.city' } = {}) {
+  if (locationMode(ctx) !== 'boundary') return '';
+  if (ctx.brandId || (ctx.influencer && ctx.influencer.id)) return '';
+  const radius = Number(ctx.worldRules.radius_km);
+  if (hasCoords(ctx) && Number.isFinite(radius) && radius > 0) {
+    const latIdx = nextIdx(); params.push(ctx.lat);
+    const lngIdx = nextIdx(); params.push(ctx.lng);
+    const radIdx = nextIdx(); params.push(radius);
+    return `AND ${latCol} IS NOT NULL AND ${lngCol} IS NOT NULL AND ${haversineKm(latIdx, lngIdx, latCol, lngCol)} <= $${radIdx}`;
+  }
+  if (ctx.city) {
+    const cIdx = nextIdx(); params.push(ctx.city);
+    return `AND LOWER(${cityCol}) = LOWER($${cIdx})`;
+  }
+  return '';
+}
+
 // ── OFFER rules ─────────────────────────────────────────────────────────────
 
 // Engagement = recent clicks (link_clicks) + recent conversions (txns) on the offer.
@@ -680,8 +708,10 @@ function mapListedProductItem(r) {
 
 // Approved brands in a category that have a live menu. No offer required.
 async function businessesInCategory(ctx) {
-  const { city, limit = 8, categoryKey } = ctx;
-  const geo = hasCoords(ctx);
+  const { limit = 8, categoryKey } = ctx;
+  const locMode = locationMode(ctx);
+  const city = locMode === 'off' ? null : ctx.city;
+  const geo = hasCoords(ctx) && locMode !== 'off';
   const cats = categoryFilter(ctx);
   const params = [];
   let p = 0;
@@ -692,6 +722,7 @@ async function businessesInCategory(ctx) {
   if (city && !geo) params.push(city);
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
+  const boundarySql = boundaryClause(ctx, params, () => ++p);
   const limIdx = ++p; params.push(limit);
 
   const distExpr = geo
@@ -712,6 +743,7 @@ async function businessesInCategory(ctx) {
      WHERE u_b.status = 'approved'
        AND EXISTS (SELECT 1 FROM brand_products bp WHERE bp.brand_id = b.id AND bp.is_active = true AND bp.pushed_to_store = true)
        ${(ctx.config || {}).has_live_offer === true ? `AND ${anyLiveOfferExists('b.id')}` : ''}
+       ${boundarySql}
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
@@ -721,8 +753,10 @@ async function businessesInCategory(ctx) {
 
 // Active products from approved brands in a category. No offer required.
 async function productsInCategory(ctx) {
-  const { city, limit = 8, categoryKey } = ctx;
-  const geo = hasCoords(ctx);
+  const { limit = 8, categoryKey } = ctx;
+  const locMode = locationMode(ctx);
+  const city = locMode === 'off' ? null : ctx.city;
+  const geo = hasCoords(ctx) && locMode !== 'off';
   const cats = categoryFilter(ctx);
   const params = [];
   let p = 0;
@@ -732,6 +766,7 @@ async function productsInCategory(ctx) {
   if (city && !geo) params.push(city);
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
+  const boundarySql = boundaryClause(ctx, params, () => ++p);
   const limIdx = ++p; params.push(limit);
 
   const distExpr = geo
@@ -758,6 +793,7 @@ async function productsInCategory(ctx) {
          WHERE rr.brand_id = b.id AND rr.status = 'published'
       ) rev ON true
      WHERE u_b.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
+       ${boundarySql}
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
@@ -775,8 +811,10 @@ async function productsInCategory(ctx) {
 // surfaces); a creator surface ADDITIONALLY intersects with live allocation.
 async function libraryProducts(ctx) {
   const def = (ctx.ruleDef && typeof ctx.ruleDef === 'object') ? ctx.ruleDef : {};
-  const { city, limit = 8 } = ctx;
-  const geo = hasCoords(ctx);
+  const { limit = 8 } = ctx;
+  const locMode = locationMode(ctx);
+  const city = locMode === 'off' ? null : ctx.city;
+  const geo = hasCoords(ctx) && locMode !== 'off';
   const cats = categoryFilter(ctx);                       // business → brand.category members
   const creatorScoped = !!(ctx.influencer && ctx.influencer.id);
 
@@ -827,6 +865,7 @@ async function libraryProducts(ctx) {
   const cityIdx = (city && !geo) ? ++p : null; if (city && !geo) params.push(city);
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
+  const boundarySql = boundaryClause(ctx, params, () => ++p);
   const limIdx = ++p; params.push(limit);
 
   const distExpr = geo
@@ -898,6 +937,7 @@ async function libraryProducts(ctx) {
       ) rev ON true
      WHERE u_b.status = 'approved' AND bp.is_active = true
        AND bp.pushed_to_store = true
+       ${boundarySql}
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
        ${subClause}
        ${tagsIdx ? `AND bp.tags @> $${tagsIdx}` : ''}
@@ -923,8 +963,10 @@ async function libraryProducts(ctx) {
 // Restaurants with no displayable dish are omitted. Category-scoped (restaurant
 // by default). The mobile renderer draws the header card + a nested dish rail.
 async function restaurantsWithFeatured(ctx) {
-  const { city, limit = 8 } = ctx;
-  const geo = hasCoords(ctx);
+  const { limit = 8 } = ctx;
+  const locMode = locationMode(ctx);
+  const city = locMode === 'off' ? null : ctx.city;
+  const geo = hasCoords(ctx) && locMode !== 'off';
   const cats = categoryFilter(ctx);
   const perRestaurant = Math.min(Math.max(parseInt(ctx.featuredPerRestaurant, 10) || 8, 1), 12);
 
@@ -934,6 +976,7 @@ async function restaurantsWithFeatured(ctx) {
   const cityIdx = (city && !geo) ? ++p : null; if (city && !geo) params.push(city);
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
+  const boundarySql = boundaryClause(ctx, params, () => ++p);
   const limIdx = ++p; params.push(limit);
 
   const distExpr = geo
@@ -961,6 +1004,7 @@ async function restaurantsWithFeatured(ctx) {
        AND ${cats ? `b.category = ANY($${catIdx})` : `b.category = 'restaurant'`}
        AND EXISTS (SELECT 1 FROM brand_products bp
                     WHERE bp.brand_id = b.id AND bp.is_active = true AND bp.pushed_to_store = true)
+       ${boundarySql}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
   const { rows: brands } = await db.query(brandSql, params);

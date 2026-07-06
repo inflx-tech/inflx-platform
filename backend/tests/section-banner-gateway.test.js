@@ -23,10 +23,20 @@ const ttlCache = require('../src/utils/ttlCache');
 const get = (path) => request(app).get(path);
 const byKey = (sections, key) => sections.find(s => s.key === key);
 
+const cleanOwnRows = async () => {
+  await query(`DELETE FROM section_config WHERE shelf_key IN
+    ('banner_match','banner_dry','banner_unresolved','static_frame','biz_banner')`);
+};
+
 beforeEach(async () => {
   await truncateAll();
+  // section_config survives truncateAll (no users FK) — clear our own rows.
+  await cleanOwnRows();
   ttlCache.clear();
 });
+
+// NOTE: no afterAll cleanup — the shared pg pool is already ended by the
+// harness when file-level afterAll runs. beforeEach self-cleaning covers reruns.
 
 async function seedFashionProduct() {
   const brandUser = (await query(

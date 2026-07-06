@@ -628,6 +628,11 @@ export const adminApi = {
   setDishGroupMembers:(id, master_dish_ids) => api.put(`/admin/dish-groups/${id}/members`, { master_dish_ids }),
   suggestDishGroupMembers: (q) => api.get(`/admin/dish-groups/suggest?q=${encodeURIComponent(q || '')}`),
 
+  // World Rules (Phase 3, mig 126) — per-world engine behaviour
+  listWorldRules:   () => api.get('/admin/world-rules'),
+  saveWorldRules:   (worldKey, data) => api.put(`/admin/world-rules/${encodeURIComponent(worldKey)}`, data),
+  deleteWorldRules: (worldKey) => api.delete(`/admin/world-rules/${encodeURIComponent(worldKey)}`),
+
   // Follower v2 home builder — world verticals + their category rails
   listHomeVerticals:   () => api.get('/admin/home-verticals'),
   createHomeVertical:  (data) => api.post('/admin/home-verticals', data),
