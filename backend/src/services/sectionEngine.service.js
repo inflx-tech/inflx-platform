@@ -184,27 +184,11 @@ async function buildSections(opts) {
     const libUnresolved = row.rule === 'library_products' && !libResolved;
 
     // Phase 6 — Banner-Gateway (B): a library section placement shown as a tappable
-    // banner. It is a GATEWAY (tap → Results re-runs the rule), so we do NOT pre-run
-    // the rule here; emit always so the marketing banner shows regardless of matches.
-    if (row.rule === 'library_products' && cfg.presentation_type === 'banner' && libResolved) {
-      sections.push({
-        key: sectionKey(row),
-        shelf_key: row.shelf_key,
-        title: interpolate(row.title, {
-          city, categoryKey: rowCategoryKey,
-          categoryLabel: rowCategoryKey ? taxMaps.labelsByKey[rowCategoryKey] : null,
-          creatorHandle,
-        }),
-        type: 'banner_gateway',
-        item_type: row.item_type || null,
-        rule: row.rule,
-        config: cfg,
-        starts_at: row.starts_at || null,
-        ends_at: row.ends_at || null,
-        items: [],
-      });
-      continue;
-    }
+    // banner (tap → Results re-runs the rule). Phase 2 (rule-controls program):
+    // hide-when-empty — a banner whose rule matches NOTHING in this context is a
+    // dead-end tap, so it is probed below (rule at limit 1) and dropped when dry.
+    const isBannerGateway = row.rule === 'library_products' && cfg.presentation_type === 'banner';
+    if (isBannerGateway && libUnresolved) continue; // deleted/hidden rule → permanent dead end
 
     const ctx = {
       // ── Standardized placement context (App Builder Phase 1) ──────────────
@@ -241,6 +225,37 @@ async function buildSections(opts) {
       lng != null ? Math.round(lng * 1000) / 1000 : null,
     ]);
 
+    // Banner gateway: probe the rule at limit 1 under the section's own cache key
+    // (it already carries brand/creator/city/coords context) — drop when nothing
+    // matches HERE; emit the same shell shape as before when something does.
+    if (isBannerGateway) {
+      let probe = [];
+      try {
+        probe = await cache.getOrSet(`${key}:exists`, () => runRule(row.rule, { ...ctx, limit: 1 }));
+      } catch (err) {
+        console.error(`[sectionEngine] banner probe for shelf '${row.shelf_key}' failed:`, err.message);
+        probe = []; // broken probe → hide the banner rather than dead-end the tap
+      }
+      if (!probe.length) continue;
+      sections.push({
+        key: sectionKey(row),
+        shelf_key: row.shelf_key,
+        title: interpolate(row.title, {
+          city, categoryKey: rowCategoryKey,
+          categoryLabel: rowCategoryKey ? taxMaps.labelsByKey[rowCategoryKey] : null,
+          creatorHandle,
+        }),
+        type: 'banner_gateway',
+        item_type: row.item_type || null,
+        rule: row.rule,
+        config: cfg,
+        starts_at: row.starts_at || null,
+        ends_at: row.ends_at || null,
+        items: [],
+      });
+      continue;
+    }
+
     let items = [];
     if (libUnresolved) {
       items = []; // unresolved library placement → empty (never the whole catalogue)
@@ -252,6 +267,11 @@ async function buildSections(opts) {
         items = []; // graceful — a broken shelf never 500s the feed
       }
     }
+
+    // Phase 2 — rule-driven hero-tiles share the banner's hide-when-empty
+    // semantics (their items COME from the rule; static frames keep rule='static'
+    // + items in config.tiles and are never dropped here).
+    if (row.rule === 'library_products' && cfg.presentation_type === 'hero_tiles' && !items.length) continue;
 
     sections.push({
       key: sectionKey(row),

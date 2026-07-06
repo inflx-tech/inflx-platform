@@ -1,0 +1,21 @@
+{
+  "feature": "phase2-banner-hide-empty",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"push and continue\", 2026-07-06 — lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "n/a — backend-only phase, no UI surface (prediction doc only); field set for pipeline consistency",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Phase 2 of the section-rules admin-control program: banner_gateway hide-when-empty. Engine probes the banner's rule at limit 1 (cached key+':exists', context-aware: brand/creator/city/coords) and OMITS the section when dry; unresolved gateways and empty rule-driven hero_tiles also drop; static frames provably never dropped. Backend only — kept banners byte-identical on the wire, no OTA, no Maestro. Intended follower-visible change; prod section_config currently empty so inert on deploy day until sections are rebuilt.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
