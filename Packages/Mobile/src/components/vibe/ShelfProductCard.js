@@ -65,7 +65,10 @@ const styles = StyleSheet.create({
     backgroundColor: C.card, borderWidth: 1, borderColor: C.line,
     shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 8 }, shadowRadius: 14, elevation: 2,
   },
-  hero: { height: 104, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  // Portrait 3:4 image box (was a 154×104 landscape box that sliced tall apparel
+  // photos in half). Brands shoot products portrait (2:3–3:4), so a 3:4 box +
+  // cover fills with negligible crop instead of cutting the garment top/bottom.
+  hero: { width: '100%', aspectRatio: 3 / 4, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
   heroImg: { width: '100%', height: '100%' },
   heroIcon: { fontSize: 42 },
   rank: { position: 'absolute', top: 9, left: 9 },

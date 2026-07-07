@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Product card image fit</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f3f4f6;margin:0;padding:24px;color:#111}
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .col{width:180px}
+  h3{font-size:13px;margin:0 0 8px}
+  .card{width:154px;border-radius:18px;overflow:hidden;background:#fff;border:1px solid #e5e7eb}
+  .heroBad{height:104px;background:#f6efe2 center/cover no-repeat}
+  .heroGood{width:100%;aspect-ratio:3/4;background:#f6efe2 center/cover no-repeat}
+  .b{background-image:url('https://inflx-platform.onrender.com/v1/media/assets/b66f545f-72f2-471b-9ea8-b7ad291a5f41')}
+  .body{padding:8px}
+  .name{font-size:12px;font-weight:700}.brand{font-size:11px;color:#6b7280}.price{font-size:13px;font-weight:800;margin-top:2px}
+  .note{font-size:11px;color:#9ca3af;margin-top:8px}
+</style></head><body>
+<div class="row">
+  <div class="col">
+    <h3>Before — 154×104 landscape (cover) → half cut</h3>
+    <div class="card"><div class="heroBad b"></div>
+      <div class="body"><div class="name">Adidas Cotton T-Shirt</div><div class="brand">Charvitha Fashions</div><div class="price">₹1,184</div></div></div>
+    <div class="note">tall photo sliced top+bottom</div>
+  </div>
+  <div class="col">
+    <h3>After — portrait 3:4 (cover) → full garment</h3>
+    <div class="card"><div class="heroGood b"></div>
+      <div class="body"><div class="name">Adidas Cotton T-Shirt</div><div class="brand">Charvitha Fashions</div><div class="price">₹1,184</div></div></div>
+    <div class="note">portrait box matches apparel photos · upload 3:4 (1080×1440) for zero crop</div>
+  </div>
+</div>
+</body></html>

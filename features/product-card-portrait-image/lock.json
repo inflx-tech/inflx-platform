@@ -1,0 +1,21 @@
+{
+  "feature": "product-card-portrait-image",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"half cut images … suggest right sizes\", 2026-07-06; lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — before/after mockup features/product-card-portrait-image/04-preview/mockups/card-fit.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Fix: follower product shelf cropped apparel ('half cut'). Cause = ShelfProductCard hero was a 154x104 landscape box + cover, slicing measured-portrait product photos (2:3-3:4). Fix = portrait 3:4 hero box, keep cover; food + detail untouched. Brand guidance: upload 3:4 (1080x1440). Mobile/OTA — released stays false until OTA published + founder on-device confirm (Maestro owed, no device at build).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
