@@ -1,0 +1,9 @@
+{
+  "feature": "inventory-image-remove-bulk",
+  "spec_version": "1.0.0", "status": "locked", "approved": true,
+  "approved_by": "founder (screenshot: images/remove broken + wants bulk delete, 2026-07-06; lock delegated)",
+  "approved_at": "2026-07-06", "preview_reviewed": true, "impact_reviewed": true,
+  "mockup_locked": true, "mockup_locked_by": "founder (delegated — inventory mockup)", "mockup_locked_at": "2026-07-06",
+  "notes": "Inventory page (/dashboard/products): rows now render product.image_url (was a dress icon); getMyNodeProducts filters is_active=true so Remove actually drops the row (was returning soft-deleted); added multi-select + bulk delete (loops DELETE, no bulk endpoint). Backend + brand-web, no migration/OTA. Production-impacting (Render+Vercel) — push gated on founder go.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}

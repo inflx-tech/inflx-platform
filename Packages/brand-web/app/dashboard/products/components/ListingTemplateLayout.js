@@ -580,12 +580,21 @@ function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRem
   );
 }
 
-function DefaultFleetRow({ product, icon, onRemove, onTogglePush, onEdit }) {
+function DefaultFleetRow({ product, icon, onRemove, onTogglePush, onEdit, selected, onToggleSelect }) {
   const pushed = product.pushed_to_store !== false;
   return (
-    <div className={`bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 ${pushed ? '' : 'opacity-60'}`}>
-      <div className="w-20 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
-        {icon || '📋'}
+    <div className={`bg-white border rounded-xl p-4 flex items-center gap-4 ${selected ? 'border-yellow ring-1 ring-yellow' : 'border-gray-200'} ${pushed ? '' : 'opacity-60'}`}>
+      {onToggleSelect && (
+        // eslint-disable-next-line jsx-a11y/label-has-associated-control
+        <input type="checkbox" checked={!!selected} onChange={onToggleSelect}
+          aria-label={`Select ${product.name}`}
+          className="w-4 h-4 flex-shrink-0 cursor-pointer accent-yellow-deep" />
+      )}
+      <div className="w-20 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+        {product.image_url
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img src={product.image_url} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          : (icon || '📋')}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -636,6 +645,8 @@ function DrilldownFleetView({ flatProducts, icon, labelPlural, onRemove, onToggl
   const [rowsLoading, setRowsLoading] = useState(false);
   const [err, setErr] = useState('');
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(new Set());   // bulk-select in the leaf view
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     let cancel = false;
@@ -646,7 +657,7 @@ function DrilldownFleetView({ flatProducts, icon, labelPlural, onRemove, onToggl
   }, []);
 
   const loadLeaf = useCallback(async (node) => {
-    setRowsLoading(true); setRows([]);
+    setRowsLoading(true); setRows([]); setSelected(new Set());
     const r = await brandApi.get(`/brands/me/listing-nodes/${node.id}/products`);
     setRowsLoading(false);
     if (r.success) setRows(r.data.products || []); else setErr(r.error?.message || 'Failed to load products');
@@ -667,9 +678,25 @@ function DrilldownFleetView({ flatProducts, icon, labelPlural, onRemove, onToggl
   const removeRow = async (id) => { await onRemove(id); refetchLeaf(); };
   const toggleRow = async (id, next) => { await onTogglePush(id, next); refetchLeaf(); };
 
+  const toggleSelect = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allSelected = rows.length > 0 && rows.every(p => selected.has(p.id));
+  const toggleSelectAll = () => setSelected(allSelected ? new Set() : new Set(rows.map(p => p.id)));
+  const bulkDelete = async () => {
+    if (!selected.size || bulkBusy) return;
+    if (!confirm(`Remove ${selected.size} product${selected.size === 1 ? '' : 's'}? This can't be undone here.`)) return;
+    setBulkBusy(true);
+    const ids = Array.from(selected);
+    let failed = 0;
+    for (const id of ids) {
+      try { await brandApi.delete(`/brands/me/products/${id}`); } catch { failed += 1; }
+    }
+    setBulkBusy(false); setSelected(new Set()); refetchLeaf();
+    if (failed) alert(`${failed} of ${ids.length} could not be removed.`);
+  };
+
   const q = search.trim().toLowerCase();
   const results = q ? (flatProducts || []).filter(p => (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)) : [];
-  const rowEl = (p) => <DefaultFleetRow key={p.id} product={p} icon={icon} onRemove={() => removeRow(p.id)} onTogglePush={toggleRow} onEdit={() => { window.location.href = `/dashboard/products/listing?edit=${p.id}`; }} />;
+  const rowEl = (p) => <DefaultFleetRow key={p.id} product={p} icon={icon} onRemove={() => removeRow(p.id)} onTogglePush={toggleRow} selected={selected.has(p.id)} onToggleSelect={() => toggleSelect(p.id)} onEdit={() => { window.location.href = `/dashboard/products/listing?edit=${p.id}`; }} />;
 
   if (loading) return <div className="text-center text-sm text-gray-400 py-10">Loading your inventory…</div>;
 
@@ -732,7 +759,25 @@ function DrilldownFleetView({ flatProducts, icon, labelPlural, onRemove, onToggl
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-wide text-gray-400 font-bold">{leaf.name} — {rows.length} product{rows.length === 1 ? '' : 's'}</p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-xs uppercase tracking-wide text-gray-400 font-bold">{leaf.name} — {rows.length} product{rows.length === 1 ? '' : 's'}</p>
+                {rows.length > 0 && (
+                  <label className="text-xs font-semibold text-gray-500 flex items-center gap-1.5 cursor-pointer">
+                    <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="w-4 h-4 accent-yellow-deep cursor-pointer" />
+                    Select all
+                  </label>
+                )}
+              </div>
+              {selected.size > 0 && (
+                <div className="flex items-center gap-3 bg-yellow-pale border border-yellow rounded-xl px-3 py-2 sticky top-2 z-10">
+                  <span className="text-xs font-bold text-ink-1">{selected.size} selected</span>
+                  <button onClick={bulkDelete} disabled={bulkBusy}
+                    className="text-xs font-bold text-red-600 hover:text-red-700 disabled:opacity-50">
+                    {bulkBusy ? 'Removing…' : `🗑 Delete selected (${selected.size})`}
+                  </button>
+                  <button onClick={() => setSelected(new Set())} className="text-xs font-semibold text-gray-500 hover:text-gray-800 ml-auto">Clear</button>
+                </div>
+              )}
               {rowsLoading ? <p className="text-sm text-gray-400">Loading…</p>
                 : rows.length === 0 ? <p className="text-sm text-gray-400">No products under {leaf.name} yet.</p>
                 : rows.map(rowEl)}

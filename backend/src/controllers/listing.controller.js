@@ -634,7 +634,8 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
        FROM brand_products bp
        JOIN category_nodes cn ON cn.id = bp.category_node_id
       WHERE bp.brand_id = $2 AND bp.category_node_id IN (SELECT id FROM sub)
-      ORDER BY bp.is_active DESC, bp.created_at DESC NULLS LAST`,
+        AND bp.is_active = true
+      ORDER BY bp.created_at DESC NULLS LAST`,
     [node.id, brand.id]
   );
 
