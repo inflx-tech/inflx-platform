@@ -1,0 +1,9 @@
+{
+  "feature": "bulk-import-photos-shown",
+  "spec_version": "1.0.0", "status": "locked", "approved": true,
+  "approved_by": "founder (\"gave image URLs in excel but still asks to upload\", 2026-07-06; lock delegated)",
+  "approved_at": "2026-07-06", "preview_reviewed": true, "impact_reviewed": true,
+  "mockup_locked": true, "mockup_locked_by": "founder (delegated — tray mockup)", "mockup_locked_at": "2026-07-06",
+  "notes": "Bulk import ingested Excel image URLs correctly but the tray showed 'needs photos' (INSERT RETURNING omitted image_url; needs_photos=ALL). Fix returns image_url+photo_count, needs_photos=photo-less only; splitUrls comma|newline + dedup across size rows. Backend-only, no migration/OTA. Production-impacting (Render) — push gated on founder go.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}

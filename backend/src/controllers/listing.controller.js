@@ -115,7 +115,7 @@ async function insertProducts(brand, node, items) {
            (brand_id, name, price, mrp, sku, category_key, super_category, section,
             image_url, description, stock, variants_json, category_node_id, facets, is_active)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,true)
-         RETURNING id, name, price, sku, category_node_id`,
+         RETURNING id, name, price, sku, category_node_id, image_url`,
         [brand.id, String(it.name).trim(), Number(it.price),
          (it.mrp != null && it.mrp !== '') ? Number(it.mrp) : null,
          sku, node.vertical, node.segment, node.category,
@@ -123,7 +123,11 @@ async function insertProducts(brand, node, items) {
          it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
          JSON.stringify(variantsJson), node.id, JSON.stringify(facets)]
       );
-      created.push(rows[0]);
+      // Count photos this product already has (from URL-ingested cover + colour
+      // images) so the post-import tray shows "photo added", not "needs photos".
+      const photoSet = new Set(cover);
+      (variantsJson.colors || []).forEach(cc => (cc.images || []).forEach(u => u && photoSet.add(u)));
+      created.push({ ...rows[0], photo_count: photoSet.size });
     }
 
     // Capture custom (typed) brands into the directory — feeds the future flywheel.
@@ -309,8 +313,8 @@ const importProducts = asyncHandler(async (req, res) => {
   return success(res, {
     node: { id: node.id, segment: node.segment, category: node.category, name: node.name },
     created_count: created.length,
-    products: created,                       // id + sku → drives the post-import photo tray
-    needs_photos: created.map(p => p.id),
+    products: created,                       // id + sku + image_url + photo_count → drives the tray
+    needs_photos: created.filter(p => !p.image_url).map(p => p.id), // only the ones with NO photo yet
     skipped,                                 // names already in the listing — not re-created
     image_warnings: imageWarnings,           // links we couldn't fetch (product still created)
     value_warnings: valueWarnings,           // unrecognised optional tags we dropped

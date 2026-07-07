@@ -210,7 +210,9 @@ function buildItems(rows, node, facets) {
         : raw;
     });
 
-    const splitUrls = (s) => norm(s).split(',').map(x => x.trim()).filter(Boolean);
+    // Split an image-URL cell on commas OR newlines (brands paste either), and
+    // dedup within the cell.
+    const splitUrls = (s) => [...new Set(norm(s).split(/[,\n\r]+/).map(x => x.trim()).filter(Boolean))];
 
     let variants;
     if (hasVariants) {
@@ -224,7 +226,9 @@ function buildItems(rows, node, facets) {
         const stock = norm(get(row, 'Variant stock'));
         if (size) { byColor.get(color).push({ size, stock: stock === '' ? null : stock }); sizes.add(size); }
         const us = splitUrls(get(row, 'Colour image URLs'));
-        if (us.length) colorImgs.set(color, [...(colorImgs.get(color) || []), ...us]);
+        // Dedup across the colour's size rows — the same URLs repeated on every
+        // size row must not become N copies in the carousel.
+        if (us.length) colorImgs.set(color, [...new Set([...(colorImgs.get(color) || []), ...us])]);
       });
       facetVals[COLOR_KEY] = [...byColor.keys()];
       if (sizes.size) facetVals[SIZE_KEY] = [...sizes];
