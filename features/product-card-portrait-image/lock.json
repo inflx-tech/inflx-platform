@@ -13,9 +13,11 @@
   "notes": "Fix: follower product shelf cropped apparel ('half cut'). Cause = ShelfProductCard hero was a 154x104 landscape box + cover, slicing measured-portrait product photos (2:3-3:4). Fix = portrait 3:4 hero box, keep cover; food + detail untouched. Brand guidance: upload 3:4 (1080x1440). Mobile/OTA — released stays false until OTA published + founder on-device confirm (Maestro owed, no device at build).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "maestro_green": false
+    "released": true,
+    "released_by": "founder (\"push and OTA pls\", 2026-07-06) — OTA follower v183 / brand v135 / influencer v126 / agency v34",
+    "released_at": "2026-07-06",
+    "deploy": "OTA published 2026-07-06 — follower v183, brand v135, influencer v126, agency v34 (publish-ota:all). Backend/web unaffected (mobile style-only).",
+    "maestro_green": false,
+    "maestro_debt": "OWED — no Android device at release (qa:maestro:doctor RED, environment). Founder verifies on-device (portrait card fit) with the owed v180–v183 batch; run pnpm qa:maestro on next device session and flip maestro_green."
   }
 }
