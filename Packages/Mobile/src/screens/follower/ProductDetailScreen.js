@@ -509,7 +509,7 @@ export default function ProductDetailScreen({ navigation, route }) {
                   onMomentumScrollEnd={e => setImageIndex(Math.round(e.nativeEvent.contentOffset.x / HERO_W))}
                 >
                   {images.map((uri, i) => (
-                    <Image key={i} source={{ uri }} style={styles.heroImage} resizeMode="cover" />
+                    <Image key={i} source={{ uri }} style={styles.heroImage} resizeMode="contain" />
                   ))}
                 </ScrollView>
               ) : (
@@ -815,7 +815,10 @@ const styles = StyleSheet.create({
   },
   backFloatingText: { fontSize: 18, color: P.ink, fontWeight: '700' },
 
-  hero: { height: 332, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
+  // Portrait 3:4 hero + contain: shows the WHOLE product photo (portrait
+  // apparel shots) instead of the old 332px near-square box + cover that
+  // sliced the model's head and feet. Pale bg fills any letterbox margin.
+  hero: { width: '100%', aspectRatio: 3 / 4, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
   heroImage: { width: HERO_W, height: '100%' },
   heroEmoji: { fontSize: 96 },
   heroDots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },

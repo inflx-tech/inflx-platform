@@ -1,0 +1,21 @@
+{
+  "feature": "product-detail-hero-fit",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"product page cropped in top … pls check screenshot\", 2026-07-06; lock delegated under standing autonomy)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — before/after mockup features/product-detail-hero-fit/04-preview/mockups/detail-hero.html)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "Fix: follower product-detail hero cropped the top (model's head) — 332px near-square box + cover sliced portrait photos. Fix = portrait 3:4 hero + resizeMode contain (whole photo, pale bg fills letterbox). Card/food/thumbnails untouched. Mobile/OTA — released false until OTA published + founder on-device confirm (Maestro owed, no device at build).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
