@@ -491,20 +491,23 @@ export default function ProductDetailScreen({ navigation, route }) {
             colour's images (deduped). Swipeable with page dots (source screen 03). */}
         {(() => {
           const vj = variantsJson || {};
-          const gallery = [
-            // The brand's uploaded images live in facets.images (verified in prod);
-            // also fold in image_url + variant cover/colour images.
+          // When a colour with its own photos is selected, the carousel shows
+          // THAT colour's images (so tapping a swatch actually switches the
+          // photo). Otherwise fall back to the product's shared gallery.
+          const colourImgs = (activeColour && Array.isArray(activeColour.images))
+            ? activeColour.images.filter(Boolean) : [];
+          const baseImgs = [
             ...(Array.isArray(selected.facets?.images) ? selected.facets.images : []),
             selected.image_url,
             ...(Array.isArray(vj.cover_images) ? vj.cover_images : []),
-            ...((activeColour && Array.isArray(activeColour.images)) ? activeColour.images : []),
           ].filter(Boolean);
-          const images = [...new Set(gallery)];
+          const images = [...new Set(colourImgs.length ? colourImgs : baseImgs)];
           const idx = Math.min(imageIndex, Math.max(0, images.length - 1));
           return (
             <View style={[styles.hero, { backgroundColor: accentPale }]}>
               {images.length > 0 ? (
                 <ScrollView
+                  key={selectedColour || 'base'}
                   horizontal pagingEnabled showsHorizontalScrollIndicator={false}
                   onMomentumScrollEnd={e => setImageIndex(Math.round(e.nativeEvent.contentOffset.x / HERO_W))}
                 >

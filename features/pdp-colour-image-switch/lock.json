@@ -1,0 +1,15 @@
+{
+  "feature": "pdp-colour-image-switch",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (\"switching of images between colors is not smooth\", 2026-07-06; lock delegated)",
+  "approved_at": "2026-07-06",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — swatch mockup)",
+  "mockup_locked_at": "2026-07-06",
+  "notes": "PDP colour swatch now switches the hero to that colour's photos (gallery leads with active colour images; ScrollView keyed by colour remounts to first). Mobile/OTA. released stays false until OTA + founder on-device confirm.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}
