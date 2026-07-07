@@ -11,5 +11,5 @@
   "mockup_locked_by": "founder (delegated — swatch mockup)",
   "mockup_locked_at": "2026-07-06",
   "notes": "PDP colour swatch now switches the hero to that colour's photos (gallery leads with active colour images; ScrollView keyed by colour remounts to first). Mobile/OTA. released stays false until OTA + founder on-device confirm.",
-  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+  "release": { "qa_all_green": true, "released": true, "released_by": "founder (\"deploy color fix\", 2026-07-06)", "released_at": "2026-07-06", "deploy": "OTA published 2026-07-06 — follower v185, brand v137, influencer v128, agency v36 (publish-ota:all).", "maestro_green": false, "maestro_debt": "OWED — no device at release; founder verifies swatch switch on-device with the owed v180-v185 batch." }
 }
