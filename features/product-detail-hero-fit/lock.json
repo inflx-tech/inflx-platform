@@ -13,9 +13,11 @@
   "notes": "Fix: follower product-detail hero cropped the top (model's head) — 332px near-square box + cover sliced portrait photos. Fix = portrait 3:4 hero + resizeMode contain (whole photo, pale bg fills letterbox). Card/food/thumbnails untouched. Mobile/OTA — released false until OTA published + founder on-device confirm (Maestro owed, no device at build).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "maestro_green": false
+    "released": true,
+    "released_by": "founder (\"push and OTA\" cadence, 2026-07-06)",
+    "released_at": "2026-07-06",
+    "deploy": "OTA published 2026-07-06 — follower v184, brand v136, influencer v127, agency v35 (publish-ota:all). Backend/web unaffected (mobile style-only).",
+    "maestro_green": false,
+    "maestro_debt": "OWED — no Android device at release (qa:maestro:doctor RED, environment). Founder verifies detail-hero fit on-device with the owed v180-v184 batch; run pnpm qa:maestro next device session and flip."
   }
 }
