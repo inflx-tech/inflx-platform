@@ -143,7 +143,35 @@ export default function CartScreen({ navigation }) {
 
   const storeOffers = cart.storeOffers || [];
   const applied = cart.appliedOffer || null;
-  const offerSaving = estimateOfferDiscount(applied, subtotal);
+
+  // Phase 2 (offer-cart-preview) — ask the backend to price the applied offer on
+  // this exact cart, so the bill shows the REAL discount + free items for
+  // volume / BOGO / bundle / free-gift (not just the client discount estimate,
+  // which only understood plain % / ₹). Same engine as checkout → no drift.
+  const itemsKey = items.map((i) => `${i.product_id}:${i.qty}`).join('|');
+  const [preview, setPreview] = useState(null);
+  useEffect(() => {
+    if (!applied || !items.length) { setPreview(null); return; }
+    let alive = true;
+    const body = {
+      brand_id: cart.brandId,
+      brand_offer_id: applied.brand_offer_id || null,
+      items: items.map((i) => ({ product_id: i.product_id, variant_id: i.variant_id || null, quantity: i.qty })),
+    };
+    const t = setTimeout(() => {
+      followerApi.previewCartOffer?.(body)
+        .then((r) => { if (alive && r?.success) setPreview(r.data); })
+        .catch(() => {});
+    }, 300);
+    return () => { alive = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applied?.brand_offer_id, applied?.id, itemsKey, cart.brandId]);
+
+  const offerSaving = (applied && preview && preview.discount_amount != null)
+    ? Number(preview.discount_amount)
+    : estimateOfferDiscount(applied, subtotal);
+  const freeItems = (applied && preview) ? (preview.adjustments || []) : [];
+  const offerReason = (applied && preview) ? (preview.reason || null) : null;
 
   // Creator code (Slice 2): saving previewed over the lines it claimed.
   const appliedCode = cart.appliedCode || null;
@@ -522,6 +550,17 @@ export default function CartScreen({ navigation }) {
           {applied && offerSaving > 0 ? (
             <View style={s.billRow}><Text style={s.billLbl}>Offer · {applied.name}</Text><Text style={s.billDisc}>−₹{Math.round(offerSaving)}</Text></View>
           ) : null}
+          {/* Phase 2 — free items (BOGO / free-gift) + the reason line, previewed
+              from the same engine that charges at checkout. */}
+          {freeItems.map((f, i) => (
+            <View key={`free${i}`} style={s.billRow}>
+              <Text style={s.billLbl}>🎁 Free · {f.name}{f.free_qty > 1 ? ` ×${f.free_qty}` : ''}</Text>
+              <Text style={s.billDisc}>FREE</Text>
+            </View>
+          ))}
+          {offerReason && offerSaving <= 0 && freeItems.length === 0 ? (
+            <View style={s.billRow}><Text style={s.billHint} numberOfLines={2}>{offerReason}</Text></View>
+          ) : null}
           {appliedCode && codeSaving > 0 ? (
             <View style={s.billRow}><Text style={s.billLbl}>@{appliedCode.creator_handle} ({appliedCode.coupon_code})</Text><Text style={s.billDisc}>−₹{Math.round(codeSaving)}</Text></View>
           ) : null}
@@ -719,6 +758,7 @@ const s = StyleSheet.create({
 
   billRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 9 },
   billLbl: { fontSize: 13, color: T.muted, fontFamily: fonts.sansMedium, flex: 1 },
+  billHint: { fontSize: 12, color: T.muted, fontFamily: fonts.sansMedium, flex: 1, fontStyle: 'italic' },
   billVal: { fontSize: 13, color: T.ink, fontFamily: fonts.sansSemiBold },
   billDisc: { fontSize: 13, color: T.pink, fontFamily: fonts.sansBold },
   billTotal: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12, marginTop: 3, borderTopWidth: 1, borderTopColor: T.line },

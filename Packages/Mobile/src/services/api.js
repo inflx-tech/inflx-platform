@@ -622,6 +622,9 @@ export const followerApi = {
   // Slice 5 (Way-4) — "click opens window": record an attribution touch when a
   // follower lands in a creator store via a tracked link.
   recordTouch: (data) => api.post('/follower/touch', data),
+  // Offer cart preview (Phase 2) — real discount + free-item adjustments for a
+  // cart BEFORE checkout (same engine as createOrder, no order created).
+  previewCartOffer: (data) => api.post('/follower/cart/price', data),
   createOrder: (data) => api.post('/follower/orders', data),
   verifyOrder: (data) => api.post('/follower/orders/verify', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),

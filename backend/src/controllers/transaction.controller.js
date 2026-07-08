@@ -1428,6 +1428,73 @@ async function priceOrderForGroup(follower, group) {
   return { subMeta, netAmount, breakdown };
 }
 
+// ── POST /follower/cart/price ─────────────────────────────────────────────────
+// Preview an offer's effect on a cart BEFORE checkout (offer-cart-preview,
+// Phase 2). Reuses the SAME pure engine (offerService.resolveOfferDiscount) and
+// the SAME price-map helpers as placeOrder → the previewed discount + free-item
+// adjustments match what checkout charges (exact for non-customised carts; the
+// free-item adjustments are always exact). Creates nothing — no order, no
+// Razorpay, no write. Lets the cart show WHY the total dropped for volume / BOGO
+// / bundle / free-gift (not just plain discount).
+const previewCartOffer = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+  const { brand_id, brand_offer_id, campaign_id, set_id, campaign_influencer_id, offer_id, items } = req.body || {};
+
+  if (!Array.isArray(items) || !items.length) {
+    return success(res, { items_total: 0, discount_amount: 0, adjustments: [], offer_type: null, reason: null });
+  }
+
+  // Resolve the offer config: store-direct brand offer OR creator-mediated CI.
+  let offerType = null, offerConfig = null;
+  if (brand_offer_id && brand_id) {
+    const so = await fetchStoreOfferOrThrow(brand_offer_id, brand_id);
+    offerType = so.offer_type; offerConfig = so.offer_config_json;
+  } else if (campaign_influencer_id && campaign_id && set_id) {
+    const rec = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
+    offerType = rec.ci_offer_type; offerConfig = rec.offer_config_json;
+  }
+
+  const productIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
+  const variantIds = [...new Set(items.map(i => i.variant_id).filter(Boolean))];
+  const [priceMap, variantPriceMap, productMetaMap] = await Promise.all([
+    fetchPriceMap(productIds), fetchVariantPriceMap(variantIds), fetchProductMetaMap(productIds),
+  ]);
+  const safeItems = items
+    .filter(i => i.product_id)
+    .map(i => ({ product_id: i.product_id, variant_id: i.variant_id || null, quantity: parseInt(i.quantity, 10) || 1 }));
+  const itemsTotal = parseFloat(offerService.itemsTotal(safeItems, priceMap, variantPriceMap).toFixed(2));
+
+  let offerResult = { discount_amount: 0, reason: null, adjustments: null };
+  if (offerType && offerConfig) {
+    offerResult = offerService.resolveOfferDiscount({
+      offerType, offerConfig, items: safeItems, priceMap, variantPriceMap, productMetaMap,
+      billAmount: itemsTotal,
+    });
+  }
+
+  // Enrich free-item adjustments (BOGO / free-gift) with product names for the UI.
+  let adjustments = [];
+  const adj = offerResult.adjustments || [];
+  if (adj.length) {
+    const adjIds = [...new Set(adj.map(a => a.product_id).filter(Boolean))];
+    const { rows } = await db.query(`SELECT id, name FROM brand_products WHERE id = ANY($1::uuid[])`, [adjIds]);
+    const nameMap = new Map(rows.map(r => [r.id, r.name]));
+    adjustments = adj.map(a => ({
+      product_id: a.product_id, name: nameMap.get(a.product_id) || 'Item',
+      free_qty: a.free_qty, reason: a.reason || null,
+    }));
+  }
+
+  return success(res, {
+    items_total: itemsTotal,
+    discount_amount: parseFloat(offerResult.discount_amount || 0),
+    reason: offerResult.reason || null,
+    offer_type: offerType,
+    adjustments,
+  });
+});
+
 const placeOrder = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
@@ -1884,6 +1951,7 @@ module.exports = {
   verifyPrebook,
   initiatePrebookDateRange,
   verifyPrebookDateRange,
+  previewCartOffer,
   placeOrder,
   verifyOrder,
   listOrders,

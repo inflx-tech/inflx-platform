@@ -1,0 +1,20 @@
+{
+  "feature": "offer-cart-preview",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'check end to end ... show to followers correctly per discount type' + 'pls start phase 2'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder locked the phase-2 goal (cart shows complex-offer effect); mockup 04-preview/mockups/cart-bill.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Phase 2. New read-only POST /follower/cart/price (previewCartOffer) reuses the exact checkout engine (resolveOfferDiscount + price-map helpers) to return discount + free-item adjustments + reason without creating an order. CartScreen swaps the plain-discount-only client estimate for the server preview and renders free items + reason. Checkout untouched. Food-with-addons % preview is conservative (base subtotal). Phase 3 next = quantity-volume + BOGO redefinition.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -28,6 +28,9 @@ router.post('/prebook/verify', ...followerAuth, ctrl.verifyPrebook);
 router.post('/prebook-daterange',        ...followerAuth, ctrl.initiatePrebookDateRange);
 router.post('/prebook-daterange/verify', ...followerAuth, ctrl.verifyPrebookDateRange);
 
+// ── Cart offer preview (Phase 2) — discount + free items before checkout ──────
+router.post('/cart/price',    ...followerAuth, ctrl.previewCartOffer);
+
 // ── Online orders ─────────────────────────────────────────────────────────────
 router.post('/orders',        ...followerAuth, ctrl.placeOrder);
 router.post('/orders/verify', ...followerAuth, ctrl.verifyOrder);
