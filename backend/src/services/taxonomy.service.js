@@ -20,7 +20,8 @@ const FREE_SIZE_SYSTEMS = new Set(['free_size', 'one_size', 'unstitched']);
 async function getTree(vertical) {
   const { rows } = await db.query(
     `SELECT id, parent_id, segment, category, name, slug, depth, is_leaf,
-            sort_order, size_system, variant_axis, unisex_default
+            sort_order, size_system, variant_axis, unisex_default,
+            meta->>'image_url' AS image_url
        FROM category_nodes
       WHERE vertical = $1
       ORDER BY depth, sort_order`,

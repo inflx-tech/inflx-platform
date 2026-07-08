@@ -18,6 +18,7 @@ router.get('/analytics',  ...adminAuth, ctrl.sectionAnalytics);
 // Section image presign (app-builder-image-content-fixes) — BEFORE /:screen so
 // the literal path isn't captured by :screen. Own 'sections' capability.
 router.post('/stock-upload-url', ...adminAuth, ctrl.stockUploadUrl);
+router.patch('/category-node-image', ...adminAuth, ctrl.setCategoryNodeImage);
 router.get('/:screen',    ...adminAuth, ctrl.listSections);
 router.put('/:screen',    ...adminAuth, ctrl.saveSections);
 router.delete('/id/:id',  ...adminAuth, ctrl.deleteSection);

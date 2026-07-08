@@ -22,6 +22,7 @@ const NAV = [
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
   { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
   { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },
+  { href: '/admin/category-images', label: 'Category Images', icon: '🖼️', cap: 'sections' },
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
   { section: 'MARKETING' },
   { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯', cap: 'marketing' },

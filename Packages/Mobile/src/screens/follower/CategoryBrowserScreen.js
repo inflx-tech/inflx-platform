@@ -92,7 +92,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
           const td = tr.data || tr;
           const segs = (td.tree || []).map((seg) => ({
             segment: seg.segment || seg.name || '',
-            cats: (seg.children || []).map((c) => ({ id: c.id, name: c.name, is_leaf: c.is_leaf })),
+            cats: (seg.children || []).map((c) => ({ id: c.id, name: c.name, is_leaf: c.is_leaf, image_url: c.image_url })),
           })).filter((sg) => sg.cats.length);
           if (cancelled) return;
           setAllSegments(segs);
@@ -254,7 +254,9 @@ export default function CategoryBrowserScreen({ navigation, route }) {
                   return (
                     <TouchableOpacity key={c.id} style={s.catTile} activeOpacity={0.8}
                       onPress={() => navigation.push('CategoryBrowser', { nodeId: c.id, vertical: params.vertical, title: c.name })}>
-                      <View style={[s.catImg, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 22 }}>▸</Text></View>
+                      {c.image_url
+                        ? <Image source={{ uri: c.image_url }} style={s.catImg} resizeMode="cover" />
+                        : <View style={[s.catImg, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 22 }}>▸</Text></View>}
                       <Text style={s.catLbl} numberOfLines={2}>{c.name}</Text>
                     </TouchableOpacity>
                   );
@@ -281,9 +283,11 @@ export default function CategoryBrowserScreen({ navigation, route }) {
             const [bg, fg] = tint(i);
             return (
               <TouchableOpacity key={c.id} style={[s.ritem, on && s.ritemOn]} activeOpacity={0.8} onPress={() => onSelectRail(c)}>
-                <View style={[s.rimg, { backgroundColor: bg }]}>
-                  <Text style={{ fontSize: 18, color: fg }}>{c.is_leaf ? '◆' : '▸'}</Text>
-                </View>
+                {c.image_url
+                  ? <Image source={{ uri: c.image_url }} style={s.rimg} resizeMode="cover" />
+                  : <View style={[s.rimg, { backgroundColor: bg }]}>
+                      <Text style={{ fontSize: 18, color: fg }}>{c.is_leaf ? '◆' : '▸'}</Text>
+                    </View>}
                 <Text style={[s.rlbl, on && s.rlblOn]} numberOfLines={2}>{c.name}</Text>
                 {c.product_count != null ? <Text style={s.rcount}>{c.product_count} item{c.product_count === 1 ? '' : 's'}</Text> : null}
               </TouchableOpacity>

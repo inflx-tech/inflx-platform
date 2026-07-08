@@ -435,6 +435,7 @@ const getNodeChildren = asyncHandler(async (req, res) => {
   // "N items" beside each rail category). Live = approved brand, active, pushed.
   const { rows } = await db.query(
     `SELECT c.id, c.parent_id, c.segment, c.category, c.name, c.slug, c.depth, c.is_leaf, c.sort_order,
+            c.meta->>'image_url' AS image_url,
             (SELECT COUNT(*) FROM brand_products bp
                JOIN brands b ON b.id = bp.brand_id
                JOIN users u ON u.id = b.user_id

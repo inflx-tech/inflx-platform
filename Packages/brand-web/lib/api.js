@@ -122,6 +122,9 @@ export const sectionApi = {
   // Section image presign — own endpoint under the 'sections' capability (was
   // borrowing the food master-dishes presign → silent 403 for sections-admins).
   stockUploadUrl: (meta) => api.post('/admin/sections/stock-upload-url', meta),
+  // Category-images (P2) — set/clear a category node's image (meta.image_url).
+  setCategoryNodeImage: (node_id, image_url) => api.patch('/admin/sections/category-node-image', { node_id, image_url }),
+  categoryTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
 };
 
 // Custom-page registry admin API (App Builder — /admin/pages/*)

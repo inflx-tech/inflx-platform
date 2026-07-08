@@ -276,4 +276,24 @@ const deleteSection = asyncHandler(async (req, res) => {
   return success(res, { deleted: rows[0].id });
 });
 
-module.exports = { listSections, saveSections, deleteSection, sectionAnalytics, stockUploadUrl };
+// PATCH /admin/sections/category-node-image — set (or clear) a category node's
+// image (category-images P2). Stored in category_nodes.meta.image_url (jsonb,
+// no migration). image_url null/'' clears it. Under the 'sections' capability.
+const setCategoryNodeImage = asyncHandler(async (req, res) => {
+  const { node_id, image_url } = req.body || {};
+  if (!node_id) throw new AppError('VALIDATION_ERROR', 'node_id is required', 422, 'node_id');
+  const url = (image_url == null || image_url === '') ? null : String(image_url);
+  const { rows } = await db.query(
+    `UPDATE category_nodes
+        SET meta = CASE WHEN $2::text IS NULL THEN (meta - 'image_url')
+                        ELSE jsonb_set(COALESCE(meta, '{}'::jsonb), '{image_url}', to_jsonb($2::text)) END
+      WHERE id = $1
+      RETURNING id, name, meta->>'image_url' AS image_url`,
+    [node_id, url]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  cache.clear?.();
+  return success(res, { node: rows[0] });
+});
+
+module.exports = { listSections, saveSections, deleteSection, sectionAnalytics, stockUploadUrl, setCategoryNodeImage };
