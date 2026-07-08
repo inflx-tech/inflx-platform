@@ -276,6 +276,20 @@ export default function DrilldownListingPage() {
     if (r.ok) setBrandOpts(r.data.brands || []);
   }
 
+  // Store-setup nudge (contract listing-home-consolidation): this page is now
+  // the Listings home even before setup — show a banner instead of the old
+  // "Complete Your Listing" interstitial.
+  const [setupNeeded, setSetupNeeded] = useState(false);
+  useEffect(() => {
+    brandApi.get('/brands/me/listing-config')
+      .then((r) => {
+        if (!r?.success) return;
+        const done = r.data?.listing_data && Object.keys(r.data.listing_data).length > 0;
+        setSetupNeeded(!done);
+      })
+      .catch(() => {});
+  }, []);
+
   // Curated world tags (contract listing-tags-at-add) — admin vocabulary for
   // this brand's world; empty list = no Tags row shown.
   const [tagOpts, setTagOpts] = useState([]);
@@ -635,9 +649,15 @@ export default function DrilldownListingPage() {
   return (
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
+      {setupNeeded && !editMode && (
+        <div className="setupnudge">
+          ⚙ Your store setup isn't finished — followers see your store profile once it's complete.
+          <a href="/dashboard/products?setup=1">Finish store setup</a>
+        </div>
+      )}
       {view !== 'offers' && (<>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
-        <h1>{editingId ? `Edit ${vlabel} product` : view === 'browse' ? `My ${vlabel} listings` : `Add products — ${vlabel}`}</h1>
+        <h1>{editingId ? `Edit ${vlabel} product` : view === 'browse' ? `My ${vlabel} inventory` : `Add products — ${vlabel}`}</h1>
         <a href="/dashboard/products?setup=1" className="setuplink">⚙ Store setup</a>
       </div>
       <div className="rule" />
@@ -650,7 +670,7 @@ export default function DrilldownListingPage() {
 
       {!editMode && (
         <div className="tabs">
-          <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>My listings</span>
+          <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>Inventory</span>
           <span className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</span>
           <span className={'tab' + (view === 'offers' ? ' on' : '')} onClick={() => setView('offers')}>Offers</span>
         </div>
@@ -737,7 +757,7 @@ export default function DrilldownListingPage() {
                   <input className="t" type="number" value={draft.price} onChange={e => setDraft(d => ({ ...d, price: e.target.value }))} placeholder="0" />
                 </div>
                 <div style={{ width: 120 }}>
-                  <label className="fl">MRP ₹ <span className="muted2">(optional)</span></label>
+                  <label className="fl">MRP ₹ <span className="muted2">(optional — shows as a strike-through discount)</span></label>
                   <input className="t" type="number" value={draft.mrp} onChange={e => setDraft(d => ({ ...d, mrp: e.target.value }))} placeholder="—" />
                 </div>
                 <div style={{ width: 100 }}>
@@ -1057,6 +1077,8 @@ const CSS = `
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
+.lst .setupnudge{background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:12px;padding:11px 16px;font-weight:700;color:var(--yellow-text);margin-bottom:14px}
+.lst .setupnudge a{color:var(--ink);text-decoration:underline;margin-left:6px}
 .lst .tagchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .lst .tgc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;border-radius:99px;padding:5px 12px;font-weight:700;font-size:12px;color:var(--muted)}
 .lst .tgc.on{background:var(--yellow-pale);border-color:var(--yellow);color:var(--yellow-text)}

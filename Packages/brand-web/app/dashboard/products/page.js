@@ -785,28 +785,27 @@ export default function ProductsPage() {
     checkListingEngine();
   }, []);
 
-  // Drill-down verticals (fashion/furniture) split the flow:
-  //   FIRST visit (store setup never completed → listing_data empty) → stay here
-  //   and run the one-time store-setup wizard (about/photos/hours/return).
-  //   AFTER setup → Listings goes STRAIGHT to the product wizard (the frequent
-  //   job); "⚙ Store setup" (?setup=1) re-opens this page to edit the profile.
-  // Deliberately independent of the listing-engine flag — a phase-gated schema
-  // (furniture was coming_soon) must not fall back to the old flat products page.
+  // Drill-down verticals (fashion/furniture): the Listings HOME is the
+  // drill-down page (Inventory · Add products · Offers) — ALWAYS, setup done
+  // or not (contract: listing-home-consolidation). This page remains only the
+  // store-setup surface, reached via "⚙ Store setup" (?setup=1) or the setup
+  // banner on the listing page. Deliberately independent of the listing-engine
+  // flag — a phase-gated schema (furniture was coming_soon) must not fall back
+  // to the old flat products page.
   useEffect(() => {
     // ?setup=1 → always stay to show/edit store-setup.
-    // ?tab=offers → stay so the folded Offers sub-tab is reachable (E-3).
+    let wantOffers = false;
     if (typeof window !== 'undefined') {
       const sp = new URLSearchParams(window.location.search);
-      if (sp.get('setup') === '1' || sp.get('tab') === 'offers') return;
+      if (sp.get('setup') === '1') return;
+      wantOffers = sp.get('tab') === 'offers';   // forward legacy deep link
     }
     let cancelled = false;
     brandApi.get('/brands/me/listing-config').then((res) => {
       if (cancelled || !res?.success) return;
       const cat = res.data?.config?.category_key || res.data?.category;
       if (!cat || !DRILLDOWN_VERTICALS.has(cat)) return;
-      const setupDone = res.data?.listing_data && Object.keys(res.data.listing_data).length > 0;
-      if (setupDone) router.replace('/dashboard/products/listing');
-      // else: first time → fall through to the store-setup wizard below.
+      router.replace(`/dashboard/products/listing${wantOffers ? '?tab=offers' : ''}`);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);

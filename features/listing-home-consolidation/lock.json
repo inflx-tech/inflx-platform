@@ -1,0 +1,20 @@
+{
+  "feature": "listing-home-consolidation",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: vision restated (one surface: Inventory/Add products/Offers; Price+MRP simple vs complex offers boundary) → 'yes pls go'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder approved the written target design in-session; mockup 04-preview/mockups/listings-home.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Drill-down brands always land on /dashboard/products/listing (setup gate removed; ?setup=1 preserved; ?tab=offers forwarded); 'My listings' renamed Inventory; setup-incomplete banner; MRP strike-through hint. Old FleetView surface untouched, reachable via Store setup only.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
