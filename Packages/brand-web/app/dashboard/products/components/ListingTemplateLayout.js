@@ -99,7 +99,9 @@ export default function ListingTemplateLayout({
     () => allSteps.some(s => s.writes_to !== 'brand' && !['preview', 'done'].includes(s.component)),
     [allSteps]
   );
-  const gotoProductWizard = () => { window.location.href = '/dashboard/products/listing'; };
+  // Add-intent entry point — carry the intent so the wizard lands on the Add
+  // products tab, not the My-listings default (contract: listing-add-intent-nav).
+  const gotoProductWizard = () => { window.location.href = '/dashboard/products/listing?tab=add'; };
 
   // Drill-down verticals (fashion/furniture) get a category folder browse of the
   // inventory instead of one flat list (contract: listing-fashion-inventory-browse).

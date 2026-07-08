@@ -1,0 +1,20 @@
+{
+  "feature": "listing-add-intent-nav",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'when i click on add item it is showing my listing... so make it little clean'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — landing-tab intent fix, no visual change; mockup shows arrival state",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "gotoProductWizard() and the drill-down add-intent buttons now pass ?tab=add; listing page view init honors it. Root cause: all add-intent entry points opened /dashboard/products/listing without intent, and the page defaults to browse.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

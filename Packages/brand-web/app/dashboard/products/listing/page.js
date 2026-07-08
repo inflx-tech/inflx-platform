@@ -220,6 +220,7 @@ export default function DrilldownListingPage() {
     if (typeof window === 'undefined') return 'browse';
     const sp = new URLSearchParams(window.location.search);
     if (sp.has('edit')) return 'add';
+    if (sp.get('tab') === 'add') return 'add';
     if (sp.get('tab') === 'offers') return 'offers';
     return 'browse';
   });   // 'browse' (My listings) | 'add' (wizard) | 'offers' (offer engine)
