@@ -1,0 +1,54 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Listings — Offers tab (mockup)</title>
+<style>
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#FAFAFA;color:#0A0A0A;font-size:13px;margin:0;padding:24px}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:22px;font-weight:800;margin:0}
+.rule{height:1px;background:#E4E4E7;margin:12px 0}
+.tabs{display:flex;gap:4px;margin:14px 0;border-bottom:1px solid #E4E4E7}
+.tab{padding:9px 16px;font-weight:700;color:#71717A;cursor:pointer;border-bottom:2px solid transparent}
+.tab.on{color:#0A0A0A;border-bottom-color:#FFC107}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-top:16px}
+.sub{color:#52525B;font-size:12px;max-width:520px;margin-top:4px}
+.btn{background:#0A0A0A;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer}
+.stats{display:flex;gap:10px;margin:16px 0}
+.stat{background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:12px 18px;min-width:90px}
+.stat .n{font-size:20px;font-weight:800}.stat .l{font-size:10.5px;color:#71717A;text-transform:uppercase}
+.row{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:14px;margin-bottom:8px}
+.ico{width:38px;height:38px;border-radius:10px;background:#FFF7CC;color:#6B5A00;display:flex;align-items:center;justify-content:center;font-weight:800}
+.pill{font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;margin-right:5px}
+.type{background:#FFF7CC;color:#6B5A00}.active{background:#D1FAE5;color:#047857}.store{background:#DBEAFE;color:#1D4ED8}
+</style></head><body><div class="wrap">
+  <h1>My fashion listings</h1>
+  <div class="rule"></div>
+  <div class="tabs">
+    <span class="tab">My listings</span>
+    <span class="tab">Add products</span>
+    <span class="tab on">Offers</span>
+  </div>
+  <!-- Offers tab active → the folded OffersLibrary renders verbatim below -->
+  <div class="hdr">
+    <div><h1 style="font-size:26px">Offers</h1>
+      <div class="sub">Design reusable offers on your products &amp; services. Publish them to your store, or attach them to influencers in a campaign — without re-authoring discounts each time.</div>
+    </div>
+    <button class="btn">+ New offer</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">4</div><div class="l">Total offers</div></div>
+    <div class="stat"><div class="n">2</div><div class="l">Active</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">Drafts</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">Archived</div></div>
+  </div>
+  <div class="row"><div class="ico">%</div>
+    <div style="flex:1"><b>Monsoon 40% off jeans</b>
+      <div class="sub">40% off · min spend ₹999</div>
+      <div style="margin-top:6px"><span class="pill type">Discount</span><span class="pill active">active</span><span class="pill store">◧ In store</span></div>
+    </div><button class="btn" style="background:#fff;color:#0A0A0A;border:1px solid #E4E4E7">Edit</button>
+  </div>
+  <div class="row"><div class="ico">⇄</div>
+    <div style="flex:1"><b>BOGO tees</b>
+      <div class="sub">Buy 1 get 1 · selected tees</div>
+      <div style="margin-top:6px"><span class="pill type">BOGO</span><span class="pill active">active</span></div>
+    </div><button class="btn" style="background:#fff;color:#0A0A0A;border:1px solid #E4E4E7">Edit</button>
+  </div>
+</div></body></html>

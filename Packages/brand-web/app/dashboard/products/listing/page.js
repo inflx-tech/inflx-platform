@@ -11,6 +11,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { listingApi, uploadFileToGallery, API_BASE, brandApi } from '../../../../lib/api';
+import OffersLibrary from '../components/OffersLibrary';
 
 const FREE = new Set(['free_size', 'one_size', 'unstitched']);
 const COLOR_KEY = 'color_tone';   // the VISUAL variant → drives per-colour pics (both verticals)
@@ -215,7 +216,13 @@ function BrowseListings({ vlabel, onAdd }) {
 }
 
 export default function DrilldownListingPage() {
-  const [view, setView] = useState(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit')) ? 'add' : 'browse');   // 'browse' (My listings) | 'add' (wizard)
+  const [view, setView] = useState(() => {
+    if (typeof window === 'undefined') return 'browse';
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.has('edit')) return 'add';
+    if (sp.get('tab') === 'offers') return 'offers';
+    return 'browse';
+  });   // 'browse' (My listings) | 'add' (wizard) | 'offers' (offer engine)
   const [vertical, setVertical] = useState('fashion');
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -611,6 +618,7 @@ export default function DrilldownListingPage() {
   return (
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
+      {view !== 'offers' && (<>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
         <h1>{editingId ? `Edit ${vlabel} product` : view === 'browse' ? `My ${vlabel} listings` : `Add products — ${vlabel}`}</h1>
         <a href="/dashboard/products?setup=1" className="setuplink">⚙ Store setup</a>
@@ -621,13 +629,17 @@ export default function DrilldownListingPage() {
         : view === 'browse'
         ? 'Browse everything you listed, organised by the same categories you listed under.'
         : 'Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.'}</div>
+      </>)}
 
       {!editMode && (
         <div className="tabs">
           <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>My listings</span>
           <span className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</span>
+          <span className={'tab' + (view === 'offers' ? ' on' : '')} onClick={() => setView('offers')}>Offers</span>
         </div>
       )}
+
+      {!editMode && view === 'offers' && <OffersLibrary />}
 
       {!editMode && view === 'browse' && <BrowseListings vlabel={vlabel} onAdd={() => setView('add')} />}
 

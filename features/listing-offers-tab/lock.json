@@ -1,0 +1,20 @@
+{
+  "feature": "listing-offers-tab",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'verify and find where it lies and get back that offer engine into listings'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — reachability restore of an already-shipped screen; mockup 04-preview/mockups/offers-tab.html mirrors the existing OffersLibrary verbatim",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Root cause: post-setup redirect products/page.js:795-812 sends drill-down brands to /dashboard/products/listing, which had no Offers entry — E-3's folded Offers sub-tab was unreachable for fashion/furniture brands. Fix: extract OffersLibrary to a shared component, mount as third tab on the listing page. Frontend-only.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
