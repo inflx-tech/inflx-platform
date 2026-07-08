@@ -13,9 +13,11 @@
   "notes": "Two follower renderer fixes. (1) FullBleedStyle swipes when multiple images (manual carousel + dots; single unchanged; auto-advance stays Hero slider). (2) Field-name mismatch: admin stores tap_destination.category_node_id but SectionRenderer read node_id → nodeId=null → CategoryBrowser isAllMode (tiles grid). Now reads category_node_id||node_id at both section (:250) and tile (:296) paths → opens rail+grid at the picked node. brand-web hint updated. Mobile OTA + Vercel. TileSection tests pass.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "maestro_green": false
+    "released": true,
+    "released_by": "aveen (founder) — flow of live-device fixes 2026-07-08",
+    "released_at": "2026-07-08",
+    "deploy": "pushed 6655779 (Vercel) + follower OTA v189",
+    "maestro_green": false,
+    "verify_note": "TileSection jest 6/6 + pnpm qa GREEN + babel-parse; on-device eyeball is the founder's check (Maestro not run in env)."
   }
 }
