@@ -19,7 +19,10 @@ import { adminApi } from '../../../lib/api';
 // Starter scopes so the page isn't empty before any tag exists. Admin can add
 // any scope via "+ business" (it should match a brand's category_key). When
 // contract 1b formalises follower categories, scopes regroup under those.
-const DEFAULT_SCOPES = ['ALL', 'restaurant', 'fashion_walkin', 'salon', 'car_rental', 'furniture'];
+// 'fashion' is the WORLD scope — tags here reach all three fashion category
+// keys (fashion / fashion_walkin / fashion_online); curate fashion tags here
+// (contract listing-tags-at-add).
+const DEFAULT_SCOPES = ['ALL', 'restaurant', 'fashion', 'fashion_walkin', 'salon', 'car_rental', 'furniture'];
 
 const EMPTY_FORM = { label: '', sort_order: '', status: 'active' };
 

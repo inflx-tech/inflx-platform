@@ -38,7 +38,7 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
   : f.facet_role === 'discovery' ? <span className="tag disc">discovery</span>
   : f.facet_role === 'listing_attr' || f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
-const blankDraft = () => ({ name: '', price: '', mrp: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {} });
+const blankDraft = () => ({ name: '', price: '', mrp: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {}, tags: [] });
 
 // ── My listings browse (contract: listing-fashion-inventory-browse) ──────────
 // The brand's OWN inventory, drilled by the same category tree they listed under.
@@ -276,6 +276,18 @@ export default function DrilldownListingPage() {
     if (r.ok) setBrandOpts(r.data.brands || []);
   }
 
+  // Curated world tags (contract listing-tags-at-add) — admin vocabulary for
+  // this brand's world; empty list = no Tags row shown.
+  const [tagOpts, setTagOpts] = useState([]);
+  useEffect(() => {
+    brandApi.getTagOptions?.()
+      .then((r) => { if (r?.success) setTagOpts(r.data?.options || []); })
+      .catch(() => {});
+  }, []);
+  const toggleTag = (slug) => setDraft(d => ({
+    ...d, tags: d.tags.includes(slug) ? d.tags.filter(t => t !== slug) : [...d.tags, slug],
+  }));
+
   // Load the product being edited into the stepper's own state (leaf + facets +
   // pre-filled draft), so the whole add form is reused verbatim for editing.
   useEffect(() => {
@@ -305,6 +317,7 @@ export default function DrilldownListingPage() {
         brand: brandVal, sku: product.sku || '', stock: product.stock ?? '',
         description: product.description || '',
         images: coverImgs, facets: pf, variants: variantsMap,
+        tags: Array.isArray(product.tags) ? product.tags : [],
       });
       setStep(1); setMode('one'); setEditingId(id);
     })();
@@ -527,11 +540,13 @@ export default function DrilldownListingPage() {
       description: draft.description.trim() || null,
       images: draft.images, facets: draft.facets,
       variants: variants.length ? variants : undefined,
+      tags: draft.tags.length ? draft.tags : undefined,
     }]);
     // Carry brand + the descriptive/discovery facet values to the next item so
     // adding many similar products is fast; clear identity, photos and variants.
     const carry = blankDraft();
     carry.brand = draft.brand;
+    carry.tags = draft.tags;
     detailFacets.forEach(f => { if (!facetEmpty(f)) carry.facets[f.facet_key] = draft.facets[f.facet_key]; });
     setDraft(carry);
     setStep(1); setMoreOpen(false);
@@ -568,6 +583,7 @@ export default function DrilldownListingPage() {
       description: draft.description.trim() || null,
       images: draft.images, facets: draft.facets,
       variants: variants.length ? variants : undefined,
+      tags: draft.tags,
     };
     const r = await brandApi.patch(`/brands/me/listing-products/${editingId}`, payload);
     setSaving(false);
@@ -739,6 +755,18 @@ export default function DrilldownListingPage() {
                   onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                   placeholder="Fabric feel, fit, styling tips, care — anything that helps a shopper decide." />
               </div>
+              {tagOpts.length > 0 && (
+                <div>
+                  <label className="fl">Tags <span className="muted2">(optional — INFLX features tagged products in curated collections)</span></label>
+                  <div className="tagchips">
+                    {tagOpts.map(t => (
+                      <button key={t.slug} type="button"
+                        className={'tgc' + (draft.tags.includes(t.slug) ? ' on' : '')}
+                        onClick={() => toggleTag(t.slug)}>{t.label}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1015,6 +1043,9 @@ const CSS = `
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
+.lst .tagchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.lst .tgc{border:1px solid var(--border);background:#fff;border-radius:99px;padding:6px 14px;font-weight:700;font-size:12px;color:var(--muted);cursor:pointer}
+.lst .tgc.on{background:var(--yellow-pale);border-color:var(--yellow);color:var(--yellow-text)}
 .lst .warnbox{background:var(--yellow-pale);border:1px solid #f0e1a8;color:var(--yellow-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:0 0 10px}
 .lst .sec{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:16px 0 8px}
 .lst .steps{display:flex;align-items:center;gap:4px;margin-bottom:14px;flex-wrap:wrap}

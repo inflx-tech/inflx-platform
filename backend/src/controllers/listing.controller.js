@@ -19,6 +19,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const taxonomy = require('../services/taxonomy.service');
+const tagsService = require('../services/tags.service');
 const bulk = require('../services/listingBulk.service');
 const imageIngest = require('../services/imageIngest.service');
 const { resolveProductImage } = require('../utils/productImage');
@@ -32,7 +33,7 @@ const INGEST_ERR_MSG = {
 
 async function getBrandByUserId(userId) {
   const { rows } = await db.query(
-    `SELECT id, business_name, store_code, product_seq FROM brands WHERE user_id = $1`, [userId]);
+    `SELECT id, business_name, store_code, product_seq, category FROM brands WHERE user_id = $1`, [userId]);
   return rows[0] || null;
 }
 
@@ -100,6 +101,11 @@ async function insertProducts(brand, node, items) {
       [items.length, brand.id]);
     let seq = seqRow.product_seq - items.length;
     const customBrands = new Set();
+    // Curated-only tags (contract listing-tags-at-add): stores may carry only
+    // admin vocabulary tags (own category + world + ALL scopes). Resolved once
+    // per batch; unknown/free tags are dropped.
+    const allowedTags = new Set(
+      (await tagsService.listTagOptions(brand.category || node.vertical)).map((r) => r.slug));
 
     for (const it of items) {
       seq += 1;
@@ -110,18 +116,20 @@ async function insertProducts(brand, node, items) {
       if (it.brand && String(it.brand).trim()) { facets.brand = String(it.brand).trim(); customBrands.add(facets.brand); }
       const variantsJson = buildVariants(it, sku);
 
+      const tags = tagsService.sanitizeProductTags(it.tags).filter((s) => allowedTags.has(s));
+
       const { rows } = await client.query(
         `INSERT INTO brand_products
            (brand_id, name, price, mrp, sku, category_key, super_category, section,
-            image_url, description, stock, variants_json, category_node_id, facets, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,true)
+            image_url, description, stock, variants_json, category_node_id, facets, tags, is_active)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,$15::text[],true)
          RETURNING id, name, price, sku, category_node_id, image_url`,
         [brand.id, String(it.name).trim(), Number(it.price),
          (it.mrp != null && it.mrp !== '') ? Number(it.mrp) : null,
          sku, node.vertical, node.segment, node.category,
          coverImage(it), it.description || null,
          it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
-         JSON.stringify(variantsJson), node.id, JSON.stringify(facets)]
+         JSON.stringify(variantsJson), node.id, JSON.stringify(facets), tags]
       );
       // Count photos this product already has (from URL-ingested cover + colour
       // images) so the post-import tray shows "photo added", not "needs photos".
@@ -661,7 +669,7 @@ const getListingProduct = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT id, name, price, mrp, description, sku, stock, image_url,
-            variants_json, facets, category_node_id, is_active, pushed_to_store
+            variants_json, facets, category_node_id, is_active, pushed_to_store, tags
        FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.id, brand.id]);
   const product = rows[0];
@@ -734,8 +742,17 @@ const updateListingProduct = asyncHandler(async (req, res) => {
      it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
      image, JSON.stringify(variantsJson), JSON.stringify(facets), existing.id, brand.id]);
 
+  // tags: undefined = leave as-is; array = replace with curated-filtered slugs
+  // (contract listing-tags-at-add — only admin vocabulary tags persist).
+  if (it.tags !== undefined) {
+    const tags = await tagsService.curatedProductTags(brand.category || node.vertical, it.tags);
+    await db.query(
+      `UPDATE brand_products SET tags = $1::text[] WHERE id = $2 AND brand_id = $3`,
+      [tags, existing.id, brand.id]);
+  }
+
   const { rows } = await db.query(
-    `SELECT id, name, price, mrp, description, sku, stock, image_url, variants_json, facets, category_node_id
+    `SELECT id, name, price, mrp, description, sku, stock, image_url, variants_json, facets, category_node_id, tags
        FROM brand_products WHERE id = $1`, [existing.id]);
   return success(res, { product: rows[0] });
 });

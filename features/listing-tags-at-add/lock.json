@@ -1,0 +1,20 @@
+{
+  "feature": "listing-tags-at-add",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: tags at listing from admin world vocabulary; 'stores see only admin's world tags (curated, clean)..this correct'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder locked the model (curated-only chips) in-session; mockup 04-preview/mockups/tags-chips.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Curated-only tags in the drill-down wizard: world-aware tag options (fashion* shares one 'fashion' pool), curated filter at the API (free/unknown tags dropped), tags column wired into drill-down create/edit/get, chip row UI in add+edit, 'fashion' added to admin scope defaults. Feeds section rules (tags+price+discount targeting).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
