@@ -247,7 +247,10 @@ function renderSection(section, navigation, canFollow, context = {}) {
     emit('see_all', null);
     if (dest && dest.type === 'category') {
       return navigation.navigate('CategoryBrowser', {
-        nodeId: dest.node_id || null,
+        // Admin stores the picked category as `category_node_id` (node_id kept
+        // as a legacy fallback). Reading the wrong key sent nodeId=null → the
+        // browser fell into "all categories" tiles instead of rail+grid.
+        nodeId: dest.category_node_id || dest.node_id || null,
         vertical: dest.vertical || ctx.superCategory || null,
         title: section.title,
       });
@@ -293,7 +296,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
       emit('tap', { entity_type: 'tile', id: t.library_section_id || null, label: t.label });
       // Per-tile destination (admin "On tap →"): category browser / a page / default grid.
       const d = t.tap_destination;
-      if (d?.type === 'category') return navigation.navigate('CategoryBrowser', { nodeId: d.node_id || null, vertical: d.vertical || ctx.superCategory || null, title: t.label || section.title });
+      if (d?.type === 'category') return navigation.navigate('CategoryBrowser', { nodeId: d.category_node_id || d.node_id || null, vertical: d.vertical || ctx.superCategory || null, title: t.label || section.title });
       if (d?.type === 'page' && d.page_key) return navigation.navigate('FollowerPage', { pageKey: d.page_key, title: t.label || section.title });
       // Inline banner rule (App Builder Frame) wins; else the wired library group.
       const rj = t.rule_json && typeof t.rule_json === 'object'

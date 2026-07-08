@@ -1,0 +1,21 @@
+{
+  "feature": "banner-swipe-category-tap",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'not able to swipe other uploaded banners' + 'category list is coming instead of ... categories on left and grid of products on right'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder reported both on live device with screenshots; mockup 04-preview/mockups/swipe-and-tap.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Two follower renderer fixes. (1) FullBleedStyle swipes when multiple images (manual carousel + dots; single unchanged; auto-advance stays Hero slider). (2) Field-name mismatch: admin stores tap_destination.category_node_id but SectionRenderer read node_id → nodeId=null → CategoryBrowser isAllMode (tiles grid). Now reads category_node_id||node_id at both section (:250) and tile (:296) paths → opens rail+grid at the picked node. brand-web hint updated. Mobile OTA + Vercel. TileSection tests pass.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

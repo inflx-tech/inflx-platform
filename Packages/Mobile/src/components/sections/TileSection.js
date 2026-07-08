@@ -140,18 +140,38 @@ function SplitStyle({ tiles, onTile }) {
   );
 }
 
-// Full-width banner (image fill) — one edge-to-edge image (1080×720), single tap.
+// Full-width banner (image fill) — edge-to-edge image(s) at the 1080×720 (3:2)
+// ratio. ONE image → a single static banner. MULTIPLE images → a manual
+// swipeable carousel with dots (no auto-advance — that's the Hero slider's job),
+// so admins who upload several banners get a swipe deck as they expect.
 function FullBleedStyle({ tiles, onTile }) {
-  const t = tiles[0] || {};
   const width = Dimensions.get('window').width;
   const h = Math.round((width - 28) * 0.667);
+  const list = (tiles || []).filter(t => t && (t.image_url || t.label));
+  const [idx, setIdx] = useState(0);
+  const idxRef = useRef(0);
+  useEffect(() => { idxRef.current = idx; }, [idx]);
+
+  const Card = ({ t }) => (
+    <TouchableOpacity activeOpacity={0.9} onPress={() => onTile?.(t)} style={[s.fbCard, { height: h }]}>
+      {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+      {t.label ? <View style={s.fbScrim} /> : null}
+      {t.label ? <Text style={s.fbLabel} numberOfLines={1}>{t.label}</Text> : null}
+    </TouchableOpacity>
+  );
+
+  if (list.length <= 1) {
+    return <View style={s.wrap}><Card t={list[0] || {}} /></View>;
+  }
   return (
-    <View style={s.wrap}>
-      <TouchableOpacity activeOpacity={0.9} onPress={() => onTile?.(t)} style={[s.fbCard, { height: h }]}>
-        {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
-        {t.label ? <View style={s.fbScrim} /> : null}
-        {t.label ? <Text style={s.fbLabel} numberOfLines={1}>{t.label}</Text> : null}
-      </TouchableOpacity>
+    <View style={[s.wrap, { position: 'relative' }]}>
+      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} scrollEventThrottle={16}
+        onMomentumScrollEnd={(e) => { const i = Math.round(e.nativeEvent.contentOffset.x / width); if (i !== idxRef.current) setIdx(i); }}>
+        {list.map((t, i) => <View key={i} style={{ width }}><Card t={t} /></View>)}
+      </ScrollView>
+      <View style={s.heroDots} pointerEvents="none">
+        {list.map((_, i) => <View key={i} style={[s.heroDot, i === idx ? s.heroDotOn : null]} />)}
+      </View>
     </View>
   );
 }

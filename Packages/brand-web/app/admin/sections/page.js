@@ -122,7 +122,7 @@ const NAME_HIDDEN_DESIGNS = new Set([
 // Per-design image guidance for the "My images" step (layman-friendly: exact
 // pixel size, aspect, and accepted formats). Keyed by design id.
 const IMAGE_SPECS = {
-  full_width_banner:  { size: '1080 × 720 px', aspect: '3:2 (landscape)', note: 'One edge-to-edge banner.' },
+  full_width_banner:  { size: '1080 × 720 px', aspect: '3:2 (landscape)', note: 'One image = a static banner. Add more images and it becomes a swipeable deck (for auto-advancing slides use Hero slider).' },
   hero_slider:        { size: '1080 × 560 px', aspect: '~2:1 (wide)',     note: 'One image per slide; keep text centred.' },
   announcement_strip: { size: '1080 × 240 px', aspect: '4.5:1 (thin)',    note: 'A slim full-width strip.' },
   split_banner:       { size: '520 × 520 px',  aspect: '1:1 (square)',    note: 'Two square tiles, side by side.' },
@@ -819,7 +819,7 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
                   <div className="text-[10px] text-gray-500">Upload two square images · 520×520 px · each taps to its own action</div>
                 )}
                 {wiz.designId === 'full_width_banner' && (
-                  <div className="text-[10px] text-gray-500">Upload one edge-to-edge image · 1080×720 px</div>
+                  <div className="text-[10px] text-gray-500">Upload one image (static) or several (swipeable deck) · 1080×720 px each</div>
                 )}
                 {wiz.designId === 'collage' && (
                   <div className="flex items-center gap-1.5 flex-wrap">
