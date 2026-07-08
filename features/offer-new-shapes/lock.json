@@ -13,8 +13,11 @@
   "notes": "Phase 3. Quantity-volume (mode='quantity', min_qty tiers) + same-product BOGO ({product,buy_qty,free_qty}). Validator + engine (resolveVolume/resolveBogo) gain branches selected by config shape; OLD shapes (spend-volume, buy/get-BOGO) left intact (founder deletes old BOGO later). Builder mode toggle + BOGO same-product form; PDP OfferBlock renders both; cart preview needs no change (flows through Phase-2 engine). No migration. Engine + validator unit-tested; qa GREEN.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "released": true,
+    "released_by": "aveen (founder) — 'pls start phase 3' + standing ship-and-eyeball 2026-07-08",
+    "released_at": "2026-07-08",
+    "deploy": "backend+brand-web pushed (commit c7865e0 → Render + Vercel); follower OTA v188 published",
+    "maestro_green": false,
+    "verify_note": "Engine + validator unit-tested; pnpm qa GREEN (79); next build compiled; OfferBlock parses. On-device Maestro not run (no device); founder eyeball is the device check."
   }
 }
