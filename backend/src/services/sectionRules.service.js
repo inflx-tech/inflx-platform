@@ -184,6 +184,41 @@ const HAS_PHOTO_SQL = `(
                 WHERE jsonb_array_length(COALESCE(col->'images','[]'::jsonb)) > 0)
   )`;
 
+// ── Live store discount-offer clauses (offer-mrp-retirement, 2026-07-08) ─────
+// MRP retired everywhere → the ONLY struck price / "% off" a product card shows
+// comes from a live published-to-store `discount` offer that applies to it.
+// These are STATIC SQL fragments (no param indices) referencing bo/bp/b in the
+// surrounding query, so they hoist to module scope and are reused by every
+// product query. Effective scope = config.scope, else products-present ?
+// 'products' : 'store'.
+const OFFER_LIVE_GATE = `bo.brand_id = bp.brand_id AND bo.status = 'active' AND bo.published_to_store = true
+      AND (bo.store_starts_at IS NULL OR bo.store_starts_at <= now())
+      AND (bo.store_ends_at IS NULL OR bo.store_ends_at >= now())`;
+const OFFER_EFF_SCOPE = `COALESCE(bo.offer_config_json->>'scope',
+      CASE WHEN jsonb_typeof(bo.offer_config_json->'products') = 'array'
+             AND jsonb_array_length(bo.offer_config_json->'products') > 0 THEN 'products' ELSE 'store' END)`;
+const OFFER_APPLIES = `(
+      ${OFFER_EFF_SCOPE} = 'store'
+      OR (${OFFER_EFF_SCOPE} = 'category' AND bp.section IS NOT DISTINCT FROM bo.offer_config_json->>'category')
+      OR (${OFFER_EFF_SCOPE} = 'products' AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(COALESCE(bo.offer_config_json->'products', '[]'::jsonb)) e
+             WHERE e->>'id' = bp.id::text)))`;
+const OFFER_NUM_VAL = `CASE WHEN bo.offer_config_json->>'value' ~ '^[0-9]+(\\.[0-9]+)?$'
+      THEN (bo.offer_config_json->>'value')::numeric ELSE NULL END`;
+const OFFER_DISC_PCT = `(CASE WHEN bo.offer_config_json->>'sub_type' = 'pct' THEN ${OFFER_NUM_VAL}
+      WHEN bo.offer_config_json->>'sub_type' = 'flat' AND bp.price > 0 THEN ${OFFER_NUM_VAL} / bp.price * 100
+      ELSE NULL END)`;
+// Scalar subquery: best applicable live discount % for the product's card badge.
+const OFFER_BEST_PCT = `(SELECT MAX(${OFFER_DISC_PCT}) FROM brand_offers bo
+      WHERE ${OFFER_LIVE_GATE} AND bo.offer_type = 'discount' AND ${OFFER_APPLIES})`;
+
+// Map a raw offer_pct column → {discount_value, offer_price} for a card.
+function offerFieldsFromPct(rawPct, price) {
+  const pct = rawPct != null ? Math.round(Number(rawPct)) : null;
+  if (!(pct > 0) || price == null) return { discount_value: null, offer_price: null };
+  return { discount_value: pct, offer_price: Math.round(price * (1 - pct / 100)) };
+}
+
 // ── Phase 3 (World Rules, mig 126) ──────────────────────────────────────────
 // Per-world location mode for the rule's world. Absent settings = rank_only
 // (the legacy soft-boost behaviour, byte-identical SQL).
@@ -688,14 +723,15 @@ function etaFromDistanceKm(km) {
 
 function mapListedProductItem(r) {
   const eta = etaFromDistanceKm(r.dist_km);
+  const price = r.price != null ? parseFloat(r.price) : null;
+  // MRP retired (offer-mrp-retirement): the card badge/struck price comes from
+  // the best live store discount-offer that applies (offer_pct), not from MRP.
+  const { discount_value, offer_price } = offerFieldsFromPct(r.offer_pct, price);
   return {
     entity_type: 'product',
     id: r.id,
     name: r.name,
-    price: r.price != null ? parseFloat(r.price) : null,
-    // Food World 3C-1 — per-dish MRP for the struck "was" price (mig 118). Card
-    // shows MRP→price only when mrp > price. Display-only (never order pricing).
-    mrp: r.mrp != null ? parseFloat(r.mrp) : null,
+    price,
     // resolve cover from image_url OR variant/facet images so the follower app
     // never shows a blank card while the brand's edit form shows the photo
     // (contract: product-image-resolution).
@@ -703,7 +739,8 @@ function mapListedProductItem(r) {
     section: r.section,
     veg_flag: r.veg_flag,
     description: r.description,
-    discount_value: null,           // no offer in listing-driven mode
+    discount_value,                 // % off from a live store discount offer, else null
+    offer_price,                    // discounted price when an offer applies, else null
     // Food World P1 — dish-card enrichment. rating/review_count are BRAND-level
     // (restaurant_reviews has no product_id); the card shows the restaurant's
     // score. badge is owner-set. has_addons tells the card whether ＋ opens the
@@ -793,9 +830,10 @@ async function productsInCategory(ctx) {
     : `${HAS_PHOTO_SQL} DESC, ${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST`;
 
   const sql = `
-    SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
+    SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.variants_json, bp.facets,
            bp.created_at, bp.badge,
+           ${OFFER_BEST_PCT} AS offer_pct,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
            rev.rating, rev.review_count,
@@ -909,39 +947,21 @@ async function libraryProducts(ctx) {
         ) SELECT id FROM sub)` : '';
 
   // Offer/discount filters (Phase 3d): correlated EXISTS over live, published-to-store
-  // brand_offers that APPLY to the product. Effective scope = config.scope, else
-  // products-present ? 'products' : 'store'. store-wide & category offers apply broadly.
-  const offerLiveGate = `bo.brand_id = b.id AND bo.status = 'active' AND bo.published_to_store = true
-        AND (bo.store_starts_at IS NULL OR bo.store_starts_at <= now())
-        AND (bo.store_ends_at IS NULL OR bo.store_ends_at >= now())`;
-  const effScope = `COALESCE(bo.offer_config_json->>'scope',
-        CASE WHEN jsonb_typeof(bo.offer_config_json->'products') = 'array'
-               AND jsonb_array_length(bo.offer_config_json->'products') > 0 THEN 'products' ELSE 'store' END)`;
-  const offerApplies = `(
-        ${effScope} = 'store'
-        OR (${effScope} = 'category' AND bp.section IS NOT DISTINCT FROM bo.offer_config_json->>'category')
-        OR (${effScope} = 'products' AND EXISTS (
-              SELECT 1 FROM jsonb_array_elements(COALESCE(bo.offer_config_json->'products', '[]'::jsonb)) e
-               WHERE e->>'id' = bp.id::text)))`;
-  const numVal = `CASE WHEN bo.offer_config_json->>'value' ~ '^[0-9]+(\\.[0-9]+)?$'
-        THEN (bo.offer_config_json->>'value')::numeric ELSE NULL END`;
-  const discPct = `(CASE WHEN bo.offer_config_json->>'sub_type' = 'pct' THEN ${numVal}
-        WHEN bo.offer_config_json->>'sub_type' = 'flat' AND bp.price > 0 THEN ${numVal} / bp.price * 100
-        ELSE NULL END)`;
+  // brand_offers that APPLY to the product. Clauses hoisted to module scope
+  // (OFFER_*) — same fragments reused by every product query.
   const hasOfferClause = def.has_offer
-    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate} AND ${offerApplies})` : '';
-  // "% off" = the struck-MRP markdown (price vs mrp, what the card shows) OR a live
-  // brand_offer of that discount. Matches what a shopper sees (founder call 2026-06-27).
+    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${OFFER_LIVE_GATE} AND ${OFFER_APPLIES})` : '';
+  // "% off" = a live brand_offer discount that applies (MRP arm retired 2026-07-08 —
+  // single source of discount truth is the offer engine).
   const minDiscClause = minDiscIdx
-    ? `AND (
-          (bp.mrp IS NOT NULL AND bp.mrp > 0 AND bp.price IS NOT NULL AND ((bp.mrp - bp.price) / bp.mrp * 100) >= $${minDiscIdx})
-          OR EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate}
-              AND bo.offer_type = 'discount' AND ${offerApplies} AND ${discPct} >= $${minDiscIdx}))` : '';
+    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${OFFER_LIVE_GATE}
+          AND bo.offer_type = 'discount' AND ${OFFER_APPLIES} AND ${OFFER_DISC_PCT} >= $${minDiscIdx})` : '';
 
   const sql = `
-    SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
+    SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.variants_json, bp.facets,
            bp.created_at, bp.badge,
+           ${OFFER_BEST_PCT} AS offer_pct,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
            rev.rating, rev.review_count,
@@ -1034,9 +1054,9 @@ async function restaurantsWithFeatured(ctx) {
   // Featured dishes per brand, windowed to perRestaurant: is_featured first
   // (by featured_sort), then newest as the fallback fill.
   const { rows: prods } = await db.query(
-    `SELECT id, name, price, mrp, image_url, section, veg_flag, description, badge, brand_id, has_addons
+    `SELECT id, name, price, offer_pct, image_url, section, veg_flag, description, badge, brand_id, has_addons
        FROM (
-        SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag,
+        SELECT bp.id, bp.name, bp.price, ${OFFER_BEST_PCT} AS offer_pct, bp.image_url, bp.section, bp.veg_flag,
                bp.description, bp.badge, bp.brand_id,
                EXISTS (SELECT 1 FROM product_addon_groups g WHERE g.product_id = bp.id) AS has_addons,
                ROW_NUMBER() OVER (
@@ -1056,14 +1076,13 @@ async function restaurantsWithFeatured(ctx) {
       id: r.id,
       name: r.name,
       price: r.price != null ? parseFloat(r.price) : null,
-      mrp: r.mrp != null ? parseFloat(r.mrp) : null,
       image_url: r.image_url,
       section: r.section,
       veg_flag: r.veg_flag,
       description: r.description,
       badge: r.badge || null,
       has_addons: r.has_addons === true,
-      discount_value: null,
+      ...offerFieldsFromPct(r.offer_pct, r.price != null ? parseFloat(r.price) : null),
       via_creator: null,
       tracking: null,
     });
@@ -1363,4 +1382,5 @@ async function runRule(ruleKey, ctx) {
   return fn(ctx);
 }
 
-module.exports = { runRule, RULES, buildTracking, etaFromDistanceKm };
+module.exports = { runRule, RULES, buildTracking, etaFromDistanceKm,
+  OFFER_BEST_PCT, offerFieldsFromPct };

@@ -587,7 +587,7 @@ function MenuTab({ sections, sectionKeys, picks, onProductPress, creator, onAddP
                   </View>
                   <Text style={mz.name} numberOfLines={1}>{p.name}</Text>
                   {p.description ? <Text style={mz.desc} numberOfLines={2}>{p.description}</Text> : null}
-                  <Text style={mz.price}>₹{Math.round(p.price)}{p.mrp && p.mrp > p.price ? <Text style={mz.mrp}>  ₹{Math.round(p.mrp)}</Text> : null}</Text>
+                  <Text style={mz.price}>₹{Math.round(p.offer_price != null && p.offer_price < p.price ? p.offer_price : p.price)}{p.offer_price != null && p.offer_price < p.price ? <Text style={mz.mrp}>  ₹{Math.round(p.price)}</Text> : null}</Text>
                 </View>
                 <View style={mz.imgWrap}>
                   <Pressable onPress={() => onProductPress(p)}>

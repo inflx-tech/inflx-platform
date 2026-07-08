@@ -173,7 +173,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
     if (!bId) return;
     const price = variant?.price != null ? variant.price : item.price;
     const payload = {
-      id: item.id, name: item.name, price, mrp: item.mrp,
+      id: item.id, name: item.name, price, offer_price: item.offer_price ?? null,
       image_url: variant?.image_url || item.image_url, qty: 1,
       variant_sku: variant?.sku || null,
       variant_label: variant ? [variant.color, variant.size].filter(Boolean).join(' · ') : null,
@@ -197,7 +197,11 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   };
 
   function renderProduct({ item }) {
-    const showMrp = item.mrp != null && item.price != null && item.mrp > item.price;
+    // MRP retired (offer-mrp-retirement) — struck "was" price + % badge come from
+    // a live store discount-offer (offer_price / discount_value), not MRP.
+    const offerPrice = item.offer_price != null ? Number(item.offer_price) : null;
+    const struck = offerPrice != null && item.price != null && offerPrice < Number(item.price);
+    const shownPrice = struck ? offerPrice : item.price;
     return (
       <TouchableOpacity style={s.pc} activeOpacity={0.85} onPress={() => goToProduct(navigation, { ...item, discount_value: null })}>
         <View style={s.pthumb}>
@@ -209,8 +213,8 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         <Text style={s.pname} numberOfLines={2}>{item.name}</Text>
         {item.brand?.name ? <Text style={s.pbrand} numberOfLines={1}>{item.brand.name}</Text> : null}
         <View style={s.prow}>
-          <Text style={s.pprice}>{fmtMoney(item.price)}</Text>
-          {showMrp ? <Text style={s.pmrp}>{fmtMoney(item.mrp)}</Text> : null}
+          <Text style={s.pprice}>{fmtMoney(shownPrice)}</Text>
+          {struck ? <Text style={s.pmrp}>{fmtMoney(item.price)}</Text> : null}
           {item.discount_value ? <Text style={s.poff}>{item.discount_value}% off</Text> : null}
         </View>
         {item.rating != null

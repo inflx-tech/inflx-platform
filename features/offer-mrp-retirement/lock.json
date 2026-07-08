@@ -1,0 +1,20 @@
+{
+  "feature": "offer-mrp-retirement",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'Remove this MRP scope in all worlds ... because all discount is from offers engine' + 'ok pls go and start'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder locked the model (single price, discounts only from offer engine, all worlds); mockup 04-preview/mockups/card-states.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Phase 1a of the offer-engine rework. Remove MRP everywhere (dormant column, no destructive migration); wire best live store discount-offer onto product cards as discount_value/offer_price (reuse offerApplies/discPct); drop MRP arms from min_discount filter + discount sort; strip MRP from brand-web wizard + mobile card/cart sites. Checkout money unchanged. Followed by offer-builder-ux (Phase 1b), cart preview (Phase 2), new shapes (Phase 3).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

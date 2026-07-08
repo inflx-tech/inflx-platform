@@ -19,8 +19,10 @@ const W = Dimensions.get('window').width;
 export default function DishDetailSheet({ visible, product, onClose, onAdd }) {
   if (!product) return null;
   const price = parseFloat(product.price) || 0;
-  const mrp = product.mrp != null ? parseFloat(product.mrp) : null;
-  const struck = mrp != null && mrp > price;
+  // MRP retired (offer-mrp-retirement) — struck "was" price from a live store offer.
+  const offerPrice = product.offer_price != null ? parseFloat(product.offer_price) : null;
+  const struck = offerPrice != null && offerPrice < price;
+  const shownPrice = struck ? offerPrice : price;
   const rating = product.rating ?? product.brand?.avg_rating ?? null;
 
   return (
@@ -41,8 +43,8 @@ export default function DishDetailSheet({ visible, product, onClose, onAdd }) {
               <Text style={s.name}>{product.name}</Text>
             </View>
             <View style={s.priceRow}>
-              <Text style={s.price}>₹{Math.round(price)}</Text>
-              {struck ? <Text style={s.mrp}>₹{Math.round(mrp)}</Text> : null}
+              <Text style={s.price}>₹{Math.round(shownPrice)}</Text>
+              {struck ? <Text style={s.mrp}>₹{Math.round(price)}</Text> : null}
               {rating != null ? <View style={s.star}><Text style={s.starTxt}>★ {Number(rating).toFixed(1)}</Text></View> : null}
             </View>
             {product.description ? <Text style={s.desc}>{product.description}</Text> : null}

@@ -536,7 +536,9 @@ export default function CartScreen({ navigation }) {
             <Text style={s.secTitle}>You might also like</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 11, paddingTop: 6 }}>
               {recs.map((p) => {
-                const showMrp = p.mrp != null && p.price != null && p.mrp > p.price;
+                // MRP retired — struck "was" price from a live store offer (offer_price).
+                const recStruck = p.offer_price != null && p.price != null && p.offer_price < p.price;
+                const recShown = recStruck ? p.offer_price : p.price;
                 return (
                   <TouchableOpacity key={p.id} style={s.rec} activeOpacity={0.85} onPress={() => navigation.navigate('ProductDetail', { selectedProductId: p.id, product: p, brand: p.brand || null, offer: null, tracking: null })}>
                     <View style={s.recImg}>
@@ -544,8 +546,8 @@ export default function CartScreen({ navigation }) {
                     </View>
                     <Text style={s.recNm} numberOfLines={2}>{p.name}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                      <Text style={s.recPr}>₹{Math.round(p.price)}</Text>
-                      {showMrp ? <Text style={s.recMrp}>₹{Math.round(p.mrp)}</Text> : null}
+                      <Text style={s.recPr}>₹{Math.round(recShown)}</Text>
+                      {recStruck ? <Text style={s.recMrp}>₹{Math.round(p.price)}</Text> : null}
                     </View>
                   </TouchableOpacity>
                 );

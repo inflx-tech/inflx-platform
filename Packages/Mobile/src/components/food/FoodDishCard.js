@@ -38,8 +38,11 @@ function VegDot({ kind }) {
 export default function FoodDishCard({ product, brand, showMeta = true, onPress, onAdd }) {
   if (!product) return null;
   const price = Number(product.price) || 0;
-  const mrp = product.mrp != null ? Number(product.mrp) : null;
-  const struck = mrp != null && mrp > price;
+  // MRP retired (offer-mrp-retirement) — the struck "was" price now comes from a
+  // live store discount-offer (offer_price), not a per-dish MRP.
+  const offerPrice = product.offer_price != null ? Number(product.offer_price) : null;
+  const struck = offerPrice != null && offerPrice < price;
+  const shownPrice = struck ? offerPrice : price;
   const veg = vegKind(product.veg_flag);
   const rating = product.rating != null ? Number(product.rating) : null;
   const eta = (product.eta_min != null && product.eta_max != null)
@@ -71,7 +74,7 @@ export default function FoodDishCard({ product, brand, showMeta = true, onPress,
           </Text>
         ) : null}
         <Text style={styles.price}>
-          ₹{Math.round(price)}{struck ? <Text style={styles.mrp}>  ₹{Math.round(mrp)}</Text> : null}
+          ₹{Math.round(shownPrice)}{struck ? <Text style={styles.mrp}>  ₹{Math.round(price)}</Text> : null}
         </Text>
       </View>
     </Pressable>

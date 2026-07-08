@@ -30,7 +30,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
 const sectionLibrary = require('../services/sectionLibrary.service');
-const { runRule, etaFromDistanceKm } = require('../services/sectionRules.service');
+const { runRule, etaFromDistanceKm, OFFER_BEST_PCT, offerFieldsFromPct } = require('../services/sectionRules.service');
 const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
@@ -1394,7 +1394,7 @@ const getPageSections = asyncHandler(async (req, res) => {
 const getProductDetail = asyncHandler(async (req, res) => {
   const { product_id } = req.params;
   const { rows } = await db.query(
-    `SELECT id, name, price, mrp, image_url, description, section,
+    `SELECT id, name, price, image_url, description, section,
             variants_json, facets, tags, category_node_id,
             return_policy_days, veg_flag, stock, badge
        FROM brand_products
@@ -1535,24 +1535,23 @@ const getCartRecommendations = asyncHandler(async (req, res) => {
   const sections = cats.map((c) => c.section).filter(Boolean);
   if (!sections.length) return success(res, { items: [] });
   const { rows } = await db.query(
-    `SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section,
+    `SELECT bp.id, bp.name, bp.price, ${OFFER_BEST_PCT} AS offer_pct, bp.image_url, bp.section,
             b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category
        FROM brand_products bp
        JOIN brands b ON b.id = bp.brand_id
        JOIN users u ON u.id = b.user_id
       WHERE u.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
         AND bp.section = ANY($1) AND NOT (bp.id = ANY($2::uuid[]))
-      ORDER BY CASE WHEN bp.mrp IS NOT NULL AND bp.mrp > bp.price THEN (bp.mrp - bp.price) / NULLIF(bp.mrp, 0) ELSE 0 END DESC,
+      ORDER BY COALESCE(${OFFER_BEST_PCT}, 0) DESC,
                bp.created_at DESC NULLS LAST
       LIMIT $3`,
     [sections, ids, limit]
   );
   const items = rows.map((r) => {
     const price = r.price != null ? parseFloat(r.price) : null;
-    const mrp = r.mrp != null ? parseFloat(r.mrp) : null;
-    const discount = (mrp != null && price != null && mrp > price) ? Math.round(((mrp - price) / mrp) * 100) : null;
     return {
-      entity_type: 'product', id: r.id, name: r.name, price, mrp, discount_value: discount,
+      entity_type: 'product', id: r.id, name: r.name, price,
+      ...offerFieldsFromPct(r.offer_pct, price),
       image_url: r.image_url, section: r.section,
       brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category },
     };

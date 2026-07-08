@@ -60,7 +60,6 @@ function columnModel(node, facets) {
   const cols = [
     { header: 'Name', field: 'name', required: true },
     { header: 'Price', field: 'price', required: true },
-    { header: 'MRP', field: 'mrp', note: 'original price for strike-through (optional)' },
     { header: 'Brand', field: 'brand' },
     { header: 'Description', field: 'description', note: 'optional shopper-facing description' },
     { header: 'Stock', field: 'stock', note: 'base stock (optional)' },
@@ -118,7 +117,7 @@ function buildTemplateWorkbook(node, facets, stampDate) {
   ins.getRow(1).font = { bold: true };
   cols.forEach(c => {
     let how = 'Free text.';
-    if (c.field === 'price' || c.field === 'mrp' || c.field === 'stock' || c.field === 'variant_stock') how = 'A number.';
+    if (c.field === 'price' || c.field === 'stock' || c.field === 'variant_stock') how = 'A number.';
     else if (Array.isArray(c.list)) how = (c.multi ? 'Comma-separate one or more of: ' : 'Pick one of: ') + c.list.join(', ');
     else if (c.multi) how = 'Comma-separate multiple values.';
     else if (c.field === 'color') how = 'The colour name (one row per colour).';
@@ -239,7 +238,6 @@ function buildItems(rows, node, facets) {
     items.push({
       name: norm(get(first, 'Name')),
       price: norm(get(first, 'Price')),
-      mrp: norm(get(first, 'MRP')) || null,
       brand: norm(get(first, 'Brand')) || null,
       description: norm(get(first, 'Description')) || null,
       stock: norm(get(first, 'Stock')) || null,

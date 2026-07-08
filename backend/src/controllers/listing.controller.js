@@ -20,6 +20,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const taxonomy = require('../services/taxonomy.service');
 const tagsService = require('../services/tags.service');
+const { OFFER_BEST_PCT, offerFieldsFromPct } = require('../services/sectionRules.service');
 const bulk = require('../services/listingBulk.service');
 const imageIngest = require('../services/imageIngest.service');
 const { resolveProductImage } = require('../utils/productImage');
@@ -125,7 +126,7 @@ async function insertProducts(brand, node, items) {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13,$14::jsonb,$15::text[],true)
          RETURNING id, name, price, sku, category_node_id, image_url`,
         [brand.id, String(it.name).trim(), Number(it.price),
-         (it.mrp != null && it.mrp !== '') ? Number(it.mrp) : null,
+         null,  // mrp retired (offer-mrp-retirement) — discounts come from the offer engine; column kept dormant
          sku, node.vertical, node.segment, node.category,
          coverImage(it), it.description || null,
          it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
@@ -389,13 +390,12 @@ const PAGE_MAX = 50;
 const FILTERABLE_ROLES = new Set(['variant', 'descriptive', 'discovery']);
 
 // Map a product row → the card shape the follower grid renders. Mirrors
-// sectionRules.mapListedProductItem; discount_value derived from mrp (display
-// only — mig 118; a live brand_offer overlays an extra discount at checkout).
+// sectionRules.mapListedProductItem; MRP retired (offer-mrp-retirement) — the
+// discount badge/struck price comes from the best live store discount-offer
+// (offer_pct), else a single clean price.
 function mapBrowseProduct(r) {
   const price = r.price != null ? parseFloat(r.price) : null;
-  const mrp = r.mrp != null ? parseFloat(r.mrp) : null;
-  const discount = (mrp != null && price != null && mrp > price)
-    ? Math.round(((mrp - price) / mrp) * 100) : null;
+  const { discount_value, offer_price } = offerFieldsFromPct(r.offer_pct, price);
   // Variant summary (colour → sizes w/ price + stock) for the quick-add
   // "Select variant" sheet — any world with variants_json.colors[] surfaces it.
   let vj = r.variants_json;
@@ -413,7 +413,7 @@ function mapBrowseProduct(r) {
   const has_variants = variants.some((c) => c.sizes.length > 0);
   return {
     entity_type: 'product',
-    id: r.id, name: r.name, price, mrp, discount_value: discount,
+    id: r.id, name: r.name, price, discount_value, offer_price,
     // resolve the cover from image_url OR the variant/facet images the edit form
     // reads, so browse never shows blank while edit shows a photo (product-image-resolution)
     image_url: resolveProductImage(r), section: r.section, veg_flag: r.veg_flag, description: r.description,
@@ -497,14 +497,15 @@ const getNodeProducts = asyncHandler(async (req, res) => {
 
   const orderBy = sort === 'price_asc' ? 'bp.price ASC NULLS LAST'
     : sort === 'price_desc' ? 'bp.price DESC NULLS LAST'
-    : sort === 'discount' ? 'CASE WHEN bp.mrp IS NOT NULL AND bp.mrp > bp.price THEN (bp.mrp - bp.price) / NULLIF(bp.mrp, 0) ELSE 0 END DESC, bp.created_at DESC NULLS LAST'
+    // MRP retired — "discount" sort ranks by the best live store discount-offer %.
+    : sort === 'discount' ? `COALESCE(${OFFER_BEST_PCT}, 0) DESC, bp.created_at DESC NULLS LAST`
     : 'bp.created_at DESC NULLS LAST';
 
   const limIdx = ++p; params.push(pageSize);
   const offIdx = ++p; params.push((page - 1) * pageSize);
 
   const pageSql = `${subtree}
-    SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
+    SELECT bp.id, bp.name, bp.price, ${OFFER_BEST_PCT} AS offer_pct, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.created_at, bp.badge, bp.variants_json,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category, u_b.city AS brand_city,
            rev.rating, rev.review_count,
@@ -635,7 +636,7 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
        SELECT id FROM category_nodes WHERE id = $1
        UNION ALL
        SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id)
-     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.sku, bp.stock,
+     SELECT bp.id, bp.name, bp.price, bp.image_url, bp.sku, bp.stock,
             bp.is_active, bp.pushed_to_store, bp.facets, bp.variants_json,
             bp.category_node_id, bp.created_at, bp.description, bp.section,
             cn.name AS leaf_name, cn.segment, cn.category
@@ -668,7 +669,7 @@ const getListingProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows } = await db.query(
-    `SELECT id, name, price, mrp, description, sku, stock, image_url,
+    `SELECT id, name, price, description, sku, stock, image_url,
             variants_json, facets, category_node_id, is_active, pushed_to_store, tags
        FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.id, brand.id]);
@@ -700,7 +701,7 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: prows } = await db.query(
-    `SELECT id, sku, mrp, category_node_id FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, sku, category_node_id FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.id, brand.id]);
   const existing = prows[0];
   if (!existing) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -729,16 +730,15 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   }
   const variantsJson = buildVariants(it, existing.sku);
   const image = coverImage(it);
-  // mrp: undefined = leave as-is; null/'' = clear; number = set.
-  const mrp = (it.mrp === undefined) ? existing.mrp
-    : (it.mrp === null || it.mrp === '') ? null : Number(it.mrp);
 
+  // mrp retired (offer-mrp-retirement) — always cleared to NULL on edit;
+  // discounts come from the offer engine. Column kept dormant.
   await db.query(
     `UPDATE brand_products
-        SET name = $1, price = $2, mrp = $3, description = $4, stock = $5,
-            image_url = $6, variants_json = $7::jsonb, facets = $8::jsonb, updated_at = now()
-      WHERE id = $9 AND brand_id = $10`,
-    [String(it.name).trim(), Number(it.price), mrp, it.description || null,
+        SET name = $1, price = $2, mrp = NULL, description = $3, stock = $4,
+            image_url = $5, variants_json = $6::jsonb, facets = $7::jsonb, updated_at = now()
+      WHERE id = $8 AND brand_id = $9`,
+    [String(it.name).trim(), Number(it.price), it.description || null,
      it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
      image, JSON.stringify(variantsJson), JSON.stringify(facets), existing.id, brand.id]);
 
@@ -752,7 +752,7 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   }
 
   const { rows } = await db.query(
-    `SELECT id, name, price, mrp, description, sku, stock, image_url, variants_json, facets, category_node_id, tags
+    `SELECT id, name, price, description, sku, stock, image_url, variants_json, facets, category_node_id, tags
        FROM brand_products WHERE id = $1`, [existing.id]);
   return success(res, { product: rows[0] });
 });
