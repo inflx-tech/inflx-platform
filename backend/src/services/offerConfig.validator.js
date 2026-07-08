@@ -48,7 +48,8 @@ function collectProductIds(offerType, cfg) {
       (cfg.products || []).forEach(push);
       break;
     case 'bogo':
-      push(cfg.buy_product); push(cfg.get_product);
+      // NEW same-product shape (product) + OLD (buy_product/get_product).
+      push(cfg.product); push(cfg.buy_product); push(cfg.get_product);
       break;
     case 'bundle':
       (cfg.products || []).forEach(push);
@@ -100,9 +101,16 @@ function validateShape(offerType, cfg) {
       if (!Array.isArray(cfg.tiers) || cfg.tiers.length === 0) {
         return fail('offer_config_json.tiers', 'at least one volume tier is required');
       }
+      // mode: 'quantity' tiers gate on min_qty (buy N units); default 'spend'
+      // tiers gate on min_spend (₹). (Phase 3 — offer-new-shapes.)
+      const quantity = cfg.mode === 'quantity';
       for (let i = 0; i < cfg.tiers.length; i += 1) {
         const t = cfg.tiers[i];
-        if (!isPositiveNumber(t?.min_spend)) {
+        if (quantity) {
+          if (!isPositiveNumber(t?.min_qty)) {
+            return fail(`offer_config_json.tiers[${i}].min_qty`, 'min_qty must be a positive number');
+          }
+        } else if (!isPositiveNumber(t?.min_spend)) {
           return fail(`offer_config_json.tiers[${i}].min_spend`, 'min_spend must be a positive number');
         }
         if (!isPositiveNumber(t?.pct_off) || Number(t.pct_off) > 100) {
@@ -112,6 +120,21 @@ function validateShape(offerType, cfg) {
       return scopeCheck() || OK;
     }
     case 'bogo': {
+      // NEW same-product BOGO (Phase 3): buy N of a product → M of the SAME
+      // product free. Presence of `product` (or a qty field) selects it.
+      if (cfg.product || cfg.buy_qty != null || cfg.free_qty != null) {
+        if (!productIdOf(cfg.product)) {
+          return fail('offer_config_json.product', 'product (with an id) is required');
+        }
+        if (cfg.buy_qty != null && !isPositiveNumber(cfg.buy_qty)) {
+          return fail('offer_config_json.buy_qty', 'buy_qty must be a positive number');
+        }
+        if (cfg.free_qty != null && !isPositiveNumber(cfg.free_qty)) {
+          return fail('offer_config_json.free_qty', 'free_qty must be a positive number');
+        }
+        return OK;
+      }
+      // OLD shape (buy_product + get_product) — left valid for existing offers.
       if (!productIdOf(cfg.buy_product)) {
         return fail('offer_config_json.buy_product', 'buy_product (with an id) is required');
       }

@@ -32,7 +32,8 @@ function emptyDraft() {
     name: '',
     offer_type: 'discount',
     d_sub: 'pct', d_val: '', d_scope: 'store', d_category: '', d_prods: [],
-    v_tiers: [{ min_spend: '', pct_off: '' }], v_scope: 'store', v_category: '', v_prods: [],
+    v_mode: 'spend', v_tiers: [{ min_spend: '', pct_off: '' }], v_scope: 'store', v_category: '', v_prods: [],
+    bogo_product: null, bogo_buy_qty: '1', bogo_free_qty: '1',
     bogo_buy: null, bogo_get: null,
     bnd_prods: [], bnd_price: '',
     gift_offers: [{ main: null, gift: null }],
@@ -53,13 +54,17 @@ function buildOfferConfig(d) {
         products: d.d_scope === 'products' ? (d.d_prods || []).map(prod) : [] };
       break;
     case 'volume':
-      cfg = { tiers: (d.v_tiers || []).map(t => ({ min_spend: num(t.min_spend), pct_off: num(t.pct_off) })),
+      cfg = { mode: d.v_mode === 'quantity' ? 'quantity' : 'spend',
+        tiers: (d.v_tiers || []).map(t => (d.v_mode === 'quantity'
+          ? { min_qty: num(t.min_qty), pct_off: num(t.pct_off) }
+          : { min_spend: num(t.min_spend), pct_off: num(t.pct_off) })),
         scope: d.v_scope,
         category: d.v_scope === 'category' ? (d.v_category || null) : null,
         products: d.v_scope === 'products' ? (d.v_prods || []).map(prod) : [] };
       break;
     case 'bogo':
-      cfg = { buy_product: prod(d.bogo_buy), get_product: prod(d.bogo_get) };
+      // Same-product BOGO (Phase 3): buy N → free M of the SAME product.
+      cfg = { product: prod(d.bogo_product), buy_qty: num(d.bogo_buy_qty) || 1, free_qty: num(d.bogo_free_qty) || 1 };
       break;
     case 'bundle':
       cfg = { products: (d.bnd_prods || []).map(prod), bundle_price: num(d.bnd_price) };
@@ -90,10 +95,16 @@ function draftFromOffer(o) {
     d.d_scope = c.scope || (c.products?.length ? 'products' : 'store');
     d.d_category = c.category || ''; d.d_prods = c.products || [];
   } else if (o.offer_type === 'volume') {
-    d.v_tiers = (c.tiers || [{ min_spend: '', pct_off: '' }]).map(t => ({ min_spend: String(t.min_spend ?? ''), pct_off: String(t.pct_off ?? '') }));
+    d.v_mode = c.mode === 'quantity' ? 'quantity' : 'spend';
+    d.v_tiers = (c.tiers || [{}]).map(t => (d.v_mode === 'quantity'
+      ? { min_qty: String(t.min_qty ?? ''), pct_off: String(t.pct_off ?? '') }
+      : { min_spend: String(t.min_spend ?? ''), pct_off: String(t.pct_off ?? '') }));
     d.v_scope = c.scope || (c.products?.length ? 'products' : 'store');
     d.v_category = c.category || ''; d.v_prods = c.products || [];
   } else if (o.offer_type === 'bogo') {
+    // New same-product shape; fall back to old buy_product for legacy offers.
+    d.bogo_product = c.product || c.buy_product || null;
+    d.bogo_buy_qty = String(c.buy_qty ?? '1'); d.bogo_free_qty = String(c.free_qty ?? '1');
     d.bogo_buy = c.buy_product || null; d.bogo_get = c.get_product || null;
   } else if (o.offer_type === 'bundle') {
     d.bnd_prods = c.products || []; d.bnd_price = String(c.bundle_price ?? '');
@@ -110,8 +121,11 @@ function previewLine(d) {
       const where = d.d_scope === 'category' ? ` on ${d.d_category || 'a category'}` : d.d_scope === 'products' ? ` on ${(d.d_prods || []).length} product(s)` : ' on the whole store';
       return base + where;
     }
-    case 'volume': return `Up to ${Math.max(0, ...(d.v_tiers || []).map(t => Number(t.pct_off) || 0))}% off — ${(d.v_tiers || []).length} tier(s)`;
-    case 'bogo': return `Buy ${d.bogo_buy?.name || '?'} → ${d.bogo_get?.name || '?'} free`;
+    case 'volume': {
+      const top = Math.max(0, ...(d.v_tiers || []).map(t => Number(t.pct_off) || 0));
+      return `Up to ${top}% off — ${(d.v_tiers || []).length} ${d.v_mode === 'quantity' ? 'quantity' : 'spend'} tier(s)`;
+    }
+    case 'bogo': return `Buy ${d.bogo_buy_qty || 1} ${d.bogo_product?.name || '?'} → get ${d.bogo_free_qty || 1} free`;
     case 'bundle': return `Bundle ${(d.bnd_prods || []).length} products @ ₹${d.bnd_price || '?'}`;
     case 'free_gift': return `Free gift — ${(d.gift_offers || []).length} pairing(s)`;
     default: return '';
@@ -279,34 +293,46 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
         </div>
       )}
 
-      {/* VOLUME — applies-to FIRST, then spend tiers (tiers are always %). */}
+      {/* VOLUME — mode (spend / quantity), applies-to, then tiers. */}
       {d.offer_type === 'volume' && (
         <div className="cfg">
-          <h5>Applies to</h5>
+          <h5>Reward on</h5>
+          <div className="seg">
+            <button className={d.v_mode !== 'quantity' ? 'act' : ''} onClick={() => setMany({ v_mode: 'spend', v_tiers: [{ min_spend: '', pct_off: '' }] })}>Amount spent (₹)</button>
+            <button className={d.v_mode === 'quantity' ? 'act' : ''} onClick={() => setMany({ v_mode: 'quantity', v_tiers: [{ min_qty: '', pct_off: '' }] })}>Quantity bought</button>
+          </div>
+          <h5 style={{ marginTop: 16 }}>Applies to</h5>
           <AppliesTo offerType="volume" scopeVal={d.v_scope}
             onScope={(s) => set('v_scope', s)}
             catVal={d.v_category} catField="v_category" prodsVal={d.v_prods} prodsField="v_prods" />
-          <h5 style={{ marginTop: 16 }}>Spend tiers</h5>
+          <h5 style={{ marginTop: 16 }}>{d.v_mode === 'quantity' ? 'Quantity tiers' : 'Spend tiers'}</h5>
           {(d.v_tiers || []).map((t, ti) => (
             <div key={ti} className="g2">
-              <div className="f"><label className="flbl">Min spend (₹)</label><input className="inp mono" value={t.min_spend} onChange={e => { const n = [...d.v_tiers]; n[ti] = { ...t, min_spend: e.target.value }; set('v_tiers', n); }} /></div>
+              {d.v_mode === 'quantity' ? (
+                <div className="f"><label className="flbl">Buy at least (qty)</label><input className="inp mono" value={t.min_qty || ''} onChange={e => { const n = [...d.v_tiers]; n[ti] = { ...t, min_qty: e.target.value }; set('v_tiers', n); }} /></div>
+              ) : (
+                <div className="f"><label className="flbl">Min spend (₹)</label><input className="inp mono" value={t.min_spend || ''} onChange={e => { const n = [...d.v_tiers]; n[ti] = { ...t, min_spend: e.target.value }; set('v_tiers', n); }} /></div>
+              )}
               <div className="f"><label className="flbl">% off</label><div className="row">
                 <input className="inp mono" value={t.pct_off} onChange={e => { const n = [...d.v_tiers]; n[ti] = { ...t, pct_off: e.target.value }; set('v_tiers', n); }} />
                 {(d.v_tiers || []).length > 1 && <button className="xbtn" onClick={() => set('v_tiers', d.v_tiers.filter((_, i) => i !== ti))}>✕</button>}
               </div></div>
             </div>
           ))}
-          <button className="addbtn" onClick={() => set('v_tiers', [...(d.v_tiers || []), { min_spend: '', pct_off: '' }])}>+ Add tier</button>
+          <button className="addbtn" onClick={() => set('v_tiers', [...(d.v_tiers || []), d.v_mode === 'quantity' ? { min_qty: '', pct_off: '' } : { min_spend: '', pct_off: '' }])}>+ Add tier</button>
         </div>
       )}
 
-      {/* BOGO */}
+      {/* BOGO — same product: buy N, get M of the SAME product free. */}
       {d.offer_type === 'bogo' && (
         <div className="cfg">
-          <h5>Buy this</h5>
-          <ProductFinder products={products} selected={d.bogo_buy} onPick={p => set('bogo_buy', p ? prod(p) : null)} placeholder="Search the product they buy…" />
-          <h5 style={{ marginTop: 16 }}>Get this free</h5>
-          <ProductFinder products={products} selected={d.bogo_get} onPick={p => set('bogo_get', p ? prod(p) : null)} placeholder="Search the free product…" />
+          <h5>Buy this product</h5>
+          <ProductFinder products={products} selected={d.bogo_product} onPick={p => set('bogo_product', p ? prod(p) : null)} placeholder="Search the product…" />
+          <div className="g2" style={{ marginTop: 12 }}>
+            <div className="f"><label className="flbl">Buy quantity</label><input className="inp mono" value={d.bogo_buy_qty} onChange={e => set('bogo_buy_qty', e.target.value)} /></div>
+            <div className="f"><label className="flbl">Free quantity (same product)</label><input className="inp mono" value={d.bogo_free_qty} onChange={e => set('bogo_free_qty', e.target.value)} /></div>
+          </div>
+          <div className="hint-inline" style={{ display: 'block', marginTop: 2 }}>The free item is the same product — the shopper can pick a different colour / size. For “buy A, get a different B free”, use Free gift instead.</div>
           <div className="hint" style={{ marginTop: 10 }}>↳ {applicabilityHint('bogo')}</div>
         </div>
       )}

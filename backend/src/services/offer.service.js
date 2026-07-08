@@ -204,6 +204,31 @@ function resolveVolume({ offerConfig, items, priceMap, variantPriceMap, productM
   const applicable = filterItemsByScope(items, scope, offerConfig, productMetaMap);
   const subtotal = itemsTotal(applicable, priceMap, variantPriceMap);
 
+  // Phase 3 (offer-new-shapes) — QUANTITY tiers: gate on total units in scope
+  // (buy N → % off), not spend. Discount still applies to the scope subtotal.
+  if (offerConfig?.mode === 'quantity') {
+    const qty = applicable.reduce((s, i) => s + Number(i.quantity || 0), 0);
+    let best = null;
+    for (const t of tiers) {
+      const min = Number(t.min_qty || 0);
+      if (qty >= min && (best == null || min > Number(best.min_qty || 0))) best = t;
+    }
+    const ctx = scope === 'category' ? ` on ${offerConfig.category}` : scope === 'products' ? ' on eligible items' : '';
+    if (!best) {
+      const lowest = tiers.reduce((acc, t) => (acc == null || Number(t.min_qty || 0) < Number(acc.min_qty || 0) ? t : acc), null);
+      return {
+        discount_amount: 0,
+        applied_to: 'scope_subtotal',
+        reason: lowest ? `Buy ${lowest.min_qty}${ctx} to unlock ${lowest.pct_off}% off` : 'Quantity threshold not met',
+      };
+    }
+    return {
+      discount_amount: r2(subtotal * Number(best.pct_off) / 100),
+      applied_to: scope === 'store' ? 'cart_total' : 'scope_subtotal',
+      reason: `${best.pct_off}% off — buy ≥ ${best.min_qty}${scope === 'category' ? ` on ${offerConfig.category}` : ''} tier`,
+    };
+  }
+
   // Pick the highest-min_spend tier whose threshold is met
   let bestTier = null;
   for (const t of tiers) {
@@ -233,6 +258,35 @@ function resolveVolume({ offerConfig, items, priceMap, variantPriceMap, productM
 }
 
 function resolveBogo({ offerConfig, items, priceMap, variantPriceMap }) {
+  // Phase 3 (offer-new-shapes) — SAME-PRODUCT BOGO: buy N of a product, get M
+  // of the SAME product free (any variant). Free units = complete groups of
+  // (buy+free) in the cart × free_qty. Variant-agnostic: count all units of the
+  // product across variants.
+  if (offerConfig?.product?.id) {
+    const p = offerConfig.product;
+    const buyN = Math.max(1, Number(offerConfig.buy_qty || 1));
+    const freeN = Math.max(1, Number(offerConfig.free_qty || 1));
+    const group = buyN + freeN;
+    const qty = items.filter(i => i.product_id === p.id).reduce((s, i) => s + Number(i.quantity || 0), 0);
+    const freeCount = Math.floor(qty / group) * freeN;
+    if (freeCount === 0) {
+      const need = Math.max(1, group - qty);
+      return {
+        discount_amount: 0,
+        applied_to: 'cart_total',
+        reason: `Buy ${buyN} ${p.name || 'item'}, get ${freeN} free — add ${need} more to unlock`,
+      };
+    }
+    const unitPrice = priceMap.get(p.id) || Number(p.price) || 0;
+    return {
+      discount_amount: r2(unitPrice * freeCount),
+      applied_to: 'cart_total',
+      reason: `${freeCount}× ${p.name || 'item'} free (buy ${buyN} get ${freeN})`,
+      adjustments: [{ product_id: p.id, free_qty: freeCount, reason: `Buy ${buyN} get ${freeN} free` }],
+    };
+  }
+
+  // OLD shape (buy_product + get_product) — left intact for existing offers.
   const buy = offerConfig?.buy_product;
   const get = offerConfig?.get_product;
   if (!buy?.id || !get?.id) {

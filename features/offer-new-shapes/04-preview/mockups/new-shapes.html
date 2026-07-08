@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>New offer shapes (mockup)</title>
+<style>
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#FAFAFA;color:#0A0A0A;font-size:13px;margin:0;padding:24px}
+.wrap{max-width:600px;margin:0 auto;display:grid;gap:16px}
+.card{background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:18px}
+h5{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#52525B;margin:0 0 10px}
+.seg{display:inline-flex;gap:6px}
+.seg button{padding:7px 13px;border-radius:99px;border:1px solid #E4E4E7;background:#fff;font-size:11.5px;font-weight:700;color:#52525B}
+.seg button.act{background:#0A0A0A;border-color:#0A0A0A;color:#FFC107}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.fl{font-size:11px;font-weight:800;text-transform:uppercase;color:#52525B}
+.inp{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #E4E4E7;border-radius:10px;margin-top:5px}
+.chip{display:inline-block;padding:6px 10px;border:1px solid #E4E4E7;border-radius:8px;background:#FAFAFA;font-weight:700;font-size:12px}
+.note{font-size:11px;color:#71717A;margin-top:8px}
+.tier{display:flex;align-items:center;gap:10px;padding:8px 0}
+.tk{width:22px;height:22px;border-radius:50%;background:#FFF7CC;color:#6B5A00;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.tp{margin-left:auto;font-weight:800;color:#047857}
+</style></head><body><div class="wrap">
+
+  <div class="card">
+    <h5>Volume — reward on</h5>
+    <div class="seg"><button>Amount spent (₹)</button><button class="act">Quantity bought</button></div>
+    <h5 style="margin-top:14px">Quantity tiers · category Tees</h5>
+    <div class="g2"><div><div class="fl">Buy at least</div><input class="inp" value="3"></div><div><div class="fl">% off</div><input class="inp" value="20"></div></div>
+    <div class="g2"><div><div class="fl">Buy at least</div><input class="inp" value="5"></div><div><div class="fl">% off</div><input class="inp" value="30"></div></div>
+  </div>
+
+  <div class="card">
+    <h5>BOGO — same product</h5>
+    <div class="chip">Puma Varsity Tee ✕</div>
+    <div class="g2"><div><div class="fl">Buy quantity</div><input class="inp" value="1"></div><div><div class="fl">Free quantity (same product)</div><input class="inp" value="1"></div></div>
+    <div class="note">The free item is the same product — the shopper picks a different colour/size. For “buy A, get a different B free”, use Free gift.</div>
+  </div>
+
+  <div class="card">
+    <h5>Follower PDP · same-product BOGO</h5>
+    <div style="font-weight:800;font-size:15px">Buy 1, Get 1 Free</div>
+    <div class="note" style="margin-top:2px">The free one is the same product — pick any colour or size.</div>
+    <div class="tier"><span class="chip">🛍️ Puma Varsity Tee · buy 1</span> → <span class="chip">🎁 Same item · FREE</span></div>
+  </div>
+
+  <div class="card">
+    <h5>Follower cart · quantity volume (3 tees)</h5>
+    <div class="tier"><span>Item total</span><span class="tp" style="color:#0A0A0A">₹1,500</span></div>
+    <div class="tier"><span>Offer · Buy 3 Get 20% (Tees)</span><span class="tp" style="color:#E35694">−₹300</span></div>
+  </div>
+</div></body></html>

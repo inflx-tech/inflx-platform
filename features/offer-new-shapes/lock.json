@@ -1,0 +1,20 @@
+{
+  "feature": "offer-new-shapes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: volume two-types + BOGO-same-product redefinition (leave old ones) + 'pls start phase 3'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder locked the shapes in-session; mockup 04-preview/mockups/new-shapes.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Phase 3. Quantity-volume (mode='quantity', min_qty tiers) + same-product BOGO ({product,buy_qty,free_qty}). Validator + engine (resolveVolume/resolveBogo) gain branches selected by config shape; OLD shapes (spend-volume, buy/get-BOGO) left intact (founder deletes old BOGO later). Builder mode toggle + BOGO same-product form; PDP OfferBlock renders both; cart preview needs no change (flows through Phase-2 engine). No migration. Engine + validator unit-tested; qa GREEN.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -31,36 +31,61 @@ export default function OfferBlock({ offer }) {
       <Note tone={C.verify} text="Simple discounts need no cart — they also apply to a walk-in pay-at-store bill." />
     );
   } else if (kind === 'volume') {
-    title = 'Buy more, save more';
-    sub = 'Discount grows with your cart total';
+    // Phase 3 (offer-new-shapes) — two modes: quantity tiers (buy N → % off) or
+    // the classic spend tiers (spend ₹X → % off).
+    const isQty = cfg.mode === 'quantity';
+    title = isQty ? 'Buy more, save more' : 'Spend more, save more';
+    sub = isQty ? 'Discount grows with how many you buy' : 'Discount grows with your cart total';
     const tiers = Array.isArray(cfg.tiers) ? cfg.tiers : [];
     body = (
       <View>
         {tiers.map((t, i) => (
           <View key={i} style={[s.tier, i === 0 && { marginTop: 8 }]}>
             <View style={s.tk}><Text style={s.tkTxt}>{i + 1}</Text></View>
-            <Text style={s.tt}>Spend {fmtRupees(t.min_spend)}</Text>
+            <Text style={s.tt}>{isQty ? `Buy ${t.min_qty}+` : `Spend ${fmtRupees(t.min_spend)}`}</Text>
             <Text style={s.tp}>{t.pct_off}% off</Text>
           </View>
         ))}
         {tiers.length === 0 ? <Text style={s.muted}>Tiered discount applied at checkout.</Text> : null}
-        <Note tone={C.star} text="Your tier is applied automatically at checkout, based on your cart total." />
+        <Note tone={C.star} text={isQty
+          ? 'Your tier is applied automatically at checkout, based on how many you buy.'
+          : 'Your tier is applied automatically at checkout, based on your cart total.'} />
       </View>
     );
   } else if (kind === 'bogo') {
-    title = 'Buy 1, Get 1 Free';
-    sub = "We'll add the free one for you";
-    const buy = cfg.buy_product, get = cfg.get_product;
-    body = (
-      <View>
-        <View style={s.pair}>
-          <Item emoji="🛍️" name={buy?.name || 'This item'} price={buy?.price} label="you buy" />
-          <Text style={s.arrow}>→</Text>
-          <Item emoji="🎁" name={get?.name || 'Free item'} free />
+    // Phase 3 — same-product BOGO: buy N, get M of the SAME product free.
+    const isSameProduct = !!(cfg.product && cfg.product.id);
+    if (isSameProduct) {
+      const p = cfg.product;
+      const buyN = Number(cfg.buy_qty || 1), freeN = Number(cfg.free_qty || 1);
+      title = buyN === 1 && freeN === 1 ? 'Buy 1, Get 1 Free' : `Buy ${buyN}, Get ${freeN} Free`;
+      sub = 'The free one is the same product — pick any colour or size';
+      body = (
+        <View>
+          <View style={s.pair}>
+            <Item emoji="🛍️" name={p?.name || 'This item'} price={p?.price} label={`buy ${buyN}`} />
+            <Text style={s.arrow}>→</Text>
+            <Item emoji="🎁" name={p?.name || 'Same item'} free />
+          </View>
+          <Note tone={C.brown} text={`Add ${buyN + freeN} to your cart — ${freeN} come${freeN > 1 ? '' : 's'} free at checkout.`} />
         </View>
-        <Note tone={C.brown} text="Tap the deal and the free item is added to your cart at ₹0 — quantity matched." />
-      </View>
-    );
+      );
+    } else {
+      // OLD buy_product/get_product offers (left intact; founder deletes later).
+      title = 'Buy 1, Get 1 Free';
+      sub = "We'll add the free one for you";
+      const buy = cfg.buy_product, get = cfg.get_product;
+      body = (
+        <View>
+          <View style={s.pair}>
+            <Item emoji="🛍️" name={buy?.name || 'This item'} price={buy?.price} label="you buy" />
+            <Text style={s.arrow}>→</Text>
+            <Item emoji="🎁" name={get?.name || 'Free item'} free />
+          </View>
+          <Note tone={C.brown} text="Tap the deal and the free item is added to your cart at ₹0 — quantity matched." />
+        </View>
+      );
+    }
   } else if (kind === 'bundle') {
     title = 'Bundle & save';
     sub = 'Get the set together for one price';
