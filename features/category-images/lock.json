@@ -11,5 +11,5 @@
   "mockup_locked_by": "delegated lock (standing autonomy) — Phase 2 of the founder-approved image strategy; mockup 04-preview/mockups/category-images.html",
   "mockup_locked_at": "2026-07-08",
   "notes": "Image strategy Phase 2. Category node images stored in category_nodes.meta.image_url (no migration). taxonomy.getTree + getNodeChildren return image_url; PATCH /admin/sections/category-node-image sets/clears it (sections capability, reuses section presign). New /admin/category-images page browses the tree + uploads per node via the 1:1 crop modal. Mobile CategoryBrowser rail + all-categories tiles render image_url with placeholder fallback. Backend + brand-web + mobile OTA.",
-  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+  "release": { "qa_all_green": true, "released": true, "released_by": "aveen (founder) 2026-07-08", "released_at": "2026-07-08", "deploy": "push 13fbb91 + follower OTA v192", "maestro_green": false }
 }
