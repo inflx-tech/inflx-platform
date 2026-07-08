@@ -11,5 +11,5 @@
   "mockup_locked_by": "delegated lock (standing autonomy) — founder reported the wrong search behavior live; mockup 04-preview/mockups/search.html",
   "mockup_locked_at": "2026-07-08",
   "notes": "Replaces the earlier wrong ⌕→Find nav with a real in-category product search. Backend: node-products endpoint accepts q (name/description ILIKE within subtree, escaped). Mobile: ⌕ toggles an inline header search bar; debounced query loads the current category subtree (railNode/selected) filtered by text; grid shows matches, 'Results for …', close restores leaf grid. Backend + mobile OTA.",
-  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+  "release": { "qa_all_green": true, "released": true, "released_by": "aveen (founder) 2026-07-08", "released_at": "2026-07-08", "deploy": "push c0b617a + follower OTA v193", "maestro_green": false }
 }
