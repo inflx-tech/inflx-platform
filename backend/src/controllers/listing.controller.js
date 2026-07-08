@@ -506,6 +506,14 @@ const getNodeProducts = asyncHandler(async (req, res) => {
   }
   if (priceMin != null) { const i = ++p; params.push(priceMin); clauses.push(`bp.price >= $${i}`); }
   if (priceMax != null) { const i = ++p; params.push(priceMax); clauses.push(`bp.price <= $${i}`); }
+  // In-category text search (category-search): match name/description within the
+  // node's subtree. Trimmed, escaped for ILIKE.
+  const qText = String(req.query.q || '').trim();
+  if (qText) {
+    const like = `%${qText.replace(/[%_]/g, (m) => `\\${m}`)}%`;
+    const i = ++p; params.push(like);
+    clauses.push(`(bp.name ILIKE $${i} OR bp.description ILIKE $${i})`);
+  }
   const filterSql = clauses.length ? `AND ${clauses.join(' AND ')}` : '';
 
   const orderBy = sort === 'price_asc' ? 'bp.price ASC NULLS LAST'

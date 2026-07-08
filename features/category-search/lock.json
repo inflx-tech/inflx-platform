@@ -1,0 +1,15 @@
+{
+  "feature": "category-search",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'search button opening old all categories screen ... make sure it opens search bar with local search of those sub categories items'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder reported the wrong search behavior live; mockup 04-preview/mockups/search.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Replaces the earlier wrong ⌕→Find nav with a real in-category product search. Backend: node-products endpoint accepts q (name/description ILIKE within subtree, escaped). Mobile: ⌕ toggles an inline header search bar; debounced query loads the current category subtree (railNode/selected) filtered by text; grid shows matches, 'Results for …', close restores leaf grid. Backend + mobile OTA.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}

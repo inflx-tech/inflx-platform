@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, ScrollView, TouchableOpacity, Image, ActivityIndicator,
-  Modal, StyleSheet, Animated, Vibration, Alert,
+  Modal, StyleSheet, Animated, Vibration, Alert, TextInput,
 } from 'react-native';
 import { toing as TZ, fonts, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
@@ -51,6 +51,8 @@ export default function CategoryBrowserScreen({ navigation, route }) {
 
   const [activeFilters, setActiveFilters] = useState({});  // { facet_key: [values] }
   const [sort, setSort] = useState('new');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState({});
@@ -62,7 +64,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
     setGridLoading(true);
     try {
       const res = await followerApi.listingNodeProducts(node.id, {
-        filters: opts.filters || {}, sort: opts.sort || 'new', page: 1, page_size: 40,
+        filters: opts.filters || {}, sort: opts.sort || 'new', page: 1, page_size: 40, q: opts.q || '',
       });
       const d = res.data || res;
       setProducts(Array.isArray(d.items) ? d.items : []);
@@ -75,6 +77,28 @@ export default function CategoryBrowserScreen({ navigation, route }) {
       setGridLoading(false);
     }
   }, []);
+
+  // In-category search (category-search): while the search bar is open, debounce
+  // the query and load the CURRENT category's whole subtree filtered by text.
+  // Scope = railNode (covers every subcategory in the rail), else the selected node.
+  useEffect(() => {
+    if (!searchOpen) return undefined;
+    const scope = railNode || selected;
+    if (!scope) return undefined;
+    const t = setTimeout(() => {
+      loadGrid(scope, { sort, filters: activeFilters, q: searchQ.trim() });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQ, searchOpen, railNode, selected, sort, activeFilters, loadGrid]);
+
+  // Closing search restores the selected leaf's grid.
+  const toggleSearch = () => {
+    setSearchOpen((open) => {
+      const next = !open;
+      if (!next) { setSearchQ(''); if (selected) loadGrid(selected, { sort, filters: activeFilters }); }
+      return next;
+    });
+  };
 
   // Initial load — resolve the rail + the first leaf to show.
   useEffect(() => {
@@ -233,7 +257,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={s.container}>
-        <Header navigation={navigation} title={params.title || 'Browse'} vertical={params.vertical} />
+        <Header navigation={navigation} title={params.title || 'Browse'} searchable={false} />
         <View style={s.center}><ActivityIndicator size="large" color={TZ.pink} /></View>
       </View>
     );
@@ -243,7 +267,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   if (isAllMode) {
     return (
       <View style={s.container}>
-        <Header navigation={navigation} title={params.title || 'All categories'} vertical={params.vertical} />
+        <Header navigation={navigation} title={params.title || 'All categories'} searchable={false} />
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 90 }} showsVerticalScrollIndicator={false}>
           {allSegments.map((seg) => (
             <View key={seg.segment} style={{ marginBottom: 16 }}>
@@ -272,7 +296,8 @@ export default function CategoryBrowserScreen({ navigation, route }) {
 
   return (
     <View style={s.container}>
-      <Header navigation={navigation} title={selected?.name || railNode?.category || params.title || 'Browse'} vertical={params.vertical || railNode?.vertical} />
+      <Header navigation={navigation} title={selected?.name || railNode?.category || params.title || 'Browse'}
+        searchOpen={searchOpen} searchQ={searchQ} onToggleSearch={toggleSearch} onSearchChange={setSearchQ} />
       {breadcrumb ? <Text style={s.crumb} numberOfLines={1}>{breadcrumb}</Text> : null}
 
       <View style={s.body}>
@@ -298,7 +323,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         {/* Right pane — count + chips + grid */}
         <View style={s.pane}>
           <View style={s.ptop}>
-            <Text style={s.pnm} numberOfLines={1}>{selected?.name || 'Pick a sub-category'}</Text>
+            <Text style={s.pnm} numberOfLines={1}>{searchOpen && searchQ.trim() ? `Results for “${searchQ.trim()}”` : (selected?.name || railNode?.category || 'All')}</Text>
             <Text style={s.pct}>{total} item{total === 1 ? '' : 's'}</Text>
           </View>
 
@@ -532,13 +557,21 @@ function CartBar({ items, count, total, onPress }) {
   );
 }
 
-function Header({ navigation, title, vertical }) {
+function Header({ navigation, title, searchOpen, searchQ, onToggleSearch, onSearchChange, searchable = true }) {
   return (
     <View style={s.header}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={s.hbtn}><Text style={{ fontSize: 18, color: TZ.ink }}>←</Text></TouchableOpacity>
-      <Text style={s.htitle} numberOfLines={1}>{title}</Text>
-      {/* Search was a dead button — now opens the search/browse screen. */}
-      <TouchableOpacity style={s.hbtn} onPress={() => navigation.navigate('Find', vertical ? { vertical } : undefined)}><Text style={{ fontSize: 16, color: TZ.ink }}>⌕</Text></TouchableOpacity>
+      <TouchableOpacity onPress={() => (searchOpen ? onToggleSearch() : navigation.goBack())} style={s.hbtn}><Text style={{ fontSize: 18, color: TZ.ink }}>←</Text></TouchableOpacity>
+      {searchOpen ? (
+        <TextInput style={s.hsearch} value={searchQ} onChangeText={onSearchChange} autoFocus
+          placeholder="Search in this category…" placeholderTextColor={TZ.hint} returnKeyType="search" />
+      ) : (
+        <Text style={s.htitle} numberOfLines={1}>{title}</Text>
+      )}
+      {searchable ? (
+        <TouchableOpacity style={s.hbtn} onPress={onToggleSearch}>
+          <Text style={{ fontSize: 16, color: TZ.ink }}>{searchOpen ? '✕' : '⌕'}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -553,6 +586,7 @@ const s = StyleSheet.create({
   },
   hbtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   htitle: { flex: 1, fontSize: 16, fontWeight: '700', color: TZ.ink, fontFamily: fonts.sansBold },
+  hsearch: { flex: 1, fontSize: 14, color: TZ.ink, backgroundColor: '#F4F4F5', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, fontFamily: fonts.sansRegular },
   crumb: { fontSize: 11, color: TZ.hint, paddingHorizontal: 14, paddingTop: 8, fontFamily: fonts.sansRegular },
 
   body: { flex: 1, flexDirection: 'row' },

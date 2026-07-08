@@ -504,6 +504,7 @@ export const followerApi = {
     }
     add('price_min', opts.price_min); add('price_max', opts.price_max);
     add('sort', opts.sort); add('page', opts.page); add('page_size', opts.page_size);
+    add('q', opts.q);
     return api.get(`/listing/nodes/${encodeURIComponent(id)}/products${p.length ? `?${p.join('&')}` : ''}`);
   },
   listingTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
