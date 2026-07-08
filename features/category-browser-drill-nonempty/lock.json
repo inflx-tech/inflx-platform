@@ -1,0 +1,21 @@
+{
+  "feature": "category-browser-drill-nonempty",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'men selected then its sub categories ... men top wear means tee shirts, polo ... like that i am expecting'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder specified the drill expectation in-session; mockup 04-preview/mockups/drill.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Refines v189: the CategoryBrowser drill already worked, but a level with no leaf child (segment like Men) showed an empty grid. Now loadGrid falls back to the node's own subtree products (listingNodeProducts is already recursive) at init + drill, so every level shows its subcategories in the rail AND a populated grid. Leaf behavior unchanged. Mobile OTA only.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

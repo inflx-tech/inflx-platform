@@ -114,7 +114,11 @@ export default function CategoryBrowserScreen({ navigation, route }) {
           setRailNode(node); setRail(d.children || []);
           const firstLeaf = (d.children || []).find((k) => k.is_leaf) || null;
           setSelected(firstLeaf);
-          if (firstLeaf) await loadGrid(firstLeaf, { sort: 'new', filters: {} });
+          // A leaf child → its products. No leaf child (e.g. a segment like
+          // "Men" whose children are Topwear/Bottomwear) → show the node's whole
+          // subtree so the grid is never empty, while the rail still lists the
+          // subcategories to drill into (category-browser-drill-nonempty).
+          await loadGrid(firstLeaf || node, { sort: 'new', filters: {} });
         }
       } catch (e) {
         console.error('[CategoryBrowser] init error:', e.message);
@@ -130,14 +134,16 @@ export default function CategoryBrowserScreen({ navigation, route }) {
       setSelected(child); setActiveFilters({}); setSort('new');
       loadGrid(child, { sort: 'new', filters: {} });
     } else {
-      // drill into a branch — its children become the rail.
+      // drill into a branch — its children become the rail. Show the first leaf's
+      // products, or (if this level is still all branches) the branch's whole
+      // subtree, so the grid is never empty (category-browser-drill-nonempty).
       try {
         const r = await followerApi.listingNodeChildren(child.id);
         const d = r.data || r;
         setRailNode(d.node); setRail(d.children || []);
         const firstLeaf = (d.children || []).find((k) => k.is_leaf) || null;
         setSelected(firstLeaf); setActiveFilters({}); setSort('new');
-        loadGrid(firstLeaf, { sort: 'new', filters: {} });
+        loadGrid(firstLeaf || child, { sort: 'new', filters: {} });
       } catch (e) { console.error('[CategoryBrowser] drill error:', e.message); }
     }
   }, [loadGrid]);
