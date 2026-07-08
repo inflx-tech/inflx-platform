@@ -13,9 +13,10 @@
   "notes": "Refines v189: the CategoryBrowser drill already worked, but a level with no leaf child (segment like Men) showed an empty grid. Now loadGrid falls back to the node's own subtree products (listingNodeProducts is already recursive) at init + drill, so every level shows its subcategories in the rail AND a populated grid. Leaf behavior unchanged. Mobile OTA only.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) 2026-07-08",
+    "released_at": "2026-07-08",
+    "deploy": "follower OTA v190",
     "maestro_green": false
   }
 }
