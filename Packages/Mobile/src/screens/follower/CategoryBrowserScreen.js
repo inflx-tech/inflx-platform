@@ -233,7 +233,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={s.container}>
-        <Header navigation={navigation} title={params.title || 'Browse'} />
+        <Header navigation={navigation} title={params.title || 'Browse'} vertical={params.vertical} />
         <View style={s.center}><ActivityIndicator size="large" color={TZ.pink} /></View>
       </View>
     );
@@ -243,7 +243,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   if (isAllMode) {
     return (
       <View style={s.container}>
-        <Header navigation={navigation} title={params.title || 'All categories'} />
+        <Header navigation={navigation} title={params.title || 'All categories'} vertical={params.vertical} />
         <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 90 }} showsVerticalScrollIndicator={false}>
           {allSegments.map((seg) => (
             <View key={seg.segment} style={{ marginBottom: 16 }}>
@@ -270,7 +270,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
 
   return (
     <View style={s.container}>
-      <Header navigation={navigation} title={selected?.name || railNode?.category || params.title || 'Browse'} />
+      <Header navigation={navigation} title={selected?.name || railNode?.category || params.title || 'Browse'} vertical={params.vertical || railNode?.vertical} />
       {breadcrumb ? <Text style={s.crumb} numberOfLines={1}>{breadcrumb}</Text> : null}
 
       <View style={s.body}>
@@ -285,6 +285,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
                   <Text style={{ fontSize: 18, color: fg }}>{c.is_leaf ? '◆' : '▸'}</Text>
                 </View>
                 <Text style={[s.rlbl, on && s.rlblOn]} numberOfLines={2}>{c.name}</Text>
+                {c.product_count != null ? <Text style={s.rcount}>{c.product_count} item{c.product_count === 1 ? '' : 's'}</Text> : null}
               </TouchableOpacity>
             );
           })}
@@ -527,13 +528,13 @@ function CartBar({ items, count, total, onPress }) {
   );
 }
 
-function Header({ navigation, title }) {
+function Header({ navigation, title, vertical }) {
   return (
     <View style={s.header}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={s.hbtn}><Text style={{ fontSize: 18, color: TZ.ink }}>←</Text></TouchableOpacity>
       <Text style={s.htitle} numberOfLines={1}>{title}</Text>
-      <TouchableOpacity style={s.hbtn}><Text style={{ fontSize: 16, color: TZ.ink }}>⌕</Text></TouchableOpacity>
-      <TouchableOpacity style={s.hbtn}><Text style={{ fontSize: 15, color: TZ.ink }}>⤴</Text></TouchableOpacity>
+      {/* Search was a dead button — now opens the search/browse screen. */}
+      <TouchableOpacity style={s.hbtn} onPress={() => navigation.navigate('Find', vertical ? { vertical } : undefined)}><Text style={{ fontSize: 16, color: TZ.ink }}>⌕</Text></TouchableOpacity>
     </View>
   );
 }
@@ -557,6 +558,7 @@ const s = StyleSheet.create({
   rimg: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
   rlbl: { fontSize: 10, lineHeight: 12, color: '#52525B', textAlign: 'center', fontFamily: fonts.sansRegular },
   rlblOn: { color: TZ.ink, fontWeight: '700', fontFamily: fonts.sansBold },
+  rcount: { fontSize: 9, lineHeight: 11, color: '#A1A1AA', textAlign: 'center', marginTop: 1, fontFamily: fonts.sansRegular },
 
   pane: { flex: 1, minWidth: 0 },
   ptop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: 12, paddingTop: 10, paddingBottom: 8 },

@@ -431,9 +431,21 @@ function mapBrowseProduct(r) {
 const getNodeChildren = asyncHandler(async (req, res) => {
   const node = await taxonomy.getNode(req.params.id);
   if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  // Per-child LIVE product count over the child's whole subtree (Blinkit-style
+  // "N items" beside each rail category). Live = approved brand, active, pushed.
   const { rows } = await db.query(
-    `SELECT id, parent_id, segment, category, name, slug, depth, is_leaf, sort_order
-       FROM category_nodes WHERE parent_id = $1 ORDER BY sort_order, name`,
+    `SELECT c.id, c.parent_id, c.segment, c.category, c.name, c.slug, c.depth, c.is_leaf, c.sort_order,
+            (SELECT COUNT(*) FROM brand_products bp
+               JOIN brands b ON b.id = bp.brand_id
+               JOIN users u ON u.id = b.user_id
+              WHERE u.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
+                AND bp.category_node_id IN (
+                  WITH RECURSIVE sub AS (
+                    SELECT c.id AS id
+                    UNION ALL
+                    SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
+                  ) SELECT id FROM sub))::int AS product_count
+       FROM category_nodes c WHERE c.parent_id = $1 ORDER BY c.sort_order, c.name`,
     [node.id]
   );
   return success(res, {

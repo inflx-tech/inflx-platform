@@ -1,0 +1,15 @@
+{
+  "feature": "category-browser-counts-search",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'category name with number of products and search option ... search but it is not working'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder reported the Blinkit gaps live; mockup 04-preview/mockups/rail-counts.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "getNodeChildren adds per-child live subtree product_count (recursive CTE). CategoryBrowser rail renders 'N items'; header search (was a dead button) opens Find with the vertical; dead share button removed. In-category product text-search deferred (no endpoint). Backend + mobile OTA.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}
