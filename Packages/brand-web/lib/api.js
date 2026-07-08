@@ -227,6 +227,9 @@ export const brandApi = {
   deleteAddonTemplate: (id) => api.delete(`/brands/me/addon-templates/${id}`),
   // Tag picker options — fixed vocabulary for this brand's business (+ 'ALL')
   getTagOptions: () => api.get('/brands/me/tag-options'),
+  // Complete category list (whole vertical taxonomy) for the offer builder's
+  // Category scope — not limited to categories that currently have products.
+  getOfferCategories: () => api.get('/brands/me/offer-categories'),
   // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────
   getOffers:   (params) => api.get(`/brands/me/offers${params ? '?' + new URLSearchParams(params) : ''}`),
   getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),

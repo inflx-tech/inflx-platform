@@ -421,7 +421,7 @@ const listProducts = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT id, name, description, price, category_key, sku, section,
-            veg_flag, duration_mins, variants_json, image_url,
+            veg_flag, duration_mins, variants_json, image_url, facets,
             is_active, is_bookable, stock, availability_json,
             booking_config_json, tags, pushed_to_store,
             badge, is_featured, featured_sort, created_at, updated_at
@@ -431,9 +431,32 @@ const listProducts = asyncHandler(async (req, res) => {
     params
   );
 
-  // Group by section for convenience
+  // Resolve a display image per product (image_url OR variant/facet images) so
+  // pickers/lists show a real thumbnail, never a blank (offer product finder).
+  const products = rows.map((r) => ({ ...r, image_url: resolveProductImage(r) }));
   const schema = loadSchema(brand.category);
-  return success(res, { products: rows, schema, category: brand.category });
+  return success(res, { products, schema, category: brand.category });
+});
+
+// GET /brands/me/offer-categories — the COMPLETE set of categories a brand can
+// scope an offer to = the distinct `category` level of its vertical taxonomy
+// (offers match brand_products.section, which is set to the node's category).
+// Comprehensive (every category in the world, not just ones with products yet),
+// so the offer builder's Category picker isn't limited to current inventory.
+const getOfferCategories = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  const cat = String(brand.category || '');
+  const vertical = cat.startsWith('furniture') ? 'furniture'
+    : cat.startsWith('fashion') ? 'fashion'
+    : cat;
+  const { rows } = await db.query(
+    `SELECT DISTINCT category FROM category_nodes
+      WHERE vertical = $1 AND category IS NOT NULL AND category <> ''
+      ORDER BY category ASC`,
+    [vertical]
+  );
+  return success(res, { categories: rows.map((r) => r.category), vertical });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1169,7 +1192,7 @@ const getTemplateColumns = asyncHandler(async (req, res) => {
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue, searchDishes,
-  listProducts, createProduct, updateProduct, deleteProduct, getTagOptions,
+  listProducts, createProduct, updateProduct, deleteProduct, getTagOptions, getOfferCategories,
   listBrandOrders, listAllTransactions, getPublicProfile, storePreview,
   getListingConfig, getQualityScore, getListingPreview,
   downloadListingTemplate, bulkUploadProducts, getTemplateColumns,

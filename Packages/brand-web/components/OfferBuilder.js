@@ -166,12 +166,12 @@ function ProductFinder({ products = [], selected, multi = false, onPick, onToggl
       {multi && (selected || []).length > 0 && (
         <div className="chips">
           {(selected || []).map((p, i) => (
-            <span key={p.id || i} className="chip">{p.name}<span className="x" onClick={() => onToggle(p)}>✕</span></span>
+            <span key={p.id || i} className="chip">{p.name}{p.price != null ? ` · ₹${p.price}` : ''}<span className="x" onClick={() => onToggle(p)}>✕</span></span>
           ))}
         </div>
       )}
       {!multi && selected && (
-        <div className="chips"><span className="chip">{selected.name}<span className="x" onClick={() => onPick(null)}>✕</span></span></div>
+        <div className="chips"><span className="chip">{selected.name}{selected.price != null ? ` · ₹${selected.price}` : ''}<span className="x" onClick={() => onPick(null)}>✕</span></span></div>
       )}
       <div className="finder">
         <div className="fhead"><input className="inp" style={{ margin: 0 }} value={q} onChange={e => setQ(e.target.value)} placeholder={placeholder} /></div>
@@ -184,6 +184,10 @@ function ProductFinder({ products = [], selected, multi = false, onPick, onToggl
                 return (
                   <div key={p.id} className={'fopt' + (on ? ' on' : '')}
                     onClick={() => { if (multi) onToggle(p); else onPick(p); }}>
+                    {p.image_url
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img className="fimg" src={p.image_url} alt="" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
+                      : <span className="fimg fph">▦</span>}
                     <span className="fnm">{p.name}</span>
                     <span className="fpr">₹{p.price}{on ? ' ✓' : ''}</span>
                   </div>
@@ -431,8 +435,10 @@ const OFB_CSS = `
 .ofb .fopt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border-top:1px solid #F7F7F5;cursor:pointer}
 .ofb .fopt:hover{background:var(--bg)}
 .ofb .fopt.on{background:var(--yellow-pale)}
-.ofb .fnm{font-size:12.5px;font-weight:600}
+.ofb .fnm{font-size:12.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ofb .fpr{font-size:12px;color:var(--muted-2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.ofb .fimg{width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--bg2);flex:none}
+.ofb .fph{display:inline-flex;align-items:center;justify-content:center;color:var(--muted-3);font-size:16px}
 .ofb .fempty{padding:14px 11px;font-size:12px;color:var(--muted-3)}
 `;
 

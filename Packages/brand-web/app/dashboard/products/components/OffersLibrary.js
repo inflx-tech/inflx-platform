@@ -18,6 +18,7 @@ export default function OffersLibrary() {
   const [offers, setOffers] = useState([]);
   const [counts, setCounts] = useState({ all: 0, draft: 0, active: 0, archived: 0 });
   const [products, setProducts] = useState([]);
+  const [offerCategories, setOfferCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
   const [typeFilter, setTypeFilter] = useState('');
@@ -33,14 +34,23 @@ export default function OffersLibrary() {
   }, []);
 
   async function load() {
-    const [offRes, prodRes] = await Promise.all([brandApi.getOffers(), brandApi.getProducts()]);
+    const [offRes, prodRes, catRes] = await Promise.all([
+      brandApi.getOffers(), brandApi.getProducts(), brandApi.getOfferCategories?.(),
+    ]);
     if (offRes.success) { setOffers(offRes.data?.offers || []); setCounts(offRes.data?.counts || { all: 0, draft: 0, active: 0, archived: 0 }); }
     if (prodRes.success) setProducts(prodRes.data?.products || []);
+    if (catRes?.success) setOfferCategories(catRes.data?.categories || []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
 
-  const sections = useMemo(() => [...new Set(products.map(p => p.section).filter(Boolean))], [products]);
+  // Category options = the COMPLETE vertical taxonomy (offer-builder-scope), not
+  // just categories that currently have products. Fall back to the product-
+  // derived sections if the endpoint is unavailable (older backend).
+  const sections = useMemo(() => (
+    offerCategories.length ? offerCategories
+      : [...new Set(products.map(p => p.section).filter(Boolean))]
+  ), [offerCategories, products]);
 
   const visible = useMemo(() => offers.filter(o =>
     (tab === 'all' || o.status === tab) &&

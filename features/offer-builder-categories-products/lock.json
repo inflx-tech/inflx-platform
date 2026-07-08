@@ -1,0 +1,20 @@
+{
+  "feature": "offer-builder-categories-products",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'category list is not comprehensive ... still hardcoded ones' + 'better UX for products ... popup with name image and price'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder reported the gap on the live screenshot; mockup 04-preview/mockups/finder.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "New GET /brands/me/offer-categories = distinct category of the brand's vertical taxonomy (fashion: 19), comprehensive + matches bp.section. listProducts resolves a display image per product (variant/facet fallback). OffersLibrary uses the endpoint (fallback to product sections); ProductFinder shows thumbnail + name + price + price chips. No matching/engine/payload change. Backend + brand-web only, no OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
