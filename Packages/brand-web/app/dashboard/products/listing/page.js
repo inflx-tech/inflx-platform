@@ -758,13 +758,27 @@ export default function DrilldownListingPage() {
               {tagOpts.length > 0 && (
                 <div>
                   <label className="fl">Tags <span className="muted2">(optional — INFLX features tagged products in curated collections)</span></label>
-                  <div className="tagchips">
-                    {tagOpts.map(t => (
-                      <button key={t.slug} type="button"
-                        className={'tgc' + (draft.tags.includes(t.slug) ? ' on' : '')}
-                        onClick={() => toggleTag(t.slug)}>{t.label}</button>
+                  <select className="t" value=""
+                    onChange={e => { if (e.target.value) toggleTag(e.target.value); }}>
+                    <option value="">Add a tag…</option>
+                    {tagOpts.filter(t => !draft.tags.includes(t.slug)).map(t => (
+                      <option key={t.slug} value={t.slug}>{t.label}</option>
                     ))}
-                  </div>
+                  </select>
+                  {draft.tags.length > 0 && (
+                    <div className="tagchips">
+                      {draft.tags.map(slug => {
+                        const opt = tagOpts.find(t => t.slug === slug);
+                        return (
+                          <span key={slug} className="tgc on">
+                            {opt ? opt.label : slug}
+                            <button type="button" className="tgx" aria-label={`Remove ${opt ? opt.label : slug}`}
+                              onClick={() => toggleTag(slug)}>×</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1043,9 +1057,10 @@ const CSS = `
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
-.lst .tagchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
-.lst .tgc{border:1px solid var(--border);background:#fff;border-radius:99px;padding:6px 14px;font-weight:700;font-size:12px;color:var(--muted);cursor:pointer}
+.lst .tagchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.lst .tgc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;border-radius:99px;padding:5px 12px;font-weight:700;font-size:12px;color:var(--muted)}
 .lst .tgc.on{background:var(--yellow-pale);border-color:var(--yellow);color:var(--yellow-text)}
+.lst .tgx{background:0;border:0;color:var(--yellow-text);font-size:14px;font-weight:800;cursor:pointer;padding:0;line-height:1}
 .lst .warnbox{background:var(--yellow-pale);border:1px solid #f0e1a8;color:var(--yellow-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:0 0 10px}
 .lst .sec{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:16px 0 8px}
 .lst .steps{display:flex;align-items:center;gap:4px;margin-bottom:14px;flex-wrap:wrap}
