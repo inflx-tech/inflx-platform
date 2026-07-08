@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Offer builder — reordered + searchable (mockup)</title>
+<style>
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#FAFAFA;color:#0A0A0A;font-size:13px;margin:0;padding:24px}
+.wrap{max-width:600px;margin:0 auto;background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:20px}
+h5{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#52525B;margin:16px 0 10px}
+.seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.seg button{padding:7px 13px;border-radius:99px;border:1px solid #E4E4E7;background:#fff;font-size:11.5px;font-weight:700;color:#52525B}
+.seg button.act{background:#0A0A0A;border-color:#0A0A0A;color:#FFC107}
+.tog{display:inline-flex;border:1px solid #E4E4E7;border-radius:10px;overflow:hidden}
+.tog button{padding:9px 15px;border:0;background:#fff;font-weight:800;font-size:13px}
+.tog button.act{background:#0A0A0A;color:#FFC107}
+.inp{width:100%;font-size:13px;padding:10px 13px;border:1px solid #E4E4E7;border-radius:10px;box-sizing:border-box;margin-top:8px}
+.hint{font-size:11.5px;color:#6B5A00;background:#FFF7CC;border:1px solid #FFC107;border-radius:8px;padding:8px 11px;margin-top:10px}
+.finder{border:1px solid #E4E4E7;border-radius:12px;margin-top:8px;overflow:hidden}
+.fhead{padding:8px 11px;border-bottom:1px solid #F4F4F5}
+.grp{font-size:10px;font-weight:800;text-transform:uppercase;color:#A1A1AA;padding:8px 11px 3px}
+.opt{display:flex;justify-content:space-between;padding:8px 11px;border-top:1px solid #F7F7F7;cursor:pointer}
+.opt:hover{background:#FAFAFA}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #E4E4E7;border-radius:8px;background:#FAFAFA;font-size:12px;font-weight:700;margin:0 6px 6px 0}
+.row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.dim{color:#A1A1AA}
+</style></head><body><div class="wrap">
+  <div style="font-weight:800;font-size:15px;margin-bottom:6px">New offer · Discount</div>
+
+  <h5>1 · Applies to <span style="text-transform:none;font-weight:600;color:#A1A1AA">(asked first)</span></h5>
+  <div class="seg"><button>Whole store</button><button class="act">Products</button><button>Category</button></div>
+
+  <h5>2 · Discount value</h5>
+  <div class="row">
+    <div class="tog"><button class="act">%</button><button>₹</button></div>
+    <input class="inp" style="flex:1;margin-top:0" value="200" placeholder="amount">
+  </div>
+  <div class="dim" style="font-size:11px;margin-top:6px">₹ flat is offered because scope = <b>Products</b>. For Whole store / Category, only % is shown.</div>
+
+  <h5>Pick products <span style="text-transform:none;font-weight:600;color:#A1A1AA">searchable</span></h5>
+  <div>
+    <span class="chip">Puma Varsity Tee ✕</span><span class="chip">Jockey Round Neck ✕</span>
+  </div>
+  <div class="finder">
+    <div class="fhead"><input class="inp" style="margin:0" placeholder="Search products by name or SKU…" value="tee"></div>
+    <div class="grp">Men · Topwear</div>
+    <div class="opt"><span>Puma Essential Tee — Marine</span><span class="dim">₹750</span></div>
+    <div class="opt"><span>Levi's Graphic Tee</span><span class="dim">₹899</span></div>
+    <div class="grp">Women · Topwear</div>
+    <div class="opt"><span>H&amp;M Slim Tee</span><span class="dim">₹599</span></div>
+  </div>
+
+  <div class="hint">↳ Applies to online orders. On a pay-at-store bill, only whole-store % offers apply (a paper bill can't be scoped to specific products).</div>
+</div></body></html>

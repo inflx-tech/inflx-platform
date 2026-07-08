@@ -1,4 +1,5 @@
 'use client';
+import { useState, useMemo } from 'react';
 
 /**
  * OfferBuilder — the reusable 5-type offer authoring form (Offer Engine).
@@ -117,55 +118,125 @@ function previewLine(d) {
   }
 }
 
+// Where does the built offer actually apply? (CTA-applicability hint.)
+function applicabilityHint(offerType, scope) {
+  const scoped = scope === 'category' || scope === 'products';
+  if (offerType === 'bundle' || offerType === 'bogo' || offerType === 'free_gift') {
+    return 'Applies to online orders (product-level offers need a cart, so pay-at-store bills can’t honour them).';
+  }
+  if (scoped) {
+    return 'Applies to online orders. On a pay-at-store bill only whole-store % offers apply — a paper bill can’t be scoped to specific products or a category.';
+  }
+  return 'Applies to online orders and pay-at-store bills.';
+}
+
+// Searchable, section-grouped product finder. Replaces the flat <select>
+// everywhere a product is chosen — usable at large inventory. multi=true keeps
+// removable chips above the search; single-select fires onPick and closes.
+function ProductFinder({ products = [], selected, multi = false, onPick, onToggle, placeholder = 'Search products by name or SKU…' }) {
+  const [q, setQ] = useState('');
+  const selIds = multi ? new Set((selected || []).map(p => String(p.id))) : new Set(selected ? [String(selected.id)] : []);
+  const matches = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const rows = products.filter(p => !needle
+      || (p.name || '').toLowerCase().includes(needle)
+      || (p.sku || '').toLowerCase().includes(needle));
+    const groups = {};
+    for (const p of rows) { const g = p.section || 'Other'; (groups[g] = groups[g] || []).push(p); }
+    return Object.entries(groups).slice(0, 30).map(([g, items]) => [g, items.slice(0, 25)]);
+  }, [products, q]);
+
+  if (!products.length) return <div className="hint">Add products to your catalogue first.</div>;
+  return (
+    <div>
+      {multi && (selected || []).length > 0 && (
+        <div className="chips">
+          {(selected || []).map((p, i) => (
+            <span key={p.id || i} className="chip">{p.name}<span className="x" onClick={() => onToggle(p)}>✕</span></span>
+          ))}
+        </div>
+      )}
+      {!multi && selected && (
+        <div className="chips"><span className="chip">{selected.name}<span className="x" onClick={() => onPick(null)}>✕</span></span></div>
+      )}
+      <div className="finder">
+        <div className="fhead"><input className="inp" style={{ margin: 0 }} value={q} onChange={e => setQ(e.target.value)} placeholder={placeholder} /></div>
+        <div className="flist">
+          {matches.length === 0 ? <div className="fempty">No products match “{q}”.</div> : matches.map(([g, items]) => (
+            <div key={g}>
+              <div className="fgrp">{g}</div>
+              {items.map(p => {
+                const on = selIds.has(String(p.id));
+                return (
+                  <div key={p.id} className={'fopt' + (on ? ' on' : '')}
+                    onClick={() => { if (multi) onToggle(p); else onPick(p); }}>
+                    <span className="fnm">{p.name}</span>
+                    <span className="fpr">₹{p.price}{on ? ' ✓' : ''}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Searchable category (section) picker — the brand's REAL catalogue sections
+// (offers match bp.section). Falls back to a hint when the catalogue has none.
+function CategoryPicker({ sections = [], value, onChange }) {
+  const [q, setQ] = useState('');
+  if (!sections.length) return <div className="hint">Add products first — your catalogue sections become the categories you can scope an offer to.</div>;
+  const rows = sections.filter(s => !q.trim() || s.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <div>
+      {value && <div className="chips"><span className="chip">{value}<span className="x" onClick={() => onChange('')}>✕</span></span></div>}
+      <div className="finder">
+        <div className="fhead"><input className="inp" style={{ margin: 0 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Search your categories…" /></div>
+        <div className="flist">
+          {rows.length === 0 ? <div className="fempty">No category matches “{q}”.</div> : rows.map(s => (
+            <div key={s} className={'fopt' + (value === s ? ' on' : '')} onClick={() => onChange(s)}>
+              <span className="fnm">{s}</span>{value === s ? <span className="fpr">✓</span> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
   const d = draft;
   const set = (field, value) => setDraft({ ...d, [field]: value });
-  const findProd = (id) => products.find(p => String(p.id) === String(id)) || null;
+  const setMany = (obj) => setDraft({ ...d, ...obj });
 
-  // single-product <select>
-  const SingleSelect = ({ value, onPick, placeholder }) => (
-    <select className="inp" value={value?.id || ''} onChange={e => onPick(findProd(e.target.value))}>
-      <option value="">{placeholder}</option>
-      {products.map(p => <option key={p.id} value={p.id}>{p.name} · ₹{p.price}</option>)}
-    </select>
-  );
+  const sameId = (a, b) => String(a?.id) === String(b?.id);
+  const toggleInList = (field, list, p) => {
+    const has = (list || []).some(x => sameId(x, p));
+    set(field, has ? list.filter(x => !sameId(x, p)) : [...(list || []), prod(p)]);
+  };
 
-  // multi-product picker (chips + add select)
-  const MultiPicker = ({ list, field }) => (
-    <div>
-      <div className="chips">
-        {(list || []).map((p, i) => (
-          <span key={p.id || i} className="chip">{p.name}<span className="x" onClick={() => set(field, list.filter((_, j) => j !== i))}>✕</span></span>
-        ))}
-      </div>
-      <select className="inp" value="" onChange={e => { const p = findProd(e.target.value); if (p && !list.some(x => String(x.id) === String(p.id))) set(field, [...(list || []), p]); }}>
-        <option value="">+ Add product…</option>
-        {products.map(p => <option key={p.id} value={p.id}>{p.name} · ₹{p.price}</option>)}
-      </select>
-    </div>
-  );
-
-  const ScopeToggle = ({ scopeField, catField, scopeVal, catVal, prodsField, prodsVal }) => (
+  // Applies-to picker: scope segment + (category | products) body. onScope may
+  // coerce the value type (discount: store/category → % only).
+  const AppliesTo = ({ scopeVal, onScope, catVal, catField, prodsVal, prodsField, offerType }) => (
     <>
       <div className="seg">
         {['store', 'category', 'products'].map(s => (
-          <button key={s} className={scopeVal === s ? 'act' : ''} onClick={() => set(scopeField, s)}>
+          <button key={s} className={scopeVal === s ? 'act' : ''} onClick={() => onScope(s)}>
             {s === 'store' ? 'Whole store' : s === 'category' ? 'Category' : 'Products'}
           </button>
         ))}
       </div>
       {scopeVal === 'category' && (
-        sections.length > 0
-          ? <select className="inp" style={{ marginTop: 8 }} value={catVal || ''} onChange={e => set(catField, e.target.value)}>
-              <option value="">Pick a section</option>
-              {sections.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          : <div className="hint">Add products with sections to enable category filtering.</div>
+        <div style={{ marginTop: 8 }}><CategoryPicker sections={sections} value={catVal} onChange={(v) => set(catField, v)} /></div>
       )}
       {scopeVal === 'products' && (
-        products.length > 0 ? <div style={{ marginTop: 8 }}><MultiPicker list={prodsVal} field={prodsField} /></div>
-          : <div className="hint">Add products to your catalogue first.</div>
+        <div style={{ marginTop: 8 }}>
+          <ProductFinder products={products} multi selected={prodsVal} onToggle={(p) => toggleInList(prodsField, prodsVal, p)} />
+        </div>
       )}
+      <div className="hint" style={{ marginTop: 10 }}>↳ {applicabilityHint(offerType, scopeVal)}</div>
     </>
   );
 
@@ -187,23 +258,35 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
         ))}
       </div>
 
-      {/* DISCOUNT */}
+      {/* DISCOUNT — applies-to FIRST, then a scope-gated value. */}
       {d.offer_type === 'discount' && (
         <div className="cfg">
-          <h5>Discount value</h5>
+          <h5>Applies to</h5>
+          <AppliesTo offerType="discount" scopeVal={d.d_scope}
+            onScope={(s) => setMany({ d_scope: s, d_sub: s === 'products' ? d.d_sub : 'pct' })}
+            catVal={d.d_category} catField="d_category" prodsVal={d.d_prods} prodsField="d_prods" />
+          <h5 style={{ marginTop: 16 }}>Discount value</h5>
           <div className="row">
-            <div className="tog"><button className={d.d_sub === 'pct' ? 'act' : ''} onClick={() => set('d_sub', 'pct')}>%</button><button className={d.d_sub === 'flat' ? 'act' : ''} onClick={() => set('d_sub', 'flat')}>₹</button></div>
-            <input className="inp mono" style={{ flex: 1 }} value={d.d_val} onChange={e => set('d_val', e.target.value)} />
+            {d.d_scope === 'products' ? (
+              <div className="tog"><button className={d.d_sub === 'pct' ? 'act' : ''} onClick={() => set('d_sub', 'pct')}>%</button><button className={d.d_sub === 'flat' ? 'act' : ''} onClick={() => set('d_sub', 'flat')}>₹</button></div>
+            ) : (
+              <div className="tog"><button className="act">% off</button></div>
+            )}
+            <input className="inp mono" style={{ flex: 1 }} value={d.d_val} onChange={e => set('d_val', e.target.value)}
+              placeholder={d.d_sub === 'flat' && d.d_scope === 'products' ? '₹ off each product' : '% off'} />
           </div>
-          <h5 style={{ marginTop: 14 }}>Applies to</h5>
-          <ScopeToggle scopeField="d_scope" catField="d_category" scopeVal={d.d_scope} catVal={d.d_category} prodsField="d_prods" prodsVal={d.d_prods} />
+          {d.d_scope !== 'products' && <div className="hint-inline" style={{ display: 'block', marginTop: 6 }}>A flat ₹ amount only makes sense on a single product — {d.d_scope === 'store' ? 'whole store' : 'category'} offers are percentage.</div>}
         </div>
       )}
 
-      {/* VOLUME */}
+      {/* VOLUME — applies-to FIRST, then spend tiers (tiers are always %). */}
       {d.offer_type === 'volume' && (
         <div className="cfg">
-          <h5>Spend tiers</h5>
+          <h5>Applies to</h5>
+          <AppliesTo offerType="volume" scopeVal={d.v_scope}
+            onScope={(s) => set('v_scope', s)}
+            catVal={d.v_category} catField="v_category" prodsVal={d.v_prods} prodsField="v_prods" />
+          <h5 style={{ marginTop: 16 }}>Spend tiers</h5>
           {(d.v_tiers || []).map((t, ti) => (
             <div key={ti} className="g2">
               <div className="f"><label className="flbl">Min spend (₹)</label><input className="inp mono" value={t.min_spend} onChange={e => { const n = [...d.v_tiers]; n[ti] = { ...t, min_spend: e.target.value }; set('v_tiers', n); }} /></div>
@@ -214,19 +297,17 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
             </div>
           ))}
           <button className="addbtn" onClick={() => set('v_tiers', [...(d.v_tiers || []), { min_spend: '', pct_off: '' }])}>+ Add tier</button>
-          <h5 style={{ marginTop: 14 }}>Applies to</h5>
-          <ScopeToggle scopeField="v_scope" catField="v_category" scopeVal={d.v_scope} catVal={d.v_category} prodsField="v_prods" prodsVal={d.v_prods} />
         </div>
       )}
 
       {/* BOGO */}
       {d.offer_type === 'bogo' && (
         <div className="cfg">
-          <h5>Buy one, get one</h5>
-          <div className="g2">
-            <div className="f"><label className="flbl">Buy this</label><SingleSelect value={d.bogo_buy} onPick={p => set('bogo_buy', p)} placeholder="Pick buy product" /></div>
-            <div className="f"><label className="flbl">Get this free</label><SingleSelect value={d.bogo_get} onPick={p => set('bogo_get', p)} placeholder="Pick free product" /></div>
-          </div>
+          <h5>Buy this</h5>
+          <ProductFinder products={products} selected={d.bogo_buy} onPick={p => set('bogo_buy', p ? prod(p) : null)} placeholder="Search the product they buy…" />
+          <h5 style={{ marginTop: 16 }}>Get this free</h5>
+          <ProductFinder products={products} selected={d.bogo_get} onPick={p => set('bogo_get', p ? prod(p) : null)} placeholder="Search the free product…" />
+          <div className="hint" style={{ marginTop: 10 }}>↳ {applicabilityHint('bogo')}</div>
         </div>
       )}
 
@@ -234,8 +315,9 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
       {d.offer_type === 'bundle' && (
         <div className="cfg">
           <h5>Bundle products <span className="hint-inline">(min 2)</span></h5>
-          {products.length > 0 ? <MultiPicker list={d.bnd_prods} field="bnd_prods" /> : <div className="hint">Add products to your catalogue first.</div>}
+          <ProductFinder products={products} multi selected={d.bnd_prods} onToggle={(p) => toggleInList('bnd_prods', d.bnd_prods, p)} placeholder="Search products to bundle…" />
           <div className="f" style={{ marginTop: 12, maxWidth: 220 }}><label className="flbl">Bundle price (₹)</label><input className="inp mono" value={d.bnd_price} onChange={e => set('bnd_price', e.target.value)} /></div>
+          <div className="hint" style={{ marginTop: 6 }}>↳ {applicabilityHint('bundle')}</div>
         </div>
       )}
 
@@ -244,15 +326,19 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
         <div className="cfg">
           <h5>Free gift pairings</h5>
           {(d.gift_offers || []).map((go, gi) => (
-            <div key={gi} className="g2">
-              <div className="f"><label className="flbl">When they buy</label><SingleSelect value={go.main} onPick={p => { const n = [...d.gift_offers]; n[gi] = { ...go, main: p }; set('gift_offers', n); }} placeholder="Pick main product" /></div>
-              <div className="f"><label className="flbl">Gift them</label><div className="row">
-                <SingleSelect value={go.gift} onPick={p => { const n = [...d.gift_offers]; n[gi] = { ...go, gift: p }; set('gift_offers', n); }} placeholder="Pick gift" />
-                {(d.gift_offers || []).length > 1 && <button className="xbtn" onClick={() => set('gift_offers', d.gift_offers.filter((_, i) => i !== gi))}>✕</button>}
-              </div></div>
+            <div key={gi} style={{ borderTop: gi ? '1px dashed var(--border)' : 'none', paddingTop: gi ? 12 : 0, marginBottom: 12 }}>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <label className="flbl">Pairing {gi + 1}</label>
+                {(d.gift_offers || []).length > 1 && <button className="xbtn" onClick={() => set('gift_offers', d.gift_offers.filter((_, i) => i !== gi))}>✕ remove</button>}
+              </div>
+              <label className="flbl" style={{ marginTop: 6 }}>When they buy</label>
+              <ProductFinder products={products} selected={go.main} onPick={p => { const n = [...d.gift_offers]; n[gi] = { ...go, main: p ? prod(p) : null }; set('gift_offers', n); }} placeholder="Search the qualifying product…" />
+              <label className="flbl" style={{ marginTop: 10 }}>Gift them</label>
+              <ProductFinder products={products} selected={go.gift} onPick={p => { const n = [...d.gift_offers]; n[gi] = { ...go, gift: p ? prod(p) : null }; set('gift_offers', n); }} placeholder="Search the gift product…" />
             </div>
           ))}
           <button className="addbtn" onClick={() => set('gift_offers', [...(d.gift_offers || []), { main: null, gift: null }])}>+ Add gift pairing</button>
+          <div className="hint" style={{ marginTop: 10 }}>↳ {applicabilityHint('free_gift')}</div>
         </div>
       )}
 
@@ -312,6 +398,16 @@ const OFB_CSS = `
 .ofb .mode.on .dot{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
 .ofb .preview{margin-top:16px;background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:10px;padding:11px 13px;font-size:13px;font-weight:700;color:var(--yellow-text)}
 .ofb .preview .pl{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;text-transform:uppercase;background:var(--ink);color:var(--yellow);padding:2px 6px;border-radius:4px;margin-right:8px}
+.ofb .finder{border:1px solid var(--border);border-radius:12px;margin-top:8px;overflow:hidden}
+.ofb .fhead{padding:8px;border-bottom:1px solid var(--bg2)}
+.ofb .flist{max-height:230px;overflow-y:auto}
+.ofb .fgrp{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted-3);padding:9px 11px 3px}
+.ofb .fopt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border-top:1px solid #F7F7F5;cursor:pointer}
+.ofb .fopt:hover{background:var(--bg)}
+.ofb .fopt.on{background:var(--yellow-pale)}
+.ofb .fnm{font-size:12.5px;font-weight:600}
+.ofb .fpr{font-size:12px;color:var(--muted-2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.ofb .fempty{padding:14px 11px;font-size:12px;color:var(--muted-3)}
 `;
 
 export default OfferBuilder;

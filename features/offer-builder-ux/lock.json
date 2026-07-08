@@ -1,0 +1,20 @@
+{
+  "feature": "offer-builder-ux",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: offer-engine critique (applies-to first, scope-gated value, real categories, searchable finders) + 'pls go and start 1b'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder locked the builder critique in-session; mockup 04-preview/mockups/offer-builder.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Phase 1b. Frontend-only OfferBuilder.js: applies-to before value (discount+volume); value type scope-gated (store/category → pct only; product → pct/flat); searchable section-grouped product finder replacing flat selects everywhere; searchable real-section category picker (offers match bp.section; getProducts is complete); CTA-applicability hint. No payload/backend change (buildOfferConfig unchanged). BOGO redefinition + quantity-volume deferred to Phase 3.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
