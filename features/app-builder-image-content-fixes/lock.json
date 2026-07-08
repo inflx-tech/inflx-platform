@@ -1,0 +1,20 @@
+{
+  "feature": "app-builder-image-content-fixes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'it is taking name, when i try to upload image ... not showing ... first fix the section wise images, its format, its size'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder reported the bug live; mockup 04-preview/mockups/my-images.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Change-program items #3 + #4. Root cause: App Builder image upload borrowed the food master-dishes presign (capability master_data) while App Builder needs capability sections → silent 403 for sections-admins. Fix: new POST /admin/sections/stock-upload-url under 'sections'; uploadAdminStockImage takes an optional presignFn; App Builder uses it; errors now surfaced + uploading indicator. Name optional (auto-filled hidden label) for banner designs that never show it; per-design image size/aspect/format guidance in the My-images step. Media serve /media/stock/* already public. Backend + brand-web, no OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

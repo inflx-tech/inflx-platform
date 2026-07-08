@@ -110,6 +110,30 @@ const DESIGN_GROUPS = [
 ];
 const designById = (id) => DESIGN_CATALOG.find(d => d.id === id) || null;
 
+// Designs whose NAME is never shown to followers (banners/frames/chips). For
+// these the wizard makes the name optional (auto-fills a hidden admin label if
+// blank) — a banner carries its own message, so forcing a title is noise
+// (change-program item #3). image_cards/image_grid/banner_with_tiles/collage/
+// sale_zone DO show a title, so they stay required.
+const NAME_HIDDEN_DESIGNS = new Set([
+  'full_width_banner', 'hero_slider', 'announcement_strip', 'split_banner', 'filter_chips',
+]);
+
+// Per-design image guidance for the "My images" step (layman-friendly: exact
+// pixel size, aspect, and accepted formats). Keyed by design id.
+const IMAGE_SPECS = {
+  full_width_banner:  { size: '1080 × 720 px', aspect: '3:2 (landscape)', note: 'One edge-to-edge banner.' },
+  hero_slider:        { size: '1080 × 560 px', aspect: '~2:1 (wide)',     note: 'One image per slide; keep text centred.' },
+  announcement_strip: { size: '1080 × 240 px', aspect: '4.5:1 (thin)',    note: 'A slim full-width strip.' },
+  split_banner:       { size: '520 × 520 px',  aspect: '1:1 (square)',    note: 'Two square tiles, side by side.' },
+  image_cards:        { size: '480 × 600 px',  aspect: '4:5 (portrait)',  note: 'Card images in a scrolling row.' },
+  image_grid:         { size: '480 × 600 px',  aspect: '4:5 (portrait)',  note: '4-column grid tiles.' },
+  banner_with_tiles:  { size: 'bg 1080 × 720 px · tiles 300 × 300 px', aspect: 'bg 3:2 · tiles 1:1', note: 'A themed background plus up to 3 small tiles.' },
+  collage:            { size: 'large 720 × 900 px · small 520 × 520 px', aspect: 'large 4:5 · small 1:1', note: 'Mixed-size mosaic tiles.' },
+  sale_zone:          { size: 'frame 1080 × 640 px', aspect: '~1.7:1', note: 'Frame background behind the countdown + tiles.' },
+};
+const IMAGE_FORMAT_HINT = 'JPG or PNG · under 2 MB · use the exact pixel size for the sharpest result (smaller stretches, larger is trimmed).';
+
 // Alias resolver — maps a saved row (legacy fields) to its catalog design.
 function resolveDesignId(s) {
   const cfg = s.config_json || {};
@@ -418,8 +442,13 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   const addTile = () => patchCfg('tiles', [...tiles, { image_url: '', label: '', library_section_id: '' }]);
   const removeTile = (idx) => patchCfg('tiles', tiles.filter((_, i) => i !== idx));
   const upload = async (file, apply) => {
-    const res = await uploadAdminStockImage(file);
-    if (res.error) { patch({ err: res.error.message || 'Upload failed' }); return; }
+    patch({ err: null, uploading: true });
+    // Use the SECTION presign (own 'sections' capability) — not the food
+    // master-dishes one — so image upload works for any App-Builder admin.
+    const res = await uploadAdminStockImage(file, sectionApi.stockUploadUrl);
+    patch({ uploading: false });
+    if (res.error) { patch({ err: `Image upload failed: ${res.error.message || 'unknown error'}` }); return; }
+    if (!res.public_url) { patch({ err: 'Image upload returned no URL — check R2 config.' }); return; }
     apply(res.public_url);
   };
 
@@ -493,12 +522,25 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
     });
   };
 
+  // Name is OPTIONAL for designs that never display it (banners/chips) — if left
+  // blank we auto-fill a hidden admin label so nothing downstream breaks
+  // (change-program item #3). Returns the title to save.
+  const nameHidden = NAME_HIDDEN_DESIGNS.has(wiz.designId);
+  const resolveTitle = () => {
+    const t = String(d.title || '').trim();
+    if (t) return t;
+    if (nameHidden) return (designById(wiz.designId)?.name) || 'Banner';
+    return '';
+  };
+
   const next = () => {
-    if (wiz.step === 2 && !String(d.title || '').trim()) { patch({ err: 'Give the section a name — it shows in the app.' }); return; }
+    if (wiz.step === 2 && !resolveTitle()) { patch({ err: 'Give the section a name — it shows in the app.' }); return; }
     patch({ step: wiz.step + 1 });
   };
   const finish = async () => {
-    if (!String(d.title || '').trim()) { patch({ err: 'Give the section a name — it shows in the app.', step: 2 }); return; }
+    const title = resolveTitle();
+    if (!title) { patch({ err: 'Give the section a name — it shows in the app.', step: 2 }); return; }
+    if (title !== d.title) d.title = title;   // persist the auto-filled hidden label
     if (badWindow) { patch({ err: '"Disappears" must be after "Goes live".', step: 3 }); return; }
     const schedErr = scheduleWarning(d.starts_at, d.ends_at);
     if (schedErr && schedErr.kind === 'err') { patch({ err: schedErr.text, step: 3 }); return; }
@@ -605,10 +647,13 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
           <div className="flex flex-col gap-3">
             <div className="text-base font-bold text-gray-900">What fills it?</div>
             <div className="text-[11px] bg-amber-50 rounded-lg px-3 py-1.5 self-start">Design: <b>{design.name}</b> · placing on <b>{scopeValue || screen}</b></div>
-            <label className="text-[11px] font-semibold text-gray-600">Section name (shown in the app)
+            <label className="text-[11px] font-semibold text-gray-600">
+              {nameHidden
+                ? <>Section name <span className="font-normal text-gray-400">(optional — this design never shows it to followers)</span></>
+                : <>Section name <span className="font-normal text-gray-400">(shown in the app)</span></>}
               <input value={d.title || ''} onChange={e => patchDraft({ title: e.target.value })}
-                placeholder="e.g. Fashion Steals — min 20% off"
-                className={`mt-0.5 w-full text-sm border rounded-lg px-2.5 py-1.5 ${wiz.err && !String(d.title || '').trim() ? 'border-red-500 bg-red-50' : 'border-gray-300'}`} />
+                placeholder={nameHidden ? 'Optional — for your own reference' : 'e.g. Fashion Steals — min 20% off'}
+                className={`mt-0.5 w-full text-sm border rounded-lg px-2.5 py-1.5 ${wiz.err && !nameHidden && !String(d.title || '').trim() ? 'border-red-500 bg-red-50' : 'border-gray-300'}`} />
             </label>
 
             {/* Automatic rules */}
@@ -756,7 +801,15 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
             {contentTabs.includes('images') && (
               <div className={`rounded-xl border p-3 flex flex-col gap-2 ${(wiz.tab === 'images' || contentTabs.length === 1) ? 'border-gray-900' : 'border-gray-200'}`}
                 onClick={() => { if (wiz.tab !== 'images' && contentTabs.length > 1) patch({ tab: 'images', draft: reconfigFill('images') }); }}>
-                <div className="text-xs font-bold text-gray-900">🖼 My images — exactly what you upload</div>
+                <div className="text-xs font-bold text-gray-900">🖼 My images — exactly what you upload{wiz.uploading ? <span className="ml-2 text-[10px] font-semibold text-amber-700">⏳ uploading…</span> : null}</div>
+                {(wiz.tab === 'images' || contentTabs.length === 1) && IMAGE_SPECS[wiz.designId] && (
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-[11px] text-amber-900" onClick={e => e.stopPropagation()}>
+                    <div className="font-bold">📐 Image size for this design</div>
+                    <div className="mt-0.5"><b>{IMAGE_SPECS[wiz.designId].size}</b> · {IMAGE_SPECS[wiz.designId].aspect}</div>
+                    <div className="text-amber-800">{IMAGE_SPECS[wiz.designId].note}</div>
+                    <div className="mt-1 text-amber-700">{IMAGE_FORMAT_HINT}</div>
+                  </div>
+                )}
                 {(wiz.tab === 'images' || contentTabs.length === 1) && (
                 <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
                 {wiz.designId === 'announcement_strip' && (

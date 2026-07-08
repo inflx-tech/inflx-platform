@@ -15,6 +15,30 @@ const cache = require('../utils/ttlCache');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const mediaService = require('../services/media.service');
+
+// POST /admin/sections/stock-upload-url — presign a section IMAGE upload.
+// Own endpoint under the 'sections' capability (app-builder-image-content-fixes)
+// — the App Builder image upload previously borrowed the food master-dishes
+// presign which required 'master_data', so a sections-admin without the food
+// capability got a silent 403 and the image never uploaded. Same R2 transport +
+// permanent /v1/media/stock/* public URL (re-signed on read).
+const stockUploadUrl = asyncHandler(async (req, res) => {
+  const { file_name, file_type, file_size_bytes } = req.body || {};
+  let result;
+  try {
+    result = await mediaService.generateStockUploadUrl({ file_name, file_type, file_size_bytes });
+  } catch (err) {
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+  const base = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3001}`;
+  return success(res, {
+    upload_url: result.url,
+    method: result.method || 'PUT',
+    key: result.key,
+    public_url: `${base}/v1/media/${result.key}`,
+  });
+});
 
 const SCREENS = ['home', 'category', 'offers', 'creator_store', 'creator_category', 'business', 'page'];
 const SCOPE_TYPES = ['global', 'city', 'vertical'];
@@ -252,4 +276,4 @@ const deleteSection = asyncHandler(async (req, res) => {
   return success(res, { deleted: rows[0].id });
 });
 
-module.exports = { listSections, saveSections, deleteSection, sectionAnalytics };
+module.exports = { listSections, saveSections, deleteSection, sectionAnalytics, stockUploadUrl };

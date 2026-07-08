@@ -119,6 +119,9 @@ export const sectionApi = {
   },
   saveSections: (screen, payload) => api.put(`/admin/sections/${screen}`, payload),
   deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
+  // Section image presign — own endpoint under the 'sections' capability (was
+  // borrowing the food master-dishes presign → silent 403 for sections-admins).
+  stockUploadUrl: (meta) => api.post('/admin/sections/stock-upload-url', meta),
 };
 
 // Custom-page registry admin API (App Builder — /admin/pages/*)
@@ -487,9 +490,12 @@ export async function uploadFileToGallery(file, { title, description, tags }) {
 // PUTs the file to R2 (or mock-POST), and returns the PERMANENT public_url to
 // store in master_dishes.default_image_url. No gallery row (stock is not a
 // brand asset). Mirrors uploadFileToGallery's transport.
-export async function uploadAdminStockImage(file) {
+export async function uploadAdminStockImage(file, presignFn) {
   if (!file) return { error: { message: 'No file provided' } };
-  const presign = await adminApi.stockUploadUrl({
+  // presignFn lets a caller use its OWN capability-scoped presign endpoint
+  // (e.g. the App Builder passes sectionApi.stockUploadUrl so section admins
+  // don't need the food 'master_data' capability). Defaults to master-dishes.
+  const presign = await (presignFn || adminApi.stockUploadUrl)({
     file_name: file.name,
     file_type: file.type || 'application/octet-stream',
     file_size_bytes: file.size,
