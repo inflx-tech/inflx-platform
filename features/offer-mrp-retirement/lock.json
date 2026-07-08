@@ -13,8 +13,11 @@
   "notes": "Phase 1a of the offer-engine rework. Remove MRP everywhere (dormant column, no destructive migration); wire best live store discount-offer onto product cards as discount_value/offer_price (reuse offerApplies/discPct); drop MRP arms from min_discount filter + discount sort; strip MRP from brand-web wizard + mobile card/cart sites. Checkout money unchanged. Followed by offer-builder-ux (Phase 1b), cart preview (Phase 2), new shapes (Phase 3).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "released": true,
+    "released_by": "aveen (founder) — 'pls push plus OTA' 2026-07-08",
+    "released_at": "2026-07-08",
+    "deploy": "backend+brand-web pushed (commit 4df7281 → Render + Vercel); follower OTA v186 published",
+    "maestro_green": false,
+    "verify_note": "Verified by pnpm qa GREEN (79) + CartScreen jest (2/2) + dev-DB SQL exec + brand-web build. On-device Maestro not run (no device in env); founder on-device eyeball is the device check."
   }
 }
