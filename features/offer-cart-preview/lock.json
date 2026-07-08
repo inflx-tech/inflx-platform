@@ -13,8 +13,11 @@
   "notes": "Phase 2. New read-only POST /follower/cart/price (previewCartOffer) reuses the exact checkout engine (resolveOfferDiscount + price-map helpers) to return discount + free-item adjustments + reason without creating an order. CartScreen swaps the plain-discount-only client estimate for the server preview and renders free items + reason. Checkout untouched. Food-with-addons % preview is conservative (base subtotal). Phase 3 next = quantity-volume + BOGO redefinition.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "released": true,
+    "released_by": "aveen (founder) — 'pls start phase 2' + standing ship-and-eyeball 2026-07-08",
+    "released_at": "2026-07-08",
+    "deploy": "backend pushed (commit 0b43c49 → Render); follower OTA v187 published",
+    "maestro_green": false,
+    "verify_note": "pnpm qa GREEN (79) + CartScreen jest (2/2) + dev-DB engine reuse validated (20%-off → ₹399.60). On-device Maestro not run (no device); founder eyeball is the device check."
   }
 }
