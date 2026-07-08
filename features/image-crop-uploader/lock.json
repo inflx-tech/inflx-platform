@@ -1,0 +1,15 @@
+{
+  "feature": "image-crop-uploader",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'Go with crop-to-frame (auto-centered). Build Phase 1 — the shared uploader for product photos and banners.'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder chose the model in-session after a comparison widget; mockup 04-preview/mockups/crop-modal.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Phase 1 of the unified image strategy. Dependency-free canvas crop-to-frame modal (auto-centre + drag + zoom, WYSIWYG export) + central lib/imageFrames.js registry. Wired into App Builder banner uploads (crop at design frame) and dashboard product photos (cover + variant, crop at 4:5, multi-file queue). Existing presign/upload transport unchanged. Category image upload = Phase 2; Cloudflare resize-on-read = optional Phase 3. brand-web only, no backend, no OTA.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null }
+}

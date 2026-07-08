@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { sectionApi, adminApi, pageApi, uploadAdminStockImage } from '../../../lib/api';
+import ImageCropModal from '../../../components/ImageCropModal';
+import { frameFor } from '../../../lib/imageFrames';
 
 /**
  * App Sections — Admin Section Manager v2 (Creator Vibe).
@@ -441,11 +443,18 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
   });
   const addTile = () => patchCfg('tiles', [...tiles, { image_url: '', label: '', library_section_id: '' }]);
   const removeTile = (idx) => patchCfg('tiles', tiles.filter((_, i) => i !== idx));
-  const upload = async (file, apply) => {
-    patch({ err: null, uploading: true });
+  // Crop-to-frame first (image-crop-uploader): a file selection opens the crop
+  // modal at this design's target aspect; the CROPPED file is what uploads, so
+  // the follower app's fixed-aspect box never crops unexpectedly.
+  const upload = (file, apply) => {
+    const frame = frameFor(wiz.designId);
+    patch({ crop: { file, aspect: frame.aspect, outW: frame.w, outH: frame.h, label: frame.label, apply } });
+  };
+  const doUpload = async (croppedFile, apply) => {
+    patch({ crop: null, err: null, uploading: true });
     // Use the SECTION presign (own 'sections' capability) — not the food
     // master-dishes one — so image upload works for any App-Builder admin.
-    const res = await uploadAdminStockImage(file, sectionApi.stockUploadUrl);
+    const res = await uploadAdminStockImage(croppedFile, sectionApi.stockUploadUrl);
     patch({ uploading: false });
     if (res.error) { patch({ err: `Image upload failed: ${res.error.message || 'unknown error'}` }); return; }
     if (!res.public_url) { patch({ err: 'Image upload returned no URL — check R2 config.' }); return; }
@@ -1085,6 +1094,13 @@ function AddSectionWizard({ wiz, setWiz, scopeValue, screen, catTree, worldTags,
           )}
         </div>
       </div>
+
+      {wiz.crop && (
+        <ImageCropModal
+          file={wiz.crop.file} aspect={wiz.crop.aspect} outW={wiz.crop.outW} outH={wiz.crop.outH} title={wiz.crop.label}
+          onCancel={() => patch({ crop: null })}
+          onDone={(f) => doUpload(f, wiz.crop.apply)} />
+      )}
     </div>
   );
 }

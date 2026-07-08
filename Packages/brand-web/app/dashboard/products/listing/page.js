@@ -12,6 +12,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { listingApi, uploadFileToGallery, API_BASE, brandApi } from '../../../../lib/api';
 import OffersLibrary from '../components/OffersLibrary';
+import ImageCropModal from '../../../../components/ImageCropModal';
+import { frameFor } from '../../../../lib/imageFrames';
 
 const FREE = new Set(['free_size', 'one_size', 'unstitched']);
 const COLOR_KEY = 'color_tone';   // the VISUAL variant → drives per-colour pics (both verticals)
@@ -377,18 +379,27 @@ export default function DrilldownListingPage() {
     return { ...d, variants: v };
   });
 
-  async function uploadImages(fileList, target) {
+  // Crop-to-frame (image-crop-uploader): each picked photo is cropped to the
+  // product-card aspect (4:5) before upload, so it displays clean on the phone.
+  // Multiple files queue through the modal one at a time.
+  const [cropQueue, setCropQueue] = useState(null);   // { files:[], target, i }
+  const pickImages = (fileList, target) => {
     const files = Array.from(fileList || []); if (!files.length) return;
+    setCropQueue({ files, target, i: 0 });
+  };
+  const addUrlTo = (target, url) => {
+    if (target === 'cover') setDraft(d => ({ ...d, images: [...d.images, url].slice(0, 6) }));
+    else setColorImages(target, [url]);
+  };
+  const advanceCrop = () => setCropQueue(q => (q && q.i + 1 < q.files.length ? { ...q, i: q.i + 1 } : null));
+  const onCropDone = async (croppedFile) => {
+    const target = cropQueue?.target;
     setUploading(target);
-    const urls = [];
-    for (const f of files) {
-      const r = await uploadFileToGallery(f, { title: f.name, tags: ['listing'] });
-      if (r.asset?.id) urls.push(`${API_BASE}/media/assets/${r.asset.id}`);
-    }
+    const r = await uploadFileToGallery(croppedFile, { title: croppedFile.name, tags: ['listing'] });
     setUploading('');
-    if (target === 'cover') setDraft(d => ({ ...d, images: [...d.images, ...urls].slice(0, 6) }));
-    else setColorImages(target, urls);
-  }
+    if (r.asset?.id) addUrlTo(target, `${API_BASE}/media/assets/${r.asset.id}`);
+    advanceCrop();
+  };
 
   // Paste image URL(s) → ingest each into our R2 → same image list as uploads
   // (contract: listing-image-urls). target = 'cover' or a colour name.
@@ -646,6 +657,11 @@ export default function DrilldownListingPage() {
   return (
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
+      {cropQueue && cropQueue.files[cropQueue.i] && (() => { const fr = frameFor('product_photo'); return (
+        <ImageCropModal
+          file={cropQueue.files[cropQueue.i]} aspect={fr.aspect} outW={fr.w} outH={fr.h} title={fr.label}
+          onCancel={advanceCrop} onDone={onCropDone} />
+      ); })()}
       {setupNeeded && !editMode && (
         <div className="setupnudge">
           ⚙ Your store setup isn't finished — followers see your store profile once it's complete.
@@ -811,7 +827,7 @@ export default function DrilldownListingPage() {
                       <div key={color} className="vcard">
                         <div className="vhead"><span className="dot" />{color}</div>
                         <label className="fl">Photos for {color}</label>
-                        <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, color)} />
+                        <input className="t" type="file" accept="image/*" multiple onChange={e => { pickImages(e.target.files, color); e.target.value = ''; }} />
                         <div className="urlrow">
                           <input className="t" placeholder="or paste URL(s)" value={urlText[color] || ''}
                             onChange={e => setUrlText(t => ({ ...t, [color]: e.target.value }))} />
@@ -840,7 +856,7 @@ export default function DrilldownListingPage() {
                 <>
                   <div className="sec">Product photos</div>
                   <label className="fl">Photos (up to 6) — the first is the main image <span className="req">*</span></label>
-                  <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
+                  <input className="t" type="file" accept="image/*" multiple onChange={e => { pickImages(e.target.files, 'cover'); e.target.value = ''; }} />
                   <div className="urlrow">
                     <input className="t" placeholder="or paste image URL(s) — comma-separated" value={urlText.cover || ''}
                       onChange={e => setUrlText(t => ({ ...t, cover: e.target.value }))} />
