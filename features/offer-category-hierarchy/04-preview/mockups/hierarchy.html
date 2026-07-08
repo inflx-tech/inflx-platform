@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Offer category — full hierarchy (mockup)</title>
+<style>
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#FAFAFA;color:#0A0A0A;font-size:13px;margin:0;padding:24px}
+.wrap{max-width:560px;margin:0 auto;background:#fff;border:1px solid #E4E4E7;border-radius:16px;padding:16px}
+h5{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#52525B;margin:0 0 8px}
+.chip{display:inline-block;padding:6px 10px;border:1px solid #FFC107;border-radius:8px;background:#FFF7CC;color:#6B5A00;font-weight:700;font-size:12px;margin-bottom:8px}
+.finder{border:1px solid #E4E4E7;border-radius:12px;overflow:hidden}
+.inp{width:100%;box-sizing:border-box;padding:9px 12px;border:0;border-bottom:1px solid #F4F4F5}
+.opt{display:flex;justify-content:space-between;padding:9px 11px;border-top:1px solid #F7F7F5;cursor:pointer}
+.opt.on{background:#FFF7CC}
+.nm{font-weight:600}
+.ct{font-family:monospace;color:#A1A1AA;font-size:12px}
+.cap{font-size:11px;color:#71717A;margin-top:12px;line-height:1.5}
+</style></head><body><div class="wrap">
+  <h5>Category — pick any level of the hierarchy</h5>
+  <div class="chip">Men › Bottomwear › Jeans ✕</div>
+  <div class="finder">
+    <input class="inp" placeholder="Search your categories…" value="">
+    <div class="opt"><span class="nm">Men</span><span class="ct">142</span></div>
+    <div class="opt"><span class="nm">Men › Topwear</span><span class="ct">58</span></div>
+    <div class="opt"><span class="nm">Men › Topwear › T-Shirt</span><span class="ct">31</span></div>
+    <div class="opt"><span class="nm">Men › Bottomwear</span><span class="ct">40</span></div>
+    <div class="opt on"><span class="nm">Men › Bottomwear › Jeans</span><span class="ct">22 ✓</span></div>
+    <div class="opt"><span class="nm">Women › Topwear › Kurti</span><span class="ct">18</span></div>
+  </div>
+  <div class="cap">Offers scope to the chosen node's whole subtree — "Men" covers everything under Men, "Men › Bottomwear › Jeans" only jeans. The number is your product count in that node.</div>
+</div></body></html>

@@ -199,7 +199,18 @@ const OFFER_EFF_SCOPE = `COALESCE(bo.offer_config_json->>'scope',
              AND jsonb_array_length(bo.offer_config_json->'products') > 0 THEN 'products' ELSE 'store' END)`;
 const OFFER_APPLIES = `(
       ${OFFER_EFF_SCOPE} = 'store'
-      OR (${OFFER_EFF_SCOPE} = 'category' AND bp.section IS NOT DISTINCT FROM bo.offer_config_json->>'category')
+      OR (${OFFER_EFF_SCOPE} = 'category' AND (
+            CASE WHEN bo.offer_config_json->>'category_node_id' IS NOT NULL
+              -- Hierarchy-aware (offer-category-hierarchy): product's node is in
+              -- the subtree of the offer's category node (any level).
+              THEN bp.category_node_id IN (
+                WITH RECURSIVE sub AS (
+                  SELECT (bo.offer_config_json->>'category_node_id')::uuid AS id
+                  UNION ALL
+                  SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
+                ) SELECT id FROM sub)
+              ELSE bp.section IS NOT DISTINCT FROM bo.offer_config_json->>'category'
+            END))
       OR (${OFFER_EFF_SCOPE} = 'products' AND EXISTS (
             SELECT 1 FROM jsonb_array_elements(COALESCE(bo.offer_config_json->'products', '[]'::jsonb)) e
              WHERE e->>'id' = bp.id::text)))`;

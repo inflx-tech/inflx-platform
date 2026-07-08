@@ -19,6 +19,7 @@ export default function OffersLibrary() {
   const [counts, setCounts] = useState({ all: 0, draft: 0, active: 0, archived: 0 });
   const [products, setProducts] = useState([]);
   const [offerCategories, setOfferCategories] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('all');
   const [typeFilter, setTypeFilter] = useState('');
@@ -34,12 +35,14 @@ export default function OffersLibrary() {
   }, []);
 
   async function load() {
-    const [offRes, prodRes, catRes] = await Promise.all([
+    const [offRes, prodRes, catRes, treeRes] = await Promise.all([
       brandApi.getOffers(), brandApi.getProducts(), brandApi.getOfferCategories?.(),
+      brandApi.get?.('/brands/me/listing-tree').catch(() => null),
     ]);
     if (offRes.success) { setOffers(offRes.data?.offers || []); setCounts(offRes.data?.counts || { all: 0, draft: 0, active: 0, archived: 0 }); }
     if (prodRes.success) setProducts(prodRes.data?.products || []);
     if (catRes?.success) setOfferCategories(catRes.data?.categories || []);
+    if (treeRes?.success) setCategoryTree(treeRes.data?.tree || []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -193,7 +196,7 @@ export default function OffersLibrary() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-h"><h3>{modal.editingId ? 'Edit offer' : 'New offer'}</h3><button className="modal-x" onClick={() => !saving && setModal(null)}>×</button></div>
             <div className="modal-b">
-              <OfferBuilder draft={modal.draft} setDraft={(d) => setModal(m => ({ ...m, draft: d }))} products={products} sections={sections} />
+              <OfferBuilder draft={modal.draft} setDraft={(d) => setModal(m => ({ ...m, draft: d }))} products={products} sections={sections} categoryTree={categoryTree} />
 
               <div className="dist-sec">
                 <div className="dist-row">

@@ -94,10 +94,13 @@ async function fetchPriceMap(productIds) {
 }
 
 /**
- * Fetch product metadata (section/category) for category-scoped offers.
- * Returns Map<product_id, { section }>. Used by offer.service.js scope
- * filtering when an offer is scoped to a specific category like
- * "Main Course" or "Hair Women".
+ * Fetch product metadata for category-scoped offers.
+ * Returns Map<product_id, { section, node_path }>. `section` powers the LEGACY
+ * string category match (old offers); `node_path` is the product's category
+ * node + all its ancestors, powering HIERARCHY-aware matching (offer-category-
+ * hierarchy): a node-scoped offer applies if its node_id is anywhere in the
+ * product's ancestor path (so "Men › Bottomwear › Jeans" matches jeans, and
+ * "Men" matches everything under Men).
  */
 async function fetchProductMetaMap(productIds) {
   const map = new Map();
@@ -106,7 +109,24 @@ async function fetchProductMetaMap(productIds) {
     `SELECT id, section FROM brand_products WHERE id = ANY($1::uuid[]) AND is_active = true`,
     [productIds]
   );
-  for (const r of rows) map.set(r.id, { section: r.section });
+  for (const r of rows) map.set(r.id, { section: r.section, node_path: [] });
+  // Ancestor path per product (leaf category node → root).
+  const { rows: paths } = await db.query(
+    `WITH RECURSIVE anc AS (
+       SELECT bp.id AS product_id, cn.id AS node_id, cn.parent_id
+         FROM brand_products bp JOIN category_nodes cn ON cn.id = bp.category_node_id
+        WHERE bp.id = ANY($1::uuid[]) AND bp.category_node_id IS NOT NULL
+       UNION ALL
+       SELECT anc.product_id, p.id, p.parent_id
+         FROM anc JOIN category_nodes p ON p.id = anc.parent_id
+     )
+     SELECT product_id, array_agg(node_id::text) AS node_path FROM anc GROUP BY product_id`,
+    [productIds]
+  );
+  for (const r of paths) {
+    const m = map.get(r.product_id);
+    if (m) m.node_path = r.node_path || [];
+  }
   return map;
 }
 

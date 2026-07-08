@@ -1,0 +1,20 @@
+{
+  "feature": "offer-category-hierarchy",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'add entire hierarchy like men..bottom wear..jeans ... entire hierarchy what we have currently'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder specified the hierarchy requirement in-session; mockup 04-preview/mockups/hierarchy.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Node-based subtree matching for offer category scope. offer_config_json.category_node_id added (+ category = full-path label). Engine (filterItemsByScope) matches via product node ancestor path from the extended fetchProductMetaMap; card-badge OFFER_APPLIES matches via recursive subtree; both keep the legacy string branch for old offers. Builder CategoryPicker shows the full hierarchy (all levels) from the listing tree, stores node id + label; food/salon fall back to flat sections. Engine node-match + card SQL validated on dev DB. Backend + brand-web only, no OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

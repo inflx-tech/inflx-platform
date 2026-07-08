@@ -31,8 +31,8 @@ function emptyDraft() {
   return {
     name: '',
     offer_type: 'discount',
-    d_sub: 'pct', d_val: '', d_scope: 'store', d_category: '', d_prods: [],
-    v_mode: 'spend', v_tiers: [{ min_spend: '', pct_off: '' }], v_scope: 'store', v_category: '', v_prods: [],
+    d_sub: 'pct', d_val: '', d_scope: 'store', d_category: '', d_category_node: '', d_prods: [],
+    v_mode: 'spend', v_tiers: [{ min_spend: '', pct_off: '' }], v_scope: 'store', v_category: '', v_category_node: '', v_prods: [],
     bogo_product: null, bogo_buy_qty: '1', bogo_free_qty: '1',
     bogo_buy: null, bogo_get: null,
     bnd_prods: [], bnd_price: '',
@@ -51,6 +51,7 @@ function buildOfferConfig(d) {
     case 'discount':
       cfg = { sub_type: d.d_sub, value: num(d.d_val), scope: d.d_scope,
         category: d.d_scope === 'category' ? (d.d_category || null) : null,
+        category_node_id: d.d_scope === 'category' ? (d.d_category_node || null) : null,
         products: d.d_scope === 'products' ? (d.d_prods || []).map(prod) : [] };
       break;
     case 'volume':
@@ -60,6 +61,7 @@ function buildOfferConfig(d) {
           : { min_spend: num(t.min_spend), pct_off: num(t.pct_off) })),
         scope: d.v_scope,
         category: d.v_scope === 'category' ? (d.v_category || null) : null,
+        category_node_id: d.v_scope === 'category' ? (d.v_category_node || null) : null,
         products: d.v_scope === 'products' ? (d.v_prods || []).map(prod) : [] };
       break;
     case 'bogo':
@@ -93,14 +95,14 @@ function draftFromOffer(o) {
   if (o.offer_type === 'discount') {
     d.d_sub = c.sub_type || 'pct'; d.d_val = String(c.value ?? '');
     d.d_scope = c.scope || (c.products?.length ? 'products' : 'store');
-    d.d_category = c.category || ''; d.d_prods = c.products || [];
+    d.d_category = c.category || ''; d.d_category_node = c.category_node_id || ''; d.d_prods = c.products || [];
   } else if (o.offer_type === 'volume') {
     d.v_mode = c.mode === 'quantity' ? 'quantity' : 'spend';
     d.v_tiers = (c.tiers || [{}]).map(t => (d.v_mode === 'quantity'
       ? { min_qty: String(t.min_qty ?? ''), pct_off: String(t.pct_off ?? '') }
       : { min_spend: String(t.min_spend ?? ''), pct_off: String(t.pct_off ?? '') }));
     d.v_scope = c.scope || (c.products?.length ? 'products' : 'store');
-    d.v_category = c.category || ''; d.v_prods = c.products || [];
+    d.v_category = c.category || ''; d.v_category_node = c.category_node_id || ''; d.v_prods = c.products || [];
   } else if (o.offer_type === 'bogo') {
     // New same-product shape; fall back to old buy_product for legacy offers.
     d.bogo_product = c.product || c.buy_product || null;
@@ -201,21 +203,42 @@ function ProductFinder({ products = [], selected, multi = false, onPick, onToggl
   );
 }
 
-// Searchable category (section) picker — the brand's REAL catalogue sections
-// (offers match bp.section). Falls back to a hint when the catalogue has none.
-function CategoryPicker({ sections = [], value, onChange }) {
+// Flatten a listing tree into selectable rows with FULL-PATH labels
+// ("Men › Bottomwear › Jeans"), so an offer can scope to ANY level of the
+// hierarchy (offer-category-hierarchy).
+function flattenTree(nodes, prefix = [], out = []) {
+  for (const n of (nodes || [])) {
+    const label = [...prefix, n.name].join(' › ');
+    out.push({ id: String(n.id), label, name: n.name, count: n.product_count || 0 });
+    if (n.children && n.children.length) flattenTree(n.children, [...prefix, n.name], out);
+  }
+  return out;
+}
+
+// Category picker. With a listing tree (fashion/furniture) it shows the FULL
+// hierarchy as searchable full-path rows and stores the node id (subtree match).
+// Without a tree (food/salon) it falls back to flat section strings.
+function CategoryPicker({ tree = [], sections = [], nodeId, label, onPick }) {
   const [q, setQ] = useState('');
-  if (!sections.length) return <div className="hint">Add products first — your catalogue sections become the categories you can scope an offer to.</div>;
-  const rows = sections.filter(s => !q.trim() || s.toLowerCase().includes(q.trim().toLowerCase()));
+  const flat = useMemo(() => flattenTree(tree), [tree]);
+  const useTree = flat.length > 0;
+  if (!useTree && !sections.length) return <div className="hint">Add products first — your categories become scopable here.</div>;
+  const needle = q.trim().toLowerCase();
+  const rows = useTree
+    ? flat.filter(r => !needle || r.label.toLowerCase().includes(needle))
+    : sections.filter(s => !needle || s.toLowerCase().includes(needle)).map(s => ({ id: '', label: s, name: s, count: 0 }));
+  const selectedLabel = (useTree && nodeId ? (flat.find(r => r.id === String(nodeId))?.label) : null) || label || '';
+  const isOn = (r) => (useTree ? String(nodeId) === r.id : label === r.label);
   return (
     <div>
-      {value && <div className="chips"><span className="chip">{value}<span className="x" onClick={() => onChange('')}>✕</span></span></div>}
+      {(nodeId || label) && <div className="chips"><span className="chip">{selectedLabel}<span className="x" onClick={() => onPick(null)}>✕</span></span></div>}
       <div className="finder">
         <div className="fhead"><input className="inp" style={{ margin: 0 }} value={q} onChange={e => setQ(e.target.value)} placeholder="Search your categories…" /></div>
         <div className="flist">
-          {rows.length === 0 ? <div className="fempty">No category matches “{q}”.</div> : rows.map(s => (
-            <div key={s} className={'fopt' + (value === s ? ' on' : '')} onClick={() => onChange(s)}>
-              <span className="fnm">{s}</span>{value === s ? <span className="fpr">✓</span> : null}
+          {rows.length === 0 ? <div className="fempty">No category matches “{q}”.</div> : rows.slice(0, 400).map(r => (
+            <div key={r.id || r.label} className={'fopt' + (isOn(r) ? ' on' : '')} onClick={() => onPick({ id: r.id, label: r.label })}>
+              <span className="fnm">{r.label}</span>
+              <span className="fpr">{r.count > 0 ? `${r.count}` : ''}{isOn(r) ? ' ✓' : ''}</span>
             </div>
           ))}
         </div>
@@ -224,7 +247,7 @@ function CategoryPicker({ sections = [], value, onChange }) {
   );
 }
 
-function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
+function OfferBuilder({ draft, setDraft, products = [], sections = [], categoryTree = [] }) {
   const d = draft;
   const set = (field, value) => setDraft({ ...d, [field]: value });
   const setMany = (obj) => setDraft({ ...d, ...obj });
@@ -237,7 +260,7 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
 
   // Applies-to picker: scope segment + (category | products) body. onScope may
   // coerce the value type (discount: store/category → % only).
-  const AppliesTo = ({ scopeVal, onScope, catVal, catField, prodsVal, prodsField, offerType }) => (
+  const AppliesTo = ({ scopeVal, onScope, catVal, catField, nodeVal, nodeField, prodsVal, prodsField, offerType }) => (
     <>
       <div className="seg">
         {['store', 'category', 'products'].map(s => (
@@ -247,7 +270,10 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
         ))}
       </div>
       {scopeVal === 'category' && (
-        <div style={{ marginTop: 8 }}><CategoryPicker sections={sections} value={catVal} onChange={(v) => set(catField, v)} /></div>
+        <div style={{ marginTop: 8 }}>
+          <CategoryPicker tree={categoryTree} sections={sections} nodeId={nodeVal} label={catVal}
+            onPick={(n) => setMany({ [catField]: n?.label || '', [nodeField]: n?.id || '' })} />
+        </div>
       )}
       {scopeVal === 'products' && (
         <div style={{ marginTop: 8 }}>
@@ -282,7 +308,8 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
           <h5>Applies to</h5>
           <AppliesTo offerType="discount" scopeVal={d.d_scope}
             onScope={(s) => setMany({ d_scope: s, d_sub: s === 'products' ? d.d_sub : 'pct' })}
-            catVal={d.d_category} catField="d_category" prodsVal={d.d_prods} prodsField="d_prods" />
+            catVal={d.d_category} catField="d_category" nodeVal={d.d_category_node} nodeField="d_category_node"
+            prodsVal={d.d_prods} prodsField="d_prods" />
           <h5 style={{ marginTop: 16 }}>Discount value</h5>
           <div className="row">
             {d.d_scope === 'products' ? (
@@ -308,7 +335,8 @@ function OfferBuilder({ draft, setDraft, products = [], sections = [] }) {
           <h5 style={{ marginTop: 16 }}>Applies to</h5>
           <AppliesTo offerType="volume" scopeVal={d.v_scope}
             onScope={(s) => set('v_scope', s)}
-            catVal={d.v_category} catField="v_category" prodsVal={d.v_prods} prodsField="v_prods" />
+            catVal={d.v_category} catField="v_category" nodeVal={d.v_category_node} nodeField="v_category_node"
+            prodsVal={d.v_prods} prodsField="v_prods" />
           <h5 style={{ marginTop: 16 }}>{d.v_mode === 'quantity' ? 'Quantity tiers' : 'Spend tiers'}</h5>
           {(d.v_tiers || []).map((t, ti) => (
             <div key={ti} className="g2">

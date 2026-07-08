@@ -119,6 +119,17 @@ function filterItemsByScope(items, scope, offerConfig, productMetaMap) {
     return items.filter(i => scopedIds.includes(i.product_id));
   }
   if (scope === 'category') {
+    // Hierarchy-aware (offer-category-hierarchy): a node-scoped offer applies to
+    // any product whose ancestor path contains the offer's node — so it works
+    // at any level (segment / category / subcategory like "Men › … › Jeans").
+    const nodeId = offerConfig?.category_node_id;
+    if (nodeId) {
+      return items.filter(i => {
+        const path = productMetaMap?.get?.(i.product_id)?.node_path;
+        return Array.isArray(path) && path.includes(String(nodeId));
+      });
+    }
+    // Legacy string match (old offers scoped by section name).
     const cat = offerConfig?.category;
     if (!cat) return items;   // ill-configured; treat as store
     return items.filter(i => {
