@@ -53,12 +53,17 @@ export default function SectionResultsScreen({ navigation, route }) {
         <View style={s.pthumb}>
           {item.image_url
             ? <Image source={{ uri: item.image_url }} style={s.pimg} resizeMode="cover" />
-            : <Text style={{ fontSize: 30 }}>🛍️</Text>}
+            : <Text style={{ fontSize: 32 }}>🛍️</Text>}
           {item.discount_value ? <View style={s.badge}><Text style={s.badgeTxt}>{item.discount_value}% OFF</Text></View> : null}
         </View>
-        <Text style={s.pname} numberOfLines={2}>{item.name}</Text>
-        <Text style={s.pbrand} numberOfLines={1}>{item.brand?.name || ''}</Text>
-        <Text style={s.pprice}>{fmtMoney(item.price)}</Text>
+        <View style={s.pmeta}>
+          {item.brand?.name ? <Text style={s.pbrand} numberOfLines={1}>{item.brand.name}</Text> : null}
+          <Text style={s.pname} numberOfLines={1}>{item.name}</Text>
+          <View style={s.prow}>
+            <Text style={s.pprice}>{fmtMoney(item.offer_price != null && item.offer_price < item.price ? item.offer_price : item.price)}</Text>
+            {item.offer_price != null && item.offer_price < item.price ? <Text style={s.pmrp}>{fmtMoney(item.price)}</Text> : null}
+          </View>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -138,14 +143,19 @@ const s = StyleSheet.create({
   sub: { fontSize: 11, color: C.muted, marginTop: 2, fontFamily: fonts.sansRegular },
   gridPad: { padding: 12, paddingBottom: 40 },
   col: { gap: 10 },
-  pcard: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 8, marginBottom: 10, backgroundColor: C.card, maxWidth: '48.5%' },
-  pthumb: { height: 110, borderRadius: 8, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginBottom: 7, position: 'relative' },
+  // design-system-p1 — canonical 3:4 product card (matches CategoryBrowser + ShelfProductCard).
+  pcard: { flex: 1, borderWidth: 1, borderColor: '#EEEDEA', borderRadius: 14, marginBottom: 14, backgroundColor: C.card, maxWidth: '48.5%', overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 2 },
+  pthumb: { width: '100%', aspectRatio: 3 / 4, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' },
   pimg: { width: '100%', height: '100%' },
-  badge: { position: 'absolute', top: 6, left: 6, backgroundColor: C.offer, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 2 },
-  badgeTxt: { fontSize: 8, fontWeight: '900', color: '#fff', fontFamily: fonts.monoBold },
-  pname: { fontSize: 12, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
-  pbrand: { fontSize: 10.5, color: C.muted, marginTop: 1, fontFamily: fonts.sansRegular },
-  pprice: { fontSize: 13, fontWeight: '900', color: C.ink, marginTop: 3, fontFamily: fonts.monoBold },
+  badge: { position: 'absolute', top: 8, left: 8, backgroundColor: '#1A1D1F', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  badgeTxt: { fontSize: 9.5, fontWeight: '800', color: '#F8CB46', fontFamily: fonts.sansBold },
+  pmeta: { padding: 10 },
+  pbrand: { fontSize: 11, color: C.ink, fontWeight: '700', fontFamily: fonts.sansBold },
+  pname: { fontSize: 11, fontWeight: '400', color: C.muted, marginTop: 1, fontFamily: fonts.sansRegular },
+  prow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 6 },
+  pprice: { fontSize: 13, fontWeight: '800', color: C.ink, fontFamily: fonts.sansBold },
+  pmrp: { fontSize: 11, color: C.muted, textDecorationLine: 'line-through', marginLeft: 5, fontFamily: fonts.sansRegular },
   crow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line },
   cavatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   cavatarImg: { width: 44, height: 44 },

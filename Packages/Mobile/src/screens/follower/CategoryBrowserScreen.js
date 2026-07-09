@@ -237,19 +237,21 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         <View style={s.pthumb}>
           {item.image_url
             ? <Image source={{ uri: item.image_url }} style={s.pimg} resizeMode="cover" />
-            : <Text style={{ fontSize: 26, color: TZ.hint }}>🛍️</Text>}
+            : <Text style={{ fontSize: 30, color: TZ.hint }}>🛍️</Text>}
+          {item.discount_value ? <View style={s.pbadge}><Text style={s.pbadgeTxt}>{item.discount_value}% OFF</Text></View> : null}
           <AddButton onAdd={() => handleAdd(item)} />
         </View>
-        <Text style={s.pname} numberOfLines={2}>{item.name}</Text>
+        <View style={s.pmeta}>
         {item.brand?.name ? <Text style={s.pbrand} numberOfLines={1}>{item.brand.name}</Text> : null}
+        <Text style={s.pname} numberOfLines={1}>{item.name}</Text>
         <View style={s.prow}>
           <Text style={s.pprice}>{fmtMoney(shownPrice)}</Text>
           {struck ? <Text style={s.pmrp}>{fmtMoney(item.price)}</Text> : null}
-          {item.discount_value ? <Text style={s.poff}>{item.discount_value}% off</Text> : null}
         </View>
         {item.rating != null
           ? <Text style={s.prate}>★ {item.rating}{item.review_count ? ` (${item.review_count})` : ''}</Text>
           : null}
+        </View>
       </TouchableOpacity>
     );
   }
@@ -614,16 +616,22 @@ const s = StyleSheet.create({
 
   gridPad: { paddingHorizontal: 12, paddingBottom: 40 },
   col: { gap: 10 },
-  pc: { flex: 1, maxWidth: '48.5%', marginBottom: 12 },
-  pthumb: { height: 122, borderRadius: 11, backgroundColor: TZ.pageBg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  // design-system-p1 — one canonical product card: 3:4 image, discount badge,
+  // tidy brand/name/price. Matches ShelfProductCard so every surface agrees.
+  pc: { flex: 1, maxWidth: '48.5%', marginBottom: 14, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: '#EEEDEA', overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 6 }, shadowRadius: 12, elevation: 2 },
+  pthumb: { width: '100%', aspectRatio: 3 / 4, backgroundColor: TZ.pageBg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' },
   pimg: { width: '100%', height: '100%' },
-  pname: { fontSize: 12, color: TZ.ink, marginTop: 7, lineHeight: 16, fontFamily: fonts.sansRegular },
-  pbrand: { fontSize: 10.5, color: TZ.muted, marginTop: 1, fontFamily: fonts.sansRegular },
-  prow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 3, flexWrap: 'wrap' },
+  pbadge: { position: 'absolute', left: 8, top: 8, backgroundColor: '#1A1D1F', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  pbadgeTxt: { fontSize: 9.5, fontWeight: '800', color: '#F8CB46', fontFamily: fonts.sansBold },
+  pmeta: { padding: 10 },
+  pbrand: { fontSize: 11, color: TZ.ink, fontWeight: '700', fontFamily: fonts.sansBold },
+  pname: { fontSize: 11, color: TZ.muted, marginTop: 1, lineHeight: 15, fontFamily: fonts.sansRegular },
+  prow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 6, flexWrap: 'wrap' },
   pprice: { fontSize: 13, fontWeight: '800', color: TZ.ink, fontFamily: fonts.sansBold },
   pmrp: { fontSize: 11, color: TZ.hint, textDecorationLine: 'line-through', marginLeft: 5, fontFamily: fonts.sansRegular },
   poff: { fontSize: 11, fontWeight: '700', color: TZ.success, marginLeft: 6, fontFamily: fonts.sansBold },
-  prate: { fontSize: 10.5, color: '#52525B', marginTop: 3, fontFamily: fonts.sansRegular },
+  prate: { fontSize: 10.5, color: '#52525B', marginTop: 4, fontFamily: fonts.sansRegular },
 
   addWrap: { position: 'absolute', right: 7, bottom: 7 },
   addBtn: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#fff', borderWidth: 1, borderColor: TZ.yellow, alignItems: 'center', justifyContent: 'center', elevation: 2 },

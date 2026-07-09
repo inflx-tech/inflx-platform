@@ -14,8 +14,10 @@ export const IMAGE_FRAMES = {
   banner_with_tiles:  { aspect: 1080 / 720, w: 1080, h: 720, label: 'Banner · 3:2' },
   collage:            { aspect: 720 / 900,  w: 720,  h: 900, label: 'Collage tile · 4:5' },
   sale_zone:          { aspect: 1080 / 640, w: 1080, h: 640, label: 'Sale frame · ~1.7:1' },
-  // Dashboard product photos (drill-down listing)
-  product_photo:      { aspect: 800 / 1000, w: 800,  h: 1000, label: 'Product photo · 4:5' },
+  // Dashboard product photos (drill-down listing) — 3:4 portrait, the ONE
+  // product-image aspect every follower card renders at (design-system-p1),
+  // so a crop shows exactly as set (no re-crop by the card).
+  product_photo:      { aspect: 3 / 4, w: 900, h: 1200, label: 'Product photo · 3:4' },
   // Category image (Phase 2)
   category:           { aspect: 1,          w: 600,  h: 600, label: 'Category · 1:1' },
 };

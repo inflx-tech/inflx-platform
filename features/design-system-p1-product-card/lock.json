@@ -1,0 +1,15 @@
+{
+  "feature": "design-system-p1-product-card",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-08: 'ours completely ugly vs AJIO ... big suspect is design' → chose systematic redesign, 3:4 standard, 'pls start'",
+  "approved_at": "2026-07-08",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — founder approved the professional-grid target direction + 3:4 standard in-session; mockups: professional_grid_target widget + 04-preview/mockups/card.html",
+  "mockup_locked_at": "2026-07-08",
+  "notes": "Phase 1 of the professional redesign. One canonical 3:4 product card across all surfaces: CategoryBrowser + SectionResults grids reskinned to match ShelfProductCard (3:4 image, ink+yellow badge, brand/name/price+struck, radius+border+shadow); cropper product_photo frame 4:5→3:4 so crop==display. Next phases: home/PDP/cart reskin, design tokens, category-image render. Mobile OTA + Vercel.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}
