@@ -1,0 +1,13 @@
+# Creator Experience Studio flow — Creator Experience Engine Phase 6b.
+# Verifies the influencer can reach the Studio and see available templates.
+# Contract: features/creator-experiences/. Batched to a real-device session
+# (founder decision) — run with the follower/influencer apps on the new JS.
+#
+# Run: pnpm qa:maestro:doctor  then  pnpm qa:maestro
+
+appId: in.inflx.app.influencer
+---
+- launchApp
+- tapOn: "Create Experience"
+- assertVisible: "AVAILABLE TEMPLATES"
+- takeScreenshot: creator-experience-studio

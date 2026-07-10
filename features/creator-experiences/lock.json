@@ -15,16 +15,24 @@
   "mobile_governed": true,
   "notes": "Creator Experience Engine Phase 6 — the payoff phase (follower home lights up). Split: 6a = new creator_experiences + experience_products tables + creator API + FILL the P5 experience_template rule (resolves published experiences → render specs via renderSpec.service) + engine passes template_id into ctx (web/API-verifiable now). 6b = influencer Studio screens + follower render via AdaptiveRenderer (mobile-governed, jest now, Maestro batched). v1 uses single featured_image_url (full Asset Pack = P7). Mockups: creator-studio.html + follower-home-lit.html. FIRST follower-visible change (only after a creator publishes for a placed template). Awaiting founder review + scope confirm (recommend 6a first). No governed-path code yet.",
   "phase_6a_qa_green": true,
+  "phase_6b_built": true,
+  "phase_6b_jest_green": "SectionRenderer.experience.test 2/2 (follower render via AdaptiveRenderer) + ExperienceStudioScreen.test 1/1 (creator publish flow); full mobile jest 33/33 tests pass (1 rotating pre-existing parallel act() warning suite, 0 assertion failures).",
+  "phase_6b_maestro_deferred": "07-creator-experience.yaml written; on-device Maestro batched (founder pattern). Pushed released=false → NOT OTA'd, live apps unchanged.",
   "phase_6a_local_verify": "create template→place→create experience(4 products)→publish→rule resolves 1 render item (hero, featured=landscape, contract-obeyed); publish w/ 2 products REJECTED (theme min); full pnpm qa 95/95 GREEN. Fixed influencers full_name/instagram_handle column bug during verify.",
   "diff_captured": true,
   "release": {
     "qa_all_green": true,
     "qa_result": "pnpm qa — 95/95 passed, STATE=GREEN (report 2026-07-10T14-11-45Z)",
     "maestro_green": false,
+    "phase_6a_released": true,
+    "phase_6a_released_by": "founder (explicit go: 'deploy')",
+    "phase_6a_released_at": "2026-07-10",
+    "phase_6a_commit": "b2755f8",
+    "phase_6a_post_deploy_check": "PROD: 0 creator_experiences, 0 placed experience_template shelves → live follower home UNCHANGED.",
     "released": false,
     "released_by": null,
     "released_at": null,
-    "classification": "6a = production-impacting backend (migration 135 + new tables + creator API + P5 rule now returns data + sectionEngine ctx.templateId) — READY. 6b = OTA + Maestro-gated (mobile). Explicit go; live home unchanged until first admin-place + creator-publish.",
-    "deploy_steps_ready_6a": "run-135.js (prod migrate) then git commit + push backend (Render). No brand-web, no mobile. Live home unchanged (prod has 0 placed templates + 0 experiences)."
+    "classification": "6a = backend SHIPPED (mig 135 + creator API + P5 rule filled + sectionEngine ctx.templateId). 6b = OTA + Maestro-gated (mobile). Full feature 'released' flips true after 6b ships. Live home unchanged until first admin-place + creator-publish.",
+    "deploy_steps_ready_6a": "DONE — run-135 applied; pushed main eb4bbce..b2755f8 (gov-check exit 0); Render backend deploy."
   }
 }

@@ -267,6 +267,12 @@ export const influencerApi = {
   updateMe: (data) => api.patch('/influencers/me', data),
   getEarnings: () => api.get('/influencers/me/earnings'),
   getReferralInfo: () => api.get('/influencers/me/referral'),
+  // Creator Experience Studio (Creator Experience Engine Phase 6)
+  listExperienceTemplates: (worldKey) => api.get(`/influencers/me/experience-templates?world_key=${encodeURIComponent(worldKey || 'fashion')}`),
+  experienceStockable: (worldKey) => api.get(`/influencers/me/experience-stockable?world_key=${encodeURIComponent(worldKey || 'fashion')}`),
+  createExperience: (data) => api.post('/influencers/me/experiences', data),
+  publishExperience: (id) => api.post(`/influencers/me/experiences/${id}/publish`),
+  myExperiences: () => api.get('/influencers/me/experiences'),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),

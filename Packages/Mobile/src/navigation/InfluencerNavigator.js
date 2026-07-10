@@ -28,6 +28,8 @@ import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
 import InfluencerContractsScreen from '../screens/influencer/InfluencerContractsScreen';
 import ProposalsHubScreen from '../screens/influencer/ProposalsHubScreen';
 import SendProposalScreen from '../screens/influencer/SendProposalScreen';
+// Creator Experience Engine Phase 6b — Creator Experience Studio
+import ExperienceStudioScreen from '../screens/influencer/ExperienceStudioScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -52,6 +54,7 @@ function HomeStackNav() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="ExperienceStudio" component={ExperienceStudioScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
       <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
       <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />

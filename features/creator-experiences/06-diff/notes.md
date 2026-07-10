@@ -28,10 +28,32 @@ Create template → place → create experience (4 products + featured) → publ
 `featured_image_url` is a single image (upload or product image); the multi-image,
 aspect-aware Asset Pack is Phase 7.
 
-## 6b (next) — mobile
-Influencer Studio screens + follower render via AdaptiveRenderer + Maestro flow.
-Off-device jest now; Maestro on-device batched. The follower home visibly lights
-up when 6b ships and a creator publishes for a placed template.
+## 6b (built, off-device verified — Maestro batched) — this pass
+**Follower render:** `SectionRenderer` gained an additive `entity_type==='experience'`
+branch that draws each item via `AdaptiveRenderer` (P4b). Existing shelves unchanged.
+**Creator Studio:** `ExperienceStudioScreen` (influencer) — pick template → select
+products → featured image → publish; reached from influencer Home ("Create Experience");
+`influencerApi` gained the 6a endpoints.
+
+### Off-device proof (jest)
+- `SectionRenderer.experience.test.js` 2/2: a placed-template shelf draws the
+  experience (title + CTA via the renderer); a normal mixed shelf is unaffected.
+- `ExperienceStudioScreen.test.js` 1/1: pick template → see products → publish
+  calls create + publish with the right args → "Published".
+- Full mobile jest **33/33 tests pass**. (1 rotating suite flag = pre-existing
+  parallel act() warning — CartScreen/FollowerWalletScreen alternate, 0 assertion
+  failures, none of my files.)
+- Fixed during verify: jest.mock factory referenced non-`mock`-prefixed vars.
+
+### On-device (Maestro) — batched
+`qa/maestro/flows/07-creator-experience.yaml` (influencer: Home → Create Experience
+→ AVAILABLE TEMPLATES) + `06-experience-preview.yaml` (4b). Run on the founder's
+emulator in a batched real-device session. `release.released` flips true only after
+Maestro green + OTA.
+
+### Not yet OTA'd
+Mobile pushed with `released=false` → the live follower/influencer apps are unchanged
+until OTA. The home lights up after OTA + a creator publishes for a placed template.
 
 ## Live-home safety
 Prod has 0 placed templates + 0 experiences → deploying 6a keeps the follower home
