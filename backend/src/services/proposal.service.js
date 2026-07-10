@@ -244,8 +244,9 @@ async function create(influencerId, brandId, payload) {
        (influencer_id, brand_id, pitch_title, pitch_message, goal,
         proposed_fee, proposed_commission_pct, proposed_deliverables,
         proposed_posting_window_start, proposed_posting_window_end,
-        portfolio_links, expires_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+        portfolio_links, expires_at,
+        scope_level, scope_ref_json, theme_key, proposed_product_ids)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16::jsonb)
      RETURNING *`,
     [
       influencerId, brandId,
@@ -259,6 +260,11 @@ async function create(influencerId, brandId, payload) {
       payload.proposed_posting_window_end || null,
       Array.isArray(payload.portfolio_links) ? payload.portfolio_links.slice(0, 3) : [],
       expires,
+      // Phase 8 — scope + theme (all optional; NULL = unscoped, today's behavior)
+      ['store', 'category', 'product'].includes(payload.scope_level) ? payload.scope_level : null,
+      payload.scope_ref_json ? JSON.stringify(payload.scope_ref_json) : null,
+      payload.theme_key || null,
+      Array.isArray(payload.proposed_product_ids) ? JSON.stringify(payload.proposed_product_ids) : null,
     ]
   );
   return rows[0];
@@ -348,10 +354,26 @@ async function flag(proposalId, reason) {
   );
 }
 
+// Phase 8 — a creator browses a brand's products to scope a proposal. Gated:
+// only brands that opted into proposals are browsable (mirrors discover-brands).
+async function browseBrandProducts(brandId, { search, limit = 40 } = {}) {
+  const brand = (await db.query(`SELECT accepts_proposals FROM brands WHERE id = $1`, [brandId])).rows[0];
+  if (!brand) { const e = new Error('Brand not found'); e.code = 'NOT_FOUND'; throw e; }
+  if (!brand.accepts_proposals) { const e = new Error('This brand is not accepting proposals right now.'); e.code = 'FORBIDDEN'; throw e; }
+  const params = [brandId];
+  let where = 'brand_id = $1';
+  if (search && String(search).trim()) { params.push(`%${String(search).trim()}%`); where += ` AND name ILIKE $${params.length}`; }
+  params.push(Math.min(Number(limit) || 40, 100));
+  const { rows } = await db.query(
+    `SELECT id, name, price, image_url FROM brand_products WHERE ${where} ORDER BY created_at DESC NULLS LAST LIMIT $${params.length}`, params);
+  return rows;
+}
+
 module.exports = {
   PROPOSAL_TTL_DAYS,
   COOLDOWN_DAYS_AFTER_REJECT,
   RATE_LIMITS,
+  browseBrandProducts,
   checkEligibility,
   tierFromFollowers,
   getById,

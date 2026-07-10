@@ -18,6 +18,7 @@ const db = require('../config/db');
 const proposalService = require('../services/proposal.service');
 const notificationService = require('../services/notification.service');
 const contractService = require('../services/contract.service');
+const experienceService = require('../services/experience.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -59,6 +60,21 @@ const discoverBrands = asyncHandler(async (req, res) => {
   const search = req.query.search || null;
   const brands = await proposalService.discoverEligibleBrands(inf.id, { search });
   return success(res, { brands });
+});
+
+// GET /v1/influencers/me/discover-brands/:id/products — Phase 8: browse a
+// brand's catalog to scope a proposal (gated: brand accepts proposals).
+const discoverBrandProducts = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  let products;
+  try { products = await proposalService.browseBrandProducts(req.params.id, { search: req.query.q }); }
+  catch (e) {
+    if (e.code === 'FORBIDDEN') throw new AppError('FORBIDDEN', e.message, 403);
+    if (e.code === 'NOT_FOUND') throw new AppError('NOT_FOUND', e.message, 404);
+    throw e;
+  }
+  return success(res, { products });
 });
 
 // GET /v1/brands/:id/proposal-criteria — public-ish: returns filter snapshot
@@ -455,6 +471,12 @@ async function acceptedFlow(proposal, useCounterTerms) {
     [proposal.id, ci.id]
   );
 
+  // 6. Phase 8 — BEST-EFFORT seed a draft experience from the (scoped/themed)
+  // proposal. Wrapped so a failure NEVER blocks the accept: on any error the
+  // proposal is accepted + the campaign created exactly as today.
+  try { await experienceService.seedFromProposal(proposal); }
+  catch (e) { console.warn('[proposal] seedFromProposal (non-fatal):', e.message); }
+
   return ci;
 }
 
@@ -504,6 +526,7 @@ const adminSetInfluencerStatus = asyncHandler(async (req, res) => {
 module.exports = {
   // Influencer
   discoverBrands,
+  discoverBrandProducts,
   getProposalCriteria,
   createProposal,
   listMyProposals,

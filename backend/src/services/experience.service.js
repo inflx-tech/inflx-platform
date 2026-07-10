@@ -202,7 +202,38 @@ async function resolveForTemplate(templateId, limit = 12) {
   }
 }
 
+// ── Phase 8 — seed a draft experience from an accepted scoped proposal ───────
+// BEST-EFFORT: the caller wraps this so a failure never blocks the accept.
+// Binds a matching placed template if one exists, else a template-less draft
+// (creator completes it in the Studio). Decision locked with founder.
+async function seedFromProposal(proposal) {
+  if (!proposal || !proposal.theme_key) return null;
+  const theme = (await db.query(
+    `SELECT world_key FROM experience_themes WHERE key=$1 ORDER BY is_blueprint ASC LIMIT 1`, [proposal.theme_key])).rows[0];
+  if (!theme) return null;
+  const worldKey = theme.world_key;
+
+  const tpl = (await db.query(
+    `SELECT key FROM experience_templates WHERE world_key=$1 AND theme_key=$2 AND status='placed'
+      ORDER BY updated_at DESC LIMIT 1`, [worldKey, proposal.theme_key])).rows[0];
+  const templateKey = tpl ? tpl.key : null;
+
+  const productIds = Array.isArray(proposal.proposed_product_ids) ? proposal.proposed_product_ids.filter(Boolean) : [];
+
+  const exp = (await db.query(
+    `INSERT INTO creator_experiences (influencer_id, world_key, template_key, theme_key, brand_id, status, source_proposal_id)
+     VALUES ($1,$2,$3,$4,$5,'draft',$6) RETURNING id`,
+    [proposal.influencer_id, worldKey, templateKey, proposal.theme_key, proposal.brand_id, proposal.id])).rows[0];
+
+  for (let i = 0; i < productIds.length; i++) {
+    // only bind products that exist (ignore stray ids); never throw the whole seed
+    try { await db.query(`INSERT INTO experience_products (experience_id, product_id, display_order) VALUES ($1,$2,$3)`, [exp.id, productIds[i], i]); }
+    catch (e) { /* skip a bad product id */ }
+  }
+  return exp;
+}
+
 module.exports = {
   listAvailableTemplates, listStockable, getExperience, listMyExperiences,
-  createExperience, publishExperience, resolveForTemplate,
+  createExperience, publishExperience, resolveForTemplate, seedFromProposal,
 };

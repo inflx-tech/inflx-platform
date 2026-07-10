@@ -20,6 +20,7 @@ const router = Router();
 
 // ── Influencer ─────────────────────────────────────────────────────────────
 router.get   ('/influencers/me/discover-brands',           authenticate, requireRole('influencer'), ctrl.discoverBrands);
+router.get   ('/influencers/me/discover-brands/:id/products', authenticate, requireRole('influencer'), ctrl.discoverBrandProducts);
 router.post  ('/influencers/me/proposals',                 authenticate, requireRole('influencer'), ctrl.createProposal);
 router.get   ('/influencers/me/proposals',                 authenticate, requireRole('influencer'), ctrl.listMyProposals);
 router.get   ('/influencers/me/proposals/:id',             authenticate, requireRole('influencer'), ctrl.getMyProposal);

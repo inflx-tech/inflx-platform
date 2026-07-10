@@ -1,0 +1,30 @@
+{
+  "feature": "scoped-proposals",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start phase 8' + decisions: 8a now, seed template-less draft when no match)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "decisions_locked": { "scope": "8a now, 8b next", "seed": "no matching template → seed template-less draft (template_key null) to finish in Studio" },
+  "ui_governed": true,
+  "mobile_governed": true,
+  "notes": "Creator Experience Engine Phase 8 — scoped, theme-aware proposals (closes creator-inbound loop). Split: 8a = EXTEND influencer_proposals (scope_level/scope_ref_json/theme_key/proposed_product_ids, all nullable) + loosen creator_experiences.template_key nullable + creator store-browse API + scoped-proposal create + best-effort experience-draft seed on accept (never blocks accept). 8b = mobile SendProposal browse+scope+theme UI (jest now, Maestro batched). Existing proposal state machine + guardrails unchanged; unscoped proposal = today's behavior. Mockups: scoped-proposal.html + brand-proposal-scoped.html. Awaiting founder review + scope confirm (recommend 8a first). No governed-path code yet.",
+  "phase_8a_qa_green": true,
+  "phase_8a_local_verify": "scoped proposal create (scope+theme+products); seedFromProposal → template-less draft w/ source_proposal_id + 4 products; store-browse gate FORBIDDEN when not accepting / products when accepting; accept path best-effort (never blocks). full pnpm qa 95/95 GREEN (1 transient prod-network flake re-run green, classified).",
+  "diff_captured": true,
+  "release": {
+    "qa_all_green": true,
+    "qa_result": "pnpm qa — 95/95 passed, STATE=GREEN (report 2026-07-10T16-08-06Z)",
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "8a = production-impacting backend (additive cols + loosened template_key + browse endpoint + best-effort accept seed) — READY. 8b = OTA + gated. Explicit go; unscoped proposals unchanged.",
+    "deploy_steps_ready_8a": "run-138.js (prod migrate, additive/0 rows) then git commit + push backend (Render)."
+  }
+}
