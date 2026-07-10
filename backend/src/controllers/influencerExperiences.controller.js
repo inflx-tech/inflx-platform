@@ -9,6 +9,7 @@
 
 const db = require('../config/db');
 const svc = require('../services/experience.service');
+const imagery = require('../services/creatorImagery.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -59,4 +60,26 @@ const listMine = asyncHandler(async (req, res) => {
   return success(res, { experiences: await svc.listMyExperiences(id) });
 });
 
-module.exports = { listTemplates, listStockable, create, publish, listMine };
+// ── Creator imagery (Phase 7a) — upload own product shots, tag to products ───
+// POST /v1/influencers/me/assets  { r2_key, media_type, aspect }
+const createAsset = asyncHandler(async (req, res) => {
+  const id = await meId(req);
+  let a; try { a = await imagery.createAsset(id, req.body || {}); }
+  catch (x) { throw new AppError('VALIDATION_ERROR', x.message, 422, x.field); }
+  return success(res, { asset: a }, 201);
+});
+// POST /v1/influencers/me/assets/:id/tag-product  { product_id }
+const tagAsset = asyncHandler(async (req, res) => {
+  const id = await meId(req);
+  if (!req.body || !req.body.product_id) throw new AppError('VALIDATION_ERROR', 'product_id required', 422, 'product_id');
+  let pi; try { pi = await imagery.tagProduct(id, req.params.id, req.body.product_id); }
+  catch (x) { throw new AppError('VALIDATION_ERROR', x.message, 422, x.field); }
+  return success(res, { product_image: pi }, 201);
+});
+// GET /v1/influencers/me/assets
+const listAssets = asyncHandler(async (req, res) => {
+  const id = await meId(req);
+  return success(res, { assets: await imagery.listMyAssets(id) });
+});
+
+module.exports = { listTemplates, listStockable, create, publish, listMine, createAsset, tagAsset, listAssets };

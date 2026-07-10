@@ -19,4 +19,9 @@ router.get('/me/experiences',          ...creatorAuth, ctrl.listMine);
 router.post('/me/experiences',         ...creatorAuth, ctrl.create);
 router.post('/me/experiences/:id/publish', ...creatorAuth, ctrl.publish);
 
+// Creator imagery (Phase 7a)
+router.get('/me/assets',               ...creatorAuth, ctrl.listAssets);
+router.post('/me/assets',              ...creatorAuth, ctrl.createAsset);
+router.post('/me/assets/:id/tag-product', ...creatorAuth, ctrl.tagAsset);
+
 module.exports = router;

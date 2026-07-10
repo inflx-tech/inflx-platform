@@ -1,0 +1,33 @@
+{
+  "feature": "creator-imagery",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start phase 7' + decisions)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "decisions_locked": {
+    "takedown": "collab-end → auto-withdraw from brand store (fall back to brand's own image), KEEP in creator's own store/experiences. Implemented via a still-contracted check in the brand-context resolver (no cron).",
+    "scope": "7a now (tables + resolver + upload/approval API + pack upgrade, flag-gated dark), 7b next (UIs + store render)."
+  },
+  "ui_governed": true,
+  "mobile_governed": true,
+  "notes": "Creator Experience Engine Phase 7 — Asset Pack / per-context creator imagery (the founder's 'main thing'; last green-field piece). Split: 7a = creator_assets + creator_product_images tables + brand_products.display_image_source_influencer_id column + central resolveProductImage(product,context) FLAG-GATED (CREATOR_IMAGERY default OFF → pass-through, today's behavior) + upload/approval API + experience pack upgrade (multi-image aspect-tagged from approved shots). 7b = creator upload UI + brand approval/image-source UI + store render via resolver (mobile/web, jest now, Maestro batched). Flag off = ZERO change to any store. Mockups: creator-upload.html + brand-image-choice.html. Awaiting founder review + scope confirm (recommend 7a first). No governed-path code yet.",
+  "phase_7a_qa_green": true,
+  "phase_7a_local_verify": "flag OFF → resolveProductImage pass-through (both contexts == own image); flag ON → creator store shows creator's approved shot, brand store auto-withdraws to own image when creator not in active collab (takedown). approval queue + approve + image-source work. full pnpm qa 95/95 GREEN.",
+  "diff_captured": true,
+  "release": {
+    "qa_all_green": true,
+    "qa_result": "pnpm qa — 95/95 passed, STATE=GREEN (report 2026-07-10T15-18-44Z)",
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "7a = production-impacting backend, ships DARK (CREATOR_IMAGERY flag default off → strict pass-through, zero store change) — READY. 7b = OTA + Vercel + gated. Explicit go.",
+    "deploy_steps_ready_7a": "run-136.js + run-137.js (prod migrate, additive/0 rows) then git commit + push backend (Render). Flag stays off on prod → live stores UNCHANGED."
+  }
+}

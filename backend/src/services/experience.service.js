@@ -10,6 +10,7 @@
 
 const db = require('../config/db');
 const rs = require('./renderSpec.service');
+const imagery = require('./creatorImagery.service');
 
 const EXP_COLS = `id, influencer_id, world_key, template_key, theme_key, brand_id, featured_image_url, status, created_at, updated_at`;
 
@@ -156,10 +157,25 @@ async function resolveForTemplate(templateId, limit = 12) {
              JOIN brand_products bp ON bp.id=ep.product_id
             WHERE ep.experience_id=$1 ORDER BY ep.display_order LIMIT 12`, [e.id])).rows;
         const featAspect = rs.desiredAspect(layout.aspect_hint);
+
+        // Phase 7 — when creator imagery is enabled, products wear the creator's
+        // approved shots and the featured pack is their real (aspect-tagged)
+        // photography. Flag OFF ⇒ isEnabled() short-circuits, no extra queries.
+        let featured_images = e.featured_image_url ? [{ url: e.featured_image_url, aspect: featAspect }] : [];
+        if (imagery.isEnabled()) {
+          const shots = [];
+          for (const p of products) {
+            p.image_url = await imagery.resolveProductImage({ id: p.id, image_url: p.image_url }, { context: 'creator', influencerId: e.influencer_id });
+            const shot = await imagery.approvedShot(e.influencer_id, p.id);
+            if (shot) shots.push(shot);
+          }
+          if (shots.length) featured_images = shots;
+        }
+
         const pack = {
           creator_name: e.creator_name || e.handle || 'Creator',
           avatar_url: null,
-          featured_images: e.featured_image_url ? [{ url: e.featured_image_url, aspect: featAspect }] : [],
+          featured_images,
           offer_badge: null,
           products,
         };

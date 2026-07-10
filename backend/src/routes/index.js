@@ -17,6 +17,7 @@ const adminDesignLayoutsRoutes = require('./adminDesignLayouts.routes');
 const adminExperiencePreviewRoutes = require('./adminExperiencePreview.routes');
 const adminTemplatesRoutes = require('./adminTemplates.routes');
 const influencerExperiencesRoutes = require('./influencerExperiences.routes');
+const brandCreatorImagesRoutes = require('./brandCreatorImages.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
 const negotiationRoutes = require('./negotiation.routes');
@@ -136,7 +137,10 @@ router.use('/admin', adminExperiencePreviewRoutes);   // /admin/experience-previ
 router.use('/admin/experience-templates', adminTemplatesRoutes);
 
 // ── Creator Experience Studio API (Creator Experience Engine Phase 6a, mig 135)
-router.use('/influencers', influencerExperiencesRoutes);   // /influencers/me/experience*
+router.use('/influencers', influencerExperiencesRoutes);   // /influencers/me/experience* + /me/assets*
+
+// ── Creator imagery: brand approval + display source (Phase 7a, mig 136-137) ──
+router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator-images + /products/:id/image-source
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
