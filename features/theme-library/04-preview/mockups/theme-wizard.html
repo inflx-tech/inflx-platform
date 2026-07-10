@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INFLX Admin — Theme Configuration (Street Style)</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e7e6e2;--bg:#faf9f7;--card:#fff;--y:#FFC400;--g:#1D9E75}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:760px;margin:0 auto;padding:24px}
+  .crumb{font-size:12px;color:var(--muted);margin-bottom:6px}
+  h1{font-size:21px;font-weight:800;margin:0 0 2px}
+  .from{font-size:12px;color:var(--muted);margin-bottom:18px}
+  .from b{color:var(--ink)}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+  .sec h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 12px;font-weight:700}
+  .sec h2 .n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:10px;align-items:center;justify-content:center;margin-right:7px;vertical-align:1px}
+  label{display:block;font-size:11px;color:var(--muted);margin:0 0 4px;font-weight:600}
+  input,textarea,select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .chip{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;margin:3px 5px 0 0;cursor:pointer;background:#fff}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:3px 6px 0 0;background:#fff}
+  .chk.on{border-color:var(--g);background:rgba(29,158,117,.08)}
+  .preset{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px}
+  .sw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.1)}
+  .preset .swatches{display:flex;gap:5px}
+  .preset .meta{font-size:11px;color:var(--muted)}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;position:sticky;bottom:0;background:var(--bg);padding:12px 0}
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.g{background:var(--ink);color:#fff}.btn.y{background:var(--y);color:#1a1a1a}.btn.o{background:#fff;border:1px solid var(--line);color:#555}
+  .req{color:#D4537E;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb">Theme Library › Fashion › New Theme</div>
+  <h1>👟 Street Style</h1>
+  <div class="from">Started from blueprint <b>Street Style</b> — everything below is pre-filled. Change only what's unique.</div>
+
+  <div class="sec">
+    <h2><span class="n">1</span>Identity</h2>
+    <div class="two">
+      <div><label>Theme name</label><input value="Street Style"/></div>
+      <div><label>Icon</label><input value="👟"/></div>
+    </div>
+    <div style="margin-top:10px"><label>Short description</label><input value="Urban casual looks curated by creators."/></div>
+    <div style="margin-top:10px"><label>Audience</label>
+      <span class="chip">Men</span><span class="chip">Women</span><span class="chip on">Unisex</span><span class="chip">Kids</span>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">2</span>Purpose</h2>
+    <span class="chip on">Lifestyle</span><span class="chip">Travel</span><span class="chip">Occasion</span>
+    <span class="chip">Seasonal</span><span class="chip">Budget</span><span class="chip">Trend</span><span class="chip">Category</span>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">3</span>Visual — preset (from Design System)</h2>
+    <div class="preset">
+      <div class="swatches"><span class="sw" style="background:#26262A"></span><span class="sw" style="background:#5F5E5A"></span><span class="sw" style="background:#FFC400"></span></div>
+      <div><div style="font-weight:800;font-size:13px">Urban Fashion</div><div class="meta">Urban · Bold Fashion · Concrete</div></div>
+      <button class="btn o" style="margin-left:auto;padding:6px 12px">Change preset</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">4</span>Supported categories <span class="req">*</span></h2>
+    <span class="chk on">✓ Jeans</span><span class="chk on">✓ Cargo</span><span class="chk on">✓ Sneakers</span><span class="chk on">✓ T-Shirts</span>
+    <span class="chk on">✓ Jackets</span><span class="chk on">✓ Caps</span><span class="chk">Belts</span><span class="chk">Watches</span>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">Creator Studio will show only these categories for this theme.</div>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">5</span>Product count</h2>
+    <div class="two">
+      <div><label>Minimum</label><input value="4"/></div>
+      <div><label>Maximum</label><input value="20"/></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">6</span>Media rules</h2>
+    <span class="chk on">✓ Featured image — required</span><span class="chk on">✓ Video — optional</span><span class="chk on">✓ Portrait preferred</span>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">7</span>Supported offers</h2>
+    <span class="chk on">✓ Flat discount</span><span class="chk on">✓ Bundle</span><span class="chk on">✓ BOGO</span><span class="chk on">✓ Free gift</span><span class="chk">Flash sale</span>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">8</span>Default copy</h2>
+    <div><label>Title</label><input value="Street Style"/></div>
+    <div style="margin-top:10px"><label>Subtitle</label><input value="Urban looks curated for everyday confidence."/></div>
+    <div style="margin-top:10px"><label>CTA</label><input value="Explore Collection"/></div>
+  </div>
+
+  <div class="sec">
+    <h2><span class="n">9</span>Applicable worlds</h2>
+    <span class="chk on">✓ Fashion</span><span class="chk">Beauty</span><span class="chk">Food</span><span class="chk">Furniture</span>
+  </div>
+
+  <div class="foot">
+    <button class="btn o">Cancel</button>
+    <div style="display:flex;gap:10px">
+      <button class="btn y">Save draft</button>
+      <button class="btn g">Publish ✓</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

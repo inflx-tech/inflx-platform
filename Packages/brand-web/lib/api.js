@@ -644,6 +644,14 @@ export const adminApi = {
   listDesignTokens:  (worldKey) => api.get(`/admin/design-system/tokens${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
   listDesignPresets: (worldKey) => api.get(`/admin/design-system/presets${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
 
+  // Theme Library (Creator Experience Engine Phase 2, mig 129-130)
+  listThemes:          (worldKey, status) => api.get(`/admin/themes?world_key=${encodeURIComponent(worldKey || '')}${status ? `&status=${encodeURIComponent(status)}` : ''}`),
+  listThemeBlueprints: (worldKey) => api.get(`/admin/themes/blueprints?world_key=${encodeURIComponent(worldKey || '')}`),
+  getTheme:            (id) => api.get(`/admin/themes/${encodeURIComponent(id)}`),
+  createTheme:         (data) => api.post('/admin/themes', data),
+  updateTheme:         (id, data) => api.patch(`/admin/themes/${encodeURIComponent(id)}`, data),
+  publishTheme:        (id) => api.post(`/admin/themes/${encodeURIComponent(id)}/publish`, {}),
+
   // World Rules (Phase 3, mig 126) — per-world engine behaviour
   listWorldRules:   () => api.get('/admin/world-rules'),
   saveWorldRules:   (worldKey, data) => api.put(`/admin/world-rules/${encodeURIComponent(worldKey)}`, data),

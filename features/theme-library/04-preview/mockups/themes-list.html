@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INFLX Admin — Theme Library (Fashion)</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e7e6e2;--bg:#faf9f7;--card:#fff;--y:#FFC400;--g:#1D9E75;--blue:#378ADD}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  h1{font-size:22px;font-weight:800;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .btn{background:var(--ink);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.y{background:var(--y);color:#1a1a1a}
+  .world{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600}
+  h2{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:26px 0 12px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .theme{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .theme .ic{font-size:26px}
+  .theme .nm{font-weight:800;font-size:15px;margin:6px 0 2px}
+  .theme .row{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .tag{font-size:11px;border-radius:999px;padding:3px 9px;border:1px solid var(--line);background:#f4f3f0;color:#555}
+  .pill{font-size:10px;font-weight:700;border-radius:999px;padding:3px 9px}
+  .pub{background:rgba(29,158,117,.12);color:var(--g);border:1px solid rgba(29,158,117,.3)}
+  .draft{background:#f0efec;color:#888;border:1px solid var(--line)}
+  .rng{font-size:11px;color:var(--muted);margin-left:auto}
+  /* blueprint picker */
+  .picker{margin-top:30px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .picker h3{margin:0 0 4px;font-size:16px;font-weight:800}
+  .picker .hint{color:var(--muted);font-size:12px;margin:0 0 16px}
+  .grp{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px}
+  .bp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .bp{border:1px solid var(--line);border-radius:11px;padding:11px;cursor:pointer}
+  .bp:hover{border-color:var(--y);box-shadow:0 0 0 2px rgba(255,196,0,.25)}
+  .bp .i{font-size:20px}
+  .bp .n{font-weight:700;font-size:12.5px;margin-top:5px}
+  .bp .p{font-size:10px;color:var(--muted);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Theme Library</h1>
+      <p class="sub" style="margin-top:4px">Themes = business definitions. Start from a blueprint, edit the delta.</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="world">🌐 Fashion World ▾</span>
+      <button class="btn y">＋ Create Theme</button>
+    </div>
+  </div>
+
+  <h2>Published & drafts</h2>
+  <div class="grid">
+    <div class="theme">
+      <div class="ic">👟</div>
+      <div class="nm">Street Style</div>
+      <div style="font-size:12px;color:var(--muted)">Urban looks curated for everyday confidence.</div>
+      <div class="row">
+        <span class="tag">Lifestyle</span><span class="tag">Urban Fashion</span>
+        <span class="pill pub">Published</span><span class="rng">4–20</span>
+      </div>
+    </div>
+    <div class="theme">
+      <div class="ic">✈️</div>
+      <div class="nm">Airport Looks</div>
+      <div style="font-size:12px;color:var(--muted)">Travel-ready fashion for every journey.</div>
+      <div class="row">
+        <span class="tag">Travel</span><span class="tag">Travel Lifestyle</span>
+        <span class="pill draft">Draft</span><span class="rng">4–15</span>
+      </div>
+    </div>
+    <div class="theme">
+      <div class="ic">💍</div>
+      <div class="nm">Wedding Collection</div>
+      <div style="font-size:12px;color:var(--muted)">Occasion looks for the big day.</div>
+      <div class="row">
+        <span class="tag">Occasion</span><span class="tag">Luxury Editorial</span>
+        <span class="pill pub">Published</span><span class="rng">6–24</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create → blueprint picker -->
+  <div class="picker">
+    <h3>Start from a blueprint</h3>
+    <p class="hint">Pick a starting point — the wizard pre-fills preset, categories, media rules, offers and copy. You only change what's unique.</p>
+
+    <div class="grp">Lifestyle</div>
+    <div class="bp-grid">
+      <div class="bp"><div class="i">👟</div><div class="n">Street Style</div><div class="p">Urban Fashion</div></div>
+      <div class="bp"><div class="i">🤍</div><div class="n">Minimal</div><div class="p">Minimal Fashion</div></div>
+      <div class="bp"><div class="i">🎩</div><div class="n">Old Money</div><div class="p">Luxury Editorial</div></div>
+      <div class="bp"><div class="i">🌿</div><div class="n">Boho</div><div class="p">Travel Lifestyle</div></div>
+    </div>
+
+    <div class="grp">Occasion</div>
+    <div class="bp-grid">
+      <div class="bp"><div class="i">💍</div><div class="n">Wedding</div><div class="p">Luxury Editorial</div></div>
+      <div class="bp"><div class="i">💼</div><div class="n">Office</div><div class="p">Minimal Fashion</div></div>
+      <div class="bp"><div class="i">🌙</div><div class="n">Date Night</div><div class="p">Festive Collection</div></div>
+      <div class="bp"><div class="i">🎉</div><div class="n">Festival</div><div class="p">Festive Collection</div></div>
+    </div>
+
+    <div class="grp">Travel · Budget · Trend</div>
+    <div class="bp-grid">
+      <div class="bp"><div class="i">✈️</div><div class="n">Airport</div><div class="p">Travel Lifestyle</div></div>
+      <div class="bp"><div class="i">🏖️</div><div class="n">Vacation</div><div class="p">Summer Collection</div></div>
+      <div class="bp"><div class="i">🏷️</div><div class="n">Under ₹999</div><div class="p">Urban Fashion</div></div>
+      <div class="bp"><div class="i">🔥</div><div class="n">New Drops</div><div class="p">Sports Active</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
