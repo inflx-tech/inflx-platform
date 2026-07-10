@@ -1,0 +1,28 @@
+{
+  "feature": "experience-templates",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start build' after mockup review; Fashion Home = category/fashion confirmed by default)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "ui_governed": true,
+  "mobile_governed": false,
+  "notes": "Creator Experience Engine Phase 5. Spec+workflow+expected-outputs+impact authored; two admin mockups (templates-list.html + template-builder.html). Template = Theme(P2)+Design(P3)+Section Style; place → writes section_config (D2: template_id column + new 'experience_template' rule). FIRST phase touching the live section engine (additive rule returns empty until Phase 6) — impact stresses live home unchanged. Awaiting founder review to lock. No governed-path code written yet.",
+  "feature_qa_green": true,
+  "diff_captured": true,
+  "release": {
+    "qa_all_green": true,
+    "qa_result": "pnpm qa — 95/95 passed, STATE=GREEN (report 2026-07-10T13-52-01Z); incl. experience-templates.spec.ts 3/3. (One prior run flaked on an unrelated prod-network api spec invariants-extended W4; re-run 8/8 + full re-run green — classified environmental, not a regression.)",
+    "live_home_unchanged_proof": "local: runRule('experience_template')→[]; place writes rule=experience_template row w/ template_id, existing fashion-home NON-template rows before==after; unplace removes it. Full qa 95/95 green (existing section/follower specs unchanged).",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting (migration 133-134 + backend incl. 1 additive section-engine rule + brand-web); explicit go; confirm live follower home unchanged before deploy",
+    "deploy_steps_ready": "run-133.js + run-134.js (prod migrate) then git commit + push (Render backend + Vercel brand-web)"
+  }
+}

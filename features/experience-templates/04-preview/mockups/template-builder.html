@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INFLX Admin — Template Builder</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e7e6e2;--bg:#faf9f7;--card:#fff;--y:#FFC400;--g:#1D9E75}
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:720px;margin:0 auto;padding:24px}
+  .crumb{font-size:12px;color:var(--muted)}h1{font-size:21px;font-weight:800;margin:2px 0 2px}
+  .from{font-size:12px;color:var(--muted);margin-bottom:16px}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+  .sec h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 10px;font-weight:700}
+  .sec h2 .n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:10px;align-items:center;justify-content:center;margin-right:7px;vertical-align:1px}
+  .chip{display:inline-block;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;margin:0 6px 6px 0;background:#fff;cursor:pointer}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+  .pick{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px}
+  .pick .ic{font-size:20px}.pick .m{font-size:11px;color:var(--muted)}
+  .contract{font-size:10px;margin-top:3px}.rq{color:#0f6e56}.hd{color:#b0aea7;text-decoration:line-through}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer}
+  .g{background:var(--ink);color:#fff}.y{background:var(--y);color:#1a1a1a}.o{background:#fff;border:1px solid var(--line);color:#555}
+  .note{font-size:11px;color:var(--muted);margin-top:6px}
+</style></head><body>
+<div class="wrap">
+  <div class="crumb">Experience Templates › Fashion › New</div>
+  <h1>Street Style Hero</h1>
+  <div class="from">Assemble reusable parts into a placeable unit. Name auto-suggested from Theme + Style.</div>
+
+  <div class="sec"><h2><span class="n">1</span>Type</h2>
+    <span class="chip on">Creator</span><span class="chip">Automatic</span><span class="chip">Mixed</span>
+    <div class="note">Creator = needs a creator experience · Automatic = products/offers only · Mixed = creator + offer badge.</div>
+  </div>
+
+  <div class="sec"><h2><span class="n">2</span>Theme <span style="color:#999">· from Theme Library</span></h2>
+    <div class="pick"><span class="ic">👟</span><div><div style="font-weight:800;font-size:13px">Street Style</div><div class="m">Lifestyle · Urban Fashion preset</div></div><button class="btn o" style="margin-left:auto;padding:6px 12px">Change</button></div>
+  </div>
+
+  <div class="sec"><h2><span class="n">3</span>Design <span style="color:#999">· from Design Library</span></h2>
+    <div class="pick"><span class="ic">🖼️</span><div><div style="font-weight:800;font-size:13px">Hero Banner · 16:9</div>
+      <div class="contract"><span class="rq">req: background · featured · title</span> · <span class="hd">hidden: products</span></div></div><button class="btn o" style="margin-left:auto;padding:6px 12px">Change</button></div>
+  </div>
+
+  <div class="sec"><h2><span class="n">4</span>Section style</h2>
+    <span class="chip on">Hero</span><span class="chip">Carousel</span><span class="chip">Grid</span><span class="chip">Story rail</span><span class="chip">Magazine</span><span class="chip">Bento</span>
+  </div>
+
+  <div class="sec"><h2><span class="n">5</span>Name</h2><input value="Street Style Hero"/></div>
+
+  <div class="sec"><h2><span class="n">6</span>Placement</h2>
+    <span class="chip on">Fashion Home</span><span class="chip">Men</span><span class="chip">Women</span><span class="chip">Creator Store</span><span class="chip">Business Store</span>
+  </div>
+
+  <div class="sec"><h2><span class="n">7</span>Store rule</h2>
+    <span class="chip">Always show</span><span class="chip on">Only if products</span><span class="chip">Manual</span>
+  </div>
+
+  <div class="sec"><h2><span class="n">8</span>Creator-store rule</h2>
+    <span class="chip">Always</span><span class="chip on">Only if creator has this experience</span><span class="chip">Hidden</span>
+  </div>
+
+  <div class="sec"><h2><span class="n">9</span>Location priority</h2>
+    <span class="chip on">City</span> → <span class="chip on">State</span> → <span class="chip on">Country</span> → <span class="chip on">Global</span>
+  </div>
+
+  <div class="foot">
+    <button class="btn o">Cancel</button>
+    <div style="display:flex;gap:10px"><button class="btn y">Save draft</button><button class="btn g">Place on Fashion Home ✓</button></div>
+  </div>
+  <div class="note">Once placed, this renders empty on the follower home until creators publish Street Style experiences (Phase 6). The live home does not change today.</div>
+</div></body></html>

@@ -644,6 +644,14 @@ export const adminApi = {
   listDesignTokens:  (worldKey) => api.get(`/admin/design-system/tokens${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
   listDesignPresets: (worldKey) => api.get(`/admin/design-system/presets${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
 
+  // Experience Templates (Creator Experience Engine Phase 5, mig 133-134)
+  listTemplates:   (worldKey, status) => api.get(`/admin/experience-templates?world_key=${encodeURIComponent(worldKey || '')}${status ? `&status=${encodeURIComponent(status)}` : ''}`),
+  getTemplate:     (id) => api.get(`/admin/experience-templates/${encodeURIComponent(id)}`),
+  createTemplate:  (data) => api.post('/admin/experience-templates', data),
+  updateTemplate:  (id, data) => api.patch(`/admin/experience-templates/${encodeURIComponent(id)}`, data),
+  placeTemplate:   (id) => api.post(`/admin/experience-templates/${encodeURIComponent(id)}/place`, {}),
+  unplaceTemplate: (id) => api.post(`/admin/experience-templates/${encodeURIComponent(id)}/unplace`, {}),
+
   // Design Library (Creator Experience Engine Phase 3, mig 131-132) — read-only layouts + contracts
   listDesignLayouts: (worldKey) => api.get(`/admin/design-layouts${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
   listSectionStyles: () => api.get('/admin/section-styles'),

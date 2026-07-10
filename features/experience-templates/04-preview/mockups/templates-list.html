@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INFLX Admin — Experience Templates</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e7e6e2;--bg:#faf9f7;--card:#fff;--y:#FFC400;--g:#1D9E75}
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  h1{font-size:22px;font-weight:800;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin:4px 0 20px}
+  .btn{background:var(--y);color:#1a1a1a;border:none;border-radius:9px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .tpl{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .tn{font-weight:800;font-size:15px}
+  .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{font-size:11px;border-radius:999px;padding:3px 9px;border:1px solid var(--line);background:#f4f3f0;color:#555}
+  .type{font-size:10px;font-weight:700;border-radius:999px;padding:3px 9px;background:#EEF;color:#4640b7;border:1px solid #dedcfa}
+  .pill{font-size:10px;font-weight:700;border-radius:999px;padding:3px 9px;margin-left:auto}
+  .placed{background:rgba(29,158,117,.12);color:var(--g);border:1px solid rgba(29,158,117,.3)}
+  .draft{background:#f0efec;color:#888;border:1px solid var(--line)}
+</style></head><body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Experience Templates</h1><p class="sub">Assemble Theme + Design + Section Style, then place on a screen.</p></div>
+    <div style="display:flex;gap:10px;align-items:center"><span class="chip" style="font-size:13px;padding:6px 12px">🌐 Fashion ▾</span><button class="btn">＋ Create Template</button></div>
+  </div>
+  <div class="grid">
+    <div class="tpl"><div class="tn">Street Style Hero</div>
+      <div class="row"><span class="type">Creator</span><span class="chip">Street Style</span><span class="chip">Hero Banner</span><span class="chip">Hero</span></div>
+      <div class="row"><span class="chip" style="background:#fff">📍 Fashion Home</span><span class="pill placed">Placed</span></div></div>
+    <div class="tpl"><div class="tn">Airport Editorial</div>
+      <div class="row"><span class="type">Creator</span><span class="chip">Airport Looks</span><span class="chip">Magazine Card</span><span class="chip">Magazine</span></div>
+      <div class="row"><span class="chip" style="background:#fff">📍 Fashion Home</span><span class="pill draft">Draft</span></div></div>
+    <div class="tpl"><div class="tn">Under ₹999 Bento</div>
+      <div class="row"><span class="type" style="background:#E7F6EF;color:#0f6e56;border-color:#bfe6d6">Automatic</span><span class="chip">Under ₹999</span><span class="chip">Bento Tile</span><span class="chip">Bento</span></div>
+      <div class="row"><span class="chip" style="background:#fff">📍 Fashion Home</span><span class="pill placed">Placed</span></div></div>
+  </div>
+</div></body></html>

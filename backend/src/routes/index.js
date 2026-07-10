@@ -15,6 +15,7 @@ const adminDesignSystemRoutes = require('./adminDesignSystem.routes');
 const adminThemesRoutes = require('./adminThemes.routes');
 const adminDesignLayoutsRoutes = require('./adminDesignLayouts.routes');
 const adminExperiencePreviewRoutes = require('./adminExperiencePreview.routes');
+const adminTemplatesRoutes = require('./adminTemplates.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
 const negotiationRoutes = require('./negotiation.routes');
@@ -129,6 +130,9 @@ router.use('/admin', adminDesignLayoutsRoutes);   // /admin/design-layouts + /ad
 
 // ── Adaptive Renderer preview API (Creator Experience Engine Phase 4a) ────────
 router.use('/admin', adminExperiencePreviewRoutes);   // /admin/experience-preview
+
+// ── Experience Templates admin API (Creator Experience Engine Phase 5, mig 133-134)
+router.use('/admin/experience-templates', adminTemplatesRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

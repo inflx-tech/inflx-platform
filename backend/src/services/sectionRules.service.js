@@ -1344,6 +1344,14 @@ async function staticRule() { return []; }
 
 // ── registry ────────────────────────────────────────────────────────────────
 
+// Creator Experience Engine Phase 5 — a placed Experience Template's shelf.
+// Phase 5: no creator experiences exist yet → return [] (section hides via
+// hide-empty). Phase 6 will resolve published experiences bound to
+// ctx.templateId. Never throws; keeps the feed safe.
+async function experienceTemplate(_ctx) {
+  return [];
+}
+
 const RULES = {
   // offers
   top_by_engagement: (ctx) => ctx.itemType === 'brands' ? topByEngagementBrands(ctx) : topByEngagementOffers(ctx),
@@ -1370,6 +1378,11 @@ const RULES = {
   library_products: libraryProducts,
   restaurants_with_featured: restaurantsWithFeatured,   // Food 3C-1 Type B
   creators_in_category_listing: creatorsInCategoryListing,
+  // Creator Experience Engine Phase 5 — a placed Experience Template's shelf.
+  // Resolves the template's published creator experiences (Phase 6). In Phase 5
+  // there are none, so it returns [] and the section is hidden (hide-empty).
+  // Additive + isolated: only fires for rows with rule='experience_template'.
+  experience_template: experienceTemplate,
   // nav / static / disabled
   nav_verticals: navVerticals,
   world_categories: worldCategories,   // Food 3C — placeable category rail
