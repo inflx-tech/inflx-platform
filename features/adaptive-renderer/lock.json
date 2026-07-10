@@ -1,0 +1,29 @@
+{
+  "feature": "adaptive-renderer",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start phase 4' + scope confirmed: 4a now, 4b when emulator)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "scope_note": "Building 4a (pure resolveRenderSpec + experience-preview API) now. 4b (RN renderer + preview screen + Maestro) deferred until emulator session — founder confirmed emulator is ready.",
+  "ui_governed": true,
+  "mobile_governed": true,
+  "notes": "Creator Experience Engine Phase 4 — the Adaptive Renderer (first engine code). Split: 4a = pure resolveRenderSpec + experience-preview API (web/API-verifiable now, no emulator); 4b = mobile AdaptiveRenderer + preview screen (mobile-governed, Maestro gate, needs Android device/emulator). No new tables; reads Phase 1-3 data; does NOT touch the live section engine or follower home. Mockup in 04-preview/mockups/adaptive-renderer.html. Awaiting founder review + scope confirmation (recommend 4a first). No governed-path code written yet.",
+  "phase_4a_qa_green": true,
+  "release": {
+    "qa_all_green": true,
+    "qa_result": "pnpm qa — 92/92 passed, STATE=GREEN (report 2026-07-10T12-50-13Z); incl. render-spec.spec.ts 4/4 unit",
+    "phase_4a_local_verify": "buildPreviewSpec live: street_style×hero_banner→landscape/all-slots; ×story_card→portrait/drops subtitle+cta; ×small_tile→square/3 slots; unknown theme→null",
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "4a = production-impacting backend (read-only endpoint, no UI, no mobile — not mockup/Maestro-gated). 4b = OTA + Maestro-gated (deferred). Push only on explicit founder go.",
+    "deploy_steps_ready_4a": "no migration; git commit + push backend (Render). No user-facing effect until 4b."
+  }
+}
