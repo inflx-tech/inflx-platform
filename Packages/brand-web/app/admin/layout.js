@@ -19,6 +19,7 @@ const NAV = [
   { href: '/admin/orders', label: 'Orders', icon: '📦', cap: 'orders' },
   { section: 'CONTENT' },
   { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️', cap: 'master_data' },
+  { href: '/admin/design-system', label: 'Design System', icon: '🎨', cap: 'sections' },
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
   { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
   { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },

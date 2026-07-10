@@ -11,6 +11,7 @@ const adminRoutes       = require('./admin.routes');
 const adminSectionsRoutes = require('./adminSections.routes');
 const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 const adminPagesRoutes = require('./adminPages.routes');
+const adminDesignSystemRoutes = require('./adminDesignSystem.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
 const negotiationRoutes = require('./negotiation.routes');
@@ -113,6 +114,9 @@ router.use('/admin/world-rules', adminWorldRulesRoutes);
 
 // ── Custom-page registry admin API (App Builder — admin only) ────────────────
 router.use('/admin/pages', adminPagesRoutes);
+
+// ── Design System admin API (Creator Experience Engine Phase 1, mig 127-128) ──
+router.use('/admin/design-system', adminDesignSystemRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

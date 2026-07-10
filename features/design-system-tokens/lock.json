@@ -1,0 +1,27 @@
+{
+  "feature": "design-system-tokens",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start build' after mockup review)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "ui_governed": true,
+  "mobile_governed": false,
+  "notes": "Creator Experience Engine Phase 1. Contract locked; code complete. Migrations 127 (schema) + 128 (seed) apply cleanly against LOCAL db — tokens 8+6+6+16+3+3=42, presets 8, DISTINCT-ON fashion query returns 42. Backend syntax + require-graph verified; new /admin/design-system router wired. Brand-web page + adminApi methods + nav authored to conventions (not Next-build-run here). REMAINING before release: Playwright pnpm qa in its proper lane (needs TEST_DATABASE_URL — NOT run against dev db to avoid truncateAll), prod migration (run-127.js + run-128.js on .env.prod-backup), brand-web deploy + admin-screen check, 06-diff before/after capture. Production-impacting: push only on founder's explicit go.",
+  "feature_qa_green": true,
+  "diff_captured": true,
+  "release": {
+    "qa_all_green": false,
+    "feature_spec_green": "qa/web/admin/design-system.spec.ts — 3/3 (render + auth-gate + empty-state)",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting (migration + backend + brand-web); push only on explicit founder go",
+    "deploy_steps_ready": "run-127.js + run-128.js (prod migrate) then git commit + push (Render backend + Vercel brand-web)"
+  }
+}

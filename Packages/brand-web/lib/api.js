@@ -640,6 +640,10 @@ export const adminApi = {
   setDishGroupMembers:(id, master_dish_ids) => api.put(`/admin/dish-groups/${id}/members`, { master_dish_ids }),
   suggestDishGroupMembers: (q) => api.get(`/admin/dish-groups/suggest?q=${encodeURIComponent(q || '')}`),
 
+  // Design System (Creator Experience Engine Phase 1, mig 127-128) — read-only vocabulary
+  listDesignTokens:  (worldKey) => api.get(`/admin/design-system/tokens${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
+  listDesignPresets: (worldKey) => api.get(`/admin/design-system/presets${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
+
   // World Rules (Phase 3, mig 126) — per-world engine behaviour
   listWorldRules:   () => api.get('/admin/world-rules'),
   saveWorldRules:   (worldKey, data) => api.put(`/admin/world-rules/${encodeURIComponent(worldKey)}`, data),

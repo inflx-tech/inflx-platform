@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INFLX Admin — Design System (Fashion)</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e7e6e2;--bg:#faf9f7;--card:#fff;--y:#FFC400;--g:#1D9E75}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  h1{font-size:22px;font-weight:800;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .world{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600}
+  .ro{display:inline-block;font-size:11px;color:var(--muted);background:#f0efec;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+  section{margin:26px 0}
+  h2{font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:700}
+  .grid{display:grid;gap:12px}
+  .g5{grid-template-columns:repeat(4,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .preset .name{font-weight:800;margin-bottom:8px}
+  .chip{display:inline-block;font-size:11px;background:#f4f3f0;border:1px solid var(--line);border-radius:999px;padding:3px 9px;margin:2px 4px 0 0}
+  .pal{display:flex;align-items:center;gap:10px}
+  .sw{width:30px;height:30px;border-radius:7px;border:1px solid rgba(0,0,0,.1)}
+  .pal .lab{font-weight:700;font-size:13px}
+  .pal .hex{font-size:11px;color:var(--muted)}
+  .type-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}
+  .type-row:last-child{border-bottom:0}
+  .bg-tile{height:80px;border-radius:10px;display:flex;align-items:flex-end;padding:8px;color:#fff;font-size:12px;font-weight:600;position:relative}
+  .bg-tile .pend{position:absolute;top:6px;right:6px;font-size:9px;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:5px}
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Design System</h1>
+    <div class="world">🌐 Fashion World ▾</div>
+  </div>
+  <p class="sub">The curated visual vocabulary the Theme wizard will use. <span class="ro">Read-only · v1</span></p>
+
+  <!-- PRESETS -->
+  <section>
+    <h2>Presets — start a Theme here</h2>
+    <div class="grid g5">
+      <div class="card preset"><div class="name">Urban Fashion</div>
+        <span class="chip">urban</span><span class="chip">urban_dark</span><span class="chip">bold_fashion</span><span class="chip">urban_concrete</span></div>
+      <div class="card preset"><div class="name">Luxury Editorial</div>
+        <span class="chip">luxury</span><span class="chip">luxury_mono</span><span class="chip">luxury_serif</span><span class="chip">luxury_marble</span></div>
+      <div class="card preset"><div class="name">Summer Collection</div>
+        <span class="chip">bright</span><span class="chip">summer_warm</span><span class="chip">modern</span><span class="chip">yellow_gradient</span></div>
+      <div class="card preset"><div class="name">Minimal Fashion</div>
+        <span class="chip">minimal</span><span class="chip">minimal_white</span><span class="chip">minimal_sans</span><span class="chip">minimal_paper</span></div>
+    </div>
+    <div class="note">+ Travel Lifestyle · Sports Active · Festive Collection · Premium Boutique (8 total)</div>
+  </section>
+
+  <!-- PALETTES -->
+  <section>
+    <h2>Palettes</h2>
+    <div class="grid" style="grid-template-columns:repeat(2,1fr)">
+      <div class="card pal"><div class="sw" style="background:#26262A"></div><div class="sw" style="background:#5F5E5A"></div><div class="sw" style="background:#FFC400"></div><div class="sw" style="background:#1C1C1E"></div><div style="margin-left:6px"><div class="lab">Urban Dark</div><div class="hex">#26262A · #FFC400 · …</div></div></div>
+      <div class="card pal"><div class="sw" style="background:#FFFFFF"></div><div class="sw" style="background:#F1EFE8"></div><div class="sw" style="background:#1A1A1A"></div><div class="sw" style="background:#FFFFFF"></div><div style="margin-left:6px"><div class="lab">Minimal White</div><div class="hex">#FFFFFF · #1A1A1A · …</div></div></div>
+      <div class="card pal"><div class="sw" style="background:#D85A30"></div><div class="sw" style="background:#F0997B"></div><div class="sw" style="background:#378ADD"></div><div class="sw" style="background:#FAECE7"></div><div style="margin-left:6px"><div class="lab">Summer Warm</div><div class="hex">#D85A30 · #378ADD · …</div></div></div>
+      <div class="card pal"><div class="sw" style="background:#1A1A1A"></div><div class="sw" style="background:#888780"></div><div class="sw" style="background:#C9A24B"></div><div class="sw" style="background:#F1EFE8"></div><div style="margin-left:6px"><div class="lab">Luxury Mono</div><div class="hex">#1A1A1A · #C9A24B · …</div></div></div>
+    </div>
+    <div class="note">+ Earthy · Night (6 total)</div>
+  </section>
+
+  <!-- TYPOGRAPHY -->
+  <section>
+    <h2>Typography</h2>
+    <div class="card">
+      <div class="type-row"><span style="font-weight:800;letter-spacing:-.02em;font-size:20px">Street Style</span><span class="chip">Bold Fashion · Inter 800</span></div>
+      <div class="type-row"><span style="font-weight:600;font-size:20px;font-family:Georgia,serif">Street Style</span><span class="chip">Luxury Serif · 600</span></div>
+      <div class="type-row"><span style="font-weight:500;font-size:20px">Street Style</span><span class="chip">Minimal Sans · Inter 500</span></div>
+      <div class="type-row"><span style="font-weight:800;text-transform:uppercase;letter-spacing:.02em;font-size:19px">Street Style</span><span class="chip">Sporty · uppercase</span></div>
+    </div>
+    <div class="note">+ Editorial · Modern (6 total)</div>
+  </section>
+
+  <!-- BACKGROUNDS -->
+  <section>
+    <h2>Backgrounds — curated library (admin picks, never uploads artwork)</h2>
+    <div class="grid g4">
+      <div class="bg-tile" style="background:#3a3a3d">Urban Concrete<span class="pend">asset pending</span></div>
+      <div class="bg-tile" style="background:#eae7df;color:#333">Minimal Paper<span class="pend">asset pending</span></div>
+      <div class="bg-tile" style="background:#C9A24B">Luxury Marble<span class="pend">asset pending</span></div>
+      <div class="bg-tile" style="background:#F5C518;color:#333">Yellow Gradient<span class="pend">asset pending</span></div>
+    </div>
+    <div class="note">+ Studio Wall · Soft Blur · Cafe · Street Wall · Outdoor · Green Nature · Festival Lights · Travel Sky · Beach · Fabric · Denim (16 total)</div>
+  </section>
+</div>
+</body>
+</html>
