@@ -1,0 +1,30 @@
+{
+  "feature": "creator-experiences",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start phase 6' + scope: 6a now/6b next, featured=upload-url-or-product-image)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "scope_note": "Building 6a now (creator_experiences+experience_products tables, creator API, fill experience_template rule, engine ctx wiring). 6b (influencer Studio + follower render + Maestro) next. v1 featured_image_url = upload or product image.",
+  "ui_governed": true,
+  "mobile_governed": true,
+  "notes": "Creator Experience Engine Phase 6 — the payoff phase (follower home lights up). Split: 6a = new creator_experiences + experience_products tables + creator API + FILL the P5 experience_template rule (resolves published experiences → render specs via renderSpec.service) + engine passes template_id into ctx (web/API-verifiable now). 6b = influencer Studio screens + follower render via AdaptiveRenderer (mobile-governed, jest now, Maestro batched). v1 uses single featured_image_url (full Asset Pack = P7). Mockups: creator-studio.html + follower-home-lit.html. FIRST follower-visible change (only after a creator publishes for a placed template). Awaiting founder review + scope confirm (recommend 6a first). No governed-path code yet.",
+  "phase_6a_qa_green": true,
+  "phase_6a_local_verify": "create template→place→create experience(4 products)→publish→rule resolves 1 render item (hero, featured=landscape, contract-obeyed); publish w/ 2 products REJECTED (theme min); full pnpm qa 95/95 GREEN. Fixed influencers full_name/instagram_handle column bug during verify.",
+  "diff_captured": true,
+  "release": {
+    "qa_all_green": true,
+    "qa_result": "pnpm qa — 95/95 passed, STATE=GREEN (report 2026-07-10T14-11-45Z)",
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "6a = production-impacting backend (migration 135 + new tables + creator API + P5 rule now returns data + sectionEngine ctx.templateId) — READY. 6b = OTA + Maestro-gated (mobile). Explicit go; live home unchanged until first admin-place + creator-publish.",
+    "deploy_steps_ready_6a": "run-135.js (prod migrate) then git commit + push backend (Render). No brand-web, no mobile. Live home unchanged (prod has 0 placed templates + 0 experiences)."
+  }
+}

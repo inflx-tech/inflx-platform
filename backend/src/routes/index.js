@@ -16,6 +16,7 @@ const adminThemesRoutes = require('./adminThemes.routes');
 const adminDesignLayoutsRoutes = require('./adminDesignLayouts.routes');
 const adminExperiencePreviewRoutes = require('./adminExperiencePreview.routes');
 const adminTemplatesRoutes = require('./adminTemplates.routes');
+const influencerExperiencesRoutes = require('./influencerExperiences.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
 const negotiationRoutes = require('./negotiation.routes');
@@ -133,6 +134,9 @@ router.use('/admin', adminExperiencePreviewRoutes);   // /admin/experience-previ
 
 // ── Experience Templates admin API (Creator Experience Engine Phase 5, mig 133-134)
 router.use('/admin/experience-templates', adminTemplatesRoutes);
+
+// ── Creator Experience Studio API (Creator Experience Engine Phase 6a, mig 135)
+router.use('/influencers', influencerExperiencesRoutes);   // /influencers/me/experience*
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

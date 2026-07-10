@@ -1344,12 +1344,14 @@ async function staticRule() { return []; }
 
 // ── registry ────────────────────────────────────────────────────────────────
 
-// Creator Experience Engine Phase 5 — a placed Experience Template's shelf.
-// Phase 5: no creator experiences exist yet → return [] (section hides via
-// hide-empty). Phase 6 will resolve published experiences bound to
-// ctx.templateId. Never throws; keeps the feed safe.
-async function experienceTemplate(_ctx) {
-  return [];
+// Creator Experience Engine — a placed Experience Template's shelf.
+// Phase 6: resolves published creator experiences bound to ctx.templateId into
+// render items (via experience.service, reusing the 4a renderSpec logic).
+// Returns [] when nothing is published → hide-empty drops the section. The
+// resolver is fully defensive (never throws) so a bad experience can't 500 the feed.
+async function experienceTemplate(ctx) {
+  const experiences = require('./experience.service');
+  return experiences.resolveForTemplate(ctx && ctx.templateId, (ctx && ctx.limit) || 12);
 }
 
 const RULES = {
