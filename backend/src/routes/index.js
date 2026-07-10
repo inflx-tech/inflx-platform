@@ -13,6 +13,7 @@ const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 const adminPagesRoutes = require('./adminPages.routes');
 const adminDesignSystemRoutes = require('./adminDesignSystem.routes');
 const adminThemesRoutes = require('./adminThemes.routes');
+const adminDesignLayoutsRoutes = require('./adminDesignLayouts.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
 const negotiationRoutes = require('./negotiation.routes');
@@ -121,6 +122,9 @@ router.use('/admin/design-system', adminDesignSystemRoutes);
 
 // ── Theme Library admin API (Creator Experience Engine Phase 2, mig 129-130) ──
 router.use('/admin/themes', adminThemesRoutes);
+
+// ── Design Library admin API (Creator Experience Engine Phase 3, mig 131-132) ──
+router.use('/admin', adminDesignLayoutsRoutes);   // /admin/design-layouts + /admin/section-styles
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

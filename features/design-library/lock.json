@@ -1,0 +1,27 @@
+{
+  "feature": "design-library",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (delegated; 'start implement' after mockup review)",
+  "approved_at": "2026-07-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated)",
+  "mockup_locked_at": "2026-07-10",
+  "ui_governed": true,
+  "mobile_governed": false,
+  "notes": "Creator Experience Engine Phase 3. Spec+workflow+expected-outputs+impact authored; admin mockup in 04-preview/mockups/design-library.html (10 layouts + contracts + section-style reference). Contracts transcribed from locked Docs/CREATOR_EXPERIENCE_ENGINE/02_LAYOUT_CONTRACTS.md. Read-only v1. UI-governed: mockup_locked required before brand-web code. Awaiting founder review to lock. No governed-path code written yet.",
+  "feature_qa_green": true,
+  "diff_captured": true,
+  "release": {
+    "qa_all_green": true,
+    "qa_result": "pnpm qa — 88/88 passed, STATE=GREEN (report 2026-07-10T12-14-24Z); incl. design-library.spec.ts 3/3",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting (migration 131-132 + backend + brand-web); push only on explicit founder go",
+    "deploy_steps_ready": "run-131.js + run-132.js (prod migrate) then git commit + push (Render backend + Vercel brand-web)"
+  }
+}

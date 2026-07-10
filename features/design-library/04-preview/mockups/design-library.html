@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>INFLX Admin — Design Library (Fashion)</title>
+<style>
+  :root{--ink:#1a1a1a;--muted:#6b6b6b;--line:#e7e6e2;--bg:#faf9f7;--card:#fff;--g:#1D9E75}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px}
+  h1{font-size:22px;font-weight:800;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin:4px 0 20px}
+  .ro{display:inline-block;font-size:10px;color:var(--muted);background:#f0efec;border:1px solid var(--line);border-radius:999px;padding:3px 9px;margin-left:6px}
+  h2{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:24px 0 12px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .lay{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:14px}
+  .wf{width:96px;flex:0 0 96px;border:1px dashed #cfcdc6;border-radius:8px;background:#f6f5f2;position:relative;overflow:hidden}
+  .wf .b{position:absolute;background:#dcdad3;border-radius:3px}
+  .wf .t{position:absolute;height:6px;background:#bdbbb2;border-radius:2px}
+  .meta{flex:1;min-width:0}
+  .nm{font-weight:800;font-size:14px}
+  .badges{margin:3px 0 8px}
+  .bd{font-size:10px;border:1px solid var(--line);background:#f4f3f0;border-radius:999px;padding:2px 7px;margin-right:5px;color:#555}
+  .chip{display:inline-block;font-size:10px;border-radius:5px;padding:2px 6px;margin:2px 4px 0 0}
+  .req{background:rgba(29,158,117,.14);color:#0f6e56;border:1px solid rgba(29,158,117,.3)}
+  .opt{background:#f1efec;color:#777;border:1px solid var(--line)}
+  .hid{background:#faf9f7;color:#b0aea7;border:1px solid var(--line);text-decoration:line-through}
+  .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
+  .styles{display:flex;flex-wrap:wrap;gap:8px}
+  .st{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .st .k{font-weight:700;font-size:13px}
+  .st .h{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div><h1>Design Library</h1><p class="sub">The visual grammar the renderer obeys — the 10 layout types, formalized.<span class="ro">Read-only · v1</span></p></div>
+    <div class="bd" style="font-size:13px;padding:6px 12px">🌐 Fashion World ▾</div>
+  </div>
+
+  <h2>Layouts — each declares a contract (green = required · grey = optional · struck = never)</h2>
+  <div class="grid" id="grid"></div>
+
+  <h2>Section styles — how a row of cards behaves</h2>
+  <div class="styles">
+    <div class="st"><div class="k">Carousel</div><div class="h">horizontal scroll</div></div>
+    <div class="st"><div class="k">Grid</div><div class="h">even columns</div></div>
+    <div class="st"><div class="k">Masonry</div><div class="h">staggered heights</div></div>
+    <div class="st"><div class="k">Collage</div><div class="h">mixed-size mosaic</div></div>
+    <div class="st"><div class="k">Story rail</div><div class="h">circular reels</div></div>
+    <div class="st"><div class="k">Tabs</div><div class="h">tabbed sets</div></div>
+    <div class="st"><div class="k">Bento</div><div class="h">mixed-size grid</div></div>
+    <div class="st"><div class="k">Split</div><div class="h">two side-by-side</div></div>
+    <div class="st"><div class="k">Hero</div><div class="h">full-width slides</div></div>
+    <div class="st"><div class="k">Magazine</div><div class="h">editorial</div></div>
+  </div>
+</div>
+
+<script>
+  var L=[
+    ['Hero Banner','banner','16:9',['background','featured','title'],['subtitle','cta','offer','avatar'],['products','price']],
+    ['Split Banner','banner','2×1:1',['featured','title'],['subtitle','offer','avatar'],['cta','products','price']],
+    ['Medium Card','card','4:5',['featured','title'],['avatar','creator','offer'],['subtitle','cta','products']],
+    ['Small Tile','card','1:1',['featured','title'],['avatar'],['subtitle','cta','offer','products','price']],
+    ['Story Card','card','9:16',['featured','avatar'],['title','offer'],['subtitle','cta','products','price']],
+    ['Magazine Card','card','4:5',['background','featured','title'],['subtitle','creator','avatar'],['offer','products']],
+    ['Product Shelf Header','structure','flex',['title'],['avatar','creator','offer'],['featured','subtitle','cta']],
+    ['Category Mosaic Tile','card','1:1',['featured','title'],['offer'],['subtitle','cta','avatar','products']],
+    ['Horizontal Carousel Card','card','3:4',['featured','title'],['offer','price'],['subtitle','cta','avatar']],
+    ['Bento Tile','card','flex',['featured'],['title'],['subtitle','cta','avatar','offer','products']]
+  ];
+  function chips(arr,cls){return arr.map(function(s){return '<span class="chip '+cls+'">'+s+'</span>';}).join('');}
+  document.getElementById('grid').innerHTML=L.map(function(x){
+    return '<div class="lay"><div class="wf"><div class="t" style="left:8px;bottom:10px;width:44px"></div><div class="b" style="right:8px;top:8px;width:34px;bottom:8px"></div></div>'
+      +'<div class="meta"><div class="nm">'+x[0]+'</div>'
+      +'<div class="badges"><span class="bd">'+x[2]+'</span><span class="bd">'+x[1]+'</span></div>'
+      +'<div class="lbl">Required</div>'+chips(x[3],'req')
+      +'<div class="lbl">Optional</div>'+chips(x[4],'opt')
+      +'<div class="lbl">Hidden</div>'+chips(x[5],'hid')
+      +'</div></div>';
+  }).join('');
+</script>
+</body>
+</html>

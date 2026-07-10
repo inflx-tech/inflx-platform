@@ -644,6 +644,10 @@ export const adminApi = {
   listDesignTokens:  (worldKey) => api.get(`/admin/design-system/tokens${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
   listDesignPresets: (worldKey) => api.get(`/admin/design-system/presets${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
 
+  // Design Library (Creator Experience Engine Phase 3, mig 131-132) — read-only layouts + contracts
+  listDesignLayouts: (worldKey) => api.get(`/admin/design-layouts${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
+  listSectionStyles: () => api.get('/admin/section-styles'),
+
   // Theme Library (Creator Experience Engine Phase 2, mig 129-130)
   listThemes:          (worldKey, status) => api.get(`/admin/themes?world_key=${encodeURIComponent(worldKey || '')}${status ? `&status=${encodeURIComponent(status)}` : ''}`),
   listThemeBlueprints: (worldKey) => api.get(`/admin/themes/blueprints?world_key=${encodeURIComponent(worldKey || '')}`),

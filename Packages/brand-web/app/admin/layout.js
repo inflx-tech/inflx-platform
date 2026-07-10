@@ -21,6 +21,7 @@ const NAV = [
   { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️', cap: 'master_data' },
   { href: '/admin/design-system', label: 'Design System', icon: '🎨', cap: 'sections' },
   { href: '/admin/themes', label: 'Theme Library', icon: '🎭', cap: 'sections' },
+  { href: '/admin/design-library', label: 'Design Library', icon: '📐', cap: 'sections' },
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
   { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
   { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },
