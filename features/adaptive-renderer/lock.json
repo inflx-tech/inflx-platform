@@ -15,15 +15,24 @@
   "mobile_governed": true,
   "notes": "Creator Experience Engine Phase 4 — the Adaptive Renderer (first engine code). Split: 4a = pure resolveRenderSpec + experience-preview API (web/API-verifiable now, no emulator); 4b = mobile AdaptiveRenderer + preview screen (mobile-governed, Maestro gate, needs Android device/emulator). No new tables; reads Phase 1-3 data; does NOT touch the live section engine or follower home. Mockup in 04-preview/mockups/adaptive-renderer.html. Awaiting founder review + scope confirmation (recommend 4a first). No governed-path code written yet.",
   "phase_4a_qa_green": true,
+  "phase_4b_built": true,
+  "phase_4b_jest_green": "Packages/Mobile AdaptiveRenderer.test.js 5/5; full mobile jest 30/30 tests pass (CartScreen suite flag = pre-existing parallel act() warning, passes in isolation, unrelated import graph)",
+  "phase_4b_maestro_pending": "qa/maestro/flows/06-experience-preview.yaml written; on-device run needed on founder emulator (adb showed no device in build shell). release stays false until maestro_green + go + OTA.",
+  "phase_4b_maestro_deferred": "Founder decision 2026-07-10: skip Maestro for now, PUSH the code (released=false → not OTA'd, live app unchanged). On-device check batched for a real-device session after several more phases. NOT released; no publish-ota run. maestro_green stays false until that on-device pass.",
+  "diff_captured": true,
   "release": {
     "qa_all_green": true,
     "qa_result": "pnpm qa — 92/92 passed, STATE=GREEN (report 2026-07-10T12-50-13Z); incl. render-spec.spec.ts 4/4 unit",
     "phase_4a_local_verify": "buildPreviewSpec live: street_style×hero_banner→landscape/all-slots; ×story_card→portrait/drops subtitle+cta; ×small_tile→square/3 slots; unknown theme→null",
     "maestro_green": false,
+    "phase_4a_released": true,
+    "phase_4a_released_by": "founder (explicit go: 'deploy')",
+    "phase_4a_released_at": "2026-07-10",
+    "phase_4a_commit": "b9561ad",
     "released": false,
     "released_by": null,
     "released_at": null,
-    "classification": "4a = production-impacting backend (read-only endpoint, no UI, no mobile — not mockup/Maestro-gated). 4b = OTA + Maestro-gated (deferred). Push only on explicit founder go.",
-    "deploy_steps_ready_4a": "no migration; git commit + push backend (Render). No user-facing effect until 4b."
+    "classification": "4a = production-impacting backend (read-only endpoint, no UI, no mobile — not mockup/Maestro-gated) — SHIPPED. 4b = OTA + Maestro-gated (deferred to emulator session). Full feature 'released' flips true only after 4b ships.",
+    "phase_4a_deploy": "no migration; pushed main 4219506..b9561ad (gov-check exit 0); Render backend deploy. No user-facing effect until 4b."
   }
 }

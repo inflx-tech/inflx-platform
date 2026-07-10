@@ -62,6 +62,8 @@ import SectionResultsScreen from '../screens/follower/SectionResultsScreen';
 // listing-category-browser (Type-1) — sidebar + product grid + facet filters
 import CategoryBrowserScreen from '../screens/follower/CategoryBrowserScreen';
 import FollowerPageScreen from '../screens/follower/FollowerPageScreen';
+// Creator Experience Engine Phase 4b — Adaptive Renderer dev preview
+import ExperiencePreviewScreen from '../screens/follower/ExperiencePreviewScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -146,6 +148,8 @@ function ProfileStack() {
       <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
       <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
       <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
+      {/* Creator Experience Engine Phase 4b — Adaptive Renderer dev preview */}
+      <Stack.Screen name="ExperiencePreview" component={ExperiencePreviewScreen} />
       {/* Returns row on MeScreen targets this; ProfileStack does not spread
           SHARED_SCREENS, so register it explicitly (no duplicate name here). */}
       <Stack.Screen name="MyReturns" component={MyReturnsScreen} />

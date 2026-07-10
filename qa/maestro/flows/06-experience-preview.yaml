@@ -1,0 +1,24 @@
+# Experience Preview flow — Creator Experience Engine Phase 4b.
+# Proves the Adaptive Renderer obeys the Layout Contract ON DEVICE: the Hero
+# layout shows the CTA ("Explore collection"); switching to Story drops it
+# (hidden by Story's contract) while the title stays. Same theme + pack.
+#
+# Contract: features/adaptive-renderer/
+# Run: pnpm qa:maestro:doctor  then  pnpm qa:maestro
+# Reachable via Profile → "Experience Preview" (feature flag EXPERIENCE_PREVIEW_DEV).
+
+appId: in.inflx.app.follower
+---
+- launchApp
+- tapOn: "PROFILE"
+- tapOn: "Experience Preview"
+- assertVisible: "Experience Preview"
+# Hero (default): CTA + title present per its contract
+- assertVisible: "Street Style"
+- assertVisible: "Explore collection"
+- takeScreenshot: experience-preview-hero
+# Switch to Story: contract hides the CTA, keeps the title
+- tapOn: "Story"
+- assertVisible: "Street Style"
+- assertNotVisible: "Explore collection"
+- takeScreenshot: experience-preview-story
