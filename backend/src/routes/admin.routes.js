@@ -9,6 +9,7 @@ const masterDishCtrl = require('../controllers/adminMasterDish.controller');
 const dishQueueCtrl = require('../controllers/adminDishQueue.controller');
 const escrowFeeTiersCtrl = require('../controllers/escrowFeeTiers.controller');
 const adminOrdersCtrl = require('../controllers/adminOrders.controller');
+const followerPostsCtrl = require('../controllers/followerPosts.controller');
 
 const router = Router();
 
@@ -25,6 +26,10 @@ router.get('/me',           authenticate, requireAnyAdminRole, ctrl.getMe);
 router.get('/capabilities', authenticate, requireAnyAdminRole, ctrl.getCapabilityCatalog);
 
 // Order Fulfillment Engine Unit 3 — platform-wide order oversight.
+// Follower app config (Post/Concept P3 globals) — global behaviour knobs
+// (video autoplay/sound defaults, future feed tuning) without an OTA.
+router.patch('/app-config',       authenticate, requireCapability('settings'), followerPostsCtrl.updateAppConfig);
+
 router.get('/orders',             authenticate, requireCapability('orders'), adminOrdersCtrl.listOrders);
 router.get('/commerce-summary',   authenticate, requireCapability('orders'), adminOrdersCtrl.getCommerceSummary);
 router.patch('/orders/:id/status', authenticate, requireCapability('orders'), adminOrdersCtrl.updateStatus);

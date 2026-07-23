@@ -55,6 +55,43 @@ async function followerIdForUser(userId) {
   return rows[0] ? rows[0].id : null;
 }
 
+// ── app config (P3 globals — one object, fetched at app launch) ─────────────
+async function getAppConfig() {
+  const { rows } = await db.query(`SELECT config FROM follower_app_config WHERE id = 1`);
+  return rows[0] ? rows[0].config : {};
+}
+
+async function updateAppConfig(patch) {
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+    throw new Error('config patch must be an object');
+  }
+  const { rows } = await db.query(
+    `UPDATE follower_app_config
+        SET config = config || $1::jsonb, updated_at = now()
+      WHERE id = 1 RETURNING config`,
+    [JSON.stringify(patch)]);
+  return rows[0].config;
+}
+
+// ── like / save (P3 globals — minimal engagement; comments/share later) ─────
+async function setEngagement(kind, postId, followerId, on) {
+  const table = kind === 'like' ? 'post_likes' : 'post_saves';
+  const { rows } = await db.query(
+    `SELECT 1 FROM creator_posts WHERE id = $1 AND status = 'approved'`, [postId]);
+  if (!rows[0]) return null;
+  if (on) {
+    await db.query(
+      `INSERT INTO ${table} (post_id, follower_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`, [postId, followerId]);
+  } else {
+    await db.query(
+      `DELETE FROM ${table} WHERE post_id = $1 AND follower_id = $2`, [postId, followerId]);
+  }
+  const { rows: c } = await db.query(
+    `SELECT count(*)::int AS n FROM ${table} WHERE post_id = $1`, [postId]);
+  return { count: c[0].n };
+}
+
 // ── FEED ─────────────────────────────────────────────────────────────────────
 
 async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, offset = 0 } = {}) {
@@ -72,6 +109,8 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
   if (collectionId) { params.push(collectionId); where.push(`cp.collection_id = $${params.length}`); }
   if (handle) { params.push(handle); where.push(`i.instagram_handle = $${params.length}`); }
 
+  params.push(followerId);          // NULL for anonymous → liked/saved false
+  const followerIdx = params.length;
   params.push(followedIds);
   const followedIdx = params.length;
   params.push(Math.min(Number(limit) || 20, 50));
@@ -86,7 +125,11 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
             col.name AS collection_name,
             fm.id AS cover_media_id, fm.width AS cover_w, fm.height AS cover_h,
             (SELECT count(*)::int FROM post_media pm WHERE pm.post_id = cp.id) AS slide_count,
-            (SELECT count(DISTINCT pp.product_id)::int FROM post_products pp WHERE pp.post_id = cp.id) AS product_count
+            (SELECT count(DISTINCT pp.product_id)::int FROM post_products pp WHERE pp.post_id = cp.id) AS product_count,
+            (SELECT count(*)::int FROM post_likes pl WHERE pl.post_id = cp.id) AS like_count,
+            (SELECT count(*)::int FROM post_saves ps WHERE ps.post_id = cp.id) AS save_count,
+            EXISTS (SELECT 1 FROM post_likes pl WHERE pl.post_id = cp.id AND pl.follower_id = $${followerIdx}::uuid) AS liked,
+            EXISTS (SELECT 1 FROM post_saves ps WHERE ps.post_id = cp.id AND ps.follower_id = $${followerIdx}::uuid) AS saved
        FROM creator_posts cp
        JOIN influencers i ON i.id = cp.influencer_id
        JOIN users u ON u.id = i.user_id
@@ -117,6 +160,10 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
       : null,
     slide_count: r.slide_count,
     product_count: r.product_count,
+    like_count: r.like_count,
+    save_count: r.save_count,
+    liked: r.liked === true,
+    saved: r.saved === true,
     created_at: r.created_at,
   }));
 }
@@ -180,6 +227,15 @@ async function getPostDetail(postId, { userId } = {}) {
   const brandIds = [...new Set(prods.map(p => p.brand_id))];
   const trackingByBrand = await liveTrackingByBrand(post.influencer_id, brandIds);
 
+  const followerId = await followerIdForUser(userId);
+  const { rows: eng } = await db.query(
+    `SELECT
+       (SELECT count(*)::int FROM post_likes WHERE post_id = $1) AS like_count,
+       (SELECT count(*)::int FROM post_saves WHERE post_id = $1) AS save_count,
+       EXISTS (SELECT 1 FROM post_likes WHERE post_id = $1 AND follower_id = $2::uuid) AS liked,
+       EXISTS (SELECT 1 FROM post_saves WHERE post_id = $1 AND follower_id = $2::uuid) AS saved`,
+    [postId, followerId]);
+
   const seen = new Set();
   const shopProducts = [];
   const pins = [];
@@ -226,7 +282,14 @@ async function getPostDetail(postId, { userId } = {}) {
     })),
     pins,                    // floating price tags (runtime-rendered)
     products: shopProducts,  // "Shop this post" — every attached product, deduped
+    like_count: eng[0].like_count,
+    save_count: eng[0].save_count,
+    liked: eng[0].liked === true,
+    saved: eng[0].saved === true,
   };
 }
 
-module.exports = { listFeed, getPostDetail };
+module.exports = {
+  listFeed, getPostDetail, followerIdForUser,
+  getAppConfig, updateAppConfig, setEngagement,
+};

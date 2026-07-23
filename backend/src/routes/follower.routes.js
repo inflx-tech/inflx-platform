@@ -40,6 +40,12 @@ router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
 const followerPostsCtrl = require('../controllers/followerPosts.controller');
 router.get('/posts',     authenticateOptional, followerPostsCtrl.feed);
 router.get('/posts/:id', authenticateOptional, followerPostsCtrl.detail);
+// P3 globals — app config (public, fetched at launch) + minimal like/save.
+router.get('/app-config', authenticateOptional, followerPostsCtrl.appConfig);
+router.post('/posts/:id/like',   ...followerAuth, followerPostsCtrl.like);
+router.delete('/posts/:id/like', ...followerAuth, followerPostsCtrl.unlike);
+router.post('/posts/:id/save',   ...followerAuth, followerPostsCtrl.save);
+router.delete('/posts/:id/save', ...followerAuth, followerPostsCtrl.unsave);
 
 // ── Feed & browse (public — auth optional for personalization) ───────────────
 router.get('/feed',      authenticateOptional, ctrl.getFeed);       // legacy

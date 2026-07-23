@@ -1,0 +1,20 @@
+{
+  "feature": "concept-p3-post-globals",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23 globals session: canvas/pure-white agreed, tags-in-feed chosen, app-config + sound-OFF agreed, no-attribution-window ruled, like+save-now agreed, system font agreed; ratio clamp to be picked on the mockup",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — 04-preview/mockups/post-frame-ratios.html IS the decision artifact the founder asked for ('we check mockup how it looks then decide'); admin page follows the settings grammar",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "Post-pillar globals (mig 141). follower_app_config single-row jsonb (seeded autoplay:true, sound:false) + GET /follower/app-config + PATCH /admin/app-config (settings cap) + /admin/app-settings toggles page. post_likes/post_saves + idempotent like/save endpoints + counts/flags in feed & detail. RULE locked: no 30-day attribution window for post purchases (direct via post tracking block); /follower/touch stays for the legacy app only. Ratio clamp OPEN pending founder's pick on the mockup (1:1↔4:5 vs 3:4) — parameterizes the Stage-A post-frame component, no code depends on it yet.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

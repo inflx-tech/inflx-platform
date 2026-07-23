@@ -652,6 +652,10 @@ export const adminApi = {
   createCollectionVocab: (data) => api.post('/admin/collections', data),
   updateCollectionVocab: (id, data) => api.patch(`/admin/collections/${encodeURIComponent(id)}`, data),
 
+  // ─── Follower app config (Post/Concept P3 globals, mig 141) ────────────────
+  getFollowerAppConfig:    () => api.get('/follower/app-config'),
+  updateFollowerAppConfig: (patch) => api.patch('/admin/app-config', { config: patch }),
+
   // ─── Post moderation queue (Post/Concept P2, mig 140) ──────────────────────
   listPostQueue: (status) => api.get(`/admin/posts?status=${encodeURIComponent(status || 'submitted')}`),
   approvePost:   (id) => api.post(`/admin/posts/${encodeURIComponent(id)}/approve`, {}),
