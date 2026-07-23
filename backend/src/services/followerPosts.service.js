@@ -24,6 +24,7 @@
 const db = require('../config/db');
 const concepts = require('./concepts.service');
 const creatorPosts = require('./creatorPosts.service');
+const postEligibility = require('./postEligibility.service');
 const { buildTracking, OFFER_BEST_PCT, offerFieldsFromPct } = require('./sectionRules.service');
 
 // Concept display fields joined flat (batch-safe — no per-row round-trips).
@@ -104,7 +105,12 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
   }
 
   const params = [];
-  const where = [`cp.status = 'approved'`];
+  // Visibility = approved AND not dark (eligibility cache; NULL = not yet
+  // checked → visible until the first sweep — never punish a fresh post).
+  const where = [
+    `cp.status = 'approved'`,
+    `(cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0)`,
+  ];
   if (conceptId) { params.push(conceptId); where.push(`cp.concept_id = $${params.length}`); }
   if (collectionId) { params.push(collectionId); where.push(`cp.collection_id = $${params.length}`); }
   if (handle) { params.push(handle); where.push(`i.instagram_handle = $${params.length}`); }
@@ -227,6 +233,16 @@ async function getPostDetail(postId, { userId } = {}) {
   const brandIds = [...new Set(prods.map(p => p.brand_id))];
   const trackingByBrand = await liveTrackingByBrand(post.influencer_id, brandIds);
 
+  // The PROMISE test, live (P4): ≥1 attached product must still satisfy the
+  // concept or the post is dark → 404 (same as never-approved). The cache
+  // update is fire-and-forget — the sweep owns notifications.
+  const elig = await postEligibility.eligibleSet(postId);
+  const eligibleIds = elig ? elig.eligibleIds : new Set();
+  if (eligibleIds.size === 0) {
+    postEligibility.recomputePost(postId).catch(() => {});
+    return null;
+  }
+
   const followerId = await followerIdForUser(userId);
   const { rows: eng } = await db.query(
     `SELECT
@@ -251,17 +267,25 @@ async function getPostDetail(postId, { userId } = {}) {
       ...offerFields,                        // discount_value + offer_price
       image_url: t.image_url,
       purchasable,
+      // Founder lock: ineligible-but-purchasable products STAY buyable —
+      // the live price is on screen, nobody is misled — they just sort
+      // below the products still keeping the concept's promise.
+      concept_eligible: eligibleIds.has(t.product_id),
       stock: t.stock,
       brand: { id: t.brand_id, name: t.brand_name, category: t.brand_category },
       tracking: tr ? buildTracking({ handle: post.handle, ...tr }) : null,
       via_creator: tr ? { id: post.influencer_id, handle: post.handle, name: post.influencer_name } : null,
     };
-    if (t.x_pct != null && t.y_pct != null) {
+    // Pins render only for purchasable products (a delisted product's tag
+    // would point at nothing a follower can act on).
+    if (t.x_pct != null && t.y_pct != null && purchasable) {
       pins.push({ ...base, id: t.id, media_id: t.media_id,
         x_pct: Number(t.x_pct), y_pct: Number(t.y_pct) });
     }
     if (!seen.has(t.product_id)) { seen.add(t.product_id); shopProducts.push(base); }
   }
+  shopProducts.sort((a, b) =>
+    (b.concept_eligible - a.concept_eligible) || (b.purchasable - a.purchasable));
 
   return {
     id: post.id,

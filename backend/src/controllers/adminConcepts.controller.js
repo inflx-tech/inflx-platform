@@ -52,6 +52,23 @@ const previewConcept = asyncHandler(async (req, res) => {
   return success(res, result);
 });
 
+// GET /v1/admin/concepts/inspector — every in-use concept/collection + counts
+const inspectorList = asyncHandler(async (req, res) => {
+  const result = await concepts.inspector();
+  return success(res, result);
+});
+
+// GET /v1/admin/concepts/inspector/breakdown?concept_id=|collection_id=
+const inspectorBreakdown = asyncHandler(async (req, res) => {
+  const conceptId = req.query.concept_id || null;
+  const collectionId = req.query.collection_id || null;
+  if (!conceptId && !collectionId) {
+    throw new AppError('VALIDATION_ERROR', 'concept_id or collection_id required', 422);
+  }
+  const creators = await concepts.inspectorBreakdown({ conceptId, collectionId });
+  return success(res, { creators });
+});
+
 // GET /v1/admin/collections?include_hidden=1
 const listCollections = asyncHandler(async (req, res) => {
   const collections = await concepts.listCollections({
@@ -82,5 +99,6 @@ const updateCollection = asyncHandler(async (req, res) => {
 
 module.exports = {
   listTemplates, createTemplate, updateTemplate, previewConcept,
+  inspectorList, inspectorBreakdown,
   listCollections, createCollection, updateCollection,
 };

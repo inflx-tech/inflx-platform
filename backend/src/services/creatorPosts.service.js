@@ -266,6 +266,10 @@ async function hydratePosts(rows) {
       caption: r.caption,
       status: r.status,
       reject_reason: r.reject_reason,
+      // P4 eligibility cache — the creator's "gone dark" signal. NULL count =
+      // not yet swept (treated visible).
+      eligible_product_count: r.eligible_product_count,
+      went_dark_at: r.went_dark_at || null,
       created_at: r.created_at,
       media: media.filter(m => m.post_id === r.id).map(m => ({
         id: m.id, slide_index: m.slide_index, width: m.width, height: m.height,

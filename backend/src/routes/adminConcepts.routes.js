@@ -17,6 +17,8 @@ router.get('/concept-templates',        ...adminAuth, ctrl.listTemplates);
 router.post('/concept-templates',       ...adminAuth, ctrl.createTemplate);
 router.patch('/concept-templates/:id',  ...adminAuth, ctrl.updateTemplate);
 router.post('/concepts/preview',        ...adminAuth, ctrl.previewConcept);
+router.get('/concepts/inspector',       ...adminAuth, ctrl.inspectorList);
+router.get('/concepts/inspector/breakdown', ...adminAuth, ctrl.inspectorBreakdown);
 router.get('/collections',              ...adminAuth, ctrl.listCollections);
 router.post('/collections',             ...adminAuth, ctrl.createCollection);
 router.patch('/collections/:id',        ...adminAuth, ctrl.updateCollection);

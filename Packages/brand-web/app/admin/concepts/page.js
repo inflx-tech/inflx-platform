@@ -20,6 +20,7 @@ const KIND_TABS = [
   { key: 'category', label: 'Category' },
   { key: 'price', label: 'Price' },
   { key: 'offer', label: 'Offer' },
+  { key: 'inuse', label: 'In use' },
 ];
 const GROUPS = ['seasonal', 'occasion', 'style', 'utility'];
 const OFFER_TYPES = ['discount', 'volume', 'bogo', 'bundle', 'free_gift'];
@@ -63,6 +64,11 @@ export default function ConceptsPage() {
 
   const [preview, setPreview] = useState(null);    // { template, leafId, loading, result, error }
 
+  // "In use" tab (P4 Concept Inspector) — materialized concepts + collections
+  // with post counts; row click loads the per-creator breakdown.
+  const [inUse, setInUse] = useState(null);
+  const [breakdown, setBreakdown] = useState({});  // rowKey -> creators[]|'loading'
+
   const load = useCallback(async () => {
     setLoading(true);
     const [tRes, treeRes] = await Promise.all([
@@ -76,6 +82,54 @@ export default function ConceptsPage() {
   useEffect(() => { load(); }, [load]);
 
   function showToast(m) { setToast(m); setTimeout(() => setToast(''), 2500); }
+
+  useEffect(() => {
+    if (tab === 'inuse' && !inUse) {
+      adminApi.conceptInspector().then(res => {
+        if (res.success) setInUse(res.data);
+      });
+    }
+  }, [tab, inUse]);
+
+  async function loadBreakdown(row, isCollection) {
+    const key = row.id;
+    if (breakdown[key]) { setBreakdown(b => ({ ...b, [key]: null })); return; }   // toggle closed
+    setBreakdown(b => ({ ...b, [key]: 'loading' }));
+    const res = await adminApi.conceptInspectorBreakdown(
+      isCollection ? { collection_id: row.id } : { concept_id: row.id });
+    setBreakdown(b => ({ ...b, [key]: res.success ? (res.data.creators || []) : [] }));
+  }
+
+  const renderInUseRow = (row, isCollection) => (
+    <div key={row.id} className="border-t border-border">
+      <button onClick={() => loadBreakdown(row, isCollection)}
+        className="w-full grid grid-cols-12 items-center px-5 py-3 text-left hover:bg-surface2/50">
+        <div className="col-span-5">
+          <div className="text-sm font-bold text-t1">{row.name}</div>
+          <div className="text-[10px] text-t3">family {row.family}</div>
+        </div>
+        <div className="col-span-2 text-xs font-bold text-navy">{row.visible} visible</div>
+        <div className="col-span-2 text-xs text-t2">{row.approved} approved</div>
+        <div className="col-span-2 text-xs text-t2">{row.pending} pending</div>
+        <div className="col-span-1 text-right text-t3">{breakdown[row.id] ? '▾' : '▸'}</div>
+      </button>
+      {breakdown[row.id] === 'loading' && (
+        <div className="px-5 pb-3 text-xs text-t3">Loading creators…</div>
+      )}
+      {Array.isArray(breakdown[row.id]) && (
+        <div className="px-5 pb-3">
+          {breakdown[row.id].length === 0
+            ? <div className="text-xs text-t3">No posts yet.</div>
+            : breakdown[row.id].map(c => (
+              <div key={c.handle} className="flex items-center justify-between py-1 text-xs">
+                <span className="font-bold text-t1">@{c.handle} <span className="font-normal text-t3">{c.name}</span></span>
+                <span className="text-t2">{c.visible} visible · {c.approved} approved · {c.pending} pending</span>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
 
   const visible = useMemo(() => templates.filter(t => t.kind === tab), [templates, tab]);
   const activeCounts = useMemo(() => {
@@ -211,6 +265,29 @@ export default function ConceptsPage() {
 
       {loading ? (
         <div className="bg-white rounded-2xl border border-border p-12 text-center text-sm text-t3">Loading templates…</div>
+      ) : tab === 'inuse' ? (
+        !inUse ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center text-sm text-t3">Loading usage…</div>
+        ) : (
+          <>
+            <div className="bg-white rounded-2xl border border-border overflow-hidden mb-4">
+              <div className="px-5 py-2.5 bg-surface2 text-[10px] font-bold uppercase tracking-wider text-t3">
+                Concepts with posts ({inUse.concepts.length}) — click a row for the creator breakdown
+              </div>
+              {inUse.concepts.length === 0
+                ? <div className="px-5 py-8 text-center text-sm text-t3 border-t border-border">No concept has posts yet — they appear here the moment a creator publishes.</div>
+                : inUse.concepts.map(r => renderInUseRow(r, false))}
+            </div>
+            <div className="bg-white rounded-2xl border border-border overflow-hidden">
+              <div className="px-5 py-2.5 bg-surface2 text-[10px] font-bold uppercase tracking-wider text-t3">
+                Collections with posts ({inUse.collections.filter(c => c.approved + c.pending > 0).length})
+              </div>
+              {inUse.collections.filter(c => c.approved + c.pending > 0).length === 0
+                ? <div className="px-5 py-8 text-center text-sm text-t3 border-t border-border">No collection has posts yet.</div>
+                : inUse.collections.filter(c => c.approved + c.pending > 0).map(r => renderInUseRow(r, true))}
+            </div>
+          </>
+        )
       ) : tab === 'category' ? (
         GROUPS.map(g => (groupedCategory[g] || []).length > 0 && (
           <div key={g} className="bg-white rounded-2xl border border-border overflow-hidden mb-4">

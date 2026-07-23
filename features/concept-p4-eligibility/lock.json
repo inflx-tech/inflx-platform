@@ -1,0 +1,20 @@
+{
+  "feature": "concept-p4-eligibility",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: 'ok move to next one' (P4 backend slice per the staged plan announced and agreed in the P3 split: eligibility + banner machinery built while founder prepares Stage-A screens)",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — only UI is the 'In use' tab on the existing /admin/concepts page, reusing its established table grammar; behaviour engine is backend",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "The promise test (POST_CONCEPT_MODEL §6). postEligibility.service: eligibleSet = concept rule + product_ids pin through library_products with scoped allocation (THE evaluator, fourth consumer); collections/hidden-templates degrade to allocated∩purchasable. Mig 142: eligible_product_count/eligibility_checked_at/went_dark_at cache + partial visible index. Feed filters cache (NULL=visible); detail recomputes LIVE (dark→404, concept_eligible flags, eligible-first sort, pins purchasable-only). Sweep cron :13/:43 + post.dark notification on >0→0. Creator My Posts payload carries dark state. Inspector: /admin/concepts/inspector + /breakdown + 'In use' tab.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

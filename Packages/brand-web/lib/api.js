@@ -648,6 +648,8 @@ export const adminApi = {
   createConceptTemplate: (data) => api.post('/admin/concept-templates', data),
   updateConceptTemplate: (id, data) => api.patch(`/admin/concept-templates/${encodeURIComponent(id)}`, data),
   previewConcept:        (data) => api.post('/admin/concepts/preview', data),
+  conceptInspector:      () => api.get('/admin/concepts/inspector'),
+  conceptInspectorBreakdown: (params) => api.get(`/admin/concepts/inspector/breakdown?${new URLSearchParams(params)}`),
   listCollectionsVocab:  (includeHidden) => api.get(`/admin/collections${includeHidden ? '?include_hidden=1' : ''}`),
   createCollectionVocab: (data) => api.post('/admin/collections', data),
   updateCollectionVocab: (id, data) => api.patch(`/admin/collections/${encodeURIComponent(id)}`, data),

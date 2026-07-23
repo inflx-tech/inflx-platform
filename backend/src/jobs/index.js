@@ -24,6 +24,7 @@ const productionReminderJob = require('./production-shipment-reminder.job');
 const subscriptionRenewalJob = require('./subscription-renewal.job');
 const settlementRetryJob     = require('./settlement-retry.job');
 const commerceSettlementJob  = require('./commerce-settlement.job');
+const postEligibilityJob     = require('./post-eligibility.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -85,6 +86,10 @@ function startAllJobs() {
   // same window boundary on the same tick.
   cron.schedule('5 0 * * *', commerceSettlementJob.run, { timezone: tz });
 
+  // post-eligibility (Post/Concept P4) — every 30 min at :13/:43; refreshes
+  // the approved-post eligibility cache + fires post.dark on transitions.
+  cron.schedule('13,43 * * * *', postEligibilityJob.run, { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -103,4 +108,5 @@ module.exports = {
   subscriptionRenewalJob,
   settlementRetryJob,
   commerceSettlementJob,
+  postEligibilityJob,
 };

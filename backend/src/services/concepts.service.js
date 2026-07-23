@@ -298,6 +298,67 @@ async function conceptDisplay(conceptId) {
   };
 }
 
+// ── inspector (P4 — the founder's "open a rule, see the posts") ──────────────
+
+/** Every materialized concept + collection with its post counts. */
+async function inspector() {
+  const { rows: conceptRows } = await db.query(
+    `SELECT co.id, ct.kind, ct.name_pattern, cn.name AS leaf_name,
+            count(cp.id) FILTER (WHERE cp.status = 'approved')::int AS approved,
+            count(cp.id) FILTER (WHERE cp.status = 'approved'
+              AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0))::int AS visible,
+            count(cp.id) FILTER (WHERE cp.status = 'submitted')::int AS pending,
+            count(cp.id) FILTER (WHERE cp.status = 'rejected')::int AS rejected
+       FROM concepts co
+       JOIN concept_templates ct ON ct.id = co.template_id
+       LEFT JOIN category_nodes cn ON cn.id = co.category_node_id
+       LEFT JOIN creator_posts cp ON cp.concept_id = co.id
+      GROUP BY co.id, ct.kind, ct.name_pattern, cn.name
+      ORDER BY approved DESC, pending DESC`);
+  const { rows: collectionRows } = await db.query(
+    `SELECT col.id, col.name,
+            count(cp.id) FILTER (WHERE cp.status = 'approved')::int AS approved,
+            count(cp.id) FILTER (WHERE cp.status = 'approved'
+              AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0))::int AS visible,
+            count(cp.id) FILTER (WHERE cp.status = 'submitted')::int AS pending,
+            count(cp.id) FILTER (WHERE cp.status = 'rejected')::int AS rejected
+       FROM collections col
+       LEFT JOIN creator_posts cp ON cp.collection_id = col.id
+      GROUP BY col.id, col.name
+      ORDER BY approved DESC, pending DESC`);
+  return {
+    concepts: conceptRows.map(r => ({
+      id: r.id,
+      name: conceptName({ kind: r.kind, name_pattern: r.name_pattern }, r.leaf_name),
+      family: familyOf(r.kind, !!r.leaf_name),
+      approved: r.approved, visible: r.visible, pending: r.pending, rejected: r.rejected,
+    })),
+    collections: collectionRows.map(r => ({
+      id: r.id, name: r.name, family: 6,
+      approved: r.approved, visible: r.visible, pending: r.pending, rejected: r.rejected,
+    })),
+  };
+}
+
+/** Per-creator breakdown for one concept or collection. */
+async function inspectorBreakdown({ conceptId, collectionId }) {
+  const col = conceptId ? 'concept_id' : 'collection_id';
+  const { rows } = await db.query(
+    `SELECT i.instagram_handle AS handle, u.name,
+            count(*) FILTER (WHERE cp.status = 'approved')::int AS approved,
+            count(*) FILTER (WHERE cp.status = 'approved'
+              AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0))::int AS visible,
+            count(*) FILTER (WHERE cp.status = 'submitted')::int AS pending
+       FROM creator_posts cp
+       JOIN influencers i ON i.id = cp.influencer_id
+       JOIN users u ON u.id = i.user_id
+      WHERE cp.${col} = $1
+      GROUP BY i.instagram_handle, u.name
+      ORDER BY approved DESC`,
+    [conceptId || collectionId]);
+  return rows;
+}
+
 // ── collections vocabulary ───────────────────────────────────────────────────
 
 function slugify(s) {
@@ -360,6 +421,8 @@ module.exports = {
   previewConcept,
   materializeConcept,
   conceptDisplay,
+  inspector,
+  inspectorBreakdown,
   listCollections,
   createCollection,
   updateCollection,
