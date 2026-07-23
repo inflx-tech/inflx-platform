@@ -149,11 +149,28 @@ export default function CampaignProductsScreen({ navigation, route }) {
         </View>
       </View>
 
+      {/* Create Post CTA (Post/Concept Stage A) — the creator's MAIN action:
+          these allocated products are the composer's product universe. */}
+      {products.length > 0 && (
+        <TouchableOpacity
+          style={s.createPostCta}
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('Home', { screen: 'PostComposer' })}
+        >
+          <Text style={{ fontSize: 20, marginRight: 10 }}>📸</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.createPostTitle}>Create Post with these products</Text>
+            <Text style={s.createPostSub}>Pick a concept → photos → tag products → followers shop your post</Text>
+          </View>
+          <Icon name="chevron-right" size={22} color={P.yellow} />
+        </TouchableOpacity>
+      )}
+
       {/* Info banner */}
       <View style={s.infoBanner}>
         <Icon name="information-outline" size={20} color={P.yellowText} style={{ marginTop: 1 }} />
         <Text style={s.infoText}>
-          These products are automatically live in your store while this campaign is running. Add a personal recommendation so followers see why you love each deal.
+          Followers discover these products through YOUR POSTS. Create a post above — optional: add a short recommendation note per product below.
         </Text>
       </View>
 
@@ -273,6 +290,9 @@ export default function CampaignProductsScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
+  createPostCta: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 10, backgroundColor: P.ink, borderRadius: 14, padding: 14 },
+  createPostTitle: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  createPostSub: { color: 'rgba(255,255,255,0.7)', fontSize: 10.5, marginTop: 2 },
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 

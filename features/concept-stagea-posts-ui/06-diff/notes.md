@@ -18,3 +18,12 @@ didn't cover the unavailable state).
 
 Capture note: on-device screenshots land with the founder's device verify
 (prod has no posts to photograph until the pilot).
+
+## Follow-up (founder device test, 2026-07-23 evening)
+Founder's creator account (old bundle) showed CampaignProducts with no path
+to the composer. Fix: prominent dark "📸 Create Post with these products"
+CTA above the product list (navigates Home→PostComposer), info banner
+reworded to the post-first model. Legacy note UI stays as a secondary
+annotation for now (removal rides Stage C cleanup). Note: founder's
+screenshot showed the pre-2026-06-14 label, proving the device had not yet
+applied the OTA — double-relaunch guidance given.
