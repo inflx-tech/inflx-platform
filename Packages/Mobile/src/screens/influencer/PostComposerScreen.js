@@ -2,15 +2,17 @@
  * PostComposerScreen — the creator Post Composer (Post/Concept P2).
  * Contract: features/concept-p2-posts/. Architecture: POST_CONCEPT_MODEL.md §5.
  *
- * The founder's 4 steps, image posts only (video = P6):
- *   1 SCOPE    single / multi / all collaborations → the product universe
- *   2 CONCEPT  one admin template (× leaf when needed) OR one collection;
- *              the picker shows the LIVE matching products (server = same
- *              evaluator as follower shelves, so what you see is what ships)
- *   3 PHOTOS   1-10 slides, uploaded via presigned PUT (no crop — free aspect,
- *              LTK-style; the image is a visual, tags carry the commerce)
- *   4 TAG      tap the photo → pick the product → (x%, y%) stored; tag style;
- *              caption; submit → admin approval queue.
+ * The founder's sequence (locked 2026-07-23):
+ *   1 SCOPE      single / multi / all collaborations → the product universe
+ *   2 CONCEPT    one admin template (× leaf) OR one collection → LIVE filtered
+ *                products (server = the same evaluator as follower shelves)
+ *   3 POST TYPE  static / carousel decide the upload; video + video-carousel
+ *                are visible but locked until the video phase → upload
+ *   4 PRODUCTS   select the post's products FROM THE FILTERED LIST — this
+ *                alone completes the post; "Shop the post" always shows them
+ *   5 PRICE TAGS (OPTIONAL) tap the photo → pick from the ALREADY-SELECTED
+ *                products → name + price pin appears at the tap point.
+ *                Creator can submit without placing a single pin.
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -23,11 +25,17 @@ import { influencerApi, uploadFile } from '../../services/api';
 
 const WIN = Dimensions.get('window');
 const SLIDE_W = WIN.width - 32;
-const GROUP_LABELS = { seasonal: 'Seasonal', occasion: 'Occasion', style: 'Style', utility: 'Utility' };
+const TOTAL_STEPS = 5;
 const TAG_STYLES = [
   { key: 'soft_editorial', label: 'Soft Editorial' },
   { key: 'minimal', label: 'Minimal' },
   { key: 'hidden', label: 'Hidden until Shop' },
+];
+const POST_TYPES = [
+  { key: 'static', label: 'Static post', sub: 'One photo', locked: false },
+  { key: 'carousel', label: 'Carousel', sub: 'Up to 10 photos', locked: false },
+  { key: 'video', label: 'Video', sub: 'Coming soon', locked: true },
+  { key: 'video_carousel', label: 'Video carousel', sub: 'Coming soon', locked: true },
 ];
 
 export default function PostComposerScreen({ navigation }) {
@@ -40,31 +48,35 @@ export default function PostComposerScreen({ navigation }) {
   const [collections, setCollections] = useState([]);
   const [leaves, setLeaves] = useState([]);
 
-  // step 1
+  // step 1 — scope
   const [scope, setScope] = useState('single');
   const [brandIds, setBrandIds] = useState([]);
 
-  // step 2
+  // step 2 — concept
   const [mode, setMode] = useState('concept');            // 'concept' | 'collection'
   const [templateId, setTemplateId] = useState(null);
   const [leafId, setLeafId] = useState(null);
   const [collectionId, setCollectionId] = useState(null);
   const [leafModal, setLeafModal] = useState(false);
   const [pickerBusy, setPickerBusy] = useState(false);
-  const [universe, setUniverse] = useState(null);         // products from the picker
+  const [universe, setUniverse] = useState(null);         // the FILTERED products
 
-  // step 3
-  const [slides, setSlides] = useState([]);               // {uri, r2_key, width, height, uploading}
+  // step 3 — post type + media
+  const [postFormat, setPostFormat] = useState(null);     // 'static' | 'carousel'
+  const [slides, setSlides] = useState([]);               // {uri, r2_key, width, height}
   const [uploadPct, setUploadPct] = useState(null);
 
-  // step 4
-  const [tags, setTags] = useState([]);                   // {media_index, product_id, x_pct, y_pct, name, price}
+  // step 4 — selected products (the attachment / shop list)
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // step 5 — optional price tags + finish
+  const [pins, setPins] = useState([]);                   // {media_index, product_id, x_pct, y_pct, name, price}
   const [tagStyle, setTagStyle] = useState('soft_editorial');
   const [caption, setCaption] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
-  const [productSheet, setProductSheet] = useState(null); // {x_pct, y_pct} pending tap
+  const [pinSheet, setPinSheet] = useState(null);         // pending tap {media_index, x_pct, y_pct}
   const [submitting, setSubmitting] = useState(false);
-  const slideSize = useRef({});                           // media_index -> {w,h}
+  const slideSize = useRef({});
 
   useEffect(() => {
     (async () => {
@@ -74,7 +86,6 @@ export default function PostComposerScreen({ navigation }) {
         setTemplates(res.data.templates || []);
         setCollections(res.data.collections || []);
       }
-      // leaves for the category picker (fashion tree, leaf level only)
       try {
         const tree = await fetch(`${require('../../config/api').getBaseUrl()}/listing/tree?vertical=fashion`).then(r => r.json());
         const out = [];
@@ -91,6 +102,7 @@ export default function PostComposerScreen({ navigation }) {
 
   const selectedTemplate = templates.find(t => t.id === templateId) || null;
   const needsLeaf = selectedTemplate?.kind === 'category';
+  const selectedProducts = (universe || []).filter(p => selectedIds.includes(p.id));
 
   const toggleBrand = (id) => {
     if (scope === 'single') { setBrandIds([id]); return; }
@@ -100,7 +112,7 @@ export default function PostComposerScreen({ navigation }) {
     : scope === 'single' ? brandIds.length === 1 : brandIds.length >= 2;
 
   const runPicker = useCallback(async () => {
-    setPickerBusy(true); setUniverse(null);
+    setPickerBusy(true); setUniverse(null); setSelectedIds([]); setPins([]);
     const res = await influencerApi.postPicker({
       scope, brand_ids: brandIds,
       template_id: mode === 'concept' ? templateId : null,
@@ -116,8 +128,10 @@ export default function PostComposerScreen({ navigation }) {
     ? !!collectionId
     : !!templateId && (!needsLeaf || !!leafId);
 
+  const maxSlides = postFormat === 'static' ? 1 : 10;
+
   async function pickImages() {
-    launchImageLibrary({ mediaType: 'photo', selectionLimit: 10 - slides.length }, async (resp) => {
+    launchImageLibrary({ mediaType: 'photo', selectionLimit: maxSlides - slides.length }, async (resp) => {
       if (resp.didCancel || !resp.assets?.length) return;
       for (const a of resp.assets) {
         setUploadPct(0);
@@ -139,24 +153,34 @@ export default function PostComposerScreen({ navigation }) {
   function onImageTap(mediaIndex, evt) {
     const size = slideSize.current[mediaIndex];
     if (!size) return;
+    if (!selectedProducts.length) {
+      Alert.alert('No products selected', 'Price tags come from the products you selected in the previous step.');
+      return;
+    }
     const { locationX, locationY } = evt.nativeEvent;
     const x = Math.round((locationX / size.w) * 1000) / 10;
     const y = Math.round((locationY / size.h) * 1000) / 10;
-    setProductSheet({ media_index: mediaIndex, x_pct: Math.min(100, Math.max(0, x)), y_pct: Math.min(100, Math.max(0, y)) });
+    setPinSheet({ media_index: mediaIndex, x_pct: Math.min(100, Math.max(0, x)), y_pct: Math.min(100, Math.max(0, y)) });
   }
 
-  function assignProduct(prod) {
-    setTags(t => [...t, {
-      media_index: productSheet.media_index, product_id: prod.id,
-      x_pct: productSheet.x_pct, y_pct: productSheet.y_pct,
+  function placePin(prod) {
+    setPins(t => [...t, {
+      media_index: pinSheet.media_index, product_id: prod.id,
+      x_pct: pinSheet.x_pct, y_pct: pinSheet.y_pct,
       name: prod.name, price: prod.offer_price ?? prod.price,
     }]);
-    setProductSheet(null);
+    setPinSheet(null);
   }
 
   async function submit() {
-    if (!tags.length) { Alert.alert('Tag at least one product', 'Tap a photo to place your first tag.'); return; }
     setSubmitting(true);
+    // attachment = every selected product; entries with coordinates are the
+    // optional price-tag pins (a pinned product is attached by construction).
+    const pinnedIds = new Set(pins.map(t => t.product_id));
+    const products = [
+      ...pins.map(t => ({ media_index: t.media_index, product_id: t.product_id, x_pct: t.x_pct, y_pct: t.y_pct })),
+      ...selectedIds.filter(id => !pinnedIds.has(id)).map(id => ({ product_id: id })),
+    ];
     const res = await influencerApi.createPost({
       scope, brand_ids: brandIds,
       template_id: mode === 'concept' ? templateId : null,
@@ -166,7 +190,7 @@ export default function PostComposerScreen({ navigation }) {
       tag_style: tagStyle,
       caption: caption.trim() || null,
       media: slides.map(s => ({ r2_key: s.r2_key, width: s.width, height: s.height })),
-      products: tags.map(t => ({ media_index: t.media_index, product_id: t.product_id, x_pct: t.x_pct, y_pct: t.y_pct })),
+      products,
     });
     setSubmitting(false);
     if (res.success) {
@@ -188,7 +212,7 @@ export default function PostComposerScreen({ navigation }) {
       </TouchableOpacity>
       <View>
         <Text style={st.hTitle}>{title}</Text>
-        <Text style={st.hStep}>Step {step} of 4</Text>
+        <Text style={st.hStep}>Step {step} of {TOTAL_STEPS}</Text>
       </View>
       <View style={{ width: 24 }} />
     </View>
@@ -259,7 +283,7 @@ export default function PostComposerScreen({ navigation }) {
                   <View style={st.chipWrap}>
                     {of.map(t => (
                       <TouchableOpacity key={t.id} style={[st.chip, templateId === t.id && st.chipOn]}
-                        onPress={() => { setTemplateId(t.id); setUniverse(null); if (t.kind !== 'category') setLeafId(leafId); }}>
+                        onPress={() => { setTemplateId(t.id); setUniverse(null); }}>
                         <Text style={[st.chipTxt, templateId === t.id && st.chipTxtOn]}>{t.name_pattern.replace('{Category}', '…')}</Text>
                       </TouchableOpacity>
                     ))}
@@ -308,7 +332,7 @@ export default function PostComposerScreen({ navigation }) {
             </Text>
             {universe.length > 0 && (
               <TouchableOpacity style={st.cta} onPress={() => setStep(3)}>
-                <Text style={st.ctaTxt}>Add photos →</Text>
+                <Text style={st.ctaTxt}>Choose post type →</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -333,55 +357,117 @@ export default function PostComposerScreen({ navigation }) {
     </SafeAreaView>
   );
 
-  // ── Step 3: photos ─────────────────────────────────────────────────────────
+  // ── Step 3: post type + upload ─────────────────────────────────────────────
   if (step === 3) return (
     <SafeAreaView style={st.safe}>
-      <Header title="Add your photos" />
+      <Header title="What are you posting?" />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <View style={st.chipWrap}>
-          {slides.map((s, i) => (
-            <View key={s.r2_key} style={st.thumbWrap}>
-              <Image source={{ uri: s.uri }} style={st.thumb} />
-              <TouchableOpacity style={st.thumbX}
-                onPress={() => { setSlides(sl => sl.filter((_, j) => j !== i)); setTags(t => t.filter(x => x.media_index !== i).map(x => ({ ...x, media_index: x.media_index > i ? x.media_index - 1 : x.media_index }))); }}>
-                <Text style={{ color: '#fff', fontSize: 11 }}>✕</Text>
-              </TouchableOpacity>
+        {POST_TYPES.map(t => (
+          <TouchableOpacity key={t.key}
+            style={[st.radioRow, postFormat === t.key && st.radioRowOn, t.locked && { opacity: 0.45 }]}
+            disabled={t.locked}
+            onPress={() => { setPostFormat(t.key); if (t.key === 'static' && slides.length > 1) setSlides(s => s.slice(0, 1)); }}>
+            <View>
+              <Text style={[st.radioTxt, postFormat === t.key && st.radioTxtOn]}>{t.label} {t.locked ? '🔒' : ''}</Text>
+              <Text style={st.radioSub}>{t.sub}</Text>
             </View>
-          ))}
-          {slides.length < 10 && (
-            <TouchableOpacity style={st.addThumb} onPress={pickImages} disabled={uploadPct != null}>
-              <Text style={{ fontSize: 26, color: '#999' }}>＋</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {uploadPct != null && <Text style={st.progress}>Uploading… {Math.round(uploadPct * 100)}%</Text>}
-        <Text style={st.hint}>Real photos or a collage — up to 10 slides, any shape. Tags come next.</Text>
-        <TouchableOpacity style={[st.cta, slides.length === 0 && st.ctaOff]} disabled={slides.length === 0}
+            <Text style={st.radioDot}>{postFormat === t.key ? '●' : '○'}</Text>
+          </TouchableOpacity>
+        ))}
+
+        {postFormat && (
+          <View style={{ marginTop: 14 }}>
+            <Text style={st.lbl}>{postFormat === 'static' ? 'Your photo' : `Your photos (up to ${maxSlides})`}</Text>
+            <View style={st.chipWrap}>
+              {slides.map((s, i) => (
+                <View key={s.r2_key} style={st.thumbWrap}>
+                  <Image source={{ uri: s.uri }} style={st.thumb} />
+                  <TouchableOpacity style={st.thumbX}
+                    onPress={() => { setSlides(sl => sl.filter((_, j) => j !== i)); setPins(t => t.filter(x => x.media_index !== i).map(x => ({ ...x, media_index: x.media_index > i ? x.media_index - 1 : x.media_index }))); }}>
+                    <Text style={{ color: '#fff', fontSize: 11 }}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {slides.length < maxSlides && (
+                <TouchableOpacity style={st.addThumb} onPress={pickImages} disabled={uploadPct != null}>
+                  <Text style={{ fontSize: 26, color: '#999' }}>＋</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {uploadPct != null && <Text style={st.progress}>Uploading… {Math.round(uploadPct * 100)}%</Text>}
+            <Text style={st.hint}>Real photos or an LTK-style collage — any shape. Products come next.</Text>
+          </View>
+        )}
+
+        <TouchableOpacity style={[st.cta, (!postFormat || slides.length === 0) && st.ctaOff]}
+          disabled={!postFormat || slides.length === 0}
           onPress={() => setStep(4)}>
-          <Text style={st.ctaTxt}>Tag products →</Text>
+          <Text style={st.ctaTxt}>Select products →</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 
-  // ── Step 4: tag + submit ───────────────────────────────────────────────────
+  // ── Step 4: select the post's products (the shop list) ─────────────────────
+  if (step === 4) return (
+    <SafeAreaView style={st.safe}>
+      <Header title="Which products are in this post?" />
+      <FlatList
+        data={universe || []}
+        keyExtractor={p => p.id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 110 }}
+        ListHeaderComponent={
+          <Text style={[st.hint, { marginBottom: 10 }]}>
+            These appear under “Shop the post”. From your {selectedTemplate ? 'concept' : 'collection'}-filtered list ({(universe || []).length}).
+          </Text>
+        }
+        renderItem={({ item }) => {
+          const on = selectedIds.includes(item.id);
+          return (
+            <TouchableOpacity style={[st.prodRow, on && st.prodRowOn]}
+              onPress={() => setSelectedIds(ids => on ? ids.filter(x => x !== item.id) : [...ids, item.id])}>
+              {item.image_url
+                ? <Image source={{ uri: item.image_url }} style={st.prodImg} />
+                : <View style={[st.prodImg, { backgroundColor: '#eee' }]} />}
+              <View style={{ flex: 1 }}>
+                <Text style={st.prodName} numberOfLines={1}>{item.name}</Text>
+                <Text style={st.prodPrice}>₹{item.offer_price ?? item.price}{item.discount_value ? `  · ${item.discount_value}% off` : ''}</Text>
+              </View>
+              <Text style={{ fontSize: 16, color: on ? '#F6B11E' : '#CCC' }}>{on ? '✓' : '○'}</Text>
+            </TouchableOpacity>
+          );
+        }}
+      />
+      <View style={st.footerBar}>
+        <TouchableOpacity style={[st.cta, { flex: 1, marginTop: 0 }, selectedIds.length === 0 && st.ctaOff]}
+          disabled={selectedIds.length === 0} onPress={() => setStep(5)}>
+          <Text style={st.ctaTxt}>Continue with {selectedIds.length || 'no'} product{selectedIds.length === 1 ? '' : 's'} →</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
+
+  // ── Step 5: optional price tags + finish ───────────────────────────────────
   return (
     <SafeAreaView style={st.safe}>
-      <Header title="Tap the photo to tag" />
+      <Header title="Price tags (optional)" />
       <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <Text style={[st.hint, { marginBottom: 8 }]}>
+          Want “shop the look” tags on the photo? Tap where a product sits, then pick it — the name and price appear automatically. Or skip: your {selectedIds.length} product{selectedIds.length === 1 ? '' : 's'} already show under “Shop the post”.
+        </Text>
         <FlatList
           horizontal pagingEnabled showsHorizontalScrollIndicator={false}
           data={slides} keyExtractor={s => s.r2_key}
           onMomentumScrollEnd={e => setActiveSlide(Math.round(e.nativeEvent.contentOffset.x / SLIDE_W))}
           renderItem={({ item, index }) => {
             const ratio = item.width && item.height ? item.height / item.width : 1.25;
-            const h = Math.min(SLIDE_W * ratio, WIN.height * 0.55);
+            const h = Math.min(SLIDE_W * ratio, WIN.height * 0.5);
             return (
               <Pressable onPress={(e) => onImageTap(index, e)}
                 onLayout={(e) => { slideSize.current[index] = { w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height }; }}
                 style={{ width: SLIDE_W, height: h }}>
                 <Image source={{ uri: item.uri }} style={{ width: SLIDE_W, height: h, borderRadius: 14 }} />
-                {tags.filter(t => t.media_index === index).map((t, i) => (
+                {pins.filter(t => t.media_index === index).map((t, i) => (
                   <View key={i} style={[st.tagPin, { left: `${t.x_pct}%`, top: `${t.y_pct}%` }]}>
                     <Text style={st.tagPinTxt}>{t.name} · ₹{t.price}</Text>
                   </View>
@@ -393,11 +479,11 @@ export default function PostComposerScreen({ navigation }) {
           {slides.map((_, i) => <View key={i} style={[st.dot, i === activeSlide && st.dotOn]} />)}
         </View>
 
-        {tags.length > 0 && (
+        {pins.length > 0 && (
           <View style={st.chipWrap}>
-            {tags.map((t, i) => (
+            {pins.map((t, i) => (
               <View key={i} style={[st.chip, st.chipOn]}>
-                <Text style={st.chipTxtOn}>{t.name} <Text onPress={() => setTags(ts => ts.filter((_, j) => j !== i))}> ✕</Text></Text>
+                <Text style={st.chipTxtOn}>{t.name} <Text onPress={() => setPins(ts => ts.filter((_, j) => j !== i))}> ✕</Text></Text>
               </View>
             ))}
           </View>
@@ -416,30 +502,30 @@ export default function PostComposerScreen({ navigation }) {
         <TextInput value={caption} onChangeText={setCaption} multiline placeholder="Weekend coffee runs in my favourite denims ☕"
           style={st.captionInput} placeholderTextColor="#999" />
 
-        <TouchableOpacity style={[st.cta, (submitting || !tags.length) && st.ctaOff]}
-          disabled={submitting || !tags.length} onPress={submit}>
-          <Text style={st.ctaTxt}>{submitting ? 'Submitting…' : 'Submit for review'}</Text>
+        <TouchableOpacity style={[st.cta, submitting && st.ctaOff]}
+          disabled={submitting} onPress={submit}>
+          <Text style={st.ctaTxt}>{submitting ? 'Submitting…' : pins.length ? 'Submit for review' : 'Submit without tags'}</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* product picker sheet */}
-      <Modal visible={!!productSheet} animationType="slide" transparent onRequestClose={() => setProductSheet(null)}>
+      {/* pin sheet — ONLY the products selected in step 4 */}
+      <Modal visible={!!pinSheet} animationType="slide" transparent onRequestClose={() => setPinSheet(null)}>
         <View style={st.sheetBack}>
           <View style={st.sheet}>
-            <Text style={st.sheetTitle}>Which product is this?</Text>
-            <FlatList data={universe || []} keyExtractor={p => p.id} style={{ maxHeight: WIN.height * 0.5 }}
+            <Text style={st.sheetTitle}>Which of your selected products is this?</Text>
+            <FlatList data={selectedProducts} keyExtractor={p => p.id} style={{ maxHeight: WIN.height * 0.5 }}
               renderItem={({ item }) => (
-                <TouchableOpacity style={st.prodRow} onPress={() => assignProduct(item)}>
+                <TouchableOpacity style={st.prodRow} onPress={() => placePin(item)}>
                   {item.image_url
                     ? <Image source={{ uri: item.image_url }} style={st.prodImg} />
                     : <View style={[st.prodImg, { backgroundColor: '#eee' }]} />}
                   <View style={{ flex: 1 }}>
                     <Text style={st.prodName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={st.prodPrice}>₹{item.offer_price ?? item.price}{item.discount_value ? `  · ${item.discount_value}% off` : ''}</Text>
+                    <Text style={st.prodPrice}>₹{item.offer_price ?? item.price}{pins.some(t => t.product_id === item.id) ? '  · pinned' : ''}</Text>
                   </View>
                 </TouchableOpacity>
               )} />
-            <TouchableOpacity onPress={() => setProductSheet(null)} style={{ padding: 14, alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => setPinSheet(null)} style={{ padding: 14, alignItems: 'center' }}>
               <Text style={{ color: '#999', fontWeight: '700' }}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -462,6 +548,7 @@ const st = StyleSheet.create({
   radioRowOn: { borderColor: '#1A1A1A', backgroundColor: '#FAFAFA' },
   radioTxt: { fontSize: 13.5, fontWeight: '600', color: '#777' },
   radioTxtOn: { color: '#1A1A1A', fontWeight: '800' },
+  radioSub: { fontSize: 11, color: '#AAA', marginTop: 1 },
   radioDot: { fontSize: 14, color: '#F6B11E' },
   lbl: { fontSize: 11, fontWeight: '800', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -487,17 +574,19 @@ const st = StyleSheet.create({
   thumbX: { position: 'absolute', top: -6, right: -6, backgroundColor: '#1A1A1A', borderRadius: 999, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
   addThumb: { width: 76, height: 96, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CCC', alignItems: 'center', justifyContent: 'center' },
   progress: { marginTop: 10, fontSize: 12, color: '#777' },
-  hint: { marginTop: 12, fontSize: 11.5, color: '#999', lineHeight: 16 },
+  hint: { fontSize: 11.5, color: '#999', lineHeight: 16, marginTop: 10 },
   tagPin: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, transform: [{ translateX: -20 }, { translateY: -12 }] },
   tagPinTxt: { fontSize: 10, fontWeight: '700', color: '#1A1A1A' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 10 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#DDD' },
   dotOn: { backgroundColor: '#1A1A1A' },
   captionInput: { borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: 12, padding: 12, minHeight: 70, fontSize: 13, color: '#1A1A1A', textAlignVertical: 'top' },
+  footerBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#F0F0F0' },
   sheetBack: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
   sheetTitle: { fontSize: 15, fontWeight: '800', color: '#1A1A1A', marginBottom: 10 },
   prodRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, borderBottomWidth: 1, borderColor: '#F5F5F5' },
+  prodRowOn: { backgroundColor: '#FAFAFA', borderRadius: 10, paddingHorizontal: 8 },
   prodImg: { width: 42, height: 52, borderRadius: 8 },
   prodName: { fontSize: 13, fontWeight: '700', color: '#1A1A1A' },
   prodPrice: { fontSize: 11.5, color: '#777' },

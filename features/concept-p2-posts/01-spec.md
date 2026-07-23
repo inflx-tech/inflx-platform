@@ -40,12 +40,17 @@ Followers cannot see it yet — by design (P3 builds their app).
 
 ## Surfaces
 
-- Mobile creator app: **PostComposerScreen** (4 steps: scope radio + brand
-  chips → concept/collection segmented picker + leaf modal + live "N products
-  available" → multi-image pick + presigned upload with progress → per-slide
-  tap-to-tag with product sheet, tag-style choice, caption, submit) and
-  **MyPostsScreen** (status pills In review/Live/Rejected + reason). Home
-  gains Create Post + My Posts tiles. OTA required.
+- Mobile creator app: **PostComposerScreen** — the founder's sequence
+  (corrected in-session 2026-07-23, 5 steps): ① scope ② concept/collection +
+  live universe ③ POST TYPE (static/carousel; video + video-carousel visible
+  but locked until P6) → upload ④ **SELECT PRODUCTS from the filtered list —
+  this alone completes the post; "Shop the post" always renders from it**
+  ⑤ OPTIONAL price tags: tap the photo → sheet of the ALREADY-SELECTED
+  products → name+price pin at the tap point; tag style; caption; submit
+  works with zero pins ("Submit without tags"). Attachment (no coords, media
+  NULL) and pins (coords + slide) both live in post_products; a pin without
+  both coords or with a bad slide → 422. **MyPostsScreen** (status pills +
+  reason). Home gains Create Post + My Posts tiles. OTA required.
 - Admin web: **/admin/posts** Post Queue (approvals cap) — tabs with counts,
   cards showing slides with tag-pin overlays, tagged-product list (with
   ⚠ delisted flags), caption; approve / reject-with-reason.

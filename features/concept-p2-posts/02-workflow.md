@@ -1,19 +1,23 @@
 # Workflow — concept-p2-posts
 
-## W1 — Creator publishes (the golden path)
-Home → Create Post → 1) picks "Single brand" + Denim Co → 2) Concept tab,
-taps "Winter {…}" chip → leaf modal → Jeans → "Show my products" → "17
-products available" → 3) picks 3 photos from the gallery, each uploads via
-presigned PUT with a progress line → 4) taps the jeans in slide 1 → product
-sheet (the 17) → picks one → pin appears at the tap point; repeats; picks
-Soft Editorial; caption; Submit → success alert → My Posts shows "In review".
+## W1 — Creator publishes (the golden path, founder sequence 2026-07-23)
+Home → Create Post → ① "Single brand" + Denim Co → ② "Winter {…}" + Jeans →
+"17 products available" → ③ post type: Carousel (video rows visible, locked
+🔒) → picks 3 photos, presigned upload with progress → ④ ticks 5 of the 17
+filtered products — the post's SHOP LIST; "Continue with 5 products" →
+⑤ price tags optional: taps the jeans in slide 1 → sheet shows ONLY the 5
+selected products → picks one → "Wide Leg Denim · ₹999" pin at the tap
+point; may pin some, all, or NONE ("Submit without tags") → tag style +
+caption → Submit → My Posts "In review".
 
 ## W2 — The by-construction guarantee
 The create call re-runs the picker server-side; a product id not in the
 result → 422 "outside the selected concept/scope". Media keys not under
-posts/<own-id>/ → 422. Tag on a nonexistent slide, or x/y outside 0-100 → 422.
-Concept XOR collection enforced (both → 422; category template without a
-leaf → 422). The concepts row materializes on first use (concurrent-safe).
+posts/<own-id>/ → 422. A pin missing either coordinate, on a nonexistent
+slide, or with x/y outside 0-100 → 422; plain attachments carry no
+coordinates and store media_id NULL. Concept XOR collection enforced (both →
+422; category template without a leaf → 422). The concepts row materializes
+on first use (concurrent-safe).
 
 ## W3 — Admin moderates
 /admin/posts (📮, approvals cap) → "Awaiting review (1)" → card shows

@@ -163,22 +163,28 @@ async function createPost(influencerId, payload) {
     }
   }
 
-  // product tags
+  // attached products (the post's SHOP list — every post has one; "Shop the
+  // post" renders from it) + OPTIONAL price-tag pins. A pin is an entry with
+  // x/y coordinates and MUST reference a slide; a plain attachment has no
+  // coordinates and no slide (media_id NULL). Founder sequence 2026-07-23:
+  // select products first, pins are optional decoration over that selection.
   const tags = Array.isArray(p.products) ? p.products : [];
   if (tags.length < 1 || tags.length > MAX_PRODUCTS) {
     throw new Error(`attach 1-${MAX_PRODUCTS} products`);
   }
   for (const t of tags) {
-    if (!t || !t.product_id) throw new Error('every tag needs a product_id');
+    if (!t || !t.product_id) throw new Error('every entry needs a product_id');
     if (!allowedIds.has(t.product_id)) {
-      throw new Error('a tagged product is outside the selected concept/scope — refresh the picker');
+      throw new Error('a product is outside the selected concept/scope — refresh the picker');
     }
-    const slide = t.media_index == null ? 0 : Number(t.media_index);
-    if (!Number.isInteger(slide) || slide < 0 || slide >= media.length) {
-      throw new Error('a tag points at a slide that does not exist');
-    }
-    for (const k of ['x_pct', 'y_pct']) {
-      if (t[k] != null) {
+    const pinned = t.x_pct != null || t.y_pct != null;
+    if (pinned) {
+      if (t.x_pct == null || t.y_pct == null) throw new Error('a price tag needs both x_pct and y_pct');
+      const slide = Number(t.media_index);
+      if (!Number.isInteger(slide) || slide < 0 || slide >= media.length) {
+        throw new Error('a price tag points at a slide that does not exist');
+      }
+      for (const k of ['x_pct', 'y_pct']) {
         const n = Number(t[k]);
         if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error(`${k} must be 0-100`);
       }
@@ -210,13 +216,13 @@ async function createPost(influencerId, payload) {
       mediaIds.push(rows[0].id);
     }
     for (const t of tags) {
-      const slide = t.media_index == null ? 0 : Number(t.media_index);
+      const pinned = t.x_pct != null && t.y_pct != null;
       await tx.query(
         `INSERT INTO post_products (post_id, media_id, product_id, x_pct, y_pct)
          VALUES ($1,$2,$3,$4,$5)`,
-        [post.id, mediaIds[slide], t.product_id,
-         t.x_pct != null ? Number(t.x_pct) : null,
-         t.y_pct != null ? Number(t.y_pct) : null]);
+        [post.id, pinned ? mediaIds[Number(t.media_index)] : null, t.product_id,
+         pinned ? Number(t.x_pct) : null,
+         pinned ? Number(t.y_pct) : null]);
     }
     return { id: post.id, status: post.status, created_at: post.created_at,
              concept: conceptRow ? { id: conceptRow.id, name: conceptRow.name } : null };
