@@ -1,0 +1,20 @@
+{
+  "feature": "concept-p1-engine",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: 'pls start phase 1' (plan approved same session)",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — internal admin tool in the house navy theme; grammar mirrors the existing tag-vocabulary/section-library pages; mockup 04-preview/mockups/concept-manager.html",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "Concept engine P1 (mig 139). concept_templates (47 seeded: 27 category / 9 price / 11 offer) + lazily-materialized concepts (empty) + collections vocabulary (14 seeded). concepts.service: kind-shaped validation, name generation (category replaces {Category}; price leaf-first; offer offer-first), family derivation, rule_json building through sectionLibrary.validateRule, live preview via the SAME library_products evaluator (preview truth = render truth). Admin API under /admin (sections capability). Two new admin pages + nav. Flash Sale / Limited Time templates NOT seeded (time-window, not offer-type-expressible — founder decision pending). Purely additive; no OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

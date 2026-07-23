@@ -11,6 +11,7 @@ const adminRoutes       = require('./admin.routes');
 const adminSectionsRoutes = require('./adminSections.routes');
 const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 const adminPagesRoutes = require('./adminPages.routes');
+const adminConceptsRoutes = require('./adminConcepts.routes');
 const brandCreatorImagesRoutes = require('./brandCreatorImages.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
@@ -120,6 +121,9 @@ router.use('/admin/pages', adminPagesRoutes);
 // creator-experience routes deleted; tables ship empty and are dropped in a
 // later phase. creatorImagery (brand-side creator-image approval) is KEPT —
 // it seeds the Phase-2 creator media pipeline.
+
+// ── Concept engine admin API (Post/Concept P1, mig 139) ──────────────────────
+router.use('/admin', adminConceptsRoutes);   // /admin/concept-templates + /admin/concepts/preview + /admin/collections
 
 // ── Creator imagery: brand approval + display source (Phase 7a, mig 136-137) ──
 router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator-images + /products/:id/image-source

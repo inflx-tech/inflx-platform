@@ -643,6 +643,15 @@ export const adminApi = {
   // Creator Experience Engine (System B) wrappers REMOVED — Concept P0
   // (2026-07-23): backend routes deleted, pages deleted, tables ship empty.
 
+  // ─── Concept engine (Post/Concept P1, mig 139) ─────────────────────────────
+  listConceptTemplates:  (includeHidden) => api.get(`/admin/concept-templates${includeHidden ? '?include_hidden=1' : ''}`),
+  createConceptTemplate: (data) => api.post('/admin/concept-templates', data),
+  updateConceptTemplate: (id, data) => api.patch(`/admin/concept-templates/${encodeURIComponent(id)}`, data),
+  previewConcept:        (data) => api.post('/admin/concepts/preview', data),
+  listCollectionsVocab:  (includeHidden) => api.get(`/admin/collections${includeHidden ? '?include_hidden=1' : ''}`),
+  createCollectionVocab: (data) => api.post('/admin/collections', data),
+  updateCollectionVocab: (id, data) => api.patch(`/admin/collections/${encodeURIComponent(id)}`, data),
+
   // World Rules (Phase 3, mig 126) — per-world engine behaviour
   listWorldRules:   () => api.get('/admin/world-rules'),
   saveWorldRules:   (worldKey, data) => api.put(`/admin/world-rules/${encodeURIComponent(worldKey)}`, data),
