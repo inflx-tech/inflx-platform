@@ -15,6 +15,7 @@
     "qa_all_green": true,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "deploy": "founder go in-session 2026-07-23 ('pls go and deploy and OTA'). run-140.js applied to prod FIRST (verified: creator_posts/post_media/post_products present, 0 rows), pushed a61d9ef -> Render + Vercel, waited for the Render deploy to settle, then publish-ota:all clean on first run: brand v139, influencer v132, follower v197, agency v38. released stays false until on-device verify (composer golden path needs a brand with listed products + an allocation) - founder owes device pass."
   }
 }
