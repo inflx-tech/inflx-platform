@@ -15,6 +15,7 @@
     "qa_all_green": true,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "deploy": "founder go in-session 2026-07-23 ('pls go and push and OTA'). Pushed 6f2024e → Render + Vercel auto-deploy. OTA published post-deploy: brand v138, influencer v131, follower v196, agency v37 (first publish-ota:all hit a 502 mid-deploy on influencer — re-ran the 3 remaining flavors after the backend settled). released stays false until on-device Maestro verify (Rule 5) — founder owes device pass."
   }
 }
