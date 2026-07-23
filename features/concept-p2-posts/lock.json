@@ -1,0 +1,20 @@
+{
+  "feature": "concept-p2-posts",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: 'start phase 2' (plan approved same session; composer steps + tag mechanics locked in Follower app creator studio.docx)",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — composer mockup 04-preview/mockups/post-composer.html renders the founder's own 4-step flow from the creator-studio doc; admin queue follows the established admin grammar",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "Creator posts P2 (mig 140, tables ship empty). creator_posts (concept XOR collection CHECK, moderation statuses only — dark is computed in P4) + post_media (ordered slides) + post_products (x/y% coordinates, nothing drawn into images). Composer API: post-scope, picker (concept rule ∩ allocation filtered to scoped brands — creatorAllocatedProductIds+brandIds, ctx.allocBrandIds), image-only presign under posts/<inf>/, create re-runs picker server-side (by-construction guarantee) + materializes the concept, hydrated My Posts. Public /v1/media/post/:id 302 serve. Moderation under approvals cap, admin-only per founder lock; notifications post.approved/post.rejected. Mobile: PostComposerScreen (4 steps) + MyPostsScreen + Home tiles; NO crop (free-aspect LTK-style; crop = native dep = APK). Decisions flagged: queue under approvals cap; caps 10 slides/30 products.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

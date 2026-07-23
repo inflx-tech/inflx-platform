@@ -231,6 +231,73 @@ async function updateTemplate(id, input) {
   return rows[0];
 }
 
+// ── materialization (P2 — stable id for a post's concept) ────────────────────
+
+/** Upsert-and-return the concepts row for (template × leaf?). Lazily called
+ * the first time a post publishes under the pair. */
+async function materializeConcept(templateId, categoryNodeId = null) {
+  const template = await getTemplate(templateId);
+  if (!template) throw new Error('template not found');
+  if (template.status !== 'active') throw new Error('template is hidden');
+  if (template.kind === 'category' && !categoryNodeId) {
+    throw new Error('category templates need a category node');
+  }
+  let leafName = null;
+  if (categoryNodeId) {
+    const { rows } = await db.query(
+      `SELECT id, name FROM category_nodes WHERE id = $1`, [categoryNodeId]);
+    if (!rows[0]) throw new Error('category node not found');
+    leafName = rows[0].name;
+  }
+  // insert-if-missing (partial unique indexes make ON CONFLICT targets awkward
+  // for the NULL arm — a plain guarded insert + reselect is race-safe enough
+  // here; a rare duplicate insert loses on the unique index and we reselect).
+  const sel = categoryNodeId
+    ? db.query(`SELECT id FROM concepts WHERE template_id = $1 AND category_node_id = $2`, [templateId, categoryNodeId])
+    : db.query(`SELECT id FROM concepts WHERE template_id = $1 AND category_node_id IS NULL`, [templateId]);
+  let { rows } = await sel;
+  if (!rows[0]) {
+    try {
+      ({ rows } = await db.query(
+        `INSERT INTO concepts (template_id, category_node_id) VALUES ($1, $2) RETURNING id`,
+        [templateId, categoryNodeId]));
+    } catch (e) {
+      if (e.code !== '23505') throw e;
+      ({ rows } = await (categoryNodeId
+        ? db.query(`SELECT id FROM concepts WHERE template_id = $1 AND category_node_id = $2`, [templateId, categoryNodeId])
+        : db.query(`SELECT id FROM concepts WHERE template_id = $1 AND category_node_id IS NULL`, [templateId])));
+    }
+  }
+  return {
+    id: rows[0].id,
+    name: conceptName(template, leafName),
+    family: familyOf(template.kind, !!categoryNodeId),
+    template,
+    category_node_id: categoryNodeId,
+  };
+}
+
+/** Display info for an existing concepts row (moderation queue, My Posts). */
+async function conceptDisplay(conceptId) {
+  const { rows } = await db.query(
+    `SELECT c.id, c.template_id, c.category_node_id, cn.name AS leaf_name,
+            t.kind, t.template_group, t.name_pattern, t.required_tags,
+            t.eff_price_min, t.eff_price_max, t.offer_type, t.min_discount_pct, t.status
+       FROM concepts c
+       JOIN concept_templates t ON t.id = c.template_id
+       LEFT JOIN category_nodes cn ON cn.id = c.category_node_id
+      WHERE c.id = $1`, [conceptId]);
+  if (!rows[0]) return null;
+  const r = rows[0];
+  return {
+    id: r.id,
+    name: conceptName(r, r.leaf_name),
+    family: familyOf(r.kind, !!r.category_node_id),
+    template: r,
+    category_node_id: r.category_node_id,
+  };
+}
+
 // ── collections vocabulary ───────────────────────────────────────────────────
 
 function slugify(s) {
@@ -291,6 +358,8 @@ module.exports = {
   createTemplate,
   updateTemplate,
   previewConcept,
+  materializeConcept,
+  conceptDisplay,
   listCollections,
   createCollection,
   updateCollection,

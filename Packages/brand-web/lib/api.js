@@ -652,6 +652,11 @@ export const adminApi = {
   createCollectionVocab: (data) => api.post('/admin/collections', data),
   updateCollectionVocab: (id, data) => api.patch(`/admin/collections/${encodeURIComponent(id)}`, data),
 
+  // ─── Post moderation queue (Post/Concept P2, mig 140) ──────────────────────
+  listPostQueue: (status) => api.get(`/admin/posts?status=${encodeURIComponent(status || 'submitted')}`),
+  approvePost:   (id) => api.post(`/admin/posts/${encodeURIComponent(id)}/approve`, {}),
+  rejectPost:    (id, reason) => api.post(`/admin/posts/${encodeURIComponent(id)}/reject`, { reason }),
+
   // World Rules (Phase 3, mig 126) — per-world engine behaviour
   listWorldRules:   () => api.get('/admin/world-rules'),
   saveWorldRules:   (worldKey, data) => api.put(`/admin/world-rules/${encodeURIComponent(worldKey)}`, data),

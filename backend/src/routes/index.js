@@ -12,6 +12,9 @@ const adminSectionsRoutes = require('./adminSections.routes');
 const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 const adminPagesRoutes = require('./adminPages.routes');
 const adminConceptsRoutes = require('./adminConcepts.routes');
+const creatorPostsRoutes = require('./creatorPosts.routes');
+const adminPostsRoutes = require('./adminPosts.routes');
+const creatorPostsController = require('../controllers/creatorPosts.controller');
 const brandCreatorImagesRoutes = require('./brandCreatorImages.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
@@ -124,6 +127,11 @@ router.use('/admin/pages', adminPagesRoutes);
 
 // ── Concept engine admin API (Post/Concept P1, mig 139) ──────────────────────
 router.use('/admin', adminConceptsRoutes);   // /admin/concept-templates + /admin/concepts/preview + /admin/collections
+
+// ── Creator posts (Post/Concept P2, mig 140) ─────────────────────────────────
+router.use('/influencers', creatorPostsRoutes);   // /me/post-scope + /me/posts*
+router.use('/admin/posts', adminPostsRoutes);     // moderation queue
+router.get('/media/post/:id', creatorPostsController.servePostMedia);   // public slide serve
 
 // ── Creator imagery: brand approval + display source (Phase 7a, mig 136-137) ──
 router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator-images + /products/:id/image-source

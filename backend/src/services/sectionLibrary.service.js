@@ -180,8 +180,16 @@ async function updateSection(id, { business_type, name, image_url, rule_json, st
 }
 
 // ── creator allocation set (2b reuse) for creator-surface context stacking ─────
-async function creatorAllocatedProductIds(influencerId) {
+// brandIds (P2, post composer): restrict to allocations from those brands only
+// — the composer's step-1 scope (single/multi/all collaborations).
+async function creatorAllocatedProductIds(influencerId, brandIds = null) {
   if (!influencerId) return [];
+  const params = [influencerId];
+  let brandClause = '';
+  if (Array.isArray(brandIds) && brandIds.length) {
+    params.push(brandIds);
+    brandClause = ` AND c.brand_id = ANY($2::uuid[])`;
+  }
   const { rows } = await db.query(
     `SELECT ci.offer_config_json AS ci_cfg, co.products_json AS products_json,
             c.brand_id AS brand_id
@@ -192,8 +200,8 @@ async function creatorAllocatedProductIds(influencerId) {
       WHERE ci.influencer_id = $1
         AND ci.status IN ('contracted','active','completed')
         AND c.status  IN ('published','active','live')
-        AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)`,
-    [influencerId]
+        AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)${brandClause}`,
+    params
   );
   const ids = new Set();
   for (const r of rows) {

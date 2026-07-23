@@ -26,9 +26,10 @@ import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
 import InfluencerContractsScreen from '../screens/influencer/InfluencerContractsScreen';
 import ProposalsHubScreen from '../screens/influencer/ProposalsHubScreen';
 import SendProposalScreen from '../screens/influencer/SendProposalScreen';
-// Concept P0 (2026-07-23): ExperienceStudio / MyStore / StockStore DELETED —
-// System B studio replaced by the Post Composer (Phase 2); the store screens
-// were orphans whose influencer_store_inventory table has no read path.
+// Concept P0 (2026-07-23): ExperienceStudio / MyStore / StockStore DELETED.
+// Concept P2: the Post Composer + My Posts replace the old studio.
+import PostComposerScreen from '../screens/influencer/PostComposerScreen';
+import MyPostsScreen from '../screens/influencer/MyPostsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -53,6 +54,8 @@ function HomeStackNav() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="PostComposer" component={PostComposerScreen} />
+      <HomeStack.Screen name="MyPosts" component={MyPostsScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
       <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
       <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />

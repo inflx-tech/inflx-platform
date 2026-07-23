@@ -22,6 +22,7 @@ const NAV = [
   // Theme Library / Design Library / Exp. Templates) DELETED — never follower-
   // visible. Food pages (Master Dishes, Meals) HIDDEN — vertical parked; the
   // backend routes stay mounted, pages return when food does.
+  { href: '/admin/posts', label: 'Post Queue', icon: '📮', cap: 'approvals' },
   { href: '/admin/concepts', label: 'Concepts', icon: '💡', cap: 'sections' },
   { href: '/admin/collections', label: 'Collections', icon: '🧺', cap: 'sections' },
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },

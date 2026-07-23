@@ -907,9 +907,11 @@ async function libraryProducts(ctx) {
   if (def.price_max != null) { maxIdx = ++p; params.push(def.price_max); }
 
   // creator surface → intersect with this creator's LIVE-allocated products (2b)
+  // ctx.allocBrandIds (P2 composer): only allocations from the post's scoped brands.
   let allocIdx = null;
   if (creatorScoped) {
-    const allocIds = await sectionLibrary.creatorAllocatedProductIds(ctx.influencer.id);
+    const allocIds = await sectionLibrary.creatorAllocatedProductIds(
+      ctx.influencer.id, ctx.allocBrandIds || null);
     if (!allocIds.length) return [];                      // creator promotes nothing live → empty
     allocIdx = ++p; params.push(allocIds);
   }

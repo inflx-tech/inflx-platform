@@ -267,6 +267,12 @@ export const influencerApi = {
   updateMe: (data) => api.patch('/influencers/me', data),
   getEarnings: () => api.get('/influencers/me/earnings'),
   getReferralInfo: () => api.get('/influencers/me/referral'),
+  // Creator posts (Post/Concept P2) — the Post Composer + My Posts
+  getPostScope: () => api.get('/influencers/me/post-scope'),
+  postPicker: (data) => api.post('/influencers/me/posts/picker', data),
+  getPostUploadUrl: (data) => api.post('/influencers/me/posts/upload-url', data),
+  createPost: (data) => api.post('/influencers/me/posts', data),
+  getMyPosts: (status) => api.get(`/influencers/me/posts${status ? `?status=${status}` : ''}`),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),
