@@ -1423,4 +1423,4 @@ async function runRule(ruleKey, ctx) {
 }
 
 module.exports = { runRule, RULES, buildTracking, etaFromDistanceKm,
-  OFFER_BEST_PCT, offerFieldsFromPct };
+  OFFER_BEST_PCT, offerFieldsFromPct, OFFER_LIVE_GATE, OFFER_APPLIES };

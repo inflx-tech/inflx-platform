@@ -1,0 +1,17 @@
+{
+  "feature": "concept-p3-follower-backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: 'start backend half' (P3 split ruling: backend now, UI screen-by-screen from founder designs)",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "P3 backend half. followerPosts.service: listFeed (approved, followed-first via follower_follows, filters concept/collection/creator for P4 reuse; batch concept-name generation, LATERAL cover) + getPostDetail (slides via public media route, pins = coordinate tags joined LIVE to product+OFFER_BEST_PCT, deduped shop list, per-product tracking/via_creator from the creator's newest live campaign_influencer per brand — existing 4-ID attribution rails, zero new commission code). PDP upgrade: getProductDetail + discount_value/offer_price + offers[] via newly-exported OFFER_LIVE_GATE/OFFER_APPLIES. Backend-only: no migration, no OTA, no UI (mockup gates n/a).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

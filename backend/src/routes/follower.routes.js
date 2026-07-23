@@ -36,6 +36,11 @@ router.post('/addresses',     ...followerAuth, ctrl.createAddress);
 router.get('/addresses',      ...followerAuth, ctrl.listAddresses);
 router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
 
+// ── Creator posts (Post/Concept P3) — the new source of truth ────────────────
+const followerPostsCtrl = require('../controllers/followerPosts.controller');
+router.get('/posts',     authenticateOptional, followerPostsCtrl.feed);
+router.get('/posts/:id', authenticateOptional, followerPostsCtrl.detail);
+
 // ── Feed & browse (public — auth optional for personalization) ───────────────
 router.get('/feed',      authenticateOptional, ctrl.getFeed);       // legacy
 router.get('/home-feed', authenticateOptional, ctrl.getHomeFeed);   // product-centric

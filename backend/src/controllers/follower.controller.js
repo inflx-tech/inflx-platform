@@ -30,7 +30,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
 const sectionLibrary = require('../services/sectionLibrary.service');
-const { runRule, etaFromDistanceKm, OFFER_BEST_PCT, offerFieldsFromPct } = require('../services/sectionRules.service');
+const { runRule, etaFromDistanceKm, OFFER_BEST_PCT, offerFieldsFromPct, OFFER_LIVE_GATE, OFFER_APPLIES } = require('../services/sectionRules.service');
 const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
@@ -1402,15 +1402,41 @@ const getPageSections = asyncHandler(async (req, res) => {
 const getProductDetail = asyncHandler(async (req, res) => {
   const { product_id } = req.params;
   const { rows } = await db.query(
-    `SELECT id, name, price, image_url, description, section,
-            variants_json, facets, tags, category_node_id,
-            return_policy_days, veg_flag, stock, badge
-       FROM brand_products
-      WHERE id = $1 AND is_active = true`,
+    `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.description, bp.section,
+            bp.variants_json, bp.facets, bp.tags, bp.category_node_id,
+            bp.return_policy_days, bp.veg_flag, bp.stock, bp.badge,
+            ${OFFER_BEST_PCT} AS offer_pct
+       FROM brand_products bp
+      WHERE bp.id = $1 AND bp.is_active = true`,
     [product_id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
-  const product = rows[0];
+  const { offer_pct, ...rest } = rows[0];
+
+  // Concept P3 — the PDP finally carries offer truth itself (previously the
+  // discount only arrived via whatever card the follower tapped through):
+  // struck-price fields from the best live discount + the full list of live
+  // offers that APPLY to this product (all 5 types), same gate the cards use.
+  const offerFields = offerFieldsFromPct(offer_pct, rest.price != null ? Number(rest.price) : null);
+  const { rows: offerRows } = await db.query(
+    `SELECT bo.id, bo.name, bo.offer_type::text AS offer_type,
+            bo.offer_config_json, bo.availing_modes, bo.store_ends_at
+       FROM brand_offers bo
+       JOIN brand_products bp ON bp.id = $1
+      WHERE ${OFFER_LIVE_GATE} AND ${OFFER_APPLIES}
+      ORDER BY bo.created_at DESC`,
+    [product_id]
+  );
+  const offers = offerRows.map(o => ({
+    id: o.id,
+    name: o.name,
+    offer_type: o.offer_type,
+    sub_type: o.offer_config_json?.sub_type || null,
+    value: o.offer_config_json?.value != null ? Number(o.offer_config_json.value) : null,
+    availing_modes: o.availing_modes || [],
+    store_ends_at: o.store_ends_at,
+  }));
+  const product = { ...rest, ...offerFields, offers };
 
   // Food World P1 — nested customisation groups for the ＋ popup + dish-detail
   // popup. ONE model: variation groups (single/is_variation, set base price) +
