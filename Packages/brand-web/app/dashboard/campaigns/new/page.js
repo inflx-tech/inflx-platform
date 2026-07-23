@@ -690,8 +690,12 @@ function NewCampaignPageInner() {
       if (s.window_end && endDate && s.window_end > endDate) sv.fields.window_end = `Cannot be after campaign end (${endDate})`;
       if (!Array.isArray(s.formats) || s.formats.length === 0) sv.fields.formats = 'Pick at least one content format';
       if (needsCoupon(s.goal)) {
-        if (!s.coupon_prefix || !s.coupon_prefix.trim()) sv.fields.coupon_prefix = 'Required for conversion / hybrid';
-        else if (!/^[A-Z0-9]{3,15}$/.test(s.coupon_prefix.trim())) sv.fields.coupon_prefix = '3-15 letters/digits, uppercase only';
+        const hasPrefix = !!(s.coupon_prefix && s.coupon_prefix.trim());
+        // Prefix is optional for handpick (each influencer can get a custom code
+        // on the terms sub-step); open-group joiners have no custom code, so the
+        // prefix is the only way they get one.
+        if (hasPrefix && !/^[A-Z0-9]{3,15}$/.test(s.coupon_prefix.trim())) sv.fields.coupon_prefix = '3-15 letters/digits, uppercase only';
+        if (!hasPrefix && s.influencer_mode === 'open_group') sv.fields.coupon_prefix = 'Required for open groups — joiners get auto-generated codes';
       }
       if (needsBudget(s.goal) && s.influencer_mode === 'handpick') {
         const sb = Number(s.set_budget);
@@ -741,6 +745,9 @@ function NewCampaignPageInner() {
           if (inf.commission_pct === '' || inf.commission_pct == null) errs.commission_pct = 'Required';
           else if (!Number.isFinite(cp) || cp <= 0 || cp > 100) errs.commission_pct = 'Must be between 0 and 100';
           if (!inf.offer_type) errs.offer_type = 'Pick an offer type';
+        }
+        if (needsCoupon(s.goal) && !(s.coupon_prefix && s.coupon_prefix.trim()) && !(inf.custom_code && inf.custom_code.trim())) {
+          errs.custom_code = 'Coupon code required — no set prefix to auto-generate one';
         }
         sv.influencers[ii] = errs;
       });
@@ -1091,11 +1098,43 @@ function NewCampaignPageInner() {
     setSets(updatedSets);
   };
 
+  // Locate the first validation error so the wizard can take the user to it —
+  // the offending field may live on an earlier sub-step that isn't on screen.
+  const ERR_FIELD_LABELS = {
+    name: 'Set name', goal: 'Goal', window_start: 'Window start', window_end: 'Window end',
+    formats: 'Content formats', coupon_prefix: 'Coupon prefix', set_budget: 'Set budget',
+    set_budget_overspent: 'Set budget', max_cap: 'Group size cap',
+    per_influencer_budget: 'Per-influencer budget', commission_pct: 'Commission %', projected: 'Group budget',
+  };
+  const ERR_FIELD_SUBSTEP = {
+    goal: 'goal', name: 'basics', coupon_prefix: 'basics', window_start: 'basics', window_end: 'basics',
+    formats: 'basics', set_budget: 'basics', set_budget_overspent: 'basics',
+  };
+  const firstStep2Error = () => {
+    for (let si = 0; si < sets.length; si++) {
+      const errs = validation.sets[si];
+      const fk = Object.keys(errs.fields);
+      if (fk.length) return { si, substep: ERR_FIELD_SUBSTEP[fk[0]] || 'basics', label: ERR_FIELD_LABELS[fk[0]] || fk[0] };
+      const gk = Object.keys(errs.group);
+      if (gk.length) return { si, substep: 'pick', label: ERR_FIELD_LABELS[gk[0]] || gk[0] };
+      const ii = errs.influencers.findIndex(e => Object.keys(e).length > 0);
+      if (ii >= 0) return { si, substep: 'terms', label: `${sets[si].influencers[ii]?.name || 'an influencer'}'s terms` };
+    }
+    return null;
+  };
+
   const goToStep3 = async () => {
     if (validation.step1Errors > 0 || validation.step2Errors > 0) {
       setForceShowErrors(true);
       const total = validation.step1Errors + validation.step2Errors;
-      setError(`Please fix ${total} field${total !== 1 ? 's' : ''} before reviewing.`);
+      if (validation.step1Errors > 0) {
+        setStep(0);
+        setError(`Please fix ${total} field${total !== 1 ? 's' : ''} before reviewing — the campaign basics highlighted below.`);
+      } else {
+        const t = firstStep2Error();
+        if (t) { setActiveSet(t.si); setSubstep(t.substep); }
+        setError(`Please fix ${total} field${total !== 1 ? 's' : ''} before reviewing${t ? ` — ${t.label} in ${sets[t.si]?.name || 'this set'}, highlighted below` : ''}.`);
+      }
       return;
     }
     let cid = campaignId;
@@ -1109,9 +1148,16 @@ function NewCampaignPageInner() {
   const handlePublish = async () => {
     if (validation.step1Errors > 0 || validation.step2Errors > 0) {
       setForceShowErrors(true);
-      setStep(validation.step1Errors > 0 ? 0 : 1);
       const total = validation.step1Errors + validation.step2Errors;
-      setError(`Cannot publish — fix ${total} field${total !== 1 ? 's' : ''} first.`);
+      if (validation.step1Errors > 0) {
+        setStep(0);
+        setError(`Cannot publish — fix ${total} field${total !== 1 ? 's' : ''} first.`);
+      } else {
+        const t = firstStep2Error();
+        setStep(1);
+        if (t) { setActiveSet(t.si); setSubstep(t.substep); }
+        setError(`Cannot publish — fix ${total} field${total !== 1 ? 's' : ''} first${t ? ` (${t.label} in ${sets[t.si]?.name || 'this set'})` : ''}.`);
+      }
       return;
     }
     let cid = campaignId;
@@ -1198,13 +1244,14 @@ function NewCampaignPageInner() {
   const substepIdx = ['goal','basics','fork','pick','terms'].indexOf(substep);
   const setComplete = (s) => {
     if (!s.goal || !s.name || !s.window_start || !s.window_end || !s.formats?.length) return false;
-    if (needsCoupon(s.goal) && !s.coupon_prefix) return false;
+    if (needsCoupon(s.goal) && s.influencer_mode !== 'handpick' && !s.coupon_prefix) return false;
     if (s.influencer_mode === 'handpick') {
       if (s.influencers.length === 0) return false;
       return s.influencers.every(inf => {
         if (!inf.post_date) return false;
         if (needsBudget(s.goal) && !(Number(inf.influencer_budget) > 0)) return false;
         if (needsOffer(s.goal) && (!(Number(inf.commission_pct) > 0) || !inf.offer_type)) return false;
+        if (needsCoupon(s.goal) && !s.coupon_prefix && !(inf.custom_code || '').trim()) return false;
         return true;
       });
     }
@@ -1388,7 +1435,7 @@ function NewCampaignPageInner() {
               Post {cur.formats?.length ? cur.formats.map(f => `${f.count} ${f.name.replace('Instagram ', '')}`).join(' + ') : '—'} between {cur.window_start || '—'} – {cur.window_end || '—'}<br />
               {needsBudget(cur.goal) && <>Earn <span className="mono">₹{fmtN(previewBudget)}</span> base{needsOffer(cur.goal) ? <> + <b>{previewComm}% commission</b></> : ''}</>}
               {!needsBudget(cur.goal) && needsOffer(cur.goal) && <>Earn <b>{previewComm}% commission</b> per sale</>}
-              {needsCoupon(cur.goal) && cur.coupon_prefix && <> via code <span className="mono">{previewCode}</span></>}
+              {needsCoupon(cur.goal) && (previewInf?.custom_code || cur.coupon_prefix) && <> via code <span className="mono">{previewCode}</span></>}
             </div>
             <div className="pr"><span className="pr-k">Window</span><span className="pr-v">{cur.window_start || '—'} → {cur.window_end || '—'}</span></div>
             <div className="pr"><span className="pr-k">Your pay</span><span className="pr-v">{needsBudget(cur.goal) ? `₹${fmtN(previewBudget)}` : 'Commission only'}{needsOffer(cur.goal) ? ` + ${previewComm}%` : ''}</span></div>
@@ -1400,11 +1447,11 @@ function NewCampaignPageInner() {
           <div className="chr"><div className={`chd ${cur.goal ? 'done' : ''}`}></div><div className={`cht ${cur.goal ? 'done' : ''}`}>Goal picked{cur.goal ? ` — ${cur.goal}` : ''}</div></div>
           <div className="chr"><div className={`chd ${cur.name && cur.window_start && cur.window_end ? 'done' : ''}`}></div><div className={`cht ${cur.name && cur.window_start && cur.window_end ? 'done' : ''}`}>Name & window</div></div>
           <div className="chr"><div className={`chd ${cur.formats?.length ? 'done' : ''}`}></div><div className={`cht ${cur.formats?.length ? 'done' : ''}`}>Formats selected</div></div>
-          {needsCoupon(cur.goal) && <div className="chr"><div className={`chd ${cur.coupon_prefix ? 'done' : 'warn'}`}></div><div className={`cht ${cur.coupon_prefix ? 'done' : ''}`}>Coupon prefix</div></div>}
+          {needsCoupon(cur.goal) && (() => { const ok = (cur.coupon_prefix || '').trim() || (curMode === 'handpick' && cur.influencers.length > 0 && cur.influencers.every(i => (i.custom_code || '').trim())); return <div className="chr"><div className={`chd ${ok ? 'done' : 'warn'}`}></div><div className={`cht ${ok ? 'done' : ''}`}>Coupon codes{!ok && curMode === 'handpick' ? ' — prefix or per-influencer' : ''}</div></div>; })()}
           {needsBudget(cur.goal) && curMode === 'handpick' && <div className="chr"><div className={`chd ${Number(cur.set_budget) > 0 ? 'done' : 'warn'}`}></div><div className={`cht ${Number(cur.set_budget) > 0 ? 'done' : ''}`}>Set budget</div></div>}
           <div className="chr"><div className={`chd ${cur.influencer_mode ? 'done' : ''}`}></div><div className={`cht ${cur.influencer_mode ? 'done' : ''}`}>Assignment mode picked</div></div>
           {curMode === 'handpick' && <div className="chr"><div className={`chd ${cur.influencers.length > 0 ? 'done' : ''}`}></div><div className={`cht ${cur.influencers.length > 0 ? 'done' : ''}`}>{cur.influencers.length || 'No'} influencer{cur.influencers.length !== 1 ? 's' : ''} added</div></div>}
-          {curMode === 'handpick' && cur.influencers.length > 0 && <div className="chr"><div className={`chd ${setComplete(cur) ? 'done' : 'warn'}`}></div><div className={`cht ${setComplete(cur) ? 'done' : ''}`}>{setComplete(cur) ? 'All terms set' : `${sv.influencers.filter(e => Object.keys(e).length).length} need terms`}</div></div>}
+          {curMode === 'handpick' && cur.influencers.length > 0 && (() => { const n = sv.influencers.filter(e => Object.keys(e).length).length; return <div className="chr"><div className={`chd ${setComplete(cur) ? 'done' : 'warn'}`}></div><div className={`cht ${setComplete(cur) ? 'done' : ''}`}>{setComplete(cur) ? 'All terms set' : n > 0 ? `${n} need terms` : 'Terms set — fix the items above'}</div></div>; })()}
         </div>
       </>
     );
@@ -1629,7 +1676,7 @@ function NewCampaignPageInner() {
             </div>
             {needsCoupon(cur.goal) && (
               <div className="f">
-                <label className="flbl">Coupon prefix <span className="opt">we append the influencer's first name</span></label>
+                <label className="flbl">Coupon prefix <span className="opt">optional — auto-generates PREFIX_NAME codes; or set each code yourself on the terms step</span></label>
                 <input className={`inp mono ${showErr(`set_${activeSet}_cp`, sv.fields.coupon_prefix) ? 'err' : ''}`} value={cur.coupon_prefix || ''} placeholder="e.g. SUMMER → SUMMER_PRIYA"
                   onChange={e => { updateSet(activeSet, { coupon_prefix: e.target.value.toUpperCase() }); markTouched(`set_${activeSet}_cp`); }} />
                 <div className="fhint">Example: {cur.coupon_prefix ? `${cur.coupon_prefix}_PRIYA` : 'CODE_PRIYA'}</div>
@@ -2164,8 +2211,9 @@ function NewCampaignPageInner() {
                 </div>
                 {needsCoupon(cur.goal) && (
                   <div className="f">
-                    <label className="flbl">Coupon code <span className="opt">default: {autoCode(cur.coupon_prefix, inf.name)}</span></label>
-                    <input className="inp mono" value={inf.custom_code || ''} placeholder={autoCode(cur.coupon_prefix, inf.name)} onChange={e => onInfChg('custom_code', e.target.value.toUpperCase())} />
+                    <label className="flbl">Coupon code <span className="opt">{(cur.coupon_prefix || '').trim() ? `default: ${autoCode(cur.coupon_prefix, inf.name)}` : 'required — no set prefix, so pick any code'}</span></label>
+                    <input className={`inp mono ${showErr(`inf_${activeSet}_${ai}_code`, infErr.custom_code) ? 'err' : ''}`} value={inf.custom_code || ''} placeholder={(cur.coupon_prefix || '').trim() ? autoCode(cur.coupon_prefix, inf.name) : `e.g. ${(inf.name || 'CODE').split(' ')[0].toUpperCase()}10`} onChange={e => { onInfChg('custom_code', e.target.value.toUpperCase()); markTouched(`inf_${activeSet}_${ai}_code`); }} />
+                    {showErr(`inf_${activeSet}_${ai}_code`, infErr.custom_code) && <div className="field-err">{infErr.custom_code}</div>}
                   </div>
                 )}
                 <div className="f" style={{ gridColumn: 'span 2' }}>

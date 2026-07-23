@@ -639,9 +639,11 @@ const createSet = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'set_budget must not be set for conversion goals', 422, 'set_budget');
   }
 
-  // Conversion/Hybrid require coupon_prefix; Engagement must not have one
-  if ((goal === 'conversion' || goal === 'hybrid') && !coupon_prefix) {
-    throw new AppError('VALIDATION_ERROR', 'coupon_prefix is required for conversion and hybrid goals', 422, 'coupon_prefix');
+  // Coupon prefix is optional for conversion/hybrid handpick sets (each invite
+  // can carry its own coupon_code); open-group joiners have no per-influencer
+  // code, so the prefix stays mandatory there. Engagement must not have one.
+  if ((goal === 'conversion' || goal === 'hybrid') && !coupon_prefix && (influencer_mode || 'handpick') === 'open_group') {
+    throw new AppError('VALIDATION_ERROR', 'coupon_prefix is required for open-group conversion and hybrid sets', 422, 'coupon_prefix');
   }
   if (goal === 'engagement' && coupon_prefix) {
     throw new AppError('VALIDATION_ERROR', 'coupon_prefix must not be set for engagement goals', 422, 'coupon_prefix');
@@ -950,6 +952,10 @@ const invite = asyncHandler(async (req, res) => {
     } else if (set.coupon_prefix) {
       const firstName = inf.full_name || 'INF';
       finalCouponCode = await generateUniqueCouponCode(set.coupon_prefix, firstName);
+    } else {
+      // Conversion/hybrid sales attribute via coupon — an influencer without any
+      // code would be untrackable, so reject rather than insert a NULL code.
+      throw new AppError('VALIDATION_ERROR', 'Provide a coupon code for this influencer, or set a coupon prefix on the set', 422, 'coupon_code');
     }
   }
 
