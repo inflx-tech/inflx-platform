@@ -1,0 +1,22 @@
+{
+  "feature": "campaign-coupon-optional-prefix",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: 'instead can we keep this coupon prefix as not mandatory field..so that brand can give name to influencer whatever he feels at sub step 5?' then 'pls commit and push'",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — no new visual design: validation/copy change inside the already-locked campaign-wizard layout, specified from the live screen (founder's in-session screenshot of the 'fix 1 field' dead end); see 06-diff/notes.md for the before/after",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "Coupon prefix optional for conversion/hybrid handpick sets (per-influencer custom codes on sub-step 5 stand in); mandatory for open-group (joiners only get auto-generated codes). Invariant enforced both layers: every conversion/hybrid influencer ends with a coupon code, never NULL — new invite-time 422 backstop closes the pre-existing NULL-coupon hole. Plus jump-to-error navigation on review/publish (previously a generic error with the field off-screen) and honest checklist copy.",
+  "qa_record": "Full lane 2026-07-23 (report 2026-07-23T13-11-08-490Z): 75 passed, 4 failed — W2, W5a, W5b (api invariants) and C5 (pure unit money-math) all hit the 60s test-timeout during setup (445-490s wall; C5's siblings C1-C4 passed in 0-3ms). Targeted rerun of the three affected spec files: 17/17 green in 17.7s (C5 2ms, W2 5.1s). Classified infrastructure flake (parallel-setup contention), no assertion ever failed. No existing test pins the old prefix-mandatory behaviour.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "founder go in-session 2026-07-23 ('pls commit and push'). Production-impacting: backend (Render) + brand-web (Vercel) auto-deploy on push. No mobile surface touched — no OTA needed. released stays false until founder re-runs the campaign-create flow on inflx.in and confirms the SAGAR10-style flow publishes."
+  }
+}
