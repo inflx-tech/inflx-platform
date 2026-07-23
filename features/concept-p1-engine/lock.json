@@ -15,6 +15,7 @@
     "qa_all_green": true,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "deploy": "founder go in-session 2026-07-23 ('ok pls go and deploy'). run-139.js applied to prod FIRST (verified: 47 templates = 27/9/11, 14 collections, 0 concepts), then pushed 104d4c4 -> Render + Vercel auto-deploy. No OTA (mobile untouched). released stays false until founder eyeballs /admin/concepts + /admin/collections live."
   }
 }
