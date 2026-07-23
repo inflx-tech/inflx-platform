@@ -1,0 +1,20 @@
+{
+  "feature": "concept-p0-foundation",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: approved POST_CONCEPT_BUILD_PLAN.md then 'start implementation of phase 0'",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated lock (standing autonomy) — only new UI is the wizard category picker (04-preview/mockups/leaf-category-picker.html); the rest of the changeset is deletion/backend. Founder approved the phase scope in-session.",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "Phase 0 of the Post/Concept program. (1) Leaf allocation: offer_config_json.category_node_id end to end — wizard tree picker, validator accepts node-only, resolveAllocatedProductIds + getStoreOfferDetail recursive subtree, getCampaignProducts now scope-aware via the same resolver. (2) library_products rule_json + offer_type + eff_price_min/max (effective = after best live discount). (3) System B (Creator Experience Engine) deleted: 4 admin pages, 6 routes, 6 controllers, 4 services, experience_template rule, ExperienceStudio/MyStore/StockStore/ExperiencePreview screens, AdaptiveRenderer components, 5 stale specs + 2 Maestro flows; tables kept (empty). creatorImagery kept. (4) Nav: food pages hidden, tax-summary added, dead pages deleted. Prod verified read-only first: 195/195 leaves match CSV, zero fashion orphans. Known pre-existing failure documented in 05-impact: mobile FollowerWalletScreen jest suite (vector-icons transform, untouched file).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -18,7 +18,6 @@ const db = require('../config/db');
 const proposalService = require('../services/proposal.service');
 const notificationService = require('../services/notification.service');
 const contractService = require('../services/contract.service');
-const experienceService = require('../services/experience.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -471,12 +470,8 @@ async function acceptedFlow(proposal, useCounterTerms) {
     [proposal.id, ci.id]
   );
 
-  // 6. Phase 8 — BEST-EFFORT seed a draft experience from the (scoped/themed)
-  // proposal. Wrapped so a failure NEVER blocks the accept: on any error the
-  // proposal is accepted + the campaign created exactly as today.
-  try { await experienceService.seedFromProposal(proposal); }
-  catch (e) { console.warn('[proposal] seedFromProposal (non-fatal):', e.message); }
-
+  // (Experience-draft seeding removed with the Creator Experience Engine —
+  // Concept P0, 2026-07-23. Accept flow is otherwise unchanged.)
   return ci;
 }
 

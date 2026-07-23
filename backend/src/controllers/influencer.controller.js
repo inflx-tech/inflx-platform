@@ -1254,14 +1254,24 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   const publishedProductIds = notes.map(n => n.product_id);
 
   // Determine product IDs — priority order:
+  // 0. Scope-aware LIVE allocation (store/category incl. category_node_id subtree)
+  //    — same resolver as the follower store, so the creator sees the SAME
+  //    universe followers do (previously store/category fell to "all products").
   // 1. offer_config_json.products (brand selected specific products for this influencer)
   // 2. campaign_offers.products_json (set-level product assignment)
   // 3. Published products (influencer already published these)
   // 4. All brand products (fallback — brand-level offer, no specific products)
   let productIds = [];
 
+  const ciScope = String(ciOfferConfig.scope || '').toLowerCase();
+  if (ciScope === 'store' || ciScope === 'category') {
+    productIds = await followerService.resolveAllocatedProductIds({
+      ciCfg: ciOfferConfig, offerProductsJson: offers[0]?.products_json, brandId: ci.brand_id,
+    });
+  }
+
   // From per-influencer offer config
-  if (Array.isArray(offerConfigProducts) && offerConfigProducts.length > 0) {
+  if (productIds.length === 0 && Array.isArray(offerConfigProducts) && offerConfigProducts.length > 0) {
     productIds = offerConfigProducts.map(p => typeof p === 'string' ? p : p.product_id || p.id).filter(Boolean);
   }
 

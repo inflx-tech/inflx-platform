@@ -11,12 +11,6 @@ const adminRoutes       = require('./admin.routes');
 const adminSectionsRoutes = require('./adminSections.routes');
 const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 const adminPagesRoutes = require('./adminPages.routes');
-const adminDesignSystemRoutes = require('./adminDesignSystem.routes');
-const adminThemesRoutes = require('./adminThemes.routes');
-const adminDesignLayoutsRoutes = require('./adminDesignLayouts.routes');
-const adminExperiencePreviewRoutes = require('./adminExperiencePreview.routes');
-const adminTemplatesRoutes = require('./adminTemplates.routes');
-const influencerExperiencesRoutes = require('./influencerExperiences.routes');
 const brandCreatorImagesRoutes = require('./brandCreatorImages.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
@@ -121,23 +115,11 @@ router.use('/admin/world-rules', adminWorldRulesRoutes);
 // ── Custom-page registry admin API (App Builder — admin only) ────────────────
 router.use('/admin/pages', adminPagesRoutes);
 
-// ── Design System admin API (Creator Experience Engine Phase 1, mig 127-128) ──
-router.use('/admin/design-system', adminDesignSystemRoutes);
-
-// ── Theme Library admin API (Creator Experience Engine Phase 2, mig 129-130) ──
-router.use('/admin/themes', adminThemesRoutes);
-
-// ── Design Library admin API (Creator Experience Engine Phase 3, mig 131-132) ──
-router.use('/admin', adminDesignLayoutsRoutes);   // /admin/design-layouts + /admin/section-styles
-
-// ── Adaptive Renderer preview API (Creator Experience Engine Phase 4a) ────────
-router.use('/admin', adminExperiencePreviewRoutes);   // /admin/experience-preview
-
-// ── Experience Templates admin API (Creator Experience Engine Phase 5, mig 133-134)
-router.use('/admin/experience-templates', adminTemplatesRoutes);
-
-// ── Creator Experience Studio API (Creator Experience Engine Phase 6a, mig 135)
-router.use('/influencers', influencerExperiencesRoutes);   // /influencers/me/experience* + /me/assets*
+// ── Creator Experience Engine (System B) RETIRED — Concept P0 (2026-07-23).
+// design-system/themes/design-layouts/experience-preview/experience-templates/
+// creator-experience routes deleted; tables ship empty and are dropped in a
+// later phase. creatorImagery (brand-side creator-image approval) is KEPT —
+// it seeds the Phase-2 creator media pipeline.
 
 // ── Creator imagery: brand approval + display source (Phase 7a, mig 136-137) ──
 router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator-images + /products/:id/image-source

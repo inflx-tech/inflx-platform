@@ -181,20 +181,6 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
-      {/* ─── Create Experience (Creator Experience Engine Phase 6b) ─── */}
-      <TouchableOpacity
-        style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: '#1A1A1A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center' }}
-        activeOpacity={0.9}
-        onPress={() => navigation.navigate('ExperienceStudio')}
-      >
-        <Text style={{ fontSize: 20, marginRight: 10 }}>✨</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Create Experience</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Pick a template → products → publish</Text>
-        </View>
-        <Text style={{ color: '#F6B11E', fontSize: 18 }}>→</Text>
-      </TouchableOpacity>
-
       {/* ─── Active Campaigns ─── */}
       {activeCampaigns.length > 0 && (
         <View style={styles.section}>

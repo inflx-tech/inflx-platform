@@ -69,8 +69,8 @@ const autoCode = (prefix, name) => `${(prefix || 'CODE').toUpperCase()}_${(name 
 const mkInf = () => ({
   influencer_id: null, name: '', handle: '', init: '',
   post_date: '', influencer_budget: '', offer_type: '',
-  d_sub: 'pct', d_val: '', d_prods: [], d_scope: 'store', d_category: '',
-  v_prods: [], v_tiers: [{min_spend:'', pct_off:''}], v_scope: 'store', v_category: '',
+  d_sub: 'pct', d_val: '', d_prods: [], d_scope: 'store', d_category: '', d_category_node: '',
+  v_prods: [], v_tiers: [{min_spend:'', pct_off:''}], v_scope: 'store', v_category: '', v_category_node: '',
   bogo_buy: null, bogo_get: null,
   bnd_prods: [], bnd_price: '',
   gift_offers: [{ main: null, gift: null }],
@@ -522,6 +522,7 @@ function NewCampaignPageInner() {
   const [duplicateToast, setDuplicateToast] = useState(null);
   const [products, setProducts] = useState([]);
   const [libOffers, setLibOffers] = useState([]);   // Offer Engine: brand's saved offers
+  const [categoryTree, setCategoryTree] = useState([]); // brand's listing tree for leaf-level category scope
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCtx, setModalCtx] = useState(null);
   const [modalTempSel, setModalTempSel] = useState([]);
@@ -561,6 +562,10 @@ function NewCampaignPageInner() {
     brandApi.getProducts().then(res => { if (res.ok) setProducts((res.data?.products || []).filter(p => p.is_active !== false && p.pushed_to_store !== false)); }).catch(() => {});
     // Offer Engine: load the brand's active saved offers for the in-wizard picker.
     brandApi.getOffers({ status: 'active' }).then(res => { if (res.success || res.ok) setLibOffers(res.data?.offers || []); }).catch(() => {});
+    // Leaf-level category allocation: the brand's own listing tree (fashion/
+    // furniture). Category scope stores category_node_id (subtree match) so a
+    // brand can allocate exactly "Jeans", not just the mid-level section string.
+    brandApi.get?.('/brands/me/listing-tree').then(res => { if (res?.success) setCategoryTree(res.data?.tree || []); }).catch(() => {});
     // F-5: load the brand's server-persisted influencer groups.
     refreshInfGroups();
   }, []);
@@ -607,8 +612,8 @@ function NewCampaignPageInner() {
               physical_delivery: ci.physical_delivery || false,
               delivery_address: ci.delivery_address || '',
               custom_code: ci.coupon_code || '',
-              ...((ci.offer_type || '').toLowerCase().includes('discount') && { d_sub: cfg.sub_type || 'pct', d_val: String(cfg.value || ''), d_prods: cfg.products || [], d_scope: cfg.scope || (cfg.products?.length ? 'products' : 'store'), d_category: cfg.category || '' }),
-              ...((ci.offer_type || '').toLowerCase().includes('volume') && { v_tiers: cfg.tiers || [{min_spend:'',pct_off:''}], v_prods: cfg.products || [], v_scope: cfg.scope || (cfg.products?.length ? 'products' : 'store'), v_category: cfg.category || '' }),
+              ...((ci.offer_type || '').toLowerCase().includes('discount') && { d_sub: cfg.sub_type || 'pct', d_val: String(cfg.value || ''), d_prods: cfg.products || [], d_scope: cfg.scope || (cfg.products?.length ? 'products' : 'store'), d_category: cfg.category || '', d_category_node: cfg.category_node_id || '' }),
+              ...((ci.offer_type || '').toLowerCase().includes('volume') && { v_tiers: cfg.tiers || [{min_spend:'',pct_off:''}], v_prods: cfg.products || [], v_scope: cfg.scope || (cfg.products?.length ? 'products' : 'store'), v_category: cfg.category || '', v_category_node: cfg.category_node_id || '' }),
               ...((ci.offer_type || '').toLowerCase() === 'bogo' && { bogo_buy: cfg.buy_product || null, bogo_get: cfg.get_product || null }),
               ...((ci.offer_type || '').toLowerCase().includes('bundle') && { bnd_prods: cfg.products || [], bnd_price: String(cfg.bundle_price || '') }),
               ...((ci.offer_type || '').toLowerCase().includes('gift') && { gift_offers: cfg.offers || [{main:null,gift:null}] }),
@@ -997,9 +1002,9 @@ function NewCampaignPageInner() {
   const buildOfferConfig = (item) => {
     const t = (item.offer_type || '').toLowerCase().trim();
     switch (t) {
-      case 'discount': return { sub_type: item.d_sub, value: Number(item.d_val) || 0, scope: item.d_scope || 'store', category: item.d_scope === 'category' ? (item.d_category || null) : null, products: item.d_scope === 'products' ? (item.d_prods || []) : [] };
+      case 'discount': return { sub_type: item.d_sub, value: Number(item.d_val) || 0, scope: item.d_scope || 'store', category: item.d_scope === 'category' ? (item.d_category || null) : null, category_node_id: item.d_scope === 'category' ? (item.d_category_node || null) : null, products: item.d_scope === 'products' ? (item.d_prods || []) : [] };
       case 'volume discount':
-      case 'volume': return { tiers: item.v_tiers, scope: item.v_scope || 'store', category: item.v_scope === 'category' ? (item.v_category || null) : null, products: item.v_scope === 'products' ? (item.v_prods || []) : [] };
+      case 'volume': return { tiers: item.v_tiers, scope: item.v_scope || 'store', category: item.v_scope === 'category' ? (item.v_category || null) : null, category_node_id: item.v_scope === 'category' ? (item.v_category_node || null) : null, products: item.v_scope === 'products' ? (item.v_prods || []) : [] };
       case 'bogo': return { buy_product: item.bogo_buy, get_product: item.bogo_get };
       case 'bundle': return { products: item.bnd_prods, bundle_price: Number(item.bnd_price) || 0 };
       case 'free gift':
@@ -1178,6 +1183,16 @@ function NewCampaignPageInner() {
   };
 
   const brandSections = [...new Set((products || []).map(p => p.section).filter(Boolean))].sort();
+  // Full-path rows ("Men › Bottomwear › Jeans") over the brand's listing tree —
+  // any level is allocatable; the server matches the whole subtree of the node.
+  const flatCategoryTree = (function flatten(nodes, prefix, out) {
+    for (const n of (nodes || [])) {
+      const label = [...prefix, n.name].join(' › ');
+      out.push({ id: String(n.id), label, name: n.name, count: n.product_count || 0 });
+      if (n.children && n.children.length) flatten(n.children, [...prefix, n.name], out);
+    }
+    return out;
+  })(categoryTree, [], []);
 
   // ─── Sub-step helpers ──────────────────────────────────────────────────────
   const substepIdx = ['goal','basics','fork','pick','terms'].indexOf(substep);
@@ -1930,7 +1945,7 @@ function NewCampaignPageInner() {
         {p ? p.name : `+ Pick ${label}`}
       </button>
     );
-    const scopeToggle = (scopeField, catField, valScope, valCat) => (
+    const scopeToggle = (scopeField, catField, nodeField, valScope, valCat, valNode) => (
       <>
         <div className="tog">
           {['store','category','products'].map(s => (
@@ -1938,7 +1953,18 @@ function NewCampaignPageInner() {
           ))}
         </div>
         {valScope === 'category' && (
-          brandSections.length > 0 ? (
+          flatCategoryTree.length > 0 ? (
+            // Tree-aware picker (leaf-level allocation): stores category_node_id
+            // (subtree match server-side) + the node name as display/legacy label.
+            <select className="inp" style={{ marginTop: 8 }} value={valNode || ''} onChange={e => {
+              const n = flatCategoryTree.find(r => r.id === e.target.value);
+              onChg(nodeField, n ? n.id : '');
+              onChg(catField, n ? n.name : '');
+            }}>
+              <option value="">Pick a category</option>
+              {flatCategoryTree.map(r => <option key={r.id} value={r.id}>{r.label}{r.count > 0 ? ` (${r.count})` : ''}</option>)}
+            </select>
+          ) : brandSections.length > 0 ? (
             <select className="inp" style={{ marginTop: 8 }} value={valCat || ''} onChange={e => onChg(catField, e.target.value)}>
               <option value="">Pick a section</option>
               {brandSections.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1957,7 +1983,7 @@ function NewCampaignPageInner() {
               <input className="inp mono" value={o.d_val || ''} onChange={e => onChg('d_val', e.target.value)} />
             </div>
             <h5 style={{ marginTop: 14 }}>Applies to</h5>
-            {scopeToggle('d_scope', 'd_category', o.d_scope, o.d_category)}
+            {scopeToggle('d_scope', 'd_category', 'd_category_node', o.d_scope, o.d_category, o.d_category_node)}
             {o.d_scope === 'products' && prodChips(o.d_prods, 'd_prods')}
           </div>
         )}
@@ -1972,7 +1998,7 @@ function NewCampaignPageInner() {
             ))}
             <button className="btn btn-back btn-sm" onClick={() => onChg('v_tiers', [...(o.v_tiers || []), { min_spend: '', pct_off: '' }])}>+ Add tier</button>
             <h5 style={{ marginTop: 14 }}>Applies to</h5>
-            {scopeToggle('v_scope', 'v_category', o.v_scope, o.v_category)}
+            {scopeToggle('v_scope', 'v_category', 'v_category_node', o.v_scope, o.v_category, o.v_category_node)}
             {o.v_scope === 'products' && prodChips(o.v_prods, 'v_prods')}
           </div>
         )}
@@ -2072,8 +2098,8 @@ function NewCampaignPageInner() {
         commission_pct: inf.commission_pct,
         offer_type: inf.offer_type,
         physical_delivery: inf.physical_delivery,
-        d_sub: inf.d_sub, d_val: inf.d_val, d_prods: inf.d_prods, d_scope: inf.d_scope, d_category: inf.d_category,
-        v_tiers: inf.v_tiers, v_prods: inf.v_prods, v_scope: inf.v_scope, v_category: inf.v_category,
+        d_sub: inf.d_sub, d_val: inf.d_val, d_prods: inf.d_prods, d_scope: inf.d_scope, d_category: inf.d_category, d_category_node: inf.d_category_node,
+        v_tiers: inf.v_tiers, v_prods: inf.v_prods, v_scope: inf.v_scope, v_category: inf.v_category, v_category_node: inf.v_category_node,
         bogo_buy: inf.bogo_buy, bogo_get: inf.bogo_get,
         bnd_prods: inf.bnd_prods, bnd_price: inf.bnd_price,
         gift_offers: inf.gift_offers,

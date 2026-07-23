@@ -241,10 +241,6 @@ async function buildSections(opts) {
       ruleDef,                       // data-driven rule definition (library_products)
       influencer,
       itemType: row.item_type || null,
-      // Creator Experience Engine Phase 6 — placed Experience Template's id, so
-      // the experience_template rule resolves this template's published
-      // experiences. NULL for every normal section (rules ignore it).
-      templateId: row.template_id || (cfg && cfg.template_id) || null,
       limit: row.item_limit || 8,
       // freshness: section override > world default (mig 126) > legacy 7
       windowDays: cfg.window_days || (worldRules && worldRules.window_days_default) || 7,

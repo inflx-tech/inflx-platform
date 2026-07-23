@@ -22,14 +22,13 @@ import CampaignDetailScreen from '../screens/influencer/CampaignDetailScreen';
 import CampaignCompletionScreen from '../screens/influencer/CampaignCompletionScreen';
 import BrandProfileScreen from '../screens/influencer/BrandProfileScreen';
 import CampaignProductsScreen from '../screens/influencer/CampaignProductsScreen';
-import MyStoreScreen from '../screens/influencer/MyStoreScreen';
-import StockStoreScreen from '../screens/influencer/StockStoreScreen';
 import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
 import InfluencerContractsScreen from '../screens/influencer/InfluencerContractsScreen';
 import ProposalsHubScreen from '../screens/influencer/ProposalsHubScreen';
 import SendProposalScreen from '../screens/influencer/SendProposalScreen';
-// Creator Experience Engine Phase 6b — Creator Experience Studio
-import ExperienceStudioScreen from '../screens/influencer/ExperienceStudioScreen';
+// Concept P0 (2026-07-23): ExperienceStudio / MyStore / StockStore DELETED —
+// System B studio replaced by the Post Composer (Phase 2); the store screens
+// were orphans whose influencer_store_inventory table has no read path.
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -54,7 +53,6 @@ function HomeStackNav() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
-      <HomeStack.Screen name="ExperienceStudio" component={ExperienceStudioScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
       <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
       <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
@@ -65,8 +63,6 @@ function HomeStackNav() {
       <HomeStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
       <HomeStack.Screen name="BrandProfile" component={BrandProfileScreen} />
       <HomeStack.Screen name="CampaignProducts" component={CampaignProductsScreen} />
-      <HomeStack.Screen name="MyStore" component={MyStoreScreen} />
-      <HomeStack.Screen name="StockStore" component={StockStoreScreen} />
       <HomeStack.Screen name="TransactionFeed" component={TransactionFeedScreen} />
       <HomeStack.Screen name="Negotiation" component={NegotiationScreen} />
     </HomeStack.Navigator>

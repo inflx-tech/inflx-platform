@@ -23,6 +23,8 @@ const categoryTaxonomy = require('./categoryTaxonomy.service');
 const { resolveAllocatedProductIds } = require('./follower.service');
 
 const SORTS = new Set(['newest', 'price_asc', 'price_desc']);
+// brand_offers.offer_type vocabulary (CHECK constraint, migration 084).
+const OFFER_TYPES = new Set(['discount', 'volume', 'bogo', 'bundle', 'free_gift']);
 
 // ── validation ───────────────────────────────────────────────────────────────
 function validateRule(rule) {
@@ -77,6 +79,25 @@ function validateRule(rule) {
     const n = Number(r.min_discount_pct);
     if (!Number.isFinite(n) || n < 0) throw new Error('min_discount_pct must be a non-negative number');
     out.min_discount_pct = Math.min(100, n);
+  }
+  // Concept P0: offer-TYPE filter — brand_offers vocabulary (mig 084 CHECK).
+  if (r.offer_type != null && String(r.offer_type).trim()) {
+    const t = String(r.offer_type).trim().toLowerCase();
+    if (!OFFER_TYPES.has(t)) {
+      throw new Error(`offer_type must be one of: ${[...OFFER_TYPES].join(', ')}`);
+    }
+    out.offer_type = t;
+  }
+  // Concept P0: EFFECTIVE-price band (price after best live discount offer).
+  for (const k of ['eff_price_min', 'eff_price_max']) {
+    if (r[k] != null && r[k] !== '') {
+      const n = Number(r[k]);
+      if (!Number.isFinite(n) || n < 0) throw new Error(`${k} must be a non-negative number`);
+      out[k] = n;
+    }
+  }
+  if (out.eff_price_min != null && out.eff_price_max != null && out.eff_price_min > out.eff_price_max) {
+    throw new Error('eff_price_min must be ≤ eff_price_max');
   }
   out.sort = SORTS.has(r.sort) ? r.sort : 'newest';
   return out;

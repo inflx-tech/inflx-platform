@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Leaf category picker — campaign wizard "Applies to"</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#faf9f6;padding:40px;color:#1a1a1a}
+  .card{max-width:420px;background:#fff;border:1px solid #e8e4da;border-radius:14px;padding:18px}
+  h5{margin:0 0 10px;font-size:13px}
+  .tog{display:flex;gap:6px;margin-bottom:8px}
+  .tog button{flex:1;padding:8px;border:1px solid #e8e4da;border-radius:9px;background:#fff;font-size:12px}
+  .tog .act{background:#1a1a1a;color:#f6b11e;border-color:#1a1a1a}
+  select{width:100%;padding:9px;border:1px solid #e8e4da;border-radius:9px;font-size:12.5px}
+  .note{font-size:11px;color:#8a8578;margin-top:8px}
+</style></head><body>
+<div class="card">
+  <h5>Applies to</h5>
+  <div class="tog"><button>Whole store</button><button class="act">Category</button><button>Products</button></div>
+  <select>
+    <option>Pick a category</option>
+    <option>Men</option>
+    <option>Men › Bottomwear</option>
+    <option selected>Men › Bottomwear › Jeans (12)</option>
+    <option>Men › Bottomwear › Trousers (7)</option>
+    <option>Women</option>
+    <option>Women › Western Wear › Jeans (9)</option>
+  </select>
+  <div class="note">Full-path rows over the brand's listing tree; picking any level
+  allocates its entire subtree. Live product counts shown. Brands without a
+  drill-down tree (food/legacy) keep the old flat section list.</div>
+</div>
+</body></html>

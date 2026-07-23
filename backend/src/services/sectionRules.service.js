@@ -922,6 +922,18 @@ async function libraryProducts(ctx) {
   let minDiscIdx = null;
   if (def.min_discount_pct != null) { minDiscIdx = ++p; params.push(def.min_discount_pct); }
 
+  // Concept P0: offer-TYPE filter — "products with a live BOGO/volume/bundle/
+  // free_gift/discount offer". has_offer stays type-blind; this narrows it.
+  let offerTypeIdx = null;
+  if (def.offer_type) { offerTypeIdx = ++p; params.push(String(def.offer_type)); }
+
+  // Concept P0: EFFECTIVE-price band — price after the best live discount offer
+  // (same single-source-of-discount-truth as the card badge, OFFER_BEST_PCT).
+  // Products with no live discount use bp.price unchanged.
+  let effMinIdx = null, effMaxIdx = null;
+  if (def.eff_price_min != null) { effMinIdx = ++p; params.push(def.eff_price_min); }
+  if (def.eff_price_max != null) { effMaxIdx = ++p; params.push(def.eff_price_max); }
+
   // brand-label filter (facets.brand) — App Builder Frame-banner condition. The
   // product's catalogue brand (Adidas/Nike), NOT the seller. Matches a jsonb
   // array (?|) or a scalar string (=). One of the generic banner-rule conditions.
@@ -967,6 +979,16 @@ async function libraryProducts(ctx) {
   const minDiscClause = minDiscIdx
     ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${OFFER_LIVE_GATE}
           AND bo.offer_type = 'discount' AND ${OFFER_APPLIES} AND ${OFFER_DISC_PCT} >= $${minDiscIdx})` : '';
+  // Concept P0: live offer of a SPECIFIC type applies to the product.
+  const offerTypeClause = offerTypeIdx
+    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${OFFER_LIVE_GATE}
+          AND bo.offer_type = $${offerTypeIdx} AND ${OFFER_APPLIES})` : '';
+  // Concept P0: effective price = bp.price discounted by the best live discount
+  // offer (scalar OFFER_BEST_PCT; NULL → no discount → bp.price).
+  const EFF_PRICE = `(bp.price * (1 - COALESCE(${OFFER_BEST_PCT}, 0) / 100))`;
+  const effPriceClause =
+    (effMinIdx ? ` AND ${EFF_PRICE} >= $${effMinIdx}` : '') +
+    (effMaxIdx ? ` AND ${EFF_PRICE} <= $${effMaxIdx}` : '');
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
@@ -1000,6 +1022,8 @@ async function libraryProducts(ctx) {
        ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
        ${hasOfferClause}
        ${minDiscClause}
+       ${offerTypeClause}
+       ${effPriceClause}
        ${brandFacetIdx ? `AND (lower(bp.facets->>'brand') = lower($${brandFacetIdx}) OR (bp.facets->'brand') ?| ARRAY[$${brandFacetIdx}]::text[])` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
@@ -1344,16 +1368,6 @@ async function staticRule() { return []; }
 
 // ── registry ────────────────────────────────────────────────────────────────
 
-// Creator Experience Engine — a placed Experience Template's shelf.
-// Phase 6: resolves published creator experiences bound to ctx.templateId into
-// render items (via experience.service, reusing the 4a renderSpec logic).
-// Returns [] when nothing is published → hide-empty drops the section. The
-// resolver is fully defensive (never throws) so a bad experience can't 500 the feed.
-async function experienceTemplate(ctx) {
-  const experiences = require('./experience.service');
-  return experiences.resolveForTemplate(ctx && ctx.templateId, (ctx && ctx.limit) || 12);
-}
-
 const RULES = {
   // offers
   top_by_engagement: (ctx) => ctx.itemType === 'brands' ? topByEngagementBrands(ctx) : topByEngagementOffers(ctx),
@@ -1380,11 +1394,9 @@ const RULES = {
   library_products: libraryProducts,
   restaurants_with_featured: restaurantsWithFeatured,   // Food 3C-1 Type B
   creators_in_category_listing: creatorsInCategoryListing,
-  // Creator Experience Engine Phase 5 — a placed Experience Template's shelf.
-  // Resolves the template's published creator experiences (Phase 6). In Phase 5
-  // there are none, so it returns [] and the section is hidden (hide-empty).
-  // Additive + isolated: only fires for rows with rule='experience_template'.
-  experience_template: experienceTemplate,
+  // Creator Experience Engine (System B) RETIRED — Concept P0 (2026-07-23).
+  // 'experience_template' rows (none exist in prod; templates shipped empty)
+  // now fall through runRule's unknown-rule guard → [] → hide-empty.
   // nav / static / disabled
   nav_verticals: navVerticals,
   world_categories: worldCategories,   // Food 3C — placeable category rail

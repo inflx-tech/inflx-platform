@@ -75,8 +75,8 @@ function validateShape(offerType, cfg) {
     if (!VALID_SCOPES.includes(scope)) {
       return fail('offer_config_json.scope', `scope must be one of: ${VALID_SCOPES.join(', ')}`);
     }
-    if (scope === 'category' && !cfg.category) {
-      return fail('offer_config_json.category', 'category is required when scope is "category"');
+    if (scope === 'category' && !cfg.category && !cfg.category_node_id) {
+      return fail('offer_config_json.category', 'category or category_node_id is required when scope is "category"');
     }
     if (scope === 'products' && !(Array.isArray(cfg.products) && cfg.products.length > 0)) {
       return fail('offer_config_json.products', 'at least one product is required when scope is "products"');

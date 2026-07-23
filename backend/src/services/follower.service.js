@@ -197,7 +197,10 @@ function allocatedProductIds(ciCfg, setProductsJson) {
 // The brand's offer builder already writes offer_config_json.scope:
 //   'store'    → ALL of the brand's currently-pushed products (live — new
 //                products flow to creator stores automatically)
-//   'category' → currently-pushed products in that section (live)
+//   'category' → currently-pushed products in that category (live). Node-based
+//                (category_node_id → recursive subtree over category_nodes,
+//                same shape as OFFER_APPLIES) when the config carries it;
+//                legacy free-text `category` matches brand_products.section.
 //   'products' / bogo / bundle / absent → the hand-picked snapshot union
 //                (legacy allocatedProductIds, unchanged)
 // Before this, store/category-scoped offers allocated ZERO listed products
@@ -205,11 +208,25 @@ function allocatedProductIds(ciCfg, setProductsJson) {
 async function resolveAllocatedProductIds({ ciCfg, offerProductsJson, brandId }) {
   const cfg = ciCfg && typeof ciCfg === 'object' ? ciCfg : {};
   const scope = String(cfg.scope || '').toLowerCase();
-  if (brandId && (scope === 'store' || (scope === 'category' && cfg.category))) {
+  const nodeId = cfg.category_node_id || null;
+  if (brandId && (scope === 'store' || (scope === 'category' && (nodeId || cfg.category)))) {
     const params = [brandId];
     let sql = `SELECT id FROM brand_products
                 WHERE brand_id = $1 AND is_active = true AND pushed_to_store = true`;
-    if (scope === 'category') { params.push(cfg.category); sql += ` AND section = $2`; }
+    if (scope === 'category') {
+      if (nodeId) {
+        params.push(nodeId);
+        sql += ` AND category_node_id IN (
+          WITH RECURSIVE sub AS (
+            SELECT id FROM category_nodes WHERE id = $2
+            UNION ALL
+            SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
+          ) SELECT id FROM sub)`;
+      } else {
+        params.push(cfg.category);
+        sql += ` AND section = $2`;
+      }
+    }
     const { rows } = await db.query(sql, params);
     return rows.map(r => r.id);
   }

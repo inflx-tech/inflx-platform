@@ -62,9 +62,6 @@ function MeInner({ navigation }) {
     { icon: 'map-marker-outline', label: 'My Addresses', sub: 'delivery addresses', onPress: () => navigation.navigate('Address') },
     { icon: 'keyboard-return', label: 'Returns', sub: 'requests & status', onPress: () => navigation.navigate('MyReturns') },
     { icon: 'cog-outline', label: 'Settings & Help', sub: 'notifications · support', onPress: () => Alert.alert('Settings & Help', 'Coming soon.') },
-    ...(isEnabled('EXPERIENCE_PREVIEW_DEV')
-      ? [{ icon: 'palette-outline', label: 'Experience Preview', sub: 'dev · adaptive renderer', onPress: () => navigation.navigate('ExperiencePreview') }]
-      : []),
   ];
 
   return (

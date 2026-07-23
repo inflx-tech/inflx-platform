@@ -18,11 +18,10 @@ const NAV = [
   { href: '/admin/production-queue', label: 'Production Queue', icon: '🚚', cap: 'production' },
   { href: '/admin/orders', label: 'Orders', icon: '📦', cap: 'orders' },
   { section: 'CONTENT' },
-  { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️', cap: 'master_data' },
-  { href: '/admin/design-system', label: 'Design System', icon: '🎨', cap: 'sections' },
-  { href: '/admin/themes', label: 'Theme Library', icon: '🎭', cap: 'sections' },
-  { href: '/admin/design-library', label: 'Design Library', icon: '📐', cap: 'sections' },
-  { href: '/admin/experience-templates', label: 'Exp. Templates', icon: '🧩', cap: 'sections' },
+  // Concept P0 (2026-07-23): Creator Experience Engine pages (Design System /
+  // Theme Library / Design Library / Exp. Templates) DELETED — never follower-
+  // visible. Food pages (Master Dishes, Meals) HIDDEN — vertical parked; the
+  // backend routes stay mounted, pages return when food does.
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
   { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
   { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },
@@ -53,7 +52,7 @@ const NAV = [
   { href: '/admin/pricing/categories',    label: 'Categories (L3)', icon: '🏷️', cap: 'pricing' },
   { section: 'SETTINGS' },
   { href: '/admin/settings/payments', label: 'Payment Config', icon: '⚙️', cap: 'settings' },
-  { href: '/admin/meals',             label: 'Meals',          icon: '🍽️', cap: 'settings' },
+  { href: '/admin/tax-summary',       label: 'Tax Summary',    icon: '🧾', cap: 'tax' },
   { href: '/admin/users',             label: 'Admin Users',    icon: '👥', cap: 'users' },
 ];
 

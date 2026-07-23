@@ -19,9 +19,6 @@ export const FEATURE_FLAGS = {
   SECTION_ENGINE_CATEGORY: true,
   // Offers tab from GET /v1/follower/section/offers.
   SECTION_ENGINE_OFFERS: true,
-  // Creator Experience Engine Phase 4b — dev entry (Profile) to the Adaptive
-  // Renderer preview screen. Verification surface; safe to flip off later.
-  EXPERIENCE_PREVIEW_DEV: true,
 };
 
 export function isEnabled(flag) {

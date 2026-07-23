@@ -489,7 +489,15 @@ const getStoreOfferDetail = asyncHandler(async (req, res) => {
   } else {
     const params = [row.brand_id];
     let catSql = '';
-    if (cfg.scope === 'category' && cfg.category) {
+    if (cfg.scope === 'category' && cfg.category_node_id) {
+      params.push(cfg.category_node_id);
+      catSql = ` AND category_node_id IN (
+        WITH RECURSIVE sub AS (
+          SELECT id FROM category_nodes WHERE id = $2
+          UNION ALL
+          SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
+        ) SELECT id FROM sub)`;
+    } else if (cfg.scope === 'category' && cfg.category) {
       params.push(cfg.category);
       catSql = ' AND section = $2';
     }

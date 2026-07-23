@@ -640,29 +640,8 @@ export const adminApi = {
   setDishGroupMembers:(id, master_dish_ids) => api.put(`/admin/dish-groups/${id}/members`, { master_dish_ids }),
   suggestDishGroupMembers: (q) => api.get(`/admin/dish-groups/suggest?q=${encodeURIComponent(q || '')}`),
 
-  // Design System (Creator Experience Engine Phase 1, mig 127-128) — read-only vocabulary
-  listDesignTokens:  (worldKey) => api.get(`/admin/design-system/tokens${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
-  listDesignPresets: (worldKey) => api.get(`/admin/design-system/presets${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
-
-  // Experience Templates (Creator Experience Engine Phase 5, mig 133-134)
-  listTemplates:   (worldKey, status) => api.get(`/admin/experience-templates?world_key=${encodeURIComponent(worldKey || '')}${status ? `&status=${encodeURIComponent(status)}` : ''}`),
-  getTemplate:     (id) => api.get(`/admin/experience-templates/${encodeURIComponent(id)}`),
-  createTemplate:  (data) => api.post('/admin/experience-templates', data),
-  updateTemplate:  (id, data) => api.patch(`/admin/experience-templates/${encodeURIComponent(id)}`, data),
-  placeTemplate:   (id) => api.post(`/admin/experience-templates/${encodeURIComponent(id)}/place`, {}),
-  unplaceTemplate: (id) => api.post(`/admin/experience-templates/${encodeURIComponent(id)}/unplace`, {}),
-
-  // Design Library (Creator Experience Engine Phase 3, mig 131-132) — read-only layouts + contracts
-  listDesignLayouts: (worldKey) => api.get(`/admin/design-layouts${worldKey ? `?world_key=${encodeURIComponent(worldKey)}` : ''}`),
-  listSectionStyles: () => api.get('/admin/section-styles'),
-
-  // Theme Library (Creator Experience Engine Phase 2, mig 129-130)
-  listThemes:          (worldKey, status) => api.get(`/admin/themes?world_key=${encodeURIComponent(worldKey || '')}${status ? `&status=${encodeURIComponent(status)}` : ''}`),
-  listThemeBlueprints: (worldKey) => api.get(`/admin/themes/blueprints?world_key=${encodeURIComponent(worldKey || '')}`),
-  getTheme:            (id) => api.get(`/admin/themes/${encodeURIComponent(id)}`),
-  createTheme:         (data) => api.post('/admin/themes', data),
-  updateTheme:         (id, data) => api.patch(`/admin/themes/${encodeURIComponent(id)}`, data),
-  publishTheme:        (id) => api.post(`/admin/themes/${encodeURIComponent(id)}/publish`, {}),
+  // Creator Experience Engine (System B) wrappers REMOVED — Concept P0
+  // (2026-07-23): backend routes deleted, pages deleted, tables ship empty.
 
   // World Rules (Phase 3, mig 126) — per-world engine behaviour
   listWorldRules:   () => api.get('/admin/world-rules'),
@@ -689,11 +668,8 @@ export const adminApi = {
   updateTagVocab:    (id, data) => api.patch(`/admin/tag-vocabulary/${id}`, data),
   deleteTagVocab:    (id) => api.delete(`/admin/tag-vocabulary/${id}`),
 
-  // ─── Follower category tiles (merch-engine Phase 1b) ───────────────────────
-  listFollowerCategories:  () => api.get('/admin/follower-categories'),
-  createFollowerCategory:  (data) => api.post('/admin/follower-categories', data),
-  updateFollowerCategory:  (id, data) => api.patch(`/admin/follower-categories/${id}`, data),
-  deleteFollowerCategory:  (id) => api.delete(`/admin/follower-categories/${id}`),
+  // (follower-categories wrappers removed — retired stub page deleted, Concept
+  // P0 2026-07-23; worlds are managed via home-verticals in the App Builder.)
 
   // Section Library (merch-engine Phase 3b) — reusable data-driven sections + live preview.
   listSectionLibrary:    (businessType) => api.get(`/admin/section-library${businessType ? `?business_type=${encodeURIComponent(businessType)}` : ''}`),

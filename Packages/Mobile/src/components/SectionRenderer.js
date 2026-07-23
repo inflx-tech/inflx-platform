@@ -11,7 +11,6 @@ import FoodDishCard from './food/FoodDishCard';
 import { useFoodOrder } from '../services/FoodOrderContext';
 import RestaurantSection from './food/RestaurantSection';
 import TileSection from './sections/TileSection';
-import AdaptiveRenderer from './experience/AdaptiveRenderer';
 
 /**
  * SectionRenderer — renders the backend section-engine payload
@@ -341,31 +340,6 @@ function renderSection(section, navigation, canFollow, context = {}) {
   }
 
   if (!section.items.length) return null;
-
-  // Creator Experience Engine 6b — a placed Experience Template's shelf: each
-  // item is a creator experience render spec (from the experience_template rule).
-  // Draw each via the Adaptive Renderer (P4). Additive — only fires when the
-  // engine sends entity_type='experience'; every existing shelf is unchanged.
-  if (section.items[0]?.entity_type === 'experience') {
-    return (
-      <View>
-        <ShelfHeader title={section.title} sub={sub} count={count} tag="mixed" onSeeAll={seeAll} />
-        <Rail>
-          {section.items.map((item, i) => (
-            <TouchableOpacity
-              key={item.id || i} activeOpacity={0.9} style={styles.expCard}
-              onPress={() => {
-                emit('tap', item);
-                if (item.via_creator?.handle) navigation.navigate('InfluencerStore', { handle: item.via_creator.handle });
-              }}
-            >
-              <AdaptiveRenderer spec={item.render_spec} />
-            </TouchableOpacity>
-          ))}
-        </Rail>
-      </View>
-    );
-  }
 
   switch (section.type) {
     case 'creators':
