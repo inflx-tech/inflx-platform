@@ -53,8 +53,10 @@ import AddressDetailsScreen from '../screens/follower/AddressDetailsScreen';
 // Fashion-1b — returns
 import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
 
-// Flow 52.0 — Creator Vibe: Reels center tab (placeholder until 52.8 backend)
-import ReelsScreen from '../screens/follower/ReelsScreen';
+// Post/Concept Stage A — the new Posts pillar (replaces the Reels placeholder
+// on the center tab; the full new shell arrives with Stage B/C).
+import PostsFeedScreen from '../screens/follower/PostsFeedScreen';
+import PostViewerScreen from '../screens/follower/PostViewerScreen';
 // Flow 52.7 — Creator-scoped category screen (mockup 4a)
 import CreatorCategoryScreen from '../screens/follower/CreatorCategoryScreen';
 // merch-engine — shared "View all" full-list results screen
@@ -115,6 +117,17 @@ function HomeStack() {
   );
 }
 
+// Post/Concept Stage A — Posts pillar stack (feed → viewer → shared commerce).
+function PostsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PostsFeed" component={PostsFeedScreen} />
+      <Stack.Screen name="PostViewer" component={PostViewerScreen} />
+      {SHARED_SCREENS(Stack)}
+    </Stack.Navigator>
+  );
+}
+
 // Offers tab removed 2026-06-23 (founder — not required in the follower app).
 
 // 🛍️ Orders — order/booking history (was MY STUFF; Saved moves to Profile).
@@ -153,7 +166,8 @@ function ProfileStack() {
   );
 }
 
-// 🎬 Reels center button — elevated terracotta FAB (custom tabBarButton).
+// 📸 Posts center button — elevated FAB (custom tabBarButton). Stage A: the
+// new Posts pillar lives here until the full new shell ships.
 function ReelsTabButton({ onPress, accessibilityState }) {
   const focused = accessibilityState?.selected;
   return (
@@ -162,11 +176,11 @@ function ReelsTabButton({ onPress, accessibilityState }) {
         activeOpacity={0.85}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Reels"
+        accessibilityLabel="Posts"
         style={[navStyles.reelsBtn, focused && navStyles.reelsBtnActive]}
       >
-        <Icon name="movie-open" size={24} color={C.ink} />
-        <Text style={navStyles.reelsLabel}>Reels</Text>
+        <Icon name="image-multiple" size={24} color={C.ink} />
+        <Text style={navStyles.reelsLabel}>Posts</Text>
       </TouchableOpacity>
     </View>
   );
@@ -200,7 +214,7 @@ export default function FollowerNavigator() {
       />
       <Tab.Screen
         name="ReelsTab"
-        component={ReelsScreen}
+        component={PostsStack}
         options={{
           tabBarLabel: '',
           tabBarButton: (props) => <ReelsTabButton {...props} />,

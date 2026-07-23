@@ -1,0 +1,20 @@
+{
+  "feature": "concept-stagea-posts-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-23: 'build stage A from locked mockups… go and build' (scope: post in feed + full screen, engagement elements, Shop CTA)",
+  "approved_at": "2026-07-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — the Stage-A look was locked interactively on the ratio decision board (globals session: canvas, tags-in-feed, yellow Shop bar, right rail, ratio Model B 1:1↔4:5); board copied in as 04-preview/mockups/stage-a-locked-board.html",
+  "mockup_locked_at": "2026-07-23",
+  "notes": "Stage A of the founder's 3-pillar order. PostCard (natural ratio clamped 1:1↔4:5, feed pins per tag style, yellow Shop bar, engagement row) + PostsFeedScreen + PostViewerScreen (right rail, concept header, true-ratio slides) + ShopThisPostSheet (server-sorted, effective prices, → existing ProductDetail with tracking = live attribution rails). Backend: feed_pins added to GET /follower/posts (cover-slide tags live-joined). Mounted on the center tab replacing the deleted Reels placeholder; the rest of the old app untouched until Stage B/C.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

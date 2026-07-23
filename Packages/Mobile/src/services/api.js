@@ -426,6 +426,19 @@ export const followerApi = {
   getMe: () => api.get('/followers/me'),
   updateMe: (data) => api.patch('/followers/me', data),
 
+  // Creator posts (Post/Concept Stage A) — the new source of truth
+  getPosts: (params = {}) => {
+    const p = Object.entries(params).filter(([, v]) => v != null)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`);
+    return api.get(`/follower/posts${p.length ? `?${p.join('&')}` : ''}`);
+  },
+  getPost: (id) => api.get(`/follower/posts/${id}`),
+  likePost: (id) => api.post(`/follower/posts/${id}/like`),
+  unlikePost: (id) => api.delete(`/follower/posts/${id}/like`),
+  savePost: (id) => api.post(`/follower/posts/${id}/save`),
+  unsavePost: (id) => api.delete(`/follower/posts/${id}/save`),
+  getAppConfig: () => api.get('/follower/app-config'),
+
   // P5 (section-analytics-city) — fire-and-forget engagement capture. Never
   // awaited by callers, never throws: a dead endpoint can't affect the UX.
   recordSectionEvent: (data) => { try { api.post('/follower/section-event', data).catch(() => {}); } catch (e) { /* never surfaces */ } },

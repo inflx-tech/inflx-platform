@@ -149,6 +149,29 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
       LIMIT $${followedIdx + 1} OFFSET $${followedIdx + 2}`,
     params);
 
+  // Feed pins (Stage A — founder: tags visible IN FEED): the cover slide's
+  // coordinate tags, live-joined to purchasable product name/price.
+  const coverIds = rows.map(r => r.cover_media_id).filter(Boolean);
+  let pinsByMedia = new Map();
+  if (coverIds.length) {
+    const { rows: pinRows } = await db.query(
+      `SELECT pp.media_id, pp.x_pct, pp.y_pct, bp.name, bp.price,
+              ${OFFER_BEST_PCT} AS offer_pct
+         FROM post_products pp
+         JOIN brand_products bp ON bp.id = pp.product_id
+        WHERE pp.media_id = ANY($1::uuid[]) AND pp.x_pct IS NOT NULL
+          AND bp.is_active = true AND bp.pushed_to_store = true`,
+      [coverIds]);
+    pinsByMedia = pinRows.reduce((m, p) => {
+      const price = p.price != null ? Number(p.price) : null;
+      const f = offerFieldsFromPct(p.offer_pct, price);
+      const list = m.get(p.media_id) || [];
+      list.push({ x_pct: Number(p.x_pct), y_pct: Number(p.y_pct), name: p.name, price, ...f });
+      m.set(p.media_id, list);
+      return m;
+    }, new Map());
+  }
+
   return rows.map(r => ({
     id: r.id,
     creator: {
@@ -156,6 +179,7 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
       avatar: r.avatar, city: r.influencer_city,
       followed: followedIds.includes(r.influencer_id),
     },
+    feed_pins: r.cover_media_id ? (pinsByMedia.get(r.cover_media_id) || []) : [],
     ...conceptFieldsFromRow(r),
     post_type: r.post_type,
     media_kind: r.media_kind,
