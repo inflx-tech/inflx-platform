@@ -15,6 +15,7 @@
     "qa_all_green": true,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "deploy": "founder go in-session 2026-07-23 ('deploy p4 eligibility and inspector'). run-142 applied to prod (3 additive columns verified) then pushed 2807d0b -> Render + Vercel. No OTA. Sweep cron live at :13/:43 IST; inert until the first approved post exists."
   }
 }
