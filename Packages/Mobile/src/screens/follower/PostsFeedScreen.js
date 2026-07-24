@@ -16,7 +16,12 @@ import ShopThisPostSheet from '../../components/posts/ShopThisPostSheet';
 
 const PAGE = 20;
 
+// The locked home grammar (founder 2026-07-24): three top tabs. Discover
+// renders with the founder's Stage-B layout; Videos with the video phase.
+const TOP_TABS = ['Discover', 'Posts', 'Videos'];
+
 export default function PostsFeedScreen({ navigation }) {
+  const [topTab, setTopTab] = useState('Posts');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -67,9 +72,27 @@ export default function PostsFeedScreen({ navigation }) {
     <SafeAreaView style={st.safe} edges={['top']}>
       <View style={st.header}>
         <Text style={st.logo}>INFLX</Text>
-        <Text style={st.tab}>Posts</Text>
+        {TOP_TABS.map(t => (
+          <TouchableOpacity key={t} onPress={() => setTopTab(t)}>
+            <Text style={[st.tabOff, topTab === t && st.tab]}>{t}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-      <FlatList
+      {topTab === 'Discover' && (
+        <View style={st.empty}>
+          <Text style={{ fontSize: 34 }}>🧭</Text>
+          <Text style={st.emptyTitle}>Discover is coming</Text>
+          <Text style={st.emptySub}>Banners and themes over creator posts — launching with the next stage.</Text>
+        </View>
+      )}
+      {topTab === 'Videos' && (
+        <View style={st.empty}>
+          <Text style={{ fontSize: 34 }}>🎬</Text>
+          <Text style={st.emptyTitle}>Videos are coming</Text>
+          <Text style={st.emptySub}>Shoppable creator videos land here in the video phase.</Text>
+        </View>
+      )}
+      {topTab === 'Posts' && <FlatList
         data={posts}
         keyExtractor={p => p.id}
         renderItem={({ item }) => (
@@ -91,7 +114,7 @@ export default function PostsFeedScreen({ navigation }) {
             <Text style={st.emptySub}>Creator posts land here the moment they're approved. Check back soon.</Text>
           </View>
         )}
-      />
+      />}
       <ShopThisPostSheet
         visible={!!shopPost}
         post={shopPost}
@@ -107,6 +130,7 @@ const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'baseline', gap: 14, paddingHorizontal: 16, paddingVertical: 10 },
   logo: { fontSize: 18, fontWeight: '900', color: '#111', letterSpacing: 0.5 },
   tab: { fontSize: 13, fontWeight: '700', color: '#111', borderBottomWidth: 2.5, borderColor: '#F6B11E', paddingBottom: 2 },
+  tabOff: { fontSize: 13, fontWeight: '700', color: '#9A9A9A', paddingBottom: 2 },
   empty: { alignItems: 'center', paddingTop: 90, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: '#111' },
   emptySub: { fontSize: 12.5, color: '#999', textAlign: 'center', marginTop: 6, lineHeight: 18 },

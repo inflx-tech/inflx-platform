@@ -53,3 +53,10 @@ orange/gold/teal/red/purple only) → transparent bg + white text = invisible
 on the white card. Only red Reject showed. Fixed to the real success token
 (bg-teal); the silently-unstyled bg-green-pale/text-green status pills on
 the concepts + collections pages fixed the same way.
+
+## Follow-up 5 (founder: "discover, posts and videos kind home is not coming")
+The Posts tab now carries the LOCKED home grammar: INFLX wordmark + three
+top tabs Discover · Posts · Videos. Posts = the live feed; Discover and
+Videos show honest coming-soon states (Stage B layout / video phase). The
+old Home keeps the Home slot until Stages B/C replace product browsing +
+orders entry — the takeover is deliberate and staged, not forgotten.
