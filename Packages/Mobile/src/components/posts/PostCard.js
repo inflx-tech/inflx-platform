@@ -20,14 +20,31 @@ export function clampedHeight(width, height, renderW = W) {
   return renderW * Math.min(Math.max(ratio, 1), 1.25);
 }
 
+// Truncate a product name for the pin — beyond this, dots. People shop on
+// PIC + PRICE (founder rule 2026-07-23); the name is secondary context.
+export function pinName(name, max = 18) {
+  const n = String(name || '');
+  return n.length > max ? `${n.slice(0, max - 1).trimEnd()}…` : n;
+}
+
+/** LTK-style two-line pill: dark bag icon + name (truncated) over BOLD price.
+ * x is clamped so a pill can never hang off the screen edge. */
 export function Pin({ tag, style: tagStyle, small }) {
   if (tagStyle === 'hidden') return null;
   const minimal = tagStyle === 'minimal';
+  const x = Math.min(Math.max(Number(tag.x_pct), 14), 86);
+  const y = Math.min(Math.max(Number(tag.y_pct), 5), 93);
   return (
-    <View style={[st.pin, { left: `${tag.x_pct}%`, top: `${tag.y_pct}%` }]} pointerEvents="none">
-      <Text style={[st.pinTxt, small && { fontSize: 9 }]} numberOfLines={1}>
-        {minimal ? `₹${tag.offer_price ?? tag.price}` : `${tag.name} · ₹${tag.offer_price ?? tag.price}`}
-      </Text>
+    <View style={[st.pin, { left: `${x}%`, top: `${y}%` }]} pointerEvents="none">
+      <View style={st.pinIcon}><Text style={{ fontSize: small ? 9 : 11 }}>🛍</Text></View>
+      <View>
+        {!minimal && (
+          <Text style={[st.pinName, small && { fontSize: 8.5 }]} numberOfLines={1}>
+            {pinName(tag.name)}
+          </Text>
+        )}
+        <Text style={[st.pinPrice, small && { fontSize: 9.5 }]}>₹{tag.offer_price ?? tag.price}</Text>
+      </View>
     </View>
   );
 }
@@ -122,8 +139,10 @@ const st = StyleSheet.create({
   city: { fontSize: 10.5, color: '#999' },
   chip: { backgroundColor: '#FDF3D7', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3, maxWidth: 150 },
   chipTxt: { fontSize: 10, fontWeight: '700', color: '#7A6210' },
-  pin: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, transform: [{ translateX: -24 }, { translateY: -12 }], shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 5, shadowOffset: { width: 0, height: 1 }, elevation: 3, maxWidth: 190 },
-  pinTxt: { fontSize: 10, fontWeight: '700', color: '#111' },
+  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 999, paddingLeft: 5, paddingRight: 11, paddingVertical: 5, transform: [{ translateX: -30 }, { translateY: -16 }], shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 5, shadowOffset: { width: 0, height: 1 }, elevation: 3, maxWidth: 175 },
+  pinIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' },
+  pinName: { fontSize: 10, fontWeight: '600', color: '#111' },
+  pinPrice: { fontSize: 11, fontWeight: '800', color: '#111' },
   slideBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   slideBadgeTxt: { color: '#FFF', fontSize: 10, fontWeight: '700' },
   shop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 14, marginTop: 10, backgroundColor: YELLOW, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },

@@ -507,11 +507,22 @@ export default function PostComposerScreen({ navigation }) {
                 onLayout={(e) => { slideSize.current[index] = { w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height }; }}
                 style={{ width: SLIDE_W, height: h }}>
                 <Image source={{ uri: item.uri }} style={{ width: SLIDE_W, height: h, borderRadius: 14 }} />
-                {pins.filter(t => t.media_index === index).map((t, i) => (
-                  <View key={i} style={[st.tagPin, { left: `${t.x_pct}%`, top: `${t.y_pct}%` }]}>
-                    <Text style={st.tagPinTxt}>{t.name} · ₹{t.price}</Text>
-                  </View>
-                ))}
+                {pins.filter(t => t.media_index === index).map((t, i) => {
+                  // Same pill the follower sees: bag icon + truncated name over
+                  // bold price; clamped so it never hangs off the edge.
+                  const px = Math.min(Math.max(t.x_pct, 14), 86);
+                  const py = Math.min(Math.max(t.y_pct, 5), 93);
+                  const nm = t.name.length > 18 ? `${t.name.slice(0, 17).trimEnd()}…` : t.name;
+                  return (
+                    <View key={i} style={[st.tagPin, { left: `${px}%`, top: `${py}%` }]}>
+                      <View style={st.tagPinIcon}><Text style={{ fontSize: 10 }}>🛍</Text></View>
+                      <View>
+                        <Text style={st.tagPinName} numberOfLines={1}>{nm}</Text>
+                        <Text style={st.tagPinPrice}>₹{t.price}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
               </Pressable>
             );
           }} />
@@ -624,8 +635,10 @@ const st = StyleSheet.create({
   addThumb: { width: 76, height: 96, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CCC', alignItems: 'center', justifyContent: 'center' },
   progress: { marginTop: 10, fontSize: 12, color: '#777' },
   hint: { fontSize: 11.5, color: '#999', lineHeight: 16, marginTop: 10 },
-  tagPin: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, transform: [{ translateX: -20 }, { translateY: -12 }] },
-  tagPinTxt: { fontSize: 10, fontWeight: '700', color: '#1A1A1A' },
+  tagPin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 999, paddingLeft: 5, paddingRight: 11, paddingVertical: 5, transform: [{ translateX: -30 }, { translateY: -16 }], maxWidth: 175, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 5, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
+  tagPinIcon: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center' },
+  tagPinName: { fontSize: 9.5, fontWeight: '600', color: '#1A1A1A' },
+  tagPinPrice: { fontSize: 10.5, fontWeight: '800', color: '#1A1A1A' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 10 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#DDD' },
   dotOn: { backgroundColor: '#1A1A1A' },

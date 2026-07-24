@@ -38,3 +38,10 @@ Design (founder: "flow should be neat clear steps; 100 brands can't be
 chips"): 5-segment yellow step-progress bar under the header with step
 names; brand chips → searchable list rows with selection state + count;
 category modal gains autofocus search over the 195 leaves.
+
+## Follow-up 3 (founder device test — pin anatomy)
+Founder: long product names clipped off-screen; people shop on PIC + PRICE.
+Pin restyled to the reference (LTK) anatomy in BOTH the composer preview and
+the follower components: dark circular bag icon + name truncated at ~18
+chars with an ellipsis + PRICE BOLD on its own line below; x/y clamped
+(14-86% / 5-93%) so a pill can never hang off the screen edge.
