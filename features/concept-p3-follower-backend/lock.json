@@ -16,5 +16,6 @@
     "released": false,
     "released_by": null,
     "released_at": null
-  }
+  },
+  "hotfix_2026_07_24": "Feed/detail 500: i.profile_pic_url does not exist on influencers (correct col: profile_image_url). Fixed + verified against prod with the first real post."
 }
