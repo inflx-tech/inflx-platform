@@ -21,5 +21,6 @@
     "deploy": "founder go in-session 2026-07-23 ('deploy'). Pushed 2cba3f6 -> Render + Vercel, waited for the deploy to settle, then publish-ota:all clean: brand v140, influencer v133, follower v198, agency v39. released stays false until founder device-verifies the Posts tab (empty state today; live cards after the pilot's first approved post) - Rule 5 Maestro/device gate."
   },
   "followup2_2026_07_23": "Composer device-test fixes: leaf list empty (non-exported getBaseUrl via raw fetch, silently caught) -> influencerApi.getListingTree + error state; step progress bar; searchable brand rows (scales to 100 brands); searchable category modal; readable disabled CTA. Mobile jest 25/25. OTA all flavors after push.",
-  "followup3_2026_07_23": "Pin anatomy locked by founder: bag icon + truncated name (~18 chars + ellipsis) + bold price on its own line; position clamped on-screen. Applied to composer preview + PostCard/Viewer pins. Mobile jest 25/25."
+  "followup3_2026_07_23": "Pin anatomy locked by founder: bag icon + truncated name (~18 chars + ellipsis) + bold price on its own line; position clamped on-screen. Applied to composer preview + PostCard/Viewer pins. Mobile jest 25/25.",
+  "followup4_2026_07_23": "Approve button invisible in Post Queue (bg-green not in palette; teal is the success token) — fixed in posts/concepts/collections pages. Discovered on the FIRST REAL POST (@sagartravel Monsoon T-Shirt, 3 products, Charvitha Fashions)."
 }

@@ -45,3 +45,11 @@ Pin restyled to the reference (LTK) anatomy in BOTH the composer preview and
 the follower components: dark circular bag icon + name truncated at ~18
 chars with an ellipsis + PRICE BOLD on its own line below; x/y clamped
 (14-86% / 5-93%) so a pill can never hang off the screen edge.
+
+## Follow-up 4 (first real post in the queue!)
+@sagartravel's "Monsoon T-Shirt" surfaced an admin bug: the Approve button
+used bg-green — a colour that DOES NOT EXIST in the brand-web palette (navy/
+orange/gold/teal/red/purple only) → transparent bg + white text = invisible
+on the white card. Only red Reject showed. Fixed to the real success token
+(bg-teal); the silently-unstyled bg-green-pale/text-green status pills on
+the concepts + collections pages fixed the same way.

@@ -106,7 +106,7 @@ export default function CollectionsPage() {
               </div>
               <div className="flex items-center gap-2">
                 {c.status === 'active'
-                  ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-pale text-green">Active</span>
+                  ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-pale text-teal-deep">Active</span>
                   : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface2 text-t3">Hidden</span>}
                 <button onClick={() => setEditing({ id: c.id, name: c.name })}
                   className="text-xs font-bold text-navy border border-navy/30 rounded-lg px-3 py-1.5">Rename</button>

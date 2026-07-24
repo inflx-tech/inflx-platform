@@ -218,7 +218,7 @@ export default function ConceptsPage() {
       <div className="col-span-2 text-xs text-t2">{t.template_group || '—'}</div>
       <div className="col-span-2">
         {t.status === 'active'
-          ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-pale text-green">Active</span>
+          ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-pale text-teal-deep">Active</span>
           : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface2 text-t3">Hidden</span>}
       </div>
       <div className="col-span-3 flex justify-end gap-2">

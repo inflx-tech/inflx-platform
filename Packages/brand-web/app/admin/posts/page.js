@@ -98,7 +98,7 @@ export default function PostQueuePage() {
                 {tab === 'submitted' && (
                   <div className="flex gap-2">
                     <button onClick={() => approve(p)} disabled={busy === p.id}
-                      className="px-4 py-2 bg-green text-white text-xs font-bold rounded-xl disabled:opacity-50">
+                      className="px-4 py-2 bg-teal text-white text-xs font-bold rounded-xl disabled:opacity-50">
                       {busy === p.id ? '…' : '✓ Approve'}
                     </button>
                     <button onClick={() => setRejecting({ post: p, reason: '' })} disabled={busy === p.id}
