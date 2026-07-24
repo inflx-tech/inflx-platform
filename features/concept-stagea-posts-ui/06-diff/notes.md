@@ -27,3 +27,14 @@ reworded to the post-first model. Legacy note UI stays as a secondary
 annotation for now (removal rides Stage C cleanup). Note: founder's
 screenshot showed the pre-2026-06-14 label, proving the device had not yet
 applied the OTA — double-relaunch guidance given.
+
+## Follow-up 2 (founder device test, composer polish)
+Bugs: (1) category picker EMPTY — the composer fetched the tree via a
+non-exported helper (require('../../config/api').getBaseUrl is not a module
+export); the silent catch hid it. Fixed through the api client
+(influencerApi.getListingTree) + an explicit couldn't-load state.
+(2) Disabled CTA unreadable (0.35 fade) → 0.55.
+Design (founder: "flow should be neat clear steps; 100 brands can't be
+chips"): 5-segment yellow step-progress bar under the header with step
+names; brand chips → searchable list rows with selection state + count;
+category modal gains autofocus search over the 195 leaves.

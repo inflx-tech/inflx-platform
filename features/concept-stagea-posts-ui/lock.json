@@ -19,5 +19,6 @@
     "released_by": null,
     "released_at": null,
     "deploy": "founder go in-session 2026-07-23 ('deploy'). Pushed 2cba3f6 -> Render + Vercel, waited for the deploy to settle, then publish-ota:all clean: brand v140, influencer v133, follower v198, agency v39. released stays false until founder device-verifies the Posts tab (empty state today; live cards after the pilot's first approved post) - Rule 5 Maestro/device gate."
-  }
+  },
+  "followup2_2026_07_23": "Composer device-test fixes: leaf list empty (non-exported getBaseUrl via raw fetch, silently caught) -> influencerApi.getListingTree + error state; step progress bar; searchable brand rows (scales to 100 brands); searchable category modal; readable disabled CTA. Mobile jest 25/25. OTA all flavors after push."
 }

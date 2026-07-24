@@ -51,6 +51,8 @@ export default function PostComposerScreen({ navigation }) {
   // step 1 — scope
   const [scope, setScope] = useState('single');
   const [brandIds, setBrandIds] = useState([]);
+  const [brandSearch, setBrandSearch] = useState('');
+  const [leafSearch, setLeafSearch] = useState('');
 
   // step 2 — concept
   const [mode, setMode] = useState('concept');            // 'concept' | 'collection'
@@ -87,13 +89,15 @@ export default function PostComposerScreen({ navigation }) {
         setCollections(res.data.collections || []);
       }
       try {
-        const tree = await fetch(`${require('../../config/api').getBaseUrl()}/listing/tree?vertical=fashion`).then(r => r.json());
+        // Through the api client (the old raw fetch called a non-exported
+        // helper and failed silently — founder device test 2026-07-23).
+        const treeRes = await influencerApi.getListingTree('fashion');
         const out = [];
         const walk = (nodes, prefix) => (nodes || []).forEach(n => {
           if (n.is_leaf) out.push({ id: String(n.id), label: [...prefix, n.name].join(' › '), name: n.name });
           if (n.children) walk(n.children, [...prefix, n.name]);
         });
-        walk(tree?.data?.tree || tree?.tree || [], []);
+        walk(treeRes?.data?.tree || [], []);
         setLeaves(out);
       } catch { /* leaf picker shows empty state */ }
       setLoading(false);
@@ -205,16 +209,24 @@ export default function PostComposerScreen({ navigation }) {
     return <SafeAreaView style={st.safe}><ActivityIndicator style={{ marginTop: 60 }} color="#F6B11E" /></SafeAreaView>;
   }
 
+  const STEP_LABELS = ['Brands', 'Concept', 'Photos', 'Products', 'Finish'];
   const Header = ({ title }) => (
-    <View style={st.header}>
-      <TouchableOpacity onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()}>
-        <Text style={st.back}>‹</Text>
-      </TouchableOpacity>
-      <View>
-        <Text style={st.hTitle}>{title}</Text>
-        <Text style={st.hStep}>Step {step} of {TOTAL_STEPS}</Text>
+    <View>
+      <View style={st.header}>
+        <TouchableOpacity onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()}>
+          <Text style={st.back}>‹</Text>
+        </TouchableOpacity>
+        <View>
+          <Text style={st.hTitle}>{title}</Text>
+          <Text style={st.hStep}>Step {step} of {TOTAL_STEPS} · {STEP_LABELS[step - 1]}</Text>
+        </View>
+        <View style={{ width: 24 }} />
       </View>
-      <View style={{ width: 24 }} />
+      <View style={st.stepBar}>
+        {STEP_LABELS.map((l, i) => (
+          <View key={l} style={[st.stepSeg, i < step ? st.stepSegOn : null]} />
+        ))}
+      </View>
     </View>
   );
 
@@ -238,14 +250,29 @@ export default function PostComposerScreen({ navigation }) {
           ))}
           {scope !== 'all' && (
             <View style={{ marginTop: 14 }}>
-              <Text style={st.lbl}>{scope === 'single' ? 'Pick your brand' : 'Pick at least two brands'}</Text>
-              <View style={st.chipWrap}>
-                {brands.map(b => (
-                  <TouchableOpacity key={b.id} style={[st.chip, brandIds.includes(b.id) && st.chipOn]}
-                    onPress={() => toggleBrand(b.id)}>
-                    <Text style={[st.chipTxt, brandIds.includes(b.id) && st.chipTxtOn]}>{b.name}</Text>
-                  </TouchableOpacity>
-                ))}
+              <Text style={st.lbl}>
+                {scope === 'single' ? 'Pick your brand' : `Pick at least two brands${brandIds.length ? ` · ${brandIds.length} selected` : ''}`}
+              </Text>
+              {brands.length > 6 && (
+                <TextInput
+                  value={brandSearch} onChangeText={setBrandSearch}
+                  placeholder="Search your brands…" placeholderTextColor="#999"
+                  style={st.searchInput}
+                />
+              )}
+              <View style={st.listBox}>
+                {brands
+                  .filter(b => !brandSearch.trim() || b.name.toLowerCase().includes(brandSearch.trim().toLowerCase()))
+                  .map(b => {
+                    const on = brandIds.includes(b.id);
+                    return (
+                      <TouchableOpacity key={b.id} style={[st.brandRow, on && st.brandRowOn]}
+                        onPress={() => toggleBrand(b.id)}>
+                        <Text style={[st.brandRowTxt, on && { fontWeight: '800' }]} numberOfLines={1}>{b.name}</Text>
+                        <Text style={{ fontSize: 15, color: on ? '#F6B11E' : '#CCC' }}>{on ? '●' : '○'}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
               </View>
             </View>
           )}
@@ -345,10 +372,23 @@ export default function PostComposerScreen({ navigation }) {
             <TouchableOpacity onPress={() => setLeafModal(false)}><Text style={st.back}>‹</Text></TouchableOpacity>
             <Text style={st.hTitle}>Pick a category</Text><View style={{ width: 24 }} />
           </View>
-          <FlatList data={leaves} keyExtractor={l => l.id}
+          <TextInput
+            value={leafSearch} onChangeText={setLeafSearch}
+            placeholder="Search — jeans, kurtis, sneakers…" placeholderTextColor="#999"
+            style={[st.searchInput, { marginHorizontal: 16 }]} autoFocus
+          />
+          {leaves.length === 0 && (
+            <Text style={{ textAlign: 'center', color: '#999', marginTop: 30, fontSize: 12.5 }}>
+              Couldn't load categories — check your connection and reopen.
+            </Text>
+          )}
+          <FlatList
+            data={leaves.filter(l => !leafSearch.trim() || l.label.toLowerCase().includes(leafSearch.trim().toLowerCase()))}
+            keyExtractor={l => l.id}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <TouchableOpacity style={st.leafRow}
-                onPress={() => { setLeafId(item.id); setUniverse(null); setLeafModal(false); }}>
+                onPress={() => { setLeafId(item.id); setUniverse(null); setLeafModal(false); setLeafSearch(''); }}>
                 <Text style={[st.leafRowTxt, leafId === item.id && { color: '#F6B11E' }]}>{item.label}</Text>
               </TouchableOpacity>
             )} />
@@ -557,8 +597,17 @@ const st = StyleSheet.create({
   chipTxt: { fontSize: 12.5, fontWeight: '600', color: '#555' },
   chipTxtOn: { fontSize: 12.5, fontWeight: '700', color: '#fff' },
   cta: { backgroundColor: '#1A1A1A', borderRadius: 14, padding: 15, alignItems: 'center', marginTop: 18 },
-  ctaOff: { opacity: 0.35 },
+  // Disabled = dimmed but still readable (founder: old 0.35 fade was unreadable)
+  ctaOff: { opacity: 0.55 },
   ctaTxt: { color: '#F6B11E', fontWeight: '800', fontSize: 14 },
+  stepBar: { flexDirection: 'row', gap: 4, paddingHorizontal: 16, paddingBottom: 10 },
+  stepSeg: { flex: 1, height: 3, borderRadius: 2, backgroundColor: '#EEE' },
+  stepSegOn: { backgroundColor: '#F6B11E' },
+  searchInput: { borderWidth: 1.5, borderColor: '#E5E5E5', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13, color: '#1A1A1A', marginBottom: 8 },
+  listBox: { borderWidth: 1.5, borderColor: '#EEE', borderRadius: 14, overflow: 'hidden' },
+  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, borderBottomWidth: 1, borderColor: '#F5F5F5' },
+  brandRowOn: { backgroundColor: '#FFFBEF' },
+  brandRowTxt: { fontSize: 13.5, fontWeight: '600', color: '#1A1A1A', flex: 1, marginRight: 10 },
   segWrap: { flexDirection: 'row', backgroundColor: '#F2F2F2', borderRadius: 12, padding: 3 },
   seg: { flex: 1, padding: 9, borderRadius: 10, alignItems: 'center' },
   segOn: { backgroundColor: '#fff' },
