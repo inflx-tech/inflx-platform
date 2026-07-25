@@ -19,6 +19,6 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy": "NOT yet deployed — build complete + jest-green (70/70). Awaiting founder OTA go."
+    "deploy": "Founder go in-session 2026-07-25 ('ok, pls deploy'). Committed ce87ec9 → pushed origin/main (gov-check OK). OTA influencer v152 published (clean). Maestro skipped per standing founder call. released stays false until founder device-confirms the restyled Home."
   }
 }
