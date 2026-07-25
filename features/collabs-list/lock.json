@@ -19,6 +19,6 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy": "NOT deployed. Awaiting founder go for OTA (production-impacting) + the Rule-5 Maestro/on-device verify. Build complete + jest-green; released stays false until device-verified."
+    "deploy": "Founder go in-session 2026-07-25 ('skip maestro, deploy and i will check'). Committed aa246c8 → pushed origin/main (gov-check OK: contract-backed, mockup_locked, diff notes, release evidence valid). OTA influencer v147 published (native runtime 3; first attempt hit Render cold-start 'fetch failed', succeeded on warm retry). Maestro SKIPPED per founder. released stays false until founder device-confirms the Collabs tab live."
   }
 }
