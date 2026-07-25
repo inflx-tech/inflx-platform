@@ -15,9 +15,9 @@
   "diff_record": "06-diff/notes.md authored — before(OfferDetail+CampaignDetail) / after(one CollabDetailScreen: spine+hero+sections, reuses sub-screens) + 4 known deltas (Tracking panels later; sub-screens not yet restyled; applied handled inline; old detail screens kept for deep-links).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) — device-verified in-session 2026-07-25 ('yes its looks as expected'). Maestro waived by founder device-check (maestro_green stays false — honest; not run).",
+    "released_at": "2026-07-25",
     "maestro_green": false,
     "deploy": "Founder go in-session 2026-07-25 ('pls go and deply,commit,OTA'). Committed 0c96fb4 → pushed origin/main (gov-check OK). OTA influencer v148 published (first attempt Render cold-start fetch-failed, succeeded on warm retry). Maestro skipped per the standing founder call ('skip maestro, i will check'). released stays false until founder device-confirms CollabDetail live."
   }

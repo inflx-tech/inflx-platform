@@ -15,9 +15,9 @@
   "diff_record": "06-diff/notes.md authored — before(2 tabs, ink) / after(1 Collabs tab, IG-clean) + 4 known mockup-vs-build deltas (4-tab bar until Create lands; rows route to OLD detail screens per strangler; row hint+tap not inline buttons; Tracking filter present but detail later).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) — device-verified in-session 2026-07-25 ('yes its looks as expected'). Maestro waived by founder device-check (maestro_green stays false — honest; not run).",
+    "released_at": "2026-07-25",
     "maestro_green": false,
     "deploy": "Founder go in-session 2026-07-25 ('skip maestro, deploy and i will check'). Committed aa246c8 → pushed origin/main (gov-check OK: contract-backed, mockup_locked, diff notes, release evidence valid). OTA influencer v147 published (native runtime 3; first attempt hit Render cold-start 'fetch failed', succeeded on warm retry). Maestro SKIPPED per founder. released stays false until founder device-confirms the Collabs tab live."
   }
