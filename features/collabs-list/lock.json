@@ -1,0 +1,24 @@
+{
+  "feature": "collabs-list",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-25: chose 'Approve — build it' on the Step-5 lock after reviewing scope (strangler routing to existing detail screens, transitional 4-tab bar, dedupe-by-campaign_influencer_id).",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — Instagram-clean look iterated + locked in-session 2026-07-25 across the influencer IA + Collabs lifecycle mockups (white/black, hairline, yellow=your turn, 6-stage spine incl. split Tracking, Applied separate). Boards copied to 04-preview/mockups/collabs-ia.html + collabs-lifecycle.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "FIRST build slice of the influencer/brand IA redesign program (auto-memory project_influencer_app_ia_redesign) and the Instagram-clean RN design-system pilot. Wave 1, screen 1 of the agreed sequence. Merges Offers+Campaigns tabs into one staged Collabs list, deduped by campaign_influencer_id; rows route to EXISTING OfferDetail/CampaignDetail transitionally (strangler); CollabDetail + Create tab + Home restyle + deliverable consolidation + Tracking screen are SEPARATE later contracts. Frontend-only, mobile-influencer, OTA — no backend/DB. Step-5 lock (approved=true) awaits founder read of 01-spec + 02-workflow; mockup look already locked.",
+  "qa_record": "Mobile jest GREEN 52/52 (2026-07-25): 21 stage/merge/dedupe/turn logic specs (collabStages.test.js) + 3 module-load/badge smoke specs (collabsList.smoke.test.js) + 28 pre-existing. Dedupe key verified in backend: /offers/inbox → getMyOffers selects ci.*, so offer.id === campaign_influencer_id. Deploy-inert until OTA: this is a mobile-JS-only change, zero backend/migration delta, so the pnpm qa backend/API contract lane is unaffected (not the relevant lane for this change).",
+  "diff_record": "06-diff/notes.md authored — before(2 tabs, ink) / after(1 Collabs tab, IG-clean) + 4 known mockup-vs-build deltas (4-tab bar until Create lands; rows route to OLD detail screens per strangler; row hint+tap not inline buttons; Tracking filter present but detail later).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT deployed. Awaiting founder go for OTA (production-impacting) + the Rule-5 Maestro/on-device verify. Build complete + jest-green; released stays false until device-verified."
+  }
+}

@@ -2,9 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { brandPalette as P, fonts } from '../theme/tokens';
+import { ig } from '../theme/ig';
 
 import HomeScreen from '../screens/influencer/HomeScreen';
+import CollabsListScreen from '../screens/influencer/CollabsListScreen';
 import OfferListScreen from '../screens/influencer/OfferListScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
 import CommissionDetailScreen from '../screens/influencer/CommissionDetailScreen';
@@ -32,9 +33,8 @@ import PostComposerScreen from '../screens/influencer/PostComposerScreen';
 import MyPostsScreen from '../screens/influencer/MyPostsScreen';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
-const CampaignsStack = createNativeStackNavigator();
+const CollabsStack = createNativeStackNavigator();
 const EarningsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 
@@ -72,39 +72,32 @@ function HomeStackNav() {
   );
 }
 
-function OffersStack() {
+// ── Collabs stack — merges the old Offers + Campaigns tabs (features/collabs-list).
+// CollabsList is the entry; every detail screen the two old stacks reached is
+// registered here so row taps + repointed notification/Home deep-links resolve.
+// OfferList + MyCampaignsList stay registered for transitional compatibility.
+function CollabsStackNav() {
   const OfferDetailScreen = require('../screens/influencer/OfferDetailScreen').default;
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OfferList" component={OfferListScreen} />
-      <Stack.Screen name="OfferDetail" component={OfferDetailScreen} />
-      <Stack.Screen name="Negotiation" component={NegotiationScreen} />
-      <Stack.Screen name="Contract" component={ContractScreen} />
-      <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
-      <Stack.Screen name="Deliverable" component={DeliverableScreen} />
-      <Stack.Screen name="DeliverableList" component={DeliverableListScreen} />
-      <Stack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
-      <Stack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
-      <Stack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
-      <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function CampaignsStackNav() {
-  return (
-    <CampaignsStack.Navigator screenOptions={{ headerShown: false }}>
-      <CampaignsStack.Screen name="MyCampaignsList" component={MyCampaignsScreen} />
-      <CampaignsStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
-      <CampaignsStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
-      <CampaignsStack.Screen name="Contract" component={ContractScreen} />
-      <CampaignsStack.Screen name="ContractPdf" component={ContractPdfScreen} />
-      <CampaignsStack.Screen name="Deliverable" component={DeliverableScreen} />
-      <CampaignsStack.Screen name="DeliverableList" component={DeliverableListScreen} />
-      <CampaignsStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
-      <CampaignsStack.Screen name="BrandProfile" component={BrandProfileScreen} />
-      <CampaignsStack.Screen name="Negotiation" component={NegotiationScreen} />
-    </CampaignsStack.Navigator>
+    <CollabsStack.Navigator screenOptions={{ headerShown: false }}>
+      <CollabsStack.Screen name="CollabsList" component={CollabsListScreen} />
+      {/* transitional compat — old list screens still resolve if navigated to */}
+      <CollabsStack.Screen name="OfferList" component={OfferListScreen} />
+      <CollabsStack.Screen name="MyCampaignsList" component={MyCampaignsScreen} />
+      {/* detail screens (strangler: rows route here until CollabDetail lands) */}
+      <CollabsStack.Screen name="OfferDetail" component={OfferDetailScreen} />
+      <CollabsStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
+      <CollabsStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
+      <CollabsStack.Screen name="Negotiation" component={NegotiationScreen} />
+      <CollabsStack.Screen name="Contract" component={ContractScreen} />
+      <CollabsStack.Screen name="ContractPdf" component={ContractPdfScreen} />
+      <CollabsStack.Screen name="Deliverable" component={DeliverableScreen} />
+      <CollabsStack.Screen name="DeliverableList" component={DeliverableListScreen} />
+      <CollabsStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
+      <CollabsStack.Screen name="BrandProfile" component={BrandProfileScreen} />
+      <CollabsStack.Screen name="CampaignProducts" component={CampaignProductsScreen} />
+      <CollabsStack.Screen name="Notifications" component={NotificationsScreen} />
+    </CollabsStack.Navigator>
   );
 }
 
@@ -118,43 +111,38 @@ function EarningsStackNav() {
   );
 }
 
-// Flow 28: real MaterialCommunityIcons via react-native-vector-icons.
-// Native rebuild required (NATIVE_RUNTIME bumped 1→2 to enforce APK ↔ OTA pairing).
 const tabIcon = (iconName) => ({ color, size }) => (
   <Icon name={iconName} size={size ?? 24} color={color} />
 );
 
+// IG-clean bottom bar: white surface, black active, grey inactive, hairline top.
 export default function InfluencerNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: P.yellow,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.5)',
+        tabBarActiveTintColor: ig.text,
+        tabBarInactiveTintColor: ig.mut2,
         tabBarStyle: {
-          backgroundColor: P.ink,
-          borderTopColor: 'rgba(255,255,255,0.08)',
+          backgroundColor: ig.bg,
+          borderTopColor: ig.line,
           borderTopWidth: 1,
           height: 72,
           paddingTop: 8,
           paddingBottom: 8,
         },
         tabBarLabelStyle: {
-          fontFamily: fonts.monoBold,
-          fontSize: 9,
-          fontWeight: '700',
-          textTransform: 'uppercase',
-          letterSpacing: 0.5,
+          fontSize: 10,
+          fontWeight: '600',
           marginTop: 2,
         },
         tabBarIconStyle: { marginBottom: 0 },
       }}
     >
-      <Tab.Screen name="Home"      component={HomeStackNav}      options={{ tabBarLabel: 'Home',      tabBarIcon: tabIcon('home-outline') }} />
-      <Tab.Screen name="Offers"    component={OffersStack}        options={{ tabBarLabel: 'Offers',    tabBarIcon: tabIcon('email-outline') }} />
-      <Tab.Screen name="Campaigns" component={CampaignsStackNav}   options={{ tabBarLabel: 'Campaigns', tabBarIcon: tabIcon('briefcase-outline') }} />
-      <Tab.Screen name="Earnings"  component={EarningsStackNav}    options={{ tabBarLabel: 'Earnings',  tabBarIcon: tabIcon('currency-inr') }} />
-      <Tab.Screen name="Profile"   component={ProfileStackNav}     options={{ tabBarLabel: 'Profile',   tabBarIcon: tabIcon('account-outline') }} />
+      <Tab.Screen name="Home"     component={HomeStackNav}     options={{ tabBarLabel: 'Home',     tabBarIcon: tabIcon('home-outline') }} />
+      <Tab.Screen name="Collabs"  component={CollabsStackNav}  options={{ tabBarLabel: 'Collabs',  tabBarIcon: tabIcon('briefcase-outline') }} />
+      <Tab.Screen name="Earnings" component={EarningsStackNav} options={{ tabBarLabel: 'Earnings', tabBarIcon: tabIcon('currency-inr') }} />
+      <Tab.Screen name="Profile"  component={ProfileStackNav}  options={{ tabBarLabel: 'Profile',  tabBarIcon: tabIcon('account-outline') }} />
     </Tab.Navigator>
   );
 }

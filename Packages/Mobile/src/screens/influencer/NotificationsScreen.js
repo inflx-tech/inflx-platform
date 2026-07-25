@@ -66,17 +66,18 @@ function timeAgo(dateStr) {
 // Cross-tab nested deep-link routing — all 18 type branches preserved verbatim.
 function getNavTarget(type, dataJson) {
   switch (type) {
+    // Collabs tab (features/collabs-list) absorbs the old Offers/Campaigns tabs.
     case 'offer_received':
     case 'offer_expired':
-      return dataJson?.offer_id ? { screen: 'Offers', params: { screen: 'OfferDetail', params: { offerId: dataJson.offer_id } } } : null;
+      return dataJson?.offer_id ? { screen: 'Collabs', params: { screen: 'OfferDetail', params: { offerId: dataJson.offer_id } } } : null;
     case 'contract_ready':
     case 'contract_signed':
-      return dataJson?.contract_id ? { screen: 'Offers', params: { screen: 'Contract', params: { contractId: dataJson.contract_id } } } : null;
+      return dataJson?.contract_id ? { screen: 'Collabs', params: { screen: 'Contract', params: { contractId: dataJson.contract_id } } } : null;
     case 'content_approved':
     case 'content_submitted':
     case 'content_revision':
     case 'content_live':
-      return dataJson?.deliverable_id ? { screen: 'Offers', params: { screen: 'Deliverable', params: { deliverableId: dataJson.deliverable_id } } } : null;
+      return dataJson?.deliverable_id ? { screen: 'Collabs', params: { screen: 'Deliverable', params: { deliverableId: dataJson.deliverable_id } } } : null;
     case 'tranche_released':
     case 'commission_earned':
     case 'commission_confirmed':
@@ -84,7 +85,7 @@ function getNavTarget(type, dataJson) {
     case 'withdrawal_failed':
       return { screen: 'Earnings' };
     case 'negotiation_update':
-      return dataJson?.negotiation_id ? { screen: 'Offers', params: { screen: 'Negotiation', params: { negotiationId: dataJson.negotiation_id } } } : null;
+      return dataJson?.negotiation_id ? { screen: 'Collabs', params: { screen: 'Negotiation', params: { negotiationId: dataJson.negotiation_id } } } : null;
     default:
       return null;
   }

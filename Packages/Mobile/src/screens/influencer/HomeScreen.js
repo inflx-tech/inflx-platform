@@ -165,7 +165,7 @@ export default function HomeScreen({ navigation }) {
           icon="tag-outline"
           count={pendingOffers}
           label="Pending offers"
-          onPress={() => navigation.navigate('Offers')}
+          onPress={() => navigation.navigate('Collabs')}
         />
         <ActionTile
           icon="signature-text"
@@ -177,7 +177,7 @@ export default function HomeScreen({ navigation }) {
           icon="image-outline"
           count={contentRevisions}
           label="Content revisions"
-          onPress={() => navigation.navigate('Campaigns', { screen: 'DeliverableList' })}
+          onPress={() => navigation.navigate('Collabs')}
         />
       </View>
 
@@ -209,7 +209,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.section}>
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>Active Campaigns</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Campaigns')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Collabs')}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
