@@ -178,7 +178,7 @@ export default function PostProductScreen({ navigation, route }) {
 
       <View style={st.ctas}>
         <TouchableOpacity style={st.ghost} onPress={() => added ? navigation.navigate('Cart') : add(false)}>
-          <Text style={st.ghostTxt}>{added ? 'Go to Bag' : '🛍 Add to Bag'}</Text>
+          <Text style={st.ghostTxt}>{added ? 'Go to Bag' : 'Add to Bag'}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={st.buy} onPress={() => add(true)}>
           <Text style={st.buyTxt}>Buy Now</Text>

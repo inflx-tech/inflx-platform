@@ -18,5 +18,6 @@
     "released_by": null,
     "released_at": null,
     "deploy": "founder go in-session 2026-07-25 ('pls go and deploy'). Pushed 8a8c413 (mobile-only; Render/Vercel behaviour unchanged) then publish-ota:all clean: brand v146, influencer v140, FOLLOWER v204, agency v45. released stays false until founder walks the 5 board steps on the Monsoon T-Shirt post (device gate)."
-  }
+  },
+  "design_v3_2026_07_25": "Founder pixel-pass lock (board post-design-v3.html; his corrections: ref1=feed/ref2=fullscreen, tick=verified not follow, ADD black Follow, bolder white bag). Implemented feed card + cream full-screen + SVG icon system + verified in payloads. Yellow feed shop bar retired. Mobile jest 25/25."
 }

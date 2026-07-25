@@ -1,0 +1,155 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Post design v2 — reference-exact light viewer + feed card</title>
+<style>
+  :root{ --y:#F6B11E; --ink:#111; --mut:#8A8A8A; --line:#EFEFEF; --cream:#F5F2EC; }
+  body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:#E9E9E9;padding:26px;display:flex;gap:24px;flex-wrap:wrap;justify-content:center;color:var(--ink)}
+  .col{display:flex;flex-direction:column;gap:8px;align-items:center;width:270px}
+  .cap{font-size:10.5px;color:#777;text-align:center;line-height:1.55;max-width:255px}
+  .capT{font-size:12.5px;font-weight:800}
+  .ph{width:270px;height:585px;background:#fff;border-radius:26px;box-shadow:0 6px 22px rgba(0,0,0,.14);overflow:hidden;display:flex;flex-direction:column}
+  /* shared bits */
+  .bagIco{width:20px;height:20px;border-radius:50%;background:var(--ink);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .bagIco svg{width:10px;height:10px}
+  .pin{position:absolute;display:flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:4px 11px 4px 4px;box-shadow:0 2px 8px rgba(0,0,0,.13);max-width:160px}
+  .pinName{font-size:9.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pinPrice{font-size:10.5px;font-weight:800;color:var(--ink)}
+  .media{position:relative;background:var(--cream)}
+  .slideCt{position:absolute;top:10px;right:10px;background:rgba(17,17,17,.72);color:#fff;font-size:9px;font-weight:700;border-radius:999px;padding:3px 8px}
+  .prod{position:absolute;border-radius:6px;background:linear-gradient(150deg,#dcd4c6,#c9bfae)}
+  .shopPillWhite{position:absolute;left:12px;right:12px;bottom:12px;background:#fff;border-radius:999px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+  .shopPillWhite .l{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:var(--ink)}
+  .shopPillWhite .r{font-size:11px;color:#777;font-weight:600}
+  .eng{display:flex;align-items:center;gap:16px;padding:10px 14px 2px;font-size:16px;color:var(--ink)}
+  .eng b{font-size:12px;font-weight:700;margin-left:4px}
+  .eng .sp{flex:1}
+  .dots{display:flex;justify-content:center;gap:4px;padding:8px 0 2px}
+  .dots i{width:5px;height:5px;border-radius:50%;background:#D9D9D9}.dots i.on{background:var(--ink)}
+  .capBlock{padding:6px 14px 0;font-size:11.5px;line-height:1.5;color:var(--ink)}
+  .capBlock b{font-weight:800}
+  .grey{color:var(--mut)}
+  .small{font-size:10px}
+  svg .s{stroke:#111;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style></head><body>
+
+<!-- shared svg defs -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="bagW"><path d="M2.2 3.5h7.6l-.7 6.3H2.9z" fill="none" stroke="#fff" stroke-width="1.1"/><path d="M4 3.4a2 2 0 0 1 4 0" fill="none" stroke="#fff" stroke-width="1.1"/></g>
+    <g id="bagB"><path d="M3 4.6h10l-.9 8.2H3.9z" class="s"/><path d="M5.4 4.5a2.6 2.6 0 0 1 5.2 0" class="s"/></g>
+    <g id="heart"><path d="M8 13.6C4.6 11 2.5 8.8 2.5 6.4 2.5 4.6 3.9 3.3 5.6 3.3c1 0 2 .5 2.4 1.3.4-.8 1.4-1.3 2.4-1.3 1.7 0 3.1 1.3 3.1 3.1 0 2.4-2.1 4.6-5.5 7.2z" class="s"/></g>
+    <g id="cmt"><path d="M13.5 7.5c0 3-2.5 5.2-5.5 5.2-.7 0-1.4-.1-2-.3l-3 1 1-2.6c-.6-.9-1-2-1-3.3C3 4.5 5.2 2.3 8 2.3s5.5 2.2 5.5 5.2z" class="s"/></g>
+    <g id="share"><path d="M13.6 2.4 7.2 8.8M13.6 2.4 9.4 13.6 7.2 8.8 2.4 6.6z" class="s"/></g>
+    <g id="save"><path d="M4 2.5h8v11l-4-3-4 3z" class="s"/></g>
+  </defs>
+</svg>
+
+<!-- 1 · FULL-SCREEN (reference-exact, light) -->
+<div class="col">
+  <div class="capT">Full-screen post — LIGHT (reference-exact)</div>
+  <div class="ph">
+    <!-- header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px 8px">
+      <span style="font-size:20px">‹</span>
+      <div style="text-align:center">
+        <div style="font-size:14px;font-weight:800">Posts</div>
+        <div class="grey" style="font-size:10.5px">Monsoon T-Shirt</div>
+      </div>
+      <span style="font-size:15px;letter-spacing:2px">⋯</span>
+    </div>
+    <!-- creator row (black letters + BLACK follow, founder addition) -->
+    <div style="display:flex;align-items:center;gap:9px;padding:2px 14px 9px">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#F6B11E,#e2703a);display:flex;align-items:center;justify-content:center">
+        <div style="width:28px;height:28px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">S</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12.5px;font-weight:800">sagartravel <span style="color:#3897f0;font-size:11px">✓</span></div>
+        <div class="grey" style="font-size:10px">Vijayawada · 16h ago</div>
+      </div>
+      <div style="border:1.4px solid #111;border-radius:999px;padding:5px 13px;font-size:11px;font-weight:800">Follow</div>
+    </div>
+    <!-- media on CREAM canvas -->
+    <div class="media" style="height:330px">
+      <div class="slideCt">1/1</div>
+      <div class="prod" style="left:34%;top:8%;width:26%;height:38%"></div>
+      <div class="prod" style="left:8%;top:34%;width:30%;height:44%"></div>
+      <div class="prod" style="left:52%;top:44%;width:28%;height:42%"></div>
+      <div class="prod" style="left:74%;top:12%;width:16%;height:28%"></div>
+      <div class="pin" style="left:36%;top:26%"><span class="bagIco"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Nike Cotton T-Shi…</div><div class="pinPrice">₹1,047</div></span></div>
+      <div class="pin" style="left:8%;top:62%"><span class="bagIco"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Adidas Cotton T-S…</div><div class="pinPrice">₹1,184</div></span></div>
+      <div class="pin" style="left:50%;top:82%"><span class="bagIco"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Allen Solly Cotto…</div><div class="pinPrice">₹773</div></span></div>
+      <!-- WHITE shop pill on the media, black text, grey count -->
+      <div class="shopPillWhite">
+        <span class="l"><span class="bagIco" style="width:18px;height:18px"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span>Shop this post</span>
+        <span class="r">3 items ›</span>
+      </div>
+    </div>
+    <!-- engagement BELOW media (monochrome outline icons + counts) -->
+    <div class="eng">
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#heart"/></svg><b>2,145</b></span>
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#cmt"/></svg><b>28</b></span>
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#share"/></svg><b>112</b></span>
+      <span class="sp"></span>
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#save"/></svg></span>
+    </div>
+    <div class="capBlock">
+      <b>sagartravel</b> Stay stylish through the rainy season with this comfortable monsoon-ready T-shirt…
+      <span class="grey">more</span>
+      <div class="grey small" style="margin-top:4px">View all 0 comments</div>
+      <div class="grey small" style="margin-top:2px">16 hours ago</div>
+    </div>
+  </div>
+  <div class="cap">White chrome · creator row in BLACK letters + black Follow (your addition) · media on the soft CREAM sheet · monochrome bag icon (no emoji) · WHITE shop pill w/ black text · engagement row BELOW (right rail removed per this reference) · timestamp grey.</div>
+</div>
+
+<!-- 2 · FEED CARD (same language) -->
+<div class="col">
+  <div class="capT">Feed card — same language</div>
+  <div class="ph">
+    <div style="display:flex;gap:14px;align-items:baseline;padding:12px 14px 8px">
+      <span style="font-size:16px;font-weight:900;letter-spacing:.4px">INFLX</span>
+      <span class="grey" style="font-size:12px;font-weight:700">Discover</span>
+      <span style="font-size:12px;font-weight:700;border-bottom:2.5px solid var(--y);padding-bottom:2px">Posts</span>
+      <span class="grey" style="font-size:12px;font-weight:700">Videos</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 14px 8px">
+      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F6B11E,#e2703a);display:flex;align-items:center;justify-content:center">
+        <div style="width:24px;height:24px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">S</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:11.5px;font-weight:800">sagartravel</div>
+        <div class="grey" style="font-size:9px">Vijayawada</div>
+      </div>
+      <div style="background:#FDF3D7;border-radius:999px;padding:3px 9px;font-size:9px;font-weight:700;color:#7A6210">Monsoon T-Shirt</div>
+    </div>
+    <div class="media" style="height:300px">
+      <div class="slideCt">1/1</div>
+      <div class="prod" style="left:34%;top:8%;width:26%;height:40%"></div>
+      <div class="prod" style="left:8%;top:36%;width:30%;height:46%"></div>
+      <div class="prod" style="left:54%;top:46%;width:26%;height:42%"></div>
+      <div class="pin" style="left:34%;top:28%"><span class="bagIco"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Nike Cotton T-Shi…</div><div class="pinPrice">₹1,047</div></span></div>
+      <div class="pin" style="left:9%;top:66%"><span class="bagIco"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Adidas Cotton T-S…</div><div class="pinPrice">₹1,184</div></span></div>
+    </div>
+    <!-- feed keeps the YELLOW bar (the one CTA) — flag if you want white here too -->
+    <div style="margin:10px 12px 0;background:var(--y);border-radius:12px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="display:flex;align-items:center;gap:8px;color:#fff;font-size:12px;font-weight:800">
+        <span class="bagIco" style="background:#fff"><svg viewBox="0 0 16 16" width="10" height="10"><use href="#bagB"/></svg></span>
+        Shop this post
+      </span>
+      <span style="color:rgba(255,255,255,.95);font-size:11px;font-weight:700">3 items ›</span>
+    </div>
+    <div class="eng">
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#heart"/></svg><b>0</b></span>
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#cmt"/></svg></span>
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#share"/></svg></span>
+      <span class="sp"></span>
+      <span><svg width="16" height="16" viewBox="0 0 16 16"><use href="#save"/></svg></span>
+    </div>
+    <div class="capBlock" style="font-size:10.5px">
+      <b>sagartravel</b> Stay stylish through the rainy season with this comfo… <span class="grey">more</span>
+      <div class="grey small" style="margin-top:3px">16 hours ago</div>
+    </div>
+  </div>
+  <div class="cap">Feed card gains the same language: cream media sheet, monochrome icons everywhere (emoji gone), timestamp. The YELLOW Shop bar stays in feed as the one CTA — say the word if you want the white pill here too.</div>
+</div>
+
+</body></html>

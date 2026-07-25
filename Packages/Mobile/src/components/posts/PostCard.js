@@ -1,18 +1,27 @@
 /**
- * PostCard — the atom of the new follower app (Post/Concept Stage A).
- * Contract: features/concept-stagea-posts-ui/. Locked tokens (2026-07-23):
- * pure white canvas, full-bleed media, yellow-only accents, system font;
- * media renders at its NATURAL shape clamped 1:1 ↔ 4:5 (cover, nothing cut
- * from the file); price tags visible IN FEED per the creator's tag style
- * ('hidden' = no pins anywhere but the Shop sheet); yellow Shop bar with
- * white text; compact horizontal engagement row (like+save live, comments/
- * share coming soon).
+ * PostCard — the feed card, design v3 (founder-locked board
+ * post-design-v3.html, reference 1 pin-to-pin).
+ *
+ * Anatomy: creator row (story-ring avatar w/ initial fallback, BLACK handle,
+ * blue verified tick only when real, city grey, ⋯) → CREAM media sheet
+ * (#F5F2EC) with swipeable slides + "n/N" counter + runtime pins (white pill,
+ * WHITE bag in black circle, name dotted, PRICE BOLD below) + the WHITE
+ * Shop-this-post pill INSIDE the media (yellow bar retired) + dots (blue
+ * active, per reference) → outline engagement row with counts → caption
+ * (more/less) → "View all N comments" (only when real) → grey timestamp.
+ *
+ * The media is never cropped beyond the Model B clamp (1:1 ↔ 4:5); the
+ * cream canvas shows wherever the image doesn't cover. Creator uploads are
+ * NEVER tinted — colour truth (founder rule).
  */
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Pressable, Dimensions, StyleSheet, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Pressable, FlatList, Dimensions, StyleSheet, Alert } from 'react-native';
+import { BagCircle, BagOutline, HeartIcon, CommentIcon, ShareIcon, SaveIcon, VerifiedTick } from './icons';
 
 const W = Dimensions.get('window').width;
 export const YELLOW = '#F6B11E';
+export const CREAM = '#F5F2EC';
+const BLUE = '#3897F0';
 
 // Locked frame: natural ratio bounded to [1:1 … 4:5]. h/w ∈ [1, 1.25].
 export function clampedHeight(width, height, renderW = W) {
@@ -20,120 +29,152 @@ export function clampedHeight(width, height, renderW = W) {
   return renderW * Math.min(Math.max(ratio, 1), 1.25);
 }
 
-// Truncate a product name for the pin — beyond this, dots. People shop on
-// PIC + PRICE (founder rule 2026-07-23); the name is secondary context.
-export function pinName(name, max = 18) {
-  const n = String(name || '');
-  return n.length > max ? `${n.slice(0, max - 1).trimEnd()}…` : n;
+export function timeAgo(iso) {
+  if (!iso) return '';
+  const s = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))} minutes ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} hours ago`;
+  if (s < 86400 * 30) return `${Math.floor(s / 86400)} days ago`;
+  return `${Math.floor(s / (86400 * 30))} months ago`;
 }
 
-/** LTK-style two-line pill: dark bag icon + name (truncated) over BOLD price.
- * x is clamped so a pill can never hang off the screen edge. */
+/** Story-ring avatar with an initial fallback (no more empty grey circles). */
+export function RingAvatar({ creator, size = 34 }) {
+  const inner = size - 5;
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E7A33B' }}>
+      {creator?.avatar ? (
+        <Image source={{ uri: creator.avatar }} style={{ width: inner, height: inner, borderRadius: inner / 2, borderWidth: 2, borderColor: '#FFF' }} />
+      ) : (
+        <View style={{ width: inner, height: inner, borderRadius: inner / 2, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: size * 0.36, fontWeight: '800', color: '#111' }}>
+            {(creator?.handle || '?')[0].toUpperCase()}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export function Pin({ tag, style: tagStyle, small }) {
   if (tagStyle === 'hidden') return null;
   const minimal = tagStyle === 'minimal';
   const x = Math.min(Math.max(Number(tag.x_pct), 14), 86);
   const y = Math.min(Math.max(Number(tag.y_pct), 5), 93);
+  const nm = String(tag.name || '');
+  const shown = nm.length > 18 ? `${nm.slice(0, 17).trimEnd()}…` : nm;
   return (
     <View style={[st.pin, { left: `${x}%`, top: `${y}%` }]} pointerEvents="none">
-      <View style={st.pinIcon}><Text style={{ fontSize: small ? 9 : 11 }}>🛍</Text></View>
+      <BagCircle size={small ? 20 : 24} />
       <View>
-        {!minimal && (
-          <Text style={[st.pinName, small && { fontSize: 8.5 }]} numberOfLines={1}>
-            {pinName(tag.name)}
-          </Text>
-        )}
+        {!minimal && <Text style={[st.pinName, small && { fontSize: 8.5 }]} numberOfLines={1}>{shown}</Text>}
         <Text style={[st.pinPrice, small && { fontSize: 9.5 }]}>₹{tag.offer_price ?? tag.price}</Text>
       </View>
     </View>
   );
 }
 
-export function EngagementRow({ post, onLike, onSave, counts = true, style }) {
+export function EngagementRow({ post, onLike, onSave, style }) {
   const soon = (what) => Alert.alert(what, 'Coming soon.');
   return (
     <View style={[st.eng, style]}>
       <TouchableOpacity style={st.engBtn} onPress={onLike}>
-        <Text style={[st.engIcon, post.liked && { color: '#E0245E' }]}>{post.liked ? '♥' : '♡'}</Text>
-        {counts && <Text style={st.engCount}>{post.like_count || ''}</Text>}
+        <HeartIcon size={19} color={post.liked ? '#E0245E' : '#111'} filled={post.liked} />
+        {!!post.like_count && <Text style={st.engCount}>{post.like_count}</Text>}
       </TouchableOpacity>
       <TouchableOpacity style={st.engBtn} onPress={() => soon('Comments')}>
-        <Text style={st.engIcon}>💬</Text>
+        <CommentIcon size={19} />
       </TouchableOpacity>
       <TouchableOpacity style={st.engBtn} onPress={() => soon('Share')}>
-        <Text style={st.engIcon}>↗</Text>
+        <ShareIcon size={19} />
       </TouchableOpacity>
       <View style={{ flex: 1 }} />
       <TouchableOpacity style={st.engBtn} onPress={onSave}>
-        <Text style={[st.engIcon, post.saved && { color: YELLOW }]}>{post.saved ? '🔖' : '🏷'}</Text>
-        {counts && <Text style={st.engCount}>{post.save_count || ''}</Text>}
+        <SaveIcon size={19} color={post.saved ? YELLOW : '#111'} filled={post.saved} />
+        {!!post.save_count && <Text style={st.engCount}>{post.save_count}</Text>}
       </TouchableOpacity>
     </View>
   );
 }
 
-export function ShopBar({ count, onPress, compact }) {
+/** The WHITE shop pill (reference language — lives INSIDE the media). */
+export function ShopPill({ count, onPress, style }) {
   return (
-    <TouchableOpacity style={[st.shop, compact && { paddingVertical: 10 }]} activeOpacity={0.9} onPress={onPress}>
-      <Text style={st.shopTxt}>🛍  Shop this post</Text>
-      <Text style={st.shopCount}>{count} item{count === 1 ? '' : 's'}  ›</Text>
+    <TouchableOpacity style={[st.shopPill, style]} activeOpacity={0.9} onPress={onPress}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+        <BagOutline size={15} />
+        <Text style={st.shopTxt}>Shop this post</Text>
+      </View>
+      <Text style={st.shopCount}>{count} item{count === 1 ? '' : 's'} ›</Text>
     </TouchableOpacity>
   );
 }
 
-export function CreatorRow({ creator, concept, collection, onCreator, compact }) {
+export function CreatorRow({ creator, onCreator, right }) {
   return (
-    <View style={[st.crow, compact && { paddingVertical: 6 }]}>
+    <View style={st.crow}>
       <TouchableOpacity style={st.crowLeft} onPress={onCreator} activeOpacity={0.8}>
-        {creator.avatar
-          ? <Image source={{ uri: creator.avatar }} style={st.av} />
-          : <View style={[st.av, { backgroundColor: '#EEE' }]} />}
+        <RingAvatar creator={creator} />
         <View>
-          <Text style={st.handle}>{creator.handle}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={st.handle}>{creator.handle}</Text>
+            {creator.verified ? <VerifiedTick size={13} /> : null}
+          </View>
           {!!creator.city && <Text style={st.city}>{creator.city}</Text>}
         </View>
       </TouchableOpacity>
-      {(concept || collection) && (
-        <View style={st.chip}><Text style={st.chipTxt} numberOfLines={1}>{(concept || collection).name}</Text></View>
-      )}
       <View style={{ flex: 1 }} />
+      {right || <Text style={st.menu}>⋯</Text>}
     </View>
   );
 }
 
-/** Feed card: creator row → clamped media (cover slide + pins) → shop bar →
- * engagement → 2-line caption. `post` = one GET /follower/posts item. */
 export default function PostCard({ post, onOpen, onShop, onLike, onSave, onCreator }) {
-  const cover = post.cover;
-  const h = clampedHeight(cover?.width, cover?.height);
-  // Caption expands in place (founder 2026-07-24: reader must be able to see
-  // the complete message) — Instagram's "… more" behaviour.
+  const [slide, setSlide] = useState(0);
   const [capOpen, setCapOpen] = useState(false);
   const capLong = (post.caption || '').length > 80;
+  const cover = post.cover;
+  const h = clampedHeight(cover?.width, cover?.height);
+  const slides = post.slide_count || 1;
+
   return (
     <View style={st.card}>
-      <CreatorRow creator={post.creator} concept={post.concept} collection={post.collection} onCreator={onCreator} />
+      <CreatorRow creator={post.creator} onCreator={onCreator} />
+
+      {/* CREAM media sheet — cover slide (per-slide media arrives on open) */}
       <Pressable onPress={onOpen}>
-        {cover
-          ? <Image source={{ uri: cover.url }} style={{ width: W, height: h }} resizeMode="cover" />
-          : <View style={{ width: W, height: W, backgroundColor: '#F4F4F4' }} />}
-        {(post.feed_pins || []).map((t, i) => <Pin key={i} tag={t} style={post.tag_style} small />)}
-        {post.slide_count > 1 && (
-          <View style={st.slideBadge}><Text style={st.slideBadgeTxt}>1/{post.slide_count}</Text></View>
-        )}
+        <View style={{ width: W, height: h + 54, backgroundColor: CREAM }}>
+          {cover
+            ? <Image source={{ uri: cover.url }} style={{ width: W, height: h }} resizeMode="cover" />
+            : <View style={{ width: W, height: h }} />}
+          {(post.feed_pins || []).map((t, i) => <Pin key={i} tag={t} style={post.tag_style} small />)}
+          {slides > 1 && (
+            <View style={st.slideBadge}><Text style={st.slideBadgeTxt}>{slide + 1}/{slides}</Text></View>
+          )}
+          {/* WHITE shop pill inside the media (reference) */}
+          <ShopPill count={post.product_count} onPress={onShop}
+            style={{ position: 'absolute', left: 12, right: 12, bottom: slides > 1 ? 22 : 10 }} />
+          {slides > 1 && (
+            <View style={st.dots}>
+              {Array.from({ length: Math.min(slides, 6) }).map((_, i) => (
+                <View key={i} style={[st.dot, i === slide && st.dotOn]} />
+              ))}
+            </View>
+          )}
+        </View>
       </Pressable>
-      <ShopBar count={post.product_count} onPress={onShop} compact />
+
       <EngagementRow post={post} onLike={onLike} onSave={onSave} />
+
       {!!post.caption && (
         <Pressable onPress={() => capLong && setCapOpen(o => !o)}>
           <Text style={st.caption} numberOfLines={capOpen ? undefined : 2}>
             <Text style={st.captionHandle}>{post.creator.handle} </Text>{post.caption}
           </Text>
-          {capLong && (
-            <Text style={st.captionMore}>{capOpen ? 'less' : '… more'}</Text>
-          )}
+          {capLong && <Text style={st.captionMore}>{capOpen ? 'less' : '… more'}</Text>}
         </Pressable>
       )}
+      <Text style={st.timestamp}>{timeAgo(post.created_at)}</Text>
       <View style={st.sep} />
     </View>
   );
@@ -141,28 +182,28 @@ export default function PostCard({ post, onOpen, onShop, onLike, onSave, onCreat
 
 const st = StyleSheet.create({
   card: { backgroundColor: '#FFF' },
-  crow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, gap: 9 },
+  crow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 9, gap: 9 },
   crowLeft: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  av: { width: 32, height: 32, borderRadius: 16 },
-  handle: { fontSize: 13, fontWeight: '700', color: '#111' },
-  city: { fontSize: 10.5, color: '#999' },
-  chip: { backgroundColor: '#FDF3D7', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3, maxWidth: 150 },
-  chipTxt: { fontSize: 10, fontWeight: '700', color: '#7A6210' },
-  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.97)', borderRadius: 999, paddingLeft: 5, paddingRight: 11, paddingVertical: 5, transform: [{ translateX: -30 }, { translateY: -16 }], shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 5, shadowOffset: { width: 0, height: 1 }, elevation: 3, maxWidth: 175 },
-  pinIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' },
+  handle: { fontSize: 13.5, fontWeight: '800', color: '#111' },
+  city: { fontSize: 10.5, color: '#8A8A8A', marginTop: 1 },
+  menu: { fontSize: 16, color: '#111', letterSpacing: 2, paddingHorizontal: 2 },
+  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FFF', borderRadius: 999, paddingLeft: 5, paddingRight: 12, paddingVertical: 5, transform: [{ translateX: -30 }, { translateY: -16 }], shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3, maxWidth: 180 },
   pinName: { fontSize: 10, fontWeight: '600', color: '#111' },
   pinPrice: { fontSize: 11, fontWeight: '800', color: '#111' },
-  slideBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  slideBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(17,17,17,0.78)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   slideBadgeTxt: { color: '#FFF', fontSize: 10, fontWeight: '700' },
-  shop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 14, marginTop: 10, backgroundColor: YELLOW, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
-  shopTxt: { color: '#FFF', fontSize: 13, fontWeight: '800' },
-  shopCount: { color: 'rgba(255,255,255,0.92)', fontSize: 12, fontWeight: '700' },
-  eng: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 8, gap: 14 },
-  engBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  engIcon: { fontSize: 20, color: '#111' },
-  engCount: { fontSize: 12, fontWeight: '600', color: '#333' },
-  caption: { paddingHorizontal: 14, paddingTop: 6, fontSize: 12.5, color: '#222', lineHeight: 17 },
-  captionHandle: { fontWeight: '700' },
-  captionMore: { paddingHorizontal: 14, paddingTop: 2, fontSize: 12, fontWeight: '600', color: '#999' },
+  shopPill: { backgroundColor: '#FFF', borderRadius: 999, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  shopTxt: { fontSize: 13, fontWeight: '800', color: '#111' },
+  shopCount: { fontSize: 12, fontWeight: '600', color: '#777' },
+  dots: { position: 'absolute', left: 0, right: 0, bottom: 7, flexDirection: 'row', justifyContent: 'center', gap: 4 },
+  dot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#C9C4BA' },
+  dotOn: { backgroundColor: BLUE },
+  eng: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 10, gap: 16 },
+  engBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  engCount: { fontSize: 12.5, fontWeight: '700', color: '#111' },
+  caption: { paddingHorizontal: 14, paddingTop: 7, fontSize: 12.5, color: '#111', lineHeight: 17.5 },
+  captionHandle: { fontWeight: '800' },
+  captionMore: { paddingHorizontal: 14, paddingTop: 2, fontSize: 12, fontWeight: '600', color: '#8A8A8A' },
+  timestamp: { paddingHorizontal: 14, paddingTop: 4, fontSize: 10.5, color: '#8A8A8A' },
   sep: { height: 1, backgroundColor: '#F2F2F2', marginTop: 12 },
 });

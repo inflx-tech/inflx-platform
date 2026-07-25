@@ -15,6 +15,7 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, FlatList, Modal, Dimensions, StyleSheet } from 'react-native';
 import { useCart } from '../../services/CartContext';
 import { YELLOW } from './PostCard';
+import { BagCircle, BagOutline } from './icons';
 
 const H = Dimensions.get('window').height;
 
@@ -95,7 +96,9 @@ export default function ShopThisPostSheet({ visible, post, onClose, onOpenProduc
                         style={[st.bagBtn, added && st.bagBtnOn]}
                         disabled={!p.purchasable}
                         onPress={() => added ? null : quickAdd(p)}>
-                        <Text style={{ fontSize: 11, color: added ? '#FFF' : '#111' }}>🛍</Text>
+                        {added
+                          ? <BagCircle size={22} />
+                          : <BagOutline size={13} />}
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>

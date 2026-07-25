@@ -126,7 +126,7 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
     `SELECT cp.id, cp.influencer_id, cp.concept_id, cp.collection_id, cp.caption,
             cp.tag_style, cp.post_type, cp.media_kind, cp.created_at,
             i.instagram_handle AS handle, u.name AS influencer_name,
-            i.profile_image_url AS avatar, u.city AS influencer_city,
+            i.profile_image_url AS avatar, u.city AS influencer_city, i.verified,
             ct.kind AS t_kind, ct.name_pattern AS t_pattern, cn.name AS leaf_name,
             col.name AS collection_name,
             fm.id AS cover_media_id, fm.width AS cover_w, fm.height AS cover_h,
@@ -176,7 +176,7 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
     id: r.id,
     creator: {
       id: r.influencer_id, handle: r.handle, name: r.influencer_name,
-      avatar: r.avatar, city: r.influencer_city,
+      avatar: r.avatar, city: r.influencer_city, verified: r.verified === true,
       followed: followedIds.includes(r.influencer_id),
     },
     feed_pins: r.cover_media_id ? (pinsByMedia.get(r.cover_media_id) || []) : [],
@@ -225,7 +225,7 @@ async function liveTrackingByBrand(influencerId, brandIds) {
 async function getPostDetail(postId, { userId } = {}) {
   const { rows } = await db.query(
     `SELECT cp.*, i.instagram_handle AS handle, u.name AS influencer_name,
-            i.profile_image_url AS avatar, u.city AS influencer_city,
+            i.profile_image_url AS avatar, u.city AS influencer_city, i.verified,
             i.followers_count,
             ct.kind AS t_kind, ct.name_pattern AS t_pattern, cn.name AS leaf_name,
             col.name AS collection_name
@@ -315,7 +315,7 @@ async function getPostDetail(postId, { userId } = {}) {
     id: post.id,
     creator: {
       id: post.influencer_id, handle: post.handle, name: post.influencer_name,
-      avatar: post.avatar, city: post.influencer_city,
+      avatar: post.avatar, city: post.influencer_city, verified: post.verified === true,
       followers_count: post.followers_count,
     },
     ...conceptFieldsFromRow(post),

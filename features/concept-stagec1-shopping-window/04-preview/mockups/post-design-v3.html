@@ -1,0 +1,154 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Post design v3 — FEED (ref 1) + FULL-SCREEN (ref 2), pin-to-pin</title>
+<style>
+  :root{ --ink:#111; --mut:#8A8A8A; --cream:#F5F2EC; --blue:#3897F0; }
+  body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:#E4E4E4;padding:26px;display:flex;gap:26px;flex-wrap:wrap;justify-content:center;color:var(--ink)}
+  .col{display:flex;flex-direction:column;gap:8px;align-items:center;width:280px}
+  .cap{font-size:10.5px;color:#777;text-align:center;line-height:1.55;max-width:265px}
+  .capT{font-size:12.5px;font-weight:800}
+  .ph{width:280px;height:606px;background:#fff;border-radius:26px;box-shadow:0 6px 22px rgba(0,0,0,.14);overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .bag{width:22px;height:22px;border-radius:50%;background:var(--ink);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .bag svg{width:12px;height:12px;display:block}
+  .pin{position:absolute;display:flex;align-items:center;gap:7px;background:#fff;border-radius:999px;padding:5px 12px 5px 5px;box-shadow:0 2px 9px rgba(0,0,0,.14);max-width:170px}
+  .pinName{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pinPrice{font-size:11px;font-weight:800}
+  .prod{position:absolute;border-radius:6px;background:linear-gradient(150deg,#dfd8ca,#cdc3b1)}
+  .slideCt{position:absolute;top:10px;right:10px;background:rgba(17,17,17,.78);color:#fff;font-size:9.5px;font-weight:700;border-radius:999px;padding:3px 9px}
+  .grey{color:var(--mut)}
+  svg .s{stroke:#111;stroke-width:1.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+</style></head><body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <!-- BOLD white bag on black circle (founder: white bag was missing/thin) -->
+  <g id="bagW"><path d="M3 4.3h6l-.5 5.4h-5z" fill="#fff"/><path d="M4.2 4.2a1.8 1.8 0 0 1 3.6 0" fill="none" stroke="#fff" stroke-width="1.2"/></g>
+  <g id="heart"><path d="M8 13.6C4.6 11 2.5 8.8 2.5 6.4 2.5 4.6 3.9 3.3 5.6 3.3c1 0 2 .5 2.4 1.3.4-.8 1.4-1.3 2.4-1.3 1.7 0 3.1 1.3 3.1 3.1 0 2.4-2.1 4.6-5.5 7.2z" class="s"/></g>
+  <g id="cmt"><path d="M13.5 7.5c0 3-2.5 5.2-5.5 5.2-.7 0-1.4-.1-2-.3l-3 1 1-2.6c-.6-.9-1-2-1-3.3C3 4.5 5.2 2.3 8 2.3s5.5 2.2 5.5 5.2z" class="s"/></g>
+  <g id="share"><path d="M13.6 2.4 7.2 8.8M13.6 2.4 9.4 13.6 7.2 8.8 2.4 6.6z" class="s"/></g>
+  <g id="save"><path d="M4 2.5h8v11l-4-3-4 3z" class="s"/></g>
+</defs></svg>
+
+<!-- ═══ 1 · FEED (reference 1, pin-to-pin) ═══ -->
+<div class="col">
+  <div class="capT">FEED — reference 1, exact</div>
+  <div class="ph">
+    <!-- concept-feed header (banner-tapped feed); main Posts tab shows INFLX tabs instead -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px 8px">
+      <span style="font-size:19px">‹</span>
+      <div style="text-align:center">
+        <div style="font-size:15px;font-weight:800">Posts</div>
+        <div class="grey" style="font-size:11px">Monsoon T-Shirt</div>
+      </div>
+      <span style="font-size:15px;letter-spacing:2px">⋯</span>
+    </div>
+    <!-- creator row -->
+    <div style="display:flex;align-items:center;gap:9px;padding:3px 14px 9px">
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#feda75,#d62976);display:flex;align-items:center;justify-content:center">
+        <div style="width:29px;height:29px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">S</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:800">sagartravel <span style="color:var(--blue);font-size:12px">✓</span></div>
+        <div class="grey" style="font-size:10.5px">Vijayawada</div>
+      </div>
+      <span style="font-size:15px;letter-spacing:2px">⋯</span>
+    </div>
+    <!-- CREAM media, pins, slide counter, WHITE shop pill INSIDE, dots on cream -->
+    <div style="position:relative;background:var(--cream);height:344px">
+      <div class="slideCt">1/6</div>
+      <div class="prod" style="left:33%;top:6%;width:27%;height:40%"></div>
+      <div class="prod" style="left:7%;top:32%;width:30%;height:46%"></div>
+      <div class="prod" style="left:53%;top:42%;width:28%;height:44%"></div>
+      <div class="prod" style="left:73%;top:8%;width:17%;height:26%"></div>
+      <div class="pin" style="left:56%;top:16%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Brown Sunglasses</div><div class="pinPrice">₹499</div></span></div>
+      <div class="pin" style="left:6%;top:36%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Classic White Shirt</div><div class="pinPrice">₹799</div></span></div>
+      <div class="pin" style="left:52%;top:52%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Wide Leg Denim</div><div class="pinPrice">₹999</div></span></div>
+      <div class="pin" style="left:10%;top:74%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Woven Tote Bag</div><div class="pinPrice">₹1,299</div></span></div>
+      <!-- WHITE shop pill (yellow feed bar RETIRED per "no deviation") -->
+      <div style="position:absolute;left:12px;right:12px;bottom:26px;background:#fff;border-radius:999px;padding:11px 15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.12)">
+        <span style="display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:800">
+          <svg width="14" height="14" viewBox="0 0 16 16"><path d="M3.6 5h8.8l-.8 8H4.4z" class="s"/><path d="M5.7 5a2.3 2.3 0 0 1 4.6 0" class="s"/></svg>
+          Shop this post
+        </span>
+        <span class="grey" style="font-size:11.5px;font-weight:600">5 items ›</span>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;gap:4px">
+        <i style="width:5px;height:5px;border-radius:50%;background:#C9C4BA"></i>
+        <i style="width:5px;height:5px;border-radius:50%;background:var(--blue)"></i>
+        <i style="width:5px;height:5px;border-radius:50%;background:#C9C4BA"></i>
+        <i style="width:5px;height:5px;border-radius:50%;background:#C9C4BA"></i>
+      </div>
+    </div>
+    <!-- engagement row -->
+    <div style="display:flex;align-items:center;gap:16px;padding:11px 14px 2px;font-size:16px">
+      <span><svg width="17" height="17" viewBox="0 0 16 16"><use href="#heart"/></svg><b style="font-size:12.5px;margin-left:5px">2,145</b></span>
+      <span><svg width="17" height="17" viewBox="0 0 16 16"><use href="#cmt"/></svg><b style="font-size:12.5px;margin-left:5px">28</b></span>
+      <span><svg width="17" height="17" viewBox="0 0 16 16"><use href="#share"/></svg><b style="font-size:12.5px;margin-left:5px">112</b></span>
+      <span style="flex:1"></span>
+      <span><svg width="17" height="17" viewBox="0 0 16 16"><use href="#save"/></svg></span>
+    </div>
+    <div style="padding:6px 14px;font-size:12px;line-height:1.5">
+      <b>sagartravel</b> Stay stylish through the rainy season with this comfortable monsoon-ready T-shirt ☔
+      <div class="grey" style="font-size:11px;margin-top:4px">View all 28 comments</div>
+      <div class="grey" style="font-size:10px;margin-top:2px">2 days ago</div>
+    </div>
+  </div>
+  <div class="cap">Ref 1 = THE FEED. White chrome · creator row (ring avatar, black handle, blue ✓) · cream media sheet · bold white-bag pins · WHITE shop pill inside the media (yellow bar retired) · blue active dot · outline engagement row w/ counts · caption + comments + timestamp.</div>
+</div>
+
+<!-- ═══ 2 · FULL-SCREEN (reference 2, pin-to-pin) ═══ -->
+<div class="col">
+  <div class="capT">FULL-SCREEN — reference 2, exact</div>
+  <div class="ph" style="background:var(--cream)">
+    <!-- top: back + menu only, floating on cream -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 4px">
+      <span style="font-size:20px">‹</span><span style="font-size:15px;letter-spacing:2px">⋯</span>
+    </div>
+    <!-- media region fills, pins on it -->
+    <div style="position:relative;flex:1">
+      <div class="prod" style="left:30%;top:4%;width:30%;height:42%"></div>
+      <div class="prod" style="left:6%;top:36%;width:30%;height:42%"></div>
+      <div class="prod" style="left:52%;top:40%;width:30%;height:46%"></div>
+      <div class="prod" style="left:70%;top:6%;width:18%;height:24%"></div>
+      <div class="pin" style="left:52%;top:14%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Brown Sunglasses</div><div class="pinPrice">₹499</div></span></div>
+      <div class="pin" style="left:5%;top:40%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Classic White Shirt</div><div class="pinPrice">₹799</div></span></div>
+      <div class="pin" style="left:46%;top:56%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Wide Leg Denim</div><div class="pinPrice">₹999</div></span></div>
+      <div class="pin" style="left:8%;top:80%"><span class="bag"><svg viewBox="0 0 12 12"><use href="#bagW"/></svg></span><span><div class="pinName">Woven Tote Bag</div><div class="pinPrice">₹1,299</div></span></div>
+      <!-- RIGHT RAIL on cream — black outline icons, counts BELOW -->
+      <div style="position:absolute;right:12px;bottom:6px;display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center">
+        <div><svg width="20" height="20" viewBox="0 0 16 16"><use href="#heart"/></svg><div style="font-size:11px;font-weight:600">2,145</div></div>
+        <div><svg width="20" height="20" viewBox="0 0 16 16"><use href="#cmt"/></svg><div style="font-size:11px;font-weight:600">28</div></div>
+        <div><svg width="20" height="20" viewBox="0 0 16 16"><use href="#share"/></svg><div style="font-size:11px;font-weight:600">112</div></div>
+        <div><svg width="20" height="20" viewBox="0 0 16 16"><use href="#save"/></svg><div style="font-size:11px;font-weight:600">35</div></div>
+      </div>
+    </div>
+    <!-- bottom block on cream -->
+    <div style="padding:6px 14px 12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#feda75,#d62976);display:flex;align-items:center;justify-content:center">
+          <div style="width:25px;height:25px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800">S</div>
+        </div>
+        <span style="font-size:13px;font-weight:800">sagartravel <span style="color:var(--blue);font-size:11.5px">✓</span></span>
+        <span class="grey">·</span>
+        <span style="font-size:12.5px;font-weight:800">Follow</span>
+      </div>
+      <div style="font-size:11.5px;line-height:1.5;margin-top:6px">Stay stylish through the rainy season with this comfortable monsoon-ready T-shirt ☔</div>
+      <div class="grey" style="font-size:10px;margin-top:3px">2 days ago</div>
+      <!-- Shop banner -->
+      <div style="margin-top:9px;background:#fff;border-radius:14px;padding:11px 13px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 7px rgba(0,0,0,.08)">
+        <span class="bag" style="width:26px;height:26px"><svg viewBox="0 0 12 12" width="13" height="13"><use href="#bagW"/></svg></span>
+        <span style="flex:1">
+          <div style="font-size:12.5px;font-weight:800">Shop this post</div>
+          <div class="grey" style="font-size:10.5px">View all 3 products in this look</div>
+        </span>
+        <span style="font-size:15px;color:#777">›</span>
+      </div>
+      <!-- comment bar -->
+      <div style="margin-top:9px;display:flex;align-items:center;gap:8px">
+        <div style="width:26px;height:26px;border-radius:50%;background:#DDD"></div>
+        <div style="flex:1;background:#fff;border-radius:999px;padding:8px 13px;font-size:11px;color:#999">Add a comment…</div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Ref 2 = FULL-SCREEN. Whole canvas cream · back + ⋯ only on top · pins on the media · BLACK outline right rail, counts BELOW icons · bottom: creator + Follow (black — your earlier instruction; ref shows blue, say if you want blue) · caption + timestamp · white "Shop this post / View all N products in this look" banner · comment bar (visual until comments ship).</div>
+</div>
+
+</body></html>
