@@ -11,6 +11,7 @@
   "mockup_locked_by": "aveen (founder) — reviewed 04-preview/mockups/c1-shopping-window.html live in the browser pane; 'pls start implement' = the lock",
   "mockup_locked_at": "2026-07-24",
   "notes": "Stage C1 shopping window, board-exact: immersive PostViewer (true image on black, overlay chrome, Follow pill, white shop pill, concept name as title, caption more/less, reopen-sheet-on-back), grid ShopThisPostSheet (corner bag quick-add w/ inline size picker, in-bag state from cart, black toast + yellow View Bag), new PostProductScreen (effective/struck/deep-yellow %OFF, colour+size chips, accordion, live offers, outline AddToBag→GoToBag + yellow BuyNow→bag; ratings absent per founder decision). Adds ride existing cart rails w/ post tracking (cartKind shop). Legacy PDP untouched until C3. Mobile-only OTA.",
+  "qa_record": "TWO runs. Run 1 (06:15 report) FAILED 73/79 — the same six api/contract-invariant specs as the 2026-07-23 incident hung to timeout (1164s each) against prod Render; prod answered a manual 401 probe in 0.45s minutes later; changeset is mobile-only and unrelated. Classified recurring transient environmental (pattern + fast-fail follow-up logged in engineering memory). Run 2 (06:17 report) GREEN 79/79 in 38.9s. Commit c518bf3's message predates run 1's reading — this field is the honest record.",
   "release": {
     "qa_all_green": true,
     "released": false,
