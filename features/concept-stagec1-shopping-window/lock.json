@@ -16,6 +16,7 @@
     "qa_all_green": true,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "deploy": "founder go in-session 2026-07-25 ('pls go and deploy'). Pushed 8a8c413 (mobile-only; Render/Vercel behaviour unchanged) then publish-ota:all clean: brand v146, influencer v140, FOLLOWER v204, agency v45. released stays false until founder walks the 5 board steps on the Monsoon T-Shirt post (device gate)."
   }
 }
