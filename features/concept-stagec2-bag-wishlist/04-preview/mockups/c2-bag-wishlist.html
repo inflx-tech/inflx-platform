@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>C2 — Bag + Wishlist board</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  body { background:#EDEDED; padding:28px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { color:#666; font-size:13px; margin-bottom:24px; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:390px; background:#FFF; border-radius:28px; box-shadow:0 8px 30px rgba(0,0,0,.14); overflow:hidden; border:1px solid #DDD; }
+  .cap { font-size:12.5px; font-weight:700; color:#444; margin:10px 4px 18px; max-width:390px; line-height:1.5; }
+  .cap b { color:#000; }
+  /* ——— shared app chrome ——— */
+  .hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+  .hdr .back { font-size:18px; font-weight:700; }
+  .hdr .t { font-size:17px; font-weight:800; color:#111; }
+  .hdr .n { font-size:12.5px; color:#8A8A8A; font-weight:600; margin-top:2px; }
+  .hdr .right { margin-left:auto; font-size:12.5px; font-weight:800; color:#111; }
+  .yellow { background:#F6B11E; color:#111; }
+  .off { color:#CA8A04; font-weight:800; }
+  .struck { color:#9A9A9A; text-decoration:line-through; font-weight:600; }
+  /* ——— bag ——— */
+  .strip { display:flex; align-items:center; gap:8px; margin:6px 16px 0; padding:10px 12px; border:1px solid #EEE; border-radius:12px; font-size:12px; color:#111; }
+  .strip .chg { margin-left:auto; font-weight:800; font-size:12px; }
+  .line { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid #F4F4F4; }
+  .line img.ph { width:76px; height:95px; border-radius:10px; background:#F5F2EC; object-fit:cover; }
+  .ph2 { width:76px; height:95px; border-radius:10px; background:linear-gradient(160deg,#F5F2EC,#E9E2D0); }
+  .lname { font-size:13px; font-weight:700; color:#111; }
+  .via { font-size:11px; color:#8A8A8A; margin-top:2px; }
+  .opts { display:flex; gap:8px; margin-top:7px; }
+  .chipx { font-size:11px; font-weight:700; color:#111; border:1px solid #E4E4E4; border-radius:8px; padding:4px 9px; }
+  .qty { display:flex; align-items:center; border:1px solid #E4E4E4; border-radius:8px; overflow:hidden; }
+  .qty span { padding:4px 10px; font-size:12px; font-weight:800; }
+  .qty .num { border-left:1px solid #E4E4E4; border-right:1px solid #E4E4E4; }
+  .prices { margin-top:8px; font-size:14px; font-weight:800; color:#111; }
+  .prices small { font-size:11.5px; }
+  .lacts { display:flex; gap:18px; margin-top:8px; font-size:11.5px; font-weight:700; color:#8A8A8A; }
+  .offerrow { display:flex; align-items:center; gap:10px; margin:12px 16px 0; padding:11px 13px; border:1px dashed #E0D6BB; background:#FDFBF4; border-radius:12px; font-size:12px; }
+  .offerrow b { color:#111; } .offerrow .sv { color:#1E9E5A; font-weight:800; }
+  .offerrow .rm { margin-left:auto; font-weight:800; color:#8A8A8A; }
+  .bill { margin:14px 16px; border:1px solid #EEE; border-radius:14px; padding:14px; }
+  .bill .r { display:flex; justify-content:space-between; font-size:12.5px; color:#555; padding:4px 0; }
+  .bill .r b { color:#111; }
+  .bill .tot { display:flex; justify-content:space-between; border-top:1px solid #EEE; margin-top:8px; padding-top:10px; font-size:15px; font-weight:800; color:#111; }
+  .note { font-size:10.5px; color:#9A9A9A; margin-top:6px; }
+  .foot { display:flex; align-items:center; gap:14px; border-top:1px solid #EEE; padding:12px 16px 18px; }
+  .foot .amt { font-size:17px; font-weight:800; } .foot .lbl { font-size:10px; color:#8A8A8A; font-weight:700; }
+  .cta { margin-left:auto; padding:13px 30px; border-radius:999px; font-size:14px; font-weight:800; }
+  /* ——— wishlist ——— */
+  .chips { display:flex; gap:8px; padding:6px 16px 12px; flex-wrap:wrap; }
+  .chip { font-size:12px; font-weight:700; padding:7px 14px; border-radius:999px; border:1px solid #E4E4E4; color:#555; }
+  .chip.on { background:#111; color:#FFF; border-color:#111; }
+  .chip.new { color:#111; border-style:dashed; }
+  .grid { display:flex; flex-wrap:wrap; gap:12px; padding:0 16px 18px; }
+  .card { width:167px; border:1px solid #F0F0F0; border-radius:14px; overflow:hidden; position:relative; }
+  .cimg { height:200px; background:linear-gradient(160deg,#F5F2EC,#E9E2D0); position:relative; }
+  .heart { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:14px; background:#FFF; display:flex; align-items:center; justify-content:center; font-size:13px; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+  .cbody { padding:9px 10px 11px; }
+  .cname { font-size:12px; font-weight:700; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cpr { font-size:13px; font-weight:800; margin-top:3px; }
+  .mtb { margin-top:8px; border:1.5px solid #111; border-radius:9px; text-align:center; padding:7px 0; font-size:12px; font-weight:800; color:#111; }
+  .gone { position:absolute; inset:0; background:rgba(255,255,255,.72); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#666; }
+  /* sheets/dialogs */
+  .sheet { border-top:1px solid #EEE; background:#FFF; padding:16px; }
+  .sheet .st { font-size:14px; font-weight:800; margin-bottom:10px; }
+  .sizes { display:flex; gap:8px; }
+  .sz { width:44px; height:44px; border:1.5px solid #E4E4E4; border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; }
+  .sz.on { border-color:#111; background:#111; color:#FFF; }
+  .modal { margin:20px 26px; border:1px solid #EEE; border-radius:16px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.16); }
+  .modal .mt { font-size:15px; font-weight:800; }
+  .inp { margin-top:12px; border:1.5px solid #E4E4E4; border-radius:10px; padding:12px; font-size:13px; color:#9A9A9A; }
+  .mrow { display:flex; gap:10px; margin-top:14px; }
+  .btn-k { flex:1; text-align:center; padding:12px; border-radius:10px; font-size:13px; font-weight:800; }
+  .dim { background:#FAFAFA; }
+  .menu { margin:8px 26px; border:1px solid #EEE; border-radius:12px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,.14); }
+  .mi { padding:12px 16px; font-size:13px; font-weight:700; color:#111; border-bottom:1px solid #F4F4F4; }
+  .mi.red { color:#D64545; border-bottom:none; }
+  .empty { text-align:center; padding:60px 40px; }
+  .empty .big { font-size:15px; font-weight:800; }
+  .empty .small { font-size:12px; color:#9A9A9A; margin-top:6px; line-height:1.5; }
+  .empty .ebtn { display:inline-block; margin-top:16px; padding:12px 26px; border-radius:999px; background:#111; color:#FFF; font-size:12.5px; font-weight:800; }
+  .panel { background:#FFF; border:1px solid #DDD; border-radius:14px; padding:18px; width:390px; font-size:12.5px; line-height:1.65; color:#333; }
+  .panel h3 { font-size:13.5px; margin-bottom:8px; }
+  .panel code { background:#F4F4F4; padding:1px 5px; border-radius:5px; font-size:11.5px; }
+</style>
+</head>
+<body>
+<h1>C2 — Bag &amp; Wishlist</h1>
+<div class="sub">Design law: pure white chrome · black text · yellow ONLY on the buy button · %OFF in deep yellow · no emoji icons (SVG line icons in app; glyphs here are placeholders).</div>
+
+<div class="row">
+
+  <!-- ——————————— FRAME 1: BAG ——————————— -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Bag</div><div class="n">2 items · Charvitha Fashions</div></div><div class="right">Wishlist</div></div>
+      <div class="strip">Deliver to <b>Home</b> — Prasadampadu, 521108 <span class="chg">Change</span></div>
+
+      <div class="line">
+        <div class="ph2"></div>
+        <div style="flex:1">
+          <div class="lname">Monsoon Cotton T-Shirt</div>
+          <div class="via">via @sagartravel</div>
+          <div class="opts"><span class="chipx">Size M ▾</span>
+            <span class="qty"><span>−</span><span class="num">1</span><span>+</span></span></div>
+          <div class="prices">₹773 <small class="struck">₹1,299</small> <small class="off">40% OFF</small></div>
+          <div class="lacts"><span>Move to Wishlist</span><span>Remove</span></div>
+        </div>
+      </div>
+      <div class="line">
+        <div class="ph2" style="background:linear-gradient(160deg,#EFEFEF,#DCDCDC)"></div>
+        <div style="flex:1">
+          <div class="lname">Allen Solly Cotton Shirt</div>
+          <div class="via">via @sagartravel</div>
+          <div class="opts"><span class="chipx">Size L ▾</span>
+            <span class="qty"><span>−</span><span class="num">2</span><span>+</span></span></div>
+          <div class="prices">₹899 <small class="struck">₹1,499</small> <small class="off">40% OFF</small></div>
+          <div class="lacts"><span>Move to Wishlist</span><span>Remove</span></div>
+        </div>
+      </div>
+
+      <div class="offerrow"><b>BOGO Weekend</b> · Applied <span class="sv">saving ₹450</span><span class="rm">Remove</span></div>
+
+      <div class="bill">
+        <div class="r"><span>Item total</span><b>₹2,571</b></div>
+        <div class="r"><span>Offer · BOGO Weekend</span><b style="color:#1E9E5A">−₹450</b></div>
+        <div class="r"><span>Delivery</span><b>Free</b></div>
+        <div class="tot"><span>To Pay</span><span>₹2,121</span></div>
+        <div class="note">Final price &amp; savings confirmed at payment.</div>
+      </div>
+
+      <div class="foot">
+        <div><div class="amt">₹2,121</div><div class="lbl">TO PAY</div></div>
+        <div class="cta yellow">Place Order</div>
+      </div>
+    </div>
+    <div class="cap"><b>Bag (reskin of the live cart — same rails, white law).</b> Address strip on top (guest addresses work here since v209). Every line shows its creator (“via @handle”) — this bag is born from posts. Size + qty inline; Move&nbsp;to&nbsp;Wishlist / Remove under each line. Offer row + honest bill (engine-priced) stay. ONE yellow element: Place Order.</div>
+  </div>
+
+  <!-- ——————————— FRAME 2: WISHLIST ALL ——————————— -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Wishlist</div><div class="n">12 items</div></div><div class="right">Bag</div></div>
+      <div class="chips">
+        <span class="chip on">All</span><span class="chip">Diwali (4)</span><span class="chip">Office (3)</span><span class="chip new">+ New</span>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="cimg"><span class="heart">♥</span></div>
+          <div class="cbody"><div class="cname">Monsoon Cotton T-Shirt</div><div class="cpr">₹773 <small class="struck">₹1,299</small></div><div class="mtb">Move to Bag</div></div></div>
+        <div class="card"><div class="cimg" style="background:linear-gradient(160deg,#EFEFEF,#DCDCDC)"><span class="heart">♥</span></div>
+          <div class="cbody"><div class="cname">Denim Straight Jeans</div><div class="cpr">₹1,199 <small class="struck">₹1,999</small></div><div class="mtb">Move to Bag</div></div></div>
+        <div class="card"><div class="cimg" style="background:linear-gradient(160deg,#F1EAE2,#E0D2C2)"><span class="heart">♥</span></div>
+          <div class="cbody"><div class="cname">Linen Kurta Set</div><div class="cpr">₹1,450</div><div class="mtb">Move to Bag</div></div></div>
+        <div class="card"><div class="cimg" style="background:linear-gradient(160deg,#ECECEC,#D8D8D8)"><span class="heart">♥</span><div class="gone">Currently unavailable</div></div>
+          <div class="cbody"><div class="cname">Printed Summer Dress</div><div class="cpr">₹999</div><div class="mtb" style="opacity:.35">Move to Bag</div></div></div>
+      </div>
+    </div>
+    <div class="cap"><b>Wishlist — All tab.</b> Collections are chips, not buried menus. Cards mirror the shop-sheet grid (image, name, price, black-outline Move&nbsp;to&nbsp;Bag). Tapping ♥ anywhere un-wishlists. Dead/out-of-stock products grey out honestly (live product data, never stale copies). Long-press a card → “Add to collection”.</div>
+  </div>
+
+  <!-- ——————————— FRAME 3: COLLECTION + DIALOGS ——————————— -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Diwali</div><div class="n">4 items</div></div><div class="right">⋯</div></div>
+      <div class="menu">
+        <div class="mi">Rename collection</div>
+        <div class="mi">Share (later — C-share)</div>
+        <div class="mi red">Delete collection</div>
+      </div>
+      <div class="modal">
+        <div class="mt">New collection</div>
+        <div class="inp">e.g. Diwali, Office wear, Gifts…</div>
+        <div class="mrow"><div class="btn-k dim">Cancel</div><div class="btn-k" style="background:#111;color:#FFF">Create</div></div>
+      </div>
+      <div class="sheet">
+        <div class="st">Select size — Monsoon Cotton T-Shirt</div>
+        <div class="sizes"><span class="sz">S</span><span class="sz on">M</span><span class="sz">L</span><span class="sz">XL</span></div>
+        <div class="cta yellow" style="margin:16px 0 4px; text-align:center; margin-left:0">Add to Bag · ₹773</div>
+      </div>
+    </div>
+    <div class="cap"><b>Collection view + the three dialogs.</b> ⋯ menu: rename / delete (share parked). “+ New” opens the naming card — black Create (yellow stays reserved for buying). Move&nbsp;to&nbsp;Bag on a sized product opens the same quick size sheet as the shop window; the Add button is yellow because it IS a buy action.</div>
+  </div>
+
+  <!-- ——————————— FRAME 4: EMPTY STATES ——————————— -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Bag</div></div></div>
+      <div class="empty">
+        <div class="big">Your bag is empty</div>
+        <div class="small">Everything you add from creator posts lands here.</div>
+        <div class="ebtn">Browse Posts</div>
+      </div>
+      <div style="border-top:8px solid #F4F4F4"></div>
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Wishlist</div></div></div>
+      <div class="empty" style="padding-top:40px">
+        <div class="big">Nothing saved yet</div>
+        <div class="small">Tap the heart on any product to keep it here.<br>Make collections like “Diwali” or “Office”.</div>
+        <div class="ebtn">Browse Posts</div>
+      </div>
+    </div>
+    <div class="cap"><b>Empty states.</b> Both route back to Posts (the app’s heart). Black buttons — nothing to buy yet, so no yellow.</div>
+  </div>
+
+  <!-- ——————————— BACKEND PANEL ——————————— -->
+  <div class="panel">
+    <h3>What this needs underneath (honest map)</h3>
+    <b>Exists already (reused, no change):</b><br>
+    · Bag = live cart rails (CartContext, offer preview engine, guest addresses v209, Place Order gate)<br>
+    · Product data + effective prices from PDP endpoints<br><br>
+    <b>New backend (small):</b><br>
+    · <code>follower_wishlist_items</code> (follower_id, product_id, created_at)<br>
+    · <code>follower_wishlist_collections</code> + item↔collection link (one item can sit in many collections)<br>
+    · Endpoints: list (live product join — dead products flagged), add/remove, collections CRUD, assign<br><br>
+    <b>Guest rule (locked law):</b> wishlist works logged-out too — device-local first, synced to the account at the same one login moment (identical to guest addresses).<br><br>
+    <b>Entry points wired in this slice:</b> heart on PDP · heart on shop-sheet cards · “Move to Wishlist” in bag.
+  </div>
+
+</div>
+</body>
+</html>

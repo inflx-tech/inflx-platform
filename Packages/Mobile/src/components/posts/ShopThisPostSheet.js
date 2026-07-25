@@ -11,11 +11,12 @@
  * Adds carry the post's tracking block → the creator's commission rides the
  * existing cart-claim rails.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, Pressable, FlatList, Modal, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { useCart } from '../../services/CartContext';
+import { loadWishlist, toggleWish } from '../../services/wishlist';
 import { YELLOW } from './PostCard';
-import { BagCircle, BagOutline } from './icons';
+import { BagCircle, BagOutline, HeartIcon } from './icons';
 
 const H = Dimensions.get('window').height;
 
@@ -23,8 +24,30 @@ export default function ShopThisPostSheet({ visible, post, loading, onClose, onO
   const { cart, addItem } = useCart();
   const [toast, setToast] = useState(null);          // { name }
   const [sizePick, setSizePick] = useState(null);    // { product, sizes }
+  // Stage C2 — heart state for the corner wishlist toggle on every card.
+  const [wished, setWished] = useState(() => new Set());
+  useEffect(() => {
+    if (!visible) return;
+    let alive = true;
+    loadWishlist().then((d) => alive && setWished(new Set(d.items.map((i) => i.product_id)))).catch(() => {});
+    return () => { alive = false; };
+  }, [visible]);
   if (!post && !loading) return null;
   const products = post?.products || [];
+
+  async function heart(p) {
+    const on = await toggleWish({
+      product_id: p.product_id, name: p.name,
+      price: p.price, offer_price: p.offer_price ?? null,
+      image_url: p.image_url, brand_id: p.brand?.id, brand_name: p.brand?.name,
+    }).catch(() => null);
+    if (on === null) return;
+    setWished((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(p.product_id); else next.delete(p.product_id);
+      return next;
+    });
+  }
 
   const inBag = (productId) => (cart.items || []).some(i => i.product_id === productId);
 
@@ -103,6 +126,12 @@ export default function ShopThisPostSheet({ visible, post, loading, onClose, onO
                         ? <Image source={{ uri: p.image_url }} style={st.img} />
                         : <View style={[st.img, { backgroundColor: '#F2F2F2' }]} />}
                       <TouchableOpacity
+                        style={st.heartBtn}
+                        onPress={() => heart(p)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <HeartIcon size={14} color="#111" filled={wished.has(p.product_id)} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
                         style={[st.bagBtn, added && st.bagBtnOn]}
                         disabled={!p.purchasable}
                         onPress={() => added ? null : quickAdd(p)}
@@ -173,6 +202,7 @@ const st = StyleSheet.create({
   imgWrap: { position: 'relative' },
   img: { width: '100%', aspectRatio: 4 / 5, borderRadius: 12 },
   bagBtn: { position: 'absolute', right: 7, bottom: 7, width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
+  heartBtn: { position: 'absolute', right: 7, top: 7, width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
   bagBtnOn: { backgroundColor: '#111' },
   name: { fontSize: 12.5, fontWeight: '600', color: '#111', marginTop: 7 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },

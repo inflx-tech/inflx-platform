@@ -36,6 +36,18 @@ router.post('/addresses',     ...followerAuth, ctrl.createAddress);
 router.get('/addresses',      ...followerAuth, ctrl.listAddresses);
 router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
 
+// ── Wishlist + collections (Stage C2 — auth required; guests keep a device-
+// local wishlist that syncs here at the one login moment) ────────────────────
+const wishlistCtrl = require('../controllers/followerWishlist.controller');
+router.get   ('/wishlist',                                    ...followerAuth, wishlistCtrl.list);
+router.post  ('/wishlist/items',                              ...followerAuth, wishlistCtrl.addItem);
+router.delete('/wishlist/items/:product_id',                  ...followerAuth, wishlistCtrl.removeItem);
+router.post  ('/wishlist/collections',                        ...followerAuth, wishlistCtrl.createCollection);
+router.patch ('/wishlist/collections/:id',                    ...followerAuth, wishlistCtrl.renameCollection);
+router.delete('/wishlist/collections/:id',                    ...followerAuth, wishlistCtrl.deleteCollection);
+router.post  ('/wishlist/collections/:id/items',              ...followerAuth, wishlistCtrl.assignItem);
+router.delete('/wishlist/collections/:id/items/:product_id',  ...followerAuth, wishlistCtrl.unassignItem);
+
 // ── Creator posts (Post/Concept P3) — the new source of truth ────────────────
 const followerPostsCtrl = require('../controllers/followerPosts.controller');
 router.get('/posts',     authenticateOptional, followerPostsCtrl.feed);

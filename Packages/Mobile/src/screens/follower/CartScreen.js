@@ -11,6 +11,7 @@ import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
 import CustomiseSheet from '../../components/food/CustomiseSheet';
 import { getGuestAddresses, isGuestAddressId, syncGuestAddresses } from '../../utils/guestAddress';
+import { ensureWish } from '../../services/wishlist';
 
 // follower-checkout Slice B — payment methods in the cart's payment selector.
 // The first is the default. `rzp` preselects the method in Razorpay's checkout
@@ -418,6 +419,27 @@ export default function CartScreen({ navigation }) {
   }
 
   if (items.length === 0) {
+    // Board frame 4 — the shop bag's empty state is white-law and routes back
+    // to Posts; food keeps its existing empty state.
+    if (isShop || cart.kind == null) {
+      return (
+        <View style={w.outer}>
+          <SafeAreaView edges={['top']} style={w.topbar}>
+            <Pressable onPress={() => navigation.goBack()} hitSlop={8}><Text style={w.back}>‹</Text></Pressable>
+            <Text style={w.title}>Bag</Text>
+            <View style={{ flex: 1 }} />
+            <Pressable onPress={() => navigation.navigate('Wishlist')} hitSlop={8}><Text style={w.wishLink}>Wishlist</Text></Pressable>
+          </SafeAreaView>
+          <View style={s.empty}>
+            <Text style={w.emptyTitle}>Your bag is empty</Text>
+            <Text style={w.emptySub}>Everything you add from creator posts lands here.</Text>
+            <Pressable style={w.browseBtn} onPress={() => navigation.goBack()}>
+              <Text style={w.browseTxt}>Browse Posts</Text>
+            </Pressable>
+          </View>
+        </View>
+      );
+    }
     return (
       <View style={s.outer}>
         <SafeAreaView edges={['top']} style={s.topbar}>
@@ -438,19 +460,37 @@ export default function CartScreen({ navigation }) {
   }
 
   return (
-    <View style={s.outer}>
-      <SafeAreaView edges={['top']} style={s.topbar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}><Text style={s.back}>←</Text></Pressable>
+    <View style={isShop ? w.outer : s.outer}>
+      <SafeAreaView edges={['top']} style={isShop ? w.topbar : s.topbar}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8}><Text style={isShop ? w.back : s.back}>{isShop ? '‹' : '←'}</Text></Pressable>
         <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={s.title}>Your Cart</Text>
-          {cart.brandName ? <Text style={s.sub} numberOfLines={1}>{cart.brandName}</Text> : null}
+          <Text style={isShop ? w.title : s.title}>{isShop ? 'Bag' : 'Your Cart'}</Text>
+          {isShop
+            ? <Text style={w.subCount} numberOfLines={1}>{count} item{count === 1 ? '' : 's'}{cart.brandName ? ` · ${cart.brandName}` : ''}</Text>
+            : (cart.brandName ? <Text style={s.sub} numberOfLines={1}>{cart.brandName}</Text> : null)}
         </View>
+        {isShop ? (
+          <Pressable onPress={() => navigation.navigate('Wishlist')} hitSlop={8}><Text style={w.wishLink}>Wishlist</Text></Pressable>
+        ) : null}
         {editLoading ? <ActivityIndicator color={T.pink} /> : null}
       </SafeAreaView>
 
+      {/* Board frame 1 — the address strip lives at the TOP of the bag. */}
+      {isShop ? (
+        <Pressable style={w.addrStrip}
+          onPress={() => (addresses.length ? setAddrOpen(true) : navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) }))}>
+          <Text style={w.addrTxt} numberOfLines={1}>
+            {addrObj
+              ? <>Deliver to <Text style={{ fontWeight: '800' }}>{addrObj.label || addrObj.type || 'Address'}</Text> — {addrLine(addrObj)}</>
+              : 'Add a delivery address'}
+          </Text>
+          <Text style={w.addrChg}>{addrObj ? 'Change' : 'Add'}</Text>
+        </Pressable>
+      ) : null}
+
       {mrpSavings + offerSaving + codeSaving > 0 ? (
-        <View style={s.savings}>
-          <Text style={s.savingsTxt}>🎉 You're saving ₹{Math.round(mrpSavings + offerSaving + codeSaving)} on this order</Text>
+        <View style={isShop ? w.savings : s.savings}>
+          <Text style={isShop ? w.savingsTxt : s.savingsTxt}>{isShop ? '' : '🎉 '}You're saving ₹{Math.round(mrpSavings + offerSaving + codeSaving)} on this order</Text>
         </View>
       ) : null}
 
@@ -482,20 +522,40 @@ export default function CartScreen({ navigation }) {
                   ) : null}
                 </View>
                 <View style={s.lright}>
-                  <View style={s.stepper}>
-                    <Pressable onPress={() => updateQty(item.line_key, item.qty - 1)} hitSlop={6}><Text style={s.stepTxt}>−</Text></Pressable>
-                    <Text style={s.stepN}>{item.qty}</Text>
-                    <Pressable onPress={() => updateQty(item.line_key, item.qty + 1)} hitSlop={6}><Text style={s.stepTxt}>+</Text></Pressable>
+                  <View style={[s.stepper, isShop && w.stepper]}>
+                    <Pressable onPress={() => updateQty(item.line_key, item.qty - 1)} hitSlop={6}><Text style={[s.stepTxt, isShop && w.ink]}>−</Text></Pressable>
+                    <Text style={[s.stepN, isShop && w.ink]}>{item.qty}</Text>
+                    <Pressable onPress={() => updateQty(item.line_key, item.qty + 1)} hitSlop={6}><Text style={[s.stepTxt, isShop && w.ink]}>+</Text></Pressable>
                   </View>
-                  <Text style={s.lprice}>
+                  <Text style={[s.lprice, isShop && w.ink]}>
                     {struck ? <Text style={s.strike}>₹{Math.round(item.mrp * item.qty)} </Text> : null}
                     ₹{Math.round((Number(item.price) || 0) * item.qty)}
                   </Text>
+                  {/* Board frame 1 — per-line actions (shop only). Move keeps
+                      the product wished even if it was never hearted before. */}
+                  {isShop ? (
+                    <View style={w.lacts}>
+                      <Pressable hitSlop={6} onPress={async () => {
+                        await ensureWish({
+                          product_id: item.product_id, name: item.name,
+                          price: item.mrp ?? item.price, offer_price: item.mrp != null ? item.price : null,
+                          image_url: item.image_url,
+                          brand_id: item.brand_id || cart.brandId, brand_name: item.brand_name || cart.brandName,
+                        }).catch(() => {});
+                        removeItem(item.line_key);
+                      }}>
+                        <Text style={w.lact}>Wishlist</Text>
+                      </Pressable>
+                      <Pressable hitSlop={6} onPress={() => removeItem(item.line_key)}>
+                        <Text style={w.lact}>Remove</Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             );
           })}
-          <Pressable onPress={() => navigation.goBack()}><Text style={s.addmore}>+ Add more items</Text></Pressable>
+          <Pressable onPress={() => navigation.goBack()}><Text style={[s.addmore, isShop && w.ink]}>+ Add more items</Text></Pressable>
         </View>
 
         {/* ── Offers ── */}
@@ -631,42 +691,23 @@ export default function CartScreen({ navigation }) {
 
       {/* ── Footer ── */}
       {isShop ? (
-        // Shopping checkout bar: delivery address + payment method + Place Order.
-        // The follower pays once; the backend splits per brand silently.
-        <SafeAreaView edges={['bottom']} style={s.footer}>
-          <Pressable style={s.frow} onPress={() => (addresses.length ? setAddrOpen(true) : navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) }))}>
-            <Text style={s.fic}>🏠</Text>
-            <View style={{ flex: 1 }}>
-              {addrObj ? (
-                <>
-                  <Text style={s.ft} numberOfLines={1}>Delivering to {addrObj.label || addrObj.type || 'Address'}</Text>
-                  <Text style={s.fs} numberOfLines={1}>{addrLine(addrObj)}</Text>
-                </>
-              ) : (
-                <Text style={s.ft}>Add a delivery address</Text>
-              )}
+        // Board frame 1 — the address strip moved to the TOP of the bag; the
+        // footer keeps payment method + ONE yellow Place Order. The follower
+        // pays once; the backend splits per brand silently.
+        <SafeAreaView edges={['bottom']} style={w.footer}>
+          <Pressable style={w.payRow} onPress={() => setPayOpen(true)}>
+            <Text style={w.payTxt} numberOfLines={1}>Pay using <Text style={{ fontWeight: '800' }}>{payMethod.label}</Text></Text>
+            <Text style={w.addrChg}>Change</Text>
+          </Pressable>
+          <View style={w.footRow}>
+            <View>
+              <Text style={w.footAmt}>₹{Math.round(total)}</Text>
+              <Text style={w.footLbl}>TO PAY</Text>
             </View>
-            <Text style={s.fc}>{addrObj ? 'Change' : 'Add'}</Text>
-          </Pressable>
-          <Pressable style={s.frow} onPress={() => setPayOpen(true)}>
-            <Text style={s.fic}>{payMethod.icon}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={s.ft} numberOfLines={1}>Pay using {payMethod.label}</Text>
-              <Text style={s.fs} numberOfLines={1}>Tap to change · UPI · Cards · Netbanking</Text>
-            </View>
-            <Text style={s.fchev}>⌄</Text>
-          </Pressable>
-          <Pressable style={[s.place, placing && { opacity: 0.7 }]} onPress={placeShopOrder} disabled={placing}>
-            {placing ? <ActivityIndicator color="#fff" /> : (
-              <>
-                <View>
-                  <Text style={s.placeTotalLbl}>TOTAL</Text>
-                  <Text style={s.placeAmt}>₹{Math.round(total)}</Text>
-                </View>
-                <Text style={s.placeTxt}>Place Order →</Text>
-              </>
-            )}
-          </Pressable>
+            <Pressable style={[w.place, placing && { opacity: 0.7 }]} onPress={placeShopOrder} disabled={placing}>
+              {placing ? <ActivityIndicator color="#111" /> : <Text style={w.placeTxt}>Place Order</Text>}
+            </Pressable>
+          </View>
         </SafeAreaView>
       ) : (
         // Food / legacy cart: existing 3-step OnlineOrder checkout (untouched).
@@ -838,4 +879,38 @@ const s = StyleSheet.create({
   emptyText: { fontSize: 13, color: T.muted, textAlign: 'center', marginBottom: 18, fontFamily: fonts.sansMedium },
   browseBtn: { backgroundColor: T.veg, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 12 },
   browseTxt: { fontSize: 13.5, fontFamily: fonts.sansBold, color: '#fff' },
+});
+
+// ── Stage C2 — the shop bag's white-law skin (board c2-bag-wishlist.html
+// frame 1). Applied ONLY on the isShop path; the food cart keeps `s`. System
+// font (no toing display faces), pure white chrome, black text, yellow on
+// Place Order alone. ──────────────────────────────────────────────────────────
+const w = StyleSheet.create({
+  outer: { flex: 1, backgroundColor: '#FFF' },
+  topbar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, backgroundColor: '#FFF' },
+  back: { fontSize: 24, fontWeight: '700', color: '#111', marginTop: -2 },
+  title: { fontSize: 17, fontWeight: '800', color: '#111' },
+  subCount: { fontSize: 12, color: '#8A8A8A', fontWeight: '600', marginTop: 1 },
+  wishLink: { fontSize: 13, fontWeight: '800', color: '#111' },
+  ink: { color: '#111' },
+  addrStrip: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 4, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: '#EEE', borderRadius: 12 },
+  addrTxt: { flex: 1, fontSize: 12, color: '#111' },
+  addrChg: { fontSize: 12, fontWeight: '800', color: '#111' },
+  savings: { marginHorizontal: 16, marginTop: 6, backgroundColor: '#FDFBF4', borderWidth: 1, borderColor: '#E0D6BB', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
+  savingsTxt: { fontSize: 12, fontWeight: '700', color: '#111' },
+  stepper: { borderWidth: 1, borderColor: '#E4E4E4', borderRadius: 8, backgroundColor: '#FFF' },
+  lacts: { flexDirection: 'row', gap: 14, marginTop: 8 },
+  lact: { fontSize: 11.5, fontWeight: '700', color: '#8A8A8A' },
+  footer: { borderTopWidth: 1, borderTopColor: '#EEE', backgroundColor: '#FFF', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 },
+  payRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F4F4F4' },
+  payTxt: { flex: 1, fontSize: 12, color: '#111' },
+  footRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 10, paddingBottom: 6 },
+  footAmt: { fontSize: 17, fontWeight: '800', color: '#111' },
+  footLbl: { fontSize: 9.5, fontWeight: '700', color: '#8A8A8A', letterSpacing: 0.5 },
+  place: { marginLeft: 'auto', backgroundColor: '#F6B11E', borderRadius: 999, paddingHorizontal: 34, paddingVertical: 13 },
+  placeTxt: { fontSize: 14, fontWeight: '800', color: '#111' },
+  emptyTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
+  emptySub: { fontSize: 12, color: '#9A9A9A', textAlign: 'center', marginBottom: 16 },
+  browseBtn: { backgroundColor: '#111', borderRadius: 999, paddingHorizontal: 26, paddingVertical: 12 },
+  browseTxt: { fontSize: 12.5, fontWeight: '800', color: '#FFF' },
 });

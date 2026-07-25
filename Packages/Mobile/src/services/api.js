@@ -685,6 +685,15 @@ export const followerApi = {
   // Addresses
   getAddresses: () => api.get('/followers/addresses'),
   addAddress: (data) => api.post('/followers/addresses', data),
+  // Wishlist + collections (Stage C2)
+  getWishlist: () => api.get('/followers/wishlist'),
+  wishlistAdd: (productId) => api.post('/followers/wishlist/items', { product_id: productId }),
+  wishlistRemove: (productId) => api.delete(`/followers/wishlist/items/${productId}`),
+  wishlistCreateCollection: (name) => api.post('/followers/wishlist/collections', { name }),
+  wishlistRenameCollection: (id, name) => api.patch(`/followers/wishlist/collections/${id}`, { name }),
+  wishlistDeleteCollection: (id) => api.delete(`/followers/wishlist/collections/${id}`),
+  wishlistAssign: (collectionId, productId) => api.post(`/followers/wishlist/collections/${collectionId}/items`, { product_id: productId }),
+  wishlistUnassign: (collectionId, productId) => api.delete(`/followers/wishlist/collections/${collectionId}/items/${productId}`),
 
   // Enquiry
   submitEnquiry: (data) => api.post('/follower/enquiry', data),

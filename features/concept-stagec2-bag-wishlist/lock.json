@@ -1,0 +1,22 @@
+{
+  "feature": "concept-stagec2-bag-wishlist",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — reviewed the C2 board (04-preview/mockups/c2-bag-wishlist.html) in the browser pane in-session 2026-07-25; 'Pls lock and start implement'",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — 'Pls lock and start implement' after board review",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "C2 board-exact: Bag reskin to white law over the LIVE cart rails (via @creator per line, inline size+qty, Move to Wishlist, one yellow Place Order; food cart untouched) + product Wishlist with collections-as-chips (black-outline Move to Bag, live-data grey-out for dead products, quick size sheet, rename/delete, guest-first device-local + sync at the one login moment). New backend: wishlist items + collections tables + follower endpoints. Entry points: PDP heart, shop-sheet card heart, bag line, bag header link.",
+  "qa_record": "Read before commit: mobile jest 10/10 suites, 28/28 tests (up from 25 — the wallet suite had been silently failing to LOAD since May behind a vector-icons transform gap, masked by tail-piped reads; fixed with a proper jest mock, its 2 tests now actually run; +1 new Bag empty-state test; cart empty-state assertion updated to C2 spec with the food contract preserved behind kind:'food'). pnpm qa 79 passed GREEN, gate 0 (report 2026-07-25T11-05-08-746Z).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": null
+  }
+}

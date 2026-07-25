@@ -21,6 +21,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import { useCart } from '../../services/CartContext';
+import { isWished, toggleWish } from '../../services/wishlist';
+import { HeartIcon } from '../../components/posts/icons';
 import { YELLOW } from '../../components/posts/PostCard';
 
 const W = Dimensions.get('window').width;
@@ -37,6 +39,13 @@ export default function PostProductScreen({ navigation, route }) {
   const [size, setSize] = useState(null);
   const [accOpen, setAccOpen] = useState(false);
   const [added, setAdded] = useState(false);
+  // Stage C2 — wishlist heart in the top bar.
+  const [wished, setWished] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    if (p?.product_id) isWished(p.product_id).then((w) => alive && setWished(w)).catch(() => {});
+    return () => { alive = false; };
+  }, [p?.product_id]);
 
   useEffect(() => {
     if (p?.product_id) {
@@ -95,7 +104,17 @@ export default function PostProductScreen({ navigation, route }) {
     <SafeAreaView style={st.safe} edges={['top']}>
       <View style={st.top}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Text style={st.topIcon}>‹</Text></TouchableOpacity>
-        <View style={{ flexDirection: 'row', gap: 18 }}>
+        <View style={{ flexDirection: 'row', gap: 18, alignItems: 'center' }}>
+          <TouchableOpacity hitSlop={10} onPress={async () => {
+            const w = await toggleWish({
+              product_id: p.product_id, name: p.name,
+              price: listPrice, offer_price: effPrice !== listPrice ? effPrice : null,
+              image_url: p.image_url, brand_id: p.brand?.id, brand_name: p.brand?.name,
+            }).catch(() => null);
+            if (w !== null) setWished(w);
+          }}>
+            <HeartIcon size={20} color="#111" filled={wished} />
+          </TouchableOpacity>
           <Text style={st.topIconSm}>↗</Text>
         </View>
       </View>

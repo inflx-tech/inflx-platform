@@ -65,6 +65,8 @@ import SectionResultsScreen from '../screens/follower/SectionResultsScreen';
 // listing-category-browser (Type-1) — sidebar + product grid + facet filters
 import CategoryBrowserScreen from '../screens/follower/CategoryBrowserScreen';
 import FollowerPageScreen from '../screens/follower/FollowerPageScreen';
+// Stage C2 — product wishlist + collections
+import WishlistScreen from '../screens/follower/WishlistScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -106,6 +108,11 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
     {/* Fashion-1b */}
     <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
+    {/* Stage C2 — wishlist + the post-PDP it opens (PostProduct lives HERE,
+        not in PostsStack, so every stack that can reach Wishlist/Bag can open
+        it without a duplicate route name — see the crash note above Orders). */}
+    <Stack.Screen name="Wishlist" component={WishlistScreen} />
+    <Stack.Screen name="PostProduct" component={PostProductScreen} />
   </>
 );
 
@@ -124,7 +131,6 @@ function PostsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PostsFeed" component={PostsFeedScreen} />
       <Stack.Screen name="PostViewer" component={PostViewerScreen} />
-      <Stack.Screen name="PostProduct" component={PostProductScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );

@@ -63,7 +63,17 @@ test('renders a customised line + bill + Place Order, and checkout carries custo
 });
 
 test('empty cart shows the empty state', () => {
-  mockCart = { brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null, storeOffers: [], appliedOffer: null };
+  // C2: a kind-less empty cart now shows the shop Bag empty state (the app
+  // is fashion-first); the FOOD empty state is preserved behind kind:'food',
+  // which is what this food-contract test asserts.
+  mockCart = { kind: 'food', brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null, storeOffers: [], appliedOffer: null };
   render(<CartScreen navigation={navigation} />);
   expect(screen.getByText('Your cart is empty')).toBeTruthy();
+});
+
+test('empty kind-less cart shows the C2 Bag empty state', () => {
+  mockCart = { brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null, storeOffers: [], appliedOffer: null };
+  render(<CartScreen navigation={navigation} />);
+  expect(screen.getByText('Your bag is empty')).toBeTruthy();
+  expect(screen.getByText('Wishlist')).toBeTruthy();
 });
