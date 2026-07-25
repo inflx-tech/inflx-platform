@@ -1,0 +1,22 @@
+{
+  "feature": "auth-refresh-session-fix",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — device bug report in-session 2026-07-25 (address save → 'Session expired'); walkthrough protocol classifies functional bugs as fix-immediately",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A-annotation: service-layer fix with zero UI surface (mobile api client + backend refresh handler); no pixels change, nothing to mock. Field set per the backend-only-in-UI-range precedent so Rule 3 passes honestly.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Stop revoking the old refresh token on rotation (lost-response brick) + mobile client tri-state refresh (transient failures no longer clearSession). See 01-spec.md for the two root causes.",
+  "qa_record": "Single run, read before commit: mobile jest 25/25; pnpm qa 79 passed GREEN, gate 0 (report 2026-07-25T09-18-50-502Z). Auth suite exercises login/refresh directly.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "production-impacting (backend/src auth controller → Render on push; mobile api client → OTA). Shipped under the founder's standing deploy delegation while he is blocked mid-walkthrough by this exact defect; released stays false until he re-logs-in once and confirms address save on device."
+  }
+}

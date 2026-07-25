@@ -25,22 +25,39 @@ export async function clearSession() {
 // multiple parallel /auth/refresh calls. All callers await the same one.
 let _refreshInFlight = null;
 
+// Tri-state result: { token } on success, { invalid: true } ONLY when the
+// server definitively rejected the refresh token (401/403), and
+// { transient: true } for everything else (no network, timeout, 5xx,
+// unparseable body). Only `invalid` may log the user out — a transient
+// failure used to fall through to clearSession() and wipe a perfectly
+// valid session ("Session expired" on a network blip).
 async function tryRefreshAccessToken() {
   if (_refreshInFlight) return _refreshInFlight;
   _refreshInFlight = (async () => {
     try {
       const rt = await getRefreshToken();
-      if (!rt) return null;
-      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: rt }),
-      });
-      if (!res.ok) return null;
+      if (!rt) return { invalid: true };
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30000);
+      let res;
+      try {
+        res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: rt }),
+          signal: controller.signal,
+        });
+      } catch {
+        return { transient: true };
+      } finally {
+        clearTimeout(timer);
+      }
+      if (res.status === 401 || res.status === 403) return { invalid: true };
+      if (!res.ok) return { transient: true };
       const json = await res.json().catch(() => null);
       const newAccess  = json?.data?.access_token;
       const newRefresh = json?.data?.refresh_token;
-      if (!newAccess) return null;
+      if (!newAccess) return { transient: true };
       await AsyncStorage.setItem('inflx_token', newAccess);
       // Backend rotates the refresh token on every refresh call. Persist the
       // new one so the 30-day clock resets — this is what keeps users
@@ -49,9 +66,9 @@ async function tryRefreshAccessToken() {
       if (newRefresh) {
         await AsyncStorage.setItem('inflx_refresh_token', newRefresh);
       }
-      return newAccess;
+      return { token: newAccess };
     } catch {
-      return null;
+      return { transient: true };
     } finally {
       _refreshInFlight = null;
     }
@@ -89,14 +106,18 @@ async function request(method, path, body) {
     let res = await fetchOnce(method, path, body, token);
 
     // Silent retry: on 401, try to refresh once and retry the original call.
-    // Only if BOTH the original call AND the refresh fail do we tell the user.
+    // The session is cleared ONLY when the server definitively rejects the
+    // refresh token — a transient refresh failure is retryable and must
+    // never wipe locally-stored tokens that are still valid server-side.
     if (res.status === 401 && !isRefreshCall) {
-      const newToken = await tryRefreshAccessToken();
-      if (newToken) {
-        res = await fetchOnce(method, path, body, newToken);
+      const refreshed = await tryRefreshAccessToken();
+      if (refreshed.token) {
+        res = await fetchOnce(method, path, body, refreshed.token);
+      } else if (refreshed.transient) {
+        return { success: false, error: { code: 'NETWORK_ERROR', message: 'Could not reach the server. Please try again.' } };
       }
       if (res.status === 401) {
-        // Both attempts failed — refresh token is also invalid/expired.
+        // Definitive: refresh token invalid/expired, or retry still rejected.
         await clearSession();
         return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
       }

@@ -180,11 +180,13 @@ const refresh = asyncHandler(async (req, res) => {
   const user = rows[0];
 
   // ── Rotate the refresh token ───────────────────────────────────────────────
-  // Issue a new access token AND a brand-new 30-day refresh token, then revoke
-  // the old refresh token. As long as the user opens the app at least once
-  // every 30 days, their session is renewed indefinitely. Effective behaviour:
-  // they only get logged out if they (a) manually log out, (b) uninstall the
-  // app, or (c) leave the app unopened for 30+ days.
+  // Issue a new access token AND a brand-new 30-day refresh token. The OLD
+  // refresh token is deliberately NOT revoked here: if the response is lost
+  // (app killed mid-refresh, TCP reset on a mobile network), the device still
+  // holds the old token — revoking it bricked the session permanently
+  // ("Session expired" on every next action). The old token dies at its own
+  // expires_at; storage is additive, so coexisting live tokens per user is
+  // already the model. Explicit logout still revokes.
   //
   // For brand-web (cookie-based): the new refresh cookie is set in the
   // response so the browser carries it forward on the next refresh call.
@@ -195,7 +197,6 @@ const refresh = asyncHandler(async (req, res) => {
   const newRefreshToken = jwtService.generateRefreshToken(user.id);
 
   await jwtService.storeRefreshToken(user.id, newRefreshToken);
-  await jwtService.revokeRefreshToken(rawToken);
 
   // Update the HttpOnly cookie for brand-web. Mobile ignores cookies.
   setRefreshCookie(res, newRefreshToken);
