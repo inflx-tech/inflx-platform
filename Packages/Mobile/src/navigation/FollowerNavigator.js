@@ -57,6 +57,7 @@ import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
 // on the center tab; the full new shell arrives with Stage B/C).
 import PostsFeedScreen from '../screens/follower/PostsFeedScreen';
 import PostViewerScreen from '../screens/follower/PostViewerScreen';
+import PostProductScreen from '../screens/follower/PostProductScreen';
 // Flow 52.7 — Creator-scoped category screen (mockup 4a)
 import CreatorCategoryScreen from '../screens/follower/CreatorCategoryScreen';
 // merch-engine — shared "View all" full-list results screen
@@ -123,6 +124,7 @@ function PostsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PostsFeed" component={PostsFeedScreen} />
       <Stack.Screen name="PostViewer" component={PostViewerScreen} />
+      <Stack.Screen name="PostProduct" component={PostProductScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );

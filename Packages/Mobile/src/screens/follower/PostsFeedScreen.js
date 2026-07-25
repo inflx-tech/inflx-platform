@@ -119,7 +119,11 @@ export default function PostsFeedScreen({ navigation }) {
         visible={!!shopPost}
         post={shopPost}
         onClose={() => setShopPost(null)}
-        navigation={navigation}
+        onOpenProduct={(p) => {
+          if (p === '__bag__') { setShopPost(null); navigation.navigate('Cart'); return; }
+          setShopPost(null);
+          navigation.navigate('PostProduct', { p });
+        }}
       />
     </SafeAreaView>
   );

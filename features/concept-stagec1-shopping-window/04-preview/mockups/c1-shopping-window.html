@@ -1,0 +1,201 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Stage C1 — post → shop sheet → add to bag → product → back (INFLX canvas)</title>
+<style>
+  :root{ --y:#F6B11E; --ydeep:#CA8A04; --ink:#111; --mut:#8A8A8A; --line:#EFEFEF; }
+  body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:#E9E9E9;padding:26px;display:flex;gap:20px;flex-wrap:wrap;justify-content:center;color:var(--ink)}
+  .col{display:flex;flex-direction:column;gap:8px;align-items:center;width:252px}
+  .step{display:flex;align-items:center;gap:7px}
+  .stepN{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .stepT{font-size:12px;font-weight:800;letter-spacing:.02em}
+  .cap{font-size:10px;color:#777;text-align:center;line-height:1.5;max-width:230px}
+  .ph{width:252px;height:546px;background:#fff;border-radius:26px;box-shadow:0 6px 22px rgba(0,0,0,.14);overflow:hidden;position:relative;display:flex;flex-direction:column}
+  /* ── 1. immersive post ── */
+  .hero{position:absolute;inset:0;background:linear-gradient(160deg,#8a7f74 0%,#b3a394 40%,#6e6259 100%)}
+  .hTop{position:relative;display:flex;align-items:center;gap:7px;padding:12px 12px 0}
+  .av{width:28px;height:28px;border-radius:50%;background:#fff;border:1.5px solid #fff}
+  .hName{color:#fff;font-size:11.5px;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .hName small{display:block;font-weight:500;font-size:9px;opacity:.85}
+  .followPill{margin-left:4px;border:1.2px solid rgba(255,255,255,.9);border-radius:999px;color:#fff;font-size:9.5px;font-weight:700;padding:3px 9px}
+  .hIcons{margin-left:auto;color:#fff;font-size:13px;display:flex;gap:10px;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .rail{position:absolute;right:10px;bottom:150px;display:flex;flex-direction:column;gap:13px;align-items:center;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.5)}
+  .rail i{font-style:normal;font-size:17px;display:block;text-align:center}
+  .rail b{font-size:8.5px;font-weight:700;display:block;text-align:center}
+  .hBottom{position:absolute;left:12px;right:56px;bottom:64px;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.5)}
+  .hTitle{font-size:14px;font-weight:800}
+  .hCap{font-size:10px;opacity:.92;margin-top:3px;line-height:1.45}
+  .hCount{font-size:9px;font-weight:800;margin-top:6px;letter-spacing:.04em}
+  .shopPill{position:absolute;left:12px;right:12px;bottom:16px;background:#fff;border-radius:999px;padding:11px;display:flex;justify-content:space-between;align-items:center}
+  .shopPill b{font-size:12px;font-weight:800;color:var(--ink)}
+  .shopPill span{font-size:11px;color:var(--mut);font-weight:700}
+  /* ── sheet ── */
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 12px 14px;max-height:78%}
+  .grip{width:36px;height:4px;border-radius:2px;background:#E5E5E5;margin:0 auto 10px}
+  .shTitle{font-size:13px;font-weight:800}
+  .shSub{font-size:9.5px;color:var(--mut);margin-bottom:10px}
+  .x{position:absolute;right:14px;top:14px;color:#999;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .gCard{}
+  .gImg{position:relative;aspect-ratio:4/5;border-radius:10px;background:linear-gradient(150deg,#e8e2d8,#d4cabb)}
+  .bagBtn{position:absolute;right:5px;bottom:5px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:10px}
+  .bagBtn.on{background:var(--ink);color:#fff}
+  .gName{font-size:8.5px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gPrice{font-size:9.5px;font-weight:800}
+  .toast{position:absolute;left:12px;right:12px;bottom:12px;background:var(--ink);border-radius:11px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
+  .toast span{color:#fff;font-size:9.5px;font-weight:600}
+  .toast b{color:var(--y);font-size:10px;font-weight:800}
+  /* ── PDP ── */
+  .pTop{display:flex;justify-content:space-between;padding:12px 14px;font-size:15px}
+  .gal{margin:0 14px;border-radius:14px;aspect-ratio:1/1;background:linear-gradient(150deg,#e8e2d8,#cbbfae)}
+  .dots{display:flex;justify-content:center;gap:4px;padding:8px}
+  .dots i{width:5px;height:5px;border-radius:50%;background:#DDD}.dots i.on{background:var(--ink)}
+  .pBody{padding:0 14px}
+  .pName{font-size:14.5px;font-weight:800}
+  .pPriceRow{display:flex;align-items:baseline;gap:7px;margin-top:5px}
+  .pPrice{font-size:16px;font-weight:900}
+  .pMrp{font-size:11px;color:#AAA;text-decoration:line-through}
+  .pOff{font-size:11px;font-weight:800;color:var(--ydeep)}
+  .pTax{font-size:9px;color:var(--mut);margin-top:2px}
+  .pLbl{font-size:9.5px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 6px}
+  .sw{display:flex;gap:8px}
+  .sw i{width:22px;height:22px;border-radius:50%;display:block}
+  .sw i:nth-child(1){background:#a0724c;outline:2px solid var(--ink);outline-offset:2px}
+  .sw i:nth-child(2){background:#1c1c1c}.sw i:nth-child(3){background:#e7ddcd}
+  .acc{display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:14px;padding:11px 0;font-size:12px;font-weight:700}
+  .pCtas{position:absolute;left:0;right:0;bottom:0;display:flex;gap:9px;padding:12px 14px;background:#fff;border-top:1px solid var(--line)}
+  .ctaGhost{flex:1;border:1.6px solid var(--ink);border-radius:11px;padding:11px;text-align:center;font-size:11.5px;font-weight:800}
+  .ctaBuy{flex:1;background:var(--y);border-radius:11px;padding:11px;text-align:center;font-size:11.5px;font-weight:800;color:#fff}
+  .flow{width:100%;display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .fNode{background:#fff;border-radius:999px;padding:8px 14px;font-size:10.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+  .fArrow{align-self:center;color:#999;font-weight:800}
+</style></head><body>
+
+<!-- 1 · FULL SCREEN POST -->
+<div class="col">
+  <div class="step"><div class="stepN">1</div><div class="stepT">FULL-SCREEN POST</div></div>
+  <div class="ph">
+    <div class="hero"></div>
+    <div class="hTop">
+      <div class="av"></div>
+      <div class="hName">komal_style ✓<small>Bangalore · 1d ago</small></div>
+      <div class="followPill">Follow</div>
+      <div class="hIcons"><span>↗</span><span>⋯</span></div>
+    </div>
+    <div class="rail">
+      <div><i>♡</i><b>12K</b></div>
+      <div><i>💬</i><b>35</b></div>
+      <div><i>🔖</i><b>812</b></div>
+      <div><i>↗</i><b>Share</b></div>
+    </div>
+    <div class="hBottom">
+      <div class="hTitle">Minimal Everyday Tote Bags</div>
+      <div class="hCap">The perfect totes for work, coffee runs and everything in between 🤎</div>
+      <div class="hCount">🛍 12 PRODUCTS</div>
+    </div>
+    <div class="shopPill"><b>Shop this post 🛍</b><span>›</span></div>
+  </div>
+  <div class="cap">Immersive: media fills the screen. Right rail = like/comment/save/share. White shop pill (the ONE non-photo bright element). Rating rows absent until reviews exist.</div>
+</div>
+
+<!-- 2 · SHOP SHEET -->
+<div class="col">
+  <div class="step"><div class="stepN">2</div><div class="stepT">SHOP THIS POST</div></div>
+  <div class="ph">
+    <div class="hero"></div><div class="dim"></div>
+    <div class="sheet">
+      <div class="grip"></div><div class="x">✕</div>
+      <div class="shTitle">Products in this post</div>
+      <div class="shSub">12 items</div>
+      <div class="grid">
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Tan Woven Tote Bag</div><div class="gPrice">₹1,899</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Beige Button Vest</div><div class="gPrice">₹1,299</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Black Maxi Skirt</div><div class="gPrice">₹1,599</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Strappy Sandals</div><div class="gPrice">₹1,499</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Gold Hoop Earrings</div><div class="gPrice">₹699</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Chunky Gold Bangle</div><div class="gPrice">₹799</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Black Sunglasses</div><div class="gPrice">₹799</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Brown Watch</div><div class="gPrice">₹1,499</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Delicate Necklace</div><div class="gPrice">₹599</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">3-column grid. Every card: image, white bag button on the corner, name (dots when long), PRICE BOLD below — the pic + price rule everywhere.</div>
+</div>
+
+<!-- 3 · ADD TO BAG -->
+<div class="col">
+  <div class="step"><div class="stepN">3</div><div class="stepT">ADD TO BAG</div></div>
+  <div class="ph">
+    <div class="hero"></div><div class="dim"></div>
+    <div class="sheet">
+      <div class="grip"></div><div class="x">✕</div>
+      <div class="shTitle">Products in this post</div>
+      <div class="shSub">12 items</div>
+      <div class="grid">
+        <div class="gCard"><div class="gImg"><div class="bagBtn on">🛍</div></div><div class="gName">Tan Woven Tote Bag</div><div class="gPrice">₹1,899</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Beige Button Vest</div><div class="gPrice">₹1,299</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Black Maxi Skirt</div><div class="gPrice">₹1,599</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Strappy Sandals</div><div class="gPrice">₹1,499</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Gold Hoop Earrings</div><div class="gPrice">₹699</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Chunky Gold Bangle</div><div class="gPrice">₹799</div></div>
+      </div>
+      <div class="toast"><span>✓ Tan Woven Tote Bag added to bag</span><b>View Bag</b></div>
+    </div>
+  </div>
+  <div class="cap">Tap the bag button → instant add (variant products first open the size sheet). Button flips dark = in bag. Black toast, yellow "View Bag".</div>
+</div>
+
+<!-- 4 · PRODUCT DETAILS -->
+<div class="col">
+  <div class="step"><div class="stepN">4</div><div class="stepT">PRODUCT DETAILS</div></div>
+  <div class="ph">
+    <div class="pTop"><span>‹</span><span>↗ &nbsp; ♡</span></div>
+    <div class="gal"></div>
+    <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+    <div class="pBody">
+      <div class="pName">Tan Woven Tote Bag</div>
+      <div class="pPriceRow"><span class="pPrice">₹1,899</span><span class="pMrp">₹2,999</span><span class="pOff">37% OFF</span></div>
+      <div class="pTax">Inclusive of all taxes</div>
+      <div class="pLbl">Color · Tan</div>
+      <div class="sw"><i></i><i></i><i></i></div>
+      <div class="acc"><span>Product Details</span><span>⌄</span></div>
+    </div>
+    <div class="pCtas">
+      <div class="ctaGhost">🛍 Add to Bag</div>
+      <div class="ctaBuy">Buy Now</div>
+    </div>
+  </div>
+  <div class="cap">Tap the product image → full details. Struck MRP + % off (deep yellow, the only accent). Add to Bag = black outline; Buy Now = THE yellow button. Rating row appears only when reviews exist (admin toggle).</div>
+</div>
+
+<!-- 5 · BACK TO PRODUCTS -->
+<div class="col">
+  <div class="step"><div class="stepN">5</div><div class="stepT">BACK TO PRODUCTS</div></div>
+  <div class="ph">
+    <div class="hero"></div><div class="dim"></div>
+    <div class="sheet">
+      <div class="grip"></div><div class="x">✕</div>
+      <div class="shTitle">Products in this post</div>
+      <div class="shSub">12 items</div>
+      <div class="grid">
+        <div class="gCard"><div class="gImg"><div class="bagBtn on">🛍</div></div><div class="gName">Tan Woven Tote Bag</div><div class="gPrice">₹1,899</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Beige Button Vest</div><div class="gPrice">₹1,299</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Black Maxi Skirt</div><div class="gPrice">₹1,599</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Strappy Sandals</div><div class="gPrice">₹1,499</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Gold Hoop Earrings</div><div class="gPrice">₹699</div></div>
+        <div class="gCard"><div class="gImg"><div class="bagBtn">🛍</div></div><div class="gName">Chunky Gold Bangle</div><div class="gPrice">₹799</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Back from the product returns HERE — same sheet, same scroll position, added items still marked. The post is never lost.</div>
+</div>
+
+<div class="flow">
+  <div class="fNode">📱 Creator Post</div><div class="fArrow">→</div>
+  <div class="fNode">🛍 Products Sheet (grid)</div><div class="fArrow">→</div>
+  <div class="fNode">✓ Quick add + toast</div><div class="fArrow">→</div>
+  <div class="fNode">📄 Product Details</div><div class="fArrow">←</div>
+  <div class="fNode">↩ Back to sheet</div>
+</div>
+
+</body></html>

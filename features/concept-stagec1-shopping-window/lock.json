@@ -1,0 +1,20 @@
+{
+  "feature": "concept-stagec1-shopping-window",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-24: supplied the three Stage-C reference boards ('copy exact one'), resolved all five scope decisions, reviewed the C1 flow board in the browser pane and said 'pls start implement'",
+  "approved_at": "2026-07-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — reviewed 04-preview/mockups/c1-shopping-window.html live in the browser pane; 'pls start implement' = the lock",
+  "mockup_locked_at": "2026-07-24",
+  "notes": "Stage C1 shopping window, board-exact: immersive PostViewer (true image on black, overlay chrome, Follow pill, white shop pill, concept name as title, caption more/less, reopen-sheet-on-back), grid ShopThisPostSheet (corner bag quick-add w/ inline size picker, in-bag state from cart, black toast + yellow View Bag), new PostProductScreen (effective/struck/deep-yellow %OFF, colour+size chips, accordion, live offers, outline AddToBag→GoToBag + yellow BuyNow→bag; ratings absent per founder decision). Adds ride existing cart rails w/ post tracking (cartKind shop). Legacy PDP untouched until C3. Mobile-only OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
