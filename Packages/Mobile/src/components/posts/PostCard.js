@@ -8,7 +8,7 @@
  * white text; compact horizontal engagement row (like+save live, comments/
  * share coming soon).
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Pressable, Dimensions, StyleSheet, Alert } from 'react-native';
 
 const W = Dimensions.get('window').width;
@@ -106,6 +106,10 @@ export function CreatorRow({ creator, concept, collection, onCreator, compact })
 export default function PostCard({ post, onOpen, onShop, onLike, onSave, onCreator }) {
   const cover = post.cover;
   const h = clampedHeight(cover?.width, cover?.height);
+  // Caption expands in place (founder 2026-07-24: reader must be able to see
+  // the complete message) — Instagram's "… more" behaviour.
+  const [capOpen, setCapOpen] = useState(false);
+  const capLong = (post.caption || '').length > 80;
   return (
     <View style={st.card}>
       <CreatorRow creator={post.creator} concept={post.concept} collection={post.collection} onCreator={onCreator} />
@@ -121,9 +125,14 @@ export default function PostCard({ post, onOpen, onShop, onLike, onSave, onCreat
       <ShopBar count={post.product_count} onPress={onShop} compact />
       <EngagementRow post={post} onLike={onLike} onSave={onSave} />
       {!!post.caption && (
-        <Text style={st.caption} numberOfLines={2}>
-          <Text style={st.captionHandle}>{post.creator.handle} </Text>{post.caption}
-        </Text>
+        <Pressable onPress={() => capLong && setCapOpen(o => !o)}>
+          <Text style={st.caption} numberOfLines={capOpen ? undefined : 2}>
+            <Text style={st.captionHandle}>{post.creator.handle} </Text>{post.caption}
+          </Text>
+          {capLong && (
+            <Text style={st.captionMore}>{capOpen ? 'less' : '… more'}</Text>
+          )}
+        </Pressable>
       )}
       <View style={st.sep} />
     </View>
@@ -154,5 +163,6 @@ const st = StyleSheet.create({
   engCount: { fontSize: 12, fontWeight: '600', color: '#333' },
   caption: { paddingHorizontal: 14, paddingTop: 6, fontSize: 12.5, color: '#222', lineHeight: 17 },
   captionHandle: { fontWeight: '700' },
+  captionMore: { paddingHorizontal: 14, paddingTop: 2, fontSize: 12, fontWeight: '600', color: '#999' },
   sep: { height: 1, backgroundColor: '#F2F2F2', marginTop: 12 },
 });

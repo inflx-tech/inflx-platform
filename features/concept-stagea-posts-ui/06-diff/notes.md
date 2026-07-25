@@ -60,3 +60,10 @@ top tabs Discover · Posts · Videos. Posts = the live feed; Discover and
 Videos show honest coming-soon states (Stage B layout / video phase). The
 old Home keeps the Home slot until Stages B/C replace product browsing +
 orders entry — the takeover is deliberate and staged, not forgotten.
+
+## Follow-up 6 (first post LIVE on founder's follower phone)
+Historic: the Monsoon T-Shirt card rendered end-to-end. Two founder notes:
+(1) old pin style on screen = device on v199/v200 (pin anatomy is v201,
+3-tab header v202) — relaunch pulls latest, no code change; (2) caption had
+no way to read the full text → Instagram-style "… more"/"less" toggle added
+to PostCard (expands in place; viewer always shows full caption).

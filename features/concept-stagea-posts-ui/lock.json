@@ -23,5 +23,6 @@
   "followup2_2026_07_23": "Composer device-test fixes: leaf list empty (non-exported getBaseUrl via raw fetch, silently caught) -> influencerApi.getListingTree + error state; step progress bar; searchable brand rows (scales to 100 brands); searchable category modal; readable disabled CTA. Mobile jest 25/25. OTA all flavors after push.",
   "followup3_2026_07_23": "Pin anatomy locked by founder: bag icon + truncated name (~18 chars + ellipsis) + bold price on its own line; position clamped on-screen. Applied to composer preview + PostCard/Viewer pins. Mobile jest 25/25.",
   "followup4_2026_07_23": "Approve button invisible in Post Queue (bg-green not in palette; teal is the success token) — fixed in posts/concepts/collections pages. Discovered on the FIRST REAL POST (@sagartravel Monsoon T-Shirt, 3 products, Charvitha Fashions).",
-  "followup5_2026_07_24": "Posts tab now renders the locked three-tab home grammar (Discover placeholder | Posts feed | Videos placeholder). Old Home keeps its slot until B/C. Mobile jest 25/25."
+  "followup5_2026_07_24": "Posts tab now renders the locked three-tab home grammar (Discover placeholder | Posts feed | Videos placeholder). Old Home keeps its slot until B/C. Mobile jest 25/25.",
+  "followup6_2026_07_24": "FIRST POST RENDERED on founder device. Caption more/less toggle added to PostCard. Old-pin-style report = stale bundle (v201/v202 pending relaunch)."
 }
