@@ -19,7 +19,7 @@ const BASE = (process.env.QA_API_BASE || 'https://inflx-platform.onrender.com/v1
 
 test.describe('WORKFLOW: B1 API contract & permission invariants', () => {
   test('W1 — protected admin endpoint rejects unauthenticated requests', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
     const res = await ctx.get(`${BASE}/admin/queue/brands`, { timeout: 60_000 });
     const status = res.status();
     let body: any = null;
@@ -32,7 +32,7 @@ test.describe('WORKFLOW: B1 API contract & permission invariants', () => {
   });
 
   test('W3 — auth contract: bad phone / missing otp → typed 422; valid phone → success', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
 
     // W3a — non-E.164 phone
     const a = await ctx.post(`${BASE}/auth/send-otp`, { data: { phone: '12345' }, timeout: 60_000 });
@@ -56,7 +56,7 @@ test.describe('WORKFLOW: B1 API contract & permission invariants', () => {
   });
 
   test('W2 — follower txn is refused without creator-attribution ids', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
     const phone = `+919${String(Date.now()).slice(-9)}`;
 
     // Auth a throwaway follower (OTP_MOCK=true → 000000), warm/retry Render.

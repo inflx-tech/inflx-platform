@@ -1,41 +1,37 @@
-import React, { useEffect, useState } from 'react';
+/**
+ * OrderDetailScreen — Stage C4, locked board c4-orders.html frames 2+3.
+ * Contract: features/concept-stagec4-orders/.
+ *
+ * White law, no yellow. Vertical tracking timeline lit from the REAL
+ * per-status timestamps (packed_at, dispatched_at…), courier + AWB with the
+ * carrier deep link, items + bill (COD fee + payment method honest), address,
+ * and the locked cancel rule: Cancel renders only while confirmed/packed —
+ * the server enforces the same guard (409 after dispatch). Cancelled orders
+ * show the red banner with the money-truth per payment method.
+ *
+ * Preserved from the prior screen (functional, restyled): Fashion-1b Request
+ * Return (delivered online orders) + MyReturns link, Tier-1 prebook
+ * "Pay Balance via INFLX" block, courier tracking links.
+ */
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Linking,
+  ActivityIndicator, Linking, Alert,
 } from 'react-native';
-import { creatorVibe as Cv, fmtMoney, fmtRupees } from '../../theme/tokens';
-
-// Flow 52.D — Creator Vibe recolor shim. Legacy navy/teal `colors` → creatorVibe.
-// Visual only; order fetch + status render + nav unchanged.
-const colors = {
-  navy: Cv.brown, navyDeep: Cv.brownDark, navyMid: Cv.brown, navyPale: Cv.soft,
-  orange: Cv.brown, orangeDeep: Cv.brownDark, orangePale: Cv.soft,
-  gold: Cv.star, goldPale: Cv.soft, teal: Cv.brown, tealDeep: Cv.brown, tealPale: Cv.soft,
-  red: Cv.offer, redPale: Cv.soft, purple: Cv.brown, purplePale: Cv.soft,
-  bg: Cv.screenBg, surface: Cv.card, surface2: Cv.soft, border: Cv.line, border2: Cv.line,
-  t1: Cv.ink, t2: Cv.muted, t3: Cv.muted, white: Cv.card, black: Cv.ink,
-};
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import ReturnRequestModal from '../../components/ReturnRequestModal';
 
 // 5-step fulfilment lifecycle (migration 105). Each node's timestamp drives its date.
 const LIFECYCLE = [
-  { key: 'confirmed',        label: 'Order Confirmed', icon: '✓',  tsKey: 'purchased_at' },
-  { key: 'packed',           label: 'Packed',          icon: '📦', tsKey: 'packed_at' },
-  { key: 'dispatched',       label: 'Shipped',         icon: '🚚', tsKey: 'dispatched_at' },
-  { key: 'out_for_delivery', label: 'Out for Delivery', icon: '📍', tsKey: 'out_for_delivery_at' },
-  { key: 'delivered',        label: 'Delivered',       icon: '🎉', tsKey: 'delivered_at' },
+  { key: 'confirmed',        label: 'Confirmed',        tsKey: 'purchased_at' },
+  { key: 'packed',           label: 'Packed',           tsKey: 'packed_at' },
+  { key: 'dispatched',       label: 'Dispatched',       tsKey: 'dispatched_at' },
+  { key: 'out_for_delivery', label: 'Out for delivery', tsKey: 'out_for_delivery_at' },
+  { key: 'delivered',        label: 'Delivered',        tsKey: 'delivered_at' },
 ];
 const LC_IDX = { confirmed: 0, packed: 1, dispatched: 2, out_for_delivery: 3, delivered: 4 };
-
-const STATUS_BADGE = {
-  confirmed:        { icon: '✅', label: 'Confirmed' },
-  packed:           { icon: '📦', label: 'Packed' },
-  dispatched:       { icon: '🚚', label: 'Shipped' },
-  out_for_delivery: { icon: '📍', label: 'Out for Delivery' },
-  delivered:        { icon: '🎉', label: 'Delivered' },
-  cancelled:        { icon: '❌', label: 'Cancelled' },
-};
+const CANCELLABLE = ['confirmed', 'packed'];
 
 // Best-effort courier deep link; Google-search fallback (mirrors the brand panel).
 function trackUrl(courier, awb) {
@@ -55,197 +51,208 @@ function fmtWhen(v) {
   catch { return null; }
 }
 
+const fmtEta = (d) => {
+  if (!d) return '';
+  const dt = new Date(d); if (isNaN(dt.getTime())) return String(d);
+  const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${wd[dt.getDay()]}, ${dt.getDate()} ${mo[dt.getMonth()]}`;
+};
+
 export default function OrderDetailScreen({ navigation, route }) {
   const { orderId } = route.params || {};
-  const [order, setOrder]   = useState(null);
+  const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [refundNote, setRefundNote] = useState(null);
   const [returnModalOpen, setReturnModalOpen] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      const res = await followerApi.getOrder(orderId);
-      setLoading(false);
-      if (res.success) setOrder(res.data?.order || res.data);
-    }
-    load();
+  const load = useCallback(async () => {
+    const res = await followerApi.getOrder(orderId);
+    setLoading(false);
+    if (res.success) setOrder(res.data?.order || res.data);
   }, [orderId]);
+  useEffect(() => { load(); }, [load]);
 
-  if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
-  }
+  if (loading) return <View style={st.center}><ActivityIndicator color="#111" /></View>;
   if (!order) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Order not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>Go Back</Text>
+      <View style={st.center}>
+        <Text style={st.errTxt}>Order not found</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={st.errBtn}>
+          <Text style={st.errBtnTxt}>Go back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const statusCfg = STATUS_BADGE[order.order_status] || STATUS_BADGE.confirmed;
-  const curIdx = LC_IDX[order.order_status] ?? 0;
   const cancelled = order.order_status === 'cancelled';
-  const creatorHandle = order.creator_handle || null;
+  const curIdx = LC_IDX[order.order_status] ?? 0;
+  const isCod = order.payment_method === 'cod';
+  const codFee = Number(order.cod_fee) || 0;
+  const net = Number(order.net_amount) || 0;
+  const due = Math.round(net + (isCod ? codFee : 0));
+  const gross = Number(order.gross_amount || 0);
+  const savings = Number(order.discount_amount || 0);
   const tUrl = trackUrl(order.courier_name, order.tracking_number);
+  const ref = `#${String(order.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+  const canCancel = CANCELLABLE.includes(order.order_status);
+
   const items = (() => {
     try { return typeof order.items_json === 'string' ? JSON.parse(order.items_json) : (order.items_json || []); }
     catch { return []; }
   })();
-  // stakeholder-sale-info S-D — friendly ETA (no Intl dependency).
-  const fmtEta = (d) => {
-    if (!d) return '';
-    const dt = new Date(d); if (isNaN(dt.getTime())) return String(d);
-    const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${wd[dt.getDay()]}, ${dt.getDate()} ${mo[dt.getMonth()]}`;
-  };
-  const gross = Number(order.gross_amount || 0);
-  const savings = Number(order.discount_amount || 0);
+  // Live product names/images from the detail endpoint's product_meta join.
+  const meta = new Map((order.product_meta || []).map((m) => [m.product_id, m]));
+  const itemName = (it, i) => meta.get(it.product_id)?.name || it.name || it.product_name || `Item ${i + 1}`;
+
+  function confirmCancel() {
+    Alert.alert(
+      'Cancel this order?',
+      isCod
+        ? 'Nothing was charged for this COD order — nothing to refund.'
+        : 'Your refund will be initiated to the same payment method.',
+      [
+        { text: 'Keep order', style: 'cancel' },
+        {
+          text: 'Yes, cancel', style: 'destructive',
+          onPress: async () => {
+            setCancelling(true);
+            const res = await followerApi.cancelOrder?.(order.id).catch(() => null);
+            setCancelling(false);
+            if (res?.success) {
+              setRefundNote(res.data?.refund?.note || null);
+              load();
+            } else {
+              Alert.alert('Could not cancel', res?.error?.message || 'Please try again.');
+              load(); // status may have advanced (dispatched) — refresh truth
+            }
+          },
+        },
+      ]
+    );
+  }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>Order Details</Text>
-          <View style={[styles.statusBadge, { backgroundColor: Cv.soft }]}>
-            <Text style={[styles.statusText, { color: Cv.goldDeep }]}>
-              {statusCfg.icon} {statusCfg.label}
+    <SafeAreaView style={st.safe} edges={['top']}>
+      <View style={st.hdr}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}><Text style={st.back}>‹</Text></TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={st.title}>Order {ref}</Text>
+          <Text style={st.sub} numberOfLines={1}>
+            {[`Placed ${fmtWhen(order.purchased_at || order.created_at) || ''}`, order.brand_name].filter(Boolean).join(' · ')}
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: 26 }}>
+        {order.creator_handle ? <Text style={st.via}>via @{order.creator_handle}</Text> : null}
+
+        {/* cancelled banner OR tracking timeline */}
+        {cancelled ? (
+          <View style={st.cxBanner}>
+            <Text style={st.cxTxt}>
+              This order was cancelled{order.cancelled_at ? ` on ${fmtWhen(order.cancelled_at)}` : ''}.
+              {'\n'}{refundNote || (isCod ? 'Nothing was charged for this COD order.' : `Refund of ₹${Math.round(net)} initiated to your payment method.`)}
             </Text>
           </View>
-        </View>
-        <Text style={styles.sub}>#{(order.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}</Text>
-        {creatorHandle ? <Text style={styles.viaCreator}>via @{creatorHandle}</Text> : null}
-      </View>
-
-      {/* Status timeline — 5-step fulfilment (or cancelled banner) */}
-      {cancelled ? (
-        <View style={styles.card}><Text style={[styles.cardTitle, { color: Cv.offer, marginBottom: 0 }]}>❌ This order was cancelled</Text></View>
-      ) : (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order Status</Text>
-          {LIFECYCLE.map((node, i) => {
-            const done = i < curIdx;
-            const curr = i === curIdx;
-            const when = fmtWhen(order[node.tsKey]);
-            const extra = node.key === 'dispatched' && order.courier_name ? ` · ${order.courier_name}` : '';
-            return (
-              <View key={node.key} style={styles.tnode}>
-                <View style={styles.tcol}>
-                  <View style={[styles.tdot, (done || curr) && (done ? styles.tdotDone : styles.tdotCurr)]}>
-                    <Text style={[styles.tdotTxt, (done || curr) && { color: done ? '#fff' : Cv.brown }]}>{done ? '✓' : node.icon}</Text>
+        ) : (
+          <View style={st.card}>
+            <Text style={st.ct}>Tracking</Text>
+            {LIFECYCLE.map((node, i) => {
+              const lit = i <= curIdx;
+              const when = fmtWhen(order[node.tsKey]);
+              const last = i === LIFECYCLE.length - 1;
+              return (
+                <View key={node.key} style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ width: 14, alignItems: 'center' }}>
+                    <View style={[st.dot, !lit && st.dotOff]}>
+                      {lit ? <Text style={st.dotTick}>✓</Text> : null}
+                    </View>
+                    {!last && <View style={[st.stem, i >= curIdx && st.stemOff]} />}
                   </View>
-                  {i < LIFECYCLE.length - 1 ? <View style={[styles.tline, done && styles.tlineDone]} /> : null}
+                  <View style={{ flex: 1, paddingBottom: last ? 0 : 14 }}>
+                    <Text style={[st.tln, !lit && st.tlnOff]}>{node.label}</Text>
+                    {when ? <Text style={st.tld}>{when}</Text>
+                      : (node.key === 'delivered' && order.estimated_delivery_date
+                        ? <Text style={st.tld}>Expected {fmtEta(order.estimated_delivery_date)}</Text> : null)}
+                    {node.key === 'dispatched' && lit && (order.courier_name || order.tracking_number) ? (
+                      <TouchableOpacity style={st.courier} disabled={!tUrl}
+                        onPress={() => tUrl && Linking.openURL(tUrl).catch(() => {})}>
+                        <Text style={st.courierTxt} numberOfLines={1}>
+                          Courier: <Text style={{ fontWeight: '800' }}>{order.courier_name || '—'}</Text>
+                          {order.tracking_number ? <>  ·  AWB <Text style={{ fontWeight: '800' }}>{order.tracking_number}</Text></> : null}
+                          {tUrl ? '  ↗' : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
                 </View>
-                <View style={styles.tbody}>
-                  <Text style={[styles.tlabel, (done || curr) && styles.tlabelActive]}>{node.label}</Text>
-                  <Text style={styles.tdate}>{when ? `${when}${extra}` : (curr ? `In progress${extra}` : 'Pending')}</Text>
-                </View>
-              </View>
-            );
-          })}
-          {order.estimated_delivery_date && order.order_status !== 'delivered' ? (
-            <View style={styles.etaBox}>
-              <Text style={styles.etaTxt}>📦 Estimated delivery by {fmtEta(order.estimated_delivery_date)}</Text>
-            </View>
-          ) : null}
-        </View>
-      )}
-
-      {/* Shipment — courier + AWB + track-on-courier link */}
-      {(order.courier_name || order.tracking_number) && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Shipment</Text>
-          {order.courier_name ? (
-            <View style={styles.shipRow}><Text style={styles.shipL}>Courier</Text><Text style={styles.shipV}>{order.courier_name}</Text></View>
-          ) : null}
-          {order.tracking_number ? (
-            <View style={styles.shipRow}><Text style={styles.shipL}>Tracking / AWB</Text><Text style={styles.shipV}>{order.tracking_number}</Text></View>
-          ) : null}
-          {tUrl ? (
-            <TouchableOpacity style={styles.trackBtn} onPress={() => Linking.openURL(tUrl).catch(() => {})}>
-              <Text style={styles.trackBtnTxt}>TRACK ON {String(order.courier_name || 'COURIER').toUpperCase()} ↗</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      )}
-
-      {/* Items */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Items</Text>
-        {items.map((item, i) => (
-          <View key={i} style={styles.itemRow}>
-            <Text style={styles.itemName}>{item.name || item.product_name || `Item ${i + 1}`}</Text>
-            <Text style={styles.itemDetail}>{item.qty || 1}× {fmtRupees(item.price || 0)}</Text>
+              );
+            })}
           </View>
-        ))}
-        {savings > 0 ? (
-          <>
-            <View style={styles.sumRow}><Text style={styles.sumL}>Item total</Text><Text style={styles.sumV}>{fmtRupees(gross || order.net_amount || 0)}</Text></View>
-            <View style={styles.sumRow}><Text style={styles.sumL}>Savings</Text><Text style={styles.sumDisc}>−{fmtRupees(savings)}</Text></View>
-          </>
-        ) : null}
-        <View style={[styles.itemRow, styles.totalRow]}>
-          <Text style={styles.totalLabel}>{savings > 0 ? 'Paid' : 'Total'}</Text>
-          <Text style={styles.totalVal}>{fmtRupees(order.net_amount || 0)}</Text>
+        )}
+
+        {/* items + bill */}
+        <View style={st.card}>
+          <Text style={st.ct}>{items.length} item{items.length === 1 ? '' : 's'} · Bill</Text>
+          {items.map((it, i) => (
+            <View key={i} style={st.br}>
+              <Text style={st.bl} numberOfLines={1}>
+                {itemName(it, i)}{it.variant_label ? ` · ${it.variant_label}` : ''} ×{it.quantity || it.qty || 1}
+              </Text>
+              <Text style={st.bv}>₹{Math.round((Number(it.price) || 0) * (it.quantity || it.qty || 1))}</Text>
+            </View>
+          ))}
+          {savings > 0 && (
+            <>
+              <View style={st.br}><Text style={st.bl}>Item total</Text><Text style={st.bv}>₹{Math.round(gross || net)}</Text></View>
+              <View style={st.br}><Text style={st.bl}>Savings</Text><Text style={st.bg}>−₹{Math.round(savings)}</Text></View>
+            </>
+          )}
+          {isCod && codFee > 0 && (
+            <View style={st.br}><Text style={st.bl}>COD fee</Text><Text style={st.bv}>₹{Math.round(codFee)}</Text></View>
+          )}
+          <View style={st.btot}>
+            <Text style={st.btotL}>{cancelled ? 'Total' : isCod ? (order.order_status === 'delivered' ? 'Paid on delivery' : 'To pay on delivery') : 'Paid'}</Text>
+            <Text style={st.btotL}>₹{due}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Delivery info */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Delivery Address</Text>
-        <Text style={styles.addrText}>
-          {order.delivery_address
-            ? (typeof order.delivery_address === 'string'
-                ? order.delivery_address
-                : [order.delivery_address.line1, order.delivery_address.line2, order.delivery_address.city, order.delivery_address.state, order.delivery_address.pincode].filter(Boolean).join(', ')
-              )
-            : '—'
-          }
-        </Text>
-      </View>
+        {/* address */}
+        <View style={st.card}>
+          <Text style={st.ct}>Delivering to {order.address_label || 'you'}</Text>
+          <Text style={st.addr}>{typeof order.delivery_address === 'string' ? order.delivery_address : '—'}</Text>
+        </View>
 
-
-      {/* Fashion-1b — Request Return CTA. Only surfaces for online_order
-          transactions in 'delivered' status (mirrors industry pattern; salon
-          prebooks and pay-at-store walk-ins don't carry physical goods).
-          Server validates the return window per product. */}
-      {order.transaction_type === 'online_order' && order.order_status === 'delivered' && order.transaction_id && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Need to return something?</Text>
-          <Text style={styles.returnSub}>
-            Within the return window? Request a return — we'll review and refund per the brand's policy.
-          </Text>
-          <TouchableOpacity
-            style={styles.returnBtn}
-            onPress={() => setReturnModalOpen(true)}>
-            <Text style={styles.returnBtnText}>↩  Request Return</Text>
+        {/* cancel — until dispatched (locked rule) */}
+        {canCancel && (
+          <TouchableOpacity style={[st.cancelBtn, cancelling && { opacity: 0.6 }]} disabled={cancelling} onPress={confirmCancel}>
+            {cancelling ? <ActivityIndicator color="#D64545" /> : <Text style={st.cancelTxt}>Cancel order</Text>}
           </TouchableOpacity>
-        </View>
-      )}
+        )}
 
-      {/* Tier-1 conversion fix — Q2 flow. "Pay Balance via INFLX" surfaces
-          for prebook bookings in confirmed status. The customer arrives at
-          the salon/garage, opens INFLX, taps this button, enters the salon's
-          full bill, and pays the discounted balance via UPI. The pay-at-store
-          screen knows the booking link → applies the captured discount % →
-          subtracts the token already paid. */}
-      {(order.transaction_type === 'prebook' || order.booking_type) && order.booking_id && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>At the venue?</Text>
-          <Text style={styles.returnSub}>
-            {order.at_venue_discount_pct > 0
-              ? `Show this booking to claim your ${order.at_venue_discount_pct}% off. Or pay the balance through INFLX — discount auto-applied.`
-              : 'Pay your balance through INFLX for instant confirmation and credit to the creator.'}
-          </Text>
-          <TouchableOpacity
-            style={styles.payBalanceBtn}
-            onPress={() => navigation.navigate('PayAtStore', {
+        {/* Fashion-1b — Request Return (delivered online orders only) */}
+        {order.transaction_type === 'online_order' && order.order_status === 'delivered' && order.transaction_id ? (
+          <View style={st.card}>
+            <Text style={st.ct}>Need to return something?</Text>
+            <Text style={st.help}>Within the return window? Request a return — we'll review and refund per the brand's policy.</Text>
+            <TouchableOpacity style={st.returnBtn} onPress={() => setReturnModalOpen(true)}>
+              <Text style={st.returnTxt}>Request Return</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Tier-1 prebook — pay balance at venue (unchanged wiring) */}
+        {(order.transaction_type === 'prebook' || order.booking_type) && order.booking_id ? (
+          <View style={st.card}>
+            <Text style={st.ct}>At the venue?</Text>
+            <Text style={st.help}>
+              {order.at_venue_discount_pct > 0
+                ? `Show this booking to claim your ${order.at_venue_discount_pct}% off, or pay the balance through INFLX — discount auto-applied.`
+                : 'Pay your balance through INFLX for instant confirmation and credit to the creator.'}
+            </Text>
+            <TouchableOpacity style={st.returnBtn} onPress={() => navigation.navigate('PayAtStore', {
               prebookBookingId: order.booking_id,
               tokenPaid: order.advance_paid || 0,
               atVenueDiscountPct: order.at_venue_discount_pct || 0,
@@ -260,104 +267,68 @@ export default function OrderDetailScreen({ navigation, route }) {
               influencer: { name: order.influencer_name },
               offer: { discount_value: order.at_venue_discount_pct || 0, id: order.offer_id },
             })}>
-            <Text style={styles.payBalanceBtnText}>💸  Pay Balance via INFLX</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+              <Text style={st.returnTxt}>Pay Balance via INFLX</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
-      <TouchableOpacity
-        style={styles.myReturnsLink}
-        onPress={() => navigation.navigate('MyReturns')}>
-        <Text style={styles.myReturnsText}>View my returns →</Text>
-      </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
+        <TouchableOpacity style={st.linkRow} onPress={() => navigation.navigate('MyReturns')}>
+          <Text style={st.linkTxt}>View my returns ›</Text>
+        </TouchableOpacity>
+      </ScrollView>
 
       <ReturnRequestModal
         visible={returnModalOpen}
         onClose={() => setReturnModalOpen(false)}
         onSuccess={() => navigation.navigate('MyReturns')}
         transactionId={order.transaction_id}
-        orderItems={items.map(it => ({
+        orderItems={items.map((it) => ({
           product_id: it.product_id,
-          name: it.name || it.product_name,
-          image_url: it.image_url || it.product_image_url,
+          name: itemName(it, 0),
+          image_url: it.image_url || meta.get(it.product_id)?.image_url,
         }))}
       />
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 14, color: colors.t2, marginBottom: 16 },
-  backBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.surface2, borderRadius: 12 },
-  backBtnText: { fontSize: 14, fontWeight: '600', color: colors.navy },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  sub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4, fontFamily: 'monospace' },
-  card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
-  tracker: { flexDirection: 'row', alignItems: 'flex-start' },
-  stepItem: { flex: 1, alignItems: 'center' },
-  stepDot: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: colors.border2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.white },
-  stepDotActive: { backgroundColor: colors.teal, borderColor: colors.teal },
-  stepCheck: { fontSize: 11, color: colors.white, fontWeight: '700' },
-  stepLabel: { fontSize: 9, color: colors.t3, textAlign: 'center', marginTop: 4, fontWeight: '600' },
-  stepLabelActive: { color: colors.teal },
-  stepLine: { flex: 1, height: 2, backgroundColor: colors.border2, alignSelf: 'center', marginTop: -11 },
-  stepLineActive: { backgroundColor: colors.teal },
-
-  // Fashion-1b return CTA styles
-  returnSub: { fontSize: 12, color: colors.t2, marginBottom: 12, lineHeight: 17 },
-  returnBtn: { backgroundColor: '#ec4899', paddingVertical: 12, borderRadius: 11, alignItems: 'center' },
-  returnBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
-  myReturnsLink: { padding: 18, alignItems: 'center' },
-  myReturnsText: { fontSize: 13, color: '#ec4899', fontWeight: '600' },
-  // Tier-1 Q2 — Pay Balance via INFLX
-  payBalanceBtn: { backgroundColor: colors.amber || '#f59e0b', paddingVertical: 12, borderRadius: 11, alignItems: 'center' },
-  payBalanceBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  itemName: { fontSize: 13, color: colors.t1, fontWeight: '500', flex: 1 },
-  itemDetail: { fontSize: 13, color: colors.t2 },
-  totalRow: { borderBottomWidth: 0, paddingTop: 10 },
-  totalLabel: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  totalVal: { fontSize: 14, fontWeight: '800', color: colors.navy },
-  addrText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
-  viaCreator: { fontSize: 12, color: Cv.goldDeep, fontWeight: '700', marginTop: 6 },
-  // stakeholder-sale-info S-D — ETA + savings breakdown
-  etaBox: { marginTop: 4, backgroundColor: Cv.soft, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 12 },
-  etaTxt: { fontSize: 12.5, fontWeight: '700', color: Cv.ink },
-  sumRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
-  sumL: { fontSize: 12.5, color: colors.t2 },
-  sumV: { fontSize: 12.5, color: colors.t1, fontWeight: '600' },
-  sumDisc: { fontSize: 12.5, color: '#159B6E', fontWeight: '700' },
-  // vertical timeline
-  tnode: { flexDirection: 'row', gap: 12 },
-  tcol: { alignItems: 'center', width: 38 },
-  tdot: { width: 34, height: 34, borderRadius: 17, backgroundColor: Cv.soft, alignItems: 'center', justifyContent: 'center' },
-  tdotDone: { backgroundColor: Cv.brown },
-  tdotCurr: { backgroundColor: Cv.ink },
-  tdotTxt: { fontSize: 15, color: Cv.muted },
-  tline: { width: 2, flex: 1, minHeight: 18, backgroundColor: Cv.line, marginVertical: 2 },
-  tlineDone: { backgroundColor: Cv.brown },
-  tbody: { flex: 1, paddingBottom: 18, paddingTop: 5 },
-  tlabel: { fontSize: 14, fontWeight: '700', color: Cv.muted },
-  tlabelActive: { color: Cv.ink },
-  tdate: { fontSize: 12, color: Cv.muted, marginTop: 3 },
-  shipRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  shipL: { fontSize: 12.5, color: Cv.muted },
-  shipV: { fontSize: 12.5, color: Cv.ink, fontWeight: '700' },
-  trackBtn: { marginTop: 12, borderWidth: 1, borderColor: Cv.brown, borderRadius: 11, paddingVertical: 12, alignItems: 'center' },
-  trackBtnTxt: { fontSize: 12.5, fontWeight: '800', color: Cv.ink, letterSpacing: 0.5 },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
-  timeLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
-  timeVal: { fontSize: 12, color: colors.t1 },
-  trackingNum: { fontSize: 14, color: colors.navy, fontWeight: '700', fontFamily: 'monospace' },
+const st = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#FFF' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF' },
+  errTxt: { fontSize: 14, color: '#8A8A8A', marginBottom: 14 },
+  errBtn: { backgroundColor: '#111', borderRadius: 999, paddingHorizontal: 24, paddingVertical: 11 },
+  errBtnTxt: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  hdr: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
+  back: { fontSize: 24, fontWeight: '700', color: '#111', marginTop: -2 },
+  title: { fontSize: 17, fontWeight: '800', color: '#111' },
+  sub: { fontSize: 12, color: '#8A8A8A', fontWeight: '600', marginTop: 1 },
+  via: { paddingHorizontal: 16, fontSize: 11.5, color: '#8A8A8A', fontWeight: '700' },
+  card: { marginHorizontal: 16, marginTop: 10, borderWidth: 1, borderColor: '#EEE', borderRadius: 14, padding: 13 },
+  ct: { fontSize: 12.5, fontWeight: '800', color: '#111', marginBottom: 10 },
+  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' },
+  dotOff: { backgroundColor: '#FFF', borderWidth: 2, borderColor: '#DDD' },
+  dotTick: { fontSize: 8, color: '#FFF', fontWeight: '800' },
+  stem: { width: 2, flex: 1, backgroundColor: '#111', minHeight: 18 },
+  stemOff: { backgroundColor: '#EEE' },
+  tln: { fontSize: 12.5, fontWeight: '800', color: '#111' },
+  tlnOff: { color: '#B5B5B5' },
+  tld: { fontSize: 10.5, color: '#8A8A8A', marginTop: 1 },
+  courier: { backgroundColor: '#FAFAFA', borderWidth: 1, borderColor: '#EEE', borderRadius: 10, paddingHorizontal: 11, paddingVertical: 9, marginTop: 6 },
+  courierTxt: { fontSize: 11.5, color: '#111' },
+  br: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, paddingVertical: 3 },
+  bl: { flex: 1, fontSize: 12, color: '#555' },
+  bv: { fontSize: 12, fontWeight: '800', color: '#111' },
+  bg: { fontSize: 12, fontWeight: '800', color: '#1E9E5A' },
+  btot: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#EEE', marginTop: 6, paddingTop: 8 },
+  btotL: { fontSize: 13.5, fontWeight: '800', color: '#111' },
+  addr: { fontSize: 12, color: '#555', lineHeight: 18 },
+  cancelBtn: { marginHorizontal: 16, marginTop: 14, borderWidth: 1.5, borderColor: '#E4E4E4', borderRadius: 999, alignItems: 'center', paddingVertical: 12 },
+  cancelTxt: { fontSize: 13, fontWeight: '800', color: '#D64545' },
+  cxBanner: { marginHorizontal: 16, marginTop: 10, backgroundColor: '#FFF6F6', borderWidth: 1, borderColor: '#F1D5D5', borderRadius: 12, padding: 12 },
+  cxTxt: { fontSize: 12, color: '#8A3B3B', lineHeight: 19 },
+  help: { fontSize: 11.5, color: '#8A8A8A', lineHeight: 17, marginBottom: 10 },
+  returnBtn: { borderWidth: 1.5, borderColor: '#111', borderRadius: 999, alignItems: 'center', paddingVertical: 10 },
+  returnTxt: { fontSize: 12.5, fontWeight: '800', color: '#111' },
+  linkRow: { paddingHorizontal: 16, paddingTop: 14 },
+  linkTxt: { fontSize: 12.5, fontWeight: '800', color: '#111' },
 });

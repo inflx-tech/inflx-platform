@@ -1853,16 +1853,86 @@ const listOrders = asyncHandler(async (req, res) => {
   requireFollowerProfile(follower);
 
   const { rows } = await db.query(
-    `SELECT fo.*, ft.net_amount, ft.created_at AS purchased_at, b.business_name AS brand_name
+    `SELECT fo.*, ft.net_amount, ft.created_at AS purchased_at, b.business_name AS brand_name,
+            i.instagram_handle AS creator_handle,
+            COALESCE(jsonb_array_length(fo.items_json::jsonb), 0) AS item_count,
+            fp.name AS first_item_name, fp.image_url AS first_item_image
      FROM follower_orders fo
      JOIN follower_transactions ft ON ft.id = fo.transaction_id
      JOIN brands b ON b.id = ft.brand_id
+     LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     LEFT JOIN influencers i ON i.id = ci.influencer_id
+     LEFT JOIN LATERAL (
+       SELECT bp.name, bp.image_url FROM brand_products bp
+        WHERE bp.id = (fo.items_json::jsonb->0->>'product_id')::uuid
+     ) fp ON true
      WHERE ft.follower_id = $1
      ORDER BY fo.created_at DESC`,
     [follower.id]
   );
 
   return success(res, { orders: rows });
+});
+
+// ── POST /follower/orders/:id/cancel ─────────────────────────────────────────
+// Stage C4 (locked rule): a follower may cancel until 'dispatched' — the same
+// guard the UI uses is enforced HERE, so a stale app that still shows the
+// button gets a 409, never a late cancel. Prepaid refunds are messaging-only
+// until the Wave-3 real-money rails; COD charged nothing. The commission job
+// already excludes cancelled orders from release.
+const cancelOrder = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const { rows } = await db.query(
+    `SELECT fo.id, fo.order_status, fo.payment_method, fo.cod_fee,
+            ft.net_amount, ft.brand_id, b.user_id AS brand_user_id, b.business_name
+       FROM follower_orders fo
+       JOIN follower_transactions ft ON ft.id = fo.transaction_id
+       JOIN brands b ON b.id = ft.brand_id
+      WHERE fo.id = $1 AND ft.follower_id = $2`,
+    [req.params.id, follower.id]
+  );
+  const order = rows[0];
+  if (!order) throw new AppError('NOT_FOUND', 'Order not found', 404);
+  if (order.order_status === 'cancelled') {
+    throw new AppError('VALIDATION_ERROR', 'This order is already cancelled', 422);
+  }
+  if (!['confirmed', 'packed'].includes(order.order_status)) {
+    throw new AppError('VALIDATION_ERROR', 'This order has been dispatched and can no longer be cancelled', 409);
+  }
+
+  // Guarded update — the status check repeats in SQL so a racing brand
+  // dispatch beats a racing cancel deterministically (0 rows = lost race).
+  const { rows: upd } = await db.query(
+    `UPDATE follower_orders
+        SET order_status = 'cancelled', cancelled_at = now()
+      WHERE id = $1 AND order_status IN ('confirmed','packed')
+      RETURNING id, cancelled_at`,
+    [order.id]
+  );
+  if (!upd[0]) {
+    throw new AppError('VALIDATION_ERROR', 'This order has been dispatched and can no longer be cancelled', 409);
+  }
+
+  if (order.brand_user_id) {
+    notificationService.send({
+      userId: order.brand_user_id,
+      type: 'order.cancelled',
+      title: 'Order cancelled',
+      body: 'A customer cancelled an order before dispatch. Open Orders for details.',
+      sendSms: false,
+    }).catch(e => console.error('[NOTIFY] order.cancelled failed:', e.message));
+  }
+
+  const prepaid = order.payment_method !== 'cod';
+  return success(res, {
+    cancelled: true,
+    cancelled_at: upd[0].cancelled_at,
+    refund: prepaid
+      ? { initiated: true, amount: parseFloat(order.net_amount), note: 'Refund initiated to your payment method.' }
+      : { initiated: false, amount: 0, note: 'Nothing was charged for this COD order.' },
+  });
 });
 
 // ── GET /follower/activity ────────────────────────────────────────────────────
@@ -1936,7 +2006,8 @@ const getOrder = asyncHandler(async (req, res) => {
             u_b.phone AS brand_contact,
             inf.instagram_handle AS creator_handle, u_i.name AS creator_name,
             a.label AS address_label,
-            NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.state, a.pincode), '') AS delivery_address
+            NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.state, a.pincode), '') AS delivery_address,
+            pm.product_meta
      FROM follower_orders fo
      JOIN follower_transactions ft ON ft.id = fo.transaction_id
      JOIN brands b ON b.id = ft.brand_id
@@ -1945,6 +2016,12 @@ const getOrder = asyncHandler(async (req, res) => {
      LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
      LEFT JOIN influencers inf ON inf.id = ci.influencer_id
      LEFT JOIN users u_i ON u_i.id = inf.user_id
+     LEFT JOIN LATERAL (
+       SELECT jsonb_agg(jsonb_build_object('product_id', bp.id, 'name', bp.name, 'image_url', bp.image_url)) AS product_meta
+         FROM brand_products bp
+        WHERE bp.id IN (SELECT (e->>'product_id')::uuid
+                          FROM jsonb_array_elements(fo.items_json::jsonb) e)
+     ) pm ON true
      WHERE fo.id = $1 AND ft.follower_id = $2`,
     [req.params.id, follower.id]
   );
@@ -2038,6 +2115,7 @@ module.exports = {
   placeOrder,
   verifyOrder,
   listOrders,
+  cancelOrder,
   listActivity,
   getOrder,
   updateOrderStatus,

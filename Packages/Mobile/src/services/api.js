@@ -680,6 +680,7 @@ export const followerApi = {
   verifyOrder: (data) => api.post('/follower/orders/verify', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),
   getOrders: () => api.get('/follower/orders'),
+  cancelOrder: (id) => api.post(`/follower/orders/${id}/cancel`),
   getActivity: () => api.get('/follower/activity'),
 
   // Addresses

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>C4 — My Orders board (list · timeline · cancel)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  body { background:#EDEDED; padding:28px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { color:#666; font-size:13px; margin-bottom:24px; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:390px; background:#FFF; border-radius:28px; box-shadow:0 8px 30px rgba(0,0,0,.14); overflow:hidden; border:1px solid #DDD; }
+  .cap { font-size:12.5px; font-weight:700; color:#444; margin:10px 4px 18px; max-width:390px; line-height:1.5; }
+  .cap b { color:#000; }
+  .hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 8px; }
+  .hdr .back { font-size:18px; font-weight:700; }
+  .hdr .t { font-size:17px; font-weight:800; color:#111; }
+  .hdr .n { font-size:12px; color:#8A8A8A; font-weight:600; margin-top:1px; }
+  .tabs { display:flex; gap:8px; padding:6px 16px 12px; }
+  .tab { font-size:12px; font-weight:700; padding:7px 14px; border-radius:999px; border:1px solid #E4E4E4; color:#555; }
+  .tab.on { background:#111; color:#FFF; border-color:#111; }
+  .ocard { margin:0 16px 12px; border:1px solid #EEE; border-radius:14px; padding:12px; }
+  .otop { display:flex; gap:10px; }
+  .oth { width:52px; height:64px; border-radius:9px; background:linear-gradient(160deg,#F5F2EC,#E9E2D0); flex:none; }
+  .onm { font-size:12.5px; font-weight:700; color:#111; }
+  .osub { font-size:10.5px; color:#8A8A8A; margin-top:2px; }
+  .oamt { margin-left:auto; text-align:right; font-size:13px; font-weight:800; color:#111; }
+  .cod { display:inline-block; font-size:9.5px; font-weight:800; color:#111; background:#FDFBF4; border:1px solid #E0D6BB; border-radius:6px; padding:2px 6px; margin-top:4px; }
+  .obot { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid #F6F6F6; }
+  .chip { font-size:10.5px; font-weight:800; padding:4px 10px; border-radius:999px; border:1.5px solid #111; color:#111; }
+  .chip.fill { background:#111; color:#FFF; }
+  .chip.green { border-color:#1E9E5A; color:#1E9E5A; }
+  .chip.red { border-color:#E4E4E4; color:#D64545; }
+  .odate { font-size:10.5px; color:#8A8A8A; margin-left:auto; }
+  /* timeline */
+  .card { margin:8px 16px 0; border:1px solid #EEE; border-radius:14px; padding:13px; }
+  .ct { font-size:12.5px; font-weight:800; color:#111; margin-bottom:10px; }
+  .tl { display:flex; gap:12px; }
+  .tl .dotcol { width:14px; display:flex; flex-direction:column; align-items:center; }
+  .dot { width:14px; height:14px; border-radius:7px; background:#111; color:#FFF; font-size:9px; line-height:14px; text-align:center; }
+  .dot.off { background:#FFF; border:2px solid #DDD; }
+  .stem { width:2px; flex:1; background:#111; min-height:22px; }
+  .stem.off { background:#EEE; }
+  .tlrow { display:flex; flex-direction:column; }
+  .tln { font-size:12.5px; font-weight:800; color:#111; }
+  .tln.off { color:#B5B5B5; }
+  .tld { font-size:10.5px; color:#8A8A8A; margin-top:1px; margin-bottom:14px; }
+  .courier { display:flex; align-items:center; gap:8px; background:#FAFAFA; border:1px solid #EEE; border-radius:10px; padding:9px 11px; margin-top:4px; font-size:11.5px; color:#111; }
+  .courier b { font-weight:800; }
+  .cancelBtn { margin:14px 16px 0; border:1.5px solid #E4E4E4; border-radius:999px; text-align:center; padding:12px; font-size:13px; font-weight:800; color:#D64545; }
+  .helpBtn { margin:10px 16px 16px; text-align:center; font-size:12px; font-weight:800; color:#111; }
+  .bill .r { display:flex; justify-content:space-between; font-size:12px; color:#555; padding:3px 0; }
+  .bill .r b { color:#111; }
+  .bill .tot { display:flex; justify-content:space-between; border-top:1px solid #EEE; margin-top:6px; padding-top:8px; font-size:13.5px; font-weight:800; color:#111; }
+  .modal { margin:20px 26px; border:1px solid #EEE; border-radius:16px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.16); }
+  .mt { font-size:15px; font-weight:800; color:#111; }
+  .mp { font-size:12px; color:#8A8A8A; margin-top:6px; line-height:1.6; }
+  .mrow { display:flex; gap:10px; margin-top:14px; }
+  .btn-k { flex:1; text-align:center; padding:12px; border-radius:10px; font-size:13px; font-weight:800; }
+  .dim { background:#FAFAFA; color:#111; border:1px solid #EEE; }
+  .danger { background:#D64545; color:#FFF; }
+  .cxbanner { margin:8px 16px 0; background:#FFF6F6; border:1px solid #F1D5D5; border-radius:12px; padding:11px 13px; font-size:12px; color:#8A3B3B; line-height:1.6; }
+  .panel { background:#FFF; border:1px solid #DDD; border-radius:14px; padding:18px; width:390px; font-size:12.5px; line-height:1.65; color:#333; }
+  .panel h3 { font-size:13.5px; margin-bottom:8px; }
+  .panel code { background:#F4F4F4; padding:1px 5px; border-radius:5px; font-size:11.5px; }
+</style>
+</head>
+<body>
+<h1>C4 — My Orders: list · tracking timeline · cancel-until-dispatched</h1>
+<div class="sub">White law throughout. No yellow anywhere — nothing on these screens is a buy action. Timeline renders from the per-status timestamps the backend already writes.</div>
+
+<div class="row">
+
+  <!-- FRAME 1: MY ORDERS LIST -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">My Orders</div><div class="n">4 orders</div></div></div>
+      <div class="tabs"><span class="tab on">All</span><span class="tab">Active</span><span class="tab">Delivered</span><span class="tab">Cancelled</span></div>
+
+      <div class="ocard">
+        <div class="otop"><div class="oth"></div>
+          <div><div class="onm">Monsoon Cotton T-Shirt +1 more</div><div class="osub">Charvitha Fashions · via @sagartravel</div><span class="cod">COD · ₹2,611 due</span></div>
+          <div class="oamt">₹2,611</div></div>
+        <div class="obot"><span class="chip">Dispatched</span><span class="odate">Today, 2:10 PM</span></div>
+      </div>
+
+      <div class="ocard">
+        <div class="otop"><div class="oth" style="background:linear-gradient(160deg,#EFEFEF,#DCDCDC)"></div>
+          <div><div class="onm">Allen Solly Cotton Shirt</div><div class="osub">Charvitha Fashions</div></div>
+          <div class="oamt">₹899</div></div>
+        <div class="obot"><span class="chip green">Delivered</span><span class="odate">22 Jul</span></div>
+      </div>
+
+      <div class="ocard">
+        <div class="otop"><div class="oth" style="background:linear-gradient(160deg,#F1EAE2,#E0D2C2)"></div>
+          <div><div class="onm">Linen Kurta Set</div><div class="osub">Urban Stitch</div></div>
+          <div class="oamt">₹1,450</div></div>
+        <div class="obot"><span class="chip fill">Confirmed</span><span class="odate">Today, 11:02 AM</span></div>
+      </div>
+
+      <div class="ocard" style="opacity:.65">
+        <div class="otop"><div class="oth" style="background:linear-gradient(160deg,#ECECEC,#D8D8D8)"></div>
+          <div><div class="onm">Printed Summer Dress</div><div class="osub">Urban Stitch</div></div>
+          <div class="oamt">₹999</div></div>
+        <div class="obot"><span class="chip red">Cancelled</span><span class="odate">18 Jul</span></div>
+      </div>
+    </div>
+    <div class="cap"><b>My Orders — list.</b> Tabs: All / Active (confirmed→out-for-delivery) / Delivered / Cancelled. Card: first item's photo, "+N more", brand, creator when attributed, COD due-tag, amount, status chip (Confirmed = filled, in-transit = outline, Delivered = green, Cancelled = muted red). Tap → detail.</div>
+  </div>
+
+  <!-- FRAME 2: ORDER DETAIL + TIMELINE -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Order #INF-20841</div><div class="n">Placed today, 11:02 AM · Charvitha Fashions</div></div></div>
+
+      <div class="card">
+        <div class="ct">Tracking</div>
+        <div class="tl"><div class="dotcol"><div class="dot">✓</div><div class="stem"></div></div><div class="tlrow"><div class="tln">Confirmed</div><div class="tld">Today, 11:02 AM</div></div></div>
+        <div class="tl"><div class="dotcol"><div class="dot">✓</div><div class="stem"></div></div><div class="tlrow"><div class="tln">Packed</div><div class="tld">Today, 1:36 PM</div></div></div>
+        <div class="tl"><div class="dotcol"><div class="dot">✓</div><div class="stem off"></div></div><div class="tlrow"><div class="tln">Dispatched</div><div class="tld">Today, 2:10 PM</div>
+          <div class="courier">Courier: <b>Delhivery</b> · AWB <b>DL4921883021</b></div><div style="height:12px"></div></div></div>
+        <div class="tl"><div class="dotcol"><div class="dot off"></div><div class="stem off"></div></div><div class="tlrow"><div class="tln off">Out for delivery</div><div class="tld"></div></div></div>
+        <div class="tl"><div class="dotcol"><div class="dot off"></div></div><div class="tlrow"><div class="tln off">Delivered</div><div class="tld">Expected 28 Jul</div></div></div>
+      </div>
+
+      <div class="card bill">
+        <div class="ct">2 items · Bill</div>
+        <div class="r"><span>Monsoon Cotton T-Shirt · M ×1</span><b>₹773</b></div>
+        <div class="r"><span>Allen Solly Cotton Shirt · L ×2</span><b>₹1,798</b></div>
+        <div class="r"><span>COD fee</span><b>₹40</b></div>
+        <div class="tot"><span>To pay on delivery</span><span>₹2,611</span></div>
+      </div>
+
+      <div class="card">
+        <div class="ct">Delivering to Home</div>
+        <div style="font-size:12px;color:#555;line-height:1.6">Flat 304, Sai Residency, Prasadampadu, Vijayawada — 521108</div>
+      </div>
+
+      <div class="helpBtn">Need help? Chat with the store</div>
+      <div style="height:12px"></div>
+    </div>
+    <div class="cap"><b>Detail — the timeline is truth, not theatre:</b> each step lights up from its real timestamp (already written by brand/admin status updates); courier + AWB appear under Dispatched. This order is DISPATCHED → the Cancel button is gone (locked rule). COD bill shows the fee + amount due.</div>
+  </div>
+
+  <!-- FRAME 3: CANCELLABLE + DIALOG + CANCELLED -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Order #INF-20857</div><div class="n">Placed today, 11:02 AM · Urban Stitch</div></div></div>
+      <div class="card">
+        <div class="ct">Tracking</div>
+        <div class="tl"><div class="dotcol"><div class="dot">✓</div><div class="stem off"></div></div><div class="tlrow"><div class="tln">Confirmed</div><div class="tld">Today, 11:02 AM</div></div></div>
+        <div class="tl"><div class="dotcol"><div class="dot off"></div></div><div class="tlrow"><div class="tln off">Packed</div><div class="tld"></div></div></div>
+      </div>
+      <div class="cancelBtn">Cancel order</div>
+
+      <div class="modal">
+        <div class="mt">Cancel this order?</div>
+        <div class="mp">Prepaid: your refund is initiated to the same payment method.<br>COD: nothing was charged — nothing to refund.</div>
+        <div class="mrow"><div class="btn-k dim">Keep order</div><div class="btn-k danger">Yes, cancel</div></div>
+      </div>
+
+      <div class="cxbanner">This order was cancelled on 25 Jul, 3:40 PM. Refund of ₹1,450 initiated to your payment method.</div>
+    </div>
+    <div class="cap"><b>Cancel — until 'dispatched', then never (locked 2026-07-24).</b> Button renders only while status is confirmed/packed; the SERVER enforces the same guard (409 after dispatch). Confirm dialog says the money-truth per payment method. Cancelled detail shows the red banner instead of the button; brand gets an order.cancelled notification.</div>
+  </div>
+
+  <!-- FRAME 4: BACKEND MAP -->
+  <div class="panel">
+    <h3>Backend map (honest — almost everything exists)</h3>
+    <b>Exists (reused, verified in code):</b><br>
+    · Status vocabulary confirmed→packed→dispatched→out_for_delivery→delivered/cancelled with per-status timestamp columns (<code>packed_at</code>, <code>dispatched_at</code>…) — the timeline needs NO new table<br>
+    · Brand <code>PATCH /orders/:id/status</code> (+courier, +AWB) and admin override — both already notify the follower per step<br>
+    · <code>GET /follower/orders/:id</code> returns <code>fo.*</code> → timestamps, courier, tracking, payment_method, cod_fee already flow<br>
+    · Commission job already excludes cancelled orders<br><br>
+    <b>New (small):</b><br>
+    · <code>POST /follower/orders/:id/cancel</code> — allowed while status ∈ {confirmed, packed}; 409 after dispatch; sets cancelled + cancelled_at, notifies brand; prepaid marks refund-initiated (real refund rails = Wave 3 money work), COD charges nothing<br>
+    · List endpoint: first-item thumbnail + item count (tiny SELECT addition) if missing<br><br>
+    <b>Mobile:</b> OrderHistory + OrderDetail redesigned to these frames (white law); routes already exist in both tabs.
+  </div>
+
+</div>
+</body>
+</html>

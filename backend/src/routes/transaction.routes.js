@@ -37,6 +37,8 @@ router.post('/orders/verify', ...followerAuth, ctrl.verifyOrder);
 router.get('/orders',         ...followerAuth, ctrl.listOrders);
 router.get('/activity',       ...followerAuth, ctrl.listActivity);
 router.get('/orders/:id',     ...followerAuth, ctrl.getOrder);
+// Stage C4 — follower cancel, allowed until 'dispatched' (server-enforced 409 after)
+router.post('/orders/:id/cancel', ...followerAuth, ctrl.cancelOrder);
 
 // Brand-side order status update
 router.patch('/orders/:id/status', ...brandAuth, ctrl.updateOrderStatus);

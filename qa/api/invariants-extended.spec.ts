@@ -26,7 +26,7 @@ test.describe('WORKFLOW: B1b extended API invariants', () => {
 
   for (const ep of RBAC) {
     test(`W4 — ${ep.method.toUpperCase()} ${ep.path} rejects unauthenticated`, async () => {
-      const ctx = await pwRequest.newContext();
+      const ctx = await pwRequest.newContext({ timeout: 15_000 });
       const res =
         ep.method === 'get'
           ? await ctx.get(`${BASE}${ep.path}`, { timeout: 60_000 })
@@ -43,7 +43,7 @@ test.describe('WORKFLOW: B1b extended API invariants', () => {
 
   // ── W5 Auth-contract breadth ──
   test('W5a — verify-otp on a fresh phone without role → 422 VALIDATION_ERROR (field role)', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
     const phone = freshPhone();
     let sent = false;
     for (let i = 0; i < 3 && !sent; i++) {
@@ -65,7 +65,7 @@ test.describe('WORKFLOW: B1b extended API invariants', () => {
   });
 
   test('W5b — verify-otp with an invalid role → 422 VALIDATION_ERROR', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
     const phone = freshPhone();
     let sent = false;
     for (let i = 0; i < 3 && !sent; i++) {
@@ -86,7 +86,7 @@ test.describe('WORKFLOW: B1b extended API invariants', () => {
   });
 
   test('W5c — POST /auth/refresh with no cookie → clean 4xx, not 5xx', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
     const res = await ctx.post(`${BASE}/auth/refresh`, { timeout: 60_000 });
     const status = res.status();
     const body: any = await res.json().catch(() => null);
@@ -98,7 +98,7 @@ test.describe('WORKFLOW: B1b extended API invariants', () => {
 
   // ── W6 Not-found contract ──
   test('W6 — unknown route → 404 JSON envelope (not HTML, not 5xx)', async () => {
-    const ctx = await pwRequest.newContext();
+    const ctx = await pwRequest.newContext({ timeout: 15_000 });
     const res = await ctx.get(`${BASE}/this-route-does-not-exist-${Date.now()}`, { timeout: 60_000 });
     const status = res.status();
     const body: any = await res.json().catch(() => null);

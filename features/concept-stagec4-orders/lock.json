@@ -1,0 +1,22 @@
+{
+  "feature": "concept-stagec4-orders",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — reviewed the C4 board (04-preview/mockups/c4-orders.html) in the browser pane in-session 2026-07-25; 'pls start building'",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — 'pls start building' after board review",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "My Orders + detail rewritten to the white-law board (timestamp-lit timeline, courier/AWB deep links, COD-honest bills, status chips); NEW cancel endpoint with the locked until-dispatched rule enforced server-side (SQL-guarded against the dispatch race); listOrders/getOrder read-enrichments (creator handle, item_count, live product names/images). Zero schema change.",
+  "qa_record": "TWO runs, both read before commit. Run 1 (13-55 report) FAILED 69/79 — the recurring prod-Render transient (ECONNRESET + hangs on the same api auth/admin-gate specs; 3rd occurrence; those specs hit prod which does NOT contain the C4 changes, so definitively environmental, and none touch orders). Per the standing 3rd-occurrence rule, added timeout:15_000 to all 8 pwRequest.newContext sites in the two api spec files (assertions unchanged — fast-fail instead of 100s hangs). Run 2 (13-57 report) GREEN 79/79 gate 0 in 42s. Mobile jest 13/13 suites 66/66.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": null
+  }
+}
