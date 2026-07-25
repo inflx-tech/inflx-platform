@@ -1,0 +1,267 @@
+<title>INFLX Influencer — New IA Mockups</title>
+<style>
+  :root{
+    /* page chrome (theme-aware) */
+    --canvas:#F2F2F3; --panel:#FFFFFF; --page-ink:#0A0A0A; --page-muted:#6E6E73; --page-line:#E3E3E5; --accent:#1A1A1A;
+    /* in-app IG-clean palette (fixed — depicts the app) */
+    --bg:#FFFFFF; --text:#0A0A0A; --text2:#262626; --mut:#8E8E8E; --line:#DBDBDB; --lineSoft:#EFEFEF;
+    --y:#FFC107; --yInk:#7A6200;
+    --green:#1A7F52; --greenBg:#EAF7F0; --red:#C4321B; --redBg:#FBEEEA;
+    --blue:#3B6FE0; --blueBg:#EDF2FD; --purple:#6D3FC4; --purpleBg:#F2ECFB;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{--canvas:#0C0C0D;--panel:#161617;--page-ink:#F4F4F5;--page-muted:#A0A0A6;--page-line:#2A2A2C;--accent:#F4F4F5}}
+  :root[data-theme="light"]{--canvas:#F2F2F3;--panel:#FFFFFF;--page-ink:#0A0A0A;--page-muted:#6E6E73;--page-line:#E3E3E5;--accent:#1A1A1A}
+  :root[data-theme="dark"]{--canvas:#0C0C0D;--panel:#161617;--page-ink:#F4F4F5;--page-muted:#A0A0A6;--page-line:#2A2A2C;--accent:#F4F4F5}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--page-ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .wrap{max-width:1080px;margin:0 auto;padding:44px 24px 80px}
+  .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--page-muted);font-weight:700}
+  h1{font-size:34px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin:12px 0 10px;text-wrap:balance}
+  .lede{font-size:15px;color:var(--page-muted);max-width:64ch;margin:0}
+  .lede b{color:var(--page-ink);font-weight:600}
+  h2{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--page-muted);font-weight:700;margin:0 0 14px;display:flex;align-items:center;gap:12px}
+  h2::after{content:"";flex:1;height:1px;background:var(--page-line)}
+  .section{margin-top:56px}
+
+  /* before/after tab bars */
+  .barsGrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:720px){.barsGrid{grid-template-columns:1fr}}
+  .barCard{background:var(--panel);border:1px solid var(--page-line);border-radius:16px;padding:16px 16px 10px;overflow:hidden}
+  .barTag{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:999px;display:inline-block;margin-bottom:14px;border:1px solid var(--page-line);color:var(--page-muted)}
+  .tabbar{display:flex;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 4px}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
+  .tab svg{width:23px;height:23px;color:#B0B0B0}
+  .tab span{font-size:9px;font-weight:600;letter-spacing:.02em;color:#B0B0B0}
+  .tab.on svg{color:#0A0A0A}.tab.on span{color:#0A0A0A;font-weight:700}
+  .tab.warn svg{color:#C4321B}.tab.warn span{color:#C4321B}
+  .tab.on::after{content:"";position:absolute;top:-11px;width:22px;height:2px;background:#0A0A0A;border-radius:2px}
+  .barNote{font-size:12px;color:var(--page-muted);margin:14px 2px 4px;line-height:1.5}
+  .barNote b{color:var(--page-ink);font-weight:700}
+
+  /* phones */
+  .phones{display:flex;gap:40px;flex-wrap:wrap;justify-content:center}
+  .col{width:328px;max-width:100%}
+  .cap{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--page-ink);font-weight:800;margin:0 0 4px;display:flex;align-items:center;gap:7px}
+  .cap .sq{width:7px;height:7px;background:var(--y);border-radius:2px}
+  .capSub{font-size:12.5px;color:var(--page-muted);margin:0 0 14px;line-height:1.45}
+  .phone{background:#fff;border:1px solid var(--page-line);border-radius:32px;padding:7px;box-shadow:0 22px 50px -26px rgba(0,0,0,.4)}
+  .screen{background:#fff;border-radius:26px;overflow:hidden}
+
+  /* IG-clean header: white, black title, hairline underline */
+  .appHead{background:#fff;padding:18px 16px 13px;border-bottom:1px solid var(--line);position:relative}
+  .htitle{color:#0A0A0A;font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .hsub{font-size:11px;color:var(--mut);margin-top:2px}
+  .bell{position:absolute;right:14px;top:18px;width:30px;height:30px;display:flex;align-items:center;justify-content:center}
+  .bell svg{width:22px;height:22px;color:#0A0A0A}
+  .bellDot{position:absolute;top:1px;right:2px;background:var(--red);width:8px;height:8px;border-radius:4px;border:1.5px solid #fff}
+
+  /* stage filter — text tabs with underline (IG story-tab feel) */
+  .stages{display:flex;gap:16px;padding:11px 16px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+  .stages::-webkit-scrollbar{display:none}
+  .pill{white-space:nowrap;font-size:12.5px;font-weight:600;color:var(--mut);padding:0 0 10px;border-bottom:2px solid transparent}
+  .pill .n{font-weight:700}
+  .pill.on{color:#0A0A0A;font-weight:700;border-bottom-color:#0A0A0A}
+
+  .body{padding:8px 0 12px}
+  /* deal row — IG feed row, hairline divider, no heavy card */
+  .deal{padding:14px 16px;border-bottom:1px solid var(--lineSoft);position:relative}
+  .deal.act::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;background:var(--y);border-radius:0 2px 2px 0}
+  .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .brand{font-size:14.5px;font-weight:700;color:var(--text)}
+  .camp{font-size:11.5px;color:var(--mut);margin-top:2px}
+  .spill{font-size:10px;font-weight:700;letter-spacing:.02em;white-space:nowrap;display:flex;align-items:center;gap:5px}
+  .spill .d{width:6px;height:6px;border-radius:3px}
+  .s-you{color:var(--yInk)}.s-you .d{background:var(--y)}
+  .s-wait{color:var(--blue)}.s-wait .d{background:var(--blue)}
+  .s-nego{color:var(--purple)}.s-nego .d{background:var(--purple)}
+  .s-done{color:var(--green)}.s-done .d{background:var(--green)}
+  .dstats{display:flex;gap:22px;margin-top:11px}
+  .dstat .l{font-size:9.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mut)}
+  .dstat .v{font-size:14px;font-weight:700;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
+  .dcta{margin-top:12px;display:flex;gap:8px}
+  .btn{flex:1;text-align:center;font-size:12px;font-weight:700;letter-spacing:.01em;padding:10px;border-radius:10px;border:1px solid var(--line);color:#0A0A0A;background:#fff}
+  .btnPrimary{background:#0A0A0A;color:#fff;border-color:#0A0A0A}
+  .btnDanger{color:var(--red);border-color:#EFD3CC}
+  .oneline{margin-top:11px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+  .oneline .go{margin-left:auto;font-weight:700;color:#0A0A0A;font-size:12px}
+  .oneline.wait .go{color:var(--mut);font-weight:600}
+  .dot{width:6px;height:6px;border-radius:3px;background:var(--y);flex-shrink:0}
+  .dot.b{background:var(--blue)}
+
+  /* create tab */
+  .bigCta{margin:12px 16px 0;border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;align-items:center;gap:13px}
+  .bigCta .ico{width:44px;height:44px;border-radius:12px;background:#0A0A0A;display:flex;align-items:center;justify-content:center}
+  .bigCta .ico svg{width:23px;height:23px;color:#fff}
+  .bigCta .t{color:#0A0A0A;font-weight:700;font-size:15px}
+  .bigCta .s{color:var(--mut);font-size:11.5px;margin-top:2px}
+  .bigCta .chev svg{width:18px;height:18px;color:#0A0A0A}
+  .lab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:20px 16px 4px}
+  .post{padding:12px 16px;border-bottom:1px solid var(--lineSoft);display:flex;gap:12px;align-items:center}
+  .thumb{width:48px;height:48px;border-radius:10px;background:#F2F2F2;border:1px solid var(--lineSoft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .thumb svg{width:20px;height:20px;color:#9A9A9A}
+  .pmid{flex:1;min-width:0}
+  .ptitle{font-size:13.5px;font-weight:700;color:var(--text)}
+  .pmeta{font-size:11px;color:var(--mut);margin-top:2px}
+  .resub{display:inline-block;margin-top:5px;font-size:11px;font-weight:700;color:#0A0A0A;border-bottom:1.5px solid #0A0A0A}
+  .st{font-size:10px;font-weight:700;letter-spacing:.02em;display:flex;align-items:center;gap:5px}
+  .st .d{width:6px;height:6px;border-radius:3px}
+  .st.rev{color:var(--yInk)}.st.rev .d{background:var(--y)}
+  .st.live{color:var(--green)}.st.live .d{background:var(--green)}
+  .st.rej{color:var(--red)}.st.rej .d{background:var(--red)}
+
+  .callouts{margin-top:18px;display:grid;gap:9px}
+  .call{display:flex;gap:12px;font-size:13.5px;color:var(--page-muted);line-height:1.45}
+  .call b{color:var(--page-ink);font-weight:700}
+  .call .k{font-weight:800;color:var(--page-ink);flex-shrink:0;font-variant-numeric:tabular-nums}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:20px}
+  .lg{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--page-muted)}
+  .lg .d{width:9px;height:9px;border-radius:3px}
+  .foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--page-line);font-size:12.5px;color:var(--page-muted);line-height:1.55}
+  .foot b{color:var(--page-ink)}
+</style>
+
+<h2 class="sr-only">Proposed information architecture for the INFLX influencer app, restyled Instagram-clean: a merged Collabs pipeline tab, a Create tab, and a revised white bottom bar.</h2>
+
+<div class="wrap">
+  <p class="eyebrow">INFLX · Influencer app · IA redesign — Instagram-clean pass</p>
+  <h1>One deal, one place. Posts get a home.</h1>
+  <p class="lede">Restyled to the new direction: <b>white surfaces, black text, hairline dividers</b> — the ink header + black tab bar are gone. Colour is spent only where it means something (yellow = <b>your turn</b>). The two structural moves are unchanged: <b>merge Offers + Campaigns into one Collabs pipeline</b>, and <b>promote Posts to a Create tab</b>.</p>
+
+  <!-- BOTTOM BAR -->
+  <div class="section">
+    <h2>The bottom bar</h2>
+    <div class="barsGrid">
+      <div class="barCard">
+        <span class="barTag">Today · 5 tabs</span>
+        <div class="tabbar">
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg><span>Home</span></div>
+          <div class="tab warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 4h16v12H4z"/><path d="M4 9h16"/></svg><span>Offers</span></div>
+          <div class="tab warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16v13H4z"/><path d="M9 7V4h6v3"/></svg><span>Campaigns</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 4h9l-1 6h1a3 3 0 010 6H8"/><path d="M6 8h8M6 12h6"/></svg><span>Earnings</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Profile</span></div>
+        </div>
+        <p class="barNote"><b style="color:var(--red)">Offers</b> and <b style="color:var(--red)">Campaigns</b> are the same deal at different stages — a signed deal shows in both. And Posts has no tab.</p>
+      </div>
+      <div class="barCard">
+        <span class="barTag">Proposed · 5 tabs</span>
+        <div class="tabbar">
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg><span>Home</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16v13H4z"/><path d="M9 7V4h6v3"/><path d="M4 12h16"/></svg><span>Collabs</span></div>
+          <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg><span>Create</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 4h9l-1 6h1a3 3 0 010 6H8"/><path d="M6 8h8M6 12h6"/></svg><span>Earnings</span></div>
+          <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Profile</span></div>
+        </div>
+        <p class="barNote"><b>Collabs</b> absorbs Offers + Campaigns as one pipeline. <b>Create</b> gives Posts a real home. Same 5 tabs.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHONES -->
+  <div class="section">
+    <h2>The two hero screens</h2>
+    <div class="phones">
+
+      <!-- COLLABS -->
+      <div class="col">
+        <p class="cap"><span class="sq"></span>Collabs — merged pipeline</p>
+        <p class="capSub">Feed-style rows, hairline dividers. Stage tabs across the top; the badge and CTA change as the deal advances. Yellow rail + dot mark the ones waiting on you.</p>
+        <div class="phone"><div class="screen">
+          <div class="appHead">
+            <div class="htitle">Collabs</div>
+            <div class="hsub">3 active · 2 need you</div>
+            <div class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 21h4"/></svg><span class="bellDot"></span></div>
+          </div>
+          <div class="stages">
+            <div class="pill on">All <span class="n">7</span></div>
+            <div class="pill">Invites <span class="n">2</span></div>
+            <div class="pill">Negotiating <span class="n">1</span></div>
+            <div class="pill">To sign <span class="n">1</span></div>
+            <div class="pill">Active <span class="n">3</span></div>
+          </div>
+          <div class="body">
+            <div class="deal">
+              <div class="dhead"><div><div class="brand">Nykaa</div><div class="camp">Summer Glow · Reel</div></div><div class="spill s-you"><span class="d"></span>To sign</div></div>
+              <div class="dstats"><div class="dstat"><div class="l">Fee</div><div class="v">₹12,000</div></div><div class="dstat"><div class="l">Signs by</div><div class="v">14 Aug</div></div></div>
+              <div class="dcta"><div class="btn btnPrimary">Review &amp; sign</div></div>
+            </div>
+            <div class="deal act">
+              <div class="dhead"><div><div class="brand">boAt</div><div class="camp">Festive Reels · Reel ×2</div></div><div class="spill s-you"><span class="d"></span>Active</div></div>
+              <div class="dstats"><div class="dstat"><div class="l">Fee</div><div class="v">₹8,500</div></div><div class="dstat"><div class="l">Delivered</div><div class="v">1 / 2</div></div></div>
+              <div class="oneline"><span class="dot"></span>1 deliverable to upload<span class="go">Upload →</span></div>
+            </div>
+            <div class="deal">
+              <div class="dhead"><div><div class="brand">Mamaearth</div><div class="camp">Skincare Launch · Story</div></div><div class="spill s-you"><span class="d"></span>New invite</div></div>
+              <div class="dstats"><div class="dstat"><div class="l">Fee</div><div class="v">₹6,000</div></div><div class="dstat"><div class="l">Expires</div><div class="v" style="color:var(--red)">18h</div></div></div>
+              <div class="dcta"><div class="btn btnPrimary">Accept</div><div class="btn">Negotiate</div><div class="btn btnDanger">Pass</div></div>
+            </div>
+            <div class="deal" style="border-bottom:0">
+              <div class="dhead"><div><div class="brand">Sugar Cosmetics</div><div class="camp">Matte Range · Reel</div></div><div class="spill s-nego"><span class="d"></span>Negotiating</div></div>
+              <div class="oneline"><span class="dot" style="background:var(--purple)"></span>Brand countered ₹9,500<span class="go">Open chat →</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- CREATE -->
+      <div class="col">
+        <p class="cap"><span class="sq"></span>Create — Posts, on the system</p>
+        <p class="capSub">The composer + ledger, IG-clean. Black primary CTA, hairline rows, status shown as a small dot+label. A rejected post offers edit-and-resubmit instead of dead-ending.</p>
+        <div class="phone"><div class="screen">
+          <div class="appHead">
+            <div class="htitle">Create</div>
+            <div class="hsub">Turn products into shoppable posts</div>
+          </div>
+          <div class="body" style="padding-top:0">
+            <div class="bigCta">
+              <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12" r="3.2"/><path d="M8 5l1.5-2h5L16 5"/></svg></div>
+              <div style="flex:1"><div class="t">New Post</div><div class="s">Concept → photos → tag products</div></div>
+              <div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg></div>
+            </div>
+            <div class="lab">My Posts · 3</div>
+            <div class="post">
+              <div class="thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+              <div class="pmid"><div class="ptitle">Everyday Glow look</div><div class="pmeta">3 products · under review 2h</div></div>
+              <div class="st rev"><span class="d"></span>In review</div>
+            </div>
+            <div class="post">
+              <div class="thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+              <div class="pmid"><div class="ptitle">Monsoon skincare edit</div><div class="pmeta">5 products · 1.2k views · 8 saves</div></div>
+              <div class="st live"><span class="d"></span>Live</div>
+            </div>
+            <div class="post" style="border-bottom:0">
+              <div class="thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+              <div class="pmid"><div class="ptitle">Festive fit haul</div><div class="pmeta">Rejected · low image quality</div><a class="resub">Edit &amp; resubmit</a></div>
+              <div class="st rej"><span class="d"></span>Rejected</div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+    </div>
+
+    <div class="legend">
+      <div class="lg"><span class="d" style="background:var(--y)"></span>Your turn</div>
+      <div class="lg"><span class="d" style="background:var(--blue)"></span>Waiting on brand</div>
+      <div class="lg"><span class="d" style="background:var(--purple)"></span>Negotiating</div>
+      <div class="lg"><span class="d" style="background:var(--green)"></span>Done / live</div>
+      <div class="lg"><span class="d" style="background:var(--red)"></span>Rejected / expired</div>
+    </div>
+  </div>
+
+  <!-- What changes -->
+  <div class="section">
+    <h2>What these two screens fix</h2>
+    <div class="callouts">
+      <div class="call"><span class="k">01</span><span><b>No double-listing.</b> A signed deal lived in both Offers → Accepted and Campaigns → Active. Now it's one row that moves through stages.</span></div>
+      <div class="call"><span class="k">02</span><span><b>One canonical door.</b> Contract and deliverable open the same screen whether reached from a row, a Home tile, or a notification.</span></div>
+      <div class="call"><span class="k">03</span><span><b>Stage-aware CTA.</b> The button is always the next action — Accept, Negotiate, Sign, Upload.</span></div>
+      <div class="call"><span class="k">04</span><span><b>One design system.</b> Posts stop looking bolted-on — no emoji, no off-palette hex. White + black + one yellow signal, everywhere.</span></div>
+      <div class="call"><span class="k">05</span><span><b>Rejected ≠ dead-end.</b> A rejected post offers edit-and-resubmit instead of forcing a rebuild.</span></div>
+    </div>
+  </div>
+
+  <p class="foot">Companion mockup: <b>Collabs — Lifecycle Spec</b> (the stage spine incl. the new split <b>Tracking</b> stage, the row in every state, and the state-driven detail screen). Restyle direction: Instagram-clean, planned app-wide. Not built — mockup pass only.</p>
+</div>

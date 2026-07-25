@@ -155,7 +155,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
         <TouchableOpacity
           style={s.createPostCta}
           activeOpacity={0.9}
-          onPress={() => navigation.navigate('Home', { screen: 'PostComposer' })}
+          onPress={() => navigation.navigate('Create', { screen: 'PostComposer' })}
         >
           <Text style={{ fontSize: 20, marginRight: 10 }}>📸</Text>
           <View style={{ flex: 1 }}>

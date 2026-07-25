@@ -1,0 +1,24 @@
+{
+  "feature": "create-tab",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls move to next logical implementation step' in-session 2026-07-25 after device-verifying collabs-list + collab-detail. Lock decision delegated per standing autonomy; Create tab is the agreed next Wave-1 screen.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — the Create tab look (New Post CTA + IG-clean posts ledger + rejected retry) was iterated + locked in-session 2026-07-25 on the influencer IA board; copied to 04-preview/mockups/create-tab-ia.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Wave-1 screen 3. Promotes Posts to a first-class Create tab (restores the 5-tab bar) + restyles the My Posts ledger to IG-clean. New CreateScreen (CTA + ledger); Create stack hosts PostComposer; Home Post bolt-on tiles removed; all Posts entries route through the Create tab. PostComposer wizard restyle + true edit-and-resubmit + deleting MyPostsScreen = later contracts. Frontend-only, mobile-influencer, OTA — no backend/DB.",
+  "qa_record": "Mobile jest GREEN 69/69 (2026-07-25): 3 create-tab specs (postStatusMeta + CreateScreen load) + 66 prior. Navigation swept — no dangling PostComposer/MyPosts target. Mobile-JS-only, no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(2 off-system Home tiles) / after(Create tab: CTA + IG-clean ledger) + wiring (nav tab/stack, Home tiles removed, CampaignProducts + composer return repointed) + 4 known deltas (wizard not yet restyled; Try again = fresh composer; rows show slides/products; MyPostsScreen unused).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT yet deployed — build complete + jest-green (69/69). Awaiting founder OTA go."
+  }
+}

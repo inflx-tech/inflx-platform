@@ -180,29 +180,7 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Collabs')}
         />
       </View>
-
-      {/* ─── Create Post (Post/Concept P2 — the Post Composer) ─── */}
-      <TouchableOpacity
-        style={{ marginHorizontal: 16, marginTop: 12, backgroundColor: '#1A1A1A', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center' }}
-        activeOpacity={0.9}
-        onPress={() => navigation.navigate('PostComposer')}
-      >
-        <Text style={{ fontSize: 20, marginRight: 10 }}>📸</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Create Post</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Pick a concept → photos → tag products</Text>
-        </View>
-        <Text style={{ color: '#F6B11E', fontSize: 18 }}>→</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={{ marginHorizontal: 16, marginTop: 8, borderWidth: 1.5, borderColor: '#EEE', borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center' }}
-        activeOpacity={0.9}
-        onPress={() => navigation.navigate('MyPosts')}
-      >
-        <Text style={{ fontSize: 16, marginRight: 10 }}>🖼️</Text>
-        <Text style={{ flex: 1, color: '#1A1A1A', fontWeight: '700', fontSize: 13 }}>My Posts</Text>
-        <Text style={{ color: '#999', fontSize: 16 }}>›</Text>
-      </TouchableOpacity>
+      {/* Post/Concept entry moved to the dedicated Create tab (features/create-tab). */}
 
       {/* ─── Active Campaigns ─── */}
       {activeCampaigns.length > 0 && (

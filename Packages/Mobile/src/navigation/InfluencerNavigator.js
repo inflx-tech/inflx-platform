@@ -7,6 +7,7 @@ import { ig } from '../theme/ig';
 import HomeScreen from '../screens/influencer/HomeScreen';
 import CollabsListScreen from '../screens/influencer/CollabsListScreen';
 import CollabDetailScreen from '../screens/influencer/CollabDetailScreen';
+import CreateScreen from '../screens/influencer/CreateScreen';
 import OfferListScreen from '../screens/influencer/OfferListScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
 import CommissionDetailScreen from '../screens/influencer/CommissionDetailScreen';
@@ -36,8 +37,21 @@ import MyPostsScreen from '../screens/influencer/MyPostsScreen';
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const CollabsStack = createNativeStackNavigator();
+const CreateStack = createNativeStackNavigator();
 const EarningsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+
+// Create tab (features/create-tab) — Posts promoted out of Home. CreateMain is
+// the ledger + New Post CTA; PostComposer + My Posts live here.
+function CreateStackNav() {
+  return (
+    <CreateStack.Navigator screenOptions={{ headerShown: false }}>
+      <CreateStack.Screen name="CreateMain" component={CreateScreen} />
+      <CreateStack.Screen name="PostComposer" component={PostComposerScreen} />
+      <CreateStack.Screen name="MyPosts" component={MyPostsScreen} />
+    </CreateStack.Navigator>
+  );
+}
 
 function ProfileStackNav() {
   return (
@@ -55,8 +69,6 @@ function HomeStackNav() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
-      <HomeStack.Screen name="PostComposer" component={PostComposerScreen} />
-      <HomeStack.Screen name="MyPosts" component={MyPostsScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
       <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
       <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
@@ -143,6 +155,7 @@ export default function InfluencerNavigator() {
     >
       <Tab.Screen name="Home"     component={HomeStackNav}     options={{ tabBarLabel: 'Home',     tabBarIcon: tabIcon('home-outline') }} />
       <Tab.Screen name="Collabs"  component={CollabsStackNav}  options={{ tabBarLabel: 'Collabs',  tabBarIcon: tabIcon('briefcase-outline') }} />
+      <Tab.Screen name="Create"   component={CreateStackNav}   options={{ tabBarLabel: 'Create',   tabBarIcon: tabIcon('plus-box-outline') }} />
       <Tab.Screen name="Earnings" component={EarningsStackNav} options={{ tabBarLabel: 'Earnings', tabBarIcon: tabIcon('currency-inr') }} />
       <Tab.Screen name="Profile"  component={ProfileStackNav}  options={{ tabBarLabel: 'Profile',  tabBarIcon: tabIcon('account-outline') }} />
     </Tab.Navigator>

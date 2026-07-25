@@ -199,7 +199,7 @@ export default function PostComposerScreen({ navigation }) {
     setSubmitting(false);
     if (res.success) {
       Alert.alert('Submitted 🎉', 'Your post is with the INFLX team for review. You will be notified.',
-        [{ text: 'My Posts', onPress: () => navigation.replace('MyPosts') }]);
+        [{ text: 'My Posts', onPress: () => navigation.replace('CreateMain') }]);
     } else {
       Alert.alert('Could not submit', res.error?.message || 'Try again.');
     }
