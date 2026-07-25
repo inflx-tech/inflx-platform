@@ -18,7 +18,9 @@ import ContractScreen from '../screens/influencer/ContractScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 import DeliverableScreen from '../screens/influencer/DeliverableScreen';
 import DeliverableListScreen from '../screens/influencer/DeliverableListScreen';
-import DeliverableDetailScreen from '../screens/influencer/DeliverableDetailScreen';
+// DeliverableDetail route now resolves to the unified DeliverableScreen
+// (features/deliverable-consolidation). DeliverableDetailScreen.js is retired
+// (still on disk; deleted in the later cleanup contract).
 import NotificationsScreen from '../screens/influencer/NotificationsScreen';
 import MyCampaignsScreen from '../screens/influencer/MyCampaignsScreen';
 import CampaignDetailScreen from '../screens/influencer/CampaignDetailScreen';
@@ -76,7 +78,7 @@ function HomeStackNav() {
       <HomeStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <HomeStack.Screen name="Deliverable" component={DeliverableScreen} />
       <HomeStack.Screen name="DeliverableList" component={DeliverableListScreen} />
-      <HomeStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
+      <HomeStack.Screen name="DeliverableDetail" component={DeliverableScreen} />
       <HomeStack.Screen name="BrandProfile" component={BrandProfileScreen} />
       <HomeStack.Screen name="CampaignProducts" component={CampaignProductsScreen} />
       <HomeStack.Screen name="TransactionFeed" component={TransactionFeedScreen} />
@@ -107,7 +109,7 @@ function CollabsStackNav() {
       <CollabsStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <CollabsStack.Screen name="Deliverable" component={DeliverableScreen} />
       <CollabsStack.Screen name="DeliverableList" component={DeliverableListScreen} />
-      <CollabsStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
+      <CollabsStack.Screen name="DeliverableDetail" component={DeliverableScreen} />
       <CollabsStack.Screen name="BrandProfile" component={BrandProfileScreen} />
       <CollabsStack.Screen name="CampaignProducts" component={CampaignProductsScreen} />
       <CollabsStack.Screen name="Notifications" component={NotificationsScreen} />

@@ -1,799 +1,440 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, Alert, Linking, Image,
+  TextInput, ActivityIndicator, Alert, Linking, Image, RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
-import { brandPalette as P, fonts } from '../../theme/tokens';
+import { ig, IG_TONE } from '../../theme/ig';
 import { influencerApi, uploadFile } from '../../services/api';
-import StatusPill from '../../components/brand/StatusPill';
+
+/* ════════════════════════════════════════════════════════════════════════
+   DeliverableScreen — features/deliverable-consolidation.
+   THE single deliverable screen: media upload + R2 + live stats (was
+   notification-only) UNION status timeline + notes + confirm dialogs (was
+   in-app-only). Reached from both doors; registered under both route names.
+   ══════════════════════════════════════════════════════════════════════ */
 
 const TYPE_LABELS = {
-  reel: 'Instagram Reel',
-  post: 'Instagram Post',
-  story: 'Instagram Story',
-  youtube_video: 'YouTube Video',
-  youtube_short: 'YouTube Short',
+  reel: 'Instagram Reel', post: 'Instagram Post', story: 'Instagram Story',
+  youtube_video: 'YouTube Video', youtube_short: 'YouTube Short',
 };
 
-/**
- * DeliverableScreen — single deliverable view with media picker + R2 upload
- * + URL fallback + live stats.
- *
- * Flow 33 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
- * JetBrains Mono fonts + StatusPill canonical for status badge.
- * Image-picker SDK config + 3-step R2 upload state machine + onprogress
- * callback preserved verbatim. Picker emoji (📁/📹) → dashed ink-bordered
- * tiles with yellowPale MCI image-multi/video icons. Action emoji
- * (⏳/🎬 preview) replaced with MCI clock/video tiles per design call #4.
- * Type emoji (DELIVERABLE_ICONS) — N/A here, owned by DeliverableList.
- */
+const STATUS_TIMELINE = ['pending', 'submitted', 'under_review', 'approved', 'live'];
+const TIMELINE_LABELS = { pending: 'Pending', submitted: 'Submitted', under_review: 'Under review', approved: 'Approved', live: 'Live' };
+
+// Pure, testable.
+export function deliverableStatusMeta(status) {
+  switch (status) {
+    case 'submitted':
+    case 'under_review':      return { label: 'In review', tone: 'brand' };
+    case 'approved':          return { label: 'Approved', tone: 'you' };
+    case 'revision_requested':return { label: 'Revision', tone: 'you' };
+    case 'live':              return { label: 'Live', tone: 'done' };
+    case 'pending':           return { label: 'Pending', tone: 'neutral' };
+    default:                  return { label: String(status || '—').replace(/_/g, ' '), tone: 'neutral' };
+  }
+}
+
+function timelineIndex(status) {
+  if (status === 'revision_requested') return 1;
+  const i = STATUS_TIMELINE.indexOf(status);
+  return i >= 0 ? i : 0;
+}
+function fmtDate(s) { return s ? new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+function fmtNum(n) {
+  if (n == null) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
 
 export default function DeliverableScreen({ navigation, route }) {
-  const { deliverable: initialDeliverable, deliverableId } = route.params || {};
-  const [deliverable, setDeliverable] = useState(initialDeliverable || null);
-  const [loading, setLoading] = useState(!initialDeliverable && !!deliverableId);
+  const { deliverable: initial, deliverableId, campaign_name, brand_name } = route.params || {};
+  const [deliverable, setDeliverable] = useState(initial || null);
+  const [loading, setLoading] = useState(!initial && !!deliverableId);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Media upload state
-  const [selectedMedia, setSelectedMedia] = useState(null);  // { uri, type, fileName }
+  const [selectedMedia, setSelectedMedia] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
-
-  // URL-based submission (fallback)
   const [submitUrl, setSubmitUrl] = useState('');
+  const [notesToBrand, setNotesToBrand] = useState('');
   const [liveUrl, setLiveUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  // Media playback URL
   const [mediaUrl, setMediaUrl] = useState(null);
-  const [loadingMedia, setLoadingMedia] = useState(false);
-
-  // Stats
   const [stats, setStats] = useState(null);
   const [refreshingStats, setRefreshingStats] = useState(false);
 
-  // Fetch deliverable by ID if not passed as full object
-  useEffect(() => {
-    if (!initialDeliverable && deliverableId) {
-      (async () => {
-        setLoading(true);
-        try {
-          const res = await influencerApi.getDeliverable(deliverableId);
-          if (res.success && res.data?.deliverable) {
-            setDeliverable(res.data.deliverable);
-          } else if (res.success && res.data) {
-            setDeliverable(res.data);
-          }
-        } catch (e) {
-          console.error('[DeliverableScreen] fetch failed:', e);
-        } finally {
-          setLoading(false);
-        }
-      })();
+  const fetchById = useCallback(async (id) => {
+    const res = await influencerApi.getDeliverable(id);
+    if (res.success) {
+      setDeliverable(res.data?.deliverable || res.data);
+      if (res.data?.stats) setStats(res.data.stats);
     }
+  }, []);
+
+  useEffect(() => {
+    const id = initial?.id || deliverableId;
+    if (!initial && deliverableId) { setLoading(true); fetchById(deliverableId).finally(() => setLoading(false)); }
+    else if (initial?.status === 'live' && id) { fetchById(id); }
   }, [deliverableId]);
 
-  // Fetch media URL if deliverable has media_key
   useEffect(() => {
     if (deliverable?.media_key && !mediaUrl) {
-      (async () => {
-        setLoadingMedia(true);
-        try {
-          const res = await influencerApi.getMediaUrl(deliverable.id);
-          if (res.success && res.data?.url) {
-            setMediaUrl(res.data.url);
-          }
-        } catch (e) {
-          console.error('[DeliverableScreen] media URL fetch failed:', e);
-        } finally {
-          setLoadingMedia(false);
-        }
-      })();
+      influencerApi.getMediaUrl(deliverable.id).then(r => { if (r.success && r.data?.url) setMediaUrl(r.data.url); }).catch(() => {});
     }
   }, [deliverable?.media_key]);
 
-  // Fetch existing stats for live deliverables
-  useEffect(() => {
-    if (deliverable?.status === 'live' && deliverable?.id) {
-      (async () => {
-        try {
-          const res = await influencerApi.getDeliverable(deliverable.id);
-          if (res.success && res.data?.stats) {
-            setStats(res.data.stats);
-          }
-        } catch (e) {
-          // Non-critical
-        }
-      })();
-    }
-  }, [deliverable?.id, deliverable?.status]);
+  const onRefresh = useCallback(async () => {
+    if (!deliverable?.id) return;
+    setRefreshing(true); await fetchById(deliverable.id); setRefreshing(false);
+  }, [deliverable?.id, fetchById]);
 
   async function handleRefreshStats() {
     if (!deliverable?.id) return;
     setRefreshingStats(true);
-    try {
-      const res = await influencerApi.refreshStats(deliverable.id);
-      if (res.success && res.data?.stats) {
-        setStats(res.data.stats);
-        Alert.alert('Stats Updated', 'Latest engagement data has been fetched from Instagram.');
-      } else {
-        Alert.alert('Failed', res.error?.message || 'Could not refresh stats');
-      }
-    } catch (e) {
-      Alert.alert('Error', e.message || 'Failed to refresh stats');
-    } finally {
-      setRefreshingStats(false);
-    }
+    const res = await influencerApi.refreshStats(deliverable.id);
+    setRefreshingStats(false);
+    if (res.success && res.data?.stats) setStats(res.data.stats);
+    else Alert.alert('Failed', res.error?.message || 'Could not refresh stats');
   }
 
-  // ── Media picker ──────────────────────────────────────────────────────────
-
-  function pickFromGallery() {
-    launchImageLibrary(
-      {
-        mediaType: 'mixed',
-        videoQuality: 'high',
-        selectionLimit: 1,
-        includeBase64: false,
-      },
-      handlePickerResponse,
-    );
-  }
-
-  function recordVideo() {
-    launchCamera(
-      {
-        mediaType: 'video',
-        videoQuality: 'high',
-        durationLimit: 300, // 5 min max
-      },
-      handlePickerResponse,
-    );
-  }
-
-  function handlePickerResponse(response) {
+  // ── media picker ──
+  const pickFromGallery = () => launchImageLibrary({ mediaType: 'mixed', videoQuality: 'high', selectionLimit: 1 }, onPicked);
+  const recordVideo = () => launchCamera({ mediaType: 'video', videoQuality: 'high', durationLimit: 300 }, onPicked);
+  function onPicked(response) {
     if (response.didCancel) return;
-    if (response.errorCode) {
-      Alert.alert('Error', response.errorMessage || 'Could not pick file');
-      return;
-    }
-    const asset = response.assets?.[0];
-    if (!asset) return;
-
-    setSelectedMedia({
-      uri: asset.uri,
-      type: asset.type || 'video/mp4',
-      fileName: asset.fileName || `content_${Date.now()}.mp4`,
-      fileSize: asset.fileSize,
-      width: asset.width,
-      height: asset.height,
-      duration: asset.duration,
-    });
+    if (response.errorCode) { Alert.alert('Error', response.errorMessage || 'Could not pick file'); return; }
+    const a = response.assets?.[0];
+    if (!a) return;
+    setSelectedMedia({ uri: a.uri, type: a.type || 'video/mp4', fileName: a.fileName || `content_${Date.now()}.mp4`, fileSize: a.fileSize, duration: a.duration });
   }
-
-  // ── Upload & Submit ───────────────────────────────────────────────────────
 
   async function handleMediaUpload() {
     if (!selectedMedia) return;
-
     try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      // Step 1: Get upload URL from backend
-      const urlRes = await influencerApi.getUploadUrl(deliverable.id, {
-        filename: selectedMedia.fileName,
-        content_type: selectedMedia.type,
-      });
-
-      if (!urlRes.success) {
-        Alert.alert('Error', urlRes.error?.message || 'Failed to get upload URL');
-        setUploading(false);
-        return;
-      }
-
+      setUploading(true); setUploadProgress(0);
+      const urlRes = await influencerApi.getUploadUrl(deliverable.id, { filename: selectedMedia.fileName, content_type: selectedMedia.type });
+      if (!urlRes.success) { Alert.alert('Error', urlRes.error?.message || 'Failed to get upload URL'); setUploading(false); return; }
       const { url, key, method } = urlRes.data;
-
-      // Step 2: Upload file
-      await uploadFile(
-        url,
-        method,
-        selectedMedia.uri,
-        selectedMedia.fileName,
-        selectedMedia.type,
-        key,
-        (progress) => setUploadProgress(progress),
-      );
-
+      await uploadFile(url, method, selectedMedia.uri, selectedMedia.fileName, selectedMedia.type, key, p => setUploadProgress(p));
       setUploadProgress(1);
-
-      // Step 3: Submit deliverable with media_key
-      const submitRes = await influencerApi.submitDeliverable(deliverable.id, {
-        media_key: key,
-        media_type: selectedMedia.type,
-      });
-
+      const submitRes = await influencerApi.submitDeliverable(deliverable.id, { media_key: key, media_type: selectedMedia.type, notes_to_brand: notesToBrand.trim() || undefined });
       if (submitRes.success) {
         setDeliverable(submitRes.data?.deliverable || { ...deliverable, status: 'submitted', media_key: key });
-        setSelectedMedia(null);
+        setSelectedMedia(null); setNotesToBrand('');
         Alert.alert('Submitted', 'Your content has been uploaded and sent for brand review.');
-      } else {
-        Alert.alert('Failed', submitRes.error?.message || 'Submission failed');
-      }
-    } catch (e) {
-      Alert.alert('Upload Failed', e.message || 'Could not upload file');
-    } finally {
-      setUploading(false);
-    }
+      } else Alert.alert('Failed', submitRes.error?.message || 'Submission failed');
+    } catch (e) { Alert.alert('Upload failed', e.message || 'Could not upload file'); }
+    finally { setUploading(false); }
   }
 
-  async function handleUrlSubmit() {
-    if (!submitUrl.trim()) {
-      Alert.alert('URL required', 'Please paste the content draft URL');
-      return;
-    }
+  function confirmUrlSubmit() {
+    if (!submitUrl.trim()) { Alert.alert('URL required', 'Please paste the content draft URL.'); return; }
+    Alert.alert(isRevision ? 'Submit revised content' : 'Submit content', 'Send this content for brand review?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Submit', onPress: doUrlSubmit },
+    ]);
+  }
+  async function doUrlSubmit() {
     setSubmitting(true);
-    const res = await influencerApi.submitDeliverable(deliverable.id, {
-      submitted_url: submitUrl.trim(),
-    });
+    const res = await influencerApi.submitDeliverable(deliverable.id, { submitted_url: submitUrl.trim(), notes_to_brand: notesToBrand.trim() || undefined });
     setSubmitting(false);
-    if (res.success) {
-      setDeliverable(res.data?.deliverable || { ...deliverable, status: 'submitted' });
-      Alert.alert('Submitted', 'Your content has been sent for brand review.');
-    } else {
-      Alert.alert('Failed', res.error?.message || 'Submission failed');
-    }
+    if (res.success) { setDeliverable(res.data?.deliverable || { ...deliverable, status: 'submitted', submitted_url: submitUrl.trim() }); setSubmitUrl(''); setNotesToBrand(''); Alert.alert('Submitted', 'Your content has been sent for brand review.'); }
+    else Alert.alert('Failed', res.error?.message || 'Submission failed');
   }
 
-  async function handleSubmitLive() {
-    if (!liveUrl.trim()) {
-      Alert.alert('URL required', 'Please paste the live post URL');
-      return;
-    }
+  function confirmLive() {
+    if (!liveUrl.trim()) { Alert.alert('URL required', 'Please paste the live post URL.'); return; }
+    Alert.alert('Submit live URL', 'Confirm your content is posted live and submit this URL for brand confirmation.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Submit', onPress: doLive },
+    ]);
+  }
+  async function doLive() {
     setSubmitting(true);
     const res = await influencerApi.submitLive(deliverable.id, { live_url: liveUrl.trim() });
     setSubmitting(false);
-    if (res.success) {
-      setDeliverable(res.data?.deliverable || { ...deliverable, status: 'live', live_url: liveUrl });
-      Alert.alert('Done', 'Live URL submitted. Brand will confirm and Tranche 2 will be released.');
-    } else {
-      Alert.alert('Failed', res.error?.message || 'Failed');
-    }
+    if (res.success) { setDeliverable(res.data?.deliverable || { ...deliverable, status: 'approved', live_url: liveUrl.trim() }); setLiveUrl(''); Alert.alert('Done', 'Live URL submitted. The brand will confirm and Tranche 2 will be released.'); }
+    else Alert.alert('Failed', res.error?.message || 'Could not submit live URL');
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  if (loading) return <View style={s.center}><ActivityIndicator color={ig.text} /></View>;
+  if (!deliverable) return <View style={s.center}><Text style={s.err}>No deliverable data</Text></View>;
 
-  if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
-  }
-
-  if (!deliverable) {
-    return <View style={styles.center}><Text style={styles.errorText}>No deliverable data</Text></View>;
-  }
-
-  const canSubmit = ['pending', 'revision_requested'].includes(deliverable.status);
+  const status = deliverable.status;
+  const isRevision = status === 'revision_requested';
+  const canSubmit = status === 'pending' || isRevision;
+  const canSubmitLive = status === 'approved' && !deliverable.live_url;
+  const isLive = status === 'live';
+  const curIdx = timelineIndex(status);
+  const meta = deliverableStatusMeta(status);
+  const tone = IG_TONE[meta.tone] || IG_TONE.neutral;
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
-          <Text style={styles.backText}>BACK</Text>
-        </TouchableOpacity>
-        <View style={styles.headerRow}>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ig.text} />}>
+      {/* header */}
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}><Icon name="chevron-left" size={18} color={ig.mut} /><Text style={s.backTxt}>Back</Text></TouchableOpacity>
+        <View style={s.hRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>
-              {TYPE_LABELS[deliverable.type] || deliverable.type?.toUpperCase() || 'DELIVERABLE'}
-            </Text>
-            {deliverable.submission_deadline && (
-              <Text style={styles.sub}>
-                DEADLINE: {new Date(deliverable.submission_deadline).toLocaleDateString('en-IN', {
-                  day: 'numeric', month: 'short', year: 'numeric',
-                }).toUpperCase()}
-              </Text>
-            )}
+            <Text style={s.title}>{TYPE_LABELS[deliverable.type] || deliverable.type?.replace(/_/g, ' ') || 'Deliverable'}</Text>
+            {(brand_name || campaign_name) ? <Text style={s.sub}>{[brand_name, campaign_name].filter(Boolean).join(' · ')}</Text> : null}
           </View>
-          <View style={{ alignSelf: 'flex-start', marginTop: 2 }}>
-            <StatusPill status={deliverable.status} />
-          </View>
+          <View style={s.pill}><View style={[s.dot, { backgroundColor: tone.dot }]} /><Text style={[s.pillTxt, { color: tone.fg }]}>{meta.label}</Text></View>
         </View>
-        <View style={styles.headerAccent} />
       </View>
 
-      {/* Info card */}
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Type</Text>
-          <Text style={styles.rowValue}>{(deliverable.type || '').replace(/_/g, ' ').toUpperCase()}</Text>
+      <View style={s.body}>
+        {/* timeline */}
+        <View style={s.card}>
+          <Text style={s.ct}>Status timeline</Text>
+          {STATUS_TIMELINE.map((step, idx) => {
+            const on = idx <= curIdx, cur = idx === curIdx, rev = isRevision && cur, last = idx === STATUS_TIMELINE.length - 1;
+            return (
+              <View key={step} style={s.tstep}>
+                <View style={s.tcol}>
+                  <View style={[s.tdot, on && s.tdotOn, cur && s.tdotCur, rev && s.tdotRev]}>
+                    {on && !cur ? <Icon name="check-bold" size={9} color={ig.text} /> : <Text style={[s.tdotN, on && { color: ig.text }, rev && { color: '#fff' }]}>{rev ? '!' : idx + 1}</Text>}
+                  </View>
+                  {!last && <View style={[s.tline, idx < curIdx && s.tlineOn]} />}
+                </View>
+                <Text style={[s.tlab, on && s.tlabOn, rev && { color: ig.red }]}>{rev ? 'Revision requested' : TIMELINE_LABELS[step]}</Text>
+              </View>
+            );
+          })}
         </View>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>Revisions</Text>
-          <Text style={styles.rowValue}>{deliverable.revision_count || 0} / {deliverable.revision_limit || 2}</Text>
-        </View>
-        {deliverable.content_requirements && (
-          <View style={styles.requirementsBox}>
-            <Text style={styles.requirementsLabel}>CONTENT BRIEF</Text>
-            <Text style={styles.requirementsText}>{deliverable.content_requirements}</Text>
-          </View>
-        )}
-      </View>
 
-      {/* Brand feedback (revision) */}
-      {deliverable.status === 'revision_requested' && deliverable.brand_feedback && (
-        <View style={styles.revisionCard}>
-          <View style={styles.revisionHead}>
-            <View style={styles.revisionIcoWrap}>
-              <Text style={styles.revisionIco}>!</Text>
-            </View>
-            <Text style={styles.revisionTitle}>REVISION REQUESTED</Text>
-          </View>
-          <View style={styles.revisionBody}>
-            <Text style={styles.revisionText}>{deliverable.brand_feedback}</Text>
-          </View>
+        {/* details */}
+        <View style={s.card}>
+          <Text style={s.ct}>Details</Text>
+          <Row l="Type" v={(deliverable.type || '').replace(/_/g, ' ').toUpperCase()} />
+          {deliverable.submission_deadline ? <Row l="Deadline" v={fmtDate(deliverable.submission_deadline)} danger={canSubmit && new Date(deliverable.submission_deadline) < new Date()} /> : null}
+          {deliverable.submitted_at ? <Row l="Submitted" v={fmtDate(deliverable.submitted_at)} /> : null}
+          <Row l="Revisions" v={`${deliverable.revision_count || 0} / ${deliverable.revision_limit || 2}`} />
+          {deliverable.content_requirements ? (
+            <View style={s.brief}><Text style={s.briefL}>CONTENT BRIEF</Text><Text style={s.briefT}>{deliverable.content_requirements}</Text></View>
+          ) : null}
         </View>
-      )}
 
-      {/* Existing media preview */}
-      {deliverable.media_key && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Submitted Content</Text>
-          {loadingMedia ? (
-            <ActivityIndicator size="small" color={P.yellow} />
-          ) : mediaUrl ? (
-            <View>
-              {(deliverable.media_type || '').startsWith('image') ? (
-                <Image source={{ uri: mediaUrl }} style={styles.mediaPreview} resizeMode="contain" />
-              ) : (
-                <TouchableOpacity
-                  style={styles.videoPreviewBox}
-                  onPress={() => Linking.openURL(mediaUrl)}
-                >
-                  <Icon name="play-circle" size={48} color={P.yellow} />
-                  <Text style={styles.videoPlayText}>TAP TO PLAY VIDEO</Text>
+        {/* submitted content preview */}
+        {deliverable.media_key ? (
+          <View style={s.card}><Text style={s.ct}>Submitted content</Text>
+            {mediaUrl ? ((deliverable.media_type || '').startsWith('image')
+              ? <Image source={{ uri: mediaUrl }} style={s.media} resizeMode="contain" />
+              : <TouchableOpacity style={s.videoBox} onPress={() => Linking.openURL(mediaUrl)}><Icon name="play-circle" size={44} color={ig.text} /><Text style={s.videoTxt}>Tap to play</Text></TouchableOpacity>)
+              : <Text style={s.hint}>Media uploaded.</Text>}
+          </View>
+        ) : deliverable.submitted_url ? (
+          <View style={s.card}><Text style={s.ct}>Submitted content</Text>
+            <TouchableOpacity style={s.urlBox} onPress={() => Linking.openURL(deliverable.submitted_url)}><Text style={s.urlL}>DRAFT URL</Text><Text style={s.urlV} numberOfLines={2}>{deliverable.submitted_url}</Text></TouchableOpacity>
+            {deliverable.notes_to_brand ? <View style={s.notes}><Text style={s.notesL}>YOUR NOTE</Text><Text style={s.notesT}>{deliverable.notes_to_brand}</Text></View> : null}
+          </View>
+        ) : null}
+
+        {/* revision card */}
+        {isRevision && deliverable.brand_feedback ? (
+          <View style={s.revCard}>
+            <View style={s.revHead}><View style={s.revIco}><Text style={s.revIcoTxt}>!</Text></View><Text style={s.revTitle}>REVISION REQUESTED</Text></View>
+            <View style={s.revBody}><Text style={s.revTxt}>{deliverable.brand_feedback}</Text></View>
+          </View>
+        ) : null}
+
+        {/* submit section — media upload + URL fallback + notes */}
+        {canSubmit ? (
+          <View style={s.card}>
+            <Text style={s.ct}>{isRevision ? 'Upload revised content' : 'Upload content'}</Text>
+            {selectedMedia ? (
+              <View style={{ marginBottom: 10 }}>
+                {selectedMedia.type?.startsWith('image')
+                  ? <Image source={{ uri: selectedMedia.uri }} style={s.media} resizeMode="contain" />
+                  : <View style={s.videoSel}><Icon name="video-outline" size={24} color={ig.yInk} /><Text style={s.videoSelTxt} numberOfLines={1}>{selectedMedia.fileName}</Text>{selectedMedia.duration ? <Text style={s.videoSelSub}>{Math.round(selectedMedia.duration)}s{selectedMedia.fileSize ? ` · ${(selectedMedia.fileSize / 1048576).toFixed(1)} MB` : ''}</Text> : null}</View>}
+                {!uploading ? <TouchableOpacity onPress={() => setSelectedMedia(null)}><Text style={s.removeTxt}>Remove</Text></TouchableOpacity> : null}
+              </View>
+            ) : null}
+
+            {uploading ? (
+              <View style={s.progRow}><View style={s.progBar}><View style={[s.progFill, { width: `${Math.round(uploadProgress * 100)}%` }]} /></View><Text style={s.progTxt}>{Math.round(uploadProgress * 100)}%</Text></View>
+            ) : null}
+
+            {!selectedMedia && !uploading ? (
+              <>
+                <TouchableOpacity style={s.pick} onPress={pickFromGallery}><View style={s.pickIco}><Icon name="image-multiple-outline" size={19} color={ig.yInk} /></View><View style={{ flex: 1 }}><Text style={s.pickT}>Choose from Gallery</Text><Text style={s.pickS}>Photos &amp; videos</Text></View></TouchableOpacity>
+                <TouchableOpacity style={s.pick} onPress={recordVideo}><View style={s.pickIco}><Icon name="video-outline" size={19} color={ig.yInk} /></View><View style={{ flex: 1 }}><Text style={s.pickT}>Record Video</Text><Text style={s.pickS}>Camera · up to 5 min</Text></View></TouchableOpacity>
+              </>
+            ) : null}
+
+            {selectedMedia && !uploading ? (
+              <TouchableOpacity style={s.btnDark} onPress={handleMediaUpload}><Text style={s.btnDarkTxt}>Upload &amp; submit for review</Text></TouchableOpacity>
+            ) : null}
+
+            {!selectedMedia && !uploading ? (
+              <>
+                <View style={s.divider}><View style={s.divLine} /><Text style={s.divTxt}>OR PASTE URL</Text><View style={s.divLine} /></View>
+                <TextInput style={s.input} value={submitUrl} onChangeText={setSubmitUrl} placeholder="https://drive.google.com/…" placeholderTextColor={ig.mut2} autoCapitalize="none" autoCorrect={false} keyboardType="url" />
+                <TextInput style={[s.input, s.notesInput]} value={notesToBrand} onChangeText={setNotesToBrand} placeholder="Add a note for the brand (optional)…" placeholderTextColor={ig.mut2} multiline textAlignVertical="top" />
+                <TouchableOpacity style={[s.btnDark, (submitting || !submitUrl.trim()) && s.disabled]} onPress={confirmUrlSubmit} disabled={submitting || !submitUrl.trim()}>
+                  {submitting ? <ActivityIndicator color="#fff" /> : <Text style={s.btnDarkTxt}>Submit URL for review</Text>}
                 </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <Text style={styles.hint}>Media uploaded</Text>
-          )}
-        </View>
-      )}
-
-      {/* Existing URL if submitted */}
-      {deliverable.submitted_url && !deliverable.media_key && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Submitted URL</Text>
-          <TouchableOpacity onPress={() => Linking.openURL(deliverable.submitted_url)} style={styles.urlBox}>
-            <Text style={styles.urlLabel}>DRAFT URL</Text>
-            <Text style={styles.urlLink} numberOfLines={2}>{deliverable.submitted_url}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* ── UPLOAD SECTION (pending / revision_requested) ─────────────── */}
-      {canSubmit && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            {deliverable.status === 'revision_requested' ? 'Upload Revised Content' : 'Upload Content'}
-          </Text>
-
-          {/* Selected media preview */}
-          {selectedMedia && (
-            <View style={styles.previewContainer}>
-              {selectedMedia.type?.startsWith('image') ? (
-                <Image source={{ uri: selectedMedia.uri }} style={styles.mediaPreview} resizeMode="contain" />
-              ) : (
-                <View style={styles.videoSelected}>
-                  <View style={styles.previewIconTile}>
-                    <Icon name="video-outline" size={26} color={P.yellow} />
-                  </View>
-                  <Text style={styles.videoSelectedText}>{selectedMedia.fileName}</Text>
-                  {selectedMedia.duration && (
-                    <Text style={styles.videoSelectedDuration}>
-                      {Math.round(selectedMedia.duration)}S
-                      {selectedMedia.fileSize ? ` · ${(selectedMedia.fileSize / 1024 / 1024).toFixed(1)} MB` : ''}
-                    </Text>
-                  )}
-                </View>
-              )}
-              <TouchableOpacity style={styles.removeBtn} onPress={() => setSelectedMedia(null)}>
-                <Text style={styles.removeBtnText}>REMOVE</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Upload progress */}
-          {uploading && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${Math.round(uploadProgress * 100)}%` }]} />
-              </View>
-              <Text style={styles.progressText}>{Math.round(uploadProgress * 100)}%</Text>
-            </View>
-          )}
-
-          {/* Picker tiles */}
-          {!selectedMedia && !uploading && (
-            <View style={styles.pickerButtons}>
-              <TouchableOpacity style={styles.pickerTile} onPress={pickFromGallery}>
-                <View style={styles.pickerIcon}>
-                  <Icon name="image-multiple-outline" size={20} color={P.yellowText} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.pickerLbl}>Choose from Gallery</Text>
-                  <Text style={styles.pickerSub}>PHOTOS &amp; VIDEOS · SYSTEM PICKER</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.pickerTile} onPress={recordVideo}>
-                <View style={styles.pickerIcon}>
-                  <Icon name="video-outline" size={20} color={P.yellowText} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.pickerLbl}>Record Video</Text>
-                  <Text style={styles.pickerSub}>CAMERA · UP TO 5 MIN</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Submit button (media selected) */}
-          {selectedMedia && !uploading && (
-            <TouchableOpacity style={styles.uploadBtn} onPress={handleMediaUpload}>
-              <Text style={styles.uploadBtnText}>UPLOAD &amp; SUBMIT FOR REVIEW</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Disabled CTA while uploading */}
-          {uploading && (
-            <View style={[styles.uploadBtn, { opacity: 0.5 }]}>
-              <Text style={styles.uploadBtnText}>UPLOADING…</Text>
-            </View>
-          )}
-
-          {/* Divider — OR paste URL */}
-          {!selectedMedia && !uploading && (
-            <>
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR PASTE URL</Text>
-                <View style={styles.dividerLine} />
-              </View>
-              <Text style={styles.hint}>Paste a URL instead (Google Drive, Dropbox, etc.)</Text>
-              <TextInput
-                style={styles.urlInput}
-                value={submitUrl}
-                onChangeText={setSubmitUrl}
-                placeholder="https://drive.google.com/…"
-                placeholderTextColor={P.muted3}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
-              <TouchableOpacity
-                style={[styles.submitBtn, (submitting || !submitUrl.trim()) && { opacity: 0.5 }]}
-                onPress={handleUrlSubmit}
-                disabled={submitting || !submitUrl.trim()}
-              >
-                {submitting
-                  ? <ActivityIndicator color={P.yellow} />
-                  : <Text style={styles.submitBtnText}>SUBMIT URL FOR REVIEW</Text>
-                }
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      )}
-
-      {/* Live URL if live */}
-      {deliverable.live_url && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Live Post</Text>
-          <TouchableOpacity onPress={() => Linking.openURL(deliverable.live_url)} style={styles.urlBox}>
-            <Text style={styles.urlLabel}>LIVE URL</Text>
-            <Text style={styles.urlLink} numberOfLines={2}>{deliverable.live_url}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* ACTION: Submit live URL (approved — waiting for brand confirm) */}
-      {deliverable.status === 'approved' && !deliverable.live_url && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Submit Live Post URL</Text>
-          <Text style={styles.hint}>Once your content is posted live on social media, paste the public URL here.</Text>
-          <TextInput
-            style={styles.urlInput}
-            value={liveUrl}
-            onChangeText={setLiveUrl}
-            placeholder="https://instagram.com/p/…"
-            placeholderTextColor={P.muted3}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
-          <TouchableOpacity
-            style={[styles.liveBtn, (submitting || !liveUrl.trim()) && { opacity: 0.5 }]}
-            onPress={handleSubmitLive}
-            disabled={submitting || !liveUrl.trim()}
-          >
-            {submitting
-              ? <ActivityIndicator color={P.white} />
-              : <Text style={styles.liveBtnText}>MARK AS LIVE</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Submitted — waiting for brand review */}
-      {deliverable.status === 'submitted' && (
-        <View style={styles.waitCard}>
-          <View style={styles.waitTile}>
-            <Icon name="clock-outline" size={26} color={P.yellowText} />
+              </>
+            ) : null}
           </View>
-          <Text style={styles.waitTitle}>Waiting for Brand Review</Text>
-          <Text style={styles.waitText}>Your content has been submitted. The brand will review and approve or request changes.</Text>
-        </View>
-      )}
+        ) : null}
 
-      {/* Live — Stats Dashboard */}
-      {deliverable.status === 'live' && (
-        <View style={styles.card}>
-          <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Live Performance</Text>
-            <TouchableOpacity
-              style={styles.refreshBtn}
-              onPress={handleRefreshStats}
-              disabled={refreshingStats}
-            >
-              {refreshingStats
-                ? <ActivityIndicator size="small" color={P.ink} />
-                : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <Icon name="refresh" size={11} color={P.ink} />
-                    <Text style={styles.refreshBtnText}>REFRESH</Text>
-                  </View>
-                )
-              }
+        {/* submitted / under review wait */}
+        {(status === 'submitted' || status === 'under_review') ? (
+          <View style={s.waitCard}><View style={s.waitIco}><Icon name="clock-outline" size={24} color={ig.yInk} /></View><Text style={s.waitT}>Waiting for brand review</Text><Text style={s.waitS}>Your content is submitted. The brand will approve or request changes.</Text></View>
+        ) : null}
+
+        {/* submit live */}
+        {canSubmitLive ? (
+          <View style={s.card}><Text style={s.ct}>Submit live post URL</Text>
+            <Text style={s.hint}>Approved! Once posted live, paste the public URL here.</Text>
+            <TextInput style={s.input} value={liveUrl} onChangeText={setLiveUrl} placeholder="https://instagram.com/p/…" placeholderTextColor={ig.mut2} autoCapitalize="none" autoCorrect={false} keyboardType="url" />
+            <TouchableOpacity style={[s.btnGreen, (submitting || !liveUrl.trim()) && s.disabled]} onPress={confirmLive} disabled={submitting || !liveUrl.trim()}>
+              {submitting ? <ActivityIndicator color="#fff" /> : <Text style={s.btnGreenTxt}>Submit live URL</Text>}
             </TouchableOpacity>
           </View>
+        ) : null}
 
-          {stats ? (
-            <View>
-              <View style={styles.statsGrid}>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{_fmtNum(stats.likes)}</Text>
-                  <Text style={styles.statLabel}>LIKES</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{_fmtNum(stats.comments)}</Text>
-                  <Text style={styles.statLabel}>COMMENTS</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{_fmtNum(stats.saves)}</Text>
-                  <Text style={styles.statLabel}>SAVES</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{_fmtNum(stats.shares)}</Text>
-                  <Text style={styles.statLabel}>SHARES</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{_fmtNum(stats.reach)}</Text>
-                  <Text style={styles.statLabel}>REACH</Text>
-                </View>
-                <View style={styles.statBox}>
-                  <Text style={styles.statValue}>{_fmtNum(stats.impressions)}</Text>
-                  <Text style={styles.statLabel}>IMPRESSIONS</Text>
-                </View>
-              </View>
-              {stats.engagement_rate != null && (
-                <View style={styles.erBox}>
-                  <Text style={styles.erValue}>{parseFloat(stats.engagement_rate).toFixed(2)}%</Text>
-                  <Text style={styles.erLabel}>ENGAGEMENT RATE</Text>
-                </View>
-              )}
-              {stats.scraped_at && (
-                <Text style={[styles.hint, { marginTop: 10, marginBottom: 0 }]}>
-                  Last updated: {new Date(stats.scraped_at).toLocaleString('en-IN')}
-                </Text>
-              )}
-            </View>
-          ) : (
-            <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-              <Text style={styles.hint}>No stats yet. Tap "Refresh" to fetch live data from Instagram.</Text>
-            </View>
-          )}
-        </View>
-      )}
+        {/* live url display */}
+        {deliverable.live_url ? (
+          <View style={s.card}><Text style={s.ct}>Live post</Text><TouchableOpacity style={s.urlBox} onPress={() => Linking.openURL(deliverable.live_url)}><Text style={s.urlL}>LIVE URL</Text><Text style={s.urlV} numberOfLines={2}>{deliverable.live_url}</Text></TouchableOpacity></View>
+        ) : null}
 
-      <View style={{ height: 40 }} />
+        {/* live: stats + celebration */}
+        {isLive ? (
+          <>
+            <View style={s.card}>
+              <View style={s.ctRow}><Text style={s.ct}>Live performance</Text><TouchableOpacity style={s.refreshBtn} onPress={handleRefreshStats} disabled={refreshingStats}>{refreshingStats ? <ActivityIndicator size="small" color={ig.text} /> : <Text style={s.refreshTxt}>Refresh</Text>}</TouchableOpacity></View>
+              {stats ? (
+                <>
+                  <View style={s.grid}>
+                    {[['Likes', stats.likes], ['Comments', stats.comments], ['Saves', stats.saves], ['Shares', stats.shares], ['Reach', stats.reach], ['Impr.', stats.impressions]].map(([l, v]) => (
+                      <View key={l} style={s.sb}><Text style={s.sv}>{fmtNum(v)}</Text><Text style={s.sl}>{l}</Text></View>
+                    ))}
+                  </View>
+                  {stats.engagement_rate != null ? <View style={s.erBox}><Text style={s.erV}>{parseFloat(stats.engagement_rate).toFixed(2)}%</Text><Text style={s.erL}>Engagement rate</Text></View> : null}
+                </>
+              ) : <Text style={s.hint}>No stats yet. Tap Refresh to fetch live data from Instagram.</Text>}
+            </View>
+            <View style={s.celCard}><View style={s.celTile}><Icon name="star" size={26} color={ig.text} /></View><Text style={s.celT}>Content is live!</Text><Text style={s.celS}>Tranche 2 released to your wallet. Tranche 3 auto-releases 30 days after live confirmation.</Text></View>
+          </>
+        ) : null}
+
+        <View style={{ height: 36 }} />
+      </View>
     </ScrollView>
   );
 }
 
-function _fmtNum(n) {
-  if (!n && n !== 0) return '--';
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return String(n);
+function Row({ l, v, danger }) {
+  return <View style={s.row}><Text style={s.rowL}>{l}</Text><Text style={[s.rowV, danger && { color: ig.red }]}>{v}</Text></View>;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: P.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
-  errorText: { fontSize: 14, color: P.muted, fontFamily: fonts.sansRegular },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: ig.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg },
+  err: { fontSize: 14, color: ig.mut },
 
-  // Header
-  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerAccent: {
-    position: 'absolute', left: 18, bottom: 8, width: 30, height: 3,
-    backgroundColor: P.yellow, borderRadius: 2,
-  },
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 14 },
-  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  title: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
-  sub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  header: { backgroundColor: ig.bg, paddingHorizontal: 16, paddingTop: 50, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: ig.line },
+  back: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, marginLeft: -4 },
+  backTxt: { fontSize: 12.5, color: ig.mut, fontWeight: '600' },
+  hRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  title: { fontSize: 19, fontWeight: '800', color: ig.text, letterSpacing: -0.2 },
+  sub: { fontSize: 11.5, color: ig.mut, marginTop: 3 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  pillTxt: { fontSize: 11, fontWeight: '700' },
 
-  card: {
-    margin: 14, marginBottom: 0, backgroundColor: P.white, borderRadius: 14,
-    padding: 14, borderWidth: 1, borderColor: P.border,
-  },
-  cardTitle: {
-    fontSize: 12.5, fontWeight: '800', color: P.ink,
-    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 11,
-    fontFamily: fonts.displayBlack,
-  },
-  cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  body: { padding: 14 },
+  card: { borderWidth: 1, borderColor: ig.line, borderRadius: 13, padding: 13, marginBottom: 10 },
+  ct: { fontSize: 12, fontWeight: '800', color: ig.text, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 11 },
+  ctRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
 
-  row: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.borderSoft,
-  },
-  rowLabel: { fontSize: 11.5, color: P.muted, fontWeight: '600', fontFamily: fonts.sansRegular },
-  rowValue: { fontSize: 11.5, color: P.ink, fontWeight: '800', letterSpacing: 0.2, fontFamily: fonts.monoBold },
+  tstep: { flexDirection: 'row', gap: 10 },
+  tcol: { width: 22, alignItems: 'center' },
+  tdot: { width: 18, height: 18, borderRadius: 9, backgroundColor: ig.bgSoft, borderWidth: 2, borderColor: ig.line, alignItems: 'center', justifyContent: 'center' },
+  tdotOn: { backgroundColor: ig.y, borderColor: ig.y },
+  tdotCur: { borderColor: ig.text, borderWidth: 3 },
+  tdotRev: { backgroundColor: ig.red, borderColor: ig.red },
+  tdotN: { fontSize: 9, fontWeight: '800', color: ig.mut2 },
+  tline: { width: 2, flex: 1, minHeight: 14, backgroundColor: ig.line, marginVertical: 2 },
+  tlineOn: { backgroundColor: ig.y },
+  tlab: { flex: 1, fontSize: 12.5, color: ig.mut, fontWeight: '600', paddingBottom: 14 },
+  tlabOn: { color: ig.text, fontWeight: '800' },
 
-  requirementsBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginTop: 11 },
-  requirementsLabel: {
-    fontSize: 9.5, fontWeight: '800', color: P.muted2,
-    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
-    fontFamily: fonts.monoBold,
-  },
-  requirementsText: { fontSize: 11.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: ig.lineSoft },
+  rowL: { fontSize: 12, color: ig.mut },
+  rowV: { fontSize: 12, fontWeight: '700', color: ig.text },
+  brief: { backgroundColor: ig.bgSoft, borderRadius: 10, padding: 11, marginTop: 11 },
+  briefL: { fontSize: 9.5, fontWeight: '800', color: ig.mut, letterSpacing: 0.4, marginBottom: 4 },
+  briefT: { fontSize: 12, color: ig.text, lineHeight: 17 },
 
-  // Revision card (PROMINENT — dangerPale per locked design call #2)
-  revisionCard: {
-    margin: 14, marginBottom: 0,
-    backgroundColor: P.dangerPale, borderRadius: 14, padding: 14,
-    borderWidth: 1.5, borderColor: P.danger,
-  },
-  revisionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  revisionIcoWrap: {
-    width: 26, height: 26, borderRadius: 13, backgroundColor: P.dangerText,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  revisionIco: { color: P.white, fontSize: 15, fontWeight: '900', fontFamily: fonts.displayBlack },
-  revisionTitle: {
-    fontSize: 13.5, fontWeight: '900', color: P.dangerText,
-    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack,
-  },
-  revisionBody: {
-    backgroundColor: P.white, borderRadius: 11, padding: 12,
-    borderWidth: 1, borderColor: '#F8D0C2',
-  },
-  revisionText: { fontSize: 12.5, color: P.ink, lineHeight: 18, fontFamily: fonts.sansRegular },
+  media: { width: '100%', height: 200, borderRadius: 11, backgroundColor: ig.bgSoft, marginBottom: 8 },
+  videoBox: { backgroundColor: ig.text, borderRadius: 11, padding: 28, alignItems: 'center' },
+  videoTxt: { fontSize: 11, color: ig.y, fontWeight: '700', marginTop: 7 },
+  videoSel: { backgroundColor: ig.bgSoft, borderRadius: 10, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: ig.line, marginBottom: 8 },
+  videoSelTxt: { fontSize: 11.5, color: ig.text, fontWeight: '700', marginTop: 8 },
+  videoSelSub: { fontSize: 10, color: ig.mut, marginTop: 3 },
+  removeTxt: { fontSize: 11, color: ig.red, fontWeight: '700', textAlign: 'center', marginTop: 4 },
 
-  // URL box
-  urlBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11 },
-  urlLabel: {
-    fontSize: 9.5, fontWeight: '800', color: P.muted2,
-    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
-    fontFamily: fonts.monoBold,
-  },
-  urlLink: { fontSize: 11.5, color: P.info, textDecorationLine: 'underline', fontWeight: '700', fontFamily: fonts.monoMedium },
+  urlBox: { backgroundColor: ig.bgSoft, borderRadius: 10, padding: 11 },
+  urlL: { fontSize: 9.5, fontWeight: '800', color: ig.mut, letterSpacing: 0.4, marginBottom: 4 },
+  urlV: { fontSize: 11.5, color: ig.blue, textDecorationLine: 'underline', fontWeight: '600' },
+  notes: { backgroundColor: ig.bgSoft, borderRadius: 10, padding: 11, marginTop: 9 },
+  notesL: { fontSize: 9.5, fontWeight: '800', color: ig.mut, letterSpacing: 0.4, marginBottom: 4 },
+  notesT: { fontSize: 11.5, color: ig.text, lineHeight: 16 },
 
-  hint: { fontSize: 11, color: P.muted, marginBottom: 11, lineHeight: 16, fontFamily: fonts.sansRegular },
+  revCard: { backgroundColor: '#FBEEEA', borderRadius: 13, padding: 13, borderWidth: 1.5, borderColor: ig.red, marginBottom: 10 },
+  revHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 9 },
+  revIco: { width: 24, height: 24, borderRadius: 12, backgroundColor: ig.red, alignItems: 'center', justifyContent: 'center' },
+  revIcoTxt: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  revTitle: { fontSize: 12.5, fontWeight: '900', color: ig.red, letterSpacing: 0.3 },
+  revBody: { backgroundColor: ig.bg, borderRadius: 10, padding: 11, borderWidth: 1, borderColor: '#F0D0C6' },
+  revTxt: { fontSize: 12.5, color: ig.text, lineHeight: 18 },
 
-  // Picker tiles
-  pickerButtons: { gap: 9, marginBottom: 12 },
-  pickerTile: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: P.white, borderRadius: 12, padding: 14,
-    borderWidth: 1.5, borderColor: P.ink, borderStyle: 'dashed',
-  },
-  pickerIcon: {
-    width: 36, height: 36, borderRadius: 9, backgroundColor: P.yellowPale,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pickerLbl: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
-  pickerSub: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  hint: { fontSize: 11.5, color: ig.mut, marginBottom: 11, lineHeight: 16 },
+  pick: { flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1.5, borderColor: ig.text, borderStyle: 'dashed', borderRadius: 11, padding: 13, marginBottom: 8 },
+  pickIco: { width: 34, height: 34, borderRadius: 9, backgroundColor: ig.yBg, alignItems: 'center', justifyContent: 'center' },
+  pickT: { fontSize: 12.5, fontWeight: '800', color: ig.text },
+  pickS: { fontSize: 10, color: ig.mut, marginTop: 1 },
 
-  // Selected media preview
-  previewContainer: { marginBottom: 12 },
-  mediaPreview: { width: '100%', height: 200, borderRadius: 12, backgroundColor: P.bg2, marginBottom: 8 },
-  videoSelected: {
-    backgroundColor: P.bg2, borderRadius: 11, padding: 18,
-    alignItems: 'center', marginBottom: 8,
-    borderWidth: 1, borderColor: P.border,
-  },
-  previewIconTile: {
-    width: 48, height: 48, borderRadius: 11, backgroundColor: P.ink,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 9,
-  },
-  videoSelectedText: { fontSize: 11, color: P.ink, fontWeight: '800', textAlign: 'center', fontFamily: fonts.monoBold },
-  videoSelectedDuration: { fontSize: 9.5, color: P.muted2, marginTop: 3, fontWeight: '700', fontFamily: fonts.monoMedium },
-  removeBtn: { alignSelf: 'center', padding: 8 },
-  removeBtnText: {
-    fontSize: 10.5, color: P.dangerText, fontWeight: '800',
-    textTransform: 'uppercase', letterSpacing: 0.3,
-    borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: P.dangerText,
-    fontFamily: fonts.monoBold,
-  },
+  progRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 11 },
+  progBar: { flex: 1, height: 8, backgroundColor: ig.bgSoft, borderRadius: 4, overflow: 'hidden' },
+  progFill: { height: '100%', backgroundColor: ig.text, borderRadius: 4 },
+  progTxt: { fontSize: 11.5, fontWeight: '800', color: ig.text, width: 42, textAlign: 'right' },
 
-  // Video preview for already-submitted content
-  videoPreviewBox: {
-    backgroundColor: P.ink, borderRadius: 12, padding: 30,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  videoPlayText: { fontSize: 10, color: P.yellow, fontWeight: '800', marginTop: 8, letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 13 },
+  divLine: { flex: 1, height: 1, backgroundColor: ig.line },
+  divTxt: { paddingHorizontal: 11, fontSize: 9.5, fontWeight: '800', color: ig.mut, letterSpacing: 0.3 },
+  input: { borderWidth: 1.5, borderColor: ig.text, borderRadius: 10, padding: 11, fontSize: 11.5, color: ig.text, marginBottom: 10 },
+  notesInput: { borderColor: ig.line, minHeight: 60 },
 
-  // Progress bar
-  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 11 },
-  progressBar: { flex: 1, height: 8, backgroundColor: P.bg2, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: P.ink, borderRadius: 4 },
-  progressText: { fontSize: 11.5, fontWeight: '900', color: P.ink, width: 44, textAlign: 'right', fontFamily: fonts.monoBold },
+  btnDark: { backgroundColor: ig.text, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+  btnDarkTxt: { fontSize: 12.5, fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.2 },
+  btnGreen: { backgroundColor: ig.green, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+  btnGreenTxt: { fontSize: 12.5, fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.2 },
+  disabled: { opacity: 0.5 },
 
-  // Buttons
-  uploadBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  uploadBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
-  submitBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
-  submitBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
-  liveBtn: { backgroundColor: P.success, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
-  liveBtnText: { fontSize: 13, fontWeight: '900', color: P.white, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  waitCard: { alignItems: 'center', borderWidth: 1, borderColor: ig.line, borderRadius: 13, padding: 20, marginBottom: 10 },
+  waitIco: { width: 50, height: 50, borderRadius: 13, backgroundColor: ig.yBg, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  waitT: { fontSize: 14, fontWeight: '800', color: ig.text, marginBottom: 5 },
+  waitS: { fontSize: 11.5, color: ig.mut, textAlign: 'center', lineHeight: 16 },
 
-  // Divider
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: P.border },
-  dividerText: {
-    paddingHorizontal: 12, fontSize: 10, fontWeight: '800', color: P.muted2,
-    letterSpacing: 0.3, fontFamily: fonts.monoBold,
-  },
+  refreshBtn: { backgroundColor: ig.bgSoft, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 6 },
+  refreshTxt: { fontSize: 10.5, fontWeight: '800', color: ig.text },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  sb: { width: '31.5%', backgroundColor: ig.bgSoft, borderRadius: 10, padding: 10, alignItems: 'center' },
+  sv: { fontSize: 15, fontWeight: '900', color: ig.text },
+  sl: { fontSize: 8, fontWeight: '800', color: ig.mut, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3 },
+  erBox: { backgroundColor: ig.yBg, borderRadius: 10, padding: 10, marginTop: 8, alignItems: 'center', borderWidth: 1, borderColor: '#F0DA88' },
+  erV: { fontSize: 20, fontWeight: '900', color: ig.yInk },
+  erL: { fontSize: 8.5, fontWeight: '800', color: ig.yInk, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
 
-  urlInput: {
-    borderWidth: 1.5, borderColor: P.ink, borderRadius: 10,
-    padding: 11, fontSize: 11.5, color: P.ink, marginBottom: 11,
-    fontFamily: fonts.monoMedium,
-  },
-
-  // Wait card (submitted state) — yellowPale tile per design call #4 (replaces ⏳ emoji)
-  waitCard: {
-    margin: 14, marginBottom: 0, backgroundColor: P.white,
-    borderRadius: 14, padding: 22, alignItems: 'center',
-    borderWidth: 1, borderColor: P.border,
-  },
-  waitTile: {
-    width: 54, height: 54, borderRadius: 13, backgroundColor: P.yellowPale,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 11,
-  },
-  waitTitle: { fontSize: 14.5, fontWeight: '900', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBlack },
-  waitText: { fontSize: 11.5, color: P.muted, lineHeight: 17, textAlign: 'center', fontFamily: fonts.sansRegular },
-
-  // Stats
-  refreshBtn: { backgroundColor: P.bg2, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 6 },
-  refreshBtnText: { fontSize: 10, fontWeight: '800', color: P.ink, letterSpacing: 0.3, fontFamily: fonts.monoBold },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  statBox: { width: '31.5%', backgroundColor: P.bg2, borderRadius: 10, padding: 11, alignItems: 'center' },
-  statValue: { fontSize: 16, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
-  statLabel: {
-    fontSize: 8.5, fontWeight: '800', color: P.muted2,
-    marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3,
-    fontFamily: fonts.monoBold,
-  },
-  erBox: {
-    backgroundColor: P.yellowPale, borderRadius: 11, padding: 11,
-    marginTop: 10, alignItems: 'center',
-    borderWidth: 1, borderColor: '#F0DA88',
-  },
-  erValue: { fontSize: 22, fontWeight: '900', color: P.yellowText, fontFamily: fonts.monoBold },
-  erLabel: { fontSize: 9, fontWeight: '800', color: P.yellowText, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  celCard: { alignItems: 'center', borderWidth: 1, borderColor: ig.line, borderRadius: 13, padding: 20, marginBottom: 10 },
+  celTile: { width: 54, height: 54, borderRadius: 13, backgroundColor: ig.y, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  celT: { fontSize: 16, fontWeight: '900', color: ig.text, marginBottom: 5 },
+  celS: { fontSize: 11.5, color: ig.mut, textAlign: 'center', lineHeight: 16 },
 });

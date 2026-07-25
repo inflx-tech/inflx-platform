@@ -36,3 +36,10 @@ jest.mock('react-native-safe-area-context', () => {
     useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
   };
 });
+
+// react-native-image-picker ships untransformed TS — stub the two launchers so
+// screens importing it (DeliverableScreen) load under node.
+jest.mock('react-native-image-picker', () => ({
+  launchImageLibrary: jest.fn(),
+  launchCamera: jest.fn(),
+}));

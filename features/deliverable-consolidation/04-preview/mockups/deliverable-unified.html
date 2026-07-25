@@ -1,0 +1,102 @@
+<title>INFLX — Unified Deliverable Screen</title>
+<style>
+  :root{--bg:#FFF;--text:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;--green:#1A7F52;--red:#C4321B;--blue:#3B6FE0;--sans:-apple-system,system-ui,sans-serif;--canvas:#F2F2F3}
+  @media (prefers-color-scheme:dark){:root{--canvas:#0C0C0D}}
+  *{box-sizing:border-box}body{margin:0;background:var(--canvas);font-family:var(--sans);padding:30px}
+  .wrap{max-width:760px;margin:0 auto;color:#0A0A0A}
+  h1{font-size:22px;font-weight:800;margin:0 0 4px}.lede{font-size:13.5px;color:#555;margin:0 0 22px}
+  @media (prefers-color-scheme:dark){.wrap{color:#eee}.lede{color:#aaa}}
+  .cols{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:28px;padding:7px;box-shadow:0 18px 40px -22px rgba(0,0,0,.4);width:300px}
+  .scr{background:#fff;border-radius:23px;overflow:hidden}
+  .cap{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--yInk);margin:0 0 6px;text-align:center}
+  .hd{padding:16px 14px 12px;border-bottom:1px solid var(--line)}
+  .bk{font-size:11px;color:var(--mut);font-weight:600}
+  .ti{font-size:17px;font-weight:800;margin-top:8px}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;margin-top:4px}
+  .pill .d{width:6px;height:6px;border-radius:3px}
+  .you{color:var(--yInk)}.you .d{background:var(--y)}
+  .body{padding:12px}
+  .card{border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:9px}
+  .ct{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#0A0A0A;margin-bottom:9px}
+  /* timeline */
+  .tl{display:flex;flex-direction:column;gap:0}
+  .tstep{display:flex;gap:9px;align-items:flex-start;min-height:30px}
+  .tdotcol{display:flex;flex-direction:column;align-items:center}
+  .tdot{width:18px;height:18px;border-radius:9px;background:#F2F2F2;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--mut)}
+  .tdot.on{background:var(--y);border-color:var(--y);color:#0A0A0A}
+  .tdot.cur{border-color:#0A0A0A;border-width:3px}
+  .tline{width:2px;flex:1;background:var(--line);min-height:12px}
+  .tline.on{background:var(--y)}
+  .tlab{font-size:12px;font-weight:600;color:var(--mut);padding-top:0}
+  .tlab.on{color:#0A0A0A;font-weight:800}
+  /* picker */
+  .pick{display:flex;align-items:center;gap:11px;border:1.5px dashed #0A0A0A;border-radius:11px;padding:12px;margin-bottom:8px}
+  .pickIco{width:34px;height:34px;border-radius:9px;background:var(--yBg);display:flex;align-items:center;justify-content:center}
+  .pickIco svg{width:18px;height:18px;color:var(--yInk)}
+  .pickT{font-size:12.5px;font-weight:800}.pickS{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .div{display:flex;align-items:center;gap:9px;margin:11px 0;color:var(--mut);font-size:9.5px;font-weight:700}
+  .div .l{flex:1;height:1px;background:var(--line)}
+  .inp{border:1.5px solid #0A0A0A;border-radius:9px;padding:10px;font-size:11px;color:var(--mut);margin-bottom:9px}
+  .btn{background:#0A0A0A;color:#fff;text-align:center;font-size:12px;font-weight:800;padding:11px;border-radius:9px;text-transform:uppercase;letter-spacing:.03em}
+  /* stats */
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .sb{background:#F7F7F7;border-radius:9px;padding:9px;text-align:center}
+  .sv{font-size:15px;font-weight:900}.sl{font-size:7.5px;font-weight:800;color:var(--mut);text-transform:uppercase;margin-top:2px}
+  .er{background:var(--yBg);border:1px solid #F0DA88;border-radius:10px;padding:9px;text-align:center;margin-top:8px}
+  .erv{font-size:19px;font-weight:900;color:var(--yInk)}.erl{font-size:8px;font-weight:800;color:var(--yInk);text-transform:uppercase}
+  .foot{margin-top:22px;font-size:12.5px;color:#555;line-height:1.5}
+  @media (prefers-color-scheme:dark){.foot{color:#aaa}}
+</style>
+<div class="wrap">
+  <h1>One deliverable screen — every capability, every door</h1>
+  <p class="lede">Merges the two screens: media upload + live stats (was notification-only) and the status timeline + notes + confirm dialogs (was in-app-only). Both entry points open this one IG-clean screen.</p>
+  <div class="cols">
+    <!-- Submit state -->
+    <div>
+      <p class="cap">Pending → submit (upload OR url)</p>
+      <div class="phone"><div class="scr">
+        <div class="hd"><div class="bk">‹ Back</div><div class="ti">Instagram Reel</div><div class="pill you"><span class="d"></span>Revision</div></div>
+        <div class="body">
+          <div class="card"><div class="ct">Status timeline</div>
+            <div class="tl">
+              <div class="tstep"><div class="tdotcol"><div class="tdot on">✓</div><div class="tline on"></div></div><div class="tlab on">Submitted</div></div>
+              <div class="tstep"><div class="tdotcol"><div class="tdot on cur">2</div><div class="tline"></div></div><div class="tlab on">Under review</div></div>
+              <div class="tstep"><div class="tdotcol"><div class="tdot">3</div></div><div class="tlab">Approved</div></div>
+            </div>
+          </div>
+          <div class="card"><div class="ct">Upload content</div>
+            <div class="pick"><div class="pickIco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div><div><div class="pickT">Choose from Gallery</div><div class="pickS">Photos &amp; videos</div></div></div>
+            <div class="pick"><div class="pickIco"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><div><div class="pickT">Record Video</div><div class="pickS">Camera · up to 5 min</div></div></div>
+            <div class="div"><span class="l"></span>OR PASTE URL<span class="l"></span></div>
+            <div class="inp">https://drive.google.com/…</div>
+            <div class="inp">Add a note for the brand (optional)…</div>
+            <div class="btn">Submit for review</div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+    <!-- Live state -->
+    <div>
+      <p class="cap">Live → performance stats</p>
+      <div class="phone"><div class="scr">
+        <div class="hd"><div class="bk">‹ Back</div><div class="ti">Instagram Reel</div><div class="pill" style="color:var(--green)"><span class="d" style="background:var(--green)"></span>Live</div></div>
+        <div class="body">
+          <div class="card"><div class="ct" style="display:flex;justify-content:space-between">Live performance <span style="color:var(--blue)">Refresh</span></div>
+            <div class="grid">
+              <div class="sb"><div class="sv">3.1K</div><div class="sl">Likes</div></div>
+              <div class="sb"><div class="sv">212</div><div class="sl">Comments</div></div>
+              <div class="sb"><div class="sv">180</div><div class="sl">Saves</div></div>
+              <div class="sb"><div class="sv">96</div><div class="sl">Shares</div></div>
+              <div class="sb"><div class="sv">48K</div><div class="sl">Reach</div></div>
+              <div class="sb"><div class="sv">61K</div><div class="sl">Impr.</div></div>
+            </div>
+            <div class="er"><div class="erv">6.4%</div><div class="erl">Engagement rate</div></div>
+          </div>
+          <div class="card" style="text-align:center;padding:18px"><div style="width:52px;height:52px;border-radius:13px;background:var(--y);display:inline-flex;align-items:center;justify-content:center;margin-bottom:9px"><svg viewBox="0 0 24 24" width="26" height="26" fill="#0A0A0A"><path d="M12 2l3 7h7l-5.5 4 2 7L12 17l-6.5 3 2-7L2 9h7z"/></svg></div><div style="font-size:15px;font-weight:900">Content is live!</div><div style="font-size:11px;color:var(--mut);margin-top:5px">Tranche 2 released. Tranche 3 auto-releases +30 days.</div></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+  <p class="foot"><b>The fix:</b> today an influencer who taps a notification gets media upload + stats; one who navigates in-app gets URL-only. This screen has both, plus the timeline/notes/confirm — so the same task looks the same regardless of how you arrived. IG-clean, frontend-only, OTA.</p>
+</div>

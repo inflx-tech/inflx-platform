@@ -1,0 +1,24 @@
+{
+  "feature": "deliverable-consolidation",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls start deliverable consolidation' in-session 2026-07-25. Lock decision delegated per standing autonomy; the agreed next Wave-1 screen.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — unified deliverable screen (timeline + media-upload+URL submit + notes + live stats) locked in-session 2026-07-25; board at 04-preview/mockups/deliverable-unified.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Wave-1 screen 5. Merges DeliverableScreen (media upload + R2 + live stats, notification-only) and DeliverableDetailScreen (URL submit + 5-step timeline + notes + confirm dialogs, in-app) into ONE IG-clean screen with the union. Loads by deliverable-object OR deliverableId (getDeliverable → {deliverable,stats}); registered under BOTH route names Deliverable + DeliverableDetail so both entry points converge. DeliverableDetailScreen.js left unused (deleted in later cleanup). Frontend-only, mobile-influencer, OTA — no backend/DB.",
+  "qa_record": "Mobile jest GREEN 73/73 (16 suites, 2026-07-25): deliverableStatusMeta unit + DeliverableScreen module-load smoke + 70 prior. Added react-native-image-picker jest mock to jest.setup.js (native module ships untransformed TS; standard stub — the old DeliverableScreen imported it too but was never test-required). Mobile-JS-only, no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(2 divergent screens: media-upload-only-via-notification vs url-only-in-app) / after(one IG-clean DeliverableScreen with union; both route names Deliverable+DeliverableDetail → it) + convergence + 2 known deltas.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT yet deployed — build complete + jest-green (73/73). Awaiting founder OTA go."
+  }
+}
