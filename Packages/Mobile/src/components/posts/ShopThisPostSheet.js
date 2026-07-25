@@ -12,19 +12,19 @@
  * existing cart-claim rails.
  */
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, FlatList, Modal, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Pressable, FlatList, Modal, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
 import { useCart } from '../../services/CartContext';
 import { YELLOW } from './PostCard';
 import { BagCircle, BagOutline } from './icons';
 
 const H = Dimensions.get('window').height;
 
-export default function ShopThisPostSheet({ visible, post, onClose, onOpenProduct }) {
+export default function ShopThisPostSheet({ visible, post, loading, onClose, onOpenProduct }) {
   const { cart, addItem } = useCart();
   const [toast, setToast] = useState(null);          // { name }
   const [sizePick, setSizePick] = useState(null);    // { product, sizes }
-  if (!post) return null;
-  const products = post.products || [];
+  if (!post && !loading) return null;
+  const products = post?.products || [];
 
   const inBag = (productId) => (cart.items || []).some(i => i.product_id === productId);
 
@@ -68,20 +68,30 @@ export default function ShopThisPostSheet({ visible, post, onClose, onOpenProduc
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={st.back} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={st.sheet} onPress={() => {}}>
+      {/* backdrop and sheet are SIBLINGS — no touch-capturing wrapper, so the
+          ✕ works first tap (v3.1 bug fix) */}
+      <View style={st.back}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={st.sheet}>
           <View style={st.grip} />
-          <TouchableOpacity style={st.x} onPress={onClose}><Text style={{ color: '#999', fontSize: 15 }}>✕</Text></TouchableOpacity>
+          <TouchableOpacity style={st.x} onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={{ color: '#666', fontSize: 17 }}>✕</Text>
+          </TouchableOpacity>
           <Text style={st.title}>Products in this post</Text>
-          <Text style={st.sub}>{products.length} item{products.length === 1 ? '' : 's'}</Text>
+          <Text style={st.sub}>{loading ? 'Loading…' : `${products.length} item${products.length === 1 ? '' : 's'}`}</Text>
 
+          {loading ? (
+            <View style={{ paddingVertical: 46, alignItems: 'center' }}>
+              <ActivityIndicator color={YELLOW} />
+            </View>
+          ) : (
           <FlatList
             data={products}
             keyExtractor={p => p.product_id}
-            numColumns={3}
-            style={{ maxHeight: H * 0.56 }}
-            columnWrapperStyle={{ gap: 9 }}
-            contentContainerStyle={{ gap: 12, paddingBottom: 8 }}
+            numColumns={2}
+            style={{ maxHeight: H * 0.6 }}
+            columnWrapperStyle={{ gap: 12 }}
+            contentContainerStyle={{ gap: 16, paddingBottom: 8 }}
             renderItem={({ item: p }) => {
               const added = inBag(p.product_id);
               return (
@@ -95,10 +105,11 @@ export default function ShopThisPostSheet({ visible, post, onClose, onOpenProduc
                       <TouchableOpacity
                         style={[st.bagBtn, added && st.bagBtnOn]}
                         disabled={!p.purchasable}
-                        onPress={() => added ? null : quickAdd(p)}>
+                        onPress={() => added ? null : quickAdd(p)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         {added
-                          ? <BagCircle size={22} />
-                          : <BagOutline size={13} />}
+                          ? <BagCircle size={30} />
+                          : <BagOutline size={16} />}
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
@@ -113,7 +124,7 @@ export default function ShopThisPostSheet({ visible, post, onClose, onOpenProduc
                 </View>
               );
             }}
-          />
+          />)}
 
           {/* size mini-picker (quick-add on a sized product) */}
           {sizePick && (
@@ -145,8 +156,8 @@ export default function ShopThisPostSheet({ visible, post, onClose, onOpenProduc
               </TouchableOpacity>
             </View>
           )}
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -158,15 +169,15 @@ const st = StyleSheet.create({
   x: { position: 'absolute', right: 16, top: 14, padding: 4 },
   title: { fontSize: 16, fontWeight: '800', color: '#111' },
   sub: { fontSize: 11, color: '#999', marginTop: 2, marginBottom: 12 },
-  card: { flex: 1 / 3 },
+  card: { flex: 1 / 2 },
   imgWrap: { position: 'relative' },
-  img: { width: '100%', aspectRatio: 4 / 5, borderRadius: 10 },
-  bagBtn: { position: 'absolute', right: 5, bottom: 5, width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
+  img: { width: '100%', aspectRatio: 4 / 5, borderRadius: 12 },
+  bagBtn: { position: 'absolute', right: 7, bottom: 7, width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
   bagBtnOn: { backgroundColor: '#111' },
-  name: { fontSize: 10.5, fontWeight: '600', color: '#111', marginTop: 5 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 5 },
-  price: { fontSize: 12, fontWeight: '800', color: '#111' },
-  struck: { fontSize: 10, color: '#AAA', textDecorationLine: 'line-through' },
+  name: { fontSize: 12.5, fontWeight: '600', color: '#111', marginTop: 7 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  price: { fontSize: 14, fontWeight: '800', color: '#111' },
+  struck: { fontSize: 11.5, color: '#AAA', textDecorationLine: 'line-through' },
   unavail: { fontSize: 9, color: '#B3261E', marginTop: 1 },
   sizeBar: { borderTopWidth: 1, borderColor: '#F0F0F0', paddingTop: 10, marginTop: 4 },
   sizeTitle: { fontSize: 11.5, fontWeight: '800', color: '#111', marginBottom: 8 },

@@ -8,25 +8,27 @@ import React from 'react';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-/** White bag in a black circle — the pin/CTA marker. */
-export function BagCircle({ size = 22, bg = '#111' }) {
-  const s = size * 0.55;
+/** White bag in a black circle — the pin/CTA marker. Reference anatomy:
+ * solid rounded shopping bag with a clean arc handle (founder v3.1: the old
+ * trapezoid "did not match"). */
+export function BagCircle({ size = 28, bg = '#111' }) {
+  const s = size * 0.56;
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={s} height={s} viewBox="0 0 12 12">
-        <Path d="M3 4.3h6l-.5 5.4h-5z" fill="#FFF" />
-        <Path d="M4.2 4.2a1.8 1.8 0 0 1 3.6 0" stroke="#FFF" strokeWidth="1.2" fill="none" />
+      <Svg width={s} height={s} viewBox="0 0 16 16">
+        <Path d="M4 5.6h8a1 1 0 0 1 1 1.1l-.5 5.6a1.4 1.4 0 0 1-1.4 1.3H4.9a1.4 1.4 0 0 1-1.4-1.3L3 6.7a1 1 0 0 1 1-1.1z" fill="#FFF" />
+        <Path d="M5.6 5.5V5a2.4 2.4 0 0 1 4.8 0v.5" stroke="#FFF" strokeWidth="1.4" fill="none" strokeLinecap="round" />
       </Svg>
     </View>
   );
 }
 
 /** Black outline bag (no circle) — light CTAs like the white shop pill. */
-export function BagOutline({ size = 15, color = '#111' }) {
+export function BagOutline({ size = 16, color = '#111' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 16 16">
-      <Path d="M3.6 5h8.8l-.8 8H4.4z" stroke={color} strokeWidth="1.4" fill="none" strokeLinejoin="round" />
-      <Path d="M5.7 5a2.3 2.3 0 0 1 4.6 0" stroke={color} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <Path d="M4 5.6h8a1 1 0 0 1 1 1.1l-.5 5.6a1.4 1.4 0 0 1-1.4 1.3H4.9a1.4 1.4 0 0 1-1.4-1.3L3 6.7a1 1 0 0 1 1-1.1z" stroke={color} strokeWidth="1.4" fill="none" strokeLinejoin="round" />
+      <Path d="M5.6 5.5V5a2.4 2.4 0 0 1 4.8 0v.5" stroke={color} strokeWidth="1.4" fill="none" strokeLinecap="round" />
     </Svg>
   );
 }

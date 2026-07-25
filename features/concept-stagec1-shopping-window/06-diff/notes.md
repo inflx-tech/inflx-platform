@@ -40,3 +40,16 @@ Mapping corrected: ref 1 = FEED, ref 2 = FULL-SCREEN. Implemented exactly:
 - Backend: feed/detail creator payloads now carry `verified`.
 - Canva rule recorded: cream comes from the APP canvas; creator images
   never tinted; composer tip suggests #F5F2EC export.
+
+## v3.1 (founder device pass, 7 fixes)
+1 pins bigger (icon 26-30, name 12, price 13 bold). 2 colour inversion
+corrected: app chrome PURE WHITE everywhere; cream lives only in the feed
+media sheet + creator-export backgrounds (never tinted). 3 bag icon redrawn
+to the reference (solid rounded bag + arc handle) everywhere. 4 shop sheet
+grid 3->2 columns, cards ~2x, bigger type. 5 close-X fixed (backdrop and
+sheet are siblings now; the old touch-wrapper ate the tap on Android) +
+hitSlop. 6 sheet opens INSTANTLY with a spinner (feed used to fetch first —
+that was the perceived delay). 7 full-screen media = edge-to-edge COVER
+fill, no letterbox separation ("one single fully covering post" — founder
+overrides the earlier true-image rule); rail icons sit on white chips for
+readability over photos.

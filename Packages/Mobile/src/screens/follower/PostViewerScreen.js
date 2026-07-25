@@ -128,7 +128,7 @@ export default function PostViewerScreen({ navigation, route }) {
             onMomentumScrollEnd={e => setSlide(Math.round(e.nativeEvent.contentOffset.x / WIN.width))}
             renderItem={({ item: m }) => (
               <View style={{ width: WIN.width, height: mediaH }}>
-                <Image source={{ uri: m.url }} style={{ width: WIN.width, height: mediaH }} resizeMode="contain" />
+                <Image source={{ uri: m.url }} style={{ width: WIN.width, height: mediaH }} resizeMode="cover" />
                 {(post.pins || []).filter(t => t.media_id === m.id).map((t, i) => (
                   <Pin key={i} tag={t} style={post.tag_style} />
                 ))}
@@ -210,15 +210,17 @@ export default function PostViewerScreen({ navigation, route }) {
 }
 
 const st = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: CREAM },
+  safe: { flex: 1, backgroundColor: '#FFF' },
   safeWhite: { flex: 1, backgroundColor: '#FFF' },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 6 },
   topIcon: { fontSize: 28, color: '#111' },
   menu: { fontSize: 16, color: '#111', letterSpacing: 2 },
   slideBadge: { position: 'absolute', top: 10, right: 12, backgroundColor: 'rgba(17,17,17,0.78)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   slideBadgeTxt: { color: '#FFF', fontSize: 10, fontWeight: '700' },
-  rail: { position: 'absolute', right: 12, bottom: 8, alignItems: 'center', gap: 13 },
-  railBtn: { alignItems: 'center', gap: 2 },
+  rail: { position: 'absolute', right: 12, bottom: 10, alignItems: 'center', gap: 11 },
+  // white chip behind each icon — media is cover-fit now, so the rail sits
+  // over the photo; the chip keeps black icons readable on any image.
+  railBtn: { alignItems: 'center', gap: 2, backgroundColor: 'rgba(255,255,255,0.88)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 6, minWidth: 44 },
   railCount: { fontSize: 11, fontWeight: '600', color: '#111' },
   creatorRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   handle: { fontSize: 13.5, fontWeight: '800', color: '#111' },

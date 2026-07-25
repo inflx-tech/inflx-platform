@@ -65,10 +65,10 @@ export function Pin({ tag, style: tagStyle, small }) {
   const shown = nm.length > 18 ? `${nm.slice(0, 17).trimEnd()}…` : nm;
   return (
     <View style={[st.pin, { left: `${x}%`, top: `${y}%` }]} pointerEvents="none">
-      <BagCircle size={small ? 20 : 24} />
+      <BagCircle size={small ? 26 : 30} />
       <View>
-        {!minimal && <Text style={[st.pinName, small && { fontSize: 8.5 }]} numberOfLines={1}>{shown}</Text>}
-        <Text style={[st.pinPrice, small && { fontSize: 9.5 }]}>₹{tag.offer_price ?? tag.price}</Text>
+        {!minimal && <Text style={[st.pinName, small && { fontSize: 11 }]} numberOfLines={1}>{shown}</Text>}
+        <Text style={[st.pinPrice, small && { fontSize: 12 }]}>₹{tag.offer_price ?? tag.price}</Text>
       </View>
     </View>
   );
@@ -187,9 +187,9 @@ const st = StyleSheet.create({
   handle: { fontSize: 13.5, fontWeight: '800', color: '#111' },
   city: { fontSize: 10.5, color: '#8A8A8A', marginTop: 1 },
   menu: { fontSize: 16, color: '#111', letterSpacing: 2, paddingHorizontal: 2 },
-  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: '#FFF', borderRadius: 999, paddingLeft: 5, paddingRight: 12, paddingVertical: 5, transform: [{ translateX: -30 }, { translateY: -16 }], shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3, maxWidth: 180 },
-  pinName: { fontSize: 10, fontWeight: '600', color: '#111' },
-  pinPrice: { fontSize: 11, fontWeight: '800', color: '#111' },
+  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF', borderRadius: 999, paddingLeft: 6, paddingRight: 14, paddingVertical: 6, transform: [{ translateX: -36 }, { translateY: -20 }], shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3, maxWidth: 210 },
+  pinName: { fontSize: 12, fontWeight: '600', color: '#111' },
+  pinPrice: { fontSize: 13, fontWeight: '800', color: '#111' },
   slideBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(17,17,17,0.78)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   slideBadgeTxt: { color: '#FFF', fontSize: 10, fontWeight: '700' },
   shopPill: { backgroundColor: '#FFF', borderRadius: 999, paddingVertical: 12, paddingHorizontal: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },

@@ -63,9 +63,12 @@ export default function PostsFeedScreen({ navigation }) {
   }
 
   async function openShop(post) {
+    // v3.1: open INSTANTLY with a loading state — the founder felt the old
+    // fetch-then-open as a delay. Products fill in when the detail arrives.
+    setShopPost({ ...post, products: null, __loading: true });
     const res = await followerApi.getPost(post.id);
     if (res.success) setShopPost(res.data.post);
-    else Alert.alert('Unavailable', 'This post is no longer available.');
+    else { setShopPost(null); Alert.alert('Unavailable', 'This post is no longer available.'); }
   }
 
   return (
@@ -118,6 +121,7 @@ export default function PostsFeedScreen({ navigation }) {
       <ShopThisPostSheet
         visible={!!shopPost}
         post={shopPost}
+        loading={!!shopPost?.__loading}
         onClose={() => setShopPost(null)}
         onOpenProduct={(p) => {
           if (p === '__bag__') { setShopPost(null); navigation.navigate('Cart'); return; }
