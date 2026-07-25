@@ -1,0 +1,24 @@
+{
+  "feature": "home-restyle",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'Ok go for home restyle' in-session 2026-07-25. Lock decision delegated per standing autonomy; Home mockup published for review (artifact) before deploy gate.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — Home IG-clean restyle (white header + single Your-turn tile → Collabs + restyled active/activity/wallet) locked in-session 2026-07-25; board at 04-preview/mockups/home-restyle.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Wave-1 screen 4. Restyle HomeScreen to IG-clean + collapse the 3 attention tiles into ONE 'Your turn (N)' tile → Collabs (N = merged collabs where turn=you, reusing utils/collabStages). Active glance → CollabDetail; wallet → Earnings; activity → Notifications. Frontend-only, mobile-influencer, OTA — no backend/DB. Reuses existing reads (getEarnings/getOffers/getMyCampaigns/getNotifications).",
+  "qa_record": "Mobile jest GREEN 70/70 (2026-07-25): homeRestyle smoke (HomeScreen parses + imports resolve) + count/active logic covered by collabStages specs + 66 prior. Mobile-JS-only, no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(ink header + 3 tiles) / after(white header + single Your-turn tile → Collabs, restyled active/activity/wallet); reuses collabStages + badgeFor; 2 known deltas (greeting-only header, MCI activity icons).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT yet deployed — build complete + jest-green (70/70). Awaiting founder OTA go."
+  }
+}
