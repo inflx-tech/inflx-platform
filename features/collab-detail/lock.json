@@ -19,6 +19,6 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy": "NOT yet deployed — build complete + jest-green. Awaiting founder OTA go (production-impacting). Maestro skippable on founder call (recorded)."
+    "deploy": "Founder go in-session 2026-07-25 ('pls go and deply,commit,OTA'). Committed 0c96fb4 → pushed origin/main (gov-check OK). OTA influencer v148 published (first attempt Render cold-start fetch-failed, succeeded on warm retry). Maestro skipped per the standing founder call ('skip maestro, i will check'). released stays false until founder device-confirms CollabDetail live."
   }
 }
