@@ -56,15 +56,26 @@ export function RingAvatar({ creator, size = 34 }) {
   );
 }
 
-export function Pin({ tag, style: tagStyle, small }) {
+export function Pin({ tag, style: tagStyle, small, containerW = W }) {
+  // v3.2 (founder): a pill near the right edge SLIDES LEFT by its own
+  // MEASURED width so it is always fully visible — no guessed clamps.
+  const [pillW, setPillW] = useState(0);
   if (tagStyle === 'hidden') return null;
   const minimal = tagStyle === 'minimal';
-  const x = Math.min(Math.max(Number(tag.x_pct), 14), 86);
   const y = Math.min(Math.max(Number(tag.y_pct), 5), 93);
   const nm = String(tag.name || '');
   const shown = nm.length > 18 ? `${nm.slice(0, 17).trimEnd()}…` : nm;
+
+  const anchor = (Number(tag.x_pct) / 100) * containerW - 36;   // tap-point offset
+  const left = pillW
+    ? Math.min(Math.max(anchor, 8), containerW - pillW - 8)
+    : anchor;
+
   return (
-    <View style={[st.pin, { left: `${x}%`, top: `${y}%` }]} pointerEvents="none">
+    <View
+      onLayout={e => { const w = e.nativeEvent.layout.width; if (w && w !== pillW) setPillW(w); }}
+      style={[st.pin, { left, top: `${y}%` }, !pillW && { opacity: 0 }]}
+      pointerEvents="none">
       <BagCircle size={small ? 26 : 30} />
       <View>
         {!minimal && <Text style={[st.pinName, small && { fontSize: 11 }]} numberOfLines={1}>{shown}</Text>}
@@ -187,7 +198,7 @@ const st = StyleSheet.create({
   handle: { fontSize: 13.5, fontWeight: '800', color: '#111' },
   city: { fontSize: 10.5, color: '#8A8A8A', marginTop: 1 },
   menu: { fontSize: 16, color: '#111', letterSpacing: 2, paddingHorizontal: 2 },
-  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF', borderRadius: 999, paddingLeft: 6, paddingRight: 14, paddingVertical: 6, transform: [{ translateX: -36 }, { translateY: -20 }], shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3, maxWidth: 210 },
+  pin: { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF', borderRadius: 999, paddingLeft: 6, paddingRight: 14, paddingVertical: 6, transform: [{ translateY: -20 }], shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3, maxWidth: 230 },
   pinName: { fontSize: 12, fontWeight: '600', color: '#111' },
   pinPrice: { fontSize: 13, fontWeight: '800', color: '#111' },
   slideBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: 'rgba(17,17,17,0.78)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },

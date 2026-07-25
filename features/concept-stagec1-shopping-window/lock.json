@@ -21,5 +21,6 @@
   },
   "design_v3_2026_07_25": "Founder pixel-pass lock (board post-design-v3.html; his corrections: ref1=feed/ref2=fullscreen, tick=verified not follow, ADD black Follow, bolder white bag). Implemented feed card + cream full-screen + SVG icon system + verified in payloads. Yellow feed shop bar retired. Mobile jest 25/25.",
   "design_v3_deploy": "founder go 2026-07-25 (push). Pushed cb15e03 (backend verified field + mobile v3), waited out Render, publish-ota:all clean: brand v147, influencer v141, FOLLOWER v205, agency v46. Founder walks the two references side-by-side on device.",
-  "v31_2026_07_25": "Founder 7-point device pass implemented (pins bigger, white chrome/cream-post corrected, reference bag icon, 2-col sheet, X fixed, instant sheet, cover-fit fullscreen w/ chip rail). Mobile jest 25/25."
+  "v31_2026_07_25": "Founder 7-point device pass implemented (pins bigger, white chrome/cream-post corrected, reference bag icon, 2-col sheet, X fixed, instant sheet, cover-fit fullscreen w/ chip rail). Mobile jest 25/25.",
+  "v32_2026_07_25": "Founder single-item fix ('if it is edge so it should come left side'): Pin now measures its own rendered width via onLayout and clamps its absolute left so the pill always sits fully on screen — near the right edge it slides LEFT of the tag point. Fixed translateX(-36) + the x_pct 14-86 guess-clamp retired; renders at opacity 0 for the pre-measure frame to avoid a visible jump. Shared component → feed, viewer and any future surface all fixed at once. Jest 25/25, qa 79/79 gate 0 (read before commit)."
 }

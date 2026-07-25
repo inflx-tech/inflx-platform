@@ -53,3 +53,14 @@ that was the perceived delay). 7 full-screen media = edge-to-edge COVER
 fill, no letterbox separation ("one single fully covering post" — founder
 overrides the earlier true-image rule); rail icons sit on white chips for
 readability over photos.
+
+## v3.2 — pin edge fix (founder single-item pass, 2026-07-25)
+
+Before: a pill near the right screen edge ("Allen Solly Cot… ₹773") was
+clipped — position used a guessed percentage clamp (x 14–86%) plus a fixed
+translateX(-36), which can't know how wide the pill actually rendered.
+After: the Pin measures its own width (onLayout) and clamps its absolute
+left to [8, screen − width − 8] — at the right edge the pill slides left
+of the tag point and is always fully visible; elsewhere behaviour is
+unchanged. First frame renders at opacity 0 until measured (no jump).
+One shared component, so feed card and full-screen viewer both fixed.
