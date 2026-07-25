@@ -19,6 +19,6 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy": "NOT yet deployed — build complete + jest-green (69/69). Awaiting founder OTA go."
+    "deploy": "Founder go in-session 2026-07-25 ('pls push ,commit, OTA'). Committed 45acbae → pushed origin/main (gov-check OK). OTA influencer v151 published (clean, first attempt). Maestro skipped per standing founder call. released stays false until founder device-confirms the Create tab live."
   }
 }
