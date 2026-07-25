@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { influencerApi } from '../../services/api';
 import {
-  mergeCollabs, filterByStage, stageCounts, isPreSign, COLLAB_STAGES, STAGE_META,
+  mergeCollabs, filterByStage, stageCounts, COLLAB_STAGES, STAGE_META,
 } from '../../utils/collabStages';
 import StageTabs from '../../components/collabs/StageTabs';
 import CollabRow from '../../components/collabs/CollabRow';
@@ -63,15 +63,8 @@ export default function CollabsListScreen({ navigation }) {
   );
 
   function openCollab(c) {
-    if (isPreSign(c)) {
-      // Pre-sign → existing OfferDetail (accepts a full offer object OR an offerId).
-      if (c.source === 'offer' && c.raw) navigation.navigate('OfferDetail', { offer: c.raw });
-      else navigation.navigate('OfferDetail', { offerId: c.ciId });
-    } else if (c.stage === 'completed') {
-      navigation.navigate('CampaignCompletion', { campaignInfluencerId: c.ciId });
-    } else {
-      navigation.navigate('CampaignDetail', { campaignInfluencerId: c.ciId });
-    }
+    // Unified hub (features/collab-detail) — one screen for every stage.
+    navigation.navigate('CollabDetail', { campaignInfluencerId: c.ciId });
   }
 
   const subtitle = loading

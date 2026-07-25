@@ -1,0 +1,410 @@
+<title>INFLX Collabs — Lifecycle Spec</title>
+<style>
+  :root{
+    --canvas:#F2F2F3; --panel:#FFFFFF; --page-ink:#0A0A0A; --page-muted:#6E6E73; --page-line:#E3E3E5;
+    --bg:#FFFFFF; --text:#0A0A0A; --text2:#262626; --mut:#8E8E8E; --line:#DBDBDB; --lineSoft:#EFEFEF;
+    --y:#FFC107; --yInk:#7A6200;
+    --green:#1A7F52; --greenBg:#EAF7F0; --red:#C4321B; --redBg:#FBEEEA;
+    --blue:#3B6FE0; --blueBg:#EDF2FD; --purple:#6D3FC4; --purpleBg:#F2ECFB;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root{--canvas:#0C0C0D;--panel:#161617;--page-ink:#F4F4F5;--page-muted:#A0A0A6;--page-line:#2A2A2C}}
+  :root[data-theme="light"]{--canvas:#F2F2F3;--panel:#FFFFFF;--page-ink:#0A0A0A;--page-muted:#6E6E73;--page-line:#E3E3E5}
+  :root[data-theme="dark"]{--canvas:#0C0C0D;--panel:#161617;--page-ink:#F4F4F5;--page-muted:#A0A0A6;--page-line:#2A2A2C}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--page-ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .wrap{max-width:1120px;margin:0 auto;padding:44px 24px 80px}
+  .eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--page-muted);font-weight:700}
+  h1{font-size:33px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin:12px 0 10px;text-wrap:balance}
+  .lede{font-size:15px;color:var(--page-muted);max-width:66ch;margin:0}
+  .lede b{color:var(--page-ink);font-weight:600}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:5px}
+  @media (prefers-color-scheme:dark){code{background:rgba(255,255,255,.08)}}
+  h2{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--page-muted);font-weight:700;margin:0 0 6px;display:flex;align-items:center;gap:12px}
+  h2::after{content:"";flex:1;height:1px;background:var(--page-line)}
+  .h2sub{font-size:13.5px;color:var(--page-muted);margin:0 0 20px;max-width:72ch}
+  .h2sub b{color:var(--page-ink);font-weight:600}
+  .section{margin-top:56px}
+
+  /* stepper spine */
+  .spine{background:var(--panel);border:1px solid var(--page-line);border-radius:18px;padding:28px 22px 18px;overflow-x:auto}
+  .steps{display:flex;align-items:flex-start;min-width:720px}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;padding:0 6px}
+  .step:not(:last-child)::after{content:"";position:absolute;top:16px;left:50%;width:100%;height:2px;background:var(--page-line);z-index:0}
+  .node{width:32px;height:32px;border-radius:50%;background:#0A0A0A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;position:relative;z-index:1}
+  .step.track .node{background:var(--y);color:#0A0A0A}
+  .sname{font-weight:700;font-size:13px;margin-top:11px;color:var(--page-ink)}
+  .skeys{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;color:var(--page-muted);margin-top:5px;line-height:1.55}
+  .turn{margin-top:9px;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:2px 0;color:var(--mut)}
+  .turn.you{color:var(--yInk)}
+  .branchNote{margin-top:16px;display:flex;gap:9px;align-items:center;font-size:12.5px;color:var(--page-muted)}
+  .branchNote .tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border:1px solid var(--page-line);border-radius:6px;color:var(--page-ink)}
+  .termRow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .termLbl{font-size:11px;font-weight:600;color:var(--page-muted)}
+  .termChip{font-family:ui-monospace,Menlo,monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--redBg);color:var(--red)}
+
+  .principle{display:flex;gap:13px;margin-top:18px;border:1px solid var(--page-line);border-left:3px solid var(--y);border-radius:12px;padding:15px 17px;background:var(--panel)}
+  .principle .big{font-weight:800;color:var(--yInk);font-size:22px;line-height:1}
+  .principle p{margin:0;font-size:13.5px;color:var(--page-ink)}
+  .principle b{font-weight:700}
+
+  /* state grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(286px,1fr));gap:14px}
+  .stateCard{background:var(--panel);border:1px solid var(--page-line);border-radius:16px;overflow:hidden}
+  .stTag{font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--page-muted);padding:11px 13px 9px;display:flex;justify-content:space-between;border-bottom:1px solid var(--page-line)}
+  .stTag .who{color:var(--yInk)}
+  .stTag .who.b{color:var(--blue)}.stTag .who.n{color:var(--mut)}
+  /* app row inside */
+  .deal{padding:13px 14px;background:#fff}
+  .deal.act{border-left:3px solid var(--y)}
+  .deal.dim{background:#FCFCFC}
+  .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:9px}
+  .brand{font-size:13.5px;font-weight:700;color:var(--text)}
+  .camp{font-size:11px;color:var(--mut);margin-top:2px}
+  .spill{font-size:10px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:5px}
+  .spill .d{width:6px;height:6px;border-radius:3px}
+  .s-you{color:var(--yInk)}.s-you .d{background:var(--y)}
+  .s-wait{color:var(--blue)}.s-wait .d{background:var(--blue)}
+  .s-nego{color:var(--purple)}.s-nego .d{background:var(--purple)}
+  .s-done{color:var(--green)}.s-done .d{background:var(--green)}
+  .s-rej{color:var(--red)}.s-rej .d{background:var(--red)}
+  .dstats{display:flex;gap:18px;margin-top:10px}
+  .dstat .l{font-size:9px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--mut)}
+  .dstat .v{font-size:13px;font-weight:700;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
+  .dcta{margin-top:11px;display:flex;gap:7px}
+  .btn{flex:1;text-align:center;font-size:11px;font-weight:700;padding:9px 6px;border-radius:9px;border:1px solid var(--line);color:#0A0A0A;background:#fff}
+  .btnPrimary{background:#0A0A0A;color:#fff;border-color:#0A0A0A}
+  .btnDanger{color:var(--red);border-color:#EFD3CC}
+  .oneline{margin-top:10px;display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text2)}
+  .oneline .go{margin-left:auto;font-weight:700;color:#0A0A0A;font-size:11px}
+  .oneline.wait .go{color:var(--mut);font-weight:600}
+  .dot{width:6px;height:6px;border-radius:3px;background:var(--y);flex-shrink:0}
+  .dot.b{background:var(--blue)}.dot.g{background:var(--green)}.dot.r{background:var(--red)}.dot.p{background:var(--purple)}
+
+  /* detail phones */
+  .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  .col{width:322px;max-width:100%}
+  .cap{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--page-ink);font-weight:800;margin:0 0 4px}
+  .capSub{font-size:12px;color:var(--page-muted);margin:0 0 13px;line-height:1.4}
+  .phone{background:#fff;border:1px solid var(--page-line);border-radius:30px;padding:7px;box-shadow:0 20px 46px -26px rgba(0,0,0,.4)}
+  .screen{background:#fff;border-radius:25px;overflow:hidden}
+  .appHead{background:#fff;padding:15px 15px 12px;border-bottom:1px solid var(--line)}
+  .backr{display:flex;align-items:center;gap:5px;color:var(--mut);font-size:11px;font-weight:600;margin-bottom:9px}
+  .backr svg{width:15px;height:15px}
+  .htitle{color:#0A0A0A;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .hsub{font-size:11px;color:var(--mut);margin-top:2px}
+  .miniSpine{display:flex;gap:5px;margin-top:13px}
+  .ms{flex:1;text-align:center}
+  .ms .bar{height:3px;border-radius:2px;background:var(--lineSoft)}
+  .ms.done .bar{background:#0A0A0A}
+  .ms.cur .bar{background:var(--y)}
+  .ms .t{font-size:7.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--mut);margin-top:5px}
+  .ms.cur .t{color:var(--yInk);font-weight:700}
+  .body{padding:13px}
+  .hero{border:1px solid var(--y);border-radius:13px;padding:14px;margin-bottom:12px;background:#fff}
+  .hero.wait{border-color:#CFE0FA}
+  .heroTag{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--yInk);display:flex;align-items:center;gap:6px}
+  .heroTag .d{width:6px;height:6px;border-radius:3px;background:var(--y)}
+  .hero.wait .heroTag{color:var(--blue)}.hero.wait .heroTag .d{background:var(--blue)}
+  .heroTitle{font-size:15px;font-weight:800;color:#0A0A0A;margin-top:5px}
+  .heroDesc{font-size:11.5px;color:var(--mut);margin-top:3px;line-height:1.4}
+  .heroBtn{margin-top:12px;background:#0A0A0A;color:#fff;text-align:center;font-size:12px;font-weight:700;padding:11px;border-radius:9px}
+  .drow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-bottom:8px;display:flex;align-items:center;gap:11px}
+  .drow.lock{opacity:.5}
+  .drico{width:32px;height:32px;border-radius:8px;background:#F4F4F4;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .drico svg{width:16px;height:16px;color:#5A5A5A}
+  .drmid{flex:1;min-width:0}
+  .drt{font-size:12.5px;font-weight:700;color:var(--text)}
+  .drs{font-size:10px;color:var(--mut);margin-top:2px}
+  .chev svg{width:15px;height:15px;color:#B8B8B8}
+  .miniPill{font-size:9px;font-weight:700;display:flex;align-items:center;gap:4px}
+  .miniPill .d{width:5px;height:5px;border-radius:3px}
+  .mp-you{color:var(--yInk)}.mp-you .d{background:var(--y)}
+  .mp-done{color:var(--green)}.mp-done .d{background:var(--green)}
+
+  /* tracking dual panel */
+  .tPanel{border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:11px}
+  .tHead{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+  .tHead .ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+  .tHead .ic svg{width:15px;height:15px}
+  .tHead .nm{font-size:12.5px;font-weight:800;color:#0A0A0A}
+  .tHead .src{margin-left:auto;font-size:9px;color:var(--mut);font-weight:600}
+  .tBig{display:flex;gap:6px;align-items:baseline}
+  .tBigV{font-size:26px;font-weight:800;color:#0A0A0A;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .tBigL{font-size:10px;color:var(--mut);font-weight:600}
+  .tRow{display:flex;margin-top:12px;border-top:1px solid var(--lineSoft);padding-top:10px}
+  .tm{flex:1;text-align:center}
+  .tm .v{font-size:14px;font-weight:700;color:#0A0A0A;font-variant-numeric:tabular-nums}
+  .tm .l{font-size:8.5px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+  .p2tag{font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--yInk);background:#FFF6D6;border:1px solid #F2E4A8;padding:2px 6px;border-radius:5px;margin-left:auto}
+  .sales{margin-top:11px;border-top:1px solid var(--lineSoft);padding-top:11px;display:flex;align-items:center;gap:9px}
+  .sales .lbl{font-size:11px;font-weight:700;color:#0A0A0A}
+  .sales .amt{margin-left:auto;font-size:15px;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
+  .sparkWrap{display:flex;align-items:flex-end;gap:3px;height:26px;margin-top:10px}
+  .sparkWrap i{flex:1;background:#E8E8E8;border-radius:1px}
+  .sparkWrap i.on{background:#0A0A0A}
+
+  .routeBox{background:var(--panel);border:1px solid var(--page-line);border-radius:16px;padding:18px 22px;margin-top:18px}
+  .routeRow{display:flex;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--page-line);font-size:13.5px}
+  .routeRow:last-child{border-bottom:0}
+  .routeRow .from{font-weight:700;color:var(--page-ink);width:158px;flex-shrink:0}
+  .routeRow .to{color:var(--page-muted)}
+  .routeRow .to b{color:var(--page-ink)}
+  .repl{display:grid;gap:8px;margin-top:16px}
+  .repl .r{display:flex;gap:10px;font-size:13px;color:var(--page-muted);line-height:1.45}
+  .repl .r b{color:var(--page-ink);font-weight:700}
+  .repl .k{font-weight:800;color:var(--page-ink)}
+  .strike{text-decoration:line-through;opacity:.55}
+  .phaseBox{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  @media(max-width:720px){.phaseBox{grid-template-columns:1fr}}
+  .ph{border:1px solid var(--page-line);border-radius:14px;padding:16px 17px;background:var(--panel)}
+  .ph .t{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .ph.p1 .t{color:var(--green)}.ph.p2 .t{color:var(--yInk)}
+  .ph .t .d{width:9px;height:9px;border-radius:3px}.ph.p1 .t .d{background:var(--green)}.ph.p2 .t .d{background:var(--y)}
+  .ph p{margin:0;font-size:12.5px;color:var(--page-muted);line-height:1.5}
+  .ph p b{color:var(--page-ink);font-weight:600}
+  .foot{margin-top:52px;padding-top:20px;border-top:1px solid var(--page-line);font-size:13px;color:var(--page-muted);line-height:1.55}
+  .foot b{color:var(--page-ink)}
+</style>
+
+<h2 class="sr-only">INFLX Collabs lifecycle spec, Instagram-clean: a six-stage spine with a dedicated Tracking stage, the list row in every state, and the state-driven Collab detail including the dual social + platform tracking screen.</h2>
+
+<div class="wrap">
+  <p class="eyebrow">INFLX · Collabs tab · lifecycle spec — Instagram-clean pass</p>
+  <h1>The life of a collab, one row to completion.</h1>
+  <p class="lede">Every brand engagement is one <code>campaign_influencer</code> record walking a single spine. Restyled white + black; colour only where it means "your turn." This pass adds a dedicated <b>Tracking</b> stage that watches two things at once — the post on <b>social media</b> and the same post on <b>our platform</b> (engagement + sales).</p>
+
+  <!-- SPINE -->
+  <div class="section">
+    <h2>1 · The spine — now six stages</h2>
+    <p class="h2sub">Five action stages plus the new <b>Tracking</b> stage (post-approval), then Complete. The grey keys are the real <code>influencer_status</code> / deliverable values from <code>StatusPill.js</code> — the UI stage is a grouping, not a new state machine.</p>
+    <div class="spine">
+      <div class="steps">
+        <div class="step"><div class="node">1</div><div class="sname">Invite</div><div class="skeys">invited</div><div class="turn you">Your move</div></div>
+        <div class="step"><div class="node">2</div><div class="sname">Negotiate</div><div class="skeys">negotiating<br>awaiting_·</div><div class="turn you">Ping-pong</div></div>
+        <div class="step"><div class="node">3</div><div class="sname">Sign</div><div class="skeys">accepted<br>pending_·</div><div class="turn you">Your move</div></div>
+        <div class="step"><div class="node">4</div><div class="sname">Active</div><div class="skeys">active · logistics<br>+ deliverables</div><div class="turn you">Deliver</div></div>
+        <div class="step track"><div class="node">5</div><div class="sname">Tracking</div><div class="skeys">live<br>social + platform</div><div class="turn you">Watch</div></div>
+        <div class="step"><div class="node">6</div><div class="sname">Complete</div><div class="skeys">completed<br>tranches</div><div class="turn">Auto</div></div>
+      </div>
+      <div class="branchNote"><span class="tag">Applied — separate filter</span> open-call applications sit in their own tab (waiting on brand pick), not mixed into Invites.</div>
+      <div class="termRow">
+        <span class="termLbl">Terminal → Archive filter:</span>
+        <span class="termChip">declined</span><span class="termChip">expired</span><span class="termChip">rejected_by_brand</span><span class="termChip">slots_filled</span><span class="termChip">cancelled</span><span class="termChip">walked_away</span>
+      </div>
+    </div>
+    <div class="principle">
+      <div class="big">↔</div>
+      <p><b>Organizing principle — "Whose turn is it?"</b> At every stage the collab is waiting on <b>you</b> (yellow, actionable) or on the <b>brand</b> (blue, informational). The row, the detail hero, and the Home "Your turn (N)" count all read this one flag.</p>
+    </div>
+  </div>
+
+  <!-- STATE GRID -->
+  <div class="section">
+    <h2>2 · The row in every state</h2>
+    <p class="h2sub">Same row component throughout the Collabs list — only the badge, stats, and action strip change. "Your turn" states get buttons; "waiting" states get a muted one-liner. The new Tracking states are the last two.</p>
+    <div class="grid">
+
+      <div class="stateCard"><div class="stTag"><span>1 · Invite (handpick)</span><span class="who">You</span></div>
+        <div class="deal"><div class="dhead"><div><div class="brand">Mamaearth</div><div class="camp">Skincare Launch · Story</div></div><div class="spill s-you"><span class="d"></span>New invite</div></div>
+        <div class="dstats"><div class="dstat"><div class="l">Fee</div><div class="v">₹6,000</div></div><div class="dstat"><div class="l">Expires</div><div class="v" style="color:var(--red)">18h</div></div></div>
+        <div class="dcta"><div class="btn btnPrimary">Accept</div><div class="btn">Negotiate</div><div class="btn btnDanger">Pass</div></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>1b · Applied (separate)</span><span class="who b">Brand</span></div>
+        <div class="deal dim"><div class="dhead"><div><div class="brand">Sugar Cosmetics</div><div class="camp">Open call · Reel</div></div><div class="spill s-wait"><span class="d"></span>Applied</div></div>
+        <div class="oneline wait"><span class="dot b"></span>Brand is choosing creators<span class="go">Waiting</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>2 · Negotiate — your turn</span><span class="who">You</span></div>
+        <div class="deal"><div class="dhead"><div><div class="brand">Sugar Cosmetics</div><div class="camp">Matte Range · Reel</div></div><div class="spill s-nego"><span class="d"></span>Your turn</div></div>
+        <div class="oneline"><span class="dot p"></span>Brand countered ₹9,500<span class="go">Open chat →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>2 · Negotiate — waiting</span><span class="who b">Brand</span></div>
+        <div class="deal dim"><div class="dhead"><div><div class="brand">Plum Goodness</div><div class="camp">Bodycare · Reel</div></div><div class="spill s-wait"><span class="d"></span>Waiting</div></div>
+        <div class="oneline wait"><span class="dot b"></span>Your counter ₹11,000 sent<span class="go">Waiting</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>3 · Sign — your turn</span><span class="who">You</span></div>
+        <div class="deal"><div class="dhead"><div><div class="brand">Nykaa</div><div class="camp">Summer Glow · Reel</div></div><div class="spill s-you"><span class="d"></span>To sign</div></div>
+        <div class="dstats"><div class="dstat"><div class="l">Fee</div><div class="v">₹12,000</div></div><div class="dstat"><div class="l">Signs by</div><div class="v">14 Aug</div></div></div>
+        <div class="dcta"><div class="btn btnPrimary">Review &amp; sign</div></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>3 · Signed — awaiting brand</span><span class="who b">Brand</span></div>
+        <div class="deal dim"><div class="dhead"><div><div class="brand">Nykaa</div><div class="camp">Summer Glow · Reel</div></div><div class="spill s-wait"><span class="d"></span>Countersign</div></div>
+        <div class="oneline wait"><span class="dot b"></span>You signed · brand to countersign<span class="go">Waiting</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>4 · Active — logistics</span><span class="who">You</span></div>
+        <div class="deal act"><div class="dhead"><div><div class="brand">The Man Company</div><div class="camp">Store visit · Reel</div></div><div class="spill s-you"><span class="d"></span>Active</div></div>
+        <div class="oneline"><span class="dot"></span>Confirm your visit slot<span class="go">Pick time →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>4 · Active — upload</span><span class="who">You</span></div>
+        <div class="deal act"><div class="dhead"><div><div class="brand">boAt</div><div class="camp">Festive Reels · Reel ×2</div></div><div class="spill s-you"><span class="d"></span>Active</div></div>
+        <div class="dstats"><div class="dstat"><div class="l">Fee</div><div class="v">₹8,500</div></div><div class="dstat"><div class="l">Delivered</div><div class="v">1 / 2</div></div></div>
+        <div class="oneline"><span class="dot"></span>1 deliverable to upload<span class="go">Upload →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>4 · Active — revision</span><span class="who">You</span></div>
+        <div class="deal act"><div class="dhead"><div><div class="brand">boAt</div><div class="camp">Festive Reels · Reel</div></div><div class="spill s-you"><span class="d"></span>Revision</div></div>
+        <div class="oneline"><span class="dot"></span>Brand asked for a change<span class="go">See notes →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>4 · Active — under review</span><span class="who b">Brand</span></div>
+        <div class="deal dim"><div class="dhead"><div><div class="brand">Lakmé</div><div class="camp">Glam Look · Reel</div></div><div class="spill s-wait"><span class="d"></span>In review</div></div>
+        <div class="oneline wait"><span class="dot b"></span>Content submitted · brand reviewing<span class="go">Waiting</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>4 · Active — go live</span><span class="who">You</span></div>
+        <div class="deal act"><div class="dhead"><div><div class="brand">Lakmé</div><div class="camp">Glam Look · Reel</div></div><div class="spill s-done"><span class="d"></span>Approved</div></div>
+        <div class="oneline"><span class="dot g"></span>Approved · post &amp; add live URL<span class="go">Submit URL →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>5 · Tracking — live</span><span class="who n">Auto</span></div>
+        <div class="deal"><div class="dhead"><div><div class="brand">Lakmé</div><div class="camp">Glam Look · Reel · live</div></div><div class="spill s-done"><span class="d"></span>Tracking</div></div>
+        <div class="dstats"><div class="dstat"><div class="l">Social reach</div><div class="v">48.2k</div></div><div class="dstat"><div class="l">Platform</div><div class="v">1.2k · 6 sales</div></div></div>
+        <div class="oneline"><span class="dot g"></span>Engagement + sales updating<span class="go">View tracking →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>6 · Complete</span><span class="who n">Auto</span></div>
+        <div class="deal"><div class="dhead"><div><div class="brand">Nykaa</div><div class="camp">Summer Glow · Reel</div></div><div class="spill s-done"><span class="d"></span>Completed</div></div>
+        <div class="dstats"><div class="dstat"><div class="l">Earned</div><div class="v" style="color:var(--green)">₹12,000</div></div><div class="dstat"><div class="l">Tranches</div><div class="v">2 / 3</div></div></div>
+        <div class="oneline"><span class="dot g"></span>Final payout in 21 days<span class="go">Earnings →</span></div></div></div>
+
+      <div class="stateCard"><div class="stTag"><span>× · Closed (archive)</span><span class="who n">—</span></div>
+        <div class="deal dim"><div class="dhead"><div><div class="brand">boAt</div><div class="camp">Old call · Reel</div></div><div class="spill s-rej"><span class="d"></span>Expired</div></div>
+        <div class="oneline wait"><span class="dot r"></span>Offer lapsed without action<span class="go">Archived</span></div></div></div>
+
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="section">
+    <h2>3 · The Collab detail — one screen, state-driven</h2>
+    <p class="h2sub">Tapping any row opens <b>CollabDetail</b>. Fixed skeleton: progress spine → a "next action" hero that swaps with state → standing sections. Sign / Negotiate / Upload / Logistics all live <em>inside</em> here. Three states shown, ending on the new Tracking screen.</p>
+    <div class="phones">
+
+      <!-- To sign -->
+      <div class="col">
+        <p class="cap">Stage 3 — To sign</p>
+        <p class="capSub">Hero = "Review &amp; sign." Downstream sections visible but locked until active.</p>
+        <div class="phone"><div class="screen">
+          <div class="appHead">
+            <div class="backr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>Collabs</div>
+            <div class="htitle">Nykaa · Summer Glow</div>
+            <div class="hsub">₹12,000 · Reel · conversion</div>
+            <div class="miniSpine">
+              <div class="ms done"><div class="bar"></div><div class="t">Invite</div></div>
+              <div class="ms done"><div class="bar"></div><div class="t">Nego</div></div>
+              <div class="ms cur"><div class="bar"></div><div class="t">Sign</div></div>
+              <div class="ms"><div class="bar"></div><div class="t">Active</div></div>
+              <div class="ms"><div class="bar"></div><div class="t">Track</div></div>
+              <div class="ms"><div class="bar"></div><div class="t">Done</div></div>
+            </div>
+          </div>
+          <div class="body">
+            <div class="hero">
+              <div class="heroTag"><span class="d"></span>Your turn</div>
+              <div class="heroTitle">Review &amp; sign contract</div>
+              <div class="heroDesc">Brand prepared your contract. Sign to lock the deal — Tranche 1 (₹3,000) releases on both signatures.</div>
+              <div class="heroBtn">Review &amp; sign →</div>
+            </div>
+            <div class="drow"><div class="drico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg></div><div class="drmid"><div class="drt">Contract</div><div class="drs">Awaiting your signature</div></div><span class="miniPill mp-you"><span class="d"></span>Your turn</span></div>
+            <div class="drow lock"><div class="drico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg></div><div class="drmid"><div class="drt">Deliverables</div><div class="drs">Unlocks after signing</div></div><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#B8B8B8" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
+            <div class="drow lock"><div class="drico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 4h9l-1 6h1a3 3 0 010 6H8"/></svg></div><div class="drmid"><div class="drt">Earnings</div><div class="drs">₹12,000 across 3 tranches</div></div><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Active -->
+      <div class="col">
+        <p class="cap">Stage 4 — Active</p>
+        <p class="capSub">Hero = current deliverable action. Logistics row appears only for offline campaigns.</p>
+        <div class="phone"><div class="screen">
+          <div class="appHead">
+            <div class="backr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>Collabs</div>
+            <div class="htitle">boAt · Festive Reels</div>
+            <div class="hsub">₹8,500 · Reel ×2 · engagement</div>
+            <div class="miniSpine">
+              <div class="ms done"><div class="bar"></div><div class="t">Invite</div></div>
+              <div class="ms done"><div class="bar"></div><div class="t">Nego</div></div>
+              <div class="ms done"><div class="bar"></div><div class="t">Sign</div></div>
+              <div class="ms cur"><div class="bar"></div><div class="t">Active</div></div>
+              <div class="ms"><div class="bar"></div><div class="t">Track</div></div>
+              <div class="ms"><div class="bar"></div><div class="t">Done</div></div>
+            </div>
+          </div>
+          <div class="body">
+            <div class="hero">
+              <div class="heroTag"><span class="d"></span>Your turn · 1 pending</div>
+              <div class="heroTitle">Upload your 2nd reel</div>
+              <div class="heroDesc">Deadline 20 Aug. Upload the video or paste a draft link — brand reviews before you post live.</div>
+              <div class="heroBtn">Upload content →</div>
+            </div>
+            <div class="drow"><div class="drico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg></div><div class="drmid"><div class="drt">Deliverables</div><div class="drs">1 live · 1 to upload</div></div><span class="miniPill mp-you"><span class="d"></span>1 / 2</span></div>
+            <div class="drow"><div class="drico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg></div><div class="drmid"><div class="drt">Contract</div><div class="drs">Active · view PDF</div></div><span class="miniPill mp-done"><span class="d"></span>Signed</span></div>
+            <div class="drow"><div class="drico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16v13H4z"/><path d="M9 7V4h6v3"/></svg></div><div class="drmid"><div class="drt">Products in store</div><div class="drs">4 live · create a post</div></div><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span></div>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- TRACKING (new) -->
+      <div class="col">
+        <p class="cap">Stage 5 — Tracking (new)</p>
+        <p class="capSub">Two panels, two sources: the post on <b>social</b> and the same post on <b>our platform</b> (engagement + sales).</p>
+        <div class="phone"><div class="screen">
+          <div class="appHead">
+            <div class="backr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>Collabs</div>
+            <div class="htitle">Lakmé · Glam Look</div>
+            <div class="hsub">Live · tracking performance</div>
+            <div class="miniSpine">
+              <div class="ms done"><div class="bar"></div><div class="t">Invite</div></div>
+              <div class="ms done"><div class="bar"></div><div class="t">Nego</div></div>
+              <div class="ms done"><div class="bar"></div><div class="t">Sign</div></div>
+              <div class="ms done"><div class="bar"></div><div class="t">Active</div></div>
+              <div class="ms cur"><div class="bar"></div><div class="t">Track</div></div>
+              <div class="ms"><div class="bar"></div><div class="t">Done</div></div>
+            </div>
+          </div>
+          <div class="body">
+            <!-- SOCIAL -->
+            <div class="tPanel">
+              <div class="tHead"><div class="ic" style="background:var(--purpleBg)"><svg viewBox="0 0 24 24" fill="none" stroke="#6D3FC4" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></div><div class="nm">On social media</div><div class="src">Instagram · 2h ago</div></div>
+              <div class="tBig"><span class="tBigV">48.2k</span><span class="tBigL">reach</span></div>
+              <div class="sparkWrap"><i style="height:30%"></i><i style="height:45%"></i><i style="height:40%"></i><i style="height:60%"></i><i style="height:75%"></i><i class="on" style="height:90%"></i><i class="on" style="height:100%"></i></div>
+              <div class="tRow"><div class="tm"><div class="v">3.1k</div><div class="l">Likes</div></div><div class="tm"><div class="v">212</div><div class="l">Comments</div></div><div class="tm"><div class="v">6.4%</div><div class="l">Eng. rate</div></div></div>
+            </div>
+            <!-- PLATFORM -->
+            <div class="tPanel">
+              <div class="tHead"><div class="ic" style="background:#FFF6D6"><svg viewBox="0 0 24 24" fill="none" stroke="#7A6200" stroke-width="1.9"><path d="M3 3h2l2 12h11l2-8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg></div><div class="nm">On INFLX</div><span class="p2tag">Phase 2</span></div>
+              <div class="tBig"><span class="tBigV">1,204</span><span class="tBigL">post views</span></div>
+              <div class="tRow"><div class="tm"><div class="v">86</div><div class="l">Likes</div></div><div class="tm"><div class="v">41</div><div class="l">Saves</div></div><div class="tm"><div class="v">9</div><div class="l">Product taps</div></div></div>
+              <div class="sales"><span class="lbl">Sales from this post</span><span class="amt">₹1,850</span></div>
+              <div class="drs" style="margin-top:6px">6 orders · commission confirmed after 30-day return window</div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ROUTING + REPLACES + PHASES -->
+  <div class="section">
+    <h2>4 · Routing, what it replaces &amp; build phases</h2>
+    <p class="h2sub">One canonical destination — every door resolves to <b>CollabDetail(id)</b>; the screen decides what to show from the record's state.</p>
+    <div class="routeBox">
+      <div class="routeRow"><span class="from">Row tap</span><span class="to">→ <b>CollabDetail(id)</b></span></div>
+      <div class="routeRow"><span class="from">Home "Your turn (N)"</span><span class="to">→ filtered Collabs list, then <b>CollabDetail(id)</b></span></div>
+      <div class="routeRow"><span class="from">Notification</span><span class="to">offer / contract / content / negotiation → <b>CollabDetail(id)</b>, hero pre-set</span></div>
+      <div class="routeRow"><span class="from">Sign · Negotiate · Upload · Logistics</span><span class="to">open as sheets <b>within</b> CollabDetail</span></div>
+    </div>
+    <div class="repl">
+      <div class="r"><span class="k">✕</span><span><b class="strike">OfferListScreen</b> + <b class="strike">MyCampaignsScreen</b> → one <b>CollabsListScreen</b> with stage filters.</span></div>
+      <div class="r"><span class="k">✕</span><span><b class="strike">OfferDetailScreen</b> + <b class="strike">CampaignDetailScreen</b> → one <b>CollabDetailScreen</b> (state-driven hero).</span></div>
+      <div class="r"><span class="k">◐</span><span><b class="strike">Deliverable</b> + <b class="strike">DeliverableDetail</b> → one deliverable screen (media upload + stats + timeline).</span></div>
+      <div class="r"><span class="k">→</span><span><b>NegotiationScreen</b> &amp; <b>ContractScreen</b> survive as sub-screens, reached only from CollabDetail.</span></div>
+    </div>
+    <div class="phaseBox">
+      <div class="ph p1"><div class="t"><span class="d"></span>Phase 1 · frontend-only · OTA-safe</div><p>All of the above restructure + the Instagram restyle + the <b>social</b> half of Tracking (already backed by <code>deliverable_stats</code> / <code>refresh-stats</code>). No DB, no backend — safe to ship.</p></div>
+      <div class="ph p2"><div class="t"><span class="d"></span>Phase 2 · gated · needs backend + migration</div><p>The <b>INFLX-platform</b> tracking panel: creator-facing post analytics (no rollup today) + <b>post-level sales attribution</b> — <code>follower_transactions</code> has no <code>post_id</code> yet. Its own contract, explicit go.</p></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Both mockups now match: Instagram-clean, planned app-wide. Locked from your call — <b>Collabs</b> name, <b>Tracking</b> as its own stage, <b>Applied</b> separate, <b>Logistics</b> inside CollabDetail, one <b>"Your turn (N)"</b> Home tile. Nothing built yet. Next per your steer: same analysis pass for <b>brand-web</b> + <b>brand mobile</b>, then you guide where we go.
+  </div>
+</div>

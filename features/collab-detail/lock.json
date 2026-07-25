@@ -1,0 +1,24 @@
+{
+  "feature": "collab-detail",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: instructed 'ok move collab details' in-session 2026-07-25 and dismissed the reconfirm question (= proceed). Lock decision delegated per standing autonomy; contract scope as written.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — the Collabs lifecycle look (incl. §3 state-driven detail: progress spine, next-action hero, standing sections) was iterated + locked in-session 2026-07-25. Board copied to 04-preview/mockups/collab-lifecycle.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Wave-1 screen 2, follows collabs-list. Unified CollabDetailScreen replaces BOTH OfferDetailScreen + CampaignDetailScreen as the engagement hub; loads by campaign_influencer_id via existing getMyCampaignDetail (verified status-agnostic — all stages). State-driven hero + progress spine + stage-gated section cards that REUSE existing sub-screens (Negotiation/Contract/Deliverable/Commission/Products) — orchestrates, does not reimplement. Frontend-only, mobile-influencer, OTA — no backend/DB. Out of scope: Tracking dual-panel (separate contract), sub-screen restyle, deleting old detail screens, open-group applied variant (transitional route to OfferDetail). Step-5 lock (approved=true) awaits founder read of 01-spec + 02-workflow.",
+  "qa_record": "Mobile jest GREEN 66/66 (2026-07-25): 14 collabDetailModel specs (heroFor per stage / sectionsFor gating / spineFor) + updated collabs smoke (CollabDetailScreen loads) + 21 collabStages + 31 others. Data model verified: getMyCampaignDetail(ciId) status-agnostic across all stages. Deploy-inert until OTA; mobile-JS-only, no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(OfferDetail+CampaignDetail) / after(one CollabDetailScreen: spine+hero+sections, reuses sub-screens) + 4 known deltas (Tracking panels later; sub-screens not yet restyled; applied handled inline; old detail screens kept for deep-links).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT yet deployed — build complete + jest-green. Awaiting founder OTA go (production-impacting). Maestro skippable on founder call (recorded)."
+  }
+}

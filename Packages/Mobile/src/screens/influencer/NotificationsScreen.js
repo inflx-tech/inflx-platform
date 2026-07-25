@@ -69,7 +69,8 @@ function getNavTarget(type, dataJson) {
     // Collabs tab (features/collabs-list) absorbs the old Offers/Campaigns tabs.
     case 'offer_received':
     case 'offer_expired':
-      return dataJson?.offer_id ? { screen: 'Collabs', params: { screen: 'OfferDetail', params: { offerId: dataJson.offer_id } } } : null;
+      // Unified hub (features/collab-detail); offer_id === campaign_influencer_id.
+      return dataJson?.offer_id ? { screen: 'Collabs', params: { screen: 'CollabDetail', params: { campaignInfluencerId: dataJson.offer_id } } } : null;
     case 'contract_ready':
     case 'contract_signed':
       return dataJson?.contract_id ? { screen: 'Collabs', params: { screen: 'Contract', params: { contractId: dataJson.contract_id } } } : null;

@@ -7,11 +7,13 @@ describe('collabs-list modules load', () => {
   // transform @react-navigation's TSX (transformIgnorePatterns), so requiring it
   // fails on THEIR source, not ours. The navigator is plain JSX validated on-device
   // via the Maestro gate.
-  it('theme + components + screen require without throwing', () => {
+  it('theme + components + screens require without throwing', () => {
     expect(() => require('../../../theme/ig')).not.toThrow();
     expect(() => require('../../../components/collabs/StageTabs')).not.toThrow();
     expect(() => require('../../../components/collabs/CollabRow')).not.toThrow();
     expect(() => require('../CollabsListScreen')).not.toThrow();
+    expect(() => require('../CollabDetailScreen')).not.toThrow();
+    expect(() => require('../../../utils/collabDetailModel')).not.toThrow();
   });
 
   it('exports are the expected shapes', () => {
@@ -19,6 +21,7 @@ describe('collabs-list modules load', () => {
     expect(ig.y).toBe('#FFC107');
     expect(IG_TONE.you.dot).toBe('#FFC107');
     expect(typeof require('../CollabsListScreen').default).toBe('function');
+    expect(typeof require('../CollabDetailScreen').default).toBe('function');
     expect(typeof require('../../../components/collabs/StageTabs').default).toBe('function');
   });
 });
