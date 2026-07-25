@@ -67,6 +67,8 @@ import CategoryBrowserScreen from '../screens/follower/CategoryBrowserScreen';
 import FollowerPageScreen from '../screens/follower/FollowerPageScreen';
 // Stage C2 — product wishlist + collections
 import WishlistScreen from '../screens/follower/WishlistScreen';
+// Stage C3 — Review Order (address · payment method · bill) before payment
+import ReviewOrderScreen from '../screens/follower/ReviewOrderScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -113,6 +115,8 @@ const SHARED_SCREENS = (Stack) => (
         it without a duplicate route name — see the crash note above Orders). */}
     <Stack.Screen name="Wishlist" component={WishlistScreen} />
     <Stack.Screen name="PostProduct" component={PostProductScreen} />
+    {/* Stage C3 — the Review Order step between Bag and payment */}
+    <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
   </>
 );
 

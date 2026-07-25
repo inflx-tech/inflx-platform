@@ -8,21 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { toing as T, fonts } from '../../theme/tokens';
 import { useCart } from '../../services/CartContext';
 import { followerApi } from '../../services/api';
-import { processPayment } from '../../services/payment';
 import CustomiseSheet from '../../components/food/CustomiseSheet';
-import { getGuestAddresses, isGuestAddressId, syncGuestAddresses } from '../../utils/guestAddress';
+import { getGuestAddresses } from '../../utils/guestAddress';
 import { ensureWish } from '../../services/wishlist';
-
-// follower-checkout Slice B — payment methods in the cart's payment selector.
-// The first is the default. `rzp` preselects the method in Razorpay's checkout
-// (it opens focused on that tab); Razorpay still owns the final method UI.
-const PAY_METHODS = [
-  { key: 'phonepe', icon: '📱', label: 'PhonePe UPI', sub: 'UPI', rzp: 'upi' },
-  { key: 'gpay', icon: '📱', label: 'Google Pay', sub: 'UPI', rzp: 'upi' },
-  { key: 'upi', icon: '🏦', label: 'Other UPI', sub: 'Enter any UPI ID', rzp: 'upi' },
-  { key: 'card', icon: '💳', label: 'Credit / Debit Card', sub: 'Visa · Mastercard · RuPay', rzp: 'card' },
-  { key: 'netbanking', icon: '🏛️', label: 'Netbanking', sub: 'All major banks', rzp: 'netbanking' },
-];
+// Stage C3: payment method + order placement moved to ReviewOrderScreen —
+// the Bag hands off with one yellow Proceed.
 
 function addrLine(a) {
   if (!a) return '';
@@ -101,10 +91,6 @@ export default function CartScreen({ navigation }) {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddr, setSelectedAddr] = useState(null);
   const [addrOpen, setAddrOpen] = useState(false);
-  const [payKey, setPayKey] = useState(PAY_METHODS[0].key);
-  const [payOpen, setPayOpen] = useState(false);
-  const [placing, setPlacing] = useState(false);
-  const payMethod = PAY_METHODS.find((m) => m.key === payKey) || PAY_METHODS[0];
 
   // Guest-first (founder 2026-07-25): the checkout bar shows device-local
   // guest addresses when logged out (and any not-yet-synced ones after login).
@@ -128,17 +114,6 @@ export default function CartScreen({ navigation }) {
   }, []);
 
   useEffect(() => { if (isShop) loadAddresses(); }, [isShop, loadAddresses]);
-
-  // The follower's own phone, prefilled into Razorpay so it skips its
-  // contact-collection ("enter phone number") step — we already have it.
-  const [userPhone, setUserPhone] = useState('');
-  useEffect(() => {
-    if (!isShop) return;
-    AsyncStorage.getItem('inflx_user').then((raw) => {
-      if (!raw) return;
-      try { const u = JSON.parse(raw); if (u?.phone) setUserPhone(u.phone); } catch { /* ignore */ }
-    }).catch(() => {});
-  }, [isShop]);
 
   const addrObj = addresses.find((a) => a.id === selectedAddr) || null;
 
@@ -285,137 +260,6 @@ export default function CartScreen({ navigation }) {
       tracking: cart.tracking || null,
       trackingParams: cart.tracking || null,
     });
-  }
-
-  // Map a cart line → the backend order item shape (server re-prices + resolves
-  // customisation; client prices are never trusted).
-  const toOrderItem = (i) => ({
-    product_id: i.product_id,
-    quantity: i.qty,
-    variant_sku: i.variant_sku || null,
-    variant_label: i.variant_label || null,
-    variation: i.variation || null,
-    addons: Array.isArray(i.selected_addons) ? i.selected_addons : [],
-    note: i.note || null,
-  });
-
-  // follower-checkout Slice B — inline shopping checkout. Builds the order
-  // payload (single brand → legacy single payload; multiple brands → brand_groups
-  // for the per-brand split), runs createOrder → (mock) pay → verifyOrder, then
-  // clears the cart and shows the confirmation. The follower pays ONCE.
-  async function placeShopOrder() {
-    if (!items.length) return;
-    if (!selectedAddr) {
-      navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) });
-      return;
-    }
-
-    // Guest-first checkout: this is the ONE login moment in the whole journey.
-    // New users go phone → OTP → name; the same tap then continues the order.
-    const token = await AsyncStorage.getItem('inflx_token');
-    if (!token) {
-      navigation.navigate('FollowerLogin', { onDone: () => placeShopOrder() });
-      return;
-    }
-
-    // A guest-saved address becomes a real account address now, so the order
-    // payload carries a server address_id.
-    let addressId = selectedAddr;
-    if (isGuestAddressId(selectedAddr)) {
-      const map = await syncGuestAddresses();
-      const serverAddr = map[selectedAddr];
-      if (!serverAddr?.id) {
-        Alert.alert('Address', 'Could not save your delivery address. Please check it and try again.');
-        loadAddresses();
-        return;
-      }
-      addressId = serverAddr.id;
-      loadAddresses(serverAddr.id);
-    }
-
-    // follower-creator-attribution Slice 1 — group lines by (brand + claiming
-    // creator). Each creator-claimed group credits that creator; the organic
-    // group (no claim) is brand+platform only. The follower still pays once.
-    const leadOfferId = applied?.brand_offer_id || null;
-    const groups = new Map();
-    for (const i of items) {
-      const bid = i.brand_id || cart.brandId;
-      const ci = i.claim?.campaign_influencer_id || '';
-      const key = `${bid}::${ci}`;
-      if (!groups.has(key)) groups.set(key, { brand_id: bid, claim: i.claim || null, lines: [] });
-      groups.get(key).lines.push(i);
-    }
-    const groupArr = [...groups.values()];
-
-    const groupPayload = (g) => {
-      const grp = { brand_id: g.brand_id, items: g.lines.map(toOrderItem) };
-      if (g.claim?.campaign_influencer_id) {
-        grp.campaign_id = g.claim.campaign_id;
-        grp.set_id = g.claim.set_id;
-        grp.campaign_influencer_id = g.claim.campaign_influencer_id;
-        grp.offer_id = g.claim.offer_id || null;
-      } else if (g.brand_id === cart.brandId && leadOfferId) {
-        // Organic lead-brand store offer (a brand-direct offer the follower chose).
-        grp.brand_offer_id = leadOfferId;
-      }
-      return grp;
-    };
-
-    let payload;
-    if (groupArr.length > 1) {
-      payload = { address_id: addressId, brand_groups: groupArr.map(groupPayload) };
-    } else {
-      const g = groupArr[0];
-      payload = g.claim?.campaign_influencer_id
-        ? {
-            items: g.lines.map(toOrderItem), address_id: addressId,
-            campaign_id: g.claim.campaign_id, set_id: g.claim.set_id,
-            campaign_influencer_id: g.claim.campaign_influencer_id, offer_id: g.claim.offer_id || null,
-          }
-        : { items: g.lines.map(toOrderItem), address_id: addressId, brand_id: g.brand_id, brand_offer_id: leadOfferId };
-    }
-
-    setPlacing(true);
-    try {
-      const res = await followerApi.createOrder(payload);
-      if (!res.success && !res.data) {
-        Alert.alert('Order failed', res.error?.message || 'Please try again'); return;
-      }
-      const payResult = await processPayment({
-        amount: Math.round((res.data?.net_amount || total) * 100), // paise
-        orderId: res.data?.razorpay_order_id,
-        keyId: res.data?.razorpay_key_id,
-        description: `Order via ${payMethod.label}`,
-        // The Razorpay merchant title must be OURS, not an individual store —
-        // the follower pays INFLX once and we split per brand. (Was leaking the
-        // lead brand's name, e.g. "Urban Stitch", in a multi-brand cart.)
-        brandName: 'INFLX',
-        // Skip Razorpay's phone step (we have the number) + open it focused on
-        // the method the follower picked in our payment row. Read the phone
-        // fresh — a guest who just OTP'd in has it in storage, not in state.
-        prefill: { contact: userPhone || (await AsyncStorage.getItem('inflx_user').then((r) => { try { return JSON.parse(r)?.phone || ''; } catch { return ''; } }).catch(() => '')), method: payMethod.rzp },
-      });
-      if (!payResult) { Alert.alert('Payment cancelled', 'You can try again anytime.'); return; }
-
-      const verifyRes = await followerApi.verifyOrder?.({
-        razorpay_order_id: payResult.razorpay_order_id,
-        razorpay_payment_id: payResult.razorpay_payment_id,
-        razorpay_signature: payResult.razorpay_signature,
-      });
-      if (verifyRes?.success || verifyRes?.data) {
-        const orderId = verifyRes?.data?.order_id;
-        clear?.();
-        navigation.replace('OrderConfirmation', {
-          orderId, total: res.data?.net_amount || total, brandName: cart.brandName,
-        });
-      } else {
-        Alert.alert('Verification failed', verifyRes?.error?.message || 'Payment received but verification failed. Contact support.');
-      }
-    } catch (e) {
-      Alert.alert('Error', e.message || 'Something went wrong');
-    } finally {
-      setPlacing(false);
-    }
   }
 
   if (items.length === 0) {
@@ -691,21 +535,24 @@ export default function CartScreen({ navigation }) {
 
       {/* ── Footer ── */}
       {isShop ? (
-        // Board frame 1 — the address strip moved to the TOP of the bag; the
-        // footer keeps payment method + ONE yellow Place Order. The follower
-        // pays once; the backend splits per brand silently.
+        // Stage C3 — the Bag hands off to Review Order (address + payment
+        // method + engine bill live THERE now); one yellow Proceed here.
         <SafeAreaView edges={['bottom']} style={w.footer}>
-          <Pressable style={w.payRow} onPress={() => setPayOpen(true)}>
-            <Text style={w.payTxt} numberOfLines={1}>Pay using <Text style={{ fontWeight: '800' }}>{payMethod.label}</Text></Text>
-            <Text style={w.addrChg}>Change</Text>
-          </Pressable>
           <View style={w.footRow}>
             <View>
               <Text style={w.footAmt}>₹{Math.round(total)}</Text>
               <Text style={w.footLbl}>TO PAY</Text>
             </View>
-            <Pressable style={[w.place, placing && { opacity: 0.7 }]} onPress={placeShopOrder} disabled={placing}>
-              {placing ? <ActivityIndicator color="#111" /> : <Text style={w.placeTxt}>Place Order</Text>}
+            <Pressable style={w.place} onPress={() => navigation.navigate('ReviewOrder', {
+              selectedAddr,
+              bill: {
+                itemTotal: Math.round(subtotal + mrpSavings),
+                savings: Math.round(mrpSavings + offerSaving + codeSaving),
+                offerName: applied?.name || null,
+                total,
+              },
+            })}>
+              <Text style={w.placeTxt}>Proceed</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -739,29 +586,6 @@ export default function CartScreen({ navigation }) {
             <Pressable onPress={() => { setAddrOpen(false); navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) }); }}>
               <Text style={s.addLink}>+ Add new address</Text>
             </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Payment method picker (shop) — UI only; mock payment */}
-      <Modal visible={payOpen} transparent animationType="slide" onRequestClose={() => setPayOpen(false)}>
-        <Pressable style={s.sheetBg} onPress={() => setPayOpen(false)}>
-          <Pressable style={s.sheet} onPress={() => {}}>
-            <Text style={s.sheetTitle}>Pay using</Text>
-            {PAY_METHODS.map((m) => {
-              const on = m.key === payKey;
-              return (
-                <Pressable key={m.key} style={[s.optRow, on && s.optRowOn]} onPress={() => { setPayKey(m.key); setPayOpen(false); }}>
-                  <Text style={s.fic}>{m.icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.optLabel}>{m.label}</Text>
-                    <Text style={s.optSub}>{m.sub}</Text>
-                  </View>
-                  <View style={[s.radio, !on && s.radioOff]}>{on ? <View style={s.radioIn} /> : null}</View>
-                </Pressable>
-              );
-            })}
-            <Text style={s.payNote}>You'll confirm payment securely. INFLX never stores your card details.</Text>
           </Pressable>
         </Pressable>
       </Modal>

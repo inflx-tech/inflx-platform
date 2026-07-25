@@ -30,6 +30,7 @@ const offerService = require('../services/offer.service');
 const pricingService = require('../services/pricing.service');
 const settlementService = require('../services/settlement.service');
 const paymentConfigSvc = require('../services/paymentConfig.service');
+const followerPostsService = require('../services/followerPosts.service'); // app-config knobs (COD)
 
 // Way-4 — resolve the admin-configured attribution window length (days) as a
 // validated integer, safe to inline into `interval 'N days'`. Falls back to 30.
@@ -1521,6 +1522,42 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   const { brand_groups, address_id } = req.body;
 
+  // ── Stage C3 — Cash on Delivery ────────────────────────────────────────────
+  // No Razorpay leg: price exactly as prepaid, then settle immediately through
+  // the SAME write path verify uses. The admin toggle is enforced HERE (server
+  // truth), not just hidden in the UI; the fee comes from app-config and lands
+  // once on the primary order row (platform revenue, outside brand_net math).
+  if (String(req.body.payment_method || '') === 'cod') {
+    const appConfig = await followerPostsService.getAppConfig();
+    if (!appConfig.cod_enabled) {
+      throw new AppError('VALIDATION_ERROR', 'Cash on Delivery is not available right now', 422);
+    }
+    const codFee = Math.max(0, parseFloat(appConfig.cod_fee) || 0);
+
+    const groups = Array.isArray(brand_groups) && brand_groups.length
+      ? brand_groups
+      : [{
+          offer_id: req.body.offer_id, campaign_id: req.body.campaign_id,
+          set_id: req.body.set_id, campaign_influencer_id: req.body.campaign_influencer_id,
+          brand_id: req.body.brand_id, brand_offer_id: req.body.brand_offer_id,
+          items: req.body.items, delivery_fee: req.body.delivery_fee,
+        }];
+    const priced = [];
+    for (const g of groups) priced.push(await priceOrderForGroup(follower, { ...g, address_id }));
+    const grandTotal = parseFloat(priced.reduce((s, p) => s + p.netAmount, 0).toFixed(2));
+
+    return settleOrders(req, res, follower, priced.map(p => p.subMeta), {
+      paymentMethod: 'cod',
+      codFee,
+      extraResponse: {
+        cod: true,
+        cod_fee: codFee,
+        net_amount: grandTotal,
+        total_due: parseFloat((grandTotal + codFee).toFixed(2)),
+      },
+    });
+  }
+
   // ── Multi-brand shopping checkout (follower-checkout Slice B) ──────────────
   // The shopping cart (fashion/furniture/beauty) can hold lines from several
   // brands. The follower sees ONE flat list + bill and pays ONCE; the backend
@@ -1607,9 +1644,13 @@ async function prepareSubOrder(sm) {
 // follower-checkout Slice B — write ONE order (one brand) inside the caller's
 // transaction. Identical to the legacy single-order write; the multi-brand path
 // calls it once per brand under the same transaction + single pending-order claim.
-async function writeSubOrder(client, prepared, razorpay_payment_id) {
+async function writeSubOrder(client, prepared, razorpay_payment_id, opts = {}) {
   const { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId } = prepared;
   const netAmount = parseFloat(sm.net_amount);
+  // Stage C3 — COD orders carry payment_method='cod'; the fee lands once, on
+  // the primary order row (opts.codFee is 0 for the rest of a multi split).
+  const paymentMethod = opts.paymentMethod || 'prepaid';
+  const codFee = parseFloat(opts.codFee || 0);
 
   const { rows: txRows } = await client.query(
     `INSERT INTO follower_transactions
@@ -1634,10 +1675,12 @@ async function writeSubOrder(client, prepared, razorpay_payment_id) {
 
   const { rows: orderRows } = await client.query(
     `INSERT INTO follower_orders
-       (transaction_id, address_id, order_status, estimated_delivery_date, whatsapp_number, items_json)
-     VALUES ($1, $2, 'confirmed', $3, $4, $5)
+       (transaction_id, address_id, order_status, estimated_delivery_date, whatsapp_number, items_json,
+        payment_method, cod_fee)
+     VALUES ($1, $2, 'confirmed', $3, $4, $5, $6, $7)
      RETURNING id`,
-    [transactionId, sm.address_id || null, estimatedDelivery, brandRows[0]?.brand_phone, JSON.stringify(sm.items_json)]
+    [transactionId, sm.address_id || null, estimatedDelivery, brandRows[0]?.brand_phone, JSON.stringify(sm.items_json),
+     paymentMethod, codFee]
   );
   const orderRowId = orderRows[0].id;
 
@@ -1694,13 +1737,32 @@ const verifyOrder = asyncHandler(async (req, res) => {
   // Reads first (per brand), then the writes inside ONE transaction with a single
   // pending-order claim — a failed verify rolls back every sub-order (no partial
   // orders), a concurrent double-verify loses the claim race (no double spend).
+  return settleOrders(req, res, follower, subMetas, {
+    razorpayPaymentId: razorpay_payment_id,
+    consumePendingOrderId: razorpay_order_id,
+  });
+});
+
+// Stage C3 — the shared settle path: prepare (reads) → write every sub-order in
+// ONE transaction → notifications → response. Prepaid verify passes the
+// pending-order id to consume; COD passes paymentMethod/codFee and no pending
+// order (there was no Razorpay leg). One code path = COD orders are identical
+// to prepaid ones in attribution, commission, return-window and settlement.
+async function settleOrders(req, res, follower, subMetas, opts = {}) {
+  const { razorpayPaymentId = null, consumePendingOrderId = null,
+          paymentMethod = 'prepaid', codFee = 0, extraResponse = {} } = opts;
+
   const prepared = [];
   for (const sm of subMetas) prepared.push(await prepareSubOrder(sm));
 
   const written = [];
   await db.withTransaction(async (client) => {
-    await txService.consumePendingOrder(client, razorpay_order_id);
-    for (const p of prepared) written.push(await writeSubOrder(client, p, razorpay_payment_id));
+    if (consumePendingOrderId) await txService.consumePendingOrder(client, consumePendingOrderId);
+    for (let i = 0; i < prepared.length; i++) {
+      written.push(await writeSubOrder(client, prepared[i], razorpayPaymentId, {
+        paymentMethod, codFee: i === 0 ? codFee : 0,
+      }));
+    }
   });
 
   // Money G-3: brand commerce settlement is DEFERRED to the commerce-settlement
@@ -1780,8 +1842,9 @@ const verifyOrder = asyncHandler(async (req, res) => {
     transaction_id: primary.transactionId,
     estimated_delivery_date: primary.estimatedDelivery,
     brand_contact_whatsapp: primary.brandPhone,
+    ...extraResponse,
   });
-});
+}
 
 // ── GET /follower/orders ──────────────────────────────────────────────────────
 

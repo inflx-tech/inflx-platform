@@ -1,0 +1,22 @@
+{
+  "feature": "concept-stagec3-checkout",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — reviewed the C3 board (04-preview/mockups/c3-checkout.html) in the browser pane in-session 2026-07-25; 'ok got it, pls start implementation'",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — 'ok got it, pls start implementation' after board review (pane re-opened and screenshot-verified in-session)",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Review Order screen (payment inline, one yellow CTA) + server-enforced COD w/ admin toggle + fee knob (app-config JSONB) + white-law shop success screen + settleOrders shared extract so COD == prepaid in attribution/commission/settlement. Migration 144 (payment_method + cod_fee on follower_orders) applied to prod pre-push.",
+  "qa_record": "Read before commit: backend controller loads; mobile jest 13/13 suites 66/66 (parallel window's 3 new suites included, all green); pnpm qa 79 passed GREEN, gate 0 (report 2026-07-25T13-13-48-663Z). Pre-OTA shared-tree check: only C3 files uncommitted, runtime stamp 3 untouched.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": null
+  }
+}

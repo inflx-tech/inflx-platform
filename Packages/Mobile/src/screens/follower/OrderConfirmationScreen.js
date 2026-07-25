@@ -8,8 +8,42 @@ import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
  * Alert. The order # is the real order id; VIEW ORDER → OrderDetail (tracking).
  */
 export default function OrderConfirmationScreen({ navigation, route }) {
-  const { orderId, total, brandName } = route.params || {};
+  const { orderId, total, brandName, kind, cod, addrLabel, addrText } = route.params || {};
   const ref = orderId ? `#${String(orderId).replace(/-/g, '').slice(0, 8).toUpperCase()}` : '#—';
+
+  // Stage C3 (board c3-checkout.html frame 3) — the SHOP checkout lands on the
+  // white-law success screen: black tick, order number, COD badge only on COD
+  // orders, address recap, black Track button (nothing to buy → no yellow).
+  // The food flow keeps the Creator Vibe variant below.
+  if (kind === 'shop') {
+    return (
+      <View style={ws.outer}>
+        <View style={ws.body}>
+          <View style={ws.tick}><Text style={ws.tickTxt}>✓</Text></View>
+          <Text style={ws.h1}>Order placed</Text>
+          <Text style={ws.p}>
+            {brandName ? `We've told ${brandName}.` : 'The store has been told.'}{'\n'}You'll get updates as it moves.
+          </Text>
+          <View style={ws.oid}><Text style={ws.oidTxt}>Order {ref}</Text></View>
+          {cod ? (
+            <View style={ws.codBadge}><Text style={ws.codTxt}>Cash on Delivery{total != null ? ` · ${fmtRupees(total)} due` : ''}</Text></View>
+          ) : (total != null ? <Text style={ws.paid}>Paid {fmtRupees(total)}</Text> : null)}
+          {addrText ? (
+            <View style={ws.addr}>
+              <Text style={ws.addrTitle}>Delivering to {addrLabel || 'you'}</Text>
+              <Text style={ws.addrTxt}>{addrText}</Text>
+            </View>
+          ) : null}
+          <TouchableOpacity style={ws.trackBtn} onPress={() => navigation.replace('OrderDetail', { orderId })}>
+            <Text style={ws.trackTxt}>Track in My Orders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.popToTop()}>
+            <Text style={ws.cont}>Continue shopping</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={s.outer}>
@@ -42,6 +76,27 @@ export default function OrderConfirmationScreen({ navigation, route }) {
     </View>
   );
 }
+
+// Stage C3 white-law success skin (shop checkout only).
+const ws = StyleSheet.create({
+  outer: { flex: 1, backgroundColor: '#FFF' },
+  body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 26 },
+  tick: { width: 74, height: 74, borderRadius: 37, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  tickTxt: { fontSize: 34, color: '#FFF', fontWeight: '800' },
+  h1: { fontSize: 19, fontWeight: '800', color: '#111' },
+  p: { fontSize: 12.5, color: '#8A8A8A', textAlign: 'center', lineHeight: 20, marginTop: 6 },
+  oid: { borderWidth: 1, borderStyle: 'dashed', borderColor: '#DDD', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8, marginTop: 14 },
+  oidTxt: { fontSize: 12, fontWeight: '800', color: '#111' },
+  paid: { fontSize: 12.5, fontWeight: '800', color: '#111', marginTop: 10 },
+  codBadge: { backgroundColor: '#FDFBF4', borderWidth: 1, borderColor: '#E0D6BB', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, marginTop: 12 },
+  codTxt: { fontSize: 11, fontWeight: '800', color: '#111' },
+  addr: { alignSelf: 'stretch', borderWidth: 1, borderColor: '#EEE', borderRadius: 12, padding: 12, marginTop: 18 },
+  addrTitle: { fontSize: 12, fontWeight: '800', color: '#111' },
+  addrTxt: { fontSize: 12, color: '#555', marginTop: 3, lineHeight: 18 },
+  trackBtn: { alignSelf: 'stretch', backgroundColor: '#111', borderRadius: 999, alignItems: 'center', paddingVertical: 14, marginTop: 22 },
+  trackTxt: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  cont: { fontSize: 12.5, fontWeight: '800', color: '#111', marginTop: 14 },
+});
 
 const s = StyleSheet.create({
   outer: { flex: 1, backgroundColor: C.screenBg },
