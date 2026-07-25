@@ -4,9 +4,11 @@ import {
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { toing as T, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { isGpsAvailable, ensureLocationPermission, getCurrentPosition } from '../../utils/geolocation';
+import { getGuestAddresses, addGuestAddress } from '../../utils/guestAddress';
 
 /**
  * AddressScreen — Follower v2, step L4 (white/yellow toing skin).
@@ -120,9 +122,20 @@ export default function AddressScreen({ navigation, route }) {
   }
 
   async function load() {
+    // Guest-first (founder 2026-07-25): no login needed to keep addresses —
+    // guests get a device-local address book; logged-in users get the server
+    // one plus any local rows that haven't synced yet.
+    const token = await AsyncStorage.getItem('inflx_token');
+    const guests = await getGuestAddresses();
+    if (!token) {
+      setLoading(false);
+      setAddresses(guests);
+      return;
+    }
     const res = await followerApi.getAddresses?.();
     setLoading(false);
-    if (res?.success) setAddresses(res.data?.addresses || []);
+    if (res?.success) setAddresses([...(res.data?.addresses || []), ...guests]);
+    else setAddresses(guests);
   }
 
   async function saveAddress() {
@@ -145,20 +158,32 @@ export default function AddressScreen({ navigation, route }) {
       Alert.alert('Address not found', "We couldn't locate that address on the map. Add more detail (area, city, pincode), or use 'Current location'.");
       return;
     }
-    const res = await followerApi.addAddress?.({
+    const body = {
       label, line1: line1.trim(), line2: line2.trim(),
       city: city.trim(), state: state.trim(), pincode: pincode.trim(),
       lat: coords.lat, lng: coords.lng,
-    });
+    };
+    // Guests save locally — the address syncs to their account at Place Order
+    // (the one login moment). Logged-in users save to the server as before.
+    const token = await AsyncStorage.getItem('inflx_token');
+    let saved = null;
+    let errMsg = null;
+    if (!token) {
+      saved = await addGuestAddress(body);
+    } else {
+      const res = await followerApi.addAddress?.(body);
+      if (res?.success) saved = res.data?.address;
+      else errMsg = res?.error?.message;
+    }
     setSaving(false);
-    if (res?.success) {
+    if (saved) {
       setShowForm(false);
       setLine1(''); setLine2(''); setCity(''); setState(''); setPincode(''); setLabel('Home');
       setLocated(null); setLocMsg(null);
       load();
-      if (typeof onSave === 'function') onSave(res.data?.address);
+      if (typeof onSave === 'function') onSave(saved);
     } else {
-      Alert.alert('Failed', res?.error?.message || 'Could not save address');
+      Alert.alert('Failed', errMsg || 'Could not save address');
     }
   }
 

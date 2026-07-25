@@ -19,10 +19,14 @@ import { api } from '../../services/api';
 /**
  * FollowerLoginScreen — quick OTP login for followers.
  *
- * Flow: Phone → OTP → Name (new users only) → Done → back to payment
+ * Flow: Phone → OTP → Name (new users only) → Done → back to payment.
+ * Guest-first (founder 2026-07-25): this screen is the ONE login moment of
+ * the shopping journey (reached from Place Order); route.params.onDone lets
+ * the caller resume (e.g. continue the order) after sign-in. Skin follows
+ * the locked design law: pure white, black text, yellow on the button only.
  */
 
-export default function FollowerLoginScreen({ navigation }) {
+export default function FollowerLoginScreen({ navigation, route }) {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
@@ -125,8 +129,17 @@ export default function FollowerLoginScreen({ navigation }) {
   }
 
   function finishLogin() {
-    Alert.alert('Signed In! ✅', 'You can now make payments and bookings.', [
-      { text: 'Continue', onPress: () => navigation.goBack() },
+    const onDone = route?.params?.onDone;
+    Alert.alert('Signed in', 'You are all set.', [
+      {
+        text: 'Continue',
+        onPress: () => {
+          navigation.goBack();
+          // Let the navigator settle before resuming the caller's action
+          // (e.g. Place Order re-runs with the fresh session).
+          if (typeof onDone === 'function') setTimeout(onDone, 400);
+        },
+      },
     ]);
   }
 
@@ -137,19 +150,14 @@ export default function FollowerLoginScreen({ navigation }) {
       </TouchableOpacity>
 
       <View style={s.content}>
-        {/* Icon */}
-        <View style={s.iconCircle}>
-          <Text style={{ fontSize: 32 }}>{step === 'phone' ? '📱' : step === 'otp' ? '🔑' : '👤'}</Text>
-        </View>
-
         {/* Title */}
         <Text style={s.title}>
-          {step === 'phone' ? 'Quick Sign In' : step === 'otp' ? 'Enter OTP' : 'Your Name'}
+          {step === 'phone' ? 'Almost there' : step === 'otp' ? 'Enter OTP' : 'Your name'}
         </Text>
         <Text style={s.subtitle}>
-          {step === 'phone' ? 'Sign in to make payments and bookings'
+          {step === 'phone' ? 'Confirm your phone number to place the order'
             : step === 'otp' ? `We sent a 6-digit code to +91 ${cleanedPhone.slice(-10)}`
-            : 'Almost done! Tell us your name'}
+            : 'Last step — tell us your name'}
         </Text>
 
         {/* ── Phone Step ── */}
@@ -166,7 +174,7 @@ export default function FollowerLoginScreen({ navigation }) {
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
                 placeholder="Enter 10-digit number"
-                placeholderTextColor="rgba(255,255,255,0.25)"
+                placeholderTextColor="#B5B5B5"
                 maxLength={10}
                 autoFocus
               />
@@ -191,7 +199,7 @@ export default function FollowerLoginScreen({ navigation }) {
               onChangeText={setOtp}
               keyboardType="number-pad"
               placeholder="0 0 0 0 0 0"
-              placeholderTextColor="rgba(255,255,255,0.2)"
+              placeholderTextColor="#B5B5B5"
               maxLength={6}
               autoFocus
             />
@@ -218,7 +226,7 @@ export default function FollowerLoginScreen({ navigation }) {
               value={name}
               onChangeText={setName}
               placeholder="Enter your name"
-              placeholderTextColor="rgba(255,255,255,0.25)"
+              placeholderTextColor="#B5B5B5"
               autoFocus
             />
             <TouchableOpacity
@@ -232,55 +240,52 @@ export default function FollowerLoginScreen({ navigation }) {
         )}
       </View>
 
-      <Text style={s.note}>Browse deals freely without signing in.{'\n'}Sign in is only needed for payments & bookings.</Text>
+      <Text style={s.note}>Browse and shop freely without signing in.{'\n'}We only ask for your number to place the order.</Text>
     </View>
   );
 }
 
+// Locked design law: pure white chrome, black text, yellow lives on the
+// primary button only.
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#070b16', justifyContent: 'center', paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', paddingHorizontal: 24 },
   backBtn: { position: 'absolute', top: 52, left: 20 },
-  backText: { color: '#F59E0B', fontSize: 13, fontWeight: '600' },
+  backText: { color: '#111', fontSize: 13, fontWeight: '700' },
   content: { alignItems: 'center' },
-  iconCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
-  title: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 6 },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  title: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 6 },
+  subtitle: { fontSize: 13, color: '#8A8A8A', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
   formBox: { width: '100%' },
-  label: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  label: { fontSize: 11, fontWeight: '700', color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   phoneRow: { flexDirection: 'row', marginBottom: 16 },
   prefixBox: {
-    backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#E4E4E4',
     borderTopLeftRadius: 12, borderBottomLeftRadius: 12,
     paddingHorizontal: 14, justifyContent: 'center', borderRightWidth: 0,
   },
-  prefixText: { fontSize: 15, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  prefixText: { fontSize: 15, fontWeight: '700', color: '#8A8A8A' },
   phoneInput: {
-    flex: 1, backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
+    flex: 1, backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#E4E4E4',
     borderTopRightRadius: 12, borderBottomRightRadius: 12,
     paddingHorizontal: 14, paddingVertical: 16,
-    fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 1,
+    fontSize: 18, fontWeight: '700', color: '#111', letterSpacing: 1,
   },
   otpInput: {
-    backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#E4E4E4',
     borderRadius: 12, paddingHorizontal: 20, paddingVertical: 18,
-    fontSize: 28, fontWeight: '800', color: '#F59E0B', textAlign: 'center', letterSpacing: 12,
+    fontSize: 28, fontWeight: '800', color: '#111', textAlign: 'center', letterSpacing: 12,
     marginBottom: 8, width: '100%',
   },
   nameInput: {
-    backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#E4E4E4',
     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16,
-    fontSize: 16, fontWeight: '600', color: '#fff',
+    fontSize: 16, fontWeight: '600', color: '#111',
     marginBottom: 16, width: '100%',
   },
-  hint: { fontSize: 11, color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginBottom: 16 },
-  btn: { backgroundColor: '#F59E0B', paddingVertical: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
+  hint: { fontSize: 11, color: '#9A9A9A', textAlign: 'center', marginBottom: 16 },
+  btn: { backgroundColor: '#F6B11E', paddingVertical: 16, borderRadius: 12, alignItems: 'center', width: '100%' },
   btnDisabled: { opacity: 0.4 },
-  btnText: { fontSize: 15, fontWeight: '800', color: '#000' },
+  btnText: { fontSize: 15, fontWeight: '800', color: '#111' },
   linkBtn: { marginTop: 14, alignItems: 'center' },
-  linkText: { fontSize: 12, color: 'rgba(255,255,255,0.35)' },
-  note: { textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 32, lineHeight: 18 },
+  linkText: { fontSize: 12, color: '#8A8A8A' },
+  note: { textAlign: 'center', fontSize: 11, color: '#9A9A9A', marginTop: 32, lineHeight: 18 },
 });

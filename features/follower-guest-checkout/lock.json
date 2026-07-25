@@ -1,0 +1,22 @@
+{
+  "feature": "follower-guest-checkout",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session 2026-07-25, dictated the guest-first journey verbatim ('first he do shopping… when purchase is happening we capture there… pls fix this')",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A-annotation: flow rewiring of existing screens dictated verbatim by the founder mid-walkthrough; the only visual delta is FollowerLoginScreen conforming to the already-locked design law (pure white / black text / yellow button). No new screen to board.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Guest-first shopping: device-local guest address book + sync-at-order, Place Order = the one login moment with onDone resume, guest-aware UNAUTHORIZED copy, login screen onto white design law.",
+  "qa_record": "Single run, read before commit: mobile jest 25/25; pnpm qa 79 passed GREEN, gate 0 (report 2026-07-25T09-53-22-918Z).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": null
+  }
+}

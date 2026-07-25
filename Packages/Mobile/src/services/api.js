@@ -118,8 +118,17 @@ async function request(method, path, body) {
       }
       if (res.status === 401) {
         // Definitive: refresh token invalid/expired, or retry still rejected.
+        // Guests (no session at all) get a sign-in prompt, not "expired" —
+        // the app is guest-first and this copy reads as a scary bug to them.
+        const hadSession = !!token;
         await clearSession();
-        return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
+        return {
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: hadSession ? 'Session expired. Please log in again.' : 'Please sign in to continue.',
+          },
+        };
       }
     }
 

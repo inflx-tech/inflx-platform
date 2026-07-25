@@ -10,6 +10,7 @@ import { useCart } from '../../services/CartContext';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
 import CustomiseSheet from '../../components/food/CustomiseSheet';
+import { getGuestAddresses, isGuestAddressId, syncGuestAddresses } from '../../utils/guestAddress';
 
 // follower-checkout Slice B — payment methods in the cart's payment selector.
 // The first is the default. `rzp` preselects the method in Razorpay's checkout
@@ -104,17 +105,25 @@ export default function CartScreen({ navigation }) {
   const [placing, setPlacing] = useState(false);
   const payMethod = PAY_METHODS.find((m) => m.key === payKey) || PAY_METHODS[0];
 
-  const loadAddresses = useCallback((preferId) => {
-    return followerApi.getAddresses?.().then((res) => {
-      if (!res?.success) return;
-      const addrs = res.data?.addresses || [];
+  // Guest-first (founder 2026-07-25): the checkout bar shows device-local
+  // guest addresses when logged out (and any not-yet-synced ones after login).
+  // Login is asked exactly once, at Place Order.
+  const loadAddresses = useCallback(async (preferId) => {
+    try {
+      const token = await AsyncStorage.getItem('inflx_token');
+      const guests = await getGuestAddresses();
+      let addrs = guests;
+      if (token) {
+        const res = await followerApi.getAddresses?.().catch(() => null);
+        addrs = res?.success ? [...(res.data?.addresses || []), ...guests] : guests;
+      }
       setAddresses(addrs);
       setSelectedAddr((prev) => {
         if (preferId && addrs.some((a) => a.id === preferId)) return preferId;
         if (prev && addrs.some((a) => a.id === prev)) return prev;
         return addrs.length ? addrs[0].id : null;
       });
-    }).catch(() => {});
+    } catch { /* keep whatever we had */ }
   }, []);
 
   useEffect(() => { if (isShop) loadAddresses(); }, [isShop, loadAddresses]);
@@ -300,6 +309,29 @@ export default function CartScreen({ navigation }) {
       return;
     }
 
+    // Guest-first checkout: this is the ONE login moment in the whole journey.
+    // New users go phone → OTP → name; the same tap then continues the order.
+    const token = await AsyncStorage.getItem('inflx_token');
+    if (!token) {
+      navigation.navigate('FollowerLogin', { onDone: () => placeShopOrder() });
+      return;
+    }
+
+    // A guest-saved address becomes a real account address now, so the order
+    // payload carries a server address_id.
+    let addressId = selectedAddr;
+    if (isGuestAddressId(selectedAddr)) {
+      const map = await syncGuestAddresses();
+      const serverAddr = map[selectedAddr];
+      if (!serverAddr?.id) {
+        Alert.alert('Address', 'Could not save your delivery address. Please check it and try again.');
+        loadAddresses();
+        return;
+      }
+      addressId = serverAddr.id;
+      loadAddresses(serverAddr.id);
+    }
+
     // follower-creator-attribution Slice 1 — group lines by (brand + claiming
     // creator). Each creator-claimed group credits that creator; the organic
     // group (no claim) is brand+platform only. The follower still pays once.
@@ -330,16 +362,16 @@ export default function CartScreen({ navigation }) {
 
     let payload;
     if (groupArr.length > 1) {
-      payload = { address_id: selectedAddr, brand_groups: groupArr.map(groupPayload) };
+      payload = { address_id: addressId, brand_groups: groupArr.map(groupPayload) };
     } else {
       const g = groupArr[0];
       payload = g.claim?.campaign_influencer_id
         ? {
-            items: g.lines.map(toOrderItem), address_id: selectedAddr,
+            items: g.lines.map(toOrderItem), address_id: addressId,
             campaign_id: g.claim.campaign_id, set_id: g.claim.set_id,
             campaign_influencer_id: g.claim.campaign_influencer_id, offer_id: g.claim.offer_id || null,
           }
-        : { items: g.lines.map(toOrderItem), address_id: selectedAddr, brand_id: g.brand_id, brand_offer_id: leadOfferId };
+        : { items: g.lines.map(toOrderItem), address_id: addressId, brand_id: g.brand_id, brand_offer_id: leadOfferId };
     }
 
     setPlacing(true);
@@ -358,8 +390,9 @@ export default function CartScreen({ navigation }) {
         // lead brand's name, e.g. "Urban Stitch", in a multi-brand cart.)
         brandName: 'INFLX',
         // Skip Razorpay's phone step (we have the number) + open it focused on
-        // the method the follower picked in our payment row.
-        prefill: { contact: userPhone || '', method: payMethod.rzp },
+        // the method the follower picked in our payment row. Read the phone
+        // fresh — a guest who just OTP'd in has it in storage, not in state.
+        prefill: { contact: userPhone || (await AsyncStorage.getItem('inflx_user').then((r) => { try { return JSON.parse(r)?.phone || ''; } catch { return ''; } }).catch(() => '')), method: payMethod.rzp },
       });
       if (!payResult) { Alert.alert('Payment cancelled', 'You can try again anytime.'); return; }
 
