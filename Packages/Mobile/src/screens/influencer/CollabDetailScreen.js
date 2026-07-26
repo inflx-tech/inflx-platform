@@ -104,6 +104,7 @@ export default function CollabDetailScreen({ route, navigation }) {
         break;
       case 'earnings':  navigation.navigate('CommissionDetail', { campaignInfluencerId: ciId, campaignName }); break;
       case 'products':  navigation.navigate('CampaignProducts', { campaignInfluencerId: ciId, campaignName }); break;
+      case 'tracking':  navigation.navigate('CollabTracking', { campaignInfluencerId: ciId, campaignName, brandName }); break;
       default: break;
     }
   }

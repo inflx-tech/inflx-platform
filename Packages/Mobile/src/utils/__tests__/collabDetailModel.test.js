@@ -25,7 +25,7 @@ describe('heroFor — one correct action per stage', () => {
     expect(heroFor({ stage: 'active', status: 'active', pendingDeliverable: false }).tone).toBe('brand');
   });
   it('tracking / completed / archive', () => {
-    expect(heroFor({ stage: 'tracking', status: 'active' }).actions).toEqual(['deliverables']);
+    expect(heroFor({ stage: 'tracking', status: 'active' }).actions).toEqual(['tracking']);
     expect(heroFor({ stage: 'completed', status: 'completed' }).actions).toEqual(['earnings']);
     const a = heroFor({ stage: 'archive', status: 'expired' });
     expect(a.actions).toEqual([]);
@@ -40,17 +40,17 @@ describe('sectionsFor — stage gating', () => {
   it('to_sign adds contract', () => {
     expect(sectionsFor({ stage: 'to_sign' }).map(s => s.key)).toEqual(['terms', 'contract']);
   });
-  it('active shows the full post-sign set', () => {
+  it('active shows the full post-sign set (incl. performance)', () => {
     const keys = sectionsFor({ stage: 'active', physical_delivery: true, products_total: 4 }).map(s => s.key);
-    expect(keys).toEqual(['terms', 'contract', 'logistics', 'deliverables', 'earnings', 'products']);
+    expect(keys).toEqual(['terms', 'contract', 'logistics', 'deliverables', 'tracking', 'earnings', 'products']);
   });
   it('logistics only when physical_delivery; products only when >0', () => {
     const keys = sectionsFor({ stage: 'active', physical_delivery: false, products_total: 0 }).map(s => s.key);
-    expect(keys).toEqual(['terms', 'contract', 'deliverables', 'earnings']);
+    expect(keys).toEqual(['terms', 'contract', 'deliverables', 'tracking', 'earnings']);
   });
-  it('completed keeps contract + deliverables + earnings', () => {
+  it('completed keeps contract + deliverables + performance + earnings', () => {
     const keys = sectionsFor({ stage: 'completed', products_total: 0 }).map(s => s.key);
-    expect(keys).toEqual(['terms', 'contract', 'deliverables', 'earnings']);
+    expect(keys).toEqual(['terms', 'contract', 'deliverables', 'tracking', 'earnings']);
   });
 });
 

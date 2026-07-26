@@ -41,7 +41,7 @@ export function heroFor(d) {
         ? { tone: 'you', label: 'Deliver your content', sub: 'Upload or submit the pending deliverable.', actions: ['deliverables'] }
         : { tone: 'brand', label: 'With the brand for review', sub: 'Your content is submitted — awaiting brand review.', actions: ['deliverables'] };
     case 'tracking':
-      return { tone: 'done', label: 'Live — tracking performance', sub: 'Your content is live and being tracked.', actions: ['deliverables'] };
+      return { tone: 'done', label: 'Live — tracking performance', sub: 'Your content is live. See how it is performing.', actions: ['tracking'] };
     case 'completed':
       return { tone: 'done', label: 'Collab complete', sub: 'View your earnings and tranche schedule.', actions: ['earnings'] };
     case 'archive':
@@ -66,6 +66,7 @@ export function sectionsFor(d) {
   if (signedOn) out.push({ key: 'contract', label: 'Contract' });
   if (post && d?.physical_delivery) out.push({ key: 'logistics', label: 'Logistics' });
   if (post) out.push({ key: 'deliverables', label: 'Deliverables' });
+  if (post) out.push({ key: 'tracking', label: 'Performance' });
   if (post) out.push({ key: 'earnings', label: 'Earnings' });
   if (post && Number(d?.products_total) > 0) out.push({ key: 'products', label: 'Products in store' });
   return out;

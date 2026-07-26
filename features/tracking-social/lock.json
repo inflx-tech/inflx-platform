@@ -1,0 +1,24 @@
+{
+  "feature": "tracking-social",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'ok pls continue for tracking' in-session 2026-07-25. Lock decision delegated per standing autonomy; final Wave-1 screen (social half only; platform axis stays gated Phase 2).",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — Tracking dual-panel (social aggregate + INFLX Phase-2 placeholder) locked in-session 2026-07-25 as part of the Collabs lifecycle board; §3 copied to 04-preview/mockups/tracking-lifecycle.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Wave-1 screen 6 (final). CollabTrackingScreen = per-collab performance: SOCIAL panel aggregates deliverable_stats across the collab's live deliverables (Phase 1, backed via getDeliverable/refreshStats) + INFLX panel = honest Phase-2 placeholder (NO fake numbers; platform analytics + post_id sales attribution deferred to a gated Phase-2 backend contract). Reached from CollabDetail (tracking hero + Performance section). aggregateSocialStats helper. Frontend-only, mobile-influencer, OTA — no backend/DB. After this: cleanup contract (delete retired screens).",
+  "qa_record": "Mobile jest GREEN 78/78 (18 suites, 2026-07-25): aggregateSocialStats unit (4) + CollabTracking smoke + updated collabDetailModel tests (tracking hero → 'tracking', sectionsFor incl. 'tracking' for post-sign) + prior. Mobile-JS-only, no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(Tracking stage had no screen) / after(CollabTrackingScreen: social aggregate panel + INFLX Phase-2 placeholder with NO fake numbers) + wiring (collabDetailModel hero/section, CollabDetail.go, nav) + fidelity note.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT yet deployed — build complete + jest-green (78/78). Awaiting founder OTA go."
+  }
+}

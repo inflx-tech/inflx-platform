@@ -7,6 +7,7 @@ import { ig } from '../theme/ig';
 import HomeScreen from '../screens/influencer/HomeScreen';
 import CollabsListScreen from '../screens/influencer/CollabsListScreen';
 import CollabDetailScreen from '../screens/influencer/CollabDetailScreen';
+import CollabTrackingScreen from '../screens/influencer/CollabTrackingScreen';
 import CreateScreen from '../screens/influencer/CreateScreen';
 import OfferListScreen from '../screens/influencer/OfferListScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
@@ -97,6 +98,7 @@ function CollabsStackNav() {
     <CollabsStack.Navigator screenOptions={{ headerShown: false }}>
       <CollabsStack.Screen name="CollabsList" component={CollabsListScreen} />
       <CollabsStack.Screen name="CollabDetail" component={CollabDetailScreen} />
+      <CollabsStack.Screen name="CollabTracking" component={CollabTrackingScreen} />
       {/* transitional compat — old list screens still resolve if navigated to */}
       <CollabsStack.Screen name="OfferList" component={OfferListScreen} />
       <CollabsStack.Screen name="MyCampaignsList" component={MyCampaignsScreen} />
