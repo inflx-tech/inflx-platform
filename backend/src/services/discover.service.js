@@ -73,8 +73,8 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
     const { rows } = await db.query(
       `SELECT co.id, ct.kind, ct.name_pattern, cn.name AS leaf_name,
               count(cp.id) FILTER (WHERE ${VISIBLE} ${scopeCond})::int AS visible,
-              (array_agg(pm.r2_key ORDER BY cp.created_at DESC)
-                 FILTER (WHERE ${VISIBLE} ${scopeCond} AND pm.r2_key IS NOT NULL))[1] AS cover_key
+              (array_agg(pm.id::text ORDER BY cp.created_at DESC)
+                 FILTER (WHERE ${VISIBLE} ${scopeCond} AND pm.id IS NOT NULL))[1] AS cover_media_id
          FROM concepts co
          JOIN concept_templates ct ON ct.id = co.template_id
          LEFT JOIN category_nodes cn ON cn.id = co.category_node_id
@@ -89,7 +89,7 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
         name: conceptName({ kind: r.kind, name_pattern: r.name_pattern }, r.leaf_name),
         family: familyOf(r.kind, !!r.leaf_name),
         visible: r.visible,
-        cover_key: r.cover_key,
+        cover_media_id: r.cover_media_id,
       });
     }
   }
@@ -100,15 +100,15 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
     const { rows } = await db.query(
       `SELECT col.id, col.name,
               count(cp.id) FILTER (WHERE ${VISIBLE} ${scopeCond})::int AS visible,
-              (array_agg(pm.r2_key ORDER BY cp.created_at DESC)
-                 FILTER (WHERE ${VISIBLE} ${scopeCond} AND pm.r2_key IS NOT NULL))[1] AS cover_key
+              (array_agg(pm.id::text ORDER BY cp.created_at DESC)
+                 FILTER (WHERE ${VISIBLE} ${scopeCond} AND pm.id IS NOT NULL))[1] AS cover_media_id
          FROM collections col
          LEFT JOIN creator_posts cp ON cp.collection_id = col.id
          LEFT JOIN post_media pm ON pm.post_id = cp.id AND pm.slide_index = 0
         WHERE col.id = ANY($1::uuid[])
         GROUP BY col.id, col.name`,
       params);
-    for (const r of rows) byCollection.set(r.id, { name: r.name, family: 6, visible: r.visible, cover_key: r.cover_key });
+    for (const r of rows) byCollection.set(r.id, { name: r.name, family: 6, visible: r.visible, cover_media_id: r.cover_media_id });
   }
 
   return banners
@@ -126,7 +126,7 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
         // The app draws the CTA as an OVERLAY chip at this spot — art made
         // outside (Canva etc.) just leaves that corner clear. Default: bottom-left.
         cta_pos: b.cta_pos || 'bottom-left',
-        cover_key: hit.cover_key || null,
+        cover_url: hit.cover_media_id ? require('./creatorPosts.service').mediaUrl(hit.cover_media_id) : null,
       };
     })
     .filter(Boolean);
@@ -180,8 +180,8 @@ async function resolveBusinesses(rule, { city = null, limit = 12 }) {
   const { rows } = await db.query(
     `SELECT b.id, b.business_name AS name, u.city,
             count(cp.id) FILTER (WHERE ${VISIBLE})::int AS visible_posts,
-            (array_agg(pm.r2_key ORDER BY cp.created_at DESC)
-               FILTER (WHERE ${VISIBLE} AND pm.r2_key IS NOT NULL))[1] AS cover_key
+            (array_agg(pm.id::text ORDER BY cp.created_at DESC)
+               FILTER (WHERE ${VISIBLE} AND pm.id IS NOT NULL))[1] AS cover_media_id
        FROM brands b
        JOIN users u ON u.id = b.user_id
        LEFT JOIN creator_posts cp ON b.id = ANY(cp.scoped_brand_ids)
@@ -192,7 +192,11 @@ async function resolveBusinesses(rule, { city = null, limit = 12 }) {
       ORDER BY visible_posts DESC
       LIMIT $1`,
     params);
-  return rows;
+  const { mediaUrl } = require('./creatorPosts.service');
+  return rows.map(({ cover_media_id, ...r }) => ({
+    ...r,
+    cover_url: cover_media_id ? mediaUrl(cover_media_id) : null,
+  }));
 }
 
 // ── the resolver ─────────────────────────────────────────────────────────────

@@ -69,6 +69,8 @@ import FollowerPageScreen from '../screens/follower/FollowerPageScreen';
 import WishlistScreen from '../screens/follower/WishlistScreen';
 // Stage C3 — Review Order (address · payment method · bill) before payment
 import ReviewOrderScreen from '../screens/follower/ReviewOrderScreen';
+// Stage B3 — concept-filtered posts (Discover banner landing)
+import ConceptPostsScreen from '../screens/follower/ConceptPostsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -117,6 +119,8 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="PostProduct" component={PostProductScreen} />
     {/* Stage C3 — the Review Order step between Bag and payment */}
     <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
+    {/* Stage B3 — a Discover banner's landing page (concept-filtered posts) */}
+    <Stack.Screen name="ConceptPosts" component={ConceptPostsScreen} />
   </>
 );
 

@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import PostCard from '../../components/posts/PostCard';
 import ShopThisPostSheet from '../../components/posts/ShopThisPostSheet';
+// Stage B3 — the Discover face (paints the admin's published layout)
+import DiscoverTab from '../../components/discover/DiscoverTab';
 
 const PAGE = 20;
 
@@ -81,13 +83,7 @@ export default function PostsFeedScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
-      {topTab === 'Discover' && (
-        <View style={st.empty}>
-          <Text style={{ fontSize: 34 }}>🧭</Text>
-          <Text style={st.emptyTitle}>Discover is coming</Text>
-          <Text style={st.emptySub}>Banners and themes over creator posts — launching with the next stage.</Text>
-        </View>
-      )}
+      {topTab === 'Discover' && <DiscoverTab navigation={navigation} />}
       {topTab === 'Videos' && (
         <View style={st.empty}>
           <Text style={{ fontSize: 34 }}>🎬</Text>

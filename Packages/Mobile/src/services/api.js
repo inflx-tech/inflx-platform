@@ -457,6 +457,12 @@ export const followerApi = {
   getMe: () => api.get('/followers/me'),
   updateMe: (data) => api.patch('/followers/me', data),
 
+  // Stage B3 — resolved Discover payload (global | business | creator)
+  getDiscover: (params = {}) => {
+    const p = Object.entries(params).filter(([, v]) => v != null)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`);
+    return api.get(`/follower/discover${p.length ? `?${p.join('&')}` : ''}`);
+  },
   // Creator posts (Post/Concept Stage A) — the new source of truth
   getPosts: (params = {}) => {
     const p = Object.entries(params).filter(([, v]) => v != null)
