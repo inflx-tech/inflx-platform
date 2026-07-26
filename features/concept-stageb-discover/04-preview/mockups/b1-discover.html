@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Stage B — Discover board (global · business · creator · builders)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  body { background:#EDEDED; padding:28px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { color:#666; font-size:13px; margin-bottom:24px; max-width:900px; line-height:1.6; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:390px; background:#FFF; border-radius:28px; box-shadow:0 8px 30px rgba(0,0,0,.14); overflow:hidden; border:1px solid #DDD; }
+  .wide { width:560px; background:#FFF; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.14); border:1px solid #DDD; padding:18px; }
+  .cap { font-size:12.5px; font-weight:700; color:#444; margin:10px 4px 18px; max-width:390px; line-height:1.5; }
+  .wide + .cap { max-width:560px; }
+  .cap b { color:#000; }
+  /* chrome */
+  .top { display:flex; align-items:center; gap:10px; padding:12px 14px 8px; }
+  .logo { font-size:15px; font-weight:900; color:#111; letter-spacing:.5px; }
+  .search { flex:1; display:flex; align-items:center; gap:7px; border:1px solid #E4E4E4; border-radius:999px; padding:7px 12px; font-size:11px; color:#9A9A9A; }
+  .ic { text-align:center; }
+  .ic .g { width:20px; height:20px; border:1.8px solid #111; border-radius:6px; margin:0 auto; }
+  .ic .l { font-size:8px; font-weight:700; color:#555; margin-top:2px; }
+  .loc { padding:2px 14px 8px; font-size:11px; color:#555; }
+  .loc b { color:#111; }
+  .tabs { display:flex; gap:16px; padding:4px 14px 10px; border-bottom:1px solid #F2F2F2; }
+  .tab { font-size:13px; font-weight:700; color:#9A9A9A; padding-bottom:4px; }
+  .tab.on { color:#111; border-bottom:2.5px solid #F6B11E; }
+  /* section */
+  .sec { padding:12px 0 2px 14px; }
+  .sech { display:flex; align-items:baseline; padding-right:14px; }
+  .sect { font-size:14px; font-weight:800; color:#111; }
+  .seeall { margin-left:auto; font-size:11px; font-weight:700; color:#555; }
+  .chips { display:flex; gap:7px; padding:8px 0; overflow:hidden; }
+  .chip { font-size:10.5px; font-weight:700; padding:5px 11px; border-radius:999px; border:1px solid #E4E4E4; color:#555; white-space:nowrap; }
+  .chip.on { background:#111; color:#FFF; border-color:#111; }
+  .cards { display:flex; gap:9px; overflow:hidden; }
+  .card { width:96px; height:128px; border-radius:12px; flex:none; position:relative; overflow:hidden; }
+  .card .txt { position:absolute; left:7px; bottom:6px; color:#FFF; text-shadow:0 1px 5px rgba(0,0,0,.55); }
+  .card .t1 { font-size:9.5px; font-weight:800; line-height:1.25; }
+  .card .t2 { font-size:8px; font-weight:700; opacity:.9; margin-top:2px; }
+  .banner { width:150px; height:92px; border-radius:12px; flex:none; position:relative; overflow:hidden; }
+  .banner .bt { position:absolute; left:9px; top:9px; }
+  .banner .b1 { font-size:11px; font-weight:900; color:#111; line-height:1.15; }
+  .banner .b2 { font-size:7.5px; font-weight:700; color:#444; margin-top:2px; }
+  .banner .shop { position:absolute; left:9px; bottom:8px; background:#111; color:#FFF; font-size:7.5px; font-weight:800; border-radius:999px; padding:3px 8px; }
+  .dots { display:flex; gap:3px; justify-content:center; padding:7px 0 2px; }
+  .dot { width:4px; height:4px; border-radius:2px; background:#DDD; }
+  .dot.on { background:#3897F0; }
+  /* rails */
+  .crow { display:flex; gap:10px; overflow:hidden; padding:6px 0; }
+  .ccard { width:84px; flex:none; text-align:center; }
+  .cav { width:56px; height:56px; border-radius:28px; margin:0 auto; background:linear-gradient(160deg,#E7A33B,#F5F2EC); border:2px solid #FFF; box-shadow:0 0 0 1.5px #E7A33B; }
+  .cnm { font-size:9.5px; font-weight:800; color:#111; margin-top:5px; }
+  .cfl { font-size:8px; color:#8A8A8A; }
+  .fbtn { display:inline-block; margin-top:4px; border:1.3px solid #111; border-radius:999px; font-size:8px; font-weight:800; padding:2px 10px; color:#111; }
+  .bcard { width:120px; flex:none; border:1px solid #F0F0F0; border-radius:12px; overflow:hidden; }
+  .bimg { height:64px; background:linear-gradient(160deg,#F5F2EC,#E0D2C2); }
+  .bnm { font-size:9.5px; font-weight:800; color:#111; padding:6px 8px 1px; }
+  .bmeta { font-size:8px; color:#8A8A8A; padding:0 8px 7px; }
+  .nav { display:flex; border-top:1px solid #EEE; padding:8px 0 12px; margin-top:8px; }
+  .nv { flex:1; text-align:center; }
+  .nv .b { width:17px; height:17px; border:1.8px solid #999; border-radius:5px; margin:0 auto; }
+  .nv.on .b { border-color:#111; background:#111; }
+  .nv .t { font-size:8px; font-weight:700; color:#999; margin-top:3px; }
+  .nv.on .t { color:#111; }
+  /* admin builder */
+  .abar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .abar h3 { font-size:15px; }
+  .pill { font-size:11px; font-weight:800; background:#111; color:#FFF; border-radius:999px; padding:5px 12px; }
+  .rowitem { display:flex; align-items:center; gap:10px; border:1px solid #EEE; border-radius:12px; padding:11px 13px; margin-bottom:8px; }
+  .grip { color:#BBB; font-size:14px; letter-spacing:1px; }
+  .rt { font-size:12.5px; font-weight:800; color:#111; }
+  .rs { font-size:10.5px; color:#8A8A8A; margin-top:1px; }
+  .rtag { margin-left:auto; font-size:10px; font-weight:800; border:1px solid #E4E4E4; border-radius:8px; padding:3px 8px; color:#555; }
+  .addrow { border:1.5px dashed #CCC; border-radius:12px; text-align:center; padding:11px; font-size:12px; font-weight:800; color:#555; }
+  .panel { background:#FFF; border:1px solid #DDD; border-radius:14px; padding:18px; width:390px; font-size:12.5px; line-height:1.65; color:#333; }
+  .panel h3 { font-size:13.5px; margin-bottom:8px; }
+  .panel code { background:#F4F4F4; padding:1px 5px; border-radius:5px; font-size:11.5px; }
+  .g1 { background:linear-gradient(160deg,#F2C94C,#E8A33D); } .g2 { background:linear-gradient(160deg,#F7B9A1,#E98C6B); }
+  .g3 { background:linear-gradient(160deg,#C9B6E4,#A98FD6); } .g4 { background:linear-gradient(160deg,#A8D5BA,#7FBF9E); }
+  .g5 { background:linear-gradient(160deg,#F5F2EC,#E9E2D0); } .g6 { background:linear-gradient(160deg,#BFD8F2,#8FB8E8); }
+</style>
+</head>
+<body>
+<h1>Stage B — Discover: one layout, three pages, two builders</h1>
+<div class="sub">Grammar from the founder's reference (page 1): a vertical stack of <b>sections</b>; every section = one <b>concept family</b> → title + See&nbsp;all + <b>chips</b> (the variants) + <b>swipeable banners</b> (each banner = ONE concept, live post count) → tap lands on that concept's posts (feed filter that already exists). Creator rows and brand rows slot between sections. White chrome; banner tiles are designed imagery (the post region carries the colour, never the chrome).</div>
+
+<div class="row">
+
+  <!-- FRAME 1: GLOBAL DISCOVER -->
+  <div>
+    <div class="phone">
+      <div class="top">
+        <div class="logo">INFLX</div>
+        <div class="search">⌕ Search for “summer outfits”</div>
+        <div class="ic"><div class="g"></div><div class="l">Wishlist</div></div>
+        <div class="ic"><div class="g"></div><div class="l">Bag</div></div>
+      </div>
+      <div class="loc">Deliver to <b>Vijayawada ▾</b></div>
+      <div class="tabs"><span class="tab on">Discover</span><span class="tab">Posts</span><span class="tab">Videos</span></div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Budget Friendly Picks</span><span class="seeall">See all ›</span></div>
+        <div class="chips"><span class="chip on">Under ₹299</span><span class="chip">Under ₹499</span><span class="chip">Under ₹699</span><span class="chip">Under ₹999</span><span class="chip">Under ₹1,4</span></div>
+        <div class="cards">
+          <div class="card g1"><div class="txt"><div class="t1">Street Style<br>Under ₹299</div><div class="t2">128 posts</div></div></div>
+          <div class="card g2"><div class="txt"><div class="t1">Basics<br>Under ₹499</div><div class="t2">143 posts</div></div></div>
+          <div class="card g3"><div class="txt"><div class="t1">Kurtis<br>Under ₹699</div><div class="t2">96 posts</div></div></div>
+          <div class="card g4"><div class="txt"><div class="t1">Trendy Tops<br>Under ₹999</div><div class="t2">112 posts</div></div></div>
+        </div>
+        <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Fresh from Creators</span><span class="seeall">See all ›</span></div>
+        <div class="crow">
+          <div class="ccard"><div class="cav"></div><div class="cnm">@sagartravel</div><div class="cfl">Vijayawada</div><div class="fbtn">Follow</div></div>
+          <div class="ccard"><div class="cav" style="background:linear-gradient(160deg,#C9B6E4,#F5F2EC)"></div><div class="cnm">@meera.styles</div><div class="cfl">12k followers</div><div class="fbtn">Follow</div></div>
+          <div class="ccard"><div class="cav" style="background:linear-gradient(160deg,#A8D5BA,#F5F2EC)"></div><div class="cnm">@ravi.fits</div><div class="cfl">Popular</div><div class="fbtn">Follow</div></div>
+          <div class="ccard"><div class="cav" style="background:linear-gradient(160deg,#F7B9A1,#F5F2EC)"></div><div class="cnm">@anu.wear</div><div class="cfl">8k followers</div><div class="fbtn">Follow</div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Deals You'll Love</span><span class="seeall">See all ›</span></div>
+        <div class="chips"><span class="chip on">BOGO</span><span class="chip">50% OFF</span><span class="chip">40% OFF</span><span class="chip">Flat ₹299</span><span class="chip">Clearance</span></div>
+        <div class="cards">
+          <div class="banner g2"><div class="bt"><div class="b1">BUY 2<br>GET 1 FREE</div><div class="b2">on selected styles</div></div><div class="shop">Shop Now</div></div>
+          <div class="banner g6"><div class="bt"><div class="b1">FLAT<br>50% OFF</div><div class="b2">on 1000+ styles</div></div><div class="shop">Shop Now</div></div>
+          <div class="banner g4"><div class="bt"><div class="b1">40%<br>OFF</div><div class="b2">summer essentials</div></div><div class="shop">Shop Now</div></div>
+        </div>
+        <div class="dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Stores near you</span><span class="seeall">See all ›</span></div>
+        <div class="crow">
+          <div class="bcard"><div class="bimg"></div><div class="bnm">Charvitha Fashions</div><div class="bmeta">Vijayawada · 46 posts</div></div>
+          <div class="bcard"><div class="bimg" style="background:linear-gradient(160deg,#EFEFEF,#DCDCDC)"></div><div class="bnm">Urban Stitch</div><div class="bmeta">Hyderabad · 31 posts</div></div>
+          <div class="bcard"><div class="bimg" style="background:linear-gradient(160deg,#C9B6E4,#EDE7F8)"></div><div class="bnm">Meraki Threads</div><div class="bmeta">Popular · 58 posts</div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Jeans Under ₹999</span><span class="seeall">See all ›</span></div>
+        <div class="chips"><span class="chip on">All</span><span class="chip">Skinny</span><span class="chip">Wide Leg</span><span class="chip">Straight</span><span class="chip">Mom Fit</span><span class="chip">Cargo</span></div>
+        <div class="cards">
+          <div class="card g5"><div class="txt" style="color:#111;text-shadow:none"><div class="t1">Wide Leg<br>Under ₹999</div><div class="t2" style="color:#555">87 posts</div></div></div>
+          <div class="card g6"><div class="txt"><div class="t1">Straight Fit<br>Under ₹999</div><div class="t2">106 posts</div></div></div>
+          <div class="card g3"><div class="txt"><div class="t1">Mom Fit<br>Under ₹999</div><div class="t2">72 posts</div></div></div>
+        </div>
+        <div class="dots"><span class="dot on"></span><span class="dot"></span></div>
+      </div>
+
+      <div class="nav">
+        <div class="nv on"><div class="b"></div><div class="t">Home</div></div>
+        <div class="nv"><div class="b"></div><div class="t">Posts</div></div>
+        <div class="nv"><div class="b"></div><div class="t">Orders</div></div>
+        <div class="nv"><div class="b"></div><div class="t">Profile</div></div>
+      </div>
+    </div>
+    <div class="cap"><b>Global Discover (admin-curated).</b> Reference grammar kept: section = family, chips = variants, banner = ONE concept with its LIVE post count (Inspector machinery), tap → that concept's post feed (existing filter). Creator + brand rows slot anywhere admin orders them, each powered by a rule (area / following / popularity). Empty concepts auto-hide (eligibility). Note: reference's Creators/Brands bottom tabs became ROWS here + "See all" directories — keeps our 4-tab nav; flag if you want the 5-tab nav instead.</div>
+  </div>
+
+  <!-- FRAME 2: BUSINESS PAGE -->
+  <div>
+    <div class="phone">
+      <div class="top"><span style="font-size:18px;font-weight:700">‹</span>
+        <div style="flex:1"><div style="font-size:15px;font-weight:800;color:#111">Charvitha Fashions</div><div style="font-size:10px;color:#8A8A8A">Vijayawada · 46 posts · 12 creators</div></div>
+        <div class="ic"><div class="g"></div><div class="l">Bag</div></div>
+      </div>
+      <div style="height:74px;background:linear-gradient(160deg,#F5F2EC,#E9E2D0);margin:6px 14px;border-radius:14px"></div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Store Offers</span><span class="seeall">See all ›</span></div>
+        <div class="cards">
+          <div class="banner g2"><div class="bt"><div class="b1">BOGO<br>WEEKEND</div><div class="b2">this store · live</div></div><div class="shop">Shop Now</div></div>
+          <div class="banner g4"><div class="bt"><div class="b1">40%<br>OFF</div><div class="b2">monsoon picks</div></div><div class="shop">Shop Now</div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Shop by Price</span></div>
+        <div class="chips"><span class="chip on">Under ₹499</span><span class="chip">Under ₹999</span><span class="chip">Under ₹1,499</span></div>
+        <div class="cards">
+          <div class="card g1"><div class="txt"><div class="t1">Tees<br>Under ₹499</div><div class="t2">18 posts</div></div></div>
+          <div class="card g5"><div class="txt" style="color:#111;text-shadow:none"><div class="t1">Shirts<br>Under ₹999</div><div class="t2" style="color:#555">12 posts</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">Creators of this store</span><span class="seeall">See all ›</span></div>
+        <div class="crow">
+          <div class="ccard"><div class="cav"></div><div class="cnm">@sagartravel</div><div class="cfl">8 posts here</div><div class="fbtn">Follow</div></div>
+          <div class="ccard"><div class="cav" style="background:linear-gradient(160deg,#C9B6E4,#F5F2EC)"></div><div class="cnm">@meera.styles</div><div class="cfl">5 posts here</div><div class="fbtn">Follow</div></div>
+        </div>
+      </div>
+      <div style="padding:10px 14px 16px"><div style="border:1px dashed #DDD;border-radius:10px;padding:9px;text-align:center;font-size:10px;color:#999">Rows with nothing behind them simply don't render — same skeleton for every store, zero per-store setup.</div></div>
+    </div>
+    <div class="cap"><b>Business page — assembles ITSELF.</b> Admin defines this structure ONCE for all fashion stores: store offers (live brand_offers) → price concepts (this brand's single-brand posts) → creators who post for it. "If exists show, if not hide." The brand does nothing.</div>
+  </div>
+
+  <!-- FRAME 3: CREATOR PAGE -->
+  <div>
+    <div class="phone">
+      <div class="top"><span style="font-size:18px;font-weight:700">‹</span>
+        <div style="flex:1;display:flex;align-items:center;gap:8px">
+          <div class="cav" style="width:40px;height:40px;border-radius:20px;margin:0"></div>
+          <div><div style="font-size:14px;font-weight:800;color:#111">@sagartravel <span style="color:#3897F0">✓</span></div><div style="font-size:10px;color:#8A8A8A">Vijayawada · 23 posts</div></div>
+        </div>
+        <div class="fbtn" style="font-size:11px;padding:6px 16px;background:#111;color:#FFF;border-color:#111">Follow</div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">My Monsoon Edit</span><span class="seeall">See all ›</span></div>
+        <div class="cards">
+          <div class="banner g4"><div class="bt"><div class="b1">Monsoon<br>Looks</div><div class="b2">9 posts · his picks</div></div></div>
+          <div class="banner g1"><div class="bt"><div class="b1">Under<br>₹999</div><div class="b2">7 posts</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sech"><span class="sect">All posts</span></div>
+        <div class="cards">
+          <div class="card g5"></div><div class="card g6"></div><div class="card g3"></div><div class="card g2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Creator page — curated BY the creator.</b> Their banners come only from concepts their approved posts already qualify for; they order them and pick the lead posts (next frame). Below, their full post grid. Nothing to configure that can break.</div>
+  </div>
+
+  <!-- FRAME 4: ADMIN BUILDER -->
+  <div>
+    <div class="wide">
+      <div class="abar"><h3>Discover Builder</h3><span class="pill">Fashion</span><span style="margin-left:auto;font-size:11px;color:#8A8A8A">ONE layout · applies live</span></div>
+      <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Section · Budget Friendly Picks</div><div class="rs">Family: Price · chips ₹299–₹1,499 · banners auto from concepts with posts</div></div><span class="rtag">family: price</span></div>
+      <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Creator row · Fresh from Creators</div><div class="rs">Rule: your area → following → popularity (auto-offered)</div></div><span class="rtag">rule: area</span></div>
+      <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Section · Deals You'll Love</div><div class="rs">Family: Offer · chips BOGO/50%/40%/Flat/Clearance</div></div><span class="rtag">family: offer</span></div>
+      <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Brand row · Stores near you</div><div class="rs">Rule: area → popularity</div></div><span class="rtag">rule: area</span></div>
+      <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Section · Jeans Under ₹999</div><div class="rs">Family: Category+Price · chips = jeans subtypes</div></div><span class="rtag">family: cat+price</span></div>
+      <div class="addrow">+ Add row — Section (pick family) · Creator row · Brand row</div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <div style="flex:1;border:1px solid #EEE;border-radius:10px;padding:9px;font-size:10.5px;color:#555">Same tool, scope switch: <b>Global home</b> · <b>Business structure</b> (one for ALL stores). Banner visuals ride the design-template model; counts + auto-hide come from the Inspector/eligibility.</div>
+      </div>
+    </div>
+    <div class="cap"><b>Admin builder — the single layout.</b> Industry → ordered rows → per-row rule from the auto-offered list. Replaces the multi-layout App Builder for fashion. Drag to reorder; publish is instant (no OTA — the layout is data).</div>
+  </div>
+
+  <!-- FRAME 5: CREATOR MY STORE ARRANGER -->
+  <div>
+    <div class="phone">
+      <div class="top"><span style="font-size:18px;font-weight:700">‹</span><div style="flex:1"><div style="font-size:15px;font-weight:800;color:#111">My Store</div><div style="font-size:10px;color:#8A8A8A">Arrange what followers see first</div></div></div>
+      <div class="sec" style="padding-right:14px">
+        <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Monsoon Looks</div><div class="rs">9 qualifying posts · lead post: Monsoon T-Shirt</div></div><span class="rtag">shown</span></div>
+        <div class="rowitem"><span class="grip">⠿</span><div><div class="rt">Under ₹999</div><div class="rs">7 qualifying posts · lead post: pick ›</div></div><span class="rtag">shown</span></div>
+        <div class="rowitem" style="opacity:.55"><span class="grip">⠿</span><div><div class="rt">BOGO Picks</div><div class="rs">2 qualifying posts</div></div><span class="rtag">hidden</span></div>
+        <div style="border:1px solid #EEE;border-radius:10px;padding:9px;font-size:10px;color:#999;text-align:center">Only concepts your APPROVED posts qualify for appear here. Drag to order · tap to pick the lead post · toggle shown/hidden.</div>
+      </div>
+    </div>
+    <div class="cap"><b>Creator's arranger (creator app).</b> Zero rules to learn: the list IS their qualifying concepts, live-counted. They order, pick lead posts, hide what they don't want. A concept that goes dark (eligibility) hides itself.</div>
+  </div>
+
+  <!-- PANEL: honest map -->
+  <div class="panel">
+    <h3>Honest build map</h3>
+    <b>Exists (verified):</b><br>
+    · Concept engine + Inspector counts → banner titles + "N posts" live<br>
+    · Feed filters <code>concept_id</code>/<code>collection_id</code>/<code>creator</code> → every tap-through works today<br>
+    · Eligibility → auto-hide of empty banners/rows<br>
+    · Rules evaluator → area/following/popularity row rules<br>
+    · Admin App Builder + section engine → gets CUT DOWN to the one layout<br>
+    · Design-template model (locked) → banner visuals<br><br>
+    <b>New:</b><br>
+    · <code>discover_layout</code> model (scopes: global · business-structure · creator)<br>
+    · Admin Discover Builder page (frame 4)<br>
+    · Follower Discover tab UI (frame 1) + business/creator pages (2–3)<br>
+    · Creator My Store arranger (frame 5)<br>
+    · Banner rendering (template + post imagery)<br><br>
+    <b>Phases after this lock:</b> B2 model+builder → B3 Discover tab → B4 creator arranger → B5 business auto-page.
+  </div>
+
+</div>
+</body>
+</html>

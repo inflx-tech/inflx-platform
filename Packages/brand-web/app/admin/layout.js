@@ -25,6 +25,7 @@ const NAV = [
   { href: '/admin/posts', label: 'Post Queue', icon: '📮', cap: 'approvals' },
   { href: '/admin/concepts', label: 'Concepts', icon: '💡', cap: 'sections' },
   { href: '/admin/collections', label: 'Collections', icon: '🧺', cap: 'sections' },
+  { href: '/admin/discover', label: 'Discover Builder', icon: '🧭', cap: 'sections' },
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
   { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
   { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },

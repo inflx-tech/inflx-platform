@@ -649,6 +649,9 @@ export const adminApi = {
   updateConceptTemplate: (id, data) => api.patch(`/admin/concept-templates/${encodeURIComponent(id)}`, data),
   previewConcept:        (data) => api.post('/admin/concepts/preview', data),
   conceptInspector:      () => api.get('/admin/concepts/inspector'),
+  // Stage B2 — the ONE Discover layout
+  getDiscoverLayout:     (scope) => api.get(`/admin/discover-layout?scope=${scope}`),
+  putDiscoverLayout:     (scope, rows) => api.put('/admin/discover-layout', { scope, rows_json: rows }),
   conceptInspectorBreakdown: (params) => api.get(`/admin/concepts/inspector/breakdown?${new URLSearchParams(params)}`),
   listCollectionsVocab:  (includeHidden) => api.get(`/admin/collections${includeHidden ? '?include_hidden=1' : ''}`),
   createCollectionVocab: (data) => api.post('/admin/collections', data),

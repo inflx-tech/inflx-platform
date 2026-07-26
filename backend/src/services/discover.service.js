@@ -1,0 +1,207 @@
+'use strict';
+
+/**
+ * discover.service — the ONE Discover layout (Stage B2).
+ * Contract: features/concept-stageb-discover/ · board b1-discover.html.
+ *
+ * The layout stores INTENT (ordered rows); this resolver turns it into a
+ * render-ready payload against LIVE data at read time:
+ * - section rows → banners, each ONE concept/collection with its live
+ *   visible-post count (same counting as the Inspector); empty banners drop,
+ *   empty sections drop ("if exists show, if not hide").
+ * - creator rows → influencers ranked by the row's rule
+ *   (area → city match · following → this follower's follows · popularity →
+ *   visible posts + followers), always falling back to popularity when the
+ *   context can't satisfy the rule (no city / not logged in).
+ * - business rows → brands ranked the same way via their single-brand posts.
+ *
+ * Row shapes (rows_json):
+ *   { type:'section',      title, chips:[{label, banners:[{concept_id?|collection_id?, image_url?}]}] }
+ *   { type:'creator_row',  title, rule:'area'|'following'|'popularity', limit? }
+ *   { type:'business_row', title, rule:'area'|'popularity', limit? }
+ * A section MAY have a single implicit chip (chips:[{label:null, banners}]).
+ */
+
+const db = require('../config/db');
+
+const VISIBLE = `cp.status = 'approved'
+  AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0)`;
+
+// ── layout store ─────────────────────────────────────────────────────────────
+
+async function getLayout(scope, creatorId = null) {
+  const { rows } = creatorId
+    ? await db.query(`SELECT * FROM discover_layouts WHERE scope = 'creator' AND creator_id = $1`, [creatorId])
+    : await db.query(`SELECT * FROM discover_layouts WHERE scope = $1 AND creator_id IS NULL`, [scope]);
+  return rows[0] || { scope, creator_id: creatorId, rows_json: [] };
+}
+
+async function putLayout(scope, rowsJson, creatorId = null) {
+  if (!Array.isArray(rowsJson)) throw new Error('rows_json must be an array');
+  const { rows } = creatorId
+    ? await db.query(
+        `INSERT INTO discover_layouts (scope, creator_id, rows_json)
+         VALUES ('creator', $1, $2)
+         ON CONFLICT (creator_id) WHERE creator_id IS NOT NULL
+         DO UPDATE SET rows_json = EXCLUDED.rows_json, updated_at = now()
+         RETURNING *`,
+        [creatorId, JSON.stringify(rowsJson)])
+    : await db.query(
+        `INSERT INTO discover_layouts (scope, rows_json)
+         VALUES ($1, $2)
+         ON CONFLICT (scope) WHERE creator_id IS NULL
+         DO UPDATE SET rows_json = EXCLUDED.rows_json, updated_at = now()
+         RETURNING *`,
+        [scope, JSON.stringify(rowsJson)]);
+  return rows[0];
+}
+
+// ── banner resolution (live names + counts, one query per id set) ────────────
+
+async function resolveBanners(banners, { brandId = null, creatorId = null } = {}) {
+  const conceptIds = banners.map(b => b.concept_id).filter(Boolean);
+  const collectionIds = banners.map(b => b.collection_id).filter(Boolean);
+
+  // Optional scoping: business pages count only that brand's posts; creator
+  // pages only that creator's. Global counts everything visible.
+  const scopeCond = brandId ? `AND $2 = ANY(cp.scoped_brand_ids)` : creatorId ? `AND cp.influencer_id = $2` : '';
+  const scopeArg = brandId || creatorId;
+
+  const byConcept = new Map();
+  if (conceptIds.length) {
+    const params = scopeArg ? [conceptIds, scopeArg] : [conceptIds];
+    const { rows } = await db.query(
+      `SELECT co.id, ct.kind, ct.name_pattern, cn.name AS leaf_name,
+              count(cp.id) FILTER (WHERE ${VISIBLE} ${scopeCond})::int AS visible,
+              (array_agg(pm.r2_key ORDER BY cp.created_at DESC)
+                 FILTER (WHERE ${VISIBLE} ${scopeCond} AND pm.r2_key IS NOT NULL))[1] AS cover_key
+         FROM concepts co
+         JOIN concept_templates ct ON ct.id = co.template_id
+         LEFT JOIN category_nodes cn ON cn.id = co.category_node_id
+         LEFT JOIN creator_posts cp ON cp.concept_id = co.id
+         LEFT JOIN post_media pm ON pm.post_id = cp.id AND pm.slide_index = 0
+        WHERE co.id = ANY($1::uuid[])
+        GROUP BY co.id, ct.kind, ct.name_pattern, cn.name`,
+      params);
+    const { conceptName, familyOf } = require('./concepts.service');
+    for (const r of rows) {
+      byConcept.set(r.id, {
+        name: conceptName({ kind: r.kind, name_pattern: r.name_pattern }, r.leaf_name),
+        family: familyOf(r.kind, !!r.leaf_name),
+        visible: r.visible,
+        cover_key: r.cover_key,
+      });
+    }
+  }
+
+  const byCollection = new Map();
+  if (collectionIds.length) {
+    const params = scopeArg ? [collectionIds, scopeArg] : [collectionIds];
+    const { rows } = await db.query(
+      `SELECT col.id, col.name,
+              count(cp.id) FILTER (WHERE ${VISIBLE} ${scopeCond})::int AS visible,
+              (array_agg(pm.r2_key ORDER BY cp.created_at DESC)
+                 FILTER (WHERE ${VISIBLE} ${scopeCond} AND pm.r2_key IS NOT NULL))[1] AS cover_key
+         FROM collections col
+         LEFT JOIN creator_posts cp ON cp.collection_id = col.id
+         LEFT JOIN post_media pm ON pm.post_id = cp.id AND pm.slide_index = 0
+        WHERE col.id = ANY($1::uuid[])
+        GROUP BY col.id, col.name`,
+      params);
+    for (const r of rows) byCollection.set(r.id, { name: r.name, family: 6, visible: r.visible, cover_key: r.cover_key });
+  }
+
+  return banners
+    .map(b => {
+      const hit = b.concept_id ? byConcept.get(b.concept_id) : byCollection.get(b.collection_id);
+      if (!hit || hit.visible <= 0) return null;   // auto-hide (the promise model)
+      return {
+        concept_id: b.concept_id || null,
+        collection_id: b.collection_id || null,
+        title: b.title || hit.name,
+        family: hit.family,
+        post_count: hit.visible,
+        image_url: b.image_url || null,   // custom art wins; else the app uses cover
+        cover_key: hit.cover_key || null,
+      };
+    })
+    .filter(Boolean);
+}
+
+// ── rails ────────────────────────────────────────────────────────────────────
+
+async function resolveCreators(rule, { city = null, followerId = null, brandId = null, limit = 12 }) {
+  // Params are appended only when their clause is present — a dangling bind
+  // makes Postgres reject the whole query.
+  const params = [limit];
+  let where = '';
+  if (rule === 'area' && city) { params.push(city); where = `AND lower(i.city) = lower($${params.length})`; }
+  else if (rule === 'following' && followerId) { params.push(followerId); where = `AND EXISTS (SELECT 1 FROM follower_follows ff WHERE ff.influencer_id = i.id AND ff.follower_id = $${params.length})`; }
+  let brandCond = '';
+  if (brandId) { params.push(brandId); brandCond = `AND $${params.length} = ANY(cp.scoped_brand_ids)`; }
+
+  const { rows } = await db.query(
+    `SELECT i.id, i.instagram_handle AS handle, i.profile_image_url AS avatar,
+            i.city, i.verified, i.followers_count,
+            count(cp.id) FILTER (WHERE ${VISIBLE} ${brandCond})::int AS visible_posts
+       FROM influencers i
+       LEFT JOIN creator_posts cp ON cp.influencer_id = i.id
+      WHERE 1=1 ${where}
+      GROUP BY i.id
+     HAVING count(cp.id) FILTER (WHERE ${VISIBLE} ${brandCond}) > 0
+      ORDER BY visible_posts DESC, i.followers_count DESC NULLS LAST
+      LIMIT $1`,
+    params);
+  return rows;
+}
+
+async function resolveBusinesses(rule, { city = null, limit = 12 }) {
+  const params = [limit];
+  let where = '';
+  if (rule === 'area' && city) { params.push(city); where = `AND lower(u.city) = lower($${params.length})`; }
+  const { rows } = await db.query(
+    `SELECT b.id, b.business_name AS name, u.city,
+            count(cp.id) FILTER (WHERE ${VISIBLE})::int AS visible_posts,
+            (array_agg(pm.r2_key ORDER BY cp.created_at DESC)
+               FILTER (WHERE ${VISIBLE} AND pm.r2_key IS NOT NULL))[1] AS cover_key
+       FROM brands b
+       JOIN users u ON u.id = b.user_id
+       LEFT JOIN creator_posts cp ON b.id = ANY(cp.scoped_brand_ids)
+       LEFT JOIN post_media pm ON pm.post_id = cp.id AND pm.slide_index = 0
+      WHERE 1=1 ${where}
+      GROUP BY b.id, u.city
+     HAVING count(cp.id) FILTER (WHERE ${VISIBLE}) > 0
+      ORDER BY visible_posts DESC
+      LIMIT $1`,
+    params);
+  return rows;
+}
+
+// ── the resolver ─────────────────────────────────────────────────────────────
+
+async function resolveDiscover({ scope = 'global', brandId = null, creatorId = null, city = null, followerId = null }) {
+  const layout = await getLayout(scope === 'business' ? 'business' : scope, creatorId);
+  const rows = Array.isArray(layout.rows_json) ? layout.rows_json : [];
+  const out = [];
+
+  for (const row of rows) {
+    if (row.hidden) continue;
+    if (row.type === 'section') {
+      const chips = [];
+      for (const chip of (row.chips || [])) {
+        const banners = await resolveBanners(chip.banners || [], { brandId, creatorId });
+        if (banners.length) chips.push({ label: chip.label || null, banners });
+      }
+      if (chips.length) out.push({ type: 'section', title: row.title, chips });
+    } else if (row.type === 'creator_row') {
+      const creators = await resolveCreators(row.rule || 'popularity', { city, followerId, brandId, limit: row.limit || 12 });
+      if (creators.length) out.push({ type: 'creator_row', title: row.title, rule: row.rule || 'popularity', creators });
+    } else if (row.type === 'business_row') {
+      const businesses = await resolveBusinesses(row.rule || 'popularity', { city, limit: row.limit || 12 });
+      if (businesses.length) out.push({ type: 'business_row', title: row.title, rule: row.rule || 'popularity', businesses });
+    }
+  }
+  return { scope, rows: out, updated_at: layout.updated_at || null };
+}
+
+module.exports = { getLayout, putLayout, resolveDiscover };

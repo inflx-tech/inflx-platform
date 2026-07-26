@@ -50,6 +50,9 @@ router.delete('/wishlist/collections/:id/items/:product_id',  ...followerAuth, w
 
 // ── Creator posts (Post/Concept P3) — the new source of truth ────────────────
 const followerPostsCtrl = require('../controllers/followerPosts.controller');
+// Stage B2 — resolved Discover payload (global | business | creator scopes)
+const discoverCtrl = require('../controllers/discover.controller');
+router.get('/discover',  authenticateOptional, discoverCtrl.followerDiscover);
 router.get('/posts',     authenticateOptional, followerPostsCtrl.feed);
 router.get('/posts/:id', authenticateOptional, followerPostsCtrl.detail);
 // P3 globals — app config (public, fetched at launch) + minimal like/save.

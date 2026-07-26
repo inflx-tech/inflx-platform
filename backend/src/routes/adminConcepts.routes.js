@@ -20,6 +20,10 @@ router.post('/concepts/preview',        ...adminAuth, ctrl.previewConcept);
 router.get('/concepts/inspector',       ...adminAuth, ctrl.inspectorList);
 router.get('/concepts/inspector/breakdown', ...adminAuth, ctrl.inspectorBreakdown);
 router.get('/collections',              ...adminAuth, ctrl.listCollections);
+// Stage B2 — the ONE Discover layout (scopes: global | business structure)
+const discoverCtrl = require('../controllers/discover.controller');
+router.get('/discover-layout',          ...adminAuth, discoverCtrl.getAdminLayout);
+router.put('/discover-layout',          ...adminAuth, discoverCtrl.putAdminLayout);
 router.post('/collections',             ...adminAuth, ctrl.createCollection);
 router.patch('/collections/:id',        ...adminAuth, ctrl.updateCollection);
 

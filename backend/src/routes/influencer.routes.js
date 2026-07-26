@@ -25,6 +25,10 @@ router.patch('/me',       authenticate, requireRole('influencer'), ctrl.updateMe
 
 // ── Offer inbox (Block B) ─────────────────────────────────────────────────────
 router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.getMyOffers);
+// Stage B2 — My Store arranger layout (creator-owned Discover rows)
+const discoverCtrl = require('../controllers/discover.controller');
+router.get('/me/discover-layout', authenticate, requireRole('influencer'), discoverCtrl.getCreatorLayout);
+router.put('/me/discover-layout', authenticate, requireRole('influencer'), discoverCtrl.putCreatorLayout);
 
 // ── Earnings overview (Phase 3 — Block E) ─────────────────────────────────────
 router.get('/me/earnings', authenticate, requireRole('influencer'), ctrl.getEarnings);

@@ -1,0 +1,22 @@
+{
+  "feature": "concept-stageb-discover",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — supplied the Discover reference (page 1), reviewed the b1-discover.html master board in the browser pane in-session 2026-07-26; 'ok go for B2'",
+  "approved_at": "2026-07-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — 'ok go for B2' after board review (reference page 2 pending; will fold in if it changes anything)",
+  "mockup_locked_at": "2026-07-26",
+  "notes": "B2 slice: migration 145 discover_layouts (scopes global/business/creator, singleton indexes), live resolver (Inspector-truth counts, covers, auto-hide, rule-ranked rails w/ honest fallbacks), admin/follower/creator endpoints, admin Discover Builder page w/ live-count banner picker. B3 tab, B4 arranger, B5 business wiring follow under this same contract.",
+  "qa_record": "B2 run, read before commit: pnpm qa 79 passed GREEN, gate 0 (report 2026-07-26T06-30-10-456Z). Backend routes/services smoke-loaded; migration 145 applied to prod pre-push (1 table verified).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": null
+  }
+}
