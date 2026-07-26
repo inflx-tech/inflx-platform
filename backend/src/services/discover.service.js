@@ -121,11 +121,26 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
         title: b.title || hit.name,
         family: hit.family,
         post_count: hit.visible,
-        image_url: b.image_url || null,   // custom art wins; else the app uses cover
+        image_url: b.image_url || null,   // admin banner art wins; else the app uses cover
+        cta: b.cta || null,               // e.g. "Shop Now" — tap = the concept feed either way
         cover_key: hit.cover_key || null,
       };
     })
     .filter(Boolean);
+}
+
+// ── category row (founder: the round category tiles) ────────────────────────
+// Images come from the SAME source the Category Images admin page maintains
+// (category_nodes.meta.image_url) — one image, every surface. Nodes without
+// an image drop (auto-hide); admin's pick order is preserved.
+async function resolveCategoryRow(row) {
+  const ids = (row.category_ids || []).filter(Boolean);
+  if (!ids.length) return [];
+  const { rows } = await db.query(
+    `SELECT id, name, meta->>'image_url' AS image_url
+       FROM category_nodes WHERE id = ANY($1::uuid[])`, [ids]);
+  const byId = new Map(rows.map(r => [r.id, r]));
+  return ids.map(id => byId.get(id)).filter(c => c && c.image_url);
 }
 
 // ── rails ────────────────────────────────────────────────────────────────────
@@ -193,6 +208,9 @@ async function resolveDiscover({ scope = 'global', brandId = null, creatorId = n
         if (banners.length) chips.push({ label: chip.label || null, banners });
       }
       if (chips.length) out.push({ type: 'section', title: row.title, chips });
+    } else if (row.type === 'category_row') {
+      const categories = await resolveCategoryRow(row);
+      if (categories.length) out.push({ type: 'category_row', title: row.title, categories });
     } else if (row.type === 'creator_row') {
       const creators = await resolveCreators(row.rule || 'popularity', { city, followerId, brandId, limit: row.limit || 12 });
       if (creators.length) out.push({ type: 'creator_row', title: row.title, rule: row.rule || 'popularity', creators });

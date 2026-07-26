@@ -11,7 +11,8 @@
   "mockup_locked_by": "aveen (founder) — 'ok go for B2' after board review (reference page 2 pending; will fold in if it changes anything)",
   "mockup_locked_at": "2026-07-26",
   "notes": "B2 slice: migration 145 discover_layouts (scopes global/business/creator, singleton indexes), live resolver (Inspector-truth counts, covers, auto-hide, rule-ranked rails w/ honest fallbacks), admin/follower/creator endpoints, admin Discover Builder page w/ live-count banner picker. B3 tab, B4 arranger, B5 business wiring follow under this same contract.",
-  "qa_record": "B2 run, read before commit: pnpm qa 79 passed GREEN, gate 0 (report 2026-07-26T06-30-10-456Z). Backend routes/services smoke-loaded; migration 145 applied to prod pre-push (1 table verified).",
+  "qa_record": "B2 run, read before commit: pnpm qa 79 passed GREEN, gate 0 (report 2026-07-26T06-30-10-456Z). Backend routes/services smoke-loaded; migration 145 applied to prod pre-push (1 table verified). B2.1 founder-walk fixes run: 79 passed GREEN gate 0 (report 2026-07-26T06-52-05-148Z).",
+  "b21_founder_walk_2026_07_26": "Founder walked the live Builder and asked for: (1) banner image upload + CTA — added inline banner editor (R2 via uploadAdminStockImage, CTA text, no-art fallback = concept's newest post cover); (2) Category row — added, round images wired to the SAME category_nodes.meta.image_url the Category Images page maintains (no-image nodes flagged red, auto-hidden from followers); (3) App Builder question — kept as 'App Builder (legacy)' because the CURRENT live Home tab still renders from its stacks; retire when B3 flips the opening surface.",
   "release": {
     "qa_all_green": true,
     "released": false,

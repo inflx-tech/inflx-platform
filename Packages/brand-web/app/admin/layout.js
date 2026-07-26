@@ -26,7 +26,10 @@ const NAV = [
   { href: '/admin/concepts', label: 'Concepts', icon: '💡', cap: 'sections' },
   { href: '/admin/collections', label: 'Collections', icon: '🧺', cap: 'sections' },
   { href: '/admin/discover', label: 'Discover Builder', icon: '🧭', cap: 'sections' },
-  { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
+  // Discover Builder supersedes this for fashion; kept because the CURRENT
+  // live Home tab still renders from its section stacks until B3 flips the
+  // opening surface — retire the nav entry when that lands.
+  { href: '/admin/sections', label: 'App Builder (legacy)', icon: '🧱', cap: 'sections' },
   { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
   { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },
   { href: '/admin/category-images', label: 'Category Images', icon: '🖼️', cap: 'sections' },

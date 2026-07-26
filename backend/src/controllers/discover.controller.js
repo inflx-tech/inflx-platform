@@ -15,7 +15,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const discover = require('../services/discover.service');
 
-const ROW_TYPES = new Set(['section', 'creator_row', 'business_row']);
+const ROW_TYPES = new Set(['section', 'category_row', 'creator_row', 'business_row']);
 
 function validateRows(rowsJson) {
   if (!Array.isArray(rowsJson)) throw new AppError('VALIDATION_ERROR', 'rows_json must be an array', 422, 'rows_json');
