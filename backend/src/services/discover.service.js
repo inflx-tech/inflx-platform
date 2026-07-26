@@ -123,6 +123,9 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
         post_count: hit.visible,
         image_url: b.image_url || null,   // admin banner art wins; else the app uses cover
         cta: b.cta || null,               // e.g. "Shop Now" — tap = the concept feed either way
+        // The app draws the CTA as an OVERLAY chip at this spot — art made
+        // outside (Canva etc.) just leaves that corner clear. Default: bottom-left.
+        cta_pos: b.cta_pos || 'bottom-left',
         cover_key: hit.cover_key || null,
       };
     })

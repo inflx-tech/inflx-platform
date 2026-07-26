@@ -179,8 +179,12 @@ export default function DiscoverBuilderPage() {
                   <button onClick={() => move(i, -1)} className="text-[10px] text-t3 leading-none">▲</button>
                   <button onClick={() => move(i, +1)} className="text-[10px] text-t3 leading-none">▼</button>
                 </div>
-                <input value={row.title || ''} onChange={e => mutate(r => { r[i].title = e.target.value; return r; })}
-                  className="text-sm font-bold text-t1 border border-transparent hover:border-border rounded px-1.5 py-0.5 flex-1" />
+                <div className="flex items-center gap-1.5 flex-1">
+                  <span className="text-[10px] font-bold text-t3 uppercase tracking-wide shrink-0">Name</span>
+                  <input value={row.title || ''} placeholder="Section name shown to followers"
+                    onChange={e => mutate(r => { r[i].title = e.target.value; return r; })}
+                    className="text-sm font-bold text-t1 border border-border rounded-lg px-2 py-1 flex-1" />
+                </div>
                 <span className="text-[10px] font-bold text-t3 border border-border rounded-lg px-2 py-1">
                   {row.type === 'section' ? 'Section' : row.type === 'category_row' ? 'Category row' : row.type === 'creator_row' ? 'Creator row' : 'Brand row'}
                 </span>
@@ -247,24 +251,59 @@ export default function DiscoverBuilderPage() {
                           );
                         })}
                       </div>
-                      {bannerEdit && bannerEdit.rowId === row._id && bannerEdit.chipIdx === ci && row.chips[ci].banners[bannerEdit.bannerIdx] && (
-                        <div className="mt-2 flex items-center gap-3 border border-navy/30 bg-white rounded-xl p-2.5">
-                          {row.chips[ci].banners[bannerEdit.bannerIdx].image_url
-                            ? <img src={row.chips[ci].banners[bannerEdit.bannerIdx].image_url} alt="" className="w-16 h-10 rounded-lg object-cover border border-border" />
-                            : <div className="w-16 h-10 rounded-lg border border-dashed border-border text-[9px] text-t3 flex items-center justify-center text-center">no art —<br/>post cover used</div>}
-                          <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                            className="text-[11px] font-bold text-navy">{uploading ? 'Uploading…' : row.chips[ci].banners[bannerEdit.bannerIdx].image_url ? 'Replace image' : 'Upload banner image'}</button>
-                          <div className="flex items-center gap-1.5 ml-2">
-                            <span className="text-[10px] font-bold text-t3">CTA</span>
-                            <input value={row.chips[ci].banners[bannerEdit.bannerIdx].cta || ''} placeholder="Shop Now"
-                              onChange={e => mutate(r => { r[i].chips[ci].banners[bannerEdit.bannerIdx].cta = e.target.value || null; return r; })}
-                              className="text-[11px] font-semibold border border-border rounded-lg px-2 py-1 w-28" />
+                      {bannerEdit && bannerEdit.rowId === row._id && bannerEdit.chipIdx === ci && row.chips[ci].banners[bannerEdit.bannerIdx] && (() => {
+                        const b = row.chips[ci].banners[bannerEdit.bannerIdx];
+                        const pos = b.cta_pos || 'bottom-left';
+                        const posClass = pos === 'bottom-right' ? 'right-2 bottom-2' : pos === 'bottom-center' ? 'left-1/2 -translate-x-1/2 bottom-2' : 'left-2 bottom-2';
+                        return (
+                          <div className="mt-2 border border-navy/30 bg-white rounded-xl p-3">
+                            <div className="flex gap-4">
+                              {/* LIVE PREVIEW — the CTA chip is drawn by the APP as an
+                                  overlay, exactly like this. Canva art just leaves the
+                                  chosen corner clear. */}
+                              <div className="relative w-[300px] h-[184px] rounded-xl overflow-hidden border border-border bg-surface2 shrink-0">
+                                {b.image_url
+                                  ? <img src={b.image_url} alt="" className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full flex items-center justify-center text-[11px] text-t3 text-center px-6">No art uploaded — followers see this concept's newest post photo here</div>}
+                                {b.cta ? (
+                                  <span className={`absolute ${posClass} bg-black text-white text-[11px] font-bold rounded-full px-3 py-1.5 shadow`}>{b.cta}</span>
+                                ) : null}
+                                <span className="absolute top-2 left-2 bg-white/85 text-[10px] font-bold text-t1 rounded px-1.5 py-0.5">PREVIEW — exactly what followers see</span>
+                              </div>
+                              <div className="flex-1 space-y-2.5">
+                                <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                                  className="text-[11px] font-bold text-white bg-navy rounded-lg px-3 py-2 w-full">
+                                  {uploading ? 'Uploading…' : b.image_url ? 'Replace banner image' : 'Upload banner image'}
+                                </button>
+                                <div>
+                                  <div className="text-[10px] font-bold text-t3 uppercase mb-1">CTA button text (blank = no button)</div>
+                                  <input value={b.cta || ''} placeholder="Shop Now"
+                                    onChange={e => mutate(r => { r[i].chips[ci].banners[bannerEdit.bannerIdx].cta = e.target.value || null; return r; })}
+                                    className="text-[12px] font-semibold border border-border rounded-lg px-2 py-1.5 w-full" />
+                                </div>
+                                <div>
+                                  <div className="text-[10px] font-bold text-t3 uppercase mb-1">CTA position — keep this corner clear in your art</div>
+                                  <div className="flex gap-1.5">
+                                    {[['bottom-left', 'Left'], ['bottom-center', 'Center'], ['bottom-right', 'Right']].map(([v, l]) => (
+                                      <button key={v}
+                                        onClick={() => mutate(r => { r[i].chips[ci].banners[bannerEdit.bannerIdx].cta_pos = v; return r; })}
+                                        className={`text-[11px] font-bold rounded-lg px-3 py-1.5 border ${pos === v ? 'bg-navy text-white border-navy' : 'border-border text-t2'}`}>
+                                        {l}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="text-[10px] text-t3 leading-relaxed">The whole banner is tappable → opens this concept's posts. The button is drawn BY THE APP on top of your image, so it always sits exactly where the preview shows it.</div>
+                                <div className="flex gap-3 pt-1">
+                                  <button onClick={() => { mutate(r => { r[i].chips[ci].banners.splice(bannerEdit.bannerIdx, 1); return r; }); setBannerEdit(null); }}
+                                    className="text-[11px] font-bold text-red-500">Remove banner</button>
+                                  <button onClick={() => setBannerEdit(null)} className="text-[11px] font-bold text-t2 ml-auto">Done</button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <button onClick={() => { mutate(r => { r[i].chips[ci].banners.splice(bannerEdit.bannerIdx, 1); return r; }); setBannerEdit(null); }}
-                            className="text-[11px] font-bold text-red-500 ml-auto">Remove banner</button>
-                          <button onClick={() => setBannerEdit(null)} className="text-t3 text-xs">✕</button>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   ))}
                   <button onClick={() => mutate(r => { r[i].chips.push({ label: 'New chip', banners: [] }); return r; })}
