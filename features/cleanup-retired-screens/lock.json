@@ -1,0 +1,24 @@
+{
+  "feature": "cleanup-retired-screens",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'Do cleanup contract' in-session 2026-07-25 after Wave-1 build complete. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — deletion-only cleanup; no new UI. The 'mockup' is a nav inventory (deleted vs remaining) at 04-preview/mockups/nav-inventory.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Deletion-only cleanup after Wave-1. Removes 7 unreachable influencer screens (OfferDetail, OfferList, MyCampaigns, CampaignDetail, CampaignCompletion, DeliverableDetail, MyPosts) + their InfluencerNavigator imports/registrations. Verified pre-delete: no kept file imports them (only BrandNavigator's different BrandCampaignDetailScreen matched); no live navigation targets them. Deliverable/DeliverableDetail routes kept (→ unified DeliverableScreen). Concurrent-window MyStore work left untouched. Zero runtime behaviour change. Does NOT flip released on v151/v152/v153/v155 — that awaits founder device-confirm.",
+  "qa_record": "Mobile jest GREEN 78/78 (18 suites, 2026-07-25) AFTER deleting the 7 screens — nothing imports them; live-screen smokes still pass. Navigator grep for deleted component names → clean. Deletion-only; zero behaviour change; no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(7 unreachable screens + dead imports/registrations) / after(deleted + navigator cleaned; Deliverable routes kept; MyStore untouched) + safety verification.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "NOT yet deployed — deletion cleanup complete + jest-green (78/78). Awaiting founder OTA go."
+  }
+}

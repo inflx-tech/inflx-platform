@@ -9,7 +9,6 @@ import CollabsListScreen from '../screens/influencer/CollabsListScreen';
 import CollabDetailScreen from '../screens/influencer/CollabDetailScreen';
 import CollabTrackingScreen from '../screens/influencer/CollabTrackingScreen';
 import CreateScreen from '../screens/influencer/CreateScreen';
-import OfferListScreen from '../screens/influencer/OfferListScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
 import CommissionDetailScreen from '../screens/influencer/CommissionDetailScreen';
 import ReferAndEarnScreen from '../screens/influencer/ReferAndEarnScreen';
@@ -19,13 +18,10 @@ import ContractScreen from '../screens/influencer/ContractScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 import DeliverableScreen from '../screens/influencer/DeliverableScreen';
 import DeliverableListScreen from '../screens/influencer/DeliverableListScreen';
-// DeliverableDetail route now resolves to the unified DeliverableScreen
-// (features/deliverable-consolidation). DeliverableDetailScreen.js is retired
-// (still on disk; deleted in the later cleanup contract).
+// DeliverableDetail route resolves to the unified DeliverableScreen
+// (features/deliverable-consolidation); the old DeliverableDetailScreen was
+// deleted in features/cleanup-retired-screens.
 import NotificationsScreen from '../screens/influencer/NotificationsScreen';
-import MyCampaignsScreen from '../screens/influencer/MyCampaignsScreen';
-import CampaignDetailScreen from '../screens/influencer/CampaignDetailScreen';
-import CampaignCompletionScreen from '../screens/influencer/CampaignCompletionScreen';
 import BrandProfileScreen from '../screens/influencer/BrandProfileScreen';
 import CampaignProductsScreen from '../screens/influencer/CampaignProductsScreen';
 import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
@@ -35,7 +31,6 @@ import SendProposalScreen from '../screens/influencer/SendProposalScreen';
 // Concept P0 (2026-07-23): ExperienceStudio / MyStore / StockStore DELETED.
 // Concept P2: the Post Composer + My Posts replace the old studio.
 import PostComposerScreen from '../screens/influencer/PostComposerScreen';
-import MyPostsScreen from '../screens/influencer/MyPostsScreen';
 import MyStoreScreen from '../screens/influencer/MyStoreScreen';
 
 const Tab = createBottomTabNavigator();
@@ -52,7 +47,6 @@ function CreateStackNav() {
     <CreateStack.Navigator screenOptions={{ headerShown: false }}>
       <CreateStack.Screen name="CreateMain" component={CreateScreen} />
       <CreateStack.Screen name="PostComposer" component={PostComposerScreen} />
-      <CreateStack.Screen name="MyPosts" component={MyPostsScreen} />
       {/* B4 — arrange their follower-facing store (sections/chips/concepts) */}
       <CreateStack.Screen name="MyStore" component={MyStoreScreen} />
     </CreateStack.Navigator>
@@ -76,8 +70,6 @@ function HomeStackNav() {
     <HomeStack.Navigator screenOptions={{ headerShown: false }}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
-      <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
-      <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
       <HomeStack.Screen name="Contract" component={ContractScreen} />
       <HomeStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <HomeStack.Screen name="Deliverable" component={DeliverableScreen} />
@@ -91,24 +83,15 @@ function HomeStackNav() {
   );
 }
 
-// ── Collabs stack — merges the old Offers + Campaigns tabs (features/collabs-list).
-// CollabsList is the entry; every detail screen the two old stacks reached is
-// registered here so row taps + repointed notification/Home deep-links resolve.
-// OfferList + MyCampaignsList stay registered for transitional compatibility.
+// ── Collabs stack (features/collabs-list + collab-detail). CollabsList → CollabDetail
+// → the action sub-screens. The old Offers/Campaigns detail + list screens were retired
+// in features/cleanup-retired-screens (all routes now resolve to the unified screens).
 function CollabsStackNav() {
-  const OfferDetailScreen = require('../screens/influencer/OfferDetailScreen').default;
   return (
     <CollabsStack.Navigator screenOptions={{ headerShown: false }}>
       <CollabsStack.Screen name="CollabsList" component={CollabsListScreen} />
       <CollabsStack.Screen name="CollabDetail" component={CollabDetailScreen} />
       <CollabsStack.Screen name="CollabTracking" component={CollabTrackingScreen} />
-      {/* transitional compat — old list screens still resolve if navigated to */}
-      <CollabsStack.Screen name="OfferList" component={OfferListScreen} />
-      <CollabsStack.Screen name="MyCampaignsList" component={MyCampaignsScreen} />
-      {/* detail screens (strangler: rows route here until CollabDetail lands) */}
-      <CollabsStack.Screen name="OfferDetail" component={OfferDetailScreen} />
-      <CollabsStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
-      <CollabsStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
       <CollabsStack.Screen name="Negotiation" component={NegotiationScreen} />
       <CollabsStack.Screen name="Contract" component={ContractScreen} />
       <CollabsStack.Screen name="ContractPdf" component={ContractPdfScreen} />

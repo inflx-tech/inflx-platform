@@ -1,0 +1,24 @@
+<title>Influencer nav — retired vs remaining</title>
+<style>body{font-family:-apple-system,system-ui,sans-serif;background:#111;color:#eee;padding:26px}h1{font-size:19px}.g{display:flex;gap:24px;flex-wrap:wrap;margin-top:16px}.col{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:16px;min-width:260px}.col h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px}.del h2{color:#ff8a80}.keep h2{color:#a5d6a7}li{font-size:13px;margin:5px 0;font-family:ui-monospace,monospace}.del li{text-decoration:line-through;color:#aaa}</style>
+<h1>Cleanup — delete retired influencer screens</h1>
+<div class="g">
+<div class="col del"><h2>Deleted (7)</h2><ul>
+<li>OfferDetailScreen → CollabDetail</li>
+<li>OfferListScreen → CollabsList</li>
+<li>MyCampaignsScreen → CollabsList</li>
+<li>CampaignDetailScreen → CollabDetail</li>
+<li>CampaignCompletionScreen → CollabDetail</li>
+<li>DeliverableDetailScreen → DeliverableScreen</li>
+<li>MyPostsScreen → CreateScreen</li>
+</ul></div>
+<div class="col keep"><h2>Remaining (live)</h2><ul>
+<li>Home · Collabs · Create · Earnings · Profile</li>
+<li>CollabsList · CollabDetail · CollabTracking</li>
+<li>DeliverableScreen (unified) · DeliverableList</li>
+<li>Negotiation · Contract · ContractPdf</li>
+<li>CreateScreen · PostComposer · MyStore</li>
+<li>CommissionDetail · ReferAndEarn · CampaignProducts</li>
+<li>Notifications · BrandProfile · TransactionFeed · Profile…</li>
+</ul></div>
+</div>
+<p style="margin-top:18px;color:#aaa;font-size:12.5px">Pure deletion of unreachable code — every deleted screen's role is owned by a live replacement; the routes were already repointed in prior Wave-1 contracts.</p>
