@@ -95,7 +95,7 @@ async function setEngagement(kind, postId, followerId, on) {
 
 // ── FEED ─────────────────────────────────────────────────────────────────────
 
-async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, offset = 0 } = {}) {
+async function listFeed({ userId, conceptId, collectionId, handle, brandId, limit = 20, offset = 0 } = {}) {
   const followerId = await followerIdForUser(userId);
   let followedIds = [];
   if (followerId) {
@@ -114,6 +114,9 @@ async function listFeed({ userId, conceptId, collectionId, handle, limit = 20, o
   if (conceptId) { params.push(conceptId); where.push(`cp.concept_id = $${params.length}`); }
   if (collectionId) { params.push(collectionId); where.push(`cp.collection_id = $${params.length}`); }
   if (handle) { params.push(handle); where.push(`i.instagram_handle = $${params.length}`); }
+  // B5 — business-page banners: only posts whose product universe includes
+  // this brand (scoped_brand_ids carries the collaboration scope).
+  if (brandId) { params.push(brandId); where.push(`$${params.length} = ANY(cp.scoped_brand_ids)`); }
 
   params.push(followerId);          // NULL for anonymous → liked/saved false
   const followerIdx = params.length;

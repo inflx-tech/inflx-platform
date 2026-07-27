@@ -29,3 +29,17 @@ lands with B3's tab (board frame 1).
   arranged "Shop my edits" rails (resolver truth: dark concepts vanish,
   lead-post cover falls back to newest if the lead goes dark); banner tap →
   their posts only for that concept. Rules/CTA/art stay admin-only.
+
+## B5 — Business page auto-structure (board b1-discover.html frame 2)
+
+- **Before**: brand store pages had no Discover rails; the admin's
+  Business-structure layout (authorable since B2) had no consumer; feed
+  had no brand filter, so a store-scoped banner tap had nowhere honest
+  to land.
+- **After**: BrandStore renders the resolved Business structure for THIS
+  brand above the tabs — concept banner rails (counts/covers from this
+  brand's posts only) + "creators of this store" rails; rows with
+  nothing behind them never arrive (resolver auto-hide, zero per-store
+  setup). Feed gains brand_id filter (scoped_brand_ids containment);
+  ConceptPosts passes it, so a store banner opens exactly that store's
+  posts for the concept.

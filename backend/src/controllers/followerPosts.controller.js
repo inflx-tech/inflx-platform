@@ -19,6 +19,7 @@ const feed = asyncHandler(async (req, res) => {
     conceptId: req.query.concept_id || null,
     collectionId: req.query.collection_id || null,
     handle: req.query.creator || null,
+    brandId: req.query.brand_id || null,
     limit: req.query.limit,
     offset: req.query.offset,
   });

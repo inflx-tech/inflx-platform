@@ -39,6 +39,8 @@ export default function BrandStoreScreen({ navigation, route }) {
   // the food page uses). When the admin has composed a business page for this
   // brand, the store renders THAT; otherwise it falls back to the product grid.
   const [bizSections, setBizSections] = useState([]);
+  // B5 — resolved Business-structure rows for this brand (auto-hide when empty)
+  const [bizDiscover, setBizDiscover] = useState([]);
 
   // Phase Salon-2 — pass the entry-creator's influencer_id to the backend so
   // the response embeds a `creator` object the sticky header renders. Most
@@ -68,6 +70,10 @@ export default function BrandStoreScreen({ navigation, route }) {
     if (!brandId) return undefined;
     followerApi.getBusinessSections?.(brandId)
       .then((res) => { if (alive && res?.success) setBizSections(res.data?.sections || []); })
+      .catch(() => {});
+    // B5 — the admin's Business structure resolved for THIS store.
+    followerApi.getDiscover?.({ scope: 'business', brand_id: brandId })
+      .then((res) => { if (alive && res?.success) setBizDiscover(res.data?.rows || []); })
       .catch(() => {});
     return () => { alive = false; };
   }, [brandId]);
@@ -332,6 +338,60 @@ export default function BrandStoreScreen({ navigation, route }) {
           </View>
         )}
       </View>
+
+      {/* B5 — the admin's ONE Business structure, auto-assembled for THIS
+          store: concept banners count only this brand's posts; creator rows
+          show only creators posting for it. Rows with nothing behind them
+          never arrive (resolver auto-hide) — zero per-store setup. */}
+      {bizDiscover.map((row, ri) => {
+        if (row.type === 'section') {
+          const banners = (row.chips || []).flatMap((c) => c.banners || []);
+          if (!banners.length) return null;
+          return (
+            <View key={`b5s${ri}`} style={{ paddingTop: 12 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#111', paddingHorizontal: 16 }}>{row.title}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 16, paddingTop: 8 }}>
+                {banners.map((b, bi) => (
+                  <TouchableOpacity key={bi} activeOpacity={0.85}
+                    style={{ width: 150, height: 92, borderRadius: 12, overflow: 'hidden', backgroundColor: '#F5F2EC' }}
+                    onPress={() => navigation.navigate('ConceptPosts', {
+                      conceptId: b.concept_id, collectionId: b.collection_id,
+                      brandId, title: b.title, count: b.post_count,
+                    })}>
+                    {(b.image_url || b.cover_url)
+                      ? <Image source={{ uri: b.image_url || b.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                      : null}
+                    <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 9, paddingTop: 18, paddingBottom: 7, backgroundColor: 'rgba(0,0,0,0.32)' }}>
+                      <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '800' }} numberOfLines={1}>{b.title}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 8.5, fontWeight: '700', marginTop: 1 }}>{b.post_count} posts</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        }
+        if (row.type === 'creator_row' && row.creators?.length) {
+          return (
+            <View key={`b5c${ri}`} style={{ paddingTop: 12 }}>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#111', paddingHorizontal: 16 }}>{row.title}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingHorizontal: 16, paddingTop: 8 }}>
+                {row.creators.map((c) => (
+                  <TouchableOpacity key={c.id} style={{ alignItems: 'center', width: 76 }} activeOpacity={0.85}
+                    onPress={() => navigation.navigate('InfluencerStore', { handle: c.handle })}>
+                    {c.avatar
+                      ? <Image source={{ uri: c.avatar }} style={{ width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: '#E7A33B' }} />
+                      : <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: '#F5F2EC', borderWidth: 2, borderColor: '#E7A33B' }} />}
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#111', marginTop: 4 }} numberOfLines={1}>@{c.handle}</Text>
+                    <Text style={{ fontSize: 8.5, color: '#8A8A8A' }}>{c.visible_posts} posts here</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        }
+        return null;
+      })}
 
       {/* Tabs */}
       <View style={s.tabRow}>
