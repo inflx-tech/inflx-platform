@@ -18,6 +18,6 @@
     "released_at": null,
     "qa_record": "pnpm qa GREEN — 79/79 passed, gate 0 (2026-07-27 report), run AFTER the backend change: zero regression. brand-web next build compiled clean (77 pages). node --check clean on the controller.",
     "diff_record": "06-diff/notes.md authored — before(handle-string join, no key available in payload) / after(campaign_influencer_id selected + id-based match with handle fallback).",
-    "deploy": "NOT yet deployed — qa GREEN. Backend change means pushing deploys Render; awaiting explicit founder go."
+    "deploy": "Founder go 2026-07-25 (pls push) — FIRST backend deploy of the session, surfaced explicitly. Committed 26d1389 → pushed origin/main (gov-check OK) → Render auto-deploys the backend + Vercel the brand dashboard. pnpm qa was GREEN 79/79 (gate 0) AFTER the change. released stays false pending the founder E2E pass."
   }
 }
