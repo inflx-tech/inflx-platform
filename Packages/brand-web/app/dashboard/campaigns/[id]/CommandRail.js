@@ -23,7 +23,7 @@ export function deriveCampaignStage(status, c = {}) {
     return { stageKey: 'fund', prime: { label: 'Fund wallet & publish', kind: 'publish' } };
   }
   if (status === 'completed') {
-    return { stageKey: 'payout', prime: { label: 'View payouts', kind: 'href', href: `/dashboard/campaigns/${id}/escrow` } };
+    return { stageKey: 'payout', prime: { label: 'View payouts', kind: 'tab', tab: 'payout' } };
   }
   if (pendingCount > 0) {
     return { stageKey: 'contracts', prime: { label: `Sign ${pendingCount} contract${pendingCount !== 1 ? 's' : ''}`, kind: 'tab', tab: 'contracts' } };

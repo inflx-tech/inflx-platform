@@ -6,6 +6,7 @@ import { campaignApi, deliverableApi, contractApi, fmtRupees } from '../../../..
 import { StageRail, PrimeBar, deriveCampaignStage } from './CommandRail';
 import { MediaPreview } from './reviewParts';
 import { contractLockAmount } from '../../../../lib/contracts';
+import PayoutSection from './PayoutSection';
 
 /* ════════════════════════════════════════════════════════════════════════════
    Campaign Command Center — full-width hierarchy view.
@@ -193,7 +194,7 @@ export default function CampaignCommandCenterPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const t = new URLSearchParams(window.location.search).get('tab');
-    if (t === 'contracts') setTab('contracts');
+    if (['hier', 'prod', 'contracts', 'ana', 'payout'].includes(t)) setTab(t);
   }, []);
 
   if (loading) {
@@ -476,7 +477,7 @@ export default function CampaignCommandCenterPage() {
           <div className="flex-1 min-w-[130px] px-4 border-r border-[#F4F4F5]">
             <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">ESCROW</div>
             <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{fmtRupees(escrowReleased)}</div>
-            <div className="text-[10px] text-[#A1A1AA] mt-0.5">released · {fmtRupees(escrowLocked)} locked · <Link href={`/dashboard/campaigns/${id}/escrow`} className="text-[#6B5A00] font-bold no-underline">detail ↗</Link></div>
+            <div className="text-[10px] text-[#A1A1AA] mt-0.5">released · {fmtRupees(escrowLocked)} locked · <button type="button" onClick={() => setTab('payout')} className="text-[#6B5A00] font-bold">detail ↗</button></div>
           </div>
         )}
         {(convCount > 0 || convRevenue > 0) && (
@@ -521,6 +522,7 @@ export default function CampaignCommandCenterPage() {
           { k: 'hier', label: 'Hierarchy' },
           ...(productsList.length > 0 ? [{ k: 'prod', label: 'Products', n: productsList.length }] : []),
           { k: 'contracts', label: 'Contracts', n: pendingCount > 0 ? pendingCount : undefined },
+          { k: 'payout', label: 'Payout' },
           { k: 'ana', label: 'Analytics' },
         ].map(t => (
           <button key={t.k} onClick={() => setTab(t.k)}
@@ -535,7 +537,7 @@ export default function CampaignCommandCenterPage() {
         <div>
           {sets.length === 0 && (
             <div className="bg-white border border-[#E4E4E7] rounded-[14px] p-10 text-center text-[#71717A] text-sm">
-              No sets yet — <Link href={`/dashboard/campaigns/${id}/sets`} className="font-bold text-[#0A0A0A]">create the first set</Link>.
+              No sets yet — <Link href={`/dashboard/campaigns/new?id=${id}`} className="font-bold text-[#0A0A0A]">create the first set</Link>.
             </div>
           )}
           {sets.map(set => {
@@ -876,6 +878,11 @@ export default function CampaignCommandCenterPage() {
             Draft = terms not yet finalised · Live = signed &amp; active · Completed = campaign wrapped.
           </div>
         </div>
+      )}
+
+      {/* ════ PAYOUT (A4 — folds the retired /escrow route) ════ */}
+      {tab === 'payout' && (
+        <PayoutSection id={id} onOpenConversions={() => setTab('ana')} />
       )}
 
       {/* ════ ANALYTICS ════ */}

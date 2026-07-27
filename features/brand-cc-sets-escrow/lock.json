@@ -1,0 +1,23 @@
+{
+  "feature": "brand-cc-sets-escrow",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls start building A4' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — CC money-in-the-hub locked 2026-07-25 (command-center.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Brand Wave-1 A4. Folds Sets + Escrow into the hub: new PayoutSection.js (IG-clean escrow/tranche ledger, self-fetches brandApi.getCampaignEscrow — the rich summary+influencer_breakdown shape /escrow used) rendered in a new hub 'Payout' tab; ?tab= deep-link generalized to accept payout; header escrow 'detail' + PrimeBar completed CTA → Payout tab. /escrow retired → redirect to ?tab=payout (kills the .esc scoped-CSS outlier). /sets retired → redirect to hub (Hierarchy groups by set; set creation stays in campaigns/new; 'create first set' link repointed to the wizard). Frontend-only, brand-web/Vercel — no backend.",
+  "qa_record": "brand-web `next build` compiled clean (77 pages); /escrow 3.8kB→520B and /sets 2.9kB→505B (redirect stubs) confirm both routes retired; hub grew (Payout tab). Reuses brandApi.getCampaignEscrow; frontend-only, no backend.",
+  "diff_record": "06-diff/notes.md authored — before(standalone /escrow + /sets routes) / after(hub Payout tab via PayoutSection + both routes→redirects; header/PrimeBar/set-link repointed).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}
