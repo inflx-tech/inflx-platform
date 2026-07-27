@@ -1,0 +1,23 @@
+{
+  "feature": "brand-cc-review",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'ok proceed to A2' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — Command Center review-in-the-hub locked 2026-07-25 (command-center.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Brand Wave-1 A2. Consolidates content review 3→1: banner removed in A1; /reviews route retired here (→ redirect to hub); hub inline Hierarchy review is the single surface. Shared reviewParts.js MediaPreview replaces the two copies. Removes the 2 'full review ↗' cross-links (inline Approve/Revision/Confirm-live stay). Frontend-only, brand-web/Vercel — no backend. Out of scope: a separate focused Review-queue tab (later refinement).",
+  "qa_record": "brand-web `next build` compiled clean (77 pages); /reviews route shrank 4.17kB→512B (redirect stub) confirming retirement. brand-web has no jest/lint gate — build is the automated gate. Reuses existing inline review handlers; frontend-only, no backend.",
+  "diff_record": "06-diff/notes.md authored — before(review in 3 places + dup MediaPreview + 2 cross-links) / after(one hub surface, /reviews→redirect, shared reviewParts.MediaPreview, cross-links removed).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}
