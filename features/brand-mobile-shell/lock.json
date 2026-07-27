@@ -19,6 +19,6 @@
     "maestro_green": false,
     "qa_record": "Mobile jest GREEN 103/103 (22 suites, 2026-07-25) after the change; presentation-only, no data/navigation change.",
     "diff_record": "06-diff/notes.md authored - before(static emoji, orange tint) / after(IG-clean white bar + MCI vector icons) + deferred/deliberate-non-change notes.",
-    "deploy": "NOT yet deployed - tests green. Awaiting founder go for the OTA publish (A7 + this ship together)."
+    "deploy": "Founder go 2026-07-25 (pls complete OTA). OTA BRAND v160 published (first attempt Render cold-start fetch-failed, succeeded on warm retry) — ships features/brand-mobile-offers (commit 6b96daf) + features/brand-mobile-shell (commit 88e4d0e) together. Maestro skipped per standing founder call; released stays false pending the founder E2E pass."
   }
 }
