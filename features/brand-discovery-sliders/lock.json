@@ -18,6 +18,6 @@
     "released_at": null,
     "qa_record": "brand-web next build compiled clean (77 pages). Control swap only; zero-position emits '' so param semantics are unchanged. Frontend-only, no backend.",
     "diff_record": "06-diff/notes.md authored — before(5 raw number boxes) / after(FilterSlider with live value; zero = Any = filter off).",
-    "deploy": "pending"
+    "deploy": "Founder go 2026-07-25 (pls go for 2b). Committed 3115209 -> Vercel auto-deploy. released false pending founder check."
   }
 }
