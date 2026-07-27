@@ -18,6 +18,6 @@
     "released_at": null,
     "qa_record": "brand-web next build compiled clean (77 pages). All endpoints pre-existing (influencerGroupApi list/create/addMembers; campaignApi list/get/inviteInfluencer). Invite endpoint + required influencer_id verified in campaign.controller.js. Frontend-only, no backend.",
     "diff_record": "06-diff/notes.md authored — before(no save-from-browse; dead invite placeholder) / after(ShortlistModal from card; real campaign+set invite).",
-    "deploy": "pending"
+    "deploy": "Founder go 2026-07-25 (complete discovery). Committed 83a04c6 -> Vercel auto-deploy. released false pending founder E2E pass."
   }
 }
