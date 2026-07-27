@@ -18,6 +18,6 @@
     "released_at": null,
     "qa_record": "brand-web next build compiled clean (77 pages). Live-filtering via one debounced effect + tier-chip double-fetch removed; same search endpoint. Frontend-only, no backend.",
     "diff_record": "06-diff/notes.md authored — before(Search-press per change + tier double-fetch) / after(debounced live filtering, single search source).",
-    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+    "deploy": "Founder go 2026-07-25 (pls go and commit). Committed 85c1836 -> Vercel auto-deploy. released false pending founder check."
   }
 }
