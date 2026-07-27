@@ -1,0 +1,23 @@
+{
+  "feature": "brand-cc-contracts",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls commit and start A3' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — CC signing model locked 2026-07-25 (command-center.html): strip routes into the hub Contracts tab.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Brand Wave-1 A3. Unify contract signing: single-source the wallet-lock money formula (fee+bonus)*(1+platformFeePct/100) into lib/contracts.js (walletLock + contractLockAmount), replacing 4 duplicated sites (campaigns list strip, hub Contracts tab, influencers ContractModal x2). List strip stays the cross-campaign inbox (bulk-sign + routes to hub tab); hub Contracts tab is the canonical per-campaign signing surface. The influencers ContractModal is contract authoring+approve+sign — its full fold into the hub is A5 (page split). Frontend-only, brand-web/Vercel — no backend; identical numeric result, now consistently paise-rounded.",
+  "qa_record": "brand-web `next build` compiled clean (77 pages). 4 duplicated wallet-lock formula sites → one lib/contracts.js. Pure money-math dedup, identical result (consistently paise-rounded). Frontend-only, no backend.",
+  "diff_record": "06-diff/notes.md authored — before(formula copied 4×) / after(one lib/contracts source; strip=inbox, hub tab=canonical sign; modal folds in A5).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}

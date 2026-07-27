@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { campaignApi, brandApi, contractApi, fmtRupees } from '../../../lib/api';
+import { contractLockAmount } from '../../../lib/contracts';
 import { QuotaWallModal, useQuotaWall } from '../../../components/QuotaWallModal';
 
 // ─── Status pill config (locked palette) ────────────────────────────────────
@@ -336,12 +337,8 @@ function StatusChip({ label, count, active, onClick }) {
 // and the SAME bulk-sign action. Each row links to its campaign detail, whose
 // Contracts tab shows the full per-creator breakdown.
 
-function contractLockAmount(c) {
-  const base  = parseFloat(c.influencer_fee || 0);
-  const bonus = parseFloat(c.bonus_amount || 0);
-  const fee   = parseFloat(c.platform_fee_pct || 8);
-  return parseFloat(((base + bonus) * (1 + fee / 100)).toFixed(2));
-}
+// contractLockAmount now imported from lib/contracts (A3 — single source of the
+// wallet-lock formula; was duplicated in the hub + influencers modal).
 
 function ContractSignatureStrip() {
   const [contracts, setContracts] = useState([]);

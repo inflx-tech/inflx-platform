@@ -6,6 +6,7 @@ import {
   campaignApi, brandApi, negotiationApi, contractApi, productionApi, applicationApi,
   fmtRupees,
 } from '../../../../../lib/api';
+import { walletLock } from '../../../../../lib/contracts';
 
 /* ─── Helpers / palette ──────────────────────────────────────────────────── */
 
@@ -858,7 +859,7 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
                 const baseFeeNum  = parseFloat(contract.influencer_fee || inf.influencer_budget || 0);
                 const bonusNum    = parseFloat(bonusAmount) || 0;
                 const totalFeeNum = baseFeeNum + bonusNum;
-                const lockNeeded  = totalFeeNum * (1 + platformFeePct / 100);
+                const lockNeeded  = walletLock(baseFeeNum, bonusNum, platformFeePct);
                 const overByNum   = lockNeeded - brandWalletBalance;
                 const isOver      = overByNum > 0.01;
                 return (
@@ -931,7 +932,7 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
               {(() => {
                 const baseFeeNum  = parseFloat(contract.influencer_fee || inf.influencer_budget || 0);
                 const bonusNum    = parseFloat(bonusAmount) || 0;
-                const lockNeeded  = (baseFeeNum + bonusNum) * (1 + platformFeePct / 100);
+                const lockNeeded  = walletLock(baseFeeNum, bonusNum, platformFeePct);
                 const isOver      = showFee && lockNeeded > brandWalletBalance + 0.01;
                 return (
                   <button onClick={() => onApprove({

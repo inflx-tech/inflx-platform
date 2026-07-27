@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { campaignApi, deliverableApi, contractApi, fmtRupees } from '../../../../lib/api';
 import { StageRail, PrimeBar, deriveCampaignStage } from './CommandRail';
 import { MediaPreview } from './reviewParts';
+import { contractLockAmount } from '../../../../lib/contracts';
 
 /* ════════════════════════════════════════════════════════════════════════════
    Campaign Command Center — full-width hierarchy view.
@@ -64,14 +65,8 @@ function formatDate(dateStr) {
 }
 const nf = (n) => (n == null ? '—' : Number(n).toLocaleString('en-IN'));
 
-/* Wallet lock for a pending contract = (fee + bonus) × (1 + platform_fee_pct/100).
-   Same formula the old Contracts inbox used. */
-function contractLockAmount(c) {
-  const base  = parseFloat(c.influencer_fee || 0);
-  const bonus = parseFloat(c.bonus_amount || 0);
-  const fee   = parseFloat(c.platform_fee_pct || 8);
-  return parseFloat(((base + bonus) * (1 + fee / 100)).toFixed(2));
-}
+/* Wallet lock = (fee + bonus) × (1 + platform_fee_pct/100) — now single-sourced in
+   lib/contracts (A3), shared with the campaigns-list strip + influencers modal. */
 
 function MiniStat({ v, k }) {
   return (
