@@ -1,8 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text } from 'react-native';
-import { colors } from '../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ig } from '../theme/ig';
 
 import BrandHomeScreen from '../screens/brand/BrandHomeScreen';
 import BrandCampaignListScreen from '../screens/brand/BrandCampaignListScreen';
@@ -91,9 +91,11 @@ function ProfileStack() {
   );
 }
 
-const tabIcon = (icon, label) => ({
+// IG-clean tab bar (features/brand-mobile-shell) — real MCI vector icons that
+// respond to active state, replacing static emoji <Text> that ignored it.
+const tabIcon = (iconName, label) => ({
   tabBarLabel: label,
-  tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icon}</Text>,
+  tabBarIcon: ({ color, size }) => <Icon name={iconName} size={size ?? 24} color={color} />,
 });
 
 export default function BrandNavigator() {
@@ -101,17 +103,24 @@ export default function BrandNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.orange,
-        tabBarInactiveTintColor: colors.t3,
-        tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.white },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarActiveTintColor: ig.text,
+        tabBarInactiveTintColor: ig.mut2,
+        tabBarStyle: {
+          backgroundColor: ig.bg,
+          borderTopColor: ig.line,
+          borderTopWidth: 1,
+          height: 72,
+          paddingTop: 8,
+          paddingBottom: 8,
+        },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 2 },
       }}
     >
-      <Tab.Screen name="Home" component={HomeStack} options={tabIcon('🏠', 'Home')} />
-      <Tab.Screen name="Campaigns" component={CampaignsStack} options={tabIcon('📣', 'Campaigns')} />
-      <Tab.Screen name="Wallet" component={BrandWalletScreen} options={tabIcon('💰', 'Wallet')} />
-      <Tab.Screen name="Alerts" component={BrandNotificationsScreen} options={tabIcon('🔔', 'Alerts')} />
-      <Tab.Screen name="Profile" component={ProfileStack} options={tabIcon('👤', 'Profile')} />
+      <Tab.Screen name="Home"      component={HomeStack}                options={tabIcon('home-outline', 'Home')} />
+      <Tab.Screen name="Campaigns" component={CampaignsStack}           options={tabIcon('bullhorn-outline', 'Campaigns')} />
+      <Tab.Screen name="Wallet"    component={BrandWalletScreen}        options={tabIcon('wallet-outline', 'Wallet')} />
+      <Tab.Screen name="Alerts"    component={BrandNotificationsScreen} options={tabIcon('bell-outline', 'Alerts')} />
+      <Tab.Screen name="Profile"   component={ProfileStack}             options={tabIcon('account-outline', 'Profile')} />
     </Tab.Navigator>
   );
 }

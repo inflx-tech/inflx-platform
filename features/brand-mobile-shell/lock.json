@@ -1,0 +1,24 @@
+{
+  "feature": "brand-mobile-shell",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'go for next issues' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — matches the already-locked + shipped influencer IG-clean tab bar; no new visual language introduced.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Brand mobile shell onto the IG-clean system: tab bar emoji-as-static-Text (ignored active state) + orange tint -> white bar, hairline border, MCI vector icons responding to active/inactive, black active / grey inactive. Removes unused Text + colors imports. DELIBERATE NON-CHANGE: ActionRequired stays a cross-campaign inbox rather than becoming a pure router — same judgement as web A3 (signature strip kept); refactoring risks working bulk-sign for modest gain. DEFERRED: brand screen bodies (headers/cards) restyle, screen-by-screen. Also noted: meals/food is DEAD platform-wide (founder 2026-07-25, fashion-only focus) so BrandMealsBoardScreen work is cancelled and its screens are dead-code cleanup candidates. Frontend-only, mobile/OTA - no backend.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 103/103 (22 suites, 2026-07-25) after the change; presentation-only, no data/navigation change.",
+    "diff_record": "06-diff/notes.md authored - before(static emoji, orange tint) / after(IG-clean white bar + MCI vector icons) + deferred/deliberate-non-change notes.",
+    "deploy": "NOT yet deployed - tests green. Awaiting founder go for the OTA publish (A7 + this ship together)."
+  }
+}
