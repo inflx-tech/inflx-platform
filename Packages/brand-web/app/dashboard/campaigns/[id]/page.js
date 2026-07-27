@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { campaignApi, deliverableApi, contractApi, fmtRupees } from '../../../../lib/api';
+import { StageRail, PrimeBar, deriveCampaignStage } from './CommandRail';
 
 /* ════════════════════════════════════════════════════════════════════════════
    Campaign Command Center — full-width hierarchy view.
@@ -326,11 +327,9 @@ export default function CampaignCommandCenterPage() {
     isBrandLevelOffer ? productsList
       : productsList.filter(p => (p.assigned_to_influencers || []).some(a => a.campaign_influencer_id === ciId));
 
-  const actionItems = [];
+  // appliedCount feeds the Command Center stage derivation (A1); the old
+  // actionItems banner it also drove was replaced by StageRail + PrimeBar.
   const appliedCount = allInfluencers.filter(ci => ci.status === 'applied').length;
-  if (appliedCount > 0) actionItems.push({ key: 'apps', label: `Review ${appliedCount} open-call application${appliedCount !== 1 ? 's' : ''}`, href: `/dashboard/campaigns/${id}/influencers?status=applied` });
-  if (reviewQueue > 0) actionItems.push({ key: 'rev', label: `Review ${reviewQueue} submitted deliverable${reviewQueue !== 1 ? 's' : ''}`, href: `/dashboard/campaigns/${id}/reviews?tab=reviews` });
-  if (liveConfirmQueue > 0) actionItems.push({ key: 'live', label: `Confirm ${liveConfirmQueue} live URL${liveConfirmQueue !== 1 ? 's' : ''}`, href: `/dashboard/campaigns/${id}/reviews?tab=live` });
 
   // default expansion: every set open; influencers with action states open
   const isSetOpen = (sid) => openSets[sid] !== undefined ? openSets[sid] : true;
@@ -452,6 +451,21 @@ export default function CampaignCommandCenterPage() {
   const contractRows = allInfluencers.map(ci => ({ ci, state: contractStateFor(ci) }));
   const pendingCount = contractRows.filter(r => r.state.key === 'pending').length;
 
+  // Fund & Publish (A1) — the previously-missing first action.
+  async function handlePublish() {
+    const res = await campaignApi.publish(id);
+    if (res.success) {
+      showToast('Campaign published.');
+      loadAll({ cancelled: false });
+    } else if (res.error?.code === 'WALLET_INSUFFICIENT') {
+      showToast('Fund the wallet with the full campaign budget first.');
+      router.push('/dashboard/wallet');
+    } else {
+      showToast(res.error?.message || 'Could not publish campaign.');
+    }
+  }
+  const stageInfo = deriveCampaignStage(campaign.status, { id, appliedCount, pendingCount, reviewQueue, liveConfirmQueue });
+
   /* ════ Render ════ */
   return (
     <div className="font-body">
@@ -478,18 +492,10 @@ export default function CampaignCommandCenterPage() {
         <StatusBadge status={campaign.status} />
       </div>
 
-      {/* Needs-attention banner (replaces the old right rail) */}
-      {actionItems.length > 0 && (
-        <div className="flex items-center gap-3 flex-wrap bg-[#FFF7CC] border border-[#FFC107] rounded-[12px] px-4 py-2.5 mb-4">
-          <span className="text-base">⚡</span>
-          <span className="text-[12.5px] font-bold text-[#0A0A0A]">{actionItems.length} thing{actionItems.length !== 1 ? 's' : ''} need{actionItems.length === 1 ? 's' : ''} you:</span>
-          {actionItems.map(a => (
-            <Link key={a.key} href={a.href} className="bg-[#0A0A0A] text-[#FFC107] rounded-[8px] px-3 py-1.5 text-[11px] font-extrabold no-underline hover:opacity-85">
-              {a.label}
-            </Link>
-          ))}
-        </div>
-      )}
+      {/* Command Center — stage rail + primary action bar (A1, features/brand-cc-shell).
+          Replaces the ad-hoc needs-you banner; drives Fund & Publish + the next step. */}
+      <StageRail current={stageInfo.stageKey} />
+      <PrimeBar prime={stageInfo.prime} onPublish={handlePublish} onTab={setTab} />
 
       {/* Full-width header strip */}
       <div className="bg-white border border-[#E4E4E7] rounded-[14px] px-5 py-4 mb-4 flex items-center flex-wrap gap-y-3">

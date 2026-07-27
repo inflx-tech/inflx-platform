@@ -1,0 +1,23 @@
+{
+  "feature": "brand-cc-shell",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: chose 'A1 — Command Center shell' + 'all web then all mobile' in-session 2026-07-25. Lock decision delegated per standing autonomy; first brand-web contract.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — Campaign Command Center look (6-stage rail + state-driven prime bar incl. Fund & Publish) locked in-session 2026-07-25; board at 04-preview/mockups/command-center.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Brand Wave-1 A1. Staged Command Center SHELL on brand-web: adds StageRail + PrimeBar (web IG-clean kit seed) + the missing Fund & Publish CTA (campaignApi.publish; WALLET_INSUFFICIENT → /dashboard/wallet) to campaigns/[id]/page.js, after the header, replacing the ad-hoc needs-you banner. Additive/strangler — existing hierarchy/tabs/sub-routes stay below; A2–A5 fold review/contracts/sets/escrow/production into the stages. Frontend-only, brand-web/Vercel — no backend. Verify = next lint + founder on deployed dashboard (no web jest/Maestro gate).",
+  "qa_record": "brand-web `next build` COMPILED SUCCESSFULLY 2026-07-25 — all 77 pages incl. /dashboard/campaigns/[id]. brand-web has no jest/eslint gate wired (next lint prompts interactively; not configured), so the production build is the automated gate. Change is additive (StageRail+PrimeBar on top; existing body untouched). Frontend-only, no backend delta.",
+  "diff_record": "06-diff/notes.md authored — before(ad-hoc needs-you banner, no publish action) / after(stage rail + prime bar + Fund & Publish) + fidelity note (A2–A5 fold the sub-routes into stages).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy (production-impacting). Web verify = founder on the deployed dashboard (no device/Maestro gate for web)."
+  }
+}
