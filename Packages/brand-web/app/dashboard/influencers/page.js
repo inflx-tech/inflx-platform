@@ -447,7 +447,14 @@ export default function InfluencersPage() {
     });
   }, []);
 
-  useEffect(() => { if (brandStatus === 'approved') doSearch(); /* eslint-disable-next-line */ }, [brandStatus]);
+  // Live filtering (features/brand-discovery-filters, step 2): debounced auto-search on
+  // any filter change (and on approval) — no Search-button press needed.
+  useEffect(() => {
+    if (brandStatus !== 'approved') return;
+    const t = setTimeout(() => { doSearch(); }, 400);
+    return () => clearTimeout(t);
+    /* eslint-disable-next-line */
+  }, [brandStatus, query, city, niche, tier, language, useCase, minFollowers, maxFollowers, minViewEr, minRate, maxRate, hasCollabs, verifiedOnly, bizOnly, brandHandle, sort]);
 
   async function doSearch(e) {
     e?.preventDefault();
@@ -658,12 +665,12 @@ export default function InfluencersPage() {
       {/* Tier chip row */}
       {results.length > 0 && (
         <div className="tier-row">
-          <button className={`tier-chip${!tier ? ' act' : ''}`} onClick={() => { setTier(''); doSearch(); }}><span className="dot" style={{ background: 'var(--muted-3)' }}></span>All <span className="ct">{tierCounts[''] || 0}</span></button>
+          <button className={`tier-chip${!tier ? ' act' : ''}`} onClick={() => setTier('')}><span className="dot" style={{ background: 'var(--muted-3)' }}></span>All <span className="ct">{tierCounts[''] || 0}</span></button>
           {Object.entries(TIER_CFG).map(([key, cfg]) => {
             const count = tierCounts[key] || 0;
             if (!count) return null;
             return (
-              <button key={key} className={`tier-chip${tier === key ? ' act' : ''}`} onClick={() => { setTier(tier === key ? '' : key); doSearch(); }}>
+              <button key={key} className={`tier-chip${tier === key ? ' act' : ''}`} onClick={() => setTier(tier === key ? '' : key)}>
                 <span className="dot" style={{ background: cfg.dot }}></span>{cfg.label} <span className="ct">{count}</span>
               </button>
             );

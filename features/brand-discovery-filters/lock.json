@@ -1,0 +1,23 @@
+{
+  "feature": "brand-discovery-filters",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'Start step 2' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — live-filtering behavior + card look locked in-session 2026-07-25 (discovery proposal).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Discovery STEP 2 = live filtering. Replaces the initial [brandStatus] search effect with ONE debounced (~400ms) effect keyed on all filter state (query/city/niche/tier/language/useCase/min+maxFollowers/minViewEr/min+maxRate/hasCollabs/verifiedOnly/bizOnly/brandHandle/sort) → existing doSearch(); tier chips drop their inline doSearch() (removes stale-tier double-fetch). Search button + Enter kept (optional). No Search-press needed. DEFERRED (step 2b): sliders for numeric ranges, pick-from-list/autocomplete chips for city/niche/language, platform filter, filter-bar IG-clean restyle. Audience-fit filters = backend batch. Frontend-only, brand-web/Vercel — no backend; same search endpoint.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "qa_record": "brand-web next build compiled clean (77 pages). Live-filtering via one debounced effect + tier-chip double-fetch removed; same search endpoint. Frontend-only, no backend.",
+    "diff_record": "06-diff/notes.md authored — before(Search-press per change + tier double-fetch) / after(debounced live filtering, single search source).",
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}
