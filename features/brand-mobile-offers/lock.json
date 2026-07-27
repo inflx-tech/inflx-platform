@@ -1,0 +1,24 @@
+{
+  "feature": "brand-mobile-offers",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'go with your recommendation' (A7 next) in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — extends the existing offer-builder sheet pattern in the same screen; no new visual language. Scope rule locked in-session 2026-07-25.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "A7. Closes the offer-builder gap from the locked brand-mobile scope (only campaign CREATION + LISTING are web-only). Adds volume / BOGO / bundle builders to BrandOffersLibraryScreen plus the ProductPickerSheet they need (over existing brandApi.listProducts). utils/offerBuilders.js mirrors backend services/offerConfig.validator.js shapes EXACTLY (read, not guessed) with matching client validation. NOTE from recon: invite-from-profile was already working on mobile (full campaign+set picker) — the 'create one from the web dashboard' line is just the no-eligible-campaign empty state, which is correct since creation is web-only. DEFERRED: free_gift builder; category/product offer scoping; offer_type is immutable by backend design. Frontend-only, mobile/OTA — no backend.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 103/103 (22 suites, 2026-07-25): 10 offerBuilders specs asserting backend-required config shapes + 2 smoke + 91 prior. Frontend-only, no backend delta.",
+    "diff_record": "06-diff/notes.md authored - before(discount only, 'build on the web dashboard') / after(Discount/Volume/BOGO/Bundle builders + product picker) + validator-parity note + deferred list.",
+    "deploy": "NOT yet deployed - tests green. Awaiting founder go for the OTA publish."
+  }
+}

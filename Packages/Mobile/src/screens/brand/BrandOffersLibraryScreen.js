@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, A
 import { useFocusEffect } from '@react-navigation/native';
 import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import ProductPickerSheet from '../../components/brand/ProductPickerSheet';
+import { buildDiscount, buildVolume, buildBogo, buildBundle, OFFER_TYPES } from '../../utils/offerBuilders';
 
 /**
  * Offer library — mobile mirror of brand-web /dashboard/offers. List, status
@@ -35,6 +37,16 @@ export default function BrandOffersLibraryScreen({ navigation }) {
   const [bName, setBName]         = useState('');
   const [bSub, setBSub]           = useState('pct');    // pct | flat
   const [bValue, setBValue]       = useState('');
+  // A7 — volume / BOGO / bundle builders (were web-only)
+  const [bType, setBType]         = useState('discount');
+  const [vMode, setVMode]         = useState('spend');  // spend | quantity
+  const [vTiers, setVTiers]       = useState([{ threshold: '', pctOff: '' }]);
+  const [bogoProduct, setBogoProduct] = useState(null);
+  const [bogoBuy, setBogoBuy]     = useState('2');
+  const [bogoFree, setBogoFree]   = useState('1');
+  const [bundleProducts, setBundleProducts] = useState([]);
+  const [bundlePrice, setBundlePrice] = useState('');
+  const [picker, setPicker]       = useState(null);     // 'bogo' | 'bundle' | null
 
   async function load() {
     const res = await brandApi.getOffers();
@@ -73,25 +85,37 @@ export default function BrandOffersLibraryScreen({ navigation }) {
     ]);
   }
 
+  function resetBuilder() {
+    setBuilder(false); setBName(''); setBValue(''); setBSub('pct'); setBType('discount');
+    setVMode('spend'); setVTiers([{ threshold: '', pctOff: '' }]);
+    setBogoProduct(null); setBogoBuy('2'); setBogoFree('1');
+    setBundleProducts([]); setBundlePrice('');
+  }
+
+  // A7 — builds the config for the chosen type; validation mirrors the backend
+  // offerConfig validator so we never post a shape the API would reject.
   async function createOffer(activate) {
-    const v = parseFloat(bValue);
     if (!bName.trim()) { Alert.alert('Name required'); return; }
-    if (!Number.isFinite(v) || v <= 0 || (bSub === 'pct' && v > 100)) {
-      Alert.alert('Invalid value', bSub === 'pct' ? 'Enter a percentage between 1 and 100.' : 'Enter a positive amount in rupees.');
-      return;
-    }
+    const built =
+      bType === 'volume' ? buildVolume({ mode: vMode, tiers: vTiers })
+        : bType === 'bogo' ? buildBogo({ product: bogoProduct, buyQty: bogoBuy, freeQty: bogoFree })
+          : bType === 'bundle' ? buildBundle({ products: bundleProducts, price: bundlePrice })
+            : buildDiscount({ subType: bSub, value: bValue });
+
+    if (!built.ok) { Alert.alert('Check the offer', built.error); return; }
+
     setActing(true);
     const res = await brandApi.createOffer({
       name: bName.trim(),
-      offer_type: 'discount',
-      offer_config_json: { sub_type: bSub, value: v, scope: 'store' },
+      offer_type: bType,
+      offer_config_json: built.config,
     });
     if (res?.success && activate) {
       const id = res.data?.offer?.id;
       if (id) await brandApi.updateOffer(id, { status: 'active' });
     }
     setActing(false);
-    if (res?.success) { setBuilder(false); setBName(''); setBValue(''); setBSub('pct'); load(); }
+    if (res?.success) { resetBuilder(); load(); }
     else Alert.alert('Failed', res?.error?.message || 'Could not create the offer.');
   }
 
@@ -136,7 +160,7 @@ export default function BrandOffersLibraryScreen({ navigation }) {
             <View style={s.empty}>
               <Text style={s.emptyIcon}>🏷️</Text>
               <Text style={s.emptyTitle}>No offers {tab !== 'all' ? `in ${tab}` : 'yet'}</Text>
-              <Text style={s.emptyText}>Create a discount here, or build volume/BOGO/bundle offers on the web dashboard.</Text>
+              <Text style={s.emptyText}>Build a discount, volume, BOGO or bundle offer — tap “+ New offer”.</Text>
             </View>
           ) : visible.map(o => {
             const pill = STATUS_PILL[o.status] || STATUS_PILL.draft;
@@ -212,25 +236,102 @@ export default function BrandOffersLibraryScreen({ navigation }) {
       <Modal visible={builder} animationType="slide" transparent onRequestClose={() => setBuilder(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.scrim}>
           <View style={s.sheet}>
-            <Text style={s.sheetTitle}>New discount offer</Text>
-            <Text style={s.sheetMeta}>Volume, BOGO, bundle and free-gift builders live on the web dashboard.</Text>
+            <Text style={s.sheetTitle}>New offer</Text>
+            <Text style={s.sheetMeta}>Build discount, volume, BOGO or bundle offers right here.</Text>
 
             <Text style={s.label}>Offer name</Text>
             <TextInput style={s.input} value={bName} onChangeText={setBName}
               placeholder="e.g. Festive 20% Off" placeholderTextColor={P.muted3} />
 
-            <Text style={s.label}>Discount type</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {[{ k: 'pct', l: '% percentage' }, { k: 'flat', l: '₹ flat off' }].map(x => (
-                <TouchableOpacity key={x.k} style={[s.chip, bSub === x.k && s.chipOn, { marginRight: 0 }]} onPress={() => setBSub(x.k)}>
-                  <Text style={[s.chipTxt, bSub === x.k && s.chipTxtOn]}>{x.l}</Text>
+            <Text style={s.label}>Offer type</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {OFFER_TYPES.map(x => (
+                <TouchableOpacity key={x.key} style={[s.chip, bType === x.key && s.chipOn, { marginRight: 0 }]} onPress={() => setBType(x.key)}>
+                  <Text style={[s.chipTxt, bType === x.key && s.chipTxtOn]}>{x.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={s.label}>{bSub === 'pct' ? 'Percentage off (1–100)' : 'Amount off (₹)'}</Text>
-            <TextInput style={s.input} value={bValue} onChangeText={t => setBValue(t.replace(/[^\d.]/g, ''))}
-              keyboardType="numeric" placeholder={bSub === 'pct' ? 'e.g. 20' : 'e.g. 150'} placeholderTextColor={P.muted3} />
+            {bType === 'discount' && (
+              <>
+                <Text style={s.label}>Discount type</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {[{ k: 'pct', l: '% percentage' }, { k: 'flat', l: '₹ flat off' }].map(x => (
+                    <TouchableOpacity key={x.k} style={[s.chip, bSub === x.k && s.chipOn, { marginRight: 0 }]} onPress={() => setBSub(x.k)}>
+                      <Text style={[s.chipTxt, bSub === x.k && s.chipTxtOn]}>{x.l}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={s.label}>{bSub === 'pct' ? 'Percentage off (1–100)' : 'Amount off (₹)'}</Text>
+                <TextInput style={s.input} value={bValue} onChangeText={t => setBValue(t.replace(/[^\d.]/g, ''))}
+                  keyboardType="numeric" placeholder={bSub === 'pct' ? 'e.g. 20' : 'e.g. 150'} placeholderTextColor={P.muted3} />
+              </>
+            )}
+
+            {bType === 'volume' && (
+              <>
+                <Text style={s.label}>Tier on</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {[{ k: 'spend', l: '₹ spend' }, { k: 'quantity', l: '# quantity' }].map(x => (
+                    <TouchableOpacity key={x.k} style={[s.chip, vMode === x.k && s.chipOn, { marginRight: 0 }]} onPress={() => setVMode(x.k)}>
+                      <Text style={[s.chipTxt, vMode === x.k && s.chipTxtOn]}>{x.l}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={s.label}>Tiers — {vMode === 'spend' ? 'spend ₹ → % off' : 'buy N → % off'}</Text>
+                {vTiers.map((t, i) => (
+                  <View key={i} style={{ flexDirection: 'row', gap: 8 }}>
+                    <TextInput style={[s.input, { flex: 1 }]} value={t.threshold} keyboardType="numeric"
+                      placeholder={vMode === 'spend' ? '₹ 2000' : 'qty 3'} placeholderTextColor={P.muted3}
+                      onChangeText={v => setVTiers(prev => prev.map((r, j) => j === i ? { ...r, threshold: v.replace(/[^\d.]/g, '') } : r))} />
+                    <TextInput style={[s.input, { flex: 1 }]} value={t.pctOff} keyboardType="numeric"
+                      placeholder="% off" placeholderTextColor={P.muted3}
+                      onChangeText={v => setVTiers(prev => prev.map((r, j) => j === i ? { ...r, pctOff: v.replace(/[^\d.]/g, '') } : r))} />
+                  </View>
+                ))}
+                <TouchableOpacity onPress={() => setVTiers(prev => [...prev, { threshold: '', pctOff: '' }])}>
+                  <Text style={{ fontSize: 12.5, fontWeight: '800', color: P.ink, paddingVertical: 6 }}>+ Add tier</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {bType === 'bogo' && (
+              <>
+                <Text style={s.label}>Product</Text>
+                <TouchableOpacity style={s.input} onPress={() => setPicker('bogo')}>
+                  <Text style={{ fontSize: 13, color: bogoProduct ? P.ink : P.muted3 }} numberOfLines={1}>
+                    {bogoProduct ? bogoProduct.name : 'Pick a product'}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.label}>Buy qty</Text>
+                    <TextInput style={s.input} value={bogoBuy} keyboardType="numeric"
+                      onChangeText={t => setBogoBuy(t.replace(/[^\d]/g, ''))} placeholderTextColor={P.muted3} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.label}>Free qty</Text>
+                    <TextInput style={s.input} value={bogoFree} keyboardType="numeric"
+                      onChangeText={t => setBogoFree(t.replace(/[^\d]/g, ''))} placeholderTextColor={P.muted3} />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {bType === 'bundle' && (
+              <>
+                <Text style={s.label}>Products (pick 2 or more)</Text>
+                <TouchableOpacity style={s.input} onPress={() => setPicker('bundle')}>
+                  <Text style={{ fontSize: 13, color: bundleProducts.length ? P.ink : P.muted3 }} numberOfLines={1}>
+                    {bundleProducts.length ? bundleProducts.map(p => p.name).join(', ') : 'Pick products'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={s.label}>Bundle price (₹)</Text>
+                <TextInput style={s.input} value={bundlePrice} keyboardType="numeric"
+                  placeholder="e.g. 999" placeholderTextColor={P.muted3}
+                  onChangeText={t => setBundlePrice(t.replace(/[^\d.]/g, ''))} />
+              </>
+            )}
 
             <View style={{ marginTop: 16, gap: 8 }}>
               <TouchableOpacity style={[s.btn, s.btnFill]} disabled={acting} onPress={() => createOffer(true)}>
@@ -239,10 +340,23 @@ export default function BrandOffersLibraryScreen({ navigation }) {
               <TouchableOpacity style={[s.btn, s.btnGhost]} disabled={acting} onPress={() => createOffer(false)}>
                 <Text style={[s.btnGhostTxt, { color: P.ink2 }]}>Save as draft</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[s.btn, s.btnPlain]} onPress={() => setBuilder(false)}>
+              <TouchableOpacity style={[s.btn, s.btnPlain]} onPress={resetBuilder}>
                 <Text style={s.btnPlainTxt}>Cancel</Text>
               </TouchableOpacity>
             </View>
+
+            {/* A7 — product picker for BOGO / bundle */}
+            <ProductPickerSheet
+              visible={picker !== null}
+              multi={picker === 'bundle'}
+              selected={picker === 'bundle' ? bundleProducts : (bogoProduct ? [bogoProduct] : [])}
+              onClose={() => setPicker(null)}
+              onDone={(picked) => {
+                if (picker === 'bundle') setBundleProducts(picked);
+                else setBogoProduct(picked[0] || null);
+                setPicker(null);
+              }}
+            />
           </View>
         </KeyboardAvoidingView>
       </Modal>
