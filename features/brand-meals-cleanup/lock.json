@@ -19,6 +19,6 @@
     "maestro_green": false,
     "qa_record": "Mobile jest GREEN 105/105 (23 suites, 2026-07-25) after deletion; post-delete grep for BrandMealsBoard / restaurantOnly / Meals-tile is clean.",
     "diff_record": "06-diff/notes.md authored — before(dead Meals board + tile) / after(deleted) + safety verification + the explicit list of follower food code NOT touched.",
-    "deploy": "NOT yet deployed — tests green. Awaiting founder go for the OTA publish."
+    "deploy": "Founder go 2026-07-25 (complete all and publish OTA at a time). OTA BRAND v162 published — ships features/brand-meals-cleanup (5233d18) + features/brand-home-restyle (9b11e26) + features/brand-screens-restyle (32ae277) together. One Render cold-start fetch-failed attempt, succeeded on retry. Maestro skipped per standing founder call; released stays false pending the founder E2E pass."
   }
 }

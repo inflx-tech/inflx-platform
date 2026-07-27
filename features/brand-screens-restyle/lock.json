@@ -19,6 +19,6 @@
     "maestro_green": false,
     "qa_record": "Mobile jest GREEN 106/106 (24 suites, 2026-07-25). Post-edit grep confirms no dangling IconGlyph/corner-blob styles in the three screens; smoke suites exercise require-time import correctness (the Campaign-list import gap would otherwise have crashed the screen).",
     "diff_record": "06-diff/notes.md authored — before(yellow corner blobs + text-glyph icons) / after(blobs removed, 10 MCI icons, dead styles cleaned, missing imports added) + deferred screen list.",
-    "deploy": "NOT yet deployed — tests green. Bundled with the meals cleanup + Home quick-actions restyle for a single OTA publish."
+    "deploy": "Founder go 2026-07-25 (complete all and publish OTA at a time). OTA BRAND v162 published — ships features/brand-meals-cleanup (5233d18) + features/brand-home-restyle (9b11e26) + features/brand-screens-restyle (32ae277) together. One Render cold-start fetch-failed attempt, succeeded on retry. Maestro skipped per standing founder call; released stays false pending the founder E2E pass."
   }
 }
