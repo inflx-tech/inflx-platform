@@ -396,14 +396,20 @@ export default function CampaignCommandCenterPage() {
   // Per-creator contract rows for the Contracts tab. Pending-signature rows come
   // from the filtered listPending payload (matched by handle); active/completed
   // are derived from ci.status already in the campaign hierarchy.
+  // Match pending contracts by campaign_influencer_id (the real key). The old
+  // Instagram-handle string join was fragile — duplicate/renamed handles or a
+  // missing handle silently mis-matched or lost the contract. Falls back to the
+  // handle only if an older payload lacks the id.
+  const pendingByCiId = {};
   const pendingByHandle = {};
   for (const c of pendingContracts) {
+    if (c.campaign_influencer_id) pendingByCiId[String(c.campaign_influencer_id)] = c;
     const h = String(c.instagram_handle || '').replace(/^@/, '').toLowerCase();
     if (h) pendingByHandle[h] = c;
   }
   function contractStateFor(ci) {
     const handle = String(ci.instagram_handle || ci.handle || ci.influencer_name || ci.name || '').replace(/^@/, '').toLowerCase();
-    const pending = pendingByHandle[handle];
+    const pending = pendingByCiId[String(ci.id)] || pendingByHandle[handle];
     if (pending) return { key: 'pending', label: 'Pending your signature', cls: 'bg-[#FFF7CC] text-[#6B5A00]', contractId: pending.id, lock: contractLockAmount(pending) };
     if (ci.status === 'completed') return { key: 'completed', label: 'Completed', cls: 'bg-[#F4F4F5] text-[#1F1F22]' };
     if (['contracted', 'active', 'live'].includes(ci.status)) return { key: 'live', label: 'Live', cls: 'bg-[#D1FAE5] text-[#047857]' };

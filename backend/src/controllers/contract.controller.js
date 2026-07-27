@@ -1183,6 +1183,7 @@ const listBrandPending = asyncHandler(async (req, res) => {
         con.influencer_signed_at,
         con.created_at,
         con.production_mode,
+        con.campaign_influencer_id,
         cs.formats_json,
         cs.goal,
         c.id   AS campaign_id,
