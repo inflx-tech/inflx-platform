@@ -27,7 +27,6 @@ import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 // Parity pack (contract: features/brand-mobile-parity-pack)
 import BrandOrdersScreen from '../screens/brand/BrandOrdersScreen';
 import BrandBookingsScreen from '../screens/brand/BrandBookingsScreen';
-import BrandMealsBoardScreen from '../screens/brand/BrandMealsBoardScreen';
 import BrandOffersLibraryScreen from '../screens/brand/BrandOffersLibraryScreen';
 import BrandSettingsHubScreen from '../screens/brand/BrandSettingsHubScreen';
 import BrandInfluencerAnalyticsScreen from '../screens/brand/BrandInfluencerAnalyticsScreen';
@@ -54,7 +53,6 @@ function HomeStack() {
       <Stack.Screen name="ContractPdf"            component={ContractPdfScreen} />
       <Stack.Screen name="BrandOrders"            component={BrandOrdersScreen} />
       <Stack.Screen name="BrandBookings"          component={BrandBookingsScreen} />
-      <Stack.Screen name="BrandMealsBoard"        component={BrandMealsBoardScreen} />
       <Stack.Screen name="BrandOffersLibrary"     component={BrandOffersLibraryScreen} />
       <Stack.Screen name="BrandInfluencerAnalytics" component={BrandInfluencerAnalyticsScreen} />
     </Stack.Navigator>

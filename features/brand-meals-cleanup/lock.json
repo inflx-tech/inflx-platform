@@ -1,0 +1,24 @@
+{
+  "feature": "brand-meals-cleanup",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — 'do dead code cleanup' in-session 2026-07-25, following the locked 'no meals, fashion only' scope call.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — deletion-only; the 'mockup' is a deleted-vs-retained inventory at 04-preview/mockups/inventory.html.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Deletion-only, BRAND SCOPE ONLY. Removes BrandMealsBoardScreen + its navigator import/route + the Home Meals quick-action + the now-unused restaurantOnly filter. Verified BEFORE deleting: the screen used only brandApi.getMe (7 other users) and restaurantOnly had exactly one consumer. IMPORTANT — the FOLLOWER food/restaurant subsystem (MealsChatScreen, RestaurantDetail/Booking/Bill, DishGroupResultScreen, services/FoodOrderContext.js, components/food/*, components/restaurant/*) was deliberately NOT deleted: it is much larger, has 4 LIVE PASSING TEST SUITES, and belongs to the separate follower fashion-rebuild program — removing it would delete working tested code and needs its own contract + explicit founder call. Surfaced rather than assumed. Frontend-only, mobile/OTA, zero behaviour change.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 105/105 (23 suites, 2026-07-25) after deletion; post-delete grep for BrandMealsBoard / restaurantOnly / Meals-tile is clean.",
+    "diff_record": "06-diff/notes.md authored — before(dead Meals board + tile) / after(deleted) + safety verification + the explicit list of follower food code NOT touched.",
+    "deploy": "NOT yet deployed — tests green. Awaiting founder go for the OTA publish."
+  }
+}

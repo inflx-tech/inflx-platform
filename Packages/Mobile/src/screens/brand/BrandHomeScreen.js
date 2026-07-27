@@ -54,7 +54,6 @@ const QUICK_ACTIONS = [
   { label: 'Orders',        icon: '🧾', target: 'BrandOrders' },
   { label: 'Bookings',      icon: '📅', target: 'BrandBookings' },
   { label: 'Offers',        icon: '🏷', target: 'BrandOffersLibrary' },
-  { label: 'Meals',         icon: '🍽', target: 'BrandMealsBoard', restaurantOnly: true },
   { label: 'Campaigns',     icon: '⊟', target: 'Campaigns' },
   { label: 'Wallet',        icon: '◫', target: 'Wallet' },
   { label: 'Enquiries',     icon: '✉',  target: 'BrandEnquiries' },
@@ -251,7 +250,6 @@ export default function BrandHomeScreen({ navigation }) {
           </View>
           <View style={styles.quickGrid}>
             {QUICK_ACTIONS
-              .filter(qa => !qa.restaurantOnly || brand?.category === 'restaurant')
               .map(qa => (
               <TouchableOpacity
                 key={qa.label}

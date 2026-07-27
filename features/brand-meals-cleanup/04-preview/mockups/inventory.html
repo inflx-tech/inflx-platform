@@ -1,0 +1,33 @@
+<title>Meals cleanup — deleted vs retained</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;background:#111;color:#eee;padding:24px}
+h1{font-size:18px;margin:0 0 4px}
+.sub{color:#aaa;font-size:12.5px;margin:0 0 16px}
+.g{display:flex;gap:20px;flex-wrap:wrap}
+.c{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:14px;min-width:290px;flex:1}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:0 0 9px}
+.del h2{color:#ff8a80}.keep h2{color:#ffd54f}
+ul{margin:0;padding-left:18px}
+li{font-size:12.5px;margin:4px 0;font-family:ui-monospace,monospace}
+.del li{text-decoration:line-through;color:#999}
+.n{color:#aaa;font-size:12.5px;margin-top:14px;line-height:1.55}
+</style>
+<h1>Meals dead-code cleanup</h1>
+<p class="sub">Brand scope only — the follower food subsystem was surfaced, not deleted.</p>
+<div class="g">
+  <div class="c del"><h2>Deleted (brand)</h2><ul>
+    <li>screens/brand/BrandMealsBoardScreen.js</li>
+    <li>BrandNavigator — import + BrandMealsBoard route</li>
+    <li>BrandHomeScreen — 'Meals' quick-action</li>
+    <li>BrandHomeScreen — restaurantOnly filter (last user)</li>
+  </ul></div>
+  <div class="c keep"><h2>NOT touched — needs its own decision</h2><ul>
+    <li>screens/follower/MealsChatScreen.js</li>
+    <li>screens/follower/RestaurantDetail / Booking / Bill</li>
+    <li>screens/follower/DishGroupResultScreen.js</li>
+    <li>services/FoodOrderContext.js</li>
+    <li>components/food/* · components/restaurant/*</li>
+  </ul></div>
+</div>
+<p class="n">The follower food subsystem has <b>4 live passing test suites</b> and belongs to the separate
+fashion-rebuild program. Deleting working, tested code was out of this cleanup's remit.</p>
