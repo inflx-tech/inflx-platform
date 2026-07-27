@@ -1,0 +1,23 @@
+{
+  "feature": "brand-listing-cards",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'go with your recommendations' (ship A5s1, then B1) in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — listing shell (bigger tiles, fluid grid, readable names) locked 2026-07-25 (listing-shell.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "B1 STEP 1 (safe/contained, CSS-only). Fixes the founder's listing complaints on the main products grid (products/page.js .prd CSS): fluid auto-fill grid (fills screen, no fixed 4-col/gutters), bigger images (120→190px), bigger 2-line names (was 13px nowrap-truncated-on-photo). No JSX/logic change. DEFERRED (later B1): name fully below image; one shared ProductCard + InventoryBrowse across the 3 product screens (products/page.js + listing/page.js + ListingTemplateLayout); collapse the 3 CSS systems. Backend parked. Frontend-only, brand-web/Vercel.",
+  "qa_record": "brand-web `next build` compiled clean (77 pages). CSS-only change to the .prd product grid — no JSX/logic/data. Frontend-only, no backend.",
+  "diff_record": "06-diff/notes.md authored — before(4-col fixed, 120px img, 13px truncated overlaid name) / after(fluid auto-fill grid, 190px img, 15px 2-line name).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}

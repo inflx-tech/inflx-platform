@@ -1,0 +1,239 @@
+<title>INFLX Brand — Listing Shell</title>
+<style>
+  :root{
+    --canvas:#F2F2F3; --panel:#FFFFFF; --page-ink:#0A0A0A; --page-muted:#6E6E73; --page-line:#E3E3E5;
+    --bg:#FFFFFF; --text:#0A0A0A; --text2:#262626; --mut:#8E8E8E; --line:#DBDBDB; --lineSoft:#EFEFEF;
+    --y:#FFC107; --yInk:#7A6200; --yBg:#FFF6D6;
+    --green:#1A7F52; --greenBg:#EAF7F0; --red:#C4321B; --redBg:#FBEEEA;
+    --blue:#3B6FE0; --blueBg:#EDF2FD; --purple:#6D3FC4; --purpleBg:#F2ECFB;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root{--canvas:#0C0C0D;--panel:#161617;--page-ink:#F4F4F5;--page-muted:#A0A0A6;--page-line:#2A2A2C}}
+  :root[data-theme="light"]{--canvas:#F2F2F3;--panel:#FFFFFF;--page-ink:#0A0A0A;--page-muted:#6E6E73;--page-line:#E3E3E5}
+  :root[data-theme="dark"]{--canvas:#0C0C0D;--panel:#161617;--page-ink:#F4F4F5;--page-muted:#A0A0A6;--page-line:#2A2A2C}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--page-ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .wrap{max-width:1180px;margin:0 auto;padding:44px 24px 80px}
+  .eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--page-muted);font-weight:700}
+  h1{font-size:33px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin:12px 0 10px;text-wrap:balance}
+  .lede{font-size:15px;color:var(--page-muted);max-width:66ch;margin:0}
+  .lede b{color:var(--page-ink);font-weight:600}
+  code{font-family:var(--mono);font-size:.85em;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:5px}
+  @media (prefers-color-scheme:dark){code{background:rgba(255,255,255,.08)}}
+  h2{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--page-muted);font-weight:700;margin:0 0 6px;display:flex;align-items:center;gap:12px}
+  h2::after{content:"";flex:1;height:1px;background:var(--page-line)}
+  .h2sub{font-size:13.5px;color:var(--page-muted);margin:0 0 20px;max-width:74ch}
+  .h2sub b{color:var(--page-ink);font-weight:600}
+  .section{margin-top:56px}
+
+  /* before/after card anatomy */
+  .baGrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:640px}
+  @media(max-width:620px){.baGrid{grid-template-columns:1fr}}
+  .baCol .tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;display:inline-block;margin-bottom:12px}
+  .tagBad{background:var(--redBg);color:var(--red)}.tagGood{background:var(--greenBg);color:var(--green)}
+  /* OLD tiny tile: name overlaid + truncated on a 120px image */
+  .oldTile{width:150px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .oldTile .img{height:120px;background:#EDEDED;position:relative;display:flex;align-items:center;justify-content:center}
+  .oldTile .img svg{width:22px;height:22px;color:#B8B8B8}
+  .oldTile .img .nm{position:absolute;left:0;right:0;bottom:0;padding:5px 7px;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .oldTile .meta{padding:6px 7px;font-size:10px;color:var(--mut)}
+  .baNote{font-size:11.5px;color:var(--page-muted);margin-top:12px;line-height:1.5}
+  .baNote b{color:var(--page-ink)}
+  /* NEW card (the shared ProductCard) */
+  .newCard{width:230px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+  .newCard .img{height:190px;background:#F2F2F2;position:relative;display:flex;align-items:center;justify-content:center}
+  .newCard .img svg{width:30px;height:30px;color:#C0C0C0}
+  .newCard .vchip{position:absolute;top:9px;left:9px;font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;background:#fff;border:1px solid var(--line);color:var(--text2);padding:3px 7px;border-radius:6px}
+  .newCard .stchip{position:absolute;top:9px;right:9px;font-size:9px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:3px 7px;border-radius:6px;display:flex;align-items:center;gap:4px}
+  .stchip .d{width:5px;height:5px;border-radius:3px}
+  .st-live{background:#fff;color:var(--green);border:1px solid #CDE8D9}.st-live .d{background:var(--green)}
+  .st-draft{background:#fff;color:var(--mut);border:1px solid var(--line)}.st-draft .d{background:var(--mut)}
+  .newCard .bd{padding:11px 12px 12px}
+  .newCard .nm{font-size:15px;font-weight:700;color:#0A0A0A;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:39px}
+  .newCard .sub{font-size:11.5px;color:var(--mut);margin-top:3px}
+  .newCard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .newCard .price{font-size:16px;font-weight:800;color:#0A0A0A;font-variant-numeric:tabular-nums}
+  .newCard .edit{font-size:11px;font-weight:700;color:#0A0A0A;border:1px solid var(--line);border-radius:7px;padding:5px 10px}
+
+  /* device frames */
+  .stageWrap{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
+  .webCol{flex:1 1 640px;min-width:320px;max-width:760px}
+  .mobCol{flex:0 0 auto;width:322px}
+  .devcap{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--page-ink);font-weight:800;margin:0 0 4px}
+  .devsub{font-size:12px;color:var(--page-muted);margin:0 0 13px;line-height:1.4}
+
+  .win{border:1px solid var(--page-line);border-radius:14px;overflow:hidden;box-shadow:0 22px 50px -28px rgba(0,0,0,.42);background:#fff}
+  .winbar{background:#F6F6F7;border-bottom:1px solid var(--line);padding:9px 12px;display:flex;align-items:center;gap:7px}
+  .winbar .d{width:10px;height:10px;border-radius:5px;background:#DADADA}
+  .winbar .url{margin-left:10px;font-size:11px;color:var(--mut);background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px 10px;font-family:var(--mono)}
+  .app{background:#fff;padding:15px 16px 18px}
+
+  .lhead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .ltitle{font-size:20px;font-weight:800;color:#0A0A0A;letter-spacing:-.02em}
+  .lrule{width:34px;height:3px;background:var(--y);border-radius:2px;margin-top:6px}
+  .addBtn{background:#0A0A0A;color:#fff;font-weight:800;font-size:12px;padding:9px 14px;border-radius:9px;display:flex;align-items:center;gap:6px}
+  .addBtn svg{width:14px;height:14px}
+  /* one tab vocabulary */
+  .ltabs{display:flex;gap:20px;margin:14px 0 0;border-bottom:1px solid var(--line)}
+  .lt{font-size:13px;font-weight:600;color:var(--mut);padding:0 0 10px;border-bottom:2px solid transparent}
+  .lt.on{color:#0A0A0A;font-weight:700;border-bottom-color:#0A0A0A}
+  .filters{display:flex;gap:8px;margin:13px 0;flex-wrap:wrap}
+  .fchip{font-size:11.5px;font-weight:600;color:var(--text2);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .fchip.on{background:#0A0A0A;color:#fff;border-color:#0A0A0A}
+  .fcount{font-size:11.5px;color:var(--mut);margin-left:auto;align-self:center}
+
+  /* THE fluid responsive grid */
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:14px}
+  .pcard{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}
+  .pcard .img{height:158px;background:#F2F2F2;position:relative;display:flex;align-items:center;justify-content:center}
+  .pcard .img svg{width:26px;height:26px;color:#C4C4C4}
+  .pcard .vchip{position:absolute;top:8px;left:8px;font-size:8.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;background:#fff;border:1px solid var(--line);color:var(--text2);padding:3px 6px;border-radius:5px}
+  .pcard .stchip{position:absolute;top:8px;right:8px;font-size:8.5px;font-weight:800;text-transform:uppercase;padding:3px 6px;border-radius:5px;display:flex;align-items:center;gap:4px}
+  .pcard .bd{padding:10px 11px 11px}
+  .pcard .nm{font-size:14px;font-weight:700;color:#0A0A0A;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+  .pcard .sub{font-size:11px;color:var(--mut);margin-top:3px}
+  .pcard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+  .pcard .price{font-size:15px;font-weight:800;color:#0A0A0A;font-variant-numeric:tabular-nums}
+  .pcard .edit{font-size:10.5px;font-weight:700;color:#0A0A0A;border:1px solid var(--line);border-radius:6px;padding:4px 9px}
+
+  /* mobile */
+  .phone{background:#fff;border:1px solid var(--page-line);border-radius:30px;padding:7px;box-shadow:0 20px 46px -26px rgba(0,0,0,.4)}
+  .screen{background:#fff;border-radius:25px;overflow:hidden}
+  .mhead{padding:15px 14px 0}
+  .mrow1{display:flex;align-items:center;justify-content:space-between}
+  .mtitle{font-size:18px;font-weight:800;color:#0A0A0A;letter-spacing:-.01em}
+  .maddb{width:34px;height:34px;border-radius:10px;background:#0A0A0A;color:#fff;display:flex;align-items:center;justify-content:center}
+  .maddb svg{width:17px;height:17px}
+  .mtabs{display:flex;gap:16px;margin-top:12px;border-bottom:1px solid var(--line)}
+  .mt{font-size:12.5px;font-weight:600;color:var(--mut);padding:0 0 9px;border-bottom:2px solid transparent}
+  .mt.on{color:#0A0A0A;font-weight:700;border-bottom-color:#0A0A0A}
+  .mbody{padding:12px 12px 14px}
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .mcard{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .mcard .img{height:118px;background:#F2F2F2;position:relative;display:flex;align-items:center;justify-content:center}
+  .mcard .img svg{width:22px;height:22px;color:#C4C4C4}
+  .mcard .vchip{position:absolute;top:7px;left:7px;font-size:8px;font-weight:800;text-transform:uppercase;background:#fff;border:1px solid var(--line);color:var(--text2);padding:2px 5px;border-radius:5px}
+  .mcard .bd{padding:9px 9px 10px}
+  .mcard .nm{font-size:13px;font-weight:700;color:#0A0A0A;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}
+  .mcard .price{font-size:14px;font-weight:800;color:#0A0A0A;margin-top:5px;font-variant-numeric:tabular-nums}
+
+  .repl{display:grid;gap:8px;margin-top:16px}
+  .repl .r{display:flex;gap:10px;font-size:13px;color:var(--page-muted);line-height:1.45}
+  .repl .r b{color:var(--page-ink);font-weight:700}.repl .k{font-weight:800;color:var(--page-ink)}
+  .strike{text-decoration:line-through;opacity:.55}
+  .foot{margin-top:52px;padding-top:20px;border-top:1px solid var(--page-line);font-size:13px;color:var(--page-muted);line-height:1.55}
+  .foot b{color:var(--page-ink)}
+</style>
+
+<h2 class="sr-only">Proposed INFLX brand listing shell: one product-card system on a fluid full-width responsive grid, with product names below the image, shown on web and mobile, replacing today's three separate listing screens.</h2>
+
+<div class="wrap">
+  <p class="eyebrow">INFLX · Brand apps · listing redesign — shared web + mobile model</p>
+  <h1>One product card. Fills the screen. Names you can read.</h1>
+  <p class="lede">Today listing is <b>three separate screens with three CSS systems</b>, capped narrow with big empty gutters, tiles at 120px with names truncated over the photo. This is one <b>ProductCard</b> on a fluid grid that grows with the window — bigger images, names <b>below</b> the image on two lines, the same card for every vertical, web and mobile.</p>
+
+  <!-- CARD ANATOMY before/after -->
+  <div class="section">
+    <h2>1 · The card — before &amp; after</h2>
+    <p class="h2sub">The single fix that removes most of the "messy / small names" feeling: stop overlaying a truncated name on a small photo; give it a real card with the name on its own two lines.</p>
+    <div class="baGrid">
+      <div class="baCol">
+        <span class="tag tagBad">Today</span>
+        <div class="oldTile">
+          <div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><div class="nm">Cotton Kurta Set — Indigo…</div></div>
+          <div class="meta">₹1,299 · 3 sizes</div>
+        </div>
+        <p class="baNote"><b>120px</b> image · name <b>13px, one line, clipped</b> over the photo · 4-column locked grid.</p>
+      </div>
+      <div class="baCol">
+        <span class="tag tagGood">Proposed</span>
+        <div class="newCard">
+          <div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Fashion</span><span class="stchip st-live"><span class="d"></span>Live</span></div>
+          <div class="bd">
+            <div class="nm">Cotton Kurta Set — Indigo Block Print</div>
+            <div class="sub">3 sizes · 2 colours</div>
+            <div class="foot"><span class="price">₹1,299</span><span class="edit">Edit</span></div>
+          </div>
+        </div>
+        <p class="baNote"><b>190px</b> image · name <b>15px, 2 lines</b> below · vertical + status chips · Edit in reach.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEB + MOBILE -->
+  <div class="section">
+    <h2>2 · The listing shell — web &amp; mobile, one card everywhere</h2>
+    <p class="h2sub">One tab vocabulary — <b>Inventory · Add · Offers</b> — for every vertical. The grid is <code>repeat(auto-fill, minmax(196px, 1fr))</code> on a fluid container, so columns grow to fill the screen instead of a 960px column with gutters. Fashion, food, salon and car all render as the same card.</p>
+    <div class="stageWrap">
+
+      <!-- WEB -->
+      <div class="webCol">
+        <p class="devcap">Brand web — Inventory</p>
+        <p class="devsub">Full-width responsive grid; one card per product regardless of vertical.</p>
+        <div class="win">
+          <div class="winbar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="url">inflx.in/dashboard/products</span></div>
+          <div class="app">
+            <div class="lhead">
+              <div><div class="ltitle">Products</div><div class="lrule"></div></div>
+              <div class="addBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>Add products</div>
+            </div>
+            <div class="ltabs"><div class="lt on">Inventory</div><div class="lt">Add</div><div class="lt">Offers</div></div>
+            <div class="filters">
+              <div class="fchip on">All</div><div class="fchip">Fashion</div><div class="fchip">Food</div><div class="fchip">Salon</div><div class="fchip">Live</div><div class="fchip">Draft</div>
+              <span class="fcount">42 products</span>
+            </div>
+            <div class="pgrid">
+              <div class="pcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Fashion</span><span class="stchip st-live"><span class="d"></span>Live</span></div><div class="bd"><div class="nm">Cotton Kurta Set — Indigo Block Print</div><div class="sub">3 sizes · 2 colours</div><div class="foot"><span class="price">₹1,299</span><span class="edit">Edit</span></div></div></div>
+              <div class="pcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Food</span><span class="stchip st-live"><span class="d"></span>Live</span></div><div class="bd"><div class="nm">Paneer Butter Masala — Family</div><div class="sub">Serves 3–4 · veg</div><div class="foot"><span class="price">₹340</span><span class="edit">Edit</span></div></div></div>
+              <div class="pcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Salon</span><span class="stchip st-draft"><span class="d"></span>Draft</span></div><div class="bd"><div class="nm">Keratin Smoothening — Shoulder Length</div><div class="sub">90 min · with wash</div><div class="foot"><span class="price">₹2,500</span><span class="edit">Edit</span></div></div></div>
+              <div class="pcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Fashion</span><span class="stchip st-live"><span class="d"></span>Live</span></div><div class="bd"><div class="nm">Linen Shirt — Sage Green</div><div class="sub">5 sizes</div><div class="foot"><span class="price">₹1,650</span><span class="edit">Edit</span></div></div></div>
+              <div class="pcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Car</span><span class="stchip st-live"><span class="d"></span>Live</span></div><div class="bd"><div class="nm">Swift Dzire — Self Drive</div><div class="sub">5 seats · petrol · MT</div><div class="foot"><span class="price">₹2,200<span style="font-size:10px;color:var(--mut);font-weight:600">/day</span></span><span class="edit">Edit</span></div></div></div>
+              <div class="pcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Food</span><span class="stchip st-draft"><span class="d"></span>Draft</span></div><div class="bd"><div class="nm">Filter Coffee — Regular</div><div class="sub">200 ml</div><div class="foot"><span class="price">₹60</span><span class="edit">Edit</span></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOBILE -->
+      <div class="mobCol">
+        <p class="devcap">Brand mobile — same, editable</p>
+        <p class="devsub">Bigger 2-col cards, names below, and real Add — not a read-only "do it on web" store.</p>
+        <div class="phone"><div class="screen">
+          <div class="mhead">
+            <div class="mrow1"><div class="mtitle">Products</div><div class="maddb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 5v14M5 12h14"/></svg></div></div>
+            <div class="mtabs"><div class="mt on">Inventory</div><div class="mt">Add</div><div class="mt">Offers</div></div>
+          </div>
+          <div class="mbody">
+            <div class="mgrid">
+              <div class="mcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Fashion</span></div><div class="bd"><div class="nm">Cotton Kurta Set — Indigo Block Print</div><div class="price">₹1,299</div></div></div>
+              <div class="mcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Food</span></div><div class="bd"><div class="nm">Paneer Butter Masala — Family</div><div class="price">₹340</div></div></div>
+              <div class="mcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Salon</span></div><div class="bd"><div class="nm">Keratin Smoothening — Shoulder Length</div><div class="price">₹2,500</div></div></div>
+              <div class="mcard"><div class="img"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg><span class="vchip">Fashion</span></div><div class="bd"><div class="nm">Linen Shirt — Sage Green</div><div class="price">₹1,650</div></div></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REPLACES -->
+  <div class="section">
+    <h2>3 · What it consolidates</h2>
+    <div class="repl">
+      <div class="r"><span class="k">✕</span><span>Three screens <b class="strike">products/page.js</b> + <b class="strike">products/listing/page.js</b> + <b class="strike">ListingTemplateLayout.js</b> → <b>one listing shell</b>; browse implemented once, not three times.</span></div>
+      <div class="r"><span class="k">✕</span><span>Three CSS systems (<code>.prd</code> + <code>.lst</code> inline + Tailwind) → <b>one token set</b> (the Instagram-clean system).</span></div>
+      <div class="r"><span class="k">✕</span><span>Three tab vocabularies (Products/Offers · Inventory/Add/Offers · Fleet/Add/Upload) → <b>one</b>: Inventory · Add · Offers.</span></div>
+      <div class="r"><span class="k">◐</span><span>Per-vertical ternaries + emoji spec strings → one card with a small <b>vertical chip</b>; vertical-specific fields live in the Add wizard, not the grid.</span></div>
+      <div class="r"><span class="k">＋</span><span><b>Coverage fixed:</b> fluid <code>min(1400px,100%)</code> container + auto-fill grid replaces <code>maxWidth:960</code> / <code>max-w-[780px]</code> — no more narrow column with empty gutters.</span></div>
+      <div class="r"><span class="k">＋</span><span><b>Mobile gets real product management</b> (Add/Edit), not a read-only "add on web" store.</span></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Scope:</b> frontend-only — web (Vercel) + mobile (OTA), over the existing listing/product endpoints. No backend, no DB. Consistent with the Campaign Command Center and the influencer app. <b>That completes the four surfaces</b> we mapped: influencer app, brand campaign command center, brand listing — all one Instagram-clean system. Ready when you are to guide where we build first.
+  </div>
+</div>
