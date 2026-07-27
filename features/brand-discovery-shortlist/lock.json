@@ -1,0 +1,23 @@
+{
+  "feature": "brand-discovery-shortlist",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'complete discovery' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — discovery card with Shortlist + Invite actions locked in-session 2026-07-25 (discovery proposal + discovery-card.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Discovery STEPS 3+4 (completes discovery). (1) Shortlist from a result card for onboarded creators → group picker (existing influencerGroupApi list/create/addMembers) — closes the 'shortlisting disconnected from browsing' gap. (2) Replaces the DEAD invite placeholder on the profile ('go to your campaign wizard and use handpick mode' + link) with a REAL invite: campaign → set → campaignApi.inviteInfluencer(cid, sid, {influencer_id}) — endpoint + required field verified in campaign.controller.js invite handler. Honest failure surfacing; no faked success. DEFERRED: side-by-side compare; content thumbnails + audience demographics (backend batch); city/niche pick-lists (needs canonical taxonomy). Frontend-only, brand-web/Vercel — no backend, all endpoints exist. Verification happens in the founder's single E2E pass per feedback_e2e_verification_at_end.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "qa_record": "brand-web next build compiled clean (77 pages). All endpoints pre-existing (influencerGroupApi list/create/addMembers; campaignApi list/get/inviteInfluencer). Invite endpoint + required influencer_id verified in campaign.controller.js. Frontend-only, no backend.",
+    "diff_record": "06-diff/notes.md authored — before(no save-from-browse; dead invite placeholder) / after(ShortlistModal from card; real campaign+set invite).",
+    "deploy": "pending"
+  }
+}

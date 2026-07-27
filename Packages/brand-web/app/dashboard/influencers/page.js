@@ -243,6 +243,86 @@ const CSS = `
 
 // ─── Row Card (compact single-line) ─────────────────────────────────────────
 
+/* Shortlist modal (features/brand-discovery-shortlist) — save a creator into a brand
+   influencer group straight from the results, so shortlisting isn't disconnected from
+   browsing. Uses the existing influencerGroupApi (list / create / addMembers). */
+function ShortlistModal({ creator, onClose, onDone }) {
+  const [groups, setGroups]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy]       = useState(false);
+  const [newName, setNewName] = useState('');
+  const infId = creator?.linked_influencer_id;
+
+  useEffect(() => {
+    influencerGroupApi.list().then(res => {
+      if (res.success || res.ok) setGroups(res.data?.groups || []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  async function addTo(groupId) {
+    setBusy(true);
+    const res = await influencerGroupApi.addMembers(groupId, [infId]);
+    setBusy(false);
+    if (res.success || res.ok) onDone(`Saved @${creator.ig_handle} to your shortlist`);
+    else onDone(res.error?.message || 'Could not add to the group', 'err');
+  }
+
+  async function createAndAdd() {
+    const name = newName.trim();
+    if (!name) return;
+    setBusy(true);
+    const res = await influencerGroupApi.create({ name, influencer_ids: [infId] });
+    setBusy(false);
+    if (res.success || res.ok) onDone(`Created “${name}” with @${creator.ig_handle}`);
+    else onDone(res.error?.message || 'Could not create the group', 'err');
+  }
+
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Shortlist @{creator.ig_handle}</h3>
+        {loading ? (
+          <p>Loading your lists…</p>
+        ) : (
+          <>
+            {groups.length > 0 && (
+              <div className="flex flex-col gap-1.5 mb-3 max-h-[220px] overflow-y-auto">
+                {groups.map(g => (
+                  <button
+                    key={g.id}
+                    disabled={busy}
+                    onClick={() => addTo(g.id)}
+                    className="flex items-center justify-between text-left border border-[#E4E4E7] rounded-[10px] px-3 py-2 hover:border-[#0A0A0A] disabled:opacity-50 bg-white"
+                  >
+                    <span className="text-[13px] font-bold text-[#0A0A0A]">{g.name}</span>
+                    <span className="text-[11px] text-[#8E8E8E]">{g.member_count ?? (g.influencer_ids || []).length} saved</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="text-[11px] font-bold uppercase tracking-[0.4px] text-[#8E8E8E] mb-1.5">New list</div>
+            <div className="flex gap-2">
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g. Summer shortlist"
+                className="flex-1 border border-[#E4E4E7] rounded-[10px] px-3 py-2 text-[13px]"
+              />
+              <button disabled={busy || !newName.trim()} onClick={createAndAdd}
+                className="bg-[#0A0A0A] text-white text-[12px] font-bold rounded-[10px] px-3.5 disabled:opacity-40">
+                Create
+              </button>
+            </div>
+          </>
+        )}
+        <div className="modal-actions">
+          <button className="cancel" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* Range filter with a live value readout (features/brand-discovery-sliders, 2b).
    Emits '' at the zero position so doSearch's truthy gate omits the param
    (= filter off), preserving the old empty-number-box semantics exactly. */
@@ -273,7 +353,7 @@ function FilterSlider({ label, value, onChange, min = 0, max = 100, step = 1, fo
   );
 }
 
-function CreatorRow({ c, onInvite, router }) {
+function CreatorRow({ c, onInvite, onShortlist, router }) {
   const tier = TIER_CFG[c.tier];
   const tierClass = TIER_CFG[c.tier] ? c.tier : 'nano';
   const isUnclaimed = c.source === 'scraped' && !c.is_inflx_verified;
@@ -321,12 +401,22 @@ function CreatorRow({ c, onInvite, router }) {
             {c.full_name ? `@${c.ig_handle}` : ''}{c.full_name && metaBits.length ? ' · ' : ''}{metaBits.join(' · ')}
           </div>
         </div>
-        <button
-          onClick={onClickAction}
-          className={`flex-shrink-0 text-[12px] font-bold rounded-[8px] px-3 py-1.5 whitespace-nowrap ${isUnclaimed ? 'bg-[#FFC107] text-[#0A0A0A] hover:bg-[#E0A800]' : 'bg-[#0A0A0A] text-white hover:opacity-90'}`}
-        >
-          {isUnclaimed ? 'Invite' : 'Add'}
-        </button>
+        <div className="flex gap-1.5 flex-shrink-0">
+          {c.linked_influencer_id && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onShortlist(c); }}
+              className="text-[12px] font-bold rounded-[8px] px-3 py-1.5 whitespace-nowrap bg-white border border-[#E4E4E7] text-[#0A0A0A] hover:border-[#0A0A0A]"
+            >
+              Shortlist
+            </button>
+          )}
+          <button
+            onClick={onClickAction}
+            className={`text-[12px] font-bold rounded-[8px] px-3 py-1.5 whitespace-nowrap ${isUnclaimed ? 'bg-[#FFC107] text-[#0A0A0A] hover:bg-[#E0A800]' : 'bg-[#0A0A0A] text-white hover:opacity-90'}`}
+          >
+            {isUnclaimed ? 'Invite' : 'Add'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mt-3">
@@ -434,6 +524,7 @@ export default function InfluencersPage() {
   const [advanced,     setAdvanced]     = useState(false);
 
   const [inviteTarget, setInviteTarget] = useState(null);
+  const [shortlistTarget, setShortlistTarget] = useState(null);
   const [toast,        setToast]        = useState(null);
 
   // Sub-tabs: Discover (creator search) + Proposals (folded inbox, E-2) +
@@ -721,7 +812,7 @@ export default function InfluencersPage() {
       ) : (
         <div>
           {results.map(c => (
-            <CreatorRow key={c.row_id} c={c} onInvite={setInviteTarget} router={router} />
+            <CreatorRow key={c.row_id} c={c} onInvite={setInviteTarget} onShortlist={setShortlistTarget} router={router} />
           ))}
         </div>
       )}
@@ -736,6 +827,19 @@ export default function InfluencersPage() {
           setTimeout(() => setToast(null), 4000);
         }}
       />
+
+      {/* Shortlist Modal (features/brand-discovery-shortlist) */}
+      {shortlistTarget && (
+        <ShortlistModal
+          creator={shortlistTarget}
+          onClose={() => setShortlistTarget(null)}
+          onDone={(text, kind) => {
+            setShortlistTarget(null);
+            setToast({ kind: kind === 'err' ? 'err' : 'ok', text });
+            setTimeout(() => setToast(null), 4000);
+          }}
+        />
+      )}
 
       {/* Toast */}
       {toast && <div className={`toast${toast.kind === 'err' ? ' err' : ''}`}>{toast.text}</div>}
