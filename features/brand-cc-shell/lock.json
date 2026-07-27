@@ -18,6 +18,6 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy (production-impacting). Web verify = founder on the deployed dashboard (no device/Maestro gate for web)."
+    "deploy": "Founder go in-session 2026-07-25 ('pls commit'). Committed f5c53aa → pushed origin/main (gov-check OK) → Vercel auto-deploys brand-web (no separate publish step; builds from the push). next build was clean locally. released stays false until founder verifies on the deployed dashboard."
   }
 }
