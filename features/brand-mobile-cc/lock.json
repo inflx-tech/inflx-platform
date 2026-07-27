@@ -19,6 +19,6 @@
     "maestro_green": false,
     "qa_record": "Mobile jest GREEN 91/91 (20 suites, 2026-07-25): 10 campaignStages specs + 3 brand command-center smoke + 78 prior. Frontend-only, no backend delta.",
     "diff_record": "06-diff/notes.md authored - before(6 shifting tiles, no publish action, dead tap) / after(stage rail + one primary action, working Fund & Publish, route fixed) + deferred list.",
-    "deploy": "NOT yet deployed - build + tests green. Awaiting founder go for the OTA publish."
+    "deploy": "Founder go 2026-07-25 (ok commit,push and OTA). Committed 6cc8ea6 -> pushed origin/main (gov-check OK). OTA BRAND v159 published (first attempt Render cold-start fetch-failed, succeeded on warm retry). Maestro skipped per standing founder call; released false pending the founder E2E pass."
   }
 }
