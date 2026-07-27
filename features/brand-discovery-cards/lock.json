@@ -1,0 +1,23 @@
+{
+  "feature": "brand-discovery-cards",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'ok go for influencer discovery' in-session 2026-07-25, after reviewing the discovery analysis + proposed-card mockup. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — scannable discovery card approved in-session 2026-07-25 (show_widget proposal + discovery-card.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Discovery STEP 1. Rewrites CreatorRow (influencers/page.js) from a cramped 64px single-line row into an IG-clean scannable card: avatar, name + tier pill, three decision-stat tiles (Followers / view-based ER / Est. rate min-max), clean meta (city · niche · N collabs), Add(onboarded)/Invite(scraped) action — behavior preserved, emoji dropped, off the .inf scoped palette. DEFERRED (later steps / backend batch): content thumbnails (needs creator recent-posts data), real audience demographics, filter-bar restyle (sliders/pick-from-list/live), shortlist+compare, working invite-from-profile, one-design-system merge of .inf/.prp/.groups. Frontend-only, brand-web/Vercel — no backend.",
+  "qa_record": "brand-web `next build` compiled clean (77 pages). One-component restyle (CreatorRow) IG-clean; filters/search/data/behavior untouched. Frontend-only, no backend.",
+  "diff_record": "06-diff/notes.md authored — before(cramped 64px 5-col row + emoji) / after(IG-clean card: 3 decision-stat tiles, clean meta, Add/Invite preserved).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}

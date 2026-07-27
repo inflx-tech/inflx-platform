@@ -261,43 +261,59 @@ function CreatorRow({ c, onInvite, router }) {
 
   const collabBit = c.total_brand_collaborations > 0 ? `${c.total_brand_collaborations} brand collab${c.total_brand_collaborations === 1 ? '' : 's'}` : null;
 
+  const metaBits = [c.city, c.niche, collabBit].filter(Boolean);
+  const erGood = Number(c.view_based_er || 0) >= 3;
+
   return (
-    <button className="ic" onClick={onClickRow}>
-      <div className="av">
-        {c.profile_pic_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.profile_pic_url} alt={c.ig_handle} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        ) : inits}
-      </div>
-      <div className="ic-mid">
-        <div className="ic-top">
-          {c.full_name && <span className="ic-name">{c.full_name}</span>}
-          <span className="ic-handle">@{c.ig_handle}</span>
-          {c.is_inflx_verified && <span className="ic-verify">✓</span>}
-          <span className={`tier-pill ${tierClass}`}><span className="d"></span>{tier?.label || c.tier || 'Unknown'}</span>
-          {c.rank_score != null && <span className="rank-mini">⭐ {Number(c.rank_score).toFixed(1)}</span>}
-          {isUnclaimed && <span className="ic-tag">scraped</span>}
-          {stale && <span className="ic-tag stale">data {staleDays(c.last_calculated_at)}d old</span>}
+    <div
+      onClick={onClickRow}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') onClickRow(); }}
+      className="text-left bg-white border border-[#E4E4E7] rounded-[14px] p-3.5 mb-2.5 cursor-pointer hover:border-[#A1A1AA] transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        <div className="w-11 h-11 rounded-full bg-[#EDEDED] flex items-center justify-center font-extrabold text-[13px] text-[#555] overflow-hidden flex-shrink-0">
+          {c.profile_pic_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={c.profile_pic_url} alt={c.ig_handle} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          ) : inits}
         </div>
-        <div className="ic-meta">
-          {c.city && <span>📍 <b>{c.city}</b></span>}
-          {c.niche && (<><span className="sep">·</span><span>🎨 <b>{c.niche}</b></span></>)}
-          {collabBit && (<><span className="sep">·</span><span>{collabBit}</span></>)}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[15px] font-bold text-[#0A0A0A]">{c.full_name || `@${c.ig_handle}`}</span>
+            {c.is_inflx_verified && <span className="text-[#3B6FE0] text-[13px]">✓</span>}
+            <span className="text-[10px] font-extrabold bg-[#F2ECFB] text-[#6D3FC4] px-2 py-0.5 rounded-full uppercase tracking-[0.3px]">{tier?.label || c.tier || 'Unknown'}</span>
+            {isUnclaimed && <span className="text-[9.5px] font-bold bg-[#F4F4F5] text-[#71717A] px-2 py-0.5 rounded-full uppercase">scraped</span>}
+            {stale && <span className="text-[9.5px] font-bold bg-[#FDEEE9] text-[#B91C1C] px-2 py-0.5 rounded-full">data {staleDays(c.last_calculated_at)}d old</span>}
+          </div>
+          <div className="text-[12.5px] text-[#8E8E8E] mt-0.5 truncate">
+            {c.full_name ? `@${c.ig_handle}` : ''}{c.full_name && metaBits.length ? ' · ' : ''}{metaBits.join(' · ')}
+          </div>
+        </div>
+        <button
+          onClick={onClickAction}
+          className={`flex-shrink-0 text-[12px] font-bold rounded-[8px] px-3 py-1.5 whitespace-nowrap ${isUnclaimed ? 'bg-[#FFC107] text-[#0A0A0A] hover:bg-[#E0A800]' : 'bg-[#0A0A0A] text-white hover:opacity-90'}`}
+        >
+          {isUnclaimed ? 'Invite' : 'Add'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mt-3">
+        <div className="bg-[#FAFAFA] rounded-[9px] px-2.5 py-2">
+          <div className="text-[17px] font-black text-[#0A0A0A] font-mono">{fmtNum(c.followers_count)}</div>
+          <div className="text-[11px] text-[#8E8E8E]">Followers</div>
+        </div>
+        <div className="bg-[#FAFAFA] rounded-[9px] px-2.5 py-2">
+          <div className={`text-[17px] font-black font-mono ${erGood ? 'text-[#047857]' : 'text-[#0A0A0A]'}`}>{Number(c.view_based_er || 0).toFixed(1)}%</div>
+          <div className="text-[11px] text-[#8E8E8E]">Eng. rate</div>
+        </div>
+        <div className="bg-[#FAFAFA] rounded-[9px] px-2.5 py-2">
+          <div className="text-[15px] font-black text-[#0A0A0A] font-mono">{c.estimated_min_rate ? `${fmtRupees(c.estimated_min_rate)}–${fmtRupees(c.estimated_max_rate)}` : '—'}</div>
+          <div className="text-[11px] text-[#8E8E8E]">Est. / post</div>
         </div>
       </div>
-      <div className="ic-stats">
-        <div className="ic-st"><div className="ic-st-v">{fmtNum(c.followers_count)}</div><div className="ic-st-l">Followers</div></div>
-        <div className="ic-st"><div className={`ic-st-v ${erClass(c.view_based_er)}`}>{Number(c.view_based_er || 0).toFixed(1)}%</div><div className="ic-st-l">View ER</div></div>
-        <div className="ic-st"><div className="ic-st-v">{fmtNum(c.avg_views)}</div><div className="ic-st-l">Avg Views</div></div>
-      </div>
-      <div className="ic-rate-mini">
-        {c.estimated_min_rate ? `${fmtRupees(c.estimated_min_rate)} – ${fmtRupees(c.estimated_max_rate)}` : '—'}
-        <span className="l">Est. rate</span>
-      </div>
-      <button className={`ic-action-btn ${isUnclaimed ? 'invite' : 'add'}`} onClick={onClickAction}>
-        {isUnclaimed ? '✉ Invite' : '+ Add'}
-      </button>
-    </button>
+    </div>
   );
 }
 
