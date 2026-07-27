@@ -18,6 +18,6 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+    "deploy": "Founder go 2026-07-25 ('ok pls go and commit'). Committed cac547c → pushed origin/main (gov-check OK) → Vercel auto-deploy. released false pending founder Vercel check."
   }
 }
