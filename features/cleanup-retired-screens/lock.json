@@ -15,9 +15,9 @@
   "diff_record": "06-diff/notes.md authored — before(7 unreachable screens + dead imports/registrations) / after(deleted + navigator cleaned; Deliverable routes kept; MyStore untouched) + safety verification.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) — device-verified in-session 2026-07-25 ('pls commit V151 to 156'). Maestro waived by founder device-check (maestro_green stays false — honest; not run).",
+    "released_at": "2026-07-25",
     "maestro_green": false,
     "deploy": "Founder go in-session 2026-07-25 ('pls go and commit,OTA'). Committed a74ac2b → pushed origin/main (gov-check OK). OTA influencer v156 published (bundle 3101 KB, down from 3190 — dead code gone; first attempt Render cold-start fetch-failed, succeeded on warm retry). Maestro skipped per standing founder call. released stays false until founder device-confirms the regression sweep."
   }

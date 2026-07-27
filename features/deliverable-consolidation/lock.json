@@ -15,9 +15,9 @@
   "diff_record": "06-diff/notes.md authored — before(2 divergent screens: media-upload-only-via-notification vs url-only-in-app) / after(one IG-clean DeliverableScreen with union; both route names Deliverable+DeliverableDetail → it) + convergence + 2 known deltas.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) — device-verified in-session 2026-07-25 ('pls commit V151 to 156'). Maestro waived by founder device-check (maestro_green stays false — honest; not run).",
+    "released_at": "2026-07-25",
     "maestro_green": false,
     "deploy": "Founder go in-session 2026-07-25 ('pls go and commit'). Committed ec05edc → pushed origin/main (gov-check OK). OTA influencer v153 published (first attempt Render cold-start fetch-failed, succeeded on warm retry). Maestro skipped per standing founder call. released stays false until founder device-confirms."
   }

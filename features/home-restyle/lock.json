@@ -15,9 +15,9 @@
   "diff_record": "06-diff/notes.md authored — before(ink header + 3 tiles) / after(white header + single Your-turn tile → Collabs, restyled active/activity/wallet); reuses collabStages + badgeFor; 2 known deltas (greeting-only header, MCI activity icons).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) — device-verified in-session 2026-07-25 ('pls commit V151 to 156'). Maestro waived by founder device-check (maestro_green stays false — honest; not run).",
+    "released_at": "2026-07-25",
     "maestro_green": false,
     "deploy": "Founder go in-session 2026-07-25 ('ok, pls deploy'). Committed ce87ec9 → pushed origin/main (gov-check OK). OTA influencer v152 published (clean). Maestro skipped per standing founder call. released stays false until founder device-confirms the restyled Home."
   }

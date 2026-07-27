@@ -15,9 +15,9 @@
   "diff_record": "06-diff/notes.md authored — before(2 off-system Home tiles) / after(Create tab: CTA + IG-clean ledger) + wiring (nav tab/stack, Home tiles removed, CampaignProducts + composer return repointed) + 4 known deltas (wizard not yet restyled; Try again = fresh composer; rows show slides/products; MyPostsScreen unused).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "aveen (founder) — device-verified in-session 2026-07-25 ('pls commit V151 to 156'). Maestro waived by founder device-check (maestro_green stays false — honest; not run).",
+    "released_at": "2026-07-25",
     "maestro_green": false,
     "deploy": "Founder go in-session 2026-07-25 ('pls push ,commit, OTA'). Committed 45acbae → pushed origin/main (gov-check OK). OTA influencer v151 published (clean, first attempt). Maestro skipped per standing founder call. released stays false until founder device-confirms the Create tab live."
   }
