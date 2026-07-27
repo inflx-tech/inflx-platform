@@ -7,6 +7,7 @@ import { StageRail, PrimeBar, deriveCampaignStage } from './CommandRail';
 import { MediaPreview } from './reviewParts';
 import { contractLockAmount } from '../../../../lib/contracts';
 import PayoutSection from './PayoutSection';
+import ProductionSection from './ProductionSection';
 
 /* ════════════════════════════════════════════════════════════════════════════
    Campaign Command Center — full-width hierarchy view.
@@ -194,7 +195,7 @@ export default function CampaignCommandCenterPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const t = new URLSearchParams(window.location.search).get('tab');
-    if (['hier', 'prod', 'contracts', 'ana', 'payout'].includes(t)) setTab(t);
+    if (['hier', 'prod', 'contracts', 'production', 'ana', 'payout'].includes(t)) setTab(t);
   }, []);
 
   if (loading) {
@@ -522,6 +523,7 @@ export default function CampaignCommandCenterPage() {
           { k: 'hier', label: 'Hierarchy' },
           ...(productsList.length > 0 ? [{ k: 'prod', label: 'Products', n: productsList.length }] : []),
           { k: 'contracts', label: 'Contracts', n: pendingCount > 0 ? pendingCount : undefined },
+          { k: 'production', label: 'Production' },
           { k: 'payout', label: 'Payout' },
           { k: 'ana', label: 'Analytics' },
         ].map(t => (
@@ -881,6 +883,10 @@ export default function CampaignCommandCenterPage() {
       )}
 
       {/* ════ PAYOUT (A4 — folds the retired /escrow route) ════ */}
+      {tab === 'production' && (
+        <ProductionSection id={id} influencers={allInfluencers} />
+      )}
+
       {tab === 'payout' && (
         <PayoutSection id={id} onOpenConversions={() => setTab('ana')} />
       )}

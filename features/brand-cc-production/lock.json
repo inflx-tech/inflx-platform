@@ -1,0 +1,23 @@
+{
+  "feature": "brand-cc-production",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls start building' (A5) in-session 2026-07-25, after reviewing the layman explainer + Production-stage mockup. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — Production-stage look shown + approved in-session 2026-07-25 (show_widget mockup + command-center.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "A5 STEP 1 (safe/contained). Gives logistics a home: new ProductionSection.js hub tab lists active creators (contracted/active/live) with a logistics chip from physical_delivery/delivery_address + 'Manage logistics →' deep-link to the influencers page (existing ContractModal→ProductionPanel does the scheduling/shipment/remote). Reads only the roster already in the hub payload — NO new endpoint, NO touch to the 1468-LOC page/modal. Frontend-only, brand-web/Vercel. DEFERRED (backend batch / later A5): inline visit-scheduling + shipment-dispatch in the hub needs a campaign-level production-list endpoint (parked); splitting the influencers page + folding ContractModal into the hub. This step is the VISIBILITY half only — surfaced honestly to founder.",
+  "qa_record": "brand-web `next build` compiled clean (77 pages). Additive read-only Production tab over existing roster data; no new endpoint, no touch to influencers page/modal. Frontend-only, no backend.",
+  "diff_record": "06-diff/notes.md authored — before(logistics buried in ContractModal) / after(hub Production tab: per-creator logistics chips + Manage-logistics deep-link) + honest deferred note (inline actions need parked backend).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT yet deployed — build compiles clean. Awaiting founder go for the Vercel deploy."
+  }
+}
