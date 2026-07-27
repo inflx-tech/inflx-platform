@@ -3,15 +3,16 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useFocusEffect } from '@react-navigation/native';
 import { creatorVibe as Cv, spacing, radius } from '../../theme/tokens';
 
-// Flow 52.D — Creator Vibe recolor shim. Legacy navy/teal `colors` → creatorVibe.
-// Visual only; follow-list fetch/unfollow + nav unchanged.
+// White sweep (features/follower-white-sweep): the recolor shim now maps to
+// the white law (was Creator Vibe cream/brown). Visual only; follow-list
+// fetch/unfollow + nav unchanged.
 const colors = {
-  navy: Cv.brown, navyDeep: Cv.brownDark, navyMid: Cv.brown, navyPale: Cv.soft,
-  orange: Cv.brown, orangeDeep: Cv.brownDark, orangePale: Cv.soft,
-  gold: Cv.star, goldPale: Cv.soft, teal: Cv.brown, tealDeep: Cv.brown, tealPale: Cv.soft,
-  red: Cv.offer, redPale: Cv.soft, purple: Cv.brown, purplePale: Cv.soft,
-  bg: Cv.screenBg, surface: Cv.card, surface2: Cv.soft, border: Cv.line, border2: Cv.line,
-  t1: Cv.ink, t2: Cv.muted, t3: Cv.muted, white: Cv.card, black: Cv.ink,
+  navy: '#111111', navyDeep: '#111111', navyMid: '#111111', navyPale: '#F6F6F6',
+  orange: '#111111', orangeDeep: '#111111', orangePale: '#F6F6F6',
+  gold: '#111111', goldPale: '#F6F6F6', teal: '#111111', tealDeep: '#111111', tealPale: '#F6F6F6',
+  red: '#D64545', redPale: '#FFF6F6', purple: '#111111', purplePale: '#F6F6F6',
+  bg: '#FFFFFF', surface: '#FFFFFF', surface2: '#FAFAFA', border: '#EEEEEE', border2: '#EEEEEE',
+  t1: '#111111', t2: '#8A8A8A', t3: '#9A9A9A', white: '#FFFFFF', black: '#111111',
 };
 import { followerApi } from '../../services/api';
 

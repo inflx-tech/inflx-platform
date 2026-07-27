@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>White sweep — Home flip + Profile + Addresses</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  body { background:#EDEDED; padding:28px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { color:#666; font-size:13px; margin-bottom:24px; max-width:880px; line-height:1.6; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:390px; background:#FFF; border-radius:28px; box-shadow:0 8px 30px rgba(0,0,0,.14); overflow:hidden; border:1px solid #DDD; }
+  .cap { font-size:12.5px; font-weight:700; color:#444; margin:10px 4px 18px; max-width:390px; line-height:1.5; }
+  .cap b { color:#000; }
+  .hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+  .hdr .t { font-size:17px; font-weight:800; color:#111; }
+  .hdr .n { font-size:11px; color:#8A8A8A; font-weight:600; margin-top:1px; }
+  .back { font-size:18px; font-weight:700; }
+  .logo { font-size:15px; font-weight:900; color:#111; }
+  .search { flex:1; border:1px solid #E4E4E4; border-radius:999px; padding:7px 12px; font-size:11px; color:#9A9A9A; }
+  .ic { text-align:center; } .ic .g { width:20px; height:20px; border:1.8px solid #111; border-radius:6px; margin:0 auto; }
+  .ic .l { font-size:8px; font-weight:700; color:#555; margin-top:2px; }
+  .tabs { display:flex; gap:16px; padding:6px 16px 10px; border-bottom:1px solid #F2F2F2; }
+  .tab { font-size:13px; font-weight:700; color:#9A9A9A; padding-bottom:4px; }
+  .tab.on { color:#111; border-bottom:2.5px solid #F6B11E; }
+  .ghost { height:250px; margin:12px 16px; border:1.5px dashed #DDD; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px; font-weight:700; text-align:center; line-height:1.6; }
+  .nav { display:flex; border-top:1px solid #EEE; padding:8px 0 12px; }
+  .nv { flex:1; text-align:center; }
+  .nv .b { width:17px; height:17px; border:1.8px solid #999; border-radius:5px; margin:0 auto; }
+  .nv.on .b { border-color:#111; background:#111; }
+  .nv .t { font-size:8px; font-weight:700; color:#999; margin-top:3px; }
+  .nv.on .t { color:#111; }
+  /* profile */
+  .pcard { margin:6px 16px 4px; border:1px solid #EEE; border-radius:16px; padding:14px; display:flex; align-items:center; gap:12px; }
+  .pav { width:52px; height:52px; border-radius:26px; background:#111; color:#FFF; font-size:20px; font-weight:800; text-align:center; line-height:52px; }
+  .pname { font-size:15.5px; font-weight:800; color:#111; }
+  .pphone { font-size:11.5px; color:#8A8A8A; margin-top:2px; }
+  .pedit { margin-left:auto; font-size:12px; font-weight:800; color:#111; }
+  .grp { margin:12px 16px 0; }
+  .grpT { font-size:11px; font-weight:800; color:#8A8A8A; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+  .prow { display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid #F6F6F6; }
+  .prow:last-child { border-bottom:none; }
+  .pic { width:20px; height:20px; border:1.8px solid #111; border-radius:6px; }
+  .plbl { font-size:13.5px; font-weight:700; color:#111; }
+  .psub { font-size:10.5px; color:#8A8A8A; margin-top:1px; }
+  .pchev { margin-left:auto; color:#BBB; font-size:14px; }
+  .logout { margin:18px 16px; text-align:center; font-size:13px; font-weight:800; color:#D64545; }
+  .signin { margin:10px 16px; background:#111; border-radius:999px; text-align:center; padding:13px; color:#FFF; font-size:13px; font-weight:800; }
+  .guestNote { margin:4px 30px 12px; text-align:center; font-size:11px; color:#9A9A9A; line-height:1.6; }
+  .panel { background:#FFF; border:1px solid #DDD; border-radius:14px; padding:18px; width:390px; font-size:12.5px; line-height:1.65; color:#333; }
+  .panel h3 { font-size:13.5px; margin-bottom:8px; }
+</style>
+</head>
+<body>
+<h1>White sweep — Discover becomes Home · Profile · Addresses</h1>
+<div class="sub">The last old-skin surfaces come onto the white law, and the app finally OPENS on Discover. One structural decision on frame 1 — confirm or veto the nav.</div>
+
+<div class="row">
+
+  <!-- FRAME 1: THE FLIP -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="logo">INFLX</span><span class="search">⌕ Search</span>
+        <div class="ic"><div class="g"></div><div class="l">Wishlist</div></div>
+        <div class="ic"><div class="g"></div><div class="l">Bag</div></div>
+      </div>
+      <div class="tabs"><span class="tab on">Discover</span><span class="tab">Posts</span><span class="tab">Videos</span></div>
+      <div class="ghost">THE B3 DISCOVER TAB RENDERS HERE<br>(already built — this frame is about<br>WHERE it lives, not how it looks)</div>
+      <div class="nav">
+        <div class="nv on"><div class="b"></div><div class="t">Home</div></div>
+        <div class="nv"><div class="b"></div><div class="t">Orders</div></div>
+        <div class="nv"><div class="b"></div><div class="t">Profile</div></div>
+      </div>
+    </div>
+    <div class="cap"><b>The flip: the app OPENS on Discover.</b> The Home tab now IS the Discover|Posts|Videos surface (built in Stage A/B3). The old Creator-Vibe sections home retires from navigation ("zero baggage") — the legacy App Builder page stays admin-side but drives nothing. Bottom nav simplifies to <b>Home · Orders · Profile</b> (the old separate center Posts tab is redundant — Posts is one swipe inside Home). Bag + Wishlist stay top-right everywhere per your chrome rule.</div>
+  </div>
+
+  <!-- FRAME 2: PROFILE (logged in) -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><div><div class="t">Profile</div></div></div>
+      <div class="pcard">
+        <div class="pav">A</div>
+        <div><div class="pname">Aveen</div><div class="pphone">+91 98••• ••210</div></div>
+        <div class="pedit">Edit</div>
+      </div>
+      <div class="grp">
+        <div class="grpT">Shopping</div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">My Orders</div><div class="psub">track · cancel · return</div></div><span class="pchev">›</span></div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">Wishlist</div><div class="psub">saved products &amp; collections</div></div><span class="pchev">›</span></div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">Addresses</div><div class="psub">delivery addresses</div></div><span class="pchev">›</span></div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">My Returns</div></div><span class="pchev">›</span></div>
+      </div>
+      <div class="grp">
+        <div class="grpT">Following</div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">Creators I follow</div></div><span class="pchev">›</span></div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">Saved posts</div></div><span class="pchev">›</span></div>
+      </div>
+      <div class="logout">Log out</div>
+      <div class="nav">
+        <div class="nv"><div class="b"></div><div class="t">Home</div></div>
+        <div class="nv"><div class="b"></div><div class="t">Orders</div></div>
+        <div class="nv on"><div class="b"></div><div class="t">Profile</div></div>
+      </div>
+    </div>
+    <div class="cap"><b>Profile — white law, grouped rows.</b> Identity card (initial avatar, name, masked phone, Edit). Shopping group: Orders / Wishlist / Addresses / Returns. Following group: creators + saved posts. Red Log out at the bottom. Wallet row appears ONLY when a wallet balance exists (honest-UI). All rows reuse screens that already exist.</div>
+  </div>
+
+  <!-- FRAME 3: PROFILE (guest) + ADDRESSES -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><div><div class="t">Profile</div></div></div>
+      <div class="pcard" style="border-style:dashed">
+        <div class="pav" style="background:#F5F2EC;color:#111">?</div>
+        <div><div class="pname">Browsing as guest</div><div class="pphone">Your bag, wishlist &amp; addresses are saved on this phone</div></div>
+      </div>
+      <div class="signin">Sign in with phone number</div>
+      <div class="guestNote">Everything you've saved as a guest follows you into your account — nothing is lost.</div>
+      <div class="grp">
+        <div class="grpT">Works without signing in</div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">Wishlist</div></div><span class="pchev">›</span></div>
+        <div class="prow"><div class="pic"></div><div><div class="plbl">Addresses</div></div><span class="pchev">›</span></div>
+      </div>
+      <div style="border-top:8px solid #F4F4F4;margin-top:14px"></div>
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Addresses</div><div class="n">Same fields &amp; verify flow — white skin</div></div><div style="margin-left:auto;font-size:12px;font-weight:800;color:#111">+ Add new</div></div>
+      <div class="pcard"><div><div class="pname" style="font-size:13px">Home</div><div class="pphone">Flat 304, Sai Residency, Prasadampadu, Vijayawada — 521108</div></div><div class="pedit">Edit</div></div>
+    </div>
+    <div class="cap"><b>Guest profile + Addresses reskin.</b> Guests get an honest card + black sign-in CTA + the rows that DO work logged-out (guest-first law); no dead rows, no "session expired". Addresses keeps its exact verify/GPS flow — only the skin changes from toing yellow-cream to white law.</div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+    <h3>Honest scope map</h3>
+    <b>Structural (frame 1):</b> Home tab → the Discover surface; old sections home + center Posts tab retired from nav; screens stay on disk until a later cleanup contract.<br><br>
+    <b>Reskin only (no logic change):</b> MeScreen → Profile (frame 2/3) · AddressScreen · FollowedInfluencers · Saved list. Wallet row = data-gated.<br><br>
+    <b>Not in this slice:</b> Edit-profile form beyond name (later) · deleting old home screens from disk (cleanup contract) · Videos tab content (parked) · notifications surface.<br><br>
+    <b>Risk note:</b> nav flip touches the follower tab navigator — the duplicate-route-name crash class is the known landmine; registrations get the same care as C2's PostProduct move.
+  </div>
+
+</div>
+</body>
+</html>

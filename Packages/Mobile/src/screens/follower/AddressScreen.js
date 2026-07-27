@@ -5,7 +5,18 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { toing as T, fonts } from '../../theme/tokens';
+// White sweep (features/follower-white-sweep): toing yellow-cream tokens
+// swapped for the white law + system font. Logic (verify/GPS/guest-first
+// save) untouched — skin only.
+const T = {
+  pageBg: '#FFFFFF', card: '#FFFFFF', line: '#EEEEEE',
+  ink: '#111111', muted: '#8A8A8A', hint: '#B5B5B5',
+  // Save-address is not a buy action → black button (yellow stays reserved
+  // for buy moments per the law).
+  yellow: '#111111', yellowInk: '#FFFFFF', yellowDeep: '#111111', yellowTint: '#F6F6F6',
+  veg: '#1E9E5A', successTint: '#F0F9F3', danger: '#D64545',
+};
+const fonts = { displayBold: undefined, sansBold: undefined, sansMedium: undefined, sansRegular: undefined };
 import { followerApi } from '../../services/api';
 import { isGpsAvailable, ensureLocationPermission, getCurrentPosition } from '../../utils/geolocation';
 import { getGuestAddresses, addGuestAddress } from '../../utils/guestAddress';

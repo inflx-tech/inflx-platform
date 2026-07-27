@@ -1,0 +1,22 @@
+{
+  "feature": "follower-white-sweep",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — reviewed the white-sweep board (frames: nav flip / profile / guest+addresses) in the browser pane in-session 2026-07-27; 'pls lock it and build it'",
+  "approved_at": "2026-07-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — 'pls lock it and build it' after board review incl. the frame-1 nav decision",
+  "mockup_locked_at": "2026-07-27",
+  "notes": "Discover becomes Home (PostsFeed default Discover; old home + Posts FAB retired from nav, files stay); white-law tab bar Home/Orders/Profile; MeScreen rewritten (groups, guest-first state, data-gated wallet, in-place logout); AddressScreen white-law token swap (save = black, not a buy); Followed/Saved palette shims remapped; ProfileStack + Wishlist/PostProduct/Cart/ReviewOrder/OrderConfirmation (once-per-stack rule).",
+  "qa_record": "Read before commit: mobile jest 18/18 suites 78/78; pnpm qa 79 passed GREEN, gate 0 (report 2026-07-27T07-29-31-442Z).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": null
+  }
+}

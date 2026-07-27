@@ -4,7 +4,15 @@ import {
   TouchableOpacity, Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { creatorVibe as C, spacing, radius, fmtMoney } from '../../theme/tokens';
+import { spacing, radius, fmtMoney } from '../../theme/tokens';
+// White sweep (features/follower-white-sweep): Creator Vibe palette shimmed
+// to the white law. Visual only; getSavedOffers/unsave/CTA dispatch unchanged.
+const C = {
+  screenBg: '#FFFFFF', card: '#FFFFFF', soft: '#FAFAFA', line: '#EEEEEE',
+  ink: '#111111', muted: '#8A8A8A', brown: '#111111', brownDark: '#111111',
+  gold: '#111111', goldDeep: '#111111', star: '#111111', offer: '#D64545',
+  verify: '#3897F0', onGold: '#FFFFFF',
+};
 import { followerApi } from '../../services/api';
 import { buildTracking } from '../../utils/tracking';
 

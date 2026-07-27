@@ -178,69 +178,57 @@ function ProfileStack() {
       {/* Returns row on MeScreen targets this; ProfileStack does not spread
           SHARED_SCREENS, so register it explicitly (no duplicate name here). */}
       <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
+      {/* White sweep — Profile's Wishlist row + its shop-through path
+          (Wishlist → PostProduct/Bag → Review → Confirmation). Explicit
+          registrations, each name once in THIS stack (crash-class rule). */}
+      <Stack.Screen name="Wishlist" component={WishlistScreen} />
+      <Stack.Screen name="PostProduct" component={PostProductScreen} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
+      <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
     </Stack.Navigator>
   );
 }
 
-// 📸 Posts center button — elevated FAB (custom tabBarButton). Stage A: the
-// new Posts pillar lives here until the full new shell ships.
-function ReelsTabButton({ onPress, accessibilityState }) {
-  const focused = accessibilityState?.selected;
-  return (
-    <View style={navStyles.reelsWrap} pointerEvents="box-none">
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel="Posts"
-        style={[navStyles.reelsBtn, focused && navStyles.reelsBtnActive]}
-      >
-        <Icon name="image-multiple" size={24} color={C.ink} />
-        <Text style={navStyles.reelsLabel}>Posts</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+// (White sweep: the old center Posts FAB retired — Posts lives inside Home.)
 
+// White sweep (features/follower-white-sweep): the app OPENS on Discover.
+// HomeTab now renders the Discover|Posts|Videos surface (PostsStack); the old
+// Creator-Vibe sections home + the center Posts FAB are retired from nav
+// ("zero baggage" — files stay on disk until the cleanup contract). White-law
+// tab bar: white surface, black active, grey inactive, hairline top.
 export default function FollowerNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: C.brown,
-        tabBarInactiveTintColor: C.muted,
+        tabBarActiveTintColor: '#111111',
+        tabBarInactiveTintColor: '#9A9A9A',
         tabBarStyle: {
-          borderTopColor: C.line,
-          backgroundColor: C.card,
+          borderTopColor: '#EEEEEE',
+          borderTopWidth: 1,
+          backgroundColor: '#FFFFFF',
           paddingTop: 6,
           height: 62,
         },
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '800', fontFamily: fonts.monoBold, marginBottom: 6, letterSpacing: 0.2 },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginBottom: 6 },
       }}
     >
       <Tab.Screen
         name="HomeTab"
-        component={HomeStack}
+        component={PostsStack}
         options={{
-          tabBarLabel: 'HOME',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ focused, color }) => (
             <Icon name={focused ? 'home-variant' : 'home-variant-outline'} size={22} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="ReelsTab"
-        component={PostsStack}
-        options={{
-          tabBarLabel: '',
-          tabBarButton: (props) => <ReelsTabButton {...props} />,
-        }}
-      />
-      <Tab.Screen
         name="OrdersTab"
         component={OrdersStack}
         options={{
-          tabBarLabel: 'ORDERS',
+          tabBarLabel: 'Orders',
           tabBarIcon: ({ focused, color }) => (
             <Icon name={focused ? 'shopping' : 'shopping-outline'} size={22} color={color} />
           ),
@@ -250,7 +238,7 @@ export default function FollowerNavigator() {
         name="ProfileTab"
         component={ProfileStack}
         options={{
-          tabBarLabel: 'PROFILE',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ focused, color }) => (
             <Icon name={focused ? 'account' : 'account-outline'} size={22} color={color} />
           ),
@@ -259,36 +247,3 @@ export default function FollowerNavigator() {
     </Tab.Navigator>
   );
 }
-
-const navStyles = StyleSheet.create({
-  reelsWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reelsBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    marginTop: -22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.brown,
-    shadowColor: C.brownDark,
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  reelsBtnActive: {
-    backgroundColor: C.brownDark,
-  },
-  reelsLabel: {
-    color: C.ink,
-    fontSize: 8,
-    fontWeight: '800',
-    fontFamily: fonts.monoBold,
-    marginTop: 1,
-    letterSpacing: 0.3,
-  },
-});

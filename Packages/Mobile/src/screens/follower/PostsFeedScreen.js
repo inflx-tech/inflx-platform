@@ -23,7 +23,8 @@ const PAGE = 20;
 const TOP_TABS = ['Discover', 'Posts', 'Videos'];
 
 export default function PostsFeedScreen({ navigation }) {
-  const [topTab, setTopTab] = useState('Posts');
+  // White sweep: the app OPENS on Discover (this surface IS the Home tab now).
+  const [topTab, setTopTab] = useState('Discover');
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
