@@ -19,6 +19,6 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy": "NOT yet deployed — deletion cleanup complete + jest-green (78/78). Awaiting founder OTA go."
+    "deploy": "Founder go in-session 2026-07-25 ('pls go and commit,OTA'). Committed a74ac2b → pushed origin/main (gov-check OK). OTA influencer v156 published (bundle 3101 KB, down from 3190 — dead code gone; first attempt Render cold-start fetch-failed, succeeded on warm retry). Maestro skipped per standing founder call. released stays false until founder device-confirms the regression sweep."
   }
 }
