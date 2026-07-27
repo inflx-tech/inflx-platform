@@ -164,7 +164,7 @@ export default function BrandHomeScreen({ navigation }) {
             onPress={() => navigation.navigate('Profile', { screen: 'BrandProfile' })}
           >
             <View style={[styles.bannerIcon, banner.tone === 'danger' ? styles.bannerIconDanger : styles.bannerIconPending]}>
-              <Text style={[styles.bannerIconGlyph, banner.tone === 'danger' ? { color: P.white } : { color: P.yellow }]}>!</Text>
+              <Icon name="alert-circle-outline" size={16} color={banner.tone === 'danger' ? P.white : P.yellow} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.bannerTitle}>{banner.title}</Text>
@@ -175,8 +175,6 @@ export default function BrandHomeScreen({ navigation }) {
 
         {/* ── Wallet card — yellow-pale gradient + corner accent + ink Top-up ── */}
         <View style={styles.walletCard}>
-          <View style={styles.walletCornerLarge} pointerEvents="none" />
-          <View style={styles.walletCornerSmall} pointerEvents="none" />
           <Text style={styles.walletLabel}>Wallet balance</Text>
           <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
           <View style={styles.walletStats}>
@@ -203,7 +201,7 @@ export default function BrandHomeScreen({ navigation }) {
           >
             <View style={styles.actionCardStripe} />
             <View style={styles.actionCardIcon}>
-              <Text style={styles.actionCardIconGlyph}>!</Text>
+              <Icon name="alert-circle-outline" size={18} color={P.ink} />
             </View>
             <View style={{ flex: 1 }}>
               <View style={styles.actionCardTitleRow}>
@@ -285,7 +283,7 @@ export default function BrandHomeScreen({ navigation }) {
 
           {campaigns.length === 0 ? (
             <View style={styles.emptyCard}>
-              <View style={styles.emptyIcon}><Text style={styles.emptyIconGlyph}>·</Text></View>
+              <View style={styles.emptyIcon}><Icon name="inbox-outline" size={22} color={ig.mut2} /></View>
               <Text style={styles.emptyText}>No campaigns yet</Text>
               <Text style={styles.emptySubText}>Create campaigns from the web dashboard</Text>
             </View>
@@ -367,7 +365,6 @@ const styles = StyleSheet.create({
   },
   bannerIconPending: { backgroundColor: P.ink },
   bannerIconDanger:  { backgroundColor: P.danger },
-  bannerIconGlyph: { fontSize: 13, fontWeight: '800' },
   bannerTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink, marginBottom: 2 },
   bannerBody:  { fontSize: 11.5, color: P.ink2, lineHeight: 16 },
 
@@ -382,20 +379,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 4,
   },
-  walletCornerLarge: {
-    position: 'absolute',
-    top: -36, right: -36,
-    width: 130, height: 130, borderRadius: 65,
-    backgroundColor: P.yellow,
-    opacity: 0.28,
-  },
-  walletCornerSmall: {
-    position: 'absolute',
-    top: -12, right: 30,
-    width: 50, height: 50, borderRadius: 25,
-    backgroundColor: P.yellow,
-    opacity: 0.16,
-  },
+  // IG-clean: decorative yellow corner blobs removed.
   walletLabel: {
     fontSize: 10,
     fontWeight: '800',
@@ -449,7 +433,6 @@ const styles = StyleSheet.create({
     backgroundColor: P.yellowPale,
     alignItems: 'center', justifyContent: 'center',
   },
-  actionCardIconGlyph: { fontSize: 16, fontWeight: '800', color: P.ink },
   actionCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
   actionCardTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink },
   actionCardCount: {
@@ -553,7 +536,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 10,
   },
-  emptyIconGlyph: { fontSize: 22, fontWeight: '700', color: P.muted2 },
   emptyText: { fontSize: 14, fontWeight: '700', color: P.ink, marginBottom: 4 },
   emptySubText: { fontSize: 11, color: P.muted, textAlign: 'center' },
 });

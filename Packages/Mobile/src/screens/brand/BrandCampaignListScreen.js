@@ -4,7 +4,9 @@ import {
   RefreshControl, ActivityIndicator, TextInput, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fmtRupees } from '../../theme/tokens';
+import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 
@@ -281,7 +283,7 @@ export default function BrandCampaignListScreen({ navigation }) {
       <View style={styles.list}>
         {filtered.length === 0 ? (
           <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}><Text style={styles.emptyIconGlyph}>·</Text></View>
+            <View style={styles.emptyIcon}><Icon name="bullhorn-outline" size={22} color={ig.mut2} /></View>
             <Text style={styles.emptyText}>
               {search ? 'No campaigns match your search' : 'No campaigns'}
             </Text>
@@ -440,7 +442,6 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: P.border,
   },
   emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: P.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  emptyIconGlyph: { fontSize: 22, fontWeight: '700', color: P.muted2 },
   emptyText: { fontSize: 13.5, fontWeight: '700', color: P.ink },
 
   card: {

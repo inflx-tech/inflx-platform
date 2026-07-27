@@ -1,0 +1,24 @@
+{
+  "feature": "brand-screens-restyle",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — 'complete all and publish OTA at a time' in-session 2026-07-25 (finish the restyle slices, then one OTA). Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — parity with the already-locked + shipped IG-clean system (influencer app, brand tab bar v160, Home quick-actions); no new visual language introduced.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Completes the brand mobile IG-clean pass across the three main screens (Home body, Campaign list, Campaign detail body). Removes 4 decorative yellow corner blobs (Home wallet card + Campaign-detail summary card) and their styles; replaces 10 text-glyph icons with MCI vector icons (alert-circle for banner/action card, inbox/bullhorn for empty states, and the 6 campaign-detail tiles: view-grid, account-multiple, chart-line, currency-inr, play-circle, cart); removes 5 dead *IconGlyph styles; adds the missing Icon + ig imports to BrandCampaignListScreen (which had neither). Semantic status colours untouched. actionIconGlyph deliberately KEPT — the campaign-detail action queue still renders a data-driven a.icon through it. DEFERRED: Wallet, Notifications, Profile, Contract and the campaign drill-down screens keep their current look. Frontend-only, mobile/OTA — presentation only, no backend.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 106/106 (24 suites, 2026-07-25). Post-edit grep confirms no dangling IconGlyph/corner-blob styles in the three screens; smoke suites exercise require-time import correctness (the Campaign-list import gap would otherwise have crashed the screen).",
+    "diff_record": "06-diff/notes.md authored — before(yellow corner blobs + text-glyph icons) / after(blobs removed, 10 MCI icons, dead styles cleaned, missing imports added) + deferred screen list.",
+    "deploy": "NOT yet deployed — tests green. Bundled with the meals cleanup + Home quick-actions restyle for a single OTA publish."
+  }
+}

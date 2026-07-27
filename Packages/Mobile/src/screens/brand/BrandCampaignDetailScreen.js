@@ -4,7 +4,9 @@ import {
   RefreshControl, ActivityIndicator, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fmtRupees } from '../../theme/tokens';
+import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 import { deriveCampaignStage } from '../../utils/campaignStages';
@@ -276,8 +278,6 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 
         {/* ── Summary card ── */}
         <View style={styles.summaryCard}>
-          <View style={styles.summaryCornerLg} pointerEvents="none" />
-          <View style={styles.summaryCornerSm} pointerEvents="none" />
           <View style={styles.summaryTop}>
             <View>
               <Text style={styles.summaryLabel}>Campaign progress</Text>
@@ -360,7 +360,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
             onPress={() => navigation.navigate('BrandCampaignSetsList', { campaignId })}
           >
             <View style={styles.tileHead}>
-              <View style={styles.tileIcon}><Text style={styles.tileIconGlyph}>⊟</Text></View>
+              <View style={styles.tileIcon}><Icon name="view-grid-outline" size={17} color={ig.text} /></View>
               <Text style={styles.tileArrow}>›</Text>
             </View>
             <Text style={styles.tileLabel}>Sets</Text>
@@ -379,7 +379,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
             onPress={() => navigation.navigate('BrandCampaignInfluencersList', { campaignId })}
           >
             <View style={styles.tileHead}>
-              <View style={styles.tileIcon}><Text style={styles.tileIconGlyph}>★</Text></View>
+              <View style={styles.tileIcon}><Icon name="account-multiple-outline" size={17} color={ig.text} /></View>
               <Text style={styles.tileArrow}>›</Text>
             </View>
             <Text style={styles.tileLabel}>Influencers</Text>
@@ -398,7 +398,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               onPress={() => navigation.navigate('BrandConversions', { campaignId, campaignName: campaign.name })}
             >
               <View style={styles.tileHead}>
-                <View style={styles.tileIcon}><Text style={styles.tileIconGlyph}>∼</Text></View>
+                <View style={styles.tileIcon}><Icon name="chart-line" size={17} color={ig.text} /></View>
                 <Text style={styles.tileArrow}>›</Text>
               </View>
               <Text style={styles.tileLabel}>Analytics</Text>
@@ -422,7 +422,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               onPress={() => navigation.navigate('Wallet')}
             >
               <View style={styles.tileHead}>
-                <View style={[styles.tileIcon, styles.tileIconDark]}><Text style={[styles.tileIconGlyph, { color: P.yellow }]}>₹</Text></View>
+                <View style={[styles.tileIcon, styles.tileIconDark]}><Icon name="currency-inr" size={17} color={P.yellow} /></View>
                 <Text style={styles.tileArrow}>›</Text>
               </View>
               <Text style={styles.tileLabel}>Escrow</Text>
@@ -439,7 +439,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               onPress={() => navigation.navigate('BrandCampaignReviewQueue', { campaignId, initialTab: 'reviews' })}
             >
               <View style={styles.tileHead}>
-                <View style={styles.tileIcon}><Text style={styles.tileIconGlyph}>▶</Text></View>
+                <View style={styles.tileIcon}><Icon name="play-circle-outline" size={17} color={ig.text} /></View>
                 <Text style={styles.tileArrow}>›</Text>
               </View>
               <Text style={styles.tileLabel}>Content</Text>
@@ -459,7 +459,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               onPress={() => navigation.navigate('BrandConversions', { campaignId, campaignName: campaign.name })}
             >
               <View style={styles.tileHead}>
-                <View style={[styles.tileIcon, styles.tileIconDark]}><Text style={[styles.tileIconGlyph, { color: P.yellow }]}>⊞</Text></View>
+                <View style={[styles.tileIcon, styles.tileIconDark]}><Icon name="cart-outline" size={17} color={P.yellow} /></View>
                 <Text style={styles.tileArrow}>›</Text>
               </View>
               <Text style={styles.tileLabel}>Conversions</Text>
@@ -529,8 +529,7 @@ const styles = StyleSheet.create({
 
   // Summary card
   summaryCard: { backgroundColor: P.yellow50, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(255,193,7,0.32)', position: 'relative', overflow: 'hidden' },
-  summaryCornerLg: { position: 'absolute', top: -36, right: -36, width: 120, height: 120, borderRadius: 60, backgroundColor: P.yellow, opacity: 0.22 },
-  summaryCornerSm: { position: 'absolute', top: -12, right: 30, width: 50, height: 50, borderRadius: 25, backgroundColor: P.yellow, opacity: 0.14 },
+  // IG-clean: decorative yellow corner blobs removed.
   summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 },
   summaryLabel: { fontSize: 11, fontWeight: '700', color: P.yellowText, letterSpacing: 0.5, textTransform: 'uppercase' },
   summaryPct: { fontFamily: 'monospace', fontWeight: '700', fontSize: 36, color: P.ink, letterSpacing: -1, lineHeight: 36 },
@@ -580,7 +579,6 @@ const styles = StyleSheet.create({
   tileHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tileIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center' },
   tileIconDark: { backgroundColor: P.ink },
-  tileIconGlyph: { fontSize: 13, fontWeight: '700', color: P.ink },
   tileArrow: { fontFamily: 'monospace', fontWeight: '700', color: P.muted3, fontSize: 14 },
   tileLabel: { fontSize: 9.5, fontWeight: '700', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 4 },
   tileValue: { fontFamily: 'monospace', fontWeight: '700', fontSize: 18, color: P.ink, letterSpacing: -0.3, lineHeight: 22 },
