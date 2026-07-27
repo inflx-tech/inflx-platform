@@ -4,7 +4,9 @@ import {
   RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fmtRupees } from '../../theme/tokens';
+import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 import Logo from '../../components/Logo';
@@ -51,17 +53,18 @@ const STATUS_LABEL = {
 };
 
 const QUICK_ACTIONS = [
-  { label: 'Orders',        icon: '🧾', target: 'BrandOrders' },
-  { label: 'Bookings',      icon: '📅', target: 'BrandBookings' },
-  { label: 'Offers',        icon: '🏷', target: 'BrandOffersLibrary' },
-  { label: 'Campaigns',     icon: '⊟', target: 'Campaigns' },
-  { label: 'Wallet',        icon: '◫', target: 'Wallet' },
-  { label: 'Enquiries',     icon: '✉',  target: 'BrandEnquiries' },
-  { label: 'Conversions',   icon: '₹',  target: 'BrandConversions' },
-  { label: 'Influencers',   icon: '★',  target: 'BrandInfluencerBrowse' },
-  { label: 'Creator market',icon: '📊', target: 'BrandInfluencerAnalytics' },
-  { label: 'Plan & billing',icon: '⚙',  target: 'BrandSettingsHub', tab: 'Profile' },
-  { label: 'Negotiations',  icon: '🤝', target: 'Campaigns' },
+  // IG-clean: MCI vector icons replace the mixed emoji/glyph set.
+  { label: 'Orders',        icon: 'receipt-text-outline',   target: 'BrandOrders' },
+  { label: 'Bookings',      icon: 'calendar-outline',       target: 'BrandBookings' },
+  { label: 'Offers',        icon: 'tag-outline',            target: 'BrandOffersLibrary' },
+  { label: 'Campaigns',     icon: 'bullhorn-outline',       target: 'Campaigns' },
+  { label: 'Wallet',        icon: 'wallet-outline',         target: 'Wallet' },
+  { label: 'Enquiries',     icon: 'email-outline',          target: 'BrandEnquiries' },
+  { label: 'Conversions',   icon: 'currency-inr',           target: 'BrandConversions' },
+  { label: 'Influencers',   icon: 'account-search-outline', target: 'BrandInfluencerBrowse' },
+  { label: 'Creator market',icon: 'chart-line',             target: 'BrandInfluencerAnalytics' },
+  { label: 'Plan & billing',icon: 'cog-outline',            target: 'BrandSettingsHub', tab: 'Profile' },
+  { label: 'Negotiations',  icon: 'handshake-outline',      target: 'Campaigns' },
 ];
 
 export default function BrandHomeScreen({ navigation }) {
@@ -260,7 +263,7 @@ export default function BrandHomeScreen({ navigation }) {
                   : navigation.navigate(qa.target)}
               >
                 <View style={styles.quickIcon}>
-                  <Text style={styles.quickIconGlyph}>{qa.icon}</Text>
+                  <Icon name={qa.icon} size={19} color={ig.text} />
                 </View>
                 <Text style={styles.quickLabel}>{qa.label}</Text>
               </TouchableOpacity>
@@ -505,13 +508,13 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 6,
   },
+  // IG-clean: neutral icon tile (was a solid yellow circle with a glyph).
   quickIcon: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: P.yellow,
+    width: 38, height: 38, borderRadius: 11,
+    backgroundColor: ig.bgSoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  quickIconGlyph: { fontSize: 14, fontWeight: '700', color: P.ink },
-  quickLabel: { fontSize: 11, fontWeight: '600', color: P.ink, textAlign: 'center' },
+  quickLabel: { fontSize: 12, fontWeight: '600', color: ig.text, textAlign: 'center' },
 
   // Campaign cards (Home — compact)
   campaignCard: {

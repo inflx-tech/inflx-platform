@@ -1,0 +1,24 @@
+{
+  "feature": "brand-home-restyle",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — 'next takeup restyle' + 'yes pls start' in-session 2026-07-25 (Home first). Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — parity with the already-locked + shipped IG-clean system (influencer app + brand tab bar v160); no new visual language introduced.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Screen-body restyle, slice 1 of N: brand Home quick-actions. Replaces a mixed emoji+glyph icon set on solid-yellow circles with MCI vector icons on neutral IG tiles (38px rounded, soft grey), label 11->12px in IG ink. All 11 navigation targets unchanged; quickIconGlyph style removed. DEFERRED to later slices: the rest of the Home body (hero, action-required card, wallet alert, campaign cards) and the other brand screens (BrandCampaignListScreen 510 LOC, BrandCampaignDetailScreen body 553 LOC) — kept separate so each slice stays reviewable. Frontend-only, mobile/OTA — presentation only, no backend.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 106/106 (24 suites, 2026-07-25) incl. a new BrandHomeScreen smoke suite; no dangling quickIconGlyph refs.",
+    "diff_record": "06-diff/notes.md authored — before(mixed emoji+glyph on yellow circles) / after(MCI icons on neutral IG tiles) + explicit note that the rest of the Home body is a later slice.",
+    "deploy": "NOT yet deployed — tests green. Awaiting founder go for the OTA publish."
+  }
+}
