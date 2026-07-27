@@ -19,6 +19,6 @@
     "maestro_green": false,
     "qa_record": "Mobile jest GREEN 105/105 (23 suites, 2026-07-25). Payload shape matched to web + backend controller. No backend delta.",
     "diff_record": "06-diff/notes.md authored - before(web-dashboard-only criteria) / after(Filters sheet on mobile writing identical payload).",
-    "deploy": "NOT yet deployed - tests green. Awaiting founder go for the OTA publish."
+    "deploy": "Founder go 2026-07-25 (pls publish OTA). OTA BRAND v161 published — ships features/brand-mobile-proposal-filters + features/brand-mobile-store-tiles (commit df51dbc). Two Render cold-start fetch-failed attempts (one exceeded the 420s tool timeout and backgrounded), succeeded on the third; honest note: the backgrounded run reported exit 0 at the shell level but its output showed the upload failing — the publish only landed on the explicit retry. released stays false pending the founder E2E pass."
   }
 }
