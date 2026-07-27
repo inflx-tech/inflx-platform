@@ -1,0 +1,23 @@
+{
+  "feature": "brand-discovery-sliders",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls go for 2b' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — discovery filter upgrade (sliders) locked in-session 2026-07-25 as part of the discovery proposal.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Discovery STEP 2b. Replaces the 5 raw number inputs (min/max followers, min ER %, min/max rate) with a co-located FilterSlider (label + live value + range input, IG-clean). CRITICAL semantics: zero position emits '' so doSearch's truthy param gate omits the param = filter off, identical to the old empty box. Steps chosen for round values (followers 5k, ER 0.5, rate ₹1k). Pairs with step-2 debounced live filtering for immediate tuning. DEFERRED: pick-from-list/autocomplete for city/niche/language (needs canonical taxonomy), platform filter, audience-fit filters (backend batch), filter-bar full restyle. Frontend-only, brand-web/Vercel — no backend, same params.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "qa_record": "brand-web next build compiled clean (77 pages). Control swap only; zero-position emits '' so param semantics are unchanged. Frontend-only, no backend.",
+    "diff_record": "06-diff/notes.md authored — before(5 raw number boxes) / after(FilterSlider with live value; zero = Any = filter off).",
+    "deploy": "pending"
+  }
+}

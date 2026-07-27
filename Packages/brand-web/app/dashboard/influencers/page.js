@@ -243,6 +243,36 @@ const CSS = `
 
 // ─── Row Card (compact single-line) ─────────────────────────────────────────
 
+/* Range filter with a live value readout (features/brand-discovery-sliders, 2b).
+   Emits '' at the zero position so doSearch's truthy gate omits the param
+   (= filter off), preserving the old empty-number-box semantics exactly. */
+function FilterSlider({ label, value, onChange, min = 0, max = 100, step = 1, format }) {
+  const num = value === '' || value == null ? min : Number(value);
+  const isOff = value === '' || value == null || num <= min;
+  return (
+    <div className="sbar-f">
+      <div className="sbar-f-l flex items-center justify-between gap-2">
+        <span>{label}</span>
+        <span className={`font-mono font-bold ${isOff ? 'text-[#A1A1AA]' : 'text-[#0A0A0A]'}`}>
+          {isOff ? 'Any' : (format ? format(num) : num)}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={num}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          onChange(v <= min ? '' : String(v));
+        }}
+        className="w-full accent-[#0A0A0A] cursor-pointer"
+      />
+    </div>
+  );
+}
+
 function CreatorRow({ c, onInvite, router }) {
   const tier = TIER_CFG[c.tier];
   const tierClass = TIER_CFG[c.tier] ? c.tier : 'nano';
@@ -629,7 +659,7 @@ export default function InfluencersPage() {
                 {Object.keys(TIER_CFG).map(t => <option key={t} value={t}>{TIER_CFG[t].label}</option>)}
               </select>
             </div>
-            <div className="sbar-f"><div className="sbar-f-l">Min ER %</div><input className="sbar-f-i" type="number" step="0.1" value={minViewEr} onChange={(e) => setMinViewEr(e.target.value)} placeholder="2.0" /></div>
+            <FilterSlider label="Min ER %" value={minViewEr} onChange={setMinViewEr} min={0} max={15} step={0.5} format={(n) => `${n}%+`} />
             <button type="button" className={`sbar-more${advanced ? ' open' : ''}`} onClick={() => setAdvanced(!advanced)}>{advanced ? 'More filters ▴' : 'More filters ▾'}</button>
             {activeFilterCount > 0 && <button type="button" className="sbar-clear" onClick={clearFilters}>Clear ({activeFilterCount}) ✕</button>}
           </div>
@@ -646,10 +676,10 @@ export default function InfluencersPage() {
                     <option value="engagement">Engagement</option>
                   </select>
                 </div>
-                <div className="sbar-f"><div className="sbar-f-l">Min followers</div><input className="sbar-f-i" type="number" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} placeholder="10000" /></div>
-                <div className="sbar-f"><div className="sbar-f-l">Max followers</div><input className="sbar-f-i" type="number" value={maxFollowers} onChange={(e) => setMaxFollowers(e.target.value)} placeholder="500000" /></div>
-                <div className="sbar-f"><div className="sbar-f-l">Min rate ₹</div><input className="sbar-f-i" type="number" value={minRate} onChange={(e) => setMinRate(e.target.value)} placeholder="2000" /></div>
-                <div className="sbar-f"><div className="sbar-f-l">Max rate ₹</div><input className="sbar-f-i" type="number" value={maxRate} onChange={(e) => setMaxRate(e.target.value)} placeholder="50000" /></div>
+                <FilterSlider label="Min followers" value={minFollowers} onChange={setMinFollowers} min={0} max={1000000} step={5000} format={fmtNum} />
+                <FilterSlider label="Max followers" value={maxFollowers} onChange={setMaxFollowers} min={0} max={1000000} step={5000} format={fmtNum} />
+                <FilterSlider label="Min rate ₹" value={minRate} onChange={setMinRate} min={0} max={100000} step={1000} format={fmtRupees} />
+                <FilterSlider label="Max rate ₹" value={maxRate} onChange={setMaxRate} min={0} max={100000} step={1000} format={fmtRupees} />
                 <div className="sbar-f"><div className="sbar-f-l">Worked with brand</div><input className="sbar-f-i" value={brandHandle} onChange={(e) => setBrandHandle(e.target.value)} placeholder="@swiggy" /></div>
               </div>
               <div className="sbar-checks">
