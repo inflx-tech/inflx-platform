@@ -1,0 +1,24 @@
+{
+  "feature": "brand-mobile-store-tiles",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'ok go for proposal filters and b2 lite' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — parity with the already-locked web panel / web listing fix; no new visual language introduced.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "B2-LITE (reduced by locked scope). Listing/product management is web-only BY DESIGN, so the mobile store preview stays READ-ONLY and the earlier \"add product management to mobile\" plan is CANCELLED. This slice only fixes the cramped tiles: image 96->150px, name 11.5->13.5px with lineHeight 18 / minHeight 36 so the existing numberOfLines={2} clamp renders two lines, price 12.5->14px. Mirrors the web listing fix (B1 step 1). Styles only. Frontend-only, mobile/OTA - no backend.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 105/105 (23 suites, 2026-07-25). Styles-only change, no data/behaviour delta.",
+    "diff_record": "06-diff/notes.md authored - before(96px img, 11.5px clipped names) / after(150px img, 13.5px 2-line names) + scope note that read-only is intentional.",
+    "deploy": "NOT yet deployed - tests green. Awaiting founder go for the OTA publish."
+  }
+}

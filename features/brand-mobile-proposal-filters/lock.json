@@ -1,0 +1,24 @@
+{
+  "feature": "brand-mobile-proposal-filters",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'ok go for proposal filters and b2 lite' in-session 2026-07-25. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — parity with the already-locked web panel / web listing fix; no new visual language introduced.",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Closes the LAST 'adjust filters on the web dashboard' bounce from the locked brand-mobile scope. New components/brand/ProposalFiltersSheet.js edits min_tier / allowed_niches / min_engagement_rate / city_match_required / only_past_collabs and posts the EXACT payload the web panel posts (verified against brand-web influencers/page.js save() and backend proposal.controller.js updateSettings — free-form JSON, no server validation, so shape parity matters). accepts_proposals preserved on save; ER validated 0-100 client-side. Frontend-only, mobile/OTA - no backend (getProposalSettings/updateProposalSettings already exist).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 105/105 (23 suites, 2026-07-25). Payload shape matched to web + backend controller. No backend delta.",
+    "diff_record": "06-diff/notes.md authored - before(web-dashboard-only criteria) / after(Filters sheet on mobile writing identical payload).",
+    "deploy": "NOT yet deployed - tests green. Awaiting founder go for the OTA publish."
+  }
+}

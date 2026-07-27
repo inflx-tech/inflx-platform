@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import ProposalFiltersSheet from '../../components/brand/ProposalFiltersSheet';
 
 /**
  * BrandProposalInboxScreen — proposals from influencers + accept/reject/counter.
@@ -52,6 +53,7 @@ export default function BrandProposalInboxScreen({ navigation }) {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [active, setActive]       = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const load = useCallback(async () => {
     const [pRes, sRes] = await Promise.all([
@@ -95,12 +97,23 @@ export default function BrandProposalInboxScreen({ navigation }) {
 
       {settings?.accepts_proposals && (
         <View style={s.acceptedBar}>
-          <Text style={s.acceptedTxt}>✓ Accepting proposals · Adjust filters on the web dashboard.</Text>
+          <Text style={s.acceptedTxt}>✓ Accepting proposals</Text>
+          <TouchableOpacity onPress={() => setFiltersOpen(true)}>
+            <Text style={s.acceptedToggle}>Filters</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={toggleAccepts}>
             <Text style={s.acceptedToggle}>Pause</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Proposal filters — editable on mobile (was "adjust on the web dashboard") */}
+      <ProposalFiltersSheet
+        visible={filtersOpen}
+        settings={settings}
+        onClose={() => setFiltersOpen(false)}
+        onSaved={() => { setFiltersOpen(false); load(); }}
+      />
 
       <View style={s.tabsScrollWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>

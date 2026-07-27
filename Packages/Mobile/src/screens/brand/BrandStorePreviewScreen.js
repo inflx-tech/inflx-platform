@@ -371,23 +371,26 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: P.border,
     overflow: 'hidden',
   },
+  // B2-lite: bigger image + readable 2-line name (was 96px / 11.5px clipped),
+  // mirroring the web listing fix. Preview stays read-only — listing is web-only
+  // by design.
   productImg: {
-    height: 96, backgroundColor: P.bg2,
+    height: 150, backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
     borderBottomWidth: 1, borderBottomColor: P.borderSoft,
   },
   productImgFill: { width: '100%', height: '100%' },
-  productEmoji: { fontSize: 32 },
-  productBody: { padding: 9 },
+  productEmoji: { fontSize: 38 },
+  productBody: { padding: 11 },
   productName: {
     fontFamily: fonts.sansBold,
-    fontSize: 11.5, fontWeight: '700', color: P.ink,
-    lineHeight: 16, minHeight: 30,
+    fontSize: 13.5, fontWeight: '700', color: P.ink,
+    lineHeight: 18, minHeight: 36,
   },
   productPrice: {
     fontFamily: fonts.monoBold,
-    fontSize: 12.5, fontWeight: '800', color: P.ink, marginTop: 5,
+    fontSize: 14, fontWeight: '800', color: P.ink, marginTop: 6,
   },
 
   // ── Empty state ──────────────────────────────────────────
