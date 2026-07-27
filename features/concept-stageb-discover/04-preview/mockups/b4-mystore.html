@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>B4 — Creator "My Store" arranger board</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  body { background:#EDEDED; padding:28px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { color:#666; font-size:13px; margin-bottom:24px; max-width:880px; line-height:1.6; }
+  .row { display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:390px; background:#FFF; border-radius:28px; box-shadow:0 8px 30px rgba(0,0,0,.14); overflow:hidden; border:1px solid #DDD; }
+  .cap { font-size:12.5px; font-weight:700; color:#444; margin:10px 4px 18px; max-width:390px; line-height:1.5; }
+  .cap b { color:#000; }
+  .hdr { display:flex; align-items:center; gap:10px; padding:14px 16px 10px; }
+  .hdr .back { font-size:18px; font-weight:700; }
+  .hdr .t { font-size:16px; font-weight:800; color:#111; }
+  .hdr .n { font-size:10.5px; color:#8A8A8A; font-weight:600; margin-top:1px; }
+  .hdr .right { margin-left:auto; font-size:12px; font-weight:800; color:#111; }
+  .hint { margin:4px 16px 10px; background:#FAFAFA; border:1px solid #EEE; border-radius:10px; padding:9px 12px; font-size:10.5px; color:#666; line-height:1.55; }
+  .crow { display:flex; align-items:center; gap:10px; margin:0 16px 9px; border:1px solid #EEE; border-radius:13px; padding:10px 12px; }
+  .grip { color:#BBB; font-size:15px; }
+  .thumb { width:44px; height:56px; border-radius:9px; background:linear-gradient(160deg,#F5F2EC,#E9E2D0); flex:none; }
+  .cn { font-size:13px; font-weight:800; color:#111; }
+  .cs { font-size:10.5px; color:#8A8A8A; margin-top:2px; }
+  .cs b { color:#111; }
+  .tog { margin-left:auto; width:38px; height:21px; border-radius:11px; background:#111; position:relative; flex:none; }
+  .tog::after { content:''; position:absolute; right:2px; top:2px; width:17px; height:17px; border-radius:9px; background:#FFF; }
+  .tog.off { background:#DDD; } .tog.off::after { right:auto; left:2px; }
+  .previewBtn { margin:12px 16px; border:1.5px solid #111; border-radius:999px; text-align:center; padding:12px; font-size:13px; font-weight:800; color:#111; }
+  .pubBtn { margin:0 16px 18px; background:#111; border-radius:999px; text-align:center; padding:13px; font-size:13px; font-weight:800; color:#FFF; }
+  /* lead picker */
+  .grid { display:flex; flex-wrap:wrap; gap:10px; padding:4px 16px 18px; }
+  .gcard { width:108px; border-radius:12px; overflow:hidden; position:relative; }
+  .gimg { height:135px; background:linear-gradient(160deg,#F5F2EC,#E9E2D0); }
+  .gsel { position:absolute; inset:0; border:3px solid #111; border-radius:12px; }
+  .gtick { position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:11px; background:#111; color:#FFF; font-size:12px; font-weight:800; text-align:center; line-height:22px; }
+  .gname { font-size:9px; color:#555; padding:4px 2px; }
+  /* follower-facing store */
+  .cav { width:44px; height:44px; border-radius:22px; background:linear-gradient(160deg,#E7A33B,#F5F2EC); border:2px solid #FFF; box-shadow:0 0 0 1.5px #E7A33B; }
+  .sec { padding:10px 0 2px 16px; }
+  .sect { font-size:13.5px; font-weight:800; color:#111; }
+  .cards { display:flex; gap:9px; overflow:hidden; padding-top:8px; }
+  .banner { width:150px; height:92px; border-radius:12px; flex:none; position:relative; overflow:hidden; }
+  .banner .txt { position:absolute; left:9px; bottom:8px; color:#FFF; text-shadow:0 1px 5px rgba(0,0,0,.55); }
+  .b1 { font-size:11px; font-weight:800; } .b2 { font-size:8px; font-weight:700; opacity:.9; }
+  .g1 { background:linear-gradient(160deg,#A8D5BA,#7FBF9E); } .g2 { background:linear-gradient(160deg,#F2C94C,#E8A33D); }
+  .g3 { background:linear-gradient(160deg,#C9B6E4,#A98FD6); } .g5 { background:linear-gradient(160deg,#F5F2EC,#E9E2D0); }
+  .pgrid { display:flex; flex-wrap:wrap; gap:3px; padding:10px 16px; }
+  .pg { width:112px; height:140px; background:linear-gradient(160deg,#EFEFEF,#DCDCDC); border-radius:4px; }
+  .panel { background:#FFF; border:1px solid #DDD; border-radius:14px; padding:18px; width:390px; font-size:12.5px; line-height:1.65; color:#333; }
+  .panel h3 { font-size:13.5px; margin-bottom:8px; }
+  .panel code { background:#F4F4F4; padding:1px 5px; border-radius:5px; font-size:11.5px; }
+</style>
+</head>
+<body>
+<h1>B4 — Creator "My Store": arrange what followers see first</h1>
+<div class="sub">The creator's version of the Discover Builder — with ZERO rules to learn. The list <b>is</b> their qualifying concepts (auto-derived from their approved posts); they drag the order, pick the lead photo, hide what they don't want, and see the change live on their follower-facing page. A concept that goes dark hides itself.</div>
+
+<div class="row">
+
+  <!-- FRAME 1: ARRANGER (sections → chips → concepts, progressive) -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">My Store</div><div class="n">Arrange what followers see first</div></div><span class="right">Preview</span></div>
+      <div class="hint">Same structure as the app's home: <b>sections → chips → concept banners → your posts</b>. Start flat; add sections and chips only if you want them. Sold-out concepts hide themselves.</div>
+
+      <div style="margin:0 16px 8px;display:flex;align-items:center;gap:8px">
+        <span class="grip">⋮⋮</span><span style="font-size:12.5px;font-weight:800;color:#111">Section · My Monsoon Edit</span>
+        <span style="margin-left:auto;font-size:10px;font-weight:800;color:#555;border:1px solid #E4E4E4;border-radius:8px;padding:3px 8px">＋ chips</span>
+      </div>
+      <div style="display:flex;gap:6px;margin:0 16px 8px">
+        <span style="font-size:10px;font-weight:800;background:#111;color:#FFF;border-radius:999px;padding:4px 11px">Dresses</span>
+        <span style="font-size:10px;font-weight:700;color:#555;border:1px solid #E4E4E4;border-radius:999px;padding:4px 11px">Kurtis</span>
+        <span style="font-size:10px;font-weight:700;color:#999;border:1px dashed #DDD;border-radius:999px;padding:4px 11px">＋</span>
+      </div>
+      <div class="crow"><span class="grip">⋮⋮</span><div class="thumb"></div>
+        <div style="flex:1"><div class="cn">Monsoon Looks</div><div class="cs"><b>9 posts</b> · cover: Monsoon T-Shirt</div></div><div class="tog"></div></div>
+      <div class="crow"><span class="grip">⋮⋮</span><div class="thumb" style="background:linear-gradient(160deg,#F2C94C,#E8A33D)"></div>
+        <div style="flex:1"><div class="cn">Under ₹999</div><div class="cs"><b>7 posts</b> · cover: tap to pick ›</div></div><div class="tog"></div></div>
+
+      <div style="margin:14px 16px 8px;display:flex;align-items:center;gap:8px">
+        <span class="grip">⋮⋮</span><span style="font-size:12.5px;font-weight:800;color:#111">Section · Everyday Value</span>
+        <span style="margin-left:auto;font-size:10px;font-weight:800;color:#555;border:1px solid #E4E4E4;border-radius:8px;padding:3px 8px">＋ chips</span>
+      </div>
+      <div class="crow"><span class="grip">⋮⋮</span><div class="thumb" style="background:linear-gradient(160deg,#C9B6E4,#A98FD6)"></div>
+        <div style="flex:1"><div class="cn">Kurtis</div><div class="cs"><b>4 posts</b> · cover: newest post</div></div><div class="tog"></div></div>
+      <div class="crow" style="opacity:.55"><span class="grip">⋮⋮</span><div class="thumb" style="background:linear-gradient(160deg,#ECECEC,#D8D8D8)"></div>
+        <div style="flex:1"><div class="cn">BOGO Picks</div><div class="cs"><b>2 posts</b> · hidden</div></div><div class="tog off"></div></div>
+
+      <div style="margin:4px 16px;border:1.5px dashed #CCC;border-radius:12px;text-align:center;padding:10px;font-size:11px;font-weight:800;color:#555">＋ New section</div>
+      <div class="previewBtn">Preview as follower</div>
+      <div class="pubBtn">Save — live instantly</div>
+    </div>
+    <div class="cap"><b>The arranger — FULL parity with global home, progressively revealed.</b> Multiple named sections; optional chips inside a section (tap ＋ chips); concepts drag between/within sections; each concept = their posts. A simple creator never touches sections/chips and gets the flat list; the data model is the SAME rows_json as the admin Builder, so the resolver needs nothing new. Rules/CTA/category rows stay admin-only.</div>
+  </div>
+
+  <!-- FRAME 2: LEAD-POST PICKER -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span><div><div class="t">Cover for “Monsoon Looks”</div><div class="n">Pick the photo that fronts this banner</div></div></div>
+      <div class="grid">
+        <div class="gcard"><div class="gimg"></div><div class="gsel"></div><div class="gtick">✓</div><div class="gname">Monsoon T-Shirt</div></div>
+        <div class="gcard"><div class="gimg" style="background:linear-gradient(160deg,#BFD8F2,#8FB8E8)"></div><div class="gname">Rain Jacket</div></div>
+        <div class="gcard"><div class="gimg" style="background:linear-gradient(160deg,#F7B9A1,#E98C6B)"></div><div class="gname">Windcheater</div></div>
+        <div class="gcard"><div class="gimg" style="background:linear-gradient(160deg,#C9B6E4,#A98FD6)"></div><div class="gname">Monsoon Kurti</div></div>
+        <div class="gcard"><div class="gimg" style="background:linear-gradient(160deg,#A8D5BA,#7FBF9E)"></div><div class="gname">Umbrella Dress</div></div>
+        <div class="gcard"><div class="gimg" style="background:linear-gradient(160deg,#F2C94C,#E8A33D)"></div><div class="gname">Puddle Boots</div></div>
+      </div>
+    </div>
+    <div class="cap"><b>Cover picker.</b> Only THEIR qualifying posts for that concept. One tap selects (black ring + tick); default is the newest post if they never pick. Their photo becomes the banner art on their page — creators never upload separate banner graphics.</div>
+  </div>
+
+  <!-- FRAME 3: FOLLOWER-FACING RESULT -->
+  <div>
+    <div class="phone">
+      <div class="hdr"><span class="back">‹</span>
+        <div style="display:flex;align-items:center;gap:8px;flex:1">
+          <div class="cav"></div>
+          <div><div class="t" style="font-size:14px">@sagartravel <span style="color:#3897F0">✓</span></div><div class="n">Vijayawada · 23 posts</div></div>
+        </div>
+        <span class="right" style="background:#111;color:#FFF;border-radius:999px;padding:6px 16px">Follow</span>
+      </div>
+
+      <div class="sec">
+        <div class="sect">Shop my edits</div>
+        <div class="cards">
+          <div class="banner g1"><div class="txt"><div class="b1">Monsoon Looks</div><div class="b2">9 posts</div></div></div>
+          <div class="banner g2"><div class="txt"><div class="b1">Under ₹999</div><div class="b2">7 posts</div></div></div>
+          <div class="banner g3"><div class="txt"><div class="b1">Kurtis</div><div class="b2">4 posts</div></div></div>
+        </div>
+      </div>
+
+      <div class="sec"><div class="sect">All posts</div></div>
+      <div class="pgrid"><div class="pg"></div><div class="pg"></div><div class="pg"></div><div class="pg"></div><div class="pg"></div><div class="pg"></div></div>
+    </div>
+    <div class="cap"><b>The follower-facing result — ships in the SAME slice</b> (lesson from the Builder walk: arranging must have a visible effect immediately). The creator's store page gets the "Shop my edits" banner rail in their arranged order, covers = their picked posts; tap → that concept filtered to THIS creator's posts. Below: their full post grid. Hidden/dark concepts absent.</div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel">
+    <h3>Honest build map (B4)</h3>
+    <b>Exists already:</b><br>
+    · Creator layout store: GET/PUT <code>/influencers/me/discover-layout</code> (shipped in B2)<br>
+    · Resolver creator scope: counts + covers restricted to THEIR posts, auto-hide (shipped)<br>
+    · Concept post feed filter by creator (shipped)<br><br>
+    <b>New (small):</b><br>
+    · GET <code>/influencers/me/discover-options</code> — their qualifying concepts w/ live counts + their posts per concept (for the cover picker)<br>
+    · Resolver honours <code>lead_post_id</code> for a banner's cover<br>
+    · Creator app: My Store screen (frame 1) + cover picker (frame 2), entry from the creator home<br>
+    · Follower app: "Shop my edits" rail on the creator store page (frame 3)<br><br>
+    <b>Creator never sees:</b> rules, scopes, chips, CTA settings — admin-only complexity stays in the admin Builder.
+  </div>
+
+</div>
+</body>
+</html>

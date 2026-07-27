@@ -64,6 +64,9 @@ export default function InfluencerStoreScreen({ route, navigation }) {
   // consumer the Creator Store was missing). Empty until composed → legacy picks
   // below carry the screen (no regression).
   const [creatorSections, setCreatorSections] = useState([]);
+  // B4 — the creator's OWN arrangement ("Shop my edits"): their My Store
+  // sections resolved with live counts; empty until they arrange (no regression).
+  const [myEdits, setMyEdits] = useState([]);
 
   const fetchStore = useCallback(async () => {
     try {
@@ -82,6 +85,9 @@ export default function InfluencerStoreScreen({ route, navigation }) {
     if (!handle) return undefined;
     followerApi.getCreatorSections?.(handle)
       .then((res) => { if (alive && res?.success) setCreatorSections(res.data?.sections || []); })
+      .catch(() => {});
+    followerApi.getDiscover?.({ scope: 'creator', creator_handle: handle })
+      .then((res) => { if (alive && res?.success) setMyEdits((res.data?.rows || []).filter((r) => r.type === 'section')); })
       .catch(() => {});
     return () => { alive = false; };
   }, [handle]);
@@ -230,6 +236,38 @@ export default function InfluencerStoreScreen({ route, navigation }) {
           </View>
           {influencer.bio ? <Text style={s.bio}>"{influencer.bio}"</Text> : null}
         </SafeAreaView>
+
+        {/* B4 — Shop my edits: the creator's own arrangement, live-resolved.
+            Banner covers are their picked posts; tap → their posts for that
+            concept. Absent until they arrange — zero regression. */}
+        {myEdits.map((row, ri) => {
+          const banners = (row.chips || []).flatMap((c) => c.banners || []);
+          if (!banners.length) return null;
+          return (
+            <View key={`edit${ri}`}>
+              <ShelfHeader title={row.title || 'Shop my edits'} sub="their picks, shoppable" count={banners.length} tag="edits" />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 16, paddingBottom: 6 }}>
+                {banners.map((b, bi) => (
+                  <TouchableOpacity key={bi} activeOpacity={0.85}
+                    style={{ width: 150, height: 92, borderRadius: 12, overflow: 'hidden', backgroundColor: '#F5F2EC' }}
+                    onPress={() => navigation.navigate('ConceptPosts', {
+                      conceptId: b.concept_id, collectionId: b.collection_id,
+                      creatorHandle: influencer.instagram_handle || handle,
+                      title: b.title, count: b.post_count,
+                    })}>
+                    {(b.image_url || b.cover_url)
+                      ? <Image source={{ uri: b.image_url || b.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                      : null}
+                    <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 9, paddingTop: 18, paddingBottom: 7, backgroundColor: 'rgba(0,0,0,0.32)' }}>
+                      <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '800' }} numberOfLines={1}>{b.title}</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 8.5, fontWeight: '700', marginTop: 1 }}>{b.post_count} posts</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          );
+        })}
 
         {/* My Store Collabs */}
         {collabs.length > 0 && (

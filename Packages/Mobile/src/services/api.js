@@ -150,6 +150,7 @@ async function request(method, path, body) {
 export const api = {
   get:    (path)       => request('GET', path, null),
   post:   (path, body) => request('POST', path, body),
+  put:    (path, body) => request('PUT', path, body),
   patch:  (path, body) => request('PATCH', path, body),
   delete: (path)       => request('DELETE', path, null),
 };
@@ -293,6 +294,10 @@ export const agencyApi = {
 
 export const influencerApi = {
   register: (data) => api.post('/influencers/register', data),
+  // B4 — My Store arranger
+  getDiscoverLayout: () => api.get('/influencers/me/discover-layout'),
+  putDiscoverLayout: (rows) => api.put('/influencers/me/discover-layout', { rows_json: rows }),
+  getDiscoverOptions: () => api.get('/influencers/me/discover-options'),
   getMe: () => api.get('/influencers/me'),
   updateMe: (data) => api.patch('/influencers/me', data),
   getEarnings: () => api.get('/influencers/me/earnings'),

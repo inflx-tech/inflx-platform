@@ -56,6 +56,62 @@ const getCreatorLayout = asyncHandler(async (req, res) => {
   return success(res, { layout });
 });
 
+// ── GET /influencers/me/discover-options (B4 — the arranger's raw material) ──
+// Every concept/collection THIS creator's approved+visible posts qualify for,
+// with live counts + their posts (id, cover, label) for the cover picker.
+// The arranger can only arrange what's here — no rules, no free choice.
+const getCreatorOptions = asyncHandler(async (req, res) => {
+  const creatorId = await influencerIdFor(req.user.sub);
+  const { conceptName, familyOf } = require('../services/concepts.service');
+  const { mediaUrl } = require('../services/creatorPosts.service');
+
+  const VISIBLE = `cp.status = 'approved'
+    AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0)`;
+
+  const { rows } = await db.query(
+    `SELECT cp.id AS post_id, cp.caption, cp.created_at,
+            cp.concept_id, cp.collection_id,
+            ct.kind, ct.name_pattern, cn.name AS leaf_name,
+            col.name AS collection_name,
+            pm.id AS media_id
+       FROM creator_posts cp
+       LEFT JOIN concepts co ON co.id = cp.concept_id
+       LEFT JOIN concept_templates ct ON ct.id = co.template_id
+       LEFT JOIN category_nodes cn ON cn.id = co.category_node_id
+       LEFT JOIN collections col ON col.id = cp.collection_id
+       LEFT JOIN post_media pm ON pm.post_id = cp.id AND pm.slide_index = 0
+      WHERE cp.influencer_id = $1 AND ${VISIBLE}
+      ORDER BY cp.created_at DESC`,
+    [creatorId]);
+
+  const byKey = new Map();
+  for (const r of rows) {
+    const key = r.concept_id ? `c:${r.concept_id}` : `l:${r.collection_id}`;
+    if (!byKey.has(key)) {
+      byKey.set(key, {
+        concept_id: r.concept_id || null,
+        collection_id: r.collection_id || null,
+        name: r.concept_id
+          ? conceptName({ kind: r.kind, name_pattern: r.name_pattern }, r.leaf_name)
+          : r.collection_name,
+        family: r.concept_id ? familyOf(r.kind, !!r.leaf_name) : 6,
+        visible: 0,
+        posts: [],
+      });
+    }
+    const opt = byKey.get(key);
+    opt.visible += 1;
+    opt.posts.push({
+      id: r.post_id,
+      label: (r.caption || '').slice(0, 40) || 'Post',
+      cover_url: r.media_id ? mediaUrl(r.media_id) : null,
+      created_at: r.created_at,
+    });
+  }
+
+  return success(res, { options: [...byKey.values()].sort((a, b) => b.visible - a.visible) });
+});
+
 const putCreatorLayout = asyncHandler(async (req, res) => {
   const creatorId = await influencerIdFor(req.user.sub);
   validateRows(req.body?.rows_json);
@@ -67,7 +123,16 @@ const putCreatorLayout = asyncHandler(async (req, res) => {
 // scope=global (default) | business&brand_id=… | creator&creator_id=…
 // city (query) + optional auth personalize the rules; guests get popularity.
 const followerDiscover = asyncHandler(async (req, res) => {
-  const { scope = 'global', brand_id = null, creator_id = null, city = null } = req.query;
+  const { scope = 'global', brand_id = null, city = null } = req.query;
+  let creator_id = req.query.creator_id || null;
+  // B4 — the follower app knows creators by HANDLE (store pages); resolve it.
+  if (!creator_id && req.query.creator_handle) {
+    const { rows } = await db.query(
+      `SELECT id FROM influencers WHERE lower(instagram_handle) = lower($1)`,
+      [String(req.query.creator_handle).replace(/^@/, '')]);
+    creator_id = rows[0]?.id || null;
+    if (!creator_id) return success(res, { scope: 'creator', rows: [], updated_at: null });
+  }
   let followerId = null;
   if (req.user?.sub) {
     const { rows } = await db.query(`SELECT id FROM followers WHERE user_id = $1`, [req.user.sub]);
@@ -85,6 +150,6 @@ const followerDiscover = asyncHandler(async (req, res) => {
 
 module.exports = {
   getAdminLayout, putAdminLayout,
-  getCreatorLayout, putCreatorLayout,
+  getCreatorLayout, putCreatorLayout, getCreatorOptions,
   followerDiscover,
 };

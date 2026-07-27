@@ -29,6 +29,8 @@ router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.ge
 const discoverCtrl = require('../controllers/discover.controller');
 router.get('/me/discover-layout', authenticate, requireRole('influencer'), discoverCtrl.getCreatorLayout);
 router.put('/me/discover-layout', authenticate, requireRole('influencer'), discoverCtrl.putCreatorLayout);
+// B4 — the arranger's raw material: their qualifying concepts + posts
+router.get('/me/discover-options', authenticate, requireRole('influencer'), discoverCtrl.getCreatorOptions);
 
 // ── Earnings overview (Phase 3 — Block E) ─────────────────────────────────────
 router.get('/me/earnings', authenticate, requireRole('influencer'), ctrl.getEarnings);

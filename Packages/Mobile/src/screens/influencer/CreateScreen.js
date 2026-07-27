@@ -88,6 +88,15 @@ export default function CreateScreen({ navigation }) {
               </View>
               <Icon name="chevron-right" size={20} color="#fff" />
             </TouchableOpacity>
+            {/* B4 — arrange the follower-facing store (sections/covers/order) */}
+            <TouchableOpacity style={st.storeCta} activeOpacity={0.85} onPress={() => navigation.navigate('MyStore')}>
+              <Icon name="storefront-outline" size={20} color="#111" />
+              <View style={{ flex: 1 }}>
+                <Text style={st.storeCtaTitle}>My Store</Text>
+                <Text style={st.storeCtaSub}>Arrange what followers see first</Text>
+              </View>
+              <Icon name="chevron-right" size={18} color="#111" />
+            </TouchableOpacity>
             {posts.length > 0 && <Text style={st.lab}>My Posts · {posts.length}</Text>}
           </View>
         }
@@ -118,6 +127,9 @@ const st = StyleSheet.create({
   ctaSub: { color: 'rgba(255,255,255,0.65)', fontSize: 11.5, marginTop: 2 },
 
   lab: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', color: ig.mut, marginTop: 20, marginBottom: 6 },
+  storeCta: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderColor: '#111', borderRadius: 14, padding: 13, marginTop: 8 },
+  storeCtaTitle: { fontSize: 14, fontWeight: '800', color: '#111' },
+  storeCtaSub: { fontSize: 11, color: '#777', marginTop: 1 },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: ig.line, borderRadius: 13, padding: 10, marginTop: 8 },
   cover: { width: 52, height: 66, borderRadius: 9 },

@@ -111,10 +111,29 @@ async function resolveBanners(banners, { brandId = null, creatorId = null } = {}
     for (const r of rows) byCollection.set(r.id, { name: r.name, family: 6, visible: r.visible, cover_media_id: r.cover_media_id });
   }
 
+  // B4 — a creator-picked lead post fronts its banner, but only while that
+  // post is still visible (approved + eligible); otherwise the newest cover
+  // silently takes over. Hidden banners (creator toggle) never render.
+  const leadIds = banners.map(b => b.lead_post_id).filter(Boolean);
+  const leadCover = new Map();
+  if (leadIds.length) {
+    const { rows } = await db.query(
+      `SELECT cp.id, pm.id AS media_id
+         FROM creator_posts cp
+         JOIN post_media pm ON pm.post_id = cp.id AND pm.slide_index = 0
+        WHERE cp.id = ANY($1::uuid[]) AND ${VISIBLE}`,
+      [leadIds]);
+    for (const r of rows) leadCover.set(r.id, r.media_id);
+  }
+
   return banners
     .map(b => {
-      const hit = b.concept_id ? byConcept.get(b.concept_id) : byCollection.get(b.collection_id);
+      if (b.hidden) return null;                   // creator toggled off
+      let hit = b.concept_id ? byConcept.get(b.concept_id) : byCollection.get(b.collection_id);
       if (!hit || hit.visible <= 0) return null;   // auto-hide (the promise model)
+      if (b.lead_post_id && leadCover.has(b.lead_post_id)) {
+        hit = { ...hit, cover_media_id: leadCover.get(b.lead_post_id) };
+      }
       return {
         concept_id: b.concept_id || null,
         collection_id: b.collection_id || null,

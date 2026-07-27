@@ -15,7 +15,7 @@ import ShopThisPostSheet from '../../components/posts/ShopThisPostSheet';
 const PAGE = 20;
 
 export default function ConceptPostsScreen({ navigation, route }) {
-  const { conceptId, collectionId, title, count } = route.params || {};
+  const { conceptId, collectionId, creatorHandle, title, count } = route.params || {};
   const [posts, setPosts] = useState(null);
   const [end, setEnd] = useState(false);
   const [shopPost, setShopPost] = useState(null);
@@ -24,6 +24,7 @@ export default function ConceptPostsScreen({ navigation, route }) {
     const res = await followerApi.getPosts({
       limit: PAGE, offset,
       concept_id: conceptId || null, collection_id: collectionId || null,
+      creator: creatorHandle || null,   // B4: a creator-page banner shows THEIR posts only
     });
     if (res.success) {
       const page = res.data?.posts || [];
@@ -31,7 +32,7 @@ export default function ConceptPostsScreen({ navigation, route }) {
       setPosts((prev) => (offset === 0 ? page : [...(prev || []), ...page]));
     } else if (posts == null) setPosts([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conceptId, collectionId]);
+  }, [conceptId, collectionId, creatorHandle]);
   useEffect(() => { load(0); }, [load]);
 
   async function toggle(post, kind) {

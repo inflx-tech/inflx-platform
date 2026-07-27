@@ -16,3 +16,16 @@ fixed before commit; dangling SQL binds in the rail resolvers fixed.
 Definitive after-check: founder builds the real Global layout in the
 Builder against prod concepts and sees honest counts; full visual truth
 lands with B3's tab (board frame 1).
+
+## B4 — Creator "My Store" (board b4-mystore.html, revised for full parity)
+
+- **Before**: creators had no control over their follower-facing page order;
+  the creator layout endpoints existed (B2) with no UI.
+- **After**: Create tab → "My Store" — sections → optional chips → their
+  qualifying concepts (auto-derived, live counts), drag order (▲▼), cover
+  picker (their own posts front the banners; newest as default), show/hide
+  toggle, first-visit auto-flat-list, "Add to your store" pool, preview
+  sheet, instant Save. Follower side: the creator store page renders their
+  arranged "Shop my edits" rails (resolver truth: dark concepts vanish,
+  lead-post cover falls back to newest if the lead goes dark); banner tap →
+  their posts only for that concept. Rules/CTA/art stay admin-only.

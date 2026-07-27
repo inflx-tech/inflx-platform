@@ -36,6 +36,7 @@ import SendProposalScreen from '../screens/influencer/SendProposalScreen';
 // Concept P2: the Post Composer + My Posts replace the old studio.
 import PostComposerScreen from '../screens/influencer/PostComposerScreen';
 import MyPostsScreen from '../screens/influencer/MyPostsScreen';
+import MyStoreScreen from '../screens/influencer/MyStoreScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -52,6 +53,8 @@ function CreateStackNav() {
       <CreateStack.Screen name="CreateMain" component={CreateScreen} />
       <CreateStack.Screen name="PostComposer" component={PostComposerScreen} />
       <CreateStack.Screen name="MyPosts" component={MyPostsScreen} />
+      {/* B4 — arrange their follower-facing store (sections/chips/concepts) */}
+      <CreateStack.Screen name="MyStore" component={MyStoreScreen} />
     </CreateStack.Navigator>
   );
 }
