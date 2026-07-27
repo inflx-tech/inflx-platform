@@ -1,0 +1,24 @@
+{
+  "feature": "brand-mobile-cc",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — delegated: 'pls start A6' in-session 2026-07-25, after reviewing the brand-mobile analysis + before/after mockup. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — brand mobile command center (stage rail + Fund & Publish) shown + approved in-session 2026-07-25 (before/after widget + command-center.html).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "A6 STEP 1. Brings the web command-center model to brand mobile: pure utils/campaignStages.js (deriveCampaignStage + stageTrack, 10 unit tests) + components/brand/CampaignStageRail.js (StageRail + PrimeBar, IG-clean) rendered above the campaign summary; prime action dispatches to the existing screens. CLOSES the founder-flagged gap: Fund & Publish now works on mobile via new brandApi.publishCampaign (client method for existing POST /campaigns/:id/publish); WALLET_INSUFFICIENT offers the Wallet tab (mobile top-up already exists). Per locked scope, campaign CREATION + LISTING stay web-only but post-creation funding/publishing belongs on mobile. Also fixes the DEAD tap in BrandActionRequiredScreen ('BrandCampaignDetail' -> registered 'CampaignDetail'). DEFERRED (A6 step 2+): fold the duplicate ActionRequired inbox into a pure router; full IG restyle of other brand screens + emoji tab icons; Production stays visibility-only (parked backend). Frontend-only, mobile/OTA - no backend.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "qa_record": "Mobile jest GREEN 91/91 (20 suites, 2026-07-25): 10 campaignStages specs + 3 brand command-center smoke + 78 prior. Frontend-only, no backend delta.",
+    "diff_record": "06-diff/notes.md authored - before(6 shifting tiles, no publish action, dead tap) / after(stage rail + one primary action, working Fund & Publish, route fixed) + deferred list.",
+    "deploy": "NOT yet deployed - build + tests green. Awaiting founder go for the OTA publish."
+  }
+}

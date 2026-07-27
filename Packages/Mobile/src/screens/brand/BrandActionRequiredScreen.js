@@ -324,7 +324,7 @@ export default function BrandActionRequiredScreen({ navigation }) {
                 <TouchableOpacity
                   key={item.id}
                   style={s.card}
-                  onPress={() => navigation.navigate('BrandCampaignDetail', { campaignId: item.campaign_id })}
+                  onPress={() => navigation.navigate('CampaignDetail', { campaignId: item.campaign_id })}
                   activeOpacity={0.85}
                 >
                   <View style={s.cardHeader}>

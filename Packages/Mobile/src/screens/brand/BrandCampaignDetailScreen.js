@@ -1,12 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
+import { deriveCampaignStage } from '../../utils/campaignStages';
+import { StageRail, PrimeBar } from '../../components/brand/CampaignStageRail';
 
 // ── locked palette (inline) ──
 const P = {
@@ -58,6 +60,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
   const [briefOpen, setBriefOpen]   = useState(false);
   const [error, setError]           = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   async function load() {
     setError(null);
@@ -191,6 +194,48 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
     });
   }
 
+  // ── Command-center stage + primary action (A6) ──
+  const stageInfo = deriveCampaignStage(campaign.status, {
+    applicationsCount, reviewsCount, liveConfirmCount, negotiatingCount,
+  });
+
+  // Fund & Publish — the action mobile never had (funding/publishing an already
+  // created campaign is post-creation, so it belongs here; creation stays on web).
+  async function handlePublish() {
+    setPublishing(true);
+    const res = await brandApi.publishCampaign(campaignId);
+    setPublishing(false);
+    if (res.success) {
+      Alert.alert('Campaign published', 'Your campaign is live and creators can be invited.');
+      load();
+    } else if (res.error?.code === 'WALLET_INSUFFICIENT') {
+      Alert.alert(
+        'Wallet needs funding',
+        res.error?.message || 'Add the full campaign budget to your wallet, then publish.',
+        [{ text: 'Later', style: 'cancel' }, { text: 'Open wallet', onPress: () => navigation.navigate('Wallet') }],
+      );
+    } else {
+      Alert.alert('Could not publish', res.error?.message || 'Please try again.');
+    }
+  }
+
+  function onPrimePress() {
+    switch (stageInfo.prime.kind) {
+      case 'publish':      return handlePublish();
+      case 'applications': return navigation.navigate('BrandCampaignInfluencersList', { campaignId, statusFilter: 'applied' });
+      case 'negotiations': return navigation.navigate('BrandCampaignInfluencersList', { campaignId, statusFilter: 'negotiating' });
+      case 'reviews':      return navigation.navigate('BrandCampaignReviewQueue', { campaignId, initialTab: 'reviews' });
+      case 'live':         return navigation.navigate('BrandCampaignReviewQueue', { campaignId, initialTab: 'live' });
+      case 'payout':       return navigation.navigate('Wallet');
+      default:             return undefined;
+    }
+  }
+
+  const primeSubtitle =
+    stageInfo.prime.kind === 'publish' && totalBudget > 0 ? `${fmtRupees(totalBudget)} budget needed to go live`
+      : stageInfo.prime.kind === 'live' && t2LockedAmount > 0 ? `Releases up to ${fmtRupees(t2LockedAmount)} Tranche-2`
+        : null;
+
   return (
     <View style={styles.container}>
       {/* ── Ink header ── */}
@@ -224,6 +269,10 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
       >
+
+        {/* ── Command center: stage rail + one primary action (A6) ── */}
+        <StageRail current={stageInfo.stageKey} />
+        <PrimeBar prime={stageInfo.prime} onPress={onPrimePress} busy={publishing} subtitle={primeSubtitle} />
 
         {/* ── Summary card ── */}
         <View style={styles.summaryCard}>

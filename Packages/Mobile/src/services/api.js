@@ -178,6 +178,7 @@ export const brandApi = {
   getCampaigns: () => api.get('/campaigns'),
   getCampaign: (id) => api.get(`/campaigns/${id}`),
   getCampaignLive: (id) => api.get(`/campaigns/${id}/live`),
+  publishCampaign: (id) => api.post(`/campaigns/${id}/publish`),
   cancelCampaign: (id) => api.post(`/campaigns/${id}/cancel`),
   deleteCampaign: (id) => api.delete(`/campaigns/${id}`),
   reviewDeliverable: (id, data) => api.post(`/deliverables/${id}/review`, data),
