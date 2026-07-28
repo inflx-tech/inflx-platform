@@ -453,8 +453,62 @@ const adminCancel = asyncHandler(async (req, res) => {
   return success(res, { production_event: updated });
 });
 
+// Local brand lookup — mirrors the same helper in campaign/contract/escrow
+// controllers (existing per-controller convention in this codebase).
+async function getBrandOrThrow(userId) {
+  const { rows } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [userId]);
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  return rows[0];
+}
+
+/* GET /v1/campaigns/:id/production — campaign-wide production roster (brand only).
+   Backend batch item 3. Until now production state was only readable one contract at
+   a time (GET /contracts/:id/production), which is why the brand Production stage
+   could show a per-creator logistics *chip* but no real state or inline action.
+   LEFT JOINs from campaign_influencers so creators without a contract/event yet still
+   appear (as production_event: null) rather than silently vanishing. */
+const listCampaignProduction = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+
+  const { rows } = await db.query(
+    `SELECT
+        ci.id                AS campaign_influencer_id,
+        ci.status            AS influencer_status,
+        ci.physical_delivery,
+        inf.instagram_handle,
+        u.name               AS influencer_name,
+        con.id               AS contract_id,
+        con.production_mode,
+        pe.id                AS production_event_id,
+        pe.mode,
+        pe.status            AS production_status,
+        pe.visit_address, pe.visit_city, pe.visit_pincode,
+        pe.visit_scheduled_at, pe.visit_window_minutes,
+        pe.visit_contact_name, pe.visit_contact_phone, pe.visit_completed_at,
+        pe.shipment_to_address_line, pe.shipment_to_city, pe.shipment_to_pincode,
+        pe.shipment_courier, pe.shipment_awb,
+        pe.shipment_dispatched_at, pe.shipment_expected_at,
+        pe.shipment_delivered_at, pe.shipment_received_confirmed_at
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns     c  ON c.id  = cs.campaign_id
+     JOIN influencers   inf ON inf.id = ci.influencer_id
+     JOIN users         u   ON u.id   = inf.user_id
+     LEFT JOIN contracts        con ON con.campaign_influencer_id = ci.id
+     LEFT JOIN production_events pe ON pe.contract_id = con.id
+     WHERE c.id = $1
+       AND c.brand_id = $2
+       AND ci.status IN ('contracted', 'active', 'live', 'completed')
+     ORDER BY inf.instagram_handle ASC`,
+    [req.params.id, brand.id]
+  );
+
+  return success(res, { production: rows });
+});
+
 module.exports = {
   getProduction,
+  listCampaignProduction,
   getDateRange,
   initialiseProduction,
   setVisitDetails,

@@ -25,6 +25,12 @@ router.get(
   authenticate, requireRole('brand', 'influencer'),
   ctrl.getProduction
 );
+// Campaign-wide production roster (brand only) — backend batch item 3.
+router.get(
+  '/campaigns/:id/production',
+  authenticate, requireRole('brand'),
+  ctrl.listCampaignProduction
+);
 router.get(
   '/contracts/:id/production/date-range',
   authenticate, requireRole('brand', 'influencer'),

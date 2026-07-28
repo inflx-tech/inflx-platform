@@ -1,0 +1,23 @@
+{
+  "feature": "backend-post-engagement",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — 'complete 4-6 and deploy,migrate,push,commit' in-session 2026-07-28. Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — backend-only, no UI in this contract; the Create-tab render that will consume these fields is a separate contract with its own mockup gate.",
+  "mockup_locked_at": "2026-07-28",
+  "notes": "Backend batch item 4 (the buildable half). Adds like_count + save_count to listMyPosts via correlated subqueries over post_likes / post_saves — tables that already exist (migration 141_post_globals.sql, verified by reading it) and are already written to by the follower app. NO MIGRATION NEEDED. SCOPE BOUNDARY, stated honestly: the founder asked for post analytics including views; there is NO view/impression counter anywhere in the schema or code (grepped, zero matches), so views are NOT included and NOT stubbed as 0 — a hardcoded 0 would read as 'nobody watched' when the truth is 'not measured'. Views require a new capture path, not a migration. Ships UNCONSUMED by design so it cannot regress the founder's imminent E2E pass. PRODUCTION-IMPACTING: push deploys Render.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "qa_record": "pnpm qa GREEN — 79/79 passed, gate 0 (2026-07-28T04-40 report) run AFTER the change: zero regression. node --check clean on creatorPosts.service.js.",
+    "diff_record": "06-diff/notes.md authored — before(engagement collected since mig 141 but never read back) / after(same call returns counts) + the explicit views-omission rationale.",
+    "deploy": "Pushed with backend-campaign-production per founder's explicit 'deploy,migrate,push,commit' go 2026-07-28."
+  }
+}

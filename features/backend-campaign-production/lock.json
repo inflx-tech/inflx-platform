@@ -1,0 +1,23 @@
+{
+  "feature": "backend-campaign-production",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — 'start items 2-3' in-session 2026-07-25 (backend batch, no-migration set). Lock decision delegated per standing autonomy.",
+  "approved_at": "2026-07-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — backend-only data endpoint, no UI in this contract; the consuming Production stage look was locked earlier (features/brand-cc-production).",
+  "mockup_locked_at": "2026-07-25",
+  "notes": "Backend batch item 3. Adds GET /v1/campaigns/:id/production (brand-only, ownership-scoped in the WHERE clause) returning the campaign's active-creator roster with contract + production_events state (mode/status, visit address/schedule/contact, shipment address/courier/AWB/dates). Unblocks the inline visit-scheduling + shipment-dispatch actions deferred from web A5 step 1, where production state was readable only one contract at a time. Design calls: LEFT JOIN from campaign_influencers so creators without a contract/event yet appear with nulls rather than vanishing; status filtered to contracted/active/live/completed. Schema verified against migration 024 before writing the SELECT — no guessed columns. Route uses the same proven fall-through mount pattern as the existing /contracts/:id/production. NO MIGRATION. Ships UNCONSUMED by design — frontend wiring (web Production tab + mobile stage + inline actions) is a separate contract, so this cannot regress the UI. PRODUCTION-IMPACTING: push deploys Render.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "qa_record": "pnpm qa GREEN — 79/79 passed, gate 0 (2026-07-28T04-31 report) run AFTER the change: zero regression. node --check clean on production.controller.js + production.routes.js.",
+    "diff_record": "06-diff/notes.md authored — before(per-contract reads only; Production stage was visibility-half) / after(one campaign-wide roster call) + the two design calls (LEFT JOIN, ownership in WHERE) + unconsumed-by-design note.",
+    "deploy": "Pushed 2026-07-28 per founder's explicit 'deploy,migrate,push,commit' go. Backend change → Render auto-deploys."
+  }
+}
