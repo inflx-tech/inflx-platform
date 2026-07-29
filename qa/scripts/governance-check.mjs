@@ -154,7 +154,9 @@ function main() {
     // governed (Packages/*/(src|app|components|lib|screens|services)/) or
     // Mobile-governed (Packages/Mobile/src/) file in the changeset.
     // Backend-only changesets (backend/src/, backend/migrations/) are
-    // unaffected — they pass through with just Rules 1+2.
+    // unaffected — they pass through with just Rules 1+2. Within a MIXED
+    // changeset, an individual backend-only contract opts out of Rules 3+4
+    // via `ui_governed: false` (guarded — see below).
     const uiChanged     = changed.filter(isUiGoverned);
     const mobileChanged = changed.filter(isMobileGoverned);
     const overrideEnv   = process.env.GOVERNANCE_OVERRIDE;
@@ -165,7 +167,32 @@ function main() {
     };
 
     if (uiChanged.length > 0) {
-      for (const slug of touchedApproved) {
+      // A push can legitimately carry several contracts — e.g. a backend-only
+      // fix riding alongside separate UI work. Rules 3+4 must apply to the
+      // contracts that actually govern UI, not to every contract that happens
+      // to share the changeset: previously one brand-web file forced
+      // mockup_locked onto a backend-only contract that has no mockups, whose
+      // only honest resolution would have been to fabricate the attestation.
+      //
+      // A contract opts out with an explicit `ui_governed: false`. The opt-out
+      // is only honoured when at least one OTHER contract in the changeset
+      // still carries the UI gates, so a lone UI change can never exempt
+      // itself — the UI files always remain covered by a mockup-locked,
+      // diff-noted contract.
+      const uiOptOut  = touchedApproved.filter((s) => contracts.get(s).lock.ui_governed === false);
+      let   uiSlugs   = touchedApproved.filter((s) => !uiOptOut.includes(s));
+      if (uiSlugs.length === 0) {
+        log(`  ! every contract in this changeset declares ui_governed:false while UI paths changed —`);
+        log(`    refusing the opt-out and enforcing Rules 3+4 on all of them.`);
+        uiSlugs = touchedApproved;
+      } else {
+        for (const s of uiOptOut) {
+          log(`  ↳ ${s} declares ui_governed:false — Rules 3+4 not applicable ` +
+              `(UI covered by: ${uiSlugs.join(', ')}) ✓`);
+        }
+      }
+
+      for (const slug of uiSlugs) {
         const lock = contracts.get(slug).lock;
 
         // Rule 3 — mockup_locked required for UI-governed changes
