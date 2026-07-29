@@ -1,0 +1,22 @@
+{
+  "feature": "brand-status-surface-fixes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (reported the defects; S8 decided explicitly in session)",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — restorative fixes, no new visual language)",
+  "mockup_locked_at": "2026-07-29",
+  "notes": "S1 status key user_status (banners never rendered). S2 gated pages no longer claim 'pending' on a failed fetch. S3 dashboard surfaces a failed /brands/me instead of a nameless greeting. S4 nav active-state exact-match for /dashboard + Settings match key. S5 contact name no longer stuck as the 'Brand User' placeholder. S6 signup draft persistence — a refresh no longer resets the wizard or burns an OTP. S7 place-search feedback states + stale-response guard; root cause is Render cold start (30s timeout then 8.2s, verified live from the inflx.in origin), NOT broken wiring. S8 Shopping & Retail collapsed to a single 'fashion' category per founder decision — fashion.json already covers footwear/jewellery/accessories/bags. Mobile BrandRegisterScreen NOT updated (Mobile-governed, needs Maestro). Production-impacting (Vercel): explicit founder go required before push.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -110,6 +110,7 @@ export default function BrandDashboardHome() {
   const [products, setProducts]         = useState([]);
   const [inbox, setInbox]               = useState(null);
   const [loading, setLoading]           = useState(true);
+  const [brandError, setBrandError]     = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -122,6 +123,11 @@ export default function BrandDashboardHome() {
         brandInboxApi.summary().catch(() => ({ success: false })),
       ]);
       setLoading(false);
+      // Track the failure explicitly. `setLoading(false)` fires unconditionally,
+      // so a failed /brands/me used to leave `brand` null and render a bare
+      // "Welcome back" with no name and no error — indistinguishable from a
+      // successful load. Surface it instead of failing silently.
+      setBrandError(!br.success);
       if (br.success) setBrand(br.data?.brand || br.data);
       if (wl.success) setWallet(wl.data?.wallet || wl.data);
       if (cp.success) setCampaigns(cp.data?.campaigns || []);
@@ -158,9 +164,13 @@ export default function BrandDashboardHome() {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  const isPending  = brand?.status === 'pending';
-  const isApproved = brand?.status === 'approved';
-  const isRejected = brand?.status === 'rejected';
+  // Status lives on `users`, not `brands` — /brands/me returns it as
+  // `user_status`. Reading `brand.status` was always undefined, so none of
+  // these banners could ever render.
+  const status     = brand?.user_status || brand?.status || null;
+  const isPending  = status === 'pending';
+  const isApproved = status === 'approved';
+  const isRejected = status === 'rejected';
 
   const inboxPending = inbox
     ? (inbox.pending_negotiations || 0) + (inbox.pending_reviews || 0) + (inbox.pending_signatures || 0) + (inbox.contracts_failed || 0) + (inbox.pdf_failed || 0)
@@ -184,6 +194,25 @@ export default function BrandDashboardHome() {
           Welcome back{brand?.business_name ? `, ${brand.business_name}` : ''}
         </h1>
         <div className="w-11 h-1 bg-[#FFC107] rounded-full mt-2"></div>
+
+        {/* Without this, a failed /brands/me renders a nameless greeting that
+            looks like a normal page — and the account-status banners below
+            silently vanish too, since they all key off the same fetch. */}
+        {brandError && (
+          <div className="mt-3 flex items-center gap-2.5 px-3.5 py-2.5 bg-[#FEF2F2] border border-[#FECACA] rounded-[10px]">
+            <span className="text-[13px]">⚠️</span>
+            <div className="text-[12.5px] text-[#991B1B]">
+              We couldn&apos;t load your business profile, so your name and account status
+              aren&apos;t showing.{' '}
+              <button
+                onClick={() => window.location.reload()}
+                className="font-bold underline underline-offset-2 hover:text-[#7F1D1D]"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Account Status Banners (Flow 1 — locked palette: yellow + ink + danger/success) ── */}

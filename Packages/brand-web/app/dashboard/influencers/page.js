@@ -564,7 +564,13 @@ export default function InfluencersPage() {
       if (res.success) {
         const b = res.data?.brand || res.data;
         setBrandStatus(b?.user_status || b?.status || 'pending');
-      } else setBrandStatus('pending');
+      } else {
+        // Don't claim "pending" when the request simply failed — an approved
+        // brand was being told its account was under review whenever
+        // /brands/me 401'd on a cold reload. Still gated (fail safe), but
+        // labelled honestly.
+        setBrandStatus('unknown');
+      }
     });
   }, []);
 
@@ -687,9 +693,16 @@ export default function InfluencersPage() {
         <style dangerouslySetInnerHTML={{ __html: CSS }} />
         {subTabBar}
         <div className="gated">
-          <div className="icx">⏳</div>
-          <h2>Account Under Review</h2>
-          <p>Your account is pending admin approval. Influencer browsing will be available once approved — usually within 24 hours.</p>
+          <div className="icx">{brandStatus === 'unknown' ? '⚠️' : '⏳'}</div>
+          <h2>{brandStatus === 'unknown' ? "Couldn't check your account" : 'Account Under Review'}</h2>
+          <p>
+            {brandStatus === 'unknown'
+              ? "We couldn't confirm your account status just now. This is usually a temporary connection problem, not a change to your account."
+              : 'Your account is pending admin approval. Influencer browsing will be available once approved — usually within 24 hours.'}
+          </p>
+          {brandStatus === 'unknown' && (
+            <button className="btn-ink" onClick={() => window.location.reload()}>Retry</button>
+          )}
           <button className="btn-ink" onClick={() => router.push('/dashboard')}>← Back to Dashboard</button>
         </div>
       </div>

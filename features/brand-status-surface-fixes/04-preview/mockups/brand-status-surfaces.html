@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand status surfaces — before / after</title>
+<style>
+  :root{--ink:#0A0A0A;--t2:#3F3F46;--t3:#71717A;--bd:#E4E4E7;--yellow:#FFC107;
+        --ypale:#FFFBEB;--yline:#FDE68A;--rpale:#FEF2F2;--rline:#FECACA;--red:#B91C1C;}
+  *{box-sizing:border-box}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+       background:#FAFAFA;color:var(--ink);margin:0;padding:26px;}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:var(--t3);margin:0 0 22px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);
+     margin:26px 0 10px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px;overflow:hidden}
+  .tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;
+       letter-spacing:.06em;padding:2px 7px;border-radius:5px;margin-bottom:11px}
+  .t-before{background:#F4F4F5;color:var(--t3)}
+  .t-after{background:var(--ypale);color:#A16207;border:1px solid var(--yline)}
+  .date{font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em}
+  .welcome{font-size:22px;font-weight:800;letter-spacing:-.5px;margin:3px 0 0}
+  .rule{width:42px;height:4px;background:var(--yellow);border-radius:99px;margin-top:8px}
+  .banner{margin-top:12px;padding:11px 13px;border-radius:10px;font-size:12.5px;line-height:1.55}
+  .b-pend{background:var(--ypale);border:1px solid var(--yline);color:#78350F}
+  .b-err{background:var(--rpale);border:1px solid var(--rline);color:var(--red)}
+  .none{margin-top:12px;font-size:12px;color:#A1A1AA;font-style:italic}
+  .nav{display:flex;gap:4px;background:var(--ink);padding:8px;border-radius:10px;flex-wrap:wrap}
+  .nv{font-size:11.5px;padding:5px 9px;border-radius:8px;color:#A1A1AA;white-space:nowrap}
+  .nv.on{background:var(--yellow);color:var(--ink);font-weight:700}
+  .fld{border:1.5px solid #D4D4D8;border-radius:10px;padding:9px 11px;font-size:12.5px;
+       color:var(--t3);background:#fff}
+  .hint{font-size:11.5px;color:var(--t3);margin-top:6px}
+  .hint.err{color:var(--red)}
+  .drop{border:1px solid var(--bd);border-radius:10px;margin-top:6px;overflow:hidden}
+  .drop div{padding:7px 11px;font-size:12px;border-bottom:1px solid #F4F4F5}
+  .drop div:last-child{border-bottom:0}
+  .note{margin-top:22px;background:#fff;border:1px solid var(--bd);border-radius:12px;
+        padding:14px 16px;font-size:12.5px;color:var(--t2);line-height:1.65}
+  .note b{color:var(--ink)}
+  code{background:#F4F4F5;padding:1px 5px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+  <h1>Brand status surfaces — before / after</h1>
+  <p class="sub">Four surfaces that currently report something untrue, or nothing at all.</p>
+
+  <h2>Dashboard header — pending account</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="tag t-before">Before</span>
+      <div class="date">Tuesday, 29 July 2026</div>
+      <div class="welcome">Welcome back, Acme Threads</div>
+      <div class="rule"></div>
+      <div class="none">No banner — ever. The layout read a key the API never returns.</div>
+    </div>
+    <div class="card">
+      <span class="tag t-after">After</span>
+      <div class="date">Tuesday, 29 July 2026</div>
+      <div class="welcome">Welcome back, Acme Threads</div>
+      <div class="rule"></div>
+      <div class="banner b-pend"><b>Account under review.</b> Admin usually approves within 24 hours. You can set up your listings meanwhile.</div>
+    </div>
+  </div>
+
+  <h2>Dashboard header — profile fetch failed</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="tag t-before">Before</span>
+      <div class="date">Tuesday, 29 July 2026</div>
+      <div class="welcome">Welcome back</div>
+      <div class="rule"></div>
+      <div class="none">Nameless, no error. Looks like a normal load.</div>
+    </div>
+    <div class="card">
+      <span class="tag t-after">After</span>
+      <div class="date">Tuesday, 29 July 2026</div>
+      <div class="welcome">Welcome back</div>
+      <div class="rule"></div>
+      <div class="banner b-err">⚠️ We couldn't load your business profile, so your name and account status aren't showing. <b><u>Retry</u></b></div>
+    </div>
+  </div>
+
+  <h2>Navigation — on /dashboard/campaigns</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="tag t-before">Before</span>
+      <div class="nav">
+        <span class="nv on">⌂ Dashboard</span><span class="nv on">⊟ Campaigns</span>
+        <span class="nv">★ Influencers</span><span class="nv">▤ Listings</span><span class="nv">⚙ Settings</span>
+      </div>
+      <div class="hint">Two tabs lit — <code>/dashboard</code> prefix-matches everything.</div>
+    </div>
+    <div class="card">
+      <span class="tag t-after">After</span>
+      <div class="nav">
+        <span class="nv">⌂ Dashboard</span><span class="nv on">⊟ Campaigns</span>
+        <span class="nv">★ Influencers</span><span class="nv">▤ Listings</span><span class="nv">⚙ Settings</span>
+      </div>
+      <div class="hint">Exactly one. Settings now also stays lit across billing + subscription.</div>
+    </div>
+  </div>
+
+  <h2>Place search — slow or failed lookup</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="tag t-before">Before</span>
+      <div class="fld">kphb</div>
+      <div class="none">Nothing. No spinner, no message, no error — for 8s+, or forever.</div>
+    </div>
+    <div class="card">
+      <span class="tag t-after">After — searching</span>
+      <div class="fld">kphb</div>
+      <div class="hint">Searching… the first lookup can take a few seconds.</div>
+      <div class="drop"><div><b>KPHB</b> — Kukatpally, Hyderabad</div><div><b>KPHB METRO</b> — Kukatpally</div></div>
+    </div>
+    <div class="card">
+      <span class="tag t-after">After — failed</span>
+      <div class="fld">kphb</div>
+      <div class="hint err">Search isn't responding right now. <b><u>Retry</u></b> or switch to <b><u>Maps link</u></b> or <b><u>Manual</u></b>.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Why search looked broken.</b> Verified live from the inflx.in origin: CORS passes and the
+    endpoint returns 5 real predictions — but the first call <b>timed out at 30s</b> and the second
+    took <b>8.2s</b>. The backend cold-starts. With no spinner and no error branch, a slow lookup
+    was indistinguishable from a dead field. The Maps-link path felt fine because it has a button
+    with a visible spinner — and needs no Google key at all, since coordinates are read straight
+    out of the URL.<br><br>
+    <b>This does not make search faster.</b> It makes the wait legible.<br><br>
+    <b>Business type.</b> Shopping &amp; Retail collapses to one option —
+    <code>fashion</code> — because that schema already carries Footwear, Jewellery, Accessories and
+    Bags as sections. Tradeoff: a footwear-only brand loses the granular
+    Men's&nbsp;Casual/Formal/Sports/Kids sections and gets one "Footwear" section.
+  </div>
+</body>
+</html>

@@ -507,7 +507,11 @@ function NewCampaignPageInner() {
         const b = res.data?.brand || res.data;
         setBrandStatus(b?.user_status || b?.status || 'pending');
         setBrandCategory(b?.category || b?.business_category || null);
-      } else { setBrandStatus('pending'); }
+      } else {
+        // A failed request is not the same as "pending" — see the sibling fix
+        // in dashboard/influencers/page.js. Still gated, but labelled honestly.
+        setBrandStatus('unknown');
+      }
     });
   }, []);
 
@@ -1281,7 +1285,16 @@ function NewCampaignPageInner() {
     <div className="cc boot"><style dangerouslySetInnerHTML={{ __html: CSS }} /><div className="boot-c"><div className="boot-h">Checking your account…</div></div></div>
   );
   if (brandStatus !== 'approved') return (
-    <div className="cc boot"><style dangerouslySetInnerHTML={{ __html: CSS }} /><div className="boot-c" style={{ maxWidth: 480 }}><div className="boot-h">Account under review</div><p className="boot-t">Your account is pending admin approval. Campaign creation will be available once approved — usually within 24 hours.</p><button onClick={() => router.push('/dashboard')} className="btn btn-prim" style={{ marginTop: 20 }}>← Back to dashboard</button></div></div>
+    <div className="cc boot"><style dangerouslySetInnerHTML={{ __html: CSS }} /><div className="boot-c" style={{ maxWidth: 480 }}>
+      <div className="boot-h">{brandStatus === 'unknown' ? "Couldn't check your account" : 'Account under review'}</div>
+      <p className="boot-t">{brandStatus === 'unknown'
+        ? "We couldn't confirm your account status just now. This is usually a temporary connection problem, not a change to your account."
+        : 'Your account is pending admin approval. Campaign creation will be available once approved — usually within 24 hours.'}</p>
+      {brandStatus === 'unknown' && (
+        <button onClick={() => window.location.reload()} className="btn btn-prim" style={{ marginTop: 20, marginRight: 8 }}>Retry</button>
+      )}
+      <button onClick={() => router.push('/dashboard')} className="btn btn-prim" style={{ marginTop: 20 }}>← Back to dashboard</button>
+    </div></div>
   );
 
   // ─── Derived values for current set ────────────────────────────────────────

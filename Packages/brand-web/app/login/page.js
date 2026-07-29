@@ -1,8 +1,12 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, brandApi, geoApi } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
+
+// Device-local draft of the registration step. Cleared on successful
+// register, and only ever read when a session token already exists.
+const DRAFT_KEY = 'inflx_brand_signup_draft';
 
 const INDUSTRY_HIERARCHY = [
   { group: 'Food & Dining', categories: [
@@ -11,16 +15,17 @@ const INDUSTRY_HIERARCHY = [
     { value: 'packaged_food', label: 'Packaged Food' },
     { value: 'grocery', label: 'Grocery & Supermarket' },
   ]},
+  // Shopping & Retail is deliberately collapsed to a single fashion business
+  // type. The `fashion` schema already carries Footwear, Jewellery, Accessories
+  // and Bags as sections (backend/public/schemas/fashion.json), so one category
+  // covers everything the founder is onboarding today — no multi-select, no new
+  // column, and `category` stays the single key that resolves a schema.
+  // The other retail types (electronics, furniture, optical, pet_shop,
+  // flowers_gifting, hardware) and the standalone footwear/jewellery schemas
+  // are intentionally not offered yet; existing brands on those values are
+  // untouched and still resolve their own schemas.
   { group: 'Shopping & Retail', categories: [
-    { value: 'fashion', label: 'Fashion & Apparel' },
-    { value: 'electronics', label: 'Electronics & Gadgets' },
-    { value: 'jewellery', label: 'Jewellery & Watches' },
-    { value: 'footwear', label: 'Footwear' },
-    { value: 'furniture', label: 'Home Decor & Furniture' },
-    { value: 'optical', label: 'Optical / Eyewear' },
-    { value: 'pet_shop', label: 'Pet Shops' },
-    { value: 'flowers_gifting', label: 'Flowers & Gifting' },
-    { value: 'hardware', label: 'Hardware & Building Materials' },
+    { value: 'fashion', label: 'Fashion — Clothing, Footwear, Jewellery & Accessories' },
   ]},
   { group: 'Beauty & Grooming', categories: [
     { value: 'salon', label: 'Salon & Beauty Parlour' },
@@ -93,10 +98,65 @@ export default function LoginPage() {
   const [locLocality, setLocLocality] = useState('');
   const [locFormatted, setLocFormatted] = useState('');
   const debounceRef = useRef(null);
+  // 'idle' | 'searching' | 'empty' | 'error' — the search box used to give no
+  // feedback at all, so a slow or failed lookup was indistinguishable from a
+  // dead field. The backend cold-starts and the first call can take 8s+.
+  const [locState, setLocState] = useState('idle');
+  const locSeqRef = useRef(0);
   const placesSessionRef = useRef(Math.random().toString(36).slice(2) + Date.now().toString(36));
   const [loading, setLoading]         = useState(false);
   const [resending, setResending]     = useState(false);
   const [error, setError]             = useState('');
+  const [restored, setRestored]       = useState(false);
+
+  // ── Signup draft persistence ──────────────────────────────────────────
+  // Every field above used to be plain component state with nothing behind
+  // it, so a refresh (or a back-nav, or a tab crash) mid-registration reset
+  // the wizard to the phone step AND burned one of the 5 hourly OTPs. A few
+  // refreshes locked the user out for an hour with no way back to their
+  // half-filled form — which is exactly what happens when someone notices a
+  // wrong Google Maps link and tries to start over.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      // Only meaningful once OTP has succeeded — before that there is no
+      // session to resume into and the phone step is the correct start.
+      if (!localStorage.getItem('inflx_token')) return;
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+      if (!d) return;
+      setPhone(d.phone || '');
+      setName(d.name || '');
+      setBusinessName(d.businessName || '');
+      setIndustry(d.industry || '');
+      setCategory(d.category || '');
+      setAddressLine(d.addressLine || '');
+      setCity(d.city || '');
+      setStateField(d.state || '');
+      setPincode(d.pincode || '');
+      setReferralCode(d.referralCode || '');
+      setLocMode(d.locMode || 'search');
+      setMapsUrl(d.mapsUrl || '');
+      setCoords(d.coords || null);
+      setLocLocality(d.locLocality || '');
+      setLocFormatted(d.locFormatted || '');
+      setStep('register');
+      setRestored(true);
+    } catch { /* corrupt draft — fall through to a clean phone step */ }
+  }, []);
+
+  // Mirror the register-step fields into the draft as they change. Cheap,
+  // synchronous, and scoped to this device — no server draft table needed.
+  useEffect(() => {
+    if (typeof window === 'undefined' || step !== 'register') return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        phone, name, businessName, industry, category, addressLine, city,
+        state, pincode, referralCode, locMode, mapsUrl, coords,
+        locLocality, locFormatted,
+      }));
+    } catch { /* quota or private mode — persistence is best-effort */ }
+  }, [step, phone, name, businessName, industry, category, addressLine, city,
+      state, pincode, referralCode, locMode, mapsUrl, coords, locLocality, locFormatted]);
 
   const fmt = phone.startsWith('+91') ? phone : `+91${phone}`;
 
@@ -171,22 +231,48 @@ export default function LoginPage() {
     if (d.formatted_address) setAddressLine(d.formatted_address);
     else if (fallbackLabel) setAddressLine(fallbackLabel);
     if (d.city) setCity(d.city);
-    if (d.state && INDIAN_STATES.includes(d.state)) setStateField(d.state);
+    // Google returns official names ("Jammu and Kashmir", "Andaman and Nicobar
+    // Islands") while INDIAN_STATES uses ampersands, so an exact includes()
+    // silently dropped the autofill for those. Match on a normalised form.
+    if (d.state) {
+      const norm = s => String(s).toLowerCase().replace(/\s*&\s*|\s+and\s+/g, ' and ').replace(/\s+/g, ' ').trim();
+      const hit = INDIAN_STATES.find(s => norm(s) === norm(d.state));
+      if (hit) setStateField(hit);
+    }
     if (d.pincode && /^[0-9]{6}$/.test(String(d.pincode))) setPincode(String(d.pincode));
   }
 
   function onLocQueryChange(v) {
     setLocQuery(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (v.trim().length < 3) { setLocSugs([]); return; }
+    if (v.trim().length < 3) { setLocSugs([]); setLocState('idle'); return; }
+    setLocState('searching');
     debounceRef.current = setTimeout(async () => {
+      // Guard against out-of-order responses: the API can take several seconds
+      // on a cold backend, so a slow reply for an earlier query must not
+      // overwrite the results of a later one.
+      const seq = ++locSeqRef.current;
       const res = await geoApi.placesAutocomplete(v.trim(), placesSessionRef.current).catch(() => null);
-      if (res?.success) setLocSugs(res.data?.predictions || []);
+      if (seq !== locSeqRef.current) return;
+
+      if (!res?.success) {
+        // The backend answers 200 with an empty list for a missing/rejected
+        // Google key AND for a genuine no-match, so a null/failed response is
+        // the only case we can honestly call an error.
+        setLocSugs([]);
+        setLocState('error');
+        return;
+      }
+      const preds = res.data?.predictions || [];
+      setLocSugs(preds);
+      setLocState(preds.length ? 'idle' : 'empty');
     }, 350);
   }
 
   async function pickSuggestion(p) {
     setLocSugs([]);
+    setLocState('idle');
+    locSeqRef.current++;   // cancel any in-flight lookup for the old query
     setLocQuery(p.description || p.main || '');
     const res = await geoApi.placeDetails(p.place_id, placesSessionRef.current).catch(() => null);
     if (res?.success && res.data) applyPlace(res.data, p.description);
@@ -245,11 +331,27 @@ export default function LoginPage() {
 
     const brand = res.data?.brand || res.data;
     localStorage.setItem('inflx_brand', JSON.stringify(brand));
+    // Registration succeeded — the draft has served its purpose. Leaving it
+    // would bounce a returning user back into the register step.
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
 
     const meRes = await brandApi.getMe().catch(() => null);
     if (meRes?.success) {
-      const updatedUser = meRes.data?.user;
-      if (updatedUser) localStorage.setItem('inflx_user', JSON.stringify(updatedUser));
+      // /brands/me returns { brand, user_status } — there is no `user` key, so
+      // the previous read was always undefined and inflx_user kept the literal
+      // 'Brand User' placeholder sent during verify-otp. The real contact name
+      // comes back on the brand row as `name` (aliased from users.name in
+      // brand.controller.js), and the status as `user_status`.
+      const b = meRes.data?.brand || meRes.data;
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { /* ignore */ }
+      if (stored && b) {
+        localStorage.setItem('inflx_user', JSON.stringify({
+          ...stored,
+          ...(b.name ? { name: b.name } : {}),
+          ...(meRes.data?.user_status ? { status: meRes.data.user_status } : {}),
+        }));
+      }
     }
 
     router.push('/dashboard');
@@ -424,6 +526,16 @@ export default function LoginPage() {
                 A couple of minutes — admin uses this to approve your account.
               </p>
 
+              {restored && (
+                <div className="mb-5 flex items-start gap-2.5 px-3.5 py-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[12px]">
+                  <span className="text-[13px] leading-none mt-0.5">💾</span>
+                  <div className="text-[12.5px] text-[#78350F] leading-relaxed">
+                    We kept what you had already filled in. Check every field before
+                    submitting — you can edit anything here, including your location.
+                  </div>
+                </div>
+              )}
+
               {/* Section 1 — Business */}
               <div className="flex items-center gap-2 text-[11px] font-bold text-[#18181B] uppercase tracking-[0.6px] mb-3">
                 <span className="w-[18px] h-[18px] rounded-full bg-[#FFC107] text-[#0A0A0A] font-display font-bold text-[10px] inline-flex items-center justify-center">1</span>
@@ -488,6 +600,30 @@ export default function LoginPage() {
                     <label className={labelClass}>Search your business or area</label>
                     <input type="text" value={locQuery} onChange={e => onLocQueryChange(e.target.value)}
                       placeholder="Type shop name or area… (min 3 letters)" className={inputClass} />
+
+                    {locState === 'searching' && (
+                      <div className="mt-1.5 text-[11.5px] text-[#71717A]">
+                        Searching… the first lookup can take a few seconds.
+                      </div>
+                    )}
+                    {locState === 'empty' && (
+                      <div className="mt-1.5 text-[11.5px] text-[#71717A]">
+                        No places matched. Try a shorter name or a nearby landmark — or use
+                        <button type="button" onClick={() => setLocMode('link')} className="mx-1 font-semibold text-[#18181B] underline underline-offset-2">Maps link</button>
+                        instead.
+                      </div>
+                    )}
+                    {locState === 'error' && (
+                      <div className="mt-1.5 text-[11.5px] text-[#B91C1C]">
+                        Search isn&apos;t responding right now.
+                        <button type="button" onClick={() => onLocQueryChange(locQuery)} className="mx-1 font-semibold underline underline-offset-2">Retry</button>
+                        or switch to
+                        <button type="button" onClick={() => setLocMode('link')} className="mx-1 font-semibold underline underline-offset-2">Maps link</button>
+                        or
+                        <button type="button" onClick={() => setLocMode('manual')} className="ml-1 font-semibold underline underline-offset-2">Manual</button>.
+                      </div>
+                    )}
+
                     {locSugs.length > 0 && (
                       <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-[#E4E4E7] rounded-[10px] overflow-hidden shadow-lg">
                         {locSugs.slice(0, 5).map(p => (

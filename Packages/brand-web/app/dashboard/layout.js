@@ -28,7 +28,10 @@ const NAV = [
   { href: '/dashboard/returns',     label: 'Returns',     icon: '↩' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
   { href: '/dashboard/wallet',                 label: 'Wallet',   icon: '◫' },
-  { href: '/dashboard/settings/profile',       label: 'Settings', icon: '⚙' },
+  // `match` overrides the active-state prefix when the link target is deeper
+  // than the section it represents — otherwise Settings only highlights on
+  // /profile and stays dark on /billing and /subscription.
+  { href: '/dashboard/settings/profile',       label: 'Settings', icon: '⚙', match: '/dashboard/settings' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -71,11 +74,14 @@ export default function DashboardLayout({ children }) {
     notificationApi.list().then(res => {
       if (res.success) setUnreadCount(res.data?.unread_count || 0);
     });
-    // Check brand approval status
+    // Check brand approval status. The status lives on `users` — `brands` has
+    // no status column — so /brands/me returns it as `user_status`, both at the
+    // top level and on the brand row. Reading `brand.status` yielded undefined,
+    // which is why the pending/rejected banners never rendered at all.
     brandApi.getMe().then(res => {
       if (res.success) {
         const brand = res.data?.brand || res.data;
-        setBrandStatus(brand?.status || null);
+        setBrandStatus(res.data?.user_status || brand?.user_status || brand?.status || null);
       }
     });
     // Resolve the brand's category schema to gate vertical-specific nav
@@ -112,7 +118,13 @@ export default function DashboardLayout({ children }) {
         {/* horizontal nav */}
         <nav className="flex items-center gap-0.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {NAV.filter(item => !item.feature || features?.[item.feature] === true).map(item => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            // '/dashboard' is a prefix of every sub-route, so a bare
+            // startsWith kept the Dashboard tab lit alongside the real one.
+            // Exact-match the index; prefix-match everything else.
+            const base = item.match || item.href;
+            const isActive = base === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname === base || pathname.startsWith(base + '/');
             return (
               <Link
                 key={item.href}
