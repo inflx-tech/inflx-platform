@@ -783,7 +783,7 @@ const listBrandOrders = asyncHandler(async (req, res) => {
        fo.items_json,
        u_f.name AS follower_name, u_f.phone AS follower_phone,
        a.label AS address_label,
-       NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.state, a.pincode), '') AS delivery_address
+       NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.pincode), '') AS delivery_address
      FROM follower_orders fo
      JOIN follower_transactions ft ON ft.id = fo.transaction_id
      JOIN followers f ON f.id = ft.follower_id

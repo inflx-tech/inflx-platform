@@ -1,0 +1,19 @@
+{
+  "feature": "backend-orders-state-column-fix",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated — standing autonomy, restorative backend fix)",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": false,
+  "mobile_governed": false,
+  "notes": "Backend-only SELECT fix: drops a non-existent column reference (follower_addresses.state) from three queries that are unconditionally 500ing in production. No schema, no API contract change, no UI. Not UI-governed, so mockup-lock and 06-diff gates do not apply. Production-impacting: explicit founder go required before push.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

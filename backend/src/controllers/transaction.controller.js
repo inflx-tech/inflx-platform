@@ -2006,7 +2006,7 @@ const getOrder = asyncHandler(async (req, res) => {
             u_b.phone AS brand_contact,
             inf.instagram_handle AS creator_handle, u_i.name AS creator_name,
             a.label AS address_label,
-            NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.state, a.pincode), '') AS delivery_address,
+            NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.pincode), '') AS delivery_address,
             pm.product_meta
      FROM follower_orders fo
      JOIN follower_transactions ft ON ft.id = fo.transaction_id
