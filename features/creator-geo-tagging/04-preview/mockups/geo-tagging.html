@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creator geo tagging — tag, upload, find by area</title>
+<style>
+  :root{--ink:#0A0A0A;--yellow:#FFC107;--bd:#E4E4E7;--t2:#3F3F46;--t3:#71717A;--bg2:#F4F4F5;
+        --teal:#0D9488;--tealp:#CCFBF1;--tealD:#0F766E;--red:#B91C1C;--redp:#FEE2E2;
+        --gold:#FFFBEB;--goldL:#FDE68A}
+  *{box-sizing:border-box}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+       background:#FAFAFA;color:var(--ink);margin:0;padding:26px}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:var(--t3);margin:0 0 22px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);
+     margin:26px 0 9px;font-weight:700}
+  .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .f{min-width:172px}
+  .fl{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+      color:var(--t3);margin-bottom:4px}
+  .sel{border:1px solid var(--bd);border-radius:9px;padding:8px 11px;font-size:12.5px;
+       background:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}
+  .sel.off{background:var(--bg2);color:#A1A1AA}
+  .sel .cv{color:#A1A1AA;font-size:10px}
+  .pop{border:1px solid var(--bd);border-radius:9px;margin-top:5px;overflow:hidden;
+       box-shadow:0 6px 18px rgba(0,0,0,.07)}
+  .pop div{padding:7px 11px;font-size:12px;border-bottom:1px solid #F4F4F5;
+           display:flex;justify-content:space-between}
+  .pop div:last-child{border-bottom:0}
+  .pop div b{font-weight:700}
+  .ct{font-family:ui-monospace,monospace;font-size:10px;color:var(--t3)}
+  pre{background:var(--ink);color:#E4E4E7;padding:12px 14px;border-radius:10px;
+      font-size:11.5px;line-height:1.7;overflow-x:auto;margin:0}
+  pre .k{color:var(--yellow)}
+  .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+  .pill{border-radius:9px;padding:7px 11px;font-size:11.5px;font-weight:700;border:1px solid}
+  .p-new{background:var(--tealp);color:var(--tealD);border-color:rgba(13,148,136,.25)}
+  .p-tag{background:var(--gold);color:#A16207;border-color:var(--goldL)}
+  .p-dup{background:var(--bg2);color:var(--t3);border-color:var(--bd)}
+  .p-bad{background:var(--redp);color:var(--red);border-color:rgba(185,28,28,.2)}
+  table{width:100%;border-collapse:collapse;margin-top:8px;background:#fff;
+        border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+  th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--t3);background:var(--bg2);padding:9px 12px;font-weight:700}
+  td{padding:10px 12px;border-top:1px solid var(--bd);font-size:12px}
+  .note{margin-top:22px;background:#fff;border:1px solid var(--bd);border-radius:12px;
+        padding:14px 16px;font-size:12.5px;color:var(--t2);line-height:1.65}
+  .note b{color:var(--ink)}
+  code{background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+  <h1>Creator geo tagging</h1>
+  <p class="sub">Tag a list of handles with city + state, upload, let the scrape fill the rest, brands find them by area.</p>
+
+  <h2>1 · Admin tags and uploads a list</h2>
+  <div class="card">
+    <pre><span class="k">type,handle,name,city,state,category,subcategory,phone,email</span>
+influencer,@ritu_sreeram,Rithwika,Nellore,Andhra Pradesh,lifestyle,,,
+influencer,@sunatha03,Sunu,Nellore,Andhra Pradesh,education,,,
+influencer,@aestheticabbayi,,Godavarikhani,Telangana,lifestyle,,,
+influencer,@somehandle,,Hyderabad,Telangana,,,,</pre>
+    <div class="pills">
+      <span class="pill p-new">Created 74</span>
+      <span class="pill p-tag">Re-tagged 41</span>
+      <span class="pill p-dup">Duplicates 3</span>
+      <span class="pill p-bad">Invalid 2</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--t3);margin-top:9px;line-height:1.6">
+      <b style="color:var(--ink)">Re-tagged</b> is the new one. A handle already in the table used to be
+      silently skipped — so tagging an existing creator did nothing and they stayed unfindable.
+      Now their city and state are applied; scraped metrics are untouched.
+    </div>
+  </div>
+
+  <h2>2 · Brand searches by area</h2>
+  <div class="card">
+    <div class="row">
+      <div class="f">
+        <div class="fl">State</div>
+        <div class="sel"><span>Telangana</span><span class="ct">7</span></div>
+        <div class="pop">
+          <div><b>Andhra Pradesh</b><span class="ct">28</span></div>
+          <div><b>Telangana</b><span class="ct">7</span></div>
+          <div><b>Karnataka</b><span class="ct">4</span></div>
+          <div><b>Maharashtra</b><span class="ct">5</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <div class="fl">City</div>
+        <div class="sel"><span>All cities</span><span class="ct">▾</span></div>
+        <div class="pop">
+          <div><b>Hyderabad</b><span class="ct">6</span></div>
+          <div><b>Godavarikhani</b><span class="ct">1</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <div class="fl">City · before a state is picked</div>
+        <div class="sel off"><span>Pick a state first</span><span class="cv">▾</span></div>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--t3);margin-top:12px;line-height:1.6">
+      Only states that actually have tagged creators appear, ordered by how many. Picking a state
+      narrows the city list to that state. Nobody types a place name, so
+      <code>hyderabad</code> vs <code>Hyderabad</code> can no longer change the result.
+    </div>
+  </div>
+
+  <h2>3 · Onboarded creators recovered (measured on production)</h2>
+  <table>
+    <thead><tr><th>Onboarded creators</th><th>Count</th></tr></thead>
+    <tbody>
+      <tr><td>Total</td><td>29</td></tr>
+      <tr><td><code>users.city</code> filled — what search read before</td><td>8</td></tr>
+      <tr><td><code>influencers.city</code> filled — the real data</td><td>28</td></tr>
+      <tr><td><b>Had a city but were invisible to search</b></td><td><b>20</b></td></tr>
+      <tr><td>Carrying a city after the fix</td><td><b>28</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>Almost all of this already existed.</b> Bulk intake, the admin-supplied city, the automatic
+    scrape fan-out, and the column protection that stops the scrape overwriting a manual value —
+    all shipped. The only missing piece was <code>state</code>.<br><br>
+    <b>The tag cannot be overwritten.</b> <code>state</code> is deliberately kept out of the ingest
+    allow-list, so a re-scrape structurally cannot touch it. <code>city</code> sits in that list and
+    is protected only by n8n convention; the tag is the whole feature, so convention was not
+    enough.<br><br>
+    <b>No hard-coded Telugu-states list.</b> The dropdown is built from what has actually been
+    tagged and sorted by creator count, so Andhra Pradesh and Telangana rise to the top on their own
+    — and adding Karnataka later needs no code change.<br><br>
+    <b>Creators with no location are hidden</b> from area searches (founder's call). They remain
+    findable by tier, niche, followers and name.
+  </div>
+</body>
+</html>

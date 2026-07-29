@@ -1,0 +1,22 @@
+{
+  "feature": "influencer-search-filter-fixes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (reported both defects with screenshots)",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — chip-row state matrix, no new visual language)",
+  "mockup_locked_at": "2026-07-29",
+  "notes": "D1: doSearch had no stale-response guard; with a cold-starting backend a slow earlier request could repaint the unfiltered list over a newer filtered one, which is what made the city filter look dead. The city SQL itself was verified correct against production first (vijayawada 6, nellore 16, hyderabad 3). D2: tier chips were hidden at count 0, so selecting a tier removed the others and stranded the user. D3: counts were page-scoped and wrong (header 69 vs All 50; Nano 10 vs a true 13). Fixed by moving the tier condition last, adding a GROUP BY tier facet query that excludes the tier filter, returning meta.tier_counts, and always rendering every chip with zero-match tiers disabled rather than removed. NOTE: any new filter must be added BEFORE the tier block or it will be silently excluded from the facet counts. Not fixed: 37 of 73 creators have no city on record, so city filtering remains aggressive by construction. Production-impacting (Render + Vercel): explicit founder go required before push.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

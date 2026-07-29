@@ -429,6 +429,7 @@ const search = asyncHandler(async (req, res) => {
   } = req.query;
 
   const cities       = parseList(req.query.city);
+  const states       = parseList(req.query.state);
   const niches       = parseList(req.query.niche);
   const tiers        = parseList(req.query.tier);
   const languages    = parseList(req.query.languages);
@@ -445,17 +446,20 @@ const search = asyncHandler(async (req, res) => {
     // Case-insensitive city match (consistent with the follower nearby
     // feed query LOWER(u_b.city)=LOWER($1)); users type "mumbai", stored
     // as "Mumbai".
-    params.push(cities.map(c => String(c).toLowerCase()));
-    conditions.push(`LOWER(city) = ANY($${params.length}::text[])`);
+    params.push(cities.map(c => String(c).trim().toLowerCase()));
+    conditions.push(`LOWER(btrim(city)) = ANY($${params.length}::text[])`);
+  }
+  if (states) {
+    params.push(states.map(s => String(s).trim().toLowerCase()));
+    conditions.push(`LOWER(btrim(state)) = ANY($${params.length}::text[])`);
   }
   if (niches) {
     params.push(niches);
     conditions.push(`niche = ANY($${params.length}::text[])`);
   }
-  if (tiers) {
-    params.push(tiers);
-    conditions.push(`tier = ANY($${params.length}::text[])`);
-  }
+  // NOTE: the tier filter is deliberately applied LAST (just before the WHERE
+  // is assembled) so the tier facet counts can reuse every other condition
+  // without it. Do not move it back up here.
   if (languages) {
     params.push(languages);
     conditions.push(`languages && $${params.length}::text[]`);
@@ -506,8 +510,35 @@ const search = asyncHandler(async (req, res) => {
     )`);
   }
 
+  // Snapshot every condition EXCEPT tier — the tier chip row needs counts for
+  // all tiers under the current filters, otherwise selecting a tier zeroes the
+  // others and the chips vanish, stranding the user with no way to switch.
+  const facetConditions = [...conditions];
+  const facetParams     = [...params];
+
+  if (tiers) {
+    params.push(tiers);
+    conditions.push(`tier = ANY($${params.length}::text[])`);
+  }
+
   const where    = conditions.join(' AND ');
   const orderBy  = SORT_MAP[String(sort || '').trim()] || DEFAULT_SORT;
+
+  // Tier facets. Counts are whole-result-set, not page-scoped: the previous
+  // client-side derivation counted only the ~50 loaded rows, so a chip could
+  // read "Nano 10" while the real total was 13.
+  const { rows: facetRows } = await db.query(
+    `SELECT tier, COUNT(*)::int AS c
+       FROM v_searchable_creators
+      WHERE ${facetConditions.join(' AND ')}
+      GROUP BY tier`,
+    facetParams
+  );
+  const tierCounts = { all: 0 };
+  for (const r of facetRows) {
+    tierCounts.all += r.c;
+    if (r.tier) tierCounts[r.tier] = r.c;
+  }
 
   const { rows: countRows } = await db.query(
     `SELECT COUNT(*)::int AS c FROM v_searchable_creators WHERE ${where}`,
@@ -524,7 +555,7 @@ const search = asyncHandler(async (req, res) => {
     `SELECT
        row_id, source, ig_handle, full_name, profile_pic_url, profile_pic_r2_key,
        followers_count, view_based_er, follower_based_er,
-       tier, city, niche, sub_niche, languages,
+       tier, city, state, niche, sub_niche, languages,
        ig_verified, is_business,
        estimated_min_rate, estimated_max_rate,
        rank_score, growth_potential_score, posting_frequency_per_week,
@@ -549,7 +580,7 @@ const search = asyncHandler(async (req, res) => {
   // onboarded ((u.status='approved')) and verification-aware for scraped.
   const creators = rows.map(r => ({ ...r, is_verified: r.is_inflx_verified === true }));
 
-  return success(res, { creators }, 200, { page: pageNum, limit: limitNum, total });
+  return success(res, { creators }, 200, { page: pageNum, limit: limitNum, total, tier_counts: tierCounts });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1458,4 +1489,56 @@ const getReferralInfo = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /influencers/locations  (brand + admin — powers the State → City filter)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Distinct states, each with the cities actually present under it, derived
+ * live from the searchable pool.
+ *
+ * Deliberately data-driven rather than a maintained reference list: the admin
+ * tags city + state at intake, so the dropdowns should show exactly what has
+ * been tagged. A separate lookup table would drift from reality and would need
+ * a row added before a newly-tagged city could ever be selected.
+ *
+ * Grouped case-insensitively — production carries both 'hyderabad' and
+ * 'Hyderabad' from earlier intake — and the display label is the most common
+ * spelling for that key, so one canonical entry surfaces per place. New intake
+ * is Title-Cased on write (normaliseGeo), so this mainly protects legacy rows.
+ *
+ * Rows with no state are omitted entirely: a creator who cannot be placed
+ * cannot be offered as a location choice.
+ */
+const getLocations = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT
+       LOWER(btrim(state)) AS state_key,
+       MODE() WITHIN GROUP (ORDER BY btrim(state)) AS state_label,
+       LOWER(btrim(city))  AS city_key,
+       MODE() WITHIN GROUP (ORDER BY btrim(city))  AS city_label,
+       COUNT(*)::int       AS creators
+     FROM v_searchable_creators
+     WHERE (is_active_creator IS DISTINCT FROM FALSE)
+       AND state IS NOT NULL AND btrim(state) <> ''
+     GROUP BY LOWER(btrim(state)), LOWER(btrim(city))
+     ORDER BY 2, 4`
+  );
+
+  const byState = new Map();
+  for (const r of rows) {
+    if (!byState.has(r.state_key)) {
+      byState.set(r.state_key, { state: r.state_label, creators: 0, cities: [] });
+    }
+    const entry = byState.get(r.state_key);
+    entry.creators += r.creators;
+    // A creator can carry a state but no city — count them for the state
+    // without inventing a blank city option.
+    if (r.city_key) entry.cities.push({ city: r.city_label, creators: r.creators });
+  }
+
+  const states = [...byState.values()].sort((a, b) => b.creators - a.creators);
+  return success(res, { states });
+});
+
+module.exports = { register, getMe, updateMe, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo };

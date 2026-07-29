@@ -14,6 +14,8 @@ const router = Router();
 
 // ── Brand/Admin search endpoints (must come BEFORE /me/* to avoid shadowing) ─
 router.get('/search',    authenticate, requireRole('brand', 'admin'), requireApproved, ctrl.search);
+// Distinct tagged states + their cities — drives the State → City dropdowns.
+router.get('/locations', authenticate, requireRole('brand', 'admin'), requireApproved, ctrl.getLocations);
 
 // ── Brand-side market analytics dashboard data (one fat aggregate response) ─
 router.get('/analytics', authenticate, requireRole('brand', 'admin'), requireApproved, analyticsCtrl.getMarketAnalytics);

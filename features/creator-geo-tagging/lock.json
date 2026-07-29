@@ -1,0 +1,22 @@
+{
+  "feature": "creator-geo-tagging",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (defined the workflow: tag IG ID lists with city+state, upload, brands find by area)",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — dropdowns reuse the existing filter-bar controls)",
+  "mockup_locked_at": "2026-07-29",
+  "notes": "Migration 146 adds creator_profiles.state (+ lower index), appends state to both branches of v_searchable_creators, and changes the onboarded city/state to COALESCE(u.*, i.*) — recovering 20 onboarded creators that city search could not see (prod dry-run: 8 -> 28). Backend: ?state= filter, state on result rows, new GET /influencers/locations driving cascading dropdowns, normaliseGeo() Title-Cases on write. Bulk intake now RE-TAGS an existing handle that carries a city/state instead of silently skipping it — that gap would have broken the founder's entire workflow, since most handles in a tagging list already exist from earlier scraping. UI: State->City dropdowns replace the free-text city on Discover; admin add gains a State field and a state CSV column. DELIBERATE: state is kept OUT of CREATOR_COLUMNS so a re-scrape structurally cannot overwrite the tag (city is in that list and protected only by n8n convention). DELIBERATE: dropdowns are data-driven, not a reference table, and there is no hard-coded Telugu-states whitelist — ordering by creator count surfaces AP/TS naturally while leaving other states reachable. Creators with no state are excluded from area search (founder's call). DEPLOY ORDERING: run node backend/scripts/run-146.js BEFORE pushing — the backend reads a column that does not exist until then. Verified against the production database inside BEGIN..ROLLBACK; column confirmed absent afterwards. Production-impacting + migration: explicit founder go required.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

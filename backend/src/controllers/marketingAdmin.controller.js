@@ -225,23 +225,38 @@ const intakeLead = asyncHandler(async (req, res) => {
  * Insert a new creator_profile or brand_profile row with manual fields
  * from the admin intake form. Returns the new id.
  */
+/**
+ * Canonicalise a hand-typed city/state so the brand-side State → City
+ * dropdowns don't sprout duplicates. Production already carries both
+ * 'hyderabad' and 'Hyderabad' as distinct values from earlier intake.
+ * Collapses whitespace and Title-Cases each word; returns null for blanks so
+ * an empty CSV cell stays NULL rather than becoming ''.
+ */
+function normaliseGeo(value) {
+  if (value === undefined || value === null) return null;
+  const s = String(value).trim().replace(/\s+/g, ' ');
+  if (!s) return null;
+  return s.replace(/\b[\p{L}]/gu, (ch) => ch.toUpperCase());
+}
+
 async function insertNewLead(target_type, handle, body) {
   if (target_type === 'influencer') {
     const { rows } = await db.query(
       `INSERT INTO creator_profiles (
-         ig_handle, full_name, city, niche, sub_niche,
+         ig_handle, full_name, city, state, niche, sub_niche,
          manual_phone, manual_email, manual_whatsapp,
          source, notes, outreach_status
        ) VALUES (
-         $1, $2, $3, $4, $5,
-         $6, $7, $8,
-         $9, $10, 'not_contacted'
+         $1, $2, $3, $4, $5, $6,
+         $7, $8, $9,
+         $10, $11, 'not_contacted'
        )
        RETURNING id`,
       [
         handle,
         body.full_name || null,
-        body.city || null,
+        normaliseGeo(body.city),
+        normaliseGeo(body.state),
         body.niche || null,
         body.sub_niche || null,
         body.phone || null,
@@ -290,7 +305,8 @@ async function updateManualFields(type, handle, body) {
   const candidates = type === 'influencer'
     ? [
         ['full_name',       body.full_name],
-        ['city',            body.city],
+        ['city',            normaliseGeo(body.city)],
+        ['state',           normaliseGeo(body.state)],
         ['niche',           body.niche],
         ['sub_niche',       body.sub_niche],
         ['manual_phone',    body.phone],
@@ -338,6 +354,7 @@ const intakeLeadBulk = asyncHandler(async (req, res) => {
     total: rows.length,
     created: 0,
     duplicates_skipped: 0,
+    updated: 0,
     revived: 0,
     invalid: 0,
     errors: [],
@@ -372,6 +389,23 @@ const intakeLeadBulk = asyncHandler(async (req, res) => {
           await triggerScrape({ handle, target_type: existing.type, scrape_mode: 'refresh' });
           result.revived++;
           result.items.push({ row: i + 1, handle, action: 'revived', id: existing.row.id });
+        } else if (row.city || row.state) {
+          // Tagging an already-known handle is the normal case, not an error:
+          // the founder's workflow is "take a list of IDs, tag them with city
+          // + state, upload". Most of those handles are already in the table
+          // from an earlier scrape, and skipping them would silently drop the
+          // tag — leaving the creator unfindable by area, which is the whole
+          // point of the upload. Only the manual geo fields are touched; every
+          // scraped metric is left alone.
+          const updated = await updateManualFields(existing.type, handle, {
+            city: row.city,
+            state: row.state,
+          });
+          result.updated++;
+          result.items.push({
+            row: i + 1, handle, action: 'updated',
+            existing_id: existing.row.id, fields: updated,
+          });
         } else {
           result.duplicates_skipped++;
           result.items.push({ row: i + 1, handle, action: 'duplicate_skipped', existing_id: existing.row.id });

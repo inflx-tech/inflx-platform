@@ -14,6 +14,7 @@ export default function AddLeadPage() {
   const [fullName, setFullName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [city, setCity] = useState('');
+  const [stateVal, setStateVal] = useState('');
   const [niche, setNiche] = useState('');
   const [subNiche, setSubNiche] = useState('');
   const [industry, setIndustry] = useState('');
@@ -33,7 +34,9 @@ export default function AddLeadPage() {
 
   function reset() {
     setHandle(''); setFullName(''); setBusinessName('');
-    setCity(''); setNiche(''); setSubNiche('');
+    // stateVal must reset too — otherwise the previous creator's state sticks
+    // and silently mis-tags the next one.
+    setCity(''); setStateVal(''); setNiche(''); setSubNiche('');
     setIndustry(''); setSubIndustry('');
     setPhone(''); setEmail(''); setWhatsapp('');
     setWebsite(''); setNotes('');
@@ -48,6 +51,7 @@ export default function AddLeadPage() {
       full_name: fullName,
       business_name: businessName,
       city,
+      state: stateVal,
       niche, sub_niche: subNiche,
       industry, sub_industry: subIndustry,
       phone, email, whatsapp,
@@ -78,7 +82,10 @@ export default function AddLeadPage() {
     const rows = [];
     for (const line of lines) {
       const parts = line.split(',').map(p => p.trim());
-      const [_type, _handle, _name, _city, _category, _subcategory, _phone, _email] = parts;
+      // `state` sits right after `city` — it is what makes a creator findable
+      // by area on the brand side. Older 8-column rows without it still parse:
+      // _state is simply undefined and the field goes up empty.
+      const [_type, _handle, _name, _city, _state, _category, _subcategory, _phone, _email] = parts;
       const type = (_type || '').toLowerCase();
       if (!['influencer', 'brand'].includes(type)) continue;
       if (!_handle) continue;
@@ -87,6 +94,7 @@ export default function AddLeadPage() {
         handle: _handle,
         business_name: _name || '',
         city: _city || '',
+        state: _state || '',
         industry: _category || '',
         sub_industry: _subcategory || '',
         phone: _phone || '',
@@ -96,6 +104,7 @@ export default function AddLeadPage() {
         handle: _handle,
         full_name: _name || '',
         city: _city || '',
+        state: _state || '',
         niche: _category || '',
         sub_niche: _subcategory || '',
         phone: _phone || '',
@@ -103,7 +112,7 @@ export default function AddLeadPage() {
       });
     }
     if (rows.length === 0) {
-      setBulkResult({ error: 'No valid rows parsed. Format: type,handle,name,city,category,subcategory,phone,email' });
+      setBulkResult({ error: 'No valid rows parsed. Format: type,handle,name,city,state,category,subcategory,phone,email' });
       return;
     }
     setSubmitting(true);
@@ -174,6 +183,14 @@ export default function AddLeadPage() {
               <label className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-1 block">City</label>
               <input type="text" value={city} onChange={e => setCity(e.target.value)}
                 placeholder="Hyderabad" className="w-full text-sm border border-border rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-1 block">State</label>
+              <input type="text" value={stateVal} onChange={e => setStateVal(e.target.value)}
+                placeholder="Telangana" className="w-full text-sm border border-border rounded-lg px-3 py-2" />
+            </div>
+            <div className="col-span-2 text-[11px] text-t3 -mt-1">
+              City and state are what let brands find this creator by area. The scrape never overwrites them.
             </div>
 
             {targetType === 'influencer' ? (
@@ -307,7 +324,7 @@ export default function AddLeadPage() {
       {mode === 'bulk' && (
         <div className="bg-white rounded-xl border border-border p-4 space-y-3">
           <div className="text-xs text-t3">
-            One row per line: <span className="font-mono bg-surface2 px-1.5 py-0.5 rounded">type,handle,name,city,category,subcategory,phone,email</span>
+            One row per line: <span className="font-mono bg-surface2 px-1.5 py-0.5 rounded">type,handle,name,city,state,category,subcategory,phone,email</span>
             <br />
             Where <span className="font-bold">type</span> is <span className="font-mono">influencer</span> or <span className="font-mono">brand</span>. Empty fields are allowed.
           </div>
@@ -322,9 +339,13 @@ export default function AddLeadPage() {
           {bulkResult && !bulkResult.error && (
             <div className="bg-teal-pale border border-teal-deep/30 rounded-lg p-3 text-sm text-teal-deep">
               <div className="font-bold mb-2">Bulk intake complete</div>
-              <div className="grid grid-cols-4 gap-3 text-xs">
+              <div className="grid grid-cols-5 gap-3 text-xs">
                 <div><span className="text-t3">Total:</span> <span className="font-bold">{bulkResult.total}</span></div>
                 <div><span className="text-t3">Created:</span> <span className="font-bold text-teal-deep">{bulkResult.created}</span></div>
+                {/* Already-known handles that carried a city/state got re-tagged
+                    rather than skipped — that is the normal case when tagging a
+                    list, so it needs its own count or it reads as a failure. */}
+                <div><span className="text-t3">Re-tagged:</span> <span className="font-bold text-teal-deep">{bulkResult.updated ?? 0}</span></div>
                 <div><span className="text-t3">Duplicates:</span> <span className="font-bold text-yellow-700">{bulkResult.duplicates_skipped}</span></div>
                 <div><span className="text-t3">Invalid:</span> <span className="font-bold text-red">{bulkResult.invalid}</span></div>
               </div>

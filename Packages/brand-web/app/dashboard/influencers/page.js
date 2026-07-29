@@ -128,6 +128,7 @@ const CSS = `
 .inf .tier-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .inf .tier-chip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
 .inf .tier-chip:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.inf .tier-chip:disabled{opacity:.38;cursor:not-allowed}
 .inf .tier-chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
 .inf .tier-chip.act:hover:not(:disabled){background:var(--ink);border-color:var(--ink);color:var(--yellow)}
 .inf .tier-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-3)}
@@ -503,10 +504,17 @@ export default function InfluencersPage() {
   const [total,       setTotal]       = useState(0);
   const [loading,     setLoading]     = useState(false);
   const [searched,    setSearched]    = useState(false);
+  // Server-supplied tier facet counts ({ all, nano, micro, mid, macro }).
+  const [tierCounts,  setTierCounts]  = useState(null);
+  // Monotonic search id — discards out-of-order responses (see doSearch).
+  const searchSeqRef = useRef(0);
 
   // Filters
   const [query,        setQuery]        = useState('');
   const [city,         setCity]         = useState('');
+  const [stateSel,     setStateSel]     = useState('');
+  // [{ state, creators, cities: [{ city, creators }] }] — tagged geography.
+  const [locations,    setLocations]    = useState([]);
   const [niche,        setNiche]        = useState('');
   const [tier,         setTier]         = useState('');
   const [language,     setLanguage]     = useState('');
@@ -581,13 +589,33 @@ export default function InfluencersPage() {
     const t = setTimeout(() => { doSearch(); }, 400);
     return () => clearTimeout(t);
     /* eslint-disable-next-line */
-  }, [brandStatus, query, city, niche, tier, language, useCase, minFollowers, maxFollowers, minViewEr, minRate, maxRate, hasCollabs, verifiedOnly, bizOnly, brandHandle, sort]);
+  }, [brandStatus, query, stateSel, city, niche, tier, language, useCase, minFollowers, maxFollowers, minViewEr, minRate, maxRate, hasCollabs, verifiedOnly, bizOnly, brandHandle, sort]);
+
+  // Tagged geography for the State → City dropdowns. Loaded once — the set
+  // only changes when an admin tags new creators, not while browsing.
+  useEffect(() => {
+    if (brandStatus !== 'approved') return;
+    influencerApi.locations()
+      .then(res => { if (res.success) setLocations(res.data?.states || []); })
+      .catch(() => {});
+  }, [brandStatus]);
+
+  const citiesForState = useMemo(
+    () => locations.find(s => s.state === stateSel)?.cities || [],
+    [locations, stateSel]
+  );
 
   async function doSearch(e) {
     e?.preventDefault();
     setLoading(true); setSearched(true);
+    // Every filter keystroke fires a debounced request, and the backend can
+    // take seconds on a cold start. Without this guard a slow earlier response
+    // lands after a newer one and overwrites the filtered results with
+    // unfiltered ones — the filter appears to do nothing.
+    const seq = ++searchSeqRef.current;
     const params = { sort };
     if (query)        params.q                 = query;
+    if (stateSel)     params.state             = stateSel;
     if (city)         params.city              = city;
     if (niche)        params.niche             = niche;
     if (tier)         params.tier              = tier;
@@ -605,26 +633,28 @@ export default function InfluencersPage() {
     params.limit = 50;
 
     const res = await influencerApi.search(params);
+    if (seq !== searchSeqRef.current) return;   // a newer search already won
     setLoading(false);
     if (res.success) {
       setResults(res.data?.creators || []);
       setTotal(res.meta?.total || 0);
+      setTierCounts(res.meta?.tier_counts || null);
     } else {
-      setResults([]); setTotal(0);
+      setResults([]); setTotal(0); setTierCounts(null);
       setToast({ kind: 'err', text: res?.error?.message || 'Search failed' });
       setTimeout(() => setToast(null), 4000);
     }
   }
 
   const clearFilters = () => {
-    setQuery(''); setCity(''); setNiche(''); setTier(''); setLanguage('');
+    setQuery(''); setStateSel(''); setCity(''); setNiche(''); setTier(''); setLanguage('');
     setUseCase(''); setMinFollowers(''); setMaxFollowers(''); setMinViewEr('');
     setMinRate(''); setMaxRate(''); setHasCollabs(false); setVerifiedOnly(false);
     setBizOnly(false); setBrandHandle(''); setSort('rank');
   };
 
   const activeFilterCount = [
-    query, city, niche, tier, language, useCase, minFollowers, maxFollowers,
+    query, stateSel, city, niche, tier, language, useCase, minFollowers, maxFollowers,
     minViewEr, minRate, maxRate, brandHandle,
   ].filter(Boolean).length + (hasCollabs ? 1 : 0) + (verifiedOnly ? 1 : 0) + (bizOnly ? 1 : 0);
 
@@ -633,13 +663,11 @@ export default function InfluencersPage() {
   const heroMedianRate = useMemo(() => median(results.map(c => c.estimated_min_rate)), [results]);
   const heroPctVerified = total ? Math.round((heroVerified / Math.min(results.length, total)) * 100) : 0;
 
-  // Tier chip counts
-  const tierCounts = useMemo(() => {
-    const c = { '': results.length };
-    for (const k of Object.keys(TIER_CFG)) c[k] = 0;
-    for (const r of results) if (r.tier && c[r.tier] !== undefined) c[r.tier] += 1;
-    return c;
-  }, [results]);
+  // Tier chip counts now come from the server (meta.tier_counts) and cover the
+  // WHOLE result set under the current filters, with the tier filter itself
+  // excluded. Deriving them from `results` counted only the ~50 loaded rows —
+  // a chip read "Nano 10" when the real total was 13 — and zeroed every other
+  // tier the moment one was selected, which is why the chips disappeared.
 
   if (brandStatus === null) {
     return (
@@ -755,7 +783,28 @@ export default function InfluencersPage() {
             <button type="submit" className="btn-ink" disabled={loading}>{loading ? '…' : 'Search'}</button>
           </div>
           <div className="sbar-row">
-            <div className="sbar-f"><div className="sbar-f-l">City</div><input className="sbar-f-i" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Vijayawada, Mumbai…" /></div>
+            {/* State → City. Both are dropdowns built from what has actually
+                been tagged, so nobody has to guess a spelling, and a city that
+                nobody is tagged with is never offered. */}
+            <div className="sbar-f"><div className="sbar-f-l">State</div>
+              <select className="sbar-f-i" value={stateSel}
+                onChange={(e) => { setStateSel(e.target.value); setCity(''); }}>
+                <option value="">All states</option>
+                {locations.map(s => (
+                  <option key={s.state} value={s.state}>{s.state} ({s.creators})</option>
+                ))}
+              </select>
+            </div>
+            <div className="sbar-f"><div className="sbar-f-l">City</div>
+              <select className="sbar-f-i" value={city} disabled={!stateSel}
+                title={!stateSel ? 'Pick a state first' : undefined}
+                onChange={(e) => setCity(e.target.value)}>
+                <option value="">{stateSel ? 'All cities' : 'Pick a state first'}</option>
+                {citiesForState.map(c => (
+                  <option key={c.city} value={c.city}>{c.city} ({c.creators})</option>
+                ))}
+              </select>
+            </div>
             <div className="sbar-f"><div className="sbar-f-l">Niche</div><input className="sbar-f-i" value={niche} onChange={(e) => setNiche(e.target.value)} placeholder="food_blogger, fashion…" /></div>
             <div className="sbar-f"><div className="sbar-f-l">Tier</div>
               <select className="sbar-f-i" value={tier} onChange={(e) => setTier(e.target.value)}>
@@ -796,15 +845,26 @@ export default function InfluencersPage() {
         </form>
       </div>
 
-      {/* Tier chip row */}
-      {results.length > 0 && (
+      {/* Tier chip row — every tier stays visible so the row works as a tier
+          switcher. Counts come from the server and ignore the tier filter, so
+          selecting one no longer zeroes (and hides) the rest. A tier with no
+          matches under the current filters is shown disabled rather than
+          removed, so the roster shape stays legible. */}
+      {searched && tierCounts && (
         <div className="tier-row">
-          <button className={`tier-chip${!tier ? ' act' : ''}`} onClick={() => setTier('')}><span className="dot" style={{ background: 'var(--muted-3)' }}></span>All <span className="ct">{tierCounts[''] || 0}</span></button>
+          <button className={`tier-chip${!tier ? ' act' : ''}`} onClick={() => setTier('')}>
+            <span className="dot" style={{ background: 'var(--muted-3)' }}></span>All <span className="ct">{tierCounts.all || 0}</span>
+          </button>
           {Object.entries(TIER_CFG).map(([key, cfg]) => {
             const count = tierCounts[key] || 0;
-            if (!count) return null;
             return (
-              <button key={key} className={`tier-chip${tier === key ? ' act' : ''}`} onClick={() => setTier(tier === key ? '' : key)}>
+              <button
+                key={key}
+                className={`tier-chip${tier === key ? ' act' : ''}`}
+                disabled={!count && tier !== key}
+                title={!count ? `No ${cfg.label} creators match the current filters` : undefined}
+                onClick={() => setTier(tier === key ? '' : key)}
+              >
                 <span className="dot" style={{ background: cfg.dot }}></span>{cfg.label} <span className="ct">{count}</span>
               </button>
             );
