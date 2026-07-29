@@ -13,6 +13,27 @@ export function getStoredUser() {
   try { return JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { return null; }
 }
 
+// Session lifetime = the refresh token's 30 days, NOT the access token's 15
+// minutes. The `inflx_token` cookie exists only so middleware.js can tell
+// "has a session" before any JS runs — real auth is enforced by the API on
+// every call, and an expired access token is transparently rotated by
+// tryRefreshToken(). Writing a 15-minute cookie made the middleware gate
+// expire long before the session did, which bounced people to /login on
+// refresh while their refresh token was still perfectly valid.
+//
+// SameSite=Lax, not Strict: Strict withholds the cookie on inbound
+// navigations from anywhere else (a link in email, WhatsApp, search
+// results), so arriving that way looked logged-out even mid-session.
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30d — matches the refresh token
+
+// Single writer for this cookie. Two call sites previously wrote it with
+// different max-age AND different SameSite; whichever ran last silently won.
+export function setSessionCookie(token) {
+  if (typeof document === 'undefined') return;
+  const secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `inflx_token=${token}; path=/; max-age=${SESSION_MAX_AGE}; SameSite=Lax${secure}`;
+}
+
 export function clearSession(reason) {
   if (typeof window !== 'undefined') {
     // Diagnostic — keeps showing up in past sessions where admins were
@@ -46,7 +67,7 @@ async function tryRefreshToken() {
       const data = await res.json();
       if (data.success && data.data?.access_token) {
         localStorage.setItem('inflx_token', data.data.access_token);
-        document.cookie = `inflx_token=${data.data.access_token}; path=/; max-age=900; SameSite=Strict`;
+        setSessionCookie(data.data.access_token);
         return true;
       }
       return false;
@@ -350,6 +371,9 @@ export const influencerApi = {
   //   brand_handle (creators who collabbed with @brand)
   //   page, limit
   search: (params) => api.get(`/influencers/search${params ? '?' + new URLSearchParams(params) : ''}`),
+  // Distinct tagged states + their cities → { states: [{ state, creators, cities[] }] }.
+  // Drives the State → City dropdowns on Discover.
+  locations: () => api.get('/influencers/locations'),
   // Market analytics — single aggregate response (all charts).
   // Optional scope: city, niche, tier (each comma-separated).
   analytics: (params) => api.get(`/influencers/analytics${params ? '?' + new URLSearchParams(params) : ''}`),

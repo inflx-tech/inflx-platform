@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 const INDUSTRY_GROUPS = [
   { icon: '🍽️', label: 'Food & Dining', count: 4, color: 'from-red-500 to-orange-500' },
@@ -14,6 +15,25 @@ const INDUSTRY_GROUPS = [
 export default function LandingPage() {
   const router = useRouter();
 
+  // Returning visitors on this browser shouldn't be asked to sign in again.
+  // Resolved after mount (localStorage is client-only) so the server-rendered
+  // markup stays identical for everyone and hydration doesn't mismatch —
+  // signed-out is the honest default until we know otherwise.
+  const [session, setSession] = useState(null);
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('inflx_token');
+      const user  = JSON.parse(localStorage.getItem('inflx_user') || 'null');
+      if (!token || !user) return;
+      // Only roles that actually have a web surface. Influencers and followers
+      // live in the mobile apps, so a "go to dashboard" link would dead-end.
+      if (user.role === 'admin')      setSession({ href: '/admin',     label: 'Go to Admin' });
+      else if (user.role === 'brand') setSession({ href: '/dashboard', label: 'Go to Dashboard' });
+    } catch { /* unreadable storage — stay signed-out */ }
+  }, []);
+
+  const goHome = () => { if (session) router.push(session.href); };
+
   return (
     <div className="min-h-screen bg-[#070b16] text-white overflow-x-hidden">
 
@@ -24,10 +44,17 @@ export default function LandingPage() {
             <img src="/inflx-logo-dark.png" alt="INFLX" style={{height: '32px'}} />
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/login')}
-              className="px-5 py-2 text-sm font-semibold text-white/70 hover:text-white transition-colors">Sign In</button>
-            <button onClick={() => router.push('/login')}
-              className="px-5 py-2 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] text-sm font-bold rounded-full hover:shadow-lg hover:shadow-orange-500/25 transition-all">Get Started</button>
+            {session ? (
+              <button onClick={goHome}
+                className="px-5 py-2 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] text-sm font-bold rounded-full hover:shadow-lg hover:shadow-orange-500/25 transition-all">{session.label} →</button>
+            ) : (
+              <>
+                <button onClick={() => router.push('/login')}
+                  className="px-5 py-2 text-sm font-semibold text-white/70 hover:text-white transition-colors">Sign In</button>
+                <button onClick={() => router.push('/login')}
+                  className="px-5 py-2 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] text-sm font-bold rounded-full hover:shadow-lg hover:shadow-orange-500/25 transition-all">Get Started</button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -47,14 +74,23 @@ export default function LandingPage() {
             The platform where local businesses create campaigns, influencers promote deals to their followers, and customers discover, book, and pay — all in one ecosystem.
           </p>
           <div className="flex items-center justify-center gap-4">
-            <button onClick={() => router.push('/login')}
-              className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-              Register Your Business →
-            </button>
-            <button onClick={() => router.push('/login')}
-              className="px-8 py-3.5 border border-white/15 text-white/80 font-semibold rounded-full text-sm hover:bg-white/5 transition-all">
-              Sign In
-            </button>
+            {session ? (
+              <button onClick={goHome}
+                className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
+                {session.label} →
+              </button>
+            ) : (
+              <>
+                <button onClick={() => router.push('/login')}
+                  className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
+                  Register Your Business →
+                </button>
+                <button onClick={() => router.push('/login')}
+                  className="px-8 py-3.5 border border-white/15 text-white/80 font-semibold rounded-full text-sm hover:bg-white/5 transition-all">
+                  Sign In
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -175,10 +211,12 @@ export default function LandingPage() {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-[#F47920]/10 border border-[#F47920]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#F47920] mb-3">For Brands</div>
             <h2 className="text-2xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Brand Dashboard</h2>
-            <p className="text-white/40 text-xs mt-1 mb-5">Sign in or create your business account</p>
-            <button onClick={() => router.push('/login')}
+            <p className="text-white/40 text-xs mt-1 mb-5">
+              {session ? "You're already signed in on this browser" : 'Sign in or create your business account'}
+            </p>
+            <button onClick={session ? goHome : () => router.push('/login')}
               className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-              Sign In / Register →
+              {session ? `${session.label} →` : 'Sign In / Register →'}
             </button>
           </div>
 

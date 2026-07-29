@@ -1,0 +1,22 @@
+{
+  "feature": "persistent-session",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (reported: 'persistent login, i need once login… after refresh going back to login')",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — landing CTA swap reuses existing button styles)",
+  "mockup_locked_at": "2026-07-29",
+  "notes": "Root cause: tryRefreshToken (lib/api.js:49) wrote the inflx_token gate cookie with max-age=900 while login wrote 2592000; the dashboard layout calls tryRefreshToken on every mount, so a 30-day cookie was downgraded to 15 minutes immediately. Once it lapsed, middleware.js:39 server-redirected /dashboard to /login before any JS could refresh, despite a valid 30-day HttpOnly refresh token. Second independent cause: SameSite=Strict withheld the cookie on inbound navigation from external links. Third: four writers with three different attribute sets, last-write-wins, which made the symptom intermittent. Fixed with a single exported setSessionCookie() (30d, SameSite=Lax, Secure on https) used by all four call sites. Landing page shows Go to Dashboard / Go to Admin for an existing session, resolved after mount to avoid hydration mismatch; influencer+follower excluded (no web surface). DELIBERATE BEHAVIOUR CHANGE: middleware now admits users whose refresh token has genuinely died; they are bounced by clearSession() on the first failed API call instead of at the door — the gate is a hint, not the authority. NOT delivered: cross-device recognition, which requires identity i.e. logging in. Production-impacting (Vercel only): explicit founder go required before push.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

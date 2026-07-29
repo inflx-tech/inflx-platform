@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Persistent session — landing CTA + cookie lifetime</title>
+<style>
+  :root{--bg:#070b16;--o1:#F47920;--o2:#FFB800;--line:rgba(255,255,255,.1)}
+  *{box-sizing:border-box}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+       background:#F4F4F5;color:#0A0A0A;margin:0;padding:26px}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:#71717A;margin:0 0 22px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#71717A;
+     margin:24px 0 9px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px}
+  .shot{background:var(--bg);border-radius:14px;padding:0;overflow:hidden;
+        border:1px solid #27272A}
+  .nav{display:flex;align-items:center;justify-content:space-between;
+       padding:13px 16px;border-bottom:1px solid var(--line)}
+  .logo{color:#fff;font-weight:800;font-size:14px;letter-spacing:-.3px}
+  .btns{display:flex;gap:8px;align-items:center}
+  .ghost{color:rgba(255,255,255,.7);font-size:11.5px;font-weight:600;padding:6px 12px}
+  .prim{background:linear-gradient(90deg,var(--o1),var(--o2));color:var(--bg);
+        font-size:11.5px;font-weight:800;padding:6px 14px;border-radius:99px}
+  .hero{padding:26px 18px 30px;text-align:center}
+  .hero h3{color:#fff;font-size:17px;margin:0 0 8px;font-weight:800;letter-spacing:-.4px}
+  .hero p{color:rgba(255,255,255,.42);font-size:11.5px;margin:0 0 16px;line-height:1.6}
+  .heroBtns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+  .outline{border:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.8);
+           font-size:11.5px;font-weight:700;padding:8px 16px;border-radius:99px}
+  .prim.lg{padding:8px 18px}
+  .tag{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;
+       letter-spacing:.06em;padding:3px 8px;border-radius:5px;margin-bottom:8px}
+  .t-out{background:#E4E4E7;color:#52525B}
+  .t-in{background:#FFFBEB;color:#A16207;border:1px solid #FDE68A}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E4E4E7;
+        border-radius:12px;overflow:hidden;margin-top:6px}
+  th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+     color:#71717A;background:#F4F4F5;padding:9px 12px;font-weight:700}
+  td{padding:10px 12px;border-top:1px solid #E4E4E7;font-size:12px}
+  code{background:#F4F4F5;padding:1px 5px;border-radius:4px;font-size:11px}
+  .bad{color:#B91C1C;font-weight:700}
+  .good{color:#0F766E;font-weight:700}
+  .note{margin-top:20px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;
+        padding:14px 16px;font-size:12.5px;color:#3F3F46;line-height:1.65}
+  .note b{color:#0A0A0A}
+</style>
+</head>
+<body>
+  <h1>Persistent session</h1>
+  <p class="sub">Sign in once. The landing page recognises a returning browser.</p>
+
+  <h2>Landing page</h2>
+  <div class="grid">
+    <div>
+      <span class="tag t-out">Signed out — unchanged</span>
+      <div class="shot">
+        <div class="nav">
+          <span class="logo">INFLX</span>
+          <span class="btns"><span class="ghost">Sign In</span><span class="prim">Get Started</span></span>
+        </div>
+        <div class="hero">
+          <h3>One ecosystem for local commerce</h3>
+          <p>Businesses create campaigns, influencers promote them, customers discover and pay.</p>
+          <div class="heroBtns">
+            <span class="prim lg">Register Your Business →</span>
+            <span class="outline">Sign In</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <span class="tag t-in">Signed in on this browser</span>
+      <div class="shot">
+        <div class="nav">
+          <span class="logo">INFLX</span>
+          <span class="btns"><span class="prim">Go to Dashboard →</span></span>
+        </div>
+        <div class="hero">
+          <h3>One ecosystem for local commerce</h3>
+          <p>Businesses create campaigns, influencers promote them, customers discover and pay.</p>
+          <div class="heroBtns">
+            <span class="prim lg">Go to Dashboard →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>The gate cookie — what actually broke</h2>
+  <table>
+    <thead><tr><th>Writer</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td><code>login/page.js</code></td><td>30d · SameSite=Strict</td><td rowspan="4" style="vertical-align:middle" class="good">setSessionCookie()<br>30d · SameSite=Lax · Secure</td></tr>
+      <tr><td><code>lib/api.js</code> (refresh)</td><td class="bad">900s (15 min) · Strict</td></tr>
+      <tr><td><code>dashboard/layout.js</code></td><td>30d · no SameSite</td></tr>
+      <tr><td><code>admin/layout.js</code></td><td>30d · no SameSite</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>Why a refresh logged you out.</b> The dashboard calls <code>tryRefreshToken()</code> on every
+    mount, and that writer set the cookie to <b>15 minutes</b> — instantly downgrading the 30-day
+    cookie login had just written. Once it lapsed, <code>middleware.js</code> ran on the server,
+    saw no cookie, and redirected <code>/dashboard</code> → <code>/login</code> before any JS could
+    refresh — while your 30-day refresh token was still perfectly valid.<br><br>
+    <b>Second, independent cause.</b> <code>SameSite=Strict</code> withholds the cookie on inbound
+    navigation from anywhere else, so opening an INFLX link from WhatsApp or email looked
+    signed-out even mid-session. <code>Lax</code> is correct for a first-party session gate.<br><br>
+    <b>Four writers, three attribute sets</b> — whichever ran last won. That is why the symptom came
+    and went rather than failing cleanly. There is now exactly one writer.<br><br>
+    <b>Scope honesty:</b> this is per-browser persistence. Recognising the same person on a
+    different device would require identifying them — i.e. logging in.
+  </div>
+</body>
+</html>

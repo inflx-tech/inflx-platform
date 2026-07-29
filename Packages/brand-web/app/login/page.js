@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, brandApi, geoApi } from '../../lib/api';
+import { authApi, brandApi, geoApi, setSessionCookie } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
 
 // Device-local draft of the registration step. Cleared on successful
@@ -196,7 +196,7 @@ export default function LoginPage() {
     const { access_token, user } = res.data;
     localStorage.setItem('inflx_token', access_token);
     localStorage.setItem('inflx_user', JSON.stringify(user));
-    document.cookie = `inflx_token=${access_token}; path=/; max-age=2592000; SameSite=Strict`;
+    setSessionCookie(access_token);
 
     if (user.role === 'admin') {
       router.push('/admin');

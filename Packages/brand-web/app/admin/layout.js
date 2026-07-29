@@ -2,7 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { authApi, tryRefreshToken } from '../../lib/api';
+import { authApi, tryRefreshToken, setSessionCookie } from '../../lib/api';
 
 // Each leaf nav item carries a `cap` — the capability key (B-2) that gates it.
 // Platform Stats has no `cap` (always visible — landing + badges). Section
@@ -101,7 +101,7 @@ export default function DashboardLayout({ children }) {
         // Re-sync the cookie middleware reads — the access-token cookie
         // is short-lived (15 min) but middleware only checks existence,
         // so renew its lifetime to match the refresh window.
-        document.cookie = `inflx_token=${token}; path=/; max-age=2592000`;
+        setSessionCookie(token);
         setUser(u);
 
         // Proactive refresh on cold start. The HttpOnly refresh cookie

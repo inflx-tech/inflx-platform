@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { notificationApi, brandApi, authApi, tryRefreshToken } from '../../lib/api';
+import { notificationApi, brandApi, authApi, tryRefreshToken, setSessionCookie } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
 
 // NAV — order + hrefs preserved exactly. Contracts folded into Campaigns,
@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }) {
         if (u.role === 'admin') { router.push('/admin'); return; }
         if (u.role !== 'brand') { router.push('/login'); return; }
         // Re-sync cookie so middleware doesn't expire it before localStorage does
-        document.cookie = `inflx_token=${token}; path=/; max-age=2592000`;
+        setSessionCookie(token);
         setUser(u);
 
         // Proactive refresh on cold start. The HttpOnly refresh cookie
