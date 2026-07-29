@@ -353,7 +353,10 @@ const st = StyleSheet.create({
   addrName: { fontSize: 12.5, fontWeight: '800', color: '#111' },
   addrTxt: { fontSize: 12, color: '#555', marginTop: 3, lineHeight: 18 },
   iline: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: '#F6F6F6' },
-  ith: { width: 42, height: 52, borderRadius: 8 },
+  // Was 42x52 (~0.81) — already near 3:4, so exact costs ~4px of height and
+  // makes the crop match every other surface. Cart's square thumbs are
+  // deliberately left alone (founder decision).
+  ith: { width: 42, aspectRatio: 3 / 4, borderRadius: 8 },
   inm: { fontSize: 12, fontWeight: '700', color: '#111' },
   isub: { fontSize: 10.5, color: '#8A8A8A', marginTop: 1 },
   ipr: { fontSize: 12.5, fontWeight: '800', color: '#111' },

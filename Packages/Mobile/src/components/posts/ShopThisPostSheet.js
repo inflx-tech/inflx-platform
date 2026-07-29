@@ -123,7 +123,7 @@ export default function ShopThisPostSheet({ visible, post, loading, onClose, onO
                     onPress={() => onOpenProduct && onOpenProduct(p)}>
                     <View style={st.imgWrap}>
                       {p.image_url
-                        ? <Image source={{ uri: p.image_url }} style={st.img} />
+                        ? <Image source={{ uri: p.image_url }} style={st.img} resizeMode="cover" />
                         : <View style={[st.img, { backgroundColor: '#F2F2F2' }]} />}
                       <TouchableOpacity
                         style={st.heartBtn}
@@ -200,7 +200,9 @@ const st = StyleSheet.create({
   sub: { fontSize: 11, color: '#999', marginTop: 2, marginBottom: 12 },
   card: { flex: 1 / 2 },
   imgWrap: { position: 'relative' },
-  img: { width: '100%', aspectRatio: 4 / 5, borderRadius: 12 },
+  // Shared by the Image and its placeholder View. 4/5 re-cropped the uploaded
+  // 3:4 frame; matching it means the same photo reads identically here.
+  img: { width: '100%', aspectRatio: 3 / 4, borderRadius: 12 },
   bagBtn: { position: 'absolute', right: 7, bottom: 7, width: 34, height: 34, borderRadius: 17, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 3 },
   heartBtn: { position: 'absolute', right: 7, top: 7, width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
   bagBtnOn: { backgroundColor: '#111' },

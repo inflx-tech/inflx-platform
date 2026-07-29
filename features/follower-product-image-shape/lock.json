@@ -1,0 +1,23 @@
+{
+  "feature": "follower-product-image-shape",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (authored the contract, including the file-by-file fix list)",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — no new visual language; every tile adopts the existing 3:4 upload frame)",
+  "mockup_locked_at": "2026-07-29",
+  "notes": "Every large product tile now renders aspectRatio 3/4 + resizeMode cover, matching the upload frame (brand-web imageFrames.js product_photo, 900x1200). Seven files under Packages/Mobile/src: ProductCard hero (height 130 -> 3/4; one component drives BOTH BrandStoreScreen and CategoryListScreen, both parents width 48% verified), SavedScreen, WishlistScreen, PostProductScreen gallery, ShopThisPostSheet (4/5 -> 3/4 + explicit cover), ReviewOrderScreen and OrderHistoryScreen thumbs. SavedScreen needed THREE coordinated edits, not the one the line ref named: imgWrap's own height:150 would have clipped the 3:4 child, and imgPh's flex:1 collapses to zero once the wrapper is unpinned — missing that would have silently vanished the no-image placeholder. FOUNDER DECISION: small thumbnails split into two groups rather than one — ReviewOrder (42x52) and OrderHistory (52x64) were already ~0.81 so exact 3:4 costs ~4px, while Cart (54x54, 104x104) is genuinely square and 3:4 would make rows visibly taller; decision was fix the two near-3:4, LEAVE CART SQUARE. Untouched and verified clean via git status: ShelfProductCard, CategoryBrowserScreen, SectionResultsScreen, ProductDetailScreen (keeps 'contain' deliberately as the safety net for uploads that bypass the 3:4 crop), CartScreen. SKIPPED the optional shared-tile extraction: both candidate screens are on the do-not-touch list and already correct, so refactoring them would add a component and edit two working screens for zero visual change — noted for a follow-up contract. QA GREEN but brand-web only; this is Mobile-only, so it proves no regression elsewhere, NOT the visual result. DEPLOY: Mobile runtime ships via OTA bundle, not git push — explicit founder go required before publishing. released stays FALSE per the standing rule (one combined brand + follower end-to-end pass at the end, not per slice), so gov-check Rule 5 / Maestro does not apply yet.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

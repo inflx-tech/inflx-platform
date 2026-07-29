@@ -190,7 +190,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   hero: {
-    height: 130,
+    // 3:4 matches the upload frame (brand-web imageFrames.js product_photo,
+    // 900x1200). The old fixed 130px kept only the middle ~54% of that frame
+    // in a 48%-wide column, so full-length garments rendered as a torso strip.
+    // Both call sites (BrandStoreScreen, CategoryListScreen) give the parent a
+    // definite width, so aspectRatio resolves.
+    aspectRatio: 3 / 4,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

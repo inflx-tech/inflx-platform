@@ -124,7 +124,9 @@ export default function PostProductScreen({ navigation, route }) {
           data={gallery} keyExtractor={(u, i) => `${i}`}
           onMomentumScrollEnd={e => setSlide(Math.round(e.nativeEvent.contentOffset.x / W))}
           renderItem={({ item: u }) => (
-            <Image source={{ uri: u }} style={{ width: W, height: W * 1.1 }} resizeMode="cover" />
+            // 3:4 to match ProductDetailScreen and the upload frame — this is a
+            // second, separate product gallery and the two must agree.
+            <Image source={{ uri: u }} style={{ width: W, aspectRatio: 3 / 4 }} resizeMode="cover" />
           )}
         />
         {gallery.length > 1 && (

@@ -147,7 +147,8 @@ const st = StyleSheet.create({
   tabOn: { backgroundColor: '#111', borderColor: '#111' },
   tabTxt: { fontSize: 12, fontWeight: '700', color: '#555' },
   card: { marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: '#EEE', borderRadius: 14, padding: 12 },
-  thumb: { width: 52, height: 64, borderRadius: 9 },
+  // Was 52x64 (~0.81) — see ReviewOrderScreen for the rationale.
+  thumb: { width: 52, aspectRatio: 3 / 4, borderRadius: 9 },
   name: { fontSize: 12.5, fontWeight: '700', color: '#111' },
   sub: { fontSize: 10.5, color: '#8A8A8A', marginTop: 2 },
   cod: { alignSelf: 'flex-start', backgroundColor: '#FDFBF4', borderWidth: 1, borderColor: '#E0D6BB', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginTop: 4 },

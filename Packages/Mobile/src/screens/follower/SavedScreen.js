@@ -116,7 +116,7 @@ export default function SavedScreen({ navigation }) {
       <TouchableOpacity style={s.card} activeOpacity={0.9} onPress={() => handleOpen(item)}>
         <View style={s.imgWrap}>
           {product?.image_url
-            ? <Image source={{ uri: product.image_url }} style={s.img} />
+            ? <Image source={{ uri: product.image_url }} style={s.img} resizeMode="cover" />
             : <View style={s.imgPh}><Text style={{ fontSize: 38 }}>{CATEGORY_EMOJI[item.brand?.category] || '🛍️'}</Text></View>}
 
           {discLabel ? (
@@ -215,12 +215,18 @@ const s = StyleSheet.create({
   col: { justifyContent: 'space-between', paddingHorizontal: spacing.lg },
 
   card: { width: '48%', marginBottom: spacing.lg },
+  // Height comes from the 3:4 children now. Keeping the old fixed 150 here
+  // would clip them.
   imgWrap: {
     position: 'relative', borderRadius: radius.lg, overflow: 'hidden',
-    backgroundColor: C.soft, height: 150,
+    backgroundColor: C.soft,
   },
-  img: { width: '100%', height: 150, resizeMode: 'cover' },
-  imgPh: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.soft },
+  // resizeMode moved onto the Image as a prop — this was the only site in the
+  // app declaring it inside a StyleSheet.
+  img: { width: '100%', aspectRatio: 3 / 4 },
+  // Was flex:1, which collapsed to zero once imgWrap lost its fixed height.
+  // Matching the image's box keeps grid rows level when a product has no photo.
+  imgPh: { width: '100%', aspectRatio: 3 / 4, alignItems: 'center', justifyContent: 'center', backgroundColor: C.soft },
   disc: {
     position: 'absolute', top: 8, left: 8, backgroundColor: C.offer,
     paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.sm,

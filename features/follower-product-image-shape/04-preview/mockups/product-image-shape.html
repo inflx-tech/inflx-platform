@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product image shape — one crop everywhere</title>
+<style>
+  :root{--ink:#0A0A0A;--bd:#E4E4E7;--t2:#3F3F46;--t3:#71717A;--bg2:#F4F4F5;
+        --red:#B91C1C;--redp:#FEE2E2;--teal:#0F766E;--tealp:#CCFBF1}
+  *{box-sizing:border-box}
+  body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+       background:#FAFAFA;color:var(--ink);margin:0;padding:26px}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:var(--t3);margin:0 0 22px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);
+     margin:26px 0 10px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px}
+  .tag{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;
+       letter-spacing:.06em;padding:3px 8px;border-radius:5px;margin-bottom:11px}
+  .t-b{background:var(--redp);color:var(--red)}
+  .t-a{background:var(--tealp);color:var(--teal)}
+  .tiles{display:flex;gap:12px}
+  .tile{width:132px}
+  /* The "photo": a full-length figure drawn in CSS so the crop is visible. */
+  .frame{width:100%;position:relative;overflow:hidden;border-radius:10px;
+         border:1px solid var(--bd);background:#EFE7DD}
+  .r34{aspect-ratio:3/4}
+  .r130{height:99px}          /* 130 : 176-wide tile, scaled to 132 */
+  .r11{aspect-ratio:1/1}
+  .r45{aspect-ratio:4/5}
+  .fig{position:absolute;left:50%;transform:translateX(-50%);width:56%}
+  /* figure is laid out against the FULL 3:4 frame, then the box clips it */
+  .fig .head{width:34%;aspect-ratio:1;border-radius:50%;background:#C9A88B;margin:0 auto}
+  .fig .body{width:100%;height:96px;background:#3E5C76;border-radius:8px 8px 4px 4px;margin-top:5px}
+  .fig .legs{width:74%;height:58px;background:#2A2A35;margin:3px auto 0;border-radius:3px}
+  .fig{top:7%}
+  .cap{font-size:11px;color:var(--t3);margin-top:7px;line-height:1.5}
+  .cap b{color:var(--ink)}
+  .keep{font-family:ui-monospace,monospace;font-size:10.5px;font-weight:800}
+  .bad{color:var(--red)} .good{color:var(--teal)}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--bd);
+        border-radius:12px;overflow:hidden;margin-top:8px}
+  th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+     color:var(--t3);background:var(--bg2);padding:9px 12px;font-weight:700}
+  td{padding:9px 12px;border-top:1px solid var(--bd);font-size:12px}
+  code{background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:11px}
+  .note{margin-top:22px;background:#fff;border:1px solid var(--bd);border-radius:12px;
+        padding:14px 16px;font-size:12.5px;color:var(--t2);line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+  <h1>Product image shape</h1>
+  <p class="sub">One photo, cropped once at upload to 3:4 — then re-cropped six different ways by the app.</p>
+
+  <h2>The worst case — brand store tile</h2>
+  <div class="grid">
+    <div class="card">
+      <span class="tag t-b">Before · height 130</span>
+      <div class="tiles">
+        <div class="tile">
+          <div class="frame r130"><div class="fig"><div class="head"></div><div class="body"></div><div class="legs"></div></div></div>
+          <div class="cap"><b class="keep bad">~54% kept</b> — head and feet gone. A full-length garment reads as a torso strip.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <span class="tag t-a">After · aspectRatio 3/4</span>
+      <div class="tiles">
+        <div class="tile">
+          <div class="frame r34"><div class="fig"><div class="head"></div><div class="body"></div><div class="legs"></div></div></div>
+          <div class="cap"><b class="keep good">100% kept</b> — the whole uploaded frame, exactly as the brand cropped it.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Every large tile, before → after</h2>
+  <div class="card">
+    <div class="tiles" style="flex-wrap:wrap">
+      <div class="tile">
+        <div class="frame r130"><div class="fig"><div class="head"></div><div class="body"></div><div class="legs"></div></div></div>
+        <div class="cap"><b>Brand store</b><br>height 130</div>
+      </div>
+      <div class="tile">
+        <div class="frame r11"><div class="fig"><div class="head"></div><div class="body"></div><div class="legs"></div></div></div>
+        <div class="cap"><b>Saved</b><br>height 150</div>
+      </div>
+      <div class="tile">
+        <div class="frame r45"><div class="fig"><div class="head"></div><div class="body"></div><div class="legs"></div></div></div>
+        <div class="cap"><b>Shop this post</b><br>aspectRatio 4/5</div>
+      </div>
+      <div class="tile">
+        <div class="frame r34" style="border-color:#0F766E"><div class="fig"><div class="head"></div><div class="body"></div><div class="legs"></div></div></div>
+        <div class="cap"><b class="good">All of them, after</b><br>aspectRatio 3/4 + cover</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>What changes</h2>
+  <table>
+    <thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Brand store + Category list <span style="color:var(--t3)">(one component)</span></td><td><code>height: 130</code></td><td><code>aspectRatio: 3/4</code></td></tr>
+      <tr><td>Saved</td><td><code>height: 150</code></td><td><code>aspectRatio: 3/4</code></td></tr>
+      <tr><td>Wishlist</td><td><code>CARD_W * 1.2</code></td><td><code>aspectRatio: 3/4</code></td></tr>
+      <tr><td>Post gallery</td><td><code>W * 1.1</code></td><td><code>aspectRatio: 3/4</code></td></tr>
+      <tr><td>Shop this post</td><td><code>aspectRatio: 4/5</code></td><td><code>aspectRatio: 3/4</code></td></tr>
+      <tr><td>Review order</td><td>42 × 52</td><td>42 × 56</td></tr>
+      <tr><td>Order history</td><td>52 × 64</td><td>52 × 69</td></tr>
+      <tr><td>Cart line item + cross-sell</td><td>54×54 · 104×104</td><td><b>unchanged</b> — founder's call</td></tr>
+      <tr><td>Product detail hero</td><td><code>contain</code></td><td><b>unchanged</b> — safety net</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>One component, two screens.</b> The brand-store fix is a single change to
+    <code>ProductCard</code>, which also drives the category list — the biggest win for the smallest
+    diff.<br><br>
+    <b>Two hidden constraints the line numbers didn't show.</b> Saved's image wrapper carried its own
+    <code>height: 150</code> that would have clipped the new 3:4 child, and its no-image placeholder
+    used <code>flex: 1</code>, which collapses to zero once that wrapper is unpinned. Both were fixed
+    with it, or the placeholder would have silently vanished.<br><br>
+    <b>Product detail keeps <code>contain</code> deliberately.</b> Paste-URL, Excel, photo-tray and
+    mobile-gallery uploads bypass the 3:4 crop entirely today, so the one screen dedicated to
+    inspecting a product must not slice an un-cropped image. Forcing those upload paths through the
+    crop is a separate contract.<br><br>
+    <b>Cart stays square.</b> 3:4 would take the line-item thumb from 54 to 72px and the cross-sell
+    from 104 to 139px — visibly taller rows, fewer items per screen. Not worth it at that size.
+  </div>
+</body>
+</html>

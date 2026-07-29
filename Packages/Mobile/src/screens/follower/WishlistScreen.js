@@ -323,7 +323,9 @@ const st = StyleSheet.create({
   browseTxt: { color: '#FFF', fontSize: 12.5, fontWeight: '800' },
   card: { width: CARD_W, borderWidth: 1, borderColor: '#F0F0F0', borderRadius: 14, overflow: 'hidden' },
   cimgWrap: { position: 'relative' },
-  cimg: { width: '100%', height: CARD_W * 1.2 },
+  // Shared by the Image and its no-image placeholder View, so both keep the
+  // same 3:4 box and the grid stays level.
+  cimg: { width: '100%', aspectRatio: 3 / 4 },
   heart: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 2 },
   gone: { position: 'absolute', inset: 0, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.72)', alignItems: 'center', justifyContent: 'center' },
   goneTxt: { fontSize: 11, fontWeight: '800', color: '#666' },
