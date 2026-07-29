@@ -244,21 +244,28 @@ export default function BrandsPage() {
               <div className="text-[10px] text-t3">{fmtDate(b.created_at)}</div>
               {/* Actions */}
               <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                {/* Pending rows carry no decision buttons — /admin/approvals is
+                    the single decision desk. Link there instead of duplicating
+                    Approve/Reject with different reason-capture UX. */}
                 {canAction && b.status === 'pending' && (
-                  <>
-                    <button
-                      onClick={() => setActionModal({ brand: b, action: 'approved' })}
-                      className="px-2 py-1 text-[10px] font-bold bg-teal-pale text-teal-deep border border-teal/20 rounded-lg hover:bg-teal hover:text-white transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => setActionModal({ brand: b, action: 'rejected' })}
-                      className="px-2 py-1 text-[10px] font-bold bg-red-pale text-red border border-red/20 rounded-lg hover:bg-red hover:text-white transition-colors"
-                    >
-                      Reject
-                    </button>
-                  </>
+                  <button
+                    onClick={() => router.push('/admin/approvals')}
+                    className="px-2 py-1 text-[10px] font-bold bg-surface2 text-t3 border border-border rounded-lg hover:bg-gold-pale hover:text-yellow-700 hover:border-gold/20 transition-colors"
+                    title="Approve or reject from the Approvals desk"
+                  >
+                    In Approvals →
+                  </button>
+                )}
+                {/* Both suspended and rejected were dead ends — no button
+                    returned a brand to approved from any admin surface. */}
+                {canAction && (b.status === 'suspended' || b.status === 'rejected') && (
+                  <button
+                    onClick={() => setActionModal({ brand: b, action: 'approved', reinstate: true })}
+                    className="px-2 py-1 text-[10px] font-bold bg-teal-pale text-teal-deep border border-teal/20 rounded-lg hover:bg-teal hover:text-white transition-colors"
+                    title="Restore this brand to approved"
+                  >
+                    Reinstate
+                  </button>
                 )}
                 {canAction && b.status === 'approved' && (
                   <button
@@ -304,12 +311,14 @@ export default function BrandsPage() {
         </div>
       )}
 
-      {/* Action Modal (Approve / Reject / Suspend) */}
+      {/* Action Modal (Reinstate / Suspend). The 'rejected' branch below is
+          retained for the shared modal shape but is no longer reachable from
+          this page — rejection lives on /admin/approvals. */}
       {actionModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl">
             <h3 className="font-display text-base font-bold text-t1 mb-1 capitalize">
-              {actionModal.action === 'approved' ? 'Approve' : actionModal.action === 'rejected' ? 'Reject' : 'Suspend'} Brand
+              {actionModal.reinstate ? 'Reinstate' : actionModal.action === 'approved' ? 'Approve' : actionModal.action === 'rejected' ? 'Reject' : 'Suspend'} Brand
             </h3>
             <p className="text-xs text-t3 mb-4">
               {actionModal.brand.business_name} ({actionModal.brand.contact_name})
@@ -331,7 +340,9 @@ export default function BrandsPage() {
             {actionModal.action === 'approved' && (
               <div className="mb-4 p-3 bg-teal-pale border border-teal/20 rounded-xl">
                 <div className="text-xs text-teal-deep font-medium">
-                  This brand will be approved and notified immediately.
+                  {actionModal.reinstate
+                    ? `This brand will be restored to approved and regain dashboard access. Their previous ${actionModal.brand.status === 'rejected' ? 'rejection' : 'suspension'} note will be cleared and they will be notified immediately.`
+                    : 'This brand will be approved and notified immediately.'}
                 </div>
               </div>
             )}
@@ -354,7 +365,7 @@ export default function BrandsPage() {
                     : 'bg-gradient-to-r from-red to-orange'
                 }`}
               >
-                {processing ? 'Processing...' : `Confirm ${actionModal.action === 'approved' ? 'Approval' : actionModal.action === 'rejected' ? 'Rejection' : 'Suspension'}`}
+                {processing ? 'Processing...' : `Confirm ${actionModal.reinstate ? 'Reinstate' : actionModal.action === 'approved' ? 'Approval' : actionModal.action === 'rejected' ? 'Rejection' : 'Suspension'}`}
               </button>
               <button
                 onClick={() => { setActionModal(null); setRejectReason(''); }}

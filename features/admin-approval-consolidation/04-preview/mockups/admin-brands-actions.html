@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Brands — action cell states</title>
+<style>
+  :root {
+    --surface2:#F4F4F5; --border:#E4E4E7; --t1:#18181B; --t2:#3F3F46; --t3:#71717A;
+    --teal:#0D9488; --teal-deep:#0F766E; --teal-pale:#CCFBF1;
+    --red:#DC2626; --red-pale:#FEE2E2; --gold:#FFC107; --gold-pale:#FFFBEB;
+  }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+         background:#FAFAFA; color:var(--t1); margin:0; padding:28px; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  .sub { font-size:12.5px; color:var(--t3); margin:0 0 22px; }
+  table { width:100%; border-collapse:collapse; background:#fff;
+          border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.06em;
+       color:var(--t3); background:var(--surface2); padding:9px 12px; font-weight:700; }
+  td { padding:11px 12px; border-top:1px solid var(--border); font-size:13px; vertical-align:middle; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px;
+          font-size:10px; font-weight:700; text-transform:capitalize; }
+  .p-pending{background:var(--gold-pale);color:#A16207}
+  .p-approved{background:var(--teal-pale);color:var(--teal-deep)}
+  .p-suspended{background:var(--surface2);color:var(--t3)}
+  .p-rejected{background:var(--red-pale);color:var(--red)}
+  .btn { padding:4px 8px; font-size:10px; font-weight:700; border-radius:8px;
+         border:1px solid; margin-right:4px; cursor:pointer; background:#fff; }
+  .b-link{background:var(--surface2);color:var(--t3);border-color:var(--border)}
+  .b-reinstate{background:var(--teal-pale);color:var(--teal-deep);border-color:rgba(13,148,136,.2)}
+  .b-suspend{background:var(--surface2);color:var(--t3);border-color:var(--border)}
+  .b-fee{background:var(--gold-pale);color:#A16207;border-color:rgba(255,193,7,.2)}
+  .gone { text-decoration:line-through; opacity:.34; }
+  .note { margin-top:20px; font-size:12.5px; color:var(--t2); line-height:1.65;
+          background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .note b { color:var(--t1); }
+  code { background:var(--surface2); padding:1px 5px; border-radius:4px; font-size:11.5px; }
+</style>
+</head>
+<body>
+  <h1>Admin · Brands — action cell after consolidation</h1>
+  <p class="sub">Decisions move to the Approvals desk. Suspended and rejected stop being dead ends.</p>
+
+  <table>
+    <thead>
+      <tr><th>Brand</th><th>Status</th><th>Actions — before</th><th>Actions — after</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Acme Threads</td>
+        <td><span class="pill p-pending">pending</span></td>
+        <td><span class="btn gone">Approve</span><span class="btn gone">Reject</span><span class="btn b-fee">Fee</span></td>
+        <td><span class="btn b-link">In Approvals →</span><span class="btn b-fee">Fee</span></td>
+      </tr>
+      <tr>
+        <td>Bolt Footwear</td>
+        <td><span class="pill p-approved">approved</span></td>
+        <td><span class="btn b-suspend">Suspend</span><span class="btn b-fee">Fee</span></td>
+        <td><span class="btn b-suspend">Suspend</span><span class="btn b-fee">Fee</span></td>
+      </tr>
+      <tr>
+        <td>Cinder Jewels</td>
+        <td><span class="pill p-suspended">suspended</span></td>
+        <td><span class="btn b-fee">Fee</span> <em style="color:var(--red);font-size:11px">— dead end</em></td>
+        <td><span class="btn b-reinstate">Reinstate</span><span class="btn b-fee">Fee</span></td>
+      </tr>
+      <tr>
+        <td>Dune Watches</td>
+        <td><span class="pill p-rejected">rejected</span></td>
+        <td><span class="btn b-fee">Fee</span> <em style="color:var(--red);font-size:11px">— dead end</em></td>
+        <td><span class="btn b-reinstate">Reinstate</span><span class="btn b-fee">Fee</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>What changes.</b> Approve/Reject are removed from this page — <code>/admin/approvals</code>
+    becomes the only decision desk. A pending row now links there instead of duplicating the
+    decision with different reason-capture UX.<br><br>
+    <b>Reinstate</b> appears for <code>suspended</code> and <code>rejected</code> rows and sends
+    <code>{ status: 'approved' }</code>. The backend already accepted this without checking the
+    current status, so no API change was needed — only the button was missing.<br><br>
+    <b>Suspend keeps its provenance.</b> Suspending previously shared a code branch with reject and
+    nulled <code>approved_at</code> / <code>approved_by</code>, so the original approval trail was
+    destroyed before you could ever reinstate. The branch is now split.<br><br>
+    <b>Unchanged:</b> Fee, row-click navigation to the brand detail page, and the
+    <code>canAction</code> / <code>canFee</code> RBAC gates.
+  </div>
+</body>
+</html>

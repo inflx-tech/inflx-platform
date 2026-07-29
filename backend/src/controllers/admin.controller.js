@@ -114,13 +114,25 @@ const updateBrandStatus = asyncHandler(async (req, res) => {
   const brand = brandRows[0];
 
   if (status === 'approved') {
+    // Approve, or reinstate a suspended/rejected brand. Clears any prior
+    // rejection/suspension note and stamps fresh approval provenance.
     await db.query(
       `UPDATE brands SET rejection_reason = NULL, approved_at = now(), approved_by = $2 WHERE id = $1`,
       [brand.id, adminUserId]
     );
-  } else {
+  } else if (status === 'rejected') {
+    // Rejected — the brand was never approved, so there is no provenance
+    // worth keeping.
     await db.query(
       `UPDATE brands SET rejection_reason = $2, approved_at = NULL, approved_by = NULL WHERE id = $1`,
+      [brand.id, reason || null]
+    );
+  } else {
+    // Suspended — the brand WAS approved. Keep approved_at/approved_by so
+    // the original approval trail survives and a later reinstate still has
+    // history to show. Only record the suspension note.
+    await db.query(
+      `UPDATE brands SET rejection_reason = $2 WHERE id = $1`,
       [brand.id, reason || null]
     );
   }
@@ -178,13 +190,21 @@ const updateInfluencerStatus = asyncHandler(async (req, res) => {
   const influencer = infRows[0];
 
   if (status === 'approved') {
+    // Approve, or reinstate a suspended/rejected influencer.
     await db.query(
       `UPDATE influencers SET rejection_reason = NULL, approved_at = now(), approved_by = $2 WHERE id = $1`,
       [influencer.id, adminUserId]
     );
-  } else {
+  } else if (status === 'rejected') {
     await db.query(
       `UPDATE influencers SET rejection_reason = $2, approved_at = NULL, approved_by = NULL WHERE id = $1`,
+      [influencer.id, reason || null]
+    );
+  } else {
+    // Suspended — preserve the original approval provenance (see the brand
+    // handler above for the rationale).
+    await db.query(
+      `UPDATE influencers SET rejection_reason = $2 WHERE id = $1`,
       [influencer.id, reason || null]
     );
   }

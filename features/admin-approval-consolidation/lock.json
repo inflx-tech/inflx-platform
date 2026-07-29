@@ -1,0 +1,22 @@
+{
+  "feature": "admin-approval-consolidation",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (directed — explicit 3-point instruction in session)",
+  "approved_at": "2026-07-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — action-cell state matrix, no new visual language)",
+  "mockup_locked_at": "2026-07-29",
+  "notes": "D1 reject body key rejection_reason->reason (fixes 422 on both brands and influencers tabs). D2 remove duplicate Approve/Reject from /admin/brands, keep Suspend + Fee, link to Approvals. D3 add Reinstate for suspended/rejected. D4 split the shared reject/suspend branch so suspend keeps approved_at/approved_by. D1 must ship with or before D2 — removing the working buttons first would leave no functioning reject anywhere. Production-impacting (Render + Vercel): explicit founder go required before push.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -12,6 +12,15 @@ import { seedAdminSession, stubAdminApis, shotDir } from '../_helpers/adminSessi
  *
  * Success = the PATCH carries the exact reason (or no PATCH when
  * unreasoned), not "the panel rendered".
+ *
+ * 2026-07-29 — the reason key was corrected from `rejection_reason` to
+ * `reason`. These tests stub the admin API and only inspect the captured
+ * body, so they passed while every real reject 422'd: the backend reads
+ * `reason` (backend/src/controllers/admin.controller.js:97, which throws
+ * VALIDATION_ERROR when it is falsy) and there is no validation middleware
+ * anywhere to normalise the two names. The assertions below now encode the
+ * contract the server actually enforces.
+ * Contract: features/admin-approval-consolidation/.
  */
 
 test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
@@ -38,7 +47,7 @@ test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
       fullPage: true,
     });
 
-    expect(cap.patchBody).toEqual({ status: 'rejected', rejection_reason: 'Duplicate account' });
+    expect(cap.patchBody).toEqual({ status: 'rejected', reason: 'Duplicate account' });
   });
 
   test('B — "Other" requires custom text and sends it as the reason', async ({ page, context }) => {
@@ -61,7 +70,7 @@ test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
 
     await confirm.click();
     await expect(page.getByText(/rejected successfully/i)).toBeVisible();
-    expect(cap.patchBody).toEqual({ status: 'rejected', rejection_reason: 'Spam signup' });
+    expect(cap.patchBody).toEqual({ status: 'rejected', reason: 'Spam signup' });
   });
 
   test('C — guard: no reason selected → Confirm disabled and no PATCH', async ({ page, context }) => {

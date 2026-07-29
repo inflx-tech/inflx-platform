@@ -136,7 +136,9 @@ export default function ApprovalsPage() {
   async function handleAction(id, status, reason) {
     const fn = activeTab === 'brands' ? adminApi.updateBrandStatus : adminApi.updateInfluencerStatus;
     const body = { status };
-    if (reason) body.rejection_reason = reason;
+    // Key must be `reason` — that is what admin.controller.js reads for both
+    // brands and influencers. Sending `rejection_reason` 422s every reject.
+    if (reason) body.reason = reason;
     const res = await fn(id, body);
     if (res.success) {
       showToast(`${activeTab === 'brands' ? 'Brand' : 'Influencer'} ${status} successfully`);
