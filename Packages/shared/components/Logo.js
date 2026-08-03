@@ -9,9 +9,13 @@
 // band — so it reads correctly on light and dark chrome alike; only the
 // wordmark colour responds to `tone`.
 //
-// API: <Logo tone="light|dark" size="sm|md|lg" />
-//   tone  — "light" for dark backgrounds (topbar), "dark" for light bg
-//   size  — sm 26px mark / md 34 / lg 42
+// API: <Logo tone="light|dark" size="sm|md|lg" wordmark={bool} />
+//   tone     — "light" for dark backgrounds (topbar), "dark" for light bg
+//   size     — sm 26px mark / md 34 / lg 42
+//   wordmark — false renders the mark alone. Used where the surrounding
+//              chrome already establishes the brand (the dashboard topbar),
+//              so the name would just be repetition. `tone` is then a no-op,
+//              because the mark carries its own colours.
 
 import React from 'react';
 import InflxMark from './InflxMark';
@@ -23,9 +27,15 @@ const WORDMARK_FONT =
 // scales as one unit.
 const SIZE = { sm: 26, md: 34, lg: 42 };
 
-export default function Logo({ tone = 'dark', size = 'md', className = '' }) {
+export default function Logo({ tone = 'dark', size = 'md', className = '', wordmark = true }) {
   const markHeight = SIZE[size] || SIZE.md;
   const isLight = tone === 'light';
+
+  // Mark alone still has to announce the brand, so it keeps its own label
+  // rather than being marked decorative.
+  if (!wordmark) {
+    return <InflxMark height={markHeight} className={`inflx-logo ${className}`} />;
+  }
 
   return (
     <span

@@ -16,7 +16,8 @@
   "release": {
     "qa_all_green": true,
     "qa_run": "pnpm qa GREEN — 79/79 workflows passed (53.6s), 2026-08-03, gate 0. Packages/Mobile jest 26 suites / 115 tests passed.",
-    "deploy_note": "NOT deploy-inert. Shipped 2026-08-03 on explicit founder go, via three separate paths.",
+    "deploy_note": "NOT deploy-inert. Shipped 2026-08-03 on explicit founder go, via three separate paths. A follow-up dashboard-topbar reskin (below) shipped the same day, web-only.",
+    "followup_topbar": "After seeing the mark live on inflx.in/dashboard the founder asked for the top menu to drop its black strip, turn the white nav text black, and show the logo alone (slightly larger) on white. Implemented in Packages/brand-web/app/dashboard/layout.js: header #0A0A0A -> white with a #E4E4E7 rule; nav/bell #A1A1AA -> #52525B with #0A0A0A hover on #F4F4F5; unread-badge ring #0A0A0A -> white; sign-out hover white -> #0A0A0A. The active pill and avatar already used #FFC107 with #0A0A0A text and were correct on white, so were left alone. Shared Logo gained an additive `wordmark` prop (default true) so the four other call sites (landing nav, landing footer, /login, /rejected) are untouched and still render the lockup; with wordmark={false} the mark keeps its own accessible label rather than being decorative, since it is then the only thing naming the brand. NOT mirrored to Packages/Mobile — no mobile surface wants a mark-only logo and an unused prop there would force an OTA republish for zero visual change, so this follow-up is Vercel-only with no OTA. Verified: pnpm qa GREEN 79/79; dashboard captured via the QA suite's own brand-session helper with 0 page and 0 console errors; grep confirmed no QA spec pinned the old dark chrome.",
     "deploy": {
       "commit": "f7f1b73",
       "web": "pushed to main 00b2865..f7f1b73 → Vercel. Verified live: https://inflx.in/ 200, /icon.png 200, and the old inflx-logo-dark.png reference is gone from the served HTML.",

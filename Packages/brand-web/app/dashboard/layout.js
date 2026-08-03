@@ -107,12 +107,12 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-body">
 
-      {/* ── Topbar — ink chrome ─────────────────────────────────── */}
-      <header className="bg-[#0A0A0A] h-16 flex items-center justify-between px-7 gap-6 flex-shrink-0 sticky top-0 z-40 border-b border-[#2A2A2D]">
+      {/* ── Topbar — white chrome ───────────────────────────────── */}
+      <header className="bg-white h-16 flex items-center justify-between px-7 gap-6 flex-shrink-0 sticky top-0 z-40 border-b border-[#E4E4E7]">
 
-        {/* Brand mark — Logo placeholder (light variant for dark chrome) */}
+        {/* Brand mark alone — the name would only repeat the page it sits on */}
         <div className="flex items-center flex-shrink-0">
-          <Logo tone="light" size="sm" />
+          <Logo size="lg" wordmark={false} />
         </div>
 
         {/* horizontal nav */}
@@ -132,7 +132,7 @@ export default function DashboardLayout({ children }) {
                 className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12.5px] whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-[#FFC107] text-[#0A0A0A] font-bold'
-                    : 'text-[#A1A1AA] font-medium hover:text-white hover:bg-[#2A2A2D]'
+                    : 'text-[#52525B] font-medium hover:text-[#0A0A0A] hover:bg-[#F4F4F5]'
                 }`}
               >
                 <span className="opacity-85" style={{ fontSize: '13px' }}>{item.icon}</span>
@@ -146,7 +146,7 @@ export default function DashboardLayout({ children }) {
         <div className="flex items-center gap-3 flex-shrink-0">
           <Link
             href="/dashboard/notifications"
-            className="relative w-9 h-9 rounded-[10px] flex items-center justify-center text-[#A1A1AA] hover:text-white hover:bg-[#2A2A2D] transition-all"
+            className="relative w-9 h-9 rounded-[10px] flex items-center justify-center text-[#52525B] hover:text-[#0A0A0A] hover:bg-[#F4F4F5] transition-all"
             aria-label="Notifications"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }) {
               <path d="M13.73 21a2 2 0 01-3.46 0"/>
             </svg>
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-[#FFC107] border-2 border-[#0A0A0A] rounded-full text-[9.5px] font-bold text-[#0A0A0A] flex items-center justify-center font-mono">
+              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-[#FFC107] border-2 border-white rounded-full text-[9.5px] font-bold text-[#0A0A0A] flex items-center justify-center font-mono">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -169,7 +169,7 @@ export default function DashboardLayout({ children }) {
               </div>
               <button
                 onClick={logout}
-                className="text-[11px] font-semibold text-[#71717A] hover:text-white transition-colors px-1 py-1"
+                className="text-[11px] font-semibold text-[#71717A] hover:text-[#0A0A0A] transition-colors px-1 py-1"
               >
                 Sign out
               </button>

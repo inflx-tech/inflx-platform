@@ -73,6 +73,41 @@ test **reads `values/ic_launcher_background.xml`** and asserts the splash
 uses whatever that resource says. Mutation-checked — recolouring the icon
 resource alone fails the test.
 
+## Follow-up — dashboard topbar reskin (founder request, same day)
+
+Evidence: `after/dash-topbar.png`, `after/dash-full.png`.
+
+Seeing the mark live on `inflx.in/dashboard`, the founder asked for the top
+menu to lose its black strip and carry the logo alone. Four changes, all in
+`app/dashboard/layout.js` plus one additive prop on the shared `Logo`:
+
+| Element | Before | After |
+|---|---|---|
+| Header | `bg-[#0A0A0A]`, border `#2A2A2D` | `bg-white`, border `#E4E4E7` |
+| Logo | `<Logo tone="light" size="sm">` — lockup, 26 px mark | `<Logo size="lg" wordmark={false}>` — mark alone, 42 px |
+| Nav (inactive) | `#A1A1AA`, hover white on `#2A2A2D` | `#52525B`, hover `#0A0A0A` on `#F4F4F5` |
+| Bell | `#A1A1AA`, hover white | `#52525B`, hover `#0A0A0A` |
+| Unread badge ring | `border-[#0A0A0A]` (to punch out of the dark bar) | `border-white` |
+| Sign out hover | white | `#0A0A0A` |
+
+The active-tab pill and the avatar keep `#FFC107` with `#0A0A0A` text —
+already correct on white, so they were left alone. Every remaining
+`#0A0A0A` in the header block is text sitting on yellow, verified by grep.
+
+`Logo` gained `wordmark` (default `true`), so all four other call sites —
+landing nav, landing footer, `/login`, `/rejected` — are untouched and still
+render the full lockup. With `wordmark={false}` the mark keeps its own
+accessible label rather than being marked decorative, since it is then the
+only thing naming the brand.
+
+Deliberately **not** mirrored to `Packages/Mobile`: no mobile surface wants
+a mark-only logo, and adding an unused prop there would be speculative and
+would force an OTA republish for no visual change.
+
+Verified: `pnpm qa` GREEN 79/79. Dashboard captured through the QA suite's
+own brand-session helper — **0 page errors, 0 console errors**. Confirmed by
+grep that no QA spec pinned the old dark chrome.
+
 ## Trace fidelity
 
 `after/compare.png` — original ¦ traced ¦ 8× amplified diff. The diff is
