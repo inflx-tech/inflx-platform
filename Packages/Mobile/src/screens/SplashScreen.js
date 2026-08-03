@@ -1,14 +1,18 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Image, Animated, StyleSheet, Dimensions } from 'react-native';
+import { View, Animated, StyleSheet, Dimensions } from 'react-native';
+import Logo from '../components/Logo';
 
 const { width, height } = Dimensions.get('window');
 
 /**
  * SplashScreen — animated app launch screen.
  *
+ * The white background + yellow mark deliberately match the launcher icon,
+ * so the splash is continuous with the icon the user just tapped.
+ *
  * Animation sequence:
- * 1. Golden background fades in (0-300ms)
- * 2. INFLX "lx" swoosh logo scales up with spring (200-800ms)
+ * 1. White background fades in (0-300ms)
+ * 2. INFLX lockup scales up with spring (200-800ms)
  * 3. Glow pulse around logo (600-1200ms)
  * 4. Hold for 500ms
  * 5. Fade out (1700-2200ms)
@@ -67,11 +71,7 @@ export default function SplashScreen({ onFinish }) {
           opacity: logoOpacity,
           transform: [{ scale: logoScale }],
         }}>
-          <Image
-            source={require('../assets/images/inflx-app-icon.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <Logo tone="dark" size="xl" />
         </Animated.View>
 
         {/* Tagline */}
@@ -90,27 +90,24 @@ const styles = StyleSheet.create({
   },
   bg: {
     flex: 1,
-    backgroundColor: '#F5A623',
+    // Matches @color/ic_launcher_background so the splash is continuous
+    // with the launcher icon.
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   glow: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 28,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(253, 182, 2, 0.16)',
   },
   tagline: {
-    marginTop: 16,
+    marginTop: 20,
     fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(13, 22, 48, 0.55)',
     letterSpacing: 0.5,
   },
 });

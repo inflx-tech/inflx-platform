@@ -1,66 +1,60 @@
-// Logo — INFLX brand placeholder (React Native).
+// Logo — the INFLX lockup (React Native).
 //
-// Mirrors Packages/shared/components/Logo.js (web). Renders a dashed
-// [LOGO] placeholder until the founder uploads the real artwork.
+// Mirrors Packages/shared/components/Logo.js (web): the vector mark
+// beside the "inflx" wordmark. The wordmark is live text rather than a
+// baked image, so it stays crisp at every size and `tone` is a pure
+// colour swap.
 //
-// Swap to real asset:
-//   1. Drop the PNG at Packages/Mobile/src/assets/logo/inflx-logo.png
-//   2. Set HAS_ASSET = true; the component renders <Image> instead.
-//   3. No call-site changes anywhere.
+// The mark is self-contained — brand yellow with a near-black band — so
+// it reads on light and dark surfaces alike; only the wordmark colour
+// responds to `tone`. On a yellow surface, pass the mark its inverted
+// fills directly via <InflxMark> instead of using this lockup.
 //
-// API: <Logo tone="light|dark" size="sm|md|lg" />
+// PlusJakartaSans-Bold is bundled (android/app/src/main/assets/fonts);
+// if it ever fails to resolve, RN falls back to the system face rather
+// than erroring.
+//
+// API: <Logo tone="light|dark" size="sm|md|lg|xl" />
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
+import InflxMark from './InflxMark';
 
-const HAS_ASSET = false;
-
-const SIZE = {
-  sm: { minWidth: 130, padH: 16, padV: 10, fontSize: 12 },
-  md: { minWidth: 170, padH: 28, padV: 16, fontSize: 14 },
-  lg: { minWidth: 220, padH: 36, padV: 18, fontSize: 16 },
-};
+// Mark height in px; the wordmark and gap derive from it so the lockup
+// scales as one unit.
+const SIZE = { sm: 26, md: 34, lg: 42, xl: 64 };
 
 export default function Logo({ tone = 'dark', size = 'md', style }) {
-  const s = SIZE[size] || SIZE.md;
+  const markHeight = SIZE[size] || SIZE.md;
   const isLight = tone === 'light';
-
-  if (HAS_ASSET) {
-    // When the asset lands we'll swap to <Image source={require(...)}/>
-    // For now this branch is unreachable — kept for the future swap.
-    return null;
-  }
-
-  const wrap = {
-    minWidth: s.minWidth,
-    paddingHorizontal: s.padH,
-    paddingVertical: s.padV,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: isLight ? 'rgba(255,255,255,0.22)' : '#D4D4D8',
-    borderRadius: 10,
-    backgroundColor: isLight ? 'rgba(255,255,255,0.04)' : '#F4F4F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-  };
-
-  const label = {
-    fontFamily: 'monospace',
-    fontWeight: '700',
-    fontSize: s.fontSize,
-    letterSpacing: 2.5,
-    color: isLight ? 'rgba(255,255,255,0.7)' : '#71717A',
-  };
 
   return (
     <View
       accessible
-      accessibilityLabel="inflx logo placeholder — upload to replace"
       accessibilityRole="image"
-      style={[wrap, style]}
+      accessibilityLabel="inflx"
+      style={[
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          alignSelf: 'center',
+        },
+        style,
+      ]}
     >
-      <Text style={label}>LOGO</Text>
+      <InflxMark height={markHeight} />
+      <Text
+        style={{
+          marginLeft: Math.round(markHeight * 0.34),
+          fontFamily: 'PlusJakartaSans-Bold',
+          fontSize: Math.round(markHeight * 0.82),
+          letterSpacing: -0.5,
+          includeFontPadding: false,
+          color: isLight ? '#FFFFFF' : '#0D1630',
+        }}
+      >
+        inflx
+      </Text>
     </View>
   );
 }

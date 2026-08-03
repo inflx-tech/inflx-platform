@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Logo from '../../shared/components/Logo';
 
 const INDUSTRY_GROUPS = [
   { icon: '🍽️', label: 'Food & Dining', count: 4, color: 'from-red-500 to-orange-500' },
@@ -41,7 +42,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-[#070b16]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="font-display text-xl font-extrabold">
-            <img src="/inflx-logo-dark.png" alt="INFLX" style={{height: '32px'}} />
+            <Logo tone="light" size="sm" />
           </div>
           <div className="flex items-center gap-3">
             {session ? (
@@ -261,7 +262,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <div className="font-display text-lg font-extrabold mb-1">
-              <img src="/inflx-logo-dark.png" alt="INFLX" style={{height: '32px'}} />
+              <Logo tone="light" size="sm" />
             </div>
             <p className="text-xs text-white/25">Connecting local brands with influencers across India</p>
           </div>
