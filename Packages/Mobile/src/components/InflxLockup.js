@@ -1,0 +1,52 @@
+// InflxLockup — the INFLX logotype (React Native).
+//
+// The mark IS the letter "i": the word is spelled once, as
+// [mark] + "nflx". GENERATED — do not hand-edit the path data.
+//
+// Rendered as outlines rather than live text on purpose. As a LETTER the
+// mark's position depends on exact glyph metrics, and the two platforms
+// do not agree: web loads Plus Jakarta Sans 800, mobile only ships
+// Bold 700. Outlines make the logotype byte-identical on web and mobile,
+// remove the font dependency (a font that failed to resolve would drop
+// the mark into the wrong place mid-word), and ship over OTA.
+//
+// Geometry, from measured metrics (unitsPerEm 1000):
+//   mark height = 757 = ascender, so it is flush with f and l
+//   mark centred in the 260-unit advance the real "i" occupied
+//   tracking -20 units = the -0.02em of the approved study
+//
+// Aspect is fixed at 2.68827; pass `height` and width follows.
+// `height` is the ASCENDER height, so the sm/md/lg/xl tokens keep the
+// vertical footprint they had before.
+
+// Deliberate twin of Packages/shared/components/InflxLockup.js — duplicated
+// rather than imported because Metro cannot resolve outside
+// Packages/Mobile/ (same constraint as src/utils/tracking.js).
+
+import React from 'react';
+import Svg, { Path, G } from 'react-native-svg';
+
+export const LOCKUP_ASPECT = 2035.02 / 757;
+
+export default function InflxLockup({ height = 34, wordFill = '#0D1630', style }) {
+  return (
+    <Svg
+      viewBox="0 0 2035.02 757"
+      height={height}
+      width={height * LOCKUP_ASPECT}
+      style={style}
+      accessible
+      accessibilityRole="image"
+      // The word is outlines, not a Text node, so the brand name exists
+      // nowhere in the tree — this label is the only thing a screen
+      // reader can announce.
+      accessibilityLabel="inflx"
+    >
+      <G transform="translate(15.02 0) scale(0.447400)">
+        <Path fill="#FDB602" d="M 428 0.863 C 427.175 1.345, 424.025 2.048, 421 2.426 C 408.162 4.030, 400.133 7.262, 373.500 21.549 C 331.929 43.849, 325.119 47.491, 311 54.972 C 303.025 59.197, 292 65.132, 286.500 68.159 C 281 71.187, 268.175 78.079, 258 83.475 C 247.825 88.872, 233.875 96.326, 227 100.040 C 220.125 103.755, 204.375 112.183, 192 118.769 C 77.306 179.813, 73.615 181.897, 58.273 194.265 C 33.679 214.091, 10 254.459, 10 276.561 C 10 277.975, 9.553 279.967, 9.007 280.987 C 8.355 282.205, 7.903 426.228, 7.691 699.672 C 7.439 1025.303, 7.100 1117.594, 6.138 1121.500 C 4.719 1127.268, 3.440 1133.782, 1.918 1143 C 0.634 1150.769, -0.074 1617.836, 1.197 1618.621 C 1.638 1618.895, 2 1620.420, 2 1622.010 C 2 1625.753, 4.113 1633.704, 7.442 1642.489 C 24.276 1686.913, 79.668 1705.597, 123.433 1681.615 C 138.186 1673.530, 186.532 1645.987, 207.500 1633.720 C 214.100 1629.859, 222.425 1625.036, 226 1623.001 C 233.743 1618.595, 243.894 1612.796, 253.500 1607.291 C 257.350 1605.084, 263.963 1601.304, 268.196 1598.890 C 291.920 1585.359, 311.467 1574.121, 331.500 1562.494 C 336.450 1559.621, 351.075 1551.299, 364 1544 C 376.925 1536.701, 391.550 1528.384, 396.500 1525.518 C 401.450 1522.651, 408.650 1518.589, 412.500 1516.491 C 453.833 1493.964, 482.841 1453.374, 489.868 1408.231 C 490.697 1402.909, 491.003 1288.971, 491.012 982.731 C 491.024 564.500, 491.024 564.500, 494.533 558.500 C 501.782 546.107, 505.301 537.752, 511.805 517.500 C 514.722 508.414, 514.841 65.873, 511.928 57 C 503.231 30.508, 483.762 12.051, 455.389 3.401 C 446.160 0.588, 430.895 -0.827, 428 0.863" />
+        <Path fill="#131413" d="M 481.259 575.343 C 466.473 593.173, 453.136 603.921, 424 621.486 C 413.275 627.952, 386.500 644.091, 364.500 657.351 C 342.500 670.612, 317.300 685.824, 308.500 691.157 C 299.700 696.490, 286.200 704.655, 278.500 709.302 C 270.800 713.949, 253.925 724.161, 241 731.996 C 228.075 739.830, 206.475 752.875, 193 760.984 C 179.525 769.093, 154.550 784.181, 137.500 794.513 C 120.450 804.844, 101.775 816.075, 96 819.471 C 46.030 848.851, 17.812 883.873, 10.572 925.500 C 7.028 945.873, 8.515 1114.056, 12.161 1105.306 C 31.567 1058.744, 48.921 1041.645, 120.687 998.370 C 143.134 984.835, 173.425 966.554, 188 957.746 C 202.575 948.938, 217.200 940.137, 220.500 938.188 C 223.800 936.239, 238.650 927.350, 253.500 918.435 C 283.271 900.563, 290.266 896.383, 306.500 886.769 C 312.550 883.186, 323.575 876.538, 331 871.996 C 338.425 867.453, 347.200 862.162, 350.500 860.237 C 353.800 858.312, 368.425 849.661, 383 841.013 C 397.575 832.365, 413.775 822.769, 419 819.689 C 450.802 800.945, 477.376 770.832, 486.118 743.634 C 489.345 733.592, 490.884 568.982, 487.750 569.012 C 487.063 569.018, 484.142 571.868, 481.259 575.343" />
+      </G>
+      <Path fill={wordFill} d="M445 757L295 757L295 211L435 211L435 319L427 295Q446 246 488.50 222.50Q531 199 588 199Q650 199 696.50 225Q743 251 769 297.50Q795 344 795 406L795 757L645 757L645 438Q645 406 632.50 383Q620 360 597.50 347Q575 334 545 334Q516 334 493 347Q470 360 457.50 383Q445 406 445 438 M1090 757L940 757L940 341L848 341L848 211L940 211L940 203Q940 138 965.50 93Q991 48 1039 24Q1087 0 1155 0Q1168 0 1183 1.50Q1198 3 1208 5L1208 133Q1198 131 1190.50 130.50Q1183 130 1175 130Q1133 130 1111.50 148.50Q1090 167 1090 203L1090 211L1207 211L1207 341L1090 341 M1414 757L1264 757L1264 0L1414 0 M1635 757L1461 757L1652 483L1460 211L1634 211L1778 423L1702 423L1846 211L2020 211L1828 483L2018 757L1845 757L1704 545L1776 545" />
+    </Svg>
+  );
+}

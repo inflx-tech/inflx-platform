@@ -76,7 +76,7 @@ export default function SplashScreen({ onFinish }) {
 
         {/* Tagline */}
         <Animated.Text style={[styles.tagline, { opacity: logoOpacity }]}>
-          Connecting Brands & Influencers
+          Powered by Creators, Driven by Community
         </Animated.Text>
       </Animated.View>
     </Animated.View>

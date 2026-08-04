@@ -108,6 +108,93 @@ Verified: `pnpm qa` GREEN 79/79. Dashboard captured through the QA suite's
 own brand-session helper — **0 page errors, 0 console errors**. Confirmed by
 grep that no QA spec pinned the old dark chrome.
 
+## Follow-up 2 — the mark becomes the letter "i" (founder request)
+
+Evidence: `after/letterform.png` (the design study), `after/new-landing-nav.png`,
+`after/new-login.png`, `after/new-topbar.png`, `after/cmp-out.png`.
+
+Founder: *"our logo symbol will act as Letter 'I', don't add I again in name
+inflx"*, plus a new splash caption.
+
+**Before:** `[mark] + "inflx"` — the "i" was written twice, once as the
+symbol and once as a letter, with the symbol standing apart as a badge.
+**After:** `[mark] + "nflx"` — the name is spelled once and the symbol is a
+letter inside the word.
+
+### Metrics, measured not guessed
+
+Plus Jakarta Sans 800 was measured two independent ways — Canvas
+`TextMetrics` in a browser and glyph outlines via opentype.js — and they
+agree, so the numbers are trustworthy:
+
+| | browser | TTF | used |
+|---|---|---|---|
+| "i" height (with dot) | 0.750 em | 0.745 em | — |
+| "f"/"l" ascender | 0.760 em | 0.757 em | **mark height** |
+| "n" x-height | 0.560 em | 0.558 em | — |
+| "i" advance | 0.260 em | 0.260 em | **mark slot** |
+
+The mark's aspect is 0.30378, so at ascender height it is **0.2299 em**
+wide against the "i" advance of **0.260 em** — it drops into the word
+almost exactly, with 0.015 em of side bearing each side reproducing the
+word's natural rhythm. The substitution is metrically natural, not forced.
+
+Founder chose **Option C** from a three-way study (A = i-height 0.75F,
+B = proud 0.84F, C = ascender 0.76F): mark top flush with the "f" and "l",
+giving the word one clean top edge.
+
+### Why outlines instead of live text
+
+This is the significant engineering change, and it is a direct consequence
+of the design: as a **letter**, the mark's position depends on exact glyph
+metrics. Web loads Plus Jakarta Sans **800**; mobile bundles only
+**Bold 700**. Live text would therefore letterfit differently on the two
+platforms — and a font that failed to resolve on a phone would drop the
+mark into the wrong place *inside* the word, which is far more damaging
+than a symbol sitting slightly off *beside* it.
+
+So the wordmark now ships as glyph outlines in `InflxLockup` (694 chars of
+path data). Consequences, all good:
+
+- byte-identical logotype on web and mobile — this also **fixes a latent
+  inconsistency**, since web was rendering the word at 800 and mobile at 700
+- no font dependency at all for the logo
+- ships over **OTA with no APK round** (adding an ExtraBold TTF to mobile
+  would have required one)
+- `tone` still works — the word is one `<path>` whose fill is the prop
+
+Verified the outline version reproduces the approved live-text design:
+rendered both at ascender height 120 and compared ink boxes — height
+identical (240 px), width within **0.9 %** (browser subpixel/hinting vs raw
+advances).
+
+### Accessibility
+
+The brand name no longer exists as text anywhere in the tree, so the
+lockup carries `aria-label="inflx"` on web and `accessibilityLabel="inflx"`
+on mobile. Confirmed live: the `/login` lockup reports accessible name
+**"inflx"**. A test asserts the label, and another asserts no literal
+"inflx" text node survives — that one fails if the double-i ever returns.
+
+### Caption
+
+`"Connecting Brands & Influencers"` → **"Powered by Creators, Driven by
+Community"**. Founder confirmed both halves capitalised.
+
+### Scope
+
+Applied to all 7 lockup call sites (splash, phone screen, brand home,
+login, landing nav, landing footer, rejected ×2) — founder chose
+brand-wide over splash-only, so the name is never spelled two ways.
+Unaffected: dashboard topbar (mark alone), launcher icon, favicon.
+
+Mobile `Logo` deliberately has **no** `wordmark` prop, unlike the web twin —
+no mobile surface needs a mark-only logo. Noted in both headers.
+
+Verified: `pnpm qa` GREEN 79/79; Mobile jest 26 suites / **118 tests**;
+landing nav, `/login` and the dashboard topbar captured on the running app
+with **0 page and 0 console errors**.
+
 ## Trace fidelity
 
 `after/compare.png` — original ¦ traced ¦ 8× amplified diff. The diff is

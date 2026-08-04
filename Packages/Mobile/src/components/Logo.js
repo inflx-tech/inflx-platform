@@ -1,60 +1,41 @@
-// Logo — the INFLX lockup (React Native).
+// Logo — the INFLX logotype (React Native).
 //
-// Mirrors Packages/shared/components/Logo.js (web): the vector mark
-// beside the "inflx" wordmark. The wordmark is live text rather than a
-// baked image, so it stays crisp at every size and `tone` is a pure
-// colour swap.
+// The mark IS the letter "i", so the name is spelled once: the lockup
+// renders [mark] + "nflx" and reads "inflx". Previously the mark sat
+// beside a full "inflx", which wrote the i twice.
 //
-// The mark is self-contained — brand yellow with a near-black band — so
-// it reads on light and dark surfaces alike; only the wordmark colour
-// responds to `tone`. On a yellow surface, pass the mark its inverted
-// fills directly via <InflxMark> instead of using this lockup.
+// The word is drawn as outlines (see InflxLockup) rather than a <Text>.
+// As a letter the mark's position depends on exact glyph metrics, and
+// this app only bundles PlusJakartaSans-Bold (700) while web uses 800 —
+// live text would letterfit differently on the two platforms, and a font
+// that failed to resolve would drop the mark into the wrong place inside
+// the word. Outlines remove that risk entirely and need no font.
 //
-// PlusJakartaSans-Bold is bundled (android/app/src/main/assets/fonts);
-// if it ever fails to resolve, RN falls back to the system face rather
-// than erroring.
+// `size` is the ASCENDER height, which is also the mark height, so these
+// tokens keep the vertical footprint they had before this change.
+//
+// Differs from the web twin by design: there is no `wordmark` prop, because
+// no mobile surface wants a mark-only logo (that is the brand-web dashboard
+// topbar). Add it here only when a screen actually needs it.
 //
 // API: <Logo tone="light|dark" size="sm|md|lg|xl" />
 
 import React from 'react';
-import { View, Text } from 'react-native';
-import InflxMark from './InflxMark';
+import InflxLockup from './InflxLockup';
 
-// Mark height in px; the wordmark and gap derive from it so the lockup
-// scales as one unit.
 const SIZE = { sm: 26, md: 34, lg: 42, xl: 64 };
 
+const WORD_ON_DARK = '#FFFFFF';
+const WORD_ON_LIGHT = '#0D1630';
+
 export default function Logo({ tone = 'dark', size = 'md', style }) {
-  const markHeight = SIZE[size] || SIZE.md;
-  const isLight = tone === 'light';
+  const height = SIZE[size] || SIZE.md;
 
   return (
-    <View
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel="inflx"
-      style={[
-        {
-          flexDirection: 'row',
-          alignItems: 'center',
-          alignSelf: 'center',
-        },
-        style,
-      ]}
-    >
-      <InflxMark height={markHeight} />
-      <Text
-        style={{
-          marginLeft: Math.round(markHeight * 0.34),
-          fontFamily: 'PlusJakartaSans-Bold',
-          fontSize: Math.round(markHeight * 0.82),
-          letterSpacing: -0.5,
-          includeFontPadding: false,
-          color: isLight ? '#FFFFFF' : '#0D1630',
-        }}
-      >
-        inflx
-      </Text>
-    </View>
+    <InflxLockup
+      height={height}
+      wordFill={tone === 'light' ? WORD_ON_DARK : WORD_ON_LIGHT}
+      style={style}
+    />
   );
 }

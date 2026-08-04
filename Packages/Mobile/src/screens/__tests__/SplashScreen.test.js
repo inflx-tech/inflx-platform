@@ -14,8 +14,10 @@ import SplashScreen from '../SplashScreen';
 describe('SplashScreen', () => {
   test('mounts and shows the INFLX lockup, not a bitmap screenshot', () => {
     const { toJSON } = render(<SplashScreen onFinish={() => {}} />);
-    expect(screen.getByText('inflx')).toBeTruthy();
-    expect(screen.getByText('Connecting Brands & Influencers')).toBeTruthy();
+    // The word is drawn as outlines, so the brand name is not a text node —
+    // the accessible label is what proves the lockup is on screen.
+    expect(screen.getByLabelText('inflx')).toBeTruthy();
+    expect(screen.getByText('Powered by Creators, Driven by Community')).toBeTruthy();
 
     const images = [];
     (function walk(n) {
