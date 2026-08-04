@@ -24,7 +24,9 @@
       "web": "pushed to main 00b2865..f7f1b73 → Vercel. Verified live: https://inflx.in/ 200, /icon.png 200, and the old inflx-logo-dark.png reference is gone from the served HTML.",
       "ota": "pnpm publish-ota:all → brand v163, influencer v160, follower v218, agency v58 (native runtime 3, bundle 3109 KB). Phones pick up on next launch.",
       "apk": "All four release APKs rebuilt (assemble{Brand,Influencer,Follower,Agency}Release, exit 0) at Packages/Mobile/android/app/build/outputs/apk/<flavour>/release/. NOT copied into APKs/ — that directory holds another window's in-flight builds and was deliberately left untouched. Icon verified INSIDE the built APK with aapt: application-icon resolves to the adaptive icon at every density; color/ic_launcher_background = #ffffffff; foreground + monochrome layers present; the foreground bitmap was extracted and rendered under circle and squircle masks.",
-      "not_shipped_by_ota": "The launcher icon is a native resource — it reaches users only when a rebuilt APK is installed. The OTA above does NOT change it."
+      "not_shipped_by_ota": "The launcher icon is a native resource — it reaches users only when a rebuilt APK is installed. The OTA above does NOT change it.",
+      "followup_topbar_deploy": "commit ed3470c — white dashboard topbar, mark alone. Vercel only, no OTA, no APK. Verified live: computed background of the production topbar is rgb(255,255,255).",
+      "followup_letterform_deploy": "commit 99c50be — the mark becomes the letter 'i' + new splash caption. Pushed ed3470c..99c50be → Vercel; pnpm publish-ota:all → brand v164, influencer v161, follower v219, agency v59. NO APK needed: the wordmark is outlines, so nothing native changed. Verified live on https://inflx.in/login — the logotype is now a single-vector lockup (no sibling <span>inflx</span>) reporting accessible name 'inflx', box 91.39x34."
     },
     "released": false,
     "released_by": null,
