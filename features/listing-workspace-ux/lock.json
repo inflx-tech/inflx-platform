@@ -1,0 +1,22 @@
+{
+  "feature": "listing-workspace-ux",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-08-04",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-08-04",
+  "notes": "Brand-web Listings screen re-housed as a full-width three-pane workspace: persistent category tree rail (left), working surface (centre), staging tray / filters (right). Replaces the maxWidth:960 centred column and the drill-and-swap navigation model. Founder reviewed the HTML mockup (04-preview/mockups/listing-workspace.html, 4 states) and locked with 'pls lock and implement' on 2026-08-04, delegating the two open scope decisions. Decisions taken under that delegation: (1) bulk actions IN for round 1, limited to Hide/Show/Remove/Edit price — all built on existing per-product endpoints, zero backend; (2) bulk Move-category and Attach-offer OUT — updateListingProduct deliberately preserves category_node_id and brandOffer.routes.js has no attach endpoint, so both need backend work; removed from the locked mockup so the mockup matches what ships; (3) brand mobile listing untouched this round. UI-governed, brand-web only — not Mobile-governed, so no Maestro gate. No backend, no migration, no new endpoint.",
+  "verification": "pnpm qa GREEN — 98 passed, gate 0 (2026-08-04, report qa/reports/2026-08-04T13-31-33-611Z/QA-REPORT.md); same count as the pre-change baseline, zero regression. JSX parses clean on all three touched files via next/dist/compiled/babel/parser. Next dev compiles the route ('✓ Compiled /dashboard/products/listing', GET 200). Live DOM check at 1280px: .page 1224px wide (was a fixed 960), .ws grid computed '236px 924px', tree rail + tab rail render, no horizontal overflow. NOT verified: the populated three-pane state and the bulk actions against real data — the local run has no brand session or seeded fashion products; that lands in the founder's single end-to-end pass, so released stays false. See 06-diff/notes.md.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

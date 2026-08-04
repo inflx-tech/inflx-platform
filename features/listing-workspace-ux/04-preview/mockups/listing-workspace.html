@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>INFLX — Listing Workspace (redesign mockup)</title>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   INFLX Listing Workspace — redesign mockup
+   Tokens copied verbatim from the live page CSS so implementation
+   is a layout swap, not a re-skin.
+   ───────────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;--border:#E4E4E7;
+  --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;--danger:#E8401A;--danger-pale:#FDEEE9;
+  --variant:#7E22CE;--variant-pale:#F3E8FF;--disc:#0E7490;--disc-pale:#CFFAFE;--info:#1D4ED8;--info-pale:#DBEAFE;
+  --rail-l:264px;--rail-r:320px;
+}
+body{font-family:'Plus Jakarta Sans','Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:13px;line-height:1.45;color:var(--ink);background:var(--bg2)}
+h1,h2,h3{font-family:'Outfit','Plus Jakarta Sans',system-ui,sans-serif;letter-spacing:-.3px}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+
+/* ── mockup-only chrome ─────────────────────────────────────── */
+.mkbar{background:#111;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;font-weight:700;position:sticky;top:0;z-index:60}
+.mkbar .lbl{color:#8b8b8b;text-transform:uppercase;letter-spacing:.6px}
+.mkbar button{background:#242424;color:#bbb;border:1px solid #333;border-radius:7px;padding:5px 11px;font-size:11px;font-weight:800}
+.mkbar button.on{background:var(--yellow);color:#111;border-color:var(--yellow)}
+.mkbar .note{margin-left:auto;color:#777;font-weight:600;letter-spacing:.2px}
+
+/* ── fake app top nav (context only, not part of the redesign) ─ */
+.appnav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:22px;height:54px}
+.appnav .logo{width:22px;height:22px;background:var(--ink);border-radius:5px;position:relative}
+.appnav .logo:after{content:"";position:absolute;inset:6px 9px;background:var(--yellow);transform:skewX(-12deg)}
+.appnav a{font-size:12.5px;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 2px}
+.appnav a.on{color:var(--ink);font-weight:800}
+.appnav .right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.appnav .av{width:28px;height:28px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+
+/* ── page shell: FULL WIDTH, no 960 cap ─────────────────────── */
+.page{max-width:1720px;margin:0 auto;padding:18px 24px 60px}
+
+/* ── header block ───────────────────────────────────────────── */
+.nudge{display:flex;align-items:center;gap:10px;background:var(--yellow-pale);border:1px solid var(--yellow);
+  border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--yellow-text);margin-bottom:14px}
+.nudge a{color:var(--ink);font-weight:800;margin-left:auto;white-space:nowrap}
+.nudge .x{background:0;border:0;color:var(--yellow-text);font-size:15px;font-weight:800;line-height:1}
+
+.hdr{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.hdr h1{font-size:23px;font-weight:700}
+.hdr .vert{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:var(--yellow);
+  border-radius:99px;padding:4px 12px;font-size:11px;font-weight:800;letter-spacing:.3px;margin-left:10px;vertical-align:3px}
+.hdr .sub{font-size:12px;color:var(--muted2);margin-top:3px;max-width:640px}
+.hdr .grow{flex:1}
+.omni{flex:0 1 420px;min-width:260px;position:relative}
+.omni input{width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px 10px 34px;font-size:13px;font-family:inherit}
+.omni input:focus{outline:none;border-color:var(--yellow)}
+.omni .ic{position:absolute;left:12px;top:10px;color:var(--muted3);font-size:13px}
+.omni .kbd{position:absolute;right:9px;top:9px;font-size:10px;font-weight:800;color:var(--muted3);
+  background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:2px 6px}
+.hactions{display:flex;gap:8px}
+
+.btn{padding:10px 15px;border:0;border-radius:10px;font-size:12.5px;font-weight:800}
+.btn.yellow{background:var(--yellow);color:var(--ink)}
+.btn.ink{background:var(--ink);color:var(--yellow)}
+.btn.ghost{background:#fff;border:1px solid var(--border);color:var(--ink2)}
+.btn.ghost:hover{border-color:var(--yellow)}
+.btn.sm{padding:7px 11px;font-size:11.5px;border-radius:8px}
+.btn:disabled{opacity:.45}
+
+/* tabs — full-width underline rail, replaces the little pills */
+.tabrail{display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--border);margin:16px 0 16px}
+.tabrail .tab{padding:11px 16px;font-size:13px;font-weight:800;color:var(--muted2);border-bottom:2.5px solid transparent;
+  background:0;border-top:0;border-left:0;border-right:0;display:flex;align-items:center;gap:7px}
+.tabrail .tab .ct{font-size:10.5px;font-weight:800;background:var(--bg2);color:var(--muted2);border-radius:99px;padding:1px 7px}
+.tabrail .tab.on{color:var(--ink);border-bottom-color:var(--yellow)}
+.tabrail .tab.on .ct{background:var(--yellow-pale);color:var(--yellow-text)}
+.tabrail .stats{margin-left:auto;display:flex;gap:16px;padding-right:4px}
+.tabrail .stat b{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;display:block;line-height:1.2}
+.tabrail .stat span{font-size:10px;font-weight:700;color:var(--muted3);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── the workspace: left tree · centre · right rail ─────────── */
+.ws{display:grid;grid-template-columns:var(--rail-l) minmax(0,1fr) var(--rail-r);gap:16px;align-items:start}
+.ws.norail{grid-template-columns:var(--rail-l) minmax(0,1fr)}
+
+.card{background:#fff;border:1px solid var(--border);border-radius:14px}
+.rail{position:sticky;top:14px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden}
+.railhd{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.railhd .t{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+.railhd .a{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted3);background:0;border:0}
+.railbody{overflow-y:auto;padding:8px 8px 12px}
+
+/* tree */
+.tnode{display:flex;align-items:center;gap:7px;border-radius:9px;padding:7px 9px;font-size:12.5px;
+  font-weight:700;color:var(--ink2);border-left:3px solid transparent;background:0;border-top:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.tnode:hover{background:var(--bg)}
+.tnode .cv{width:12px;color:var(--muted3);font-size:9px;flex:none;transition:.15s}
+.tnode.open .cv{transform:rotate(90deg)}
+.tnode .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tnode .n{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;color:var(--muted3)}
+.tnode.on{background:var(--yellow-pale);border-left-color:var(--yellow);color:var(--ink)}
+.tnode.on .n{color:var(--yellow-text)}
+.tnode.leaf .nm:before{content:"▪";color:var(--muted3);margin-right:6px;font-size:9px}
+.tnode.on.leaf .nm:before{color:var(--yellow-text)}
+.tkids{margin-left:14px;border-left:1px dashed var(--border);padding-left:4px}
+.tkids[hidden]{display:none}
+
+/* centre */
+.crumbbar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.crumbbar .cr{font-size:12px;font-weight:700;color:var(--muted2)}
+.crumbbar .cr a{color:var(--muted2);text-decoration:none}
+.crumbbar .cr a:hover{color:var(--ink)}
+.crumbbar .cr b{color:var(--ink)}
+.crumbbar .sep{color:var(--muted3);margin:0 5px}
+.crumbbar .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 13px;font-size:11.5px;font-weight:800;color:var(--muted2)}
+.seg button.on{background:var(--ink);color:var(--yellow)}
+
+.body{padding:16px}
+.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:2px 0 10px;display:flex;align-items:center;gap:8px}
+.sec .ln{flex:1;height:1px;background:var(--border)}
+
+/* category grid — spreads across the full centre column */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:10px}
+.node{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:12px 13px;text-align:left;transition:.12s;width:100%}
+.node:hover{border-color:var(--yellow);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.05)}
+.node.leaf{border-left:3px solid var(--yellow)}
+.node .ico{width:34px;height:34px;border-radius:9px;background:var(--bg2);display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex:none}
+.node.leaf .ico{background:var(--yellow-pale)}
+.node .nm{font-weight:800;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.node .mt{font-size:10.5px;color:var(--muted3);margin-top:1px}
+.node .a{margin-left:auto;color:var(--muted3);font-size:15px}
+.node .done{margin-left:auto;font-size:10px;font-weight:800;color:var(--success-text);
+  background:var(--success-pale);border-radius:99px;padding:2px 8px}
+
+/* wizard */
+.leafhd{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.leafhd h2{font-size:16px;font-weight:800}
+.leafhd .path{font-size:11.5px;color:var(--muted2);font-weight:600;margin-top:2px}
+.leafhd .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.steps{display:flex;align-items:center;gap:0;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg)}
+.stp{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;color:var(--muted3);flex:1}
+.stp .n{width:22px;height:22px;border-radius:50%;background:#fff;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted2);flex:none}
+.stp.on{color:var(--ink)} .stp.on .n{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+.stp.done .n{background:var(--success);color:#fff;border-color:var(--success)}
+.stp .bar{flex:1;height:2px;background:var(--border);margin:0 10px;border-radius:2px}
+.stp.done .bar{background:var(--success)}
+
+.fgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px 14px}
+.f4{grid-column:span 4}.f3{grid-column:span 3}.f2{grid-column:span 2}.f6{grid-column:span 6}.f12{grid-column:span 12}
+.fl{display:block;font-size:10.5px;font-weight:800;color:var(--ink2);margin:0 0 5px}
+.fl .req{color:var(--danger)}
+.fl .tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:5px}
+.tag.variant{background:var(--variant-pale);color:var(--variant)}
+.tag.disc{background:var(--disc-pale);color:var(--disc)}
+.tag.attr{background:var(--info-pale);color:var(--info)}
+.t{width:100%;background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:13px;font-family:inherit;color:var(--ink)}
+.t:focus{outline:none;border-color:var(--yellow)}
+textarea.t{min-height:70px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:700;color:var(--muted)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.on.v{background:var(--variant);border-color:var(--variant)}
+.drop{border:1.5px dashed var(--border);border-radius:12px;background:var(--bg);padding:20px;text-align:center;color:var(--muted2);font-size:12px;font-weight:700}
+.drop b{display:block;color:var(--ink2);font-size:13px;margin-bottom:3px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.th{width:58px;height:58px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;color:var(--muted3);font-size:16px;position:relative}
+.th.cover:after{content:"COVER";position:absolute;bottom:3px;left:3px;right:3px;background:var(--ink);color:var(--yellow);
+  font-size:7px;font-weight:800;border-radius:4px;padding:1px;text-align:center}
+.vcard{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg);margin-top:8px}
+.vhead{font-weight:800;font-size:12.5px;display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.vhead .dot{width:13px;height:13px;border-radius:50%;border:1px solid var(--border)}
+.vstock{display:flex;flex-wrap:wrap;gap:7px}
+.vsize{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:4px 8px}
+.vsize span{font-size:11px;font-weight:800;min-width:22px}
+.vsize input{width:52px;border:0;border-bottom:1px solid var(--border);font-size:12px;padding:2px;font-family:inherit}
+.navbar{display:flex;align-items:center;gap:10px;padding:13px 16px;border-top:1px solid var(--border);
+  background:#fff;position:sticky;bottom:0;border-radius:0 0 14px 14px}
+.navbar .hint{font-size:11px;color:var(--muted3);font-weight:700}
+.navbar .right{margin-left:auto;display:flex;gap:8px}
+
+/* right rail — batch tray */
+.tray{padding:10px;overflow-y:auto}
+.trow{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);
+  border-radius:10px;padding:8px 9px;margin-bottom:7px}
+.trow .ph{width:38px;height:38px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;
+  justify-content:center;color:var(--muted3);font-size:15px;flex:none}
+.trow .nm{font-weight:800;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .mt{font-size:10.5px;color:var(--muted2)}
+.trow .pr{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12.5px;margin-left:auto}
+.trow .x{background:0;border:0;color:var(--danger);font-size:15px;font-weight:800;line-height:1}
+.railfoot{border-top:1px solid var(--border);padding:12px;background:#fff;border-radius:0 0 14px 14px}
+.railfoot .btn{width:100%}
+.railfoot .fine{font-size:10.5px;color:var(--muted3);font-weight:700;text-align:center;margin-top:8px;line-height:1.5}
+.emptytray{text-align:center;padding:26px 14px;color:var(--muted3);font-size:11.5px;font-weight:700;line-height:1.6}
+.emptytray .big{font-size:24px;margin-bottom:6px}
+
+/* inventory table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--muted2);padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg)}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr:hover td{background:#FCFCFD}
+.tbl .pimg{width:40px;height:40px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;
+  justify-content:center;color:var(--muted3);font-size:16px;border:1px solid var(--border)}
+.pn{font-weight:800;font-size:12.5px}
+.pm{font-size:10.5px;color:var(--muted2);margin-top:1px}
+.pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;
+  padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.pill.live{background:var(--success-pale);color:var(--success-text)}
+.pill.hid{background:var(--bg2);color:var(--muted2)}
+.pill.low{background:var(--danger-pale);color:#9a2a12}
+.vchips{display:flex;gap:3px}
+.vch{width:15px;height:15px;border-radius:50%;border:1px solid var(--border)}
+.vmore{font-size:10px;font-weight:800;color:var(--muted3);margin-left:3px}
+.pact{display:flex;gap:2px;justify-content:flex-end}
+.pact button{padding:5px 9px;font-size:11px;font-weight:800;border-radius:7px;background:0;border:0;color:var(--muted)}
+.pact button:hover{background:var(--bg2);color:var(--ink)}
+.pact button.danger:hover{background:var(--danger-pale);color:#9a2a12}
+.bulkbar{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:11px;
+  padding:9px 14px;margin-bottom:12px;font-size:12px;font-weight:800}
+.bulkbar .btn.sm{background:#2a2a2a;color:#fff}
+.bulkbar .btn.sm:hover{background:#3a3a3a}
+.bulkbar .x{margin-left:auto;background:0;border:0;color:#888;font-size:16px}
+
+/* filter rail */
+.frow{padding:12px 14px;border-bottom:1px solid var(--border)}
+.frow:last-child{border-bottom:0}
+.frow .ft{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:9px}
+.fopt{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink2);padding:4px 0}
+.fopt .n{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted3);font-weight:800}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.tile{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px}
+.tile b{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:800;display:block}
+.tile span{font-size:10px;font-weight:800;color:var(--muted3);text-transform:uppercase;letter-spacing:.4px}
+.tile.warn{background:var(--danger-pale);border-color:#f3c0b0}
+.tile.warn b{color:#9a2a12}
+
+/* offers */
+.ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+.ocard{border:1px solid var(--border);border-radius:12px;padding:14px;background:#fff}
+.ocard .oh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ocard .obadge{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:6px;background:var(--yellow-pale);color:var(--yellow-text)}
+.ocard .obadge.pct{background:var(--variant-pale);color:var(--variant)}
+.ocard .obadge.bogo{background:var(--disc-pale);color:var(--disc)}
+.ocard .on2{font-weight:800;font-size:13.5px;margin-bottom:3px}
+.ocard .od{font-size:11.5px;color:var(--muted2);line-height:1.5;min-height:34px}
+.ocard .of{display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted2)}
+
+.hide{display:none !important}
+@media (max-width:1400px){ .ws{grid-template-columns:236px minmax(0,1fr) 290px} }
+@media (max-width:1150px){ .ws,.ws.norail{grid-template-columns:1fr} .rail{position:static;max-height:none} }
+</style>
+</head>
+<body>
+
+<!-- ══ mockup-only control bar ══════════════════════════════ -->
+<div class="mkbar">
+  <span class="lbl">Mockup states</span>
+  <button data-view="add-browse" class="on">Add · browsing tree</button>
+  <button data-view="add-wizard">Add · leaf wizard</button>
+  <button data-view="inventory">Inventory</button>
+  <button data-view="offers">Offers</button>
+  <span class="note">Full-width workspace · left tree always visible · contextual right rail</span>
+</div>
+
+<!-- ══ app nav (context only — unchanged) ═══════════════════ -->
+<div class="appnav">
+  <span class="logo"></span>
+  <a href="#">Dashboard</a><a href="#">Campaigns</a><a href="#">Influencers</a>
+  <a href="#" class="on">Listings</a><a href="#">Gallery</a><a href="#">Fulfillment</a>
+  <a href="#">Returns</a><a href="#">Conversions</a><a href="#">Wallet</a><a href="#">Settings</a>
+  <span class="right"><span class="av">99</span><a href="#">Sign out</a></span>
+</div>
+
+<div class="page">
+
+  <!-- slim setup nudge (was a full-width yellow slab) -->
+  <div class="nudge">
+    <span>⚙</span><span>Store setup isn't finished — followers see your store profile once it's complete.</span>
+    <a href="#">Finish store setup →</a>
+    <button class="x">×</button>
+  </div>
+
+  <!-- ══ header ═════════════════════════════════════════════ -->
+  <div class="hdr">
+    <div>
+      <h1 id="ttl">Listings<span class="vert">FASHION</span></h1>
+      <div class="sub" id="sub">Your whole catalogue in one workspace — browse the tree on the left, work on the right.</div>
+    </div>
+    <div class="grow"></div>
+    <div class="omni">
+      <span class="ic">⌕</span>
+      <input placeholder="Search products, SKUs or categories…" />
+      <span class="kbd">/</span>
+    </div>
+    <div class="hactions">
+      <button class="btn ghost">⚙ Store setup</button>
+      <button class="btn ink">+ Add products</button>
+    </div>
+  </div>
+
+  <!-- ══ tabs ═══════════════════════════════════════════════ -->
+  <div class="tabrail">
+    <button class="tab" data-tab="inventory">Inventory <span class="ct">412</span></button>
+    <button class="tab on" data-tab="add">Add products</button>
+    <button class="tab" data-tab="offers">Offers <span class="ct">6</span></button>
+    <div class="stats">
+      <div class="stat"><b>412</b><span>Listed</span></div>
+      <div class="stat"><b>386</b><span>Live</span></div>
+      <div class="stat"><b>14</b><span>Out of stock</span></div>
+      <div class="stat"><b>38</b><span>Categories used</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 1 + 2 — ADD PRODUCTS (tree · centre · batch tray)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="ws" id="v-add">
+
+    <!-- left: persistent category tree -->
+    <div class="card rail">
+      <div class="railhd"><span class="t">Fashion catalogue</span><button class="a">Collapse</button></div>
+      <div class="railbody">
+        <button class="tnode open"><span class="cv">▸</span><span class="nm">Men</span><span class="n">12</span></button>
+        <div class="tkids">
+          <button class="tnode"><span class="cv"></span><span class="nm">T-Shirts</span><span class="n">5</span></button>
+          <button class="tnode open" id="tn-shirts"><span class="cv">▸</span><span class="nm">Shirts</span><span class="n">5</span></button>
+          <div class="tkids">
+            <button class="tnode leaf on" data-leaf="1"><span class="cv"></span><span class="nm">Formal Shirts</span><span class="n">24</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Casual Shirts</span><span class="n">31</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Printed Shirts</span><span class="n">12</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Denim Shirts</span><span class="n">6</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Half-Sleeve Shirts</span><span class="n">9</span></button>
+          </div>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Trousers</span><span class="n">4</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Jeans</span><span class="n">3</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Jackets &amp; Coats</span><span class="n">4</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Kurtas &amp; Ethnic</span><span class="n">6</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Shorts</span><span class="n">3</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Innerwear</span><span class="n">4</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Sportswear</span><span class="n">5</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Footwear</span><span class="n">7</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Accessories</span><span class="n">8</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Sleepwear</span><span class="n">3</span></button>
+        </div>
+        <button class="tnode"><span class="cv">▸</span><span class="nm">Women</span><span class="n">12</span></button>
+        <button class="tnode"><span class="cv">▸</span><span class="nm">Unisex</span><span class="n">6</span></button>
+        <button class="tnode"><span class="cv">▸</span><span class="nm">Kids</span><span class="n">5</span></button>
+      </div>
+    </div>
+
+    <!-- centre -->
+    <div class="card">
+
+      <!-- ── state A: browsing (no leaf picked) ── -->
+      <div id="c-browse">
+        <div class="crumbbar">
+          <span class="cr"><a href="#">Fashion</a><span class="sep">›</span><b>Men</b></span>
+          <span class="right">
+            <span style="font-size:11px;font-weight:700;color:var(--muted3)">Pick the exact item type once, then batch-add</span>
+          </span>
+        </div>
+        <div class="body">
+          <div class="sec">Men <span class="ln"></span><span style="font-weight:700;color:var(--muted3);text-transform:none;letter-spacing:0">12 categories</span></div>
+          <div class="grid">
+            <button class="node"><span class="ico">👕</span><span><span class="nm">T-Shirts</span><span class="mt">5 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">👔</span><span><span class="nm">Shirts</span><span class="mt">5 item types</span></span><span class="done">82 listed</span></button>
+            <button class="node"><span class="ico">👖</span><span><span class="nm">Trousers</span><span class="mt">4 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">👖</span><span><span class="nm">Jeans</span><span class="mt">3 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🧥</span><span><span class="nm">Jackets &amp; Coats</span><span class="mt">4 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🥻</span><span><span class="nm">Kurtas &amp; Ethnic</span><span class="mt">6 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🩳</span><span><span class="nm">Shorts</span><span class="mt">3 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🩲</span><span><span class="nm">Innerwear</span><span class="mt">4 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🏃</span><span><span class="nm">Sportswear</span><span class="mt">5 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">👟</span><span><span class="nm">Footwear</span><span class="mt">7 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🧢</span><span><span class="nm">Accessories</span><span class="mt">8 item types</span></span><span class="a">›</span></button>
+            <button class="node"><span class="ico">🌙</span><span><span class="nm">Sleepwear</span><span class="mt">3 item types</span></span><span class="a">›</span></button>
+          </div>
+
+          <div class="sec" style="margin-top:22px">Jump back in <span class="ln"></span></div>
+          <div class="grid">
+            <button class="node leaf"><span class="ico">👔</span><span><span class="nm">Formal Shirts</span><span class="mt">Men › Shirts · added 2h ago</span></span><span class="done">24</span></button>
+            <button class="node leaf"><span class="ico">👔</span><span><span class="nm">Casual Shirts</span><span class="mt">Men › Shirts · added today</span></span><span class="done">31</span></button>
+            <button class="node leaf"><span class="ico">👗</span><span><span class="nm">A-Line Dresses</span><span class="mt">Women › Dresses · yesterday</span></span><span class="done">18</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── state B: leaf picked → wizard ── -->
+      <div id="c-wizard" class="hide">
+        <div class="crumbbar">
+          <span class="cr"><a href="#">Fashion</a><span class="sep">›</span><a href="#">Men</a><span class="sep">›</span><a href="#">Shirts</a><span class="sep">›</span><b>Formal Shirts</b></span>
+          <span class="right">
+            <span class="seg"><button class="on">Add one-by-one</button><button>Bulk add (Excel)</button></span>
+          </span>
+        </div>
+
+        <div class="leafhd">
+          <div>
+            <h2>Add Formal Shirts</h2>
+            <div class="path">Men › Shirts › Formal Shirts · <b style="color:var(--success-text)">24 already listed here</b></div>
+          </div>
+          <div class="right">
+            <button class="btn ghost sm">⤓ Download template</button>
+            <button class="btn ghost sm">View the 24 listed</button>
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="stp on"><span class="n">1</span>Basics<span class="bar"></span></div>
+          <div class="stp"><span class="n">2</span>Variants<span class="bar"></span></div>
+          <div class="stp"><span class="n">3</span>Details<span class="bar"></span></div>
+          <div class="stp"><span class="n">4</span>Review</div>
+        </div>
+
+        <div class="body">
+          <div class="fgrid">
+            <div class="f6">
+              <label class="fl">Product name <span class="req">*</span></label>
+              <input class="t" value="Arvind Slim-Fit Formal Shirt" />
+            </div>
+            <div class="f3">
+              <label class="fl">Brand</label>
+              <input class="t" value="Arvind" />
+            </div>
+            <div class="f2">
+              <label class="fl">Price ₹ <span class="req">*</span></label>
+              <input class="t" value="1499" />
+            </div>
+            <div class="f1" style="grid-column:span 1">
+              <label class="fl">Stock</label>
+              <input class="t" value="40" />
+            </div>
+
+            <div class="f4">
+              <label class="fl">SKU <span style="color:var(--muted3);font-weight:600">(auto)</span></label>
+              <input class="t" placeholder="auto-generated" disabled style="background:var(--bg2);color:var(--muted3)" />
+            </div>
+            <div class="f4">
+              <label class="fl">Fabric <span class="tag attr">listing</span></label>
+              <select class="t"><option>Cotton</option><option>Linen</option><option>Poly-blend</option></select>
+            </div>
+            <div class="f4">
+              <label class="fl">Fit <span class="tag disc">discovery</span></label>
+              <div class="chips">
+                <span class="chip on">Slim</span><span class="chip">Regular</span><span class="chip">Relaxed</span>
+              </div>
+            </div>
+
+            <div class="f6">
+              <label class="fl">Cover photos</label>
+              <div class="drop"><b>Drop photos here</b>or click to browse · JPG/PNG · cropped to 4:5 automatically</div>
+              <div class="thumbs">
+                <span class="th cover">▦</span><span class="th">▦</span><span class="th">▦</span><span class="th">+</span>
+              </div>
+            </div>
+            <div class="f6">
+              <label class="fl">Colours <span class="tag variant">variant</span> <span style="color:var(--muted3);font-weight:600">each colour gets its own pics + stock in step 2</span></label>
+              <div class="chips">
+                <span class="chip on v">White</span><span class="chip on v">Sky Blue</span><span class="chip">Black</span>
+                <span class="chip">Navy</span><span class="chip">Beige</span><span class="chip">Pink</span><span class="chip">Lavender</span>
+              </div>
+              <label class="fl" style="margin-top:14px">Sizes <span class="tag variant">variant</span> <span style="color:var(--muted3);font-weight:600">alpha system</span></label>
+              <div class="chips">
+                <span class="chip on v">S</span><span class="chip on v">M</span><span class="chip on v">L</span>
+                <span class="chip on v">XL</span><span class="chip">XXL</span><span class="chip">3XL</span>
+              </div>
+            </div>
+
+            <div class="f12">
+              <div class="vcard">
+                <div class="vhead"><span class="dot" style="background:#fff"></span>White — per-size stock</div>
+                <div class="vstock">
+                  <span class="vsize"><span>S</span><input value="8" /></span>
+                  <span class="vsize"><span>M</span><input value="14" /></span>
+                  <span class="vsize"><span>L</span><input value="12" /></span>
+                  <span class="vsize"><span>XL</span><input value="6" /></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="navbar">
+          <button class="btn ghost">‹ Back</button>
+          <span class="hint">Required: name, price</span>
+          <span class="right">
+            <button class="btn ghost">Save &amp; add another</button>
+            <button class="btn yellow">Continue to Variants ›</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: batch tray -->
+    <div class="card rail" id="r-add">
+      <div class="railhd"><span class="t">This batch</span><span class="a mono" style="color:var(--yellow-text);background:var(--yellow-pale);border-radius:99px;padding:2px 9px">3</span></div>
+      <div class="tray">
+        <div class="trow"><span class="ph">▦</span><span style="min-width:0"><span class="nm">Arvind Slim Formal — White</span><span class="mt">4 sizes · 40 stock</span></span><span class="pr">₹1,499</span><button class="x">×</button></div>
+        <div class="trow"><span class="ph">▦</span><span style="min-width:0"><span class="nm">Arvind Slim Formal — Sky Blue</span><span class="mt">4 sizes · 32 stock</span></span><span class="pr">₹1,499</span><button class="x">×</button></div>
+        <div class="trow"><span class="ph">▦</span><span style="min-width:0"><span class="nm">Peter England Oxford</span><span class="mt">3 sizes · 18 stock</span></span><span class="pr">₹1,199</span><button class="x">×</button></div>
+      </div>
+      <div class="railfoot">
+        <button class="btn yellow">Save 3 products →</button>
+        <div class="fine">SKUs are generated on save.<br />Brand + details carry to the next item.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 3 — INVENTORY (tree · table · filters)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="ws hide" id="v-inventory">
+
+    <div class="card rail">
+      <div class="railhd"><span class="t">Browse by category</span><button class="a">Collapse</button></div>
+      <div class="railbody">
+        <button class="tnode on"><span class="cv"></span><span class="nm">All products</span><span class="n">412</span></button>
+        <button class="tnode open"><span class="cv">▸</span><span class="nm">Men</span><span class="n">218</span></button>
+        <div class="tkids">
+          <button class="tnode"><span class="cv"></span><span class="nm">T-Shirts</span><span class="n">46</span></button>
+          <button class="tnode open"><span class="cv">▸</span><span class="nm">Shirts</span><span class="n">82</span></button>
+          <div class="tkids">
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Formal Shirts</span><span class="n">24</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Casual Shirts</span><span class="n">31</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Printed Shirts</span><span class="n">12</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Denim Shirts</span><span class="n">6</span></button>
+            <button class="tnode leaf"><span class="cv"></span><span class="nm">Half-Sleeve</span><span class="n">9</span></button>
+          </div>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Trousers</span><span class="n">38</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Jeans</span><span class="n">29</span></button>
+          <button class="tnode"><span class="cv">▸</span><span class="nm">Footwear</span><span class="n">23</span></button>
+        </div>
+        <button class="tnode"><span class="cv">▸</span><span class="nm">Women</span><span class="n">154</span></button>
+        <button class="tnode"><span class="cv">▸</span><span class="nm">Unisex</span><span class="n">27</span></button>
+        <button class="tnode"><span class="cv">▸</span><span class="nm">Kids</span><span class="n">13</span></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="crumbbar">
+        <span class="cr"><a href="#">Fashion</a><span class="sep">›</span><a href="#">Men</a><span class="sep">›</span><a href="#">Shirts</a><span class="sep">›</span><b>Formal Shirts</b> <span style="color:var(--muted3);font-weight:600">· 24 products</span></span>
+        <span class="right">
+          <span class="seg"><button class="on">▤ Table</button><button>▦ Cards</button></span>
+          <button class="btn ghost sm">⤓ Export</button>
+          <button class="btn ink sm">+ Add to this category</button>
+        </span>
+      </div>
+      <div class="body" style="padding:14px 0 0">
+        <div style="padding:0 14px">
+          <div class="bulkbar">
+            <span>2 selected</span>
+            <button class="btn sm">Hide</button>
+            <button class="btn sm">Show</button>
+            <button class="btn sm">Edit price</button>
+            <button class="btn sm">Remove</button>
+            <button class="x">×</button>
+          </div>
+        </div>
+        <table class="tbl">
+          <thead><tr>
+            <th style="width:34px"><input type="checkbox" /></th>
+            <th style="width:52px"></th>
+            <th>Product</th>
+            <th>Brand</th>
+            <th>Variants</th>
+            <th>SKU</th>
+            <th style="text-align:right">Price</th>
+            <th style="text-align:right">Stock</th>
+            <th>Status</th>
+            <th style="text-align:right">Actions</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox" checked /></td>
+              <td><span class="pimg">▦</span></td>
+              <td><div class="pn">Arvind Slim-Fit Formal Shirt</div><div class="pm">Cotton · Slim · Full sleeve</div></td>
+              <td style="font-size:12px;font-weight:700">Arvind</td>
+              <td><span class="vchips"><span class="vch" style="background:#fff"></span><span class="vch" style="background:#87CEEB"></span><span class="vch" style="background:#0A0A0A"></span><span class="vmore">+2 · 4 sizes</span></span></td>
+              <td class="mono" style="font-size:11px;color:var(--muted2)">FS-ARV-0241</td>
+              <td class="mono" style="text-align:right;font-weight:800">₹1,499</td>
+              <td class="mono" style="text-align:right;font-weight:800">40</td>
+              <td><span class="pill live">Live</span></td>
+              <td><span class="pact"><button>Edit</button><button>Hide</button><button class="danger">Remove</button></span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" checked /></td>
+              <td><span class="pimg">▦</span></td>
+              <td><div class="pn">Peter England Oxford Shirt</div><div class="pm">Cotton · Regular · Full sleeve</div></td>
+              <td style="font-size:12px;font-weight:700">Peter England</td>
+              <td><span class="vchips"><span class="vch" style="background:#fff"></span><span class="vch" style="background:#1e3a5f"></span><span class="vmore">3 sizes</span></span></td>
+              <td class="mono" style="font-size:11px;color:var(--muted2)">FS-PET-0198</td>
+              <td class="mono" style="text-align:right;font-weight:800">₹1,199</td>
+              <td class="mono" style="text-align:right;font-weight:800">18</td>
+              <td><span class="pill live">Live</span></td>
+              <td><span class="pact"><button>Edit</button><button>Hide</button><button class="danger">Remove</button></span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><span class="pimg">▦</span></td>
+              <td><div class="pn">Van Heusen Textured Formal</div><div class="pm">Poly-blend · Slim · Full sleeve</div></td>
+              <td style="font-size:12px;font-weight:700">Van Heusen</td>
+              <td><span class="vchips"><span class="vch" style="background:#d9d2c5"></span><span class="vch" style="background:#0A0A0A"></span><span class="vmore">4 sizes</span></span></td>
+              <td class="mono" style="font-size:11px;color:var(--muted2)">FS-VAN-0177</td>
+              <td class="mono" style="text-align:right;font-weight:800">₹1,799</td>
+              <td class="mono" style="text-align:right;font-weight:800;color:#9a2a12">2</td>
+              <td><span class="pill low">Low stock</span></td>
+              <td><span class="pact"><button>Edit</button><button>Hide</button><button class="danger">Remove</button></span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><span class="pimg">▦</span></td>
+              <td><div class="pn">UATHAYAM White Bead Shirt</div><div class="pm">Cotton · Regular · Half sleeve</div></td>
+              <td style="font-size:12px;font-weight:700">UATHAYAM</td>
+              <td><span class="vchips"><span class="vch" style="background:#fff"></span><span class="vmore">5 sizes</span></span></td>
+              <td class="mono" style="font-size:11px;color:var(--muted2)">FS-UAT-0155</td>
+              <td class="mono" style="text-align:right;font-weight:800">₹899</td>
+              <td class="mono" style="text-align:right;font-weight:800">64</td>
+              <td><span class="pill hid">Hidden</span></td>
+              <td><span class="pact"><button>Edit</button><button>Show</button></span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><span class="pimg">▦</span></td>
+              <td><div class="pn">Kingdom of White Linen Shirt</div><div class="pm">Linen · Relaxed · Full sleeve</div></td>
+              <td style="font-size:12px;font-weight:700">Kingdom</td>
+              <td><span class="vchips"><span class="vch" style="background:#fff"></span><span class="vch" style="background:#f0e6d2"></span><span class="vmore">4 sizes</span></span></td>
+              <td class="mono" style="font-size:11px;color:var(--muted2)">FS-KOW-0132</td>
+              <td class="mono" style="text-align:right;font-weight:800">₹2,199</td>
+              <td class="mono" style="text-align:right;font-weight:800">27</td>
+              <td><span class="pill live">Live</span></td>
+              <td><span class="pact"><button>Edit</button><button>Hide</button><button class="danger">Remove</button></span></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td><span class="pimg">▦</span></td>
+              <td><div class="pn">Symbol Premium Formal Shirt</div><div class="pm">Cotton · Slim · Full sleeve</div></td>
+              <td style="font-size:12px;font-weight:700">Symbol</td>
+              <td><span class="vchips"><span class="vch" style="background:#fff"></span><span class="vch" style="background:#87CEEB"></span><span class="vch" style="background:#c8c8c8"></span><span class="vmore">4 sizes</span></span></td>
+              <td class="mono" style="font-size:11px;color:var(--muted2)">FS-SYM-0119</td>
+              <td class="mono" style="text-align:right;font-weight:800">₹1,049</td>
+              <td class="mono" style="text-align:right;font-weight:800">51</td>
+              <td><span class="pill live">Live</span></td>
+              <td><span class="pact"><button>Edit</button><button>Hide</button><button class="danger">Remove</button></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card rail">
+      <div class="railhd"><span class="t">This category</span></div>
+      <div class="tiles">
+        <div class="tile"><b>24</b><span>Products</span></div>
+        <div class="tile"><b>22</b><span>Live</span></div>
+        <div class="tile warn"><b>3</b><span>Low stock</span></div>
+        <div class="tile"><b>₹1.4k</b><span>Avg price</span></div>
+      </div>
+      <div class="frow">
+        <div class="ft">Status</div>
+        <label class="fopt"><input type="checkbox" checked /> Live <span class="n">22</span></label>
+        <label class="fopt"><input type="checkbox" /> Hidden <span class="n">2</span></label>
+        <label class="fopt"><input type="checkbox" /> Low / out of stock <span class="n">3</span></label>
+      </div>
+      <div class="frow">
+        <div class="ft">Brand</div>
+        <label class="fopt"><input type="checkbox" /> Arvind <span class="n">6</span></label>
+        <label class="fopt"><input type="checkbox" /> Peter England <span class="n">5</span></label>
+        <label class="fopt"><input type="checkbox" /> Van Heusen <span class="n">4</span></label>
+        <label class="fopt"><input type="checkbox" /> Symbol <span class="n">3</span></label>
+      </div>
+      <div class="frow">
+        <div class="ft">Offer attached</div>
+        <label class="fopt"><input type="checkbox" /> Has an offer <span class="n">9</span></label>
+        <label class="fopt"><input type="checkbox" /> No offer <span class="n">15</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VIEW 4 — OFFERS
+       ══════════════════════════════════════════════════════════ -->
+  <div class="ws norail hide" id="v-offers">
+    <div class="card rail">
+      <div class="railhd"><span class="t">Offer library</span></div>
+      <div class="railbody">
+        <button class="tnode on"><span class="cv"></span><span class="nm">All offers</span><span class="n">6</span></button>
+        <button class="tnode"><span class="cv"></span><span class="nm">Store-direct</span><span class="n">2</span></button>
+        <button class="tnode"><span class="cv"></span><span class="nm">Conversion</span><span class="n">3</span></button>
+        <button class="tnode"><span class="cv"></span><span class="nm">Engagement</span><span class="n">1</span></button>
+        <button class="tnode"><span class="cv"></span><span class="nm">Expired</span><span class="n">4</span></button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="crumbbar">
+        <span class="cr"><b>All offers</b> <span style="color:var(--muted3);font-weight:600">· 6 active</span></span>
+        <span class="right"><button class="btn ink sm">+ New offer</button></span>
+      </div>
+      <div class="body">
+        <div class="ogrid">
+          <div class="ocard">
+            <div class="oh"><span class="obadge">Flat</span><span class="pill live">Live</span></div>
+            <div class="on2">₹300 off formal shirts</div>
+            <div class="od">Applies to 24 products in Men › Shirts › Formal Shirts. Min cart ₹999.</div>
+            <div class="of"><span>Store-direct</span><span>·</span><span>ends 31 Aug</span><span style="margin-left:auto"><button class="btn ghost sm">Edit</button></span></div>
+          </div>
+          <div class="ocard">
+            <div class="oh"><span class="obadge pct">Percentage</span><span class="pill live">Live</span></div>
+            <div class="on2">20% off · Monsoon drop</div>
+            <div class="od">Applies to 68 products across Men + Women. Commission-eligible.</div>
+            <div class="of"><span>Conversion</span><span>·</span><span>ends 15 Sep</span><span style="margin-left:auto"><button class="btn ghost sm">Edit</button></span></div>
+          </div>
+          <div class="ocard">
+            <div class="oh"><span class="obadge bogo">BOGO</span><span class="pill live">Live</span></div>
+            <div class="on2">Buy 2 get 1 · T-Shirts</div>
+            <div class="od">Applies to 46 products in Men › T-Shirts. Lowest-priced item free.</div>
+            <div class="of"><span>Conversion</span><span>·</span><span>ends 30 Aug</span><span style="margin-left:auto"><button class="btn ghost sm">Edit</button></span></div>
+          </div>
+          <div class="ocard">
+            <div class="oh"><span class="obadge">Volume</span><span class="pill hid">Draft</span></div>
+            <div class="on2">Buy 3+ · extra 10%</div>
+            <div class="od">Not attached to any products yet.</div>
+            <div class="of"><span>Store-direct</span><span>·</span><span>no end date</span><span style="margin-left:auto"><button class="btn ghost sm">Edit</button></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const views = {
+    'add-browse':  { ws:'v-add', centre:'c-browse', tab:'add' },
+    'add-wizard':  { ws:'v-add', centre:'c-wizard', tab:'add' },
+    'inventory':   { ws:'v-inventory', tab:'inventory' },
+    'offers':      { ws:'v-offers', tab:'offers' },
+  };
+  const titles = {
+    'add-browse': ['Listings','Your whole catalogue in one workspace — browse the tree on the left, work on the right.'],
+    'add-wizard': ['Listings','Drill once to the item type, then batch-add. Everything you add stays visible in the tray.'],
+    'inventory':  ['Listings','Everything you have listed, organised by the categories you listed under.'],
+    'offers':     ['Listings','Reusable offers you can attach to any product or category.'],
+  };
+  function show(v){
+    const cfg = views[v];
+    ['v-add','v-inventory','v-offers'].forEach(id => document.getElementById(id).classList.toggle('hide', id !== cfg.ws));
+    if (cfg.centre){
+      ['c-browse','c-wizard'].forEach(id => document.getElementById(id).classList.toggle('hide', id !== cfg.centre));
+      document.getElementById('r-add').classList.toggle('hide', cfg.centre !== 'c-wizard');
+      document.getElementById('v-add').classList.toggle('norail', cfg.centre !== 'c-wizard');
+    }
+    document.querySelectorAll('.tabrail .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === cfg.tab));
+    document.querySelectorAll('.mkbar button').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+    document.getElementById('sub').textContent = titles[v][1];
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll('.mkbar button').forEach(b => b.onclick = () => show(b.dataset.view));
+  document.querySelectorAll('.tabrail .tab').forEach(t => t.onclick = () =>
+    show(t.dataset.tab === 'add' ? 'add-browse' : t.dataset.tab));
+  // tree: category rows toggle their children; leaf rows open the wizard
+  document.querySelectorAll('.tnode').forEach(n => n.onclick = () => {
+    if (n.classList.contains('leaf')) {
+      document.querySelectorAll('.tnode').forEach(x => x.classList.remove('on'));
+      n.classList.add('on');
+      if (!document.getElementById('v-add').classList.contains('hide')) show('add-wizard');
+      return;
+    }
+    const kids = n.nextElementSibling;
+    if (kids && kids.classList.contains('tkids')) { n.classList.toggle('open'); kids.hidden = !kids.hidden; }
+  });
+  // category cards drill into the wizard
+  document.querySelectorAll('#c-browse .node').forEach(c => c.onclick = () => show('add-wizard'));
+  show('add-browse');
+</script>
+</body>
+</html>

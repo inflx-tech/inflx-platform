@@ -1,0 +1,19 @@
+{
+  "feature": "backend-defect-inventory-hidden-products",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-08-04",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Genuine backend defect carved 2026-08-04 while implementing listing-workspace-ux, and FIXED the same day on founder go ('push and also fix that backend issue as well'). getMyNodeProducts (backend/src/controllers/listing.controller.js) filtered `AND bp.is_active = true`, contradicting its own docstring ('ALL statuses, live-first') and making hidden products unreachable from the brand's category browse — the Hidden pill and Show button in that path could never fire, so Hide was a one-way trip unless you knew the product's name or SKU. Fix: dropped the filter, ordering is now `bp.is_active DESC, bp.created_at DESC NULLS LAST` so live rows still lead. One line of behaviour, no schema change, no migration. Brand-scoped endpoint only; the follower-facing browse (getNodeProducts, all-brands + live-only) is a different controller and untouched. Not UI-governed on its own — the consuming UI ships under listing-workspace-ux, whose InventoryBrowser was updated in the same change to add a Live/Hidden visibility filter and to drop the caption that used to explain where hidden products went.",
+  "verification": "pnpm qa GREEN — 98 passed, gate 0 (2026-08-04), zero regression vs the pre-change baseline. Root cause read directly from the controller SQL before changing it (verify-twice). NOT verified against real data: no brand session or seeded fashion products locally, so the hidden-row round-trip (Hide → row stays listed → Show) has not been exercised end-to-end; it lands in the founder's comprehensive pass.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

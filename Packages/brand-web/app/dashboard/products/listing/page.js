@@ -12,6 +12,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { listingApi, uploadFileToGallery, API_BASE, brandApi } from '../../../../lib/api';
 import OffersLibrary from '../components/OffersLibrary';
+import CategoryTree from '../components/CategoryTree';
+import InventoryBrowser from '../components/InventoryBrowser';
 import ImageCropModal from '../../../../components/ImageCropModal';
 import { frameFor } from '../../../../lib/imageFrames';
 
@@ -42,179 +44,19 @@ const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant"
 const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
 const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', description: '', images: [], facets: {}, variants: {}, tags: [] });
 
-// ── My listings browse (contract: listing-fashion-inventory-browse) ──────────
-// The brand's OWN inventory, drilled by the same category tree they listed under.
-// Read-only browse; row actions reuse the existing brand product endpoints.
-const money = (v) => (v == null || v === '' ? '—' : '₹' + Number(v).toLocaleString('en-IN'));
-function facetSummary(facets) {
-  if (!facets || typeof facets !== 'object') return '';
-  const bits = [];
-  for (const k of Object.keys(facets)) {
-    const v = facets[k];
-    const vals = Array.isArray(v) ? v : (v ? [v] : []);
-    if (vals.length) bits.push(vals.slice(0, 3).join(', '));
-    if (bits.length >= 2) break;
+// Ancestor nodes from the root down to (but excluding) `id`; null when absent.
+// Lets any node be selected directly instead of drilled to one level at a time.
+function ancestorsOf(nodes, id, trail = []) {
+  for (const n of (nodes || [])) {
+    if (n.id === id) return trail;
+    const hit = ancestorsOf(n.children, id, [...trail, n]);
+    if (hit) return hit;
   }
-  return bits.join(' · ');
+  return null;
 }
 
-function BrowseListings({ vlabel, onAdd }) {
-  const [tree, setTree] = useState(null);
-  const [level, setLevel] = useState([]);
-  const [crumb, setCrumb] = useState([]);       // [{ name, children }]
-  const [leaf, setLeaf] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pLoading, setPLoading] = useState(false);
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState('');
-  const [search, setSearch] = useState('');
-  const [flat, setFlat] = useState(null);
-  const [flatLoading, setFlatLoading] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const r = await brandApi.get('/brands/me/listing-tree');
-      setLoading(false);
-      if (r.success) { setTree(r.data.tree || []); setLevel(r.data.tree || []); }
-      else setErr(r.error?.message || 'Failed to load your listings');
-    })();
-  }, []);
-
-  const loadLeaf = async (node) => {
-    setPLoading(true); setProducts([]);
-    const r = await brandApi.get(`/brands/me/listing-nodes/${node.id}/products`);
-    setPLoading(false);
-    if (r.success) setProducts(r.data.products || []);
-    else setErr(r.error?.message || 'Failed to load products');
-  };
-  const drill = (node) => {
-    setErr('');
-    setCrumb(c => [...c, { name: node.name, children: level }]);
-    if (node.is_leaf) { setLeaf(node); loadLeaf(node); }
-    else setLevel(node.children || []);
-  };
-  const jump = (i) => {
-    setLeaf(null); setProducts([]); setErr('');
-    if (i < 0) { setLevel(tree || []); setCrumb([]); return; }
-    setLevel(crumb[i].children); setCrumb(crumb.slice(0, i));
-  };
-  const reloadFlat = async () => { const r = await brandApi.getProducts(); if (r.success) setFlat(r.data.products || []); };
-  const afterMutation = () => { if (search.trim()) reloadFlat(); else if (leaf) loadLeaf(leaf); };
-  const doToggle = async (p) => {
-    setBusy(p.id);
-    const r = await brandApi.updateProduct(p.id, { is_active: !p.is_active });
-    setBusy('');
-    if (r.success) afterMutation(); else setErr(r.error?.message || 'Update failed');
-  };
-  const doRemove = async (p) => {
-    if (!window.confirm(`Remove "${p.name}" from your listing?`)) return;
-    setBusy(p.id);
-    const r = await brandApi.deleteProduct(p.id);
-    setBusy('');
-    if (r.success) afterMutation(); else setErr(r.error?.message || 'Remove failed');
-  };
-
-  useEffect(() => {
-    if (!search.trim() || flat || flatLoading) return;
-    setFlatLoading(true);
-    brandApi.getProducts()
-      .then(r => { setFlatLoading(false); if (r.success) setFlat(r.data.products || []); })
-      .catch(() => setFlatLoading(false));
-  }, [search, flat, flatLoading]);
-
-  const q = search.trim().toLowerCase();
-  const searching = !!q;
-  const results = searching && flat
-    ? flat.filter(p => (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q))
-    : [];
-
-  const row = (p) => (
-    <div key={p.id} className={'prow' + (p.is_active ? '' : ' hid')}>
-      {p.image_url
-        // eslint-disable-next-line @next/next/no-img-element
-        ? <img className="pth" src={p.image_url} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        : <span className="pth ph">▦</span>}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="pname">{p.name}</div>
-        <div className="pmeta">{[facetSummary(p.facets), p.sku, (p.stock != null ? `stock ${p.stock}` : null)].filter(Boolean).join(' · ') || '—'}</div>
-      </div>
-      <div className="pprice">
-        {money(p.price)}
-      </div>
-      <span className={'pill ' + (p.is_active ? 'live' : 'hid')}>{p.is_active ? 'Live' : 'Hidden'}</span>
-      <div className="pact">
-        <button onClick={() => { window.location.href = `/dashboard/products/listing?edit=${p.id}`; }}>Edit</button>
-        <button disabled={busy === p.id} onClick={() => doToggle(p)}>{p.is_active ? 'Hide' : 'Show'}</button>
-        {p.is_active && <button className="danger" disabled={busy === p.id} onClick={() => doRemove(p)}>Remove</button>}
-      </div>
-    </div>
-  );
-
-  if (loading) return <div className="sub" style={{ marginTop: 16 }}>Loading your {vlabel} listings…</div>;
-
-  const total = (tree || []).reduce((a, n) => a + (n.product_count || 0), 0);
-  const folders = (level || []).filter(n => (n.product_count || 0) > 0);
-
-  return (
-    <div>
-      <div className="searchbar">
-        <input className="t" placeholder="Search your products by name or SKU…" value={search} onChange={e => setSearch(e.target.value)} />
-        {searching && <button className="btn ghost" onClick={() => setSearch('')}>Clear</button>}
-      </div>
-
-      {err && <div className="err">{err}</div>}
-
-      {searching ? (
-        <>
-          <div className="sec">{flatLoading ? 'Searching…' : `${results.length} match${results.length === 1 ? '' : 'es'}`}</div>
-          {!flatLoading && results.length === 0 && <div className="sub">No products match. Clear search to browse by category.</div>}
-          {results.map(row)}
-        </>
-      ) : total === 0 ? (
-        <div className="empty2">
-          <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>No {vlabel.toLowerCase()} products listed yet</div>
-          <div className="sub" style={{ marginBottom: 12 }}>Once you add products they&apos;ll show here, organised by the category you listed under.</div>
-          <button className="btn ink" onClick={onAdd}>+ Add products</button>
-        </div>
-      ) : (
-        <>
-          <div className="crumb">
-            <a onClick={() => jump(-1)}>{vlabel}</a>
-            {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jump(i)}>{c.name}</a>}</span>)}
-          </div>
-
-          {!leaf && (
-            <div className="grid">
-              {folders.map(n => {
-                const subCats = (n.children || []).filter(c => (c.product_count || 0) > 0).length;
-                return (
-                  <div key={n.id} className={'node' + (n.is_leaf ? ' leaf' : '')} onClick={() => drill(n)}>
-                    <div>
-                      <div className="nm">{n.name}</div>
-                      <div className="mt">{n.is_leaf ? `${n.product_count} listed` : `${subCats} categor${subCats === 1 ? 'y' : 'ies'}`}</div>
-                    </div>
-                    <span className="pbadge">{n.product_count}</span>
-                  </div>
-                );
-              })}
-              {folders.length === 0 && <div className="sub">Nothing listed under here.</div>}
-            </div>
-          )}
-
-          {leaf && (
-            <div style={{ marginTop: 6 }}>
-              <div className="sec">{leaf.name} — {products.length} product{products.length === 1 ? '' : 's'}</div>
-              {pLoading ? <div className="sub">Loading…</div>
-                : products.length === 0 ? <div className="sub">No products under {leaf.name} yet.</div>
-                : products.map(row)}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
+// Inventory browse now lives in components/InventoryBrowser.js (contract:
+// listing-workspace-ux) — tree rail + product table + filters, same endpoints.
 
 export default function DrilldownListingPage() {
   const [view, setView] = useState(() => {
@@ -251,6 +93,8 @@ export default function DrilldownListingPage() {
   const [ok, setOk] = useState('');
   const [brandOpts, setBrandOpts] = useState([]);
   const [counts, setCounts] = useState({});
+  const [search, setSearch] = useState('');     // header search — drives Inventory
+  const [selId, setSelId] = useState(null);     // node highlighted in the tree rail
   // Edit mode (contract: listing-product-edit) — ?edit=<id> loads one product into
   // the stepper; the final action saves via PATCH instead of batching.
   const [editMode] = useState(() => (typeof window !== 'undefined') && new URLSearchParams(window.location.search).has('edit'));
@@ -338,8 +182,21 @@ export default function DrilldownListingPage() {
     })();
   }, [editMode]);
 
-  const drillInto = useCallback(async (node) => {
-    setOk('');
+  // Select any node from ANYWHERE — the tree rail, a card, or the breadcrumb
+  // (contract listing-workspace-ux). The crumb/level pair is rebuilt from the
+  // node's real ancestors instead of being pushed one drill at a time, so a
+  // sideways jump across the tree lands in a consistent state.
+  const selectNode = useCallback(async (node) => {
+    if (!tree) return;
+    if (node.is_leaf && leaf && node.id !== leaf.id && items.length > 0
+      && !window.confirm(`${items.length} product(s) are staged under ${leaf.name} and not saved yet. Leave and discard them?`)) return;
+
+    const anc = ancestorsOf(tree, node.id) || [];
+    const levelOf = anc.length ? (anc[anc.length - 1].children || []) : tree;
+    const crumbs = anc.map((a, i) => ({ name: a.name, children: i === 0 ? tree : (anc[i - 1].children || []) }));
+    crumbs.push({ name: node.name, children: levelOf });
+
+    setOk(''); setSelId(node.id);
     if (node.is_leaf) {
       const r = await listingApi.getNodeFacets(node.id);
       if (!r.ok) { setErr(r.error?.message || 'Failed to load specs'); return; }
@@ -348,17 +205,17 @@ export default function DrilldownListingPage() {
       setFacets((r.data.facets || []).filter(f => f.facet_key !== 'images' && f.facet_key !== 'price'));
       setItems([]); setDraft(blankDraft()); setStep(1); setMoreOpen(false);
       setMode('one'); setImported([]); setImportErrors(null); setImportFileErr(''); setImportWarnings(null);
-      setCrumb(c => [...c, { name: node.name, children: level }]);
+      setCrumb(crumbs); setLevel(levelOf);
     } else {
-      setCrumb(c => [...c, { name: node.name, children: level }]);
-      setLevel(node.children || []);
+      setErr(''); setLeaf(null);
+      setCrumb(crumbs); setLevel(node.children || []);
     }
-  }, [level]);
+  }, [tree, leaf, items.length]);
 
   const jumpTo = (i) => {
     setLeaf(null); setErr(''); setOk('');
-    if (i < 0) { setLevel(tree); setCrumb([]); return; }
-    setLevel(crumb[i].children); setCrumb(crumb.slice(0, i));
+    if (i < 0) { setLevel(tree); setCrumb([]); setSelId(null); return; }
+    setLevel(crumb[i].children); setCrumb(crumb.slice(0, i)); setSelId(null);
   };
 
   const setFacet = (key, val) => setDraft(d => ({ ...d, facets: { ...d.facets, [key]: val } }));
@@ -655,72 +512,113 @@ export default function DrilldownListingPage() {
   if (loading) return <div className="lst" style={{ padding: 24 }}><style>{CSS}</style>Loading {vlabel} categories…</div>;
 
   return (
-    <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
+    <div className="lst">
       <style>{CSS}</style>
       {cropQueue && cropQueue.files[cropQueue.i] && (() => { const fr = frameFor('product_photo'); return (
         <ImageCropModal
           file={cropQueue.files[cropQueue.i]} aspect={fr.aspect} outW={fr.w} outH={fr.h} title={fr.label}
           onCancel={advanceCrop} onDone={onCropDone} />
       ); })()}
+
+      <div className="page">
       {setupNeeded && !editMode && (
         <div className="setupnudge">
-          ⚙ Your store setup isn't finished — followers see your store profile once it's complete.
-          <a href="/dashboard/products?setup=1">Finish store setup</a>
+          <span>⚙</span>
+          <span>Your store setup isn&apos;t finished — followers see your store profile once it&apos;s complete.</span>
+          <a href="/dashboard/products?setup=1">Finish store setup →</a>
         </div>
       )}
-      {view !== 'offers' && (<>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
-        <h1>{editingId ? `Edit ${vlabel} product` : view === 'browse' ? `My ${vlabel} inventory` : `Add products — ${vlabel}`}</h1>
-        <a href="/dashboard/products?setup=1" className="setuplink">⚙ Store setup</a>
+
+      <div className="hdr">
+        <div>
+          <h1>{editingId ? `Edit ${vlabel} product` : 'Listings'}
+            {!editingId && <span className="vert">{vertical.toUpperCase()}</span>}</h1>
+          <div className="sub">{editingId
+            ? 'Update photos, price, description, colours/sizes and other details — then save.'
+            : view === 'browse'
+            ? 'Everything you have listed, organised by the categories you listed under.'
+            : view === 'offers'
+            ? 'Reusable offers you can attach to products.'
+            : 'Pick the exact item-type from the tree, then add every product of that type. SKU is generated automatically.'}</div>
+        </div>
+        <div className="grow" />
+        {!editMode && view === 'browse' && (
+          <div className="omni">
+            <span className="ic">⌕</span>
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search your products by name or SKU…" />
+            {search && <button className="clr" onClick={() => setSearch('')}>×</button>}
+          </div>
+        )}
+        <div className="hactions">
+          <a href="/dashboard/products?setup=1" className="btn ghost">⚙ Store setup</a>
+          {!editMode && view !== 'add' && (
+            <button className="btn ink" onClick={() => setView('add')}>+ Add products</button>
+          )}
+        </div>
       </div>
-      <div className="rule" />
-      <div className="sub">{editingId
-        ? 'Update photos, price, description, colours/sizes and other details — then save.'
-        : view === 'browse'
-        ? 'Browse everything you listed, organised by the same categories you listed under.'
-        : 'Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.'}</div>
-      </>)}
 
       {!editMode && (
-        <div className="tabs">
-          <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>Inventory</span>
-          <span className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</span>
-          <span className={'tab' + (view === 'offers' ? ' on' : '')} onClick={() => setView('offers')}>Offers</span>
+        <div className="tabrail">
+          <button className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>Inventory</button>
+          <button className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</button>
+          <button className={'tab' + (view === 'offers' ? ' on' : '')} onClick={() => setView('offers')}>Offers</button>
         </div>
       )}
 
-      {!editMode && view === 'offers' && <OffersLibrary />}
-
-      {!editMode && view === 'browse' && <BrowseListings vlabel={vlabel} onAdd={() => setView('add')} />}
-
-      {view === 'add' && (<>
-      {editMode && !leaf && !err && <div className="sub" style={{ marginTop: 8 }}>Loading product…</div>}
-      {!editMode && (
-        <div className="crumb">
-          <a onClick={() => jumpTo(-1)}>{vlabel}</a>
-          {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jumpTo(i)}>{c.name}</a>}</span>)}
-        </div>
+      {!editMode && view === 'offers' && (
+        <div className="ws solo"><div className="card"><div className="body"><OffersLibrary /></div></div></div>
       )}
 
-      {err && <div className="err">{err}</div>}
-      {ok && <div className="ok">{ok}</div>}
+      {!editMode && view === 'browse' && (
+        <InventoryBrowser
+          vlabel={vlabel} search={search}
+          onAdd={() => setView('add')}
+          onEditCategory={(node) => { setView('add'); if (node) selectNode(node); }} />
+      )}
 
-      {!editMode && !leaf && (
-        <div className="grid">
-          {level.map(n => (
-            <div key={n.id} className={'node' + (n.is_leaf ? ' leaf' : '')} onClick={() => drillInto(n)}>
-              <div>
-                <div className="nm">{n.name}</div>
-                <div className="mt">
-                  {n.is_leaf ? (counts[n.id] ? `✓ ${counts[n.id]} added` : 'item type')
-                    : `${(n.children || []).length} ${n.depth === 0 ? 'categories' : 'items'}`}
-                </div>
-              </div>
-              <div className="a">{n.is_leaf && counts[n.id] ? '✓' : '›'}</div>
+      {view === 'add' && (
+      <div className={'ws' + (editMode ? ' solo' : (leaf && !editingId ? '' : ' norail'))}>
+        {!editMode && (
+          <CategoryTree
+            nodes={tree} title={`${vlabel} catalogue`}
+            selectedId={selId} onSelect={selectNode}
+            countOf={(n) => counts[n.id] || 0} />
+        )}
+
+        <div className="card">
+          {!editMode && (
+            <div className="crumbbar">
+              <span className="cr">
+                <a onClick={() => jumpTo(-1)}>{vlabel}</a>
+                {crumb.map((c, i) => <span key={i}><span className="sep">›</span>{i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jumpTo(i)}>{c.name}</a>}</span>)}
+              </span>
+              {!leaf && <span className="right"><span className="hintq">Pick the exact item type once, then batch-add</span></span>}
             </div>
-          ))}
-        </div>
-      )}
+          )}
+
+          <div className="body">
+          {editMode && !leaf && !err && <div className="sub">Loading product…</div>}
+
+          {err && <div className="err">{err}</div>}
+          {ok && <div className="ok">{ok}</div>}
+
+          {!editMode && !leaf && (
+            <div className="grid">
+              {level.map(n => (
+                <div key={n.id} className={'node' + (n.is_leaf ? ' leaf' : '')} onClick={() => selectNode(n)}>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="nm">{n.name}</div>
+                    <div className="mt">
+                      {n.is_leaf ? (counts[n.id] ? `✓ ${counts[n.id]} added` : 'item type')
+                        : `${(n.children || []).length} ${n.depth === 0 ? 'categories' : 'items'}`}
+                    </div>
+                  </div>
+                  <div className="a">{n.is_leaf && counts[n.id] ? '✓' : '›'}</div>
+                </div>
+              ))}
+            </div>
+          )}
 
       {leaf && (
         <div className="panel">
@@ -922,24 +820,6 @@ export default function DrilldownListingPage() {
                   : <button className="btn yellow" onClick={addItem}>+ Add this item</button>)}
           </div>
           {step < 4 && stepBlocked.length > 0 && <div className="hint">Still needed: {stepBlocked.join(', ')}</div>}
-
-          {!editingId && items.length > 0 && (
-            <>
-              <div className="sec">Staged under {leaf.name} ({items.length})</div>
-              {items.map((it, i) => (
-                <div key={i} className="added">
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{it.name}{it.brand ? <span className="brandtag">{it.brand}</span> : null}</div>
-                    <div className="sub">₹{it.price}{it.variants ? ` · ${it.variants.length} colour(s)` : ''} · {Object.values(it.facets).flat().filter(Boolean).slice(0, 4).join(' · ') || '—'}</div>
-                  </div>
-                  <button className="x" onClick={() => setItems(list => list.filter((_, j) => j !== i))}>×</button>
-                </div>
-              ))}
-              <button className="btn ink" disabled={saving} onClick={saveBatch} style={{ marginTop: 6 }}>
-                {saving ? 'Saving…' : `Save all ${items.length} product(s)`}
-              </button>
-            </>
-          )}
           </>)}
 
           {mode === 'bulk' && (
@@ -1028,7 +908,48 @@ export default function DrilldownListingPage() {
           )}
         </div>
       )}
-      </>)}
+          </div>{/* .body */}
+        </div>{/* .card */}
+
+        {/* Staging tray — the batch stays visible while you add the next product
+            (contract listing-workspace-ux; it used to sit below the fold). */}
+        {leaf && !editingId && (
+          <div className="card rail">
+            <div className="railhd">
+              <span className="t">This batch</span>
+              <span className="cnt">{items.length}</span>
+            </div>
+            {items.length === 0 ? (
+              <div className="emptytray">
+                <div className="big">▤</div>
+                Nothing staged yet.<br />Fill the steps and press<br /><b>+ Add this item</b>.
+              </div>
+            ) : (
+              <div className="tray">
+                {items.map((it, i) => (
+                  <div key={i} className="tcard">
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="nm">{it.name}{it.brand ? <span className="brandtag">{it.brand}</span> : null}</div>
+                      <div className="mt">{it.variants?.length ? `${it.variants.length} colour(s)` : ''}{it.stock != null ? `${it.variants?.length ? ' · ' : ''}stock ${it.stock}` : ''}</div>
+                    </div>
+                    <span className="pr">₹{Number(it.price).toLocaleString('en-IN')}</span>
+                    <button className="x" aria-label={`Remove ${it.name}`}
+                      onClick={() => setItems(list => list.filter((_, j) => j !== i))}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="railfoot">
+              <button className="btn yellow" disabled={saving || items.length === 0} onClick={saveBatch}>
+                {saving ? 'Saving…' : `Save ${items.length} product${items.length === 1 ? '' : 's'} →`}
+              </button>
+              <div className="fine">SKUs are generated on save.<br />Brand + details carry to the next item.</div>
+            </div>
+          </div>
+        )}
+      </div>
+      )}
+      </div>{/* .page */}
     </div>
   );
 }
@@ -1041,13 +962,8 @@ const CSS = `
   --variant:#7E22CE;--variant-pale:#F3E8FF;--disc:#0E7490;--disc-pale:#CFFAFE;--info:#1D4ED8;--info-pale:#DBEAFE;
   font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:var(--ink);font-size:13px;line-height:1.45}
 .lst h1{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.3px;margin:0}
-.lst .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 10px}
 .lst .sub{font-size:12px;color:var(--muted2);max-width:680px}
-.lst .setuplink{font-size:12px;font-weight:700;color:var(--ink2);background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;text-decoration:none;white-space:nowrap}
-.lst .setuplink:hover{border-color:var(--yellow)}
 .lst .muted2{color:var(--muted3);font-weight:500}
-.lst .crumb{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:12px;color:var(--muted2);margin:14px 0;font-weight:600}
-.lst .crumb b{color:var(--ink)} .lst .crumb a{color:var(--muted2);cursor:pointer} .lst .crumb a:hover{color:var(--ink)}
 .lst .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
 .lst .node{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--white);border:1px solid var(--border);
   border-radius:12px;padding:13px 14px;cursor:pointer;transition:.12s}
@@ -1081,8 +997,6 @@ const CSS = `
 .lst .vstock{display:flex;flex-wrap:wrap;gap:8px}
 .lst .vsize{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:5px 8px}
 .lst .vsize span{font-size:11px;font-weight:700;min-width:24px} .lst .vsize input{width:60px;border:0;border-bottom:1px solid var(--border);font-size:12px;padding:2px;font-family:inherit}
-.lst .added{display:flex;align-items:center;gap:11px;background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:7px}
-.lst .added .x{color:var(--danger);background:0;border:0;font-size:17px;cursor:pointer;margin-left:auto}
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
@@ -1129,28 +1043,156 @@ const CSS = `
 .lst .tph.ph{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);color:var(--muted3);font-size:17px}
 .lst .urlrow{display:flex;gap:8px;margin-top:6px}
 .lst .urlrow .t{flex:1}
-/* My-listings browse (contract: listing-fashion-inventory-browse) */
-.lst .tabs{display:flex;gap:6px;margin:10px 0 14px}
-.lst .tab{padding:8px 15px;border-radius:9px;font-size:12px;font-weight:800;border:1px solid var(--border);background:var(--bg);color:var(--muted2);cursor:pointer;user-select:none}
-.lst .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.lst .searchbar{display:flex;gap:8px;margin:4px 0 14px}
-.lst .searchbar .t{flex:1}
-.lst .pbadge{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;background:var(--yellow-pale);color:var(--yellow-text);border-radius:99px;padding:2px 10px}
-.lst .prow{display:flex;align-items:center;gap:11px;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:7px}
-.lst .prow.hid{opacity:.6;border-style:dashed}
-.lst .pth{width:44px;height:44px;border-radius:9px;object-fit:cover;border:1px solid var(--border)}
-.lst .pth.ph{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);color:var(--muted3);font-size:18px}
-.lst .pname{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lst .pmeta{font-size:11px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lst .pprice{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;white-space:nowrap}
-.lst .pprice .mrp{color:var(--muted3);text-decoration:line-through;font-weight:600;font-size:11px;margin-left:5px}
-.lst .pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
-.lst .pill.live{background:var(--success-pale);color:var(--success-text)}
-.lst .pill.hid{background:var(--bg2);color:var(--muted2)}
+/* Row actions — shared by the inventory table (contract: listing-workspace-ux) */
 .lst .pact{display:flex;gap:4px}
 .lst .pact button{padding:5px 9px;font-size:11px;font-weight:700;border-radius:6px;background:transparent;color:var(--muted);border:0;cursor:pointer;font-family:inherit}
 .lst .pact button:hover:not(:disabled){color:var(--ink);background:var(--bg)}
 .lst .pact button.danger{color:var(--danger-text)}
 .lst .pact button:disabled{opacity:.4;cursor:not-allowed}
 .lst .empty2{background:#FFFDEB;border:1px solid #f0e1a8;border-radius:14px;padding:28px;text-align:center;margin-top:12px}
+
+/* ── Listing workspace (contract: listing-workspace-ux) ──────────────────────
+   Full-width three-pane shell. Replaces the maxWidth:960 centred column and
+   the drill-and-swap navigation. Rules below intentionally come last so they
+   win over the single-column styling above. */
+.lst{--rail-l:264px;--rail-r:320px}
+.lst .page{max-width:1720px;margin:0 auto;padding:18px 24px 60px}
+
+/* header */
+.lst .hdr{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.lst .hdr h1{font-size:23px}
+.lst .hdr .grow{flex:1}
+.lst .vert{display:inline-flex;align-items:center;background:var(--ink);color:var(--yellow);border-radius:99px;
+  padding:4px 12px;font-size:11px;font-weight:800;letter-spacing:.3px;margin-left:10px;vertical-align:3px}
+.lst .omni{flex:0 1 420px;min-width:240px;position:relative}
+.lst .omni input{width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:10px 30px 10px 34px;font-size:13px;font-family:inherit;color:var(--ink)}
+.lst .omni input:focus{outline:none;border-color:var(--yellow)}
+.lst .omni .ic{position:absolute;left:12px;top:10px;color:var(--muted3);font-size:13px}
+.lst .omni .clr{position:absolute;right:8px;top:7px;background:0;border:0;color:var(--muted2);font-size:16px;cursor:pointer;line-height:1}
+.lst .hactions{display:flex;gap:8px;align-items:center}
+.lst a.btn{text-decoration:none;display:inline-flex;align-items:center}
+.lst .setupnudge{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:12px;margin-bottom:14px}
+.lst .setupnudge a{margin-left:auto;white-space:nowrap}
+
+/* tab rail */
+.lst .tabrail{display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--border);margin:16px 0}
+.lst .tabrail .tab{padding:11px 16px;font-size:13px;font-weight:800;color:var(--muted2);background:0;
+  border:0;border-bottom:2.5px solid transparent;cursor:pointer;font-family:inherit;border-radius:0}
+.lst .tabrail .tab.on{color:var(--ink);border-bottom-color:var(--yellow);background:0}
+
+/* three-pane grid */
+.lst .ws{display:grid;grid-template-columns:var(--rail-l) minmax(0,1fr) var(--rail-r);gap:16px;align-items:start}
+.lst .ws.norail{grid-template-columns:var(--rail-l) minmax(0,1fr)}
+.lst .ws.solo{grid-template-columns:minmax(0,1fr)}
+.lst .card{background:#fff;border:1px solid var(--border);border-radius:14px;min-width:0}
+.lst .rail{position:sticky;top:14px;max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden}
+.lst .railhd{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.lst .railhd .t{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+.lst .railhd .a{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted3);background:0;border:0;cursor:pointer;font-family:inherit}
+.lst .railhd .a:hover{color:var(--ink)}
+.lst .railhd .cnt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;
+  background:var(--yellow-pale);color:var(--yellow-text);border-radius:99px;padding:2px 9px}
+.lst .railbody{overflow-y:auto;padding:8px}
+.lst .railnote{font-size:11.5px;color:var(--muted3);font-weight:700;padding:10px}
+
+/* tree */
+.lst .tnode{display:flex;align-items:center;gap:7px;width:100%;text-align:left;border:0;border-left:3px solid transparent;
+  border-radius:9px;padding:7px 9px;font-size:12.5px;font-weight:700;color:var(--ink2);background:0;cursor:pointer;font-family:inherit}
+.lst .tnode:hover{background:var(--bg)}
+.lst .tnode .cv{width:12px;color:var(--muted3);font-size:9px;flex:none;transition:.15s}
+.lst .tnode.open .cv{transform:rotate(90deg)}
+.lst .tnode .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lst .tnode .n{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;color:var(--muted3)}
+.lst .tnode.on{background:var(--yellow-pale);border-left-color:var(--yellow);color:var(--ink)}
+.lst .tnode.on .n{color:var(--yellow-text)}
+.lst .tnode.leaf .nm:before{content:"▪";color:var(--muted3);margin-right:6px;font-size:9px}
+.lst .tnode.on.leaf .nm:before{color:var(--yellow-text)}
+.lst .tkids{margin-left:14px;border-left:1px dashed var(--border);padding-left:4px}
+
+/* centre */
+.lst .crumbbar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.lst .crumbbar .cr{font-size:12px;font-weight:700;color:var(--muted2)}
+.lst .crumbbar .cr a{color:var(--muted2);cursor:pointer}
+.lst .crumbbar .cr a:hover{color:var(--ink)}
+.lst .crumbbar .cr b{color:var(--ink)}
+.lst .crumbbar .sep{color:var(--muted3);margin:0 5px}
+.lst .crumbbar .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.lst .hintq{font-size:11px;font-weight:700;color:var(--muted3)}
+.lst .body{padding:16px}
+.lst .btn.sm{padding:7px 11px;font-size:11.5px;border-radius:8px}
+.lst .btn.danger{color:var(--danger)}
+
+/* category cards spread the full centre column */
+.lst .grid{grid-template-columns:repeat(auto-fill,minmax(212px,1fr))}
+.lst .node:hover{box-shadow:0 4px 14px rgba(0,0,0,.05)}
+.lst .panel{border:0;border-radius:0;padding:0;margin-top:0;background:transparent}
+
+/* inventory table */
+.lst .tblwrap{overflow-x:auto}
+.lst .tbl{width:100%;border-collapse:collapse}
+.lst .tbl th{text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--muted2);padding:9px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--bg)}
+.lst .tbl td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.lst .tbl tr:last-child td{border-bottom:0}
+.lst .tbl tr:hover td{background:#FCFCFD}
+.lst .tbl tr.hid td{opacity:.6}
+.lst .tbl .pimg{width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid var(--border);background:var(--bg2)}
+.lst .tbl .pimg.ph{display:flex;align-items:center;justify-content:center;color:var(--muted3);font-size:16px;border-style:dashed}
+.lst .tbl .pn{font-weight:800;font-size:12.5px}
+.lst .tbl .pm{font-size:10.5px;color:var(--muted2);margin-top:1px}
+.lst .tbl .tdbrand{font-size:12px;font-weight:700;white-space:nowrap}
+.lst .tbl .tdsku{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted2);white-space:nowrap}
+.lst .tbl .tdprice{font-family:'JetBrains Mono',monospace;font-weight:800;text-align:right;white-space:nowrap}
+.lst .tbl .tdstock{font-family:'JetBrains Mono',monospace;font-weight:800;text-align:right}
+.lst .tbl .tdstock.warn{color:#9a2a12}
+.lst .tbl .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;
+  padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.lst .tbl .pill.live{background:var(--success-pale);color:var(--success-text)}
+.lst .tbl .pill.hid{background:var(--bg2);color:var(--muted2)}
+.lst .tbl .pill.low{background:var(--danger-pale);color:#9a2a12}
+.lst .vchips{display:flex;gap:3px;align-items:center}
+.lst .vch{width:15px;height:15px;border-radius:50%;border:1px solid var(--border);flex:none}
+.lst .vmore{font-size:10px;font-weight:800;color:var(--muted3);margin-left:3px;white-space:nowrap}
+.lst .pact{display:flex;gap:2px;justify-content:flex-end}
+.lst .bulkbar{display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:11px;
+  padding:9px 14px;font-size:12px;font-weight:800;flex-wrap:wrap}
+.lst .bulkbar .btn.sm{background:#2a2a2a;color:#fff}
+.lst .bulkbar .btn.sm:hover:not(:disabled){background:#3a3a3a}
+.lst .bulkbar .btn.sm.danger{color:#ff9b7d}
+.lst .bulkbar .x{margin-left:auto;background:0;border:0;color:#888;font-size:16px;cursor:pointer}
+
+/* filter / stats rail */
+.lst .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.lst .tile{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;min-width:0}
+.lst .tile b{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;display:block;overflow:hidden;text-overflow:ellipsis}
+.lst .tile span{font-size:10px;font-weight:800;color:var(--muted3);text-transform:uppercase;letter-spacing:.4px}
+.lst .tile.warn{background:var(--danger-pale);border-color:#f3c0b0}
+.lst .tile.warn b{color:#9a2a12}
+.lst .frow{padding:12px 14px;border-top:1px solid var(--border)}
+.lst .frow .ft{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:9px}
+.lst .fopt{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink2);padding:4px 0;cursor:pointer}
+.lst .fopt .n{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted3);font-weight:800}
+
+/* staging tray */
+.lst .tray{overflow-y:auto;padding:10px}
+.lst .tcard{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);
+  border-radius:10px;padding:8px 9px;margin-bottom:7px}
+.lst .tcard .nm{font-weight:800;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lst .tcard .mt{font-size:10.5px;color:var(--muted2)}
+.lst .tcard .pr{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12.5px;white-space:nowrap}
+.lst .tcard .x{background:0;border:0;color:var(--danger);font-size:16px;font-weight:800;line-height:1;cursor:pointer}
+.lst .railfoot{border-top:1px solid var(--border);padding:12px;background:#fff;margin-top:auto}
+.lst .railfoot .btn{width:100%}
+.lst .railfoot .fine{font-size:10.5px;color:var(--muted3);font-weight:700;text-align:center;margin-top:8px;line-height:1.5}
+.lst .emptytray{text-align:center;padding:26px 14px;color:var(--muted3);font-size:11.5px;font-weight:700;line-height:1.6}
+.lst .emptytray .big{font-size:24px;margin-bottom:6px}
+.lst .emptytray b{color:var(--ink2)}
+
+@media (max-width:1400px){ .lst{--rail-l:236px;--rail-r:290px} }
+@media (max-width:1150px){
+  .lst .ws,.lst .ws.norail{grid-template-columns:minmax(0,1fr)}
+  .lst .rail{position:static;max-height:none}
+  .lst .railbody{max-height:320px}
+}
 `;

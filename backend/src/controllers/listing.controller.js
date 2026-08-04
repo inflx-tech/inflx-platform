@@ -643,6 +643,14 @@ const getMyListingTree = asyncHandler(async (req, res) => {
 // ── GET /brands/me/listing-nodes/:id/products ─────────────────────────────────
 // Contract: listing-fashion-inventory-browse. This brand's products under a node
 // subtree, ALL statuses (live-first), for the inventory browse. Brand-scoped.
+//
+// The `AND bp.is_active = true` filter that used to sit in this query has been
+// removed (contract: backend-defect-inventory-hidden-products). It contradicted
+// the "ALL statuses" contract above and made hidden products unreachable from
+// the category browse — the brand's own Hidden pill and Show button could never
+// fire, so Hide was a one-way trip unless you knew the product's name or SKU.
+// Live rows still sort first. The follower-facing browse is a DIFFERENT
+// controller (getNodeProducts, all-brands + live-only) and is untouched.
 const getMyNodeProducts = asyncHandler(async (req, res) => {
   const { rows: brows } = await db.query(
     `SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
@@ -664,8 +672,7 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
        FROM brand_products bp
        JOIN category_nodes cn ON cn.id = bp.category_node_id
       WHERE bp.brand_id = $2 AND bp.category_node_id IN (SELECT id FROM sub)
-        AND bp.is_active = true
-      ORDER BY bp.created_at DESC NULLS LAST`,
+      ORDER BY bp.is_active DESC, bp.created_at DESC NULLS LAST`,
     [node.id, brand.id]
   );
 
