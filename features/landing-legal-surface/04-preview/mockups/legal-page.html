@@ -1,0 +1,230 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>landing-legal-surface — legal page preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0A0A; --t2:#52525B; --t3:#71717A; --t4:#A1A1AA;
+    --line:#E4E4E7; --line2:#D4D4D8;
+    --paper:#FFFFFF; --surface:#FAFAFA; --surface2:#F4F4F5;
+    --yellow:#FFC107; --yellow-deep:#E0A800; --yellow-pale:#FFFBEB; --yellow-pale2:#FFF7CC;
+    --display:'Outfit',sans-serif; --body:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+  h1,h2,h3{font-family:var(--display);margin:0}
+
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .navrow{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
+  .btn{border:0;cursor:pointer;font-family:var(--body);font-weight:700;border-radius:999px;padding:10px 20px;font-size:13.5px;background:var(--yellow);color:var(--ink)}
+
+  /* ── document header ── */
+  .dochead{background:var(--surface);border-bottom:1px solid var(--line);padding:44px 0 36px}
+  .crumb{font-size:12.5px;color:var(--t3);margin-bottom:12px}
+  .crumb a{text-decoration:none} .crumb a:hover{text-decoration:underline}
+  .dochead h1{font-size:38px;font-weight:800;letter-spacing:-.025em}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .pill{font-size:11.5px;font-weight:700;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--t2)}
+  .pill b{color:var(--ink)}
+  .applies{margin-top:14px;font-size:13px;color:var(--t2)}
+
+  /* ── body layout: sticky TOC + prose ── */
+  .layout{display:grid;grid-template-columns:230px 1fr;gap:52px;padding:46px 0 70px;align-items:start}
+  .toc{position:sticky;top:78px}
+  .toc h5{font-family:var(--display);font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--t4);margin:0 0 12px}
+  .toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:s}
+  .toc a{display:block;font-size:12.8px;color:var(--t2);text-decoration:none;padding:6px 10px;border-radius:8px;border-left:2px solid transparent;line-height:1.45}
+  .toc a:hover{background:var(--surface2);color:var(--ink)}
+  .toc a.on{background:var(--yellow-pale);border-left-color:var(--yellow);color:var(--ink);font-weight:700}
+
+  .prose{max-width:720px}
+  .prose h2{font-size:19px;font-weight:700;margin:38px 0 12px;scroll-margin-top:90px}
+  .prose h2:first-child{margin-top:0}
+  .prose h2 .n{color:var(--yellow-deep);margin-right:9px;font-weight:800}
+  .prose p{font-size:14.5px;line-height:1.78;color:var(--t2);margin:0 0 14px}
+  .prose ul{margin:0 0 16px;padding-left:20px}
+  .prose li{font-size:14.5px;line-height:1.78;color:var(--t2);margin-bottom:7px}
+  .prose strong{color:var(--ink);font-weight:700}
+
+  .callout{background:var(--yellow-pale);border:1px solid #F5E3A8;border-left:3px solid var(--yellow);
+           border-radius:10px;padding:16px 18px;margin:0 0 18px}
+  .callout p{margin:0;font-size:13.5px;color:#5C4600}
+  .callout .lbl{font-family:var(--display);font-size:10.5px;font-weight:800;letter-spacing:.09em;
+                text-transform:uppercase;color:#8A6A00;display:block;margin-bottom:6px}
+
+  table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:13.5px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6}
+  th{font-family:var(--display);font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--t4);background:var(--surface)}
+  td{color:var(--t2)} td:first-child{color:var(--ink);font-weight:600;white-space:nowrap}
+
+  .tbd{background:#FDEEE9;color:#B3350F;border:1px dashed #E8401A;border-radius:4px;padding:0 5px;
+       font-family:ui-monospace,monospace;font-size:11px;font-weight:700}
+
+  .related{border-top:1px solid var(--line);margin-top:44px;padding-top:26px}
+  .related h5{font-family:var(--display);font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--t4);margin:0 0 14px}
+  .rgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .rcard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-decoration:none;display:block}
+  .rcard:hover{border-color:var(--yellow);background:var(--yellow-pale)}
+  .rcard b{font-family:var(--display);font-size:13.5px;display:block;margin-bottom:3px}
+  .rcard span{font-size:11.5px;color:var(--t3);line-height:1.5}
+
+  footer{background:var(--surface);border-top:1px solid var(--line);padding:26px 0;font-size:12px;color:var(--t3)}
+  .fb{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .note{background:#111;color:#eee;font-family:ui-monospace,monospace;font-size:12px;padding:10px 24px}
+  @media(max-width:900px){.layout{grid-template-columns:1fr;gap:24px}.toc{position:static}.rgrid{grid-template-columns:1fr}.dochead h1{font-size:28px}}
+</style>
+
+<div class="note">MOCKUP — features/landing-legal-surface · route <b>/legal/[slug]</b> · one template, ten documents · <span style="color:#ff8a65">red dashed</span> = founder must supply</div>
+
+<nav>
+  <div class="wrap navrow">
+    <span style="display:inline-flex;align-items:center;gap:9px;line-height:1">
+      <span style="width:8px;height:26px;background:var(--yellow);border-radius:3px 6px 3px 6px;display:inline-block"></span>
+      <span style="font-weight:800;font-size:21px;letter-spacing:-.02em">inflx</span>
+    </span>
+    <button class="btn">Get Started</button>
+  </div>
+</nav>
+
+<div class="dochead">
+  <div class="wrap">
+    <div class="crumb"><a href="/">Home</a> › <a href="/legal">Legal</a> › Privacy Policy</div>
+    <h1>Privacy Policy</h1>
+    <div class="meta">
+      <span class="pill">Effective <b><span class="tbd">DATE-TBD</span></b></span>
+      <span class="pill">Last updated <b><span class="tbd">DATE-TBD</span></b></span>
+      <span class="pill">Version <b>1.0</b></span>
+      <span class="pill">Governed by <b>Indian law</b></span>
+    </div>
+    <p class="applies">Applies to: everyone who uses INFLX — brands, creators and shoppers —
+      across the website and the mobile applications.</p>
+  </div>
+</div>
+
+<div class="wrap layout">
+  <aside class="toc">
+    <h5>On this page</h5>
+    <ol>
+      <li><a class="on" href="#s1">1. Who we are</a></li>
+      <li><a href="#s2">2. What we collect</a></li>
+      <li><a href="#s3">3. Why we process it</a></li>
+      <li><a href="#s4">4. Consent &amp; your choices</a></li>
+      <li><a href="#s5">5. Sharing &amp; processors</a></li>
+      <li><a href="#s6">6. Retention</a></li>
+      <li><a href="#s7">7. Your rights</a></li>
+      <li><a href="#s8">8. Security</a></li>
+      <li><a href="#s9">9. Children</a></li>
+      <li><a href="#s10">10. Grievance redressal</a></li>
+    </ol>
+  </aside>
+
+  <main class="prose">
+    <div class="callout">
+      <span class="lbl">In short</span>
+      <p>We collect only what we need to run campaigns, process payments and keep the
+      platform safe. We do not sell your personal information. You can ask us for a copy
+      of your data, correct it, or delete your account at any time.</p>
+    </div>
+
+    <h2 id="s1"><span class="n">1</span>Who we are</h2>
+    <p><strong>Omnara India Private Limited</strong> (“Omnara”, “we”, “us”), a company
+    incorporated in India with CIN <span class="tbd">CIN-TBD</span> and registered office at
+    <span class="tbd">REGISTERED-ADDRESS-TBD</span>, operates the INFLX platform. For the
+    purposes of the Digital Personal Data Protection Act, 2023, Omnara is the
+    <strong>Data Fiduciary</strong> for the personal data described in this policy, and you
+    are the <strong>Data Principal</strong>.</p>
+
+    <h2 id="s2"><span class="n">2</span>What we collect</h2>
+    <p>What we hold depends on which side of the platform you are on.</p>
+    <table>
+      <tr><th>Who</th><th>What we collect</th></tr>
+      <tr><td>Everyone</td><td>Mobile number, name, city, device and app-version information, and how you use the app.</td></tr>
+      <tr><td>Brands</td><td>Business name and category, business address, GSTIN where applicable, listings, campaign and wallet activity.</td></tr>
+      <tr><td>Creators</td><td>Handle, niche, connected social profiles and their public metrics, bank or UPI details for payouts, and PAN for statutory tax deduction.</td></tr>
+      <tr><td>Shoppers</td><td>Delivery addresses, orders and bookings, and the transaction records needed for refunds and returns.</td></tr>
+    </table>
+    <p>We do <strong>not</strong> store complete payment card details. Card and UPI
+    credentials are handled by our payment partner and never reach our servers.</p>
+
+    <h2 id="s3"><span class="n">3</span>Why we process it</h2>
+    <ul>
+      <li><strong>To provide the service</strong> — create your account, run campaigns, attribute commission, fulfil orders.</li>
+      <li><strong>To pay people</strong> — settle creator commissions and brand payouts, and deduct tax where the law requires it.</li>
+      <li><strong>To keep the platform safe</strong> — detect fraud, abuse and fake engagement.</li>
+      <li><strong>To meet legal obligations</strong> — tax, accounting, and lawful requests from authorities.</li>
+    </ul>
+
+    <h2 id="s4"><span class="n">4</span>Consent &amp; your choices</h2>
+    <p>Where we rely on your consent, we ask for it in clear language before we collect
+    the data, and we tell you what it will be used for. You can withdraw consent at any
+    time — it is as easy to withdraw as it was to give. Withdrawing consent does not undo
+    processing that already happened, and some features stop working without the data
+    they depend on.</p>
+
+    <h2 id="s5"><span class="n">5</span>Sharing &amp; processors</h2>
+    <table>
+      <tr><th>Who</th><th>What they receive</th><th>Why</th></tr>
+      <tr><td>Payment partner</td><td>Payment and payout details</td><td>To process payments and settlements</td></tr>
+      <tr><td>Cloud &amp; storage</td><td>Platform data at rest</td><td>To host the service</td></tr>
+      <tr><td>SMS / notifications</td><td>Mobile number, device token</td><td>To send OTPs and alerts</td></tr>
+      <tr><td>The other side of a deal</td><td>Only what the transaction requires</td><td>A brand sees the order it must fulfil; a creator sees the sales attributed to them</td></tr>
+    </table>
+    <p>We do not sell personal information, and we do not share it with advertisers for
+    their own marketing.</p>
+
+    <h2 id="s6"><span class="n">6</span>Retention</h2>
+    <p>We keep personal data for as long as your account is active. After deletion we
+    erase or anonymise it, except records we are legally required to retain — financial
+    and tax records in particular — which we keep for the statutory period and use for
+    nothing else.</p>
+
+    <h2 id="s7"><span class="n">7</span>Your rights</h2>
+    <ul>
+      <li>Ask for a summary of the personal data we hold about you and who we shared it with.</li>
+      <li>Correct or complete anything that is wrong or out of date.</li>
+      <li>Erase your data and close your account — see <a href="/account-deletion">Delete My Account</a>.</li>
+      <li>Nominate someone to exercise these rights if you die or become incapacitated.</li>
+      <li>Raise a grievance with us, and escalate it if we do not resolve it.</li>
+    </ul>
+
+    <h2 id="s8"><span class="n">8</span>Security</h2>
+    <p>Access is authenticated with one-time passwords and short-lived tokens, traffic is
+    encrypted in transit, and access to production data is restricted by role. No system is
+    perfectly secure; if a breach affects your data we will notify you and the authority as
+    the law requires.</p>
+
+    <h2 id="s9"><span class="n">9</span>Children</h2>
+    <p>INFLX is not intended for anyone under 18. We do not knowingly create accounts for
+    children, and we do not use their data for tracking or behavioural advertising. If you
+    believe a child has registered, tell the Grievance Officer and we will remove the account.</p>
+
+    <h2 id="s10"><span class="n">10</span>Grievance redressal</h2>
+    <p>Questions or complaints about this policy or how we handle your data go to our
+    Grievance Officer, who acknowledges within 24 hours and resolves within 7 days.</p>
+    <div class="callout">
+      <span class="lbl">Grievance Officer</span>
+      <p><span class="tbd">OFFICER-NAME-TBD</span>, Omnara India Private Limited<br>
+      <span class="tbd">grievance@…-TBD</span> · <span class="tbd">REGISTERED-ADDRESS-TBD</span><br>
+      Full details and escalation path: <a href="/legal/grievance">inflx.in/legal/grievance</a></p>
+    </div>
+
+    <div class="related">
+      <h5>Related documents</h5>
+      <div class="rgrid">
+        <a class="rcard" href="/legal/cookies"><b>Cookie Policy</b><span>What we store on your device and why</span></a>
+        <a class="rcard" href="/legal/terms"><b>Terms of Service</b><span>The rules for using INFLX</span></a>
+        <a class="rcard" href="/account-deletion"><b>Delete My Account</b><span>Erase your account and data</span></a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <div class="wrap fb">
+    <span>© 2026 Omnara India Private Limited. All rights reserved.</span>
+    <span>The full compliance footer from the landing mockup renders here on every legal route.</span>
+  </div>
+</footer>

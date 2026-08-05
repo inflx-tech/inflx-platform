@@ -1,0 +1,438 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>landing-legal-surface — landing page preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Palette lifted verbatim from the surfaces already live in brand-web
+       (/login and /dashboard). The landing page was the last dark holdout;
+       these tokens are what makes it match the product instead of the
+       marketing site of a different company. */
+    --ink:#0A0A0A; --ink2:#18181B; --t2:#52525B; --t3:#71717A; --t4:#A1A1AA;
+    --line:#E4E4E7; --line2:#D4D4D8;
+    --paper:#FFFFFF; --surface:#FAFAFA; --surface2:#F4F4F5;
+    --yellow:#FFC107; --yellow-deep:#E0A800; --yellow-pale:#FFFBEB; --yellow-pale2:#FFF7CC;
+    --display:'Outfit',sans-serif; --body:'Plus Jakarta Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--body);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+  .narrow{max-width:880px;margin:0 auto;padding:0 24px}
+  h1,h2,h3{font-family:var(--display);margin:0}
+
+  /* ── nav ── */
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .navrow{display:flex;align-items:center;justify-content:space-between;padding:14px 0}
+  .navlinks{display:flex;align-items:center;gap:28px;font-size:13.5px;font-weight:600;color:var(--t2)}
+  .navlinks a{text-decoration:none}
+  .navlinks a:hover{color:var(--ink)}
+  .btn{border:0;cursor:pointer;font-family:var(--body);font-weight:700;border-radius:999px;transition:all .15s}
+  .btn-y{background:var(--yellow);color:var(--ink);padding:10px 20px;font-size:13.5px}
+  .btn-y:hover{background:var(--yellow-deep)}
+  .btn-ghost{background:transparent;color:var(--t2);padding:10px 16px;font-size:13.5px}
+  .btn-ghost:hover{color:var(--ink)}
+  .btn-line{background:#fff;color:var(--ink);border:1px solid var(--line2);padding:14px 26px;font-size:14px}
+  .btn-line:hover{background:var(--surface2)}
+  .btn-lg{padding:15px 30px;font-size:14.5px}
+
+  /* ── hero ── */
+  .hero{position:relative;padding:88px 0 76px;text-align:center;overflow:hidden}
+  .hero:before{content:'';position:absolute;inset:0;background:
+    radial-gradient(680px 320px at 50% -6%, rgba(255,193,7,.22), transparent 70%);pointer-events:none}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--yellow-pale);border:1px solid #F5E3A8;
+        border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;color:#8A6A00;margin-bottom:22px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#16A34A;display:inline-block}
+  .hero h1{font-size:56px;font-weight:800;line-height:1.06;letter-spacing:-.03em;margin-bottom:20px;position:relative}
+  .hl{position:relative;white-space:nowrap}
+  .hl:after{content:'';position:absolute;left:-2px;right:-2px;bottom:.08em;height:.34em;background:var(--yellow);z-index:-1;border-radius:2px}
+  .hero p.lede{font-size:17.5px;line-height:1.62;color:var(--t2);max-width:620px;margin:0 auto 34px}
+  .ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .microtrust{margin-top:26px;font-size:12.5px;color:var(--t3)}
+
+  /* ── sections ── */
+  section.band{padding:76px 0}
+  .alt{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .eyebrow{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+           color:#8A6A00;background:var(--yellow-pale2);border-radius:999px;padding:5px 13px;margin-bottom:14px}
+  .h2{font-size:34px;font-weight:800;letter-spacing:-.02em}
+  .sub{color:var(--t2);font-size:15.5px;margin:10px 0 0;line-height:1.6}
+  .center{text-align:center}
+  .head{margin-bottom:44px}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:12px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px;position:relative;transition:all .18s}
+  .card:hover{border-color:var(--yellow);box-shadow:0 8px 24px rgba(10,10,10,.06)}
+  .card .num{position:absolute;top:16px;right:20px;font-family:var(--display);font-size:44px;font-weight:800;color:var(--yellow-pale2);line-height:1}
+  .card .ico{font-size:26px;margin-bottom:14px}
+  .card h3{font-size:16.5px;font-weight:700;margin-bottom:7px}
+  .card p{margin:0;font-size:13.5px;line-height:1.62;color:var(--t2)}
+  .mini{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
+  .mini .ico{font-size:21px;margin-bottom:10px}
+  .mini h4{font-family:var(--display);font-size:14px;font-weight:700;margin:0 0 5px}
+  .mini p{margin:0;font-size:12.5px;line-height:1.6;color:var(--t3)}
+  .cat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 10px;text-align:center}
+  .cat .ico{font-size:26px}
+  .cat .lbl{font-size:12px;font-weight:700;margin-top:8px}
+  .cat .cnt{font-size:10.5px;color:var(--t4);margin-top:3px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center}
+  .stat .v{font-family:var(--display);font-size:38px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+  .stat .v em{font-style:normal;color:var(--yellow-deep)}
+  .stat .l{font-size:12.5px;color:var(--t3);font-weight:600;margin-top:4px}
+
+  /* ── trust / responsibility band ── */
+  .trust{background:var(--yellow-pale);border-top:1px solid #F5E3A8;border-bottom:1px solid #F5E3A8}
+  .tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tcard{background:#fff;border:1px solid #F0E4BC;border-radius:14px;padding:22px}
+  .tcard h4{font-family:var(--display);font-size:14.5px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .tcard h4 span.k{width:22px;height:22px;border-radius:6px;background:var(--yellow);display:inline-flex;
+                   align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+  .tcard p{margin:0;font-size:12.8px;line-height:1.65;color:var(--t2)}
+
+  /* ── apps ── */
+  .apps{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:820px;margin:0 auto}
+  .appcard{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px;text-align:center}
+  .appcard .ico{font-size:38px;margin-bottom:12px}
+  .appcard h3{font-size:18px;font-weight:800;margin-bottom:6px}
+  .appcard p{font-size:13px;color:var(--t2);line-height:1.6;margin:0 0 20px}
+  .store{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;
+         border:1px solid var(--line2);border-radius:12px;background:#fff;margin-bottom:10px;text-decoration:none}
+  .store:hover{background:var(--surface2)}
+  .store .s1{font-size:9px;text-transform:uppercase;color:var(--t4);font-weight:700;letter-spacing:.06em}
+  .store .s2{font-size:13.5px;font-weight:800}
+
+  /* ── footer ── */
+  footer{background:var(--surface);border-top:1px solid var(--line);padding:58px 0 0}
+  .fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:32px;padding-bottom:40px}
+  .fcol h5{font-family:var(--display);font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--t4);margin:0 0 14px}
+  .fcol ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .fcol a{font-size:13px;color:var(--t2);text-decoration:none}
+  .fcol a:hover{color:var(--ink);text-decoration:underline}
+  .identity p{font-size:12.5px;line-height:1.75;color:var(--t2);margin:14px 0 0}
+  .identity .ent{font-weight:700;color:var(--ink)}
+  .tbd{background:#FDEEE9;color:#B3350F;border:1px dashed #E8401A;border-radius:4px;padding:0 5px;
+       font-family:ui-monospace,monospace;font-size:11px;font-weight:700}
+  .compliance{border-top:1px solid var(--line);padding:22px 0;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:26px}
+  .compliance a{color:var(--t2)}
+  .compliance h6{font-family:var(--display);font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+                 color:var(--t4);margin:0 0 8px}
+  .compliance p{margin:0;font-size:12px;line-height:1.7;color:var(--t2)}
+  .ipnotice{border-top:1px solid var(--line);padding:20px 0;font-size:11.5px;line-height:1.75;color:var(--t3)}
+  .fbottom{border-top:1px solid var(--line);padding:20px 0 30px;display:flex;justify-content:space-between;
+           align-items:center;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--t3)}
+
+  .note{background:#111;color:#eee;font-family:ui-monospace,monospace;font-size:12px;padding:10px 24px}
+  @media(max-width:900px){
+    .hero h1{font-size:38px} .grid3,.grid4,.tgrid,.apps,.stats{grid-template-columns:1fr 1fr}
+    .grid7{grid-template-columns:repeat(3,1fr)} .fgrid{grid-template-columns:1fr 1fr}
+    .compliance{grid-template-columns:1fr} .navlinks{display:none}
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mark" viewBox="0 0 514 1692"><path fill="#FDB602" d="M 428 0.863 C 427.175 1.345, 424.025 2.048, 421 2.426 C 408.162 4.030, 400.133 7.262, 373.500 21.549 C 331.929 43.849, 325.119 47.491, 311 54.972 C 303.025 59.197, 292 65.132, 286.500 68.159 C 281 71.187, 268.175 78.079, 258 83.475 C 247.825 88.872, 233.875 96.326, 227 100.040 C 220.125 103.755, 204.375 112.183, 192 118.769 C 77.306 179.813, 73.615 181.897, 58.273 194.265 C 33.679 214.091, 10 254.459, 10 276.561 C 10 277.975, 9.553 279.967, 9.007 280.987 C 8.355 282.205, 7.903 426.228, 7.691 699.672 C 7.439 1025.303, 7.100 1117.594, 6.138 1121.500 C 4.719 1127.268, 3.440 1133.782, 1.918 1143 C 0.634 1150.769, -0.074 1617.836, 1.197 1618.621 C 1.638 1618.895, 2 1620.420, 2 1622.010 C 2 1625.753, 4.113 1633.704, 7.442 1642.489 C 24.276 1686.913, 79.668 1705.597, 123.433 1681.615 C 138.186 1673.530, 186.532 1645.987, 207.500 1633.720 C 214.100 1629.859, 222.425 1625.036, 226 1623.001 C 233.743 1618.595, 243.894 1612.796, 253.500 1607.291 C 257.350 1605.084, 263.963 1601.304, 268.196 1598.890 C 291.920 1585.359, 311.467 1574.121, 331.500 1562.494 C 336.450 1559.621, 351.075 1551.299, 364 1544 C 376.925 1536.701, 391.550 1528.384, 396.500 1525.518 C 401.450 1522.651, 408.650 1518.589, 412.500 1516.491 C 453.833 1493.964, 482.841 1453.374, 489.868 1408.231 C 490.697 1402.909, 491.003 1288.971, 491.012 982.731 C 491.024 564.500, 491.024 564.500, 494.533 558.500 C 501.782 546.107, 505.301 537.752, 511.805 517.500 C 514.722 508.414, 514.841 65.873, 511.928 57 C 503.231 30.508, 483.762 12.051, 455.389 3.401 C 446.160 0.588, 430.895 -0.827, 428 0.863"/><path fill="#131413" d="M 481.259 575.343 C 466.473 593.173, 453.136 603.921, 424 621.486 C 413.275 627.952, 386.500 644.091, 364.500 657.351 C 342.500 670.612, 317.300 685.824, 308.500 691.157 C 299.700 696.490, 286.200 704.655, 278.500 709.302 C 270.800 713.949, 253.925 724.161, 241 731.996 C 228.075 739.830, 206.475 752.875, 193 760.984 C 179.525 769.093, 154.550 784.181, 137.500 794.513 C 120.450 804.844, 101.775 816.075, 96 819.471 C 46.030 848.851, 17.812 883.873, 10.572 925.500 C 7.028 945.873, 8.515 1114.056, 12.161 1105.306 C 31.567 1058.744, 48.921 1041.645, 120.687 998.370 C 143.134 984.835, 173.425 966.554, 188 957.746 C 202.575 948.938, 217.200 940.137, 220.500 938.188 C 223.800 936.239, 238.650 927.350, 253.500 918.435 C 283.271 900.563, 290.266 896.383, 306.500 886.769 C 312.550 883.186, 323.575 876.538, 331 871.996 C 338.425 867.453, 347.200 862.162, 350.500 860.237 C 353.800 858.312, 368.425 849.661, 383 841.013 C 397.575 832.365, 413.775 822.769, 419 819.689 C 450.802 800.945, 477.376 770.832, 486.118 743.634 C 489.345 733.592, 490.884 568.982, 487.750 569.012 C 487.063 569.018, 484.142 571.868, 481.259 575.343"/></symbol></svg>
+
+<div class="note">MOCKUP — features/landing-legal-surface · route <b>/</b> (brand-web) · white + yellow, no dark surfaces · <span style="color:#ff8a65">red dashed</span> = founder must supply before go-live</div>
+
+<!-- ═══════════ NAV ═══════════ -->
+<nav>
+  <div class="wrap navrow">
+    <span style="display:inline-flex;align-items:center;gap:9px;line-height:1">
+      <svg height="26" width="7.9" aria-hidden="true" style="display:block"><use href="#mark"/></svg>
+      <span style="font-family:var(--body);font-weight:800;font-size:21px;letter-spacing:-.02em;color:var(--ink)">inflx</span>
+    </span>
+    <div class="navlinks">
+      <a href="#brands">For Brands</a>
+      <a href="#creators">For Creators</a>
+      <a href="#followers">For Shoppers</a>
+      <a href="#trust">Trust</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button class="btn btn-ghost">Sign In</button>
+      <button class="btn btn-y">Get Started</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <div class="narrow" style="position:relative">
+    <span class="chip"><span class="dot"></span> Powering local commerce across India</span>
+    <h1>Where local brands and<br><span class="hl">creators</span> grow together</h1>
+    <p class="lede">Brands run campaigns. Creators promote deals to the people who
+      actually trust them. Shoppers discover, book and pay — with every rupee of
+      commission tracked automatically.</p>
+    <div class="ctas">
+      <button class="btn btn-y btn-lg">Register Your Business →</button>
+      <button class="btn btn-line">Join as a Creator</button>
+    </div>
+    <p class="microtrust">A product of Omnara India Private Limited · Payments by Razorpay · Made in India</p>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="band alt">
+  <div class="wrap">
+    <div class="head center">
+      <span class="eyebrow">How it works</span>
+      <h2 class="h2">Three sides, one loop</h2>
+      <p class="sub">Every transaction carries the campaign, offer and creator it came from — so attribution is never a guess.</p>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="num">01</div><div class="ico">🏪</div>
+        <h3>Brand lists &amp; funds</h3>
+        <p>Register your business, list products or services, create a campaign and fund it. 35 business types supported, from street food to car rentals.</p></div>
+      <div class="card"><div class="num">02</div><div class="ico">📣</div>
+        <h3>Creator promotes</h3>
+        <p>Creators accept, negotiate or decline the offer, then publish the deal to their own store with their own recommendation attached.</p></div>
+      <div class="card"><div class="num">03</div><div class="ico">💰</div>
+        <h3>Shopper buys, everyone settles</h3>
+        <p>Followers browse, pre-book or pay at store. Commission is attributed to the exact creator and released after the return window.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOR BRANDS ═══════════ -->
+<section class="band" id="brands">
+  <div class="wrap">
+    <div class="head center">
+      <span class="eyebrow">For brands</span>
+      <h2 class="h2">Everything you need to grow</h2>
+    </div>
+    <div class="grid4">
+      <div class="mini"><div class="ico">📋</div><h4>Smart listings</h4><p>A guided wizard per business type. Excel bulk upload for large catalogues.</p></div>
+      <div class="mini"><div class="ico">📣</div><h4>Campaign manager</h4><p>Set offers, invite creators, review content before it goes live.</p></div>
+      <div class="mini"><div class="ico">📊</div><h4>Real analytics</h4><p>Reach, engagement, conversions and ROI — per creator, per offer.</p></div>
+      <div class="mini"><div class="ico">💳</div><h4>Automated payouts</h4><p>Commission split and settled automatically. No spreadsheets.</p></div>
+      <div class="mini"><div class="ico">🔒</div><h4>Escrow protection</h4><p>Funds release in three tranches as the creator actually delivers.</p></div>
+      <div class="mini"><div class="ico">📦</div><h4>35 business types</h4><p>Restaurants, fashion, salons, gyms, rentals, home services and more.</p></div>
+      <div class="mini"><div class="ico">🔗</div><h4>Tracked links</h4><p>Every order attributed to the campaign, offer and creator behind it.</p></div>
+      <div class="mini"><div class="ico">📱</div><h4>Reach on mobile</h4><p>Your deals surface inside creator stores in the shopper app.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOR CREATORS ═══════════ -->
+<section class="band alt" id="creators">
+  <div class="wrap">
+    <div class="head center">
+      <span class="eyebrow">For creators</span>
+      <h2 class="h2">Turn influence into income</h2>
+    </div>
+    <div class="grid4">
+      <div class="mini"><div class="ico">🎯</div><h4>Real offers</h4><p>Brands invite you. Accept, negotiate the rate, or decline — your call.</p></div>
+      <div class="mini"><div class="ico">🏪</div><h4>Your own store</h4><p>Publish deals to a storefront your followers can actually shop.</p></div>
+      <div class="mini"><div class="ico">💰</div><h4>Commission per sale</h4><p>Earn on every purchase made through your deal, tracked automatically.</p></div>
+      <div class="mini"><div class="ico">🏦</div><h4>Clean withdrawals</h4><p>Withdraw to UPI or bank. TDS handled at source. Minimum ₹100.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOR SHOPPERS ═══════════ -->
+<section class="band" id="followers">
+  <div class="wrap">
+    <div class="head center">
+      <span class="eyebrow">For shoppers</span>
+      <h2 class="h2">Buy from people you already follow</h2>
+    </div>
+    <div class="grid4">
+      <div class="mini"><div class="ico">🔍</div><h4>Discover locally</h4><p>Deals from businesses in your city, picked by creators you follow.</p></div>
+      <div class="mini"><div class="ico">🎟️</div><h4>Real offers</h4><p>Flat, percentage, bundle, BOGO and pre-book — priced before you commit.</p></div>
+      <div class="mini"><div class="ico">🛵</div><h4>Order or book</h4><p>Buy for delivery, book a slot, or pay at the store counter.</p></div>
+      <div class="mini"><div class="ico">↩️</div><h4>Protected returns</h4><p>A stated return window on eligible orders, with refunds to source.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CATEGORIES ═══════════ -->
+<section class="band alt">
+  <div class="wrap center">
+    <div class="head center">
+      <h2 class="h2">35 business types supported</h2>
+      <p class="sub">From street food to luxury stays — every local business can list and grow.</p>
+    </div>
+    <div class="grid7">
+      <div class="cat"><div class="ico">🍽️</div><div class="lbl">Food &amp; Dining</div><div class="cnt">4 types</div></div>
+      <div class="cat"><div class="ico">🛍️</div><div class="lbl">Shopping</div><div class="cnt">9 types</div></div>
+      <div class="cat"><div class="ico">✨</div><div class="lbl">Beauty</div><div class="cnt">3 types</div></div>
+      <div class="cat"><div class="ico">💪</div><div class="lbl">Health &amp; Fitness</div><div class="cnt">5 types</div></div>
+      <div class="cat"><div class="ico">✈️</div><div class="lbl">Travel</div><div class="cnt">4 types</div></div>
+      <div class="cat"><div class="ico">🏠</div><div class="lbl">Home Services</div><div class="cnt">5 types</div></div>
+      <div class="cat"><div class="ico">🎉</div><div class="lbl">Events</div><div class="cnt">5 types</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ STATS ═══════════ -->
+<section class="band" style="padding:56px 0">
+  <div class="wrap stats">
+    <div class="stat"><div class="v"><em>35</em>+</div><div class="l">Business types</div></div>
+    <div class="stat"><div class="v"><em>3</em></div><div class="l">Connected apps</div></div>
+    <div class="stat"><div class="v"><em>7</em></div><div class="l">Categories</div></div>
+    <div class="stat"><div class="v">₹<em>0</em></div><div class="l">To get started</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ APPS ═══════════ -->
+<section class="band alt">
+  <div class="wrap">
+    <div class="head center">
+      <span class="eyebrow">Get started</span>
+      <h2 class="h2">Pick your side</h2>
+    </div>
+    <div class="apps">
+      <div class="appcard">
+        <div class="ico">💼</div>
+        <h3>Brands</h3>
+        <p>Run your business from the web dashboard — listings, campaigns, wallet, analytics.</p>
+        <button class="btn btn-y" style="width:100%;padding:13px">Sign In / Register →</button>
+      </div>
+      <div class="appcard">
+        <div class="ico">📱</div>
+        <h3>Creators &amp; shoppers</h3>
+        <p>Manage campaigns, publish deals and track earnings — or just shop — from the app.</p>
+        <a class="store" href="#"><span style="font-size:20px">🤖</span><span><span class="s1">Get it on</span><br><span class="s2">Google Play</span></span></a>
+        <a class="store" href="#"><span style="font-size:20px">🍎</span><span><span class="s1">Download on</span><br><span class="s2">App Store</span></span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ TRUST & RESPONSIBILITY ═══════════ -->
+<section class="band trust" id="trust">
+  <div class="wrap">
+    <div class="head center">
+      <span class="eyebrow" style="background:#fff">Trust &amp; responsibility</span>
+      <h2 class="h2">Who is responsible for what</h2>
+      <p class="sub">INFLX is a technology platform. Being explicit about this protects everyone using it.</p>
+    </div>
+    <div class="tgrid">
+      <div class="tcard"><h4><span class="k">👤</span> Creator responsibility</h4>
+        <p>Creators are solely responsible for the content they publish, including promotional
+claims, advertising disclosures, and compliance with applicable advertising regulations.</p></div>
+      <div class="tcard"><h4><span class="k">🏬</span> Brand responsibility</h4>
+        <p>Brands are solely responsible for the products, pricing, inventory, warranties,
+fulfilment and legal compliance associated with their offerings.</p></div>
+      <div class="tcard"><h4><span class="k">🔐</span> Payments</h4>
+        <p>Payments are processed through trusted third-party payment partners. INFLX does not
+store complete payment card information.</p></div>
+      <div class="tcard"><h4><span class="k">🌐</span> Availability</h4>
+        <p>Certain platform features may vary by region and may change without prior notice as
+the platform evolves.</p></div>
+      <div class="tcard"><h4><span class="k">✦</span> AI assistance</h4>
+        <p>Some features use artificial intelligence to assist with recommendations, analytics,
+content organisation and workflow automation. AI-generated insights should be independently
+reviewed before making business decisions.</p></div>
+      <div class="tcard"><h4><span class="k">⚖️</span> Marketplace disclaimer</h4>
+        <p>INFLX connects brands, creators and consumers. Unless explicitly stated, INFLX does not
+manufacture, own or guarantee products or services offered by third parties.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fcol identity">
+        <span style="display:inline-flex;align-items:center;gap:9px;line-height:1">
+          <svg height="24" width="7.3" aria-hidden="true" style="display:block"><use href="#mark"/></svg>
+          <span style="font-weight:800;font-size:19px;letter-spacing:-.02em;color:var(--ink)">inflx</span>
+        </span>
+        <p>
+          <span class="ent">Omnara India Private Limited</span><br>
+          CIN <span class="tbd">CIN-TBD</span><br>
+          <span class="tbd">REGISTERED-ADDRESS-TBD</span><br>
+          GSTIN <span class="tbd">GSTIN-TBD</span>
+        </p>
+        <p style="color:var(--t3)">INFLX is a product of Omnara India Private Limited.</p>
+      </div>
+
+      <div class="fcol">
+        <h5>Platform</h5>
+        <ul>
+          <li><a href="#brands">For Brands</a></li>
+          <li><a href="#creators">For Creators</a></li>
+          <li><a href="#followers">For Shoppers</a></li>
+          <li><a href="#">Business Types</a></li>
+          <li><a href="#">Get the App</a></li>
+        </ul>
+      </div>
+
+      <div class="fcol">
+        <h5>Policies</h5>
+        <ul>
+          <li><a href="/legal/privacy">Privacy Policy</a></li>
+          <li><a href="/legal/terms">Terms of Service</a></li>
+          <li><a href="/legal/cookies">Cookie Policy</a></li>
+          <li><a href="/legal/refunds">Refund &amp; Cancellation</a></li>
+          <li><a href="/legal/community-guidelines">Community Guidelines</a></li>
+          <li><a href="/legal/ranking">How Ranking Works</a></li>
+        </ul>
+      </div>
+
+      <div class="fcol">
+        <h5>Agreements</h5>
+        <ul>
+          <li><a href="/legal/creator-agreement">Creator Agreement</a></li>
+          <li><a href="/legal/brand-agreement">Brand Agreement</a></li>
+          <li><a href="/legal/content-ip-policy">Content &amp; IP Policy</a></li>
+          <li><a href="/legal/advertising-disclosure">Advertising Disclosure</a></li>
+          <li><a href="/legal/copyright">Copyright &amp; Takedown</a></li>
+        </ul>
+      </div>
+
+      <div class="fcol">
+        <h5>Help</h5>
+        <ul>
+          <li><a href="/legal/grievance">Grievance Officer</a></li>
+          <li><a href="/contact">Contact Us</a></li>
+          <li><a href="/account-deletion">Delete My Account</a></li>
+          <li><a href="/legal">All Legal Documents</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="compliance">
+      <div>
+        <h6>Grievance Officer</h6>
+        <p><span class="tbd">OFFICER-NAME-TBD</span>, <span class="tbd">DESIGNATION-TBD</span><br>
+        <span class="tbd">grievance@…-TBD</span><br>
+        We acknowledge every complaint within <b>24 hours</b> and resolve it within
+        <b>7 days</b>. Complaints about intimate images or impersonation are acted on
+        within <b>2 hours</b>. Unresolved complaints may be appealed to the Grievance
+        Appellate Committee within 30 days.
+        <a href="/legal/grievance">How to raise a complaint →</a></p>
+      </div>
+      <div>
+        <h6>Customer Care</h6>
+        <p><span class="tbd">support@…-TBD</span><br>
+        Mobile <span class="tbd">MOBILE-TBD</span> · Landline <span class="tbd">LANDLINE-TBD</span><br>
+        <span class="tbd">CARE-ADDRESS-TBD</span></p>
+      </div>
+      <div>
+        <h6>National Consumer Helpline</h6>
+        <p>1915 · consumerhelpline.gov.in<br>
+        Department of Consumer Affairs, Government of India. You may approach the
+        helpline at any time, including before contacting us.</p>
+      </div>
+    </div>
+
+    <div class="ipnotice">
+      INFLX™, its logo, branding, software, website design, mobile applications and associated
+      technology are the intellectual property of Omnara India Private Limited. Unauthorised
+      copying, reproduction, reverse engineering, distribution or commercial use of any part of
+      the platform without prior written permission is strictly prohibited. All other trademarks,
+      product names and brand assets shown on this site belong to their respective owners.
+    </div>
+
+    <div class="fbottom">
+      <span>© 2026 Omnara India Private Limited. All rights reserved.</span>
+      <span>Made with <span style="color:#E8401A">❤</span> in India</span>
+    </div>
+  </div>
+</footer>

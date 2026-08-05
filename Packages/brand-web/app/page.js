@@ -2,16 +2,91 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Logo from '../../shared/components/Logo';
+import SiteFooter from '../components/SiteFooter';
+
+// The landing page runs on the same white + yellow system as /login and
+// /dashboard (#FFFFFF ground, #0A0A0A ink, #FFC107 accent). It used to be the
+// last dark surface in brand-web, so a visitor who signed up crossed a hard
+// visual seam into what looked like a different company's product.
 
 const INDUSTRY_GROUPS = [
-  { icon: '🍽️', label: 'Food & Dining', count: 4, color: 'from-red-500 to-orange-500' },
-  { icon: '🛍️', label: 'Shopping & Retail', count: 9, color: 'from-amber-500 to-yellow-500' },
-  { icon: '✨', label: 'Beauty & Grooming', count: 3, color: 'from-pink-500 to-rose-400' },
-  { icon: '💪', label: 'Health & Fitness', count: 5, color: 'from-blue-500 to-cyan-400' },
-  { icon: '✈️', label: 'Travel & Rentals', count: 4, color: 'from-teal-500 to-emerald-400' },
-  { icon: '🏠', label: 'Home Services', count: 5, color: 'from-green-500 to-lime-400' },
-  { icon: '🎉', label: 'Events & Professional', count: 5, color: 'from-purple-500 to-violet-400' },
+  { icon: '🍽️', label: 'Food & Dining', count: 4 },
+  { icon: '🛍️', label: 'Shopping', count: 9 },
+  { icon: '✨', label: 'Beauty', count: 3 },
+  { icon: '💪', label: 'Health & Fitness', count: 5 },
+  { icon: '✈️', label: 'Travel', count: 4 },
+  { icon: '🏠', label: 'Home Services', count: 5 },
+  { icon: '🎉', label: 'Events', count: 5 },
 ];
+
+const STEPS = [
+  { num: '01', icon: '🏪', title: 'Brand lists and funds', desc: 'Register your business, list what you sell, create a campaign and fund it. 35 business types are supported, from street food to car rentals.' },
+  { num: '02', icon: '📣', title: 'Creator promotes', desc: 'Creators accept, negotiate or decline the offer, then publish the deal to their own store with their own recommendation attached.' },
+  { num: '03', icon: '💰', title: 'Shopper buys, everyone settles', desc: 'Followers browse, book or pay at the store. Commission is attributed to the exact creator and released once the return window closes.' },
+];
+
+const BRAND_FEATURES = [
+  { icon: '📋', title: 'Smart listings', desc: 'A guided wizard per business type. Excel bulk upload for large catalogues.' },
+  { icon: '📣', title: 'Campaign manager', desc: 'Set offers, invite creators, review content before it goes live.' },
+  { icon: '📊', title: 'Real analytics', desc: 'Reach, engagement, conversions and ROI — per creator, per offer.' },
+  { icon: '💳', title: 'Automated payouts', desc: 'Commission split and settled automatically. No spreadsheets.' },
+  { icon: '🔒', title: 'Escrow protection', desc: 'Funds release in three tranches as the creator actually delivers.' },
+  { icon: '📦', title: '35 business types', desc: 'Restaurants, fashion, salons, gyms, rentals, home services and more.' },
+  { icon: '🔗', title: 'Tracked links', desc: 'Every order attributed to the campaign, offer and creator behind it.' },
+  { icon: '📱', title: 'Reach on mobile', desc: 'Your deals surface inside creator stores in the shopper app.' },
+];
+
+const CREATOR_FEATURES = [
+  { icon: '🎯', title: 'Real offers', desc: 'Brands invite you. Accept, negotiate the rate, or decline — your call.' },
+  { icon: '🏪', title: 'Your own store', desc: 'Publish deals to a storefront your followers can actually shop.' },
+  { icon: '💰', title: 'Commission per sale', desc: 'Earn on every purchase made through your deal, tracked automatically.' },
+  { icon: '🏦', title: 'Clean withdrawals', desc: 'Withdraw to UPI or bank. Tax handled at source. Minimum ₹100.' },
+];
+
+const SHOPPER_FEATURES = [
+  { icon: '🔍', title: 'Discover locally', desc: 'Deals from businesses in your city, picked by creators you already follow.' },
+  { icon: '🎟️', title: 'Honest offers', desc: 'Flat, percentage, bundle, BOGO and pre-book — priced in full before you commit.' },
+  { icon: '🛵', title: 'Order or book', desc: 'Buy for delivery, book a slot, or pay at the store counter.' },
+  { icon: '↩️', title: 'Protected returns', desc: 'A stated return window on eligible orders, with refunds to the original method.' },
+];
+
+// The responsibility notices. These are on the landing page rather than buried
+// in the terms because the whole point is that a visitor reads them before
+// they transact, not after something has gone wrong.
+const NOTICES = [
+  { k: '👤', title: 'Creator responsibility', body: 'Creators are solely responsible for the content they publish, including promotional claims, advertising disclosures, and compliance with applicable advertising regulations.' },
+  { k: '🏬', title: 'Brand responsibility', body: 'Brands are solely responsible for the products, pricing, inventory, warranties, fulfilment and legal compliance associated with their offerings.' },
+  { k: '🔐', title: 'Payments', body: 'Payments are processed through trusted third-party payment partners. INFLX does not store complete payment card information.' },
+  { k: '🌐', title: 'Availability', body: 'Certain platform features may vary by region and may change without prior notice as the platform evolves.' },
+  { k: '✦', title: 'AI assistance', body: 'Some features use artificial intelligence to assist with recommendations, analytics, content organisation and workflow automation. AI-generated insights should be reviewed independently before business decisions are made.' },
+  { k: '⚖️', title: 'Marketplace disclaimer', body: 'INFLX connects brands, creators and consumers. Unless explicitly stated, INFLX does not manufacture, own or guarantee products or services offered by third parties.' },
+  // Told to the shopper, not just written into the creator's contract. Across
+  // every comparable Indian platform surveyed, commission is disclosed only as
+  // a platform-to-creator fee and never as a material-connection notice to the
+  // person actually spending the money. Saying it plainly costs nothing.
+  { k: '🏷️', title: 'Creators earn commission', body: 'When you buy through a creator’s store, that creator usually earns a commission on the sale. It does not change what you pay. Paid and promoted placements are labelled wherever they appear.' },
+];
+
+function Eyebrow({ children, onPale }) {
+  return (
+    <span
+      className="mb-3.5 inline-block rounded-full px-3.5 py-1.5 font-display text-[11.5px] font-extrabold uppercase tracking-[0.1em]"
+      style={{ background: onPale ? '#FFFFFF' : '#FFF7CC', color: '#8A6A00' }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function MiniCard({ f }) {
+  return (
+    <div className="rounded-2xl border p-5 transition-colors hover:border-[#FFC107]" style={{ borderColor: '#E4E4E7', background: '#fff' }}>
+      <div className="mb-2.5 text-[21px]">{f.icon}</div>
+      <h4 className="mb-1.5 font-display text-[14px] font-bold" style={{ color: '#0A0A0A' }}>{f.title}</h4>
+      <p className="m-0 text-[12.5px] leading-[1.6]" style={{ color: '#71717A' }}>{f.desc}</p>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const router = useRouter();
@@ -36,24 +111,36 @@ export default function LandingPage() {
   const goHome = () => { if (session) router.push(session.href); };
 
   return (
-    <div className="min-h-screen bg-[#070b16] text-white overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden" style={{ background: '#FFFFFF', color: '#0A0A0A' }}>
 
       {/* ═══════════════════ NAVBAR ═══════════════════ */}
-      <nav className="fixed top-0 w-full z-50 bg-[#070b16]/90 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <div className="font-display text-xl font-extrabold">
-            <Logo tone="light" size="sm" />
+      <nav
+        className="sticky top-0 z-50"
+        style={{ background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #E4E4E7' }}
+      >
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+          <Logo tone="dark" size="sm" />
+
+          <div className="hidden items-center gap-7 text-[13.5px] font-semibold md:flex" style={{ color: '#52525B' }}>
+            <a href="#brands" className="no-underline hover:text-[#0A0A0A]">For Brands</a>
+            <a href="#creators" className="no-underline hover:text-[#0A0A0A]">For Creators</a>
+            <a href="#shoppers" className="no-underline hover:text-[#0A0A0A]">For Shoppers</a>
+            <a href="#trust" className="no-underline hover:text-[#0A0A0A]">Trust</a>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-1.5">
             {session ? (
               <button onClick={goHome}
-                className="px-5 py-2 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] text-sm font-bold rounded-full hover:shadow-lg hover:shadow-orange-500/25 transition-all">{session.label} →</button>
+                className="rounded-full px-5 py-2.5 text-[13.5px] font-bold transition-colors hover:bg-[#E0A800]"
+                style={{ background: '#FFC107', color: '#0A0A0A' }}>{session.label} →</button>
             ) : (
               <>
                 <button onClick={() => router.push('/login')}
-                  className="px-5 py-2 text-sm font-semibold text-white/70 hover:text-white transition-colors">Sign In</button>
+                  className="rounded-full px-4 py-2.5 text-[13.5px] font-semibold transition-colors hover:text-[#0A0A0A]"
+                  style={{ color: '#52525B' }}>Sign In</button>
                 <button onClick={() => router.push('/login')}
-                  className="px-5 py-2 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] text-sm font-bold rounded-full hover:shadow-lg hover:shadow-orange-500/25 transition-all">Get Started</button>
+                  className="rounded-full px-5 py-2.5 text-[13.5px] font-bold transition-colors hover:bg-[#E0A800]"
+                  style={{ background: '#FFC107', color: '#0A0A0A' }}>Get Started</button>
               </>
             )}
           </div>
@@ -61,57 +148,75 @@ export default function LandingPage() {
       </nav>
 
       {/* ═══════════════════ HERO ═══════════════════ */}
-      <section className="pt-32 pb-20 px-6 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#F47920]/5 via-transparent to-transparent" />
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-xs font-medium text-white/60 mb-6">
-            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+      <section className="relative overflow-hidden px-6 pb-20 pt-24">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: 'radial-gradient(680px 320px at 50% -6%, rgba(255,193,7,0.22), transparent 70%)' }}
+        />
+        <div className="relative mx-auto max-w-3xl text-center">
+          <span
+            className="mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-bold"
+            style={{ background: '#FFFBEB', border: '1px solid #F5E3A8', color: '#8A6A00' }}
+          >
+            <span className="inline-block h-[7px] w-[7px] animate-pulse rounded-full" style={{ background: '#16A34A' }} />
             Powering local commerce across India
-          </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Connect Local Brands<br />with <span className="bg-gradient-to-r from-[#F47920] to-[#FFB800] bg-clip-text text-transparent">Influencers</span>
+          </span>
+
+          <h1 className="mb-5 font-display text-[38px] font-extrabold leading-[1.06] tracking-[-0.03em] md:text-[56px]">
+            Where local brands and<br />
+            <span className="relative inline-block">
+              <span className="relative z-10">creators</span>
+              <span className="absolute bottom-[0.08em] left-[-2px] right-[-2px] h-[0.34em] rounded-sm" style={{ background: '#FFC107' }} />
+            </span>{' '}
+            grow together
           </h1>
-          <p className="text-lg text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-            The platform where local businesses create campaigns, influencers promote deals to their followers, and customers discover, book, and pay — all in one ecosystem.
+
+          <p className="mx-auto mb-8 max-w-[620px] text-[16px] leading-[1.62] md:text-[17.5px]" style={{ color: '#52525B' }}>
+            Brands run campaigns. Creators promote deals to the people who actually trust
+            them. Shoppers discover, book and pay — with every rupee of commission tracked
+            automatically.
           </p>
-          <div className="flex items-center justify-center gap-4">
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {session ? (
               <button onClick={goHome}
-                className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-                {session.label} →
-              </button>
+                className="rounded-full px-8 py-3.5 text-[14.5px] font-bold transition-colors hover:bg-[#E0A800]"
+                style={{ background: '#FFC107', color: '#0A0A0A' }}>{session.label} →</button>
             ) : (
               <>
                 <button onClick={() => router.push('/login')}
-                  className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-                  Register Your Business →
-                </button>
+                  className="rounded-full px-8 py-3.5 text-[14.5px] font-bold transition-colors hover:bg-[#E0A800]"
+                  style={{ background: '#FFC107', color: '#0A0A0A' }}>Register Your Business →</button>
                 <button onClick={() => router.push('/login')}
-                  className="px-8 py-3.5 border border-white/15 text-white/80 font-semibold rounded-full text-sm hover:bg-white/5 transition-all">
-                  Sign In
-                </button>
+                  className="rounded-full px-7 py-3.5 text-[14px] font-bold transition-colors hover:bg-[#F4F4F5]"
+                  style={{ background: '#fff', color: '#0A0A0A', border: '1px solid #D4D4D8' }}>Join as a Creator</button>
               </>
             )}
           </div>
+
+          <p className="mt-6 text-[12.5px]" style={{ color: '#71717A' }}>
+            A product of Omnara India Private Limited · Payments handled by our payment partner · Made in India
+          </p>
         </div>
       </section>
 
       {/* ═══════════════════ HOW IT WORKS ═══════════════════ */}
-      <section className="py-20 px-6 bg-[#0e1525]">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-extrabold text-center mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>How It Works</h2>
-          <p className="text-white/40 text-center mb-12">Three simple steps to grow your business through influencer marketing</p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { num: '01', icon: '🏪', title: 'Brand Lists Products', desc: 'Register your business, list your products or services. We support 35 business types from restaurants to car rentals.' },
-              { num: '02', icon: '📣', title: 'Influencer Promotes', desc: 'Create campaigns, assign influencers. They add personal notes and publish deals to their store for followers to discover.' },
-              { num: '03', icon: '💰', title: 'Followers Buy & Pay', desc: 'Followers browse deals, pre-book or pay at store via UPI. Commissions auto-tracked, settlements automated.' },
-            ].map((step, i) => (
-              <div key={i} className="relative bg-[#151d30] rounded-2xl p-8 border border-white/5 hover:border-[#F47920]/20 transition-all group">
-                <div className="text-[#F47920]/20 text-6xl font-black absolute top-4 right-6" style={{ fontFamily: 'Outfit' }}>{step.num}</div>
-                <div className="text-4xl mb-4">{step.icon}</div>
-                <h3 className="text-lg font-bold mb-2 group-hover:text-[#FFB800] transition-colors">{step.title}</h3>
-                <p className="text-sm text-white/40 leading-relaxed">{step.desc}</p>
+      <section className="px-6 py-[76px]" style={{ background: '#FAFAFA', borderTop: '1px solid #E4E4E7', borderBottom: '1px solid #E4E4E7' }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-11 text-center">
+            <Eyebrow>How it works</Eyebrow>
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Three sides, one loop</h2>
+            <p className="mt-2.5 text-[15.5px] leading-[1.6]" style={{ color: '#52525B' }}>
+              Every transaction carries the campaign, offer and creator it came from — so attribution is never a guess.
+            </p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            {STEPS.map((s) => (
+              <div key={s.num} className="relative rounded-2xl border p-6 transition-all hover:border-[#FFC107]" style={{ borderColor: '#E4E4E7', background: '#fff' }}>
+                <div className="absolute right-5 top-4 font-display text-[44px] font-extrabold leading-none" style={{ color: '#FFF7CC' }}>{s.num}</div>
+                <div className="mb-3.5 text-[26px]">{s.icon}</div>
+                <h3 className="mb-1.5 font-display text-[16.5px] font-bold">{s.title}</h3>
+                <p className="m-0 text-[13.5px] leading-[1.62]" style={{ color: '#52525B' }}>{s.desc}</p>
               </div>
             ))}
           </div>
@@ -119,68 +224,59 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════ FOR BRANDS ═══════════════════ */}
-      <section className="py-20 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-[#F47920]/10 border border-[#F47920]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#F47920] mb-4">For Brands</div>
-            <h2 className="text-3xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Everything You Need to Grow</h2>
+      <section id="brands" className="px-6 py-[76px]">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-11 text-center">
+            <Eyebrow>For brands</Eyebrow>
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Everything you need to grow</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { icon: '📋', title: 'Smart Listings', desc: 'List products with our config-driven wizard. Excel bulk upload supported.' },
-              { icon: '📣', title: 'Campaign Manager', desc: 'Create campaigns, set discounts, assign influencers with full tracking.' },
-              { icon: '📊', title: 'Real-time Analytics', desc: 'Track reach, engagement, conversions, and ROI per influencer.' },
-              { icon: '💳', title: 'Automated Payments', desc: 'Followers pay via UPI. Commissions auto-split. Settlements automated.' },
-              { icon: '🔒', title: 'Escrow Protection', desc: '3-tranche escrow ensures influencers deliver before you pay.' },
-              { icon: '📦', title: '35 Business Types', desc: 'From restaurants to car rentals — every local business supported.' },
-              { icon: '🔗', title: 'Tracking URLs', desc: 'Every transaction attributed to the exact campaign and influencer.' },
-              { icon: '📱', title: 'Follower App', desc: 'Your deals reach thousands of local followers through influencer stores.' },
-            ].map((f, i) => (
-              <div key={i} className="bg-[#151d30] rounded-xl p-5 border border-white/5 hover:border-[#F47920]/15 transition-all">
-                <div className="text-2xl mb-3">{f.icon}</div>
-                <h4 className="font-bold text-sm mb-1">{f.title}</h4>
-                <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {BRAND_FEATURES.map((f) => <MiniCard key={f.title} f={f} />)}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════ FOR INFLUENCERS ═══════════════════ */}
-      <section className="py-20 px-6 bg-[#0e1525]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#8b5cf6] mb-4">For Influencers</div>
-            <h2 className="text-3xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Turn Your Influence Into Income</h2>
+      {/* ═══════════════════ FOR CREATORS ═══════════════════ */}
+      <section id="creators" className="px-6 py-[76px]" style={{ background: '#FAFAFA', borderTop: '1px solid #E4E4E7', borderBottom: '1px solid #E4E4E7' }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-11 text-center">
+            <Eyebrow>For creators</Eyebrow>
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Turn influence into income</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { icon: '🎯', title: 'Get Campaign Offers', desc: 'Brands invite you to promote their products. Accept, negotiate, or decline.' },
-              { icon: '🏪', title: 'Your Personal Store', desc: 'Publish deals to your store. Followers see your recommendations.' },
-              { icon: '💰', title: 'Earn Commissions', desc: 'Every follower purchase through your deal earns you commission.' },
-              { icon: '🏦', title: 'Easy Withdrawals', desc: 'Withdraw to UPI or bank. TDS auto-calculated. Min ₹100.' },
-            ].map((f, i) => (
-              <div key={i} className="bg-[#151d30] rounded-xl p-5 border border-white/5 hover:border-[#8b5cf6]/15 transition-all">
-                <div className="text-2xl mb-3">{f.icon}</div>
-                <h4 className="font-bold text-sm mb-1">{f.title}</h4>
-                <p className="text-xs text-white/35 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {CREATOR_FEATURES.map((f) => <MiniCard key={f.title} f={f} />)}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FOR SHOPPERS ═══════════════════
+          The third side, which the previous landing page never explained even
+          though it is where money actually enters the platform. */}
+      <section id="shoppers" className="px-6 py-[76px]">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-11 text-center">
+            <Eyebrow>For shoppers</Eyebrow>
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Buy from people you already follow</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SHOPPER_FEATURES.map((f) => <MiniCard key={f.title} f={f} />)}
           </div>
         </div>
       </section>
 
       {/* ═══════════════════ CATEGORIES ═══════════════════ */}
-      <section className="py-20 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-3xl font-extrabold mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>35 Business Types Supported</h2>
-          <p className="text-white/40 mb-10">From street food to luxury hotels — every local business can list and grow</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {INDUSTRY_GROUPS.map((g, i) => (
-              <div key={i} className="bg-[#151d30] rounded-xl p-4 border border-white/5 hover:border-white/15 transition-all text-center group cursor-default">
-                <div className="text-3xl mb-2">{g.icon}</div>
-                <div className="text-xs font-semibold text-white/70 group-hover:text-white transition-colors">{g.label}</div>
-                <div className="text-[10px] text-white/30 mt-1">{g.count} types</div>
+      <section className="px-6 py-[76px]" style={{ background: '#FAFAFA', borderTop: '1px solid #E4E4E7', borderBottom: '1px solid #E4E4E7' }}>
+        <div className="mx-auto max-w-5xl text-center">
+          <div className="mb-10">
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">35 business types supported</h2>
+            <p className="mt-2.5 text-[15.5px]" style={{ color: '#52525B' }}>From street food to luxury stays — every local business can list and grow.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+            {INDUSTRY_GROUPS.map((g) => (
+              <div key={g.label} className="rounded-2xl border p-4 text-center transition-colors hover:border-[#FFC107]" style={{ borderColor: '#E4E4E7', background: '#fff' }}>
+                <div className="text-[26px]">{g.icon}</div>
+                <div className="mt-2 text-[12px] font-bold">{g.label}</div>
+                <div className="mt-0.5 text-[10.5px]" style={{ color: '#A1A1AA' }}>{g.count} types</div>
               </div>
             ))}
           </div>
@@ -188,93 +284,98 @@ export default function LandingPage() {
       </section>
 
       {/* ═══════════════════ STATS ═══════════════════ */}
-      <section className="py-16 px-6 bg-[#0e1525]">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <section className="px-6 py-14">
+        <div className="mx-auto grid max-w-4xl grid-cols-2 gap-6 text-center md:grid-cols-4">
           {[
-            { val: '35+', label: 'Business Types' },
-            { val: '20+', label: 'Influencers' },
-            { val: '7', label: 'Categories' },
-            { val: '₹0', label: 'Platform Fee to Start' },
-          ].map((s, i) => (
-            <div key={i}>
-              <div className="text-3xl font-extrabold bg-gradient-to-r from-[#F47920] to-[#FFB800] bg-clip-text text-transparent" style={{ fontFamily: 'Outfit' }}>{s.val}</div>
-              <div className="text-xs text-white/35 mt-1 font-medium">{s.label}</div>
+            { v: '35+', l: 'Business types' },
+            { v: '3', l: 'Connected apps' },
+            { v: '7', l: 'Categories' },
+            { v: '₹0', l: 'To get started' },
+          ].map((s) => (
+            <div key={s.l}>
+              <div className="font-display text-[34px] font-extrabold tracking-[-0.02em]" style={{ color: '#E0A800' }}>{s.v}</div>
+              <div className="mt-1 text-[12.5px] font-semibold" style={{ color: '#71717A' }}>{s.l}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ═══════════════════ INFLUENCER APP SECTION ═══════════════════ */}
-      <section className="py-20 px-6">
-        <div className="max-w-md mx-auto">
-
-          {/* ── Brand sign-in CTA ── */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-[#F47920]/10 border border-[#F47920]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#F47920] mb-3">For Brands</div>
-            <h2 className="text-2xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Brand Dashboard</h2>
-            <p className="text-white/40 text-xs mt-1 mb-5">
-              {session ? "You're already signed in on this browser" : 'Sign in or create your business account'}
-            </p>
-            <button onClick={session ? goHome : () => router.push('/login')}
-              className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-              {session ? `${session.label} →` : 'Sign In / Register →'}
-            </button>
+      {/* ═══════════════════ APPS ═══════════════════ */}
+      <section className="px-6 py-[76px]" style={{ background: '#FAFAFA', borderTop: '1px solid #E4E4E7', borderBottom: '1px solid #E4E4E7' }}>
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-11 text-center">
+            <Eyebrow>Get started</Eyebrow>
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Pick your side</h2>
           </div>
-
-          {/* ── Influencer — Download App CTA ── */}
-          <div>
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#8b5cf6] mb-3">For Influencers</div>
-              <h2 className="text-2xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Influencer App</h2>
-              <p className="text-white/40 text-xs mt-1">Download the INFLX app to get started</p>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="rounded-3xl border p-7 text-center" style={{ borderColor: '#E4E4E7', background: '#fff' }}>
+              <div className="mb-3 text-[38px]">💼</div>
+              <h3 className="mb-1.5 font-display text-[18px] font-extrabold">Brands</h3>
+              <p className="mb-5 text-[13px] leading-[1.6]" style={{ color: '#52525B' }}>
+                Run your business from the web dashboard — listings, campaigns, wallet, analytics.
+              </p>
+              <button onClick={session ? goHome : () => router.push('/login')}
+                className="w-full rounded-full py-3.5 text-[13.5px] font-bold transition-colors hover:bg-[#E0A800]"
+                style={{ background: '#FFC107', color: '#0A0A0A' }}>
+                {session ? `${session.label} →` : 'Sign In / Register →'}
+              </button>
             </div>
 
-            <div className="bg-[#151d30] rounded-2xl p-7 border border-white/10 text-center">
-              <div className="text-6xl mb-4">📱</div>
-              <h3 className="text-lg font-bold mb-2">Get the INFLX App</h3>
-              <p className="text-sm text-white/40 mb-6 leading-relaxed">
-                Manage your campaigns, publish deals to your store, track commissions, and withdraw earnings — all from the mobile app.
+            <div className="rounded-3xl border p-7 text-center" style={{ borderColor: '#E4E4E7', background: '#fff' }}>
+              <div className="mb-3 text-[38px]">📱</div>
+              <h3 className="mb-1.5 font-display text-[18px] font-extrabold">Creators &amp; shoppers</h3>
+              <p className="mb-5 text-[13px] leading-[1.6]" style={{ color: '#52525B' }}>
+                Manage campaigns, publish deals and track earnings — or just shop — from the app.
               </p>
-              <div className="space-y-3">
-                <a href="#" className="flex items-center justify-center gap-3 w-full py-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
-                  <span className="text-2xl">🤖</span>
-                  <div className="text-left">
-                    <div className="text-[9px] text-white/40 uppercase">Download on</div>
-                    <div className="text-sm font-bold text-white">Google Play</div>
-                  </div>
+              {[
+                { icon: '🤖', top: 'Get it on', name: 'Google Play' },
+                { icon: '🍎', top: 'Download on', name: 'App Store' },
+              ].map((s) => (
+                <a key={s.name} href="#"
+                  className="mb-2.5 flex w-full items-center justify-center gap-2.5 rounded-xl border py-3 no-underline transition-colors hover:bg-[#F4F4F5]"
+                  style={{ borderColor: '#D4D4D8', background: '#fff' }}>
+                  <span className="text-[20px]">{s.icon}</span>
+                  <span className="text-left">
+                    <span className="block text-[9px] font-bold uppercase tracking-[0.06em]" style={{ color: '#A1A1AA' }}>{s.top}</span>
+                    <span className="block text-[13.5px] font-extrabold" style={{ color: '#0A0A0A' }}>{s.name}</span>
+                  </span>
                 </a>
-                <a href="#" className="flex items-center justify-center gap-3 w-full py-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
-                  <span className="text-2xl">🍎</span>
-                  <div className="text-left">
-                    <div className="text-[9px] text-white/40 uppercase">Download on</div>
-                    <div className="text-sm font-bold text-white">App Store</div>
-                  </div>
-                </a>
-              </div>
-              <p className="text-[10px] text-white/20 mt-4">Also available for followers to discover deals</p>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════ FOOTER ═══════════════════ */}
-      <footer className="py-12 px-6 border-t border-white/5 bg-[#070b16]">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <div className="font-display text-lg font-extrabold mb-1">
-              <Logo tone="light" size="sm" />
-            </div>
-            <p className="text-xs text-white/25">Connecting local brands with influencers across India</p>
+      {/* ═══════════════════ TRUST & RESPONSIBILITY ═══════════════════ */}
+      <section id="trust" className="px-6 py-[76px]" style={{ background: '#FFFBEB', borderTop: '1px solid #F5E3A8', borderBottom: '1px solid #F5E3A8' }}>
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-11 text-center">
+            <Eyebrow onPale>Trust &amp; responsibility</Eyebrow>
+            <h2 className="font-display text-[28px] font-extrabold tracking-[-0.02em] md:text-[34px]">Who is responsible for what</h2>
+            <p className="mt-2.5 text-[15.5px] leading-[1.6]" style={{ color: '#52525B' }}>
+              INFLX is a technology platform. Being explicit about this protects everyone using it.
+            </p>
           </div>
-          <div className="flex items-center gap-6 text-xs text-white/30">
-            <a href="#" className="hover:text-white/60 transition-colors">About</a>
-            <a href="#" className="hover:text-white/60 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white/60 transition-colors">Terms</a>
-            <a href="#" className="hover:text-white/60 transition-colors">Contact</a>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {NOTICES.map((n) => (
+              <div key={n.title} className="rounded-2xl border p-5" style={{ borderColor: '#F0E4BC', background: '#fff' }}>
+                <h4 className="mb-2 flex items-center gap-2 font-display text-[14.5px] font-bold">
+                  <span className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[12px]" style={{ background: '#FFC107' }}>{n.k}</span>
+                  {n.title}
+                </h4>
+                <p className="m-0 text-[12.8px] leading-[1.65]" style={{ color: '#52525B' }}>{n.body}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-[10px] text-white/15">© 2026 INFLX. All rights reserved.</p>
+          <p className="mt-8 text-center text-[13px]" style={{ color: '#52525B' }}>
+            Read the full terms in our{' '}
+            <a href="/legal" className="font-semibold underline" style={{ color: '#0A0A0A' }}>legal documents</a>, or see{' '}
+            <a href="/legal/ranking" className="font-semibold underline" style={{ color: '#0A0A0A' }}>how ranking works</a>.
+          </p>
         </div>
-      </footer>
+      </section>
+
+      <SiteFooter />
     </div>
   );
 }
