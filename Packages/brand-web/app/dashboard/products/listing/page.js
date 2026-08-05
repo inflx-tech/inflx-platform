@@ -161,7 +161,13 @@ export default function DrilldownListingPage() {
       try { vj = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {}); } catch { vj = {}; }
       const variantsMap = {};
       for (const cv of (vj.colors || [])) {
-        variantsMap[cv.color] = { images: arr(cv.images), stock: Object.fromEntries(arr(cv.sizes).map(s => [s.size, s.stock ?? ''])) };
+        // `sizes` is this colour's OWN list — it may legitimately differ from
+        // another colour's, so restore it rather than re-deriving from facets.
+        variantsMap[cv.color] = {
+          images: arr(cv.images),
+          sizes: arr(cv.sizes).map(s => s.size).filter(Boolean),
+          stock: Object.fromEntries(arr(cv.sizes).map(s => [s.size, s.stock ?? ''])),
+        };
       }
       const pf = (product.facets && typeof product.facets === 'object') ? { ...product.facets } : {};
       const brandVal = pf.brand || '';
@@ -235,6 +241,21 @@ export default function DrilldownListingPage() {
     v[color] = cv;
     return { ...d, variants: v };
   });
+  // Turn one size on/off FOR THIS COLOUR ONLY (contract listing-per-colour-sizes).
+  // An absent `sizes` means "all of the master list" — that is what keeps the
+  // common case (every colour shares sizes) at zero extra clicks. The master is
+  // re-read from `d` inside the updater so a stale render closure can't shrink it.
+  const toggleColorSize = (color, val) => setDraft(d => {
+    const master = stockKey ? arr(d.facets?.[stockKey]) : [];
+    const v = { ...(d.variants || {}) };
+    const cv = { ...(v[color] || { images: [], stock: {} }) };
+    const cur = Array.isArray(cv.sizes) ? cv.sizes.filter(s => master.includes(s)) : master;
+    const next = cur.includes(val) ? cur.filter(s => s !== val) : [...cur, val];
+    cv.sizes = master.filter(s => next.includes(s));   // keep the master's order
+    if (!next.includes(val)) { const st = { ...cv.stock }; delete st[val]; cv.stock = st; }
+    v[color] = cv;
+    return { ...d, variants: v };
+  });
 
   // Crop-to-frame (image-crop-uploader): each picked photo is cropped to the
   // product-card aspect (4:5) before upload, so it displays clean on the phone.
@@ -283,7 +304,23 @@ export default function DrilldownListingPage() {
   const stockFacet = facets.find(f => f.facet_role === 'variant' && f.facet_key !== COLOR_KEY) || null;
   const stockKey = stockFacet?.facet_key || null;
   const selectedColors = arr(draft.facets[COLOR_KEY]);
+  // The MASTER list — every size this product comes in, across all colours.
+  // It is what feeds facets[stockKey] and, downstream, the follower size filter.
   const selectedVariants = stockKey ? arr(draft.facets[stockKey]) : [];
+  // …and this colour's own subset of it (contract listing-per-colour-sizes).
+  // Absent `sizes` = "all of them", so a brand whose colours share sizes does
+  // nothing extra. Always filtered through the master, so shrinking the top row
+  // can never leave an orphan chip behind in a colour card.
+  const sizesFor = (color) => {
+    const cv = draft.variants[color];
+    return Array.isArray(cv?.sizes) ? selectedVariants.filter(s => cv.sizes.includes(s)) : selectedVariants;
+  };
+  // Union of what the colours actually stock — narrower than the master whenever
+  // a size was turned off everywhere. Saved to facets so the app never advertises
+  // a size no colour carries.
+  const sizeUnion = () => (selectedColors.length && stockKey
+    ? selectedVariants.filter(s => selectedColors.some(c => sizesFor(c).includes(s)))
+    : selectedVariants);
 
   // Steps fall straight out of facet_role (contract listing-add-stepper):
   //   ② Variants  = role 'variant'   ③ Details = everything else.
@@ -320,6 +357,12 @@ export default function DrilldownListingPage() {
     if (s === 2) {
       variantFacets.filter(f => facetRequired(f) && facetEmpty(f)).forEach(f => e.push(f.label));
       if (!hasAnyPhoto) e.push('at least one photo');
+      // A colour with every size switched off is unsellable — block before it
+      // can be saved as a colour with an empty sizes[] (listing-per-colour-sizes).
+      if (selectedVariants.length > 0) {
+        const bare = selectedColors.filter(c => sizesFor(c).length === 0);
+        bare.forEach(c => e.push(`at least one ${(stockFacet?.label || 'size').toLowerCase()} for ${c}`));
+      }
     }
     if (s === 3) requiredDetails.filter(f => facetEmpty(f)).forEach(f => e.push(f.label));
     return e;
@@ -411,14 +454,19 @@ export default function DrilldownListingPage() {
     const variants = selectedColors.map(color => ({
       color,
       images: arr(draft.variants[color]?.images),
-      sizes: selectedVariants.map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
+      // This colour's OWN sizes, not the master list (listing-per-colour-sizes).
+      sizes: sizesFor(color).map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
     }));
+    // facets carries the UNION, so the size filter never offers a size that no
+    // colour stocks. Always a subset of the master, so it stays in-vocabulary
+    // for taxonomy.validateItem's locked-dropdown check.
+    const outFacets = stockKey ? { ...draft.facets, [stockKey]: sizeUnion() } : draft.facets;
     setItems(list => [...list, {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null, sku: draft.sku.trim() || null,
       stock: draft.stock === '' ? null : Number(draft.stock),
       description: draft.description.trim() || null,
-      images: draft.images, facets: draft.facets,
+      images: draft.images, facets: outFacets,
       variants: variants.length ? variants : undefined,
       tags: draft.tags.length ? draft.tags : undefined,
     }]);
@@ -453,14 +501,17 @@ export default function DrilldownListingPage() {
     const variants = selectedColors.map(color => ({
       color,
       images: arr(draft.variants[color]?.images),
-      sizes: selectedVariants.map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
+      // Per-colour sizes on edit too, else re-saving would flatten them back
+      // to the master list (listing-per-colour-sizes).
+      sizes: sizesFor(color).map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
     }));
+    const outFacets = stockKey ? { ...draft.facets, [stockKey]: sizeUnion() } : draft.facets;
     const payload = {
       name: draft.name.trim(), price: Number(draft.price),
       brand: draft.brand.trim() || null,
       stock: draft.stock === '' ? null : Number(draft.stock),
       description: draft.description.trim() || null,
-      images: draft.images, facets: draft.facets,
+      images: draft.images, facets: outFacets,
       variants: variants.length ? variants : undefined,
       tags: draft.tags,
     };
@@ -716,6 +767,9 @@ export default function DrilldownListingPage() {
           {step === 2 && (
             <div className="stepbody">
               {variantFacets.map(renderFacet)}
+              {selectedColors.length > 0 && selectedVariants.length > 0 && (
+                <div className="sub">Every {(stockFacet?.label || 'size').toLowerCase()} this product comes in. Turn one off inside a colour below if that colour doesn&rsquo;t stock it.</div>
+              )}
               {selectedColors.length > 0 ? (
                 <>
                   <div className="sec">Variant photos &amp; stock — per colour</div>
@@ -735,17 +789,35 @@ export default function DrilldownListingPage() {
                         </div>
                         {uploading === color && <div className="sub">Uploading…</div>}
                         {arr(cv.images).length > 0 && <div className="imgs">{cv.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
-                        {selectedVariants.length > 0 && (
-                          <>
-                            <label className="fl">Stock per {stockFacet?.label || 'variant'}</label>
-                            <div className="vstock">{selectedVariants.map(val => (
-                              <div key={val} className="vsize">
-                                <span>{val}</span>
-                                <input type="number" placeholder="0" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
-                              </div>
-                            ))}</div>
-                          </>
-                        )}
+                        {selectedVariants.length > 0 && (() => {
+                          // Every master size is offered, ON by default; tapping one
+                          // drops it FOR THIS COLOUR ONLY (listing-per-colour-sizes).
+                          const on = sizesFor(color);
+                          const unit = (stockFacet?.label || 'size').toLowerCase();
+                          return (
+                            <>
+                              <label className="fl">{stockFacet?.label || 'Variant'} &amp; stock for {color}</label>
+                              <div className="vstock">{selectedVariants.map(val => {
+                                const has = on.includes(val);
+                                return (
+                                  <div key={val} className={'vsize' + (has ? '' : ' off')}>
+                                    <button type="button" className="vsz" aria-pressed={has}
+                                      title={has ? `${color} does not come in ${val}? Tap to remove` : `Add ${val} to ${color}`}
+                                      onClick={() => toggleColorSize(color, val)}>{val}</button>
+                                    {has
+                                      ? <input type="number" placeholder="0" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
+                                      : <span className="na" aria-label={`${val} not available in ${color}`}>—</span>}
+                                  </div>
+                                );
+                              })}</div>
+                              {on.length === 0
+                                ? <div className="hintq warn">Pick at least one {unit} for {color}.</div>
+                                : on.length < selectedVariants.length
+                                  ? <div className="sub">{color} is not sold in {selectedVariants.filter(v => !on.includes(v)).join(', ')}.</div>
+                                  : null}
+                            </>
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -997,6 +1069,13 @@ const CSS = `
 .lst .vstock{display:flex;flex-wrap:wrap;gap:8px}
 .lst .vsize{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:5px 8px}
 .lst .vsize span{font-size:11px;font-weight:700;min-width:24px} .lst .vsize input{width:60px;border:0;border-bottom:1px solid var(--border);font-size:12px;padding:2px;font-family:inherit}
+/* listing-per-colour-sizes: the size label is a toggle, so a colour can drop a
+   size the rest of the product still carries. Off = dashed + struck through. */
+.lst .vsize .vsz{border:0;background:var(--yellow-pale);color:var(--yellow-text);font:inherit;font-size:11px;font-weight:800;border-radius:6px;padding:5px 9px;min-width:34px;cursor:pointer}
+.lst .vsize .vsz:hover{filter:brightness(.96)}
+.lst .vsize.off{background:var(--bg2);border-style:dashed;opacity:.72}
+.lst .vsize.off .vsz{background:transparent;color:var(--muted);text-decoration:line-through}
+.lst .vsize .na{width:60px;text-align:center;color:var(--muted);font-size:12px;min-width:0}
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
@@ -1119,6 +1198,7 @@ const CSS = `
 .lst .crumbbar .sep{color:var(--muted3);margin:0 5px}
 .lst .crumbbar .right{margin-left:auto;display:flex;align-items:center;gap:8px}
 .lst .hintq{font-size:11px;font-weight:700;color:var(--muted3)}
+.lst .hintq.warn{color:#B4531A}
 .lst .body{padding:16px}
 .lst .btn.sm{padding:7px 11px;font-size:11.5px;border-radius:8px}
 .lst .btn.danger{color:var(--danger)}

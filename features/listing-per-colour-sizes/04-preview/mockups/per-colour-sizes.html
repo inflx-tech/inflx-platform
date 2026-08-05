@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Step ② — per-colour sizes</title>
+<style>
+  :root{
+    --ink:#14110C; --muted:#7A736A; --border:#E7E2D8; --white:#fff;
+    --page:#FBF9F4; --yellow:#F5C518; --yellow-pale:#FEF6D8; --yellow-text:#7A5C00;
+    --off:#F2EFE8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px;background:var(--page);color:var(--ink);
+       font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:13px}
+  .wrap{max-width:760px;margin:0 auto}
+  .steps{display:flex;align-items:center;gap:8px;margin-bottom:22px;font-size:12px;font-weight:700}
+  .stp{width:22px;height:22px;border-radius:99px;display:grid;place-items:center;
+       background:var(--off);color:var(--muted);font-size:11px}
+  .stp.done{background:#1F9D63;color:#fff}
+  .stp.on{background:var(--ink);color:#fff}
+  .bar{flex:1;height:1px;background:var(--border);max-width:34px}
+  .fl{display:block;font-size:11px;font-weight:700;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.04em;margin:16px 0 7px}
+  .req{color:#D64545}
+  .tag{display:inline-block;font-size:9px;font-weight:800;background:var(--off);
+       color:var(--muted);border-radius:4px;padding:2px 5px;margin-left:6px;
+       text-transform:uppercase;letter-spacing:.05em;vertical-align:middle}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{border:1px solid var(--border);background:#fff;border-radius:99px;
+        padding:7px 15px;font-weight:700;font-size:12px;color:var(--muted)}
+  .chip.on{background:#5B21B6;border-color:#5B21B6;color:#fff}
+  .sec{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;
+       letter-spacing:.06em;margin:24px 0 10px}
+  .vcard{border:1px solid var(--border);background:var(--white);border-radius:14px;
+         padding:15px 16px;margin-bottom:13px}
+  .vhead{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;margin-bottom:4px}
+  .dot{width:11px;height:11px;border-radius:99px;border:1px solid var(--border);background:#EDEAE3}
+  .dot.blue{background:#3B6BD6}
+  .stub{border:1px dashed var(--border);border-radius:9px;padding:9px 11px;
+        color:var(--muted);font-size:12px;margin-top:6px}
+  .vstock{display:flex;flex-wrap:wrap;gap:8px}
+  .vsize{display:flex;align-items:center;gap:7px;background:var(--white);
+         border:1px solid var(--border);border-radius:9px;padding:4px 5px 4px 4px}
+  .vsz{border:0;background:var(--yellow-pale);color:var(--yellow-text);
+       font:inherit;font-size:11px;font-weight:800;border-radius:6px;
+       padding:5px 9px;cursor:pointer;min-width:34px}
+  .vsize input{width:58px;border:0;border-bottom:1px solid var(--border);
+               font:inherit;font-size:12px;padding:2px}
+  .vsize.off{background:var(--off);border-style:dashed;opacity:.72}
+  .vsize.off .vsz{background:transparent;color:var(--muted);
+                  text-decoration:line-through}
+  .na{width:58px;text-align:center;color:var(--muted);font-size:12px}
+  .hint{font-size:11px;color:var(--muted);margin-top:9px;font-style:italic}
+  .hintq{font-size:11px;color:#B4531A;margin-top:9px;font-weight:700}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:24px}
+  .btn{border:1px solid var(--border);background:#fff;border-radius:10px;
+       padding:9px 17px;font-weight:800;font-size:12px}
+  .btn.ink{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .cb{border:1px solid var(--border);border-left:3px solid var(--yellow);
+      background:#fff;border-radius:0 10px 10px 0;padding:12px 15px;margin-bottom:22px}
+  .cb b{display:block;margin-bottom:3px;font-size:12px}
+  .cb p{margin:0;font-size:12px;color:var(--muted);line-height:1.55}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="cb">
+    <b>What changed</b>
+    <p>The top Size row is now the product's <b>full range</b>. Inside each colour
+       card those sizes appear as toggles, all on by default — so the common case
+       (every colour shares sizes) is unchanged and needs zero extra clicks.
+       Switching one off removes it <b>for that colour only</b>.</p>
+  </div>
+
+  <div class="steps">
+    <span class="stp done">✓</span><span>Basics</span><span class="bar"></span>
+    <span class="stp on">2</span><span>Variants</span><span class="bar"></span>
+    <span class="stp">3</span><span class="bar"></span><span class="stp">4</span>
+  </div>
+
+  <label class="fl">Color / Tone <span class="req">*</span><span class="tag">variant</span></label>
+  <div class="chips">
+    <span class="chip">Black</span><span class="chip on">White</span>
+    <span class="chip">Red</span><span class="chip on">Blue</span>
+    <span class="chip">Navy</span><span class="chip">Green</span>
+  </div>
+
+  <label class="fl">Size <span class="req">*</span><span class="tag">variant</span></label>
+  <div class="chips">
+    <span class="chip">XS</span><span class="chip on">S</span>
+    <span class="chip on">M</span><span class="chip on">L</span>
+    <span class="chip">XL</span><span class="chip">XXL</span>
+  </div>
+  <div class="hint">Every size this product comes in. Turn individual sizes off
+    inside a colour below if that colour doesn't stock them.</div>
+
+  <div class="sec">Variant photos &amp; stock — per colour</div>
+
+  <div class="vcard">
+    <div class="vhead"><span class="dot"></span>White</div>
+    <label class="fl">Photos for White</label>
+    <div class="stub">Choose Files · or paste URL(s)</div>
+    <label class="fl">Sizes &amp; stock for White</label>
+    <div class="vstock">
+      <div class="vsize"><button class="vsz">S</button><input value="5"></div>
+      <div class="vsize"><button class="vsz">M</button><input value="8"></div>
+      <div class="vsize"><button class="vsz">L</button><input value="5"></div>
+    </div>
+  </div>
+
+  <div class="vcard">
+    <div class="vhead"><span class="dot blue"></span>Blue</div>
+    <label class="fl">Photos for Blue</label>
+    <div class="stub">Choose Files · or paste URL(s)</div>
+    <label class="fl">Sizes &amp; stock for Blue</label>
+    <div class="vstock">
+      <div class="vsize off"><button class="vsz">S</button><span class="na">—</span></div>
+      <div class="vsize"><button class="vsz">M</button><input value="6"></div>
+      <div class="vsize"><button class="vsz">L</button><input value="4"></div>
+    </div>
+    <div class="hint">S is switched off — Blue will not be sellable in S.</div>
+  </div>
+
+  <div class="vcard" style="border-style:dashed;background:#FDFCF9">
+    <div class="vhead"><span class="dot"></span>Green — blocked state</div>
+    <div class="vstock">
+      <div class="vsize off"><button class="vsz">S</button><span class="na">—</span></div>
+      <div class="vsize off"><button class="vsz">M</button><span class="na">—</span></div>
+      <div class="vsize off"><button class="vsz">L</button><span class="na">—</span></div>
+    </div>
+    <div class="hintq">Pick at least one size for Green.</div>
+  </div>
+
+  <div class="foot">
+    <button class="btn">‹ Back</button>
+    <button class="btn ink">Next ›</button>
+  </div>
+
+</div>
+</body>
+</html>

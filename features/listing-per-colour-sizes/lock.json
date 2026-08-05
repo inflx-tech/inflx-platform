@@ -1,0 +1,24 @@
+{
+  "feature": "listing-per-colour-sizes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (reported the defect from the live stepper with a screenshot and instructed 'pls understand and fix it'; design variant — keep the top Size row as the product's full range, toggle per colour — recommended in chat and not objected to)",
+  "approved_at": "2026-08-05",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — no new visual language; the off-state chip is a variant of the existing .vsize pill, and the on-state reuses the yellow-pale accent already used by .tgc.on)",
+  "mockup_locked_at": "2026-08-05",
+  "notes": "Step 2 of the fashion listing stepper picked ONE global size list (page.js:286 selectedVariants) and reused it for every colour, so a brand could not say White comes in S/M/L but Blue only in M/L. Both payload builders flattened it identically (addItem :414, saveEdit :456). The persisted shape ALREADY models per-colour sizes -- backend buildVariants (listing.controller.js:62-82) maps cv.sizes per colour and never assumes they match -- and the Excel import already produces correct per-colour sizes by construction. So this is UI-only: one file, no backend, no migration, no API change, Excel path untouched. Design: the top Size row keeps its meaning as the product's FULL range (it feeds facets.size and the follower size filter); inside each colour card those sizes render as toggle chips defaulting to ON, so the common case of shared sizes costs zero extra clicks and the exception costs one tap. CRITICAL invariant: facets[stockKey] is written as the UNION of every colour's sizes on save, not the raw top row -- it is read by taxonomy.validateItem (required + locked-dropdown, 422 on drift) and by the follower browse filter, and storing the union stops the app advertising a size no colour actually stocks. Per-colour lists are filtered through the master list on every read so shrinking the top row can never leave an orphan. Step-2 gate extended to block a colour with zero sizes. Edit-mode load extended to restore each colour's own list so existing products round-trip. Free-size leaves (saree/dupatta/unstitched) unaffected -- that block is already gated on selectedVariants.length > 0. Existing products keep uniform sizes across colours; no migration, no breakage, brands correct them editorially by reopening and unticking. DEPLOY: brand-web runtime -> Vercel auto-deploys on push, NOT an OTA; explicit founder go required. released stays FALSE per the standing rule (one combined brand + follower end-to-end pass at the end, not per slice), so Rule 5 / Maestro does not apply and there is no Packages/Mobile change anyway.",
+  "release": {
+    "qa_all_green": false,
+    "qa_note": "118 passed / 6 failed. All 6 are qa/api/* specs that need a running backend; localhost:3001 is unreachable because no local PostgreSQL is available (verified by starting backend/src/index.js -> '[DB] Failed to connect to PostgreSQL'). Environmental, not a defect: this change touches zero backend files. brand-web `npm run build` PASSES. No Playwright coverage exists for the listing stepper in either direction, so nothing was skipped or weakened. Visual result UNVERIFIED — needs an authenticated brand session plus a seeded taxonomy, so it must be exercised on deployed brand-web per 02-workflow.md before it counts as proven.",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
