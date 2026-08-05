@@ -22,6 +22,7 @@ const taxonomy = require('../services/taxonomy.service');
 const tagsService = require('../services/tags.service');
 const { OFFER_BEST_PCT, offerFieldsFromPct } = require('../services/sectionRules.service');
 const bulk = require('../services/listingBulk.service');
+const bulkActions = require('../services/listingBulkActions.service');
 const imageIngest = require('../services/imageIngest.service');
 const { resolveProductImage } = require('../utils/productImage');
 
@@ -785,4 +786,75 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   return success(res, { product: rows[0] });
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts, getMyListingTree, getMyNodeProducts, getListingProduct, updateListingProduct };
+// ── POST /brands/me/listing-products/move ─────────────────────────────────────
+// Contract: listing-bulk-move-and-offer. Move N products to another item type.
+// Body: { product_ids: [uuid], target_node_id: uuid }
+//
+// insertProducts derives FOUR columns from the node, so a move rewrites all
+// four — updating only category_node_id would leave `section` stale, and
+// `section` is what category-scoped offers match on.
+//
+// Each product is validated against the target leaf with the SAME
+// taxonomy.validateItem used by create and edit, so a move can never land a
+// product the edit form would reject. Refusals are returned per product with a
+// reason; they never fail the whole request.
+const moveListingProducts = asyncHandler(async (req, res) => {
+  const { rows: brows } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
+  const brand = brows[0];
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const ids = Array.isArray(req.body?.product_ids) ? req.body.product_ids.filter(Boolean) : [];
+  const targetId = req.body?.target_node_id;
+  if (!ids.length) throw new AppError('VALIDATION_ERROR', 'Select at least one product to move', 422, 'product_ids');
+  if (!targetId) throw new AppError('VALIDATION_ERROR', 'Pick a category to move into', 422, 'target_node_id');
+
+  const targetNode = await taxonomy.getNode(targetId);
+  if (!targetNode) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  if (!targetNode.is_leaf) {
+    throw new AppError('VALIDATION_ERROR', 'Products can only sit under an item type, not a parent category', 422, 'target_node_id');
+  }
+  const targetFacetDefs = await taxonomy.getNodeFacets(targetNode);
+
+  // Brand-scoped fetch: another brand's id simply doesn't come back, so it can
+  // never be moved. Ids that vanish here are reported as not-found, not ignored.
+  const { rows: products } = await db.query(
+    `SELECT id, name, price, facets, category_node_id
+       FROM brand_products
+      WHERE brand_id = $1 AND id = ANY($2::uuid[])`,
+    [brand.id, ids]
+  );
+  const found = new Map(products.map((p) => [p.id, p]));
+
+  const moved = [];
+  const skipped = [];
+  for (const id of ids) {
+    const product = found.get(id);
+    if (!product) { skipped.push({ id, name: null, reason: 'Product not found in your listing.' }); continue; }
+    const verdict = bulkActions.canMoveProduct({ product, targetNode, targetFacetDefs });
+    if (!verdict.ok) { skipped.push({ id, name: product.name, reason: verdict.reason }); continue; }
+    moved.push(product);
+  }
+
+  if (moved.length) {
+    await db.withTransaction(async (client) => {
+      for (const p of moved) {
+        await client.query(
+          `UPDATE brand_products
+              SET category_node_id = $1, category_key = $2, super_category = $3,
+                  section = $4, updated_at = now()
+            WHERE id = $5 AND brand_id = $6`,
+          [targetNode.id, targetNode.vertical, targetNode.segment, targetNode.category, p.id, brand.id]
+        );
+      }
+    });
+  }
+
+  return success(res, {
+    target: { id: targetNode.id, name: targetNode.name, segment: targetNode.segment, category: targetNode.category },
+    moved_count: moved.length,
+    moved: moved.map((p) => ({ id: p.id, name: p.name })),
+    skipped,
+  });
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts, getMyListingTree, getMyNodeProducts, getListingProduct, updateListingProduct, moveListingProducts };

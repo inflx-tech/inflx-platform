@@ -164,6 +164,11 @@ export const listingApi = {
   getNodeFacets: (nodeId) => api.get(`/listing/nodes/${nodeId}/facets`),
   getBrands: (vertical, q) => api.get(`/listing/brands?vertical=${encodeURIComponent(vertical)}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
   batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
+  // Bulk re-file products under another item type (contract:
+  // listing-bulk-move-and-offer). Returns per-product moved/skipped outcomes —
+  // callers must report the skipped ones, never assume a clean sweep.
+  moveProducts: (productIds, targetNodeId) =>
+    api.post('/brands/me/listing-products/move', { product_ids: productIds, target_node_id: targetNodeId }),
   // Ingest a pasted image URL into our R2 (contract: listing-image-urls).
   ingestImage: (url) => api.post('/listing/ingest-image', { url }),
   // Append cover photos to a product (post-import photo tray, multiple).
@@ -260,6 +265,11 @@ export const brandApi = {
   // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────
   getOffers:   (params) => api.get(`/brands/me/offers${params ? '?' + new URLSearchParams(params) : ''}`),
   getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),
+  // Add products to an offer's scope from the Inventory bulk bar (contract:
+  // listing-bulk-move-and-offer). Only discount/volume offers scoped to
+  // products accept this; the server refuses the rest with a reason.
+  attachOfferProducts: (id, productIds) =>
+    api.post(`/brands/me/offers/${id}/products`, { product_ids: productIds }),
   createOffer: (data) => api.post('/brands/me/offers', data),
   updateOffer: (id, data) => api.patch(`/brands/me/offers/${id}`, data),
   deleteOffer: (id) => api.delete(`/brands/me/offers/${id}`),

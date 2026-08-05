@@ -37,6 +37,9 @@ brandRouter.post('/products/batch', ctrl.batchCreate);
 // contract: listing-fashion-inventory-browse — brand's own inventory browse
 brandRouter.get('/listing-tree', ctrl.getMyListingTree);
 brandRouter.get('/listing-nodes/:id/products', ctrl.getMyNodeProducts);
+// contract: listing-bulk-move-and-offer — bulk re-file products under another
+// item type. Declared before the /:id routes so "move" is never read as an id.
+brandRouter.post('/listing-products/move', ctrl.moveListingProducts);
 // contract: listing-product-edit — view + edit one drill-down product
 brandRouter.get('/listing-products/:id', ctrl.getListingProduct);
 brandRouter.patch('/listing-products/:id', ctrl.updateListingProduct);

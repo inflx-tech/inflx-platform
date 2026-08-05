@@ -1,0 +1,22 @@
+{
+  "feature": "listing-bulk-move-and-offer",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-08-04",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-08-04",
+  "notes": "Completes the two bulk actions deferred from listing-workspace-ux, both of which needed backend. Founder scoped this explicitly on 2026-08-04 ('start and complete this listing related things including backend', then picked 'the 2 deferred bulk actions' over the wider listing roadmap). Two additive brand-scoped endpoints, no migration: POST /brands/me/listing-products/move and POST /brands/me/offers/:id/products. Design decisions taken from the real code, not assumed: (1) a move rewrites all FOUR node-derived columns (category_node_id, category_key, super_category, section) because insertProducts derives all four and `section` is what category-scoped offers match on; (2) SKU is a brand-level sequence with no category component, so moves never invalidate SKUs or variants_json; (3) move eligibility runs through taxonomy.validateItem, the same gate as create/edit, and sizes are checked against the TARGET leaf's size system using the SIZE_SYSTEMS the backend already owns for Excel templates (newly exported rather than copied); (4) attach is limited to discount/volume offers scoped to products, because offer.service.js resolveScope/filterItemsByScope means bundle/bogo/free_gift configs are not flat lists and store/category-scoped offers ignore their products array — attaching there would be a silent no-op; (5) a legacy no-scope empty-products offer is refused because resolveScope treats it as store-wide and attaching would silently shrink a store-wide discount. The merged config passes through validateOfferConfig, the same shared validator as offer create/update. Both endpoints answer per product; the UI names every refusal. UI-governed (brand-web), not Mobile-governed.",
+  "verification": "pnpm qa GREEN — 120 passed, gate 0 (2026-08-05, report qa/reports/2026-08-05T06-41-25-327Z/QA-REPORT.md). Baseline 98; the 22 new tests are this contract's (qa/unit/listing-bulk-rules.spec.ts), covering every move refusal, every offer-type/scope refusal, and merge dedupe/idempotency/passthrough. Zero regression. next build on brand-web compiled successfully with lint + type check passing; /dashboard/products/listing present at 21 kB. node --check clean on all six changed backend files. One test was CORRECTED, not weakened: 'a size-less product is not blocked by the target size system' asserted the wrong behaviour — taxonomy.sizeRequired() makes Size required for any non-free size system, so the refusal is right; the assertion now states that, with a companion free-size case. NOT verified: neither endpoint has been called against real data (no brand session or seeded fashion products locally), so the modals and the per-product result line are unexercised end-to-end; a live DOM check was blocked by a parallel session holding port 3002. Lands in the founder's comprehensive pass — released stays false. See 06-diff/notes.md.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

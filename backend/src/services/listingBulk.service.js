@@ -294,4 +294,7 @@ function coerceItemFacets(items, facets) {
   return warnings;
 }
 
-module.exports = { buildTemplateWorkbook, parseRows, buildItems, coerceItemFacets, columnModel, COLOR_KEY, SIZE_KEY };
+// sizeValues is exported so the move-category rules (listingBulkActions.service)
+// can check a product's existing sizes against a TARGET leaf's size system from
+// the one definition of that vocabulary, rather than keeping a second copy.
+module.exports = { buildTemplateWorkbook, parseRows, buildItems, coerceItemFacets, columnModel, sizeValues, SIZE_SYSTEMS, COLOR_KEY, SIZE_KEY };

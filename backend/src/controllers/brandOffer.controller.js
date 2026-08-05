@@ -26,6 +26,7 @@ const {
   validateOfferConfig,
   validateAvailingModes,
 } = require('../services/offerConfig.validator');
+const bulkActions = require('../services/listingBulkActions.service');
 
 const RETURNING = `id, brand_id, name, offer_type, offer_config_json,
   availing_modes, status, published_to_store, store_starts_at, store_ends_at,
@@ -151,6 +152,72 @@ const getOfferAttachments = asyncHandler(async (req, res) => {
   return success(res, { attachments: rows });
 });
 
+// ── POST /brands/me/offers/:id/products ──────────────────────────────────────
+// Contract: listing-bulk-move-and-offer. Add N products to an offer's scope,
+// driven from the Inventory bulk bar ("these 12 products, put them on the
+// Monsoon Sale") rather than from inside the offer builder.
+//
+// Offers have no product join table — scope lives in offer_config_json.products,
+// which only discount/volume offers resolve through (see offer.service.js
+// resolveScope/filterItemsByScope). listingBulkActions.offerAcceptsProducts()
+// owns that rule and explains every refusal; the merged config then goes through
+// the SAME shared validator as create/update, so this path can't write a config
+// the offer builder would reject.
+const attachOfferProducts = asyncHandler(async (req, res) => {
+  const brandId = await getBrandIdByUserId(req.user.sub);
+  if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const ids = Array.isArray(req.body?.product_ids) ? req.body.product_ids.filter(Boolean) : [];
+  if (!ids.length) throw new AppError('VALIDATION_ERROR', 'Select at least one product', 422, 'product_ids');
+
+  const { rows: orows } = await db.query(
+    `SELECT id, offer_type, offer_config_json FROM brand_offers WHERE id = $1 AND brand_id = $2`,
+    [req.params.id, brandId]
+  );
+  const offer = orows[0];
+  if (!offer) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+
+  const verdict = bulkActions.offerAcceptsProducts(offer);
+  if (!verdict.ok) throw new AppError('VALIDATION_ERROR', verdict.reason, 422, 'offer_id');
+
+  // Brand-scoped: another brand's product id never comes back, so it can never
+  // be attached. Ids that vanish are reported, not silently dropped.
+  const { rows: products } = await db.query(
+    `SELECT id, name, price FROM brand_products WHERE brand_id = $1 AND id = ANY($2::uuid[])`,
+    [brandId, ids]
+  );
+  const found = new Map(products.map((p) => [p.id, p]));
+  const skipped = ids
+    .filter((id) => !found.has(id))
+    .map((id) => ({ id, name: null, reason: 'Product not found in your listing.' }));
+
+  const { config, added, already } = bulkActions.mergeOfferProducts(
+    offer.offer_config_json, ids.map((id) => found.get(id)).filter(Boolean)
+  );
+
+  const check = await validateOfferConfig({
+    offerType: offer.offer_type, offerConfig: config, brandId, db,
+  });
+  if (!check.ok) {
+    throw new AppError('VALIDATION_ERROR', check.error?.message || 'Offer config invalid after attach', 422,
+      check.error?.field || 'offer_config_json');
+  }
+
+  const { rows } = await db.query(
+    `UPDATE brand_offers SET offer_config_json = $1::jsonb, updated_at = now()
+      WHERE id = $2 AND brand_id = $3 RETURNING ${RETURNING}`,
+    [JSON.stringify(config), offer.id, brandId]
+  );
+
+  return success(res, {
+    offer: rows[0],
+    attached_count: added.length,
+    attached: added,
+    already_attached: already,
+    skipped,
+  });
+});
+
 // ── PATCH /brands/me/offers/:id ──────────────────────────────────────────────
 // Body: partial { name?, offer_config_json?, availing_modes?, status? }
 // offer_type is immutable here — to change the mechanic, create a new offer.
@@ -241,6 +308,7 @@ module.exports = {
   createOffer,
   getOffer,
   getOfferAttachments,
+  attachOfferProducts,
   updateOffer,
   archiveOffer,
 };

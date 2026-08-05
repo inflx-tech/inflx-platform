@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Listings — bulk Move category + Attach offer</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FAFAFA;font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:#0A0A0A;font-size:13px;line-height:1.45}
+:root{--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--ink2:#1F1F22;--muted2:#71717A;--muted3:#A1A1AA;--border:#E4E4E7;
+  --success-pale:#D1FAE5;--success-text:#047857;--danger:#E8401A}
+.switcher{background:#0A0A0A;color:#fff;padding:9px 16px;display:flex;gap:8px;align-items:center;font-size:12px;font-weight:700}
+.switcher span{color:#888;margin-right:6px}
+.switcher button{background:#2a2a2a;color:#fff;border:0;border-radius:7px;padding:6px 13px;font-weight:800;font-size:11.5px;cursor:pointer;font-family:inherit}
+.switcher button.on{background:var(--yellow);color:#0A0A0A}
+.note{background:#FFFDEB;border-bottom:1px solid #f0e1a8;padding:9px 22px;font-size:11.5px;color:var(--yellow-text);font-weight:600}
+.page{max-width:1720px;margin:0 auto;padding:18px 24px 60px;position:relative}
+h1{font-family:'Outfit',sans-serif;font-size:23px;font-weight:700;letter-spacing:-.3px;margin:0}
+.sub{font-size:12px;color:var(--muted2);margin-top:3px}
+.tabrail{display:flex;gap:2px;border-bottom:1px solid var(--border);margin:16px 0}
+.tab{padding:11px 16px;font-size:13px;font-weight:800;color:var(--muted2);background:0;border:0;border-bottom:2.5px solid transparent}
+.tab.on{color:var(--ink);border-bottom-color:var(--yellow)}
+.ws{display:grid;grid-template-columns:264px minmax(0,1fr) 320px;gap:16px;align-items:start}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;min-width:0}
+.railhd{padding:12px 14px;border-bottom:1px solid var(--border);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+.railbody{padding:8px}
+.tnode{display:flex;align-items:center;gap:7px;width:100%;border:0;border-left:3px solid transparent;border-radius:9px;
+  padding:7px 9px;font-size:12.5px;font-weight:700;color:var(--ink2);background:0;text-align:left;font-family:inherit}
+.tnode.on{background:var(--yellow-pale);border-left-color:var(--yellow)}
+.tnode .cv{width:12px;color:var(--muted3);font-size:9px}
+.tnode .n{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--muted3)}
+.tkids{margin-left:14px;border-left:1px dashed var(--border);padding-left:4px}
+.crumbbar{padding:11px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted2)}
+.crumbbar b{color:var(--ink)}
+.bulkbar{display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:11px;
+  padding:9px 14px;font-size:12px;font-weight:800;margin:12px 14px;flex-wrap:wrap}
+.bulkbar button{background:#2a2a2a;color:#fff;border:0;border-radius:8px;padding:7px 11px;font-size:11.5px;font-weight:800;font-family:inherit}
+.bulkbar button.hi{background:var(--yellow);color:#0A0A0A}
+.bulkbar button.danger{color:#ff9b7d}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);
+  padding:9px 10px;border-bottom:1px solid var(--border);background:var(--bg)}
+td{padding:9px 10px;border-bottom:1px solid var(--border)}
+.pimg{width:40px;height:40px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);display:block}
+.pn{font-weight:800;font-size:12.5px}
+.pm{font-size:10.5px;color:var(--muted2)}
+.mono{font-family:'JetBrains Mono',monospace}
+.pill{display:inline-block;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;background:var(--success-pale);color:var(--success-text)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.tile{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px}
+.tile b{font-size:16px;font-weight:800;display:block;font-family:'JetBrains Mono',monospace}
+.tile span{font-size:10px;font-weight:800;color:var(--muted3);text-transform:uppercase}
+
+/* modal */
+.modalwrap{position:absolute;inset:0;background:rgba(10,10,10,.45);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:70px 24px}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.28);overflow:hidden}
+.mhd{display:flex;align-items:center;padding:15px 18px 0;font-family:'Outfit',sans-serif;font-size:16px;font-weight:800}
+.mhd .x{margin-left:auto;color:var(--muted3);font-size:20px}
+.msub{padding:5px 18px 12px;font-size:12px;color:var(--muted2)}
+.mbody{padding:0 18px 8px;max-height:330px;overflow-y:auto}
+.mbody .rail{border:1px solid var(--border);border-radius:12px}
+.mfoot{display:flex;align-items:center;gap:9px;padding:13px 18px;border-top:1px solid var(--border);background:var(--bg)}
+.mfoot .pickd{flex:1;font-size:11.5px;font-weight:700;color:var(--muted2)}
+.mfoot .pickd b{color:var(--ink)}
+.btn{padding:9px 15px;border:0;border-radius:10px;font-size:12.5px;font-weight:800;font-family:inherit}
+.btn.ghost{background:#fff;border:1px solid var(--border);color:var(--ink2)}
+.btn.yellow{background:var(--yellow);color:var(--ink)}
+.btn.yellow[disabled]{opacity:.45}
+.offrow{display:flex;align-items:center;gap:9px;width:100%;background:#fff;border:1px solid var(--border);
+  border-radius:10px;padding:10px 12px;margin-bottom:7px;font-size:12.5px;text-align:left;font-family:inherit}
+.offrow.on{background:var(--yellow-pale);border-color:var(--yellow)}
+.offrow .nm{font-weight:800;flex:1}
+.offrow .ty,.offrow .st{font-size:9.5px;font-weight:800;text-transform:uppercase;background:var(--bg2);color:var(--muted2);border-radius:99px;padding:3px 9px}
+.offrow.dis{background:var(--bg);border-style:dashed;opacity:.85}
+.offrow.dis .nm{font-weight:700;color:var(--muted2);flex:none;max-width:38%}
+.offrow .why{font-size:11px;color:var(--muted3);font-weight:600;flex:1;text-align:right}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:14px 0 8px}
+.okmsg{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;
+  padding:9px 12px;font-size:12px;font-weight:700;margin:12px 14px}
+.hide{display:none}
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <span>Mockup states (this bar does not ship)</span>
+  <button class="on" onclick="show('move',this)">1 · Move category</button>
+  <button onclick="show('offer',this)">2 · Attach offer</button>
+  <button onclick="show('result',this)">3 · Honest result</button>
+</div>
+<div class="note">
+  Completes the two bulk actions deferred from the Listings workspace redesign. Both refuse work they cannot do
+  honestly — a move into a category whose required facets the product lacks, or an attach onto an offer type that
+  cannot carry a product list — and say why, per product.
+</div>
+
+<div class="page">
+  <h1>Listings</h1>
+  <div class="sub">Everything you have listed, organised by the categories you listed under.</div>
+  <div class="tabrail">
+    <button class="tab on">Inventory</button><button class="tab">Add products</button><button class="tab">Offers</button>
+  </div>
+
+  <div class="ws">
+    <div class="card">
+      <div class="railhd">Browse by category</div>
+      <div class="railbody">
+        <div class="tnode on"><span class="cv">▾</span>Men<span class="n">128</span></div>
+        <div class="tkids">
+          <div class="tnode"><span class="cv"></span>Shirts<span class="n">42</span></div>
+          <div class="tnode"><span class="cv"></span>T-Shirts<span class="n">31</span></div>
+          <div class="tnode"><span class="cv"></span>Kurtas<span class="n">18</span></div>
+        </div>
+        <div class="tnode"><span class="cv">▸</span>Women<span class="n">96</span></div>
+        <div class="tnode"><span class="cv">▸</span>Kids<span class="n">24</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="crumbbar">Men <span style="color:#A1A1AA">›</span> <b>Shirts</b> <span style="color:#A1A1AA;font-weight:600">· 42 products</span></div>
+
+      <div id="okmsg" class="okmsg hide">
+        2 products moved to Kurtas. 1 skipped: "Silk Blend Kurta" — Sleeve length is required.
+      </div>
+
+      <div class="bulkbar">
+        <span>3 selected</span>
+        <button>Hide</button><button>Show</button><button>Edit price</button>
+        <button class="hi">Move category</button><button class="hi">Attach offer</button>
+        <button class="danger">Remove</button>
+      </div>
+
+      <table>
+        <thead><tr><th style="width:34px"></th><th style="width:52px"></th><th>Product</th><th>Brand</th><th>SKU</th><th style="text-align:right">Price</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>☑</td><td><span class="pimg"></span></td><td><div class="pn">Oxford Cotton Shirt</div><div class="pm">Half sleeve · Regular fit</div></td><td>Arrow</td><td class="mono">CHF-0142</td><td class="mono" style="text-align:right">₹1,299</td><td><span class="pill">Live</span></td></tr>
+          <tr><td>☑</td><td><span class="pimg"></span></td><td><div class="pn">Linen Kurta Shirt</div><div class="pm">Full sleeve · Straight</div></td><td>Fabindia</td><td class="mono">CHF-0143</td><td class="mono" style="text-align:right">₹1,899</td><td><span class="pill">Live</span></td></tr>
+          <tr><td>☑</td><td><span class="pimg"></span></td><td><div class="pn">Silk Blend Kurta</div><div class="pm">—</div></td><td>Manyavar</td><td class="mono">CHF-0144</td><td class="mono" style="text-align:right">₹2,450</td><td><span class="pill">Live</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="railhd">Shirts</div>
+      <div class="tiles">
+        <div class="tile"><b>42</b><span>Products</span></div>
+        <div class="tile"><b>40</b><span>Live</span></div>
+        <div class="tile"><b>3</b><span>Low / out</span></div>
+        <div class="tile"><b>₹1,640</b><span>Avg price</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 1 — move -->
+  <div class="modalwrap" id="m-move">
+    <div class="modal">
+      <div class="mhd">Move 3 products<span class="x">×</span></div>
+      <div class="msub">Pick the item type to move them into. Products keep their SKU, photos and variants.</div>
+      <div class="mbody">
+        <div class="rail">
+          <div class="railhd">Move into</div>
+          <div class="railbody">
+            <div class="tnode"><span class="cv">▾</span>Men</div>
+            <div class="tkids">
+              <div class="tnode"><span class="cv"></span>Shirts<span class="n">42</span></div>
+              <div class="tnode"><span class="cv"></span>T-Shirts<span class="n">31</span></div>
+              <div class="tnode on"><span class="cv"></span>Kurtas<span class="n">18</span></div>
+            </div>
+            <div class="tnode"><span class="cv">▸</span>Women</div>
+          </div>
+        </div>
+      </div>
+      <div class="mfoot">
+        <span class="pickd">Moving into <b>Kurtas</b></span>
+        <button class="btn ghost">Cancel</button><button class="btn yellow">Move 3</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 2 — attach offer -->
+  <div class="modalwrap hide" id="m-offer">
+    <div class="modal">
+      <div class="mhd">Attach 3 products to an offer<span class="x">×</span></div>
+      <div class="msub">Adds these products to the offer's scope. Attaching twice changes nothing.</div>
+      <div class="mbody">
+        <div class="offrow on"><span class="nm">Monsoon Sale 20%</span><span class="ty">discount</span><span class="st">active</span></div>
+        <div class="offrow"><span class="nm">Spend ₹2000 save 10%</span><span class="ty">volume</span><span class="st">active</span></div>
+        <div class="sec">Can't take a product list</div>
+        <div class="offrow dis"><span class="nm">Festive Bundle</span><span class="why">Bundle offers work on one fixed set of products.</span></div>
+        <div class="offrow dis"><span class="nm">Buy 1 Get 1 Tees</span><span class="why">BOGO needs a specific buy-and-get pair.</span></div>
+        <div class="offrow dis"><span class="nm">Store-wide 5%</span><span class="why">Applies store-wide — attaching would have no effect.</span></div>
+      </div>
+      <div class="mfoot">
+        <span class="pickd">Attaching to <b>Monsoon Sale 20%</b></span>
+        <button class="btn ghost">Cancel</button><button class="btn yellow">Attach 3</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(state, btn) {
+  document.querySelectorAll('.switcher button').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('m-move').classList.toggle('hide', state !== 'move');
+  document.getElementById('m-offer').classList.toggle('hide', state !== 'offer');
+  document.getElementById('okmsg').classList.toggle('hide', state !== 'result');
+}
+</script>
+</body>
+</html>

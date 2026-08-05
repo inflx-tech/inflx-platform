@@ -1189,6 +1189,34 @@ const CSS = `
 .lst .emptytray .big{font-size:24px;margin-bottom:6px}
 .lst .emptytray b{color:var(--ink2)}
 
+/* bulk move / attach modals (contract: listing-bulk-move-and-offer) */
+.lst .modalwrap{position:fixed;inset:0;background:rgba(10,10,10,.45);z-index:60;display:flex;
+  align-items:center;justify-content:center;padding:24px}
+.lst .modal{background:#fff;border-radius:16px;width:100%;max-width:520px;max-height:calc(100vh - 60px);
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.lst .mhd{display:flex;align-items:center;gap:10px;padding:15px 18px 0}
+.lst .mhd b{font-family:'Outfit',sans-serif;font-size:16px;font-weight:800}
+.lst .mhd .x{margin-left:auto;background:0;border:0;font-size:20px;color:var(--muted3);cursor:pointer;line-height:1}
+.lst .msub{padding:5px 18px 12px;font-size:12px;color:var(--muted2)}
+.lst .mbody{flex:1;overflow-y:auto;padding:0 18px 8px;min-height:120px}
+.lst .mbody .rail{position:static;max-height:none;border:1px solid var(--border)}
+.lst .mbody .railbody{max-height:290px}
+.lst .mfoot{display:flex;align-items:center;gap:9px;padding:13px 18px;border-top:1px solid var(--border);
+  background:var(--bg);flex-wrap:wrap}
+.lst .mfoot .pickd{flex:1;min-width:150px;font-size:11.5px;font-weight:700;color:var(--muted2)}
+.lst .mfoot .pickd b{color:var(--ink)}
+.lst .offrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:#fff;
+  border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:7px;cursor:pointer;
+  font-family:inherit;font-size:12.5px}
+.lst .offrow:hover{border-color:var(--yellow)}
+.lst .offrow.on{background:var(--yellow-pale);border-color:var(--yellow)}
+.lst .offrow .nm{font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lst .offrow .ty,.lst .offrow .st{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
+  background:var(--bg2);color:var(--muted2);border-radius:99px;padding:3px 9px;white-space:nowrap}
+.lst .offrow.dis{cursor:default;background:var(--bg);border-style:dashed;opacity:.85}
+.lst .offrow.dis .nm{font-weight:700;color:var(--muted2);flex:none;max-width:38%}
+.lst .offrow .why{font-size:11px;color:var(--muted3);font-weight:600;flex:1;text-align:right}
+
 @media (max-width:1400px){ .lst{--rail-l:236px;--rail-r:290px} }
 @media (max-width:1150px){
   .lst .ws,.lst .ws.norail{grid-template-columns:minmax(0,1fr)}

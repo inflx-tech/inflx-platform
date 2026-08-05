@@ -15,10 +15,51 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { brandApi } from '../../../../lib/api';
+import { brandApi, listingApi } from '../../../../lib/api';
 import CategoryTree from './CategoryTree';
 
+/**
+ * Display-only mirror of listingBulkActions.offerAcceptsProducts (backend).
+ * Used to sort the offer picker into "can take products" and "can't, because…"
+ * so the brand isn't invited to attempt an attach the server will refuse. The
+ * SERVER remains authoritative — it re-checks and refuses independently.
+ */
+function offerEligibility(offer) {
+  const t = String(offer?.offer_type || '').toLowerCase().trim();
+  const type = t === 'volume discount' || t === 'volume_discount' ? 'volume'
+    : t === 'free gift' ? 'free_gift' : t;
+  if (type !== 'discount' && type !== 'volume') {
+    return { ok: false, reason: {
+      bundle: 'Bundle offers work on one fixed set of products.',
+      bogo: 'BOGO needs a specific buy-and-get pair.',
+      free_gift: 'Free-gift offers pair each product with its gift.',
+    }[type] || 'This offer type does not take a product list.' };
+  }
+  const cfg = offer?.offer_config_json || {};
+  if (cfg.scope && cfg.scope !== 'products') {
+    return { ok: false, reason: cfg.scope === 'category'
+      ? 'Applies to a whole category — attaching would have no effect.'
+      : 'Applies store-wide — attaching would have no effect.' };
+  }
+  const ids = Array.isArray(cfg.products) ? cfg.products.filter(Boolean) : [];
+  if (!cfg.scope && ids.length === 0) {
+    return { ok: false, reason: 'Applies store-wide today. Set its scope to specific products first.' };
+  }
+  return { ok: true };
+}
+
 const money = (v) => (v == null || v === '' ? '—' : '₹' + Number(v).toLocaleString('en-IN'));
+
+// Turn a per-product server response into one honest sentence. Refused rows are
+// NAMED with their reason — never folded into a bare success count.
+function describeOutcome(base, skipped) {
+  if (!skipped || !skipped.length) return base + '.';
+  const detail = skipped.slice(0, 3)
+    .map((s) => `${s.name ? `"${s.name}"` : 'One product'} — ${s.reason}`)
+    .join(' · ');
+  const more = skipped.length > 3 ? ` …and ${skipped.length - 3} more.` : '';
+  return `${base}. ${skipped.length} skipped: ${detail}${more}`;
+}
 
 function facetSummary(facets) {
   if (!facets || typeof facets !== 'object') return '';
@@ -64,6 +105,13 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
   const [fStatus, setFStatus] = useState([]);      // [] = no stock filter
   const [fVis, setFVis] = useState([]);            // [] = live + hidden
   const [fBrands, setFBrands] = useState([]);
+  // Bulk move / attach (contract: listing-bulk-move-and-offer)
+  const [modal, setModal] = useState(null);        // 'move' | 'offer' | null
+  const [moveTarget, setMoveTarget] = useState(null);
+  const [offers, setOffers] = useState(null);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [chosenOffer, setChosenOffer] = useState(null);
+  const [modalBusy, setModalBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -148,6 +196,48 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     return runBulk('Price updated', (p) => brandApi.updateProduct(p.id, { price }));
   };
 
+  // ── bulk move / attach ─────────────────────────────────────────────────────
+  // Both endpoints answer per product. We report exactly what the server said,
+  // including which rows it refused and why — a bulk action that quietly drops
+  // rows is worse than one that names them.
+  const openMove = () => { setMoveTarget(null); setModal('move'); };
+  const openOffer = () => {
+    setChosenOffer(null); setModal('offer');
+    if (offers || offersLoading) return;
+    setOffersLoading(true);
+    brandApi.getOffers()
+      .then((r) => { setOffersLoading(false); if (r.success) setOffers(r.data?.offers || []); })
+      .catch(() => setOffersLoading(false));
+  };
+
+  const doMove = async () => {
+    if (!moveTarget) return;
+    setModalBusy(true); setErr(''); setMsg('');
+    const r = await listingApi.moveProducts(picked, moveTarget.id);
+    setModalBusy(false);
+    if (!r.ok) { setErr(r.error?.message || 'Move failed'); return; }
+    const { moved_count: n, skipped = [] } = r.data;
+    setMsg(describeOutcome(`${n} product${n === 1 ? '' : 's'} moved to ${moveTarget.name}`, skipped));
+    setModal(null); setPicked([]);
+    // The tree's per-node counts changed on both sides of the move.
+    const t = await brandApi.get('/brands/me/listing-tree');
+    if (t.success) setTree(t.data.tree || []);
+    refresh();
+  };
+
+  const doAttach = async () => {
+    if (!chosenOffer) return;
+    setModalBusy(true); setErr(''); setMsg('');
+    const r = await brandApi.attachOfferProducts(chosenOffer.id, picked);
+    setModalBusy(false);
+    if (!r.success) { setErr(r.error?.message || 'Attach failed'); return; }
+    const { attached_count: n, already_attached: already = [], skipped = [] } = r.data;
+    const base = `${n} product${n === 1 ? '' : 's'} added to "${chosenOffer.name}"`
+      + (already.length ? ` (${already.length} already on it)` : '');
+    setMsg(describeOutcome(base, skipped));
+    setModal(null); setPicked([]);
+  };
+
   // ── derived ────────────────────────────────────────────────────────────────
   const q = String(search || '').trim().toLowerCase();
   const brandOf = (p) => (p.facets && p.facets.brand) || '';
@@ -185,8 +275,88 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     );
   }
 
+  const eligibleOffers = (offers || []).filter(o => o.status !== 'archived')
+    .map(o => ({ ...o, elig: offerEligibility(o) }));
+
   return (
     <div className="ws">
+      {modal === 'move' && (
+        <div className="modalwrap" onClick={() => !modalBusy && setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="mhd">
+              <b>Move {picked.length} product{picked.length === 1 ? '' : 's'}</b>
+              <button className="x" onClick={() => setModal(null)}>×</button>
+            </div>
+            <div className="msub">Pick the item type to move them into. Products keep their SKU, photos and variants.</div>
+            <div className="mbody">
+              <CategoryTree
+                nodes={tree} title="Move into"
+                selectedId={moveTarget?.id}
+                onSelect={(n) => { if (n.is_leaf) setMoveTarget(n); }}
+                countOf={(n) => n.product_count || 0} />
+            </div>
+            <div className="mfoot">
+              <span className="pickd">
+                {moveTarget
+                  ? <>Moving into <b>{moveTarget.name}</b></>
+                  : 'Select an item type (the lowest level) to continue.'}
+              </span>
+              <button className="btn ghost" onClick={() => setModal(null)}>Cancel</button>
+              <button className="btn yellow" disabled={!moveTarget || modalBusy} onClick={doMove}>
+                {modalBusy ? 'Moving…' : `Move ${picked.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal === 'offer' && (
+        <div className="modalwrap" onClick={() => !modalBusy && setModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="mhd">
+              <b>Attach {picked.length} product{picked.length === 1 ? '' : 's'} to an offer</b>
+              <button className="x" onClick={() => setModal(null)}>×</button>
+            </div>
+            <div className="msub">Adds these products to the offer&apos;s scope. Attaching twice changes nothing.</div>
+            <div className="mbody">
+              {offersLoading && <div className="sub">Loading your offers…</div>}
+              {!offersLoading && eligibleOffers.length === 0 && (
+                <div className="sub">No offers yet. Create one in the Offers tab first.</div>
+              )}
+              {eligibleOffers.filter(o => o.elig.ok).map(o => (
+                <button key={o.id}
+                  className={'offrow' + (chosenOffer?.id === o.id ? ' on' : '')}
+                  onClick={() => setChosenOffer(o)}>
+                  <span className="nm">{o.name}</span>
+                  <span className="ty">{o.offer_type}</span>
+                  <span className="st">{o.status}</span>
+                </button>
+              ))}
+              {eligibleOffers.some(o => !o.elig.ok) && (
+                <>
+                  <div className="sec">Can&apos;t take a product list</div>
+                  {eligibleOffers.filter(o => !o.elig.ok).map(o => (
+                    <div key={o.id} className="offrow dis">
+                      <span className="nm">{o.name}</span>
+                      <span className="why">{o.elig.reason}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+            <div className="mfoot">
+              <span className="pickd">
+                {chosenOffer ? <>Attaching to <b>{chosenOffer.name}</b></> : 'Pick an offer to continue.'}
+              </span>
+              <button className="btn ghost" onClick={() => setModal(null)}>Cancel</button>
+              <button className="btn yellow" disabled={!chosenOffer || modalBusy} onClick={doAttach}>
+                {modalBusy ? 'Attaching…' : `Attach ${picked.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <CategoryTree
         nodes={tree} loading={treeLoading} hideEmpty
         title="Browse by category"
@@ -227,6 +397,8 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
                 <button className="btn sm" disabled={bulkBusy} onClick={() => bulkActive(false)}>Hide</button>
                 <button className="btn sm" disabled={bulkBusy} onClick={() => bulkActive(true)}>Show</button>
                 <button className="btn sm" disabled={bulkBusy} onClick={bulkPrice}>Edit price</button>
+                <button className="btn sm" disabled={bulkBusy} onClick={openMove}>Move category</button>
+                <button className="btn sm" disabled={bulkBusy} onClick={openOffer}>Attach offer</button>
                 <button className="btn sm danger" disabled={bulkBusy} onClick={bulkRemove}>Remove</button>
                 {bulkBusy && <span style={{ fontWeight: 700 }}>Working…</span>}
                 <button className="x" onClick={() => setPicked([])}>×</button>
