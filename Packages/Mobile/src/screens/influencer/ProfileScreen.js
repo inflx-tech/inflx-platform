@@ -534,6 +534,26 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* ── Legal ──
+          Creators get the creator document set: the six everyone gets, plus
+          the Creator Agreement, advertising disclosure, content ownership and
+          copyright. Not refunds — a creator cannot action those. */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Legal</Text>
+        <TouchableOpacity
+          style={styles.docRow}
+          onPress={() => navigation.navigate('LegalList')}>
+          <View style={styles.docIco}>
+            <Icon name="shield-check-outline" size={18} color={P.yellowText} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.docLabel}>Legal &amp; Policies</Text>
+            <Text style={styles.docHint}>TERMS · PRIVACY · DISCLOSURE RULES</Text>
+          </View>
+          <Icon name="chevron-right" size={16} color={P.muted3} />
+        </TouchableOpacity>
+      </View>
+
       {/* ── Logout ── */}
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>LOG OUT</Text>

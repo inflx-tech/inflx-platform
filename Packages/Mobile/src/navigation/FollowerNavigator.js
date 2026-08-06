@@ -71,6 +71,8 @@ import WishlistScreen from '../screens/follower/WishlistScreen';
 import ReviewOrderScreen from '../screens/follower/ReviewOrderScreen';
 // Stage B3 — concept-filtered posts (Discover banner landing)
 import ConceptPostsScreen from '../screens/follower/ConceptPostsScreen';
+import LegalListScreen from '../screens/legal/LegalListScreen';
+import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -178,6 +180,11 @@ function ProfileStack() {
       {/* Returns row on MeScreen targets this; ProfileStack does not spread
           SHARED_SCREENS, so register it explicitly (no duplicate name here). */}
       <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
+      {/* Legal — registered ONLY here. ProfileStack does not spread
+          SHARED_SCREENS, so one registration, no duplicate name (crash-class
+          rule). Shoppers get the shopper document set. */}
+      <Stack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'shopper' }} />
+      <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} />
       {/* White sweep — Profile's Wishlist row + its shop-through path
           (Wishlist → PostProduct/Bag → Review → Confirmation). Explicit
           registrations, each name once in THIS stack (crash-class rule). */}

@@ -150,6 +150,18 @@ function MeInner({ navigation }) {
           <Row icon="bookmark-outline" label="Saved posts" onPress={() => navigation.navigate('SavedList')} />
         </View>
 
+        {/* Legal — shoppers see only the documents that apply to buying:
+            the six everyone gets, plus refunds and how ranking works. */}
+        <View style={st.grp}>
+          <Text style={st.grpT}>About</Text>
+          <Row
+            icon="shield-check-outline"
+            label="Legal & policies"
+            sub="terms · privacy · refunds · complaints"
+            onPress={() => navigation.navigate('LegalList')}
+          />
+        </View>
+
         <TouchableOpacity style={st.logout} onPress={handleLogout} hitSlop={8}>
           <Text style={st.logoutTxt}>Log out</Text>
         </TouchableOpacity>

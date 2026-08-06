@@ -30,6 +30,8 @@ import BrandBookingsScreen from '../screens/brand/BrandBookingsScreen';
 import BrandOffersLibraryScreen from '../screens/brand/BrandOffersLibraryScreen';
 import BrandSettingsHubScreen from '../screens/brand/BrandSettingsHubScreen';
 import BrandInfluencerAnalyticsScreen from '../screens/brand/BrandInfluencerAnalyticsScreen';
+import LegalListScreen from '../screens/legal/LegalListScreen';
+import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -85,6 +87,9 @@ function ProfileStack() {
       <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <Stack.Screen name="ProposalInbox" component={BrandProposalInboxScreen} />
       <Stack.Screen name="BrandSettingsHub" component={BrandSettingsHubScreen} />
+      {/* Legal — brands get the brand document set. */}
+      <Stack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'brand' }} />
+      <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} />
     </Stack.Navigator>
   );
 }

@@ -32,6 +32,8 @@ import SendProposalScreen from '../screens/influencer/SendProposalScreen';
 // Concept P2: the Post Composer + My Posts replace the old studio.
 import PostComposerScreen from '../screens/influencer/PostComposerScreen';
 import MyStoreScreen from '../screens/influencer/MyStoreScreen';
+import LegalListScreen from '../screens/legal/LegalListScreen';
+import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -61,6 +63,9 @@ function ProfileStackNav() {
       <ProfileStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <ProfileStack.Screen name="ProposalsHub" component={ProposalsHubScreen} />
       <ProfileStack.Screen name="SendProposal" component={SendProposalScreen} />
+      {/* Legal — creators get the creator document set. */}
+      <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
+      <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
     </ProfileStack.Navigator>
   );
 }

@@ -361,9 +361,18 @@ export default function BrandProfileScreen({ navigation }) {
             <Text style={s.linkLabel}>Media Gallery</Text>
             <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.linkRow, s.linkRowLast]} onPress={() => navigation.navigate('ProposalInbox')}>
+          <TouchableOpacity style={s.linkRow} onPress={() => navigation.navigate('ProposalInbox')}>
             <Text style={s.linkIcon}>[P]</Text>
             <Text style={s.linkLabel}>Influencer Proposals</Text>
+            <Text style={s.linkArrow}>›</Text>
+          </TouchableOpacity>
+          {/* Legal — brands get the widest set, because a brand is both a
+              seller and an advertiser: everyone's six, plus the Brand
+              Agreement, the refunds they must honour, the disclosure rules
+              their creators follow, content ownership and how ranking works. */}
+          <TouchableOpacity style={[s.linkRow, s.linkRowLast]} onPress={() => navigation.navigate('LegalList')}>
+            <Text style={s.linkIcon}>[L]</Text>
+            <Text style={s.linkLabel}>Legal &amp; Policies</Text>
             <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
         </View>

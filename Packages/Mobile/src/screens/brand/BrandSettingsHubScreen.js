@@ -171,6 +171,7 @@ export default function BrandSettingsHubScreen({ navigation }) {
             </>
           )}
         </View>
+
       </ScrollView>
     </View>
   );
