@@ -21,6 +21,12 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "release_flip_blocked_on": "Rule 5 requires pnpm qa:maestro green before released=true, and no device or emulator was attached (adb devices empty). Owed: one pass on a real device confirming the Legal row appears on all three profile screens and that opening a document does not crash a tab."
+    "release_flip_blocked_on": "Rule 5 requires pnpm qa:maestro green before released=true, and no device or emulator was attached (adb devices empty). Owed: one pass on a real device confirming the Legal row appears on all three profile screens and that opening a document does not crash a tab.",
+    "deploy": {
+      "commit": "783d1d0",
+      "ota": "pnpm publish-ota:all — brand v165, influencer v162, follower v220, agency v60 (native runtime 3, bundle 3203 KB). Phones pick up on next launch.",
+      "apk": "NOT required — JS-only change, no native resource touched.",
+      "vercel": "No brand-web change in this commit."
+    }
   }
 }
