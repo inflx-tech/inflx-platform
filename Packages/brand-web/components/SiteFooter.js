@@ -47,7 +47,6 @@ export default function SiteFooter() {
                 <>
                   <br />CIN <Fact token="CIN" />
                   <br /><Fact token="REGISTERED_ADDRESS" />
-                  <br />GSTIN <Fact token="GSTIN" />
                 </>
               )}
             </p>
@@ -118,8 +117,7 @@ export default function SiteFooter() {
             </h6>
             <p className="m-0 text-[12px] leading-[1.7]" style={{ color: C.t2 }}>
               <Fact token="SUPPORT_EMAIL" /><br />
-              Mobile <Fact token="SUPPORT_MOBILE" /><br />
-              Landline <Fact token="SUPPORT_LANDLINE" />
+              <Fact token="SUPPORT_MOBILE" />
             </p>
           </div>
 

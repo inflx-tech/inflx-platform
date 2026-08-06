@@ -5,16 +5,16 @@
 // of legal prose into the landing-page bundle for the sake of a list of
 // hrefs. This module has no dependencies.
 
-// The legal pages are built and pass QA, but they are NOT published: the
-// mandatory disclosures in company.js are still unsupplied, so the documents
-// would go live showing red placeholders where a CIN and a named Grievance
-// Officer belong.
+// PUBLISHED 2026-08-06, on the founder's approval of the document text.
 //
-// While this is false the public footer shows the company identity and the
-// ownership notice only — no links to unbuilt pages, and no half-filled
-// statutory block. Flip it to true in the same change that supplies the facts
-// and ships app/legal/**; the two only make sense together.
-export const LEGAL_SURFACE_LIVE = false;
+// Every mandatory disclosure in company.js now has a real value, taken from
+// the Certificate of Incorporation and from the founder directly, so the
+// footer carries the full statutory block and every policy link resolves.
+//
+// Set this back to false only if a disclosure is ever removed — the footer
+// then falls back to the identity and ownership notice alone rather than
+// publishing a half-filled statutory block.
+export const LEGAL_SURFACE_LIVE = true;
 
 // Split by WHO IS ASKING, not by legal taxonomy. A shopper wanting a refund
 // and a creator checking their disclosure duty should not have to read the

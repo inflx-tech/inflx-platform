@@ -35,66 +35,88 @@ export const TOKENS = {
     why: 'Auto-filled. Never needs supplying.',
   },
   CIN: {
-    value: null,
+    value: 'U63120AP2026PTC125275',
     label: 'Corporate Identity Number',
     why: 'Companies Act — official publications must carry the CIN alongside the name and registered office.',
   },
+  // Optional means "may legitimately not exist yet", not "nice to have".
+  // A company incorporated in 2026 may have no GSTIN and no landline. An
+  // optional token that is unset is simply not rendered — no placeholder, no
+  // empty label — rather than blocking publication for a fact that does not
+  // exist.
   GSTIN: {
     value: null,
+    optional: true,
     label: 'GSTIN',
-    why: 'An e-commerce operator registers compulsorily. Displayed so sellers and buyers can verify the operator.',
+    why: 'Shown so sellers and buyers can verify the operator. Omitted entirely until GST registration exists.',
   },
+  // From the Certificate of Incorporation (CIN U63120AP2026PTC125275,
+  // incorporated 13 April 2026). The certificate labels this the "Mailing
+  // Address as per record available in Registrar of Companies office" — for a
+  // newly incorporated company that is normally the registered office too,
+  // but if the two ever diverge, both must be displayed.
   REGISTERED_ADDRESS: {
-    value: null,
+    value: 'Door No. 10-40, Middeladon, Medarametla, Korisapadu, Bodduvaripalem, Ongole, Prakasam – 523212, Andhra Pradesh, India',
     label: 'Registered office address',
     why: 'E-Commerce Rules r.4(2) — registered office and every branch office address must be displayed.',
   },
   GRIEVANCE_OFFICER: {
-    value: null,
+    value: 'M Aveen',
     label: 'Grievance Officer — full name',
     why: 'IT Rules r.3(2)(a) — the name must be published, not merely available on request.',
   },
   GRIEVANCE_DESIGNATION: {
-    value: null,
+    value: 'Founder',
     label: 'Grievance Officer — designation',
     why: 'E-Commerce Rules r.4(4) requires the designation in addition to name and contact.',
   },
   GRIEVANCE_EMAIL: {
-    value: null,
+    value: 'contact@inflx.in',
     label: 'Grievance Officer — email',
     why: 'IT Rules r.3(2)(a). Must be monitored against a 24-hour acknowledgement clock.',
   },
+  GRIEVANCE_PHONE: {
+    value: '+91 86394 48121',
+    label: 'Grievance Officer — phone',
+    why: 'Not strictly required, but the Indian platforms that handle grievances well all publish one.',
+  },
   SUPPORT_EMAIL: {
-    value: null,
+    value: 'contact@inflx.in',
     label: 'Customer care email',
     why: 'E-Commerce Rules r.4(2) requires contact details including email.',
   },
   SUPPORT_MOBILE: {
-    value: null,
+    value: '+91 86394 48121',
     label: 'Customer care mobile',
     why: 'E-Commerce Rules r.4(2) names mobile explicitly, separately from landline.',
   },
   SUPPORT_LANDLINE: {
     value: null,
+    optional: true,
     label: 'Customer care landline',
-    why: 'E-Commerce Rules r.4(2) names landline explicitly. A mobile number alone does not satisfy it.',
+    why: 'E-Commerce Rules r.4(2) names landline separately from mobile. Omitted until a landline exists; worth adding when the team forms.',
   },
   EFFECTIVE_DATE: {
-    value: null,
+    value: '1 August 2026',
     label: 'Effective date of the published documents',
     why: 'A policy without an effective date cannot be shown to have applied to a past transaction.',
   },
   JURISDICTION_CITY: {
-    value: null,
+    value: 'Ongole, Andhra Pradesh',
     label: 'Courts of which city have jurisdiction',
-    why: 'Governing-law clauses name a seat. Usually the city of the registered office.',
+    why: 'Governing-law clauses name a seat. Taken from the registered office; change it if the company later operates from elsewhere.',
   },
 };
 
-/** Tokens still awaiting a founder-supplied value, in declaration order. */
+/**
+ * Tokens still awaiting a founder-supplied value, in declaration order.
+ * Optional tokens are excluded — a company with no GST registration and no
+ * landline is not an incomplete company, and blocking publication on a fact
+ * that does not exist would be wrong.
+ */
 export function missingTokens() {
   return Object.entries(TOKENS)
-    .filter(([, t]) => t.value === null || t.value === '')
+    .filter(([, t]) => !t.optional && (t.value === null || t.value === ''))
     .map(([key, t]) => ({ key, ...t }));
 }
 

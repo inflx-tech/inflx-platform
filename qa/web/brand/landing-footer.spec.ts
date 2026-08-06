@@ -56,8 +56,12 @@ test.describe('WORKFLOW: public landing footer', () => {
     await expect(placeholders, 'footer shows an unfilled statutory field in public').toHaveCount(0);
 
     if (LEGAL_SURFACE_LIVE) {
-      await expect(page.locator('footer a[href="/legal/grievance"]'),
-        'the Grievance Officer must be one hop from the home page').toHaveCount(1);
+      // At least one — the requirement is that the Grievance Officer is
+      // reachable in a single hop from the home page, not that we link it
+      // exactly once. The footer legitimately carries it twice: once in the
+      // Help column and once in the compliance strip.
+      const count = await page.locator('footer a[href="/legal/grievance"]').count();
+      expect(count, 'the Grievance Officer must be one hop from the home page').toBeGreaterThan(0);
     } else {
       await expect(legalLinks,
         'footer links to a legal page that is not published yet').toHaveCount(0);
