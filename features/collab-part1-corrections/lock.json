@@ -25,9 +25,26 @@
     "released": false,
     "released_by": null,
     "released_at": null,
+    "release_note": "PARTIAL release. Backend + brand-web are deployed; the mobile OTA is deliberately NOT shipped because the founder chose to skip Maestro (\"skip the maestro...for now\"). release.released stays false until the mobile leg ships with maestro_green=true — no GOVERNANCE_OVERRIDE was used or needed, since the split is safe (see ota_gap_safe).",
     "deploy_class": "production-impacting",
     "deploy_targets": ["render:backend", "vercel:brand-web", "ota:mobile"],
     "maestro_green": false,
+    "partial_deploy": {
+      "commit": "1f26542",
+      "pushed_at": "2026-08-11T02:52:00Z",
+      "pushed_by": "founder · 2026-08-11 chat (\"pls go and deploy\")",
+      "trigger": "git push origin main → Render + Vercel auto-deploy",
+      "gov_check": "exit 0 — 10 governed changes contract-backed, mockup_locked ✓, 06-diff/notes.md present ✓, release evidence valid ✓",
+      "migration": "147 applied to prod BEFORE the push — 3 legacy 'Discount' rows converted to 'discount', 0 non-canonical remaining",
+      "shipped": ["render:backend", "vercel:brand-web"],
+      "post_deploy_verification": {
+        "vercel_brand_web": "CONFIRMED — CDN Age on https://inflx.in/login fell from 413347s (~4.8 days) to 78s, i.e. the cache was invalidated by a new deployment. /dashboard/campaigns/new correctly 307s to /login for an unauthenticated request.",
+        "render_backend": "NOT EXTERNALLY PROVEN — /health returns a static {status,service,version:'1.0.0'} with no commit or build marker, and every changed code path is auth-gated, so there is no unauthenticated observable that distinguishes the new build from the old. The service answers 200 and Render auto-deploys on push to main (same webhook that demonstrably fired for Vercel), so it is very likely live — but 'likely' is the honest word.",
+        "follow_up": "Add the deployed commit SHA (and boot time) to the /health payload so future backend deploys are verifiable from outside. Not done here: it would itself require a deploy, and it is outside this contract's locked scope.",
+        "founder_walkthrough": "OWED — per the walkthrough protocol the founder confirms on the live surfaces. Specifically worth checking: campaign basics shows no wallet card on a commission-only campaign, a start date of today is accepted, and an offer over an unpublished product is refused."
+      },
+      "held": ["ota:mobile — canonical offer key in BrandInfluencerProfileScreen; needs Maestro green first. Old builds keep working via backfillDiscountSubType, so holding it breaks nothing."]
+    },
     "migration": "backend/migrations/147_offer_type_canonical.sql — run via backend/scripts/run-147.js against prod BEFORE the backend deploy. Value conversion only, no DDL, idempotent.",
     "deploy_blockers": [
       "Maestro green required — Packages/Mobile/src/** is touched (gov-check Rule 5)",
