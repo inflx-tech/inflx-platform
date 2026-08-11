@@ -26,22 +26,44 @@ live collaborations (contracted/active/completed,
 
 So the one live collaboration in production is invisible to every query built on that join.
 
-## What is affected
+## What is affected — CORRECTED 2026-08-11, before any code was written
 
-**Discovery shelves — the largest surface.** `sectionRules.service` builds a shared
-`OFFER_FROM` clause containing `JOIN campaign_offers co ON co.set_id = cs.id AND
-co.is_active = true`, and **12 rule queries** use it. Every shelf driven by those rules
-evaluates to empty. This is very likely the explanation for discovery surfaces that look
-correctly configured but render nothing.
+The first version of this spec claimed **"12 discovery rule queries return nothing"** and
+called this the largest functional defect on the board. **That was wrong**, and it was the
+basis on which the founder gave the go. Correcting it before implementing.
 
-**Follower "active deals" count.** `follower.service` computes
-`COUNT(DISTINCT co.id)` behind the same inner join for each creator a follower follows, so
-every followed creator shows **0 active deals** regardless of reality. Concretely wrong and
-user-visible.
+**The 12 offer rules are NOT affected.** Every one of them opens with
+`if (offerAdapter.offersV2Enabled()) return offersViaAdapter(...)`, and `offersV2Enabled`
+resolves to **true in production** — it defaults on when `NODE_ENV=production` **or** the
+`DATABASE_URL` contains `supabase.com`, and prod is Supabase with no explicit override. So
+those rules short-circuit to the V2 adapter and **never reach `OFFER_FROM` at all**. That
+path is effectively dead code in production, not a live fault.
 
-**Also on the same pattern:** saved-items resolution (`saved.controller`), a contract-side
-existence check (`contract.controller`), prebook advance lookups
-(`transaction.controller`), and post-attached deals (`followerPosts.service`).
+**What IS genuinely broken** — all verified as reachable, none behind the V2 flag:
+
+1. **`liveOfferExistsForInfluencer`** inner-joins the empty table with **no OR rescue**, so
+   `has_live_deal` is **false for every creator** wherever it is used, and the
+   `WHERE … OR EXISTS(…)` that depends on it means a creator with a real live collaboration
+   only appears in those sections **if the follower already follows them**. A genuinely live
+   creator is invisible to everyone else.
+2. **`topByEngagementBrands`** uses the bare `liveOfferExists('b.id')` — not the
+   `anyLiveOfferExists` variant — so it returns nothing.
+3. **`creatorsInCategory`** inner-joins the empty table and is not V2-guarded, so it
+   returns nothing.
+4. **Follower "active deals" count** (`follower.service`, `getFollowing`) computes
+   `COUNT(DISTINCT co.id)` behind the same join, so every followed creator shows **0 active
+   deals** regardless of reality.
+
+**Notably NOT broken:** `anyLiveOfferExists` ORs the dead campaign leg with a store-direct
+`brand_offers` check, so brands with a published store offer still qualify. The dead leg is
+masked there.
+
+**Lower impact, same pattern:** saved-items resolution (`saved.controller`), a contract-side
+existence check (`contract.controller`), prebook advance lookups (`transaction.controller`),
+post-attached deals (`followerPosts.service`).
+
+**Revised severity:** real and user-visible, but **creator-facing sections and deal counts**
+— not the offer shelves. Smaller and safer than first stated.
 
 ## Why this was mis-described in Part 4
 

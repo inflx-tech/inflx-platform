@@ -551,17 +551,36 @@ async function topByEngagementBrands(ctx) {
 }
 
 // Build a correlated EXISTS that a brand has at least one live offer.
-function liveOfferExists(brandRef) {
-  return `EXISTS (
-        SELECT 1
+// backend-defect-dead-offer-join — "this collaboration is live AND the creator has
+// something to sell".
+//
+// Every one of these checks used to prove that by INNER JOINing campaign_offers, a
+// table that has never had a row in production and that no application code writes.
+// An inner join against an empty table returns nothing, so the answer was "no" for
+// every creator and every brand, always — which is why a creator with a real live
+// collaboration was invisible to anyone who did not already follow them.
+//
+// The real test is the one collab-part4 established: a creator can sell if they have
+// an ALLOCATION. The offer_type leg is the same transitional fallback used by the
+// storefront gates, for rows written before allocations existed; it goes when the
+// resolver fallback does.
+const HAS_SOMETHING_TO_SELL = `(ci.alloc_scope IS NOT NULL OR ci.offer_type IS NOT NULL)`;
+
+const LIVE_COLLAB_CHAIN = `
           FROM campaign_influencers ci
           JOIN campaign_sets cs    ON cs.id = ci.set_id
-          JOIN campaigns c         ON c.id  = cs.campaign_id
-          JOIN campaign_offers co  ON co.set_id = cs.id AND co.is_active = true
-         WHERE c.brand_id = ${brandRef}
+          JOIN campaigns c         ON c.id  = cs.campaign_id`;
+
+const LIVE_COLLAB_WHERE = `
            AND ci.status IN ('contracted','active','completed')
            AND c.status  IN ('published','active','live')
            AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+           AND ${HAS_SOMETHING_TO_SELL}`;
+
+function liveOfferExists(brandRef) {
+  return `EXISTS (
+        SELECT 1${LIVE_COLLAB_CHAIN}
+         WHERE c.brand_id = ${brandRef}${LIVE_COLLAB_WHERE}
      )`;
 }
 
@@ -642,16 +661,13 @@ async function stories(ctx) {
   return rows.map(r => ({ ...mapCreatorItem(r), is_followed: r.is_followed === true, has_live_deal: r.has_live_deal === true }));
 }
 
+// The worst of the four: this drives `has_live_deal`, and the sections using it read
+// "show a creator if the follower already follows them OR they have a live deal". With
+// the dead join the second half was always false, so a creator actively selling right
+// now was invisible to everyone who did not already follow them.
 function liveOfferExistsForInfluencer(infRef) {
-  return `SELECT 1
-            FROM campaign_influencers ci
-            JOIN campaign_sets cs   ON cs.id = ci.set_id
-            JOIN campaigns c        ON c.id  = cs.campaign_id
-            JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
-           WHERE ci.influencer_id = ${infRef}
-             AND ci.status IN ('contracted','active','completed')
-             AND c.status  IN ('published','active','live')
-             AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)`;
+  return `SELECT 1${LIVE_COLLAB_CHAIN}
+           WHERE ci.influencer_id = ${infRef}${LIVE_COLLAB_WHERE}`;
 }
 
 // Creators active in a vertical+city, ranked by reach.
@@ -675,9 +691,12 @@ async function creatorsInCategory(ctx) {
       JOIN campaign_sets cs ON cs.id = ci.set_id
       JOIN campaigns c      ON c.id  = cs.campaign_id
       JOIN brands b         ON b.id  = c.brand_id
-      JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
      WHERE ci.status IN ('contracted','active','completed')
        AND c.status  IN ('published','active','live')
+       -- backend-defect-dead-offer-join — was an INNER JOIN on the empty
+       -- campaign_offers, so "creators active in this category" was always empty.
+       -- The real test is whether they have something to sell.
+       AND ${HAS_SOMETHING_TO_SELL}
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY i.followers_count DESC NULLS LAST
      LIMIT $${limIdx}`;

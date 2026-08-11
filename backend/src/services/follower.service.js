@@ -1135,16 +1135,22 @@ async function getFollowing(followerId) {
        u.name,
        ff.followed_at,
        (
-         SELECT COUNT(DISTINCT co.id)
+         -- backend-defect-dead-offer-join — this counted DISTINCT campaign_offers rows
+         -- behind an INNER JOIN on that table. It has never had a row in production, so
+         -- every followed creator reported 0 active deals no matter what they actually
+         -- had running. Count the live COLLABORATIONS instead — one per deal, which is
+         -- what "active deals" means to a follower — using the same has-something-to-sell
+         -- test the storefront gates use.
+         SELECT COUNT(DISTINCT ci2.id)
          FROM campaign_influencers ci2
          JOIN campaign_sets cs2 ON cs2.id = ci2.set_id
          JOIN campaigns c2 ON c2.id = cs2.campaign_id
-         JOIN campaign_offers co ON co.set_id = cs2.id AND co.is_active = true
          WHERE ci2.influencer_id = i.id
            AND ci2.status IN ('contracted','active','completed')
            AND c2.status IN ('published','active','live')
            AND (c2.start_date IS NULL OR c2.start_date <= CURRENT_DATE)
            AND (c2.end_date IS NULL OR c2.end_date >= CURRENT_DATE)
+           AND (ci2.alloc_scope IS NOT NULL OR ci2.offer_type IS NOT NULL)
        )::int AS active_deals
      FROM follower_follows ff
      JOIN influencers i ON i.id = ff.influencer_id

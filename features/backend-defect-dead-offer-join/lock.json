@@ -1,19 +1,21 @@
 {
   "feature": "backend-defect-dead-offer-join",
-  "spec_version": "0.1.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "notes": "GENUINE BACKEND DEFECT, carved not fixed. campaign_offers has ZERO rows in production and nothing writes it, yet 8 read paths INNER JOIN it — so those queries return nothing, always. Verified in prod 2026-08-11: 0 campaign_offers rows; 1 live collaboration; 0 surviving the inner join. Worst affected: sectionRules.service's shared OFFER_FROM clause, used by 12 discovery rule queries, so every shelf built on those rules is empty; and follower.service's per-creator active-deal COUNT, which reports 0 for every followed creator regardless of reality. Also saved items, a contract existence check, prebook advance lookups, and post-attached deals. Found while scoping collab-part4-offers-allocation §4.5, whose claim that retiring this table is 'provably inert' is TRUE for the 8 LEFT JOINs and WRONG for the 8 INNER JOINs — removing those is a follower-visible behaviour change, not a cleanup. Part 4's spec has been corrected; this contract owns the functional half. Deliberately NOT bundled into Part 4: a discovery behaviour change must not arrive inside a commit whose stated scope is retiring a dead table, and separating it keeps regressions attributable. Sequenced AFTER Part 4 deploys, so each removed inner join has the per-creator offer path already live to fall back on. Needs founder go — discovery content will change.",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-08-11 chat (\"yes pls fix\") — go given for the CORRECTED four-item scope after the original claim was withdrawn. The first version of this contract said 12 discovery rule queries returned nothing; they do not, because each short-circuits to the V2 adapter and never reaches the dead join. Founder was told before any code was written and re-confirmed.",
+  "approved_at": "2026-08-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "GENUINE BACKEND DEFECT, now fixed. campaign_offers has ZERO rows in prod and nothing writes it, yet four live checks INNER JOINed it, so \"does this creator/brand have something live?\" answered no for everyone, always. Worst consequence: creator sections read \"followed OR has a live deal\", so a creator actively selling was invisible to everyone who did not already follow them. Also: has_live_deal always false, creators-in-category always empty, top-brands-by-engagement always empty, and every followed creator showing 0 active deals. Fixed by asking the real question — does the creator have an ALLOCATION (collab-part4) — via one shared predicate rather than four copies. Prod evidence: creators-with-a-live-deal 0 -> 1, brands 0 -> 1. Deliberately untouched: anyLiveOfferExists store-direct leg (was masking the defect for brands), OFFER_FROM and the 12 V2-guarded rules (unreachable in prod; rewriting dead code is risk without value, pinned by J8), and the genuinely-inert LEFT JOIN references.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "released": false,
     "released_by": null,
     "released_at": null,
     "deploy_class": "production-impacting",
-    "deploy_targets": ["render:backend"]
+    "deploy_targets": [
+      "render:backend"
+    ]
   }
 }
