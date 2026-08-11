@@ -432,6 +432,13 @@ async function resolveStore(handle) {
         veg_flag: p.veg_flag,
         description: p.description,
         variants_json: p.variants_json,
+        // collab-part4 §4.3 display side — this projection is a field WHITELIST, so
+        // computing the offer fields above was not enough: they were being dropped
+        // here and never reached the client. Without these two the tile shows full
+        // price while checkout charges the global discount, which is the exact
+        // asymmetry §4.3 was supposed to close.
+        discount_value: p.discount_value ?? null,
+        offer_price: p.offer_price ?? null,
         influencer_note: noteMap[`${p.id}_${r.campaign_id}`] || null,
       })),
     });
@@ -1192,6 +1199,12 @@ async function getInfluencerStorePreview(influencerId) {
         image_url: p.image_url,
         section: p.section,
         description: p.description,
+        // collab-part4 §4.3 display side — see the sibling projection above: this is
+        // a field whitelist, so without these two the computed offer fields are
+        // silently dropped and the tile advertises full price while checkout charges
+        // the global discount.
+        discount_value: p.discount_value ?? null,
+        offer_price: p.offer_price ?? null,
         influencer_note: noteMap[`${p.id}_${r.campaign_id}`] || null,
         has_note: !!noteMap[`${p.id}_${r.campaign_id}`],
       })),

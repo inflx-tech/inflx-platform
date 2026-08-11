@@ -89,6 +89,37 @@ test.describe('WORKFLOW: one offer-display evaluator, shared (§4.3 display)', (
     expect(uses.length).toBe(2);                  // both creator-storefront queries
     expect(src).toContain('FROM brand_products bp');
   });
+
+  test('D7 — the computed fields actually SURVIVE to the response payload', () => {
+    // The gap this test exists to close: computing the offer fields was not enough.
+    // Each storefront payload builds its products through an explicit field
+    // WHITELIST, so the computed discount_value/offer_price were being dropped and
+    // never reached the client — the tile still advertised full price while checkout
+    // charged the global discount, i.e. exactly the asymmetry §4.3 was meant to fix.
+    // Caught only by probing the live endpoint, because D6 asserted the SQL and the
+    // import but never the payload. Assert the whole chain, not its first half.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const path = require('path');
+    const src = fs.readFileSync(
+      path.join(__dirname, '../../backend/src/services/follower.service.js'), 'utf8');
+
+    // The invariant: wherever the offer fields are COMPUTED, they must also be
+    // PASSED THROUGH. Counting both sides catches a computed-but-dropped field,
+    // which is the bug this test was written for.
+    //
+    // Scoped to the creator storefront deliberately. A third product projection
+    // exists in resolveBusinessStore — the BRAND's own store — which never computed
+    // offer fields at all. That is a separate surface, pre-existing, and outside
+    // Part 4's scope; widening into it here would be scope creep and might duplicate
+    // what the shelves already compute for brand pages.
+    const computed = src.split('offerFieldsFromPct(offer_pct').length - 1;
+    const passedThrough = src.split('discount_value: p.discount_value ?? null').length - 1;
+    expect(computed).toBe(2);                       // both creator-storefront queries
+    expect(passedThrough).toBe(computed);           // none silently dropped
+    expect(src.split('offer_price: p.offer_price ?? null').length - 1).toBe(computed);
+  });
 });
 
 test.describe('WORKFLOW: card mapping', () => {
