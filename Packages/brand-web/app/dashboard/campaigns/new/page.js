@@ -82,6 +82,12 @@ const mkInf = () => ({
   bnd_prods: [], bnd_price: '',
   gift_offers: [{ main: null, gift: null }],
   commission_pct: '', physical_delivery: false,
+  // collab-part4 §4.1 — ALLOCATION: what this creator may SELL. Separate from the
+  // offer's own scope, which only decides what the DISCOUNT applies to. Defaults to
+  // the whole store: the common case, and it means a creator always has something to
+  // sell even with no offer at all.
+  alloc_scope: 'store', alloc_category: '', alloc_category_node: '', alloc_products: [],
+  offer_valid_until: '',
   delivery_address: '', custom_code: '', edit_code: false,
   brand_offer_id: null,   // Offer Engine: conversion/hybrid — one saved offer (snapshot)
   promoted_offer_ids: [], // Offer Engine: engagement — multiple saved offers to promote
@@ -90,6 +96,10 @@ const mkInf = () => ({
 const mkGroup = () => ({
   tiers: [], niches: [], cities: [], min_er: '', gender: '',
   max_cap: '10', per_influencer_budget: '',
+  // collab-part4 §4.1 — open-group joiners get the same allocation, set once for the
+  // whole group (there are no individual creators to configure until they join).
+  alloc_scope: 'store', alloc_category: '', alloc_category_node: '', alloc_products: [],
+  offer_valid_until: '',
   offer_type: '', d_sub: 'pct', d_val: '', d_prods: [], d_scope: 'store', d_category: '',
   v_prods: [], v_tiers: [{min_spend:'', pct_off:''}], v_scope: 'store', v_category: '',
   bogo_buy: null, bogo_get: null, bnd_prods: [], bnd_price: '',
@@ -112,6 +122,26 @@ const mkSet = (idx) => ({
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 .cc *,.cc *::before,.cc *::after{box-sizing:border-box}
+/* collab-part4 §4.1 — allocation scope: category tree + selected-product list */
+.cc .cat-tree{border:1px solid var(--border);border-radius:10px;background:var(--white);margin-top:9px;padding:5px;max-height:280px;overflow:auto}
+.cc .ctr{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12px}
+.cc .ctr:hover{background:var(--bg2)}
+.cc .ctr.sel{background:var(--yellow-pale);box-shadow:inset 0 0 0 1px var(--ink)}
+.cc .ctw{width:12px;font-size:9px;color:var(--muted-3);flex:0 0 auto}
+.cc .ctn{font-weight:700;flex:1}
+.cc .ctr.sel .ctn{font-weight:800}
+.cc .ctc{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--muted-2);background:var(--bg2);padding:2px 7px;border-radius:999px}
+.cc .cts{font-size:10px;font-weight:800;color:var(--yellow-text)}
+.cc .alloc-hint{font-size:10.5px;color:var(--muted-2);font-weight:600;margin-top:8px;line-height:1.5}
+.cc .alloc-list{border:1px solid var(--border);border-radius:10px;background:var(--white);overflow:hidden;margin-top:9px}
+.cc .alr{display:flex;align-items:center;gap:10px;padding:8px 11px;border-bottom:1px solid var(--border-soft)}
+.cc .alr:last-child{border-bottom:none}
+.cc .ali{width:34px;height:34px;border-radius:8px;background:var(--bg2);display:grid;place-items:center;font-size:16px;flex:0 0 auto;overflow:hidden}
+.cc .ali img{width:100%;height:100%;object-fit:cover}
+.cc .alb{flex:1;min-width:0}
+.cc .aln{font-size:12px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc .alm{font-size:10px;color:var(--muted-2);font-weight:650;margin-top:1px}
+.cc .alp{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800}
 .cc{
   --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
   --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
@@ -539,6 +569,8 @@ function NewCampaignPageInner() {
   const [products, setProducts] = useState([]);
   const [libOffers, setLibOffers] = useState([]);   // Offer Engine: brand's saved offers
   const [categoryTree, setCategoryTree] = useState([]); // brand's listing tree for leaf-level category scope
+  // collab-part4 §4.1 — which branches of the allocation category tree are expanded.
+  const [allocTreeOpen, setAllocTreeOpen] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCtx, setModalCtx] = useState(null);
   const [modalTempSel, setModalTempSel] = useState([]);
@@ -623,6 +655,16 @@ function NewCampaignPageInner() {
               influencer_budget: ci.influencer_budget != null ? String(ci.influencer_budget) : '',
               // Stored value is canonical (migration 147); the chips compare on labels.
               offer_type: OFFER_KEY_TO_LABEL[ci.offer_type] || ci.offer_type || '',
+              // collab-part4 §4.1 — hydrate the allocation. A legacy row has no
+              // alloc_scope (it still derives from the offer server-side), so default
+              // to 'store' rather than showing an empty control.
+              alloc_scope: ci.alloc_scope || 'store',
+              alloc_category: ci.alloc_category || '',
+              alloc_category_node: ci.alloc_category_node_id || '',
+              alloc_products: Array.isArray(ci.alloc_product_ids)
+                ? ci.alloc_product_ids.map(id => products.find(p => p.id === id) || { id, name: 'Product', price: 0 })
+                : [],
+              offer_valid_until: ci.offer_valid_until ? String(ci.offer_valid_until).split('T')[0] : '',
               brand_offer_id: ci.brand_offer_id || null,
               promoted_offer_ids: ci.promoted_brand_offer_ids || [],
               commission_pct: ci.commission_pct != null ? String(ci.commission_pct) : '',
@@ -1089,6 +1131,16 @@ function NewCampaignPageInner() {
             // (promoted_brand_offer_ids, promotional — backend sets allocation,
             // no commission/coupon).
             offer_type: needsOffer(s.goal) ? toOfferKey(inf.offer_type) : null,
+            // collab-part4 §4.1 — the allocation. Sent for sales/hybrid only; an
+            // engagement creator is paid to post, not to sell.
+            ...(needsOffer(s.goal) ? {
+              alloc_scope: inf.alloc_scope || 'store',
+              alloc_category_node_id: inf.alloc_scope === 'category' ? (inf.alloc_category_node || null) : null,
+              alloc_category: inf.alloc_scope === 'category' ? (inf.alloc_category || null) : null,
+              alloc_product_ids: inf.alloc_scope === 'products'
+                ? (inf.alloc_products || []).map(p => p.id).filter(Boolean) : null,
+              offer_valid_until: inf.offer_valid_until || null,
+            } : {}),
             brand_offer_id: needsOffer(s.goal) ? (inf.brand_offer_id || null) : null,
             offer_config_json: (needsOffer(s.goal) && inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
             promoted_brand_offer_ids: s.goal === 'engagement' ? (inf.promoted_offer_ids || []) : null,
@@ -2038,6 +2090,121 @@ function NewCampaignPageInner() {
     </>
   );
 
+  // ─── Allocation: WHAT THE CREATOR MAY SELL (collab-part4 §4.1) ─────────────
+  // Deliberately NOT inside renderOfferConfig: that returns early when there is no
+  // offer_type, and the entire point of this contract is that a creator can sell
+  // with no offer at all. Allocation and offer are independent questions, so they
+  // get independent controls.
+  //
+  // The scope toggle itself is the same three-way control the offer builder already
+  // had — it has simply moved up a level. The category picker is upgraded from a flat
+  // <select> of breadcrumb strings to a real tree (founder feedback), and the selected
+  // product list now shows image + title + price instead of name-only chips.
+  // isGroup is kept in the signature so this can serve open groups the moment the
+  // publish-time materialisation can carry an allocation — see the note at its
+  // (deliberately absent) call site.
+  const renderAllocation = (o, isGroup) => {
+    const si = activeSet;
+    const ii = isGroup ? null : activeTermsInf;
+    const onChg = (field, value) => isGroup ? updateGroup(si, { [field]: value }) : updateInf(si, ii, { [field]: value });
+    const scope = o.alloc_scope || 'store';
+
+    const renderNodes = (nodes, depth) => (nodes || []).map(n => {
+      const id = String(n.id);
+      const kids = n.children || [];
+      const open = !!allocTreeOpen[id];
+      const sel = o.alloc_category_node === id;
+      return (
+        <div key={id}>
+          <div className={`ctr ${sel ? 'sel' : ''}`} style={{ paddingLeft: 8 + depth * 20 }}
+               onClick={() => { onChg('alloc_category_node', id); onChg('alloc_category', n.name); }}>
+            <span className="ctw" onClick={e => { e.stopPropagation(); setAllocTreeOpen(p => ({ ...p, [id]: !open })); }}>
+              {kids.length ? (open ? '▾' : '▸') : ''}
+            </span>
+            <span className="ctn">{n.name}</span>
+            <span className="ctc">{n.product_count || 0}</span>
+            {sel && <span className="cts">✓</span>}
+          </div>
+          {kids.length > 0 && open && renderNodes(kids, depth + 1)}
+        </div>
+      );
+    });
+
+    return (
+      <div className="te">
+        <h4>What {isGroup ? 'joiners' : (o.name || 'this creator')} can sell</h4>
+        <div className="sh">Products from your store. Independent of any offer — leave the offer empty and they still sell, at full price, earning commission.</div>
+
+        <div className="tog">
+          {['store', 'category', 'products'].map(s => (
+            <button key={s} className={scope === s ? 'act' : ''} onClick={() => onChg('alloc_scope', s)}>
+              {s === 'store' ? 'Whole store' : s === 'category' ? 'Category' : 'Products'}
+            </button>
+          ))}
+        </div>
+
+        {scope === 'store' && (
+          <div className="alloc-hint">Every published product. Anything you publish later is added automatically.</div>
+        )}
+
+        {scope === 'category' && (
+          categoryTree.length > 0 ? (
+            <>
+              <div className="cat-tree">{renderNodes(categoryTree, 0)}</div>
+              <div className="alloc-hint">
+                Pick any level — choosing a parent includes everything beneath it, and new products added there later come along too.
+                {o.alloc_category ? <> Selected: <b>{o.alloc_category}</b>.</> : <> <b>Nothing selected yet.</b></>}
+              </div>
+            </>
+          ) : (
+            // No taxonomy for this brand — fall back to the flat section list, which
+            // is what the server accepts as the legacy category label.
+            <>
+              <select className="inp" style={{ marginTop: 8 }} value={o.alloc_category || ''}
+                      onChange={e => { onChg('alloc_category', e.target.value); onChg('alloc_category_node', ''); }}>
+                <option value="">Pick a section</option>
+                {brandSections.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <div className="alloc-hint">Your catalogue has no category tree yet, so sections are used instead.</div>
+            </>
+          )
+        )}
+
+        {scope === 'products' && (
+          <>
+            {(o.alloc_products || []).length > 0 && (
+              <div className="alloc-list">
+                {(o.alloc_products || []).map(sel => {
+                  // Hydrating a saved draft only restores ids, and the catalogue loads
+                  // asynchronously — so resolve against `products` at render time
+                  // rather than trusting whatever was stored. Otherwise reopening a
+                  // draft can show "Product ₹0" purely because of load order.
+                  const p = products.find(x => x.id === sel.id) || sel;
+                  return (
+                    <div key={p.id} className="alr">
+                      <div className="ali">{p.image_url ? <img src={p.image_url} alt={p.name} onError={e => { e.currentTarget.style.display = 'none'; }} /> : '📦'}</div>
+                      <div className="alb">
+                        <div className="aln">{p.name || 'Product'}</div>
+                        <div className="alm">{p.category || p.section || ''}{p.sku ? ` · ${p.sku}` : ''}</div>
+                      </div>
+                      <div className="alp">{p.price != null ? `₹${fmtN(p.price)}` : '—'}</div>
+                      <span className="px" onClick={() => onChg('alloc_products', (o.alloc_products || []).filter(x => x.id !== sel.id))}>✕</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button className="spb" style={{ marginTop: 9 }}
+                    onClick={() => openModal({ si, ii, field: 'alloc_products', currentSel: o.alloc_products || [], multi: true, isGroup })}>
+              + {(o.alloc_products || []).length > 0 ? 'Add more products' : 'Select products'}
+            </button>
+            <div className="alloc-hint">A fixed list — products you publish later are <b>not</b> added automatically.</div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   // ─── Offer config sub-form (shared between handpick + open_group) ──────────
   const renderOfferConfig = (o, isGroup) => {
     if (!o.offer_type) return <div style={{ fontSize: 11.5, color: 'var(--muted-2)', textAlign: 'center', padding: 14, background: 'var(--bg)', borderRadius: 10 }}>Pick an offer type above to configure</div>;
@@ -2169,10 +2336,17 @@ function NewCampaignPageInner() {
             </div>
           </div>
 
+          {/* collab-part4 §4.1 — NO allocation control for open groups, deliberately.
+              The publish-time materialisation of joiners inserts only
+              (set_id, influencer_id, status, influencer_budget, offer_expires_at) —
+              no offer, no commission, and nowhere to put an allocation. A control here
+              would silently do nothing, which is the fault this contract keeps finding.
+              Open-group joiners are recorded as a follow-up in lock.json; handpick
+              creators get the control below. */}
           {needsOffer(cur.goal) && (
             <div className="te">
-              <h4>Offer for the audience</h4>
-              <div className="sh">What followers get when they use the coupon.</div>
+              <h4>Offer for the audience <span style={{ fontWeight: 600, color: 'var(--muted-2)', fontSize: 11 }}>— optional</span></h4>
+              <div className="sh">What followers get when they use the coupon. Leave it empty to sell at full price on commission alone.</div>
               <div className="oc-types">
                 {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${g.offer_type === ot ? 'sel' : ''}`} onClick={() => onGroupChg('offer_type', ot)}>{ot}</div>)}
               </div>
@@ -2292,10 +2466,16 @@ function NewCampaignPageInner() {
               </div>
             </div>
 
+            {/* collab-part4 §4.1 — allocation first, and NOT gated on an offer
+                existing: what this creator may sell is a separate question from
+                whether a discount exists. Sales/hybrid only — an engagement creator
+                is paid to post, not to sell. */}
+            {needsOffer(cur.goal) && renderAllocation(inf, false)}
+
             {(needsOffer(cur.goal) || cur.goal === 'engagement') && (
               <div className="te">
-                <h4>{cur.goal === 'engagement' ? `Offer for ${inf.name || inf.handle} to promote (optional)` : `Offer for ${inf.name || inf.handle}'s audience`}</h4>
-                <div className="sh">{cur.goal === 'engagement' ? 'Promotional only — no commission, no coupon. Pick a saved offer for them to feature; followers buy it as a store deal.' : 'What their followers get when they use the coupon.'}</div>
+                <h4>{cur.goal === 'engagement' ? `Offer for ${inf.name || inf.handle} to promote (optional)` : `Offer for ${inf.name || inf.handle}'s audience — optional`}</h4>
+                <div className="sh">{cur.goal === 'engagement' ? 'Promotional only — no commission, no coupon. Pick a saved offer for them to feature; followers buy it as a store deal.' : 'What their followers get when they use the coupon. Leave it empty and they sell at full price, still earning commission.'}</div>
                 {cur.goal === 'engagement' ? (
                   /* Engagement = promotional: pick ANY number of saved offers to feature. */
                   libOffers.length > 0 ? (

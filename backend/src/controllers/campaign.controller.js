@@ -868,6 +868,75 @@ async function resolveOfferAttachment({ brandId, goal, brand_offer_id, offer_typ
   return { effType, effConfig, brandOfferId, allocation };
 }
 
+/**
+ * collab-part4 §4.1 — validate + normalise the ALLOCATION a brand is giving a
+ * creator: what they may SELL, independent of any offer.
+ *
+ *   store    → every published product; new ones auto-join
+ *   category → that node's subtree (or a legacy section label); new ones auto-join
+ *   products → a fixed list of this brand's products; nothing auto-joins
+ *
+ * Returns null when nothing was sent, which leaves the row on the transitional
+ * legacy fallback (derive from the offer) rather than silently clearing an
+ * existing allocation.
+ */
+const VALID_ALLOC_SCOPES = ['store', 'category', 'products'];
+
+async function resolveAllocation({ brandId, alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids }) {
+  if (alloc_scope == null || alloc_scope === '') return null;
+
+  const scope = String(alloc_scope).trim().toLowerCase();
+  if (!VALID_ALLOC_SCOPES.includes(scope)) {
+    throw new AppError('VALIDATION_ERROR', `alloc_scope must be one of: ${VALID_ALLOC_SCOPES.join(', ')}`, 422, 'alloc_scope');
+  }
+
+  if (scope === 'store') {
+    return { scope, node_id: null, category: null, product_ids: null };
+  }
+
+  if (scope === 'category') {
+    // A node id is preferred (subtree-aware); a bare section label is the legacy
+    // fallback for brands with no taxonomy. One of the two is required, otherwise
+    // the allocation would resolve to nothing and the creator would silently have
+    // an empty store.
+    if (!alloc_category_node_id && !alloc_category) {
+      throw new AppError('VALIDATION_ERROR', 'alloc_category_node_id or alloc_category is required when alloc_scope is "category"', 422, 'alloc_category_node_id');
+    }
+    if (alloc_category_node_id) {
+      const { rows } = await db.query(`SELECT id, name FROM category_nodes WHERE id = $1`, [alloc_category_node_id]);
+      if (!rows[0]) throw new AppError('VALIDATION_ERROR', 'alloc_category_node_id is not a known category', 422, 'alloc_category_node_id');
+      return { scope, node_id: rows[0].id, category: alloc_category || rows[0].name, product_ids: null };
+    }
+    return { scope, node_id: null, category: String(alloc_category), product_ids: null };
+  }
+
+  // products — must be a non-empty list, and every product must be this brand's
+  // and published. Same rule as offers (§1.1): never allocate something no
+  // customer can see.
+  const ids = Array.isArray(alloc_product_ids) ? [...new Set(alloc_product_ids.filter(Boolean))] : [];
+  if (ids.length === 0) {
+    throw new AppError('VALIDATION_ERROR', 'alloc_product_ids must contain at least one product when alloc_scope is "products"', 422, 'alloc_product_ids');
+  }
+  const { rows } = await db.query(
+    `SELECT id, name, pushed_to_store FROM brand_products WHERE id = ANY($1::uuid[]) AND brand_id = $2`,
+    [ids, brandId]
+  );
+  const owned = new Map(rows.map(r => [r.id, r]));
+  const foreign = ids.find(id => !owned.has(id));
+  if (foreign) {
+    throw new AppError('VALIDATION_ERROR', 'one or more allocated products do not belong to your catalogue', 422, 'alloc_product_ids');
+  }
+  const unpublished = ids.map(id => owned.get(id)).filter(p => p.pushed_to_store === false);
+  if (unpublished.length > 0) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `cannot allocate products that are not published to your store: ${unpublished.map(p => p.name || p.id).join(', ')}`,
+      422, 'alloc_product_ids'
+    );
+  }
+  return { scope, node_id: null, category: null, product_ids: ids };
+}
+
 // Offer Engine: validate the engagement "promoted offers" multi-select — every id
 // must belong to this brand and not be archived. Returns a de-duped uuid[] or null.
 async function validatePromotedOffers(brandId, ids) {
@@ -907,11 +976,21 @@ const invite = asyncHandler(async (req, res) => {
     physical_delivery,
     delivery_address,
     influencer_budget,
+    // collab-part4 §4.1 — what this creator MAY SELL, independent of any offer.
+    alloc_scope,
+    alloc_category_node_id,
+    alloc_category,
+    alloc_product_ids,
+    offer_valid_until,
   } = req.body;
 
   if (!influencer_id) {
     throw new AppError('VALIDATION_ERROR', 'influencer_id is required', 422, 'influencer_id');
   }
+
+  const alloc = await resolveAllocation({
+    brandId: brand.id, alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
+  });
 
   const goal = set.goal;
 
@@ -930,8 +1009,19 @@ const invite = asyncHandler(async (req, res) => {
     if (customCouponCode) throw new AppError('VALIDATION_ERROR', 'coupon_code must not be set for engagement (promotional) offers', 422, 'coupon_code');
     if (commission_pct) throw new AppError('VALIDATION_ERROR', 'commission_pct must not be set for engagement (promotional) offers', 422, 'commission_pct');
   }
-  if ((goal === 'conversion' || goal === 'hybrid') && !effType) {
-    throw new AppError('VALIDATION_ERROR', 'offer_type is required for conversion and hybrid goals', 422, 'offer_type');
+  // collab-part4 §4.2 — the EIGHTH gate, and the one that mattered most: this
+  // refused to CREATE a conversion/hybrid collaboration without an offer. The six
+  // read gates were widened earlier, which made full-price selling readable but
+  // still impossible to set up — the API rejected the invite before the row existed.
+  //
+  // A creator needs SOMETHING to sell: an allocation, or an offer to derive one
+  // from (legacy). Neither means there is nothing to sell, which is still refused.
+  if ((goal === 'conversion' || goal === 'hybrid') && !effType && !alloc) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'conversion and hybrid collaborations need either an allocation (alloc_scope) or an offer',
+      422, 'alloc_scope'
+    );
   }
 
   // Verify influencer exists
@@ -1007,8 +1097,13 @@ const invite = asyncHandler(async (req, res) => {
        (set_id, influencer_id, status, agreed_fee, posting_date, offer_expires_at,
         offer_type, offer_config_json, commission_pct, coupon_code,
         physical_delivery, delivery_address, influencer_budget, submission_deadline,
-        brand_offer_id, allocation, promoted_brand_offer_ids)
-     VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        brand_offer_id, allocation, promoted_brand_offer_ids,
+        -- collab-part4 §4.1/§4.4 — allocation (what they may sell) + the offer's own
+        -- deadline. NOT offer_expires_at above, which is the invitation clock.
+        alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
+        offer_valid_until)
+     VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+             $17, $18, $19, $20::jsonb, $21)
      RETURNING *`,
     [
       set.id,
@@ -1027,6 +1122,11 @@ const invite = asyncHandler(async (req, res) => {
       brandOfferId,
       finalAllocation,
       promotedIds,
+      alloc ? alloc.scope : null,
+      alloc ? alloc.node_id : null,
+      alloc ? alloc.category : null,
+      alloc && alloc.product_ids ? JSON.stringify(alloc.product_ids) : null,
+      offer_valid_until || null,
     ]
   );
 
@@ -1080,7 +1180,21 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     delivery_address,
     influencer_budget,
     coupon_code,
+    // collab-part4 §4.1/§4.4
+    alloc_scope,
+    alloc_category_node_id,
+    alloc_category,
+    alloc_product_ids,
+    offer_valid_until,
   } = req.body;
+
+  // An omitted alloc_scope leaves the existing allocation ALONE rather than
+  // clearing it — this endpoint is also called for unrelated edits (posting date,
+  // budget), and wiping what a creator may sell as a side effect of changing their
+  // fee would be silent data loss.
+  const alloc = await resolveAllocation({
+    brandId: brand.id, alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
+  });
 
   // Offer Engine (C): resolve library-offer attachment (snapshot) or inline offer.
   const { effType, effConfig, brandOfferId, allocation } = await resolveOfferAttachment({
@@ -1125,7 +1239,13 @@ const updateInfluencer = asyncHandler(async (req, res) => {
        offer_expires_at = $10,
        brand_offer_id = $11,
        allocation = $12,
-       promoted_brand_offer_ids = $13
+       promoted_brand_offer_ids = $13,
+       -- COALESCE so an omitted allocation keeps the existing one (see above).
+       alloc_scope            = COALESCE($14, alloc_scope),
+       alloc_category_node_id = CASE WHEN $14::text IS NULL THEN alloc_category_node_id ELSE $15 END,
+       alloc_category         = CASE WHEN $14::text IS NULL THEN alloc_category         ELSE $16 END,
+       alloc_product_ids      = CASE WHEN $14::text IS NULL THEN alloc_product_ids      ELSE $17::jsonb END,
+       offer_valid_until      = CASE WHEN $18::text IS NULL THEN offer_valid_until      ELSE $18::timestamptz END
      WHERE id = $1
      RETURNING *`,
     [
@@ -1142,6 +1262,11 @@ const updateInfluencer = asyncHandler(async (req, res) => {
       brandOfferId,
       finalAllocation,
       promotedIds,
+      alloc ? alloc.scope : null,
+      alloc ? alloc.node_id : null,
+      alloc ? alloc.category : null,
+      alloc && alloc.product_ids ? JSON.stringify(alloc.product_ids) : null,
+      offer_valid_until != null ? offer_valid_until : null,
     ]
   );
 
@@ -2337,4 +2462,9 @@ module.exports = {
   createDateChangeRequest,
   listDateChangeRequests,
   decideDateChangeRequest,
+  // collab-part4 §4.1 — exported for test. Validation of what a creator may sell
+  // sits on the money-adjacent path (it decides what can be bought through them),
+  // so it is covered directly rather than only through the HTTP handlers.
+  resolveAllocation,
+  VALID_ALLOC_SCOPES,
 };

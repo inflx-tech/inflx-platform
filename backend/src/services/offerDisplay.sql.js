@@ -69,6 +69,57 @@ const OFFER_DISC_PCT = `(CASE WHEN bo.offer_config_json->>'sub_type' = 'pct' THE
 const OFFER_BEST_PCT = `(SELECT MAX(${OFFER_DISC_PCT}) FROM brand_offers bo
       WHERE ${OFFER_LIVE_GATE} AND bo.offer_type = 'discount' AND ${OFFER_APPLIES})`;
 
+/**
+ * Cart-shaped offers (volume / bundle / bogo / free_gift) applicable to a product.
+ * collab-part4 §4.3 display side.
+ *
+ * These need their OWN applicability test. OFFER_APPLIES models the discount scope
+ * (store / category / products array), and for a BOGO or free-gift the products live
+ * under different keys — so OFFER_EFF_SCOPE would find no products array, fall back to
+ * 'store', and badge the offer across the ENTIRE catalogue. Precise per-shape matching
+ * instead. Keys mirror offerConfig.validator.collectProductIds, including the newer
+ * same-product `product` shape for BOGO.
+ */
+const OFFER_CART_APPLIES = `(
+      (bo.offer_type = 'volume' AND ${OFFER_APPLIES})
+      OR (bo.offer_type = 'bundle' AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(COALESCE(bo.offer_config_json->'products', '[]'::jsonb)) e
+             WHERE e->>'id' = bp.id::text))
+      OR (bo.offer_type = 'bogo' AND (
+               bo.offer_config_json->'product'->>'id'     = bp.id::text
+            OR bo.offer_config_json->'buy_product'->>'id' = bp.id::text
+            OR bo.offer_config_json->'get_product'->>'id' = bp.id::text))
+      OR (bo.offer_type = 'free_gift' AND EXISTS (
+            SELECT 1 FROM jsonb_array_elements(COALESCE(bo.offer_config_json->'offers', '[]'::jsonb)) o
+             WHERE o->'main'->>'id' = bp.id::text OR o->'gift'->>'id' = bp.id::text)))`;
+
+/**
+ * Scalar subquery: the KINDS of cart-shaped offer available on this product, as a
+ * text[]. A tile cannot show these as a price — there is no cart to measure a
+ * threshold against or to assemble a bundle from — so they surface as an availability
+ * badge and the real value is computed at checkout by offerResolution.
+ */
+const OFFER_CART_KINDS = `(SELECT array_agg(DISTINCT bo.offer_type::text) FROM brand_offers bo
+      WHERE ${OFFER_LIVE_GATE} AND bo.offer_type <> 'discount' AND ${OFFER_CART_APPLIES})`;
+
+const CART_OFFER_LABELS = {
+  volume:    'Volume deal',
+  bundle:    'Bundle deal',
+  bogo:      'Buy 1 get 1',
+  free_gift: 'Free gift',
+};
+
+/**
+ * Map the raw kinds array → stable, ordered badge labels for a card.
+ * Unknown kinds are dropped rather than shown raw: a badge reading "prebook" to a
+ * shopper is worse than no badge.
+ */
+function cartOfferBadges(kinds) {
+  if (!Array.isArray(kinds) || kinds.length === 0) return [];
+  const order = ['bundle', 'bogo', 'free_gift', 'volume'];
+  return order.filter(k => kinds.includes(k)).map(k => CART_OFFER_LABELS[k]);
+}
+
 /** Map a raw offer_pct column → { discount_value, offer_price } for a card. */
 function offerFieldsFromPct(rawPct, price) {
   const pct = rawPct != null ? Math.round(Number(rawPct)) : null;
@@ -84,4 +135,8 @@ module.exports = {
   OFFER_DISC_PCT,
   OFFER_BEST_PCT,
   offerFieldsFromPct,
+  OFFER_CART_APPLIES,
+  OFFER_CART_KINDS,
+  CART_OFFER_LABELS,
+  cartOfferBadges,
 };

@@ -5,12 +5,12 @@
   "approved": true,
   "approved_by": "founder · 2026-08-11 chat (\"ok this is fine, pls write the contract\") — spec locked after all three §5 questions were resolved: 5.1 answered (only published offers apply to creators), 5.2 and 5.3 dissolved by adopting best-single-offer-per-checkout instead of splitting the cart",
   "approved_at": "2026-08-11",
-  "preview_reviewed": false,
+  "preview_reviewed": true,
   "impact_reviewed": true,
-  "mockup_locked": false,
-  "mockup_locked_by": null,
-  "mockup_locked_at": null,
-  "notes": "Part 4 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md). Three independent axes: allocation (what the creator may sell) · offers (what the customer saves) · commission (what the creator earns). Five pieces: (4.1) allocation owns its own scope — store/category/products, store+category resolve live so new published products auto-join per founder's explicit choice; (4.2) remove the 7 gates blocking full-price selling, incl. validateTracking which today stops a commission-only sale from even being recorded; (4.3) global published offers reach creators for the first time, and the BEST SINGLE OFFER wins per checkout — candidates scored against the whole cart by the existing untouched engine, never combined, never stacked; (4.4) offers get their own expiry, and library offers' existing dates start being honoured on the coupon path; (4.5) retire the dead set-level offer table from the read paths (49 refs, 14 files, ZERO rows in prod so provably inert). SPEC IS LOCKED BUT THE WIZARD SCOPE-CHOOSER MOCKUP IS NOT — mockup_locked=false, so no Packages/** commit may land until it is made, reviewed and locked (gov-check Rule 3). Backend work carries no such gate and proceeds first.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-08-11 chat (\"pls lock the mockup and complete remaining parts in part 4\") — locked after two rounds of feedback: category picker became a real expandable tree with counts at every level (was a flat select of breadcrumb strings), and the SELECTED products list gained image/title/price (was name-only chips). Founder also corrected an over-scoped first draft: the product PICKER already had search + image + title + price, which that draft had understated.",
+  "mockup_locked_at": "2026-08-11",
+  "notes": "Part 4 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md). Three independent axes: allocation (what the creator may sell) · offers (what the customer saves) · commission (what the creator earns). Five pieces: (4.1) allocation owns its own scope — store/category/products, store+category resolve live so new published products auto-join per founder's explicit choice; (4.2) remove the 7 gates blocking full-price selling, incl. validateTracking which today stops a commission-only sale from even being recorded; (4.3) global published offers reach creators for the first time, and the BEST SINGLE OFFER wins per checkout — candidates scored against the whole cart by the existing untouched engine, never combined, never stacked; (4.4) offers get their own expiry, and library offers' existing dates start being honoured on the coupon path; (4.5) retire the dead set-level offer table from the read paths (49 refs, 14 files, ZERO rows in prod so provably inert). Spec locked 2026-08-11; wizard scope-chooser mockup locked the same day after two rounds of founder feedback, so Packages/** work is unblocked.",
   "design_history": "The original §4.3 resolved offers PER PRODUCT, splitting one cart into groups each governed by a different offer. Founder flagged the resulting confusion when volume/bundle/BOGO mix with simple discounts. Root cause was the cart splitting, not the model: cart-shaped offers need a threshold to measure or several specific products present, and splitting destroys that. Replaced with best-single-offer-per-checkout, which dissolves both open questions and fixes a case the old design got wrong — a creator-specific 25%-off-kurtas would have broken a global 3-item bundle and left the customer Rs 851 WORSE OFF because the creator had a special offer. Chosen because resolveOfferDiscount is already a pure score-one-offer-against-one-cart function returning zero-with-a-reason rather than throwing, so this is a loop plus a max() with the money maths untouched.",
   "progress": {
     "as_of": "2026-08-11",
@@ -18,14 +18,17 @@
       "§4.1 backend — allocation owns its scope. Migration 148 (additive DDL) + run-148.js backfill that ASSERTS W6 per row using the real resolver. resolveAllocatedProductIds reads the allocation; all 5 call sites updated (storefront, feed, coupon resolve, creator campaign-products, section rules). Transitional legacy fallback added — see below.",
       "§4.2 — six gates widened to accept an allocation (NOT removed: a creator with neither allocation nor offer stays hidden per W8). Includes validateTracking, the money path, where a commission-only sale previously could not even be recorded.",
       "§4.4 enforcement — offer_valid_until honoured; past it the discount stops and the sale prices at full price while allocation/storefront/commission continue.",
-      "§4.3 — offerResolution.service.js: published global offers now reach creators for the first time, and the best single offer wins against the whole cart. Holds NO discount maths — it scores each candidate with the same untouched offer.service engine, so the risk is confined to WHICH offer is chosen. Wired into BOTH checkout paths (computeOfferDiscount and priceOrderForGroup's creator-mediated branch) so the same cart cannot get different discounts by route. Ties go to the creator-specific offer. MAX_GLOBAL_CANDIDATES caps and logs rather than degrading silently."
+      "§4.3 — offerResolution.service.js: published global offers now reach creators for the first time, and the best single offer wins against the whole cart. Holds NO discount maths — it scores each candidate with the same untouched offer.service engine, so the risk is confined to WHICH offer is chosen. Wired into BOTH checkout paths (computeOfferDiscount and priceOrderForGroup's creator-mediated branch) so the same cart cannot get different discounts by route. Ties go to the creator-specific offer. MAX_GLOBAL_CANDIDATES caps and logs rather than degrading silently.",
+      "Wizard — allocation control wired into the terms sub-step, OUTSIDE the offer gate and ordered before it. Category picker upgraded from a flat select of breadcrumb strings to a real expandable tree with counts at every level; selected-products list upgraded from name-only chips to image/title/category/price rows. Payload + hydration round-trip all three scope shapes. Open-group control deliberately ABSENT (see below).",
+      "Cart-shaped offer badges — volume/bundle/BOGO/free-gift now surface on a product card as availability badges (they cannot be a % on one product: no cart to measure a threshold against or assemble a bundle from). Each shape matched on its OWN product keys, because the discount scope model would find no products array for a BOGO, default to store, and badge it across the entire catalogue.",
+      "Offer expiry display side — an expired offer now stops being ADVERTISED, not just applied. Applied to all 7 payload surfaces; both feeding queries select offer_valid_until, and the same rule is used at checkout so the two agree."
     ],
     "done_display": "§4.3 display side — closed the asymmetry §4.3 opened, where a product could be CHARGED a published global discount at checkout while its tile in the creator's store advertised full price. Reused the SAME evaluator the discovery shelves/wishlist/product cards already use rather than writing a second one. That required hoisting the fragments out of sectionRules.service into a new dependency-free offerDisplay.sql module: follower.service cannot require sectionRules without closing the cycle sectionRules → sectionLibrary → follower.service, which would hand sectionLibrary a half-initialised follower.service. sectionRules re-exports the names so existing importers are untouched, and D1 asserts sharing BY IDENTITY so a future copy-paste fails. Only simple discounts reach a tile — cart-shaped mechanics have no cart to evaluate and would be a lie on a single product.",
     "remaining": [
-      "§4.5 — SPLIT OUT. The inert claim was wrong for the 8 INNER JOIN references (an inner join on an empty table returns nothing, not NULLs), so removing them changes what followers see. Carved to features/backend-defect-dead-offer-join, sequenced after Part 4 deploys. The 8 genuinely-inert LEFT JOINs ride with it rather than being done twice.",
-      "Cart-shaped offers as an availability badge on a tile (volume/bundle/BOGO) — currently they simply do not appear on a card",
-      "Wizard scope chooser — lift the existing scopeToggle up one level. BLOCKED on mockup_locked (gov-check Rule 3).",
-      "§4.4 display side — expiry on the storefront/coupon preview, not only at checkout"
+      "Open-group joiners cannot carry an allocation — publish-time materialisation inserts only (set_id, influencer_id, status, influencer_budget, offer_expires_at). Also a PRE-EXISTING defect: joiners get no offer AND no commission_pct, so an open-group conversion set does not really work today. renderAllocation already accepts isGroup for when the backend can carry it.",
+      "Browser verification of the allocation control — source-verified, not browser-verified (it sits behind goal→basics→fork→creator-pick). Owed on the founder walkthrough.",
+      "The brand's OWN store product list still computes no offer fields (resolveBusinessStore) — pre-existing, separate surface, may already be served by the shelves path.",
+      "Delete the transitional legacy fallback once no row has alloc_scope IS NULL (prod is already at 0, but new wizard-created rows now set it, so this can go after the next deploy is verified)."
     ],
     "defect_found_post_deploy": "The §4.3 display fields were COMPUTED AND THEN DISCARDED. Each creator-storefront payload builds products through an explicit field whitelist immediately after the map that computes them, so offerFieldsFromPct ran and its output never reached the client: the tile advertised full price while checkout charged the published global discount — exactly the asymmetry §4.3 existed to close. Found only by probing the live prod storefront after deploying, because test D6 asserted the SQL and the import but never the payload, so it passed while the feature did nothing. D7 now asserts the whole chain by counting both sides — wherever the offer fields are computed they must also be passed through. D7 additionally caught that only ONE of the two creator-storefront projections had been fixed (the two whitelists have different field lists, so replace_all matched one). Lesson: asserting that a value is computed is not asserting that it is delivered.",
     "followup_brand_own_store": "A third product projection exists in resolveBusinessStore — the BRAND's own store — which never computed offer fields at all, so its product list carries no discount badge. Pre-existing, a different surface, and outside Part 4's scope; left alone rather than silently widened. Worth checking whether brand store pages get their discounts from the shelves path instead, before adding anything here.",
@@ -34,19 +37,28 @@
       "Allocation product-scope also filters on live listing state, so a product-scoped creator cannot keep selling something the brand unpublished. Not in the original spec text."
     ],
     "transitional_debt": "resolveAllocatedProductIds falls back to the OFFER's scope when alloc_scope IS NULL, logging each time. Not part of the model — it exists so the backend can deploy without blanking the 19 live creator storefronts, and so rows created between backfill and deploy still resolve. Delete it (and the offer_type leg in the six widened gates, and the L1-L3 tests) once `SELECT count(*) FROM campaign_influencers WHERE alloc_scope IS NULL AND offer_type IS NOT NULL` returns 0.",
-    "qa": "186 passed · gate 0 · STATE=GREEN (144 baseline + 42 new: 11 allocation-scope, 10 full-price-selling, 11 offer-resolution, 10 offer-display-shared). NOTE: the main QA lane does not exercise these SQL paths, so suite-green alone is a WEAK signal here — the 32 new tests are the real coverage.",
+    "qa": "222 passed · gate 0 · STATE=GREEN (144 baseline + 78 new across 6 specs: allocation-scope, full-price-selling, offer-resolution, offer-display-shared, allocation-write-path, wizard-allocation-wiring, cart-offer-badges-and-expiry). The main QA lane does not exercise these SQL paths, so suite-green alone is a WEAK signal — the new specs are the real coverage.",
     "qa_failure_carved": "One RED during §4.3: full-price-selling F5 asserted that transaction.controller referenced trackingRecord.offer_valid_until. §4.3 moved offer selection — including the expiry check — into offerResolution.service, so the assertion broke on a refactor while the behaviour stayed intact and better covered (offer-resolution E1/E2/E3 test it directly). Classified as ASSERTION DRIFT, not a defect. Fixed by pinning the invariant instead of the location: the money path must delegate offer choice, and whoever chooses must key expiry off offer_valid_until and never the invitation clock. Assertion strengthened, not weakened or removed.",
     "prod_untouched": "Migration 148 has NOT been run against production. Nothing committed, nothing deployed."
   },
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "released": false,
     "released_by": null,
     "released_at": null,
     "deploy_class": "production-impacting",
-    "deploy_targets": ["render:backend", "vercel:brand-web"],
+    "deploy_targets": [
+      "render:backend",
+      "vercel:brand-web"
+    ],
     "maestro_green": "n/a unless Packages/Mobile/src/** is touched — not currently planned",
     "qa_runs_required": 2,
-    "qa_runs_note": "Once after 4.1/4.2/4.4/4.5, again after 4.3, so any pricing regression is attributable to one known change."
+    "qa_runs_note": "Once after 4.1/4.2/4.4/4.5, again after 4.3, so any pricing regression is attributable to one known change.",
+    "qa_evidence": {
+      "ran_at": "2026-08-11T09:17:54Z",
+      "result": "222/222 passed · gate 0 · STATE=GREEN",
+      "report": "qa/reports/2026-08-11T09-17-54-803Z/QA-REPORT.md",
+      "first_run_clean": true
+    }
   }
 }

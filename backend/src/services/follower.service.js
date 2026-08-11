@@ -22,7 +22,9 @@ const categoryTaxonomy = require('./categoryTaxonomy.service');
 // the discovery shelves and wishlist. Lives in its own dependency-free module so
 // requiring it here cannot close the sectionRules → sectionLibrary → follower.service
 // cycle.
-const { OFFER_BEST_PCT, offerFieldsFromPct } = require('./offerDisplay.sql');
+const {
+  OFFER_BEST_PCT, offerFieldsFromPct, OFFER_CART_KINDS, cartOfferBadges,
+} = require('./offerDisplay.sql');
 
 // ── Open/closed status helper ────────────────────────────────────────────────
 // hours_json shape (per WeeklyScheduleEditor):
@@ -266,6 +268,32 @@ function allocatedProductIds(ciCfg, setProductsJson) {
  * Build the allocation object from any row that selected the alloc_* columns.
  * One place, so every call site agrees on the shape.
  */
+/**
+ * collab-part4 §4.4 display side — has this creator's campaign-level offer passed its
+ * own deadline?
+ *
+ * Checkout already refuses to apply an expired offer. Without this the storefront
+ * would keep ADVERTISING it, so a follower would see a discount that silently
+ * vanishes at payment — the same advertise-vs-charge mismatch §4.3 had to fix in the
+ * other direction.
+ *
+ * offer_valid_until, never offer_expires_at: the latter is the invitation-acceptance
+ * clock driven by offer-expiry.job.
+ */
+function offerExpired(r, now = Date.now()) {
+  return !!r?.offer_valid_until && new Date(r.offer_valid_until).getTime() < now;
+}
+
+/** Offer-level display fields, blanked once the offer's own deadline has passed. */
+function offerDisplayFields(r) {
+  const expired = offerExpired(r);
+  return {
+    offer_type:     expired ? null : r.offer_type,
+    discount_value: expired ? null : r.discount_value,
+    offer_expired:  expired,
+  };
+}
+
 function allocFromRow(r) {
   if (!r) return null;
   return {
@@ -389,7 +417,10 @@ async function resolveStore(handle) {
         // has no cart, so volume/bundle/BOGO cannot be expressed as a % here.
         `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag,
                 bp.description, bp.variants_json,
-                ${OFFER_BEST_PCT} AS offer_pct
+                ${OFFER_BEST_PCT} AS offer_pct,
+                -- collab-part4 §4.3 — cart-shaped offers (volume/bundle/bogo/gift)
+                -- cannot be a price on a tile, so they surface as availability badges.
+                ${OFFER_CART_KINDS} AS cart_offer_kinds
          FROM brand_products bp
          WHERE bp.id = ANY($1) AND bp.is_active = true AND bp.pushed_to_store = true
          ORDER BY bp.section, bp.name`,
@@ -398,9 +429,10 @@ async function resolveStore(handle) {
       // Map the raw pct into the same { discount_value, offer_price } shape every
       // other product card in the app uses, so a creator's tile and a shelf tile
       // advertise a discount identically.
-      products = rows.map(({ offer_pct, ...p }) => ({
+      products = rows.map(({ offer_pct, cart_offer_kinds, ...p }) => ({
         ...p,
         ...offerFieldsFromPct(offer_pct, p.price != null ? parseFloat(p.price) : null),
+        cart_offer_badges: cartOfferBadges(cart_offer_kinds),
       }));
     }
     const hasAssignedProducts = allocatedIds.length > 0;
@@ -414,8 +446,9 @@ async function resolveStore(handle) {
       brand_id: r.brand_id,
       brand_category: r.brand_category,
       brand_city: r.brand_city,
-      offer_type: r.offer_type,
-      discount_value: r.discount_value,
+      // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+      // surface advertises a discount checkout will refuse to apply.
+      ...offerDisplayFields(r),
       availing_modes: r.availing_modes || ['pay_at_store', 'prebook'],
       coupon_code: r.coupon_code,
       commission_pct: r.commission_pct,
@@ -439,6 +472,8 @@ async function resolveStore(handle) {
         // asymmetry §4.3 was supposed to close.
         discount_value: p.discount_value ?? null,
         offer_price: p.offer_price ?? null,
+        // Availability only — the real value is computed at checkout by offerResolution.
+        cart_offer_badges: p.cart_offer_badges || [],
         influencer_note: noteMap[`${p.id}_${r.campaign_id}`] || null,
       })),
     });
@@ -569,8 +604,9 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
       campaign_influencer_id: r.campaign_influencer_id,
       set_id: r.set_id,
       campaign_id: r.campaign_id,
-      offer_type: r.offer_type,
-      discount_value: r.discount_value,
+      // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+      // surface advertises a discount checkout will refuse to apply.
+      ...offerDisplayFields(r),
       availing_modes: r.availing_modes,
       coupon_code: r.coupon_code,
       commission_pct: r.commission_pct,
@@ -755,8 +791,9 @@ async function resolveCategoryStore(categoryKey, city) {
     brand_category: r.brand_category,
     brand_city: r.brand_city,
     offer_id: r.offer_id,
-    offer_type: r.offer_type,
-    discount_value: r.discount_value,
+    // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+    // surface advertises a discount checkout will refuse to apply.
+    ...offerDisplayFields(r),
     availing_modes: r.availing_modes,
     coupon_code: r.coupon_code,
     commission_pct: r.commission_pct,
@@ -799,8 +836,9 @@ async function getFeed(followerId, followerCity) {
       brand_category: r.brand_category,
       offer: {
         id: r.offer_id,
-        offer_type: r.offer_type,
-        discount_value: r.discount_value,
+        // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+        // surface advertises a discount checkout will refuse to apply.
+        ...offerDisplayFields(r),
         availing_modes: r.availing_modes,
       },
       coupon_code: r.coupon_code,
@@ -890,8 +928,9 @@ async function getHomeFeed(followerId, followerCity, page = 1, limit = 20) {
         },
         offer: {
           id: r.offer_id,
-          offer_type: r.offer_type,
-          discount_value: r.discount_value,
+          // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+          // surface advertises a discount checkout will refuse to apply.
+          ...offerDisplayFields(r),
           availing_modes: r.availing_modes,
           prebook_advance: r.prebook_advance,
         },
@@ -1048,8 +1087,9 @@ async function getDealsByCategory(category, followerCity, followerId, page = 1, 
       },
       offer: {
         id: r.offer_id,
-        offer_type: r.offer_type,
-        discount_value: r.discount_value,
+        // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+        // surface advertises a discount checkout will refuse to apply.
+        ...offerDisplayFields(r),
         availing_modes: r.availing_modes,
         prebook_advance: r.prebook_advance,
       },
@@ -1164,7 +1204,10 @@ async function getInfluencerStorePreview(influencerId) {
         // has no cart, so volume/bundle/BOGO cannot be expressed as a % here.
         `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag,
                 bp.description, bp.variants_json,
-                ${OFFER_BEST_PCT} AS offer_pct
+                ${OFFER_BEST_PCT} AS offer_pct,
+                -- collab-part4 §4.3 — cart-shaped offers (volume/bundle/bogo/gift)
+                -- cannot be a price on a tile, so they surface as availability badges.
+                ${OFFER_CART_KINDS} AS cart_offer_kinds
          FROM brand_products bp
          WHERE bp.id = ANY($1) AND bp.is_active = true AND bp.pushed_to_store = true
          ORDER BY bp.section, bp.name`,
@@ -1173,9 +1216,10 @@ async function getInfluencerStorePreview(influencerId) {
       // Map the raw pct into the same { discount_value, offer_price } shape every
       // other product card in the app uses, so a creator's tile and a shelf tile
       // advertise a discount identically.
-      products = rows.map(({ offer_pct, ...p }) => ({
+      products = rows.map(({ offer_pct, cart_offer_kinds, ...p }) => ({
         ...p,
         ...offerFieldsFromPct(offer_pct, p.price != null ? parseFloat(p.price) : null),
+        cart_offer_badges: cartOfferBadges(cart_offer_kinds),
       }));
     }
 
@@ -1183,8 +1227,9 @@ async function getInfluencerStorePreview(influencerId) {
       brand_name: r.brand_name,
       brand_id: r.brand_id,
       brand_category: r.brand_category,
-      offer_type: r.offer_type,
-      discount_value: r.discount_value,
+      // collab-part4 §4.4 — blanked once the offer's own deadline passes, so no
+      // surface advertises a discount checkout will refuse to apply.
+      ...offerDisplayFields(r),
       availing_modes: r.availing_modes || ['pay_at_store', 'prebook'],
       coupon_code: r.coupon_code,
       end_date: r.end_date,
@@ -1205,6 +1250,8 @@ async function getInfluencerStorePreview(influencerId) {
         // the global discount.
         discount_value: p.discount_value ?? null,
         offer_price: p.offer_price ?? null,
+        // Availability only — the real value is computed at checkout by offerResolution.
+        cart_offer_badges: p.cart_offer_badges || [],
         influencer_note: noteMap[`${p.id}_${r.campaign_id}`] || null,
         has_note: !!noteMap[`${p.id}_${r.campaign_id}`],
       })),

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part 4 — allocation scope chooser</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--bg2:#F4F4F5;
+  --yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-50:#FFFDEB;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--muted-4:#D4D4D8;
+  --border:#E4E4E7;--border-soft:#F4F4F5;
+  --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;
+  --danger:#E8401A;--danger-pale:#FDEEE9;--danger-text:#B91C1C;
+  --conv:#7E22CE;--conv-pale:#F3E8FF;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--muted-3);font-weight:600}
+.wrap{padding:22px;max-width:1120px;margin:0 auto}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:11px 14px;margin-bottom:16px;line-height:1.55}
+.note.key{background:var(--yellow-50);border:1px solid var(--yellow-pale);color:var(--yellow-text)}
+.note.good{background:var(--success-pale);border:1px solid #A7F3D0;color:var(--success-text)}
+.note.bad{background:var(--danger-pale);border:1px solid #FBCBC4;color:var(--danger-text)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.col h2{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;padding:5px 11px;border-radius:6px;display:inline-block;margin-bottom:11px;font-family:'JetBrains Mono',monospace}
+.col.before h2{background:var(--danger-pale);color:var(--danger-text)}
+.col.after h2{background:var(--success-pale);color:var(--success-text)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:16px;margin-bottom:14px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:4px}
+.sh{font-size:11px;color:var(--muted-2);font-weight:600;margin-bottom:12px}
+.oc-sec{border:1px solid var(--border);border-radius:11px;padding:13px;margin-bottom:11px;background:var(--bg)}
+.oc-sec.hl{border-color:var(--ink);background:var(--yellow-50);box-shadow:0 0 0 3px var(--yellow-pale)}
+h5{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:9px}
+.tog{display:flex;gap:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--white)}
+.tog button{flex:1;border:none;background:var(--white);padding:9px 6px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--muted);border-right:1px solid var(--border)}
+.tog button:last-child{border-right:none}
+.tog button.act{background:var(--ink);color:var(--yellow)}
+.inp{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12px;font-family:inherit;background:var(--white);margin-top:8px}
+.flbl{display:block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{background:var(--white);border:1px solid var(--border);border-radius:999px;padding:5px 10px;font-size:11px;font-weight:650;display:flex;gap:6px;align-items:center}
+.chip b{font-weight:800}
+.chip .x{color:var(--muted-3);font-weight:800;cursor:pointer}
+.addbtn{background:var(--white);border:1px dashed var(--muted-4);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit}
+.hint{font-size:10.5px;color:var(--muted-2);font-weight:600;margin-top:7px;line-height:1.5}
+.pill{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;margin-left:7px;vertical-align:middle}
+.pill.moved{background:var(--success);color:#fff}
+.pill.gone{background:var(--danger);color:#fff}
+.pill.conv{background:var(--conv-pale);color:var(--conv)}
+.sep{height:1px;background:var(--border-soft);margin:16px 0}
+.who{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--yellow);display:grid;place-items:center;font-size:12px;font-weight:800}
+.who .n{font-size:13px;font-weight:800}
+.who .h{font-size:11px;color:var(--muted-2);font-weight:650}
+.strike{opacity:.45}
+/* category tree */
+.tree{border:1px solid var(--border);border-radius:10px;background:var(--white);margin-top:9px;padding:5px;max-height:290px;overflow:auto}
+.tr{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12px}
+.tr:hover{background:var(--bg2)}
+.tr.sel{background:var(--yellow-pale);box-shadow:inset 0 0 0 1px var(--ink)}
+.tr.d1{padding-left:26px}
+.tr.d2{padding-left:46px}
+.tw{width:12px;font-size:9px;color:var(--muted-3);flex:0 0 auto}
+.tn{font-weight:700;flex:1}
+.tr.sel .tn{font-weight:800}
+.tc{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--muted-2);background:var(--bg2);padding:2px 7px;border-radius:999px}
+.tsel{font-size:9.5px;font-weight:800;color:var(--yellow-text);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.4px}
+/* product grid (existing picker) */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:10px}
+.pc{border:1px solid var(--border);border-radius:10px;padding:9px;background:var(--white);cursor:pointer;text-align:center}
+.pc.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--yellow-pale)}
+.pimg{height:52px;display:grid;place-items:center;font-size:24px;background:var(--bg2);border-radius:7px;margin-bottom:7px}
+.pn{font-size:11.5px;font-weight:750;line-height:1.3}
+.pp{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:800;margin-top:3px}
+.pm{font-size:9.5px;color:var(--muted-2);font-weight:650;margin-top:2px}
+/* selected list */
+.sellist{border:1px solid var(--border);border-radius:10px;background:var(--white);overflow:hidden;margin-top:9px}
+.sr{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid var(--border-soft)}
+.sr:last-child{border-bottom:none}
+.simg{width:36px;height:36px;border-radius:8px;background:var(--bg2);display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+.sb{flex:1;min-width:0}
+.sn{font-size:12px;font-weight:750}
+.sm{font-size:10px;color:var(--muted-2);font-weight:650;margin-top:1px}
+.sp{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800}
+.sr .x{color:var(--muted-3);font-weight:800;cursor:pointer;padding-left:4px}
+table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border-soft)}
+th{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2)}
+td.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Part 4 — allocation scope chooser (Step 2, per creator)</h1>
+  <p>A MOVE of the control you already have, not a new design. Step order, step count and goal placement unchanged.</p>
+</div>
+
+<div class="wrap">
+
+  <div class="note key">
+    <b>The whole change in one line:</b> the <code>Whole store / Category / Products</code> toggle already exists — it just lives <i>inside the offer builder</i>, once per offer type. That is the conflation: what a creator may <b>sell</b> is currently decided by the shape of their <b>discount</b>. It moves up one level to sit on the creator, and the offer keeps its own scope for pricing only.
+  </div>
+
+  <div class="cols">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="card">
+        <div class="who"><div class="av">A</div><div><div class="n">Asha Menon</div><div class="h">@ashamenon · Set A <span class="pill conv">conversion</span></div></div></div>
+        <div class="sh">Terms → offer. The scope control is buried per offer type.</div>
+
+        <div class="oc-sec">
+          <h5>Offer — Discount</h5>
+          <label class="flbl">Value</label>
+          <div class="tog"><button class="act">%</button><button>₹</button></div>
+          <input class="inp mono" value="20">
+          <h5 style="margin-top:14px">Applies to</h5>
+          <div class="tog"><button class="act">Whole store</button><button>Category</button><button>Products</button></div>
+          <div class="hint">↑ This single control is doing <b>two unrelated jobs</b>: what the discount applies to, and — because allocation reads it — what Asha is allowed to sell at all.</div>
+        </div>
+
+        <div class="oc-sec strike">
+          <h5>Offer — Volume discount</h5>
+          <h5 style="margin-top:10px">Applies to</h5>
+          <div class="tog"><button class="act">Whole store</button><button>Category</button><button>Products</button></div>
+          <div class="hint">A second copy of the same control, on a different offer type.</div>
+        </div>
+      </div>
+      <div class="note bad">
+        Consequences today: <b>no offer means no products</b>, so Asha cannot sell at full price on commission alone. Editing the discount silently changes what she may sell. And "sell the whole store, discount one category" cannot be expressed at all.
+      </div>
+    </div>
+
+    <div class="col after">
+      <h2>After</h2>
+      <div class="card">
+        <div class="who"><div class="av">A</div><div><div class="n">Asha Menon</div><div class="h">@ashamenon · Set A <span class="pill conv">conversion</span></div></div></div>
+        <div class="sh">Two separate questions, asked separately.</div>
+
+        <div class="oc-sec hl">
+          <h5>What Asha can sell <span class="pill moved">moved here</span></h5>
+          <div class="tog"><button class="act">Whole store</button><button>Category</button><button>Products</button></div>
+          <div class="hint"><b>Whole store</b> — every published product. Products you publish later are added to Asha automatically.</div>
+        </div>
+
+        <div class="oc-sec">
+          <h5>Offer (optional)</h5>
+          <label class="flbl">Value</label>
+          <div class="tog"><button class="act">%</button><button>₹</button></div>
+          <input class="inp mono" value="20">
+          <h5 style="margin-top:14px">Discount applies to <span class="pill gone">no longer sets allocation</span></h5>
+          <div class="tog"><button>Whole store</button><button class="act">Category</button><button>Products</button></div>
+          <input class="inp" value="Jackets → Denim Jackets (14)">
+          <div class="hint">Asha sells the whole store; only Denim Jackets are discounted. <b>This combination is impossible today.</b></div>
+        </div>
+      </div>
+      <div class="note good">
+        Leave the offer empty and Asha still sells — at full price, earning commission. That is the case that could not exist before.
+      </div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <h3 style="font-size:14px;margin-bottom:9px">The three choices, and what each means</h3>
+  <div class="card">
+    <table>
+      <tr><th>Choice</th><th>Creator can sell</th><th>New published product</th><th>Brand unpublishes a product</th></tr>
+      <tr><td><b>Whole store</b></td><td class="mono">every published product</td><td>joins automatically</td><td>leaves automatically</td></tr>
+      <tr><td><b>Category</b></td><td class="mono">that category + everything under it</td><td>joins if it's in that subtree</td><td>leaves automatically</td></tr>
+      <tr><td><b>Products</b></td><td class="mono">exactly the picked list</td><td>does not join</td><td>leaves automatically</td></tr>
+    </table>
+    <div class="hint" style="margin-top:10px">Publishing is the only lever needed — an unpublished product leaves every creator, in all three modes. No separate "exclude from promotion" flag.</div>
+  </div>
+
+  <h3 style="font-size:14px;margin:16px 0 9px">Category picker — a real tree <span class="pill moved">new</span></h3>
+  <div class="note bad">
+    <b>What it is today:</b> a flat <code>&lt;select&gt;</code> of breadcrumb strings —
+    <code>Women › Footwear › Sandals (23)</code>, one long list, every depth mixed together. Fine for
+    three categories, unusable for a real catalogue. This is the genuine gap.
+  </div>
+  <div class="cols">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="card">
+        <div class="tog"><button>Whole store</button><button class="act">Category</button><button>Products</button></div>
+        <select class="inp">
+          <option>Women › Footwear › Sandals (23)</option>
+        </select>
+        <div class="hint">Flat dropdown. No hierarchy, no expanding, no way to see what sits under a branch.</div>
+      </div>
+    </div>
+    <div class="col after">
+      <h2>After</h2>
+      <div class="card">
+        <div class="tog"><button>Whole store</button><button class="act">Category</button><button>Products</button></div>
+        <div class="tree">
+          <div class="tr"><span class="tw">▾</span><span class="tn">Women</span><span class="tc">412</span></div>
+          <div class="tr d1"><span class="tw">▾</span><span class="tn">Footwear</span><span class="tc">86</span></div>
+          <div class="tr d2 sel"><span class="tw"></span><span class="tn">Sandals</span><span class="tc">23</span><span class="tsel">✓ selected</span></div>
+          <div class="tr d2"><span class="tw"></span><span class="tn">Heels</span><span class="tc">31</span></div>
+          <div class="tr d2"><span class="tw"></span><span class="tn">Flats</span><span class="tc">32</span></div>
+          <div class="tr d1"><span class="tw">▸</span><span class="tn">Ethnic Wear</span><span class="tc">204</span></div>
+          <div class="tr d1"><span class="tw">▸</span><span class="tn">Tops</span><span class="tc">122</span></div>
+          <div class="tr"><span class="tw">▸</span><span class="tn">Men</span><span class="tc">318</span></div>
+          <div class="tr"><span class="tw">▸</span><span class="tn">Kids</span><span class="tc">96</span></div>
+        </div>
+        <div class="hint">Expand and collapse, product count at every level. Pick <b>any</b> level — choosing <b>Footwear</b> gives the creator Sandals, Heels and Flats, and any subcategory added later.</div>
+      </div>
+    </div>
+  </div>
+  <div class="note good">
+    Picking a branch allocates <b>everything beneath it</b>. That already works server-side — the allocation stores the category node and resolves the whole subtree — so this is purely a better way to choose it.
+  </div>
+
+  <h3 style="font-size:14px;margin:18px 0 9px">Products picker — search + image, title, price</h3>
+  <div class="note key">
+    <b>Correction to an earlier draft of this mockup:</b> the picker already has all of this — search box, category filter chips, and a grid of cards with image, name, price and SKU. I drew it as bare name-chips, which sold it short. What is actually thin is the <b>selected</b> list.
+  </div>
+  <div class="cols">
+    <div class="col">
+      <div class="card">
+        <h5>Picking — already exists</h5>
+        <input class="inp" value="kurta" style="margin-top:0">
+        <div class="chips" style="margin:9px 0 2px">
+          <span class="chip"><b>All</b></span><span class="chip">Ethnic</span><span class="chip">Tops</span>
+        </div>
+        <div class="pgrid">
+          <div class="pc sel"><div class="pimg">👗</div><div class="pn">Silk Kurta</div><div class="pp">₹1,400</div><div class="pm">Ethnic · SK-01</div></div>
+          <div class="pc"><div class="pimg">👗</div><div class="pn">Cotton Kurta</div><div class="pp">₹899</div><div class="pm">Ethnic · CK-04</div></div>
+          <div class="pc"><div class="pimg">👗</div><div class="pn">Kurta Set</div><div class="pp">₹2,199</div><div class="pm">Ethnic · KS-11</div></div>
+        </div>
+        <div class="hint">Search, filter, image, title, price, SKU. Unchanged.</div>
+      </div>
+    </div>
+    <div class="col after">
+      <h2>Selected list — improved</h2>
+      <div class="card">
+        <h5>Allocated to Asha — 3 products</h5>
+        <div class="sellist">
+          <div class="sr"><div class="simg">👗</div><div class="sb"><div class="sn">Silk Kurta</div><div class="sm">Ethnic · SK-01</div></div><div class="sp">₹1,400</div><span class="x">✕</span></div>
+          <div class="sr"><div class="simg">🧥</div><div class="sb"><div class="sn">Denim Jacket</div><div class="sm">Outerwear · DJ-07</div></div><div class="sp">₹4,000</div><span class="x">✕</span></div>
+          <div class="sr"><div class="simg">👚</div><div class="sb"><div class="sn">Linen Dress</div><div class="sm">Dresses · LD-02</div></div><div class="sp">₹2,600</div><span class="x">✕</span></div>
+        </div>
+        <button class="addbtn" style="margin-top:9px">+ Add products</button>
+        <div class="hint">Was: name-only chips, no image, no price — you could not tell at a glance what a creator had been given. A fixed list; nothing joins later.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note key" style="margin-top:18px">
+    <b>Not changing:</b> step order, step count, goal placement (still Step 2), layout, palette, the Apply-to-all behaviour, or any other field. The offer builder keeps its own scope control — it just no longer decides what the creator may sell.
+  </div>
+
+</div>
+</body>
+</html>
