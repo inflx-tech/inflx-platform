@@ -4,6 +4,11 @@ const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
 const pricingService      = require('../services/pricing.service');
 const entitlementsService = require('../services/entitlements.service');
+const {
+  validateOfferConfig,
+  normalizeOfferType,
+  backfillDiscountSubType,
+} = require('../services/offerConfig.validator');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase A12.2 — discover_filter entitlement helper.
@@ -816,8 +821,17 @@ const duplicateSet = asyncHandler(async (req, res) => {
 // conversion|hybrid => 'commissioned'. Returns the effective offer to persist.
 // ─────────────────────────────────────────────────────────────────────────────
 async function resolveOfferAttachment({ brandId, goal, brand_offer_id, offer_type, offer_config_json }) {
-  let effType = offer_type || null;
-  let effConfig = offer_config_json || null;
+  // collab-part1-corrections §1.4 — canonicalise whatever the client sent. The
+  // web wizard used to post display labels ('Discount', 'Volume discount') and
+  // the mobile invite posted 'flat'/'percentage'; both now send canonical keys,
+  // but normalising here keeps older app builds working through an OTA gap.
+  let effType = normalizeOfferType(offer_type);
+  // Recover the sub_type a pre-OTA mobile build didn't send. Without this, the
+  // backend deploying ahead of the mobile OTA would 422 every conversion/hybrid
+  // invite from an un-updated phone — the validation added below is what made
+  // those payloads reachable. Same rule migration 147 applies to stored rows, so
+  // the deploy order stops mattering.
+  let effConfig = backfillDiscountSubType(offer_type, offer_config_json || null);
   let brandOfferId = null;
 
   if (brand_offer_id) {
@@ -831,6 +845,23 @@ async function resolveOfferAttachment({ brandId, goal, brand_offer_id, offer_typ
     brandOfferId = rows[0].id;
     effType = rows[0].offer_type;            // snapshot — library is authoritative
     effConfig = rows[0].offer_config_json;   // jsonb → JS object
+  } else if (effType) {
+    // collab-part1-corrections §1.1 — the inline path validated NOTHING before
+    // this: no vocabulary check, no config shape check, no catalogue ownership
+    // check, so a brand could attach another brand's product ids. Routing it
+    // through the same validator the library uses also applies the publish rule
+    // at both of the two creation levels the founder defined.
+    //
+    // Library offers skip this deliberately: they were validated when created,
+    // and re-validating a stored snapshot would fail an offer whose products
+    // were unpublished after the offer was saved — an unpublish is meant to warn,
+    // not to retroactively break an attached offer (§1.1, founder's call).
+    const check = await validateOfferConfig({
+      offerType: effType, offerConfig: effConfig, brandId, db,
+    });
+    if (!check.ok) {
+      throw new AppError('VALIDATION_ERROR', check.message, 422, check.field);
+    }
   }
 
   const allocation = effType ? (goal === 'engagement' ? 'promotional' : 'commissioned') : null;

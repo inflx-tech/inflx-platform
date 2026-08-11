@@ -1,0 +1,37 @@
+{
+  "feature": "collab-part1-corrections",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-08-11 chat (\"your recommendation is fine, pls lock the contract and proceed to implementation\") — lock decision delegated per standing autonomy; scope = the five corrections in 01-spec.md",
+  "approved_at": "2026-08-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-08-11 chat — delegated with the contract lock; mockup is a before/after of the Step-1 money card + start-date hint only, no structural change (founder: \"no don't change structure at all\")",
+  "mockup_locked_at": "2026-08-11",
+  "notes": "Part 1 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md). Five behaviour corrections: (1) offers refused over unpublished products at BOTH creation levels, which required wiring the offer-config validator into the previously-unvalidated in-campaign inline path; (2) commission no longer displayed to customers as a discount; (3) campaign-basics money card shows real balance and hides when no set needs funding; (4) one canonical offer vocabulary (discount|volume|bogo|bundle|free_gift) across web + mobile with a migration for existing rows — coupled to (1) because the validator enforces the vocabulary; (5) the frontend-only 7-day start-date rule removed. Founder decided unpublish-inside-live-offer WARNS and proceeds. No model, layout, step-order or flow change. Parts 2-7 explicitly out of scope.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-08-11T02:49:42Z",
+      "result": "144/144 passed · gate 0 · STATE=GREEN",
+      "duration_seconds": 54,
+      "report": "qa/reports/2026-08-11T02-49-42-000Z/QA-REPORT.md",
+      "first_run_clean": true,
+      "baseline": "125 passed before this contract; +15 unit (offer vocabulary, publish rule, OTA-gap sub_type inference) +4 web (campaign-basics money card + start date)"
+    },
+    "ota_gap_safe": "Backend may deploy AHEAD of the mobile OTA. Wiring validation into the campaign path (§1.1) made pre-canonical mobile payloads reachable — offer_type 'flat'/'percentage' with a config of just {value} would have 422'd every conversion/hybrid invite from an un-updated phone. backfillDiscountSubType infers sub_type from the legacy type using the same rule as migration 147, so old and new builds both work and deploy order does not matter. Covered by unit tests O1-O6.",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["render:backend", "vercel:brand-web", "ota:mobile"],
+    "maestro_green": false,
+    "migration": "backend/migrations/147_offer_type_canonical.sql — run via backend/scripts/run-147.js against prod BEFORE the backend deploy. Value conversion only, no DDL, idempotent.",
+    "deploy_blockers": [
+      "Maestro green required — Packages/Mobile/src/** is touched (gov-check Rule 5)",
+      "Founder go required — production-impacting, never silent"
+    ]
+  }
+}

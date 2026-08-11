@@ -11,10 +11,21 @@
  *      offer.service.js resolveOfferDiscount consumes)
  *   3. every referenced product belongs to the brand (catalogue ownership)
  *
- * NOTE: this is the LIBRARY vocabulary (discount/volume/bogo/bundle/free_gift).
- * The legacy campaign path (campaign.controller VALID_OFFER_TYPES =
- * flat/percentage/bogo/bundle/volume/prebook) is intentionally NOT routed
- * through this in Sub-contract A — bridging the two vocabularies is C's job.
+ * NOTE: this is the LIBRARY vocabulary (discount/volume/bogo/bundle/free_gift)
+ * and — since collab-part1-corrections — the ONLY vocabulary. The bridge the
+ * original header called "C's job" is `normalizeOfferType` below: the web
+ * wizard used to write display labels ('Discount', 'Volume discount', …) and
+ * the mobile brand invite used to write 'flat'/'percentage', all into the same
+ * unconstrained campaign_influencers.offer_type column. Both apps now send
+ * canonical keys; the normaliser stays as the read-side safety net for rows
+ * written before migration 145.
+ *
+ * Validates:
+ *   4. every referenced product is pushed to the store — an offer must not
+ *      cover items no customer can see (collab-part1-corrections §1.1).
+ *      `is_active` is deliberately NOT enforced here: the founder defined
+ *      publish as push-to-store only, so folding in a second flag would be
+ *      scope we were not asked for.
  *
  * Returns a plain result object (never throws): { ok: true } or
  * { ok: false, field, message }. The caller maps a falsy result to a
@@ -22,6 +33,71 @@
  */
 
 const VALID_OFFER_TYPES = ['discount', 'volume', 'bogo', 'bundle', 'free_gift'];
+
+/**
+ * Legacy → canonical offer-type map. Keys are lowercased on lookup.
+ *
+ * 'flat' and 'percentage' both collapse to 'discount' because they were never
+ * separate mechanics — the flat-vs-percent distinction lives in the config as
+ * sub_type, which is what the web wizard has always stored.
+ *
+ * 'prebook' is intentionally absent. It appears in the legacy campaign enum but
+ * is an availing MODE, not an offer mechanic, and no current writer puts it in
+ * this column. Mapping it to a discount would invent a discount that never
+ * existed, so unknown values pass through unchanged and get rejected at write
+ * time instead.
+ */
+const LEGACY_OFFER_TYPE_MAP = {
+  'discount':         'discount',
+  'flat':             'discount',
+  'percentage':       'discount',
+  'volume discount':  'volume',
+  'volume_discount':  'volume',
+  'volume':           'volume',
+  'bogo':             'bogo',
+  'bundle':           'bundle',
+  'free gift':        'free_gift',
+  'free_gift':        'free_gift',
+};
+
+/**
+ * Map any historical offer-type spelling to the canonical vocabulary.
+ * Unrecognised input is returned lowercased-and-trimmed but otherwise
+ * unchanged, so read paths still match rather than silently resolving to null.
+ * Returns null only for null/empty input.
+ */
+function normalizeOfferType(raw) {
+  if (raw == null) return null;
+  const key = String(raw).trim().toLowerCase();
+  if (!key) return null;
+  return LEGACY_OFFER_TYPE_MAP[key] || key;
+}
+
+/**
+ * Recover the discount sub_type an older client didn't send.
+ *
+ * The pre-canonical mobile build posted offer_type 'flat' | 'percentage' with a
+ * config of just { value }. Both normalise to 'discount', whose config REQUIRES
+ * sub_type — so once the campaign path started validating, those payloads would
+ * 422 until every phone took the OTA. The legacy type already carries the
+ * information, so infer it rather than rejecting a request we can understand.
+ *
+ * This is deliberately the same rule migration 147 applies to stored rows, so a
+ * collab created by an old build during the OTA gap ends up identical to one the
+ * migration converted.
+ *
+ * Returns the config unchanged unless it is a discount that is missing sub_type
+ * AND the raw type tells us which kind it was.
+ */
+function backfillDiscountSubType(rawOfferType, config) {
+  if (normalizeOfferType(rawOfferType) !== 'discount') return config;
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return config;
+  if (config.sub_type === 'pct' || config.sub_type === 'flat') return config;
+
+  const raw = String(rawOfferType || '').trim().toLowerCase();
+  if (raw !== 'flat' && raw !== 'percentage') return config;   // can't infer — let it fail honestly
+  return { ...config, sub_type: raw === 'percentage' ? 'pct' : 'flat' };
+}
 const VALID_AVAILING_MODES = ['pay_at_store', 'online_order', 'prebook', 'enquiry'];
 const VALID_SCOPES = ['store', 'category', 'products'];
 
@@ -191,16 +267,30 @@ async function validateOfferConfig({ offerType, offerConfig, brandId, db }) {
   if (!shape.ok) return shape;
 
   // Catalogue ownership: every referenced product must belong to this brand.
+  // Publish rule (collab-part1-corrections §1.1): and must be pushed to the
+  // store, so an offer can never cover an item no customer can see.
   const ids = collectProductIds(offerType, offerConfig);
   if (ids.length > 0) {
     const { rows } = await db.query(
-      `SELECT id FROM brand_products WHERE id = ANY($1::uuid[]) AND brand_id = $2`,
+      `SELECT id, name, pushed_to_store
+         FROM brand_products WHERE id = ANY($1::uuid[]) AND brand_id = $2`,
       [ids, brandId]
     );
-    const owned = new Set(rows.map(r => r.id));
+    const owned = new Map(rows.map(r => [r.id, r]));
     const foreign = ids.find(id => !owned.has(id));
     if (foreign) {
       return fail('offer_config_json.products', 'referenced product is not owned by this brand');
+    }
+    const unpublished = ids
+      .map(id => owned.get(id))
+      .filter(p => p && p.pushed_to_store === false);
+    if (unpublished.length > 0) {
+      const names = unpublished.map(p => p.name || p.id).join(', ');
+      return fail(
+        'offer_config_json.products',
+        `an offer cannot include products that are not published to your store: ${names}. ` +
+        `Publish them first, or remove them from this offer.`
+      );
     }
   }
   return OK;
@@ -223,6 +313,9 @@ module.exports = {
   validateOfferConfig,
   validateAvailingModes,
   collectProductIds,
+  normalizeOfferType,
+  backfillDiscountSubType,
+  LEGACY_OFFER_TYPE_MAP,
   VALID_OFFER_TYPES,
   VALID_AVAILING_MODES,
   VALID_SCOPES,

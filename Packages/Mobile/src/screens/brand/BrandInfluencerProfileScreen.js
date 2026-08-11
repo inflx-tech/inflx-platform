@@ -11,10 +11,19 @@ import { brandApi } from '../../services/api';
  * Flow 20 (2026-05-25): navy-deep hero + orange CTA → ink hero + yellow CTA.
  */
 
+// collab-part1-corrections §1.4 — these keys used to be posted straight into
+// campaign_influencers.offer_type as 'flat' / 'percentage', while the web wizard
+// posted display labels ('Discount', 'Volume discount') into the same
+// unconstrained column. Neither was the canonical Offer-Engine vocabulary, so
+// collabs created on the two apps could not be compared or reported together.
+// The chips keep their own keys for local UI state; `sub_type` is what travels,
+// which is exactly the shape the web wizard has always stored for a discount.
 const OFFER_TYPES = [
-  { key: 'flat',       label: 'Flat Discount (₹)' },
-  { key: 'percentage', label: 'Percentage Off (%)' },
+  { key: 'flat',       label: 'Flat Discount (₹)', sub_type: 'flat' },
+  { key: 'percentage', label: 'Percentage Off (%)', sub_type: 'pct'  },
 ];
+// Both chips are the same mechanic — a discount. Flat vs percentage is a sub_type.
+const CANONICAL_OFFER_TYPE = 'discount';
 
 export default function BrandInfluencerProfileScreen({ route, navigation }) {
   const { influencerId } = route.params;
@@ -229,8 +238,23 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
       if (!offerType) { Alert.alert('Missing info', 'Pick an offer type.'); return; }
       const valueNum = parseFloat(offerValue);
       if (!valueNum || valueNum <= 0) { Alert.alert('Missing info', 'Enter the offer value.'); return; }
-      payload.offer_type = offerType;
-      payload.offer_config_json = { value: valueNum };
+      // The server now validates this config (it did not before), and a pct
+      // discount over 100 is rejected there. Catch it here so the brand gets a
+      // clear message instead of a 422.
+      if (offerType === 'percentage' && valueNum > 100) {
+        Alert.alert('Check the value', 'A percentage discount cannot be more than 100%.');
+        return;
+      }
+      payload.offer_type = CANONICAL_OFFER_TYPE;
+      payload.offer_config_json = {
+        sub_type: OFFER_TYPES.find(t => t.key === offerType)?.sub_type || 'flat',
+        value: valueNum,
+        // Scope defaults to 'store' server-side when no products are listed, but
+        // stating it keeps the stored config self-describing and matches what this
+        // screen has always meant: not limited to a hand-picked product list.
+        scope: 'store',
+        products: [],
+      };
       const cpct = parseFloat(commissionPct);
       if (cpct > 0) payload.commission_pct = cpct;
     }

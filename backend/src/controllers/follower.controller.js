@@ -559,9 +559,14 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   if (ci_id) {
     const r = await db.query(
       `SELECT co.id            AS offer_id,
+              -- collab-part1-corrections §1.2 — ci.commission_pct used to be the
+              -- last COALESCE leg. Worse here than on the storefront: the value
+              -- lands in discountPct below and is applied as a real percentage
+              -- off, so a 10% commission became a 10% customer discount the
+              -- brand never agreed to fund. Commission is not a discount.
               COALESCE(co.discount_value,
-                       NULLIF(ci.offer_config_json->>'value','')::numeric,
-                       ci.commission_pct)         AS discount_value,
+                       NULLIF(ci.offer_config_json->>'value','')::numeric)
+                                                 AS discount_value,
               co.products_json,
               cs.id            AS set_id,
               c.id             AS campaign_id,

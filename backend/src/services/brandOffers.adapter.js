@@ -364,7 +364,9 @@ async function fetchAssignmentOffers(ctx = {}) {
       cs.id                 AS set_id,
       cs.campaign_id        AS campaign_id,
       co.id                 AS offer_id,
-      COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
+      -- collab-part1-corrections §1.2 — ci.commission_pct dropped as the final
+      -- COALESCE leg. Commission is the brand's cost, not a customer discount.
+      COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric) AS discount_value,
       COALESCE(co.availing_modes, bo.availing_modes) AS availing_modes,
       bo.name               AS bo_name,
       b.id                  AS brand_id,

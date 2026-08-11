@@ -91,7 +91,12 @@ const ACTIVE_CI_QUERY = `
     u_b.city              AS brand_city,
     co.id                 AS offer_id,
     COALESCE(co.offer_type::text, ci.offer_type::text) AS offer_type,
-    COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
+    -- collab-part1-corrections §1.2 — ci.commission_pct was the third COALESCE
+    -- leg here. Commission is what the BRAND pays the creator; it is not a
+    -- customer discount. A sales collab with 10% commission and no discount was
+    -- advertising "10% off" that checkout never applied. No discount now means
+    -- no discount is reported.
+    COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric) AS discount_value,
     co.availing_modes,
     co.products_json,
     co.bundle_price,
@@ -129,7 +134,12 @@ const FEED_QUERY = `
     u_b.city              AS brand_city,
     co.id                 AS offer_id,
     COALESCE(co.offer_type::text, ci.offer_type::text) AS offer_type,
-    COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
+    -- collab-part1-corrections §1.2 — ci.commission_pct was the third COALESCE
+    -- leg here. Commission is what the BRAND pays the creator; it is not a
+    -- customer discount. A sales collab with 10% commission and no discount was
+    -- advertising "10% off" that checkout never applied. No discount now means
+    -- no discount is reported.
+    COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric) AS discount_value,
     co.availing_modes,
     co.products_json,
     co.prebook_advance,

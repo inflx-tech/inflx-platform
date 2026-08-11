@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part 1 — campaign basics money card</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--bg2:#F4F4F5;
+  --yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-50:#FFFDEB;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--muted-4:#D4D4D8;
+  --border:#E4E4E7;--border-soft:#F4F4F5;
+  --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;
+  --danger:#E8401A;--danger-pale:#FDEEE9;--danger-text:#B91C1C;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--muted-3);font-weight:600}
+.wrap{padding:22px;max-width:1180px;margin:0 auto}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.col h2{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;padding:6px 11px;border-radius:6px;display:inline-block;margin-bottom:12px;font-family:'JetBrains Mono',monospace}
+.col.before h2{background:var(--danger-pale);color:var(--danger-text)}
+.col.after h2{background:var(--success-pale);color:var(--success-text)}
+.rc{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:14px;margin-bottom:13px}
+.rc h4{font-size:12px;font-weight:800;margin-bottom:9px}
+.rc-h{font-size:10.5px;color:var(--muted-2);font-weight:600;line-height:1.5}
+.bsv{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:800;letter-spacing:-.6px}
+.bsof{font-size:10px;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.chr{display:flex;gap:8px;align-items:flex-start;padding:4px 0}
+.chd{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted-4);flex:0 0 auto;margin-top:1px}
+.chd.done{background:var(--success);border-color:var(--success)}
+.chd.warn{border-color:var(--yellow);background:var(--yellow-pale)}
+.cht{font-size:11px;font-weight:650;color:var(--muted)}
+.cht.done{color:var(--ink)}
+.note{font-size:11px;font-weight:650;border-radius:9px;padding:9px 12px;margin-bottom:12px;line-height:1.5}
+.note.bad{background:var(--danger-pale);border:1px solid #FBCBC4;color:var(--danger-text)}
+.note.good{background:var(--success-pale);border:1px solid #A7F3D0;color:var(--success-text)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.gone{border:1.5px dashed var(--muted-4);border-radius:13px;padding:20px 14px;text-align:center;color:var(--muted-2);font-size:11.5px;font-weight:700;background:var(--bg2)}
+.f{margin-bottom:12px}
+.flbl{display:block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:5px}
+.inp{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12px;font-family:'JetBrains Mono',monospace;background:var(--white)}
+.fhint{font-size:10.5px;color:var(--muted-3);font-weight:600;margin-top:4px}
+.fhint.strike{text-decoration:line-through;color:var(--danger)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px}
+.card h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.sec{margin-top:26px}
+.sec>h3{font-size:14px;font-weight:800;margin-bottom:11px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Part 1 — campaign basics: money card + start date</h1>
+  <p>The only UI surface Part 1 touches. Step order, step count, goal placement and layout are unchanged.</p>
+</div>
+
+<div class="wrap">
+
+  <div class="sec">
+    <h3>A · Commission-only campaign (no set needs funding)</h3>
+    <div class="cols">
+      <div class="col before">
+        <h2>Before</h2>
+        <div class="note bad">Shown to <b>every</b> brand, including commission-only ones: a hardcoded <code>₹2,50,000</code>, an escrow-lock requirement that will never apply, and a pre-ticked ✓ that reflects nothing.</div>
+        <div class="rc">
+          <h4>💰 Wallet status</h4>
+          <div class="bsv">₹2,50,000</div>
+          <div class="bsof">covers this campaign</div>
+          <div class="rc-h" style="margin-top:10px">You need wallet ≥ total escrow lock (set budget + 8% platform fee) to publish.</div>
+        </div>
+        <div class="rc">
+          <h4>📋 Onboarding tips</h4>
+          <div class="chr"><div class="chd done"></div><div class="cht done">Wallet topped up</div></div>
+          <div class="chr"><div class="chd"></div><div class="cht">Products listed in catalogue</div></div>
+          <div class="chr"><div class="chd"></div><div class="cht">Brand logo + brief assets uploaded</div></div>
+        </div>
+      </div>
+      <div class="col after">
+        <h2>After</h2>
+        <div class="note good">No set needs funding, so the money card is not rendered at all. The checklist stays, with ticks that reflect real state.</div>
+        <div class="gone">Wallet / escrow card — not shown<br><span style="font-weight:600;color:var(--muted-3)">no funded set in this campaign</span></div>
+        <div class="rc" style="margin-top:13px">
+          <h4>📋 Before you can publish</h4>
+          <div class="chr"><div class="chd warn"></div><div class="cht">Products listed in catalogue</div></div>
+          <div class="chr"><div class="chd"></div><div class="cht">Brand logo + brief assets uploaded</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>B · Campaign with a funded set (engagement or hybrid)</h3>
+    <div class="cols">
+      <div class="col before">
+        <h2>Before</h2>
+        <div class="note bad">The figure is a placeholder, not the brand's balance. The ✓ is unconditional.</div>
+        <div class="rc">
+          <h4>💰 Wallet status</h4>
+          <div class="bsv">₹2,50,000</div>
+          <div class="bsof">covers this campaign</div>
+          <div class="rc-h" style="margin-top:10px">You need wallet ≥ total escrow lock (set budget + 8% platform fee) to publish.</div>
+        </div>
+        <div class="rc">
+          <h4>📋 Onboarding tips</h4>
+          <div class="chr"><div class="chd done"></div><div class="cht done">Wallet topped up</div></div>
+        </div>
+      </div>
+      <div class="col after">
+        <h2>After</h2>
+        <div class="note good">Real balance, and the tick is earned — it turns green only when the balance actually covers what the sets allocate.</div>
+        <div class="rc">
+          <h4>💰 Wallet status</h4>
+          <div class="bsv">₹1,80,000</div>
+          <div class="bsof">your wallet balance</div>
+          <div class="rc-h" style="margin-top:10px">You need wallet ≥ total escrow lock (set budget + platform fee) to publish.</div>
+        </div>
+        <div class="rc">
+          <h4>📋 Before you can publish</h4>
+          <div class="chr"><div class="chd warn"></div><div class="cht">Wallet ₹1,80,000 — allocate set budgets in Step 2</div></div>
+          <div class="chr"><div class="chd"></div><div class="cht">Brand logo + brief assets uploaded</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>C · Start date</h3>
+    <div class="cols">
+      <div class="col before">
+        <h2>Before</h2>
+        <div class="card">
+          <h3>Name &amp; dates</h3>
+          <div class="f">
+            <label class="flbl">Start date</label>
+            <input class="inp" type="date" value="2026-08-18">
+            <div class="fhint">Must start at least 7 days from today.</div>
+          </div>
+        </div>
+        <div class="note bad">A browser-only rule with no backend counterpart. A brand that wants to launch today cannot.</div>
+      </div>
+      <div class="col after">
+        <h2>After</h2>
+        <div class="card">
+          <h3>Name &amp; dates</h3>
+          <div class="f">
+            <label class="flbl">Start date</label>
+            <input class="inp" type="date" value="2026-08-11">
+            <div class="fhint">Can start today.</div>
+          </div>
+        </div>
+        <div class="note good">Rule removed. The backend's only date rule — end after start — is unchanged.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h3>D · Not visible here (backend-only in this contract)</h3>
+    <div class="note good" style="max-width:820px">
+      Offers refused over unpublished products, at <b>both</b> creation levels · the in-campaign inline offer path validated for the first time · a phantom discount no longer shown to customers when a sales collaboration has commission but no discount · one offer vocabulary across web and mobile, with existing rows migrated.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -46,6 +46,13 @@ const TIERS    = [{key:'nano',label:'Nano',sub:'1K–10K'},{key:'micro',label:'M
 const OFFER_TYPES = ['Discount','Volume discount','BOGO','Bundle','Free gift'];
 // Offer Engine: map a saved brand_offers.offer_type (key) to the wizard's display label.
 const OFFER_KEY_TO_LABEL = { discount: 'Discount', volume: 'Volume discount', bogo: 'BOGO', bundle: 'Bundle', free_gift: 'Free gift' };
+// collab-part1-corrections §1.4 — the wizard keeps display labels in its own
+// state (every chip comparison depends on that), but the wire format is the
+// canonical Offer-Engine vocabulary. Previously the labels themselves were
+// posted, so campaign_influencers.offer_type held 'Volume discount' from web
+// and 'percentage' from mobile in the same unconstrained column.
+const OFFER_LABEL_TO_KEY = { 'Discount': 'discount', 'Volume discount': 'volume', 'BOGO': 'bogo', 'Bundle': 'bundle', 'Free gift': 'free_gift' };
+const toOfferKey = label => (label ? (OFFER_LABEL_TO_KEY[label] || String(label).trim().toLowerCase()) : null);
 const LANGUAGES = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Urdu'];
 const GENDERS = [{key:'male',label:'Male'},{key:'female',label:'Female'},{key:'non_binary',label:'Non-binary'}];
 
@@ -500,6 +507,7 @@ function NewCampaignPageInner() {
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [error, setError] = useState('');
   const [campaignId, setCampaignId] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(null);
 
   useEffect(() => {
     brandApi.getMe().then(res => {
@@ -507,6 +515,10 @@ function NewCampaignPageInner() {
         const b = res.data?.brand || res.data;
         setBrandStatus(b?.user_status || b?.status || 'pending');
         setBrandCategory(b?.category || b?.business_category || null);
+        // collab-part1-corrections §1.3 — the Step-1 rail used to print a
+        // hardcoded ₹2,50,000. This is the real balance; null means "we don't
+        // know yet", which the rail renders as unknown rather than inventing one.
+        setWalletBalance(b?.wallet_balance != null ? Number(b.wallet_balance) : null);
       } else {
         // A failed request is not the same as "pending" — see the sibling fix
         // in dashboard/influencers/page.js. Still gated, but labelled honestly.
@@ -609,7 +621,8 @@ function NewCampaignPageInner() {
               init: (ci.influencer_name || '?')[0].toUpperCase(),
               post_date: ci.posting_date ? ci.posting_date.split('T')[0] : '',
               influencer_budget: ci.influencer_budget != null ? String(ci.influencer_budget) : '',
-              offer_type: ci.offer_type || '',
+              // Stored value is canonical (migration 147); the chips compare on labels.
+              offer_type: OFFER_KEY_TO_LABEL[ci.offer_type] || ci.offer_type || '',
               brand_offer_id: ci.brand_offer_id || null,
               promoted_offer_ids: ci.promoted_brand_offer_ids || [],
               commission_pct: ci.commission_pct != null ? String(ci.commission_pct) : '',
@@ -1075,7 +1088,7 @@ function NewCampaignPageInner() {
             // brand_offer_id, commissioned). Engagement promotes a LIST of offers
             // (promoted_brand_offer_ids, promotional — backend sets allocation,
             // no commission/coupon).
-            offer_type: needsOffer(s.goal) ? (inf.offer_type || null) : null,
+            offer_type: needsOffer(s.goal) ? toOfferKey(inf.offer_type) : null,
             brand_offer_id: needsOffer(s.goal) ? (inf.brand_offer_id || null) : null,
             offer_config_json: (needsOffer(s.goal) && inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
             promoted_brand_offer_ids: s.goal === 'engagement' ? (inf.promoted_offer_ids || []) : null,
@@ -1384,16 +1397,50 @@ function NewCampaignPageInner() {
 
   // ─── Right rail ────────────────────────────────────────────────────────────
   const RightRail = () => {
-    if (step === 0) return (
-      <>
-        <div className="rc"><h4>💰 Wallet status</h4><div className="bsr"><div className="bsv">₹{fmtN(totalBudget || 250000)}</div><div className="bsof">covers this campaign</div></div><div className="rc-h" style={{ marginTop: 10, marginBottom: 0 }}>You need wallet ≥ total escrow lock (set budget + 8% platform fee) to publish.</div></div>
-        <div className="rc"><h4>📋 Onboarding tips</h4>
-          <div className="chr"><div className="chd done"></div><div className="cht done">Wallet topped up</div></div>
-          <div className="chr"><div className="chd"></div><div className="cht">Products listed in catalogue (for conversion offers)</div></div>
-          <div className="chr"><div className="chd"></div><div className="cht">Brand logo + brief assets uploaded</div></div>
-        </div>
-      </>
-    );
+    // collab-part1-corrections §1.3 — this rail used to render a hardcoded
+    // ₹2,50,000 "covers this campaign", an escrow warning, and a pre-ticked ✓
+    // "Wallet topped up" to EVERY brand, including commission-only ones for whom
+    // no wallet is ever touched (the backend only checks it when a set is
+    // engagement or hybrid). Now: shown only when a set actually needs funding,
+    // with the real balance, and no tick that hasn't been earned.
+    if (step === 0) {
+      const needsFunding = sets.some(s => needsBudget(s.goal));
+      const allocated    = totalSetBudget();
+      const walletKnown  = walletBalance != null;
+      const walletCovers = walletKnown && allocated > 0 && walletBalance >= allocated;
+      return (
+        <>
+          {needsFunding && (
+            <div className="rc"><h4>💰 Wallet status</h4>
+              <div className="bsr">
+                <div className="bsv">{walletKnown ? `₹${fmtN(walletBalance)}` : '—'}</div>
+                <div className="bsof">{walletKnown ? 'your wallet balance' : 'balance unavailable'}</div>
+              </div>
+              <div className="rc-h" style={{ marginTop: 10, marginBottom: 0 }}>You need wallet ≥ total escrow lock (set budget + platform fee) to publish. Funds stay in your wallet and lock per-creator as each contract is signed.</div>
+            </div>
+          )}
+          <div className="rc"><h4>📋 Before you can publish</h4>
+            {needsFunding && (
+              <div className="chr">
+                <div className={`chd ${walletCovers ? 'done' : 'warn'}`}></div>
+                <div className={`cht ${walletCovers ? 'done' : ''}`}>
+                  {allocated > 0
+                    ? (walletCovers ? `Wallet covers ₹${fmtN(allocated)} allocated` : `Allocated ₹${fmtN(allocated)} — top up or reduce set budgets`)
+                    : 'Allocate set budgets in Step 2'}
+                </div>
+              </div>
+            )}
+            <div className="chr"><div className="chd"></div><div className="cht">Products listed in catalogue (for conversion offers)</div></div>
+            <div className="chr"><div className="chd"></div><div className="cht">Brand logo + brief assets uploaded</div></div>
+          </div>
+          {!needsFunding && (
+            <div className="rc"><h4>💸 No upfront cost</h4>
+              <div className="rc-h">Nothing here needs funding yet. Add an engagement or hybrid set and the wallet requirement appears.</div>
+            </div>
+          )}
+        </>
+      );
+    }
     if (step === 2) {
       const totalAllocated = (() => {
         let t = 0;
@@ -1490,10 +1537,13 @@ function NewCampaignPageInner() {
         <div className="g2">
           <div className="f">
             <label className="flbl">Start date</label>
+            {/* collab-part1-corrections §1.5 — the 7-days-from-today `min` was a
+                browser-only rule with no backend counterpart, and it stopped a
+                brand from launching today. The only real date rule is the
+                backend's: end must be after start. */}
             <input className={`inp mono ${showErr('startDate', validation.campaign.startDate) ? 'err' : ''}`} type="date" value={startDate}
-              min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })()}
               onChange={e => { setStartDate(e.target.value); markTouched('startDate'); }} onBlur={() => markTouched('startDate')} />
-            <div className="fhint">Must start at least 7 days from today.</div>
+            <div className="fhint">Can start today.</div>
             {showErr('startDate', validation.campaign.startDate) && <div className="field-err">{validation.campaign.startDate}</div>}
           </div>
           <div className="f">

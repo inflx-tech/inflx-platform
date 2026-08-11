@@ -62,20 +62,18 @@ function itemsTotal(items, priceMap, variantPriceMap) {
 
 function r2(n) { return parseFloat((Number(n) || 0).toFixed(2)); }
 
-function normalizeOfferType(s) {
-  if (!s) return null;
-  const t = String(s).toLowerCase().trim();
-  if (t === 'discount') return 'discount';
-  if (t === 'volume' || t === 'volume discount' || t === 'volume_discount') return 'volume';
-  if (t === 'bogo') return 'bogo';
-  if (t === 'bundle') return 'bundle';
-  if (t === 'free gift' || t === 'free_gift') return 'free_gift';
-  // Legacy short types from the original campaign_offers enum
-  if (t === 'percentage') return 'discount';   // map to discount sub_type='pct'
-  if (t === 'flat') return 'discount';         // map to discount sub_type='flat'
-  if (t === 'prebook') return 'prebook';
-  return t;
-}
+// collab-part1-corrections §1.4 — this function used to carry its own copy of the
+// legacy→canonical map, identical to the one in offerConfig.validator. Two copies
+// of the same vocabulary is how they drift, and the migration, the write-time
+// validator and this pricing path all have to agree or a stored offer silently
+// stops applying. Delegating keeps one map.
+//
+// Behaviour is unchanged: the validator's map covers every case this version
+// handled (discount, volume / volume discount / volume_discount, bogo, bundle,
+// free gift / free_gift, percentage → discount, flat → discount) and passes
+// anything unrecognised through lowercased — which is what 'prebook' and the old
+// `return t` default already did.
+const { normalizeOfferType } = require('./offerConfig.validator');
 
 function extractProductIds(rawProducts) {
   if (!Array.isArray(rawProducts)) return [];

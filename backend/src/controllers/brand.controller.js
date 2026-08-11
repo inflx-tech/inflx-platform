@@ -6,6 +6,7 @@ const entitlementsService = require('../services/entitlements.service');
 const { loadSchema, clearSchemaCache } = require('../services/schema.service');
 const dishFlywheel = require('../services/dishFlywheel.service');
 const tagsService = require('../services/tags.service');
+const { collectProductIds } = require('../services/offerConfig.validator');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -628,8 +629,42 @@ const updateProduct = asyncHandler(async (req, res) => {
   );
 
   const { rows } = await db.query(`SELECT * FROM brand_products WHERE id = $1`, [req.params.pid]);
-  return success(res, { product: rows[0] });
+
+  // collab-part1-corrections §1.1 — unpublishing a product that sits inside a
+  // live offer WARNS and proceeds (founder's call). Blocking would make
+  // unpublishing a fight; silently dropping the product from the offer is the
+  // class of silence that caused the other faults this contract fixes. So the
+  // brand simply gets told which offers to look at.
+  let affected_offers = [];
+  if (req.body.pushed_to_store === false) {
+    affected_offers = await offersReferencingProduct(brand.id, req.params.pid);
+  }
+
+  return success(res, { product: rows[0], affected_offers });
 });
+
+/**
+ * Library offers whose config references this product. Uses the validator's
+ * collectProductIds so every offer shape (discount / volume / bundle / BOGO /
+ * free-gift pairs) is understood, rather than string-matching the jsonb.
+ * Archived offers are ignored — they cannot go live again.
+ */
+async function offersReferencingProduct(brandId, productId) {
+  const { rows } = await db.query(
+    `SELECT id, name, offer_type, offer_config_json, published_to_store
+       FROM brand_offers
+      WHERE brand_id = $1 AND status <> 'archived'`,
+    [brandId]
+  );
+  return rows
+    .filter(o => collectProductIds(o.offer_type, o.offer_config_json || {}).includes(productId))
+    .map(o => ({
+      id: o.id,
+      name: o.name,
+      offer_type: o.offer_type,
+      published_to_store: !!o.published_to_store,
+    }));
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DELETE /brands/me/products/:pid

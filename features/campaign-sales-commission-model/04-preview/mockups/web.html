@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campaign creation — sales/commission model correction</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --hyb:#6B5A00; --hyb-pale:#FFF7CC;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ── mockup chrome ───────────────────────────────────────── */
+.mk-top{background:var(--ink);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mk-top h1{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.mk-top .mk-sub{font-size:11px;color:var(--muted-3);font-weight:600}
+.mk-tabs{display:flex;gap:6px;padding:12px 22px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.mk-tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:7px 14px;font-size:11.5px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
+.mk-tab:hover{border-color:var(--muted-4);color:var(--ink)}
+.mk-tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.mk-note{margin:0;padding:11px 22px;background:var(--yellow-50);border-bottom:1px solid var(--yellow-pale);font-size:11.5px;color:var(--yellow-text);font-weight:650}
+.view{display:none;padding:22px}
+.view.on{display:block}
+
+/* ── wizard shell ────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:210px minmax(0,1fr) 268px;gap:18px;max-width:1300px;margin:0 auto;align-items:start}
+.steprail{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px}
+.sr-t{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-3);margin-bottom:11px}
+.sr-i{display:flex;gap:9px;align-items:flex-start;padding:8px 6px;border-radius:8px}
+.sr-i.on{background:var(--yellow-pale)}
+.sr-n{width:19px;height:19px;border-radius:50%;background:var(--bg2);color:var(--muted-2);font-size:10px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;font-family:'JetBrains Mono',monospace}
+.sr-i.on .sr-n{background:var(--ink);color:var(--yellow)}
+.sr-i.done .sr-n{background:var(--success);color:#fff}
+.sr-l{font-size:11.5px;font-weight:700;color:var(--muted);line-height:1.3}
+.sr-i.on .sr-l{color:var(--ink)}
+.sr-d{font-size:10px;color:var(--muted-3);font-weight:600;margin-top:1px}
+
+.main{min-width:0}
+.sh-tag{display:inline-block;background:var(--ink);color:var(--yellow);font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:4px 9px;border-radius:5px;font-family:'JetBrains Mono',monospace}
+.main h1{font-size:23px;font-weight:800;letter-spacing:-.5px;margin:9px 0 5px}
+.subh{font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:16px;max-width:640px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:17px;margin-bottom:14px}
+.card h3{font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:3px}
+.sh{font-size:11.5px;color:var(--muted-2);font-weight:600;margin-bottom:13px}
+.g1{display:grid;grid-template-columns:1fr;gap:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f{min-width:0}
+.flbl{display:block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:5px}
+.inp{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12.5px;font-family:inherit;background:var(--white);color:var(--ink)}
+.inp.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.inp:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.fhint{font-size:10.5px;color:var(--muted-3);font-weight:600;margin-top:4px}
+
+/* radio-row control for Runs until */
+.rad{display:flex;flex-direction:column;gap:8px}
+.rad-r{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;background:var(--white)}
+.rad-r.sel{border-color:var(--ink);background:var(--yellow-50);box-shadow:inset 0 0 0 1px var(--ink)}
+.rad-d{width:15px;height:15px;border-radius:50%;border:2px solid var(--muted-4);flex:0 0 auto;display:grid;place-items:center}
+.rad-r.sel .rad-d{border-color:var(--ink)}
+.rad-r.sel .rad-d::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.rad-t{font-size:12.5px;font-weight:750}
+.rad-s{font-size:10.5px;color:var(--muted-2);font-weight:600}
+.rad-r .inp{max-width:158px;margin-left:auto}
+
+/* goal cards */
+.goals{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.gc{background:var(--white);border:1.5px solid var(--border);border-radius:15px;padding:17px;cursor:pointer;position:relative;transition:.14s}
+.gc:hover{border-color:var(--muted-4);transform:translateY(-1px)}
+.gc.sel{border-color:var(--ink);box-shadow:0 0 0 3px var(--yellow-pale)}
+.gc-ic{width:33px;height:33px;border-radius:10px;display:grid;place-items:center;font-size:15px;font-weight:800;margin-bottom:11px;font-family:'JetBrains Mono',monospace}
+.gc.conv .gc-ic{background:var(--conv-pale);color:var(--conv)}
+.gc.eng  .gc-ic{background:var(--eng-pale);color:var(--eng)}
+.gc.hyb  .gc-ic{background:var(--hyb-pale);color:var(--hyb)}
+.gc-tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:4px;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.gc.conv .gc-tag{background:var(--conv-pale);color:var(--conv)}
+.gc.eng  .gc-tag{background:var(--eng-pale);color:var(--eng)}
+.gc.hyb  .gc-tag{background:var(--hyb-pale);color:var(--hyb)}
+.gc h4{font-size:14.5px;font-weight:800;letter-spacing:-.25px;margin-bottom:6px}
+.gc-d{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.45;margin-bottom:11px}
+.gc-f{border-top:1px solid var(--border-soft);padding-top:9px;font-size:10.5px;font-weight:700;color:var(--muted-2);font-family:'JetBrains Mono',monospace}
+.gc-ck{position:absolute;top:13px;right:13px;width:19px;height:19px;border-radius:50%;background:var(--ink);color:var(--yellow);display:none;place-items:center;font-size:10px;font-weight:800}
+.gc.sel .gc-ck{display:grid}
+
+/* right rail */
+.rail{display:flex;flex-direction:column;gap:13px}
+.rc{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:14px}
+.rc h4{font-size:12px;font-weight:800;margin-bottom:9px;letter-spacing:-.1px}
+.rc-h{font-size:10.5px;color:var(--muted-2);font-weight:600;line-height:1.5}
+.chr{display:flex;gap:8px;align-items:flex-start;padding:4px 0}
+.chd{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted-4);flex:0 0 auto;margin-top:1px}
+.chd.done{background:var(--success);border-color:var(--success)}
+.chd.warn{border-color:var(--yellow);background:var(--yellow-pale)}
+.cht{font-size:11px;font-weight:650;color:var(--muted)}
+.cht.done{color:var(--ink)}
+.bsv{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:800;letter-spacing:-.6px}
+.bsof{font-size:10px;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+
+/* callouts */
+.co{border-radius:12px;padding:13px 15px;font-size:11.5px;font-weight:650;line-height:1.5;display:flex;gap:11px;align-items:flex-start}
+.co-ic{font-size:14px;line-height:1.1;flex:0 0 auto}
+.co.good{background:var(--success-pale);border:1px solid #A7F3D0;color:var(--success-text)}
+.co.warn{background:var(--yellow-50);border:1px solid var(--yellow-pale);color:var(--yellow-text)}
+.co.bad{background:var(--danger-pale);border:1px solid #FBCBC4;color:var(--danger-text)}
+.co.conv{background:var(--conv-pale);border:1px solid #E9D5FF;color:var(--conv)}
+.co b{font-weight:800}
+
+/* kill / keep annotation */
+.ann{border-left:3px solid var(--danger);background:var(--danger-pale);border-radius:0 10px 10px 0;padding:11px 14px;margin-bottom:14px;font-size:11.5px;color:var(--danger-text);font-weight:650}
+.ann.keep{border-left-color:var(--success);background:var(--success-pale);color:var(--success-text)}
+.ann code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.strike{position:relative;opacity:.5}
+.strike::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(232,64,26,.09) 6px,rgba(232,64,26,.09) 12px);border-radius:12px;pointer-events:none}
+.rm-pill{display:inline-block;background:var(--danger);color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;margin-left:7px;vertical-align:middle}
+.new-pill{display:inline-block;background:var(--success);color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;margin-left:7px;vertical-align:middle}
+
+/* buttons */
+.btn{border:none;border-radius:10px;padding:10px 17px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn.pri{background:var(--yellow);color:var(--ink)}
+.btn.pri:hover{background:var(--yellow-hover)}
+.btn.sec{background:var(--white);border:1px solid var(--border);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #FBCBC4;color:var(--danger-text)}
+.btn.dgr:hover{background:var(--danger-pale)}
+.btnrow{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+
+/* live campaign header */
+.lc{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:900px;margin:0 auto}
+.lc-h{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.lc-t{flex:1;min-width:220px}
+.lc-t h2{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.pill{display:inline-block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:5px;font-family:'JetBrains Mono',monospace}
+.pill.live{background:var(--success-pale);color:var(--success-text)}
+.pill.conv{background:var(--conv-pale);color:var(--conv)}
+.pill.ong{background:var(--yellow-pale);color:var(--yellow-text)}
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:16px 0}
+.mt{background:var(--bg);border:1px solid var(--border-soft);border-radius:11px;padding:12px}
+.mt-k{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2)}
+.mt-v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:800;letter-spacing:-.5px;margin-top:4px}
+.sep{height:1px;background:var(--border-soft);margin:16px 0}
+h3.blk{font-size:13px;font-weight:800;margin-bottom:9px}
+@media(max-width:1080px){.shell{grid-template-columns:1fr}.goals{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.mrow{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="mk-top">
+  <h1>Campaign creation — sales / commission model correction</h1>
+  <span class="mk-sub">MOCKUP · brand-web · 2026-08-07 · awaiting founder lock</span>
+</div>
+
+<div class="mk-tabs">
+  <button class="mk-tab on" data-v="v0">① Step 0 — Goal first <span style="opacity:.6">(new)</span></button>
+  <button class="mk-tab" data-v="v1">② Step 1 — Sales</button>
+  <button class="mk-tab" data-v="v2">③ Step 1 — Content / Both</button>
+  <button class="mk-tab" data-v="v3">④ Mixed-goal safety net</button>
+  <button class="mk-tab" data-v="v4">⑤ Live campaign — End promotion</button>
+</div>
+
+<p class="mk-note">Locked decisions: <b>Ongoing by default</b> for sales · <b>Goal first, then adaptive Step 1</b> · <b>Manual "End promotion" only</b> (no stock-decrement wiring — nothing decrements stock on an order today).</p>
+
+<!-- ═══ VIEW 0 — GOAL FIRST ═══ -->
+<div class="view on" id="v0">
+  <div class="shell">
+    <div class="steprail">
+      <div class="sr-t">Create campaign</div>
+      <div class="sr-i on"><div class="sr-n">0</div><div><div class="sr-l">Goal</div><div class="sr-d">What you pay for</div></div></div>
+      <div class="sr-i"><div class="sr-n">1</div><div><div class="sr-l">Basics</div><div class="sr-d">Adapts to goal</div></div></div>
+      <div class="sr-i"><div class="sr-n">2</div><div><div class="sr-l">Sets & creators</div></div></div>
+      <div class="sr-i"><div class="sr-n">3</div><div><div class="sr-l">Review & publish</div></div></div>
+    </div>
+
+    <div class="main">
+      <div class="sh-tag">Step 0 of 3</div>
+      <h1>What are you paying for?</h1>
+      <div class="subh">This decides what we ask you next. Pick the one that matches how you want money to move — you can still mix goals per set later.</div>
+
+      <div class="ann keep">Same three goals, same copy, same <code>--conv/--eng/--hyb</code> tokens as today — only <b>moved ahead of basics</b>. Sets keep their own per-set <code>goal</code> column. Zero schema change.</div>
+
+      <div class="goals">
+        <div class="gc conv sel">
+          <div class="gc-ck">✓</div>
+          <div class="gc-ic">%</div>
+          <div class="gc-tag">Commission only</div>
+          <h4>Pay per sale</h4>
+          <div class="gc-d">No upfront cost. Each creator gets a unique coupon — you pay a % of every sale they bring in.</div>
+          <div class="gc-f">coupon prefix · commission %</div>
+        </div>
+        <div class="gc eng">
+          <div class="gc-ck">✓</div>
+          <div class="gc-ic">♦</div>
+          <div class="gc-tag">Flat fee</div>
+          <h4>Pay for content</h4>
+          <div class="gc-d">Pay a fixed fee for content creation. No coupons, no sales tracking — just great posts.</div>
+          <div class="gc-f">total budget · per-creator pay</div>
+        </div>
+        <div class="gc hyb">
+          <div class="gc-ck">✓</div>
+          <div class="gc-ic">~</div>
+          <div class="gc-tag">Fee + commission</div>
+          <h4>Both</h4>
+          <div class="gc-d">A base fee to guarantee posting, plus commission on tracked sales. Most predictable for both sides.</div>
+          <div class="gc-f">budget · coupon · commission %</div>
+        </div>
+      </div>
+
+      <div class="co conv" style="margin-top:16px">
+        <span class="co-ic">→</span>
+        <div><b>Pay per sale selected.</b> Next step will skip budget, wallet and escrow entirely — none of it applies when money only moves on a sale.</div>
+      </div>
+
+      <div class="btnrow" style="margin-top:16px"><button class="btn pri">Continue to basics →</button></div>
+    </div>
+
+    <div class="rail">
+      <div class="rc">
+        <h4>🧭 Why we ask first</h4>
+        <div class="rc-h">Today the wizard asks for budget and dates in Step 1 but only learns your goal in Step 2 — so it has to ask everyone for everything. Asking here means every field after this point actually applies to you.</div>
+      </div>
+      <div class="rc">
+        <h4>💡 Mixing goals</h4>
+        <div class="rc-h">This sets the default. In Step 2 you can still give an individual set a different goal — if that set is paid, we'll ask for the budget then, not now.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW 1 — STEP 1 SALES ═══ -->
+<div class="view" id="v1">
+  <div class="shell">
+    <div class="steprail">
+      <div class="sr-t">Create campaign</div>
+      <div class="sr-i done"><div class="sr-n">✓</div><div><div class="sr-l">Goal</div><div class="sr-d">Pay per sale</div></div></div>
+      <div class="sr-i on"><div class="sr-n">1</div><div><div class="sr-l">Basics</div><div class="sr-d">Name & timing</div></div></div>
+      <div class="sr-i"><div class="sr-n">2</div><div><div class="sr-l">Sets & creators</div></div></div>
+      <div class="sr-i"><div class="sr-n">3</div><div><div class="sr-l">Review & publish</div></div></div>
+    </div>
+
+    <div class="main">
+      <div class="sh-tag">Step 1 of 3 · Pay per sale</div>
+      <h1>Campaign basics</h1>
+      <div class="subh">Name it and decide when it starts. There's no budget to set — you pay commission only when a sale lands.</div>
+
+      <div class="card">
+        <h3>Name</h3>
+        <div class="sh">A clear internal name. Creators never see this.</div>
+        <div class="g1"><div class="f">
+          <label class="flbl">Campaign name</label>
+          <input class="inp" value="Monsoon Glow — always on">
+        </div></div>
+      </div>
+
+      <div class="card">
+        <h3>When it runs</h3>
+        <div class="sh">Two separate things: when the promotion goes live, and how long it stays live. The date each creator must post by is set per set in Step 2.</div>
+
+        <div class="g1" style="margin-bottom:14px">
+          <div class="f">
+            <label class="flbl">Go live</label>
+            <div class="rad">
+              <div class="rad-r sel"><div class="rad-d"></div><div><div class="rad-t">Immediately on publish</div><div class="rad-s">Coupons work the moment you publish</div></div></div>
+              <div class="rad-r"><div class="rad-d"></div><div><div class="rad-t">On a specific date</div><div class="rad-s">Schedule the launch</div></div><input class="inp mono" type="date" value="2026-08-14"></div>
+            </div>
+            <div class="fhint">The old "must start at least 7 days from today" rule is gone — it was frontend-only, with no backend counterpart.<span class="rm-pill">removed</span></div>
+          </div>
+        </div>
+
+        <div class="g1">
+          <div class="f">
+            <label class="flbl">Runs until <span class="new-pill">new</span></label>
+            <div class="rad">
+              <div class="rad-r sel"><div class="rad-d"></div><div><div class="rad-t">Ongoing — until you end it</div><div class="rad-s">Right for "promote while stock lasts". You end it from the campaign page.</div></div></div>
+              <div class="rad-r"><div class="rad-d"></div><div><div class="rad-t">End on a date</div><div class="rad-s">Coupons stop working after this date</div></div><input class="inp mono" type="date"></div>
+            </div>
+            <div class="fhint"><b>Ongoing</b> writes <span class="mono">end_date = NULL</span> — which every read path already treats as "never expires".</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ann keep">Verified: all follower / discovery / saved / creator-post queries are already written <code>AND (c.end_date IS NULL OR c.end_date &gt;= CURRENT_DATE)</code>, and coupon expiry is <code>if (r.end_date && …)</code>. Open-ended campaigns need <b>no read-path change</b>.</div>
+
+      <div class="card strike">
+        <h3 style="color:var(--muted-2)">Budget & negotiation <span class="rm-pill">not shown for sales</span></h3>
+        <div class="sh">Total budget covers engagement + hybrid sets. Conversion-only campaigns can leave it at zero.</div>
+        <div class="g2">
+          <div class="f"><label class="flbl">Total campaign budget (₹)</label><input class="inp mono" placeholder="0" disabled></div>
+          <div class="f"><label class="flbl">Allow negotiation?</label><input class="inp" placeholder="Yes" disabled></div>
+        </div>
+      </div>
+      <div class="ann">This whole card disappears for a sales campaign. The backend already agrees — <code>total_budget</code> is only required at publish when a set is engagement or hybrid (<code>campaign.controller.js:1211</code>). The field was being asked for and then ignored.</div>
+
+      <div class="card">
+        <h3>How you'll pay</h3>
+        <div class="sh">Replaces the budget card. Real numbers, no invented ones.</div>
+        <div class="co good"><span class="co-ic">✓</span><div><b>No upfront cost, no wallet top-up, no escrow lock.</b> You pay a percentage of each tracked sale, after the return window closes. Set the % per creator in Step 2.</div></div>
+        <div style="margin-top:12px" class="g2">
+          <div class="f"><label class="flbl">Allow negotiation?</label><input class="inp" value="Yes — creators can counter the commission %"></div>
+          <div class="f"><label class="flbl">Coupon prefix</label><input class="inp mono" value="MONSOON"><div class="fhint">Each creator gets <span class="mono">MONSOON_&lt;NAME&gt;</span>.</div></div>
+        </div>
+      </div>
+
+      <div class="btnrow"><button class="btn sec">← Back</button><button class="btn pri">Continue to sets →</button></div>
+    </div>
+
+    <div class="rail">
+      <div class="ann" style="margin:0 0 0 0;border-radius:12px;border-left-width:3px">
+        <b>Today's rail, removed.</b> Step 1 currently renders a hardcoded <code>₹2,50,000 covers this campaign</code> with "you need wallet ≥ total escrow lock" and a pre-ticked ✓ "Wallet topped up" — to every brand, including commission-only ones. <code>new/page.js:1389</code>
+      </div>
+      <div class="rc">
+        <h4>💸 How you get paid out</h4>
+        <div class="rc-h">A follower buys using a creator's coupon → the sale is attributed to that creator → commission is confirmed once the return window closes → you're invoiced for commission plus platform fee. Nothing is charged before a sale.</div>
+      </div>
+      <div class="rc">
+        <h4>📋 Before you can publish</h4>
+        <div class="chr"><div class="chd done"></div><div class="cht done">Campaign name</div></div>
+        <div class="chr"><div class="chd done"></div><div class="cht done">Go live + runs-until</div></div>
+        <div class="chr"><div class="chd warn"></div><div class="cht">Products listed in catalogue</div></div>
+        <div class="chr"><div class="chd warn"></div><div class="cht">Coupon prefix or per-creator codes</div></div>
+        <div class="chr"><div class="chd"></div><div class="cht">Commission % per creator</div></div>
+        <div class="rc-h" style="margin-top:9px">No wallet requirement for this campaign.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW 2 — STEP 1 CONTENT/BOTH ═══ -->
+<div class="view" id="v2">
+  <div class="shell">
+    <div class="steprail">
+      <div class="sr-t">Create campaign</div>
+      <div class="sr-i done"><div class="sr-n">✓</div><div><div class="sr-l">Goal</div><div class="sr-d">Pay for content</div></div></div>
+      <div class="sr-i on"><div class="sr-n">1</div><div><div class="sr-l">Basics</div><div class="sr-d">Name, dates, budget</div></div></div>
+      <div class="sr-i"><div class="sr-n">2</div><div><div class="sr-l">Sets & creators</div></div></div>
+      <div class="sr-i"><div class="sr-n">3</div><div><div class="sr-l">Review & publish</div></div></div>
+    </div>
+
+    <div class="main">
+      <div class="sh-tag">Step 1 of 3 · Pay for content</div>
+      <h1>Campaign basics</h1>
+      <div class="subh">Unchanged from today — a flat-fee campaign really does need a budget and a run window.</div>
+
+      <div class="ann keep">This variant is <b>functionally identical to today</b>. Only two cosmetic fixes: the hardcoded ₹2,50,000 fallback becomes a real wallet balance, and the fake pre-ticked ✓ "Wallet topped up" reflects actual state.</div>
+
+      <div class="card">
+        <h3>Name & dates</h3>
+        <div class="sh">A clear internal name + the campaign's run window. Creators can only post inside this window.</div>
+        <div class="g1" style="margin-bottom:12px"><div class="f"><label class="flbl">Campaign name</label><input class="inp" value="Diwali Creator Push"></div></div>
+        <div class="g2">
+          <div class="f"><label class="flbl">Start date</label><input class="inp mono" type="date" value="2026-09-01"></div>
+          <div class="f"><label class="flbl">End date</label><input class="inp mono" type="date" value="2026-10-15"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Budget & negotiation</h3>
+        <div class="sh">Total budget covers engagement + hybrid sets, allocated across paid sets in Step 2.</div>
+        <div class="g2">
+          <div class="f"><label class="flbl">Total campaign budget (₹)</label><input class="inp mono" value="400000"><div class="fhint">Allocated across paid sets in Step 2.</div></div>
+          <div class="f"><label class="flbl">Allow negotiation?</label><input class="inp" value="Yes"></div>
+        </div>
+      </div>
+
+      <div class="btnrow"><button class="btn sec">← Back</button><button class="btn pri">Continue to sets →</button></div>
+    </div>
+
+    <div class="rail">
+      <div class="rc">
+        <h4>💰 Wallet status</h4>
+        <div class="bsv">₹4,20,000</div>
+        <div class="bsof">Actual wallet balance</div>
+        <div class="rc-h" style="margin-top:10px">You need wallet ≥ total escrow lock (set budget + platform fee) to publish. Funds stay in your wallet and lock per-creator when each contract is signed.</div>
+      </div>
+      <div class="rc">
+        <h4>📋 Before you can publish</h4>
+        <div class="chr"><div class="chd done"></div><div class="cht done">Wallet balance ₹4,20,000 ≥ budget ₹4,00,000</div></div>
+        <div class="chr"><div class="chd warn"></div><div class="cht">Set budgets allocated in Step 2</div></div>
+        <div class="chr"><div class="chd"></div><div class="cht">Brand logo + brief assets</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW 3 — MIXED GOAL ═══ -->
+<div class="view" id="v3">
+  <div class="shell">
+    <div class="steprail">
+      <div class="sr-t">Create campaign</div>
+      <div class="sr-i done"><div class="sr-n">✓</div><div><div class="sr-l">Goal</div><div class="sr-d">Pay per sale</div></div></div>
+      <div class="sr-i done"><div class="sr-n">✓</div><div><div class="sr-l">Basics</div><div class="sr-d">No budget asked</div></div></div>
+      <div class="sr-i on"><div class="sr-n">2</div><div><div class="sr-l">Sets & creators</div><div class="sr-d">Set B is paid</div></div></div>
+      <div class="sr-i"><div class="sr-n">3</div><div><div class="sr-l">Review & publish</div></div></div>
+    </div>
+
+    <div class="main">
+      <div class="sh-tag">Step 2 of 3</div>
+      <h1>The mixed-goal problem</h1>
+      <div class="subh">The brand came in through "Pay per sale", so Step 1 never asked for a budget. Then in Step 2 they add a <b>Set B</b> with an engagement goal — which does need one.</div>
+
+      <div class="ann">Without a catch, this is the failure mode: budget was never asked, so <code>publish</code> throws <code>"Campaign must have a total_budget set before publishing"</code> at the very last step, with no obvious way back.</div>
+
+      <div class="card" style="border-color:var(--eng);box-shadow:0 0 0 3px var(--eng-pale)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <h3 style="margin:0">Set B — Reels for launch week</h3>
+          <span class="pill" style="background:var(--eng-pale);color:var(--eng)">engagement</span>
+        </div>
+        <div class="sh">Flat fee per creator. This set introduces upfront money into a commission-only campaign.</div>
+
+        <div class="co warn" style="margin-bottom:13px">
+          <span class="co-ic">⚠</span>
+          <div><b>Funding needed.</b> This set pays a flat fee, so the campaign now needs a budget. You skipped it in Step 1 because your campaign started out commission-only — add it here and we'll carry it back.</div>
+        </div>
+
+        <div class="g2">
+          <div class="f"><label class="flbl">Total campaign budget (₹) <span class="new-pill">asked here</span></label><input class="inp mono" placeholder="e.g. 150000"><div class="fhint">Covers paid sets only. Your sales sets stay commission-only.</div></div>
+          <div class="f"><label class="flbl">Set B budget (₹)</label><input class="inp mono" placeholder="e.g. 120000"></div>
+        </div>
+        <div style="margin-top:13px" class="co bad"><span class="co-ic">✕</span><div>Wallet ₹0 — top up to at least the campaign budget before you can publish. <b>Sales sets are unaffected</b> and would publish fine on their own.</div></div>
+      </div>
+
+      <div class="ann keep">The budget question follows the money, not the step number. Asked exactly when a paid set appears, blocked again at Review with a direct "Add campaign budget" action — never a surprise at publish.</div>
+
+      <div class="btnrow"><button class="btn sec">← Back</button><button class="btn pri">Continue to review →</button></div>
+    </div>
+
+    <div class="rail">
+      <div class="rc">
+        <h4>💰 Wallet status</h4>
+        <div class="bsv" style="color:var(--danger)">₹0</div>
+        <div class="bsof">Needed once a paid set exists</div>
+        <div class="rc-h" style="margin-top:10px">Appears only because Set B is engagement. A sales-only campaign never shows this card.</div>
+      </div>
+      <div class="rc">
+        <h4>📋 Sets</h4>
+        <div class="chr"><div class="chd done"></div><div class="cht done">Set A — <span class="mono">conversion</span> · commission only</div></div>
+        <div class="chr"><div class="chd warn"></div><div class="cht">Set B — <span class="mono">engagement</span> · needs budget</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW 4 — END PROMOTION ═══ -->
+<div class="view" id="v4">
+  <div class="lc">
+    <div class="lc-h">
+      <div class="lc-t">
+        <div style="display:flex;gap:7px;margin-bottom:7px;flex-wrap:wrap">
+          <span class="pill live">● Live</span>
+          <span class="pill conv">Pay per sale</span>
+          <span class="pill ong">Ongoing — no end date</span>
+        </div>
+        <h2>Monsoon Glow — always on</h2>
+        <div style="font-size:11.5px;color:var(--muted);font-weight:650;margin-top:4px">Live since 14 Aug 2026 · 12 creators · runs until you end it</div>
+      </div>
+      <button class="btn dgr">End promotion</button>
+    </div>
+
+    <div class="mrow">
+      <div class="mt"><div class="mt-k">Tracked sales</div><div class="mt-v">₹3,84,200</div></div>
+      <div class="mt"><div class="mt-k">Commission owed</div><div class="mt-v">₹38,420</div></div>
+      <div class="mt"><div class="mt-k">Orders</div><div class="mt-v">247</div></div>
+      <div class="mt"><div class="mt-k">Active coupons</div><div class="mt-v">12</div></div>
+    </div>
+
+    <div class="co warn"><span class="co-ic">⚠</span><div><b>This control is mandatory, not a nice-to-have.</b> The auto-complete cron keys off <span class="mono">end_date &lt; CURRENT_DATE</span>, which never matches a NULL end date. Without an explicit End, an ongoing campaign would run forever.</div></div>
+
+    <div class="sep"></div>
+
+    <h3 class="blk">What "End promotion" does</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="chr"><div class="chd done"></div><div class="cht">Sets <span class="mono">end_date = today</span> — every creator coupon stops working (the existing expiry check fires)</div></div>
+      <div class="chr"><div class="chd done"></div><div class="cht">Campaign drops out of follower discovery immediately (existing <span class="mono">end_date &gt;= CURRENT_DATE</span> filters)</div></div>
+      <div class="chr"><div class="chd done"></div><div class="cht">Cron picks it up and moves status → <span class="mono">completed</span> once tranches settle</div></div>
+      <div class="chr"><div class="chd done"></div><div class="cht">Commission already earned is <b>unaffected</b> — it settles on its own return-window schedule</div></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <h3 class="blk">Why not automatic on stock-out</h3>
+    <div class="co bad"><span class="co-ic">✕</span><div><b><span class="mono">brand_products.stock</span> exists but nothing decrements it on an order.</b> Stock is a brand-entered attribute today, so "auto-end when stock closes" would be reading a number nobody updates. Ending is brand-declared until stock decrement is wired at checkout — a separate piece of work.</div></div>
+
+    <div class="sep"></div>
+
+    <h3 class="blk">Offer dates live on the offer, not here</h3>
+    <div class="co good"><span class="co-ic">✓</span><div>The discount clock already has a home: <span class="mono">brand_offers.store_starts_at</span> / <span class="mono">store_ends_at</span> (migration 084), NULL = unbounded, enforced in the adapters. Dates get asked <b>inside the offer builder, only when a discount is attached</b> — and disappear from the campaign level entirely.</div></div>
+
+    <div style="margin-top:16px;font-size:11px;color:var(--muted-2);font-weight:650">
+      Also ships in <span class="mono">Packages/Mobile</span> brand campaign detail — ending a live campaign is a live-campaign capability, and only campaign <i>creation</i> and <i>listing</i> are web-only by design.
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.mk-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.mk-tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+document.querySelectorAll('.goals').forEach(g=>{
+  g.querySelectorAll('.gc').forEach(c=>c.addEventListener('click',()=>{
+    g.querySelectorAll('.gc').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');
+  }));
+});
+document.querySelectorAll('.rad').forEach(r=>{
+  r.querySelectorAll('.rad-r').forEach(x=>x.addEventListener('click',()=>{
+    r.querySelectorAll('.rad-r').forEach(y=>y.classList.remove('sel'));x.classList.add('sel');
+  }));
+});
+</script>
+</body>
+</html>
