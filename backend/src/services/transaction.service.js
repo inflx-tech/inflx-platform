@@ -147,6 +147,7 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
     `SELECT
        ci.id, ci.status AS ci_status, ci.commission_pct, ci.coupon_code,
        ci.influencer_id, ci.offer_type AS ci_offer_type, ci.offer_config_json,
+       ci.alloc_scope, ci.offer_valid_until,
        cs.id AS set_id, cs.campaign_id,
        c.brand_id, c.status AS campaign_status, c.end_date,
        co.id AS offer_id,
@@ -162,7 +163,13 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
      WHERE ci.id = $1
        AND cs.id = $2
        AND c.id  = $3
-       AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)`,
+       -- collab-part4 §4.2 — the money path. This required an OFFER to exist, so a
+       -- commission-only sale could not even be RECORDED, let alone displayed: the
+       -- row simply didn't come back and the caller threw OFFER_UNAVAILABLE. An
+       -- allocation is now sufficient. offer_type stays for legacy rows with no
+       -- allocation yet (transitional). A creator with neither still cannot
+       -- transact, which is correct — there is nothing they are entitled to sell.
+       AND (ci.alloc_scope IS NOT NULL OR co.id IS NOT NULL OR ci.offer_type IS NOT NULL)`,
     [campaignInfluencerId, setId, campaignId, offerId || null]
   );
 

@@ -387,6 +387,11 @@ async function fetchAssignmentOffers(ctx = {}) {
     LEFT JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
     LEFT JOIN brand_offers   bo ON bo.id = ci.brand_offer_id
     WHERE ${LIVE_CI}
+      -- collab-part4 §4.2 — deliberately NOT widened to allocation-only. This
+      -- source exists to surface assignments that CARRY AN OFFER; a creator
+      -- selling at full price has no offer to list here, and returning them would
+      -- put offer-less rows in an offers feed. Their products still reach
+      -- followers through the storefront and section paths.
       AND ci.offer_type IS NOT NULL
     ORDER BY ci.created_at DESC
     LIMIT $1`;

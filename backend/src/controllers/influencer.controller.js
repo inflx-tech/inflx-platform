@@ -619,6 +619,7 @@ const getPublicById = asyncHandler(async (req, res) => {
        i.price_per_post_min, i.price_per_post_max,
        i.past_brands_json, i.collaboration_types_json,
        i.profile_image_url, i.age,
+       NULL::text AS profile_pic_r2_key,
        u.name, u.id AS user_id, u.status AS user_status,
        'onboarded'::text AS source,
        TRUE AS is_inflx_verified,
@@ -628,7 +629,14 @@ const getPublicById = asyncHandler(async (req, res) => {
      WHERE i.id = $1`,
     [id]
   );
-  if (legacy[0]) return success(res, { influencer: legacy[0] });
+  if (legacy[0]) {
+    // No-op today (onboarded influencers upload their own image, so there is
+    // no scraped R2 key to swap in) but kept symmetrical with the scraped
+    // branch so the two cannot drift apart again.
+    await resolveAvatars(legacy, { urlField: 'profile_image_url' });
+    delete legacy[0].profile_pic_r2_key;
+    return success(res, { influencer: legacy[0] });
+  }
 
   // 2. Scraped creator profile (new table) — shape into the legacy response
   const { rows: scraped } = await db.query(
@@ -645,7 +653,11 @@ const getPublicById = asyncHandler(async (req, res) => {
        cp.languages              AS language,
        cp.follower_tier          AS tier,
        cp.city,
-       NULL::text                AS state,
+       -- Was hardcoded NULL. creator_profiles.state exists since migration
+       -- 146, so a creator the admin has tagged now shows that state on their
+       -- own profile, not just in search.
+       cp.state,
+       -- creator_profiles genuinely has no gender column; NULL is honest here.
        NULL::text                AS gender,
        'Instagram'::text         AS platform,
        cp.avg_views,
@@ -662,6 +674,7 @@ const getPublicById = asyncHandler(async (req, res) => {
        cp.top_brand_partners     AS past_brands_json,
        cp.recommended_use_cases  AS collaboration_types_json,
        cp.profile_pic_url        AS profile_image_url,
+       cp.profile_pic_r2_key,
        NULL::int                 AS age,
        cp.full_name              AS name,
        cp.linked_influencer_id   AS user_id,
@@ -683,7 +696,17 @@ const getPublicById = asyncHandler(async (req, res) => {
      WHERE cp.id = $1`,
     [id]
   );
-  if (scraped[0]) return success(res, { influencer: scraped[0] });
+  if (scraped[0]) {
+    // The fix for the reported blank avatar. Search already did this; detail
+    // did not, so it returned the raw Instagram CDN URL — which decays in 1-2
+    // weeks (see utils/avatarResolver.js). A 76-day-old row therefore rendered
+    // a dead image on the profile while the Discover list showed the cached
+    // R2 copy just fine.
+    await resolveAvatars(scraped, { urlField: 'profile_image_url' });
+    // Internal storage key — never part of the public response.
+    delete scraped[0].profile_pic_r2_key;
+    return success(res, { influencer: scraped[0] });
+  }
 
   throw new AppError('NOT_FOUND', 'Creator not found', 404);
 });
@@ -1253,7 +1276,9 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   // Verify this CI belongs to the influencer
   const { rows: ciRows } = await db.query(
     `SELECT ci.id, ci.set_id, cs.campaign_id, c.brand_id, b.business_name, b.category,
-            ci.offer_type, ci.offer_config_json
+            ci.offer_type, ci.offer_config_json,
+            -- collab-part4 §4.1 — allocation is its own axis, not the offer's scope.
+            ci.alloc_scope, ci.alloc_category_node_id, ci.alloc_category, ci.alloc_product_ids
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id
@@ -1294,10 +1319,16 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   // 4. All brand products (fallback — brand-level offer, no specific products)
   let productIds = [];
 
-  const ciScope = String(ciOfferConfig.scope || '').toLowerCase();
-  if (ciScope === 'store' || ciScope === 'category') {
+  // collab-part4 §4.1 — gate on the ALLOCATION's scope, not the offer's. The old
+  // gate only ran the resolver for store/category-scoped OFFERS, which is why a
+  // creator with no offer saw nothing here. Now any allocation resolves, and a
+  // legacy row with no allocation still falls through the resolver's transitional
+  // offer-scope fallback, so nothing regresses.
+  const alloc = followerService.allocFromRow(ci);
+  const effScope = String(alloc?.scope || ciOfferConfig.scope || '').toLowerCase();
+  if (effScope) {
     productIds = await followerService.resolveAllocatedProductIds({
-      ciCfg: ciOfferConfig, offerProductsJson: offers[0]?.products_json, brandId: ci.brand_id,
+      alloc, ciCfg: ciOfferConfig, offerProductsJson: offers[0]?.products_json, brandId: ci.brand_id,
     });
   }
 

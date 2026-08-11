@@ -20,7 +20,7 @@
 
 const db = require('../config/db');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
-const { resolveAllocatedProductIds } = require('./follower.service');
+const { resolveAllocatedProductIds, allocFromRow } = require('./follower.service');
 
 const SORTS = new Set(['newest', 'price_asc', 'price_desc']);
 // brand_offers.offer_type vocabulary (CHECK constraint, migration 084).
@@ -191,7 +191,10 @@ async function creatorAllocatedProductIds(influencerId, brandIds = null) {
     brandClause = ` AND c.brand_id = ANY($2::uuid[])`;
   }
   const { rows } = await db.query(
-    `SELECT ci.offer_config_json AS ci_cfg, co.products_json AS products_json,
+    `SELECT ci.offer_config_json AS ci_cfg,
+            -- collab-part4 §4.1 — allocation is its own axis, not the offer's scope.
+            ci.alloc_scope, ci.alloc_category_node_id, ci.alloc_category, ci.alloc_product_ids,
+            co.products_json AS products_json,
             c.brand_id AS brand_id
        FROM campaign_influencers ci
        JOIN campaign_sets cs ON cs.id = ci.set_id
@@ -207,6 +210,7 @@ async function creatorAllocatedProductIds(influencerId, brandIds = null) {
   for (const r of rows) {
     // Phase 4b — store/category-scoped offers resolve LIVE; hand-picked lists stay frozen.
     const allocated = await resolveAllocatedProductIds({
+      alloc: allocFromRow(r),
       ciCfg: r.ci_cfg || {}, offerProductsJson: r.products_json, brandId: r.brand_id,
     });
     for (const id of allocated) ids.add(id);

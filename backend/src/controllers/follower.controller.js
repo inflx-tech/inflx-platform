@@ -726,7 +726,9 @@ const getStories = asyncHandler(async (req, res) => {
        JOIN users u ON u.id = i.user_id
        LEFT JOIN campaign_influencers ci ON ci.influencer_id = i.id
          AND ci.status IN ('contracted', 'active', 'completed')
-         AND (ci.offer_type IS NOT NULL)
+         -- collab-part4 §4.2 — an allocation is enough; an offer is not required.
+         -- offer_type stays for legacy rows with no allocation yet (transitional).
+         AND (ci.alloc_scope IS NOT NULL OR ci.offer_type IS NOT NULL)
        LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
        LEFT JOIN campaigns c ON c.id = cs.campaign_id
          AND c.status IN ('published', 'active', 'live')
@@ -749,7 +751,9 @@ const getStories = asyncHandler(async (req, res) => {
        JOIN users u ON u.id = i.user_id
        JOIN campaign_influencers ci ON ci.influencer_id = i.id
          AND ci.status IN ('contracted', 'active', 'completed')
-         AND (ci.offer_type IS NOT NULL)
+         -- collab-part4 §4.2 — an allocation is enough; an offer is not required.
+         -- offer_type stays for legacy rows with no allocation yet (transitional).
+         AND (ci.alloc_scope IS NOT NULL OR ci.offer_type IS NOT NULL)
        JOIN campaign_sets cs ON cs.id = ci.set_id
        JOIN campaigns c ON c.id = cs.campaign_id
          AND c.status IN ('published', 'active', 'live')
@@ -1753,6 +1757,10 @@ const resolveCoupon = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT ci.id AS campaign_influencer_id, ci.status AS ci_status,
             ci.offer_type, ci.offer_config_json, ci.commission_pct,
+            -- collab-part4 §4.1/§4.4 — allocation is its own axis; offer_valid_until
+            -- is the DISCOUNT deadline (not offer_expires_at, the invite clock).
+            ci.alloc_scope, ci.alloc_category_node_id, ci.alloc_category,
+            ci.alloc_product_ids, ci.offer_valid_until,
             cs.id AS set_id, co.products_json,
             c.id AS campaign_id, c.status AS campaign_status, c.end_date,
             b.id AS brand_id, b.business_name AS brand_name,
@@ -1776,13 +1784,22 @@ const resolveCoupon = asyncHandler(async (req, res) => {
   if (!['published', 'active', 'live'].includes(r.campaign_status)) throw UNAVAILABLE('This creator code is not active.');
   if (r.end_date && new Date(r.end_date) < new Date()) throw UNAVAILABLE('This creator code has expired.');
   // Mirror validateTracking: a shoppable code needs a typed offer or a set offer.
-  if (!r.offer_type && !r.offer_id) throw UNAVAILABLE('This code can’t be used for orders.');
+  // collab-part4 §4.2 — a code used to need a typed offer or a set offer to be
+  // shoppable. That is what blocked full-price selling at the coupon door: a
+  // creator on commission alone got "this code can't be used for orders" even
+  // though they had products to sell. An allocation now makes a code shoppable.
+  // A creator with neither an allocation nor an offer still cannot be used —
+  // there is nothing they are entitled to sell.
+  if (!r.alloc_scope && !r.offer_type && !r.offer_id) {
+    throw UNAVAILABLE('This code can’t be used for orders.');
+  }
 
   // Phase 4b — scope-aware LIVE allocation (also fixes the genuine defect here:
   // this query selected cs.products_json, a column that has never existed on
   // campaign_sets — every coupon resolve 500'd. The offer's own products_json
   // (co.) was always the intended source.)
   const allocatedIds = await followerService.resolveAllocatedProductIds({
+    alloc: followerService.allocFromRow(r),
     ciCfg: r.offer_config_json || {}, offerProductsJson: r.products_json, brandId: r.brand_id,
   });
 

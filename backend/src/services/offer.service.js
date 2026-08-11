@@ -414,7 +414,13 @@ function resolveOfferDiscount({ offerType, offerConfig, items = [], priceMap, va
     case 'bundle':    return resolveBundle(ctx);
     case 'free_gift': return resolveFreeGift(ctx);
     case 'prebook':   return { discount_amount: 0, applied_to: 'cart_total', reason: 'Prebook offer (token-only at advance time)' };
-    default:          return { discount_amount: 0, applied_to: 'cart_total', reason: `Unknown offer type: ${offerType}` };
+    default:
+      // collab-part4 §4.2 — "no offer" is now a normal, supported case: a creator
+      // can sell at full price on commission alone. It used to be unreachable, so
+      // a null type could only mean corruption and the message said so. Separate
+      // the two, because this reason surfaces on receipts and logs.
+      if (!type) return { discount_amount: 0, applied_to: 'cart_total', reason: 'No offer — full price' };
+      return { discount_amount: 0, applied_to: 'cart_total', reason: `Unknown offer type: ${offerType}` };
   }
 }
 

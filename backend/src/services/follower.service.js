@@ -18,6 +18,11 @@
 const db = require('../config/db');
 const listingService = require('./listing.service');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
+// collab-part4 §4.3 display side — the one product-card offer evaluator, shared with
+// the discovery shelves and wishlist. Lives in its own dependency-free module so
+// requiring it here cannot close the sectionRules → sectionLibrary → follower.service
+// cycle.
+const { OFFER_BEST_PCT, offerFieldsFromPct } = require('./offerDisplay.sql');
 
 // ── Open/closed status helper ────────────────────────────────────────────────
 // hours_json shape (per WeeklyScheduleEditor):
@@ -79,6 +84,12 @@ const ACTIVE_CI_QUERY = `
     ci.influencer_id,
     ci.offer_type         AS ci_offer_type,
     ci.offer_config_json  AS ci_offer_config,
+    -- collab-part4 §4.1 — allocation is its own axis, not the offer's scope.
+    ci.alloc_scope,
+    ci.alloc_category_node_id,
+    ci.alloc_category,
+    ci.alloc_product_ids,
+    ci.offer_valid_until,
     cs.id                 AS set_id,
     cs.campaign_id,
     c.brand_id,
@@ -111,7 +122,14 @@ const ACTIVE_CI_QUERY = `
   WHERE ci.status IN ('contracted', 'active', 'completed')
     AND c.status  IN ('published', 'active', 'live')
     AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
-    AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
+    -- collab-part4 §4.2 — this used to require an OFFER to exist. That made
+    -- full-price commission-only selling impossible: no offer meant no scope,
+    -- which meant no products, so the creator was hidden. Now an ALLOCATION is
+    -- enough. The offer_type leg stays only for legacy rows that have no
+    -- allocation yet and still derive one from the offer (transitional; drop it
+    -- with the resolver fallback). A creator with neither is still hidden — we do
+    -- not surface empty storefronts (W8).
+    AND (ci.alloc_scope IS NOT NULL OR co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
 
 // Extended query that also fetches influencer details + product notes
@@ -123,6 +141,12 @@ const FEED_QUERY = `
     ci.influencer_id,
     ci.offer_type         AS ci_offer_type,
     ci.offer_config_json  AS ci_offer_config,
+    -- collab-part4 §4.1 — allocation is its own axis, not the offer's scope.
+    ci.alloc_scope,
+    ci.alloc_category_node_id,
+    ci.alloc_category,
+    ci.alloc_product_ids,
+    ci.offer_valid_until,
     cs.id                 AS set_id,
     cs.campaign_id,
     c.brand_id,
@@ -159,7 +183,14 @@ const FEED_QUERY = `
   WHERE ci.status IN ('contracted', 'active', 'completed')
     AND c.status  IN ('published', 'active', 'live')
     AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
-    AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
+    -- collab-part4 §4.2 — this used to require an OFFER to exist. That made
+    -- full-price commission-only selling impossible: no offer meant no scope,
+    -- which meant no products, so the creator was hidden. Now an ALLOCATION is
+    -- enough. The offer_type leg stays only for legacy rows that have no
+    -- allocation yet and still derive one from the offer (transitional; drop it
+    -- with the resolver fallback). A creator with neither is still hidden — we do
+    -- not surface empty storefronts (W8).
+    AND (ci.alloc_scope IS NOT NULL OR co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
 
 // Category → business linkage for the deals tab now comes from the single source
@@ -203,23 +234,83 @@ function allocatedProductIds(ciCfg, setProductsJson) {
   return Array.from(ids);
 }
 
-// Phase 4b — LIVE allocation: honor the offer's declared SCOPE at read time.
-// The brand's offer builder already writes offer_config_json.scope:
-//   'store'    → ALL of the brand's currently-pushed products (live — new
-//                products flow to creator stores automatically)
-//   'category' → currently-pushed products in that category (live). Node-based
-//                (category_node_id → recursive subtree over category_nodes,
-//                same shape as OFFER_APPLIES) when the config carries it;
-//                legacy free-text `category` matches brand_products.section.
-//   'products' / bogo / bundle / absent → the hand-picked snapshot union
-//                (legacy allocatedProductIds, unchanged)
-// Before this, store/category-scoped offers allocated ZERO listed products
-// (their products arrays are empty by design) — the declared scope was ignored.
-async function resolveAllocatedProductIds({ ciCfg, offerProductsJson, brandId }) {
+// ── Allocation: what a creator MAY SELL ──────────────────────────────────────
+// collab-part4-offers-allocation §4.1.
+//
+// This used to read the OFFER's scope (offer_config_json.scope) to decide what a
+// creator could sell. That one read was the conflation behind three faults: no
+// offer meant no products (so full-price commission-only selling was impossible),
+// editing an offer silently rewrote what the creator was allowed to sell, and
+// "whole store allocated, one category discounted" was inexpressible because both
+// meanings shared a field.
+//
+// Allocation now has its own scope, independent of the offer:
+//   'store'    → every currently-published product. New products AUTO-JOIN
+//                (founder's explicit choice).
+//   'category' → the node's recursive subtree (or legacy section name). New
+//                products in it auto-join.
+//   'products' → a FIXED list. Nothing auto-joins.
+//
+// Resolved live rather than snapshotted, so unpublishing is the brand's lever: an
+// unpublished product leaves the store and therefore leaves every store/category
+// allocation automatically.
+//
+// TRANSITIONAL legacy fallback: when alloc_scope is NULL we fall back to the
+// offer's scope, as before. This exists purely to survive the deploy window —
+// rows written by the old code (and any created between the backfill and the
+// deploy) have no allocation, and without this the 19 live collaborations would
+// resolve to zero products and every creator storefront would go blank. It logs
+// so the remaining volume is visible, and it should be deleted once
+// alloc_scope IS NULL returns nothing. It is NOT part of the model.
+/**
+ * Build the allocation object from any row that selected the alloc_* columns.
+ * One place, so every call site agrees on the shape.
+ */
+function allocFromRow(r) {
+  if (!r) return null;
+  return {
+    scope:            r.alloc_scope || null,
+    category_node_id: r.alloc_category_node_id || null,
+    category:         r.alloc_category || null,
+    product_ids:      Array.isArray(r.alloc_product_ids) ? r.alloc_product_ids : null,
+  };
+}
+
+async function resolveAllocatedProductIds({ alloc, ciCfg, offerProductsJson, brandId }) {
   const cfg = ciCfg && typeof ciCfg === 'object' ? ciCfg : {};
-  const scope = String(cfg.scope || '').toLowerCase();
-  const nodeId = cfg.category_node_id || null;
-  if (brandId && (scope === 'store' || (scope === 'category' && (nodeId || cfg.category)))) {
+
+  const a = alloc && typeof alloc === 'object' ? alloc : {};
+  let scope  = String(a.scope || '').toLowerCase();
+  let nodeId = a.category_node_id || null;
+  let catLabel = a.category || null;
+  let fixedIds = Array.isArray(a.product_ids) ? a.product_ids : null;
+
+  if (!scope) {
+    // Legacy row — derive from the offer exactly as the old code did.
+    scope    = String(cfg.scope || '').toLowerCase();
+    nodeId   = cfg.category_node_id || null;
+    catLabel = cfg.category || null;
+    fixedIds = null;
+    if (scope) {
+      console.log('[allocation] legacy fallback — alloc_scope NULL, derived from offer scope:', scope);
+    }
+  }
+
+  if (scope === 'products') {
+    // A fixed list. Still filtered by live listing state so an unpublished
+    // product disappears here too — otherwise a product-scoped creator could
+    // keep selling something the brand pulled.
+    if (!fixedIds || fixedIds.length === 0) return allocatedProductIds(cfg, offerProductsJson);
+    const { rows } = await db.query(
+      `SELECT id FROM brand_products
+        WHERE id = ANY($1::uuid[]) AND brand_id = $2
+          AND is_active = true AND pushed_to_store = true`,
+      [fixedIds, brandId]
+    );
+    return rows.map(r => r.id);
+  }
+
+  if (brandId && (scope === 'store' || (scope === 'category' && (nodeId || catLabel)))) {
     const params = [brandId];
     let sql = `SELECT id FROM brand_products
                 WHERE brand_id = $1 AND is_active = true AND pushed_to_store = true`;
@@ -233,13 +324,16 @@ async function resolveAllocatedProductIds({ ciCfg, offerProductsJson, brandId })
             SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
           ) SELECT id FROM sub)`;
       } else {
-        params.push(cfg.category);
+        params.push(catLabel);
         sql += ` AND section = $2`;
       }
     }
     const { rows } = await db.query(sql, params);
     return rows.map(r => r.id);
   }
+
+  // No allocation and no legacy offer scope → nothing to sell. The caller must
+  // not surface this creator (contract W8: no empty storefronts).
   return allocatedProductIds(cfg, offerProductsJson);
 }
 
@@ -282,19 +376,32 @@ async function resolveStore(handle) {
     // hand-picked lists stay frozen.
     const ciCfg = r.ci_offer_config || {};
     const allocatedIds = await resolveAllocatedProductIds({
-      ciCfg, offerProductsJson: r.products_json, brandId: r.brand_id,
+      alloc: allocFromRow(r), ciCfg, offerProductsJson: r.products_json, brandId: r.brand_id,
     });
 
     let products = [];
     if (allocatedIds.length > 0) {
       const { rows } = await db.query(
-        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
-         FROM brand_products
-         WHERE id = ANY($1) AND is_active = true AND pushed_to_store = true
-         ORDER BY section, name`,
+        // collab-part4 §4.3 display side — OFFER_BEST_PCT is the SAME evaluator the
+        // discovery shelves, wishlist and product cards use. Without it a product
+        // could be CHARGED a published global discount at checkout while its tile in
+        // the creator's store advertised full price. Simple discounts only: a tile
+        // has no cart, so volume/bundle/BOGO cannot be expressed as a % here.
+        `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag,
+                bp.description, bp.variants_json,
+                ${OFFER_BEST_PCT} AS offer_pct
+         FROM brand_products bp
+         WHERE bp.id = ANY($1) AND bp.is_active = true AND bp.pushed_to_store = true
+         ORDER BY bp.section, bp.name`,
         [allocatedIds]
       );
-      products = rows;
+      // Map the raw pct into the same { discount_value, offer_price } shape every
+      // other product card in the app uses, so a creator's tile and a shelf tile
+      // advertise a discount identically.
+      products = rows.map(({ offer_pct, ...p }) => ({
+        ...p,
+        ...offerFieldsFromPct(offer_pct, p.price != null ? parseFloat(p.price) : null),
+      }));
     }
     const hasAssignedProducts = allocatedIds.length > 0;
 
@@ -1037,18 +1144,32 @@ async function getInfluencerStorePreview(influencerId) {
     // full brand-catalogue ELSE fallback that leaked every product when the
     // creator hadn't hand-picked anything.) Phase 4b: scope-aware + live.
     const allocatedIds = await resolveAllocatedProductIds({
-      ciCfg: r.ci_offer_config || {}, offerProductsJson: r.products_json, brandId: r.brand_id,
+      alloc: allocFromRow(r), ciCfg: r.ci_offer_config || {},
+      offerProductsJson: r.products_json, brandId: r.brand_id,
     });
     let products = [];
     if (allocatedIds.length > 0) {
       const { rows } = await db.query(
-        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
-         FROM brand_products
-         WHERE id = ANY($1) AND is_active = true AND pushed_to_store = true
-         ORDER BY section, name`,
+        // collab-part4 §4.3 display side — OFFER_BEST_PCT is the SAME evaluator the
+        // discovery shelves, wishlist and product cards use. Without it a product
+        // could be CHARGED a published global discount at checkout while its tile in
+        // the creator's store advertised full price. Simple discounts only: a tile
+        // has no cart, so volume/bundle/BOGO cannot be expressed as a % here.
+        `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag,
+                bp.description, bp.variants_json,
+                ${OFFER_BEST_PCT} AS offer_pct
+         FROM brand_products bp
+         WHERE bp.id = ANY($1) AND bp.is_active = true AND bp.pushed_to_store = true
+         ORDER BY bp.section, bp.name`,
         [allocatedIds]
       );
-      products = rows;
+      // Map the raw pct into the same { discount_value, offer_price } shape every
+      // other product card in the app uses, so a creator's tile and a shelf tile
+      // advertise a discount identically.
+      products = rows.map(({ offer_pct, ...p }) => ({
+        ...p,
+        ...offerFieldsFromPct(offer_pct, p.price != null ? parseFloat(p.price) : null),
+      }));
     }
 
     offersWithProducts.push({
@@ -1110,4 +1231,5 @@ module.exports = {
   computeOpenStatus,        // Phase 1 (Dining) — exported so controllers can reuse the helper
   allocatedProductIds,      // Phase 3a — reused by sectionLibrary for creator-surface stacking
   resolveAllocatedProductIds, // Phase 4b — scope-aware LIVE allocation (store/category)
+  allocFromRow,               // collab-part4 §4.1 — one shape for the allocation object
 };

@@ -27,6 +27,9 @@ const txService = require('../services/transaction.service');
 const bookingService = require('../services/booking.service');
 const notificationService = require('../services/notification.service');
 const offerService = require('../services/offer.service');
+// collab-part4 §4.3 — chooses WHICH offer applies (creator-specific vs published
+// global, best single offer per checkout). Holds no discount maths of its own.
+const offerResolution = require('../services/offerResolution.service');
 const pricingService = require('../services/pricing.service');
 const settlementService = require('../services/settlement.service');
 const paymentConfigSvc = require('../services/paymentConfig.service');
@@ -179,9 +182,20 @@ async function computeOfferDiscount({ trackingRecord, items, billAmount }) {
     ]);
   }
 
-  return offerService.resolveOfferDiscount({
-    offerType: trackingRecord.ci_offer_type,
-    offerConfig: trackingRecord.offer_config_json,
+  // collab-part4 §4.3 — the creator's own offer is no longer the only candidate.
+  // Published global offers from the brand's engine now reach every creator holding
+  // those products, and the BEST SINGLE offer wins against the whole cart. Never
+  // combined, never stacked.
+  //
+  // §4.4 expiry is handled inside the resolver (offer_valid_until — not
+  // offer_expires_at, which is the invitation clock).
+  //
+  // The pure maths is untouched: the resolver scores each candidate with the same
+  // offerService.resolveOfferDiscount this used to call directly, so the only thing
+  // that changed is WHICH offer is chosen.
+  return offerResolution.resolveBestOffer({
+    ci: trackingRecord,
+    brandId: trackingRecord.brand_id,
     items: safeItems,
     priceMap,
     variantPriceMap,
@@ -1346,9 +1360,16 @@ async function priceOrderForGroup(follower, group) {
   // model (store / category / products) for Discount + Volume.
   let offerResult;
   if (!isOrganic) {
-    // Creator-mediated: offer from the contracted campaign chain.
-    offerResult = offerService.resolveOfferDiscount({
-      offerType: record.ci_offer_type, offerConfig: record.offer_config_json,
+    // Creator-mediated: the contracted campaign chain PLUS the brand's published
+    // global offers (collab-part4 §4.3), best single offer against the whole cart.
+    //
+    // Routed through the resolver rather than the engine directly so this checkout
+    // path agrees with computeOfferDiscount. Leaving it on the creator's offer alone
+    // would mean the same cart got a different discount depending on which checkout
+    // route it took — the kind of inconsistency that surfaces as a customer
+    // complaint rather than a test failure.
+    offerResult = await offerResolution.resolveBestOffer({
+      ci: record, brandId: record.brand_id,
       items: safeItems, priceMap, variantPriceMap, productMetaMap,
     });
   } else if (record.brand_offer_id) {
