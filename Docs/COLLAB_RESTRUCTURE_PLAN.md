@@ -209,6 +209,14 @@ confusion in the offer layer.
 *Change:* the per-creator offer becomes the only truth; the library offer is what it
 snapshots from; the set-level table leaves the read path.
 
+> **Correction, 2026-08-11.** "Provably inert" holds only for the LEFT JOIN half. Eight
+> references are **INNER JOINs**, and an inner join against an empty table returns nothing —
+> so those queries are eliminating every row, not falling through to NULLs. Twelve discovery
+> rule queries share one such join, so those shelves are empty in production, and the
+> follower "active deals" count reports 0 for every followed creator. Removing them changes
+> what followers see. Carved as a defect in its own right:
+> `features/backend-defect-dead-offer-join/`.
+
 ### 4.2 — Allocation becomes a record
 
 Today there is no "assign these products to this creator" action. Allocation is

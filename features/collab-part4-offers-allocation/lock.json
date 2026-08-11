@@ -22,7 +22,7 @@
     ],
     "done_display": "§4.3 display side — closed the asymmetry §4.3 opened, where a product could be CHARGED a published global discount at checkout while its tile in the creator's store advertised full price. Reused the SAME evaluator the discovery shelves/wishlist/product cards already use rather than writing a second one. That required hoisting the fragments out of sectionRules.service into a new dependency-free offerDisplay.sql module: follower.service cannot require sectionRules without closing the cycle sectionRules → sectionLibrary → follower.service, which would hand sectionLibrary a half-initialised follower.service. sectionRules re-exports the names so existing importers are untouched, and D1 asserts sharing BY IDENTITY so a future copy-paste fails. Only simple discounts reach a tile — cart-shaped mechanics have no cart to evaluate and would be a lie on a single product.",
     "remaining": [
-      "§4.5 — retire the dead set-level offer table from the read paths (49 refs, 14 files, one at a time with equivalence checks)",
+      "§4.5 — SPLIT OUT. The inert claim was wrong for the 8 INNER JOIN references (an inner join on an empty table returns nothing, not NULLs), so removing them changes what followers see. Carved to features/backend-defect-dead-offer-join, sequenced after Part 4 deploys. The 8 genuinely-inert LEFT JOINs ride with it rather than being done twice.",
       "Cart-shaped offers as an availability badge on a tile (volume/bundle/BOGO) — currently they simply do not appear on a card",
       "Wizard scope chooser — lift the existing scopeToggle up one level. BLOCKED on mockup_locked (gov-check Rule 3).",
       "§4.4 display side — expiry on the storefront/coupon preview, not only at checkout"

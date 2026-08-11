@@ -141,10 +141,26 @@ An offer gets its own expiry, and it becomes the only thing that stops selling. 
 means no date anywhere. Library offers' existing validity dates start being honoured on the
 coupon path, where they are currently ignored.
 
-### 4.5 — Retire the dead set-level path
+### 4.5 — Retire the dead set-level path — **SPLIT 2026-08-11, claim corrected**
 
-Remove it from the read paths. Provably inert: zero rows in production. Each of the 49
-references is removed with its own before/after proof rather than in one sweep.
+This section claimed retiring the table was "provably inert: zero rows in production." That
+is **true for the 8 LEFT JOIN references** (their `co.*` columns are always NULL, so every
+COALESCE already falls through) and **wrong for the 8 INNER JOIN references**.
+
+An inner join against an empty table returns **nothing**, so those queries are not falling
+through to NULLs — they are eliminating every row. Verified in production: 1 live
+collaboration exists, and 0 survive the join. Twelve discovery rule queries share one such
+join, so those shelves are empty today; the follower "active deals" count reports 0 for every
+followed creator.
+
+Removing them therefore **changes what followers see**. That is a functional fix, not a
+cleanup, and it is carved into its own contract:
+**`features/backend-defect-dead-offer-join/`**, sequenced after Part 4 deploys so each
+removed join has the per-creator offer path already live to fall back on.
+
+**What remains in Part 4's scope:** nothing. The inert half is low value on its own and
+touches files the defect fix will also touch, so doing it first would mean editing the same
+queries twice. It rides with the defect contract.
 
 ---
 
