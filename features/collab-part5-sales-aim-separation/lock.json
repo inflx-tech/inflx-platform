@@ -1,0 +1,31 @@
+{
+  "feature": "collab-part5-sales-aim-separation",
+  "spec_version": "1.0.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "notes": "Part 5 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md); Parts 1, 4 and 2 (which absorbed 3) have shipped. AWAITING FOUNDER LOCK — spec authored 2026-08-12, no implementation started. Four items: (1) campaign total_budget becomes DERIVED from set allocations and the Step-1 budget field goes; (2) end_date optional at creation, required at PUBLISH unless every set is conversion (hybrid stays windowed); (3) a new explicit End campaign -> completed, distinct from cancel's abort, guarded on pending tranches + deliverables awaiting review, with creators notified because completing removes their products from follower discovery; (4) a NULL end date renders as 'Ongoing' everywhere instead of an em-dash. No migration: campaigns.end_date is already nullable in prod. Two decisions requested at lock, both answered with a recommendation in 01-spec.md §6: budget = derive (not ceiling, not drop), hybrid = windowed.",
+  "prod_evidence_2026_08_12": {
+    "campaigns": 10,
+    "active": "7 — all conversion",
+    "draft": 3,
+    "total_budget_null": "10 of 10",
+    "set_budget_sum": "NULL — no set has ever carried a budget",
+    "end_date_null": "0 of 10",
+    "conclusion": "Every live campaign is commission-only, so this part fixes the flow 100% of real campaigns use. It also means the NULL end date is genuinely new data, which is why the read-path audit in 01-spec.md §2 was performed rather than assumed."
+  },
+  "plan_claims_corrected": [
+    "The program plan claimed dateless campaigns already exist in prod via the old acceptance path — FALSE, end_date IS NULL is zero rows. Part 2 replaced that path before it fabricated any stub.",
+    "The plan claimed budget is 'asked of every brand before the aim is known' — half stale. Part 1 already made it conditionally required and hid the money card; what remains is that the field itself still greets every brand in Step 1."
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "deploy_class": "production-impacting (backend/src, brand-web runtime, Mobile runtime) — explicit founder go required at deploy time; no migration",
+    "maestro_green": false
+  }
+}
