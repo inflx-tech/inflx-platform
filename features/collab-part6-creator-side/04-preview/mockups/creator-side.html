@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part 6 — the creator side</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--bg2:#F4F4F5;
+  --yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-50:#FFFDEB;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--muted-4:#D4D4D8;
+  --border:#E4E4E7;--border-soft:#F4F4F5;
+  --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;
+  --danger:#E8401A;--danger-pale:#FDEEE9;--danger-text:#B91C1C;
+  --conv:#7E22CE;--conv-pale:#F3E8FF;--eng:#0E7490;--eng-pale:#CFFAFE;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--muted-3);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
+.tab:hover{border-color:var(--muted-4);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1140px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:15px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55}
+.note.key{background:var(--yellow-50);border:1px solid var(--yellow-pale);color:var(--yellow-text)}
+.note.good{background:var(--success-pale);border:1px solid #A7F3D0;color:var(--success-text)}
+.note.bad{background:var(--danger-pale);border:1px solid #FBCBC4;color:var(--danger-text)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:3px}
+/* Wide tables scroll inside their own box — the page body must never scroll sideways. */
+.card.tight{padding:0;overflow:hidden}
+.card.tight table{min-width:560px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sh{font-size:11.5px;color:var(--muted-2);font-weight:600;margin-bottom:12px}
+h5{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.45px;color:var(--muted);margin:14px 0 8px}
+h5:first-child{margin-top:0}
+.tog{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--white)}
+.tog button{flex:1;border:none;background:var(--white);padding:8px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--muted);border-right:1px solid var(--border)}
+.tog button:last-child{border-right:none}
+.tog button.act{background:var(--ink);color:var(--yellow)}
+.inp{width:100%;border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:inherit;background:var(--white)}
+.inp.mono{font-family:'JetBrains Mono',monospace}
+.inp.sm{padding:6px 9px;font-size:11.5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.flbl{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+.hint{font-size:10.5px;color:var(--muted-2);font-weight:600;margin-top:6px;line-height:1.5}
+.hint.warn{color:var(--yellow-text)}
+.btn{border:none;border-radius:10px;padding:9px 15px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn.pri{background:var(--yellow);color:var(--ink)}
+.btn.ink{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--border);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #FBCBC4;color:var(--danger-text)}
+.btn.sm{padding:6px 11px;font-size:11px;border-radius:8px}
+.btn.big{width:100%;padding:12px;font-size:13px}
+.btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+/* terms */
+.term{border:1px solid var(--border);border-radius:11px;padding:11px;margin-bottom:9px;background:var(--white)}
+.term.primary{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--yellow)}
+.term.off{opacity:.62}
+.term-h{display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.term-t{font-size:12px;font-weight:800;flex:1;min-width:120px}
+.pill{display:inline-block;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.45px;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pill.pri{background:var(--ink);color:var(--yellow)}
+.pill.req{background:var(--danger-pale);color:var(--danger-text)}
+.pill.pref{background:var(--yellow-pale);color:var(--yellow-text)}
+.pill.neg{background:var(--success-pale);color:var(--success-text)}
+.pill.conv{background:var(--conv-pale);color:var(--conv)}
+.pill.eng{background:var(--eng-pale);color:var(--eng)}
+.pill.mut{background:var(--bg2);color:var(--muted)}
+.imp{display:flex;gap:5px;margin-top:7px;align-items:center}
+.imp button{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:3px 9px;font-size:9.5px;font-weight:750;cursor:pointer;font-family:inherit;color:var(--muted)}
+.imp button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
+.imp .lb{font-size:9.5px;font-weight:800;color:var(--muted-3);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
+/* rows */
+.list{border:1px solid var(--border);border-radius:11px;background:var(--white);overflow:hidden}
+.crow{display:flex;align-items:center;gap:9px;padding:9px 11px;border-bottom:1px solid var(--border-soft)}
+.crow:last-child{border-bottom:none}
+.crow.hl{background:var(--yellow-50)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--yellow);display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto}
+.av.sq{border-radius:8px}
+.cb{flex:1;min-width:0}
+.cn{font-size:12px;font-weight:750}
+.cm{font-size:10.5px;color:var(--muted-2);font-weight:650}
+.st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;font-family:'JetBrains Mono',monospace;padding:3px 7px;border-radius:4px;white-space:nowrap}
+.st.wait{background:var(--bg2);color:var(--muted)}
+.st.agreed{background:var(--success-pale);color:var(--success-text)}
+.st.counter{background:var(--yellow-pale);color:var(--yellow-text)}
+.st.dec{background:var(--danger-pale);color:var(--danger-text)}
+.st.exp{background:var(--bg2);color:var(--muted-3)}
+.sep{height:1px;background:var(--border-soft);margin:14px 0}
+/* min-width:0 on the grid items — without it a grid track refuses to shrink below its
+   widest child, so a wide table inside a column pushes the whole page sideways even
+   though the table itself is in a scroll container. */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start}
+.cols>*,.cols3>*{min-width:0}
+.col{min-width:0}
+.col h2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+.col.before h2{background:var(--danger-pale);color:var(--danger-text)}
+.col.after h2{background:var(--success-pale);color:var(--success-text)}
+.col.now h2{background:var(--bg2);color:var(--muted)}
+/* phone */
+.phone{max-width:322px;margin:0 auto;border:8px solid var(--ink);border-radius:24px;overflow:hidden;background:var(--white)}
+.ph-h{background:var(--ink);color:#fff;padding:8px 12px;font-size:11px;font-weight:750;display:flex;justify-content:space-between}
+.ph-b{padding:12px}
+.ph-tabs{display:flex;border-bottom:1px solid var(--border)}
+.ph-tabs div{flex:1;text-align:center;padding:8px 3px;font-size:10.5px;font-weight:750;color:var(--muted-2)}
+.ph-tabs div.act{color:var(--ink);box-shadow:inset 0 -2px 0 var(--yellow)}
+.ph-nav{display:flex;border-top:1px solid var(--border);background:var(--white)}
+.ph-nav div{flex:1;text-align:center;padding:8px 2px;font-size:9px;font-weight:750;color:var(--muted-3)}
+.ph-nav div.act{color:var(--ink)}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-soft);font-size:11.5px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted);font-weight:650}
+.kv .v{font-weight:800;text-align:right}
+.locked{background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:10.5px;color:var(--muted);font-weight:650;margin-top:8px;line-height:1.5}
+/* diff */
+.diff{display:grid;grid-template-columns:1fr auto 1fr;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)}
+.diff:last-child{border-bottom:none}
+.diff .lbl{grid-column:1/-1;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-3)}
+.dv{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;padding:6px 9px;border-radius:7px;background:var(--bg2)}
+.dv.old{color:var(--muted-2);text-decoration:line-through}
+.dv.new{background:var(--yellow-pale);color:var(--yellow-text)}
+.dv.same{background:var(--bg2);color:var(--muted)}
+.arr{font-size:12px;color:var(--muted-3);font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border-soft)}
+th{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);background:var(--bg)}
+td.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.chk{width:15px;height:15px;border:2px solid var(--muted-4);border-radius:4px;display:inline-grid;place-items:center;font-size:9px;flex:0 0 auto}
+.chk.on{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.rounds{display:flex;gap:4px;align-items:center;font-size:9.5px;font-weight:800;color:var(--muted-2);font-family:'JetBrains Mono',monospace}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted-4)}
+.dot.used{background:var(--yellow-text)}
+@media(max-width:960px){.cols,.cols3{grid-template-columns:1fr}.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Part 6 — the creator side</h1>
+  <p>What Asha already agreed · what she can sell · finding brands in her industry</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">① Settled vs new</button>
+  <button class="tab" data-v="v2">② A cold invite</button>
+  <button class="tab" data-v="v3">③ What she can sell</button>
+  <button class="tab" data-v="v4">④ Finding brands</button>
+  <button class="tab" data-v="v5">⑤ What we're NOT building</button>
+</div>
+
+<!-- ①──────────────────────────────────────────────────────────────────────── -->
+<div class="view on" id="v1">
+  <div class="vh">The invite for terms she already agreed</div>
+  <div class="vs">Asha settled 15% and a 15 Sep post-by date with Kanchi Silks on 8 August. A week later the campaign arrives.</div>
+
+  <div class="cols">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Festive Sarees 2026</span><span>⋯</span></div>
+        <div class="ph-b">
+          <div class="cn" style="margin-bottom:8px">Kanchi Silks</div>
+          <div class="kv"><span class="k">Commission</span><span class="v mono">15%</span></div>
+          <div class="kv"><span class="k">Post by</span><span class="v mono">15 Sep 2026</span></div>
+          <div class="kv"><span class="k">Your code</span><span class="v mono">ASHA15</span></div>
+          <div class="kv"><span class="k">Offer</span><span class="v">20% off dupattas</span></div>
+          <button class="btn pri big" style="margin-top:12px">ACCEPT</button>
+          <div class="btnrow"><button class="btn sec sm">Decline</button><button class="btn sec sm">Negotiate</button></div>
+        </div>
+      </div>
+      <div class="note bad" style="margin-top:12px"><b>Nothing says these were already agreed.</b> It reads like a brand-new offer that appeared out of nowhere. Asha has to remember, from a week ago, that the money and timing are closed — and a Negotiate button sits there implying they are not.</div>
+    </div>
+
+    <div class="col after">
+      <h2>After</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Festive Sarees 2026</span><span>⋯</span></div>
+        <div class="ph-b">
+          <div class="cn" style="margin-bottom:8px">Kanchi Silks</div>
+
+          <h5 style="margin-top:0">✓ Already agreed with you</h5>
+          <div class="term primary">
+            <div class="kv"><span class="k">Commission</span><span class="v mono">15%</span></div>
+            <div class="kv"><span class="k">Post by</span><span class="v mono">15 Sep 2026</span></div>
+            <div class="locked">Settled with Kanchi Silks on 8 Aug 2026. Nothing to decide again.</div>
+          </div>
+
+          <h5>New in this campaign</h5>
+          <div class="kv"><span class="k">Your code</span><span class="v mono">ASHA15</span></div>
+          <div class="kv"><span class="k">You can sell</span><span class="v">Their whole store</span></div>
+          <div class="kv"><span class="k">Offer</span><span class="v">20% off dupattas</span></div>
+          <div class="kv"><span class="k">Brief</span><span class="v">1 reel + 2 stories</span></div>
+
+          <button class="btn pri big" style="margin-top:12px">ACCEPT</button>
+          <div class="hint" style="text-align:center">One tap — you already agreed the terms.</div>
+        </div>
+      </div>
+      <div class="note good" style="margin-top:12px"><b>No Negotiate button here</b> — and that is not a removal, it is the truth showing. The system already refuses to renegotiate settled terms; the screen simply stopped pretending otherwise.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ②──────────────────────────────────────────────────────────────────────── -->
+<div class="view" id="v2">
+  <div class="vh">A cold invite — completely unchanged</div>
+  <div class="vs">Meera was invited directly. No handshake, nothing pre-agreed.</div>
+
+  <div class="cols">
+    <div class="col now">
+      <h2>Meera's screen — today AND after</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Diwali Lookbook</span><span>⋯</span></div>
+        <div class="ph-b">
+          <div class="cn" style="margin-bottom:8px">Kanchi Silks</div>
+          <div class="kv"><span class="k">Fee</span><span class="v mono">₹30,000</span></div>
+          <div class="kv"><span class="k">Post between</span><span class="v mono">5–25 Oct</span></div>
+          <div class="kv"><span class="k">You can sell</span><span class="v">Ethnic Wear</span></div>
+          <div class="kv"><span class="k">Brief</span><span class="v">2 reels</span></div>
+          <button class="btn pri big" style="margin-top:12px">ACCEPT</button>
+          <div class="btnrow"><button class="btn sec sm">Decline</button><button class="btn sec sm">Negotiate</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Why this matters</h3>
+        <div class="sh">The split only appears when an agreement actually sits behind the collaboration.</div>
+        <div class="kv"><span class="k">"Already agreed" group</span><span class="v">not shown</span></div>
+        <div class="kv"><span class="k">Negotiate</span><span class="v">still there</span></div>
+        <div class="kv"><span class="k">Everything else</span><span class="v">identical</span></div>
+      </div>
+      <div class="note key">A creator who never negotiated must never be told they did. The one genuinely new line on this screen is <b>“You can sell”</b> — see tab ③.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③──────────────────────────────────────────────────────────────────────── -->
+<div class="view" id="v3">
+  <div class="vh">What she is allowed to sell</div>
+  <div class="vs">Kanchi Silks gave Asha the whole store. Next week she lists twelve new sarees.</div>
+
+  <div class="cols">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="card">
+        <h3>Asha's products screen</h3>
+        <div class="sh">48 products listed.</div>
+        <div class="locked">A week later: 60 products.</div>
+      </div>
+      <div class="note bad"><b>The products are visible; the rule behind them is not.</b> Twelve items appear and Asha cannot tell whether that is how it is supposed to work or a mistake. And a creator given a fixed list of twelve has no way to know nothing will ever be added.</div>
+    </div>
+    <div class="col after">
+      <h2>After — one line, three shapes</h2>
+      <div class="card">
+        <h5>Whole store</h5>
+        <div class="kv"><span class="k">You can sell</span><span class="v">Their whole store</span></div>
+        <div class="locked">Anything they list from now on is automatically yours to sell.</div>
+      </div>
+      <div class="card">
+        <h5>A category</h5>
+        <div class="kv"><span class="k">You can sell</span><span class="v">Ethnic Wear</span></div>
+        <div class="locked">New Ethnic Wear arrivals join automatically.</div>
+      </div>
+      <div class="card">
+        <h5>A hand-picked list</h5>
+        <div class="kv"><span class="k">You can sell</span><span class="v">12 selected products</span></div>
+        <div class="locked">A fixed list — new arrivals will not be added.</div>
+      </div>
+    </div>
+  </div>
+  <div class="note key"><b>The summary must never contradict the list.</b> A line reading “whole store” above a screen showing twelve items would be worse than saying nothing, so the two are asserted together rather than separately.</div>
+</div>
+
+<!-- ④──────────────────────────────────────────────────────────────────────── -->
+<div class="view" id="v4">
+  <div class="vh">Finding brands worth pitching</div>
+  <div class="vs">Asha does fashion, in Bengaluru.</div>
+
+  <div class="cols">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Brand Proposals</span><span></span></div>
+        <div class="ph-tabs"><div class="act">DISCOVER</div><div>MY PITCHES</div><div>REQUESTS</div></div>
+        <div class="ph-b">
+          <input class="inp sm" value="Search brands…" readonly>
+          <div class="crow"><span class="av sq">KS</span><span class="cb"><span class="cn">Kanchi Silks</span><br><span class="cm">Fashion · Bengaluru</span></span></div>
+          <div class="crow"><span class="av sq">MT</span><span class="cb"><span class="cn">Madras Tiffin</span><br><span class="cm">Food · Chennai</span></span></div>
+          <div class="crow"><span class="av sq">UF</span><span class="cb"><span class="cn">Urban Furnish</span><br><span class="cm">Furniture · Pune</span></span></div>
+        </div>
+      </div>
+      <div class="note bad" style="margin-top:12px"><b>Name search only.</b> The industry and city are already shown on every row — the app receives them — but Asha cannot filter by either. She scrolls and guesses.</div>
+    </div>
+    <div class="col after">
+      <h2>After</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Brand Proposals</span><span></span></div>
+        <div class="ph-tabs"><div class="act">DISCOVER</div><div>MY PITCHES</div><div>REQUESTS</div></div>
+        <div class="ph-b">
+          <input class="inp sm" value="Search brands…" readonly>
+          <div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap">
+            <span class="pill pri">FASHION ✕</span>
+            <span class="pill pri">BENGALURU ✕</span>
+            <span class="pill mut">+ INDUSTRY</span>
+            <span class="pill mut">+ CITY</span>
+          </div>
+          <div class="crow hl"><span class="av sq">KS</span><span class="cb"><span class="cn">Kanchi Silks</span><br><span class="cm">Fashion · Bengaluru</span></span></div>
+          <div class="crow hl"><span class="av sq">TW</span><span class="cb"><span class="cn">Thread & Weave</span><br><span class="cm">Fashion · Bengaluru</span></span></div>
+        </div>
+      </div>
+      <div class="note good" style="margin-top:12px">Filters combine with the name search, and each clears on its own. Only industries and cities that actually have brands listed are offered — no dead options.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤──────────────────────────────────────────────────────────────────────── -->
+<div class="view" id="v5">
+  <div class="vh">What this part deliberately does not build</div>
+  <div class="vs">Creators asking to join a campaign that already exists.</div>
+
+  <div class="card">
+    <h3>The four ways a collaboration can start — and the one that is missing</h3>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Route</th><th>Who starts</th><th>Campaign exists first?</th><th>Works</th></tr></thead>
+        <tbody>
+          <tr><td>Build, then hand-pick creators</td><td>Brand</td><td>Yes</td><td><span class="pill neg">YES</span></td></tr>
+          <tr><td>Build, then invite by filter (open)</td><td>Brand</td><td>Yes</td><td><span class="pill neg">YES</span></td></tr>
+          <tr><td>Ask first, agree, then build</td><td>Brand</td><td>No</td><td><span class="pill neg">YES — Part 2</span></td></tr>
+          <tr><td>Creator pitches a brand</td><td>Creator</td><td>No</td><td><span class="pill neg">YES</span></td></tr>
+          <tr><td><b>Creator asks to join a live campaign</b></td><td>Creator</td><td>Yes</td><td><span class="pill req">HALF-BUILT</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <div class="card">
+        <h5>What exists</h5>
+        <div class="kv"><span class="k">Brand's application inbox</span><span class="v">built</span></div>
+        <div class="kv"><span class="k">Approve / reject</span><span class="v">built</span></div>
+        <div class="kv"><span class="k">Auto-decline when full</span><span class="v">built</span></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h5>What does not</h5>
+        <div class="kv"><span class="k">Creator browsing campaigns</span><span class="v" style="color:var(--danger-text)">missing</span></div>
+        <div class="kv"><span class="k">Any way to apply</span><span class="v" style="color:var(--danger-text)">missing</span></div>
+        <div class="kv"><span class="k">Applications ever made</span><span class="v mono">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note bad"><b>And building the missing half would not be enough.</b> A creator who joined an open group carries no product allocation and no commission rate (a Part 4 leftover). Since Part 4, having something to sell is exactly what makes a creator visible to shoppers — so they would be approved, appear in the brand's roster, and be unable to sell anything.</div>
+
+  <div class="note good"><b>Nothing is filling this gap.</b> Brands already reach creators three ways, including automatic invitations to everyone matching their filters. The missing route is a creator spotting a live campaign and knocking — a fourth channel, not a hole in the flow.</div>
+
+  <div class="note key"><b>Recorded, not left to rot.</b> A test pins that no way to apply exists, so whoever builds it later does so deliberately. One loose end noted for them: publishing an open group notifies creators with <i>“Apply now!”</i> and links to a screen that exists in neither app. It has never fired — no open group has ever been created.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+document.querySelectorAll('.tog, .imp').forEach(g=>{
+  g.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    g.querySelectorAll('button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
+  }));
+});
+document.querySelectorAll('.chk').forEach(c=>c.addEventListener('click',()=>{
+  c.classList.toggle('on'); c.textContent = c.classList.contains('on') ? '✓' : ' ';
+}));
+</script>
+</body>
+</html>

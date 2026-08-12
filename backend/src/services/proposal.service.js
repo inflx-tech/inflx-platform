@@ -214,7 +214,7 @@ async function listForInfluencer(influencerId, { status } = {}) {
 }
 
 // Brands the influencer can pitch right now (after applying their own filters).
-async function discoverEligibleBrands(influencerId, { search, limit = 30 } = {}) {
+async function discoverEligibleBrands(influencerId, { search, category, city, limit = 30 } = {}) {
   const params = [influencerId];
   let q = `SELECT b.id, b.business_name, b.logo_url, b.category, b.proposal_filters,
                   u.city AS brand_city
@@ -224,7 +224,19 @@ async function discoverEligibleBrands(influencerId, { search, limit = 30 } = {})
              AND  u.status = 'approved'`;
   if (search) {
     params.push(`%${search}%`);
-    q += ` AND b.business_name ILIKE $${params.length}`;
+    q += ` AND b.business_name ILIKE ${params.length}`;
+  }
+  // collab-part6 §6.2 — category and city were already SELECTed and shown on every row;
+  // only business_name was filterable, so a creator looking for fashion brands in their
+  // city had to scroll and guess. The eligibility conditions above are untouched: these
+  // filters narrow, never widen.
+  if (category) {
+    params.push(category);
+    q += ` AND b.category = ${params.length}`;
+  }
+  if (city) {
+    params.push(city);
+    q += ` AND u.city = ${params.length}`;
   }
   params.push(Math.min(limit, 100));
   q += ` ORDER BY b.created_at DESC LIMIT $${params.length}`;
@@ -232,6 +244,24 @@ async function discoverEligibleBrands(influencerId, { search, limit = 30 } = {})
   const { rows } = await db.query(q, params);
   // Return all listed brands; eligibility is checked per-brand on submit.
   return rows;
+}
+
+/**
+ * collab-part6 §6.2 — the industry and city values that actually have listed brands.
+ * Derived from the same eligibility conditions as the list itself, so the app can never
+ * offer a filter that returns nothing.
+ */
+async function discoveryFacets() {
+  const { rows } = await db.query(
+    `SELECT b.category, u.city
+       FROM brands b
+       JOIN users u ON u.id = b.user_id
+      WHERE b.accepts_proposals = TRUE
+        AND u.status = 'approved'`
+  );
+  const categories = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();
+  const cities = [...new Set(rows.map(r => r.city).filter(Boolean))].sort();
+  return { categories, cities };
 }
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
@@ -380,6 +410,7 @@ module.exports = {
   listForBrand,
   listForInfluencer,
   discoverEligibleBrands,
+  discoveryFacets,
   create,
   markViewed,
   reject,

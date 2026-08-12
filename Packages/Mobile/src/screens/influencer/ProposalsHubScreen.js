@@ -124,13 +124,21 @@ function DiscoverTab({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  // collab-part6 §6.2 — facets come from the server so a filter that would return
+  // nothing is never offered.
+  const [facets, setFacets] = useState({ categories: [], cities: [] });
+  const [category, setCategory] = useState(null);
+  const [city, setCity] = useState(null);
 
   const load = useCallback(async () => {
-    const res = await influencerApi.discoverBrands(search.trim() || null);
-    if (res.success) setBrands(res.data?.brands || []);
+    const res = await influencerApi.discoverBrands(search.trim() || null, category, city);
+    if (res.success) {
+      setBrands(res.data?.brands || []);
+      if (res.data?.facets) setFacets(res.data.facets);
+    }
     setLoading(false);
     setRefreshing(false);
-  }, [search]);
+  }, [search, category, city]);
 
   useEffect(() => {
     const t = setTimeout(load, 300);
@@ -155,6 +163,28 @@ function DiscoverTab({ navigation }) {
               placeholderTextColor={P.muted3}
             />
           </View>
+          {(facets.categories.length > 0 || facets.cities.length > 0) && (
+            <View style={styles.filterWrap}>
+              {facets.categories.map(cat => (
+                <TouchableOpacity key={`c-${cat}`}
+                  style={[styles.fchip, category === cat && styles.fchipOn]}
+                  onPress={() => setCategory(category === cat ? null : cat)}>
+                  <Text style={[styles.fchipTxt, category === cat && styles.fchipTxtOn]}>
+                    {cat}{category === cat ? '  ✕' : ''}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              {facets.cities.map(ct => (
+                <TouchableOpacity key={`t-${ct}`}
+                  style={[styles.fchip, city === ct && styles.fchipOn]}
+                  onPress={() => setCity(city === ct ? null : ct)}>
+                  <Text style={[styles.fchipTxt, city === ct && styles.fchipTxtOn]}>
+                    {ct}{city === ct ? '  ✕' : ''}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <View style={styles.discoverIntro}>
             <Text style={styles.discoverTitle}>Pitch a brand</Text>
             <Text style={styles.discoverBody}>
@@ -453,6 +483,11 @@ const styles = StyleSheet.create({
   reqStatus: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted2, letterSpacing: 0.4 },
   prefRow: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginHorizontal: 14, marginBottom: 10 },
   prefTxt: { fontFamily: fonts.sansBold, fontSize: 11.5, color: P.muted },
+  filterWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 14, marginBottom: 4 },
+  fchip: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  fchipOn: { backgroundColor: P.ink, borderColor: P.ink },
+  fchipTxt: { fontSize: 10.5, fontWeight: '700', color: P.muted, fontFamily: fonts.sansBold },
+  fchipTxtOn: { color: P.yellow },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },
   emptySub: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, fontFamily: fonts.sansRegular },
 });

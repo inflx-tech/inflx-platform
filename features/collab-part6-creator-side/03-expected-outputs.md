@@ -39,7 +39,11 @@ computed and stored is delivered to nobody.
 | M3 | The allocation summary is rendered in words, not a raw scope key | W3 |
 | M4 | Brand discovery exposes category + city filters, populated from real data | W4 |
 | M5 | Full production RN bundle builds | W1–W6 |
-| P1 | The web brand-browse surface exposes the same two filters | W4 |
+
+**No web assertion.** The first draft carried a P1 for "the web brand-browse surface".
+There is no creator-facing web surface — `brand-web` is the brand + admin dashboard and
+contains no reference to brand discovery. Removed before lock rather than satisfied by
+building a page nobody asked for.
 
 ## Regression
 

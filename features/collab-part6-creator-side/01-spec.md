@@ -114,7 +114,13 @@ what they see today, including the full negotiate flow.
 
 **Change.** Category and city become filters on the same endpoint, both already present in
 the payload. Values come from the brands actually listed, so no empty filter is ever
-offered. Web and mobile.
+offered.
+
+**Mobile only — corrected before lock.** The first draft of this spec said "web and
+mobile". There is no creator-facing web surface at all: `brand-web` is the brand and admin
+dashboard, and nothing in it references brand discovery. Creators are a mobile-only
+audience, so the web assertion (P1) was removed rather than left to fail or, worse, be
+satisfied by building a page nobody asked for.
 
 ## 4. What this contract records rather than builds
 

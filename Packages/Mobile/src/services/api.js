@@ -367,7 +367,15 @@ export const influencerApi = {
   flipProductionToRemote:       (eventId, data)   => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
 
   // Proposals (Phase Q)
-  discoverBrands:           (search) => api.get(`/influencers/me/discover-brands${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  // collab-part6 §6.2 — industry and city were always in the response and never
+  // filterable, so a creator looking for fashion brands in their city had to scroll.
+  discoverBrands: (search, category, city) => {
+    const qs = [];
+    if (search) qs.push(`search=${encodeURIComponent(search)}`);
+    if (category) qs.push(`category=${encodeURIComponent(category)}`);
+    if (city) qs.push(`city=${encodeURIComponent(city)}`);
+    return api.get(`/influencers/me/discover-brands${qs.length ? `?${qs.join('&')}` : ''}`);
+  },
   getBrandProposalCriteria: (brandId) => api.get(`/brands/${brandId}/proposal-criteria`),
   createProposal:           (data) => api.post('/influencers/me/proposals', data),
   listMyProposals:          (status) => api.get(`/influencers/me/proposals${status ? `?status=${status}` : ''}`),

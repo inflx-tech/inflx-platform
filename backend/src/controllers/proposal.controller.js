@@ -60,8 +60,16 @@ const discoverBrands = asyncHandler(async (req, res) => {
   const inf = await getInfluencerByUserId(req.user.sub);
   if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
   const search = req.query.search || null;
-  const brands = await proposalService.discoverEligibleBrands(inf.id, { search });
-  return success(res, { brands });
+  // collab-part6 §6.2
+  const category = req.query.category || null;
+  const city = req.query.city || null;
+  const [brands, facets] = await Promise.all([
+    proposalService.discoverEligibleBrands(inf.id, { search, category, city }),
+    proposalService.discoveryFacets(),
+  ]);
+  // Facets ride along with the list so the filter controls are populated from real data
+  // in the same round trip — an option that returns nothing is never offered.
+  return success(res, { brands, facets });
 });
 
 // GET /v1/influencers/me/discover-brands/:id/products — Phase 8: browse a

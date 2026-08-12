@@ -1,13 +1,13 @@
 {
   "feature": "collab-part6-creator-side",
   "spec_version": "1.0.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "mockup_locked": false,
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-12 chat (\"lock part 6 and start implementation\") — scope confirmed after the four-routes walkthrough: build 6.1 + 6.2, defer 6.3.",
+  "approved_at": "2026-08-12",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
   "notes": "Part 6 of 7. AWAITING FOUNDER LOCK - spec authored 2026-08-12, no implementation started. IN: 6.1 (the creator sees which terms were already agreed vs what the campaign newly adds, plus an allocation summary) and 6.2 (filter brands by category and city - both values are already in the payload; only name is filterable today). DEFERRED: 6.3 open-campaign discovery/application, with reasons in 01-spec.md section 1. No migration.",
   "audit_2026_08_12": {
     "finding_1": "campaign_influencers.agreement_id is returned to the creator NOWHERE (zero references in influencer.controller.js). Part 2 one-click accept is enforced by the API and invisible in the product - the creator re-reads terms they already settled, with no sign they are closed.",
@@ -16,9 +16,37 @@
   },
   "deferral_6_3": "Deferred, not dropped. Reasons: creators already have two shipped routes to brands (pitches, requests) that no human has exercised on a device yet; open groups have zero production usage; open-campaign apply reverses the founder-stated model (agree first, then the brand builds) so it is a new idea rather than a completion of this program; and it cannot be done honestly without first fixing the Part 4 open-group allocation/commission leftover. Recorded with a test pinning the absence so a future half-build is a deliberate act.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "released": false,
     "maestro_green": false,
-    "deploy_class": "production-impacting (backend/src, brand-web runtime, Mobile runtime) - explicit founder go required BEFORE the push, per feedback-push-is-the-deploy; no migration"
+    "deploy_class": "production-impacting (backend/src, brand-web runtime, Mobile runtime) - explicit founder go required BEFORE the push, per feedback-push-is-the-deploy; no migration",
+    "qa_evidence": {
+      "ran_at": "2026-08-12",
+      "result": "386 passed · gate 0 · STATE=GREEN",
+      "first_run_clean": false,
+      "first_run_note": "First run FAILED at 380/386. All six failures were in the API lane at exactly 60.0s — a timeout signature. Probing the backend showed it answering in 1.5s then 0.67s: it had spun down during the run and the probe woke it. The same six specs failed identically in Part 5 first run and cleared the same way. Classified as the documented Render cold start (reference_render_cold_start), not a defect and not a weakened test.",
+      "baseline": "363 at Part 5 close; +23 this contract"
+    },
+    "deploy_targets": [
+      "Render (backend/src)",
+      "OTA (Packages/Mobile)"
+    ],
+    "deploy_note": "NOT PUSHED. Per feedback-push-is-the-deploy, pushing governed backend code IS the deploy on this repo, so the founder go is required BEFORE the push. Committed locally only. brand-web is untouched by this contract, so Vercel is not a target."
+  },
+  "mockup_locked_by": "founder 2026-08-12 chat — delegated with the contract lock (\"lock part 6 and start implementation\"); 5 panels, incl. panel 5 recording the deferred route.",
+  "mockup_locked_at": "2026-08-12",
+  "corrected_before_lock": "The first draft said 6.2 ships on \"web and mobile\" and carried a web assertion (P1). There is NO creator-facing web surface — brand-web is the brand + admin dashboard and contains no reference to brand discovery. Removed rather than satisfied by building a page nobody asked for.",
+  "progress": {
+    "done": [
+      "Backend: the creator collaboration detail now returns agreement_id, the settled terms and the date agreed (LEFT join, so a cold invite is unaffected), plus an allocation summary in words with auto_joins_new_products. Both built server-side so the two apps cannot drift and the test can assert the payload.",
+      "Backend: brand discovery gained category and city filters (both values were already in the response and unfilterable), plus a facets query built from the SAME eligibility conditions as the list, delivered on the same response so no filter that returns nothing is ever offered.",
+      "Mobile: the creator collaboration screen splits into \"Already agreed with you\" (with the agreed date) and \"New in this campaign\"; Negotiate is hidden ONLY for agreement-backed collaborations because the server already refuses it; the allocation renders in words. Discover tab gained industry + city chips that clear on re-tap.",
+      "Tests: 23 new. The summarisers are executed on real inputs rather than grepped, and one test walks every backend file to assert no application writer exists."
+    ],
+    "remaining": [
+      "On-device verification — bundle-level verified only; owed at the founder walkthrough (fifth consecutive mobile release without Maestro).",
+      "DEFERRED by design: creators cannot ask to join a live campaign. Whoever builds it must first fix the Part 4 open-group leftover (joiners carry no allocation and no commission_pct) and correct the publishOpenGroup notification, which says \"Apply now!\" and links to a screen that exists in neither app."
+    ],
+    "qa": "386 passed · gate 0 · STATE=GREEN · full RN production bundle builds."
   }
 }

@@ -186,7 +186,13 @@ export default function CollabDetailScreen({ route, navigation }) {
         <Text style={styles.heroSub}>{hero.sub}</Text>
         {hero.actions.length > 0 && (
           <View style={styles.heroBtns}>
-            {hero.actions.map(a => {
+            {hero.actions
+              // collab-part6 §6.1 — an agreement-backed collaboration cannot be
+              // renegotiated: the server refuses it (Part 2). Showing the button offered
+              // the creator something that would fail, so it goes — for these only. A
+              // cold invite keeps every action exactly as today.
+              .filter(a => !(a === 'negotiate' && c.settled_terms))
+              .map(a => {
               const primary = a === 'accept' || a === 'sign' || a === 'deliverables' || a === 'earnings' || (a === 'negotiate' && hero.tone === 'nego');
               const danger = a === 'pass';
               const label = { accept: 'Accept', negotiate: 'Negotiate', pass: 'Pass',
@@ -209,8 +215,38 @@ export default function CollabDetailScreen({ route, navigation }) {
           if (s.key === 'terms') {
             return (
               <View key="terms" style={styles.termsCard}>
-                <Text style={styles.termsTitle}>Terms & brief</Text>
-                <View style={styles.termsRow}><Text style={styles.tl}>Fee</Text><Text style={styles.tv}>{fmtRupees(c.agreed_fee || c.influencer_budget || 0)}</Text></View>
+                {/* collab-part6 §6.1 — a creator who spent days agreeing terms used to
+                    open this screen and see a fresh-looking offer. Settled terms now show
+                    as settled, with the date, and only the rest is up for reading. */}
+                {c.settled_terms ? (
+                  <View style={styles.agreedCard}>
+                    <Text style={styles.agreedTitle}>✓ Already agreed with you</Text>
+                    {c.settled_terms.items.map(it => (
+                      <View key={it.key} style={styles.termsRow}>
+                        <Text style={styles.tl}>{it.label}</Text>
+                        <Text style={styles.tv}>{it.value}</Text>
+                      </View>
+                    ))}
+                    <Text style={styles.agreedNote}>
+                      Settled with {brandName}{c.settled_terms.agreed_at ? ` on ${fmtDate(c.settled_terms.agreed_at)}` : ''}. Nothing to decide again.
+                    </Text>
+                  </View>
+                ) : null}
+
+                <Text style={styles.termsTitle}>{c.settled_terms ? 'New in this campaign' : 'Terms & brief'}</Text>
+                {!c.settled_terms ? (
+                  <View style={styles.termsRow}><Text style={styles.tl}>Fee</Text><Text style={styles.tv}>{fmtRupees(c.agreed_fee || c.influencer_budget || 0)}</Text></View>
+                ) : null}
+                {/* collab-part6 §6.1 — what she may sell. 'Their whole store' and a
+                    category keep absorbing new arrivals; a hand-picked list never does,
+                    and that difference was invisible until now. */}
+                {c.allocation_summary ? (
+                  <View style={styles.termsRow}>
+                    <Text style={styles.tl}>You can sell</Text>
+                    <Text style={styles.tv}>{c.allocation_summary.label}</Text>
+                  </View>
+                ) : null}
+                {c.coupon_code ? <View style={styles.termsRow}><Text style={styles.tl}>Your code</Text><Text style={styles.tv}>{c.coupon_code}</Text></View> : null}
                 {prettyGoal(c.goal) ? <View style={styles.termsRow}><Text style={styles.tl}>Goal</Text><Text style={styles.tv}>{prettyGoal(c.goal)}</Text></View> : null}
                 {dCount > 0 ? <View style={styles.termsRow}><Text style={styles.tl}>Deliverables</Text><Text style={styles.tv}>{dApproved}/{dCount} done</Text></View> : null}
                 {c.posting_date ? <View style={styles.termsRow}><Text style={styles.tl}>Posting date</Text><Text style={styles.tv}>{fmtDate(c.posting_date)}</Text></View> : null}
@@ -235,6 +271,10 @@ export default function CollabDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: ig.bg },
+  // collab-part6 §6.1
+  agreedCard: { backgroundColor: '#F7FEF9', borderWidth: 1, borderColor: '#A7F3D0', borderRadius: 10, padding: 11, marginBottom: 12 },
+  agreedTitle: { fontSize: 11, fontWeight: '800', color: '#047857', letterSpacing: 0.3, marginBottom: 6 },
+  agreedNote: { fontSize: 10.5, color: '#047857', marginTop: 6, lineHeight: 15 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg, padding: 30 },
   errTitle: { fontSize: 14, fontWeight: '700', color: ig.text, marginTop: 12 },
   errBtn: { marginTop: 14, backgroundColor: ig.text, borderRadius: 9, paddingHorizontal: 20, paddingVertical: 10 },

@@ -994,6 +994,68 @@ const getMyCampaigns = asyncHandler(async (req, res) => {
   return success(res, { campaigns: rows });
 });
 
+// collab-part6 §6.1 ──────────────────────────────────────────────────────────
+// What the creator already agreed, and what they are allowed to sell.
+//
+// Both are computed from values that already existed (agreement_id since Part 2,
+// alloc_* since Part 4) and were returned to the creator nowhere.
+
+/**
+ * The terms settled at the handshake, or null for a cold invite.
+ * Returning null — rather than an empty shell — is what lets the app show a single
+ * undivided list for a creator who never negotiated. A creator who did not agree
+ * anything must never be told they did.
+ */
+function summariseSettledTerms(row) {
+  if (!row.agreement_id || !row.agreed_terms_json) return null;
+  const t = row.agreed_terms_json || {};
+  const items = [];
+  if (t.money && t.money.commission_pct != null) {
+    items.push({ key: 'commission', label: 'Commission', value: `${t.money.commission_pct}%` });
+  }
+  if (t.money && t.money.fee != null) {
+    items.push({ key: 'fee', label: 'Fee', value: `₹${Number(t.money.fee).toLocaleString('en-IN')}` });
+  }
+  if (t.time && t.time.post_by) {
+    items.push({ key: 'post_by', label: 'Post by', value: String(t.time.post_by).slice(0, 10) });
+  } else if (t.time && t.time.window_end) {
+    items.push({
+      key: 'window',
+      label: 'Posting window',
+      value: `${String(t.time.window_start || '').slice(0, 10)} – ${String(t.time.window_end).slice(0, 10)}`,
+    });
+  }
+  if (!items.length) return null;
+  return { agreement_id: row.agreement_id, agreed_at: row.terms_agreed_at, items };
+}
+
+/**
+ * What the creator may sell, in words. 'store' and 'category' auto-join new arrivals;
+ * a hand-picked list never does — which is the distinction the creator most needs and
+ * could not previously see.
+ */
+function summariseAllocation(row) {
+  const scope = row.alloc_scope || null;
+  if (!scope) return null;
+  if (scope === 'store') {
+    return { scope, label: 'Their whole store', auto_joins_new_products: true };
+  }
+  if (scope === 'category') {
+    return {
+      scope,
+      label: row.alloc_category || 'A category',
+      auto_joins_new_products: true,
+    };
+  }
+  const count = Array.isArray(row.alloc_product_ids) ? row.alloc_product_ids.length : 0;
+  return {
+    scope: 'products',
+    label: `${count} selected product${count === 1 ? '' : 's'}`,
+    auto_joins_new_products: false,
+    product_count: count,
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /influencers/me/campaigns/:campaign_influencer_id
 // Full campaign detail from the influencer's perspective
@@ -1028,6 +1090,23 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
          ci.offer_config_json,
          ci.physical_delivery,
          ci.delivery_address,
+         -- collab-part6 §6.1 — the creator was never told WHICH terms were already
+         -- settled at the handshake. Part 2 enforces it (renegotiation is refused);
+         -- the value was stored and delivered to nobody, so the one-click promise was
+         -- real in the API and invisible on the creator's screen.
+         ci.agreement_id,
+         ag.terms_json      AS agreed_terms_json,
+         -- collab_agreements has no agreed_at column: the row is CREATED at the moment
+         -- of acceptance (Part 2's acceptIntoAgreement), so created_at IS the date the
+         -- terms were agreed. Verified against the prod schema rather than assumed.
+         ag.created_at      AS terms_agreed_at,
+         -- collab-part6 §6.1 — what she is allowed to sell. The allocated PRODUCTS are
+         -- already reachable via /campaigns/:id/products; the scope RULE behind them
+         -- was never stated, so a creator given the whole store could not tell that new
+         -- arrivals join automatically.
+         ci.alloc_scope,
+         ci.alloc_category,
+         ci.alloc_product_ids,
          ci.contract_signed_at,
          ci.brand_signed_at,
          ci.created_at AS invited_at,
@@ -1056,11 +1135,18 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
        JOIN campaigns c ON c.id = cs.campaign_id
        JOIN brands b ON b.id = c.brand_id
        JOIN users u ON u.id = b.user_id
+       -- LEFT: a cold invite has no agreement, and must stay exactly as it is today.
+       LEFT JOIN collab_agreements ag ON ag.id = ci.agreement_id
        WHERE ci.id = $1 AND ci.influencer_id = $2`,
       [ciId, inf.id]
     );
     if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
     campaign = ciRows[0];
+    // collab-part6 §6.1 — deliver the two facts, already stored, that the creator could
+    // not see. Built here rather than in the app so both apps cannot drift, and so the
+    // test can assert the PAYLOAD rather than the query.
+    campaign.settled_terms = summariseSettledTerms(campaign);
+    campaign.allocation_summary = summariseAllocation(campaign);
   } catch (e) {
     if (e instanceof AppError) throw e;
     console.error('[getMyCampaignDetail] Step 1 (main query) failed:', e.message);
