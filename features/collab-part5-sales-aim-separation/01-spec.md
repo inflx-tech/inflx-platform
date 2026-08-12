@@ -83,22 +83,61 @@ enough. Deriving the total removes the contradiction.
 
 ## 2. §5.2 — Sales collaborations run open-ended
 
+**Founder refinement, 2026-08-12** (this supersedes the "optional field" framing the spec
+was first written with): *"if the campaign type is conversions or sales then it might be
+start date but no end date. but for offers it may have end date (this we addressed
+already)."*
+
+So an end date is not a field a sales brand may leave blank — for a sales campaign it
+**does not exist**.
+
 **Today.** End date is required at creation, in both places: the wizard
 (`page.js:778`, `:1086`) and the backend (`campaign.controller.js:342`). A brand selling
 on commission until stock runs out has to invent a date.
 
-**Change.** End date becomes **optional at creation**. The aim-aware rule moves to
-**publish**, where the aim is finally known:
+### 2.1 The three clocks — and the trap in conflating them
 
-> **End date is required unless every set is `conversion`.**
+Verified, and it changes the design: **every set requires a posting window regardless of
+aim** (`page.js:793-794`, `:1373`). A sales set has `window_start`/`window_end` too.
 
-This deliberately mirrors the budget gate that already sits ten lines away, so the two
-rules read as one idea: *what a campaign must state depends on how it pays.*
+That makes three genuinely separate clocks:
 
-**Hybrid is windowed, not open-ended** (resolving the plan's open question). Hybrid
-carries a fee, and therefore escrow tranches, a posting window, tranche-3's +30-day clock
-and the backwards-computed visit window. All of those need dates. Only a
-**pure-commission** campaign has nothing to date.
+| Clock | Lives on | Sales campaign |
+|---|---|---|
+| **When the creator must post** | set posting window | **Yes** — post by 15 Sep |
+| **How long selling runs** | campaign end date | **None** — until the brand ends it |
+| **When a discount expires** | the offer | Optional — already built (Parts 1 & 4) |
+
+**The trap avoided:** deriving the campaign end date from set posting windows — the
+symmetrical move to §1's budget derivation, and superficially attractive — would have
+ended a sales campaign on its *post-by* date and **removed every product from the follower
+app while stock was still on the shelf.** Posting and selling are not the same clock. This
+is recorded because the derivation looks obviously right until you notice sales sets carry
+windows too.
+
+### 2.2 The rule
+
+The campaign end date is **never asked for**. Like the budget in §1, it is derived — but
+only from sets that pay a fee:
+
+> **Campaign end date = the latest posting-window end among `engagement` / `hybrid` sets.
+> If every set is `conversion`, there is no end date.**
+
+- **All-sales campaign** → no end date. Runs until the brand ends it (§3). Step 1 asks
+  name and start date; there is **no end-date field on screen at all**.
+- **Content or hybrid campaign** → the end date is the day the last paid post is due.
+  Correct by construction, and the brand never types it.
+
+**Hybrid stays dated** (resolving the plan's open question) because it carries a fee, and
+therefore escrow tranches, tranche-3's +30-day clock and the backwards-computed visit
+window — all of which need a calendar.
+
+**Two error classes dissolve**, exactly as §1's did — a value defined as the maximum of
+its own parts cannot be exceeded by them:
+- *"Window end cannot be after campaign end"* (`page.js:797`) becomes unreachable.
+- The publish-time `end_date` requirement becomes unreachable too: a paid set always has a
+  window, so a paid campaign always has an end date. **No new publish gate is needed** —
+  the earlier draft of this spec proposed one, and the derivation removes the need.
 
 **Read-path audit — this is NOT the dead-offer-join shape.** Every filtering site was read
 before this was proposed. All 16 are written NULL-tolerantly:
@@ -199,5 +238,10 @@ Both of the plan's stated open questions, with a recommendation:
 
 1. **Budget: optional ceiling, or drop the concept?** → **Neither — derive it** (§1). Keep
    the column so every reader is untouched; stop asking the brand.
-2. **Hybrid: open-ended, or its posting window?** → **Windowed** (§2). End date required
-   unless *every* set is conversion.
+2. **Hybrid: open-ended, or its posting window?** → **Windowed** (§2). Its end date is the
+   last paid posting window; only all-conversion campaigns have none.
+
+**Resolved by the founder 2026-08-12** — sales campaigns have a start date and **no end
+date at all** (not an optional blank). Offers keep their own expiry, which Parts 1 and 4
+already delivered. Both remaining questions therefore collapse into one principle: **the
+brand types neither the budget nor the end date; both are read off the sets they build.**

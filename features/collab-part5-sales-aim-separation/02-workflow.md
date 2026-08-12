@@ -8,9 +8,9 @@ The end states `pnpm qa` must prove. Each is written as the actor's journey, bec
 ## W1 — A commission-only brand never meets a budget field
 
 1. Brand opens campaign creation.
-2. Step 1 shows **name, start date, end date, negotiation toggle** — and **no budget
-   field**.
-3. Brand names the campaign, sets a start date, **leaves end date blank**, continues.
+2. Step 1 shows **name, start date, negotiation toggle** — and **neither a budget field
+   nor an end-date field**.
+3. Brand names the campaign, sets a start date, continues. There is no end date to skip.
 4. Step 2: one set, aim = pay-per-sale, creators invited with commission and allocation.
 5. Review: dates read **"1 Sep 2026 → Ongoing"**; no budget row; no wallet card.
 6. Publish succeeds.
@@ -24,21 +24,25 @@ ever seeing the words budget, wallet, or escrow.
 2. Step 2: set aim = pay-for-content, set budget ₹40,000, two creators at ₹20,000 each.
 3. Step 2's money strip shows **campaign total ₹40,000 — derived**, not an input.
 4. Review shows the same total; the wallet card shows the real balance and what is needed.
-5. Publish: end date **is** required. Blank → refused at publish naming `end_date`.
-6. With an end date, publish succeeds and the wallet locks exactly the derived amount.
+5. The set posting window closes 30 Sep, so the **campaign end date becomes 30 Sep** —
+   written by the server, never typed, and impossible to contradict.
+6. Publish succeeds and the wallet locks exactly the derived amount.
 
 **End state:** `campaigns.total_budget` equals the sum of set allocations, written by the
 server, never typed. The "set budgets exceed campaign budget" error is unreachable.
 
-## W3 — Hybrid is windowed
+## W3 — Hybrid is dated, and the three clocks stay separate
 
-1. Campaign with one hybrid set, end date blank.
-2. Publish → refused, naming `end_date`, because a fee, escrow and a posting window need a
-   calendar.
-3. Same for a mixed campaign (one conversion set + one engagement set): **any** non-
-   conversion set makes the end date required.
+1. Campaign with one hybrid set whose posting window ends 20 Oct → campaign end date
+   becomes **20 Oct**.
+2. Mixed campaign (one conversion set posting by 15 Sep, one engagement set posting by
+   31 Oct) → campaign end date is **31 Oct**: the conversion set contributes nothing.
+3. **The trap, asserted:** an all-sales campaign whose sets have posting windows ending
+   15 Sep still has **no campaign end date**, and on 16 Sep its products are **still
+   selling**. Posting and selling are different clocks.
 
-**End state:** only a campaign whose sets are *all* conversion may run open-ended.
+**End state:** only paid posting windows can date a campaign; a sales campaign never dates
+itself out of the follower app.
 
 ## W4 — An open-ended campaign is visible and sellable
 
