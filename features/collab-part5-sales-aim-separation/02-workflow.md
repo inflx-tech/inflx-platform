@@ -35,8 +35,12 @@ server, never typed. The "set budgets exceed campaign budget" error is unreachab
 
 1. Campaign with one hybrid set whose posting window ends 20 Oct → campaign end date
    becomes **20 Oct**.
-2. Mixed campaign (one conversion set posting by 15 Sep, one engagement set posting by
-   31 Oct) → campaign end date is **31 Oct**: the conversion set contributes nothing.
+2. **Mixed campaign** (one conversion set posting by 15 Sep, one engagement set posting by
+   31 Oct) → **no campaign end date at all.** The sales aim wins on dates. The engagement
+   set still holds its own 31 Oct post-by deadline; nothing about it is lost.
+2b. On 1 Nov the sales set is **still selling** — the paid set never imposed a deadline on
+   it. (This is the edge the plain-language walkthrough surfaced; the first draft got it
+   wrong and would have closed selling on 31 Oct.)
 3. **The trap, asserted:** an all-sales campaign whose sets have posting windows ending
    15 Sep still has **no campaign end date**, and on 16 Sep its products are **still
    selling**. Posting and selling are different clocks.

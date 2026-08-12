@@ -14,8 +14,10 @@ row, never on the presence of the code that computes it.
 | B1 | `POST /campaigns` with **no `end_date`** → 201, row has `end_date IS NULL` | W1 |
 | B2 | `POST /campaigns` with `end_date` before `start_date` → 422 `end_date` (unchanged) | W8 |
 | B3 | Publish, all sets `conversion`, no end date → **200** | W1 |
-| B4 | On set save, `campaigns.end_date` = **latest posting-window end among engagement/hybrid sets** | W2·W3 |
-| B5 | Mixed campaign: a conversion set with a LATER window than the paid set does **not** move the campaign end date | W3 |
+| B4 | On set save, an **all-paid** campaign gets `end_date` = latest posting-window end among its sets | W2·W3 |
+| B5 | **Mixed campaign** (any conversion set + any paid set) → `end_date IS NULL`; the paid window does **not** date the campaign | W3 |
+| B5c | That mixed campaign is **still in discovery after the paid window passes** — a paid set cannot impose a deadline on open-ended selling | W3·W4 |
+| B5d | Adding a conversion set to an already-dated all-paid campaign **clears** `end_date`; removing it restores the derived date | W3 |
 | B5b | **The trap:** all-conversion campaign whose sets have posting windows keeps `end_date IS NULL`, and its products still appear in discovery **after** those windows pass | W3·W4 |
 | B6 | On set save, `campaigns.total_budget` = **sum of engagement+hybrid set budgets**; conversion sets contribute 0 | W2 |
 | B7 | A campaign whose only sets are conversion has `total_budget` = 0 or NULL and **publishes** | W1 |
@@ -31,6 +33,7 @@ row, never on the presence of the code that computes it.
 | B17 | `cancel` still refunds locked escrow and writes `cancelled` — `end` did not change it | W8 |
 | B18 | Cron still completes a dated campaign past its end date, and still skips one with pending tranches | W8 |
 | B19 | Cron **never selects** a NULL-end-date campaign (open-ended campaigns are never auto-completed) | W5 |
+| B20 | Tranche 3 still releases N days after `triggered_at` for a campaign with **no** end date — payments never depend on campaign dates | W3·W8 |
 
 ## Discovery — the NULL-tolerance guarantee
 

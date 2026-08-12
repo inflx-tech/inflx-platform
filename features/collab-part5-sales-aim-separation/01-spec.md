@@ -118,15 +118,38 @@ windows too.
 ### 2.2 The rule
 
 The campaign end date is **never asked for**. Like the budget in §1, it is derived — but
-only from sets that pay a fee:
+the presence of a single sales set keeps the campaign open:
 
-> **Campaign end date = the latest posting-window end among `engagement` / `hybrid` sets.
-> If every set is `conversion`, there is no end date.**
+> **If any set is `conversion`, the campaign has NO end date.
+> Only when every set is `engagement`/`hybrid` does it get one — the latest posting-window
+> end among them.**
 
 - **All-sales campaign** → no end date. Runs until the brand ends it (§3). Step 1 asks
   name and start date; there is **no end-date field on screen at all**.
-- **Content or hybrid campaign** → the end date is the day the last paid post is due.
-  Correct by construction, and the brand never types it.
+- **All-paid campaign** → the end date is the day the last paid post is due. Correct by
+  construction, and the brand never types it.
+- **Mixed campaign** (a sales set *and* a paid set) → **open-ended.**
+
+### 2.3 Why a mixed campaign stays open — the edge the walkthrough surfaced
+
+The first draft of this rule took the latest paid window even when a sales set was present.
+Walking a worked example exposed the flaw: a campaign with a sales set posting by 15 Sep
+and a paid set posting by 31 Oct would be dated 31 Oct — and on 1 Nov **the sales set's
+products would leave the follower app**, ending a collaboration the founder's model says
+never ends. A dated paid set would have silently imposed a deadline on open-ended selling.
+
+So the sales aim wins on dates, exactly as it does on budget (§1 sums only paid sets):
+**anything sales in the campaign means the campaign is open-ended**, and the paid sets keep
+their own post-by deadlines, which is all those deadlines ever governed.
+
+**Verified safe before adopting:** tranche 3 releases N days after
+`escrow_entries.triggered_at` (`tranche-3-release.job.js:42`), **not** after the campaign
+end date. So an undated campaign still pays every creator correctly and on schedule. The
+only thing an undated paid campaign loses is cron auto-completion — which is precisely what
+§3's explicit End exists to provide.
+
+If a brand wants automatic closure, the answer is a paid-only campaign. Mixing the aims is
+a choice to run something open-ended, and it is closed deliberately.
 
 **Hybrid stays dated** (resolving the plan's open question) because it carries a fee, and
 therefore escrow tranches, tranche-3's +30-day clock and the backwards-computed visit

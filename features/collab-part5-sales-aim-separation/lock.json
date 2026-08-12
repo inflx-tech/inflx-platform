@@ -1,14 +1,14 @@
 {
   "feature": "collab-part5-sales-aim-separation",
   "spec_version": "1.0.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-08-12 chat (\"pls lock\") — locked after a full plain-language walkthrough of all four items with worked examples. The walkthrough itself surfaced and resolved the mixed-campaign edge (see mixed_campaign_rule).",
+  "approved_at": "2026-08-12",
   "preview_reviewed": false,
-  "impact_reviewed": false,
+  "impact_reviewed": true,
   "mockup_locked": false,
-  "notes": "Part 5 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md); Parts 1, 4 and 2 (which absorbed 3) have shipped. AWAITING FOUNDER LOCK — spec authored 2026-08-12, no implementation started. Four items: (1) campaign total_budget becomes DERIVED from set allocations and the Step-1 budget field goes; (2) end_date NEVER asked — derived as the latest posting-window end among engagement/hybrid sets, so an all-conversion campaign simply has none (founder 2026-08-12: a sales campaign has a start date and NO end date, not an optional blank). No publish gate needed: a paid set always has a window, so a paid campaign always has an end date; (3) a new explicit End campaign -> completed, distinct from cancel's abort, guarded on pending tranches + deliverables awaiting review, with creators notified because completing removes their products from follower discovery; (4) a NULL end date renders as 'Ongoing' everywhere instead of an em-dash. No migration: campaigns.end_date is already nullable in prod. Two decisions requested at lock, both answered with a recommendation in 01-spec.md §6: budget = derive (not ceiling, not drop), hybrid = windowed.",
+  "notes": "Part 5 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md); Parts 1, 4 and 2 (which absorbed 3) have shipped. LOCKED 2026-08-12. Four items: (1) campaign total_budget becomes DERIVED from set allocations and the Step-1 budget field goes; (2) end_date NEVER asked — derived as the latest posting-window end among engagement/hybrid sets, so an all-conversion campaign simply has none (founder 2026-08-12: a sales campaign has a start date and NO end date, not an optional blank). No publish gate needed: a paid set always has a window, so a paid campaign always has an end date; (3) a new explicit End campaign -> completed, distinct from cancel's abort, guarded on pending tranches + deliverables awaiting review, with creators notified because completing removes their products from follower discovery; (4) a NULL end date renders as 'Ongoing' everywhere instead of an em-dash. No migration: campaigns.end_date is already nullable in prod. Two decisions requested at lock, both answered with a recommendation in 01-spec.md §6: budget = derive (not ceiling, not drop), hybrid = windowed.",
   "prod_evidence_2026_08_12": {
     "campaigns": 10,
     "active": "7 — all conversion",
@@ -33,5 +33,11 @@
     "effect": "End date stops being an optional field and becomes a derived one. Sales campaigns have no end-date field at all.",
     "trap_avoided": "Deriving the campaign end date from set posting windows — the symmetrical move to the budget derivation — would have ended a SALES campaign on its post-by date and removed every product from the follower app while stock remained. Verified that every set requires a posting window regardless of aim (page.js:793-794, :1373), so only engagement/hybrid windows may date a campaign. Asserted as B5b and W3.3 precisely because the derivation looks obviously right until you notice sales sets carry windows too.",
     "three_clocks": "when the creator must post (set window, all aims) · how long selling runs (campaign end date; sales = none) · when a discount expires (offer, already delivered in Parts 1 and 4)"
+  },
+  "mixed_campaign_rule": {
+    "rule": "If ANY set is conversion, the campaign has NO end date. Only an all-paid campaign gets one — the latest posting-window end among its sets.",
+    "why": "The first draft took the latest paid window regardless. A worked example in the founder walkthrough exposed it: a sales set posting by 15 Sep alongside a paid set posting by 31 Oct would date the campaign 31 Oct, and on 1 Nov the SALES products would leave the follower app — a paid set silently imposing a deadline on open-ended selling. The sales aim now wins on dates exactly as it does on budget (which sums only paid sets).",
+    "verified_safe": "tranche-3-release.job.js:42 releases N days after escrow_entries.triggered_at, NOT after the campaign end date, so an undated campaign still pays every creator on schedule. The only thing an undated paid campaign loses is cron auto-completion — which is what the explicit End provides.",
+    "asserted_by": "B5, B5c, B5d, B20, W3.2, W3.2b"
   }
 }
