@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { campaignApi, brandApi, influencerApi, influencerGroupApi, creatorInvitationApi, fmtNum } from '../../../../lib/api';
+import { campaignApi, brandApi, influencerApi, influencerGroupApi, creatorInvitationApi, handshakeApi, fmtNum } from '../../../../lib/api';
 import GalleryPicker from '../../gallery/components/GalleryPicker';
 import { QuotaWallModal, useQuotaWall } from '../../../../components/QuotaWallModal';
 
@@ -91,6 +91,10 @@ const mkInf = () => ({
   delivery_address: '', custom_code: '', edit_code: false,
   brand_offer_id: null,   // Offer Engine: conversion/hybrid — one saved offer (snapshot)
   promoted_offer_ids: [], // Offer Engine: engagement — multiple saved offers to promote
+  // collab-part2 — set when this creator was briefed from a handshake agreement. Sent
+  // with the invite so the server consumes the agreement and the creator's acceptance
+  // becomes one click (no Negotiate on terms they already settled).
+  agreement_id: null,
   backendId: null,
 });
 const mkGroup = () => ({
@@ -707,6 +711,50 @@ function NewCampaignPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // collab-part2 — arrive from "Ready to brief" with ?agreement=<id>: pre-fill the
+  // first set from the settled terms. The aim decides the set's goal, money and time
+  // land on the creator, the agreed scope becomes their allocation, and agreement_id
+  // rides along so the server consumes the agreement at invite — after which the
+  // creator's acceptance is one click, with no Negotiate on what they already settled.
+  useEffect(() => {
+    const agreementId = searchParams.get('agreement');
+    if (!agreementId || searchParams.get('id')) return;   // drafts hydrate their own sets
+    handshakeApi.agreements().then(res => {
+      if (!res.success) return;
+      const a = (res.data?.agreements || []).find(x => x.id === agreementId);
+      if (!a) { setError('That agreement is no longer available — it may have been briefed or expired.'); return; }
+      const t = a.terms_json || {};
+      const aim = t.aim || 'conversion';
+      const scope = t.scope || {};
+      const LABEL_BY_TYPE = Object.fromEntries(Object.entries(FORMAT_TYPE_MAP).map(([label, type]) => [type, label]));
+      setSets(prev => prev.map((s, si) => si !== 0 ? s : {
+        ...s,
+        goal: aim,
+        formats: Array.isArray(t.deliverables)
+          ? t.deliverables.map(d => ({ name: LABEL_BY_TYPE[d.type] || 'Instagram reel', type: d.type, count: d.count }))
+          : s.formats,
+        influencers: [...s.influencers, {
+          ...mkInf(),
+          agreement_id: a.id,
+          influencer_id: a.influencer_id,
+          name: a.influencer_name || '',
+          handle: a.instagram_handle ? `@${a.instagram_handle}` : '',
+          init: (a.influencer_name || 'X').slice(0, 2).toUpperCase(),
+          commission_pct: t.money?.commission_pct != null ? String(t.money.commission_pct) : '',
+          influencer_budget: t.money?.fee != null ? String(t.money.fee) : '',
+          post_date: t.time?.post_by || t.time?.window_end || '',
+          alloc_scope: scope.level || 'store',
+          alloc_category: scope.category || '',
+          alloc_category_node: scope.category_node_id || '',
+          alloc_products: Array.isArray(scope.product_ids) ? scope.product_ids.map(id => ({ id, name: 'Product', price: null })) : [],
+        }],
+      }));
+      setStep(1);
+      setSubstep('terms');
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Budget helpers
   const totalSetBudget = () => sets.reduce((t, s) => {
     if (!needsBudget(s.goal)) return t;
@@ -1140,6 +1188,9 @@ function NewCampaignPageInner() {
               alloc_product_ids: inf.alloc_scope === 'products'
                 ? (inf.alloc_products || []).map(p => p.id).filter(Boolean) : null,
               offer_valid_until: inf.offer_valid_until || null,
+              // collab-part2 — consumes the agreement server-side; the creator then gets
+              // one-click accept with no Negotiate on terms they already settled.
+              agreement_id: inf.agreement_id || null,
             } : {}),
             brand_offer_id: needsOffer(s.goal) ? (inf.brand_offer_id || null) : null,
             offer_config_json: (needsOffer(s.goal) && inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
@@ -1156,6 +1207,13 @@ function NewCampaignPageInner() {
             const res = await campaignApi.inviteInfluencer(cid, setBackendId, infPayload);
             if (res.success || res.ok) {
               updatedSets[si].influencers[ii] = { ...inf, backendId: res.data?.campaign_influencer?.id || true };
+              // collab-part2 W18 — the server flags every field that drifted from what
+              // the creator agreed. Surfacing it is the contract's "never silent" rule:
+              // the creator will have to agree again, and the brand should know now.
+              const warns = res.data?.agreement_warnings;
+              if (Array.isArray(warns) && warns.length) {
+                setError(`Heads up — ${inf.name || 'this creator'} agreed different terms: ${warns.join(' ')}`);
+              }
             } else if (showFromResponse(res)) {
               // Quota wall — e.g. Growth plan's 25-influencers-per-cycle cap.
               return updatedSets;

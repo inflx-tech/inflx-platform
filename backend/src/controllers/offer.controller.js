@@ -321,6 +321,20 @@ const negotiate = asyncHandler(async (req, res) => {
     );
   }
 
+  // collab-part2 W19 — negotiate once, then one click. A collaboration briefed from a
+  // handshake agreement carries agreement_id, which means money, time and the rest were
+  // already negotiated and settled BEFORE the campaign existed. Re-opening negotiation
+  // here would mean the handshake bought nothing. Accept (which generates the contract,
+  // as it always has) and Decline both remain — nobody is trapped, but settled is
+  // settled. A cold invite (agreement_id NULL) keeps full negotiation below.
+  if (ci.agreement_id) {
+    throw new AppError(
+      'FORBIDDEN',
+      'You already agreed these terms with the brand — accept to generate your contract, or decline.',
+      403
+    );
+  }
+
   // Brand can disable negotiation per-campaign — fixed terms, take-it-or-leave-it.
   if (ci.allow_negotiation === false) {
     throw new AppError(

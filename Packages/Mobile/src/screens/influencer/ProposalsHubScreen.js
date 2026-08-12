@@ -10,7 +10,10 @@ import StatusPill from '../../components/brand/StatusPill';
 
 const TABS = [
   { key: 'discover', label: 'DISCOVER' },
-  { key: 'mine',     label: 'MY PROPOSALS' },
+  { key: 'mine',     label: 'MY PITCHES' },
+  // collab-part2 — brands can now ask YOU. Separate list from your pitches: a pitch
+  // says "I want to work with you", a request says "I want you for something".
+  { key: 'requests', label: 'REQUESTS' },
 ];
 
 function fmtDate(iso) {
@@ -50,8 +53,69 @@ export default function ProposalsHubScreen({ navigation }) {
         ))}
       </View>
 
-      {tab === 'discover' ? <DiscoverTab navigation={navigation} /> : <MyProposalsTab navigation={navigation} />}
+      {tab === 'discover' ? <DiscoverTab navigation={navigation} />
+        : tab === 'requests' ? <BrandRequestsTab navigation={navigation} />
+        : <MyProposalsTab navigation={navigation} />}
     </View>
+  );
+}
+
+// collab-part2 — incoming brand requests. Rows summarise money + time; the detail
+// screen carries the full terms model, the counter composer and one-tap accept.
+function BrandRequestsTab({ navigation }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    const res = await influencerApi.listCollabRequests();
+    if (res.success) setRequests(res.data?.requests || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const summary = (r) => {
+    const t = r.terms_json || {};
+    const bits = [];
+    if (t.money?.commission_pct != null) bits.push(`${t.money.commission_pct}%`);
+    if (t.money?.fee != null) bits.push(`₹${Number(t.money.fee).toLocaleString('en-IN')}`);
+    if (t.time?.post_by) bits.push(`post by ${String(t.time.post_by).slice(0, 10)}`);
+    else if (t.time?.window_end) bits.push(`by ${String(t.time.window_end).slice(0, 10)}`);
+    return bits.join(' · ') || '—';
+  };
+
+  if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={P.yellow} /></View>;
+
+  return (
+    <FlatList
+      data={requests}
+      keyExtractor={r => r.id}
+      contentContainerStyle={{ paddingVertical: 14, paddingBottom: 30 }}
+      refreshing={refreshing}
+      onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }}
+      renderItem={({ item }) => (
+        <TouchableOpacity style={styles.brandCard}
+          onPress={() => navigation.navigate('CollabRequestDetail', { requestId: item.id })}>
+          <View style={styles.brandLogoBox}><Text style={styles.brandLogoPlaceholder}>{(item.business_name || '?').slice(0, 2).toUpperCase()}</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.brandName}>{item.business_name}</Text>
+            <Text style={styles.brandMeta}>{summary(item)}</Text>
+          </View>
+          <Text style={[styles.reqStatus, item.status === 'agreed' && { color: '#047857' }]}>{item.status.toUpperCase()}</Text>
+        </TouchableOpacity>
+      )}
+      ListHeaderComponent={
+        <TouchableOpacity style={styles.prefRow} onPress={() => navigation.navigate('CollabPreferences')}>
+          <Text style={styles.prefTxt}>⚙ Who can ask me, and my minimums</Text>
+        </TouchableOpacity>
+      }
+      ListEmptyComponent={
+        <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
+          <Text style={styles.emptyTitle}>No brand requests yet</Text>
+          <Text style={styles.emptySub}>When a brand wants to work with you, their request lands here — money and timing are always negotiable.</Text>
+        </View>
+      }
+    />
   );
 }
 
@@ -386,6 +450,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
+  reqStatus: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted2, letterSpacing: 0.4 },
+  prefRow: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginHorizontal: 14, marginBottom: 10 },
+  prefTxt: { fontFamily: fonts.sansBold, fontSize: 11.5, color: P.muted },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },
   emptySub: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, fontFamily: fonts.sansRegular },
 });

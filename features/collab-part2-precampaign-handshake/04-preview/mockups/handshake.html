@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part 2 — pre-campaign handshake</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--bg2:#F4F4F5;
+  --yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-50:#FFFDEB;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--muted-4:#D4D4D8;
+  --border:#E4E4E7;--border-soft:#F4F4F5;
+  --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;
+  --danger:#E8401A;--danger-pale:#FDEEE9;--danger-text:#B91C1C;
+  --conv:#7E22CE;--conv-pale:#F3E8FF;--eng:#0E7490;--eng-pale:#CFFAFE;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--muted-3);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);font-family:inherit}
+.tab:hover{border-color:var(--muted-4);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1140px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:15px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55}
+.note.key{background:var(--yellow-50);border:1px solid var(--yellow-pale);color:var(--yellow-text)}
+.note.good{background:var(--success-pale);border:1px solid #A7F3D0;color:var(--success-text)}
+.note.bad{background:var(--danger-pale);border:1px solid #FBCBC4;color:var(--danger-text)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:3px}
+/* Wide tables scroll inside their own box — the page body must never scroll sideways. */
+.card.tight{padding:0;overflow:hidden}
+.card.tight table{min-width:560px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sh{font-size:11.5px;color:var(--muted-2);font-weight:600;margin-bottom:12px}
+h5{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.45px;color:var(--muted);margin:14px 0 8px}
+h5:first-child{margin-top:0}
+.tog{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--white)}
+.tog button{flex:1;border:none;background:var(--white);padding:8px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--muted);border-right:1px solid var(--border)}
+.tog button:last-child{border-right:none}
+.tog button.act{background:var(--ink);color:var(--yellow)}
+.inp{width:100%;border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:inherit;background:var(--white)}
+.inp.mono{font-family:'JetBrains Mono',monospace}
+.inp.sm{padding:6px 9px;font-size:11.5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.flbl{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px}
+.hint{font-size:10.5px;color:var(--muted-2);font-weight:600;margin-top:6px;line-height:1.5}
+.hint.warn{color:var(--yellow-text)}
+.btn{border:none;border-radius:10px;padding:9px 15px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.btn.pri{background:var(--yellow);color:var(--ink)}
+.btn.ink{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--border);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #FBCBC4;color:var(--danger-text)}
+.btn.sm{padding:6px 11px;font-size:11px;border-radius:8px}
+.btn.big{width:100%;padding:12px;font-size:13px}
+.btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+/* terms */
+.term{border:1px solid var(--border);border-radius:11px;padding:11px;margin-bottom:9px;background:var(--white)}
+.term.primary{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--yellow)}
+.term.off{opacity:.62}
+.term-h{display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.term-t{font-size:12px;font-weight:800;flex:1;min-width:120px}
+.pill{display:inline-block;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.45px;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pill.pri{background:var(--ink);color:var(--yellow)}
+.pill.req{background:var(--danger-pale);color:var(--danger-text)}
+.pill.pref{background:var(--yellow-pale);color:var(--yellow-text)}
+.pill.neg{background:var(--success-pale);color:var(--success-text)}
+.pill.conv{background:var(--conv-pale);color:var(--conv)}
+.pill.eng{background:var(--eng-pale);color:var(--eng)}
+.pill.mut{background:var(--bg2);color:var(--muted)}
+.imp{display:flex;gap:5px;margin-top:7px;align-items:center}
+.imp button{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:3px 9px;font-size:9.5px;font-weight:750;cursor:pointer;font-family:inherit;color:var(--muted)}
+.imp button.act{background:var(--ink);color:#fff;border-color:var(--ink)}
+.imp .lb{font-size:9.5px;font-weight:800;color:var(--muted-3);text-transform:uppercase;letter-spacing:.4px;margin-right:2px}
+/* rows */
+.list{border:1px solid var(--border);border-radius:11px;background:var(--white);overflow:hidden}
+.crow{display:flex;align-items:center;gap:9px;padding:9px 11px;border-bottom:1px solid var(--border-soft)}
+.crow:last-child{border-bottom:none}
+.crow.hl{background:var(--yellow-50)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--yellow);display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto}
+.av.sq{border-radius:8px}
+.cb{flex:1;min-width:0}
+.cn{font-size:12px;font-weight:750}
+.cm{font-size:10.5px;color:var(--muted-2);font-weight:650}
+.st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;font-family:'JetBrains Mono',monospace;padding:3px 7px;border-radius:4px;white-space:nowrap}
+.st.wait{background:var(--bg2);color:var(--muted)}
+.st.agreed{background:var(--success-pale);color:var(--success-text)}
+.st.counter{background:var(--yellow-pale);color:var(--yellow-text)}
+.st.dec{background:var(--danger-pale);color:var(--danger-text)}
+.st.exp{background:var(--bg2);color:var(--muted-3)}
+.sep{height:1px;background:var(--border-soft);margin:14px 0}
+/* min-width:0 on the grid items — without it a grid track refuses to shrink below its
+   widest child, so a wide table inside a column pushes the whole page sideways even
+   though the table itself is in a scroll container. */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:start}
+.cols>*,.cols3>*{min-width:0}
+.col{min-width:0}
+.col h2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.55px;padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+.col.before h2{background:var(--danger-pale);color:var(--danger-text)}
+.col.after h2{background:var(--success-pale);color:var(--success-text)}
+.col.now h2{background:var(--bg2);color:var(--muted)}
+/* phone */
+.phone{max-width:322px;margin:0 auto;border:8px solid var(--ink);border-radius:24px;overflow:hidden;background:var(--white)}
+.ph-h{background:var(--ink);color:#fff;padding:8px 12px;font-size:11px;font-weight:750;display:flex;justify-content:space-between}
+.ph-b{padding:12px}
+.ph-tabs{display:flex;border-bottom:1px solid var(--border)}
+.ph-tabs div{flex:1;text-align:center;padding:8px 3px;font-size:10.5px;font-weight:750;color:var(--muted-2)}
+.ph-tabs div.act{color:var(--ink);box-shadow:inset 0 -2px 0 var(--yellow)}
+.ph-nav{display:flex;border-top:1px solid var(--border);background:var(--white)}
+.ph-nav div{flex:1;text-align:center;padding:8px 2px;font-size:9px;font-weight:750;color:var(--muted-3)}
+.ph-nav div.act{color:var(--ink)}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-soft);font-size:11.5px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--muted);font-weight:650}
+.kv .v{font-weight:800;text-align:right}
+.locked{background:var(--bg2);border-radius:8px;padding:8px 10px;font-size:10.5px;color:var(--muted);font-weight:650;margin-top:8px;line-height:1.5}
+/* diff */
+.diff{display:grid;grid-template-columns:1fr auto 1fr;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft)}
+.diff:last-child{border-bottom:none}
+.diff .lbl{grid-column:1/-1;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-3)}
+.dv{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:800;padding:6px 9px;border-radius:7px;background:var(--bg2)}
+.dv.old{color:var(--muted-2);text-decoration:line-through}
+.dv.new{background:var(--yellow-pale);color:var(--yellow-text)}
+.dv.same{background:var(--bg2);color:var(--muted)}
+.arr{font-size:12px;color:var(--muted-3);font-weight:800}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border-soft)}
+th{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-2);background:var(--bg)}
+td.mono{font-family:'JetBrains Mono',monospace;font-size:11px}
+.chk{width:15px;height:15px;border:2px solid var(--muted-4);border-radius:4px;display:inline-grid;place-items:center;font-size:9px;flex:0 0 auto}
+.chk.on{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.rounds{display:flex;gap:4px;align-items:center;font-size:9.5px;font-weight:800;color:var(--muted-2);font-family:'JetBrains Mono',monospace}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted-4)}
+.dot.used{background:var(--yellow-text)}
+@media(max-width:960px){.cols,.cols3{grid-template-columns:1fr}.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Part 2 — pre-campaign handshake</h1>
+  <p>Agree first, build the campaign after · two record types, one terms model, one negotiation · web + mobile</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">① Where it lives</button>
+  <button class="tab" data-v="v2">② Compose a request</button>
+  <button class="tab" data-v="v3">③ Send to who</button>
+  <button class="tab" data-v="v4">④ Creator inbox</button>
+  <button class="tab" data-v="v5">⑤ Creator counters</button>
+  <button class="tab" data-v="v6">⑥ Brand reads the counter</button>
+  <button class="tab" data-v="v7">⑦ Ready to brief</button>
+  <button class="tab" data-v="v8">⑧ Campaign from agreements</button>
+  <button class="tab" data-v="v9">⑨ One-click accept</button>
+  <button class="tab" data-v="v10">⑩ Admin limits</button>
+  <button class="tab" data-v="v11">⑪ Creator settings</button>
+</div>
+
+<!-- ① WHERE IT LIVES -->
+<div class="view on" id="v1">
+  <div class="vh">Where it lives — the Influencers tab</div>
+  <div class="vs">Your call: the tab where search, groups and proposals already are. Web and mobile both.</div>
+
+  <div class="note bad"><b>Today the brand has no way in.</b> It can search creators and view profiles, but its only outreach is: invite into a campaign that already exists, or invite an unclaimed creator to join the platform. "I'd like to work with you" cannot be said.</div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Web — Influencers tab</h2>
+      <div class="card tight">
+        <div style="display:flex;gap:0;border-bottom:1px solid var(--border)">
+          <div style="padding:9px 13px;font-size:11.5px;font-weight:800;box-shadow:inset 0 -2px 0 var(--yellow)">Search</div>
+          <div style="padding:9px 13px;font-size:11.5px;font-weight:700;color:var(--muted-2)">Groups <span class="pill mut">4</span></div>
+          <div style="padding:9px 13px;font-size:11.5px;font-weight:700;color:var(--muted-2)">Requests <span class="pill counter">3</span></div>
+          <div style="padding:9px 13px;font-size:11.5px;font-weight:700;color:var(--muted-2)">Ready to brief <span class="pill agreed">2</span></div>
+        </div>
+        <div style="padding:12px">
+          <div class="g3" style="margin-bottom:11px">
+            <input class="inp sm" value="Search handle or name">
+            <input class="inp sm" value="Niche: Ethnic">
+            <input class="inp sm" value="City: Mumbai">
+          </div>
+          <div class="list">
+            <div class="crow"><span class="chk on">✓</span><div class="av">A</div><div class="cb"><div class="cn">Asha Menon</div><div class="cm">@ashamenon · 48K · 3.2% ER · Ethnic · Mumbai</div></div><button class="btn ink sm">Request collab</button></div>
+            <div class="crow"><span class="chk">&nbsp;</span><div class="av">B</div><div class="cb"><div class="cn">Bilal Khan</div><div class="cm">@bilalstyle · 112K · 2.8% ER · Fashion · Mumbai</div></div><button class="btn sec sm">Request collab</button></div>
+            <div class="crow"><span class="chk on">✓</span><div class="av">C</div><div class="cb"><div class="cn">Chetan Rao</div><div class="cm">@chetan.co · 22K · 4.1% ER · Ethnic · Pune</div></div><button class="btn sec sm">Request collab</button></div>
+          </div>
+          <div class="btnrow">
+            <button class="btn ink sm">Request from 2 selected</button>
+            <button class="btn sec sm">Save 2 as a group</button>
+          </div>
+          <div class="hint">Two new entry points on a surface that already exists — a per-creator button and a bulk action. Groups are already server-side with members.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>Mobile — same tab</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Influencers</span><span>⌕</span></div>
+        <div class="ph-tabs"><div class="act">Search</div><div>Groups</div><div>Requests</div><div>Agreed</div></div>
+        <div class="ph-b">
+          <input class="inp sm" style="margin-bottom:9px" value="Ethnic · Mumbai">
+          <div class="list">
+            <div class="crow" style="padding:8px 9px"><div class="av">A</div><div class="cb"><div class="cn">Asha Menon</div><div class="cm">48K · 3.2% ER</div></div><button class="btn ink sm">Request</button></div>
+            <div class="crow" style="padding:8px 9px"><div class="av">B</div><div class="cb"><div class="cn">Bilal Khan</div><div class="cm">112K · 2.8% ER</div></div><button class="btn sec sm">Request</button></div>
+            <div class="crow" style="padding:8px 9px"><div class="av">C</div><div class="cb"><div class="cn">Chetan Rao</div><div class="cm">22K · 4.1% ER</div></div><button class="btn sec sm">Request</button></div>
+          </div>
+        </div>
+        <div class="ph-nav"><div>Home</div><div class="act">Influencers</div><div>Campaigns</div><div>Orders</div><div>More</div></div>
+      </div>
+      <div class="note key" style="margin-top:11px">The whole handshake works on mobile — a brand can answer a creator and agree money and timing from a phone. Only <b>detailed campaign creation</b> stays web-only.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ② COMPOSE -->
+<div class="view" id="v2">
+  <div class="vh">Compose a request</div>
+  <div class="vs">Money and time always. Everything else optional, and you say how much it matters.</div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Pay per sale</h2>
+      <div class="card">
+        <div class="term-h" style="margin-bottom:11px"><div class="av">A</div><div class="term-t">Asha Menon<div class="cm">@ashamenon</div></div><span class="pill conv">pay per sale</span></div>
+        <div class="tog" style="margin-bottom:12px"><button class="act">Pay per sale</button><button>Pay for content</button><button>Both</button></div>
+
+        <div class="term primary">
+          <div class="term-h"><span class="term-t">Commission</span><span class="pill pri">primary</span><span class="pill neg">negotiable</span></div>
+          <div class="g2">
+            <div><label class="flbl">Rate</label><input class="inp mono" value="12"></div>
+            <div><label class="flbl">Paid</label><input class="inp sm" value="On confirmed sales" disabled></div>
+          </div>
+          <div class="hint">No fee, no budget — sales is commission-only.</div>
+        </div>
+
+        <div class="term primary">
+          <div class="term-h"><span class="term-t">Post by</span><span class="pill pri">primary</span><span class="pill neg">negotiable</span></div>
+          <input class="inp mono" type="date" value="2026-09-15">
+          <div class="hint">The <b>posting expectation</b>, not a campaign end date — a sales collaboration has no duration.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>Pay for content</h2>
+      <div class="card">
+        <div class="term-h" style="margin-bottom:11px"><div class="av">B</div><div class="term-t">Bilal Khan<div class="cm">@bilalstyle</div></div><span class="pill eng">pay for content</span></div>
+        <div class="tog" style="margin-bottom:12px"><button>Pay per sale</button><button class="act">Pay for content</button><button>Both</button></div>
+
+        <div class="term primary">
+          <div class="term-h"><span class="term-t">Fee</span><span class="pill pri">primary</span><span class="pill neg">negotiable</span></div>
+          <div class="g2">
+            <div><label class="flbl">Amount (₹)</label><input class="inp mono" value="25,000"></div>
+            <div><label class="flbl">Paid</label><input class="inp sm" value="In tranches" disabled></div>
+          </div>
+          <div class="hint">Flat fee. <b>Both</b> would show fee <i>and</i> commission.</div>
+        </div>
+
+        <div class="term primary">
+          <div class="term-h"><span class="term-t">Posting window</span><span class="pill pri">primary</span><span class="pill neg">negotiable</span></div>
+          <div class="g2"><input class="inp mono" type="date" value="2026-09-10"><input class="inp mono" type="date" value="2026-09-24"></div>
+          <div class="hint">Content work has a real window — unlike sales, which only needs a post-by date.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Everything else — optional, each one marked</h3>
+    <div class="sh">A requirement must be settled before agreeing. A preference is put to the creator as a question.</div>
+
+    <div class="term">
+      <div class="term-h"><span class="term-t">What they'd promote</span><span class="pill req">requirement</span></div>
+      <div class="tog"><button>Whole store</button><button class="act">A category</button><button>Specific products</button></div>
+      <input class="inp sm" style="margin-top:7px" value="Women → Ethnic Wear (204 products)">
+      <div class="imp"><span class="lb">how much it matters</span><button class="act">Requirement</button><button>Preference</button></div>
+    </div>
+
+    <div class="term">
+      <div class="term-h"><span class="term-t">How you'd work together</span><span class="pill pref">preference</span></div>
+      <div class="tog"><button class="act">Store visit</button><button>We ship products</button><button>Remote</button></div>
+      <div class="imp"><span class="lb">how much it matters</span><button>Requirement</button><button class="act">Preference</button></div>
+      <div class="hint warn">As a preference, Asha is asked <i>"we'd prefer a store visit — what works for you?"</i> rather than told. She can agree to everything and still say remote.</div>
+    </div>
+
+    <div class="term off">
+      <div class="term-h"><span class="term-t">Deliverables</span><span class="pill mut">left for them</span></div>
+      <div class="g3">
+        <input class="inp sm" placeholder="Reels" disabled><input class="inp sm" placeholder="Stories" disabled><input class="inp sm" placeholder="Posts" disabled>
+      </div>
+      <div class="imp"><span class="lb">how much it matters</span><button>Requirement</button><button>Preference</button><button class="act">Let them propose</button></div>
+      <div class="hint">Deliberately optional — you often don't know which channels a creator has, so don't guess. Asha proposes what she can do and it becomes part of the agreement.</div>
+    </div>
+
+    <div class="term">
+      <div class="term-h"><span class="term-t">Message</span></div>
+      <textarea class="inp" rows="2">Loved your Diwali reel. We'd like you on our new ethnic line.</textarea>
+    </div>
+
+    <div class="note key">Deliberately <b>not</b> here: coupon codes, product allocation, offer configuration, the brief, assets. None can be correct before the campaign exists — trying to carry them is exactly why today's acceptance path fabricates a campaign to have somewhere to put them.</div>
+    <div class="btnrow"><button class="btn sec">Save draft</button><button class="btn pri">Send request</button><span class="hint" style="margin:0;align-self:center">Expires in 7 days · uses 1 of your 12 active</span></div>
+  </div>
+</div>
+
+<!-- ③ SEND TO WHO -->
+<div class="view" id="v3">
+  <div class="vh">Send to who</div>
+  <div class="vs">All three mechanisms already exist — they just fire at campaign publish today instead of here.</div>
+
+  <div class="tog" style="max-width:420px;margin-bottom:14px"><button class="act">One creator</button><button>A saved group</button><button>Everyone matching</button></div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>A saved group — with overrides</h2>
+      <div class="card tight">
+        <div style="padding:12px 13px;border-bottom:1px solid var(--border)">
+          <div class="cn">Mumbai micro — ethnic</div>
+          <div class="cm">7 creators · same terms unless you change one</div>
+        </div>
+        <div class="tscroll"><table>
+          <tr><th>Creator</th><th>Commission</th><th>Post by</th><th></th></tr>
+          <tr><td>Asha Menon</td><td class="mono">12%</td><td class="mono">15 Sep</td><td class="cm">group terms</td></tr>
+          <tr><td>Chetan Rao</td><td class="mono">12%</td><td class="mono">15 Sep</td><td class="cm">group terms</td></tr>
+          <tr style="background:var(--yellow-50)"><td>Farah M</td><td class="mono">14%</td><td class="mono">30 Sep</td><td><span class="pill pref">overridden</span></td></tr>
+          <tr><td>+ 4 more</td><td class="mono">12%</td><td class="mono">15 Sep</td><td class="cm">group terms</td></tr>
+        </table></div>
+      </div>
+      <div class="hint">One set of terms for the group, with a per-creator override where you want to pay someone differently. Each creator still gets their own record and negotiates separately.</div>
+    </div>
+    <div class="col">
+      <h2>Everyone matching — one-time</h2>
+      <div class="card">
+        <div class="g2">
+          <div><label class="flbl">Tier</label><input class="inp sm" value="Micro, Macro"></div>
+          <div><label class="flbl">Niche</label><input class="inp sm" value="Ethnic, Fashion"></div>
+          <div><label class="flbl">City</label><input class="inp sm" value="Mumbai, Pune"></div>
+          <div><label class="flbl">Min engagement %</label><input class="inp sm mono" value="2.5"></div>
+          <div><label class="flbl">Gender</label><input class="inp sm" value="Any"></div>
+          <div><label class="flbl">Past collaborators</label><input class="inp sm" value="Include"></div>
+        </div>
+        <div class="note key" style="margin:12px 0 0"><b>34 creators match · 30 will be contacted.</b> Capped by the admin limit, and 4 have muted brand requests. Sends <b>once, as a snapshot</b> — you will know exactly who was contacted.</div>
+        <div class="btnrow"><button class="btn sec sm">Preview the 30</button><button class="btn pri sm">Send to 30</button></div>
+      </div>
+      <div class="note bad">Your call: <b>one-time snapshot, not standing recruitment.</b> You are gauging interest now, before building anything. Standing recruitment belongs to an open sales campaign, not a handshake.</div>
+    </div>
+  </div>
+
+  <div class="note good"><b>Creators are reachable by default and can mute.</b> Opt-in would leave most creators unreachable and the feature unused. The protections are admin-set volume caps, a cooldown after someone declines you, and the creator's own mute — see tabs ⑩ and ⑪.</div>
+</div>
+
+<!-- ④ CREATOR INBOX -->
+<div class="view" id="v4">
+  <div class="vh">Creator inbox — two record types, side by side</div>
+  <div class="vs">A pitch says "I want to work with you". A request says "I want you for something". Separate records, shared machinery.</div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Inbox</h2>
+      <div class="phone">
+        <div class="ph-h"><span>Collabs</span><span>⚙</span></div>
+        <div class="ph-tabs"><div class="act">Requests <span class="pill counter">2</span></div><div>My pitches</div><div>Agreed</div></div>
+        <div class="ph-b">
+          <div class="cm" style="margin-bottom:7px;font-weight:800;text-transform:uppercase;font-size:9px;letter-spacing:.4px">Brands asking for you</div>
+          <div class="list" style="margin-bottom:12px">
+            <div class="crow hl" style="padding:9px"><div class="av sq">EL</div><div class="cb"><div class="cn">Ethnic Luxe</div><div class="cm">12% · post by 15 Sep</div></div><span class="st counter">new</span></div>
+            <div class="crow" style="padding:9px"><div class="av sq">KW</div><div class="cb"><div class="cn">Kala Weaves</div><div class="cm">₹18,000 · 2 reels</div></div><span class="st wait">3d left</span></div>
+          </div>
+          <div class="cm" style="margin-bottom:7px;font-weight:800;text-transform:uppercase;font-size:9px;letter-spacing:.4px">Pitches you sent</div>
+          <div class="list">
+            <div class="crow" style="padding:9px"><div class="av sq">SS</div><div class="cb"><div class="cn">Silk Story</div><div class="cm">you asked 10% · store-wide</div></div><span class="st counter">countered</span></div>
+            <div class="crow" style="padding:9px"><div class="av sq">MB</div><div class="cb"><div class="cn">Meera Boutique</div><div class="cm">you asked ₹12,000</div></div><span class="st wait">viewed</span></div>
+          </div>
+          <div class="locked">Same terms model, same accept / counter / decline on both. Different lists because they mean different things.</div>
+        </div>
+        <div class="ph-nav"><div class="act">Collabs</div><div>Create</div><div>Earnings</div><div>Store</div><div>Profile</div></div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>Reading a request</h2>
+      <div class="phone">
+        <div class="ph-h"><span>← Ethnic Luxe</span><span>⋯</span></div>
+        <div class="ph-b">
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+            <div class="av sq">EL</div>
+            <div><div class="cn">Ethnic Luxe</div><div class="cm">Fashion · Mumbai · 4 past collabs</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);font-weight:650;margin-bottom:11px;font-style:italic">"Loved your Diwali reel. We'd like you on our new ethnic line."</div>
+
+          <h5>Must be agreed</h5>
+          <div class="kv"><span class="k">Commission <span class="pill neg">negotiable</span></span><span class="v mono">12%</span></div>
+          <div class="kv"><span class="k">Post by <span class="pill neg">negotiable</span></span><span class="v mono">15 Sep</span></div>
+          <div class="kv"><span class="k">You'd promote <span class="pill req">required</span></span><span class="v">Ethnic Wear<br><span class="cm">204 products</span></span></div>
+
+          <h5>They'd prefer — your call</h5>
+          <div class="kv"><span class="k">Working style <span class="pill pref">preference</span></span><span class="v">Store visit</span></div>
+
+          <h5>Over to you</h5>
+          <div class="kv"><span class="k">Deliverables</span><span class="v" style="color:var(--muted-2);font-weight:650">not specified —<br>tell them what you can do</span></div>
+
+          <div class="locked">Commission and timing are open to negotiation. The category is a requirement. The store visit is only a preference — you can agree to everything else and still say remote.</div>
+
+          <div class="btnrow" style="flex-direction:column">
+            <button class="btn pri big">Accept these terms</button>
+            <button class="btn ink big">Counter</button>
+            <button class="btn dgr big">Not interested</button>
+          </div>
+          <div class="hint" style="text-align:center">Declining starts a cooldown before this brand can ask again.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ CREATOR COUNTERS -->
+<div class="view" id="v5">
+  <div class="vh">The creator counters</div>
+  <div class="vs">Two counters each, then it settles or drops — the same rule the campaign contract already uses.</div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Counter composer</h2>
+      <div class="phone">
+        <div class="ph-h"><span>← Counter</span><span class="rounds"><span class="dot used"></span><span class="dot"></span> 1 of 2</span></div>
+        <div class="ph-b">
+          <h5>Money</h5>
+          <div class="term primary" style="padding:9px;margin-bottom:8px">
+            <div class="term-h"><span class="term-t" style="font-size:11px">Commission</span></div>
+            <div class="g2"><div><label class="flbl">They said</label><input class="inp sm mono" value="12%" disabled></div><div><label class="flbl">You want</label><input class="inp sm mono" value="15%"></div></div>
+          </div>
+          <h5>Time</h5>
+          <div class="term primary" style="padding:9px;margin-bottom:8px">
+            <div class="term-h"><span class="term-t" style="font-size:11px">Post by</span></div>
+            <div class="g2"><div><label class="flbl">They said</label><input class="inp sm mono" value="15 Sep" disabled></div><div><label class="flbl">You want</label><input class="inp sm mono" value="20 Sep"></div></div>
+          </div>
+          <h5>Their preference</h5>
+          <div class="term" style="padding:9px;margin-bottom:8px">
+            <div class="term-h"><span class="term-t" style="font-size:11px">Working style</span><span class="pill pref">preference</span></div>
+            <div class="tog"><button>Store visit</button><button>Ship it</button><button class="act">Remote</button></div>
+            <div class="hint">A preference, so declining it does not break the deal.</div>
+          </div>
+          <h5>What you'll deliver</h5>
+          <div class="term" style="padding:9px">
+            <div class="g3"><input class="inp sm" value="2 reels"><input class="inp sm" value="4 stories"><input class="inp sm" value="0 posts"></div>
+            <div class="hint">They left this to you.</div>
+          </div>
+          <div class="btnrow" style="flex-direction:column"><button class="btn pri big">Send counter</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>The requirement they can't move</h2>
+      <div class="card">
+        <div class="note bad" style="margin:0 0 11px"><b>Category is a requirement.</b> It is not offered as an editable field in the counter — a requirement must be accepted or the whole request declined.</div>
+        <div class="kv"><span class="k">You'd promote</span><span class="v">Ethnic Wear 🔒</span></div>
+        <div class="hint">If the creator cannot live with a requirement, the honest outcome is <b>Not interested</b> — not a counter that quietly changes it and looks like agreement.</div>
+      </div>
+      <div class="card">
+        <h3>Round tracking</h3>
+        <div class="sh">Visible to both sides, so nobody is guessing how much room is left.</div>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Brand</th><th>Creator</th></tr>
+          <tr><td>Round 1</td><td class="mono">sent 12%</td><td class="mono">wants 15%</td></tr>
+          <tr><td>Round 2</td><td class="mono">— available</td><td class="mono">— available</td></tr>
+        </table></div>
+        <div class="hint">After both rounds, it settles or drops. The 7-day expiry is the backstop.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ BRAND READS THE COUNTER -->
+<div class="view" id="v6">
+  <div class="vh">The brand reads the counter</div>
+  <div class="vs">Side by side, so what moved is obvious.</div>
+
+  <div class="card">
+    <div class="term-h" style="margin-bottom:12px"><div class="av">A</div><div class="term-t">Asha Menon countered<div class="cm">2 hours ago · round 1 of 2</div></div><span class="rounds"><span class="dot used"></span><span class="dot"></span> 1 used</span></div>
+
+    <div class="diff"><span class="lbl">Commission — primary, negotiable</span><span class="dv old">12%</span><span class="arr">→</span><span class="dv new">15%</span></div>
+    <div class="diff"><span class="lbl">Post by — primary, negotiable</span><span class="dv old">15 Sep</span><span class="arr">→</span><span class="dv new">20 Sep</span></div>
+    <div class="diff"><span class="lbl">Working style — your preference</span><span class="dv old">Store visit</span><span class="arr">→</span><span class="dv new">Remote</span></div>
+    <div class="diff"><span class="lbl">What they'd promote — your requirement</span><span class="dv same">Ethnic Wear</span><span class="arr">=</span><span class="dv same">accepted</span></div>
+    <div class="diff"><span class="lbl">Deliverables — you left this to her</span><span class="dv same">—</span><span class="arr">→</span><span class="dv new">2 reels + 4 stories</span></div>
+
+    <div class="note key" style="margin-top:13px">She accepted your <b>requirement</b>, declined your <b>preference</b>, moved both primary terms, and filled in what you left open. That is the model working as intended, not a problem.</div>
+
+    <div class="btnrow">
+      <button class="btn pri">Accept her terms</button>
+      <button class="btn ink">Counter back <span class="mono" style="opacity:.7">(last round)</span></button>
+      <button class="btn dgr">Decline</button>
+    </div>
+    <div class="hint">Accepting creates the <b>agreement</b> — not a campaign, not a contract. She moves to Ready to brief.</div>
+  </div>
+
+  <div class="note bad"><b>What happens today instead.</b> Accepting silently fabricates a campaign — "Proposal: &lt;title&gt;", one set, one creator, no dates — plus a contract draft. The agreed creator never enters a real campaign; they get a one-person stub with none of the campaign's offer, coupon prefix, products or brief.</div>
+</div>
+
+<!-- ⑦ READY TO BRIEF -->
+<div class="view" id="v7">
+  <div class="vh">Ready to brief</div>
+  <div class="vs">Agreed, waiting for a campaign. Nothing created for them yet — no campaign, no set, no contract.</div>
+
+  <div class="card tight">
+    <div class="tscroll"><table>
+      <tr><th>Creator</th><th>Aim</th><th>Money</th><th>Time</th><th>Promotes</th><th>Style</th><th>Delivers</th><th>Agreed</th></tr>
+      <tr><td>Asha Menon</td><td><span class="pill conv">sale</span></td><td class="mono">15%</td><td class="mono">20 Sep</td><td>Ethnic Wear</td><td>Remote</td><td class="mono">2R + 4S</td><td class="cm">2 days ago</td></tr>
+      <tr><td>Esha P</td><td><span class="pill conv">sale</span></td><td class="mono">10%</td><td class="mono">22 Sep</td><td>Whole store</td><td>We ship</td><td class="mono">1R</td><td class="cm">6 days ago</td></tr>
+      <tr><td>Bilal Khan</td><td><span class="pill eng">content</span></td><td class="mono">₹25,000</td><td class="mono">10–24 Sep</td><td>—</td><td>Store visit</td><td class="mono">3R + 6S</td><td class="cm">1 day ago</td></tr>
+      <tr style="opacity:.6"><td>Farah M</td><td><span class="pill conv">sale</span></td><td class="mono">14%</td><td class="mono">30 Sep</td><td>Footwear</td><td>Remote</td><td class="mono">2R</td><td><span class="st exp">expires in 9 days</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <div class="note key"><b>Three-month expiry.</b> An agreement not briefed into a campaign within three months expires. Your call — an accepted handshake sitting unused indefinitely is not a real commitment to either side.</div>
+    </div>
+    <div class="col">
+      <div class="note good"><b>Consumed when briefed.</b> An agreement is one brand with one creator, used once. As soon as it goes into a campaign it leaves this list — so this list always shows exactly what is still outstanding.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ CAMPAIGN FROM AGREEMENTS -->
+<div class="view" id="v8">
+  <div class="vh">Campaign creation, starting from agreements</div>
+  <div class="vs">Web only. Several agreements go into one campaign, across its sets.</div>
+
+  <div class="cols">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="card">
+        <h3>Step 2 — pick creators</h3>
+        <div class="sh">Starts cold. Search, pick, hope they say yes.</div>
+        <div class="note bad" style="margin:0">And anyone who already agreed via a pitch is not here at all — they are sitting in a fabricated one-person campaign of their own, invisible to this screen.</div>
+      </div>
+    </div>
+    <div class="col after">
+      <h2>After</h2>
+      <div class="card">
+        <h3>Step 2 — pick creators</h3>
+        <div class="note good" style="margin-bottom:11px"><b>3 creators already agreed.</b> Add them, or search as usual.</div>
+        <div class="list" style="margin-bottom:10px">
+          <div class="crow hl"><span class="chk on">✓</span><div class="av">A</div><div class="cb"><div class="cn">Asha Menon</div><div class="cm">15% · 20 Sep · Ethnic Wear · remote</div></div><span class="st agreed">→ Set A</span></div>
+          <div class="crow hl"><span class="chk on">✓</span><div class="av">E</div><div class="cb"><div class="cn">Esha P</div><div class="cm">10% · 22 Sep · whole store · we ship</div></div><span class="st agreed">→ Set A</span></div>
+          <div class="crow"><span class="chk on">✓</span><div class="av">B</div><div class="cb"><div class="cn">Bilal Khan</div><div class="cm">₹25,000 · 10–24 Sep · 3R + 6S</div></div><span class="st counter">→ Set B</span></div>
+          <div class="crow" style="opacity:.6"><span class="chk">&nbsp;</span><div class="av">F</div><div class="cb"><div class="cn">Farah M</div><div class="cm">14% · 30 Sep · Footwear</div></div><span class="st wait">leave for later</span></div>
+        </div>
+        <div class="hint">Asha and Esha agreed sales terms → the conversion set. Bilal agreed a fee → the content set. <b>The aim they agreed to decides which set they belong in.</b> Farah stays in Ready to brief.</div>
+      </div>
+      <div class="card">
+        <h3>Their terms arrive filled in</h3>
+        <div class="tscroll"><table>
+          <tr><th>Field</th><th>From the agreement</th><th>Editable?</th></tr>
+          <tr><td>Commission</td><td class="mono">15%</td><td><span class="pill mut">yes — but changing it breaks what she agreed</span></td></tr>
+          <tr><td>Post by</td><td class="mono">20 Sep</td><td><span class="pill mut">yes, same caveat</span></td></tr>
+          <tr><td>Deliverables</td><td class="mono">2 reels + 4 stories</td><td><span class="pill mut">yes</span></td></tr>
+          <tr><td>Working style</td><td>Remote</td><td><span class="pill mut">yes</span></td></tr>
+          <tr><td>Coupon code</td><td class="cm">— campaign supplies</td><td><span class="pill pref">new here</span></td></tr>
+          <tr><td>What she can sell</td><td class="cm">Ethnic Wear (from the agreement's scope)</td><td><span class="pill pref">confirm here</span></td></tr>
+          <tr><td>Customer offer</td><td class="cm">— campaign supplies</td><td><span class="pill pref">new here</span></td></tr>
+          <tr><td>Brief + assets</td><td class="cm">— campaign supplies</td><td><span class="pill pref">new here</span></td></tr>
+        </table></div>
+        <div class="hint warn">Editing an agreed term is allowed but flagged: <i>"Asha agreed to 15% — changing it to 12% means she has to agree again."</i> Silence there would be the worst of both worlds.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑨ ONE-CLICK ACCEPT -->
+<div class="view" id="v9">
+  <div class="vh">Negotiate once, then one click</div>
+  <div class="vs">Your instruction: after the agreed campaign is created and sent, no second approval flow.</div>
+
+  <div class="cols3">
+    <div class="col before">
+      <h2>Before</h2>
+      <div class="phone">
+        <div class="ph-h"><span>← Campaign offer</span></div>
+        <div class="ph-b">
+          <div class="cn" style="margin-bottom:8px">Monsoon Ethnic Push</div>
+          <div class="kv"><span class="k">Commission</span><span class="v mono">15%</span></div>
+          <div class="kv"><span class="k">Post by</span><span class="v mono">20 Sep</span></div>
+          <div class="kv"><span class="k">Products</span><span class="v">Ethnic Wear</span></div>
+          <div class="btnrow" style="flex-direction:column">
+            <button class="btn pri big">Accept</button>
+            <button class="btn sec big">Negotiate</button>
+            <button class="btn dgr big">Decline</button>
+          </div>
+          <div class="hint" style="text-align:center;color:var(--danger-text)">A second negotiation over terms already agreed — the handshake bought nothing.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col after">
+      <h2>After — came via an agreement</h2>
+      <div class="phone">
+        <div class="ph-h"><span>← Monsoon Ethnic Push</span></div>
+        <div class="ph-b">
+          <div class="note good" style="margin-bottom:10px;padding:8px 10px">✓ Terms you agreed on 12 Aug</div>
+          <div class="kv"><span class="k">Commission</span><span class="v mono">15% 🔒</span></div>
+          <div class="kv"><span class="k">Post by</span><span class="v mono">20 Sep 🔒</span></div>
+          <div class="kv"><span class="k">Working style</span><span class="v">Remote 🔒</span></div>
+          <div class="kv"><span class="k">You deliver</span><span class="v mono">2R + 4S 🔒</span></div>
+          <div class="sep" style="margin:10px 0"></div>
+          <h5>New in the campaign</h5>
+          <div class="kv"><span class="k">Your code</span><span class="v mono">ETHNIC_ASHA</span></div>
+          <div class="kv"><span class="k">You can sell</span><span class="v">Ethnic Wear<br><span class="cm">204 products</span></span></div>
+          <div class="kv"><span class="k">Customer offer</span><span class="v">15% off</span></div>
+          <div class="kv"><span class="k">Brief</span><span class="v" style="font-weight:650;font-size:11px">Festive, warm tones</span></div>
+          <div class="btnrow" style="flex-direction:column">
+            <button class="btn pri big">Accept — generates your contract</button>
+            <button class="btn dgr big">Decline</button>
+          </div>
+          <div class="hint" style="text-align:center">One click. No Negotiate — settled is settled.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col now">
+      <h2>After — invited cold</h2>
+      <div class="phone">
+        <div class="ph-h"><span>← Diwali Push</span></div>
+        <div class="ph-b">
+          <div class="locked" style="margin:0 0 10px">No prior agreement — this brand found you in the campaign.</div>
+          <div class="kv"><span class="k">Commission</span><span class="v mono">10%</span></div>
+          <div class="kv"><span class="k">Post by</span><span class="v mono">28 Sep</span></div>
+          <div class="kv"><span class="k">You can sell</span><span class="v">Whole store</span></div>
+          <div class="btnrow" style="flex-direction:column">
+            <button class="btn pri big">Accept</button>
+            <button class="btn ink big">Negotiate</button>
+            <button class="btn dgr big">Decline</button>
+          </div>
+          <div class="hint" style="text-align:center">Unchanged. Nothing was agreed with them, so there is nothing to protect.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:15px"><b>Accept already generates the contract today</b> — the existing accept endpoint calls contract auto-create. So this is mostly <b>removing</b> a step, not adding one.</div>
+  <div class="note key"><b>Decline stays in every case.</b> One click to accept is the goal; nobody is trapped into a collaboration. Declining after agreeing releases the agreement and tells the brand why.</div>
+</div>
+
+<!-- ⑩ ADMIN LIMITS -->
+<div class="view" id="v10">
+  <div class="vh">Admin — the limits, not hardcoded</div>
+  <div class="vs">Your call. Follows the pattern of referral settings, world rules and follower app config: one settings row with an admin surface.</div>
+
+  <div class="note bad"><b>Today these are constants in code</b> — 5 active, 3 per day, 10 per week, 7-day expiry, 30-day cooldown. Changing any of them needs a deploy. And the brand side has no limits at all, because brand outreach never existed.</div>
+
+  <div class="card tight">
+    <div class="tscroll"><table>
+      <tr><th>Limit</th><th>Creator → brand</th><th>Brand → creator</th><th>Note</th></tr>
+      <tr><td>Active at once</td><td class="mono">5</td><td class="mono">12</td><td class="cm">a brand runs more conversations than a creator</td></tr>
+      <tr><td>New per day</td><td class="mono">3</td><td class="mono">10</td><td class="cm"></td></tr>
+      <tr><td>New per week</td><td class="mono">10</td><td class="mono">40</td><td class="cm"></td></tr>
+      <tr><td>Expires after</td><td class="mono">7 days</td><td class="mono">7 days</td><td class="cm">unanswered requests clear themselves</td></tr>
+      <tr><td>Cooldown after a decline</td><td class="mono">30 days</td><td class="mono">30 days</td><td class="cm">stops re-asking someone who said no</td></tr>
+      <tr><td>Counter rounds each</td><td class="mono">2</td><td class="mono">2</td><td class="cm">matches the campaign contract rule</td></tr>
+      <tr style="background:var(--yellow-50)"><td>Max reached by one broadcast</td><td class="cm">n/a</td><td class="mono">30</td><td class="cm">the cap that stops bulk outreach</td></tr>
+      <tr style="background:var(--yellow-50)"><td>Agreement expiry</td><td class="mono">3 months</td><td class="mono">3 months</td><td class="cm">unbriefed agreements lapse</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>Both sides move into settings, not just the brand side.</b> Making brand limits editable while creator limits stay frozen in code would be confusing to whoever operates it. Seeded with today's values, so nothing changes behaviour on day one.</div>
+  <div class="note good">Numbers shown are illustrative starting points, not decisions — that is the point of making them admin-editable.</div>
+</div>
+
+<!-- ⑪ CREATOR SETTINGS -->
+<div class="view" id="v11">
+  <div class="vh">Creator settings — reachable by default, can mute</div>
+  <div class="vs">Your call: open by default. Opt-in would leave most creators unreachable and the feature unused.</div>
+
+  <div class="cols">
+    <div class="col">
+      <h2>Creator controls</h2>
+      <div class="phone">
+        <div class="ph-h"><span>← Collab preferences</span></div>
+        <div class="ph-b">
+          <div class="kv"><span class="k"><b>Brands can ask me</b><br><span class="cm">Turn off and no brand can send you a request</span></span><span class="v">ON</span></div>
+          <div class="kv"><span class="k"><b>Include me in bulk outreach</b><br><span class="cm">Filter-matched requests to many creators</span></span><span class="v">ON</span></div>
+          <h5>Only ask me if</h5>
+          <div class="kv"><span class="k">Minimum commission</span><span class="v mono">8%</span></div>
+          <div class="kv"><span class="k">Minimum fee</span><span class="v mono">₹10,000</span></div>
+          <div class="kv"><span class="k">Aims I take</span><span class="v">Sales, Both</span></div>
+          <div class="locked">A brand whose terms fall below your bar is told the request cannot be sent — you never see it, and they know why rather than being ignored.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>Symmetry with the brand side</h2>
+      <div class="card">
+        <div class="sh">The controls already on the brand side, for comparison.</div>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Brand receiving pitches</th><th>Creator receiving requests</th></tr>
+          <tr><td>Default</td><td class="mono">OFF — opt in</td><td class="mono">ON — can mute</td></tr>
+          <tr><td>Why</td><td class="cm">a brand not looking for creators should not be pitched</td><td class="cm">a creator who cannot be found cannot get work</td></tr>
+          <tr><td>Own bar</td><td class="cm">min tier, niches, city, engagement, past-collab</td><td class="cm">min commission, min fee, aims</td></tr>
+          <tr><td>Abuse control</td><td class="cm">cooldown, admin suspend/ban</td><td class="cm">cooldown, volume caps, broadcast cap</td></tr>
+        </table></div>
+        <div class="hint">Deliberately <b>not</b> symmetric on the default, because the two sides are not in the same position — that asymmetry is the decision, not an oversight.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+document.querySelectorAll('.tog, .imp').forEach(g=>{
+  g.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    g.querySelectorAll('button').forEach(x=>x.classList.remove('act'));b.classList.add('act');
+  }));
+});
+document.querySelectorAll('.chk').forEach(c=>c.addEventListener('click',()=>{
+  c.classList.toggle('on'); c.textContent = c.classList.contains('on') ? '✓' : ' ';
+}));
+</script>
+</body>
+</html>

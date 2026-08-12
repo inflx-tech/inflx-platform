@@ -145,6 +145,18 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
       </ScrollView>
 
       <View style={s.footerBar}>
+        {/* collab-part2 — agree terms FIRST, build the campaign after. The request needs
+            no campaign to exist; the campaign invite below stays for direct invites. */}
+        <TouchableOpacity
+          style={[s.inviteBtn, { backgroundColor: P.ink, marginBottom: 8 }]}
+          onPress={() => navigation.navigate('BrandRequestComposer', {
+            influencerId,
+            influencerName: inf?.full_name || inf?.name,
+            influencerHandle: inf?.instagram_handle ? `@${inf.instagram_handle}` : '',
+          })}
+          activeOpacity={0.85}>
+          <Text style={[s.inviteBtnText, { color: P.yellow }]}>Request Collaboration</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={s.inviteBtn} onPress={() => setInviteOpen(true)} activeOpacity={0.85}>
           <Text style={s.inviteBtnText}>Invite to Campaign</Text>
         </TouchableOpacity>

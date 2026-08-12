@@ -45,6 +45,9 @@ const productionRoutes = require('./production.routes');
 
 // Influencer proposals (Phase Q)
 const proposalRoutes = require('./proposal.routes');
+// collab-part2 — the other half of the handshake: brand -> creator requests, the
+// creator's inbox and preferences, and the admin-editable limits.
+const handshakeRoutes = require('./handshake.routes');
 
 // Media uploads
 const uploadRoutes = require('./upload.routes');
@@ -150,6 +153,7 @@ router.use('/contracts',     contractRoutes);
 router.use('/deliverables',  deliverableRoutes);
 router.use('/',              productionRoutes);   // /contracts/:id/production + /production-events/:id/*
 router.use('/',              proposalRoutes);     // /influencers/me/* + /brands/me/proposals* + /admin/proposals
+router.use('/',              handshakeRoutes);    // /brands/me/collab-requests* + /influencers/me/collab-* + /admin/handshake-settings
 router.use('/uploads',       uploadRoutes);
 router.use('/ota',           otaRoutes);
 

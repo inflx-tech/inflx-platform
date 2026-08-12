@@ -17,7 +17,10 @@
 const db = require('../config/db');
 const proposalService = require('../services/proposal.service');
 const notificationService = require('../services/notification.service');
-const contractService = require('../services/contract.service');
+// collab-part2 — acceptance produces an agreement, not a campaign. The
+// contract.service import that used to live here is gone with it: a contract is now
+// created from the real campaign the brand builds, not drafted against a fabricated one.
+const handshake = require('../services/handshake.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -196,9 +199,16 @@ const respondToCounter = asyncHandler(async (req, res) => {
     return success(res, { proposal: { ...proposal, status: 'rejected' } });
   }
 
-  // Accept counter — same flow as brand-accept (acceptedFlow uses counter terms)
-  const ci = await acceptedFlow(proposal, /* useCounterTerms */ true);
-  return success(res, { proposal: { ...proposal, status: 'accepted', resulting_campaign_influencer_id: ci.id } });
+  // Accept counter — same flow as brand-accept (acceptedFlow uses counter terms).
+  // collab-part2: this now returns an AGREEMENT, not a campaign_influencer.
+  // resulting_campaign_influencer_id stays null until the agreement is briefed into a
+  // real campaign — reporting an id here would point the app at a campaign that does
+  // not exist, which is what the old fabricated stub was.
+  const agreement = await acceptedFlow(proposal, /* useCounterTerms */ true);
+  return success(res, {
+    proposal: { ...proposal, status: 'accepted', resulting_campaign_influencer_id: null },
+    agreement,
+  });
 });
 
 // ─── Brand endpoints ────────────────────────────────────────────────────────
@@ -274,7 +284,7 @@ const acceptProposal = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', `Cannot accept in status "${proposal.status}"`, 422);
   }
 
-  const ci = await acceptedFlow(proposal, /* useCounterTerms */ false);
+  const agreement = await acceptedFlow(proposal, /* useCounterTerms */ false);
 
   // Notify influencer
   const { rows: infRows } = await db.query(
@@ -284,12 +294,16 @@ const acceptProposal = asyncHandler(async (req, res) => {
   );
   const inf = infRows[0];
   if (inf) {
+    // collab-part2: the copy and the destination both had to change. It used to say the
+    // contract was being prepared and deep-link to campaign_detail — both untrue now,
+    // because no campaign and no contract exist yet. Telling a creator to look at a
+    // campaign that is not there is worse than telling them nothing.
     notify(
       inf.user_id, inf.fcm_token, inf.phone,
       'proposal.accepted',
-      'Proposal accepted',
-      `${brand.business_name} accepted your pitch. The contract is being prepared.`,
-      { screen: 'campaign_detail', campaign_influencer_id: ci.id },
+      'Pitch accepted',
+      `${brand.business_name} agreed to your terms. They will send you the campaign details next.`,
+      { screen: 'agreement_detail', agreement_id: agreement.id },
       true
     );
   }
@@ -381,98 +395,50 @@ const flagProposal = asyncHandler(async (req, res) => {
 
 // ─── Acceptance flow (shared) ───────────────────────────────────────────────
 //
-// When a proposal is accepted (either by brand on initial offer, or by
-// influencer on a counter), spin up the campaign chain: campaign + set +
-// campaign_influencer + contract draft. Brand still has to approve the
-// contract via the standard flow before money locks.
+// collab-part2-precampaign-handshake — THIS USED TO FABRICATE A CAMPAIGN.
+//
+// Accepting a pitch created a campaign + set + campaign_influencer + contract draft,
+// because there was nowhere else to put the result. Consequences, all real:
+//
+//   · the campaign was INSERTed with only (brand_id, name, status, created_at), which
+//     is why one-person dateless campaigns exist in production
+//   · the agreed creator never entered a REAL campaign — they got a stub with none of
+//     the campaign's offer, coupon prefix, product allocation or brief
+//   · a contract was drafted describing a campaign that did not meaningfully exist
+//   · the founder's intended sequence — agree first, then build properly — was exactly
+//     what the code skipped
+//
+// Acceptance now produces an AGREEMENT. The creator lands in the brand's "ready to
+// brief" list with the settled terms attached; the brand builds one real campaign from
+// however many creators agreed, and the contract is created from that campaign instead.
+//
+// Existing stub campaigns are left alone — founder's call: "leave them, fresh one will
+// carry these."
 async function acceptedFlow(proposal, useCounterTerms) {
-  const terms = useCounterTerms && proposal.counter_terms
+  const counterTerms = useCounterTerms && proposal.counter_terms
     ? (typeof proposal.counter_terms === 'string' ? JSON.parse(proposal.counter_terms) : proposal.counter_terms)
-    : {
-        proposed_fee:                  proposal.proposed_fee,
-        proposed_commission_pct:       proposal.proposed_commission_pct,
-        proposed_deliverables:         proposal.proposed_deliverables,
-        proposed_posting_window_start: proposal.proposed_posting_window_start,
-        proposed_posting_window_end:   proposal.proposed_posting_window_end,
-        goal:                          proposal.goal,
-      };
+    : null;
 
-  const goal = (terms.goal || proposal.goal || 'engagement').toLowerCase();
-  const fee  = Number(terms.proposed_fee || proposal.proposed_fee || 0);
-  const commissionPct = Number(terms.proposed_commission_pct || proposal.proposed_commission_pct || 0);
-  const deliverables = terms.proposed_deliverables || proposal.proposed_deliverables || [{ type: 'reel', count: 1 }];
+  // Flat pitch columns → the shared terms shape. One boundary, so both record types
+  // obey the same rules without restructuring influencer_proposals.
+  const settledTerms = handshake.termsFromProposal(proposal, counterTerms);
 
-  // 1. Create a mini campaign owned by the brand
-  const { rows: campRows } = await db.query(
-    `INSERT INTO campaigns (brand_id, name, status, created_at)
-     VALUES ($1, $2, 'draft', NOW())
-     RETURNING *`,
-    [proposal.brand_id, `Proposal: ${proposal.pitch_title}`]
-  );
-  const campaign = campRows[0];
+  const agreement = await handshake.acceptIntoAgreement({
+    source: 'proposal',
+    sourceId: proposal.id,
+    brandId: proposal.brand_id,
+    influencerId: proposal.influencer_id,
+    settledTerms,
+  });
 
-  // 2. Create the set
-  const formatsJson = (Array.isArray(deliverables) ? deliverables : []).map(d => ({
-    name:  d.type === 'reel'  ? 'Instagram reel'
-         : d.type === 'post'  ? 'Instagram post'
-         : d.type === 'story' ? 'Instagram stories'
-         : d.type === 'youtube_video' ? 'YouTube video'
-         : d.type === 'youtube_short' ? 'YouTube short'
-         : 'Instagram reel',
-    count: Math.max(1, Number(d.count || 1)),
-  }));
-  const { rows: setRows } = await db.query(
-    `INSERT INTO campaign_sets
-       (campaign_id, name, goal, formats_json, influencer_mode, set_budget)
-     VALUES ($1, 'Set A', $2, $3, 'handpick', $4)
-     RETURNING *`,
-    [
-      campaign.id, goal,
-      JSON.stringify(formatsJson),
-      goal === 'conversion' ? null : fee,
-    ]
-  );
-  const set = setRows[0];
-
-  // 3. Create the campaign_influencer assignment (status=accepted so contract auto-create logic fires)
-  const { rows: ciRows } = await db.query(
-    `INSERT INTO campaign_influencers
-       (set_id, campaign_id, influencer_id, status,
-        influencer_budget, commission_pct, posting_date)
-     VALUES ($1, $2, $3, 'accepted', $4, $5, $6)
-     RETURNING *`,
-    [
-      set.id, campaign.id, proposal.influencer_id,
-      goal === 'conversion' ? 0 : fee,
-      commissionPct || null,
-      terms.proposed_posting_window_start || null,
-    ]
-  );
-  const ci = ciRows[0];
-
-  // 4. Trigger contract auto-create (existing flow). This creates a
-  //    contract row in 'draft' status. Brand approves via /contracts/:id/approve.
-  try {
-    await contractService.autoCreate(ci.id);
-  } catch (err) {
-    console.error('[PROPOSAL] contract auto-create failed:', err.message);
-    // non-fatal — brand can retry from contract screen
-  }
-
-  // 5. Update proposal with the link
+  // resulting_campaign_influencer_id stays NULL until the agreement is briefed into a
+  // campaign — that is the point. acceptIntoAgreement already set status = 'accepted'.
   await db.query(
-    `UPDATE influencer_proposals
-     SET status = 'accepted',
-         brand_response_at = NOW(),
-         resulting_campaign_influencer_id = $2,
-         updated_at = NOW()
-     WHERE id = $1`,
-    [proposal.id, ci.id]
+    `UPDATE influencer_proposals SET brand_response_at = NOW(), updated_at = NOW() WHERE id = $1`,
+    [proposal.id]
   );
 
-  // (Experience-draft seeding removed with the Creator Experience Engine —
-  // Concept P0, 2026-07-23. Accept flow is otherwise unchanged.)
-  return ci;
+  return agreement;
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────────

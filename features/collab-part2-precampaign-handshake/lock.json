@@ -1,0 +1,74 @@
+{
+  "feature": "collab-part2-precampaign-handshake",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-08-11 chat (\"lock it, and start implement\") — locked after the mockup was rebuilt on founder feedback that the first version was a flow skeleton rather than a design",
+  "approved_at": "2026-08-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-08-11 chat — first mockup rejected as \"not detailed one\"; rebuilt from 6 screens to 11, adding the counter exchange in both directions, the creator inbox with both record types side by side, the admin limits screen, creator mute/bar settings, the brand's mobile surface, and how agreed creators land in sets",
+  "mockup_locked_at": "2026-08-11",
+  "notes": "Covers what Docs/COLLAB_RESTRUCTURE_PLAN.md listed as Parts 2 AND 3 — founder: 'make it single instead of two', because an agreement with nowhere to go is not useful. Builds the pre-campaign handshake: brand-initiated requests (which do not exist today in any form), the shared terms model, the agreement record, and the handoff into campaign creation. Biggest behaviour change is a REMOVAL: accepting a pitch stops fabricating a campaign/set/assignment/contract and produces an agreement instead.",
+  "founder_decisions": {
+    "merge_parts": "Parts 2 and 3 are one contract.",
+    "two_record_types": "A creator pitch and a brand request are separate records that SHARE the terms model and response flow. A pitch says 'I want to work with you'; a request says 'I want you for something'. Never converted into one another.",
+    "existing_stubs": "The fabricated stub campaigns already in production are left alone; the new flow carries fresh ones.",
+    "agreement_expiry": "Three months unbriefed, then it expires.",
+    "creator_default": "Creators are open to brand requests BY DEFAULT and can mute. Opt-in would leave most creators unreachable and the feature unused. Deliberately asymmetric with the brand side, which is opt-in — the two sides are not in the same position.",
+    "broadcast": "A filter-matched request is a ONE-TIME snapshot, not standing recruitment. Standing recruitment belongs to open sales campaigns.",
+    "counter_rounds": "Two counters each, then settle or drop — matching the existing campaign contract rule so both negotiations feel the same.",
+    "limits_admin_controlled": "Limits are NOT hardcoded. A handshake_settings row, admin-editable, following the referral_settings / world_rule_settings / follower_app_config pattern. Covers BOTH sides — leaving creator limits frozen in code while brand limits are editable would be confusing to operate. Seeded with today's values.",
+    "one_agreement_one_collaboration": "An agreement is one brand with one creator, consumed when briefed, so Ready to brief always shows exactly what is outstanding. Several agreements can still be briefed into ONE campaign across its sets — one agreement per whole campaign would recreate the per-creator fragmentation this contract removes.",
+    "negotiate_once": "All negotiation happens at the handshake. When the detailed campaign arrives, an agreement-backed creator sees settled terms locked and a single Accept that generates the contract — no Negotiate. A creator invited cold keeps today's Accept / Decline / Negotiate. Decline stays in both cases.",
+    "mobile_surface": "The Influencers tab in the brand app, where search, proposals and groups already live, mirroring web.",
+    "maestro": "Parked by founder decision, so the mobile leg is held at release."
+  },
+  "verified_facts": {
+    "brand_outreach_absent": "No table and no endpoint for brand → creator requests. The only outreach is a campaign invite (needs a campaign) or an invitation to an unclaimed scraped creator (needs them to not be on the platform).",
+    "creator_side_built": "15 endpoints, full lifecycle, with 5 active / 3 per day / 10 per week caps, 7-day expiry, 30-day rejection cooldown, brand opt-in off by default, a brand eligibility bar, and admin suspend/ban — all currently hardcoded in proposal.service.",
+    "acceptance_fabricates": "proposal.controller acceptance INSERTs a campaign with only (brand_id, name, status, created_at) — hence the dateless campaigns already in production — plus a set, a campaign_influencer and a contract draft.",
+    "accept_already_makes_contract": "offer.controller accept already calls contractService.autoCreate, so the one-click requirement is mostly REMOVING the negotiate step rather than adding contract generation.",
+    "targeting_exists": "Handpick, server-persisted creator groups with members, and a filter matcher on tier / niche (incl. secondary) / city / min engagement / gender — all working, but fired once at campaign publish."
+  },
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": [
+      "render:backend",
+      "vercel:brand-web",
+      "ota:mobile"
+    ],
+    "maestro_green": false,
+    "maestro_note": "Parked by founder. The mobile leg does not ship with the web leg; the backend must stay safe for un-updated app builds."
+  },
+  "progress": {
+    "as_of": "2026-08-11",
+    "done": [
+      "Migration 149 — brand_collab_requests, collab_agreements (CHECK: exactly one source), handshake_settings (seeded with today values), brand_request_cooldowns, creator preference columns, ci.agreement_id link. NOT yet run against prod.",
+      "collabTerms.model — the shared terms model. Aim vocabulary ALIGNED to the existing campaign_goal enum after a first draft invented sales/content/both — the same duplicated-vocabulary fault this program fixed twice; caught before anything was built on it.",
+      "handshakeSettings.service — admin-controlled limits both sides, falls back to today constants so a missing row cannot take the feature down.",
+      "handshake.service — eligibility both directions, request creation, broadcast preview (honest matched-vs-reachable-vs-capped), counter rounds against the LATEST terms, decline+cooldown, acceptIntoAgreement, consumeAgreement (guarded), expiry functions. Fixed in review: regex-patched SQL placeholders rewritten to indexed params; a shared mutable params array snapshotted.",
+      "proposal.controller acceptedFlow REPLACED — acceptance produces an agreement; no campaign/set/CI/contract fabricated; notification copy + deep-link corrected (no more campaign_detail for a campaign that does not exist); resulting_campaign_influencer_id stays null until briefed; contract.service import removed. Zero proposals in prod, so nothing live affected.",
+      "termsFromProposal bridge — pitch flat columns map into shared terms at ONE boundary; conversion post_by = window end; creator asks are preferences, not ultimatums; incomplete pitch cannot become an agreement.",
+      "handshake.controller + routes — 17 endpoints mounted and verified against the live Express router; bulk send reports partial success per creator; inbox marks viewed; counterable_terms returned so the UI never offers a requirement as editable; admin settings behind requireAnyAdminRole.",
+      "Campaign briefing — invite accepts agreement_id: validated before writes (ownership, creator match, ready, AIM matches set goal), consumption + CI insert in ONE transaction, agreement_warnings per drifted field (W18, never silent), notification copy differs for agreement-backed invites.",
+      "One-click accept — negotiate refused (403) for agreement-backed CIs with the true reason, ordered BEFORE the generic fixed-terms check; accept and decline untouched; cold invites keep full negotiation. Behaviourally tested.",
+      "handshake-expiry.job — hourly cron flipping expired requests + agreements; expiry stamped at creation so settings changes are not retroactive.",
+      "Web UI — Influencers tab gains Requests + Ready to brief sub-tabs with badges; claimed-creator row action becomes Request collab (was Add → campaigns list, the exact campaign-first flow this contract inverts); composer with per-aim money+time, requirement/preference pickers, no deliverables field; counter rendered as a side-by-side diff; honest partial-success reporting on send. Browser-verified against the real page (6 tests).",
+      "Wizard handoff — ?agreement= prefills set 0 (goal from aim, creator with agreed money/time/scope-as-allocation, deliverables as formats), sends agreement_id on invite, surfaces the server per-field agreement_warnings (W18, never silent), and fails loudly for a consumed/expired agreement. Browser-verified (3 tests). Until this, the Ready-to-brief CTA navigated with a parameter the wizard ignored — a silently inert control.",
+      "Mobile leg — creator: REQUESTS tab in ProposalsHub (rows summarise money+time), CollabRequestDetail (terms with requirement/preference markers, requirement shown locked and NOT offered in the counter, counter composer with rounds, one-tap accept explaining the agreement), CollabPreferences (mute, broadcast opt-out, min commission/fee, aims). Brand: Request Collaboration CTA on the creator profile (above the campaign invite), BrandRequestComposer (per-aim money+time, markers, no deliverables field), BrandCollabRequests (counter as old→new diff + accept/decline/withdraw, agreed creators under READY TO BRIEF with an honest build-it-on-web note since campaign creation is web-only by locked scope). Notification deep links wired on both apps.",
+      "Mobile verification WITHOUT a device: all 12 touched files Babel-parse with the RN preset; mobile jest suite 64/64; and a full production react-native bundle builds — the same module-graph resolution the OTA publish performs. Maestro remains SKIPPED per founder (third time), so released stays false and no GOVERNANCE_OVERRIDE is used."
+    ],
+    "remaining": [
+      "Web group/broadcast composer entry points — API complete; web opens from a single creator row only.",
+      "Migration 149 NOT yet run against prod; nothing committed or deployed. Deploy is now ONE decision: backend + web + mobile OTA can ship together, so creators can answer what brands send from day one.",
+      "On-device verification of the mobile handshake screens — owed at the founder walkthrough (bundle-level verified only)."
+    ],
+    "qa": "319 passed · gate 0 · STATE=GREEN · mobile: Babel-parse 12/12, jest 64/64, full RN production bundle builds."
+  }
+}

@@ -87,6 +87,17 @@ function getNavTarget(type, dataJson) {
       return { screen: 'Earnings' };
     case 'negotiation_update':
       return dataJson?.negotiation_id ? { screen: 'Collabs', params: { screen: 'Negotiation', params: { negotiationId: dataJson.negotiation_id } } } : null;
+    // collab-part2 — the pre-campaign handshake. A brand asked for you, countered you,
+    // or agreed your terms. All live in the Profile stack next to your pitches.
+    case 'collab_request.received':
+    case 'collab_request.countered':
+      return dataJson?.request_id
+        ? { screen: 'Profile', params: { screen: 'CollabRequestDetail', params: { requestId: dataJson.request_id } } }
+        : { screen: 'Profile', params: { screen: 'ProposalsHub' } };
+    case 'collab_request.agreed':
+    case 'proposal.accepted':
+      // Terms agreed — the campaign details arrive next; until then the hub shows it.
+      return { screen: 'Profile', params: { screen: 'ProposalsHub' } };
     default:
       return null;
   }

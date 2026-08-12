@@ -52,6 +52,11 @@ function routeNotification(navigation, data) {
   if (!data || typeof data !== 'object') return false;
   const s = data.screen;
   switch (s) {
+    // collab-part2 — the pre-campaign handshake. Both live in the Home stack.
+    case 'ready_to_brief':
+    case 'brand_request_detail':
+      navigation.navigate('Home', { screen: 'BrandCollabRequests' });
+      return true;
     case 'campaign_detail':
     case 'offer_inbox':
       if (data.campaign_id) {

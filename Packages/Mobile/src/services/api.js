@@ -169,6 +169,16 @@ export const brandApi = {
   register: (data) => api.post('/brands/register', data),
   getMe: () => api.get('/brands/me'),
   updateMe: (data) => api.patch('/brands/me', data),
+
+  // collab-part2 — the pre-campaign handshake, brand side: request a creator before any
+  // campaign exists, answer counters, and see agreed creators (briefing is web-only).
+  sendCollabRequest:        (data) => api.post('/brands/me/collab-requests', data),
+  listSentCollabRequests:   (status) => api.get(`/brands/me/collab-requests${status ? `?status=${status}` : ''}`),
+  acceptCollabCounter:      (id) => api.post(`/brands/me/collab-requests/${id}/accept`),
+  counterCollabRequest:     (id, terms) => api.post(`/brands/me/collab-requests/${id}/counter`, { terms }),
+  declineCollabRequest:     (id, reason) => api.post(`/brands/me/collab-requests/${id}/decline`, { reason }),
+  withdrawCollabRequest:    (id) => api.post(`/brands/me/collab-requests/${id}/withdraw`),
+  listAgreements:           () => api.get('/brands/me/agreements'),
   // Store preview — brand sees their store as customers see it
   getMyStorePreview: () => api.get('/brands/me/store-preview'),
   getWallet: () => api.get('/brands/me/wallet'),
@@ -361,6 +371,16 @@ export const influencerApi = {
   getMyProposal:            (id) => api.get(`/influencers/me/proposals/${id}`),
   withdrawProposal:         (id) => api.post(`/influencers/me/proposals/${id}/withdraw`),
   respondCounter:           (id, action) => api.post(`/influencers/me/proposals/${id}/respond-counter`, { action }),
+
+  // collab-part2 — the pre-campaign handshake, creator side. Brands can now ask YOU;
+  // these are the inbox, the responses, the mute/bar, and your agreements.
+  listCollabRequests:     () => api.get('/influencers/me/collab-requests'),
+  acceptCollabRequest:    (id) => api.post(`/influencers/me/collab-requests/${id}/accept`),
+  counterCollabRequest:   (id, terms) => api.post(`/influencers/me/collab-requests/${id}/counter`, { terms }),
+  declineCollabRequest:   (id, reason) => api.post(`/influencers/me/collab-requests/${id}/decline`, { reason }),
+  getCollabPreferences:   () => api.get('/influencers/me/collab-preferences'),
+  updateCollabPreferences:(data) => api.patch('/influencers/me/collab-preferences', data),
+  listMyAgreements:       () => api.get('/influencers/me/agreements'),
 
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),

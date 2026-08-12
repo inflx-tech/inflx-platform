@@ -104,9 +104,18 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: P.bg }}>
       <ScreenHeader
         title="Find Influencers"
-        sub="Search and invite to your campaigns"
+        sub="Search, request collabs, invite to campaigns"
         back onBack={() => navigation.goBack()}
       />
+
+      {/* collab-part2 — sent requests + agreed creators live one tap away from search,
+          mirroring the web Influencers tab. */}
+      <TouchableOpacity
+        style={{ marginHorizontal: 16, marginTop: 8, backgroundColor: P.ink, borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
+        onPress={() => navigation.navigate('BrandCollabRequests')}
+        activeOpacity={0.85}>
+        <Text style={{ fontFamily: fonts.sansBold, fontSize: 12, color: P.yellow }}>Collab requests & agreed creators →</Text>
+      </TouchableOpacity>
 
       <View style={s.searchBar}>
         <TextInput

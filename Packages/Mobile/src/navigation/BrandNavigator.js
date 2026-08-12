@@ -21,6 +21,9 @@ import BrandEnquiriesScreen from '../screens/brand/BrandEnquiriesScreen';
 import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
 import BrandInfluencerBrowseScreen from '../screens/brand/BrandInfluencerBrowseScreen';
 import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfileScreen';
+// collab-part2 — the pre-campaign handshake, brand side.
+import BrandRequestComposerScreen from '../screens/brand/BrandRequestComposerScreen';
+import BrandCollabRequestsScreen from '../screens/brand/BrandCollabRequestsScreen';
 import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScreen';
 import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
@@ -51,6 +54,9 @@ function HomeStack() {
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerBrowse"  component={BrandInfluencerBrowseScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
+      {/* collab-part2 — the pre-campaign handshake, brand side. */}
+      <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
+      <Stack.Screen name="BrandCollabRequests" component={BrandCollabRequestsScreen} />
       <Stack.Screen name="BrandStorePreview"      component={BrandStorePreviewScreen} />
       <Stack.Screen name="ContractPdf"            component={ContractPdfScreen} />
       <Stack.Screen name="BrandOrders"            component={BrandOrdersScreen} />

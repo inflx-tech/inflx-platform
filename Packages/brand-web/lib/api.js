@@ -422,6 +422,20 @@ export const proposalApi = {
   flag: (id, reason) => api.post(`/brands/me/proposals/${id}/flag`, { reason }),
 };
 
+// collab-part2 — the pre-campaign handshake, brand side. The other half of proposalApi:
+// a pitch says "I want to work with you", a request says "I want you for something".
+export const handshakeApi = {
+  send: (data) => api.post('/brands/me/collab-requests', data),
+  broadcastPreview: (filters) => api.post('/brands/me/collab-requests/broadcast-preview', { filters }),
+  list: (status) => api.get(`/brands/me/collab-requests${status ? `?status=${status}` : ''}`),
+  accept: (id) => api.post(`/brands/me/collab-requests/${id}/accept`),
+  counter: (id, terms) => api.post(`/brands/me/collab-requests/${id}/counter`, { terms }),
+  decline: (id, reason) => api.post(`/brands/me/collab-requests/${id}/decline`, { reason }),
+  withdraw: (id) => api.post(`/brands/me/collab-requests/${id}/withdraw`),
+  // Ready to brief — what campaign creation offers.
+  agreements: () => api.get('/brands/me/agreements'),
+};
+
 export const productionApi = {
   // GET — both parties see their own contract's production event + log
   get: (contractId) => api.get(`/contracts/${contractId}/production`),

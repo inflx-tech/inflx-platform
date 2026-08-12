@@ -15,6 +15,8 @@ const env = require('../config/env');
 const commissionConfirmJob = require('./commission-confirm.job');
 const tranche3Job          = require('./tranche-3-release.job');
 const offerExpiryJob       = require('./offer-expiry.job');
+// collab-part2 — lapse unanswered handshake requests + unbriefed agreements.
+const handshakeExpiryJob   = require('./handshake-expiry.job');
 const apifyEngagementJob   = require('./apify-engagement.job');
 const campaignStatusJob    = require('./campaign-status.job');
 const bookingReminderJob   = require('./booking-reminder.job');
@@ -51,6 +53,11 @@ function startAllJobs() {
 
   // offer-expiry — every 15 minutes
   cron.schedule('0,15,30,45 * * * *', offerExpiryRun, { timezone: tz });
+
+  // handshake-expiry — hourly. Requests lapse on request_ttl_days, agreements on
+  // agreement_expiry_days (founder: three months unbriefed). Hourly is plenty —
+  // the shortest clock is measured in days.
+  cron.schedule('20 * * * *', handshakeExpiryJob.run, { timezone: tz });
 
   // negotiation-expiry — every 30 minutes (auto-walks-away after 48h SLA)
   cron.schedule('7,37 * * * *', negotiationExpiryRun, { timezone: tz });

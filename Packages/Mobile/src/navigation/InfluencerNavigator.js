@@ -28,6 +28,9 @@ import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
 import InfluencerContractsScreen from '../screens/influencer/InfluencerContractsScreen';
 import ProposalsHubScreen from '../screens/influencer/ProposalsHubScreen';
 import SendProposalScreen from '../screens/influencer/SendProposalScreen';
+// collab-part2 — the pre-campaign handshake: incoming brand requests + preferences.
+import CollabRequestDetailScreen from '../screens/influencer/CollabRequestDetailScreen';
+import CollabPreferencesScreen from '../screens/influencer/CollabPreferencesScreen';
 // Concept P0 (2026-07-23): ExperienceStudio / MyStore / StockStore DELETED.
 // Concept P2: the Post Composer + My Posts replace the old studio.
 import PostComposerScreen from '../screens/influencer/PostComposerScreen';
@@ -63,6 +66,8 @@ function ProfileStackNav() {
       <ProfileStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <ProfileStack.Screen name="ProposalsHub" component={ProposalsHubScreen} />
       <ProfileStack.Screen name="SendProposal" component={SendProposalScreen} />
+      <ProfileStack.Screen name="CollabRequestDetail" component={CollabRequestDetailScreen} />
+      <ProfileStack.Screen name="CollabPreferences" component={CollabPreferencesScreen} />
       {/* Legal — creators get the creator document set. */}
       <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
       <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />

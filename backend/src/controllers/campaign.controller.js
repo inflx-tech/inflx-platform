@@ -9,6 +9,8 @@ const {
   normalizeOfferType,
   backfillDiscountSubType,
 } = require('../services/offerConfig.validator');
+// collab-part2 — consuming a handshake agreement when it is briefed into a set.
+const handshakeService = require('../services/handshake.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase A12.2 — discover_filter entitlement helper.
@@ -982,10 +984,41 @@ const invite = asyncHandler(async (req, res) => {
     alloc_category,
     alloc_product_ids,
     offer_valid_until,
+    // collab-part2 — briefing a handshake agreement into this set. Optional: a cold
+    // invite (no prior agreement) is unchanged.
+    agreement_id,
   } = req.body;
 
   if (!influencer_id) {
     throw new AppError('VALIDATION_ERROR', 'influencer_id is required', 422, 'influencer_id');
+  }
+
+  // collab-part2 — validate the agreement BEFORE any writes. It must be this brand's,
+  // with this creator, still 'ready', and its agreed AIM must match the set's goal —
+  // a creator who agreed commission-only terms cannot be quietly briefed into a
+  // fee-paying engagement set, or vice versa.
+  let agreement = null;
+  if (agreement_id) {
+    const { rows: agrRows } = await db.query(
+      `SELECT * FROM collab_agreements WHERE id = $1 AND brand_id = $2`,
+      [agreement_id, brand.id]
+    );
+    agreement = agrRows[0];
+    if (!agreement) throw new AppError('NOT_FOUND', 'Agreement not found', 404, 'agreement_id');
+    if (agreement.influencer_id !== influencer_id) {
+      throw new AppError('VALIDATION_ERROR', 'That agreement is with a different creator', 422, 'agreement_id');
+    }
+    if (agreement.status !== 'ready') {
+      throw new AppError('VALIDATION_ERROR', `That agreement is ${agreement.status} and cannot be briefed`, 422, 'agreement_id');
+    }
+    const agreedAim = String((agreement.terms_json || {}).aim || '').toLowerCase();
+    if (agreedAim && agreedAim !== set.goal) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        `This creator agreed ${agreedAim} terms — add them to a ${agreedAim} set, not a ${set.goal} one`,
+        422, 'agreement_id'
+      );
+    }
   }
 
   const alloc = await resolveAllocation({
@@ -1092,7 +1125,12 @@ const invite = asyncHandler(async (req, res) => {
   // is set yet, leave NULL — the offer will not auto-expire until one is assigned.
   const expiresAt = posting_date ? new Date(posting_date) : null;
 
-  const { rows } = await db.query(
+  // collab-part2 — when briefing an agreement, its consumption and the assignment's
+  // creation are ONE transaction. Separable, a crash between them leaves either a
+  // consumed agreement with no collaboration, or (the other order) the same agreement
+  // briefable into two campaigns. consumeAgreement's guarded UPDATE (status='ready')
+  // is what makes a concurrent double-brief lose cleanly.
+  const insertCi = (q) => q.query(
     `INSERT INTO campaign_influencers
        (set_id, influencer_id, status, agreed_fee, posting_date, offer_expires_at,
         offer_type, offer_config_json, commission_pct, coupon_code,
@@ -1101,9 +1139,12 @@ const invite = asyncHandler(async (req, res) => {
         -- collab-part4 §4.1/§4.4 — allocation (what they may sell) + the offer's own
         -- deadline. NOT offer_expires_at above, which is the invitation clock.
         alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
-        offer_valid_until)
+        offer_valid_until,
+        -- collab-part2 — the agreement this assignment was briefed from. Presence is
+        -- what tells the creator's acceptance flow the terms were already settled.
+        agreement_id)
      VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-             $17, $18, $19, $20::jsonb, $21)
+             $17, $18, $19, $20::jsonb, $21, $22)
      RETURNING *`,
     [
       set.id,
@@ -1127,22 +1168,59 @@ const invite = asyncHandler(async (req, res) => {
       alloc ? alloc.category : null,
       alloc && alloc.product_ids ? JSON.stringify(alloc.product_ids) : null,
       offer_valid_until || null,
+      agreement ? agreement.id : null,
     ]
   );
+
+  let ci;
+  if (agreement) {
+    ci = await db.withTransaction(async (tx) => {
+      const { rows } = await insertCi(tx);
+      await handshakeService.consumeAgreement({
+        agreementId: agreement.id, campaignId: campaign.id, ciId: rows[0].id, tx,
+      });
+      return rows[0];
+    });
+  } else {
+    const { rows } = await insertCi(db);
+    ci = rows[0];
+  }
+
+  // collab-part2 W18 — editing an agreed term is allowed but NEVER silent. The brand
+  // is warned per field, because a creator who agreed 15% and then receives 12% will
+  // simply decline, and the brand should know that before sending.
+  const agreement_warnings = [];
+  if (agreement) {
+    const t = agreement.terms_json || {};
+    const agreedPct = t.money && t.money.commission_pct != null ? Number(t.money.commission_pct) : null;
+    const agreedFee = t.money && t.money.fee != null ? Number(t.money.fee) : null;
+    const agreedBy  = (t.time && (t.time.post_by || t.time.window_end)) || null;
+    if (agreedPct != null && commission_pct != null && Number(commission_pct) !== agreedPct) {
+      agreement_warnings.push(`They agreed ${agreedPct}% commission — you are sending ${commission_pct}%. They will have to agree again.`);
+    }
+    if (agreedFee != null && agreed_fee != null && Number(agreed_fee) !== agreedFee) {
+      agreement_warnings.push(`They agreed a ₹${agreedFee} fee — you are sending ₹${agreed_fee}.`);
+    }
+    if (agreedBy && posting_date && String(posting_date).slice(0, 10) !== String(agreedBy).slice(0, 10)) {
+      agreement_warnings.push(`They agreed to post by ${String(agreedBy).slice(0, 10)} — you are asking for ${String(posting_date).slice(0, 10)}.`);
+    }
+  }
 
   // Notify influencer
   await notificationService.send({
     userId: inf.user_id,
     type: 'offer.invited',
-    title: 'New Campaign Invitation',
-    body: 'You have received a new campaign invitation. Check your offers inbox.',
-    data: { screen: 'offer_inbox', campaign_influencer_id: rows[0].id },
+    title: agreement ? 'Your agreed collaboration is ready' : 'New Campaign Invitation',
+    body: agreement
+      ? 'The brand has set up the campaign you agreed to. One tap to accept and generate your contract.'
+      : 'You have received a new campaign invitation. Check your offers inbox.',
+    data: { screen: 'offer_inbox', campaign_influencer_id: ci.id },
     fcmToken: inf.fcm_token,
     sendSms: true,
     phone: inf.phone,
   });
 
-  return success(res, { campaign_influencer: rows[0] }, 201);
+  return success(res, { campaign_influencer: ci, agreement_warnings }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
