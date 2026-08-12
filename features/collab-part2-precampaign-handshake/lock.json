@@ -44,7 +44,20 @@
       "ota:mobile"
     ],
     "maestro_green": false,
-    "maestro_note": "Parked by founder. The mobile leg does not ship with the web leg; the backend must stay safe for un-updated app builds."
+    "maestro_note": "Parked by founder. The mobile leg does not ship with the web leg; the backend must stay safe for un-updated app builds.",
+    "partial_deploy": {
+      "commit": "ee9749c",
+      "pushed_at": "2026-08-12",
+      "pushed_by": "founder chat: deploy",
+      "migration": "149 applied to prod BEFORE the push — settings row seeded (creator 5/3/10, brand 12/10/40, broadcast cap 30, agreement expiry 90d), all new tables at 0 rows, mute + agreement_id columns present",
+      "gov_check": "exit 0 — 28 governed changes contract-backed, mockup_locked, diff notes present",
+      "verified": {
+        "render_backend": "CONFIRMED — /v1/brands/me/agreements returns 401, producible only by the new router (old code 404s unknown paths; auth is per-route). Unusually fast deploy (~2-3 min).",
+        "vercel_brand_web": "CONFIRMED — CDN Age on inflx.in/login reset to 0.",
+        "ota_mobile": "PUBLISHED — brand v166, influencer v163, follower v221, agency v61. Phones pick up on next launch."
+      },
+      "held": "released stays false + maestro_green false — Maestro skipped per founder (third time), no GOVERNANCE_OVERRIDE. On-device verification of the handshake screens owed at the founder walkthrough."
+    }
   },
   "progress": {
     "as_of": "2026-08-11",
@@ -66,7 +79,6 @@
     ],
     "remaining": [
       "Web group/broadcast composer entry points — API complete; web opens from a single creator row only.",
-      "Migration 149 NOT yet run against prod; nothing committed or deployed. Deploy is now ONE decision: backend + web + mobile OTA can ship together, so creators can answer what brands send from day one.",
       "On-device verification of the mobile handshake screens — owed at the founder walkthrough (bundle-level verified only)."
     ],
     "qa": "319 passed · gate 0 · STATE=GREEN · mobile: Babel-parse 12/12, jest 64/64, full RN production bundle builds."
