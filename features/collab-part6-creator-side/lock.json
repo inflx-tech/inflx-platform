@@ -1,0 +1,24 @@
+{
+  "feature": "collab-part6-creator-side",
+  "spec_version": "1.0.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "notes": "Part 6 of 7. AWAITING FOUNDER LOCK - spec authored 2026-08-12, no implementation started. IN: 6.1 (the creator sees which terms were already agreed vs what the campaign newly adds, plus an allocation summary) and 6.2 (filter brands by category and city - both values are already in the payload; only name is filterable today). DEFERRED: 6.3 open-campaign discovery/application, with reasons in 01-spec.md section 1. No migration.",
+  "audit_2026_08_12": {
+    "finding_1": "campaign_influencers.agreement_id is returned to the creator NOWHERE (zero references in influencer.controller.js). Part 2 one-click accept is enforced by the API and invisible in the product - the creator re-reads terms they already settled, with no sign they are closed.",
+    "finding_2": "discoverEligibleBrands already SELECTs b.category and u.city AS brand_city but filters on business_name ILIKE alone (proposal.service.js:217-234). Both useful filters sit in the payload, unreachable.",
+    "finding_3": "THE APPLICATION FLOW IS HALF-BUILT AND UNREACHABLE - the same shape as the dead offer join. Brand-side approve/reject handlers gated on ci.status=applied exist (campaign.controller.js:1952-2130) plus a brandInbox pending_applications counter, but NOTHING in the backend writes status=applied (all three campaign_influencers INSERT sites write invited) and there is no creator-facing browse-or-apply route. Prod: applied 0 rows; campaign_sets by mode = handpick 7, open_group 0, so the mode it serves has never been used once. It would also not work if built: Part 4 recorded that open-group joiners carry no allocation and no commission_pct, and since Part 4 having something to sell IS the discovery gate - a joiner would be contracted and unable to sell anything."
+  },
+  "deferral_6_3": "Deferred, not dropped. Reasons: creators already have two shipped routes to brands (pitches, requests) that no human has exercised on a device yet; open groups have zero production usage; open-campaign apply reverses the founder-stated model (agree first, then the brand builds) so it is a new idea rather than a completion of this program; and it cannot be done honestly without first fixing the Part 4 open-group allocation/commission leftover. Recorded with a test pinning the absence so a future half-build is a deliberate act.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src, brand-web runtime, Mobile runtime) - explicit founder go required BEFORE the push, per feedback-push-is-the-deploy; no migration"
+  }
+}
