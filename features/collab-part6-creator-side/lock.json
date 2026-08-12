@@ -31,7 +31,19 @@
       "Render (backend/src)",
       "OTA (Packages/Mobile)"
     ],
-    "deploy_note": "NOT PUSHED. Per feedback-push-is-the-deploy, pushing governed backend code IS the deploy on this repo, so the founder go is required BEFORE the push. Committed locally only. brand-web is untouched by this contract, so Vercel is not a target."
+    "deploy_note": "NOT PUSHED. Per feedback-push-is-the-deploy, pushing governed backend code IS the deploy on this repo, so the founder go is required BEFORE the push. Committed locally only. brand-web is untouched by this contract, so Vercel is not a target.",
+    "deploy": {
+      "commit": "f49ee6d",
+      "deployed_at": "2026-08-12",
+      "authorised_by": "founder chat: pls deploy (go given BEFORE the push, per feedback-push-is-the-deploy)",
+      "verified": {
+        "ota_mobile": "CONFIRMED — brand v168, influencer v165, follower v223, agency v63 published.",
+        "render_backend": "NOT EXTERNALLY PROVABLE for this contract, and stated as such rather than implied. Parts 2 and 5 were provable because each added a NEW route (401 where old code 404s). Part 6 adds no route: every changed response sits behind influencer auth, and /health returns a static version with no commit or uptime marker. What IS confirmed: the push succeeded, gov-check passed, and the backend answers /health in 0.44s and still auth-gates the changed endpoint (401). Which build is serving cannot be shown from outside.",
+        "vercel_brand_web": "N/A — brand-web is untouched by this contract. Age reset to 0 because the push rebuilds the site regardless; it is not evidence of a Part 6 change."
+      },
+      "proof_gap_followup": "If proving backend deploys matters going forward, the cheap fix is a build marker on /health (commit SHA or boot time). Worth its own small contract — flagged, not silently accepted."
+    },
+    "released_note": "Stays false: Maestro skipped per founder (fifth consecutive mobile release). On-device verification of the settled-vs-new split, the allocation line and the brand filters is owed at the founder walkthrough."
   },
   "mockup_locked_by": "founder 2026-08-12 chat — delegated with the contract lock (\"lock part 6 and start implementation\"); 5 panels, incl. panel 5 recording the deferred route.",
   "mockup_locked_at": "2026-08-12",
