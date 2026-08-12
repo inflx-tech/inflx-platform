@@ -38,7 +38,20 @@
       "Render (backend/src)",
       "Vercel (brand-web)",
       "OTA (Packages/Mobile)"
-    ]
+    ],
+    "deploy": {
+      "commit": "d33d5e0",
+      "deployed_at": "2026-08-12",
+      "authorised_by": "founder chat: pls deploy",
+      "verified": {
+        "render_backend": "CONFIRMED - POST /v1/campaigns/:id/end returns 401 (route mounted, auth required). Old code 404s unknown paths.",
+        "vercel_brand_web": "CONFIRMED - CDN Age on inflx.in/login reset to 0.",
+        "ota_mobile": "PUBLISHED - brand v167, influencer v164, follower v222, agency v62."
+      },
+      "sequencing_note": "Backend and brand-web went live at PUSH time (Render/Vercel auto-deploy on push to main), which happened during implementation - BEFORE the founder said \"pls deploy\". Only the OTA was actually outstanding at that point. Corrected to the founder rather than left implied. Rule for future parts: pushing governed backend/web code IS the deploy, so the explicit go belongs before the push, not after it.",
+      "first_ota_attempt_failed": "The first publish-ota:all ran from C:\\WORK instead of the repo root and published NOTHING (ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND), while the background task still reported completion. Caught by reading the output rather than trusting the notification; the re-run from the repo root succeeded."
+    },
+    "released_note": "Stays false: Maestro skipped per founder (fourth consecutive mobile release). On-device verification of END CAMPAIGN and the Ongoing renders is owed at the founder walkthrough."
   },
   "founder_refinement_2026_08_12": {
     "quote": "as far as dates is concern, its simple that is if the campaign type is conversions or sales then it might be start date but no end date. but for offers it may have end date (this we addressed already)",
