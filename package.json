@@ -40,7 +40,8 @@
     "diff:build": "node qa/scripts/diff-build.mjs",
     "diff:open": "node qa/scripts/diff-open.mjs",
     "qa:maestro": "node qa/scripts/qa-maestro.mjs",
-    "qa:maestro:doctor": "node qa/scripts/maestro-doctor.mjs"
+    "qa:maestro:doctor": "node qa/scripts/maestro-doctor.mjs",
+    "qa:prod-integrity": "node backend/scripts/verify-prod-integrity.mjs"
   },
   "engines": {
     "node": ">=20"
