@@ -19,6 +19,9 @@ router.delete('/:id',  ...brandApproved, ctrl.remove);
 // ── Campaign Publish / Cancel ─────────────────────────────────────────────────
 router.post('/:id/publish', ...brandAuth, ctrl.publish);
 router.post('/:id/cancel',  ...brandAuth, ctrl.cancel);
+// collab-part5 — the deliberate finish. Distinct from cancel: completes rather than
+// aborts, refunds nothing, and is the only way to close an open-ended sales campaign.
+router.post('/:id/end',     ...brandAuth, ctrl.endCampaign);
 
 // ── Cancel individual influencer assignment ──────────────────────────────────
 router.post('/:id/influencers/:ciid/cancel', ...brandAuth, ctrl.cancelInfluencer);

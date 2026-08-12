@@ -53,7 +53,7 @@ function generateCSV(campaigns) {
     c.spent_budget || 0,
     c.influencer_count || 0,
     c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN') : '',
-    c.end_date ? new Date(c.end_date).toLocaleDateString('en-IN') : '',
+    c.end_date ? new Date(c.end_date).toLocaleDateString('en-IN') : 'Ongoing',
     c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN') : '',
   ]);
   return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -149,10 +149,12 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
             {campaign.start_date
               ? new Date(campaign.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
               : <span className="text-[#A1A1AA]">— no dates set —</span>}
-            {campaign.end_date && <>
-              <span className="text-[#D4D4D8] mx-1.5">→</span>
-              {new Date(campaign.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-            </>}
+            {/* collab-part5 — an open-ended campaign says so; only a genuinely date-less
+                legacy row shows nothing. */}
+            <span className="text-[#D4D4D8] mx-1.5">→</span>
+            {campaign.end_date
+              ? new Date(campaign.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+              : 'Ongoing'}
           </div>
         </div>
         <StatusBadge status={campaign.status} />

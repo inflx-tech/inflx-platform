@@ -158,7 +158,9 @@ export default function CollabDetailScreen({ route, navigation }) {
         <Text style={styles.meta}>
           {fmtRupees(c.agreed_fee || c.influencer_budget || 0)}
           {prettyGoal(c.goal) ? ` · ${prettyGoal(c.goal)}` : ''}
-          {c.start_date ? ` · ${fmtDate(c.start_date)}–${fmtDate(c.end_date)}` : ''}
+          {/* collab-part5 — "Ongoing" tells the creator their links keep working, which is
+              the whole point of an open-ended sales collaboration. */}
+          {c.start_date ? ` · ${fmtDate(c.start_date)}–${c.end_date ? fmtDate(c.end_date) : 'Ongoing'}` : ''}
         </Text>
 
         {/* progress spine */}

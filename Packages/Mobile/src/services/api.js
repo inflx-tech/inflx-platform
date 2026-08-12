@@ -190,6 +190,9 @@ export const brandApi = {
   getCampaignLive: (id) => api.get(`/campaigns/${id}/live`),
   publishCampaign: (id) => api.post(`/campaigns/${id}/publish`),
   cancelCampaign: (id) => api.post(`/campaigns/${id}/cancel`),
+  // collab-part5 — the deliberate finish (completes, not aborts). The only way to close
+  // an open-ended sales campaign; refuses while a creator is owed money or awaits review.
+  endCampaign: (id) => api.post(`/campaigns/${id}/end`),
   deleteCampaign: (id) => api.delete(`/campaigns/${id}`),
   reviewDeliverable: (id, data) => api.post(`/deliverables/${id}/review`, data),
   confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),

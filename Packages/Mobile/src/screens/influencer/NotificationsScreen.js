@@ -94,6 +94,10 @@ function getNavTarget(type, dataJson) {
       return dataJson?.request_id
         ? { screen: 'Profile', params: { screen: 'CollabRequestDetail', params: { requestId: dataJson.request_id } } }
         : { screen: 'Profile', params: { screen: 'ProposalsHub' } };
+    // collab-part5 — a brand closed a collaboration. Their products came off the shopping
+    // app, so send them to Collabs where the campaign now reads Completed.
+    case 'campaign.ended':
+      return { screen: 'Collabs' };
     case 'collab_request.agreed':
     case 'proposal.accepted':
       // Terms agreed — the campaign details arrive next; until then the hub shows it.

@@ -63,6 +63,37 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   const [briefOpen, setBriefOpen]   = useState(false);
   const [error, setError]           = useState(null);
   const [publishing, setPublishing] = useState(false);
+  const [ending, setEnding]         = useState(false);
+
+  // collab-part5 — the deliberate finish, on the phone too (only campaign creation and
+  // listing are web-only). Completing takes every participating creator's products out of
+  // the follower app, so the consequence is spelled out before confirming; the server
+  // refuses while a creator is owed money or has work awaiting review, and its message
+  // names which.
+  function confirmEnd() {
+    Alert.alert(
+      'End this campaign?',
+      "Creators' products will leave the shopping app and their share links will stop earning. They are notified. Commission already earned is unaffected, and this is recorded as Completed — not cancelled.",
+      [
+        { text: 'Keep it running', style: 'cancel' },
+        {
+          text: 'End campaign',
+          style: 'destructive',
+          onPress: async () => {
+            setEnding(true);
+            const res = await brandApi.endCampaign(campaignId);
+            setEnding(false);
+            if (res.success) {
+              Alert.alert('Campaign ended', `${res.data?.creators_notified ?? 0} creator(s) notified.`);
+              load();
+            } else {
+              Alert.alert('Could not end', res.error?.message || 'Try again.');
+            }
+          },
+        },
+      ]
+    );
+  }
 
   async function load() {
     setError(null);
@@ -248,7 +279,11 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle} numberOfLines={2}>{campaign.name}</Text>
-            <Text style={styles.headerDates}>{formatDate(campaign.start_date)} → {formatDate(campaign.end_date)}</Text>
+            {/* collab-part5 — a sales campaign has no end date by design, so it reads
+                "Ongoing" rather than an em-dash that looks like missing data. */}
+            <Text style={styles.headerDates}>
+              {formatDate(campaign.start_date)} → {campaign.end_date ? formatDate(campaign.end_date) : 'Ongoing'}
+            </Text>
             <Text style={styles.headerMeta}>
               <Text style={styles.headerMetaV}>{sets.length}</Text> set{sets.length !== 1 ? 's' : ''}
               {'  ·  '}
@@ -275,6 +310,12 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         {/* ── Command center: stage rail + one primary action (A6) ── */}
         <StageRail current={stageInfo.stageKey} />
         <PrimeBar prime={stageInfo.prime} onPress={onPrimePress} busy={publishing} subtitle={primeSubtitle} />
+
+        {['published', 'active', 'live'].includes(campaign.status) && (
+          <TouchableOpacity style={styles.endBtn} onPress={confirmEnd} disabled={ending}>
+            <Text style={styles.endBtnTxt}>{ending ? 'ENDING…' : 'END CAMPAIGN'}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* ── Summary card ── */}
         <View style={styles.summaryCard}>
@@ -505,6 +546,8 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  endBtn: { backgroundColor: '#0A0A0A', borderRadius: 11, paddingVertical: 12, alignItems: 'center', marginHorizontal: 14, marginTop: 10 },
+  endBtnTxt: { color: '#FFC107', fontSize: 12.5, fontWeight: '800', letterSpacing: 0.4 },
   container: { flex: 1, backgroundColor: P.bg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 24 },
   errorText: { fontSize: 13, color: P.dangerDeep, marginBottom: 16, textAlign: 'center' },

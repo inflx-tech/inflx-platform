@@ -431,6 +431,27 @@ export default function CampaignCommandCenterPage() {
       showToast(res.error?.message || 'Could not publish campaign.');
     }
   }
+  // collab-part5 — End is the deliberate finish for a campaign that will never close by
+  // itself. Because completing takes every participating creator's products out of follower
+  // discovery, the consequence is spelled out before the brand confirms rather than
+  // discovered afterwards by a creator whose link went quiet.
+  const [ending, setEnding] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const canEnd = ['published', 'active', 'live'].includes(campaign.status);
+  async function handleEnd() {
+    setEnding(true);
+    const res = await campaignApi.end(id);
+    setEnding(false);
+    setEndOpen(false);
+    if (res.success) {
+      showToast(`Campaign ended. ${res.data?.creators_notified ?? 0} creator(s) notified.`);
+      loadAll({ cancelled: false });
+    } else {
+      // The server names the real reason — unreleased payment, or work awaiting review.
+      showToast(res.error?.message || 'Could not end campaign.');
+    }
+  }
+
   const stageInfo = deriveCampaignStage(campaign.status, { id, appliedCount, pendingCount, reviewQueue, liveConfirmQueue });
 
   /* ════ Render ════ */
@@ -449,15 +470,70 @@ export default function CampaignCommandCenterPage() {
           <h1 className="font-display text-[28px] font-bold text-[#0A0A0A] -tracking-[0.6px]">{campaign.name}</h1>
           <div className="w-11 h-1 bg-[#FFC107] rounded-full mt-1.5 mb-2"></div>
           <div className="text-[12.5px] text-[#52525B]">
-            <span className="font-mono font-semibold text-[#0A0A0A]">{formatDate(campaign.start_date)} → {formatDate(campaign.end_date)}</span>
+            {/* collab-part5 — no end date is an intentional state (a sales campaign runs
+                until the brand ends it), so it reads "Ongoing" rather than an em-dash that
+                looks like missing data. */}
+            <span className="font-mono font-semibold text-[#0A0A0A]">
+              {formatDate(campaign.start_date)} → {campaign.end_date ? formatDate(campaign.end_date) : 'Ongoing'}
+            </span>
             <span className="text-[#D4D4D8] mx-2">·</span>
             <span className="font-mono font-semibold text-[#0A0A0A]">{sets.length}</span> set{sets.length !== 1 ? 's' : ''}
             <span className="text-[#D4D4D8] mx-2">·</span>
             <span className="font-mono font-semibold text-[#0A0A0A]">{totalInf}</span> influencer{totalInf !== 1 ? 's' : ''}
           </div>
         </div>
-        <StatusBadge status={campaign.status} />
+        <div className="flex items-center gap-2.5">
+          <StatusBadge status={campaign.status} />
+          {canEnd && (
+            <button
+              onClick={() => setEndOpen(true)}
+              className="bg-[#0A0A0A] text-[#FFC107] border-none rounded-[10px] px-3.5 py-2 text-[12px] font-extrabold cursor-pointer">
+              End campaign
+            </button>
+          )}
+        </div>
       </div>
+
+      {endOpen && (
+        <div className="fixed inset-0 bg-black/45 grid place-items-center z-50 p-4" onClick={() => setEndOpen(false)}>
+          <div className="bg-white rounded-[14px] max-w-[440px] w-full p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display text-[17px] font-bold text-[#0A0A0A]">End &ldquo;{campaign.name}&rdquo;?</h3>
+            <p className="text-[12px] text-[#52525B] mt-1 mb-3">This closes the collaboration for everyone in it.</p>
+            <div className="text-[12px] text-[#0A0A0A]">
+              <div className="flex justify-between gap-3 py-1.5 border-b border-[#F4F4F5]">
+                <span className="text-[#52525B]">{totalInf} creator{totalInf !== 1 ? 's' : ''}&apos; products</span>
+                <span className="font-semibold text-right">leave the shopping app</span>
+              </div>
+              <div className="flex justify-between gap-3 py-1.5 border-b border-[#F4F4F5]">
+                <span className="text-[#52525B]">Their share links</span>
+                <span className="font-semibold text-right">stop earning</span>
+              </div>
+              <div className="flex justify-between gap-3 py-1.5 border-b border-[#F4F4F5]">
+                <span className="text-[#52525B]">They are</span>
+                <span className="font-semibold text-right">notified</span>
+              </div>
+              <div className="flex justify-between gap-3 py-1.5 border-b border-[#F4F4F5]">
+                <span className="text-[#52525B]">Commission already earned</span>
+                <span className="font-semibold text-right">unaffected</span>
+              </div>
+              <div className="flex justify-between gap-3 py-1.5">
+                <span className="text-[#52525B]">Recorded as</span>
+                <span className="font-semibold text-right">Completed, not cancelled</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={handleEnd} disabled={ending}
+                className="flex-1 bg-[#FFC107] text-[#0A0A0A] border-none rounded-[10px] py-2.5 text-[12.5px] font-extrabold cursor-pointer disabled:opacity-60">
+                {ending ? 'Ending…' : 'End campaign'}
+              </button>
+              <button onClick={() => setEndOpen(false)}
+                className="bg-white border border-[#E4E4E7] text-[#0A0A0A] rounded-[10px] px-4 py-2.5 text-[12.5px] font-bold cursor-pointer">
+                Keep it running
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Command Center — stage rail + primary action bar (A1, features/brand-cc-shell).
           Replaces the ad-hoc needs-you banner; drives Fund & Publish + the next step. */}

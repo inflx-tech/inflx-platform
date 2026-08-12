@@ -54,7 +54,11 @@ async function getVisitDateRange(contractId) {
     latest = new Date(r.campaign_end_date);
     latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
   } else {
-    // Should never happen — campaign always has an end_date — but be safe.
+    // No posting date, no content window, and no campaign end date. Since
+    // collab-part5 that last one is a REAL state, not a defensive branch: a sales
+    // campaign runs open-ended by design, so it has no end_date to work back from.
+    // A year out is the deliberate ceiling for scheduling a visit against an
+    // open-ended collaboration — far enough not to obstruct, near enough to stay sane.
     latest = new Date();
     latest.setUTCFullYear(latest.getUTCFullYear() + 1);
   }

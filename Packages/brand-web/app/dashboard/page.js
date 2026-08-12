@@ -53,7 +53,8 @@ function CampaignRow({ c }) {
         <div className="text-[11px] text-[#71717A] mt-0.5 flex items-center gap-1.5 flex-wrap">
           <span className="font-mono">
             {c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
-            {c.end_date ? ` → ${new Date(c.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+            {/* collab-part5 — "Ongoing" rather than a bare start date. */}
+            {c.end_date ? ` → ${new Date(c.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ' → Ongoing'}
           </span>
           <span className="text-[#D4D4D8]">·</span>
           <span className="font-mono font-semibold text-[#0A0A0A]">{fmtRupees(c.total_budget || 0)}</span>

@@ -563,8 +563,9 @@ function NewCampaignPageInner() {
 
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [totalBudget, setTotalBudget] = useState('');
+  // collab-part5 — endDate/totalBudget state removed: both are derived from the sets
+  // (see derivedEndDate/totalSetBudget) and the server recomputes them on every set
+  // write, so holding them here could only drift from the truth.
   const [allowNegotiation, setAllowNegotiation] = useState(true);
   const [sets, setSets] = useState([mkSet(0)]);
   const [activeSet, setActiveSet] = useState(0);
@@ -634,8 +635,8 @@ function NewCampaignPageInner() {
       setCampaignId(c.id);
       setName(c.name || '');
       setStartDate(c.start_date ? c.start_date.split('T')[0] : '');
-      setEndDate(c.end_date ? c.end_date.split('T')[0] : '');
-      setTotalBudget(c.total_budget != null ? String(c.total_budget) : '');
+
+
       setAllowNegotiation(c.allow_negotiation !== false);
       if (c.sets && c.sets.length > 0) {
         const hydratedSets = c.sets.map((s, idx) => {
@@ -755,16 +756,32 @@ function NewCampaignPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // collab-part5 — the campaign total and end date are DERIVED from the sets, never
+  // typed. Mirrors backend/src/services/campaignRollup.service.js; the server is
+  // authoritative and recomputes on every set write.
+  //   total    = sum of paid set budgets (conversion carries no upfront money)
+  //   end date = none if ANY set is conversion (a sales collab has no end, and a paid
+  //              set must not impose its deadline on open-ended selling); otherwise the
+  //              latest paid posting-window end.
+  const hasSalesSet = () => sets.some(s => s.goal === 'conversion');
+  const derivedEndDate = () => {
+    if (hasSalesSet()) return null;
+    const ends = sets.filter(s => needsBudget(s.goal)).map(s => s.window_end).filter(Boolean);
+    return ends.length ? ends.reduce((a, b) => (b > a ? b : a)) : null;
+  };
+  const endLabel = () => derivedEndDate() || 'Ongoing';
+
   // Budget helpers
   const totalSetBudget = () => sets.reduce((t, s) => {
     if (!needsBudget(s.goal)) return t;
     if (s.influencer_mode === 'handpick') return t + Number(s.set_budget || 0);
     return t + (Number(s.group.per_influencer_budget || 0) * Number(s.group.max_cap || 0));
   }, 0);
-  const campRem = () => Number(totalBudget || 0) - totalSetBudget();
+  // collab-part5 — no campaign remaining/over state exists any more: the total is the
+  // sum of the allocations, so it is never over. Publish still checks the wallet.
   const setInfSpent = si => sets[si].influencers.reduce((t, i) => t + Number(i.influencer_budget || 0), 0);
   const setRem = si => Number(sets[si].set_budget || 0) - setInfSpent(si);
-  const isBudgetOver = () => sets.some(s => needsBudget(s.goal)) && campRem() < 0;
+  const isBudgetOver = () => false;
 
   // Validation (verbatim from OLD)
   const validation = (() => {
@@ -775,15 +792,9 @@ function NewCampaignPageInner() {
     };
     if (!name.trim()) v.campaign.name = 'Campaign name is required';
     if (!startDate) v.campaign.startDate = 'Start date is required';
-    if (!endDate) v.campaign.endDate = 'End date is required';
-    else if (startDate && endDate < startDate) v.campaign.endDate = 'End date must be on or after start date';
-    const anyPaidSet = sets.some(s => needsBudget(s.goal));
-    if (anyPaidSet) {
-      const tb = Number(totalBudget);
-      if (totalBudget === '' || totalBudget == null) v.campaign.totalBudget = 'Required when any set is engagement or hybrid';
-      else if (!Number.isFinite(tb)) v.campaign.totalBudget = 'Must be a valid number';
-      else if (tb <= 0) v.campaign.totalBudget = 'Must be greater than 0';
-    }
+    // collab-part5 — no end-date or campaign-total validation: neither is asked for.
+    // Both are derived from the sets, so the brand cannot contradict themselves and
+    // there is nothing here to be wrong about.
     v.step1Errors = Object.keys(v.campaign).length;
 
     sets.forEach((s, si) => {
@@ -794,7 +805,8 @@ function NewCampaignPageInner() {
       if (!s.window_end) sv.fields.window_end = 'Required';
       if (s.window_start && s.window_end && s.window_end < s.window_start) sv.fields.window_end = 'Window end must be on or after window start';
       if (s.window_start && startDate && s.window_start < startDate) sv.fields.window_start = `Cannot be before campaign start (${startDate})`;
-      if (s.window_end && endDate && s.window_end > endDate) sv.fields.window_end = `Cannot be after campaign end (${endDate})`;
+      // collab-part5 — "cannot be after campaign end" is gone: for a paid campaign the
+      // latest paid window IS the campaign end, so a window can never exceed it.
       if (!Array.isArray(s.formats) || s.formats.length === 0) sv.fields.formats = 'Pick at least one content format';
       if (needsCoupon(s.goal)) {
         const hasPrefix = !!(s.coupon_prefix && s.coupon_prefix.trim());
@@ -809,7 +821,9 @@ function NewCampaignPageInner() {
         if (s.set_budget === '' || s.set_budget == null) sv.fields.set_budget = 'Required for engagement / hybrid';
         else if (!Number.isFinite(sb)) sv.fields.set_budget = 'Must be a valid number';
         else if (sb <= 0) sv.fields.set_budget = 'Must be greater than 0';
-        else if (Number(totalBudget) > 0 && totalSetBudget() > Number(totalBudget)) sv.fields.set_budget = `Total set budgets exceed campaign budget by ₹${fmtN(totalSetBudget() - Number(totalBudget))}`;
+        // collab-part5 — "total set budgets exceed campaign budget" removed: the campaign
+        // total IS this sum, so it cannot be exceeded. The real ceiling is the wallet,
+        // enforced at publish. The per-set overspend check below still matters.
         if (sb > 0 && setInfSpent(si) > sb) sv.fields.set_budget_overspent = `Influencers allocated ₹${fmtN(setInfSpent(si))} — exceeds set budget by ₹${fmtN(setInfSpent(si) - sb)}`;
       }
       if (s.influencer_mode === 'open_group') {
@@ -824,9 +838,10 @@ function NewCampaignPageInner() {
           else if (!Number.isFinite(pib)) sv.group.per_influencer_budget = 'Must be a valid number';
           else if (pib <= 0) sv.group.per_influencer_budget = 'Must be greater than 0';
           if (pib > 0 && cap > 0) {
-            const projected = pib * cap;
-            const tb = Number(totalBudget) || 0;
-            if (tb > 0 && totalSetBudget() > tb) sv.group.projected = `Group could spend up to ₹${fmtN(projected)} — campaign budget over by ₹${fmtN(totalSetBudget() - tb)}`;
+            // collab-part5 — the projection is still worth stating (an open group can
+            // multiply out to a large number), but it is no longer framed as breaching a
+            // campaign ceiling, because there is no ceiling to breach.
+            sv.group.projected = `Group could spend up to ₹${fmtN(pib * cap)} if it fills to ${cap} creators`;
           }
         }
         if (needsOffer(s.goal)) {
@@ -1083,12 +1098,14 @@ function NewCampaignPageInner() {
   const saveDraft = async () => {
     if (!name.trim()) { setError('Campaign name is required'); return null; }
     if (!startDate) { setError('Start date is required'); return null; }
-    if (!endDate) { setError('End date is required'); return null; }
+    // collab-part5 — nothing to check: the end date is derived, not entered.
     setSaving(true); setError('');
     try {
       let cid = campaignId;
       if (!cid) {
-        const res = await campaignApi.create({ name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null, allow_negotiation: allowNegotiation });
+        // collab-part5 — end_date and total_budget deliberately not sent; the server
+        // derives both from the sets and ignores them on this path.
+        const res = await campaignApi.create({ name, start_date: startDate, allow_negotiation: allowNegotiation });
         if (!res.ok) {
           // Quota wall — e.g. Free plan's 1-active-campaign cap.
           if (showFromResponse(res)) return null;
@@ -1096,7 +1113,7 @@ function NewCampaignPageInner() {
         }
         cid = res.data.campaign.id; setCampaignId(cid);
       } else {
-        await campaignApi.update(cid, { name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null, allow_negotiation: allowNegotiation });
+        await campaignApi.update(cid, { name, start_date: startDate, allow_negotiation: allowNegotiation });
       }
       return cid;
     } catch (e) { setError(e.message); return null; } finally { setSaving(false); }
@@ -1424,8 +1441,6 @@ function NewCampaignPageInner() {
   const cur = sets[activeSet];
   const curMode = cur.influencer_mode;
   const used = totalSetBudget();
-  const rem = campRem();
-  const pct = totalBudget ? Math.min(100, used / Number(totalBudget) * 100) : 0;
   const sv = validation.sets[activeSet] || { fields: {}, group: {}, influencers: [] };
 
   // ─── Topbar ────────────────────────────────────────────────────────────────
@@ -1591,11 +1606,16 @@ function NewCampaignPageInner() {
     const previewCode = previewInf?.custom_code || autoCode(cur.coupon_prefix, previewInf?.name || 'Priya');
     return (
       <>
-        <div className="rc"><h4>💰 Campaign budget</h4>
-          <div className="bsr"><div className={`bsv ${rem < 0 ? 'over' : pct > 80 ? 'warn' : 'ok'}`}>₹{fmtN(rem)}</div><div className="bsof">of ₹{fmtN(totalBudget || 0)}</div></div>
-          <div className="bb"><div className={`bf ${rem < 0 ? 'over' : pct > 80 ? 'warn' : ''}`} style={{ width: `${pct}%` }} /></div>
-          <div className="bsn">₹{fmtN(used)} allocated · {sets.filter(s => needsBudget(s.goal)).length} paid set(s)</div>
-        </div>
+        {/* collab-part5 — the money strip reports the DERIVED total instead of a
+            remaining-vs-guess bar. There is no ceiling to run out of: the total is the sum
+            of these allocations. A commission-only campaign shows no money strip at all. */}
+        {totalSetBudget() > 0 && (
+          <div className="rc"><h4>💰 Campaign total</h4>
+            <div className="bsr"><div className="bsv ok">₹{fmtN(totalSetBudget())}</div><div className="bsof">derived</div></div>
+            <div className="bsn">Sum of {sets.filter(s => needsBudget(s.goal)).length} paid set(s) · you never type this</div>
+            <div className="bsn" style={{ marginTop: 4 }}>Campaign ends <b>{endLabel()}</b></div>
+          </div>
+        )}
         <div className="pw">
           <div className="pwh">👁  What {previewName} will see</div>
           <div className="pwb">
@@ -1656,26 +1676,18 @@ function NewCampaignPageInner() {
             <div className="fhint">Can start today.</div>
             {showErr('startDate', validation.campaign.startDate) && <div className="field-err">{validation.campaign.startDate}</div>}
           </div>
-          <div className="f">
-            <label className="flbl">End date</label>
-            <input className={`inp mono ${showErr('endDate', validation.campaign.endDate) ? 'err' : ''}`} type="date" value={endDate} min={startDate || undefined}
-              onChange={e => { setEndDate(e.target.value); markTouched('endDate'); }} onBlur={() => markTouched('endDate')} />
-            {showErr('endDate', validation.campaign.endDate) && <div className="field-err">{validation.campaign.endDate}</div>}
-          </div>
+          {/* collab-part5 — the end-date input is gone. A sales campaign has no end, and a
+              paid one ends when its last paid post is due, so the answer already exists in
+              Step 2. Asking here meant asking before the aim was known. */}
         </div>
       </div>
 
       <div className="card">
-        <h3>Budget & negotiation</h3>
-        <div className="sh">Total budget covers engagement + hybrid sets. Conversion-only campaigns can leave it at zero.</div>
+        <h3>Negotiation</h3>
+        {/* collab-part5 — the "Total campaign budget" input is gone. The total is the sum of
+            what you promise creators in Step 2, so asking for it here only produced a number
+            that had to agree with arithmetic the brand had not done yet. */}
         <div className="g2">
-          <div className="f">
-            <label className="flbl">Total campaign budget (₹)</label>
-            <input className={`inp mono ${showErr('totalBudget', validation.campaign.totalBudget) ? 'err' : ''}`} type="number" value={totalBudget} placeholder="0"
-              onChange={e => { setTotalBudget(e.target.value); markTouched('totalBudget'); }} onBlur={() => markTouched('totalBudget')} />
-            <div className="fhint">Allocated across paid sets in Step 2.</div>
-            {showErr('totalBudget', validation.campaign.totalBudget) && <div className="field-err">{validation.campaign.totalBudget}</div>}
-          </div>
           <div className="f">
             <label className="flbl">Allow negotiation?</label>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 11, border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer', background: 'var(--white)' }}>
@@ -1722,12 +1734,15 @@ function NewCampaignPageInner() {
 
         <div className="rh">
           <h2>{name || 'Campaign'}</h2>
-          <div className="rh-d">{startDate} → {endDate} · {sets.length} set{sets.length !== 1 ? 's' : ''}</div>
-          {totalBudget && (
+          {/* collab-part5 — an all-sales campaign reads "Ongoing", not a blank or a dash:
+              it is an intentional state, and the creator sees the same word. */}
+          <div className="rh-d">{startDate} → {endLabel()} · {sets.length} set{sets.length !== 1 ? 's' : ''}</div>
+          {/* The total is derived, so there is no "remaining" and no over-budget bar — a sum
+              of your own allocations cannot be exceeded by them. */}
+          {totalSetBudget() > 0 && (
             <div style={{ background: 'rgba(255,255,255,.65)', borderRadius: 10, padding: 12 }}>
-              <div className="bsr"><span style={{ fontFamily: "'JetBrains Mono'", fontSize: 10.5, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.3px' }}>Campaign budget</span><span className={`bsv ${rem < 0 ? 'over' : pct > 80 ? 'warn' : 'ok'}`} style={{ fontSize: 13 }}>₹{fmtN(rem)} of ₹{fmtN(totalBudget)} remaining</span></div>
-              <div className="bb" style={{ background: 'rgba(0,0,0,.08)', margin: '8px 0 4px' }}><div className={`bf ${rem < 0 ? 'over' : pct > 80 ? 'warn' : ''}`} style={{ width: `${pct}%` }} /></div>
-              <div className="bsn">{rem < 0 ? <span style={{ color: 'var(--danger-text)' }}>Over by ₹{fmtN(Math.abs(rem))}</span> : `₹${fmtN(used)} allocated`}</div>
+              <div className="bsr"><span style={{ fontFamily: "'JetBrains Mono'", fontSize: 10.5, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.3px' }}>Campaign total</span><span className="bsv ok" style={{ fontSize: 13 }}>₹{fmtN(totalSetBudget())}</span></div>
+              <div className="bsn">Sum of what you&apos;ve promised across {sets.filter(s => needsBudget(s.goal)).length} paid set(s)</div>
             </div>
           )}
         </div>
@@ -1762,14 +1777,14 @@ function NewCampaignPageInner() {
           </div>
         ))}
 
-        {isBudgetOver() && <div className="err-msg" style={{ padding: 12, background: 'var(--danger-pale)', borderRadius: 10, border: '1px solid #FBCBC4' }}>Budget exceeded — reduce set budgets before publishing.</div>}
+        {/* collab-part5 — the "budget exceeded" banner is gone; the state is unreachable. */}
         {error && <div className="err-msg">{error}</div>}
 
         <div className="nf">
           <button className="btn btn-back" onClick={goBack}>← Back</button>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button className="btn btn-draft" onClick={saveDraft}>Save draft</button>
-            <button className="btn btn-pub" onClick={handlePublish} disabled={isBudgetOver() || publishing}>{publishing ? 'Publishing…' : '🚀 Publish campaign'}</button>
+            <button className="btn btn-pub" onClick={handlePublish} disabled={publishing}>{publishing ? 'Publishing…' : '🚀 Publish campaign'}</button>
           </div>
         </div>
       </>
@@ -1858,13 +1873,13 @@ function NewCampaignPageInner() {
             )}
             <div className="f">
               <label className="flbl">Window starts</label>
-              <input className={`inp mono ${showErr(`set_${activeSet}_ws`, sv.fields.window_start) ? 'err' : ''}`} type="date" value={cur.window_start || ''} min={startDate || undefined} max={endDate || undefined}
+              <input className={`inp mono ${showErr(`set_${activeSet}_ws`, sv.fields.window_start) ? 'err' : ''}`} type="date" value={cur.window_start || ''} min={startDate || undefined}
                 onChange={e => { updateSet(activeSet, { window_start: e.target.value }); markTouched(`set_${activeSet}_ws`); }} />
               {showErr(`set_${activeSet}_ws`, sv.fields.window_start) && <div className="field-err">{sv.fields.window_start}</div>}
             </div>
             <div className="f">
               <label className="flbl">Window ends</label>
-              <input className={`inp mono ${showErr(`set_${activeSet}_we`, sv.fields.window_end) ? 'err' : ''}`} type="date" value={cur.window_end || ''} min={cur.window_start || startDate || undefined} max={endDate || undefined}
+              <input className={`inp mono ${showErr(`set_${activeSet}_we`, sv.fields.window_end) ? 'err' : ''}`} type="date" value={cur.window_end || ''} min={cur.window_start || startDate || undefined}
                 onChange={e => { updateSet(activeSet, { window_end: e.target.value }); markTouched(`set_${activeSet}_we`); }} />
               {showErr(`set_${activeSet}_we`, sv.fields.window_end) && <div className="field-err">{sv.fields.window_end}</div>}
             </div>

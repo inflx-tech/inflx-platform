@@ -5,9 +5,9 @@
   "approved": true,
   "approved_by": "founder · 2026-08-12 chat (\"pls lock\") — locked after a full plain-language walkthrough of all four items with worked examples. The walkthrough itself surfaced and resolved the mixed-campaign edge (see mixed_campaign_rule).",
   "approved_at": "2026-08-12",
-  "preview_reviewed": false,
+  "preview_reviewed": true,
   "impact_reviewed": true,
-  "mockup_locked": false,
+  "mockup_locked": true,
   "notes": "Part 5 of 7 in the Collaboration Restructure program (Docs/COLLAB_RESTRUCTURE_PLAN.md); Parts 1, 4 and 2 (which absorbed 3) have shipped. LOCKED 2026-08-12. Four items: (1) campaign total_budget becomes DERIVED from set allocations and the Step-1 budget field goes; (2) end_date NEVER asked — derived as the latest posting-window end among engagement/hybrid sets, so an all-conversion campaign simply has none (founder 2026-08-12: a sales campaign has a start date and NO end date, not an optional blank). No publish gate needed: a paid set always has a window, so a paid campaign always has an end date; (3) a new explicit End campaign -> completed, distinct from cancel's abort, guarded on pending tranches + deliverables awaiting review, with creators notified because completing removes their products from follower discovery; (4) a NULL end date renders as 'Ongoing' everywhere instead of an em-dash. No migration: campaigns.end_date is already nullable in prod. Two decisions requested at lock, both answered with a recommendation in 01-spec.md §6: budget = derive (not ceiling, not drop), hybrid = windowed.",
   "prod_evidence_2026_08_12": {
     "campaigns": 10,
@@ -23,10 +23,22 @@
     "The plan claimed budget is 'asked of every brand before the aim is known' — half stale. Part 1 already made it conditionally required and hid the money card; what remains is that the field itself still greets every brand in Step 1."
   ],
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "released": false,
     "deploy_class": "production-impacting (backend/src, brand-web runtime, Mobile runtime) — explicit founder go required at deploy time; no migration",
-    "maestro_green": false
+    "maestro_green": false,
+    "qa_evidence": {
+      "ran_at": "2026-08-12",
+      "result": "363 passed · gate 0 · STATE=GREEN",
+      "first_run_clean": false,
+      "first_run_note": "First run reported FAILED at 357 tests — the known mid-write spec-glob race; re-ran GREEN at 363 twice. No test was skipped, deleted or weakened to reach green.",
+      "baseline": "319 at Part 2 close; +44 this contract"
+    },
+    "deploy_targets": [
+      "Render (backend/src)",
+      "Vercel (brand-web)",
+      "OTA (Packages/Mobile)"
+    ]
   },
   "founder_refinement_2026_08_12": {
     "quote": "as far as dates is concern, its simple that is if the campaign type is conversions or sales then it might be start date but no end date. but for offers it may have end date (this we addressed already)",
@@ -39,5 +51,22 @@
     "why": "The first draft took the latest paid window regardless. A worked example in the founder walkthrough exposed it: a sales set posting by 15 Sep alongside a paid set posting by 31 Oct would date the campaign 31 Oct, and on 1 Nov the SALES products would leave the follower app — a paid set silently imposing a deadline on open-ended selling. The sales aim now wins on dates exactly as it does on budget (which sums only paid sets).",
     "verified_safe": "tranche-3-release.job.js:42 releases N days after escrow_entries.triggered_at, NOT after the campaign end date, so an undated campaign still pays every creator on schedule. The only thing an undated paid campaign loses is cron auto-completion — which is what the explicit End provides.",
     "asserted_by": "B5, B5c, B5d, B20, W3.2, W3.2b"
+  },
+  "mockup_locked_by": "founder · 2026-08-12 chat (\"ok pls start implementation as we locked inn mockups\") — 9 panels approved as drawn, including panel 5 which shows the wrong-vs-locked mixed-campaign rule side by side.",
+  "mockup_locked_at": "2026-08-12",
+  "progress": {
+    "done": [
+      "Backend: campaignRollup.service (the rule stated ONCE in derive(); recompute = read+derive+write, lazy db require so the rule is testable without booting config) · create no longer requires or stores an end date/total · PATCH drops both derived fields and deliberately does not recompute · recompute wired into createSet/updateSet/deleteSet · POST /campaigns/:id/end (completes, never cancels, refuses on owed escrow or work awaiting review with both guards before the UPDATE, notifies participants, reads the row back) · production.service visit-window comment made truthful.",
+      "Web: Step 1 loses the end-date and total-budget inputs; money strip + review show derived values and Ongoing; End campaign button + a confirm that states all five consequences; Ongoing on detail, list, CSV and dashboard tile; the two dissolved error classes deleted along with campRem/over-budget banner/publish disable and the backing state.",
+      "Mobile: brand campaign detail gains END CAMPAIGN with the same guards and consequence text; Ongoing on brand detail AND the creator collab detail; endCampaign in the API; campaign.ended deep-links to Collabs.",
+      "Tests: 44 new (12 derivation incl. the mixed-campaign trap, 25 end/open-ended/wiring, 7 browser tests against the real wizard). Suite 363 passed, gate 0, STATE=GREEN twice in a row.",
+      "Mobile verification: jest 131/131 and a full production RN bundle — which caught a real syntax error (an apostrophe in \"Creators' products\" closed the string) that pnpm qa was structurally unable to see."
+    ],
+    "remaining": [
+      "The 7 live prod campaigns keep their stored end dates until a set is edited (derivation runs on set writes only, by design). A one-time normalisation is a founder data decision.",
+      "On-device verification of END CAMPAIGN and the Ongoing renders — bundle-level verified only; owed at the founder walkthrough.",
+      "Separate defect filed, NOT fixed here: cancel writes escrow status \"cancelled\" which is not in the escrow_status enum, so cancelling a FUNDED campaign throws and refunds nothing. Latent (escrow_entries is empty in prod)."
+    ],
+    "qa": "363 passed · gate 0 · STATE=GREEN (twice) · mobile jest 131/131 · full RN production bundle builds."
   }
 }

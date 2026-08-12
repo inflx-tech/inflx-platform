@@ -341,6 +341,10 @@ export const campaignApi = {
   delete: (id) => api.delete(`/campaigns/${id}`),
   publish: (id) => api.post(`/campaigns/${id}/publish`),
   cancel: (id) => api.post(`/campaigns/${id}/cancel`),
+  // collab-part5 — the deliberate finish. Completes rather than aborts; the only way to
+  // close an open-ended sales campaign, and refuses while a creator is owed money or has
+  // work awaiting review.
+  end: (id) => api.post(`/campaigns/${id}/end`),
   cancelInfluencer: (cid, ciid) => api.post(`/campaigns/${cid}/influencers/${ciid}/cancel`),
   getLive: (id) => api.get(`/campaigns/${id}/live`),
   // Sets

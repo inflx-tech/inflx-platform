@@ -2,6 +2,7 @@
 
 const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
+const campaignRollup = require('../services/campaignRollup.service');
 const pricingService      = require('../services/pricing.service');
 const entitlementsService = require('../services/entitlements.service');
 const {
@@ -339,10 +340,12 @@ const create = asyncHandler(async (req, res) => {
   if (!start_date) {
     throw new AppError('VALIDATION_ERROR', 'start_date is required', 422, 'start_date');
   }
-  if (!end_date) {
-    throw new AppError('VALIDATION_ERROR', 'end_date is required', 422, 'end_date');
-  }
-  if (new Date(end_date) <= new Date(start_date)) {
+  // collab-part5 — the end date is no longer asked for. It is derived from the sets by
+  // campaignRollup: NULL when any set is conversion (a sales collaboration has no end),
+  // otherwise the latest paid posting-window end. A caller that still sends one is not
+  // rejected — old clients would break mid-deploy — but the value is ignored, and the
+  // first set write replaces it with the derived one. Same for total_budget.
+  if (end_date && new Date(end_date) <= new Date(start_date)) {
     throw new AppError('VALIDATION_ERROR', 'end_date must be after start_date', 422, 'end_date');
   }
 
@@ -353,9 +356,9 @@ const create = asyncHandler(async (req, res) => {
     [
       brand.id,
       name.trim(),
-      total_budget != null ? total_budget : null,
+      null,                 // total_budget — derived from paid sets (collab-part5)
       start_date,
-      end_date,
+      null,                 // end_date     — derived from paid posting windows (collab-part5)
       brief || null,
       allow_negotiation === false ? false : true,
     ]
@@ -527,7 +530,12 @@ const update = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', `Only draft campaigns can be edited. Current status: ${campaign.status}`, 422);
   }
 
-  const allowed = ['name', 'total_budget', 'start_date', 'end_date', 'brief', 'allow_negotiation'];
+  // collab-part5 — total_budget and end_date are derived from the sets and are no longer
+  // accepted here. They are dropped rather than rejected so a stale client mid-deploy does
+  // not hard-fail; the derived values are authoritative either way. Deliberately NOT
+  // recomputed on this path: existing campaigns keep their stored dates until a SET is
+  // touched, so renaming a live campaign never silently changes when it ends.
+  const allowed = ['name', 'start_date', 'brief', 'allow_negotiation'];
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -658,17 +666,10 @@ const createSet = asyncHandler(async (req, res) => {
 
   assertValidFormats(formats_json);
 
-  // Validate set budget against campaign total
-  if (set_budget != null && campaign.total_budget != null) {
-    const { rows: existingSets } = await db.query(
-      `SELECT COALESCE(SUM(set_budget), 0) AS total FROM campaign_sets WHERE campaign_id = $1`,
-      [campaign.id]
-    );
-    const allocated = parseFloat(existingSets[0].total) + parseFloat(set_budget);
-    if (allocated > parseFloat(campaign.total_budget)) {
-      throw new AppError('VALIDATION_ERROR', `Set budget exceeds remaining campaign budget. Available: ₹${(parseFloat(campaign.total_budget) - parseFloat(existingSets[0].total)).toFixed(2)}`, 422, 'set_budget');
-    }
-  }
+  // collab-part5 — the "set budget exceeds remaining campaign budget" check is gone, and
+  // could not fire even if kept: the campaign total is now DEFINED as the sum of the paid
+  // sets, so a set cannot exceed it. The brand's real constraint is their wallet, which
+  // publish still enforces against the derived total.
 
   const { rows } = await db.query(
     `INSERT INTO campaign_sets
@@ -695,7 +696,8 @@ const createSet = asyncHandler(async (req, res) => {
     ]
   );
 
-  return success(res, { set: rows[0] }, 201);
+  const derived = await campaignRollup.recompute(campaign.id);
+  return success(res, { set: rows[0], campaign_derived: derived }, 201);
 });
 
 const updateSet = asyncHandler(async (req, res) => {
@@ -731,7 +733,8 @@ const updateSet = asyncHandler(async (req, res) => {
   await db.query(`UPDATE campaign_sets SET ${setClauses.join(', ')} WHERE id = $1`, values);
 
   const { rows } = await db.query(`SELECT * FROM campaign_sets WHERE id = $1`, [set.id]);
-  return success(res, { set: rows[0] });
+  const derived = await campaignRollup.recompute(req.params.id);
+  return success(res, { set: rows[0], campaign_derived: derived });
 });
 
 const deleteSet = asyncHandler(async (req, res) => {
@@ -749,7 +752,10 @@ const deleteSet = asyncHandler(async (req, res) => {
   }
 
   await db.query(`DELETE FROM campaign_sets WHERE id = $1`, [set.id]);
-  return success(res, { message: 'Set deleted successfully' });
+  // Deleting the last conversion set makes the campaign all-paid, which gives it a
+  // derived end date; deleting a paid set can move that date earlier.
+  const derived = await campaignRollup.recompute(campaign.id);
+  return success(res, { message: 'Set deleted successfully', campaign_derived: derived });
 });
 
 /**
@@ -1707,6 +1713,143 @@ const cancel = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// End campaign — the deliberate finish, as opposed to cancel's abort
+// POST /campaigns/:id/end
+// collab-part5-sales-aim-separation
+//
+// Why this exists at all: once a sales campaign has no end date, NOTHING can ever close
+// it. The nightly job selects on `end_date < CURRENT_DATE`, which a NULL never matches,
+// and nothing in the codebase decrements stock, so "runs until stock sells out" cannot
+// detect its own end. Cancel is not a substitute — it refunds escrow and records
+// 'cancelled', filing a sold-out success as a failure and showing the creator that word.
+//
+// Guards mirror the nightly job's own protection so manual and automatic completion can
+// never disagree: a brand must not be able to end their way out of paying someone, or out
+// of reviewing work already submitted to them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Escrow money that is still owed to a creator. 'released' is paid; 'refunded' has gone
+// back to the brand. Everything else is in flight and blocks the finish.
+const ESCROW_OWED_STATUSES = ['locked', 'queued', 'processing', 'disputed'];
+
+// Work the creator has handed over and the brand has not yet dealt with.
+const DELIVERABLE_AWAITING_BRAND = ['submitted', 'under_review'];
+
+const endCampaign = asyncHandler(async (req, res) => {
+  const brand    = await getBrandOrThrow(req.user.sub);
+  const campaign = await getCampaignOrThrow(req.params.id, brand.id);
+
+  const ENDABLE = ['published', 'active', 'live'];
+  if (!ENDABLE.includes(campaign.status)) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      campaign.status === 'draft'
+        ? 'This campaign is still a draft — there is nothing to end. Delete it instead.'
+        : `Campaign is already ${campaign.status} and cannot be ended`,
+      422,
+      'status'
+    );
+  }
+
+  // Money still owed — name the amount and the earliest release date so the brand knows
+  // when they CAN end, rather than being told a flat no.
+  const { rows: owed } = await db.query(
+    // Deliberately not promising a release DATE here: tranche 3 fires N days after
+    // triggered_at where N is admin-configurable, so any date this message printed could
+    // be wrong. The count and the amount are facts; "once they clear" is honest.
+    `SELECT COUNT(*)::int              AS n,
+            COALESCE(SUM(ee.amount),0) AS total
+       FROM escrow_entries ee
+       JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+      WHERE cs.campaign_id = $1
+        AND ee.status = ANY($2::escrow_status[])`,
+    [campaign.id, ESCROW_OWED_STATUSES]
+  );
+  if (owed[0].n > 0) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot end yet — ${owed[0].n} creator payment(s) totalling ₹${parseFloat(owed[0].total).toFixed(2)} have not been released. End the campaign once they clear.`,
+      422,
+      'escrow_pending',
+      { pending_count: owed[0].n, pending_amount: parseFloat(owed[0].total) }
+    );
+  }
+
+  // Work awaiting the brand's own review.
+  const { rows: awaiting } = await db.query(
+    `SELECT COUNT(*)::int AS n,
+            MIN(COALESCE(u.name, i.instagram_handle)) AS who
+       FROM deliverables d
+       JOIN campaign_influencers ci ON ci.id = d.campaign_influencer_id
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+       JOIN influencers i           ON i.id  = ci.influencer_id
+       LEFT JOIN users u            ON u.id  = i.user_id
+      WHERE cs.campaign_id = $1
+        AND d.status = ANY($2::deliverable_status[])`,
+    [campaign.id, DELIVERABLE_AWAITING_BRAND]
+  );
+  if (awaiting[0].n > 0) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot end yet — ${awaiting[0].n} submission(s) are waiting for your review${awaiting[0].who ? ` (including ${awaiting[0].who}'s)` : ''}. Review them first, then end.`,
+      422,
+      'deliverables_awaiting_review',
+      { awaiting_count: awaiting[0].n }
+    );
+  }
+
+  // Everyone who was actually collaborating. Completing the campaign takes their products
+  // out of follower discovery (LIVE_COLLAB_WHERE requires published/active/live), so they
+  // are told rather than left to notice a link that stopped selling.
+  const { rows: participants } = await db.query(
+    `SELECT DISTINCT i.user_id, u.fcm_token, u.phone
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs  ON cs.id = ci.set_id
+       JOIN influencers i     ON i.id  = ci.influencer_id
+       JOIN users u           ON u.id  = i.user_id
+      WHERE cs.campaign_id = $1
+        AND ci.status IN ('contracted','active','completed')`,
+    [campaign.id]
+  );
+
+  await db.query(
+    `UPDATE campaigns SET status = 'completed', completed_at = NOW() WHERE id = $1`,
+    [campaign.id]
+  );
+
+  for (const person of participants) {
+    try {
+      await notificationService.send({
+        userId:   person.user_id,
+        type:     'campaign.ended',
+        title:    'A collaboration has ended',
+        body:     `"${campaign.name}" has been closed by the brand. Your products from it are no longer listed, and commission you already earned is unaffected.`,
+        data:     { screen: 'collabs' },
+        fcmToken: person.fcm_token,
+        sendSms:  false,
+        phone:    person.phone,
+      });
+    } catch (e) {
+      console.error('[endCampaign] notification send failed:', e.message);
+    }
+  }
+
+  // Read the row back rather than reporting the status we intended to write.
+  const { rows: after } = await db.query(
+    `SELECT id, status, completed_at FROM campaigns WHERE id = $1`,
+    [campaign.id]
+  );
+
+  return success(res, {
+    campaign_id:         after[0].id,
+    status:              after[0].status,
+    completed_at:        after[0].completed_at,
+    creators_notified:   participants.length,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Cancel a single influencer assignment
 // POST /campaigns/:id/influencers/:ciid/cancel
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2520,6 +2663,7 @@ module.exports = {
   update,
   remove,
   cancel,
+  endCampaign,
   cancelInfluencer,
   approveApplication,
   rejectApplication,
