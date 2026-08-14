@@ -164,7 +164,15 @@ export function CartProvider({ children }) {
       // line_key includes the claiming creator so the SAME product via two
       // different creators (or creator vs organic) stays two distinct lines.
       const lineKey = `${base.line_key}::${claim?.campaign_influencer_id || ''}`;
-      const line = { ...base, line_key: lineKey, brand_id: brandId, brand_name: brandName, claim };
+      // Slice 0 (features/follower-event-log) — post_id sits on the LINE, not
+      // inside the claim, because a post can drive a sale with no campaign
+      // behind it (an own-store product needs no collaboration). Putting it in
+      // the claim would silently lose exactly that case. Not part of line_key:
+      // the same product added from two posts merges, first post wins.
+      const line = {
+        ...base, line_key: lineKey, brand_id: brandId, brand_name: brandName, claim,
+        post_id: extra?.postId || null,
+      };
       const existingIdx = prev.items.findIndex(i => i.line_key === lineKey && (i.brand_id || brandId) === brandId);
       const items = existingIdx >= 0
         ? prev.items.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + line.qty } : it)

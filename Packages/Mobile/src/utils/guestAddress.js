@@ -39,6 +39,18 @@ export function isGuestAddressId(id) {
   return typeof id === 'string' && id.startsWith('guest-');
 }
 
+/**
+ * Slice 1 (features/follower-profile-repairs) — remove a device-local address.
+ * Guest rows have never reached the server, so unlike the account path this is
+ * a real delete: there is no past order that could be pointing at it.
+ */
+export async function removeGuestAddress(id) {
+  const list = await getGuestAddresses();
+  const next = list.filter(a => a.id !== id);
+  await AsyncStorage.setItem(KEY, JSON.stringify(next));
+  return next;
+}
+
 export async function syncGuestAddresses() {
   const list = await getGuestAddresses();
   if (!list.length) return {};

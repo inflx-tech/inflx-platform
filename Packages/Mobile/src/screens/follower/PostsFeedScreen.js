@@ -7,10 +7,13 @@
  * login. Mounted on the follower app's spare tab slot (old Reels
  * placeholder) so the new experience ships without touching the old app.
  */
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, RefreshControl, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
+// Slice 0 (features/follower-event-log) — what was SHOWN is the signal the feed
+// ranker needs most, and it is the one nothing was recording.
+import { track, makeImpressionTracker } from '../../services/events';
 import PostCard from '../../components/posts/PostCard';
 import ShopThisPostSheet from '../../components/posts/ShopThisPostSheet';
 // Stage B3 — the Discover face (paints the admin's published layout)
@@ -30,6 +33,15 @@ export default function PostsFeedScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [end, setEnd] = useState(false);
   const [shopPost, setShopPost] = useState(null);   // hydrated detail for the sheet
+
+  // Impressions: a post counts as "shown" at 60% visible for 400ms — a card
+  // flicking past during a fast scroll is not an impression. Both handler and
+  // config MUST be refs; React Native throws if either changes after mount.
+  const noteImpression = useRef(makeImpressionTracker('posts_tab')).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60, minimumViewTime: 400 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    viewableItems.forEach(v => noteImpression(v.item?.id, v.index));
+  }).current;
 
   const load = useCallback(async (offset = 0, refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -60,12 +72,16 @@ export default function PostsFeedScreen({ navigation }) {
       if (res.error?.code === 'UNAUTHORIZED' || res.status === 401) requireLogin();
       return;
     }
+    // The state lives in post_likes/post_saves; the event is the TIMESTAMPED
+    // record that it happened, which is what the ranker reads.
+    track(liked ? `un${kind}` : kind, post.id, 'posts_tab');
     setPosts(ps => ps.map(p => p.id !== post.id ? p : (kind === 'like'
       ? { ...p, liked: !liked, like_count: res.data.like_count }
       : { ...p, saved: !liked, save_count: res.data.save_count })));
   }
 
   async function openShop(post) {
+    track('tap_shop', post.id, 'posts_tab');
     // v3.1: open INSTANTLY with a loading state — the founder felt the old
     // fetch-then-open as a delay. Products fill in when the detail arrives.
     setShopPost({ ...post, products: null, __loading: true });
@@ -106,6 +122,8 @@ export default function PostsFeedScreen({ navigation }) {
           />
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(0, true)} />}
+        viewabilityConfig={viewabilityConfig}
+        onViewableItemsChanged={onViewableItemsChanged}
         onEndReached={() => { if (!end && !loading) load(posts.length); }}
         onEndReachedThreshold={0.6}
         ListEmptyComponent={!loading && (
@@ -122,8 +140,11 @@ export default function PostsFeedScreen({ navigation }) {
         onClose={() => setShopPost(null)}
         onOpenProduct={(p) => {
           if (p === '__bag__') { setShopPost(null); navigation.navigate('Cart'); return; }
+          const postId = shopPost?.id || null;
+          if (postId) track('tap_product', postId, 'posts_tab', { product_id: p?.product_id || p?.id || null });
           setShopPost(null);
-          navigation.navigate('PostProduct', { p });
+          // Carry the post through — without it the sale cannot be traced back.
+          navigation.navigate('PostProduct', { p, post_id: postId });
         }}
       />
     </SafeAreaView>

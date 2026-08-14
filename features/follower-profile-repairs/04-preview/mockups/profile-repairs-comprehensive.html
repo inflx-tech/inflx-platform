@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Follower Profile repairs — Slice 1</title>
+<style>
+  :root{
+    --ink:#111111; --muted:#8A8A8A; --muted2:#9A9A9A; --line:#EEEEEE;
+    --hair:#F6F6F6; --soft:#FAFAFA; --red:#D64545; --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#F2F2F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);padding:28px}
+  h1{font-size:17px;font-weight:800;margin-bottom:4px}
+  .sub{font-size:12px;color:var(--muted);margin-bottom:22px;line-height:1.5;max-width:760px}
+  .frames{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .frame{width:330px}
+  .cap{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:7px}
+  .capnote{font-size:10.5px;color:var(--muted2);margin-bottom:8px;line-height:1.5;font-weight:400;text-transform:none;letter-spacing:0}
+  .phone{background:var(--white);border:1px solid #DDD;border-radius:22px;overflow:hidden;height:660px;position:relative;display:flex;flex-direction:column}
+  .nav{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+  .back{font-size:17px;line-height:1;color:var(--ink)}
+  .title{font-size:17px;font-weight:800}
+  .body{flex:1;overflow:hidden;padding:0 16px}
+
+  /* saved posts grid */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .card{border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .shot{height:132px;position:relative}
+  .s1{background:linear-gradient(140deg,#E8DFD3,#CDBBA4)}
+  .s2{background:linear-gradient(140deg,#D9DEE6,#AFBAC9)}
+  .s3{background:linear-gradient(140deg,#E5DAE0,#C3A9B8)}
+  .s4{background:linear-gradient(140deg,#DCE4DC,#A9BCA9)}
+  .play{position:absolute;right:8px;top:8px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center}
+  .meta{padding:8px 9px 10px;display:flex;align-items:center;gap:6px}
+  .av{width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:8.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .who{font-size:10.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cnt{font-size:9.5px;color:var(--muted);margin-left:auto;flex:0 0 auto}
+
+  /* empty state */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:78%;text-align:center;padding:0 26px}
+  .emptyIcon{width:52px;height:52px;border-radius:50%;background:var(--soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
+  .emptyT{font-size:14px;font-weight:800;margin-bottom:6px}
+  .emptyS{font-size:11.5px;color:var(--muted);line-height:1.6}
+
+  /* rows */
+  .grp{margin-top:14px}
+  .grpT{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .arow{display:flex;gap:10px;padding:13px 0;border-bottom:1px solid var(--hair);align-items:flex-start}
+  .aico{font-size:15px;line-height:1.2;flex:0 0 auto}
+  .abody{flex:1;min-width:0}
+  .alabel{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px}
+  .pill{font-size:8.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:99px;padding:2px 7px;letter-spacing:.3px}
+  .aline{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.55}
+  .del{font-size:15px;color:var(--muted2);flex:0 0 auto;padding-left:6px}
+
+  /* form */
+  .field{margin-top:14px}
+  .lab{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .input{border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-size:13px;font-weight:600}
+  .input.err{border-color:var(--red)}
+  .input.ro{background:var(--soft);color:var(--muted);font-weight:600}
+  .errtxt{font-size:10.5px;color:var(--red);margin-top:6px;font-weight:700}
+  .hint{font-size:10.5px;color:var(--muted2);margin-top:6px;line-height:1.5}
+  .cta{margin:20px 0 0;background:var(--ink);color:#fff;border-radius:99px;text-align:center;padding:13px;font-size:13px;font-weight:800}
+  .ghost{margin-top:10px;text-align:center;font-size:12.5px;font-weight:800;color:var(--muted)}
+
+  /* confirm sheet */
+  .scrim{position:absolute;inset:0;background:rgba(17,17,17,.38);display:flex;align-items:flex-end}
+  .sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:20px 18px 22px}
+  .sheetT{font-size:15px;font-weight:800;margin-bottom:7px}
+  .sheetS{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+  .danger{background:var(--red);color:#fff;border-radius:99px;text-align:center;padding:13px;font-size:13px;font-weight:800}
+  .cancel{text-align:center;padding:13px;font-size:13px;font-weight:800;color:var(--muted)}
+  .note{font-size:11px;color:var(--muted);line-height:1.65;margin-top:10px;max-width:330px}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<h1>Follower Profile — Slice 1 repairs</h1>
+<p class="sub">
+  Contract <b>features/follower-profile-repairs</b>. Three faults verified in live code on 2026-08-14:
+  a saved post can never be found again, an address can never be deleted, and Edit does nothing on
+  either the app or the server. White law throughout — white surface, black ink, grey hairlines,
+  red reserved for destructive actions only. No yellow: nothing here is a buy action.
+</p>
+
+<div class="frames">
+
+  <!-- 1 — SAVED POSTS, POPULATED -->
+  <div class="frame">
+    <div class="cap">1 · Saved posts</div>
+    <div class="capnote">Profile → “Saved posts”. Today this row opens the legacy saved-<i>offers</i> list; it now opens the posts the follower actually saved, newest save first.</div>
+    <div class="phone">
+      <div class="nav"><div class="back">‹</div><div class="title">Saved posts</div></div>
+      <div class="body">
+        <div class="grid">
+          <div class="card"><div class="shot s1"></div><div class="meta"><div class="av">R</div><div class="who">rohitstyle</div><div class="cnt">3 items</div></div></div>
+          <div class="card"><div class="shot s2"><div class="play">▶</div></div><div class="meta"><div class="av">A</div><div class="who">anaya.wears</div><div class="cnt">5 items</div></div></div>
+          <div class="card"><div class="shot s3"></div><div class="meta"><div class="av">K</div><div class="who">kabir_fit</div><div class="cnt">2 items</div></div></div>
+          <div class="card"><div class="shot s4"><div class="play">▶</div></div><div class="meta"><div class="av">R</div><div class="who">rohitstyle</div><div class="cnt">4 items</div></div></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Same card as the feed — reused, not rewritten. Tapping opens the post. Unsaving removes it on next focus.</p>
+  </div>
+
+  <!-- 2 — SAVED POSTS, EMPTY -->
+  <div class="frame">
+    <div class="cap">2 · Saved posts — empty</div>
+    <div class="capnote">An honest empty state. Not a spinner that never resolves, and not an error.</div>
+    <div class="phone">
+      <div class="nav"><div class="back">‹</div><div class="title">Saved posts</div></div>
+      <div class="body">
+        <div class="empty">
+          <div class="emptyIcon">🔖</div>
+          <div class="emptyT">Nothing saved yet</div>
+          <div class="emptyS">Posts you save will appear here, so you can come back to them later.</div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Guests never reach this screen — saved posts are personal and the row is signed-in only.</p>
+  </div>
+
+  <!-- 3 — ADDRESSES + DELETE CONFIRM -->
+  <div class="frame">
+    <div class="cap">3 · Addresses — delete</div>
+    <div class="capnote">Each address gains a delete action behind a confirm. The delete is <b>soft</b>: past orders keep showing where they actually shipped.</div>
+    <div class="phone">
+      <div class="nav"><div class="back">‹</div><div class="title">Addresses</div></div>
+      <div class="body">
+        <div class="grp">
+          <div class="grpT">Saved addresses</div>
+          <div class="arow">
+            <div class="aico">🏠</div>
+            <div class="abody">
+              <div class="alabel">Home <span class="pill">DEFAULT</span></div>
+              <div class="aline">Flat 304, Sai Residency, Indiranagar<br>Bengaluru 560038</div>
+            </div>
+            <div class="del">🗑</div>
+          </div>
+          <div class="arow">
+            <div class="aico">🏢</div>
+            <div class="abody">
+              <div class="alabel">Work</div>
+              <div class="aline">7th Floor, Prestige Tower, MG Road<br>Bengaluru 560001</div>
+            </div>
+            <div class="del">🗑</div>
+          </div>
+          <div class="arow">
+            <div class="aico">📦</div>
+            <div class="abody">
+              <div class="alabel">Old flat</div>
+              <div class="aline">12/B, Green Meadows, HSR Layout<br>Bengaluru 560102</div>
+            </div>
+            <div class="del">🗑</div>
+          </div>
+        </div>
+      </div>
+      <div class="scrim">
+        <div class="sheet">
+          <div class="sheetT">Delete this address?</div>
+          <div class="sheetS">“Old flat” will be removed from your saved addresses and from checkout. Orders already delivered there are not affected.</div>
+          <div class="danger">Delete address</div>
+          <div class="cancel">Cancel</div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Deleting the <b>default</b> promotes another address to default, so checkout is never left pointing at nothing.</p>
+  </div>
+
+  <!-- 4 — EDIT PROFILE -->
+  <div class="frame">
+    <div class="cap">4 · Edit profile</div>
+    <div class="capnote">Replaces the “coming soon” alert. Name and email only — phone is the login identity and is shown read-only.</div>
+    <div class="phone">
+      <div class="nav"><div class="back">‹</div><div class="title">Edit profile</div></div>
+      <div class="body">
+        <div class="field">
+          <div class="lab">Name</div>
+          <div class="input">Meera</div>
+        </div>
+        <div class="field">
+          <div class="lab">Email</div>
+          <div class="input err">meera@example.com</div>
+          <div class="errtxt">That email is already in use</div>
+        </div>
+        <div class="field">
+          <div class="lab">Phone</div>
+          <div class="input ro">+91 98765 43210</div>
+          <div class="hint">Your phone is how you sign in, so it can’t be changed here.</div>
+        </div>
+        <div class="cta">Save changes</div>
+        <div class="ghost">Cancel</div>
+      </div>
+    </div>
+    <p class="note">Errors land <b>inline under the field</b>, never as a crash or a silent no-op — a duplicate email is a field error, not a 500.</p>
+  </div>
+
+</div>
+</body>
+</html>

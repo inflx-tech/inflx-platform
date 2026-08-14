@@ -65,6 +65,10 @@ import SectionResultsScreen from '../screens/follower/SectionResultsScreen';
 // listing-category-browser (Type-1) — sidebar + product grid + facet filters
 import CategoryBrowserScreen from '../screens/follower/CategoryBrowserScreen';
 import FollowerPageScreen from '../screens/follower/FollowerPageScreen';
+// Slice 1 (features/follower-profile-repairs) — saved posts become findable
+// and a follower can finally correct their own name.
+import SavedPostsScreen from '../screens/follower/SavedPostsScreen';
+import EditProfileScreen from '../screens/follower/EditProfileScreen';
 // Stage C2 — product wishlist + collections
 import WishlistScreen from '../screens/follower/WishlistScreen';
 // Stage C3 — Review Order (address · payment method · bill) before payment
@@ -193,6 +197,14 @@ function ProfileStack() {
       <Stack.Screen name="Cart" component={CartScreen} />
       <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
       <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
+      {/* Slice 1 (features/follower-profile-repairs) — Saved posts + Edit
+          profile, and the viewer Saved posts opens. PostViewer is NOT in
+          SHARED_SCREENS and ProfileStack does not spread it, so this is its
+          only registration in this stack (duplicate route name in a native
+          stack = uncatchable native crash on tab mount — the v93 incident). */}
+      <Stack.Screen name="SavedPosts" component={SavedPostsScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="PostViewer" component={PostViewerScreen} />
     </Stack.Navigator>
   );
 }

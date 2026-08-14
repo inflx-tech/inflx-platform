@@ -128,7 +128,9 @@ function MeInner({ navigation }) {
             <Text style={st.pname}>{profile?.name || 'Follower'}</Text>
             {profile?.phone ? <Text style={st.psub}>{maskPhone(profile.phone)}</Text> : null}
           </View>
-          <TouchableOpacity hitSlop={8} onPress={() => Alert.alert('Edit profile', 'Coming with the account settings slice.')}>
+          {/* Slice 1 — was an Alert stub; PATCH /followers/me did not exist
+              server-side either. Both halves are real now. */}
+          <TouchableOpacity hitSlop={8} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={st.edit}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -147,7 +149,9 @@ function MeInner({ navigation }) {
         <View style={st.grp}>
           <Text style={st.grpT}>Following</Text>
           <Row icon="account-group-outline" label="Creators I follow" onPress={() => navigation.navigate('FollowedInfluencers')} />
-          <Row icon="bookmark-outline" label="Saved posts" onPress={() => navigation.navigate('SavedList')} />
+          {/* Slice 1 — this pointed at SavedList, the legacy saved-OFFERS
+              screen, so a saved POST was unreachable. Now reads post_saves. */}
+          <Row icon="bookmark-outline" label="Saved posts" onPress={() => navigation.navigate('SavedPosts')} />
         </View>
 
         {/* Legal — shoppers see only the documents that apply to buying:

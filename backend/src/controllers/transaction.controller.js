@@ -23,6 +23,13 @@ const env = require('../config/env');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+
+// features/follower-event-log (Slice 0) — a cart line driven by a creator post
+// carries post_id, so a sale can be traced back to the post that caused it.
+// Shape-checked here; existence is confirmed before it reaches the FK column,
+// because a stale post id must never fail a checkout.
+const POST_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const safePostId = (v) => (POST_UUID_RE.test(String(v || '')) ? v : null);
 const txService = require('../services/transaction.service');
 const bookingService = require('../services/booking.service');
 const notificationService = require('../services/notification.service');
@@ -1342,6 +1349,8 @@ async function priceOrderForGroup(follower, group) {
       variation,
       selected_addons: selectedAddons,
       note,
+      // Slice 0 — which post drove this line (null for organic/browse adds).
+      post_id: safePostId(i.post_id),
     };
   });
 
@@ -1425,6 +1434,10 @@ async function priceOrderForGroup(follower, group) {
     variation: i.variation,
     selected_addons: i.selected_addons,
     note: i.note,
+    // Slice 0 — per-item post attribution. The transaction row denormalizes only
+    // the PRIMARY line's post (like product_id/variant_id); a cart mixing posts
+    // keeps the per-item truth here.
+    post_id: i.post_id || null,
   }));
 
   // Way-4: an organic buy attributed via the window carries the resolved CI so
@@ -1659,14 +1672,27 @@ async function prepareSubOrder(sm) {
   const primaryProductId = Array.isArray(sm.items_json) && sm.items_json[0]?.product_id ? sm.items_json[0].product_id : null;
   const primaryVariantId = Array.isArray(sm.items_json) && sm.items_json[0]?.variant_id ? sm.items_json[0].variant_id : null;
 
-  return { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId };
+  // Slice 0 (features/follower-event-log) — the post that drove this order.
+  // Confirmed to exist before it touches the FK column: a post deleted while the
+  // follower was mid-checkout must NOT fail the order, it must just go unlinked.
+  const claimedPostId = Array.isArray(sm.items_json)
+    ? safePostId(sm.items_json.find(i => i?.post_id)?.post_id)
+    : null;
+  let primaryPostId = null;
+  if (claimedPostId) {
+    const { rows: postRows } = await db.query(
+      `SELECT id FROM creator_posts WHERE id = $1`, [claimedPostId]);
+    primaryPostId = postRows[0]?.id || null;
+  }
+
+  return { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId, primaryPostId };
 }
 
 // follower-checkout Slice B — write ONE order (one brand) inside the caller's
 // transaction. Identical to the legacy single-order write; the multi-brand path
 // calls it once per brand under the same transaction + single pending-order claim.
 async function writeSubOrder(client, prepared, razorpay_payment_id, opts = {}) {
-  const { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId } = prepared;
+  const { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId, primaryPostId } = prepared;
   const netAmount = parseFloat(sm.net_amount);
   // Stage C3 — COD orders carry payment_method='cod'; the fee lands once, on
   // the primary order row (opts.codFee is 0 for the rest of a multi split).
@@ -1679,8 +1705,9 @@ async function writeSubOrder(client, prepared, razorpay_payment_id, opts = {}) {
         variant_id, offer_type, brand_offer_id, offer_source,
         transaction_type, gross_amount, discount_amount, net_amount,
         influencer_commission, marketplace_fee_amount, brand_net,
-        status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'online_order',$12,$13,$14,$15,$16,$17,'completed',$18,$19,$20)
+        status, coupon_code_used, return_window_ends_at, razorpay_payment_id,
+        via_post_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'online_order',$12,$13,$14,$15,$16,$17,'completed',$18,$19,$20,$21)
      RETURNING id`,
     [
       sm.follower_id, sm.brand_id, sm.campaign_id, sm.set_id,
@@ -1690,6 +1717,7 @@ async function writeSubOrder(client, prepared, razorpay_payment_id, opts = {}) {
       sm.items_total, sm.discount_amount, netAmount,
       commissionAmount, sm.platform_fee, sm.brand_net,
       couponCode, returnWindowEndsAt, razorpay_payment_id,
+      primaryPostId || null,
     ]
   );
   const transactionId = txRows[0].id;

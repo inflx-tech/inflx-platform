@@ -19,7 +19,7 @@ const T = {
 const fonts = { displayBold: undefined, sansBold: undefined, sansMedium: undefined, sansRegular: undefined };
 import { followerApi } from '../../services/api';
 import { isGpsAvailable, ensureLocationPermission, getCurrentPosition } from '../../utils/geolocation';
-import { getGuestAddresses, addGuestAddress } from '../../utils/guestAddress';
+import { getGuestAddresses, addGuestAddress, isGuestAddressId, removeGuestAddress } from '../../utils/guestAddress';
 
 /**
  * AddressScreen — Follower v2, step L4 (white/yellow toing skin).
@@ -147,6 +147,38 @@ export default function AddressScreen({ navigation, route }) {
     setLoading(false);
     if (res?.success) setAddresses([...(res.data?.addresses || []), ...guests]);
     else setAddresses(guests);
+  }
+
+  // Slice 1 (features/follower-profile-repairs). Two paths: a guest row has
+  // never left the device so it is really deleted; an account row is SOFT
+  // deleted server-side, because follower_orders points at it and a past order
+  // must keep showing where it actually shipped.
+  function confirmDelete(addr) {
+    const label = addr.label || addr.type || 'this address';
+    Alert.alert(
+      'Delete this address?',
+      `“${label}” will be removed from your saved addresses and from checkout. Orders already delivered there are not affected.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => doDelete(addr) },
+      ],
+    );
+  }
+
+  async function doDelete(addr) {
+    if (isGuestAddressId(addr.id)) {
+      await removeGuestAddress(addr.id);
+      setAddresses(prev => prev.filter(a => a.id !== addr.id));
+      return;
+    }
+    const res = await followerApi.deleteAddress?.(addr.id);
+    if (res?.success) {
+      setAddresses(prev => prev.filter(a => a.id !== addr.id));
+      return;
+    }
+    // Never remove it from the list on a failed call — showing it gone while
+    // the server still has it is the worse lie.
+    Alert.alert('Could not delete', res?.error?.message || 'Please try again in a moment.');
   }
 
   async function saveAddress() {
@@ -316,9 +348,17 @@ export default function AddressScreen({ navigation, route }) {
       ) : (
         addresses.map((addr) => (
           <View key={addr.id} style={s.card}>
-            <View style={s.addrTypeChip}>
-              <Icon name={typeIcon(addr.label)} size={13} color={T.yellowDeep} />
-              <Text style={s.addrTypeText}>{addr.label || addr.type || 'Home'}</Text>
+            <View style={s.addrRowTop}>
+              <View style={s.addrTypeChip}>
+                <Icon name={typeIcon(addr.label)} size={13} color={T.yellowDeep} />
+                <Text style={s.addrTypeText}>{addr.label || addr.type || 'Home'}</Text>
+              </View>
+              {/* Slice 1 — an address could never be removed: the API had POST,
+                  GET and PATCH but no DELETE, so a follower who moved carried
+                  the old flat in their checkout picker forever. */}
+              <TouchableOpacity hitSlop={10} onPress={() => confirmDelete(addr)}>
+                <Icon name="trash-can-outline" size={18} color={T.hint} />
+              </TouchableOpacity>
             </View>
             <Text style={s.addrText}>{[addr.line1, addr.line2].filter(Boolean).join(', ')}</Text>
             <Text style={s.addrCity}>{[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}</Text>
@@ -361,6 +401,8 @@ const s = StyleSheet.create({
   addFirstBtnText: { fontSize: 13, color: T.yellowInk, fontFamily: fonts.sansBold },
   addrTypeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: T.yellowTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginBottom: 8 },
   addrTypeText: { fontSize: 11, color: T.yellowDeep, fontFamily: fonts.sansBold },
+  // Slice 1 — chip left, delete right, on one line above the address text.
+  addrRowTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   addrText: { fontSize: 14, color: T.ink, fontFamily: fonts.sansMedium, marginBottom: 2 },
   addrCity: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular },
   searchHint: { fontSize: 12, color: T.muted, fontFamily: fonts.sansMedium, marginBottom: 8 },

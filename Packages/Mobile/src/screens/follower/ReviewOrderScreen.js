@@ -124,6 +124,10 @@ export default function ReviewOrderScreen({ navigation, route }) {
       variation: i.variation || null,
       addons: Array.isArray(i.selected_addons) ? i.selected_addons : [],
       note: i.note || null,
+      // Slice 0 (features/follower-event-log) — which post drove this line. The
+      // server shape-checks it, confirms the post exists, then stores it on the
+      // transaction (via_post_id) and inside items_json.
+      post_id: i.post_id || null,
     });
     const groupArr = [...groups.values()];
     const groupPayload = (g) => {

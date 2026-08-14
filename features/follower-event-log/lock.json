@@ -1,0 +1,25 @@
+{
+  "feature": "follower-event-log",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder — 'ok now, start with slice 0 and 1' (2026-08-14), after the sequenced 6-slice plan was presented and explained",
+  "approved_at": "2026-08-14",
+  "ui_governed": false,
+  "mockup_required": false,
+  "mockup_note": "No user-visible surface. Recording only — the spec's success condition is that nothing looks different.",
+  "impact_reviewed": true,
+  "notes": "Slice 0 of the follower program. Unblocks slice 4 (per-post sales for own-store creators), slice 5 (feed ranking), slice 6 (all stats). Grounded in a read of migrations 001/046/050/085/094/112/140/141 and services/CartContext.js — no post link exists anywhere today, and the cart's per-line claim is the seam post_id rides on.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": "pnpm qa 409 passed GREEN gate 0 (2026-08-14T12-12-27Z) · Packages/Mobile npm test 141 passed / 28 suites · 23 new backend contract tests + 10 new event-queue tests",
+    "maestro_green": false,
+    "maestro_waived": "no connected device; founder is the on-device gate. Nothing is user-visible in this contract — the on-device check is that NOTHING changed.",
+    "released": false,
+    "deploy": {
+      "class": "production-impacting — migration 150 + Render backend + follower OTA",
+      "go_required": true,
+      "go_received": false
+    }
+  }
+}

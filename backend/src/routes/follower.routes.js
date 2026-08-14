@@ -13,6 +13,10 @@ const followerAuth = [authenticate, requireRole('follower')];
 // ── Registration + profile ────────────────────────────────────────────────────
 router.post('/register', authenticate, requireRole('follower'), ctrl.register);
 router.get('/me',        authenticate, requireRole('follower'), ctrl.getMe);
+// Slice 1 (features/follower-profile-repairs): followers were the ONLY role
+// without a PATCH /me — brand, influencer and agency all have one. Name/email
+// live on users; phone is the login identity and is never editable here.
+router.patch('/me',      ...followerAuth, ctrl.updateMe);
 
 // ── Attribution touch (auth required) — click/store-entry opens the window ────
 router.post('/touch',                ...followerAuth, ctrl.recordTouch);
@@ -35,6 +39,9 @@ router.get('/places/details', authenticateOptional, ctrl.placeDetails);
 router.post('/addresses',     ...followerAuth, ctrl.createAddress);
 router.get('/addresses',      ...followerAuth, ctrl.listAddresses);
 router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
+// Slice 1 — SOFT delete. follower_orders.address_id FKs this table, so a hard
+// delete would either fail or destroy a past order's shipping address.
+router.delete('/addresses/:id', ...followerAuth, ctrl.deleteAddress);
 
 // ── Wishlist + collections (Stage C2 — auth required; guests keep a device-
 // local wishlist that syncs here at the one login moment) ────────────────────
@@ -54,6 +61,10 @@ const followerPostsCtrl = require('../controllers/followerPosts.controller');
 const discoverCtrl = require('../controllers/discover.controller');
 router.get('/discover',  authenticateOptional, discoverCtrl.followerDiscover);
 router.get('/posts',     authenticateOptional, followerPostsCtrl.feed);
+// Slice 1 — MUST stay above '/posts/:id' or Express matches 'saved' as an id.
+// post_saves (mig 141) has been written since P3 with no reader anywhere: a
+// follower could save a post and never find it again.
+router.get('/posts/saved', ...followerAuth, followerPostsCtrl.savedPosts);
 router.get('/posts/:id', authenticateOptional, followerPostsCtrl.detail);
 // P3 globals — app config (public, fetched at launch) + minimal like/save.
 router.get('/app-config', authenticateOptional, followerPostsCtrl.appConfig);
@@ -61,6 +72,12 @@ router.post('/posts/:id/like',   ...followerAuth, followerPostsCtrl.like);
 router.delete('/posts/:id/like', ...followerAuth, followerPostsCtrl.unlike);
 router.post('/posts/:id/save',   ...followerAuth, followerPostsCtrl.save);
 router.delete('/posts/:id/save', ...followerAuth, followerPostsCtrl.unsave);
+
+// ── Behaviour log (Slice 0 — features/follower-event-log) ────────────────────
+// authenticateOptional: guests must be able to log, or the feed would only ever
+// learn from signed-in followers while most browsing happens signed out.
+const postEventsCtrl = require('../controllers/postEvents.controller');
+router.post('/events', authenticateOptional, postEventsCtrl.ingest);
 
 // ── Feed & browse (public — auth optional for personalization) ───────────────
 router.get('/feed',      authenticateOptional, ctrl.getFeed);       // legacy

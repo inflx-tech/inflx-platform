@@ -23,6 +23,9 @@ import {
 } from '../../components/posts/PostCard';
 import { BagCircle, HeartIcon, CommentIcon, ShareIcon, SaveIcon, VerifiedTick } from '../../components/posts/icons';
 import ShopThisPostSheet from '../../components/posts/ShopThisPostSheet';
+// Slice 0 (features/follower-event-log) — a view with real dwell is the
+// strongest quality signal a post can produce; nothing was recording it.
+import { track, flush } from '../../services/events';
 
 const WIN = Dimensions.get('window');
 
@@ -50,6 +53,18 @@ export default function PostViewerScreen({ navigation, route }) {
     return unsub;
   }, [navigation]);
 
+  // Dwell is measured from mount to unmount and sent ON THE WAY OUT — a 'view'
+  // logged on open would count every accidental tap as engagement. The flush is
+  // deliberate: leaving the viewer is exactly when the tail tends to be lost.
+  useEffect(() => {
+    if (!postId) return undefined;
+    const openedAt = Date.now();
+    return () => {
+      track('view', postId, 'posts_tab', { dwell_ms: Date.now() - openedAt });
+      flush();
+    };
+  }, [postId]);
+
   function requireLogin(what = 'do this') {
     Alert.alert('Login needed', `Log in to ${what}.`, [
       { text: 'Cancel', style: 'cancel' },
@@ -67,6 +82,7 @@ export default function PostViewerScreen({ navigation, route }) {
       if (res.error?.code === 'UNAUTHORIZED' || res.status === 401) requireLogin('like and save posts');
       return;
     }
+    track(on ? `un${kind}` : kind, post.id, 'posts_tab');
     setPost(pv => kind === 'like'
       ? { ...pv, liked: !on, like_count: res.data.like_count }
       : { ...pv, saved: !on, save_count: res.data.save_count });
@@ -85,9 +101,12 @@ export default function PostViewerScreen({ navigation, route }) {
 
   function openProduct(p) {
     if (p === '__bag__') { navigation.navigate('Cart'); return; }
+    track('tap_product', postId, 'posts_tab', { product_id: p?.product_id || p?.id || null });
     reopenShop.current = true;
     setShopOpen(false);
-    navigation.navigate('PostProduct', { p });
+    // The post travels WITH the product: it is what makes the eventual sale
+    // traceable back to the post that caused it (via_post_id).
+    navigation.navigate('PostProduct', { p, post_id: postId });
   }
 
   if (missing) {
@@ -182,7 +201,8 @@ export default function PostViewerScreen({ navigation, route }) {
           <Text style={st.timestamp}>{timeAgo(post.created_at)}</Text>
 
           {/* WHITE shop banner */}
-          <TouchableOpacity style={st.shopBanner} activeOpacity={0.9} onPress={() => setShopOpen(true)}>
+          <TouchableOpacity style={st.shopBanner} activeOpacity={0.9}
+            onPress={() => { track('tap_shop', postId, 'posts_tab'); setShopOpen(true); }}>
             <BagCircle size={28} />
             <View style={{ flex: 1 }}>
               <Text style={st.shopTitle}>Shop this post</Text>

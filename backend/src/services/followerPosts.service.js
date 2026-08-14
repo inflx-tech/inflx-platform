@@ -95,7 +95,11 @@ async function setEngagement(kind, postId, followerId, on) {
 
 // ── FEED ─────────────────────────────────────────────────────────────────────
 
-async function listFeed({ userId, conceptId, collectionId, handle, brandId, limit = 20, offset = 0 } = {}) {
+// savedOnly (Slice 1, features/follower-profile-repairs): restricts the feed to
+// posts THIS follower saved, newest save first. Same card shape as the feed so
+// the mobile post card is reused rather than rewritten. Requires a signed-in
+// follower — the caller enforces that.
+async function listFeed({ userId, conceptId, collectionId, handle, brandId, savedOnly = false, limit = 20, offset = 0 } = {}) {
   const followerId = await followerIdForUser(userId);
   let followedIds = [];
   if (followerId) {
@@ -120,6 +124,11 @@ async function listFeed({ userId, conceptId, collectionId, handle, brandId, limi
 
   params.push(followerId);          // NULL for anonymous → liked/saved false
   const followerIdx = params.length;
+  // Pushed after followerIdx exists; `where` is joined below, so order is fine.
+  if (savedOnly) {
+    where.push(`EXISTS (SELECT 1 FROM post_saves psf
+                         WHERE psf.post_id = cp.id AND psf.follower_id = $${followerIdx}::uuid)`);
+  }
   params.push(followedIds);
   const followedIdx = params.length;
   params.push(Math.min(Number(limit) || 20, 50));
@@ -148,7 +157,10 @@ async function listFeed({ userId, conceptId, collectionId, handle, brandId, limi
           WHERE pm.post_id = cp.id ORDER BY slide_index LIMIT 1
        ) fm ON true
       WHERE ${where.join(' AND ')}
-      ORDER BY (cp.influencer_id = ANY($${followedIdx}::uuid[])) DESC, cp.created_at DESC
+      ORDER BY ${savedOnly
+        ? `(SELECT pso.created_at FROM post_saves pso
+             WHERE pso.post_id = cp.id AND pso.follower_id = $${followerIdx}::uuid) DESC`
+        : `(cp.influencer_id = ANY($${followedIdx}::uuid[])) DESC, cp.created_at DESC`}
       LIMIT $${followedIdx + 1} OFFSET $${followedIdx + 2}`,
     params);
 

@@ -86,7 +86,9 @@ const getMe = asyncHandler(async (req, res) => {
   if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found. Please register first.', 404);
 
   const { rows: addresses } = await db.query(
-    `SELECT * FROM follower_addresses WHERE follower_id = $1 ORDER BY is_default DESC`,
+    `SELECT * FROM follower_addresses
+      WHERE follower_id = $1 AND deleted_at IS NULL
+      ORDER BY is_default DESC`,
     [follower.id]
   );
 
@@ -330,7 +332,9 @@ const listAddresses = asyncHandler(async (req, res) => {
   if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
 
   const { rows } = await db.query(
-    `SELECT * FROM follower_addresses WHERE follower_id = $1 ORDER BY is_default DESC`,
+    `SELECT * FROM follower_addresses
+      WHERE follower_id = $1 AND deleted_at IS NULL
+      ORDER BY is_default DESC`,
     [follower.id]
   );
 
@@ -344,7 +348,8 @@ const updateAddress = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const { rows: existing } = await db.query(
-    `SELECT * FROM follower_addresses WHERE id = $1 AND follower_id = $2`,
+    `SELECT * FROM follower_addresses
+      WHERE id = $1 AND follower_id = $2 AND deleted_at IS NULL`,
     [id, follower.id]
   );
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Address not found', 404);
@@ -377,6 +382,114 @@ const updateAddress = asyncHandler(async (req, res) => {
   }
 
   return success(res, { address: rows[0] });
+});
+
+// ── DELETE /followers/addresses/:id (Slice 1) ────────────────────────────────
+// SOFT delete. follower_orders.address_id references this table with no ON
+// DELETE clause, so a hard delete would either fail on the FK or destroy the
+// shipping address of a past order. Order history must keep resolving where it
+// actually shipped; the follower just stops seeing the address.
+const deleteAddress = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+
+  const { id } = req.params;
+
+  // Already-deleted reads as not-found: deleting twice is idempotent from the
+  // caller's point of view, and we never confirm the existence of a row that
+  // isn't theirs.
+  const { rows: existing } = await db.query(
+    `SELECT id, is_default FROM follower_addresses
+      WHERE id = $1 AND follower_id = $2 AND deleted_at IS NULL`,
+    [id, follower.id]
+  );
+  if (!existing[0]) throw new AppError('NOT_FOUND', 'Address not found', 404);
+
+  await db.query(
+    `UPDATE follower_addresses SET deleted_at = now(), is_default = false WHERE id = $1`,
+    [id]
+  );
+
+  // Never leave the follower pointing at a deleted default — checkout reads it.
+  const { rows: promoted } = await db.query(
+    `SELECT id FROM follower_addresses
+      WHERE follower_id = $1 AND deleted_at IS NULL
+      ORDER BY is_default DESC, id
+      LIMIT 1`,
+    [follower.id]
+  );
+  const nextDefault = promoted[0]?.id || null;
+  if (nextDefault) {
+    await db.query(`UPDATE follower_addresses SET is_default = true WHERE id = $1`, [nextDefault]);
+  }
+  await db.query(
+    `UPDATE followers SET default_address_id = $1 WHERE id = $2`,
+    [nextDefault, follower.id]
+  );
+
+  return success(res, { deleted: true, default_address_id: nextDefault });
+});
+
+// ── PATCH /followers/me (Slice 1) ────────────────────────────────────────────
+// Followers were the only role without this — brand, influencer and agency all
+// have PATCH /me, and the mobile client has been calling a route that did not
+// exist. The editable fields live on `users` (the followers table holds only
+// id / user_id / default_address_id). Phone is the login identity: never here.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const updateMe = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+
+  const hasName  = Object.prototype.hasOwnProperty.call(req.body || {}, 'name');
+  const hasEmail = Object.prototype.hasOwnProperty.call(req.body || {}, 'email');
+  if (!hasName && !hasEmail) {
+    throw new AppError('VALIDATION_ERROR', 'Nothing to update', 422);
+  }
+
+  let name = null;
+  if (hasName) {
+    name = String(req.body.name ?? '').trim();
+    if (name.length < 2 || name.length > 100) {
+      throw new AppError('VALIDATION_ERROR', 'Name must be 2-100 characters', 422, 'name');
+    }
+  }
+
+  // Explicit null/'' clears the email; anything else must be a valid address.
+  let email = null;
+  let clearEmail = false;
+  if (hasEmail) {
+    const raw = req.body.email;
+    if (raw === null || String(raw).trim() === '') {
+      clearEmail = true;
+    } else {
+      email = String(raw).trim().toLowerCase();
+      if (!EMAIL_RE.test(email) || email.length > 200) {
+        throw new AppError('VALIDATION_ERROR', 'Enter a valid email address', 422, 'email');
+      }
+    }
+  }
+
+  let rows;
+  try {
+    ({ rows } = await db.query(
+      `UPDATE users SET
+         name       = COALESCE($1, name),
+         email      = CASE WHEN $3::boolean THEN NULL ELSE COALESCE($2, email) END,
+         updated_at = now()
+       WHERE id = $4
+       RETURNING id, name, email, phone, city, state`,
+      [name, email, clearEmail, req.user.sub]
+    ));
+  } catch (e) {
+    // users.email is UNIQUE — surface it as a field error, never a raw 500.
+    if (e.code === '23505') {
+      throw new AppError('VALIDATION_ERROR', 'That email is already in use', 422, 'email');
+    }
+    throw e;
+  }
+
+  return success(res, { follower: { ...follower, ...rows[0], id: follower.id, user_id: req.user.sub } });
 });
 
 // ── GET /follower/feed (legacy) ──────────────────────────────────────────────
@@ -1890,6 +2003,8 @@ module.exports = {
   createAddress,
   listAddresses,
   updateAddress,
+  deleteAddress,
+  updateMe,
   getFeed,
   getHomeFeed,
   getDeals,

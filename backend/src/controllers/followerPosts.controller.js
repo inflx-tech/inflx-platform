@@ -26,6 +26,19 @@ const feed = asyncHandler(async (req, res) => {
   return success(res, { posts });
 });
 
+// GET /v1/follower/posts/saved — Slice 1 (features/follower-profile-repairs).
+// post_saves has been written since P3 with nothing reading it back: a follower
+// could save a post and never find it again. Auth required — this is personal.
+const savedPosts = asyncHandler(async (req, res) => {
+  const posts = await followerPosts.listFeed({
+    userId: req.user.sub,
+    savedOnly: true,
+    limit: req.query.limit,
+    offset: req.query.offset,
+  });
+  return success(res, { posts });
+});
+
 // GET /v1/follower/posts/:id
 const detail = asyncHandler(async (req, res) => {
   const post = await followerPosts.getPostDetail(req.params.id, {
@@ -64,7 +77,7 @@ function engagementHandler(kind, on) {
 }
 
 module.exports = {
-  feed, detail, appConfig, updateAppConfig,
+  feed, savedPosts, detail, appConfig, updateAppConfig,
   like: engagementHandler('like', true),
   unlike: engagementHandler('like', false),
   save: engagementHandler('save', true),

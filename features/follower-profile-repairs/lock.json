@@ -1,0 +1,26 @@
+{
+  "feature": "follower-profile-repairs",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder — 'ok now, start with slice 0 and 1' (2026-08-14)",
+  "approved_at": "2026-08-14",
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('pls lock it', 2026-08-14) — profile-repairs-comprehensive.html, 4 frames: saved posts populated + empty, addresses with delete confirm, edit profile with inline field error",
+  "mockup_locked_at": "2026-08-14",
+  "impact_reviewed": true,
+  "notes": "Slice 1. Three faults verified in live code on 2026-08-14: (1) MeScreen 'Saved posts' opens the legacy saved-OFFERS screen while post_saves (mig 141) has no reader anywhere; (2) no DELETE route for follower addresses, and follower_orders.address_id FKs the table so the fix must be a soft delete; (3) MeScreen Edit is an Alert stub AND PATCH /followers/me does not exist server-side, though the mobile api client already declares it. Follower name/email live on users, not followers.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": "pnpm qa 409 passed GREEN gate 0 (2026-08-14T12-12-27Z) · Packages/Mobile npm test 141 passed / 28 suites · all touched mobile files babel-validated",
+    "maestro_green": false,
+    "maestro_waived": "no connected device in this environment; founder is the on-device gate (standing arrangement). First thing to tap: Profile → Saved posts → open a post (PostViewer newly registered in ProfileStack).",
+    "released": false,
+    "deploy": {
+      "class": "production-impacting — migration 151 + Render backend + follower OTA",
+      "go_required": true,
+      "go_received": false
+    }
+  }
+}

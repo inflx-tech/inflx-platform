@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { followerApi } from '../../services/api';
 import { useCart } from '../../services/CartContext';
+import { track } from '../../services/events';
 import { isWished, toggleWish } from '../../services/wishlist';
 import { HeartIcon } from '../../components/posts/icons';
 import { YELLOW } from '../../components/posts/PostCard';
@@ -31,7 +32,9 @@ const YDEEP = '#CA8A04';
 export default function PostProductScreen({ navigation, route }) {
   // p = the shop-sheet product (carries tracking/via_creator/brand); detail
   // fills description/facets/variants/offers from the (offer-aware) PDP API.
-  const { p } = route.params || {};
+  // post_id (Slice 0, features/follower-event-log) — travels with the product so
+  // the cart line, and eventually the sale, remembers which post drove it.
+  const { p, post_id: postId = null } = route.params || {};
   const { addItem } = useCart();
   const [detail, setDetail] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -92,9 +95,12 @@ export default function PostProductScreen({ navigation, route }) {
   function add(goBag) {
     if (needsSize) { Alert.alert('Select a size', 'Pick your size first.'); return; }
     const res = addItem(buildItem(), p.brand?.id, p.brand?.name, p.tracking, {
-      cartKind: 'shop', creatorHandle: p.via_creator?.handle || null,
+      cartKind: 'shop', creatorHandle: p.via_creator?.handle || null, postId,
     });
     if (res.ok) {
+      if (postId) {
+        track('add_to_bag', postId, 'posts_tab', { product_id: p?.product_id || p?.id || null });
+      }
       setAdded(true);
       if (goBag) navigation.navigate('Cart');
     }

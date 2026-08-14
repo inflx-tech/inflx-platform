@@ -511,6 +511,12 @@ export const followerApi = {
   unlikePost: (id) => api.delete(`/follower/posts/${id}/like`),
   savePost: (id) => api.post(`/follower/posts/${id}/save`),
   unsavePost: (id) => api.delete(`/follower/posts/${id}/save`),
+  // Slice 1 (features/follower-profile-repairs) — post_saves had no reader:
+  // a follower could save a post and never find it again.
+  getSavedPosts: () => api.get('/follower/posts/saved'),
+  // Slice 0 (features/follower-event-log) — batched behaviour log. Called only
+  // by services/events.js; never awaited on a render path.
+  postEvents: (body) => api.post('/follower/events', body),
   getAppConfig: () => api.get('/follower/app-config'),
 
   // P5 (section-analytics-city) — fire-and-forget engagement capture. Never
@@ -729,6 +735,8 @@ export const followerApi = {
   // Addresses
   getAddresses: () => api.get('/followers/addresses'),
   addAddress: (data) => api.post('/followers/addresses', data),
+  // Slice 1 — soft delete server-side; past orders keep their address.
+  deleteAddress: (id) => api.delete(`/followers/addresses/${id}`),
   // Wishlist + collections (Stage C2)
   getWishlist: () => api.get('/followers/wishlist'),
   wishlistAdd: (productId) => api.post('/followers/wishlist/items', { product_id: productId }),
