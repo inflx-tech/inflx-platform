@@ -20,7 +20,12 @@
     "deploy": {
       "class": "production-impacting — migration 151 + Render backend + follower OTA",
       "go_required": true,
-      "go_received": false
+      "go_received": "founder — 'commit,deploy,migrate' (2026-08-14)",
+      "migration": "151 applied to prod 2026-08-14 — deleted_at_col 1 · deleted_rows 0 · live_idx 1 · total_rows 5 unchanged",
+      "commit": "1dd84a0",
+      "backend": "Render auto-deploy CONFIRMED LIVE: GET /v1/follower/posts/saved returns UNAUTHORIZED (401), not NOT_FOUND — which also proves in production that the route is matched as /posts/saved and not swallowed by /posts/:id",
+      "ota": "follower version 224, native_runtime 3; manifest re-read and confirmed",
+      "rollback": "revert 1dd84a0 + re-publish OTA; point the Profile row back at SavedList. deleted_at is inert if unread."
     }
   }
 }

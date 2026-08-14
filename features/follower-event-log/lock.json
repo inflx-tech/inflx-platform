@@ -19,7 +19,12 @@
     "deploy": {
       "class": "production-impacting — migration 150 + Render backend + follower OTA",
       "go_required": true,
-      "go_received": false
+      "go_received": "founder — 'commit,deploy,migrate' (2026-08-14)",
+      "migration": "150 applied to prod 2026-08-14 — events_table 1 · event_rows 0 · via_post_col 1 · linked_txns 0 · post_idx 1 · ft_idx 1 (all as predicted)",
+      "commit": "1dd84a0",
+      "backend": "pushed to main → Render auto-deploy CONFIRMED LIVE: POST /v1/follower/events returns the new service's own error (VALIDATION_ERROR / device_id is required), which only the new code can produce",
+      "ota": "publish-ota:follower → version 224, native_runtime 3. First attempt failed ('fetch failed') because Render was mid-redeploy from the same push; retried after two green /health probes. Manifest re-read afterwards and confirms version 224 — not trusting the publisher's own success line.",
+      "rollback": "revert 1dd84a0 + re-publish OTA; migration 150 is additive and inert if unread"
     }
   }
 }
