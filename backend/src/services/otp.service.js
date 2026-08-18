@@ -6,7 +6,7 @@ const db = require('../config/db');
 const AppError = require('../utils/AppError');
 
 const OTP_TTL_MINUTES = 10;
-const MSG91_OTP_URL = 'https://control.msg91.com/api/v5/otp';
+const MSG91_FLOW_URL = 'https://control.msg91.com/api/v5/flow/';
 const MSG91_TIMEOUT_MS = 10000;
 
 /**
@@ -76,12 +76,18 @@ function _maskPhone(phone) {
 }
 
 /**
- * Send the OTP through MSG91's v5 OTP endpoint.
+ * Send the OTP through MSG91's v5 `flow` endpoint.
  *
- * We pass our own `otp` rather than letting MSG91 generate one, so otp_codes
+ * NOT `/api/v5/otp`. That endpoint answers 200 {"type":"success"} with a
+ * request_id and then fails asynchronously with error 400 — nothing is
+ * submitted, nothing is billed, and no row appears in Logs, Advanced Logs or
+ * API Failed Logs. The only visible symptom is a "SMS API has Failed" email.
+ * Verified against this account on 2026-08-18: /otp dropped every send while
+ * /flow delivered and billed correctly using the same template.
+ *
+ * We pass our own code rather than letting MSG91 generate one, so otp_codes
  * stays the single source of truth and verifyOtp() needs no network call.
- * The DLT-approved template (Inflx_OTP_Login) carries the ##OTP## variable
- * that this value fills.
+ * `OTP` is the ##OTP## variable in the DLT-approved Inflx_OTP_Login template.
  *
  * Throws on any failure — the caller must not report "OTP sent" for an SMS
  * that never left.
@@ -98,18 +104,22 @@ async function _sendViaMSG91(phone, code) {
 
   let response;
   try {
-    response = await axios.post(MSG91_OTP_URL, null, {
-      params: {
+    response = await axios.post(
+      MSG91_FLOW_URL,
+      {
         template_id: env.OTP_TEMPLATE_ID,
-        mobile,
-        otp: code,
+        short_url: '0',
+        recipients: [{ mobiles: mobile, OTP: code }],
       },
-      headers: {
-        authkey: env.MSG91_AUTH_KEY,
-        accept: 'application/json',
-      },
-      timeout: MSG91_TIMEOUT_MS,
-    });
+      {
+        headers: {
+          authkey: env.MSG91_AUTH_KEY,
+          'Content-Type': 'application/json',
+          accept: 'application/json',
+        },
+        timeout: MSG91_TIMEOUT_MS,
+      }
+    );
   } catch (err) {
     const detail = err.response ? JSON.stringify(err.response.data) : err.message;
     console.error(`[MSG91] OTP send failed for ${_maskPhone(phone)}: ${detail}`);
@@ -117,7 +127,7 @@ async function _sendViaMSG91(phone, code) {
   }
 
   // MSG91 answers HTTP 200 with {"type":"error"} for template, DLT and
-  // insufficient-balance problems, so a 2xx alone does not mean it was sent.
+  // balance problems, so a 2xx alone does not mean it was accepted.
   if (!response.data || response.data.type !== 'success') {
     console.error(`[MSG91] OTP rejected for ${_maskPhone(phone)}: ${JSON.stringify(response.data)}`);
     throw new AppError('INTERNAL_ERROR', 'Could not send OTP. Please try again.', 502);

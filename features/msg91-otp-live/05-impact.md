@@ -45,3 +45,31 @@
 - Deferred, tracked separately: `notification.service.js::_sendSms` remains a
   stub; ~60 `sendSms: true` call sites stay push + in-app only pending
   per-message DLT templates. Founder decision, 2026-08-18.
+
+---
+
+## Amendment — 2026-08-18, post-deploy: /otp → /flow
+
+First deploy (720f38d) used `POST /api/v5/otp`. Production behaviour showed it
+is silently non-functional on this MSG91 account:
+
+- returns HTTP 200 `{"request_id":"…","type":"success"}`
+- then fails ASYNCHRONOUSLY with error 400 — nothing submitted, nothing billed
+- writes NO row to Logs, Advanced Logs, or API Failed Logs
+- only visible signal is an emailed "SMS API has Failed due to error code:400"
+
+`POST /api/v5/flow/` with the same authkey and the same `template_id` delivers,
+logs and bills correctly — confirmed by handset receipt (135790 at 17:06 IST,
+778899 on payload re-verification) and by MSG91 Logs showing Delivered /
+0.25 credits for both.
+
+Change: `MSG91_OTP_URL` → `MSG91_FLOW_URL`; query params → JSON body
+`{template_id, short_url:"0", recipients:[{mobiles, OTP}]}`. Error handling,
+phone normalisation, masking and the `type !== 'success'` guard are unchanged.
+
+A wrong intermediate diagnosis is recorded here deliberately: `balance.php`
+reported `0` on every route while the account was demonstrably funded and
+billing. That endpoint is not trustworthy and must not be used to conclude
+anything about credits.
+
+No migration. No OTA. Backend only. Still PRODUCTION-IMPACTING via Render.

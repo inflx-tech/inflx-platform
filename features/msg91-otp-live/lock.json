@@ -9,7 +9,7 @@
   "preview_reviewed": true,
   "impact_reviewed": true,
   "deploy_posture": "PRODUCTION-IMPACTING via Render (backend redeploy). Fixes a live sign-in outage: prod ran OTP_MOCK=false against the stub, so no OTP SMS reached any role. No migration. No OTA. No mobile or web source change.",
-  "fix": "Implement _sendViaMSG91() against MSG91 v5 OTP API: authkey header, template_id 6a840c9f172fc38ddf0d67c2, E.164 normalised to bare digits, our own otp passed so otp_codes stays source of truth. Throw on transport failure and on 200 + {type:'error'}. Mask phone and stop logging the plaintext code.",
+  "fix": "Send OTP via MSG91 v5 /api/v5/flow/ (NOT /api/v5/otp, which returns success then fails async with error 400, unlogged and unbilled). JSON body {template_id 6a840c9f172fc38ddf0d67c2, short_url:\"0\", recipients:[{mobiles, OTP}]}, authkey header, E.164 normalised to bare digits, our own code passed so otp_codes stays source of truth. Throw on transport failure and on type!==success. Mask phone, never log the code.",
   "scope_deferred": "notification.service.js::_sendSms remains a stub by founder decision (2026-08-18); ~60 sendSms:true call sites stay push + in-app only until per-message DLT templates exist.",
   "ui_governed": false,
   "mobile_governed": false,
@@ -21,6 +21,7 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "deploy": "Pushed to origin/main 2026-08-18 → Render backend redeploy. release.released stays FALSE until (a) live OTP delivery is verified end-to-end on prod and (b) the W5a/W5b follow-up is resolved or explicitly overridden. gov-check forbids released=true while qa_all_green=false (GOVERNANCE.md §5) — correctly, and qa_all_green was NOT flipped to buy the gate. Vercel rebuild is a no-op (source untouched). No OTA."
-  }
+    "deploy": "Second push 2026-08-18 (/otp -> /flow) → Render backend redeploy. released stays FALSE until handset receipt via the deployed backend is confirmed. Vercel rebuild is a no-op. No OTA."
+  },
+  "amended": "2026-08-18 — first deploy 720f38d used /api/v5/otp and delivered nothing; switched to /flow after handset + MSG91 Logs confirmed /flow delivers and bills while /otp is silently dropped. See 05-impact.md amendment."
 }
