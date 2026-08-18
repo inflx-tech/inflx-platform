@@ -55,7 +55,7 @@
     "existing_history_precedents": "production_event_log (the shoot — the model being generalised) and negotiation_turns (the older campaign flow). The pattern exists twice; this makes it one."
   },
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "released": false,
     "maestro_green": false,
     "maestro_note": "Not applicable — nothing on a phone changed. The first phase needing a device pass is Phase 4, which adds routes to native stacks.",
@@ -69,7 +69,20 @@
       "OTA — no app change"
     ],
     "qa_baseline": 386,
-    "safe_for_stale_clients": "YES, and asserted as check T22. Nothing reads the diary or the new columns until Phase 2; the two calculations are endpoints nobody calls yet; the corrections fire only in states no shipped app can produce."
+    "safe_for_stale_clients": "YES, and asserted as check T22. Nothing reads the diary or the new columns until Phase 2; the two calculations are endpoints nobody calls yet; the corrections fire only in states no shipped app can produce.",
+    "deploy": {
+      "commit": "a8cf50f",
+      "deployed_at": "2026-08-15",
+      "authorised_by": "founder chat: \"pls go\" — given before the push, per feedback-push-is-the-deploy",
+      "migration": "152 applied to production BEFORE the push. Post-migration: diary table present and EMPTY by design (0 rows, 17 columns), 3 new columns on creator pitches, backfill complete (0 rows left unmarked). FIRST EXECUTION OF THIS MIGRATION ANYWHERE — staging Supabase host no longer resolves and no local database was available; surfaced to the founder before the go.",
+      "verified": {
+        "render_backend": "CONFIRMED. The new creator-counter route returns 401 where the old build returned 404 — a response only the new code can produce, since Express 404s unknown paths and auth is per-route. Control probe on an existing route of the same prefix returned 401 throughout, so the technique is sound. Roughly two minutes.",
+        "live_database_probe": "CONFIRMED after the migration. Brand and creator needs-you counts run against production and reconcile at every level. The diary accepted a write, recorded the change as 15 -> 22, read back, and the probe row was removed (0 rows remain). Sagar Joshi — the creator whose invisible request started this programme — now returns 1 invitation waiting.",
+        "vercel": "N/A — no web change in this phase.",
+        "ota": "N/A — no app change. Nothing on any phone was touched."
+      },
+      "held": "released stays false. Maestro not applicable (no mobile change). This phase is proven by reading data back, not by looking at a screen — the live-database probe is the evidence, not a screenshot."
+    }
   },
   "verification": {
     "checks": 25,
@@ -93,7 +106,7 @@
   },
   "progress": {
     "as_of": "2026-08-15",
-    "status": "IMPLEMENTATION COMPLETE — not committed, not pushed, migration not yet run anywhere.",
+    "status": "SHIPPED 2026-08-15. Migration applied to production, backend deployed and confirmed live.",
     "done": [
       "Migration 152 — collab_events (5 anchors incl. post_id) + 3 columns on influencer_proposals + factual backfill. Runner scripts/run-152.js takes staging|prod.",
       "collabEvents.service — record() never throws; list() reads a thread across anchors; diffTerms() builds the what-changed shape.",
@@ -119,7 +132,7 @@
       "spec_correction": "acceptProposal REFUSES a countered pitch rather than silently settling the original terms. Spec corrected visibly."
     },
     "remaining": [
-      "Founder go, then: run migration 152 against production, verify, commit, push. Full pnpm qa (API lane needs a live backend) after deploy."
+      "Nothing for Phase 0. Next: Phase 1 — per-collaboration earnings, product categories, brand pitch settings."
     ]
   }
 }
