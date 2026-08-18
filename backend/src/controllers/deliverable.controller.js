@@ -20,6 +20,8 @@ const asyncHandler        = require('../utils/asyncHandler');
 const notificationService = require('../services/notification.service');
 const escrowService       = require('../services/escrow.service');
 const storageService      = require('../services/storage.service');
+// collab-phase0 — step 5 history. Only the LATEST change request used to survive.
+const events              = require('../services/collabEvents.service');
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
@@ -102,6 +104,18 @@ const getById = asyncHandler(async (req, res) => {
 // Block C — POST /v1/deliverables/:id/submit  (influencer)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** collab-phase0 — one helper so every step-5 entry is shaped the same way. */
+async function recordGoLive(d, actorRole, actorUserId, action, note) {
+  await events.record({
+    campaignInfluencerId: d.campaign_influencer_id || null,
+    step: events.STEP.GO_LIVE,
+    actorRole,
+    actorUserId,
+    action,
+    note: note || null,
+  });
+}
+
 const submit = asyncHandler(async (req, res) => {
   if (req.user.role !== 'influencer') {
     throw new AppError('FORBIDDEN', 'Only influencers can submit deliverables', 403);
@@ -157,6 +171,8 @@ const submit = asyncHandler(async (req, res) => {
     fcmToken: d.brand_fcm_token,
     sendSms:  false,
   });
+
+  await recordGoLive(d, 'creator', req.user.sub, 'submitted', notes_to_brand || null);
 
   return success(res, { deliverable: rows[0] });
 });
@@ -256,6 +272,11 @@ const review = asyncHandler(async (req, res) => {
     });
   }
 
+  await recordGoLive(
+    d, 'brand', req.user.sub,
+    updated && updated.status === 'revision_requested' ? 'changes_asked' : 'approved',
+    (feedback || '').trim() || null);
+
   return success(res, { deliverable: updated });
 });
 
@@ -305,6 +326,8 @@ const submitLive = asyncHandler(async (req, res) => {
     fcmToken: d.brand_fcm_token,
     sendSms:  false,
   });
+
+  await recordGoLive(d, 'creator', req.user.sub, 'posted', live_url);
 
   return success(res, { deliverable: rows[0] });
 });
@@ -441,6 +464,8 @@ const confirmLive = asyncHandler(async (req, res) => {
       console.error('[DELIVERABLE] Notification failed (non-fatal):', notifErr.message);
     }
   }
+
+  await recordGoLive(d, 'brand', req.user.sub, 'confirmed_live', null);
 
   return success(res, {
     deliverable:     updatedDeliverable,

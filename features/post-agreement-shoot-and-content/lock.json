@@ -1,0 +1,66 @@
+{
+  "feature": "post-agreement-shoot-and-content",
+  "spec_version": "1.0.0",
+  "status": "awaiting_founder_lock",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "notes": "AWAITING FOUNDER LOCK — audit + spec + mockup authored 2026-08-15, no implementation started. Source: the founder's end-to-end walkthrough and 62-item finalised list, handed over from a prior conversation. Covers Part A (the shoot), Part B (content, in order), Part C (completion), Part D (travelling kit, later). Begins at contract signature; the sale itself is the follower app and is explicitly next, not here. 02-workflow / 03-expected-outputs / 05-impact deliberately NOT authored yet — the founder asked for analysis and mockups first, and sizing before the shape is agreed would be guessing.",
+  "audit_2026_08_15": {
+    "verdict": "The founder's read — 'almost everything before the shoot exists but is hidden inside the campaign, and almost everything after the shoot exists but nothing connects' — is accurate. 30 of 62 items already work in code. Three claims needed correcting.",
+    "confirmed_as_claimed": "Shoot plan auto-created on signature (contract.controller.js:478 -> autoCreateForContract). Three modes (VALID_MODES). Propose/counter/accept/flip-to-remote/complete — six live routes. Two reschedules per side (RESCHEDULE_LIMIT_PER_SIDE, enforced both sides). Visit finishes 2 days before posting, worked backwards (getVisitDateRange: posting_date-2d, falling back to content_end_date-3d, campaign.end_date-3d, then a deliberate 1-year ceiling for the open-ended sales campaigns Part 5 introduced). Admin production queue (GET /admin/production/queue). Social chain submit->review->post->confirm-live->auto-scrape complete incl. refresh-stats. No wallet/escrow/payment stage anywhere in the sales track.",
+    "correction_1_media_library": "ITEM 42 IS LISTED 'TO BUILD'. IT IS CLOSER TO 'CHANGES'. Migration 136 already created creator_assets — r2_key, media_type, aspect, an approval state, and foreign keys to BOTH campaign_influencer_id AND deliverable_id. Its own COMMENT reads 'approved creator photos, reusable across experiences'. 0 rows in prod, flag-gated behind CREATOR_IMAGERY (default off), one consumer (creatorImagery.service.js) built for per-context product imagery rather than shoot footage. So the media library is an EXTENSION of something already designed for reuse. Extending vs building beside it is a real call: creator_assets carries an approval workflow shoot footage does not need, and extending couples this work to the parked Creator Imagery program.",
+    "correction_2_where_it_is_buried": "Buried in the CONTRACT screen, not the campaign. Production renders inside ContractScreen.js (creator) and BrandContractScreen.js (brand), and there are ZERO production routes in either navigator. Item 7 is therefore slightly larger than 'move a screen' — there is no screen to move, and no destination a notification can deep-link to.",
+    "correction_3_never_exercised": "THE WHOLE SURFACE HAS RUN EXACTLY ONCE. Prod: production_events = 1 row (mode visit, status 'proposed' — never confirmed, never completed); contracts.production_mode = 1 (visit); creator_posts = 1 (approved); deliverables = 1 (live); creator_assets = 0. 'Works today' means the code paths exist and are wired, NOT that they have been exercised. Every works-today item should be read as code-verified and field-unproven.",
+    "new_work_confirmed_by_absence": "Parcel contents + item receipt: no item/parcel/contents column in migration 024 or 039. Shop-live-before-social ordering: ZERO references to creator posts in deliverable.controller.js — the two tracks do not know each other exists. Brand notified on exclusive posts: creatorPosts.service.js notifies the CREATOR ONLY on approval. Fixed rejection reasons: reject takes free-text req.body.reason -> reject_reason. Completion: nothing computes it across the two tracks."
+  },
+  "tally": "30 work · 7 change · 18 to build · 4 deliberately not built · 3 later. The build concentrates in five places — the parcel, the ordering rule, the notification, the reasons list, and the completion picture — plus the screens to put them on.",
+  "judgement_calls_flagged": {
+    "ordering_threshold": "The shop-before-social gate fires on ONE live shop post, not all of them. Requiring every post to clear review would let a single slow review hold her Instagram hostage, and the rule exists only so traffic lands somewhere. Founder may want all — flagged, not assumed silently.",
+    "engagement_exemption": "Engagement collaborations have no shop posts, so the gate must not accidentally block a paid reel. Needs an explicit test, not an intention.",
+    "media_library_extend_vs_new": "Recommended: extend creator_assets with the approval state made optional — shoot footage enters pending and is usable in a draft immediately, approval stays meaningful only where CREATOR_IMAGERY is on. Couples this work to a parked program, so it is the founder's call.",
+    "delivered_at_approval": "Completion is computed from the approval event, never from current visibility — so a post going dark (stock-out, price rise, offer expiry) never makes the creator non-compliant. Items 46/47."
+  },
+  "open_questions": {
+    "A": { "q": "Cold invites have no handshake — where does the shoot mode get settled?", "status": "ASSUMED, not blocking. Designed to the answer already proposed: the shoot screen's first step, negotiable, asked once. Only question that touches Parts A-C." },
+    "B": { "q": "Who pays the courier creator-to-creator?", "status": "open — blocks Part D only" },
+    "C": { "q": "Who is liable if the kit is lost between two creators?", "status": "open — condition photos at each handover would give a record" },
+    "D": { "q": "Ship-onward deadline so creator B is not blocked?", "status": "open — blocks Part D only" },
+    "E": { "q": "A creator drops out mid-chain holding the goods — recovery?", "status": "open — blocks Part D only" }
+  },
+  "slices": [
+    { "n": "A1", "slice": "Shoot mode moves to the handshake; expected-time relabel", "targets": ["backend", "Packages/brand-web", "Packages/Mobile"] },
+    { "n": "A2", "slice": "The shoot screen + route, both apps", "targets": ["Packages/Mobile (creator + brand)"] },
+    { "n": "A3", "slice": "Parcel contents + item-by-item receipt + shortfall notice", "targets": ["migration", "backend", "Packages/Mobile"] },
+    { "n": "B1", "slice": "Fixed rejection reasons + 'with our review team' timestamp", "targets": ["backend", "admin (brand-web)", "Packages/Mobile"] },
+    { "n": "B2", "slice": "Exclusive-post notification to the brand", "targets": ["backend"] },
+    { "n": "B3", "slice": "The ordering rule, server-side, with the engagement exemption", "targets": ["backend", "Packages/Mobile"] },
+    { "n": "B4", "slice": "Media library — extend creator_assets", "targets": ["backend", "Packages/Mobile"] },
+    { "n": "C1", "slice": "Completion computation + one screen per track", "targets": ["backend", "Packages/Mobile"] },
+    { "n": "D", "slice": "The travelling kit", "targets": ["backend", "Packages/Mobile"], "blocked_on": "open questions B, C, D, E" }
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src + at least one migration + Mobile runtime + admin surface) — explicit founder go required BEFORE the push, per feedback-push-is-the-deploy",
+    "qa_baseline": 386,
+    "released_note": "Stays false. Per feedback_e2e_verification_at_end the founder verifies with the rest of the redesign in one end-to-end pass. Note this contract adds NEW ROUTES to native stacks on both apps — a duplicate Stack.Screen name is a hard crash on tab mount (reference_rn_native_crash_debugging), so a device pass is worth it here regardless."
+  },
+  "progress": {
+    "as_of": "2026-08-15",
+    "done": [
+      "Full code + production audit of all 62 finalised items",
+      "01-spec authored with the three corrections",
+      "Mockup authored — 10 panels, rendered and checked at 375px (no sideways body scroll)"
+    ],
+    "remaining": [
+      "FOUNDER LOCK on spec + mockup. Nothing implemented.",
+      "02-workflow, 03-expected-outputs, 05-impact — authored at lock",
+      "Open questions B-E before Part D"
+    ]
+  }
+}

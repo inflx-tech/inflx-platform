@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Post-agreement — the shoot, the content, the finish</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;
+  --ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;
+  --y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;
+  --red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;
+  --purple:#6D3FC4;--purpleBg:#F2ECFB;
+  --border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1180px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:800px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:920px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800;flex:1}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:680px;overflow-y:auto}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.tag{font-size:8.5px;font-weight:800;letter-spacing:.35px;text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-left:6px}
+.tag.neg{background:var(--yBg);color:var(--yInk)}
+.tag.new{background:var(--purpleBg);color:var(--purple)}
+.tag.req{background:var(--redBg);color:var(--red)}
+
+/* status strip */
+.strip{display:flex;gap:0;padding:0 14px 12px}
+.stp{flex:1;text-align:center;position:relative}
+.stp .c{width:20px;height:20px;border-radius:50%;margin:0 auto 5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:var(--lineSoft);color:var(--mut2)}
+.stp.done .c{background:var(--green);color:#fff}
+.stp.now .c{background:var(--ink);color:var(--y)}
+.stp .l{font-size:8.5px;font-weight:800;color:var(--mut);letter-spacing:.2px;line-height:1.3}
+.stp.done .l,.stp.now .l{color:var(--ink)}
+.stp::after{content:'';position:absolute;top:10px;left:60%;right:-40%;height:1.5px;background:var(--lineSoft)}
+.stp:last-child::after{display:none}
+.stp.done::after{background:var(--green)}
+
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+
+.btn{border:none;border-radius:10px;padding:11px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+.rl{font-size:10.5px;color:var(--mut);font-weight:700;margin-top:8px;line-height:1.5}
+
+/* parcel items */
+.item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--lineSoft)}
+.item:last-child{border-bottom:none}
+.thumb{width:38px;height:44px;border-radius:7px;background:#F0EDE7;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.item .n{flex:1;min-width:0}
+.item .nm{font-size:12px;font-weight:800}
+.item .mt{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.cbx{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:transparent;flex-shrink:0}
+.cbx.on{background:var(--green);border-color:var(--green);color:#fff}
+.cbx.miss{background:var(--redBg);border-color:#F0C4BA;color:var(--red)}
+
+/* reason list */
+.rsn{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:11.5px;font-weight:700}
+.rsn.on{border-color:var(--red);border-width:1.5px;background:var(--redBg);color:var(--red)}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0}
+.rsn.on .rdo{border-color:var(--red);border-width:4.5px}
+
+/* two-track */
+.trk{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.trk .th{padding:9px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.trk .tb{padding:11px 12px}
+.pill{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+.p-ok{background:var(--greenBg);color:var(--green)}
+.p-wait{background:var(--blueBg);color:var(--blue)}
+.p-you{background:var(--yBg);color:var(--yInk)}
+.p-no{background:var(--redBg);color:var(--red)}
+.p-none{background:var(--lineSoft);color:var(--mut)}
+.p-new{background:var(--purpleBg);color:var(--purple)}
+
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+/* media grid */
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mg div{aspect-ratio:3/4;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:17px;position:relative}
+.mg div .u{position:absolute;bottom:3px;right:4px;font-size:7.5px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1060px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:580px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10.5px}
+tr:last-child td{border-bottom:none}
+td.n{font-family:'JetBrains Mono';font-size:10px;color:var(--mut2);width:26px}
+.st{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ok{background:var(--greenBg);color:var(--green)}
+.s-ch{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-no{background:var(--lineSoft);color:var(--mut)}
+.s-q{background:var(--blueBg);color:var(--blue)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Post-agreement — the shoot, the content, the finish</h1>
+  <p>features/post-agreement-shoot-and-content · mockup for lock · 2026-08-15 · Parts A · B · C · D</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① Audit</button>
+  <button class="tab" data-v="v1">② A · Shoot screen</button>
+  <button class="tab" data-v="v2">③ A · Store visit</button>
+  <button class="tab" data-v="v3">④ A · Parcel</button>
+  <button class="tab" data-v="v4">⑤ B · Posts + review</button>
+  <button class="tab" data-v="v5">⑥ B · The ordering rule</button>
+  <button class="tab" data-v="v6">⑦ B · Media library</button>
+  <button class="tab" data-v="v7">⑧ C · Completion</button>
+  <button class="tab" data-v="v8">⑨ D · Travelling kit</button>
+  <button class="tab" data-v="v9">⑩ The 62 items</button>
+</div>
+
+<!-- ① AUDIT -->
+<div class="view on" id="v0">
+  <div class="vh">Your read was right — and three items need correcting</div>
+  <div class="vs">Every "works today" claim checked against the code and against production. Most hold. Three do not, and one of them makes a 🆕 item smaller than you think.</div>
+
+  <div class="note good"><b>Confirmed as claimed.</b> The shoot plan really is auto-created on signature (<code>contract.controller.js:478</code> → <code>autoCreateForContract</code>). Reschedules really are capped per side (<code>RESCHEDULE_LIMIT_PER_SIDE</code>). The 2-day backwards rule really is calculated (<code>getVisitDateRange</code> — posting_date − 2d, falling back to window − 3d, then a 1-year ceiling for open-ended sales campaigns). The admin queue really exists (<code>GET /admin/production/queue</code>). Social submit → approve → post → confirm-live → auto-scrape really is complete.</div>
+
+  <div class="card">
+    <h3>Correction 1 — the media library is not greenfield</h3>
+    <div class="note info" style="max-width:none;margin:0 0 10px"><b>Item 42 is listed 🆕. It is closer to 🔄.</b> Migration 136 already created <code>creator_assets</code> — an approved-creator-photo bank with <code>r2_key</code>, <code>media_type</code>, <code>aspect</code>, an approval state, and foreign keys to <b>both</b> <code>campaign_influencer_id</code> and <code>deliverable_id</code>. Its own comment reads: "approved creator photos, <b>reusable across experiences</b>."</div>
+    <div class="tscroll"><table>
+      <tr><th>Fact</th><th>Consequence</th></tr>
+      <tr><td>Table exists, shape fits</td><td>The media library is an <b>extension</b>, not a new build</td></tr>
+      <tr><td><b>0 rows in prod</b></td><td>No migration risk, no backfill</td></tr>
+      <tr><td>Flag-gated behind <code>CREATOR_IMAGERY</code>, default off</td><td>Inert today — turning it on is a decision, not a side effect</td></tr>
+      <tr><td>Used by exactly one consumer, <code>creatorImagery.service.js</code></td><td>Built for per-context product imagery, not shoot footage. <b>Extending vs building beside it is a real design call</b>, not a formality.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Correction 2 — it is buried in the <i>contract</i>, not the campaign</h3>
+    <div class="tscroll"><table>
+      <tr><th>Claim</th><th>Actual</th></tr>
+      <tr><td>"buried inside a campaign"</td><td>Buried inside <b><code>ContractScreen.js</code></b> (creator) and <b><code>BrandContractScreen.js</code></b> (brand)</td></tr>
+      <tr><td>—</td><td><b>Zero</b> production routes in either navigator. There is no shoot screen to deep-link to, so a notification cannot point at one.</td></tr>
+    </table></div>
+    <div class="note key" style="max-width:none;margin:10px 0 0">This makes item 7 slightly bigger than "move a screen": there is no screen. The backend is rich and the surface is a section inside a contract page.</div>
+  </div>
+
+  <div class="card">
+    <h3>Correction 3 — the whole surface has run exactly once</h3>
+    <div class="tscroll"><table>
+      <tr><th>Table</th><th>Production rows</th></tr>
+      <tr><td><code>production_events</code></td><td class="mono">1 — mode visit, status <b>proposed</b> (never confirmed, never completed)</td></tr>
+      <tr><td><code>contracts.production_mode</code></td><td class="mono">1 — visit</td></tr>
+      <tr><td><code>creator_posts</code></td><td class="mono">1 — approved</td></tr>
+      <tr><td><code>deliverables</code></td><td class="mono">1 — live</td></tr>
+      <tr><td><code>creator_assets</code></td><td class="mono">0</td></tr>
+    </table></div>
+    <div class="note bad" style="max-width:none;margin:10px 0 0">"Works today" here means <b>the code paths exist and are wired</b> — not that they have been exercised. One visit sits at <code>proposed</code> and was never confirmed. Treat every ✅ below as code-verified and field-unproven, and expect the first real run to find things.</div>
+  </div>
+
+  <div class="card">
+    <h3>The genuinely new work, confirmed by absence</h3>
+    <div class="tscroll"><table>
+      <tr><th>Item</th><th>Verified absent</th></tr>
+      <tr><td>Parcel contents + item-by-item receipt</td><td>No item/parcel/contents column anywhere in migrations 024 or 039</td></tr>
+      <tr><td>Shop-live-before-social ordering</td><td><b>Zero references</b> to creator posts in <code>deliverable.controller.js</code> — the two tracks do not know each other exists</td></tr>
+      <tr><td>Brand notified on an exclusive post</td><td><code>creatorPosts.service.js</code> notifies <b>the creator only</b> on approval</td></tr>
+      <tr><td>Fixed rejection reasons</td><td><code>reject</code> takes free-text <code>req.body.reason</code> → <code>reject_reason</code></td></tr>
+      <tr><td>Completion picture</td><td>Nothing computes "is this collaboration done" across the two tracks</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>Net:</b> your instinct — "almost everything exists but nothing connects" — is accurate. The new work is the <b>parcel</b>, the <b>ordering rule</b>, the <b>notification</b>, the <b>completion picture</b>, and <b>one screen to put it all on</b>. The media library is an extension of something already built.</div>
+</div>
+
+<!-- ② SHOOT SCREEN -->
+<div class="view" id="v1">
+  <div class="vh">Part A — the shoot gets its own screen</div>
+  <div class="vs">Today this is a section inside the contract page, on both apps, with no route of its own. It becomes a destination that a notification can point at.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">The shoot</div><div class="sub">KANCHI SILKS · STORE VISIT</div></div></div>
+        <div class="strip" style="padding-top:12px">
+          <div class="stp done"><div class="c">✓</div><div class="l">AGREED</div></div>
+          <div class="stp done"><div class="c">✓</div><div class="l">SLOT SET</div></div>
+          <div class="stp now"><div class="c">3</div><div class="l">SHOOT</div></div>
+          <div class="stp"><div class="c">4</div><div class="l">POSTS</div></div>
+        </div>
+        <div class="body">
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="wait g">✓ Confirmed for <b>Tue 2 Sep, 11:00 AM</b>. Expect around 3 hours.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Where</div>
+            <div style="font-size:12px;font-weight:700;line-height:1.6">Kanchi Silks<br>Benz Circle, Vijayawada 520010<br>Andhra Pradesh</div>
+            <button class="btn sec" style="margin-top:10px">Open in Maps</button>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Who to ask for</div>
+            <div class="trm"><div class="k">Contact</div><div class="v">Lakshmi R.</div></div>
+            <div class="trm"><div class="k">Phone</div><div class="v">+91 98490 12345</div></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Working style <span class="tag new">from the handshake</span></div>
+            <div class="trm"><div class="k">Mode</div><div class="v">Store visit</div></div>
+            <div class="trm"><div class="k">Expected time</div><div class="v">~3 hours<span class="tag neg">not a fixed slot</span></div></div>
+            <div class="rl">Agreed with Kanchi Silks on 12 Aug, before the campaign was built.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Mark shoot done</button>
+              <button class="btn sec">Reschedule <span style="font-weight:700;opacity:.6">· 1 left</span></button>
+              <button class="btn sec">Switch to remote instead</button>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="lock">🔒 <span>No shoot brief. Kanchi Silks does not tell you what to shoot — that is your craft. They chose you for it.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Creator. <b>Expected time, not a fixed slot</b> — the copy carries the change, not just the field.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Shoots</div><div class="sub">4 UPCOMING</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Needs you</div>
+            <div class="wait y" style="margin-bottom:9px"><b>Asha M.</b> proposed Tue 2 Sep, 11:00 AM — accept or counter</div>
+            <div class="wait r"><b>Ravi K.</b> — parcel delivered 4 days ago, receipt not confirmed</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Confirmed</div>
+            <div class="trm"><div class="k">Nisha P. · visit</div><div class="v" style="font-size:11px">4 Sep</div></div>
+            <div class="trm"><div class="k">Meera S. · shipment</div><div class="v" style="font-size:11px">IN TRANSIT</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Done</div>
+            <div class="trm"><div class="k">Divya T. · visit</div><div class="v" style="font-size:11px;color:var(--green)">28 AUG</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Brand. One list across every creator — the campaign roster endpoint <code>GET /campaigns/:id/production</code> <b>already returns this</b> and nothing renders it.</div>
+    </div>
+
+    <div style="flex:1;min-width:330px">
+      <div class="note good"><b>Almost all of this is a rendering job.</b> Address, maps URL, contact, slot, counters, remote flip, completion timestamp and the reschedule caps are all live endpoints today. What is missing is a screen, a route, and a place for a notification to land.</div>
+
+      <div class="card">
+        <h3>What changes, precisely</h3>
+        <div class="tscroll"><table>
+          <tr><th>#</th><th>Change</th><th>Where</th></tr>
+          <tr><td class="n">3</td><td>Mode comes from the handshake, removed from contract signing</td><td><code>contracts.production_mode</code> stops being set at brand-approve; read from the agreement's terms</td></tr>
+          <tr><td class="n">4,5</td><td>Mode is negotiable, never dictated, not mandatory</td><td>Falls out of #3 — the handshake already negotiates every term it carries</td></tr>
+          <tr><td class="n">6</td><td><code>visit_window_minutes</code> → <b>expected time</b></td><td>Same column, honest label + copy. Not a slot the creator can miss.</td></tr>
+          <tr><td class="n">7</td><td>Its own screen + route on both apps</td><td>New. There is no production route in either navigator today.</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note bad"><b>Open question A, and I have assumed an answer.</b> A cold invite has no handshake, so there is no agreement to read the mode from. I have designed to the suggestion already on the table: <b>the shoot screen's first step asks it</b>, negotiable, asked once. Flagged as an assumption — say the word if you want it elsewhere.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ STORE VISIT -->
+<div class="view" id="v2">
+  <div class="vh">Part A — settling the slot</div>
+  <div class="vs">Either side proposes, either counters, two reschedules each, and the visit must finish two days before the posting date. All of this is live backend today with no screen on it.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Propose a time</div><div class="sub">KANCHI SILKS · STORE VISIT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait b">Pick any day between <b>16 Aug</b> and <b>13 Sep</b>. Your posting date is 15 Sep — the shoot has to finish two days before, so you have time to shoot and edit.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Your suggestion</div>
+            <div class="trm"><div class="k">Date</div><div class="v">Tue 2 Sep</div></div>
+            <div class="trm"><div class="k">Arriving</div><div class="v">11:00 AM</div></div>
+            <div class="trm"><div class="k">Expected time</div><div class="v">~3 hours</div></div>
+          </div>
+          <div class="dsec">
+            <div class="rl" style="margin-top:0">Expected time is a guide for the store, not a deadline for you. Nothing counts as late.</div>
+          </div>
+          <div class="dsec"><button class="btn pri">Send to Kanchi Silks</button></div>
+
+          <div class="dsec">
+            <div class="dh">History</div>
+            <div class="trm"><div class="k">Contract signed</div><div class="v" style="font-size:11px">12 AUG</div></div>
+            <div class="trm"><div class="k">Kanchi Silks proposed 28 Aug</div><div class="v" style="font-size:11px">13 AUG</div></div>
+            <div class="trm"><div class="k">You countered</div><div class="v" style="font-size:11px;color:var(--yInk)">NOW</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">This is your <b>first counter</b>. You have 2 reschedules; they have 2.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">The date bounds are <b>computed by the server</b> — <code>getVisitDateRange</code> exists and returns exactly this window.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">PROPOSED A NEW TIME</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait y">Asha countered your 28 Aug slot.</div></div>
+          <div class="dsec">
+            <div class="dh">What changed</div>
+            <div class="trm"><div class="k">Was</div><div class="v" style="color:var(--mut2);text-decoration:line-through;font-size:11.5px">Thu 28 Aug, 2:00 PM</div></div>
+            <div class="trm"><div class="k">Now</div><div class="v">Tue 2 Sep, 11:00 AM</div></div>
+            <div class="trm"><div class="k">Expected</div><div class="v">~3 hours</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Accept 2 Sep</button>
+              <button class="btn sec">Counter <span style="font-weight:700;opacity:.6">· 2 left</span></button>
+              <button class="btn sec">Suggest remote instead</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="rl" style="margin-top:0">Still <b>13 days</b> clear of her 15 Sep posting date.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Brand side. Same diff grammar as the handshake counter — one language across the product.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="card">
+        <h3>Live today, unrendered</h3>
+        <div class="tscroll"><table>
+          <tr><th>Capability</th><th>Endpoint</th></tr>
+          <tr><td>Creator proposes a slot</td><td class="mono">POST /production-events/:id/propose-slot</td></tr>
+          <tr><td>Either side accepts</td><td class="mono">POST /production-events/:id/accept</td></tr>
+          <tr><td>Either side counters</td><td class="mono">POST /production-events/:id/counter-propose</td></tr>
+          <tr><td>Flip to remote, both confirm</td><td class="mono">POST /production-events/:id/flip-to-remote</td></tr>
+          <tr><td>Mark the visit done</td><td class="mono">POST /production-events/:id/complete</td></tr>
+          <tr><td>The legal date window</td><td class="mono">GET /contracts/:id/production/date-range</td></tr>
+        </table></div>
+      </div>
+      <div class="note good">Six endpoints, a full state machine, an audit log table — and one production row sitting at <code>proposed</code>, never confirmed. This part of Part A is <b>almost entirely a UI contract</b>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ PARCEL -->
+<div class="view" id="v3">
+  <div class="vh">Part A — what is actually in the box</div>
+  <div class="vs">The one genuinely new thing before the shoot. Today a shipment carries a courier, an AWB and four timestamps — and no idea what is inside it.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What you're sending</div><div class="sub">TO ASHA M. · MUMBAI</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">From your catalogue</div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Kanjivaram Silk — Maroon</div><div class="mt">SKU KS-114 · FREE SIZE · ₹18,500</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Banarasi Silk — Gold</div><div class="mt">SKU KS-207 · FREE SIZE · ₹24,000</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Cotton Handloom — Indigo</div><div class="mt">SKU KS-051 · FREE SIZE · ₹4,200</div></div><div class="cbx on">✓</div></div>
+          </div>
+          <div class="dsec">
+            <button class="btn sec">+ Add another item</button>
+            <div class="rl">Items come from your catalogue, so what she confirms matches what she can later tag in a post.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Courier</div>
+            <div class="trm"><div class="k">Carrier</div><div class="v">Delhivery</div></div>
+            <div class="trm"><div class="k">Tracking</div><div class="v" style="font-family:'JetBrains Mono';font-size:11px">DL8829174C</div></div>
+            <div class="trm"><div class="k">Expected</div><div class="v">21 Aug</div></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Mark dispatched · 3 items</button></div>
+        </div>
+      </div>
+      <div class="cap">Brand. Items are <b>picked from the catalogue</b>, not typed — so the parcel and the taggable products are the same objects.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your parcel arrived</div><div class="sub">KANCHI SILKS · 3 ITEMS</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait b">Delivered <b>21 Aug, 2:40 PM</b>. Check each item and confirm.</div></div>
+          <div class="dsec">
+            <div class="dh">Tick what you received</div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Kanjivaram Silk — Maroon</div><div class="mt">SKU KS-114</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Banarasi Silk — Gold</div><div class="mt">SKU KS-207</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb" style="opacity:.4">🥻</div><div class="n"><div class="nm" style="color:var(--red)">Cotton Handloom — Indigo</div><div class="mt" style="color:var(--red)">FLAGGED — NOT IN THE BOX</div></div><div class="cbx miss">!</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait r"><b>1 item missing.</b> Kanchi Silks is told immediately, with the item named. You do not have to chase this.</div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Confirm — 2 of 3 received</button>
+              <button class="btn sec">Everything arrived</button>
+            </div>
+            <div class="rl">You can still shoot with what arrived. A missing item never blocks your shoot or your posts.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Creator. <b>A flag, not a WhatsApp message</b> — and a shortfall that does not become her problem.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="note key"><b>Why items must come from the catalogue.</b> A free-text parcel list would drift from the products she can tag in a post. Binding to <code>brand_products</code> means "the three sarees she was sent" and "the three sarees she can tag" are the same rows — and a later question like "did the parcel ever get shot?" is answerable.</div>
+
+      <div class="card">
+        <h3>What this adds</h3>
+        <div class="tscroll"><table>
+          <tr><th>Item</th><th>Shape</th></tr>
+          <tr><td><b>20</b> · itemised parcel</td><td>New table <code>production_event_items</code> — event, product, variant, qty. Additive; the four existing timestamps are untouched.</td></tr>
+          <tr><td><b>21</b> · item-by-item receipt</td><td>Per-item <code>received</code> / <code>missing</code> / <code>damaged</code> + timestamp. The existing <code>shipment_received_confirmed_at</code> stays as the overall marker.</td></tr>
+          <tr><td>Shortfall notice</td><td>Brand notified with the item named, on confirm. Reuses the existing notify path.</td></tr>
+        </table></div>
+      </div>
+      <div class="note good"><b>Bounded risk:</b> one new table, no change to <code>production_events</code>, and prod holds zero shipments — so there is nothing to backfill and nothing to regress.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ POSTS + REVIEW -->
+<div class="view" id="v4">
+  <div class="vh">Part B — posts, and a review desk that cannot creep</div>
+  <div class="vs">Creating posts works today. The change is what a rejection is allowed to say, and telling her she is in a queue rather than a void.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your posts</div><div class="sub">FROM THE KANCHI SILKS SHOOT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Live in your shop</div>
+            <div class="item"><div class="thumb">🖼</div><div class="n"><div class="nm">Festive Sarees</div><div class="mt">3 PRODUCTS · KANCHI SILKS ONLY</div></div><span class="pill p-ok">live</span></div>
+            <div class="item"><div class="thumb">🖼</div><div class="n"><div class="nm">Wedding Edit</div><div class="mt">5 PRODUCTS · 2 BRANDS</div></div><span class="pill p-ok">live</span></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Being reviewed</div>
+            <div class="item"><div class="thumb">🎬</div><div class="n"><div class="nm">Party Sarees</div><div class="mt">4 PRODUCTS · KANCHI SILKS ONLY</div></div><span class="pill p-wait">in review</span></div>
+            <div class="wait b" style="margin-top:9px">With our review team since <b>29 Aug, 4:12 PM</b>. We check quality only — never your concept.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Needs a fix</div>
+            <div class="item"><div class="thumb">🎬</div><div class="n"><div class="nm">Draped Three Ways</div><div class="mt">2 PRODUCTS</div></div><span class="pill p-no">fix</span></div>
+            <div class="wait r" style="margin-top:9px"><b>Video is too shaky to use.</b> Re-upload the clip — everything else is fine, your concept and caption are kept.</div>
+          </div>
+          <div class="dsec"><button class="btn pri">+ New post from this shoot</button></div>
+        </div>
+      </div>
+      <div class="cap">Creator. <b>"With our review team since…"</b> — item 33. A timestamp turns a wait into a queue.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Reject this post</div><div class="sub">ADMIN · QUALITY REVIEW</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Pick the technical fault</div>
+            <div class="rsn"><span class="rdo"></span>Blurred or out of focus</div>
+            <div class="rsn on"><span class="rdo"></span>Video unusable — shake or motion</div>
+            <div class="rsn"><span class="rdo"></span>Too dark to see the product</div>
+            <div class="rsn"><span class="rdo"></span>Product cropped out of frame</div>
+            <div class="rsn"><span class="rdo"></span>Resolution below our minimum</div>
+            <div class="rsn"><span class="rdo"></span>Watermark or another brand visible</div>
+            <div class="rsn"><span class="rdo"></span>Tagged product is not the one shown</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Optional note to the creator</div>
+            <div class="wait n">Free text is allowed <b>only alongside a fault above</b>, and only to help her fix it. It cannot stand alone.</div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>There is <b>no reason here about concept, styling, product choice or how many posts</b>. That is deliberate. The desk checks whether the file is usable, nothing else.</span></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Send back for a fix</button></div>
+        </div>
+      </div>
+      <div class="cap">Admin. Today this is a <b>free-text box</b> — the single change that stops a quality desk becoming a creative one.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="note key"><b>Items 28 + 29 are one change.</b> "Reject on quality only" is a policy; a free-text box is how policies quietly stop being true. Replacing it with a closed list is what makes the rule real, and it makes rejections countable — you will be able to see which fault dominates.</div>
+
+      <div class="card">
+        <h3>The notification rule — items 30 and 31</h3>
+        <div class="tscroll"><table>
+          <tr><th>Post</th><th>Who is told</th></tr>
+          <tr><td>Every product is Kanchi Silks'</td><td><b>Kanchi Silks is notified</b> — "Asha published Festive Sarees using your products"</td></tr>
+          <tr><td>Kanchi Silks + one other brand</td><td><b>Nobody.</b> Neither brand is told.</td></tr>
+          <tr><td>Her whole shelf</td><td><b>Nobody.</b></td></tr>
+        </table></div>
+        <div class="note info" style="max-width:none;margin:10px 0 0">Exclusivity is computed from the tagged products at approval time: one distinct brand → notify it; more than one → notify no one. Today approval notifies <b>only the creator</b>, so this is one branch on an existing path.</div>
+      </div>
+      <div class="note good"><b>Unchanged and worth restating:</b> you approve, not the brand. The brand never sees a shop post before it is live, and never gets a veto over her concept.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ ORDERING RULE -->
+<div class="view" id="v5">
+  <div class="vh">Part B — shop first, then Instagram</div>
+  <div class="vs">Your rule. She cannot publish to Instagram until her shop posts are live, or the traffic arrives and lands on nothing. Both reviews still run at the same time — only publishing is ordered.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Going live</div><div class="sub">KANCHI SILKS · POST BY 15 SEP</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trk">
+              <div class="th"><span>① Your shop posts</span><span class="pill p-wait">in review</span></div>
+              <div class="tb">
+                <div class="trm"><div class="k">Festive Sarees</div><div class="v" style="font-size:11px;color:var(--green)">LIVE</div></div>
+                <div class="trm"><div class="k">Party Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">IN REVIEW</div></div>
+                <div class="trm"><div class="k">Wedding Edit</div><div class="v" style="font-size:11px;color:var(--green)">LIVE</div></div>
+              </div>
+            </div>
+            <div class="trk">
+              <div class="th"><span>② Your Instagram reel</span><span class="pill p-ok">brand approved</span></div>
+              <div class="tb">
+                <div class="trm"><div class="k">Submitted</div><div class="v" style="font-size:11px">28 AUG</div></div>
+                <div class="trm"><div class="k">Kanchi Silks approved</div><div class="v" style="font-size:11px;color:var(--green)">29 AUG</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="wait g">✓ <b>Your shop posts are live — you can post on Instagram now.</b></div>
+            <button class="btn pri" style="margin-top:10px">I've posted — add the link</button>
+            <div class="rl">2 of 3 shop posts are live. That is enough: one live post gives the traffic somewhere to land. Party Sarees can finish its review after.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Both clocks</div>
+            <div class="trm"><div class="k">Agreed deadline</div><div class="v">15 Sep</div></div>
+            <div class="trm"><div class="k">Covers</div><div class="v" style="font-size:11px">SHOP + SOCIAL, IN THAT ORDER</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Unlocked. The message is <b>exactly your words</b> — it says she may go, not that she was blocked.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Going live</div><div class="sub">KANCHI SILKS · POST BY 15 SEP</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trk">
+              <div class="th"><span>① Your shop posts</span><span class="pill p-wait">in review</span></div>
+              <div class="tb">
+                <div class="trm"><div class="k">Festive Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">IN REVIEW</div></div>
+                <div class="trm"><div class="k">Party Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">IN REVIEW</div></div>
+              </div>
+            </div>
+            <div class="trk">
+              <div class="th"><span>② Your Instagram reel</span><span class="pill p-ok">brand approved</span></div>
+              <div class="tb">
+                <div class="trm"><div class="k">Kanchi Silks approved</div><div class="v" style="font-size:11px;color:var(--green)">29 AUG</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <button class="btn off">I've posted — add the link</button>
+            <div class="wait n" style="margin-top:10px">Your reel is approved and ready. <b>Hold on until at least one shop post is live</b> — otherwise the people who tap through land on an empty shelf.<br><br>Both are being reviewed right now, side by side. Usually a few hours.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="lock">⏳ <span>You are <b>not</b> waiting in two queues. The brand already approved your reel while our team reviews your posts.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Locked. It explains <b>why</b>, and promises she is not queued twice — item 40.</div>
+    </div>
+
+    <div style="flex:1;min-width:330px">
+      <div class="note bad"><b>Nothing connects these two today.</b> Verified: zero references to creator posts anywhere in <code>deliverable.controller.js</code>. The shop track and the social track do not know the other exists. This is the single most substantial new mechanic in Part B.</div>
+
+      <div class="card">
+        <h3>The rule, stated exactly</h3>
+        <div class="tscroll"><table>
+          <tr><th>#</th><th>Rule</th><th>Note</th></tr>
+          <tr><td class="n">38</td><td><code>submit-live</code> refuses while the creator has <b>zero live shop posts</b> for this collaboration</td><td>Server-side. A UI-only gate is a suggestion.</td></tr>
+          <tr><td class="n">39</td><td>The unlock is announced, in her words</td><td>"Your shop posts are live — you can post on Instagram now"</td></tr>
+          <tr><td class="n">40</td><td>Brand review of the reel and admin review of the posts run <b>concurrently</b></td><td>Neither queue waits for the other. Only publishing is ordered.</td></tr>
+          <tr><td class="n">41</td><td>One deadline covers both, in that order</td><td>The agreed post-by date, from the handshake</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>Threshold: one live shop post, not all of them.</b> Requiring every post to clear review would let a single slow review hold her Instagram hostage — and the reason for the rule is only that traffic must land somewhere. One live post satisfies that. Flagged because it is a judgement call and you may want all.</div>
+
+      <div class="note info"><b>Engagement collaborations are exempt.</b> There are no shop posts in that track, so the gate cannot apply — and must not accidentally block a paid reel. Worth an explicit test, not just an intention.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ MEDIA LIBRARY -->
+<div class="view" id="v6">
+  <div class="vh">Part B — upload the footage once</div>
+  <div class="vs">She shoots for a day, then uploads the same clip twice: once making shop posts, once submitting the reel. One library, two destinations.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Shoot footage</div><div class="sub">KANCHI SILKS · 2 SEP · 14 FILES</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="mg">
+              <div>🖼<span class="u">USED ×2</span></div>
+              <div>🎬<span class="u">USED ×1</span></div>
+              <div>🖼<span class="u">USED ×1</span></div>
+              <div>🖼</div><div>🎬</div><div>🖼</div>
+              <div>🖼</div><div>🖼</div><div>🎬</div>
+            </div>
+            <button class="btn sec" style="margin-top:11px">+ Upload from this shoot</button>
+          </div>
+          <div class="dsec">
+            <div class="dh">Where these are used</div>
+            <div class="trm"><div class="k">Shop posts</div><div class="v">4 files</div></div>
+            <div class="trm"><div class="k">Instagram reel</div><div class="v">1 file</div></div>
+            <div class="trm"><div class="k">Not used yet</div><div class="v" style="color:var(--mut)">9 files</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait b">Uploaded once. Pick from here when you create a shop post <b>or</b> submit your reel — no second upload, no second wait.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Grouped by shoot, because that is how she thinks about it — not one undifferentiated camera roll.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note good"><b>This is an extension, not a new build — the correction from panel ①.</b> <code>creator_assets</code> (migration 136) already stores <code>r2_key</code>, <code>media_type</code>, <code>aspect</code> and an approval state, with foreign keys to <b>both</b> <code>campaign_influencer_id</code> and <code>deliverable_id</code>. Its comment already says "reusable across experiences". It holds <b>0 rows</b> and is flag-gated off.</div>
+
+      <div class="card">
+        <h3>Extend it, or build beside it</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Extend <code>creator_assets</code></th><th>New table</th></tr>
+          <tr><td>Cost</td><td>Low — shape already fits</td><td>Higher, and a second thing that means "creator media"</td></tr>
+          <tr><td>Risk</td><td>It carries an <b>approval workflow</b> for per-context product imagery. Shoot footage does not need approving to be picked for a draft.</td><td>None inherited</td></tr>
+          <tr><td>Entanglement</td><td>Tied to the parked Creator Imagery program and its feature flag</td><td>Independent</td></tr>
+        </table></div>
+        <div class="note key" style="max-width:none;margin:10px 0 0"><b>My read: extend, with the approval state made optional.</b> Shoot footage enters as <code>pending</code> and is usable in a draft immediately; approval remains meaningful only where Creator Imagery is switched on. Worth your call — it couples this work to a parked program.</div>
+      </div>
+      <div class="note info"><b>What it removes:</b> the second upload, the second wait, and the drift where the reel and the shop post are visibly different exports of the same clip.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ COMPLETION -->
+<div class="view" id="v7">
+  <div class="vh">Part C — where does this collaboration actually stand</div>
+  <div class="vs">Nothing computes this today. Both sides infer it from four screens.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">SALES COLLABORATION</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where this stands</div>
+            <div class="trm"><div class="k">Shoot</div><div class="v" style="color:var(--green);font-size:12px">✓ DONE 2 SEP</div></div>
+            <div class="trm"><div class="k">Shop posts live</div><div class="v" style="color:var(--green);font-size:12px">✓ 2 LIVE</div></div>
+            <div class="trm"><div class="k">Instagram post</div><div class="v" style="color:var(--blue);font-size:12px">⏳ AWAITING CONFIRM</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait b">You posted on 6 Sep. Kanchi Silks confirms it is live — then this collaboration is complete.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">What they hoped for</div>
+            <div class="wait n"><b>3 posts · they hoped for 5</b><br>A hope they mentioned when you agreed terms. It is not owed, it changes nothing, and nothing is withheld.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Earning</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Sales so far</div><div class="v">₹0</div></div>
+            <div class="rl">You earn when someone buys. No fee, no stages, nothing held back — there was never money in escrow here.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Sales track. The hoped-for number is <b>guidance rendered as guidance</b> — items 43, 44, 58.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Nova Fit</div><div class="sub">CONTENT COLLABORATION</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where this stands</div>
+            <div class="trm"><div class="k">Shoot</div><div class="v" style="color:var(--green);font-size:12px">✓ DONE 24 AUG</div></div>
+            <div class="trm"><div class="k">1 reel + 2 stories</div><div class="v" style="color:var(--green);font-size:12px">✓ ALL LIVE</div></div>
+            <div class="trm"><div class="k">Confirmed by brand</div><div class="v" style="color:var(--green);font-size:12px">✓ 28 AUG</div></div>
+          </div>
+          <div class="dsec"><div class="wait g">✓ Complete.</div></div>
+          <div class="dsec">
+            <div class="dh">Your fee</div>
+            <div class="trm"><div class="k">Agreed</div><div class="v">₹30,000</div></div>
+            <div class="trm"><div class="k">Stage 1 · on signing</div><div class="v" style="color:var(--green);font-size:11px">₹7,500 RELEASED</div></div>
+            <div class="trm"><div class="k">Stage 2 · confirmed live</div><div class="v" style="color:var(--green);font-size:11px">₹7,500 RELEASED</div></div>
+            <div class="trm"><div class="k">Stage 3 · +30 days</div><div class="v" style="color:var(--blue);font-size:11px">₹15,000 · 27 SEP</div></div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>No shop posts here. Nothing is being sold, so there is nothing for the shop to show.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Content track. Same screen, <b>genuinely different content</b> — money is real here and absent there.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="card">
+        <h3>Completion, defined</h3>
+        <div class="tscroll"><table>
+          <tr><th>Track</th><th>Complete when</th></tr>
+          <tr><td><b>Sales</b></td><td>shoot done · <b>≥1</b> shop post approved and live · social post live and brand-confirmed</td></tr>
+          <tr><td><b>Content</b></td><td>deliverables live and confirmed · payment stages released</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>Items 46 and 47 — the one that protects her.</b> A post counts as delivered <b>when it is approved</b>, not for as long as it stays visible. If Kanchi Silks runs out of stock, raises a price, or lets an offer expire and the post goes dark, Asha does not become non-compliant. She did the work. Completion is computed from the approval event, never from current visibility.</div>
+
+      <div class="note good"><b>Verified, and worth keeping true:</b> there is no wallet, no escrow and no payment stage anywhere in the sales track. Payment stages exist only where a fee exists. The sales completion screen must never grow a money bar just because the content one has one.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑨ TRAVELLING KIT -->
+<div class="view" id="v8">
+  <div class="vh">Part D — the travelling kit</div>
+  <div class="vs">Marked LATER by you, and it should stay later: four of the five open questions are here, and they are commercial and legal, not design.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kit KS-114</div><div class="sub">SKETCH · NOT FOR BUILD</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where these sarees have been</div>
+            <div class="tb" style="padding:0">
+              <div class="trm"><div class="k">Kanchi Silks · Vijayawada</div><div class="v" style="font-size:11px;color:var(--green)">SENT 18 AUG</div></div>
+              <div class="trm"><div class="k">Asha M. · Mumbai</div><div class="v" style="font-size:11px;color:var(--green)">SHOT 2 SEP</div></div>
+              <div class="trm"><div class="k">Priya N. · Mumbai</div><div class="v" style="font-size:11px;color:var(--blue)">IN TRANSIT</div></div>
+              <div class="trm"><div class="k">Back to Kanchi Silks</div><div class="v" style="font-size:11px;color:var(--mut2)">NOT SCHEDULED</div></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">Asha ships straight to Priya. The kit never goes back to Vijayawada in between.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Each handover</div>
+            <div class="trm"><div class="k">Dispatch confirmed</div><div class="v">✓</div></div>
+            <div class="trm"><div class="k">Receipt confirmed</div><div class="v" style="color:var(--mut2)">PENDING</div></div>
+            <div class="trm"><div class="k">Condition photos</div><div class="v" style="color:var(--red);font-size:11px">UNDECIDED</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Sketch only. The mechanics are a repeat of the parcel flow; the <b>unanswered parts are not design</b>.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>Not designed further on purpose.</b> B–E are policy questions with money and liability attached. A mockup that quietly implies answers to them would be me deciding your commercial terms in CSS.</div>
+
+      <div class="card">
+        <h3>The five open questions</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Question</th><th>Status</th></tr>
+          <tr><td class="n">A</td><td>Cold invites have no handshake — where does the shoot mode get settled?</td><td><span class="st s-ch">assumed</span> the shoot screen's first step, negotiable, asked once. <b>Designed to this.</b></td></tr>
+          <tr><td class="n">B</td><td>Who pays the courier creator-to-creator?</td><td><span class="st s-q">open</span> blocks Part D</td></tr>
+          <tr><td class="n">C</td><td>Who is liable if the kit is lost between two creators?</td><td><span class="st s-q">open</span> condition photos at each handover would give you a record</td></tr>
+          <tr><td class="n">D</td><td>Ship-onward deadline so creator B is not blocked?</td><td><span class="st s-q">open</span></td></tr>
+          <tr><td class="n">E</td><td>A creator drops out mid-chain holding the goods — recovery?</td><td><span class="st s-q">open</span></td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>Only A blocks Parts A–C</b>, and I have designed to the answer already proposed rather than stopping. B–E block Part D alone, which you have already placed later. Parts A, B and C can be locked and built without any of them.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑩ THE 62 ITEMS -->
+<div class="view" id="v9">
+  <div class="vh">All 62 items, verified</div>
+  <div class="vs">Your list, with the audit's verdict against each. <span class="st s-ok">works</span> <span class="st s-ch">changes</span> <span class="st s-nw">to build</span> <span class="st s-no">not building</span> <span class="st s-q">open</span> — and <b>corrected</b> where the code disagreed.</div>
+
+  <div class="card">
+    <h3>Before the shoot — the plan (1–8)</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Item</th><th></th><th>Verified</th></tr>
+      <tr><td class="n">1</td><td>Plan auto-created on signature</td><td><span class="st s-ok">works</span></td><td><code>contract.controller.js:478</code> → <code>autoCreateForContract</code></td></tr>
+      <tr><td class="n">2</td><td>Three modes: visit, shipment, remote</td><td><span class="st s-ok">works</span></td><td><code>VALID_MODES</code></td></tr>
+      <tr><td class="n">3</td><td>Mode settled at handshake, off contract signing</td><td><span class="st s-ch">changes</span></td><td>Confirmed: set at brand-approve, "so the influencer sees it before signing"</td></tr>
+      <tr><td class="n">4,5</td><td>Negotiable, not dictated, not mandatory</td><td><span class="st s-ch">changes</span></td><td>Falls out of #3</td></tr>
+      <tr><td class="n">6</td><td>Expected time, not a fixed slot</td><td><span class="st s-ch">changes</span></td><td><code>visit_window_minutes</code> kept, relabelled</td></tr>
+      <tr><td class="n">7</td><td>Its own flow on both phones</td><td><span class="st s-nw">to build</span></td><td><b>Corrected:</b> buried in the <i>contract</i> screen; zero routes in either navigator</td></tr>
+      <tr><td class="n">8</td><td>No shoot brief</td><td><span class="st s-no">not building</span></td><td>—</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Store visit (9–16) · Shipment (17–21) · Oversight (22)</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Item</th><th></th><th>Verified</th></tr>
+      <tr><td class="n">9–12</td><td>Address, maps, slot, contact, propose + counter</td><td><span class="st s-ok">works</span></td><td>All columns present; 6 endpoints live</td></tr>
+      <tr><td class="n">13</td><td>Two reschedules per side, then locked</td><td><span class="st s-ok">works</span></td><td><code>RESCHEDULE_LIMIT_PER_SIDE</code>, enforced both sides</td></tr>
+      <tr><td class="n">14</td><td>Flip to remote, other side confirms</td><td><span class="st s-ok">works</span></td><td><code>requestRemoteFlip</code> + <code>confirmRemoteFlip</code></td></tr>
+      <tr><td class="n">15</td><td>Finish 2 days before posting, backwards</td><td><span class="st s-ok">works</span></td><td><code>getVisitDateRange</code>; falls back to window − 3d, then a 1-year ceiling for open-ended sales campaigns</td></tr>
+      <tr><td class="n">16</td><td>Visit completion timestamp</td><td><span class="st s-ok">works</span></td><td><code>visit_completed_at</code></td></tr>
+      <tr><td class="n">17–19</td><td>Address, courier, AWB, four timestamps</td><td><span class="st s-ok">works</span></td><td>All four columns present</td></tr>
+      <tr><td class="n">20</td><td>Itemised parcel contents</td><td><span class="st s-nw">to build</span></td><td>No item/parcel column in 024 or 039</td></tr>
+      <tr><td class="n">21</td><td>Item-by-item receipt + flag missing</td><td><span class="st s-nw">to build</span></td><td>Only a single overall confirm timestamp exists</td></tr>
+      <tr><td class="n">22</td><td>Admin production queue</td><td><span class="st s-ok">works</span></td><td><code>GET /admin/production/queue</code> — note: <code>requireCapability('production')</code>, so an operator needs that capability</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>After the shoot — sales track (23–42)</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Item</th><th></th><th>Verified</th></tr>
+      <tr><td class="n">23–27</td><td>Create posts, concept, scope, media types; you approve</td><td><span class="st s-ok">works</span></td><td><code>creatorPosts</code> + <code>adminPosts</code></td></tr>
+      <tr><td class="n">28</td><td>Reject on quality only, never concept</td><td><span class="st s-ch">changes</span></td><td>Policy today, unenforceable — the box is free text</td></tr>
+      <tr><td class="n">29</td><td>Fixed list of technical faults</td><td><span class="st s-nw">to build</span></td><td><code>req.body.reason</code> → <code>reject_reason</code>, free text</td></tr>
+      <tr><td class="n">30,31</td><td>Brand told on exclusive posts; mixed notify nobody</td><td><span class="st s-nw">to build</span></td><td>Approval notifies <b>the creator only</b></td></tr>
+      <tr><td class="n">32</td><td>Posts go live in the shop</td><td><span class="st s-ok">works</span></td><td>1 approved post in prod</td></tr>
+      <tr><td class="n">33</td><td>"With our review team" + timestamp</td><td><span class="st s-nw">to build</span></td><td>Status exists; the reassurance does not</td></tr>
+      <tr><td class="n">34–37</td><td>Submit, brand approves, post, confirm live, auto-scrape</td><td><span class="st s-ok">works</span></td><td>Full chain incl. <code>refresh-stats</code></td></tr>
+      <tr><td class="n">38–41</td><td><b>The ordering rule</b></td><td><span class="st s-nw">to build</span></td><td><b>Zero</b> references to creator posts in <code>deliverable.controller.js</code></td></tr>
+      <tr><td class="n">42</td><td>One media library</td><td><span class="st s-ch">changes</span></td><td><b>Corrected from 🆕:</b> <code>creator_assets</code> exists (mig 136), 0 rows, flag-gated, FKs to CI <i>and</i> deliverable</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Expectation (43–47) · Money (48–49) · Engagement (50–55)</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Item</th><th></th><th>Verified</th></tr>
+      <tr><td class="n">43,44</td><td>"We'd love 5 posts" as a preference, never a debt</td><td><span class="st s-nw">to build</span></td><td>Rides the handshake terms model as a preference</td></tr>
+      <tr><td class="n">45</td><td>Brand may not specify content or direction</td><td><span class="st s-no">not building</span></td><td>—</td></tr>
+      <tr><td class="n">46,47</td><td>Delivered at approval; going dark is never breach</td><td><span class="st s-nw">to build</span></td><td>Completion must read the approval event, not current visibility</td></tr>
+      <tr><td class="n">48,49</td><td>No wallet, escrow or stages in sales; earn on sale</td><td><span class="st s-ok">works</span></td><td>Confirmed absent</td></tr>
+      <tr><td class="n">50–53,55</td><td>Deliverables, 2 review rounds, confirm-live releases stage 2</td><td><span class="st s-ok">works</span></td><td>Unchanged by this contract</td></tr>
+      <tr><td class="n">54</td><td>No shop posts or admin queue in engagement</td><td><span class="st s-no">not building</span></td><td>Needs an explicit test so the new gate cannot leak in</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Completion (56–59) · Travelling kit (60–62)</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Item</th><th></th><th>Verified</th></tr>
+      <tr><td class="n">56</td><td>Sales complete = shoot + ≥1 shop post live + social confirmed</td><td><span class="st s-nw">to build</span></td><td>Nothing computes this</td></tr>
+      <tr><td class="n">57</td><td>Engagement complete = deliverables live + stages released</td><td><span class="st s-ok">works</span></td><td>Derivable today</td></tr>
+      <tr><td class="n">58</td><td>Hoped-for number as guidance, never a gate</td><td><span class="st s-nw">to build</span></td><td>—</td></tr>
+      <tr><td class="n">59</td><td>One screen showing where a collaboration stands</td><td><span class="st s-nw">to build</span></td><td>—</td></tr>
+      <tr><td class="n">60–62</td><td>Returns, creator-to-creator transfer, per-handover confirm</td><td><span class="st s-q">later</span></td><td>Blocked on B–E</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Tally:</b> 30 items already work · 7 change · 18 to build · 4 deliberately not built · 3 later. The build is concentrated in five places — the parcel, the ordering rule, the notification, the reasons list, and the completion picture — plus the screens to put them on.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

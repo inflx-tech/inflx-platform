@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Collabs — the one spine, and what's needed from you</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;
+  --ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;
+  --y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;
+  --red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;
+  --purple:#6D3FC4;--purpleBg:#F2ECFB;
+  --border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1180px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:820px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:920px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:17px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 8px;max-height:700px;overflow-y:auto}
+.needpill{background:var(--y);color:var(--ink);font-size:10px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+.stg .n{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:999px;padding:1px 5px;margin-left:3px}
+.stg span:not(.on) .n{background:var(--lineSoft);color:var(--mut)}
+
+.tr{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--lineSoft);align-items:flex-start}
+.av{width:38px;height:38px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:12px;font-weight:800;flex-shrink:0}
+.tr .m{flex:1;min-width:0}
+.tr .bn{font-size:13px;font-weight:800;font-family:'Outfit'}
+.tr .tm{font-size:11px;color:var(--text2);font-weight:650;margin-top:2px}
+.tr .st{font-size:10px;font-weight:800;margin-top:5px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.c-you{color:var(--yInk)}.d-you{background:var(--y)}
+.c-brand{color:var(--blue)}.d-brand{background:var(--blue)}
+.c-done{color:var(--green)}.d-done{background:var(--green)}
+.c-mut{color:var(--mut)}.d-mut{background:var(--mut2)}
+.chev{color:var(--mut2);font-size:15px;align-self:center}
+.lhd{padding:11px 14px 6px;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase}
+.mini{font-size:9.5px;font-weight:700;color:var(--mut);margin-top:4px}
+
+/* THE STEP SPINE */
+.spine{padding:6px 14px 12px}
+.step{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--lineSoft);align-items:flex-start;position:relative}
+.step:last-child{border-bottom:none}
+.sn{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px;z-index:2}
+.sn.done{background:var(--green);color:#fff}
+.sn.now{background:var(--ink);color:var(--y)}
+.sn.wait{background:var(--blueBg);color:var(--blue);border:1.5px solid #C7D8F8}
+.sn.lock{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.sn.todo{background:var(--white);color:var(--mut2);border:1.5px solid var(--lineSoft)}
+.step .rail{position:absolute;left:11.5px;top:30px;bottom:-2px;width:1.5px;background:var(--lineSoft);z-index:1}
+.step.done .rail{background:var(--green)}
+.step:last-child .rail{display:none}
+.sc{flex:1;min-width:0}
+.stt{font-size:12.5px;font-weight:800;font-family:'Outfit';display:flex;align-items:center;gap:7px}
+.sd{font-size:11px;color:var(--mut);font-weight:650;margin-top:2px;line-height:1.5}
+.step.now .stt{font-size:13.5px}
+.step.lockd .stt{color:var(--mut2)}
+.sbadge{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.3px;text-transform:uppercase}
+.b-you{background:var(--yBg);color:var(--yInk)}
+.b-brand{background:var(--blueBg);color:var(--blue)}
+.b-done{background:var(--greenBg);color:var(--green)}
+.b-lock{background:var(--lineSoft);color:var(--mut)}
+.b-admin{background:var(--purpleBg);color:var(--purple)}
+.sact{margin-top:9px}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.btn.sm{padding:7px 12px;font-size:11px;width:auto;border-radius:8px}
+.bstack{display:flex;flex-direction:column;gap:8px}
+
+/* needs-you rows */
+.nrow{padding:12px 14px;border-bottom:1px solid var(--lineSoft)}
+.nhead{display:flex;gap:9px;align-items:flex-start}
+.nico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.i-y{background:var(--yBg)}.i-b{background:var(--blueBg)}.i-r{background:var(--redBg)}.i-g{background:var(--greenBg)}.i-p{background:var(--purpleBg)}
+.nwhat{font-size:12.5px;font-weight:800;font-family:'Outfit';line-height:1.3}
+.nwho{font-size:10.5px;color:var(--mut);font-weight:700;margin-top:2px;letter-spacing:.2px}
+.nwhy{font-size:11px;color:var(--text2);font-weight:650;margin-top:6px;line-height:1.55}
+.nfoot{display:flex;gap:7px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.due{font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px;letter-spacing:.2px}
+.due.late{background:var(--redBg);color:var(--red)}
+.due.soon{background:var(--yBg);color:var(--yInk)}
+.due.ok{background:var(--lineSoft);color:var(--mut)}
+.ghd{padding:12px 14px 5px;font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;display:flex;justify-content:space-between}
+.ghd.late{color:var(--red)}.ghd.soon{color:var(--yInk)}.ghd.ok{color:var(--mut)}
+
+.tbar{display:flex;border-top:1px solid var(--lineSoft);padding:8px 0 10px;background:var(--white)}
+.tbar div{flex:1;text-align:center;font-size:9px;font-weight:800;color:var(--mut2)}
+.tbar div.on{color:var(--ink)}
+.tbar .ic{font-size:15px;display:block;margin-bottom:2px;position:relative}
+.tbar .bdg{position:absolute;top:-3px;right:50%;margin-right:-16px;background:var(--red);color:#fff;font-size:7.5px;font-weight:800;border-radius:999px;padding:1px 4px;font-family:'JetBrains Mono'}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1060px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:600px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10.5px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-mv{background:var(--yBg);color:var(--yInk)}
+
+/* flow strip */
+.flow{display:flex;gap:0;flex-wrap:wrap;margin-bottom:14px}
+.fl{flex:1;min-width:118px;border:1px solid var(--line);border-right:none;padding:11px 10px;background:var(--white)}
+.fl:first-child{border-radius:11px 0 0 11px}
+.fl:last-child{border-right:1px solid var(--line);border-radius:0 11px 11px 0}
+.fl .fn{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--mut2)}
+.fl .ft{font-size:12px;font-weight:800;font-family:'Outfit';margin-top:3px}
+.fl .fs{font-size:10px;color:var(--mut);font-weight:650;margin-top:3px;line-height:1.45}
+.fl.acc{background:#FAFAFA}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Collabs — the one spine, and what's needed from you</h1>
+  <p>features/collab-navigation-spine · navigation mockup for lock · 2026-08-15</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① One spine</button>
+  <button class="tab" data-v="v1">② Collabs tab</button>
+  <button class="tab" data-v="v2">③ The 6 steps</button>
+  <button class="tab" data-v="v3">④ Track-aware</button>
+  <button class="tab" data-v="v4">⑤ Needs you · creator</button>
+  <button class="tab" data-v="v5">⑥ Needs you · brand</button>
+  <button class="tab" data-v="v6">⑦ Brand app IA</button>
+  <button class="tab" data-v="v7">⑧ Route map</button>
+</div>
+
+<!-- ① ONE SPINE -->
+<div class="view on" id="v0">
+  <div class="vh">Six phases. One tab. One grammar.</div>
+  <div class="vs">Everything from the first approach to the finished collaboration is a single lifecycle. Today it is spread across four tabs and eleven screens, and nothing tells a creator where she is in it.</div>
+
+  <div class="flow">
+    <div class="fl"><div class="fn">01</div><div class="ft">Agree</div><div class="fs">Invitation or pitch · counters · terms settled</div></div>
+    <div class="fl"><div class="fn">02</div><div class="ft">Sign</div><div class="fs">Campaign arrives · one-tap accept · contract</div></div>
+    <div class="fl acc"><div class="fn">03</div><div class="ft">Shoot</div><div class="fs">Part A · mode, slot or parcel, shoot done</div></div>
+    <div class="fl acc"><div class="fn">04</div><div class="ft">Shop posts</div><div class="fs">Part B · create → our review → live</div></div>
+    <div class="fl acc"><div class="fn">05</div><div class="ft">Go live</div><div class="fs">Part B · brand approves reel → publish → confirm</div></div>
+    <div class="fl"><div class="fn">06</div><div class="ft">Done</div><div class="fs">Part C · complete, per track</div></div>
+  </div>
+
+  <div class="note key"><b>The design rule for everything that follows:</b> a collaboration sits at exactly <b>one</b> phase, and that phase is both its <b>place in the list</b> and its <b>position in the stepper</b>. The tab you find it under and the step you are on are the same fact, shown twice. Nothing can be in two places.</div>
+
+  <div class="card">
+    <h3>Where these live today</h3>
+    <div class="tscroll"><table>
+      <tr><th>Phase</th><th>Today, creator app</th><th>After</th></tr>
+      <tr><td><b>01 Agree</b></td><td>Profile → Brand Outreach → Brand Proposals → 3rd tab</td><td>Collabs · <b>Invitations</b> / <b>My pitches</b></td></tr>
+      <tr><td><b>02 Sign</b></td><td>Collabs → CollabDetail → Contract</td><td>Collabs · <b>To sign</b> — unchanged, now step 2 of a visible spine</td></tr>
+      <tr><td><b>03 Shoot</b></td><td>Inside <code>ContractScreen.js</code>. <b>No route exists.</b></td><td>Collabs · <b>Shoot</b> → its own screen</td></tr>
+      <tr><td><b>04 Shop posts</b></td><td><b>Create tab</b> — a different tab entirely</td><td>Created in Create, <b>tracked in Collabs</b> as step 4</td></tr>
+      <tr><td><b>05 Go live</b></td><td>Collabs → Deliverable</td><td>Collabs · <b>Content</b> → step 5, gated on step 4</td></tr>
+      <tr><td><b>06 Done</b></td><td>Nothing computes it</td><td>Collabs · <b>Done</b></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>The one real IA tension, stated up front.</b> Shop posts are <b>created</b> in the Create tab — that is correct, because a post can span several brands or her whole shelf and belongs to her, not to one collaboration. But a post made from the Kanchi Silks shoot is also step 4 of the Kanchi Silks collaboration. <b>Create owns the making; Collabs owns the obligation.</b> Step 4 links across rather than duplicating the composer.</div>
+
+  <div class="note good"><b>What this costs.</b> Phases 01, 02 and 05 already have screens — they gain a spine around them. Phase 03 needs a screen. Phase 04 is a link plus a status roll-up. Phase 06 is new. The navigation work is mostly <b>arrangement</b>, which is why it is worth doing before the Part A/B/C build rather than after.</div>
+</div>
+
+<!-- ② COLLABS TAB -->
+<div class="view" id="v1">
+  <div class="vh">The Collabs tab — six stages, left to right</div>
+  <div class="vs">The stage rail is the lifecycle. A collaboration enters at the left and exits at the right, and never appears twice.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav">
+          <div style="flex:1"><div class="ttl">Collabs</div><div class="sub">3 ACTIVE · 2 COMPLETED</div></div>
+          <div class="needpill">4 need you</div>
+        </div>
+        <div class="stg">
+          <span>Invitations<span class="n">2</span></span>
+          <span>Pitches<span class="n">1</span></span>
+          <span>To sign</span>
+          <span class="on">Shoot<span class="n">1</span></span>
+          <span>Content<span class="n">2</span></span>
+          <span>Done<span class="n">2</span></span>
+        </div>
+        <div class="body">
+          <div class="lhd">Shoot · 1</div>
+          <div class="tr">
+            <div class="av">KS</div>
+            <div class="m">
+              <div class="bn">Kanchi Silks</div>
+              <div class="tm">Store visit · Tue 2 Sep, 11:00 AM</div>
+              <div class="st c-you"><span class="dot d-you"></span>STEP 3 OF 6 — CONFIRM THE SLOT</div>
+              <div class="mini">SALES · 18% · POST BY 15 SEP</div>
+            </div><div class="chev">›</div>
+          </div>
+
+          <div class="lhd" style="padding-top:16px">What the other stages hold</div>
+          <div class="tr" style="opacity:.6">
+            <div class="av" style="background:#EFEFEF;color:#8E8E8E">NF</div>
+            <div class="m"><div class="bn">Nova Fit</div><div class="tm">Content · ₹30,000</div>
+            <div class="st c-brand"><span class="dot d-brand"></span>STEP 5 — BRAND REVIEWING YOUR REEL</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr" style="opacity:.6">
+            <div class="av" style="background:#EFEFEF;color:#8E8E8E">LF</div>
+            <div class="m"><div class="bn">Label Fern</div><div class="tm">Sales · 22%</div>
+            <div class="st c-you"><span class="dot d-you"></span>STEP 4 — 1 POST NEEDS A FIX</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr" style="opacity:.6">
+            <div class="av" style="background:#EFEFEF;color:#8E8E8E">MK</div>
+            <div class="m"><div class="bn">Mokha Beauty</div><div class="tm">Sales · 18%</div>
+            <div class="st c-done"><span class="dot d-done"></span>STEP 6 — COMPLETE 8 SEP</div></div><div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tbar">
+          <div><span class="ic">⌂</span>Home</div>
+          <div class="on"><span class="ic">◈<span class="bdg">4</span></span>Collabs</div>
+          <div><span class="ic">✚</span>Create</div>
+          <div><span class="ic">₹</span>Earnings</div>
+          <div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap">Every row states its <b>step number</b>. The list and the stepper agree, always.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>The six stages, and what decides them</h3>
+        <div class="tscroll"><table>
+          <tr><th>Stage</th><th>A collaboration is here when</th></tr>
+          <tr><td><b>Invitations</b></td><td>brand-initiated, no contract yet — request, counter, or agreement waiting to be briefed</td></tr>
+          <tr><td><b>Pitches</b></td><td>creator-initiated, no contract yet</td></tr>
+          <tr><td><b>To sign</b></td><td>a campaign invite exists and is unsigned</td></tr>
+          <tr><td><b>Shoot</b></td><td>contract signed, shoot not marked done</td></tr>
+          <tr><td><b>Content</b></td><td>shoot done, not yet complete — covers steps 4 <i>and</i> 5</td></tr>
+          <tr><td><b>Done</b></td><td>completion satisfied for its track</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>Why steps 4 and 5 share one stage.</b> They overlap by design — the ordering rule holds publishing back while both reviews run <b>concurrently</b>. Splitting them into two stages would put one collaboration in two tabs at once, which is exactly the rule this IA is built on. The stepper inside shows the two clearly; the list does not need to.</div>
+
+      <div class="note info"><b>Replaces, not adds.</b> Today's stage list is All · Invites · Applied · Negotiating · To sign · Active · Tracking · Completed · Archive — nine, three of which (<code>applied</code>, <code>negotiating</code>, <code>tracking</code>) are derived states most creators never see, and <code>applied</code> can never be non-empty at all (Part 6 found nothing in the backend writes <code>status='applied'</code>). Six replaces nine.</div>
+
+      <div class="note good">The header pill <b>"4 need you"</b> is the entry to panel ⑤. The tab-bar badge is the same number — the one thing worth interrupting her for.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ THE 6 STEPS -->
+<div class="view" id="v2">
+  <div class="vh">Inside one collaboration — the spine is the navigation</div>
+  <div class="vs">Not a dashboard. A checklist that knows where you are, what you did, and what is holding the next thing up. Every step is a door to a screen already designed.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:16px">Kanchi Silks</div><div class="sub">SALES · 18% · POST BY 15 SEP</div></div></div>
+        <div class="spine">
+
+          <div class="step done"><div class="rail"></div>
+            <div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">12 Aug</span></div>
+            <div class="sd">18% commission · post by 15 Sep · store visit</div></div>
+            <div class="chev">›</div>
+          </div>
+
+          <div class="step done"><div class="rail"></div>
+            <div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Signed <span class="sbadge b-done">12 Aug</span></div>
+            <div class="sd">Contract active · you can sell bottom wear</div></div>
+            <div class="chev">›</div>
+          </div>
+
+          <div class="step now"><div class="rail"></div>
+            <div class="sn now">3</div>
+            <div class="sc">
+              <div class="stt">The shoot <span class="sbadge b-you">your turn</span></div>
+              <div class="sd">Kanchi Silks proposed <b>Thu 28 Aug, 2:00 PM</b> at Benz Circle, Vijayawada. You can accept or suggest another time.</div>
+              <div class="sact"><div class="bstack">
+                <button class="btn pri">Open the shoot</button>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="step"><div class="rail"></div>
+            <div class="sn todo">4</div>
+            <div class="sc"><div class="stt">Shop posts</div>
+            <div class="sd">After the shoot, make posts in <b>Create</b>. They come back here for our quality review.</div></div>
+          </div>
+
+          <div class="step lockd"><div class="rail"></div>
+            <div class="sn lock">🔒</div>
+            <div class="sc"><div class="stt">Go live on Instagram <span class="sbadge b-lock">locked</span></div>
+            <div class="sd">Opens once one shop post is live — so people who tap through land on something.</div></div>
+          </div>
+
+          <div class="step"><div class="rail"></div>
+            <div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete</div>
+            <div class="sd">Shoot · one post live · Instagram confirmed.</div></div>
+          </div>
+
+        </div>
+      </div>
+      <div class="cap">Step 3 is expanded with its action. Done steps collapse to one line. <b>Locked steps say why.</b></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:16px">Label Fern</div><div class="sub">SALES · 22% · POST BY 20 SEP</div></div></div>
+        <div class="spine">
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">2 Aug</span></div></div><div class="chev">›</div></div>
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Signed <span class="sbadge b-done">3 Aug</span></div></div><div class="chev">›</div></div>
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Shoot done <span class="sbadge b-done">28 Aug</span></div>
+            <div class="sd">Parcel · 3 items received</div></div><div class="chev">›</div></div>
+
+          <div class="step now"><div class="rail"></div><div class="sn now">4</div>
+            <div class="sc">
+              <div class="stt">Shop posts <span class="sbadge b-you">1 needs a fix</span></div>
+              <div class="sd"><b>2 live</b> · 1 with our review team since 29 Aug · <b>1 sent back</b> — video too shaky</div>
+              <div class="sact"><div class="bstack">
+                <button class="btn pri">Fix "Draped Three Ways"</button>
+                <button class="btn sec">+ New post from this shoot</button>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="step"><div class="rail"></div><div class="sn wait">5</div>
+            <div class="sc"><div class="stt">Go live on Instagram <span class="sbadge b-done">unlocked</span></div>
+            <div class="sd">✓ 2 shop posts are live — you can post now. Label Fern approved your reel on 29 Aug.</div>
+            <div class="sact"><button class="btn sec">I've posted — add the link</button></div></div>
+          </div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete</div></div></div>
+        </div>
+      </div>
+      <div class="cap">Two steps live at once — <b>4 and 5 run in parallel</b>. Only publishing was ever ordered.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>Five step states, one vocabulary</h3>
+        <div class="tscroll"><table>
+          <tr><th>State</th><th>Looks like</th><th>Means</th></tr>
+          <tr><td><b>Done</b></td><td>green ✓ + date</td><td>collapsed to one line, still tappable</td></tr>
+          <tr><td><b>Your turn</b></td><td>black circle, yellow number, expanded</td><td>carries the action button</td></tr>
+          <tr><td><b>Waiting</b></td><td>blue outline</td><td>says who is being waited on</td></tr>
+          <tr><td><b>Locked</b></td><td>grey padlock</td><td><b>always states the condition</b>, never just greyed</td></tr>
+          <tr><td><b>Not yet</b></td><td>hollow number</td><td>reachable later, nothing to do</td></tr>
+        </table></div>
+      </div>
+      <div class="note good"><b>No new screens are invented here.</b> Every step opens something already designed — the invitation thread, the contract, the shoot screen, the post list, the go-live screen, the completion screen. The spine is the <b>index</b>.</div>
+      <div class="note key"><b>A locked step must say its condition.</b> "Opens once one shop post is live — so people who tap through land on something" does the work a disabled button never does: it explains, so she is not left guessing whether the app is broken.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ TRACK AWARE -->
+<div class="view" id="v3">
+  <div class="vh">The spine knows which track it is on</div>
+  <div class="vs">Sales and content are genuinely different collaborations. Same grammar, different steps — and money appears in exactly one of them.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:16px">Nova Fit</div><div class="sub">CONTENT · ₹30,000</div></div></div>
+        <div class="spine">
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">18 Aug</span></div>
+            <div class="sd">₹30,000 · 1 reel + 2 stories</div></div><div class="chev">›</div></div>
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Signed <span class="sbadge b-done">19 Aug</span></div>
+            <div class="sd">Stage 1 released · ₹7,500</div></div><div class="chev">›</div></div>
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Shoot done <span class="sbadge b-done">24 Aug</span></div></div><div class="chev">›</div></div>
+
+          <div class="step now"><div class="rail"></div><div class="sn wait">4</div>
+            <div class="sc"><div class="stt">Your deliverables <span class="sbadge b-brand">with the brand</span></div>
+            <div class="sd">1 reel + 2 stories submitted 26 Aug. Nova Fit is reviewing — they can ask for changes twice.</div></div>
+          </div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">5</div>
+            <div class="sc"><div class="stt">Post and confirm</div>
+            <div class="sd">You post, Nova Fit confirms it is live — that releases <b>₹7,500</b>.</div></div></div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete and paid</div>
+            <div class="sd">Final ₹15,000 lands 30 days after live.</div></div></div>
+        </div>
+      </div>
+      <div class="cap">Content track. <b>No shop posts step.</b> Nothing is being sold, so the shop has nothing to show.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>The two spines side by side</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Sales</th><th>Content</th></tr>
+          <tr><td><b>1</b></td><td>Terms agreed</td><td>Terms agreed</td></tr>
+          <tr><td><b>2</b></td><td>Signed</td><td>Signed <span class="st2 s-ex">stage 1 paid</span></td></tr>
+          <tr><td><b>3</b></td><td>The shoot</td><td>The shoot</td></tr>
+          <tr><td><b>4</b></td><td>Shop posts <span class="st2 s-nw">our review</span></td><td>Deliverables <span class="st2 s-mv">brand review</span></td></tr>
+          <tr><td><b>5</b></td><td>Go live <span class="st2 s-nw">gated on 4</span></td><td>Post + confirm <span class="st2 s-ex">stage 2 paid</span></td></tr>
+          <tr><td><b>6</b></td><td>Complete — <b>no money here</b></td><td>Complete + stage 3</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>Steps 4 and 5 are the whole difference.</b> On sales, <b>we</b> review for quality and the brand never sees a post before it is live. On content, the <b>brand</b> reviews because they are paying for it. Same position in the spine, opposite reviewer — the badge on the step says which, every time.</div>
+
+      <div class="note good"><b>Money shows only where money exists.</b> The sales spine has no payment line at any step: no wallet, no escrow, no stages. She earns when someone buys. The content spine names the amount at steps 2, 5 and 6, because those releases are real.</div>
+
+      <div class="note info"><b>Step 3 is identical on both.</b> The shoot does not care what it is for — which is why it deserves one screen and one flow rather than being reimplemented per track.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ NEEDS YOU · CREATOR -->
+<div class="view" id="v4">
+  <div class="vh">Things needed from you — creator</div>
+  <div class="vs">One screen, every collaboration, every track. Sorted by what actually goes wrong first, not by what happened most recently.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:16px">Needs you</div><div class="sub">4 THINGS · 1 OVERDUE</div></div></div>
+        <div class="body">
+
+          <div class="ghd late"><span>Overdue</span><span>1</span></div>
+          <div class="nrow">
+            <div class="nhead">
+              <div class="nico i-r">📦</div>
+              <div style="flex:1">
+                <div class="nwhat">Confirm your parcel arrived</div>
+                <div class="nwho">KANCHI SILKS · STEP 3</div>
+              </div>
+            </div>
+            <div class="nwhy">3 sarees were delivered on <b>21 Aug, 2:40 PM</b> — 4 days ago. Tick what actually turned up, and flag anything missing. Nothing else moves until you do.</div>
+            <div class="nfoot">
+              <span class="due late">4 days late</span>
+              <button class="btn pri sm">Check the 3 items</button>
+            </div>
+          </div>
+
+          <div class="ghd soon"><span>This week</span><span>2</span></div>
+          <div class="nrow">
+            <div class="nhead">
+              <div class="nico i-y">📅</div>
+              <div style="flex:1">
+                <div class="nwhat">Accept or move the shoot time</div>
+                <div class="nwho">KANCHI SILKS · STEP 3</div>
+              </div>
+            </div>
+            <div class="nwhy">They proposed <b>Thu 28 Aug, 2:00 PM</b> at Benz Circle, Vijayawada. Your posting date is 15 Sep, so the shoot has to finish by <b>13 Sep</b>.</div>
+            <div class="nfoot">
+              <span class="due soon">expires 22 Aug</span>
+              <span class="due ok">2 counters left</span>
+              <button class="btn pri sm">Open</button>
+            </div>
+          </div>
+
+          <div class="nrow">
+            <div class="nhead">
+              <div class="nico i-r">🎬</div>
+              <div style="flex:1">
+                <div class="nwhat">Re-upload one clip</div>
+                <div class="nwho">LABEL FERN · STEP 4</div>
+              </div>
+            </div>
+            <div class="nwhy">"Draped Three Ways" came back — <b>video too shaky to use</b>. Your concept and caption are saved; only the clip needs replacing.</div>
+            <div class="nfoot">
+              <span class="due soon">post by 20 Sep</span>
+              <button class="btn pri sm">Replace the clip</button>
+            </div>
+          </div>
+
+          <div class="ghd ok"><span>When you can</span><span>1</span></div>
+          <div class="nrow">
+            <div class="nhead">
+              <div class="nico i-g">📱</div>
+              <div style="flex:1">
+                <div class="nwhat">You can post on Instagram now</div>
+                <div class="nwho">LABEL FERN · STEP 5</div>
+              </div>
+            </div>
+            <div class="nwhy">2 shop posts are live and Label Fern approved your reel on 29 Aug. Post it, then drop the link here so they can confirm.</div>
+            <div class="nfoot">
+              <span class="due ok">post by 20 Sep</span>
+              <button class="btn sec sm">Add the link</button>
+            </div>
+          </div>
+
+          <div class="nrow" style="border-bottom:none">
+            <div class="nwhy" style="text-align:center;color:var(--mut)">That's everything. 2 other collaborations are waiting on the brand — nothing for you to do there.</div>
+          </div>
+
+        </div>
+      </div>
+      <div class="cap">Four rows, four different steps, three different collaborations. <b>Grouped by consequence</b>, not by date.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note key"><b>Every row answers four questions</b> — and a row that cannot answer all four does not belong on this screen.</div>
+
+      <div class="card">
+        <h3>The row anatomy</h3>
+        <div class="tscroll"><table>
+          <tr><th>Part</th><th>Question</th><th>Example</th></tr>
+          <tr><td><b>Title</b></td><td>What do I do?</td><td>Verb first — "Confirm your parcel arrived"</td></tr>
+          <tr><td><b>Who + step</b></td><td>Where is this?</td><td>"KANCHI SILKS · STEP 3" — ties it to the spine</td></tr>
+          <tr><td><b>Body</b></td><td>Why now, and what happens if I don't?</td><td>"…4 days ago. Nothing else moves until you do."</td></tr>
+          <tr><td><b>Chips</b></td><td>How long have I got?</td><td>"4 days late" · "expires 22 Aug" · "2 counters left"</td></tr>
+          <tr><td><b>Button</b></td><td>—</td><td>Goes straight to the doing, never to a list</td></tr>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h3>What can appear here</h3>
+        <div class="tscroll"><table>
+          <tr><th>Step</th><th>Rows</th></tr>
+          <tr><td>1 · Agree</td><td>brand asked you · they countered · your pitch was countered</td></tr>
+          <tr><td>2 · Sign</td><td>campaign invite waiting · contract to sign</td></tr>
+          <tr><td>3 · Shoot</td><td>slot to accept or counter · <b>parcel to confirm</b> · mark the shoot done</td></tr>
+          <tr><td>4 · Shop posts</td><td>post sent back for a fix · nothing made yet after a finished shoot</td></tr>
+          <tr><td>5 · Go live</td><td>brand asked for changes · <b>unlocked, you may post</b> · add the live link</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note good"><b>The closing line matters.</b> "2 other collaborations are waiting on the brand — nothing for you to do there" turns an empty-ish screen into a complete answer. Without it she goes and checks anyway.</div>
+
+      <div class="note info"><b>Reachable from three places</b>, because it is the one screen worth interrupting for: the <b>"4 need you"</b> pill in the Collabs header, the <b>tab-bar badge</b>, and the Home screen. Notifications deep-link to the <i>row's</i> destination, not to this list.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ NEEDS YOU · BRAND -->
+<div class="view" id="v5">
+  <div class="vh">Things needed from you — brand</div>
+  <div class="vs">This screen already exists. <code>BrandActionRequiredScreen</code>, five tabs, backed by <code>GET /brands/me/inbox-summary</code>. It is missing everything this program added.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:16px">Needs you</div><div class="sub">6 THINGS · 2 OVERDUE</div></div></div>
+        <div class="body">
+
+          <div class="ghd late"><span>Overdue</span><span>2</span></div>
+          <div class="nrow">
+            <div class="nhead"><div class="nico i-r">🥻</div>
+              <div style="flex:1"><div class="nwhat">Asha says one saree is missing</div>
+              <div class="nwho">ASHA M. · STEP 3 · NEW</div></div></div>
+            <div class="nwhy"><b>Cotton Handloom — Indigo (KS-051)</b> was not in the parcel she received on 21 Aug. She has shot the other two.</div>
+            <div class="nfoot"><span class="due late">3 days</span><button class="btn pri sm">Resolve</button></div>
+          </div>
+
+          <div class="nrow">
+            <div class="nhead"><div class="nico i-r">📅</div>
+              <div style="flex:1"><div class="nwhat">Ravi's shoot slot is unanswered</div>
+              <div class="nwho">RAVI K. · STEP 3 · NEW</div></div></div>
+            <div class="nwhy">He proposed <b>30 Aug, 10:00 AM</b> six days ago. His posting date is 12 Sep — the slot has to be settled by <b>10 Sep</b>.</div>
+            <div class="nfoot"><span class="due late">6 days</span><button class="btn pri sm">Accept or counter</button></div>
+          </div>
+
+          <div class="ghd soon"><span>This week</span><span>3</span></div>
+          <div class="nrow">
+            <div class="nhead"><div class="nico i-y">🎬</div>
+              <div style="flex:1"><div class="nwhat">Approve Nisha's reel</div>
+              <div class="nwho">NISHA P. · STEP 5 · EXISTS TODAY</div></div></div>
+            <div class="nwhy">1 reel + 2 stories submitted 26 Aug. It carries your name in public, so it is yours to approve. Two rounds of changes available.</div>
+            <div class="nfoot"><span class="due soon">live by 5 Sep</span><button class="btn pri sm">Review</button></div>
+          </div>
+
+          <div class="nrow">
+            <div class="nhead"><div class="nico i-y">✍</div>
+              <div style="flex:1"><div class="nwhat">Countersign 2 contracts</div>
+              <div class="nwho">MEERA S. · DIVYA T. · EXISTS TODAY</div></div></div>
+            <div class="nwhy">Both creators signed. Nothing starts until you do.</div>
+            <div class="nfoot"><button class="btn pri sm">Sign both</button></div>
+          </div>
+
+          <div class="nrow">
+            <div class="nhead"><div class="nico i-p">🤝</div>
+              <div style="flex:1"><div class="nwhat">Asha countered your terms</div>
+              <div class="nwho">ASHA M. · STEP 1 · NEW</div></div></div>
+            <div class="nwhy">You offered 15%, she wants <b>22%</b> and 2 Sep instead of 24 Aug. One counter left on your side.</div>
+            <div class="nfoot"><span class="due soon">expires 22 Aug</span><button class="btn pri sm">See the diff</button></div>
+          </div>
+
+          <div class="ghd ok"><span>Good to know</span><span>1</span></div>
+          <div class="nrow" style="border-bottom:none">
+            <div class="nhead"><div class="nico i-g">🖼</div>
+              <div style="flex:1"><div class="nwhat">Asha posted using only your products</div>
+              <div class="nwho">ASHA M. · STEP 4 · NEW · NO ACTION</div></div></div>
+            <div class="nwhy">"Festive Sarees" went live with 3 of your sarees. You did not review it and do not need to — we check quality, she chooses the concept.</div>
+            <div class="nfoot"><button class="btn sec sm">See the post</button></div>
+          </div>
+
+        </div>
+      </div>
+      <div class="cap">Same anatomy as the creator's. The last row is <b>news, not a task</b> — and says so.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>Extending what is there</h3>
+        <div class="tscroll"><table>
+          <tr><th>Item</th><th>Status</th></tr>
+          <tr><td>Contracts to countersign</td><td><span class="st2 s-ex">exists</span> <code>pending_signatures</code></td></tr>
+          <tr><td>Content to review</td><td><span class="st2 s-ex">exists</span> <code>pending_reviews</code></td></tr>
+          <tr><td>Negotiations</td><td><span class="st2 s-ex">exists</span> <code>pending_negotiations</code></td></tr>
+          <tr><td>Applications</td><td><span class="st2 s-ex">exists</span> <code>pending_applications</code> — <b>can never be non-zero</b>: Part 6 found nothing writes <code>status='applied'</code></td></tr>
+          <tr><td>Payment failures</td><td><span class="st2 s-ex">exists</span></td></tr>
+          <tr><td>Collab requests + counters</td><td><span class="st2 s-nw">new</span> from the handshake</td></tr>
+          <tr><td>Shoot slots to answer</td><td><span class="st2 s-nw">new</span></td></tr>
+          <tr><td>Parcels to dispatch</td><td><span class="st2 s-nw">new</span></td></tr>
+          <tr><td>Missing-item reports</td><td><span class="st2 s-nw">new</span></td></tr>
+          <tr><td>Exclusive-post notices</td><td><span class="st2 s-nw">new</span> · informational</td></tr>
+          <tr><td>Agreements to brief</td><td><span class="st2 s-nw">new</span> · "build it on web"</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note bad"><b>Two changes to the screen itself.</b> The five tabs become <b>one list grouped by urgency</b> — five tabs means five places to check, and the brand's real question is "what is on fire", not "what kind of thing is on fire". And it moves from <code>brandPalette</code> yellow to <code>ig</code>, matching everything else.</div>
+
+      <div class="note key"><b>Kill the Applications tab.</b> It renders a counter that is structurally always zero — the flow behind it was never finished, as Part 6 recorded. A permanently empty tab teaches people to stop looking at the screen.</div>
+
+      <div class="note good"><b>One summary endpoint, extended.</b> <code>getSummary</code> is already a single round-trip counts query. The new sources are added there rather than in five more calls.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ BRAND APP IA -->
+<div class="view" id="v6">
+  <div class="vh">The brand app has no Collabs tab — and needs the same spine</div>
+  <div class="vs">Brand tabs today: Home · Campaigns · Wallet · Alerts · Profile. The per-creator lifecycle lives three levels down, under Campaigns → Campaign → Creators.</div>
+
+  <div class="note bad"><b>The asymmetry.</b> The creator sees one collaboration with one brand. The brand sees one campaign with many creators. That is a real difference, not a bug — <b>so the answer is not to bolt a Collabs tab onto the brand app.</b> The brand's spine is per-creator <i>inside</i> a campaign, plus one cross-campaign action list.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl" style="font-size:16px">Festive Season</div><div class="sub">SALES · ONGOING · 4 CREATORS</div></div></div>
+        <div class="stg"><span class="on">Creators<span class="n">4</span></span><span>Shoots<span class="n">2</span></span><span>Content<span class="n">3</span></span><span>Sales</span></div>
+        <div class="body">
+          <div class="lhd">Needs you · 2</div>
+          <div class="tr">
+            <div class="av">AM</div>
+            <div class="m"><div class="bn">Asha M.</div>
+            <div class="tm">Step 3 · parcel — 1 item missing</div>
+            <div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">RK</div>
+            <div class="m"><div class="bn">Ravi K.</div>
+            <div class="tm">Step 3 · slot proposed 30 Aug</div>
+            <div class="st c-you"><span class="dot d-you"></span>ANSWER — 6 DAYS OLD</div></div><div class="chev">›</div>
+          </div>
+          <div class="lhd">Moving</div>
+          <div class="tr">
+            <div class="av">NP</div>
+            <div class="m"><div class="bn">Nisha P.</div>
+            <div class="tm">Step 4 · 2 posts live</div>
+            <div class="st c-brand"><span class="dot d-brand"></span>WITH THE REVIEW TEAM</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">DT</div>
+            <div class="m"><div class="bn">Divya T.</div>
+            <div class="tm">Step 6 · complete 28 Aug</div>
+            <div class="st c-done"><span class="dot d-done"></span>DONE</div></div><div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tbar">
+          <div><span class="ic">⌂</span>Home</div>
+          <div class="on"><span class="ic">📣</span>Campaigns</div>
+          <div><span class="ic">₹</span>Wallet</div>
+          <div><span class="ic">🔔<span class="bdg">6</span></span>Alerts</div>
+          <div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap">Campaign → Creators. <b>Every row carries the same step number</b> the creator sees. One shared truth.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:16px">Asha M.</div><div class="sub">FESTIVE SEASON · SALES · 18%</div></div></div>
+        <div class="spine">
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">12 Aug</span></div></div><div class="chev">›</div></div>
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Both signed <span class="sbadge b-done">12 Aug</span></div></div><div class="chev">›</div></div>
+          <div class="step now"><div class="rail"></div><div class="sn now">3</div>
+            <div class="sc"><div class="stt">The shoot <span class="sbadge b-you">your turn</span></div>
+            <div class="sd">Parcel delivered 21 Aug. Asha flagged <b>Cotton Handloom — Indigo</b> as missing.</div>
+            <div class="sact"><button class="btn pri">Resolve the missing item</button></div></div></div>
+          <div class="step"><div class="rail"></div><div class="sn todo">4</div>
+            <div class="sc"><div class="stt">Her shop posts</div>
+            <div class="sd">You will be told when a post uses only your products. You do not review these.</div></div></div>
+          <div class="step"><div class="rail"></div><div class="sn todo">5</div>
+            <div class="sc"><div class="stt">Her Instagram post</div>
+            <div class="sd">You approve the reel before it goes out, then confirm it is live.</div></div></div>
+          <div class="step"><div class="rail"></div><div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete</div>
+            <div class="sd">You hoped for 5 posts — guidance only.</div></div></div>
+        </div>
+      </div>
+      <div class="cap">Same six steps, <b>written from the brand's side</b>. Step 4 explicitly says they do not review.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>The brand's three entry points</h3>
+        <div class="tscroll"><table>
+          <tr><th>Entry</th><th>Answers</th><th>Where</th></tr>
+          <tr><td><b>Needs you</b></td><td>"What is on fire, anywhere?"</td><td><code>BrandActionRequired</code> — exists, extended</td></tr>
+          <tr><td><b>Campaign → Creators</b></td><td>"How is this campaign moving?"</td><td><code>BrandCampaignInfluencersList</code> — exists, gains step numbers</td></tr>
+          <tr><td><b>Creator spine</b></td><td>"Where is Asha exactly?"</td><td>New — the brand-side mirror</td></tr>
+        </table></div>
+      </div>
+      <div class="note good"><b>No new brand tab.</b> Every screen above is an existing route gaining the spine, plus one new detail screen. Campaign creation and listing stay web-only, per locked scope — nothing here needs a desk.</div>
+      <div class="note info"><b>Alerts keeps the badge, Needs-you keeps the work.</b> Alerts is a feed of what happened; Needs-you is a list of what is owed. Today the brand has both and they overlap confusingly — the split is: if it needs a decision it belongs in Needs you, if it is news it belongs in Alerts.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ ROUTE MAP -->
+<div class="view" id="v7">
+  <div class="vh">Route map — what is new, what is reused</div>
+  <div class="vs">Real screen names from both navigators, so the build has no ambiguity about where anything lands.</div>
+
+  <div class="card">
+    <h3>Influencer app · <code>CollabsStackNav</code></h3>
+    <div class="tscroll"><table>
+      <tr><th>Route</th><th>Step</th><th>Status</th></tr>
+      <tr><td class="mono">CollabsList</td><td>the six-stage rail</td><td><span class="st2 s-mv">rework</span> stages 9 → 6</td></tr>
+      <tr><td class="mono">CollabNeedsYou</td><td>—</td><td><span class="st2 s-nw">new</span> panel ⑤</td></tr>
+      <tr><td class="mono">CollabDetail</td><td>the spine</td><td><span class="st2 s-mv">rework</span> becomes the 6-step index</td></tr>
+      <tr><td class="mono">CollabThread</td><td>1 · Agree</td><td><span class="st2 s-nw">new</span> from the conversations contract</td></tr>
+      <tr><td class="mono">Contract · ContractPdf</td><td>2 · Sign</td><td><span class="st2 s-ex">exists</span> unchanged</td></tr>
+      <tr><td class="mono">CollabShoot</td><td>3 · Shoot</td><td><span class="st2 s-nw">new</span> — no production route exists in any navigator today</td></tr>
+      <tr><td class="mono">CollabShopPosts</td><td>4 · Shop posts</td><td><span class="st2 s-nw">new</span> roll-up; composer stays in the Create tab</td></tr>
+      <tr><td class="mono">Deliverable · DeliverableList</td><td>5 · Go live</td><td><span class="st2 s-ex">exists</span> gains the ordering gate</td></tr>
+      <tr><td class="mono">CollabComplete</td><td>6 · Done</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">CollabPreferences</td><td>—</td><td><span class="st2 s-mv">moves</span> from the Profile stack</td></tr>
+      <tr><td class="mono">CollabTracking · Negotiation</td><td>—</td><td><span class="st2 s-ex">exists</span> reachable from the spine</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Brand app · <code>CampaignsStack</code> + <code>HomeStack</code></h3>
+    <div class="tscroll"><table>
+      <tr><th>Route</th><th>Role</th><th>Status</th></tr>
+      <tr><td class="mono">BrandActionRequired</td><td>Needs you</td><td><span class="st2 s-mv">rework</span> 5 tabs → 1 urgency list, <code>ig</code>, new sources</td></tr>
+      <tr><td class="mono">BrandCampaignInfluencersList</td><td>Campaign → Creators</td><td><span class="st2 s-mv">rework</span> gains step numbers + turn</td></tr>
+      <tr><td class="mono">BrandCollabSpine</td><td>per-creator six steps</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">BrandShoot</td><td>3 · Shoot</td><td><span class="st2 s-nw">new</span> incl. the parcel builder</td></tr>
+      <tr><td class="mono">BrandCampaignReviewQueue</td><td>5 · reel review</td><td><span class="st2 s-ex">exists</span></td></tr>
+      <tr><td class="mono">BrandContract</td><td>2 · Sign</td><td><span class="st2 s-ex">exists</span></td></tr>
+      <tr><td class="mono">BrandCollabRequests · BrandRequestComposer</td><td>1 · Agree</td><td><span class="st2 s-ex">exists</span> feeds Needs you</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>Native-crash warning, stated because it has bitten this repo before.</b> This adds several routes to native stacks in both apps. Two <code>Stack.Screen</code>s with the <b>same name inside one stack</b> is a hard crash on tab mount that no ErrorBoundary catches. <b>Checked: there are none today</b> in either navigator. The same name in <i>different</i> stacks is fine and is already the pattern — <code>CampaignDetail</code> sits in both <code>HomeStack</code> and <code>CampaignsStack</code>, <code>ContractPdf</code> in three. That is legitimate; the thing to preserve is uniqueness <i>within</i> each stack as these routes are added, and to prove it on a device rather than in a bundle build.</div>
+
+  <div class="card">
+    <h3>Build order</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Slice</th><th>Why here</th></tr>
+      <tr><td><b>1</b></td><td>Stage model 9 → 6 + step derivation, server-side</td><td>Everything else reads the step number. One source, two apps.</td></tr>
+      <tr><td><b>2</b></td><td><code>CollabDetail</code> becomes the spine</td><td>The index. Existing steps wire in immediately; new ones slot in as they land.</td></tr>
+      <tr><td><b>3</b></td><td>Creator <b>Needs you</b> + header pill + tab badge</td><td>Standalone value from day one, even before Parts A–C</td></tr>
+      <tr><td><b>4</b></td><td>Brand <b>Needs you</b> rework + campaign step numbers</td><td>Same data, other side</td></tr>
+      <tr><td><b>5</b></td><td>Brand per-creator spine</td><td>Mirrors slice 2</td></tr>
+    </table></div>
+    <div class="note good" style="max-width:none;margin:12px 0 0"><b>This is arrangement, and it comes first.</b> Slices 1–5 need none of Part A, B or C — they organise what exists and leave labelled sockets for what does not. Build the spine, then drop the shoot, the parcel, the ordering rule and completion into steps that are already there.</div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

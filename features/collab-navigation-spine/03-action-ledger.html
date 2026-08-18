@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Action ledger — every action, in sequence, both sides</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;
+  --ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;
+  --y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;
+  --red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;
+  --purple:#6D3FC4;--purpleBg:#F2ECFB;
+  --border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1240px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:860px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:960px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:0;margin-bottom:15px;overflow:hidden}
+.card>h3{font-size:13.5px;font-weight:800;padding:13px 15px 11px;border-bottom:1px solid var(--lineSoft);display:flex;justify-content:space-between;align-items:center}
+.card>h3 .ct{font-size:10px;font-weight:800;color:var(--mut2);font-family:'JetBrains Mono'}
+.cb{padding:0}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--border);white-space:nowrap;background:#FAFAFA}
+td{font-size:11.5px;padding:9px 10px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+tr:last-child td{border-bottom:none}
+td.n{font-family:'JetBrains Mono';font-size:10px;color:var(--mut2);width:32px;font-weight:800}
+td.act{font-weight:800;min-width:170px}
+td.scr{font-family:'JetBrains Mono';font-size:10px;color:var(--text2);min-width:135px}
+td.dd{color:var(--mut);min-width:150px}
+.who{font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap;letter-spacing:.2px}
+.w-b{background:var(--blueBg);color:var(--blue)}
+.w-c{background:var(--greenBg);color:var(--green)}
+.w-both{background:var(--yBg);color:var(--yInk)}
+.w-a{background:var(--purpleBg);color:var(--purple)}
+.w-s{background:var(--lineSoft);color:var(--mut)}
+.st{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-rm{background:var(--redBg);color:var(--red)}
+.legend{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:15px}
+.lgi{font-size:10px;font-weight:700;color:var(--mut);display:flex;align-items:center;gap:5px}
+
+.flow{display:flex;gap:0;flex-wrap:wrap;margin-bottom:16px}
+.fl{flex:1;min-width:106px;border:1px solid var(--line);border-right:none;padding:10px 9px;background:var(--white)}
+.fl:first-child{border-radius:11px 0 0 11px}
+.fl:last-child{border-right:1px solid var(--line);border-radius:0 11px 11px 0}
+.fl .fn{font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;color:var(--mut2)}
+.fl .ft{font-size:11.5px;font-weight:800;font-family:'Outfit';margin-top:3px}
+.fl .fs{font-size:9.5px;color:var(--mut);font-weight:650;margin-top:2px;line-height:1.4}
+.fl.acc{background:#FAFAFA}
+.sub{font-size:10.5px;color:var(--mut);font-weight:650;padding:9px 15px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);line-height:1.5}
+.gap{background:#FFF9F7 !important}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Action ledger — every action, in sequence, both sides</h1>
+  <p>features/collab-navigation-spine · 03-action-ledger · 2026-08-15 · authored BEFORE the next mockups, on request</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① How to read</button>
+  <button class="tab" data-v="v1">② Controls + approach</button>
+  <button class="tab" data-v="v2">③ Negotiate + agree</button>
+  <button class="tab" data-v="v3">④ Campaign creation</button>
+  <button class="tab" data-v="v4">⑤ Offer sub-flow</button>
+  <button class="tab" data-v="v5">⑥ Sign + shoot</button>
+  <button class="tab" data-v="v6">⑦ Posts + social</button>
+  <button class="tab" data-v="v7">⑧ Finish + money</button>
+  <button class="tab" data-v="v8">⑨ Screen inventory</button>
+  <button class="tab" data-v="v9">⑩ Gaps you found</button>
+</div>
+
+<!-- ① HOW TO READ -->
+<div class="view on" id="v0">
+  <div class="vh">One lifecycle, 160 actions, two apps</div>
+  <div class="vs">Every action either side can take, in the order it happens. Each one names its owner, the screen it lives on, and what it drills into. This is the list the next mockups get drawn from — nothing should appear in a screen that isn't a row here.</div>
+
+  <div class="flow">
+    <div class="fl"><div class="fn">00</div><div class="ft">Controls</div><div class="fs">who may approach whom</div></div>
+    <div class="fl"><div class="fn">01</div><div class="ft">Approach</div><div class="fs">search, groups, ask, pitch</div></div>
+    <div class="fl acc"><div class="fn">02</div><div class="ft">Negotiate</div><div class="fs">counter, accept, decline</div></div>
+    <div class="fl acc"><div class="fn">03</div><div class="ft">Agree</div><div class="fs">terms settled, 90-day clock</div></div>
+    <div class="fl"><div class="fn">04</div><div class="ft">Campaign</div><div class="fs">shell → sets → offer</div></div>
+    <div class="fl"><div class="fn">05</div><div class="ft">Sign</div><div class="fs">invite, accept, contract</div></div>
+    <div class="fl acc"><div class="fn">06</div><div class="ft">Shoot</div><div class="fs">slot or parcel</div></div>
+    <div class="fl acc"><div class="fn">07</div><div class="ft">Shop posts</div><div class="fs">make, review, live</div></div>
+    <div class="fl acc"><div class="fn">08</div><div class="ft">Social</div><div class="fs">approve, publish, confirm</div></div>
+    <div class="fl"><div class="fn">09</div><div class="ft">Finish</div><div class="fs">completion, money</div></div>
+  </div>
+
+  <div class="legend">
+    <span class="lgi"><span class="who w-b">BRAND</span> brand acts</span>
+    <span class="lgi"><span class="who w-c">CREATOR</span> creator acts</span>
+    <span class="lgi"><span class="who w-both">EITHER</span> both can, it's a negotiation</span>
+    <span class="lgi"><span class="who w-a">ADMIN</span> your desk</span>
+    <span class="lgi"><span class="who w-s">SYSTEM</span> automatic, nobody presses it</span>
+  </div>
+  <div class="legend">
+    <span class="lgi"><span class="st s-ex">WORKS</span> screen + backend live</span>
+    <span class="lgi"><span class="st s-ui">NEEDS UI</span> backend live, no screen</span>
+    <span class="lgi"><span class="st s-ch">CHANGES</span> exists, behaviour moves</span>
+    <span class="lgi"><span class="st s-nw">NEW</span> build both ends</span>
+    <span class="lgi"><span class="st s-rm">REMOVE</span> delete it</span>
+  </div>
+
+  <div class="note key"><b>The reading rule.</b> If an action is <span class="who w-both">EITHER</span>, both apps get the identical screen — same buttons, same words, same diff. If it is <span class="who w-b">BRAND</span> or <span class="who w-c">CREATOR</span>, the other side sees its <i>state</i> and no button. That single rule removes most of the design questions.</div>
+
+  <div class="note good"><b>Tally: 160 actions.</b> <b>77 work today</b> · <b>21</b> have a working backend and no screen · <b>22</b> change behaviour · <b>39</b> are new · <b>1</b> is removed. By owner: brand 52 · creator 31 · either 24 · system 20 · admin 4. Roughly three-quarters of this programme is arrangement and rewiring, not new construction.</div>
+
+  <div class="note bad"><b>Ten of the twenty-one "needs UI" rows are brand-side approach</b> — groups, bulk-add, asking a group, broadcasting, the reach preview. That whole capability was built and tested in Part 2 and has never been usable by anyone on any surface. It is the single largest block of finished-but-invisible work in the system.</div>
+</div>
+
+<!-- ② CONTROLS + APPROACH -->
+<div class="view" id="v1">
+  <div class="vh">Phase 0–1 · Who may approach whom, and the approach itself</div>
+  <div class="vs">Both sides control their own inbox. Then four ways in for the brand, one for the creator.</div>
+
+  <div class="card">
+    <h3>Phase 0 · Controls <span class="ct">1–12</span></h3>
+    <div class="sub">You asked for this explicitly: both sides decide who can reach them. Both halves exist in the engine; only the creator's has a screen.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Drills into</th><th></th></tr>
+      <tr><td class="n">1</td><td class="act">Turn brand requests on/off</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Collab preferences</td><td class="dd">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">2</td><td class="act">Opt out of bulk outreach</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Collab preferences</td><td class="dd">separate from #1 — stay open to a direct ask</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">3</td><td class="act">Set minimum commission / fee</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Collab preferences</td><td class="dd">shown to brands as "her bar"</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">4</td><td class="act">Set which aims she'll accept</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Collab preferences</td><td class="dd">sales / content / both</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">5</td><td class="act">Move preferences into Collabs</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Invitations header</td><td class="dd">out of the Profile stack</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr class="gap"><td class="n">6</td><td class="act">Turn creator pitches on/off</td><td><span class="who w-b">BRAND</span></td><td class="scr">Profile → Settings</td><td class="dd">the mirror of #1</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">7</td><td class="act">Set a minimum tier for pitches</td><td><span class="who w-b">BRAND</span></td><td class="scr">Profile → Settings</td><td class="dd">nano/micro/macro</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">8</td><td class="act">Restrict pitches to niches</td><td><span class="who w-b">BRAND</span></td><td class="scr">Profile → Settings</td><td class="dd">multi-select</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">9</td><td class="act">Require same city</td><td><span class="who w-b">BRAND</span></td><td class="scr">Profile → Settings</td><td class="dd">matched against where she lives now</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">10</td><td class="act">Set minimum engagement rate</td><td><span class="who w-b">BRAND</span></td><td class="scr">Profile → Settings</td><td class="dd">—</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">11</td><td class="act">Only past collaborators may pitch</td><td><span class="who w-b">BRAND</span></td><td class="scr">Profile → Settings</td><td class="dd">—</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="n">12</td><td class="act">Set the platform limits</td><td><span class="who w-a">ADMIN</span></td><td class="scr">Admin → Handshake</td><td class="dd">rounds, caps, expiry, cooldown</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>The asymmetry is deliberate, and it is worth restating.</b> Creators are reachable <b>by default</b> and can mute. Brands <b>opt in</b> to receiving pitches. A creator who can't be found gets no work; a brand who isn't looking shouldn't be pitched. Consequence: <b>1 of 26 brands is currently pitchable</b> — the decision on whether approved brands should default to open is still open.</div>
+
+  <div class="card">
+    <h3>Phase 1 · The brand approaches <span class="ct">13–30</span></h3>
+    <div class="sub">Four ways in — one creator, a group, a filtered broadcast, or answering a pitch. Ten of these have no screen anywhere.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Drills into</th><th></th></tr>
+      <tr class="gap"><td class="n">13</td><td class="act">Search creators by name</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">creator profile</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">14</td><td class="act">Filter by place</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">the state→city→area picker</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">15</td><td class="act">Filter by niche</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">same picker component</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">16</td><td class="act">Filter by social following</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">band picker</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">17</td><td class="act">Filter by INFLX following</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">predicts sales better than reach</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">18</td><td class="act">Open a creator profile</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creator profile</td><td class="dd">split followers · stats · her bar</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr class="gap"><td class="n">19</td><td class="act">Create a group</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Groups</td><td class="dd">name it, then add</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">20</td><td class="act">Add a creator to a group</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creator profile</td><td class="dd">group picker sheet</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">21</td><td class="act">Add many to a group at once</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">multi-select from results</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">22</td><td class="act">Rename / delete a group</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Groups</td><td class="dd">—</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">23</td><td class="act">Remove a member</td><td><span class="who w-b">BRAND</span></td><td class="scr">Group detail</td><td class="dd">—</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="n">24</td><td class="act">Ask ONE creator</td><td><span class="who w-b">BRAND</span></td><td class="scr">Request composer</td><td class="dd">terms · style · optional</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">25</td><td class="act">Ask a whole GROUP</td><td><span class="who w-b">BRAND</span></td><td class="scr">Group detail</td><td class="dd">same composer, reach funnel first</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">26</td><td class="act">Ask MANY by filter</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Find</td><td class="dd">matched → reachable → capped</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">27</td><td class="act">Preview who a broadcast reaches</td><td><span class="who w-b">BRAND</span></td><td class="scr">Ask many</td><td class="dd">every drop named</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="n">28</td><td class="act">See requests sent</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Talking</td><td class="dd">one row per conversation</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">29</td><td class="act">Withdraw a request</td><td><span class="who w-b">BRAND</span></td><td class="scr">Conversation</td><td class="dd">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">30</td><td class="act">See a broadcast as one row</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Talking</td><td class="dd">expands to its 30 conversations</td><td><span class="st s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Phase 1 · The creator approaches <span class="ct">31–40</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Drills into</th><th></th></tr>
+      <tr><td class="n">31</td><td class="act">Search brands by name</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Find brands</td><td class="dd">brand card</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">32</td><td class="act">Filter by state → city → nearby</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Find brands</td><td class="dd">same picker as #14</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">33</td><td class="act">Filter by industry</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Find brands</td><td class="dd">hidden when only one exists</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">34</td><td class="act">Switch home / current location</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Find brands</td><td class="dd">second location is new</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">35</td><td class="act">See if she can pitch, and why not</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Find brands</td><td class="dd">on the row, before writing</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">36</td><td class="act">Browse a brand's catalogue by category</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Brand card</td><td class="dd">grouped, with images</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">37</td><td class="act">Write a pitch — 4 steps</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Pitch wizard</td><td class="dd">deal → money → deliver → review</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">38</td><td class="act">See her pitches</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Collabs → My pitches</td><td class="dd">conversation</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">39</td><td class="act">Withdraw a pitch</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Conversation</td><td class="dd">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">40</td><td class="act">Brand SEES pitches received</td><td><span class="who w-b">BRAND</span></td><td class="scr">Creators → Talking</td><td class="dd">same list as her requests</td><td><span class="st s-ch">changes</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>#40 was the gap you spotted.</b> A pitch arriving and a request going out are both "a conversation with a creator about terms" — they belong in one list, sorted by whose turn it is, not split by who started. Splitting them makes a brand check two places for the same job.</div>
+</div>
+
+<!-- ③ NEGOTIATE + AGREE -->
+<div class="view" id="v2">
+  <div class="vh">Phase 2–3 · Negotiating, and what agreement produces</div>
+  <div class="vs">The most symmetric part of the product. Every row here should render identically on both phones.</div>
+
+  <div class="card">
+    <h3>Phase 2 · Negotiation <span class="ct">41–52</span></h3>
+    <div class="sub">You said: make it the same for both. It nearly is — one direction is still missing a counter-back.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Drills into</th><th></th></tr>
+      <tr><td class="n">41</td><td class="act">Open a conversation</td><td><span class="who w-both">EITHER</span></td><td class="scr">Conversation</td><td class="dd">terms · diff · history</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">42</td><td class="act">Accept the terms on the table</td><td><span class="who w-both">EITHER</span></td><td class="scr">Conversation</td><td class="dd">button names the numbers</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">43</td><td class="act">Counter — brand answering a request</td><td><span class="who w-b">BRAND</span></td><td class="scr">Counter composer</td><td class="dd">old→new diff</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">44</td><td class="act">Counter — creator answering a request</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Counter composer</td><td class="dd">requirements absent, not disabled</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">45</td><td class="act">Counter — brand answering a pitch</td><td><span class="who w-b">BRAND</span></td><td class="scr">Counter composer</td><td class="dd">currently unlimited — gets a cap</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr class="gap"><td class="n">46</td><td class="act"><b>Counter back on her own pitch</b></td><td><span class="who w-c">CREATOR</span></td><td class="scr">Counter composer</td><td class="dd">the one missing direction</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">47</td><td class="act">Decline</td><td><span class="who w-both">EITHER</span></td><td class="scr">Conversation</td><td class="dd">starts a cooldown</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">48</td><td class="act">See rounds remaining</td><td><span class="who w-both">EITHER</span></td><td class="scr">Conversation</td><td class="dd">both sides' counts</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">49</td><td class="act">Mark a term as required</td><td><span class="who w-both">EITHER</span></td><td class="scr">Composer</td><td class="dd">cannot be countered</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr class="gap"><td class="n">50</td><td class="act"><b>See the full history of the talk</b></td><td><span class="who w-both">EITHER</span></td><td class="scr">Step diary</td><td class="dd">every offer, both sides, one page</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">51</td><td class="act">Expire an unanswered request</td><td><span class="who w-s">SYSTEM</span></td><td class="scr">—</td><td class="dd">7-day clock, warned first</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">52</td><td class="act">Block a re-ask after a decline</td><td><span class="who w-s">SYSTEM</span></td><td class="scr">—</td><td class="dd">30-day cooldown</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>#50 is a hard dependency, not a nice-to-have.</b> Only the latest counter is stored — each one overwrites the last. Until a diary exists, the history screen on <b>either</b> app cannot be drawn. Build it before any step-detail work.</div>
+
+  <div class="card">
+    <h3>Phase 3 · Agreement <span class="ct">53–58</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Drills into</th><th></th></tr>
+      <tr><td class="n">53</td><td class="act">Create the agreement</td><td><span class="who w-s">SYSTEM</span></td><td class="scr">—</td><td class="dd">from either record type</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">54</td><td class="act">See what was settled</td><td><span class="who w-both">EITHER</span></td><td class="scr">Agreement detail</td><td class="dd">→ the diary (#50)</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">55</td><td class="act">See the expiry clock</td><td><span class="who w-both">EITHER</span></td><td class="scr">Agreement detail</td><td class="dd">90 days to brief it</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">56</td><td class="act">Cancel an agreement</td><td><span class="who w-both">EITHER</span></td><td class="scr">Agreement detail</td><td class="dd">before briefing only</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="n">57</td><td class="act">List agreements ready to brief</td><td><span class="who w-b">BRAND</span></td><td class="scr">Home + Creators → Agreed</td><td class="dd">the campaign shortcut</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="n">58</td><td class="act">Expire an unbriefed agreement</td><td><span class="who w-s">SYSTEM</span></td><td class="scr">—</td><td class="dd">warned before it lapses</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ④ CAMPAIGN CREATION -->
+<div class="view" id="v3">
+  <div class="vh">Phase 4 · Campaign creation, fully expanded</div>
+  <div class="vs">Shell → sets → four steps per set. Step 2 and step 4 differ by goal. Every branch listed.</div>
+
+  <div class="card">
+    <h3>The shell <span class="ct">59–63</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Drills into</th><th></th></tr>
+      <tr><td class="n">59</td><td class="act">Land on Campaigns</td><td><span class="who w-b">BRAND</span></td><td class="scr">Campaigns</td><td class="dd"><b>list + one Create button</b></td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">60</td><td class="act">Start a campaign</td><td><span class="who w-b">BRAND</span></td><td class="scr">New campaign</td><td class="dd">name + start date only</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">61</td><td class="act">Add a set</td><td><span class="who w-b">BRAND</span></td><td class="scr">New campaign</td><td class="dd">→ the 4-step wizard</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">62</td><td class="act">Edit / delete a set</td><td><span class="who w-b">BRAND</span></td><td class="scr">New campaign</td><td class="dd">before publish</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">63</td><td class="act">Review and publish</td><td><span class="who w-b">BRAND</span></td><td class="scr">Review</td><td class="dd">warns on any drift from agreed terms</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Step 1 · Pick the goal <span class="ct">64</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Branch</th><th>What it decides</th><th></th></tr>
+      <tr><td class="n">64</td><td class="act">Pick the aim</td><td><b>Sales</b></td><td>no end date · no budget · asks about channels · commission per creator · a follower offer is required</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n"></td><td class="act"></td><td><b>Content</b></td><td>end date derived from the last window · budget = sum of fees · asks for deliverables · <b>no follower offer</b></td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n"></td><td class="act"></td><td><b>Both</b></td><td>fee and commission · deliverables asked · a follower offer required</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Step 2 · Basics — this is where the goals diverge <span class="ct">65–71</span></h3>
+    <div class="sub">Your point: on content you are buying labour, so you specify posts. On sales the creator carries the performance-marketing burden, so you ask what reach they bring instead.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Field</th><th>Sales</th><th>Content</th><th>Both</th><th></th></tr>
+      <tr><td class="n">65</td><td class="act">Set name</td><td>asked</td><td>asked</td><td>asked</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">66</td><td class="act">Start date</td><td>asked</td><td>asked</td><td>asked</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">67</td><td class="act">End date</td><td><b>never asked</b> — runs until ended</td><td><b>calculated</b> from the last posting window</td><td>calculated</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">68</td><td class="act">Budget</td><td><b>none anywhere</b></td><td><b>calculated</b> = sum of agreed fees</td><td>calculated</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">69</td><td class="act">Content format</td><td><b>reframed:</b> which channels will they drive traffic on, and a minimum channel count</td><td>unchanged: how many reels / posts / stories you are buying</td><td>as content</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">70</td><td class="act">Posting window</td><td>per creator, from the agreement</td><td>per set</td><td>per set</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">71</td><td class="act">Who posts?</td><td colspan="3"><b>REMOVED from all three</b> — settled at the agreement, whether you canvassed openly or asked one person</td><td><span class="st s-rm">remove</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Step 3 · Add your agreed creators <span class="ct">72–77</span></h3>
+    <div class="sub">You asked for this to be clearer. It is no longer a creator search — it is a pick-list of agreements you already hold.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">72</td><td class="act">See your unbriefed agreements</td><td><span class="who w-b">BRAND</span></td><td>each row: photo · agreed terms · working style · date agreed · <b>days until expiry</b></td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">73</td><td class="act">Tick who belongs in this set</td><td><span class="who w-b">BRAND</span></td><td>multi-select; one agreement can only go in one set</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">74</td><td class="act">Filter the pick-list</td><td><span class="who w-b">BRAND</span></td><td>by aim, so a sales set can't show a content agreement</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">75</td><td class="act">Open one to re-read the terms</td><td><span class="who w-b">BRAND</span></td><td>→ agreement detail → the diary</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">76</td><td class="act">Blocked from adding a stranger</td><td><span class="who w-s">SYSTEM</span></td><td>no agreement, no entry. Link out to "go and ask someone"</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">77</td><td class="act">Consume the agreement</td><td><span class="who w-s">SYSTEM</span></td><td>on publish — it leaves "ready to brief" for good</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Step 4 · Terms — two sections <span class="ct">78–82</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Section</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">78</td><td class="act">Read back what each creator gets</td><td><b>① settled</b></td><td>commission / fee · post-by · what she may sell · working style. Read-only by default.</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">79</td><td class="act">Override an agreed term</td><td><b>① settled</b></td><td>allowed, but <b>she is told which term moved, by name</b></td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">80</td><td class="act">Set what she may sell</td><td><b>① settled</b></td><td>whole store / a category / specific products → <b>the allocation sub-flow</b></td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">81</td><td class="act">Choose the follower offer</td><td><b>② open</b></td><td>use a saved offer, or make a new one → <b>the offer sub-flow</b></td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">82</td><td class="act">Skip the offer</td><td><b>② open</b></td><td>content sets only — nothing is being sold</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Why four steps now fit on a phone.</b> The old wizard asked the brand to invent terms per creator. After the handshake those terms already exist, so step 4 section ① is a read-back. The only genuine input left in the whole wizard is <b>one offer</b>.</div>
+</div>
+
+<!-- ⑤ OFFER SUB-FLOW -->
+<div class="view" id="v4">
+  <div class="vh">The two sub-flows inside step 4</div>
+  <div class="vs">You asked for these expanded: what she may sell (allocation), and what her followers get (the offer).</div>
+
+  <div class="card">
+    <h3>Sub-flow A · What she may sell — allocation <span class="ct">83–88</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Detail</th><th>Drills into</th><th></th></tr>
+      <tr><td class="n">83</td><td class="act">Pick the scope</td><td>three choices: <b>whole store</b> · <b>a category</b> · <b>specific products</b></td><td class="dd">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">84</td><td class="act">Whole store</td><td>everything listed, now and in future</td><td class="dd">shows a live count</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">85</td><td class="act">A category</td><td>pick a node in your category tree; the whole subtree comes with it</td><td class="dd">category picker</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">86</td><td class="act">Specific products</td><td>browse the catalogue <b>grouped by category</b>, with images, multi-select</td><td class="dd">product picker</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">87</td><td class="act">Search within the picker</td><td>by name, inside the chosen category</td><td class="dd">—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">88</td><td class="act">Auto-join new products</td><td>store and category scopes pick up newly listed items automatically</td><td class="dd">stated on screen</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Sub-flow B · What her followers get — the offer <span class="ct">89–98</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">89</td><td class="act">Use a saved offer</td><td>pick from the library; shows type, scope, expiry</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">90</td><td class="act">Make a new one — pick the type</td><td><b>discount · volume · buy-one-get-one · bundle · free gift</b></td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">91</td><td class="act">Set the value</td><td>% or ₹ off · buy-X-get-Y · bundle price · the gift item</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">92</td><td class="act">Set a minimum basket</td><td>optional</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">93</td><td class="act">Choose what it applies to</td><td>whole store · a category · specific products — <b>same picker as #86</b></td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">94</td><td class="act">Set how it's redeemed</td><td>in-store visit · online order · both</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">95</td><td class="act">Set an expiry</td><td>an expired offer stops applying and stops advertising itself</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">96</td><td class="act">Preview a shopper's basket</td><td>which offer wins, and by how much</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="n">97</td><td class="act">Save it to the library</td><td>reusable across campaigns</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">98</td><td class="act">Blocked: an offer on an unlisted product</td><td>can't discount what isn't in the store</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>One product picker, four callers.</b> Allocation (#86), offer scope (#93), the creator's catalogue browse, and the parcel builder all need "choose products, grouped by category, with images". Build it once as a component and every one of those gets it.</div>
+
+  <div class="note info"><b>One offer per basket, never stacked</b> — the best one for that shopper, with a creator's own offer winning a tie. That rule already holds server-side; the preview at #96 is the only way a brand can see it before publishing.</div>
+</div>
+
+<!-- ⑥ SIGN + SHOOT -->
+<div class="view" id="v5">
+  <div class="vh">Phase 5–6 · Signing, then the shoot</div>
+
+  <div class="card">
+    <h3>Phase 5 · Invite and sign <span class="ct">99–106</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Screen</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">99</td><td class="act">Send the campaign invite</td><td><span class="who w-s">SYSTEM</span></td><td class="scr">—</td><td>on publish</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">100</td><td class="act">See settled vs new</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Campaign invite</td><td>"already agreed" and "new in this campaign", split</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">101</td><td class="act">Accept in one tap</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Campaign invite</td><td>no Negotiate — terms are closed</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">102</td><td class="act">Accept / decline / negotiate a cold invite</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Campaign invite</td><td>no agreement behind it, so all three stay</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">103</td><td class="act">Sign</td><td><span class="who w-c">CREATOR</span></td><td class="scr">Contract</td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">104</td><td class="act">Countersign</td><td><span class="who w-b">BRAND</span></td><td class="scr">Contract</td><td>bulk-sign several at once</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">105</td><td class="act">Read the contract PDF</td><td><span class="who w-both">EITHER</span></td><td class="scr">Contract PDF</td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">106</td><td class="act">Create the shoot plan</td><td><span class="who w-s">SYSTEM</span></td><td class="scr">—</td><td>automatic on signature</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Phase 6 · The shoot <span class="ct">107–121</span></h3>
+    <div class="sub">Working style is now two questions, not three options: <b>where does she shoot</b>, and <b>are you sending products</b>.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Branch</th><th></th></tr>
+      <tr><td class="n">107</td><td class="act">Read the style from the agreement</td><td><span class="who w-s">SYSTEM</span></td><td>no longer set at contract approval</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">108</td><td class="act">Ask the style on a cold invite</td><td><span class="who w-both">EITHER</span></td><td>no agreement exists, so the shoot screen asks once</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">109</td><td class="act">Set the address and contact</td><td><span class="who w-b">BRAND</span></td><td>visit only</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">110</td><td class="act">Propose a slot</td><td><span class="who w-both">EITHER</span></td><td>bounded — must finish 2 days before her post-by</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">111</td><td class="act">Counter a slot</td><td><span class="who w-both">EITHER</span></td><td>2 reschedules each, then locked</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">112</td><td class="act">Accept a slot</td><td><span class="who w-both">EITHER</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">113</td><td class="act">Set expected time</td><td><span class="who w-both">EITHER</span></td><td>a guide, not a deadline — nothing is ever late</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">114</td><td class="act">Switch to remote</td><td><span class="who w-both">EITHER</span></td><td>one asks, the other confirms</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">115</td><td class="act">Build the parcel</td><td><span class="who w-b">BRAND</span></td><td>items picked <b>from the catalogue</b>, not typed</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">116</td><td class="act">Dispatch</td><td><span class="who w-b">BRAND</span></td><td>courier + tracking number</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">117</td><td class="act">Confirm receipt item by item</td><td><span class="who w-c">CREATOR</span></td><td>received / missing / damaged, each timestamped</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">118</td><td class="act">Resolve a shortfall</td><td><span class="who w-b">BRAND</span></td><td>resend, or drop it — <b>her shoot goes ahead either way</b></td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">119</td><td class="act">Mark the shoot done</td><td><span class="who w-both">EITHER</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">120</td><td class="act">Watch the production queue</td><td><span class="who w-a">ADMIN</span></td><td>stuck shoots</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">121</td><td class="act">See the shoot's history</td><td><span class="who w-both">EITHER</span></td><td><b>already recorded</b> — the only step that keeps one</td><td><span class="st s-ui">needs UI</span></td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ⑦ POSTS + SOCIAL -->
+<div class="view" id="v6">
+  <div class="vh">Phase 7–8 · Shop posts, then Instagram</div>
+  <div class="vs">The most one-sided phase, and the one with the ordering rule.</div>
+
+  <div class="card">
+    <h3>Phase 7 · Shop posts <span class="ct">122–133</span></h3>
+    <div class="sub">The brand does nothing here. They are told about one thing and can read the result.</div>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">122</td><td class="act">Create a post</td><td><span class="who w-c">CREATOR</span></td><td>concept · brand scope · products · caption · media</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">123</td><td class="act">Pick products to tag</td><td><span class="who w-c">CREATOR</span></td><td>from her allocation — <b>grouped by category</b></td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="n">124</td><td class="act">Reuse shoot footage</td><td><span class="who w-c">CREATOR</span></td><td>upload once, use in a post and the reel</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">125</td><td class="act">Submit for review</td><td><span class="who w-c">CREATOR</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">126</td><td class="act">See "with our review team since…"</td><td><span class="who w-c">CREATOR</span></td><td>a wait with a clock is a queue</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">127</td><td class="act">Approve</td><td><span class="who w-a">ADMIN</span></td><td>quality only</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">128</td><td class="act">Reject with a fixed fault</td><td><span class="who w-a">ADMIN</span></td><td>closed list; free text only alongside a fault</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">129</td><td class="act">Fix and resubmit</td><td><span class="who w-c">CREATOR</span></td><td>concept and caption preserved</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">130</td><td class="act">Go live in the shop</td><td><span class="who w-s">SYSTEM</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">131</td><td class="act">Notify the brand — exclusive only</td><td><span class="who w-s">SYSTEM</span></td><td>one brand → tell them · mixed → tell nobody</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">132</td><td class="act">Read an exclusive post</td><td><span class="who w-b">BRAND</span></td><td><b>read-only, after it is live</b></td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">133</td><td class="act">Open a post full-screen</td><td><span class="who w-both">EITHER</span></td><td>media · caption · tagged products · what it sold</td><td><span class="st s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Phase 8 · Social <span class="ct">134–142</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">134</td><td class="act">Submit the reel and caption</td><td><span class="who w-c">CREATOR</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">135</td><td class="act">Approve it</td><td><span class="who w-b">BRAND</span></td><td>it carries their name in public</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">136</td><td class="act">Ask for changes</td><td><span class="who w-b">BRAND</span></td><td>two rounds</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">137</td><td class="act"><b>Hold publishing until a shop post is live</b></td><td><span class="who w-s">SYSTEM</span></td><td>server-side; one live post is enough</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">138</td><td class="act">Tell her she may post now</td><td><span class="who w-s">SYSTEM</span></td><td>"Your shop posts are live — you can post on Instagram now"</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">139</td><td class="act">Publish and add the link</td><td><span class="who w-c">CREATOR</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">140</td><td class="act">Confirm it is live</td><td><span class="who w-b">BRAND</span></td><td>on content, this releases the second payment</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">141</td><td class="act">Pull the numbers</td><td><span class="who w-s">SYSTEM</span></td><td>refreshable; current reading only, by your decision</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">142</td><td class="act">Exempt content sets from the hold</td><td><span class="who w-s">SYSTEM</span></td><td>no shop posts exist there — needs its own test</td><td><span class="st s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>Both reviews run at the same time.</b> The brand reviewing the reel and your desk reviewing the shop posts happen in parallel — only <b>publishing</b> is ordered. She is never queued twice.</div>
+</div>
+
+<!-- ⑧ FINISH + MONEY -->
+<div class="view" id="v7">
+  <div class="vh">Phase 9 · Completion, money, analytics</div>
+
+  <div class="card">
+    <h3>Completion <span class="ct">143–148</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Detail</th><th></th></tr>
+      <tr class="gap"><td class="n">143</td><td class="act">Compute completion — sales</td><td><span class="who w-s">SYSTEM</span></td><td>shoot done · ≥1 shop post live · social confirmed</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">144</td><td class="act">Compute completion — content</td><td><span class="who w-s">SYSTEM</span></td><td>deliverables live · stages released</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr class="gap"><td class="n">145</td><td class="act">Show the hoped-for count as guidance</td><td><span class="who w-both">EITHER</span></td><td>"3 posts · they hoped for 5" — gates nothing</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">146</td><td class="act">Count a post as delivered at approval</td><td><span class="who w-s">SYSTEM</span></td><td>a post going dark later is never her breach</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">147</td><td class="act">End a campaign</td><td><span class="who w-b">BRAND</span></td><td>sales runs open-ended until this</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">148</td><td class="act">Release payment stages</td><td><span class="who w-s">SYSTEM</span></td><td><b>content only</b> — no money is held on sales</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Money and analytics <span class="ct">149–160</span></h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Action</th><th>Who</th><th>Detail</th><th></th></tr>
+      <tr><td class="n">149</td><td class="act">See lifetime earnings</td><td><span class="who w-c">CREATOR</span></td><td>—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">150</td><td class="act"><b>See what THIS collaboration paid</b></td><td><span class="who w-c">CREATOR</span></td><td>the brand already has the mirror of this</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">151</td><td class="act">See which products sold</td><td><span class="who w-both">EITHER</span></td><td>each side's own slice</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">152</td><td class="act">See which post sold them</td><td><span class="who w-both">EITHER</span></td><td>—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">153</td><td class="act">See confirmed vs pending commission</td><td><span class="who w-both">EITHER</span></td><td>30-day return window</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="n">154</td><td class="act">See campaign conversions</td><td><span class="who w-b">BRAND</span></td><td>already per campaign</td><td><span class="st s-ex">works</span></td></tr>
+      <tr class="gap"><td class="n">155</td><td class="act">Cut by creator</td><td><span class="who w-b">BRAND</span></td><td>—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">156</td><td class="act">Cut by product</td><td><span class="who w-b">BRAND</span></td><td>—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">157</td><td class="act">Cut by post</td><td><span class="who w-b">BRAND</span></td><td>—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">158</td><td class="act">Browse the catalogue by category</td><td><span class="who w-b">BRAND</span></td><td>with how many are in a creator's scope</td><td><span class="st s-nw">new</span></td></tr>
+      <tr class="gap"><td class="n">159</td><td class="act">Shop-post reach numbers</td><td><span class="who w-both">EITHER</span></td><td><b>blocked</b> — nothing emits the signals, nothing reads them</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="n">160</td><td class="act">Enforce the privacy boundary</td><td><span class="who w-s">SYSTEM</span></td><td>mixed-brand posts invisible to both brands</td><td><span class="st s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ⑨ SCREEN INVENTORY -->
+<div class="view" id="v8">
+  <div class="vh">Every screen, both apps, and the actions it carries</div>
+  <div class="vs">The same 160 actions, arranged by where they live. This is the list the mockups will draw.</div>
+
+  <div class="card">
+    <h3>Creator app · 5 tabs</h3>
+    <div class="tscroll"><table>
+      <tr><th>Tab</th><th>Screen</th><th>Actions</th><th></th></tr>
+      <tr><td rowspan="2"><b>Home</b></td><td>Home</td><td>needs-you summary</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td>Notifications</td><td>deep-links to a row's destination</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td rowspan="8"><b>Collabs</b></td><td>Collabs list — 6 stages</td><td>59-style landing: stage rail + needs-you pill</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Needs you</b></td><td>every owed action, grouped by consequence</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Collab detail — the spine</td><td>the 6-step index</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Conversation</td><td>41–50</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Step diary</b></td><td>50, 121 — every step's history</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Shoot</td><td>107–121</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Go live</td><td>134–142</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Completion</td><td>143–153</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td rowspan="3"><b>Create</b></td><td>Her posts grid</td><td>122–130</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Post detail</b></td><td>133, 151–152, 159</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Her shelf</td><td>catalogue by category, all brands</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Earnings</b></td><td>Earnings</td><td>149–153</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td rowspan="3"><b>Profile</b></td><td>Collab preferences</td><td>1–5</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Find brands</td><td>31–36</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Pitch wizard</td><td>37</td><td><span class="st s-ch">changes</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Brand app · 5 tabs</h3>
+    <div class="tscroll"><table>
+      <tr><th>Tab</th><th>Screen</th><th>Actions</th><th></th></tr>
+      <tr><td rowspan="2"><b>Home</b></td><td>Home</td><td>needs-you · ready-to-brief · the month</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Needs you</td><td>every owed action across campaigns</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td rowspan="8"><b>Creators</b></td><td>Talking</td><td>28, 30, 40 — requests out AND pitches in</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Agreed</td><td>54–57</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td><b>Find creators</b></td><td>13–17, 21, 26–27</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td>Creator profile</td><td>18, 20, 24</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Groups</b></td><td>19, 22</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td><b>Group detail</b></td><td>23, 25</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td>Request composer</td><td>24–26, 49</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Conversation</td><td>41–50</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td rowspan="9"><b>Campaigns</b></td><td>Campaigns landing</td><td>59 — list + Create</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Campaign wizard</b></td><td>60–82</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td><b>Product picker</b></td><td>86–87, 93 — one component, four callers</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td><b>Offer builder</b></td><td>89–98</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td>Campaign → creators</td><td>roster with step numbers</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td><b>Creator spine</b></td><td>the 6 steps, brand side</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Shoot</td><td>109, 115–116, 118</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td>Reel review</td><td>135–136, 140</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td><b>Analytics</b></td><td>154–158, 160</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td><b>Wallet</b></td><td>Wallet</td><td>content fees only</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td rowspan="3"><b>Profile</b></td><td><b>Pitch settings</b></td><td>6–11</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td>Offers library</td><td>89, 97</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td>Alerts</td><td>news, not work</td><td><span class="st s-ch">changes</span></td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ⑩ GAPS -->
+<div class="view" id="v9">
+  <div class="vh">The gaps you found, and where each now sits</div>
+
+  <div class="card">
+    <h3>Everything you listed</h3>
+    <div class="tscroll"><table>
+      <tr><th>You said</th><th>Now</th><th>Actions</th></tr>
+      <tr><td>Creator search is missing</td><td>Creators → <b>Find</b>, with name, place, niche, social following and <b>INFLX following</b></td><td>13–17</td></tr>
+      <tr><td>Group creation is missing</td><td>Creators → <b>Groups</b> · create, rename, delete, add from a profile or in bulk from search results</td><td>19–23</td></tr>
+      <tr><td>Asking a group is missing</td><td>Group detail → same composer, with a reach funnel first</td><td>25</td></tr>
+      <tr><td>Pitches received is missing</td><td><b>Talking</b> holds both directions in one list, sorted by whose turn it is</td><td>40</td></tr>
+      <tr><td>Same conversation screen for the creator</td><td>Confirmed — every <span class="who w-both">EITHER</span> row renders identically on both phones</td><td>41–50</td></tr>
+      <tr><td>Both sides control who can approach</td><td>Creator's exists; <b>the brand's six settings have no screen</b></td><td>1–11</td></tr>
+      <tr><td>Campaign creation must be clean, per goal</td><td>Shell + 4 steps, with step 2 and step 4 branching by goal — every branch listed</td><td>59–82</td></tr>
+      <tr><td>Step 4 "make a new offer" screens missing</td><td>Full sub-flow: type → value → minimum → scope → redemption → expiry → preview → save</td><td>89–98</td></tr>
+      <tr><td>Offer scope: store / category / products</td><td>Shared product picker, grouped by category, with search</td><td>86–87, 93</td></tr>
+      <tr><td>Step 3 choosing from agreements unclear</td><td>A pick-list of agreements, filtered by aim, each showing terms and expiry — not a creator search</td><td>72–77</td></tr>
+      <tr><td>What do I see landing on Campaigns</td><td>The list, and one Create button. Nothing else.</td><td>59</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>The biggest single finding in this ledger.</b> Fourteen actions have a working backend and no screen anywhere — and <b>ten of them are the brand's approach tools</b>: groups, bulk-add, asking a group, broadcasting, and the reach preview. That capability was built and tested in Part 2 and has never been usable by anyone on any surface.</div>
+
+  <div class="note key"><b>Two hard dependencies, worth building before their screens.</b> <b>#50, the diary</b> — only the latest counter is stored, so no history screen can be drawn on either app until it exists. <b>The product picker</b> — four separate flows need "choose products, grouped by category, with images"; building it four times is how they drift apart.</div>
+
+  <div class="card">
+    <h3>Suggested order for the mockups</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Mockup</th><th>Covers</th></tr>
+      <tr><td><b>1</b></td><td>Brand · Creators tab in full</td><td>13–30, 40 · search, groups, ask one / group / many, both-direction talking</td></tr>
+      <tr><td><b>2</b></td><td>Campaign creation, every step and branch</td><td>59–98 · including the product picker and offer builder</td></tr>
+      <tr><td><b>3</b></td><td>The shared conversation + diary</td><td>41–58 · drawn once, labelled for both apps</td></tr>
+      <tr><td><b>4</b></td><td>Both control screens</td><td>1–11 · creator preferences and brand pitch settings side by side</td></tr>
+      <tr><td><b>5</b></td><td>Creator app, re-cut against this ledger</td><td>whatever 31–39 and 122–153 still need after the above</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Nothing gets drawn that isn't a row here.</b> If a screen needs a button this ledger doesn't list, the ledger is wrong and gets fixed first — that is what stops the two apps drifting apart again.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tab arrangement — what lives where, both apps</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1240px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:860px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:960px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+
+/* tab summary cards */
+.tabgrid{display:flex;gap:11px;flex-wrap:wrap;margin-bottom:16px}
+.tcard{flex:1;min-width:150px;border:1px solid var(--line);border-radius:13px;background:var(--white);overflow:hidden}
+.tcard .th{padding:11px 13px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:8px}
+.tcard .ic{font-size:17px}
+.tcard .nm{font-family:'Outfit';font-size:14px;font-weight:800}
+.tcard .tb{padding:11px 13px}
+.tcard .big{font-family:'Outfit';font-size:27px;font-weight:800;letter-spacing:-.5px;line-height:1}
+.tcard .lb{font-size:9px;font-weight:800;color:var(--mut);letter-spacing:.4px;text-transform:uppercase;margin-top:3px}
+.tcard .sp{display:flex;gap:12px;margin-top:10px;padding-top:9px;border-top:1px solid var(--lineSoft)}
+.tcard .sp div{flex:1}
+.tcard .sn{font-family:'Outfit';font-size:16px;font-weight:800}
+.tcard .sl{font-size:8.5px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:1px}
+.tcard.hero{background:var(--ink)}
+.tcard.hero .th{border-bottom-color:#2A2A2A}
+.tcard.hero .nm{color:#fff}
+.tcard.hero .big{color:var(--y)}
+.tcard.hero .lb,.tcard.hero .sl{color:var(--mut2)}
+.tcard.hero .sn{color:#fff}
+.tcard.hero .sp{border-top-color:#2A2A2A}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;margin-bottom:14px;overflow:hidden}
+.card>h3{font-size:14px;font-weight:800;padding:13px 15px 12px;border-bottom:1px solid var(--lineSoft);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card>h3 .cnt{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--mut2)}
+.sub{font-size:11px;color:var(--mut);font-weight:650;padding:10px 15px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);line-height:1.5}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:680px}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--border);white-space:nowrap;background:#FAFAFA}
+td{font-size:11.5px;padding:9px 10px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+tr:last-child td{border-bottom:none}
+td.scr{font-weight:800;min-width:150px}
+td.acts{font-family:'JetBrains Mono';font-size:9.5px;color:var(--purple);font-weight:800;min-width:118px}
+td.n{font-family:'JetBrains Mono';font-size:10px;color:var(--mut2);width:30px;font-weight:800}
+.st{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-mv{background:#EDE7F5;color:#4C2E8E}
+.who{font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.w-b{background:var(--blueBg);color:var(--blue)}
+.w-c{background:var(--greenBg);color:var(--green)}
+.w-a{background:var(--purpleBg);color:var(--purple)}
+.w-s{background:var(--lineSoft);color:var(--mut)}
+.w-w{background:#EDE7F5;color:#4C2E8E}
+
+.bar{display:flex;height:26px;border-radius:7px;overflow:hidden;margin:4px 0 3px;border:1px solid var(--line)}
+.bar div{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.lgi{font-size:10px;font-weight:700;color:var(--mut);display:flex;align-items:center;gap:5px}
+.sw{width:11px;height:11px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Tab arrangement — what lives where, in both apps</h1>
+  <p>All 160 ledger actions assigned to a home tab · 2026-08-15</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① The answer</button>
+  <button class="tab" data-v="v1">② Creator · 5 tabs</button>
+  <button class="tab" data-v="v2">③ Brand · 5 tabs</button>
+  <button class="tab" data-v="v3">④ Not in any tab</button>
+  <button class="tab" data-v="v4">⑤ Rules that decided it</button>
+</div>
+
+<!-- ① THE ANSWER -->
+<div class="view on" id="v0">
+  <div class="vh">The counts, both apps</div>
+  <div class="vs">Every action has exactly one home tab. Screens are counted once, in the tab that owns them.</div>
+
+  <h3 style="font-size:13px;margin-bottom:9px">Creator app</h3>
+  <div class="tabgrid">
+    <div class="tcard"><div class="th"><span class="ic">⌂</span><span class="nm">Home</span></div>
+      <div class="tb"><div class="big">2</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">0</div><div class="sl">OWNED ACTIONS</div></div><div><div class="sn">—</div><div class="sl">A LAUNCHPAD</div></div></div></div></div>
+    <div class="tcard hero"><div class="th"><span class="ic">◈</span><span class="nm">Collabs</span></div>
+      <div class="tb"><div class="big">16</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">54</div><div class="sl">ACTIONS</div></div><div><div class="sn">6</div><div class="sl">STAGES</div></div></div></div></div>
+    <div class="tcard"><div class="th"><span class="ic">✚</span><span class="nm">Create</span></div>
+      <div class="tb"><div class="big">5</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">10</div><div class="sl">ACTIONS</div></div><div><div class="sn">1</div><div class="sl">BLOCKED</div></div></div></div></div>
+    <div class="tcard"><div class="th"><span class="ic">₹</span><span class="nm">Earnings</span></div>
+      <div class="tb"><div class="big">3</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">2</div><div class="sl">ACTIONS</div></div><div><div class="sn">—</div><div class="sl">MIRRORS COLLABS</div></div></div></div></div>
+    <div class="tcard"><div class="th"><span class="ic">☺</span><span class="nm">Profile</span></div>
+      <div class="tb"><div class="big">4</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">1</div><div class="sl">ACTION</div></div><div><div class="sn">—</div><div class="sl">SETTINGS</div></div></div></div></div>
+  </div>
+  <div class="bar">
+    <div style="width:81%;background:var(--ink)">COLLABS · 54</div>
+    <div style="width:15%;background:var(--blue)">CREATE 10</div>
+    <div style="width:3%;background:var(--green)"></div>
+    <div style="width:1%;background:var(--mut2)"></div>
+  </div>
+  <div class="legend">
+    <span class="lgi"><span class="sw" style="background:var(--ink)"></span>Collabs 54</span>
+    <span class="lgi"><span class="sw" style="background:var(--blue)"></span>Create 10</span>
+    <span class="lgi"><span class="sw" style="background:var(--green)"></span>Earnings 2</span>
+    <span class="lgi"><span class="sw" style="background:var(--mut2)"></span>Profile 1</span>
+    <span class="lgi"><b>67 creator-facing actions · 30 screens</b></span>
+  </div>
+
+  <h3 style="font-size:13px;margin:20px 0 9px">Brand app</h3>
+  <div class="tabgrid">
+    <div class="tcard"><div class="th"><span class="ic">⌂</span><span class="nm">Home</span></div>
+      <div class="tb"><div class="big">2</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">0</div><div class="sl">OWNED ACTIONS</div></div><div><div class="sn">—</div><div class="sl">A LAUNCHPAD</div></div></div></div></div>
+    <div class="tcard hero"><div class="th"><span class="ic">👥</span><span class="nm">Creators</span></div>
+      <div class="tb"><div class="big">13</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">33</div><div class="sl">ACTIONS</div></div><div><div class="sn">4</div><div class="sl">SUB-TABS</div></div></div></div></div>
+    <div class="tcard hero"><div class="th"><span class="ic">📣</span><span class="nm">Campaigns</span></div>
+      <div class="tb"><div class="big">21</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">57</div><div class="sl">ACTIONS</div></div><div><div class="sn">6</div><div class="sl">STEPS</div></div></div></div></div>
+    <div class="tcard"><div class="th"><span class="ic">₹</span><span class="nm">Wallet</span></div>
+      <div class="tb"><div class="big">2</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">0</div><div class="sl">NEW ACTIONS</div></div><div><div class="sn">—</div><div class="sl">UNCHANGED</div></div></div></div></div>
+    <div class="tcard"><div class="th"><span class="ic">☺</span><span class="nm">Profile</span></div>
+      <div class="tb"><div class="big">6</div><div class="lb">screens</div>
+      <div class="sp"><div><div class="sn">8</div><div class="sl">ACTIONS</div></div><div><div class="sn">—</div><div class="sl">GAINS ALERTS</div></div></div></div></div>
+  </div>
+  <div class="bar">
+    <div style="width:58%;background:var(--ink)">CAMPAIGNS · 57</div>
+    <div style="width:34%;background:var(--blue)">CREATORS · 33</div>
+    <div style="width:8%;background:var(--mut2)">PROF 8</div>
+  </div>
+  <div class="legend">
+    <span class="lgi"><span class="sw" style="background:var(--ink)"></span>Campaigns 57</span>
+    <span class="lgi"><span class="sw" style="background:var(--blue)"></span>Creators 33</span>
+    <span class="lgi"><span class="sw" style="background:var(--mut2)"></span>Profile 8</span>
+    <span class="lgi"><b>98 brand-facing actions · 44 screens</b></span>
+  </div>
+
+  <div class="note key" style="margin-top:18px"><b>The shape in one line.</b> The creator's app is <b>one big tab and four small ones</b> — 54 of her 67 actions are in Collabs, because a creator's whole working life is one collaboration at a time. The brand's app is <b>two big tabs</b> — Creators 33, Campaigns 57 — because a brand does two genuinely different jobs: finding people, and running work.</div>
+
+  <div class="note good"><b>Neither app gains a tab.</b> The creator keeps Home · Collabs · Create · Earnings · Profile. The brand swaps <b>Alerts → Creators</b> and keeps five. Alerts moves under Profile — a tab is for something you go to on purpose; a feed you check when a badge appears is not that.</div>
+
+  <div class="note info"><b>Why the totals overshoot 160.</b> 67 + 98 = 165, because <b>24 actions are "either side"</b> and appear in both apps — the conversation, the diary, the shoot, completion. They are one screen built once and shipped twice, counted in each app's total.</div>
+</div>
+
+<!-- ② CREATOR -->
+<div class="view" id="v1">
+  <div class="vh">Creator app — five tabs, 30 screens, 67 actions</div>
+  <div class="vs">Home · Collabs · Create · Earnings · Profile. Unchanged tab bar.</div>
+
+  <div class="card">
+    <h3><span>⌂ Home</span><span class="cnt">2 SCREENS · 0 OWNED ACTIONS</span></h3>
+    <div class="sub">A launchpad, not a destination. It shows what needs her and sends her elsewhere — it owns nothing.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Home</td><td>Needs-you summary · active collaborations · this month's earnings</td><td class="acts">— surfaces only</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Notifications</td><td>What happened. Deep-links to the row's destination, never to a list</td><td class="acts">— surfaces only</td><td><span class="st s-ch">changes</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>◈ Collabs — the spine</span><span class="cnt">16 SCREENS · 54 ACTIONS</span></h3>
+    <div class="sub">Six stages: Invitations · Pitches · To sign · Shoot · Content · Done. Everything from the first approach to the final payment lives here.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Collabs list</td><td>The six-stage rail, needs-you pill, step number on every row</td><td class="acts">38</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Needs you</td><td>Every owed action, grouped by consequence</td><td class="acts">—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Collab detail</td><td>The six-step index — the navigation itself</td><td class="acts">—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Conversation</td><td>Accept · counter · decline · rounds</td><td class="acts">41 42 44 46 47 48</td><td><span class="st s-ch">46 new</span></td></tr>
+      <tr><td class="scr">Counter composer</td><td>Diff, must-haves omitted</td><td class="acts">44 46 49</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Step diary</td><td>Every offer that was on the table, both sides</td><td class="acts">50 121</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Agreement detail</td><td>Settled terms · expiry clock · cancel</td><td class="acts">54 55 56</td><td><span class="st s-nw">55 new</span></td></tr>
+      <tr><td class="scr">Find brands</td><td>State → city → nearby · industry · eligibility on the row</td><td class="acts">31 32 33 34 35</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Brand catalogue</td><td>Their products, grouped by category, with images</td><td class="acts">36</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Pitch wizard</td><td>Four steps · shared vocabulary · importance markers</td><td class="acts">37 39</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Campaign invite</td><td>Settled-vs-new · one-tap accept · cold invite keeps all three</td><td class="acts">100 101 102 108</td><td><span class="st s-ch">108 new</span></td></tr>
+      <tr><td class="scr">Contract + PDF</td><td>Sign, read</td><td class="acts">103 105</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Shoot</td><td>Slot, counter, remote flip, parcel receipt, mark done</td><td class="acts">110 111 112 113 114 117 119</td><td><span class="st s-nw">new screen</span></td></tr>
+      <tr><td class="scr">Go live</td><td>Submit reel · the ordering gate · publish · add link</td><td class="acts">134 139</td><td><span class="st s-ch">gated</span></td></tr>
+      <tr><td class="scr">Completion</td><td>Where it stands · hoped-for guidance · what it paid</td><td class="acts">145 146 150 151 152</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Collab preferences</td><td>Who can ask her · her bar · accepted aims</td><td class="acts">1 2 3 4 5</td><td><span class="st s-mv">moves in</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>✚ Create — her own work</span><span class="cnt">5 SCREENS · 10 ACTIONS</span></h3>
+    <div class="sub">Create owns the making. Collabs owns the obligation. A post can span several brands, so it belongs to her — not to one collaboration.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Posts grid</td><td>Everything published, status on every tile</td><td class="acts">—</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Post composer</td><td>Footage → concept → scope → products → caption</td><td class="acts">122 123 125 129</td><td><span class="st s-ch">123 grouped</span></td></tr>
+      <tr><td class="scr">Post detail</td><td>Full media · tagged products · what it sold · its diary</td><td class="acts">133 159</td><td><span class="st s-nw">new endpoint</span></td></tr>
+      <tr><td class="scr">Media library</td><td>Shoot footage, uploaded once, used twice</td><td class="acts">124</td><td><span class="st s-ch">extends</span></td></tr>
+      <tr><td class="scr">Her shelf</td><td>Every product she can sell, by category, filterable by brand</td><td class="acts">126</td><td><span class="st s-ch">changes</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>₹ Earnings</span><span class="cnt">3 SCREENS · 2 ACTIONS</span></h3>
+    <div class="sub">Lifetime money. The per-collaboration breakdown lives in Collabs and is mirrored here.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Earnings</td><td>Lifetime · confirmed vs pending · <b>split by collaboration</b></td><td class="acts">149 153</td><td><span class="st s-ch">split is new</span></td></tr>
+      <tr><td class="scr">Transactions</td><td>Every sale, stamped</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Withdraw</td><td>Payout, TDS</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>☺ Profile</span><span class="cnt">4 SCREENS · 1 ACTION</span></h3>
+    <div class="sub">Loses the most. Brand Outreach goes to Collabs; only identity and documents remain.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Profile</td><td>Handle, stats, <b>both locations</b> — home and current</td><td class="acts">34</td><td><span class="st s-ch">2nd location new</span></td></tr>
+      <tr><td class="scr">My contracts</td><td>Signed contracts, PDFs</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Legal</td><td>Creator document set</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Settings</td><td>Account, bank, notifications</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>What leaves Profile.</b> "Brand Proposals" — the row that caused the original bug, where a real request sat unseen behind three taps. Discover, pitches and the request inbox all move to Collabs. Profile keeps only what a profile should: who she is, her documents, her settings.</div>
+</div>
+
+<!-- ③ BRAND -->
+<div class="view" id="v2">
+  <div class="vh">Brand app — five tabs, 44 screens, 98 actions</div>
+  <div class="vs">Home · Creators · Campaigns · Wallet · Profile. Alerts swaps out for Creators.</div>
+
+  <div class="card">
+    <h3><span>⌂ Home</span><span class="cnt">2 SCREENS · 0 OWNED ACTIONS</span></h3>
+    <div class="sub">Who am I · what needs me · who's waiting to be briefed · how's the money. Owns nothing; routes everywhere.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Home</td><td>Brand profile + followers · needs-you · ready-to-brief with expiry · this month</td><td class="acts">— surfaces only</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Needs you</td><td>Every owed action across every campaign, one urgency list</td><td class="acts">— surfaces only</td><td><span class="st s-ch">5 tabs → 1</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>👥 Creators — everything before a campaign</span><span class="cnt">13 SCREENS · 33 ACTIONS</span></h3>
+    <div class="sub">Four sub-tabs: Talking · Agreed · Find · Groups. A conversation lives here from the first approach until a campaign is drafted, then leaves for good.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Talking</td><td>Requests out <b>and</b> pitches in, one list sorted by turn</td><td class="acts">28 29 30 40</td><td><span class="st s-ch">40 new here</span></td></tr>
+      <tr><td class="scr">Agreed</td><td>Settled terms waiting to be briefed, with expiry</td><td class="acts">57</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Find creators</td><td>Name search + place · niche · social · <b>INFLX following</b></td><td class="acts">13 14 15 16 17 21</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Place picker</td><td>State → city, searchable, counts, zero greyed</td><td class="acts">14</td><td><span class="st s-nw">new · shared</span></td></tr>
+      <tr><td class="scr">Creator profile</td><td>Split followers · both locations · her bar</td><td class="acts">18 20 24</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Groups</td><td>Saved lists, create, rename, delete</td><td class="acts">19 22</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Group detail</td><td>Members, remove, ask the whole group</td><td class="acts">23 25</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Request composer</td><td>Terms · two-question working style · importance markers</td><td class="acts">24 25 26 49</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Ask many</td><td>Filters → matched/reachable/capped funnel</td><td class="acts">26 27</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Broadcast detail</td><td>One batch, thirty conversations</td><td class="acts">30</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Conversation</td><td>Accept · counter · decline · rounds</td><td class="acts">41 42 43 45 47 48</td><td><span class="st s-ch">45 capped</span></td></tr>
+      <tr><td class="scr">Step diary</td><td>Same page the creator sees</td><td class="acts">50</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Agreement detail</td><td>Settled terms · expiry · cancel</td><td class="acts">53 54 55 56</td><td><span class="st s-nw">55 new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>📣 Campaigns — everything after</span><span class="cnt">21 SCREENS · 57 ACTIONS</span></h3>
+    <div class="sub">Create, run, and see. The biggest tab in either app, because it holds campaign creation, the six-step spine per creator, products, posts and all analytics.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Campaigns landing</td><td>The list, and one Create button</td><td class="acts">59</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Campaign shell</td><td>Name, start date, sets list</td><td class="acts">60 61 62</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Step 1 · aim</td><td>Sales / content / both, with consequences stated</td><td class="acts">64</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Step 2 · basics</td><td>Branches by aim · channels vs deliverables</td><td class="acts">65 66 67 68 69 70 71</td><td><span class="st s-ch">69 reframed · 71 removed</span></td></tr>
+      <tr><td class="scr">Step 3 · agreements</td><td>Pick-list filtered by aim, expiry countdown</td><td class="acts">72 73 74 75 76 77</td><td><span class="st s-ch">74 75 new</span></td></tr>
+      <tr><td class="scr">Step 4 · terms</td><td>① settled read-back · ② the follower offer</td><td class="acts">78 79 80 81 82</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Allocation</td><td>Store / category / specific products, auto-join stated</td><td class="acts">83 84 85 88</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Product picker</td><td>Grouped, searchable, select-all — <b>4 callers</b></td><td class="acts">86 87</td><td><span class="st s-nw">new · shared</span></td></tr>
+      <tr><td class="scr">Offer library</td><td>Saved offers, expired shown greyed</td><td class="acts">89 97</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Offer builder</td><td>Type → value → min → scope → redemption → expiry</td><td class="acts">90 91 92 93 94 95 98</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Basket preview</td><td>Which offer wins, and what she earns</td><td class="acts">96</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Review + publish</td><td>Drift warnings by name, publish blockers</td><td class="acts">63</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Campaign detail</td><td>Sets, roster, sales</td><td class="acts">147</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Creators roster</td><td>Step number and turn on every creator</td><td class="acts">—</td><td><span class="st s-ch">changes</span></td></tr>
+      <tr><td class="scr">Creator spine</td><td>The six steps, brand side</td><td class="acts">—</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Contracts</td><td>Bulk countersign, read PDF</td><td class="acts">104 105</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Shoot</td><td>Address, slot, counter, remote flip, mark done</td><td class="acts">109 110 111 112 113 114 119</td><td><span class="st s-nw">new screen</span></td></tr>
+      <tr><td class="scr">Parcel</td><td>Build from catalogue, dispatch, resolve a shortfall</td><td class="acts">115 116 118</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Reel review</td><td>Approve · ask changes · confirm live</td><td class="acts">135 136 140</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Posts for you</td><td>Exclusive posts, read-only, and their products</td><td class="acts">132 133</td><td><span class="st s-nw">new</span></td></tr>
+      <tr><td class="scr">Analytics</td><td>Overall · creator · product · post · catalogue by category</td><td class="acts">154 155 156 157 158 160</td><td><span class="st s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>₹ Wallet</span><span class="cnt">2 SCREENS · 0 NEW ACTIONS</span></h3>
+    <div class="sub">Untouched by this programme. Content fees only — a sales set never holds money.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Wallet</td><td>Balance, top-up, escrow for content sets</td><td class="acts">148</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Transactions</td><td>Money in and out</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>☺ Profile</span><span class="cnt">6 SCREENS · 8 ACTIONS</span></h3>
+    <div class="sub">Gains Alerts and the pitch settings that currently have no screen anywhere.</div>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Holds</th><th>Actions</th><th></th></tr>
+      <tr><td class="scr">Brand profile</td><td>Identity, address, followers</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Who can pitch us</td><td>Accept pitches + five filters</td><td class="acts">6 7 8 9 10 11</td><td><span class="st s-ui">needs UI</span></td></tr>
+      <tr><td class="scr">Offers library</td><td>Saved offers, reusable</td><td class="acts">89 97</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Alerts</td><td>News, not work</td><td class="acts">—</td><td><span class="st s-mv">moves in</span></td></tr>
+      <tr><td class="scr">Store preview</td><td>What followers see</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="scr">Legal + settings</td><td>Brand document set, account</td><td class="acts">—</td><td><span class="st s-ex">works</span></td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ④ NOT IN A TAB -->
+<div class="view" id="v3">
+  <div class="vh">What lives in no mobile tab</div>
+  <div class="vs">Three groups. Naming them is what stops someone building a screen for something that shouldn't have one.</div>
+
+  <div class="card">
+    <h3><span>System actions — nobody presses them</span><span class="cnt">20 ACTIONS</span></h3>
+    <div class="sub">They happen automatically and surface as state on somebody's screen.</div>
+    <div class="tscroll"><table>
+      <tr><th>Actions</th><th>What</th><th>Where it shows</th></tr>
+      <tr><td class="acts">51 52</td><td>Expire a request · start a cooldown</td><td>Conversation copy, both apps</td></tr>
+      <tr><td class="acts">53 58</td><td>Create an agreement · expire an unbriefed one</td><td>Agreed, both apps</td></tr>
+      <tr><td class="acts">77</td><td>Consume an agreement on publish</td><td>Campaigns step 3</td></tr>
+      <tr><td class="acts">99 106</td><td>Send the invite · create the shoot plan</td><td>Invite + shoot, both apps</td></tr>
+      <tr><td class="acts">107</td><td>Read the working style from the agreement</td><td>Shoot, both apps</td></tr>
+      <tr><td class="acts">130 131</td><td>Go live · notify the brand when exclusive</td><td>Posts, both apps</td></tr>
+      <tr><td class="acts">137 138 142</td><td><b>The ordering gate</b> · the unlock message · the content exemption</td><td>Go live, creator</td></tr>
+      <tr><td class="acts">141</td><td>Pull the Instagram numbers</td><td>Completion + analytics</td></tr>
+      <tr><td class="acts">143 144 146</td><td>Compute completion · delivered-at-approval</td><td>Completion, both apps</td></tr>
+      <tr><td class="acts">148</td><td>Release payment stages</td><td>Wallet + completion</td></tr>
+      <tr><td class="acts">160</td><td>Enforce the privacy boundary</td><td>Analytics, brand</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3><span>Admin desk — not in either mobile app</span><span class="cnt">4 ACTIONS</span></h3>
+    <div class="tscroll"><table>
+      <tr><th>Actions</th><th>What</th><th></th></tr>
+      <tr><td class="acts">12</td><td>Set the platform limits — rounds, caps, expiry, cooldown</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="acts">120</td><td>Watch the production queue for stuck shoots</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="acts">127</td><td>Approve a shop post</td><td><span class="st s-ex">works</span></td></tr>
+      <tr><td class="acts">128</td><td><b>Reject with a fixed technical fault</b></td><td><span class="st s-nw">new</span></td></tr>
+    </table></div>
+    <div class="note key" style="margin:12px 15px 15px"><b>The brand never appears here.</b> Quality review is your desk's job — a brand veto over a shop post becomes a veto over her concept, which is the one thing this whole model refuses.</div>
+  </div>
+
+  <div class="card">
+    <h3><span>Web only — the last desk job</span><span class="cnt">1 CAPABILITY</span></h3>
+    <div class="tscroll"><table>
+      <tr><th>What</th><th>Why it stays on the desk</th><th>On mobile</th></tr>
+      <tr><td><b>Adding and pricing products</b></td><td>Bulk work against a catalogue — variants, colours, sizes, images. A phone version would produce listings that need fixing at a desk anyway.</td><td>View the catalogue by category, read-only, with what sold</td></tr>
+    </table></div>
+    <div class="note good" style="margin:12px 15px 15px"><b>Campaign creation coming to mobile leaves exactly one desk job.</b> That's only possible because the handshake settled the per-creator terms first — the wizard now mostly reads back rather than asks.</div>
+  </div>
+
+  <div class="card">
+    <h3><span>Deferred — drawn, not built</span><span class="cnt">2 ITEMS</span></h3>
+    <div class="tscroll"><table>
+      <tr><th>Actions</th><th>What</th><th>Blocked on</th></tr>
+      <tr><td class="acts">159</td><td>Shop-post reach numbers</td><td>Nothing emits the signals, nothing reads them. Both ends first, then a screen — and the honest empty state until then, never a zero.</td></tr>
+      <tr><td class="acts">—</td><td>The travelling kit</td><td>Four commercial questions: who pays the courier, who's liable, the ship-onward deadline, and recovery if a creator drops out mid-chain.</td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ⑤ RULES -->
+<div class="view" id="v4">
+  <div class="vh">The five rules that decided every placement</div>
+  <div class="vs">If a future screen doesn't fit these, the rule is wrong or the screen is.</div>
+
+  <div class="card">
+    <h3>The rules</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Rule</th><th>What it settled</th></tr>
+      <tr><td class="n">1</td><td><b>One action, one home tab.</b> An action may be surfaced elsewhere but is owned once.</td><td>Needs-you appears on Home but is owned by Collabs. Earnings mirrors the per-collaboration figure owned by Collabs.</td></tr>
+      <tr><td class="n">2</td><td><b>Before a campaign vs after.</b> For the brand, Creators owns everything up to a draft; Campaigns owns everything after.</td><td>A conversation moves out of Creators the moment it's briefed and never returns. No item is ever in both.</td></tr>
+      <tr><td class="n">3</td><td><b>Making vs owing.</b> Create owns what she makes; Collabs owns what she owes.</td><td>A post can span several brands, so it belongs to her. Step 4 of a collaboration links across rather than duplicating the composer.</td></tr>
+      <tr><td class="n">4</td><td><b>A tab is a destination, a feed is not.</b></td><td>Alerts loses its tab to Creators and moves under Profile. The badge that mattered moved to Home, where the work is.</td></tr>
+      <tr><td class="n">5</td><td><b>Either-side actions are one screen, shipped twice.</b></td><td>The conversation, the diary, the shoot and completion are built once and appear in both apps — same buttons, same words, names swapped.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Final counts</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Creator</th><th>Brand</th></tr>
+      <tr><td><b>Tabs</b></td><td>5 — unchanged</td><td>5 — Alerts swaps for Creators</td></tr>
+      <tr><td><b>Screens</b></td><td>30</td><td>44</td></tr>
+      <tr><td><b>Actions owned</b></td><td>67</td><td>98</td></tr>
+      <tr><td><b>Biggest tab</b></td><td>Collabs — 16 screens, 54 actions</td><td>Campaigns — 21 screens, 57 actions</td></tr>
+      <tr><td><b>Smallest</b></td><td>Home — 2 screens, 0 owned</td><td>Home and Wallet — 2 screens each</td></tr>
+      <tr><td><b>Shared screens</b></td><td colspan="2">Conversation · counter composer · diary · agreement detail · shoot · completion — <b>6 built once, shipped twice</b></td></tr>
+      <tr><td><b>Outside both apps</b></td><td colspan="2">20 system · 4 admin · 1 web-only · 2 deferred</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Where the whole programme sits.</b> 160 actions · 74 mobile screens across two apps · 6 shared · 5 tabs each · one desk job left. Of the 160, <b>77 already work</b>, 21 have a backend waiting for a screen, 22 change behaviour, 39 are new and 1 is deleted.</div>
+
+  <div class="note key"><b>Three decisions are still open</b> and none of them blocks starting: the <code>accepts_proposals</code> default (A/B/C), whether the ordering gate fires on one live shop post or all of them, and extend-vs-rebuild for the media library.</div>
+
+  <div class="note info"><b>The full set of specs:</b> the action ledger (160 rows), FINAL 1 (actions 1–58), FINAL 2 (59–98), FINAL 3 (99–160), and this arrangement. Every mockup panel carries its ledger IDs, and every file ends in a coverage table — so a screen needing a control the ledger doesn't list means the ledger gets fixed first.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

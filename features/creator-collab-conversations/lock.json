@@ -1,0 +1,94 @@
+{
+  "feature": "creator-collab-conversations",
+  "spec_version": "1.0.0",
+  "status": "awaiting_founder_lock",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "notes": "AWAITING FOUNDER LOCK — spec + mockup authored 2026-08-15, no implementation started. Triggered by a real defect report: a collab request sent to Sagar Joshi was invisible to the creator. IN: (a) invitations from brands and pitches to brands become two front stages of the Collabs tab, threaded one-row-per-brand-conversation; (b) every next step — accept, decline, negotiate — spelled out for both directions; (c) symmetric negotiation, i.e. the creator can counter the brand's counter on their own pitch, which does not exist today. OUT: tab-bar unread badge (no badge mechanism exists; touches all four apps), creator web surface (none exists — Part 6 recorded that mistake), open-campaign application (still deferred per Part 6 §6.3).",
+  "founder_decisions_2026_08_15": {
+    "threading": "One thread per brand — request -> agreement -> campaign is ONE row telling one story, not three rows in three lists. Chosen over two separate sections and a flat list.",
+    "negotiation": "Symmetric — the creator can counter back on their own pitch, under the same round limits as the handshake. Chosen over keeping accept/decline, and over deferring the backend to a later slice."
+  },
+  "audit_2026_08_15": {
+    "finding_1": "THE REQUEST WAS NEVER LOST, IT WAS NEVER REACHABLE. Prod holds 2 brand_collab_requests, both status='sent'; the founder's row targets influencer 070418e5 = Sagar Joshi (sagartravel), 15% commission, post by 2026-08-24, scope 'bottom wear'. A collab_request.received notification exists for Sagar's user, unread. viewed_at is NULL on BOTH rows — and listCreatorRequests flips sent->viewed on first read (handshake.controller.js:347), so that endpoint has never been called on that account. The screen was not opened-and-empty; it was never opened. Only entry: Profile tab -> 'Brand Outreach' -> 'Brand Proposals' (subtitle still 'DISCOVER + TRACK PITCHES', written before brands could ask anyone) -> third tab REQUESTS, unbadged, behind a hub that opens on DISCOVER. InfluencerNavigator.js:67 registers ProposalsHub in the Profile stack; ProfileScreen.js:513 is the sole tap-through.",
+    "finding_2": "THE TWO DIRECTIONS ARE NOT SYMMETRIC AND THE OUTGOING ONE IS A DEAD END. brand_collab_requests supports counters from both sides with 2 rounds each (brand_rounds_used / creator_rounds_used / counter_by). influencer_proposals supports counters from the BRAND ONLY: the creator's sole reply is respond-counter with action in {accept, decline} (proposal.controller.js:195-198). There is no round limit on the brand side at all, so a brand may counter forever. There is also no creator-facing detail screen — getMyProposal exists server-side and mobile never calls it, and listMyAgreements (api.js:395) is likewise never called, so an accepted pitch produces an agreement the creator is never shown.",
+    "finding_3": "A BRAND CAN ACCEPT TERMS NOBODY OFFERED. acceptProposal calls acceptedFlow(proposal, useCounterTerms=false) (proposal.controller.js:295) — brand acceptance always settles the creator's ORIGINAL terms. Correct today only because the creator can never counter. The moment finding_2 is fixed, a brand pressing Accept after the creator moved to 14,000 would silently agree 20,000. A latent defect that this contract's own change would arm, so it is fixed in the same contract rather than shipped.",
+    "finding_4": "THREADING IS ALREADY POSSIBLE IN THE SCHEMA AND USED NOWHERE. brand_collab_requests.id -> collab_agreements.source_request_id / source_proposal_id -> campaign_influencers.agreement_id (+ consumed_ci_id). Every link exists from migration 149. No endpoint and no screen walks it, so a creator who agreed terms and then receives that brand's campaign sees two unrelated things in two unrelated places.",
+    "finding_6": "THE BRAND DIRECTORY IS EFFECTIVELY EMPTY. Prod holds 26 brands and exactly ONE has accepts_proposals=TRUE — 'Aveen food paradise', category restaurant, with users.city NULL and brands.locality NULL. Zero fashion brands are pitchable. So the industry facet offers one value (restaurant) and the area facet offers none: a creator opening 'Find brands to pitch' sees a single restaurant with no location. Not a bug — accepts_proposals defaults false and Part 2 deliberately made brands opt in while creators are reachable by default. The consequence is that the creator's outbound route has been shipped and unusable since it was built. Needs a founder decision (spec 1.6 options A/B/C); slice 9 is blocked on it.",
+    "finding_7": "DISCOVERY FILTERS THE WRONG COLUMN, AND THAT COLUMN IS DIRTY. discoverEligibleBrands (proposal.service.js:217-243) touches exactly one geo field, users.city — free text, NULL for 10 of 26 brands, and holding BOTH 'Vijayawada' (5) and 'Vijaywada' (1) as separate facet entries for one city, plus 'Tadepalle' which is a locality filed as a city. Meanwhile brands carries structured geo that discovery never reads: locality (12/26 — HITEC City, Jubilee Hills, Indiranagar, Bandra, Gachibowli), pincode (11/26), lat/lng (13/26), formatted_address (7/26). The 'area' filter the founder asked for already exists in the data, on a column nothing queries.",
+    "finding_8": "ELIGIBILITY IS CHECKED ON SUBMIT, AFTER THE WORK. checkEligibility exists and returns a usable reason string, but runs only at createProposal. A creator picks a brand, writes a title, message, terms, deliverables and three portfolio links, presses Send, and is told 'this brand only accepts proposals from macro tier and above'. discoverEligibleBrands' own comment states it: 'Return all listed brands; eligibility is checked per-brand on submit.'",
+    "finding_9": "THE PITCH AND THE INVITATION SPEAK DIFFERENT LANGUAGES FOR THE SAME ENUM. SendProposalScreen labels the aim 'ENGAGEMENT (FEE)' / 'CONVERSION (COMM)' / 'HYBRID'; CollabRequestDetailScreen labels the identical campaign_goal enum 'Pay for content' / 'Pay per sale' / 'Fee + commission'. One creator, two directions, two vocabularies — the duplicated-vocabulary fault Part 2 caught twice. The pitch also carries NO requirement/preference marker, so symmetric negotiation would have no rules to enforce on that side.",
+    "finding_5": "PALETTE TRAP. CollabsListScreen renders in theme/ig (white/black restyle). ProposalsHubScreen, CollabRequestDetailScreen and CollabPreferencesScreen all render in theme/tokens brandPalette (yellow). Moving them into Collabs without restyling would put a yellow screen one tap inside a white-and-black tab."
+  },
+  "prod_state_at_authoring": {
+    "checked_at": "2026-08-15",
+    "brand_collab_requests": "2 rows, both sent, both viewed_at NULL",
+    "influencer_proposals": "0 rows — which is why the acceptProposal correction has zero blast radius today",
+    "collab_agreements": "0 rows",
+    "handshake_settings": "seeded row 1: creator 5/3/10, brand 12/10/40, broadcast cap 30, counter_rounds_per_side 2, agreement expiry 90d"
+  },
+  "scope": {
+    "in": [
+      "Migration 152 (additive): brand_rounds_used, creator_rounds_used, counter_by on influencer_proposals, with a factual backfill",
+      "Three corrections: acceptProposal settles the LATEST terms; brand counterProposal bounded by counter_rounds_per_side; respondToCounter refuses unless the brand is the one countering",
+      "New route POST /v1/influencers/me/proposals/:id/counter, validated through the same collabTerms.model the handshake uses",
+      "New route GET /v1/influencers/me/collab-threads — threaded read, both directions, ordered timeline, built server-side",
+      "Collabs list: two front stages (invitations, pitches); the old invites stage is absorbed into invitations",
+      "Thread detail: timeline + every action in 01-spec 1.3, both directions",
+      "ProposalsHub REQUESTS + MY PITCHES retired; DISCOVER kept; Profile row relabelled 'Find brands to pitch'",
+      "CollabRequestDetailScreen + CollabPreferencesScreen restyled brandPalette -> ig and moved into the Collabs stack",
+      "Notification deep links repointed from Profile/ProposalsHub to the thread",
+      "Brand answers a creator counter — brand-web proposals inbox + BrandProposalInboxScreen, diff + Accept/Counter/Reject with rounds",
+      "Discovery (founder ask 2026-08-15): area filter reading brands.locality scoped by city, industry facet from server-derived values and HIDDEN when only one industry has brands, per-row eligibility badge + reason so a creator learns before writing rather than on submit; ineligible brands greyed with the reason, never hidden",
+      "Pitch composer (founder ask 2026-08-15): SendProposalScreen becomes a four-step wizard (the deal / money and time / what you'd deliver / review), adopts the invitation's aim vocabulary over the same campaign_goal enum, gains requirement-vs-preference markers on every term, validates through collabTerms.model, and resolves eligibility before Send",
+      "City normalisation backfill (canonical city per brand from formatted_address / pincode, unresolvable ones listed for manual review) + the accepts_proposals decision — slice 9, blocked on founder"
+    ],
+    "out": [
+      "Unread badge on the tab bar icon — no badge mechanism exists today and adding one touches all four apps. Its own slice.",
+      "Any creator-facing web surface — there is none, and Part 6 already recorded that mistake being made and removed.",
+      "Open-campaign discovery and application — still deferred per Part 6 section 6.3, same reasons."
+    ]
+  },
+  "slices": [
+    { "n": 1, "slice": "Migration 152 + pitch terms validation + the three corrections", "targets": ["backend"] },
+    { "n": 2, "slice": "GET /collab-threads", "targets": ["backend"] },
+    { "n": 3, "slice": "Creator counter route + notification", "targets": ["backend"] },
+    { "n": 4, "slice": "Collabs list: two front stages, threaded rows; ProposalsHub retired to DISCOVER", "targets": ["Packages/Mobile (influencer)"] },
+    { "n": 5, "slice": "Thread detail: timeline + all actions, ig restyle of moved screens", "targets": ["Packages/Mobile (influencer)"] },
+    { "n": 6, "slice": "Brand answers a creator counter", "targets": ["Packages/brand-web", "Packages/Mobile (brand)"] },
+    { "n": 7, "slice": "Discovery: area filter on brands.locality, industry facet hidden at one option, per-row eligibility + reason", "targets": ["backend", "Packages/Mobile (influencer)"] },
+    { "n": 8, "slice": "Pitch composer: four-step wizard, shared aim vocabulary, importance markers, collabTerms.model validation", "targets": ["Packages/Mobile (influencer)", "backend"] },
+    { "n": 9, "slice": "City normalisation backfill + the accepts_proposals decision", "targets": ["backend", "migration"], "blocked_on": "founder decision — spec 1.6 options A/B/C" }
+  ],
+  "open_decision_accepts_proposals": {
+    "question": "26 brands, 1 pitchable. Should approved brands be pitchable by default?",
+    "option_a_recommended": "Migration flipping accepts_proposals=true for status='approved' brands, per-brand toggle unchanged. Mirrors the creator side. NOTE: outward-facing — 25 brands go from unreachable to reachable at once and some will first notice via a pitch notification. Reverses a deliberate Part 2 asymmetry, so it is the founder's call and must not ride in quietly on a UI contract.",
+    "option_b": "Surface the toggle in brand onboarding and settings so brands opt in knowingly. Honest, slower, depends on brands acting.",
+    "option_c": "Leave it. Discovery ships correct and empty; filters tested against one restaurant.",
+    "blocks": "slice 9 only — slices 7 and 8 are correct and shippable either way"
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (migration 152 + backend/src + brand-web runtime + Mobile runtime) — explicit founder go required BEFORE the push, per feedback-push-is-the-deploy",
+    "deploy_targets": ["Render (backend/src)", "Vercel (Packages/brand-web)", "OTA (Packages/Mobile — brand + influencer)"],
+    "qa_baseline": 386,
+    "released_note": "Stays false. Per feedback_e2e_verification_at_end the founder verifies this with the rest of the redesign in one end-to-end pass. Flagged in 05-impact: this is a NAVIGATION change adding routes to a native stack — exactly the class a device catches and a bundle does not (a duplicate Stack.Screen name is a hard crash on tab mount). Worth a device pass even if the rest waits."
+  },
+  "progress": {
+    "as_of": "2026-08-15",
+    "done": [
+      "Defect diagnosed against production — the request exists, is correctly addressed, and was never reachable",
+      "01-spec, 02-workflow, 03-expected-outputs, 05-impact authored",
+      "Mockup authored — 10 panels, rendered and checked at 375px (no sideways body scroll)"
+    ],
+    "remaining": [
+      "FOUNDER LOCK on spec + mockup. Nothing implemented."
+    ]
+  }
+}

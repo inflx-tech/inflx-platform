@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brand mobile — the same spine, the brand's half</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;
+  --ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;
+  --y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;
+  --red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;
+  --purple:#6D3FC4;--purpleBg:#F2ECFB;
+  --border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1180px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:820px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:920px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:690px;overflow-y:auto}
+.needpill{background:var(--y);color:var(--ink);font-size:10px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:25px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+.stg .n{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:999px;padding:1px 5px;margin-left:3px}
+.stg span:not(.on) .n{background:var(--lineSoft);color:var(--mut)}
+
+.tr{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--lineSoft);align-items:flex-start}
+.av{width:38px;height:38px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:12px;font-weight:800;flex-shrink:0}
+.tr .m{flex:1;min-width:0}
+.tr .bn{font-size:13px;font-weight:800;font-family:'Outfit'}
+.tr .tm{font-size:11px;color:var(--text2);font-weight:650;margin-top:2px}
+.tr .st{font-size:10px;font-weight:800;margin-top:5px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.c-you{color:var(--yInk)}.d-you{background:var(--y)}
+.c-them{color:var(--blue)}.d-them{background:var(--blue)}
+.c-done{color:var(--green)}.d-done{background:var(--green)}
+.c-adm{color:var(--purple)}.d-adm{background:var(--purple)}
+.chev{color:var(--mut2);font-size:15px;align-self:center}
+.lhd{padding:11px 14px 6px;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase}
+
+/* spine */
+.spine{padding:6px 14px 12px}
+.step{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--lineSoft);align-items:flex-start;position:relative}
+.step:last-child{border-bottom:none}
+.sn{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px;z-index:2}
+.sn.done{background:var(--green);color:#fff}
+.sn.now{background:var(--ink);color:var(--y)}
+.sn.wait{background:var(--blueBg);color:var(--blue);border:1.5px solid #C7D8F8}
+.sn.adm{background:var(--purpleBg);color:var(--purple);border:1.5px solid #D9C7F5}
+.sn.todo{background:var(--white);color:var(--mut2);border:1.5px solid var(--lineSoft)}
+.step .rail{position:absolute;left:11.5px;top:30px;bottom:-2px;width:1.5px;background:var(--lineSoft);z-index:1}
+.step.done .rail{background:var(--green)}
+.step:last-child .rail{display:none}
+.sc{flex:1;min-width:0}
+.stt{font-size:12.5px;font-weight:800;font-family:'Outfit';display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.sd{font-size:11px;color:var(--mut);font-weight:650;margin-top:2px;line-height:1.5}
+.step.now .stt{font-size:13.5px}
+.sbadge{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.3px;text-transform:uppercase}
+.b-you{background:var(--yBg);color:var(--yInk)}
+.b-them{background:var(--blueBg);color:var(--blue)}
+.b-done{background:var(--greenBg);color:var(--green)}
+.b-adm{background:var(--purpleBg);color:var(--purple)}
+.b-web{background:#E8E3F5;color:#4C2E8E}
+.b-none{background:var(--lineSoft);color:var(--mut)}
+.sact{margin-top:9px}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.btn.sm{padding:7px 12px;font-size:11px;width:auto;border-radius:8px}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.frow{padding:10px 14px 3px}
+.flab{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:7px}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+/* funnel */
+.fun{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.fr{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--lineSoft)}
+.fr:last-child{border-bottom:none}
+.fr .fn{font-family:'Outfit';font-size:19px;font-weight:800;width:38px;text-align:right}
+.fr .ft{flex:1;font-size:11.5px;font-weight:700}
+.fr .fs{font-size:10px;color:var(--mut);font-weight:650;margin-top:1px;line-height:1.45}
+.fr.hi{background:var(--greenBg)}
+.fr.hi .fn{color:var(--green)}
+.fr.lo .fn{color:var(--mut2)}
+
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1060px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10.5px}
+tr:last-child td{border-bottom:none}
+.own{font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap;letter-spacing:.2px}
+.o-both{background:var(--yBg);color:var(--yInk)}
+.o-brand{background:var(--blueBg);color:var(--blue)}
+.o-cr{background:var(--greenBg);color:var(--green)}
+.o-adm{background:var(--purpleBg);color:var(--purple)}
+.o-web{background:#E8E3F5;color:#4C2E8E}
+.o-no{background:var(--lineSoft);color:var(--mut)}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-mv{background:var(--yBg);color:var(--yInk)}
+.s-blk{background:var(--redBg);color:var(--red)}
+
+.tbar{display:flex;border-top:1px solid var(--lineSoft);padding:8px 0 10px;background:var(--white)}
+.tbar div{flex:1;text-align:center;font-size:9px;font-weight:800;color:var(--mut2)}
+.tbar div.on{color:var(--ink)}
+.tbar .ic{font-size:15px;display:block;margin-bottom:2px;position:relative}
+.tbar .bdg{position:absolute;top:-3px;right:50%;margin-right:-16px;background:var(--red);color:#fff;font-size:7.5px;font-weight:800;border-radius:999px;padding:1px 4px;font-family:'JetBrains Mono'}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Brand mobile — the same spine, the brand's half</h1>
+  <p>features/brand-mobile-spine · mockup for lock · 2026-08-15 · built from the four agreed mockups</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① Who owns what</button>
+  <button class="tab" data-v="v1">② Brand mobile IA</button>
+  <button class="tab" data-v="v2">③ Ask one creator</button>
+  <button class="tab" data-v="v3">④ Ask many (open)</button>
+  <button class="tab" data-v="v4">⑤ Agreed → web</button>
+  <button class="tab" data-v="v5">⑥ The brand's spine</button>
+  <button class="tab" data-v="v6">⑦ Brand's drill-downs</button>
+  <button class="tab" data-v="v7">⑧ Analytics</button>
+  <button class="tab" data-v="v8">⑨ What it must NOT do</button>
+</div>
+
+<!-- ① OWNERSHIP -->
+<div class="view on" id="v0">
+  <div class="vh">Who owns each step — the whole design in one table</div>
+  <div class="vs">Some steps are a negotiation and both sides act. Some are one side's job alone. Two things stay on the desk. Everything in this mockup follows from this table.</div>
+
+  <div class="chips" style="margin-bottom:14px">
+    <span class="own o-both">BOTH — a negotiation</span>
+    <span class="own o-brand">BRAND ONLY</span>
+    <span class="own o-cr">CREATOR ONLY</span>
+    <span class="own o-adm">ADMIN ONLY</span>
+    <span class="own o-web">WEB ONLY</span>
+  </div>
+
+  <div class="card">
+    <h3>The six steps</h3>
+    <div class="tscroll"><table>
+      <tr><th>Step</th><th>Owner</th><th>Brand does</th><th>Creator does</th></tr>
+      <tr><td><b>1 · Agree terms</b></td><td><span class="own o-both">both</span></td><td>ask, counter, accept, decline, withdraw</td><td>counter, accept, decline</td></tr>
+      <tr><td><b>2a · Build the campaign</b></td><td><span class="own o-web">web only</span></td><td>brief agreed creators into sets</td><td>—</td></tr>
+      <tr><td><b>2b · Sign</b></td><td><span class="own o-both">both</span></td><td>countersign</td><td>accept the invite, sign</td></tr>
+      <tr><td><b>3 · The shoot</b></td><td><span class="own o-both">both</span></td><td>set address, propose/counter slot, <b>dispatch the parcel</b>, resolve a shortfall</td><td>propose/counter slot, <b>confirm the parcel</b>, mark the shoot done</td></tr>
+      <tr><td><b>4 · Shop posts</b></td><td><span class="own o-cr">creator</span> + <span class="own o-adm">admin</span></td><td><b>nothing.</b> Notified only when a post uses their products alone</td><td>create, fix, resubmit</td></tr>
+      <tr><td><b>5 · Go live</b></td><td><span class="own o-both">both</span></td><td><b>approve the reel</b>, <b>confirm it is live</b></td><td>submit, publish, add the link</td></tr>
+      <tr><td><b>6 · Complete</b></td><td><span class="own o-no">neither</span></td><td>read</td><td>read</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Outside the six steps</h3>
+    <div class="tscroll"><table>
+      <tr><th>Job</th><th>Owner</th><th>Where</th></tr>
+      <tr><td>List and price products</td><td><span class="own o-brand">brand</span></td><td><span class="own o-web">web only</span> — your locked scope</td></tr>
+      <tr><td>Build a detailed campaign from agreements</td><td><span class="own o-brand">brand</span></td><td><span class="own o-web">web only</span> — your locked scope</td></tr>
+      <tr><td>Apply offers to products</td><td><span class="own o-brand">brand</span></td><td>web · mobile can view</td></tr>
+      <tr><td>Quality-review a shop post</td><td><span class="own o-adm">admin</span></td><td>admin desk. <b>The brand never sees it before it is live.</b></td></tr>
+      <tr><td>Publish to Instagram</td><td><span class="own o-cr">creator</span></td><td>creator mobile</td></tr>
+      <tr><td>Analytics</td><td>both — <b>each sees only their own slice</b></td><td>web · mobile</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>The rule that decides every screen in this file.</b> If a step is a <b>negotiation</b>, brand mobile gets the full thing — asking, countering, accepting. If a step is <b>the other side's job</b>, brand mobile shows its state and offers nothing to press. If it is <b>web only</b>, brand mobile says so plainly and hands over, rather than half-doing it.</div>
+
+  <div class="note good"><b>Only two jobs stay on the desk</b> — listing products, and building the detailed campaign. Everything else a brand does, they can do from the phone. That matches the scope you locked earlier and this mockup does not widen it.</div>
+</div>
+
+<!-- ② IA -->
+<div class="view" id="v1">
+  <div class="vh">Brand mobile — five tabs, unchanged</div>
+  <div class="vs">Home · Campaigns · Wallet · Alerts · Profile. No new tab. The spine lives under Campaigns, and the cross-campaign work lives on Home.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">Kanchi Silks</div><div class="sub">2 CAMPAIGNS RUNNING</div></div><div class="needpill">6 need you</div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Needs you</div>
+            <div class="wait r" style="margin-bottom:8px"><b>Asha M.</b> — one saree missing from the parcel · 3 days</div>
+            <div class="wait y" style="margin-bottom:8px"><b>Ravi K.</b> — shoot slot unanswered · 6 days</div>
+            <div class="wait y"><b>Nisha P.</b> — reel waiting for your approval</div>
+            <button class="btn sec" style="margin-top:10px">See all 6</button>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Find creators</div>
+            <div class="brow">
+              <button class="btn pri">Ask a creator</button>
+              <button class="btn sec">Ask many</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Agree terms first. Build the campaign after, on the web.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Ready to brief · 3</div>
+            <div class="trm"><div class="k">Asha M. · 18%</div><div class="v" style="font-size:11px">EXPIRES 10 NOV</div></div>
+            <div class="trm"><div class="k">Meera S. · 15%</div><div class="v" style="font-size:11px">EXPIRES 2 NOV</div></div>
+            <div class="trm"><div class="k">Divya T. · 20%</div><div class="v" style="font-size:11px">EXPIRES 28 OCT</div></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">This month</div>
+            <div class="trm"><div class="k">Sales through creators</div><div class="v">₹82,300</div></div>
+            <div class="trm"><div class="k">Commission owed</div><div class="v">₹14,120</div></div>
+          </div>
+        </div>
+        <div class="tbar">
+          <div class="on"><span class="ic">⌂<span class="bdg">6</span></span>Home</div>
+          <div><span class="ic">📣</span>Campaigns</div>
+          <div><span class="ic">₹</span>Wallet</div>
+          <div><span class="ic">🔔</span>Alerts</div>
+          <div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap">Home answers <b>"what is on fire"</b> and <b>"who can I approach"</b>. Nothing else.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>Where each thing lives</h3>
+        <div class="tscroll"><table>
+          <tr><th>Tab</th><th>Holds</th><th>Status</th></tr>
+          <tr><td><b>Home</b></td><td>Needs you · ask a creator · ask many · ready to brief · month at a glance</td><td><span class="st2 s-mv">rework</span></td></tr>
+          <tr><td><b>Campaigns</b></td><td>campaign → creators → <b>the six-step spine per creator</b></td><td><span class="st2 s-mv">rework</span></td></tr>
+          <tr><td><b>Wallet</b></td><td>money in and out — content fees only</td><td><span class="st2 s-ex">as is</span></td></tr>
+          <tr><td><b>Alerts</b></td><td>what happened. <b>Not</b> what is owed.</td><td><span class="st2 s-ex">as is</span></td></tr>
+          <tr><td><b>Profile</b></td><td>settings, store preview, offers, legal, proposals inbox</td><td><span class="st2 s-ex">as is</span></td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>Alerts and Needs-you are not the same list, and today they blur.</b> The split: if it needs a decision it belongs in <b>Needs you</b>; if it is news it belongs in <b>Alerts</b>. "Asha countered" needs you. "Asha's post went live" is news.</div>
+
+      <div class="note good"><b>Everything above already has a screen.</b> <code>BrandActionRequiredScreen</code>, <code>BrandInfluencerBrowseScreen</code>, <code>BrandRequestComposerScreen</code>, <code>BrandCollabRequestsScreen</code>, <code>BrandCampaignInfluencersListScreen</code> all exist. This rearranges and extends; it does not start from nothing.</div>
+
+      <div class="note info"><b>"Ready to brief" appears on Home deliberately.</b> An agreement expires in 90 days and a brand who forgets to build the campaign wastes the whole negotiation. It belongs where they look daily, not three taps in.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ ASK ONE -->
+<div class="view" id="v2">
+  <div class="vh">Asking one creator — this already works</div>
+  <div class="vs">Browse creators, open one, request a collaboration. Built in Part 2 and live on the phone today.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">@ASHAMEHRA · 48.2K · MUMBAI</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trm"><div class="k">Followers</div><div class="v">48,200</div></div>
+            <div class="trm"><div class="k">Engagement</div><div class="v">4.8%</div></div>
+            <div class="trm"><div class="k">Works in</div><div class="v">Fashion · Lifestyle</div></div>
+            <div class="trm"><div class="k">Based in</div><div class="v">Mumbai</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait g">✓ She accepts brand requests. Her minimum is 15% commission.</div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Request a collaboration</button>
+              <button class="btn sec">Add to a group</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>You cannot invite her to a campaign from here any more. <b>Agree terms first</b> — the campaign is built afterwards, from what you both settled.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Creator profile. <b>"Request a collaboration" replaced "Add to campaign"</b> — the inversion Part 2 made.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Ask Asha M.</div><div class="sub">SHE CAN COUNTER ANY OF THIS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">What you want from it</div>
+            <div class="chips"><span class="chip on">Pay per sale</span><span class="chip">Pay for content</span><span class="chip">Fee + commission</span></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Money and time</div>
+            <div class="g2">
+              <div><label class="fl2">Commission %</label><input class="inp" value="15"></div>
+              <div><label class="fl2">Post by</label><input class="inp" value="2026-08-24"></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Working style</div>
+            <div class="chips"><span class="chip">Store visit</span><span class="chip on">We ship to her</span><span class="chip">Remote</span></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Settled here, not at signing — so she gets a say. She can counter this like anything else.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Optional</div>
+            <div class="trm"><div class="k">She'd promote</div><div class="v">Sarees <span class="sbadge b-none">preference</span></div></div>
+            <div class="trm"><div class="k">You'd love</div><div class="v">5 posts <span class="sbadge b-none">a hope</span></div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Mark anything <b>required</b> and she cannot counter it — she takes it or passes. Use it sparingly.</div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span><b>No deliverables field here.</b> On a sales collaboration you are not buying posts, so there is nothing to specify.</span></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Send to Asha</button></div>
+        </div>
+      </div>
+      <div class="cap">Composer. Two changes from today: <b>working style moved in</b>, and <b>the post hope</b> as a preference.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>Both screens exist.</b> <code>BrandInfluencerProfileScreen</code> and <code>BrandRequestComposerScreen</code> shipped with Part 2. The work here is the two additions above, not a build.</div>
+      <div class="note key"><b>Why working style belongs here.</b> Today it is picked when the brand approves the contract — the creator sees it and cannot argue. Moving it into the request makes it negotiable like the money and the date, which is what it always should have been.</div>
+      <div class="note info">Her counter comes back to the same place, as an old→new diff, with rounds remaining. Same grammar the creator sees.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ ASK MANY -->
+<div class="view" id="v3">
+  <div class="vh">Asking many — the "open" way in</div>
+  <div class="vs">Set who you're looking for, see honestly how many you'll actually reach, send once.</div>
+
+  <div class="note bad"><b>This exists in the engine and in no screen.</b> The server already supports three ways to ask — one creator, a saved group, or a filtered broadcast with a cap — and returns a full matched/reachable/capped breakdown. <b>Neither the phone nor the web has ever offered it.</b> The mobile composer sends a single creator id and nothing else.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Ask many</div><div class="sub">ONE SET OF TERMS, MANY CREATORS</div></div></div>
+        <div class="body">
+          <div class="frow">
+            <div class="flab">Send to</div>
+            <div class="chips"><span class="chip on">Anyone who matches</span><span class="chip">A saved group</span></div>
+          </div>
+          <div class="frow">
+            <div class="flab">Where</div>
+            <div class="chips"><span class="chip on">Andhra Pradesh</span><span class="chip on">Telangana</span><span class="chip">Anywhere</span></div>
+          </div>
+          <div class="frow">
+            <div class="flab">Works in</div>
+            <div class="chips"><span class="chip on">Fashion</span><span class="chip">Lifestyle</span><span class="chip">Beauty</span></div>
+          </div>
+          <div class="frow" style="padding-bottom:12px">
+            <div class="flab">Following</div>
+            <div class="chips"><span class="chip">1K–10K</span><span class="chip on">10K–100K</span><span class="chip">100K+</span></div>
+          </div>
+
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="dh">Who this actually reaches</div>
+            <div class="fun">
+              <div class="fr"><div class="fn">41</div><div><div class="ft">match what you asked for</div></div></div>
+              <div class="fr"><div class="fn">33</div><div><div class="ft">can be reached</div><div class="fs">5 muted brand requests · 2 opted out of bulk · 1 already has an open request from you</div></div></div>
+              <div class="fr hi"><div class="fn">30</div><div><div class="ft">will be sent</div><div class="fs">Your limit is 30 in one go</div></div></div>
+              <div class="fr lo"><div class="fn">3</div><div><div class="ft">left out this time</div><div class="fs">Narrow the filters or send again later</div></div></div>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">The terms they all get</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">15%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">24 Sep</div></div>
+            <div class="trm"><div class="k">Working style</div><div class="v">We ship</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Each creator negotiates separately from here. You may end up with thirty different deals — that is the point.</div>
+          </div>
+
+          <div class="dsec"><button class="btn pri">Send to 30 creators</button></div>
+        </div>
+      </div>
+      <div class="cap">The funnel is the screen. <b>41 → 33 → 30</b>, each drop explained.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sent to 30</div><div class="sub">FASHION · AP + TELANGANA · 18 AUG</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="fun">
+              <div class="fr hi"><div class="fn">4</div><div><div class="ft">agreed</div><div class="fs">Ready to brief into a campaign</div></div></div>
+              <div class="fr"><div class="fn">6</div><div><div class="ft">countering you</div><div class="fs">Each one needs an answer</div></div></div>
+              <div class="fr"><div class="fn">11</div><div><div class="ft">opened, no reply</div></div></div>
+              <div class="fr"><div class="fn">7</div><div><div class="ft">not opened yet</div></div></div>
+              <div class="fr lo"><div class="fn">2</div><div><div class="ft">said no</div></div></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Countering you · 6</div>
+            <div class="tr" style="padding:9px 0;border:none;border-bottom:1px solid var(--lineSoft)">
+              <div class="av">AM</div>
+              <div class="m"><div class="bn">Asha M.</div><div class="tm">wants 22% · 2 Sep</div>
+              <div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div>
+            </div>
+            <div class="tr" style="padding:9px 0;border:none;border-bottom:1px solid var(--lineSoft)">
+              <div class="av">PN</div>
+              <div class="m"><div class="bn">Priya N.</div><div class="tm">wants 18% · ships back after</div>
+              <div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">Everyone here expires <b>25 Aug</b> if they don't answer. You'll be told before they do.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">After sending. One batch, <b>thirty separate conversations</b>, tracked as a group.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>Every number on the left is already computed by the server.</b> Matched, reachable, the reasons for each drop, and the 30-cap all come back from a preview call built in Part 2. Nothing here needs new logic — only a screen.</div>
+      <div class="note key"><b>Showing the drops is the whole point.</b> A brand who asks for 41 and silently reaches 30 assumes 11 people ignored them. Naming muted, opted-out, in-cooldown and already-asked turns a mystery into a fact.</div>
+      <div class="note info"><b>The cap is admin-set</b>, not hardcoded — you can raise or lower it without a release.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ AGREED -> WEB -->
+<div class="view" id="v4">
+  <div class="vh">Agreed — now the handover to the desk</div>
+  <div class="vs">Building the detailed campaign is web only, by your locked scope. Mobile's job is to make that handover honest and to keep the agreements from expiring.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Ready to brief</div><div class="sub">4 AGREEMENTS WAITING</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait y">These four already agreed terms with you. Build one campaign and put them all in it.</div>
+          </div>
+          <div class="tr">
+            <div class="av">AM</div>
+            <div class="m"><div class="bn">Asha M.</div><div class="tm">18% · post by 28 Aug · we ship</div>
+            <div class="st c-done"><span class="dot d-done"></span>AGREED 14 AUG · EXPIRES 12 NOV</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">MS</div>
+            <div class="m"><div class="bn">Meera S.</div><div class="tm">15% · post by 30 Aug · store visit</div>
+            <div class="st c-done"><span class="dot d-done"></span>AGREED 12 AUG · EXPIRES 10 NOV</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">DT</div>
+            <div class="m"><div class="bn">Divya T.</div><div class="tm">20% · post by 5 Sep · remote</div>
+            <div class="st c-you"><span class="dot d-you"></span>EXPIRES IN 9 DAYS</div></div><div class="chev">›</div>
+          </div>
+
+          <div class="dsec">
+            <div class="lock">💻 <span><b>Building the campaign happens on the web.</b> It needs your product catalogue, offers and sets side by side — that does not fit a phone and we are not going to pretend it does.</span></div>
+            <button class="btn sec" style="margin-top:10px">Email me the link</button>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">What you can do here</div>
+            <div class="trm"><div class="k">See what was agreed</div><div class="v">✓</div></div>
+            <div class="trm"><div class="k">Chase a creator</div><div class="v">✓</div></div>
+            <div class="trm"><div class="k">Cancel an agreement</div><div class="v">✓</div></div>
+            <div class="trm"><div class="k">Build the campaign</div><div class="v" style="color:var(--mut2)">On the web</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><b>Honest handover.</b> It says why, and gives a way to get to the desk — not a dead end.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">AGREEMENT · READY TO BRIEF</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">What you both settled</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">28 Aug</div></div>
+            <div class="trm"><div class="k">Working style</div><div class="v">We ship to her</div></div>
+            <div class="trm"><div class="k">She'd promote</div><div class="v">Sarees</div></div>
+            <div class="trm"><div class="k">Agreed on</div><div class="v">14 Aug</div></div>
+          </div>
+          <div class="dsec"><button class="btn sec">See how you got here</button></div>
+          <div class="dsec">
+            <div class="wait b">When you brief this into a campaign, these terms come pre-filled. <b>If you change one, she is told which one</b> — by name.</div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">Not briefed by <b>12 Nov</b> and this lapses. You would have to ask her again from the start.</div>
+          </div>
+          <div class="dsec"><div class="bstack"><button class="btn dgr">Cancel this agreement</button></div></div>
+        </div>
+      </div>
+      <div class="cap">One agreement. <b>"See how you got here"</b> opens the step-1 diary — the same page she sees.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note key"><b>Half-doing this on mobile would be worse than not doing it.</b> A campaign needs sets, aims, posting windows, what each creator may sell, and offers — against a catalogue. A cut-down phone version would produce campaigns that then need fixing on the desk anyway.</div>
+      <div class="note good"><b>What mobile genuinely adds:</b> the expiry warning. An agreement lapses at 90 days and the brand loses the whole negotiation. Surfacing "expires in 9 days" on the phone is worth more than a phone campaign builder.</div>
+      <div class="note info"><b>The web screen already accepts this handoff</b> — the campaign wizard pre-fills from an agreement and warns when the brand drifts from what was agreed. Mobile only has to point at it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ SPINE -->
+<div class="view" id="v5">
+  <div class="vh">The brand's spine — same six steps, their half</div>
+  <div class="vs">Campaigns → a campaign → a creator. Every step shows who it belongs to, and only the brand's steps carry a button.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Season</div><div class="sub">SALES · ONGOING · 4 CREATORS</div></div></div>
+        <div class="stg"><span class="on">Creators<span class="n">4</span></span><span>Shoots<span class="n">2</span></span><span>Content<span class="n">3</span></span><span>Sales</span></div>
+        <div class="body">
+          <div class="lhd">Needs you · 2</div>
+          <div class="tr">
+            <div class="av">AM</div>
+            <div class="m"><div class="bn">Asha M.</div><div class="tm">Step 3 · one saree missing</div>
+            <div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">NP</div>
+            <div class="m"><div class="bn">Nisha P.</div><div class="tm">Step 5 · reel waiting on you</div>
+            <div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div>
+          </div>
+          <div class="lhd">Moving</div>
+          <div class="tr">
+            <div class="av">RK</div>
+            <div class="m"><div class="bn">Ravi K.</div><div class="tm">Step 4 · 2 posts with the review team</div>
+            <div class="st c-adm"><span class="dot d-adm"></span>NOT YOURS TO REVIEW</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">DT</div>
+            <div class="m"><div class="bn">Divya T.</div><div class="tm">Step 6 · complete 28 Aug</div>
+            <div class="st c-done"><span class="dot d-done"></span>DONE · ₹8,900 SOLD</div></div><div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tbar">
+          <div><span class="ic">⌂<span class="bdg">6</span></span>Home</div>
+          <div class="on"><span class="ic">📣</span>Campaigns</div>
+          <div><span class="ic">₹</span>Wallet</div><div><span class="ic">🔔</span>Alerts</div><div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap">Roster. <b>"Not yours to review"</b> states an ownership boundary rather than leaving a silence.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">FESTIVE SEASON · SALES · 18%</div></div></div>
+        <div class="spine">
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">14 Aug</span></div>
+            <div class="sd">18% · post by 28 Aug · you ship</div></div><div class="chev">›</div></div>
+
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Both signed <span class="sbadge b-done">16 Aug</span></div>
+            <div class="sd">Briefed from your agreement on the web</div></div><div class="chev">›</div></div>
+
+          <div class="step now"><div class="rail"></div><div class="sn now">3</div>
+            <div class="sc">
+              <div class="stt">The shoot <span class="sbadge b-you">your turn</span></div>
+              <div class="sd">Parcel delivered 21 Aug. Asha flagged <b>Cotton Handloom — Indigo</b> as not in the box.</div>
+              <div class="sact"><button class="btn pri">Sort the missing saree</button></div>
+            </div>
+          </div>
+
+          <div class="step"><div class="rail"></div><div class="sn adm">4</div>
+            <div class="sc"><div class="stt">Her shop posts <span class="sbadge b-adm">not yours</span></div>
+            <div class="sd">She makes them, our team checks quality. You are told only if a post uses <b>only your products</b>.</div></div>
+            <div class="chev">›</div></div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">5</div>
+            <div class="sc"><div class="stt">Her Instagram post <span class="sbadge b-you">yours later</span></div>
+            <div class="sd">You approve the reel before it goes out — it carries your name — then confirm it is live.</div></div></div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete</div>
+            <div class="sd">You hoped for 5 posts. Guidance only — nothing is withheld either way.</div></div></div>
+        </div>
+      </div>
+      <div class="cap">Her spine, from their side. <b>Step 4 carries no button</b>, and says why.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>Identical step numbers on both phones.</b> When the brand rings the creator and says "we're stuck on step 3", they are looking at the same thing. One shared truth beats two internally consistent stories.</div>
+
+      <div class="card">
+        <h3>How each step reads on the brand's side</h3>
+        <div class="tscroll"><table>
+          <tr><th>Step</th><th>Badge</th><th>Button?</th></tr>
+          <tr><td>1 Agree</td><td><span class="own o-both">both</span></td><td>while live — accept, counter, decline</td></tr>
+          <tr><td>2 Sign</td><td><span class="own o-both">both</span></td><td>countersign</td></tr>
+          <tr><td>3 Shoot</td><td><span class="own o-both">both</span></td><td>slot, parcel, shortfall</td></tr>
+          <tr><td>4 Shop posts</td><td><span class="own o-adm">not yours</span></td><td><b>none</b> — read-only</td></tr>
+          <tr><td>5 Go live</td><td><span class="own o-brand">brand</span></td><td>approve the reel, confirm live</td></tr>
+          <tr><td>6 Complete</td><td><span class="own o-no">neither</span></td><td>none</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>A step with no button still shows its state.</b> Hiding step 4 from the brand would make the collaboration look stalled. Showing it greyed with "not yours to review" tells them work is happening and it is not theirs.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ DRILL-DOWNS -->
+<div class="view" id="v6">
+  <div class="vh">The three screens a brand actually acts on</div>
+  <div class="vs">Everything else on the phone is reading. These are the ones where they press something.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">The shoot</div><div class="sub">ASHA M. · WE SHIP · STEP 3</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait r"><b>Asha says one item is missing.</b> Confirmed the other two on 21 Aug.</div></div>
+          <div class="dsec">
+            <div class="dh">What you sent · 3</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v" style="color:var(--green);font-size:11px">✓ RECEIVED</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="color:var(--green);font-size:11px">✓ RECEIVED</div></div>
+            <div class="trm"><div class="k">Cotton Handloom — Indigo</div><div class="v" style="color:var(--red);font-size:11px">✕ NOT IN THE BOX</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Send the missing saree</button>
+              <button class="btn sec">Drop it — she'll shoot the other two</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Either way her shoot goes ahead. A shortfall is never her problem.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Courier</div>
+            <div class="trm"><div class="k">Delhivery</div><div class="v" style="font-family:'JetBrains Mono';font-size:11px">DL8829174C</div></div>
+            <div class="trm"><div class="k">Delivered</div><div class="v">21 Aug, 2:40 PM</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Step 3. <b>Both outcomes offered</b> — resend, or proceed with two.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Nisha's reel</div><div class="sub">STEP 5 · YOUR APPROVAL</div></div></div>
+        <div class="body">
+          <div style="width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:38px">🎬</div>
+          <div class="dsec">
+            <div style="font-size:11.5px;font-weight:650;line-height:1.6">"Three drapes, one Kanjivaram. Kanchi Silks sent me this maroon and I haven't taken it off 🪔"</div>
+            <div style="font-size:10.5px;color:var(--blue);font-weight:700;margin-top:6px">#kanchisilks #kanjivaram #festive</div>
+          </div>
+          <div class="dsec">
+            <div class="wait y">This carries your name in public. Approve it, or ask for changes — you have <b>2 rounds</b>.</div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Approve — she can post</button>
+              <button class="btn sec">Ask for a change</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>Approving does <b>not</b> publish it. She posts when her shop posts are live, so the traffic has somewhere to land.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Step 5. The lock note stops "I approved it, why isn't it up?"</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Confirm it's live</div><div class="sub">NISHA P. · STEP 5</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait b">Nisha posted on <b>6 Sep</b> and sent the link.</div></div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Link</div><div class="v" style="font-size:10.5px;color:var(--blue)">instagram.com/p/C8x…</div></div>
+            <div class="trm"><div class="k">Posted</div><div class="v">6 Sep, 7:15 PM</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Yes — it's live</button>
+              <button class="btn sec">I can't see it</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">On a content collaboration this releases her second payment. On a sales one it just finishes the step.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">After you confirm</div>
+            <div class="trm"><div class="k">Its numbers</div><div class="v" style="font-size:11px">PULLED DAILY</div></div>
+            <div class="trm"><div class="k">This collaboration</div><div class="v" style="font-size:11px;color:var(--green)">COMPLETE</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Step 5, closing. <b>Names the money consequence</b> — it differs by track.</div>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:16px"><b>Three screens, and the backend for all three exists.</b> Reel review and confirm-live are live endpoints today. Only the parcel and the shortfall are new, and they come from the shoot contract already drawn.</div>
+</div>
+
+<!-- ⑧ ANALYTICS -->
+<div class="view" id="v7">
+  <div class="vh">Analytics — both see it, each sees only their own</div>
+  <div class="vs">The brand sees what happened inside their campaigns. Nothing about the creator's life outside them.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Season</div><div class="sub">HOW IT'S DOING</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">Sales through creators</div>
+            <div class="big">₹82,300</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">11 ORDERS · ₹14,120 COMMISSION</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">By creator</div>
+            <div class="trm"><div class="k">Asha M. · 18%</div><div class="v">₹51,000</div></div>
+            <div class="trm"><div class="k">Nisha P. · 15%</div><div class="v">₹22,400</div></div>
+            <div class="trm"><div class="k">Divya T. · 20%</div><div class="v">₹8,900</div></div>
+            <div class="trm"><div class="k">Ravi K. · 18%</div><div class="v" style="color:var(--mut2)">₹0</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">By product</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v">5 sold · ₹92,500</div></div>
+            <div class="trm"><div class="k">Cotton Handloom — Indigo</div><div class="v">3 sold · ₹12,600</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="color:var(--mut2)">0 sold</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Content they made</div>
+            <div class="trm"><div class="k">Shop posts live</div><div class="v">7</div></div>
+            <div class="trm"><div class="k">Using only your products</div><div class="v">4</div></div>
+            <div class="trm"><div class="k">Instagram posts live</div><div class="v">3</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Campaign level. <b>Per-campaign sales already exist</b> — creator and product cuts are the addition.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">WITH YOU · FESTIVE SEASON</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">She sold</div>
+            <div class="big">₹51,000</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">3 ORDERS · ₹9,180 TO HER AT 18%</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Her posts for you</div>
+            <div class="trm"><div class="k">Festive Sarees</div><div class="v">₹37,000</div></div>
+            <div class="trm"><div class="k">Draped Three Ways</div><div class="v">₹14,000</div></div>
+            <div class="trm"><div class="k">Her Instagram reel</div><div class="v" style="color:var(--mut2)">—</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Her reel's numbers</div>
+            <div class="trm"><div class="k">Views</div><div class="v">95,400</div></div>
+            <div class="trm"><div class="k">Likes</div><div class="v">6,210</div></div>
+            <div class="trm"><div class="k">Saves</div><div class="v">840</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Her public profile</div>
+            <div class="trm"><div class="k">Followers</div><div class="v">48,200</div></div>
+            <div class="trm"><div class="k">Engagement</div><div class="v">4.8%</div></div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>You see <b>her work with you</b>. Not her other brands, not her other collaborations, not what she earns elsewhere.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Creator level. The lock note is a <b>promise to her</b>, shown to them.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>The boundary, precisely</h3>
+        <div class="tscroll"><table>
+          <tr><th>The brand sees</th><th>The brand never sees</th></tr>
+          <tr><td>Sales through this creator, on their campaigns</td><td>Her sales for any other brand</td></tr>
+          <tr><td>Their own products' performance</td><td>Another brand's products in a mixed post</td></tr>
+          <tr><td>Reel numbers for content they paid for</td><td>Her posts that don't involve them</td></tr>
+          <tr><td>Her public followers and engagement</td><td>Her total earnings across the platform</td></tr>
+          <tr><td>Posts using <b>only</b> their products</td><td>Mixed-brand posts — nobody is told</td></tr>
+          <tr><td>Their own campaign totals</td><td>Any other brand's campaigns or rates</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>Mixed posts are the sharp edge.</b> Asha's "Wedding Edit" carries two brands. Neither is notified and neither sees its numbers — because showing it to one reveals she works with the other. That rule already exists; analytics must not quietly break it.</div>
+      <div class="note good"><b>She sees the mirror image</b> — what she earned, from which brand, through which post. Same data, cut by who is asking.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑨ MUST NOT -->
+<div class="view" id="v8">
+  <div class="vh">What brand mobile must not do</div>
+  <div class="vs">You asked for both halves. This is the half that keeps the app honest.</div>
+
+  <div class="card">
+    <h3>Not on the phone — and not a cut-down version either</h3>
+    <div class="tscroll"><table>
+      <tr><th>Not this</th><th>Why</th><th>Instead</th></tr>
+      <tr><td><b>Build a detailed campaign</b></td><td>Needs sets, aims, windows, allocations and offers against a catalogue. A phone version would make campaigns that need fixing on the desk anyway.</td><td>"Ready to brief" list + a link to the desk</td></tr>
+      <tr><td><b>List or price products</b></td><td>Same reason — your locked scope</td><td>View the catalogue, read-only</td></tr>
+      <tr><td><b>Review or reject a shop post</b></td><td>Quality is the admin desk's job. A brand veto here becomes a veto over her concept.</td><td>Told when a post uses only their products</td></tr>
+      <tr><td><b>See a shop post before it is live</b></td><td>Same reason. Preview is approval by another name.</td><td>See it once live</td></tr>
+      <tr><td><b>Specify what she should shoot</b></td><td>Her craft. You decided this.</td><td>State the aim and the scope at step 1</td></tr>
+      <tr><td><b>Set the working style unilaterally</b></td><td>It moved into the negotiation so she has a say</td><td>Propose it; she can counter</td></tr>
+      <tr><td><b>Publish anything on her behalf</b></td><td>It is her account and her audience</td><td>Approve, then confirm it went live</td></tr>
+      <tr><td><b>Enforce the post count they hoped for</b></td><td>A hope, never a debt. Nothing is withheld.</td><td>"3 posts · you hoped for 5" as guidance</td></tr>
+      <tr><td><b>Show any wallet or escrow on a sales collaboration</b></td><td>There is no money held there. She earns when someone buys.</td><td>Show commission owed, nothing else</td></tr>
+      <tr><td><b>Show her earnings from other brands</b></td><td>Not theirs to see</td><td>Only what she did with them</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>Two of these are new restrictions, not restatements.</b> The brand can currently set the working style at contract approval with no say from the creator — that moves into the negotiation. And "Add to campaign" on a creator profile becomes "Request a collaboration", because approaching someone with a campaign already built is the thing this whole programme inverted.</div>
+
+  <div class="card">
+    <h3>Build order</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Slice</th><th>Size</th><th>Note</th></tr>
+      <tr><td><b>1</b></td><td>Home reworked — Needs you, ask-a-creator, ready-to-brief, expiry warnings</td><td><span class="st2 s-mv">medium</span></td><td>Every source exists; the screen exists. Highest value per hour.</td></tr>
+      <tr><td><b>2</b></td><td>Campaign → creators gains step numbers and turn</td><td><span class="st2 s-mv">small</span></td><td>One shared step derivation with the creator app</td></tr>
+      <tr><td><b>3</b></td><td>The brand's per-creator spine</td><td><span class="st2 s-nw">medium</span></td><td>Mirrors the creator's; existing screens hang off it</td></tr>
+      <tr><td><b>4</b></td><td>"Ask many" — filters, the funnel, the batch view</td><td><span class="st2 s-nw">medium</span></td><td>Engine is done. Screen has never existed on any surface.</td></tr>
+      <tr><td><b>5</b></td><td>Working style into the request; post-hope as a preference</td><td><span class="st2 s-mv">small</span></td><td>Composer changes, plus removing it from contract approval</td></tr>
+      <tr><td><b>6</b></td><td>Shoot screen with the parcel and the shortfall</td><td><span class="st2 s-nw">medium</span></td><td>From the shoot contract</td></tr>
+      <tr><td><b>7</b></td><td>Analytics — creator and product cuts</td><td><span class="st2 s-nw">medium</span></td><td>Same grouping the creator's earnings view needs</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Slices 1 and 2 are worth doing alone.</b> Neither needs the shoot, the parcel, the ordering rule, or any decision still open — and they are the two that make the phone feel like it knows what is going on.</div>
+
+  <div class="note info"><b>Next: brand web.</b> It inherits the same six steps and the same ownership table, plus the two jobs that live only there — building the campaign from agreements, and the catalogue. The spine drawn here is what web will mirror, not the other way round.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

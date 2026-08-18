@@ -26,6 +26,8 @@ router.get   ('/influencers/me/proposals',                 authenticate, require
 router.get   ('/influencers/me/proposals/:id',             authenticate, requireRole('influencer'), ctrl.getMyProposal);
 router.post  ('/influencers/me/proposals/:id/withdraw',    authenticate, requireRole('influencer'), ctrl.withdrawMyProposal);
 router.post  ('/influencers/me/proposals/:id/respond-counter', authenticate, requireRole('influencer'), ctrl.respondToCounter);
+// collab-phase0 — she can now counter back on her own pitch, not just accept or decline.
+router.post  ('/influencers/me/proposals/:id/counter',          authenticate, requireRole('influencer'), ctrl.creatorCounterProposal);
 
 // ── Brand criteria (any authenticated user can read; influencer needs it) ──
 router.get   ('/brands/:id/proposal-criteria',  authenticate, ctrl.getProposalCriteria);

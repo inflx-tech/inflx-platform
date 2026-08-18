@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Step history, earnings, catalogue, posts</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;
+  --ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;
+  --y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;
+  --red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;
+  --purple:#6D3FC4;--purpleBg:#F2ECFB;
+  --border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1180px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:4px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:820px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:920px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:700px;overflow-y:auto}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:26px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+
+/* diary */
+.dia{position:relative;padding-left:20px}
+.dia::before{content:'';position:absolute;left:5px;top:6px;bottom:8px;width:1.5px;background:var(--lineSoft)}
+.ev{position:relative;padding-bottom:15px}
+.ev:last-child{padding-bottom:0}
+.ev::before{content:'';position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:var(--mut2);border:2.5px solid #fff}
+.ev.you::before{background:var(--y)}.ev.them::before{background:var(--blue)}
+.ev.ok::before{background:var(--green)}.ev.sys::before{background:var(--mut2)}
+.ev .w{font-size:12px;font-weight:800}
+.ev .d{font-size:10px;color:var(--mut);font-weight:700;margin-top:1px;letter-spacing:.2px}
+.evd{margin-top:6px;border:1px solid var(--lineSoft);border-radius:9px;overflow:hidden}
+.evd .r{display:flex;align-items:center;gap:7px;padding:6px 9px;border-bottom:1px solid var(--lineSoft);font-size:11px}
+.evd .r:last-child{border-bottom:none}
+.evd .k{flex:1;color:var(--mut);font-weight:700}
+.old{color:var(--mut2);text-decoration:line-through;font-weight:700;font-family:'JetBrains Mono';font-size:10px}
+.arw{color:var(--mut2);font-size:10px}
+.new{color:var(--ink);font-weight:800;font-family:'JetBrains Mono';font-size:10.5px}
+.same{color:var(--mut);font-weight:700;font-family:'JetBrains Mono';font-size:10px}
+
+/* chips + filters */
+.frow{padding:10px 14px 3px}
+.flab{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:7px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.locbar{margin:11px 14px 0;border:1px solid var(--line);border-radius:11px;padding:10px 12px;display:flex;gap:9px;align-items:center}
+.locbar .t{flex:1;font-size:11.5px;font-weight:750}
+.locbar .s{font-size:10px;color:var(--mut);font-weight:700;margin-top:1px}
+.swap{font-size:10px;font-weight:800;color:var(--blue)}
+
+/* brand card + catalogue */
+.bcard{margin:0 14px 12px;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.bhead{display:flex;gap:10px;padding:12px;align-items:flex-start}
+.av{width:38px;height:38px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:12px;font-weight:800;flex-shrink:0}
+.bn{font-size:13px;font-weight:800;font-family:'Outfit'}
+.bm{font-size:10.5px;color:var(--mut);font-weight:700;margin-top:2px;letter-spacing:.2px}
+.elig{font-size:10px;font-weight:800;margin-top:5px}
+.elig.ok{color:var(--green)}.elig.no{color:var(--red)}
+.catrow{border-top:1px solid var(--lineSoft);padding:9px 12px}
+.cathd{display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:var(--text2);letter-spacing:.2px;margin-bottom:7px}
+.cathd .n{color:var(--mut2);font-family:'JetBrains Mono';font-size:9.5px}
+.prow{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}
+.pcard{width:64px;flex-shrink:0}
+.pimg{width:64px;height:78px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:20px}
+.pnm{font-size:9px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9.5px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+
+/* grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.gc{aspect-ratio:3/4;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px;position:relative}
+.gc .b{position:absolute;top:4px;right:4px;font-size:7.5px;font-weight:800;padding:1px 4px;border-radius:4px}
+.b-live{background:var(--green);color:#fff}
+.b-rev{background:var(--blue);color:#fff}
+.b-fix{background:var(--red);color:#fff}
+.gc .p{position:absolute;bottom:4px;left:4px;font-size:7.5px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+
+/* post detail */
+.hero{width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:40px}
+.tagged{display:flex;gap:8px;overflow-x:auto;padding:11px 14px}
+.stat3{display:flex;text-align:center;border-top:1px solid var(--lineSoft);border-bottom:1px solid var(--lineSoft)}
+.stat3 div{flex:1;padding:11px 4px;border-right:1px solid var(--lineSoft)}
+.stat3 div:last-child{border-right:none}
+.stat3 .n{font-family:'Outfit';font-size:16px;font-weight:800}
+.stat3 .l{font-size:8.5px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:2px}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.sm{padding:7px 12px;font-size:11px;width:auto;border-radius:8px}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1060px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:580px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10.5px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-mv{background:var(--yBg);color:var(--yInk)}
+.s-blk{background:var(--redBg);color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Step history · earnings · catalogue · her posts</h1>
+  <p>features/step-detail-tracking-and-catalogue · mockup for lock · 2026-08-15</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① Step history</button>
+  <button class="tab" data-v="v1">② What it paid her</button>
+  <button class="tab" data-v="v2">③ Finding brands</button>
+  <button class="tab" data-v="v3">④ Brand + catalogue</button>
+  <button class="tab" data-v="v4">⑤ Products, 3 places</button>
+  <button class="tab" data-v="v5">⑥ Her posts</button>
+  <button class="tab" data-v="v6">⑦ Shop-post numbers</button>
+  <button class="tab" data-v="v7">⑧ Where it lives</button>
+</div>
+
+<!-- ① STEP HISTORY -->
+<div class="view on" id="v0">
+  <div class="vh">Tap any step → what happened here</div>
+  <div class="vs">One diary, six steps, both sides see the same page. Each entry says who moved, what they moved it to, and when.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What happened here</div><div class="sub">STEP 1 · AGREEING TERMS · KANCHI SILKS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Settled on</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">28 Aug 2026</div></div>
+            <div class="trm"><div class="k">Agreed</div><div class="v">14 Aug, 6:02 PM</div></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">How you got there · 4 moves</div>
+            <div class="dia">
+              <div class="ev them">
+                <div class="w">Kanchi Silks asked you</div>
+                <div class="d">11 AUG, 10:14 AM</div>
+                <div class="evd">
+                  <div class="r"><span class="k">Commission</span><span class="new">15%</span></div>
+                  <div class="r"><span class="k">Post by</span><span class="new">24 Aug</span></div>
+                </div>
+              </div>
+              <div class="ev sys"><div class="w">You opened it</div><div class="d">11 AUG, 7:40 PM</div></div>
+              <div class="ev you">
+                <div class="w">You countered</div>
+                <div class="d">12 AUG, 9:05 AM · YOUR 1ST OF 2</div>
+                <div class="evd">
+                  <div class="r"><span class="k">Commission</span><span class="old">15%</span><span class="arw">→</span><span class="new">22%</span></div>
+                  <div class="r"><span class="k">Post by</span><span class="old">24 Aug</span><span class="arw">→</span><span class="new">2 Sep</span></div>
+                </div>
+              </div>
+              <div class="ev them">
+                <div class="w">They countered back</div>
+                <div class="d">13 AUG, 4:20 PM · THEIR 1ST OF 2</div>
+                <div class="evd">
+                  <div class="r"><span class="k">Commission</span><span class="old">22%</span><span class="arw">→</span><span class="new">18%</span></div>
+                  <div class="r"><span class="k">Post by</span><span class="old">2 Sep</span><span class="arw">→</span><span class="new">28 Aug</span></div>
+                </div>
+              </div>
+              <div class="ev ok"><div class="w">You accepted</div><div class="d">14 AUG, 6:02 PM</div></div>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="wait n">Kanchi Silks sees this same page, word for word. Neither side can hold a different version of what was said.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Your exact example. <b>Today the 15% and the 22% are gone</b> — only 18% survives.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What happened here</div><div class="sub">STEP 4 · SHOP POSTS · "DRAPED THREE WAYS"</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where it stands</div>
+            <div class="wait g">✓ Live in your shop since 3 Sep</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">It took 3 tries</div>
+            <div class="dia">
+              <div class="ev you"><div class="w">You submitted it</div><div class="d">29 AUG, 11:02 AM</div></div>
+              <div class="ev them"><div class="w">Sent back — <b>video too shaky</b></div><div class="d">29 AUG, 4:47 PM · REVIEW TEAM</div>
+                <div class="evd"><div class="r"><span class="k">Note</span><span class="same">"Steady the middle clip and resend"</span></div></div></div>
+              <div class="ev you"><div class="w">You replaced the clip</div><div class="d">30 AUG, 8:15 AM</div></div>
+              <div class="ev them"><div class="w">Sent back — <b>saree cropped out of frame</b></div><div class="d">30 AUG, 1:30 PM · REVIEW TEAM</div></div>
+              <div class="ev you"><div class="w">You re-cropped and resent</div><div class="d">2 SEP, 9:40 AM</div></div>
+              <div class="ev ok"><div class="w">Approved and live</div><div class="d">3 SEP, 10:05 AM</div></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">Your concept and caption were never touched — only the file.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Two rejections, both kept. <b>Today only the second one survives</b>, so this page can't be drawn.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>The shoot already works exactly like this</b> — who proposed, who moved it, when, with notes. This takes the thing that works and gives it to the other five steps.</div>
+
+      <div class="card">
+        <h3>What each step's diary holds</h3>
+        <div class="tscroll"><table>
+          <tr><th>Step</th><th>Entries</th></tr>
+          <tr><td><b>1 Agree</b></td><td>asked · opened · countered <i>(with the numbers that moved)</i> · accepted · declined · expired</td></tr>
+          <tr><td><b>2 Sign</b></td><td>invited · accepted · she signed · they countersigned</td></tr>
+          <tr><td><b>3 Shoot</b></td><td>already recorded — proposed, countered, rescheduled, dispatched, received, done</td></tr>
+          <tr><td><b>4 Shop posts</b></td><td>submitted · sent back <i>(with the fault)</i> · resubmitted · approved · live</td></tr>
+          <tr><td><b>5 Go live</b></td><td>submitted · changes asked <i>(each round)</i> · approved · posted · confirmed live</td></tr>
+          <tr><td><b>6 Done</b></td><td>each completion condition, as it was met</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>Two rules that make it worth reading.</b> An entry shows <b>what changed</b>, not just that something did — "15% → 22%" beats "countered". And both parties see the identical page, so it settles arguments instead of starting them.</div>
+
+      <div class="note info"><b>Counting comes free.</b> Once rejections are kept individually you can finally answer "which fault do creators hit most" — impossible today, because only the last one survives.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ② EARNINGS -->
+<div class="view" id="v1">
+  <div class="vh">What this collaboration actually paid her</div>
+  <div class="vs">The sales are already stamped with the campaign, the creator and the offer. This adds them up — and shows which sarees did the work.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">STEP 6 · WHAT YOU EARNED</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">Your commission so far</div>
+            <div class="big">₹9,180</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">FROM ₹51,000 OF SALES · AT 18%</div>
+          </div>
+
+          <div class="dsec">
+            <div class="trm"><div class="k">Confirmed — yours</div><div class="v" style="color:var(--green)">₹6,300</div></div>
+            <div class="trm"><div class="k">Still in the return window</div><div class="v" style="color:var(--blue)">₹2,880</div></div>
+            <div class="rl" style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Commission confirms 30 days after each sale, once it can't be returned.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Which of their products sold</div>
+            <div class="trm"><div class="k">🥻 Kanjivaram — Maroon<br><span style="font-size:10px;color:var(--mut2)">2 SOLD</span></div><div class="v">₹37,000<br><span style="font-size:10px;color:var(--green)">₹6,660 yours</span></div></div>
+            <div class="trm"><div class="k">🥻 Banarasi — Gold<br><span style="font-size:10px;color:var(--mut2)">0 SOLD</span></div><div class="v" style="color:var(--mut2)">—</div></div>
+            <div class="trm"><div class="k">🥻 Cotton Handloom — Indigo<br><span style="font-size:10px;color:var(--mut2)">1 SOLD</span></div><div class="v">₹14,000<br><span style="font-size:10px;color:var(--green)">₹2,520 yours</span></div></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Which of your posts sold them</div>
+            <div class="trm"><div class="k">Festive Sarees</div><div class="v">₹37,000</div></div>
+            <div class="trm"><div class="k">Draped Three Ways</div><div class="v">₹14,000</div></div>
+            <div class="trm"><div class="k">Your Instagram reel</div><div class="v" style="color:var(--mut2)">—</div></div>
+          </div>
+          <div class="dsec"><div class="wait n">A sale counts for whichever post the shopper came through. Nothing is shared between two posts.</div></div>
+        </div>
+      </div>
+      <div class="cap">Creator. <b>Today she can only see ₹14,000 across everything</b> — never this breakdown.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">FESTIVE SEASON · WHAT SHE BROUGHT IN</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">Sales through Asha</div>
+            <div class="big">₹51,000</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">3 ORDERS · ₹9,180 COMMISSION TO HER</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Your creators, this campaign</div>
+            <div class="trm"><div class="k">Asha M. · 18%</div><div class="v">₹51,000</div></div>
+            <div class="trm"><div class="k">Nisha P. · 15%</div><div class="v">₹22,400</div></div>
+            <div class="trm"><div class="k">Ravi K. · 18%</div><div class="v" style="color:var(--mut2)">₹0</div></div>
+            <div class="trm"><div class="k">Divya T. · 20%</div><div class="v">₹8,900</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Your products, this campaign</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v">5 sold</div></div>
+            <div class="trm"><div class="k">Cotton Handloom — Indigo</div><div class="v">3 sold</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="color:var(--mut2)">0 sold</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Brand. <b>Per-campaign totals already exist</b> — this adds the per-creator and per-product cut.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>No new recording needed.</b> Every sale already carries which campaign, which creator and which offer it came from — there are real stamped sales sitting in production now. This is arithmetic over data you already keep.</div>
+      <div class="note key"><b>It closes an odd gap.</b> Today the brand can see what a campaign earned and the creator cannot see what a collaboration paid her — in a product where commission <i>is</i> her pay.</div>
+      <div class="note info"><b>Confirmed vs pending is not decoration.</b> Commission clears only after the return window, so a creator who sees one number and gets a smaller one loses trust. Both numbers, always, with the reason.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ FINDING BRANDS -->
+<div class="view" id="v2">
+  <div class="vh">Finding brands — state, city, and what's nearby</div>
+  <div class="vs">Her own recorded location leads. Then state → the major cities in it → that city plus the towns around it.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Find brands</div><div class="sub">14 ACCEPTING PITCHES</div></div></div>
+        <div class="body">
+          <div class="locbar">
+            <div style="font-size:15px">📍</div>
+            <div style="flex:1"><div class="t">Near you — Vijayawada</div><div class="s">WHERE YOU LIVE NOW · ANDHRA PRADESH</div></div>
+            <div class="swap">Change</div>
+          </div>
+
+          <div class="frow">
+            <div class="flab">State</div>
+            <div class="chips">
+              <span class="chip on">Andhra Pradesh</span>
+              <span class="chip">Telangana</span>
+              <span class="chip gh">All India</span>
+            </div>
+          </div>
+
+          <div class="frow">
+            <div class="flab">City</div>
+            <div class="chips">
+              <span class="chip on">Vijayawada</span>
+              <span class="chip">Visakhapatnam</span>
+              <span class="chip">Guntur</span>
+              <span class="chip">Tirupati</span>
+              <span class="chip">Nellore</span>
+              <span class="chip">Kurnool</span>
+            </div>
+          </div>
+
+          <div class="frow" style="padding-bottom:11px;border-bottom:1px solid var(--lineSoft)">
+            <div class="flab">Also show nearby</div>
+            <div class="chips">
+              <span class="chip on">Gannavaram</span>
+              <span class="chip on">Mangalagiri</span>
+              <span class="chip">Tadepalle</span>
+              <span class="chip">Hanuman Junction</span>
+            </div>
+            <div style="font-size:10px;color:var(--mut);font-weight:650;margin-top:7px;line-height:1.5">Towns around Vijayawada. Turn any off to tighten the list.</div>
+          </div>
+
+          <div style="padding:11px 14px 5px;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase">6 brands · Vijayawada + 2 nearby</div>
+
+          <div class="bcard">
+            <div class="bhead">
+              <div class="av">KS</div>
+              <div style="flex:1">
+                <div class="bn">Kanchi Silks</div>
+                <div class="bm">SAREES · BENZ CIRCLE, VIJAYAWADA</div>
+                <div class="elig ok">✓ You can pitch this brand</div>
+              </div>
+            </div>
+          </div>
+          <div class="bcard">
+            <div class="bhead">
+              <div class="av">VL</div>
+              <div style="flex:1">
+                <div class="bn">Vastra Lane Boutique</div>
+                <div class="bm">FASHION · GANNAVARAM · 18 KM</div>
+                <div class="elig ok">✓ You can pitch this brand</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Three levels, each narrowing the one above. <b>Distance shows only where it's known</b> — never a filter.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Where you are</div><div class="sub">USED TO FIND BRANDS NEAR YOU</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where you're from</div>
+            <div class="trm"><div class="k">City</div><div class="v">Vijayawada</div></div>
+            <div class="trm"><div class="k">State</div><div class="v">Andhra Pradesh</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Already on your profile. Brands see this.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Where you're living now <span style="color:var(--purple)">· new</span></div>
+            <div class="trm"><div class="k">City</div><div class="v">Vijayawada</div></div>
+            <div class="trm"><div class="k">State</div><div class="v">Andhra Pradesh</div></div>
+            <button class="btn sec" style="margin-top:10px">I've moved — update this</button>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Optional. If you're shooting in another city for a while, set it here and your brand search follows you. Leave it blank and we use where you're from.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Which one to search by</div>
+            <div class="chips">
+              <span class="chip on">Where I live now</span>
+              <span class="chip">Where I'm from</span>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="wait b">Brands that ask for a creator <b>in their own city</b> are matched against <b>where you live now</b>.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Two locations, as you asked. <b>Second one optional</b>, and it falls back cleanly.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>Better news than I gave you last round.</b> Creators already have city <b>and</b> state recorded — <b>28 of 29 profiles</b>. Nothing needs collecting. Discovery just reads the wrong record today.</div>
+
+      <div class="note bad"><b>The one genuinely new thing.</b> There is no list of places anywhere in the system — no states, no cities in a state, no idea that Gannavaram is near Vijayawada. Those chips need a place list built. Starting with <b>Andhra Pradesh + Telangana</b>, where 13 of your 16 located brands are.</div>
+
+      <div class="card">
+        <h3>What decides which brands show</h3>
+        <div class="tscroll"><table>
+          <tr><th>Filter</th><th>Reads</th><th>Coverage</th></tr>
+          <tr><td>State</td><td>the brand's recorded state</td><td>16 of 26</td></tr>
+          <tr><td>City</td><td>the brand's city</td><td>16 of 26</td></tr>
+          <tr><td>Nearby towns</td><td>the new place list</td><td><span class="st2 s-nw">to build</span></td></tr>
+          <tr><td>Neighbourhood shown on the row</td><td>the business address</td><td>12 of 26</td></tr>
+          <tr><td>Distance in km</td><td>map coordinates</td><td>13 of 26 — <b>display only</b></td></tr>
+        </table></div>
+        <div class="note key" style="max-width:none;margin:10px 0 0"><b>Distance never filters.</b> Only half the brands have coordinates, so a "within 25 km" filter would silently hide the other half. It shows as "18 km" where known and orders results — nothing more.</div>
+      </div>
+
+      <div class="note info"><b>A brand with no city still appears</b> under All India rather than vanishing. Ten brands have no location at all; hiding them would make the directory look emptier than it is.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ BRAND + CATALOGUE -->
+<div class="view" id="v3">
+  <div class="vh">A brand result is its shopfront, not a name and a pin</div>
+  <div class="vs">You asked that she see the products too. So the row opens into the catalogue, grouped the way the products are already labelled.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">39 PRODUCTS · BENZ CIRCLE, VIJAYAWADA</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trm"><div class="k">Trade</div><div class="v">Sarees · Fashion</div></div>
+            <div class="trm"><div class="k">Where</div><div class="v">Benz Circle, Vijayawada</div></div>
+            <div class="trm"><div class="k">Open to pitches</div><div class="v" style="color:var(--green)">Yes</div></div>
+            <div class="wait g" style="margin-top:10px">✓ You meet what they ask for — 48.2K followers, fashion, Andhra Pradesh</div>
+          </div>
+
+          <div class="dsec" style="padding-bottom:4px">
+            <div class="dh">What they sell</div>
+            <div class="chips">
+              <span class="chip on">All 39</span><span class="chip">Silk 14</span><span class="chip">Cotton 11</span><span class="chip">Party 8</span><span class="chip">Bridal 6</span>
+            </div>
+          </div>
+
+          <div class="catrow" style="border-top:none">
+            <div class="cathd"><span>SILK SAREES</span><span class="n">14</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Silk Teal</div><div class="ppr">₹12,400</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Tussar Ivory</div><div class="ppr">₹9,800</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>COTTON SAREES</span><span class="n">11</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Handloom Indigo</div><div class="ppr">₹4,200</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mangalgiri Rust</div><div class="ppr">₹3,600</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Jamdani White</div><div class="ppr">₹6,900</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>PARTY WEAR</span><span class="n">8</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Sequin Rose</div><div class="ppr">₹15,000</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Georgette Wine</div><div class="ppr">₹8,400</div></div>
+            </div>
+          </div>
+
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <button class="btn pri">Pitch Kanchi Silks</button>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Seeing the range first means your pitch can name what you'd actually shoot.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">She decides whether to pitch by looking at the <b>stock</b>, not the trade label.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note good"><b>The labels already exist.</b> All 92 products carry a category and 80 sit in the proper tree. Nothing needs classifying — the screens simply were never sent the label. This is the cheapest item on your whole list.</div>
+
+      <div class="note bad"><b>What she gets today instead:</b> a flat list of 39 sarees, newest first, with a name box — and the only label on it is "fashion", which is the shop's trade, not the saree's kind.</div>
+
+      <div class="card">
+        <h3>Rules for the grouping</h3>
+        <div class="tscroll"><table>
+          <tr><th>Rule</th><th>Why</th></tr>
+          <tr><td>Categories come from the products, not a fixed list</td><td>A saree shop shows Silk/Cotton/Bridal; a restaurant shows Starters/Mains. No hardcoding.</td></tr>
+          <tr><td>Empty categories never appear</td><td>Same rule the brand filters follow — never offer a tap that leads nowhere</td></tr>
+          <tr><td>Uncategorised products get an "Other" group</td><td>12 of 92 have no tree position. Hiding them would hide real stock.</td></tr>
+          <tr><td>Images at a readable size</td><td>She is judging whether the range is worth her time — thumbnails the size of text don't answer that</td></tr>
+        </table></div>
+      </div>
+      <div class="note info"><b>Same component, three places.</b> Panel ⑤ reuses this exact grouped-catalogue block for the other two views, so it is built once.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ PRODUCTS 3 PLACES -->
+<div class="view" id="v4">
+  <div class="vh">The same catalogue, in all three places she looks</div>
+  <div class="vs">Browsing a brand · what she may sell in one campaign · everything she can stock. One grouped list, three scopes.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What you can sell</div><div class="sub">KANCHI SILKS · FESTIVE SEASON</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait y">You agreed to promote <b>bottom wear and sarees</b>. That's 25 of their 39 products.</div>
+          </div>
+          <div class="dsec" style="padding-bottom:4px">
+            <div class="chips"><span class="chip on">All 25</span><span class="chip">Silk 14</span><span class="chip">Cotton 11</span></div>
+          </div>
+          <div class="catrow" style="border-top:none">
+            <div class="cathd"><span>SILK SAREES</span><span class="n">14</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">₹12,400</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>COTTON SAREES</span><span class="n">11</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Handloom Indigo</div><div class="ppr">₹4,200</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mangalgiri Rust</div><div class="ppr">₹3,600</div></div>
+            </div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="dh">Not in your scope</div>
+            <div class="wait n">14 products — party wear and bridal. You can't tag these in a post for this collaboration.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Per campaign. <b>Says what's out of scope too</b> — silence reads as a bug.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your shelf</div><div class="sub">EVERYTHING YOU CAN SELL · 4 BRANDS</div></div></div>
+        <div class="body">
+          <div class="frow">
+            <div class="flab">Brand</div>
+            <div class="chips"><span class="chip on">All 4</span><span class="chip">Kanchi Silks</span><span class="chip">Label Fern</span><span class="chip">Urban Stitch</span></div>
+          </div>
+          <div class="frow" style="padding-bottom:11px">
+            <div class="flab">Category</div>
+            <div class="chips"><span class="chip on">All 61</span><span class="chip">Sarees 25</span><span class="chip">Dresses 18</span><span class="chip">Denim 12</span><span class="chip">Other 6</span></div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>SAREES · 25</span><span class="n">KANCHI SILKS</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Handloom Indigo</div><div class="ppr">₹4,200</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">₹12,400</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>DRESSES · 18</span><span class="n">LABEL FERN</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">👗</div><div class="pnm">Linen Midi Sage</div><div class="ppr">₹3,400</div></div>
+              <div class="pcard"><div class="pimg">👗</div><div class="pnm">Wrap Dress Black</div><div class="ppr">₹2,900</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>OTHER · 6</span><span class="n">UNCATEGORISED</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">📦</div><div class="pnm">Untagged item</div><div class="ppr">₹1,200</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Everything, across brands. <b>Two filters that combine</b> — brand and category.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>Three scopes, one block</h3>
+        <div class="tscroll"><table>
+          <tr><th>Where</th><th>Shows</th><th>Extra</th></tr>
+          <tr><td>Browsing a brand</td><td>everything they sell</td><td>can she pitch them</td></tr>
+          <tr><td>Inside a campaign</td><td>only what she agreed to promote</td><td>names what's excluded</td></tr>
+          <tr><td>Her shelf</td><td>every product across contracted brands</td><td>brand filter as well</td></tr>
+        </table></div>
+      </div>
+      <div class="note good"><b>Built once.</b> The grouped block from panel ④ is the same component in all three. The only difference is which products go in and one extra line at the top.</div>
+      <div class="note key"><b>"Other" is deliberate.</b> 12 of 92 products have no place in the tree. Grouping them into Other keeps them sellable and makes the gap visible so it gets fixed — dropping them would quietly hide real stock.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ HER POSTS -->
+<div class="view" id="v5">
+  <div class="vh">Her own posts — and opening one</div>
+  <div class="vs">Everything she has published, plus the thing that doesn't exist yet: tapping one and seeing it full, with the products attached.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your posts</div><div class="sub">14 PUBLISHED · 2 IN REVIEW</div></div></div>
+        <div class="body">
+          <div class="frow" style="padding-bottom:11px">
+            <div class="chips"><span class="chip on">All</span><span class="chip">Live 14</span><span class="chip">In review 2</span><span class="chip">Needs a fix 1</span></div>
+          </div>
+          <div class="grid3">
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">3</span></div>
+            <div class="gc">🎬<span class="b b-live">LIVE</span><span class="p">5</span></div>
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">2</span></div>
+            <div class="gc">🎬<span class="b b-rev">REVIEW</span><span class="p">4</span></div>
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">1</span></div>
+            <div class="gc">🖼<span class="b b-fix">FIX</span><span class="p">2</span></div>
+            <div class="gc">🎬<span class="b b-live">LIVE</span><span class="p">6</span></div>
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">3</span></div>
+            <div class="gc">🖼<span class="b b-rev">REVIEW</span><span class="p">2</span></div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="wait n">The small number is how many products are tagged in that post.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Her grid. Status on every tile, so a stuck post is visible without opening it.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Sarees</div><div class="sub">LIVE SINCE 3 SEP · KANCHI SILKS</div></div></div>
+        <div class="body">
+          <div class="hero">🖼</div>
+          <div style="padding:12px 14px 0">
+            <div style="font-size:11.5px;font-weight:650;line-height:1.6">Three ways to drape a Kanjivaram for the festive season. Swipe for the pleating detail 🪔</div>
+            <div style="font-size:10.5px;color:var(--blue);font-weight:700;margin-top:6px">#kanjivaram #festivesarees #handloom</div>
+          </div>
+
+          <div class="tagged">
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">₹12,400</div></div>
+          </div>
+
+          <div class="stat3">
+            <div><div class="n">₹37,000</div><div class="l">SOLD THROUGH</div></div>
+            <div><div class="n">₹6,660</div><div class="l">YOU EARNED</div></div>
+            <div><div class="n">2</div><div class="l">ORDERS</div></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">About this post</div>
+            <div class="trm"><div class="k">Concept</div><div class="v">Festive Sarees</div></div>
+            <div class="trm"><div class="k">Brands in it</div><div class="v">Kanchi Silks only</div></div>
+            <div class="trm"><div class="k">Collaboration</div><div class="v">Festive Season</div></div>
+            <div class="trm"><div class="k">Approved</div><div class="v">3 Sep</div></div>
+          </div>
+          <div class="dsec"><button class="btn sec">See what happened with this post</button></div>
+        </div>
+      </div>
+      <div class="cap">Tapped. Big media, caption, <b>tagged products underneath</b>, what it earned — and a way into its diary.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>There is no way to open a post today.</b> She can list her posts and that is all — no screen, and nothing to call for one. This is a new endpoint, not a screen tweak. Worth saying plainly before it looks small.</div>
+
+      <div class="note good"><b>It becomes the place two other answers land.</b> The sales figures from panel ② and the diary from panel ① both belong on an opened post — which is why it is worth building properly rather than as a lightbox.</div>
+
+      <div class="card">
+        <h3>What an opened post shows</h3>
+        <div class="tscroll"><table>
+          <tr><th>Part</th><th>Source</th></tr>
+          <tr><td>Media, full size</td><td><span class="st2 s-ex">exists</span></td></tr>
+          <tr><td>Caption + hashtags</td><td><span class="st2 s-ex">exists</span></td></tr>
+          <tr><td>Tagged products with images</td><td><span class="st2 s-ex">exists</span> — never shown together with the post</td></tr>
+          <tr><td>Sold-through and earned</td><td><span class="st2 s-nw">new</span> — panel ②</td></tr>
+          <tr><td>Concept, brands, collaboration</td><td><span class="st2 s-ex">exists</span></td></tr>
+          <tr><td>Its diary</td><td><span class="st2 s-nw">new</span> — panel ①</td></tr>
+          <tr><td>Views, taps, saves</td><td><span class="st2 s-blk">blocked</span> — panel ⑦</td></tr>
+        </table></div>
+      </div>
+      <div class="note info"><b>The brand sees a read-only version</b> of a post that used only their products — the one they are notified about. No edit, no veto; the concept is hers.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ SHOP POST NUMBERS -->
+<div class="view" id="v6">
+  <div class="vh">How her shop posts perform — and why this one is last</div>
+  <div class="vs">The design is done and the table is waiting. Nothing sends the signals, and nothing can read them. Both ends have to be connected before this screen can say anything true.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Sarees</div><div class="sub">HOW IT'S DOING</div></div></div>
+        <div class="body">
+          <div class="stat3">
+            <div><div class="n">4,210</div><div class="l">SEEN</div></div>
+            <div><div class="n">386</div><div class="l">OPENED</div></div>
+            <div><div class="n">52</div><div class="l">TAPPED A SAREE</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">What people did</div>
+            <div class="trm"><div class="k">Saved it</div><div class="v">74</div></div>
+            <div class="trm"><div class="k">Shared it</div><div class="v">11</div></div>
+            <div class="trm"><div class="k">Added a saree to their bag</div><div class="v">9</div></div>
+            <div class="trm"><div class="k">Bought</div><div class="v" style="color:var(--green)">2</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Which saree they tapped</div>
+            <div class="trm"><div class="k">Kanjivaram Maroon</div><div class="v">31</div></div>
+            <div class="trm"><div class="k">Banarasi Gold</div><div class="v">14</div></div>
+            <div class="trm"><div class="k">Mysore Teal</div><div class="v">7</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Where people found it</div>
+            <div class="trm"><div class="k">Discover</div><div class="v">2,890</div></div>
+            <div class="trm"><div class="k">Your store</div><div class="v">910</div></div>
+            <div class="trm"><div class="k">A shared link</div><div class="v">410</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">What it looks like <b>once both ends are connected</b>. Every number here is a signal the app was already designed to record.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Sarees</div><div class="sub">HOW IT'S DOING</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait n" style="text-align:center;padding:20px 14px">
+              <div style="font-size:22px;margin-bottom:8px">📊</div>
+              <b style="color:var(--ink);font-size:12.5px">We're not counting yet</b><br>
+              <span style="font-weight:650">Your post is live and selling — we just aren't measuring how people find it yet. Sales are still tracked in full.</span>
+            </div>
+          </div>
+          <div class="stat3">
+            <div><div class="n">₹37,000</div><div class="l">SOLD THROUGH</div></div>
+            <div><div class="n">₹6,660</div><div class="l">YOU EARNED</div></div>
+            <div><div class="n">2</div><div class="l">ORDERS</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">What she <b>can</b> see meanwhile — because sales are recorded properly and views are not.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">The honest state until then. <b>Never a zero</b> — a zero says nobody looked, which isn't true.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>Two jobs, in this order.</b> <b>One:</b> the shopping app has to start sending the signals — right now not one has ever been sent. <b>Two:</b> something has to be able to read them back; today they can only go in. The screen is third.</div>
+
+      <div class="note key"><b>Why the empty state matters more than the full one.</b> If this ships showing zeros, every creator concludes her posts are being ignored. Showing "we're not counting yet" alongside her real sales is the difference between an honest gap and a wrong number.</div>
+
+      <div class="note good"><b>Nothing about the design needs inventing.</b> Seen, opened, tapped, saved, shared, added to bag, which product, and which surface — all of it is already in the shape the app was built to record. This is finishing something, not starting it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ WHERE IT LIVES -->
+<div class="view" id="v7">
+  <div class="vh">Where each of these lives</div>
+  <div class="vs">Slotted into the six-step spine, not bolted on beside it.</div>
+
+  <div class="card">
+    <h3>Creator app</h3>
+    <div class="tscroll"><table>
+      <tr><th>Thing</th><th>Where</th><th>Reached by</th></tr>
+      <tr><td><b>Step history</b></td><td>Collabs → a collaboration → tap any step</td><td>the spine itself</td></tr>
+      <tr><td><b>What it paid her</b></td><td>Collabs → a collaboration → step 6</td><td>also from Earnings, per collaboration</td></tr>
+      <tr><td><b>Finding brands</b></td><td>Collabs → My pitches → Find brands</td><td>also Profile</td></tr>
+      <tr><td><b>Brand + catalogue</b></td><td>a brand result opens into it</td><td>—</td></tr>
+      <tr><td><b>What she can sell</b></td><td>Collabs → a collaboration → step 4</td><td>and from the post composer</td></tr>
+      <tr><td><b>Her shelf</b></td><td>Create tab → My store</td><td>—</td></tr>
+      <tr><td><b>Her posts + opening one</b></td><td>Create tab → her grid</td><td>also from step 4 of any collaboration</td></tr>
+      <tr><td><b>Shop-post numbers</b></td><td>inside an opened post</td><td>—</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Brand app</h3>
+    <div class="tscroll"><table>
+      <tr><th>Thing</th><th>Where</th></tr>
+      <tr><td><b>Step history</b></td><td>Campaigns → campaign → a creator → tap any step. Same page she sees.</td></tr>
+      <tr><td><b>What a creator brought in</b></td><td>Campaigns → campaign → a creator → step 6</td></tr>
+      <tr><td><b>Per-product sales</b></td><td>Campaigns → campaign → its own view</td></tr>
+      <tr><td><b>A post using only their products</b></td><td>from the notification — read-only</td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Order I'd build them</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Item</th><th>Size</th><th>Why here</th></tr>
+      <tr><td><b>1</b></td><td>Send the category labels</td><td><span class="st2 s-ex">smallest</span></td><td>Labels already exist. Fixes all three product views at once.</td></tr>
+      <tr><td><b>2</b></td><td>What each collaboration paid her</td><td><span class="st2 s-ex">small</span></td><td>Arithmetic over sales already stamped. Closes a real gap.</td></tr>
+      <tr><td><b>3</b></td><td>Opening a post</td><td><span class="st2 s-mv">medium</span></td><td>Needs a new endpoint, and items 2 and 4 both land on it</td></tr>
+      <tr><td><b>4</b></td><td>Step history</td><td><span class="st2 s-mv">medium</span></td><td>New diary written by all six steps. Do it before the detail screens.</td></tr>
+      <tr><td><b>5</b></td><td>Brand search by place</td><td><span class="st2 s-nw">medium</span></td><td>Needs the place list built. Also still behind the pitches-by-default decision.</td></tr>
+      <tr><td><b>6</b></td><td>Shop-post numbers</td><td><span class="st2 s-blk">largest</span></td><td>Two jobs before the screen. Ship the honest empty state early.</td></tr>
+    </table></div>
+    <div class="note key" style="max-width:none;margin:12px 0 0"><b>1 and 2 are worth doing on their own</b>, this week, regardless of everything else in the programme. Neither needs the spine, the shoot, or any decision that is still open.</div>
+  </div>
+
+  <div class="note info"><b>Two assumptions I took rather than stall.</b> A creator gets <b>two</b> locations — where she's from and where she lives now, the second optional and falling back to the first. And the place list starts as <b>Andhra Pradesh + Telangana</b>, built to extend. Both easy to overturn.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

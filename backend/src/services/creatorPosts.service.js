@@ -20,6 +20,7 @@
  */
 
 const db = require('../config/db');
+const events = require('./collabEvents.service');
 const concepts = require('./concepts.service');
 const sectionLibrary = require('./sectionLibrary.service');
 const { runRule } = require('./sectionRules.service');
@@ -339,6 +340,17 @@ async function decidePost(postId, adminUserId, approve, reason) {
      approve ? null : (String(reason || '').trim() || 'Not specified'), adminUserId]);
   const post = rows[0];
   if (!post) return null;
+
+  // collab-phase0 — step 4 history. Until now only the LATEST rejection reason
+  // survived, so a post sent back twice looked like it was sent back once.
+  await events.record({
+    postId: post.id,
+    step: events.STEP.SHOP_POSTS,
+    actorRole: 'admin',
+    actorUserId: adminUserId,
+    action: approve ? 'approved' : 'sent_back',
+    note: approve ? null : (String(reason || '').trim() || 'Not specified'),
+  });
 
   // notify the creator (in-app + push; never blocks the decision)
   try {

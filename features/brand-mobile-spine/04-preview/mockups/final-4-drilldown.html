@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FINAL 4 — Campaign drill-down: campaign → set → creator → six steps</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1240px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:860px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:960px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.wrap{position:relative}
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:11px 14px 9px;border-bottom:1px solid var(--lineSoft)}
+.crumb{font-size:9px;font-weight:800;color:var(--mut2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.crumb b{color:var(--blue)}
+.navrow{display:flex;align-items:center;gap:9px}
+.navrow .bk{font-size:15px;color:var(--ink);font-weight:700}
+.navrow .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.navrow .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.lvl{position:absolute;top:8px;left:8px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:5;background:var(--ink);color:var(--y)}
+.body{padding:0 0 10px;max-height:715px;overflow-y:auto}
+.needpill{background:var(--y);color:var(--ink);font-size:10px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px;display:flex;justify-content:space-between}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.wait{border-radius:11px;padding:10px 12px;font-size:11.5px;font-weight:700;line-height:1.5}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:10px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.5}
+
+.tr{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--lineSoft);align-items:flex-start}
+.pic{width:38px;height:38px;border-radius:50%;background:#EDE7E0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.av{width:38px;height:38px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:11px;font-weight:800;flex-shrink:0}
+.tr .m{flex:1;min-width:0}
+.tr .bn{font-size:13px;font-weight:800;font-family:'Outfit'}
+.tr .tm{font-size:10.5px;color:var(--text2);font-weight:650;margin-top:2px}
+.tr .st{font-size:9.5px;font-weight:800;margin-top:5px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.c-you{color:var(--yInk)}.d-you{background:var(--y)}
+.c-them{color:var(--blue)}.d-them{background:var(--blue)}
+.c-done{color:var(--green)}.d-done{background:var(--green)}
+.c-adm{color:var(--purple)}.d-adm{background:var(--purple)}
+.chev{color:var(--mut2);font-size:15px;align-self:center}
+.nb{background:var(--y);color:var(--ink);font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;align-self:center;font-family:'JetBrains Mono'}
+.lhd{padding:11px 14px 6px;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;display:flex;justify-content:space-between}
+
+/* mini step dots on a row */
+.dots{display:flex;gap:3px;margin-top:6px;align-items:center}
+.dt{width:15px;height:5px;border-radius:3px;background:var(--lineSoft)}
+.dt.d{background:var(--green)}
+.dt.n{background:var(--ink)}
+.dt.w{background:var(--blue)}
+.dots .lbl{font-size:9px;font-weight:800;color:var(--mut);margin-left:4px;font-family:'JetBrains Mono'}
+
+/* spine */
+.spine{padding:6px 14px 12px}
+.step{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--lineSoft);align-items:flex-start;position:relative}
+.step:last-child{border-bottom:none}
+.sn{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px;z-index:2}
+.sn.done{background:var(--green);color:#fff}
+.sn.now{background:var(--ink);color:var(--y)}
+.sn.wait{background:var(--blueBg);color:var(--blue);border:1.5px solid #C7D8F8}
+.sn.adm{background:var(--purpleBg);color:var(--purple);border:1.5px solid #D9C7F5}
+.sn.todo{background:var(--white);color:var(--mut2);border:1.5px solid var(--lineSoft)}
+.step .rail{position:absolute;left:11.5px;top:30px;bottom:-2px;width:1.5px;background:var(--lineSoft);z-index:1}
+.step.done .rail{background:var(--green)}
+.step:last-child .rail{display:none}
+.sc{flex:1;min-width:0}
+.stt{font-size:12.5px;font-weight:800;font-family:'Outfit';display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.sd{font-size:11px;color:var(--mut);font-weight:650;margin-top:2px;line-height:1.5}
+.step.now .stt{font-size:13.5px}
+.sbadge{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.3px;text-transform:uppercase}
+.b-you{background:var(--yBg);color:var(--yInk)}
+.b-them{background:var(--blueBg);color:var(--blue)}
+.b-done{background:var(--greenBg);color:var(--green)}
+.b-adm{background:var(--purpleBg);color:var(--purple)}
+.sact{margin-top:9px}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.sm{padding:7px 12px;font-size:11px;width:auto;border-radius:8px}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+.stg .n{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:999px;padding:1px 5px;margin-left:3px}
+.stg span:not(.on) .n{background:var(--lineSoft);color:var(--mut)}
+
+.nrow{padding:11px 14px;border-bottom:1px solid var(--lineSoft)}
+.nhead{display:flex;gap:9px;align-items:flex-start}
+.nico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.i-y{background:var(--yBg)}.i-r{background:var(--redBg)}.i-b{background:var(--blueBg)}.i-g{background:var(--greenBg)}
+.nwhat{font-size:12px;font-weight:800;font-family:'Outfit';line-height:1.3}
+.nwho{font-size:10px;color:var(--mut);font-weight:700;margin-top:2px;letter-spacing:.2px}
+.nwhy{font-size:10.5px;color:var(--text2);font-weight:650;margin-top:5px;line-height:1.5}
+.nfoot{display:flex;gap:7px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.due{font-size:9px;font-weight:800;padding:3px 8px;border-radius:999px}
+.due.late{background:var(--redBg);color:var(--red)}
+.due.soon{background:var(--yBg);color:var(--yInk)}
+
+/* ladder diagram */
+.lad{display:flex;flex-direction:column;gap:0;max-width:820px;margin-bottom:16px}
+.lrow{display:flex;align-items:stretch;gap:0}
+.lnum{width:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:16px;font-weight:800;color:#fff;background:var(--ink)}
+.lbody{flex:1;border:1px solid var(--line);border-left:none;padding:11px 14px;background:var(--white)}
+.lrow:first-child .lnum{border-radius:11px 0 0 0}
+.lrow:first-child .lbody{border-radius:0 11px 0 0}
+.lrow:last-child .lnum{border-radius:0 0 0 11px}
+.lrow:last-child .lbody{border-radius:0 0 11px 0}
+.lrow:not(:last-child) .lbody{border-bottom:none}
+.lt{font-family:'Outfit';font-size:13px;font-weight:800}
+.ls{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:2px;line-height:1.5}
+.lneed{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:var(--yBg);color:var(--yInk);margin-top:6px}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+td.lv{font-family:'Outfit';font-size:14px;font-weight:800;width:34px;color:var(--mut2)}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.tbar{display:flex;border-top:1px solid var(--lineSoft);padding:8px 0 10px;background:var(--white)}
+.tbar div{flex:1;text-align:center;font-size:8.5px;font-weight:800;color:var(--mut2)}
+.tbar div.on{color:var(--ink)}
+.tbar .ic{font-size:15px;display:block;margin-bottom:2px;position:relative}
+.tbar .bdg{position:absolute;top:-3px;right:50%;margin-right:-16px;background:var(--red);color:#fff;font-size:7.5px;font-weight:800;border-radius:999px;padding:1px 4px;font-family:'JetBrains Mono'}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>FINAL 4 — Campaign drill-down: campaign → set → creator → six steps</h1>
+  <p>The running half of the Campaigns tab · completes FINAL 2 · 2026-08-15</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① Five levels</button>
+  <button class="tab" data-v="v1">② L1 Campaigns</button>
+  <button class="tab" data-v="v2">③ L2 Sets</button>
+  <button class="tab" data-v="v3">④ L3 Creators</button>
+  <button class="tab" data-v="v4">⑤ L4 Six steps</button>
+  <button class="tab" data-v="v5">⑥ L5 Inside a step</button>
+  <button class="tab" data-v="v6">⑦ Needs-you roll-up</button>
+  <button class="tab" data-v="v7">⑧ Coverage</button>
+</div>
+
+<!-- ① FIVE LEVELS -->
+<div class="view on" id="v0">
+  <div class="vh">Five levels, and "needs you" at every one</div>
+  <div class="vs">FINAL 2 showed the landing and the creation wizard. This is what happens after — tapping down from a campaign to a single creator's six steps, with owed work rolling up the whole way.</div>
+
+  <div class="lad">
+    <div class="lrow"><div class="lnum">1</div><div class="lbody">
+      <div class="lt">Campaigns</div>
+      <div class="ls">Every campaign you run. Each row shows its aim, its sets, its sales — and how many things need you inside it.</div>
+      <span class="lneed">6 NEED YOU · SUM OF ALL BELOW</span>
+    </div></div>
+    <div class="lrow"><div class="lnum">2</div><div class="lbody">
+      <div class="lt">A campaign → its sets</div>
+      <div class="ls">A campaign holds sets. This is the sets list, plus anything owed at campaign level — wallet short, an offer about to expire.</div>
+      <span class="lneed">4 NEED YOU · 2 SETS + 1 CAMPAIGN-LEVEL</span>
+    </div></div>
+    <div class="lrow"><div class="lnum">3</div><div class="lbody">
+      <div class="lt">A set → its creators</div>
+      <div class="ls">Who is in this set, what step each one is on, and whose turn it is. Plus anything owed at set level — a creator with no allocation.</div>
+      <span class="lneed">3 NEED YOU · 2 CREATORS + 1 SET-LEVEL</span>
+    </div></div>
+    <div class="lrow"><div class="lnum">4</div><div class="lbody">
+      <div class="lt">A creator → the six steps</div>
+      <div class="ls">The spine. Agree · Sign · Shoot · Shop posts · Go live · Complete. The current step is expanded and carries the action.</div>
+      <span class="lneed">1 NEEDS YOU · STEP 3</span>
+    </div></div>
+    <div class="lrow"><div class="lnum">5</div><div class="lbody">
+      <div class="lt">A step → its screen and its history</div>
+      <div class="ls">Tapping a step opens the thing itself — the shoot, the reel review — and every step opens its diary.</div>
+      <span class="lneed">THE ACTION ITSELF</span>
+    </div></div>
+  </div>
+
+  <div class="note key"><b>The rule that makes the ladder work.</b> A number at any level is the <b>sum of everything beneath it, plus anything owed at that level itself</b>. So a badge on Campaigns is never a mystery — tap it and it decomposes, every time, until you reach a button.</div>
+
+  <div class="note good"><b>You can also go straight there.</b> Home → Needs you lists all six flattened, each row deep-linking to level 5. The ladder is for when you're exploring; the flat list is for when you're clearing.</div>
+
+  <div class="note bad"><b>What was missing from FINAL 2.</b> Levels 2, 3, 4 and 5 — the whole running half. FINAL 2 stopped at the landing and the creation wizard, so a brand could build a campaign and then had nowhere to watch it happen.</div>
+</div>
+
+<!-- ② L1 -->
+<div class="view" id="v1">
+  <div class="vh">Level 1 · Campaigns</div>
+  <div class="vids">LEDGER 59 · needs-you roll-up</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="navrow"><div style="flex:1"><div class="ttl">Campaigns</div><div class="sub">2 RUNNING · 1 ENDED</div></div><div class="needpill">6 need you</div></div></div>
+        <div class="body">
+          <div class="tr">
+            <div class="av">FS</div>
+            <div class="m">
+              <div class="bn">Festive Season 2026</div>
+              <div class="tm">Mixed · 2 sets · 4 creators · started 1 Sep</div>
+              <div class="st c-you"><span class="dot d-you"></span>₹51,000 SOLD · ₹30,000 COMMITTED</div>
+            </div>
+            <div class="nb">4</div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">MC</div>
+            <div class="m">
+              <div class="bn">Monsoon Cottons</div>
+              <div class="tm">Content · 1 set · 2 creators · ends 30 Sep</div>
+              <div class="st c-them"><span class="dot d-them"></span>₹30,000 COMMITTED</div>
+            </div>
+            <div class="nb">2</div><div class="chev">›</div>
+          </div>
+          <div class="tr" style="opacity:.55">
+            <div class="av" style="background:#EFEFEF;color:#8E8E8E">SS</div>
+            <div class="m">
+              <div class="bn">Summer Silks</div>
+              <div class="tm">Sales · ended 30 Jun</div>
+              <div class="st c-done"><span class="dot d-done"></span>₹1,24,000 SOLD</div>
+            </div><div class="chev">›</div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft);margin-top:8px">
+            <div class="wait y"><b>3 creators agreed and waiting.</b> Build a campaign before their agreements lapse.</div>
+            <button class="btn pri" style="margin-top:10px">Build one with those 3</button>
+          </div>
+        </div>
+        <div class="tbar">
+          <div><span class="ic">⌂<span class="bdg">6</span></span>Home</div><div><span class="ic">👥</span>Creators</div>
+          <div class="on"><span class="ic">📣</span>Campaigns</div><div><span class="ic">₹</span>Wallet</div><div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div><span class="lvl">LEVEL 1</span></div>
+      <div class="cap">The yellow number is <b>everything owed inside that campaign</b>. 4 + 2 = the 6 on the tab bar.<span class="id">59</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>What a campaign row carries</h3>
+        <div class="tscroll"><table>
+          <tr><th>Element</th><th>Why</th></tr>
+          <tr><td><b>Aim · sets · creators</b></td><td>The shape, without opening it</td></tr>
+          <tr><td><b>Dates</b></td><td>Sales says "started" — it has no end date. Content says "ends".</td></tr>
+          <tr><td><b>Money</b></td><td>Sales shows what sold. Content shows what's committed.</td></tr>
+          <tr><td><b>Needs-you count</b></td><td>The sum of every owed action inside, at any depth</td></tr>
+        </table></div>
+      </div>
+      <div class="note info"><b>Ended campaigns stay, greyed, with no badge.</b> A finished campaign is a track record. It can still be opened all the way down to a creator's completed six steps.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ L2 -->
+<div class="view" id="v2">
+  <div class="vh">Level 2 · A campaign, and its sets</div>
+  <div class="vids">LEDGER 61 · 62 · 147 · needs-you at campaign level</div>
+  <div class="vs">Tapping a campaign opens its sets — plus anything owed by the campaign itself rather than by a creator.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Campaigns</b> › Festive Season</div>
+          <div class="navrow"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Season 2026</div><div class="sub">SALES · STARTED 1 SEP · ONGOING</div></div><div class="needpill">4</div></div>
+        </div>
+        <div class="stg"><span class="on">Sets<span class="n">2</span></span><span>All creators<span class="n">4</span></span><span>Products</span><span>Posts</span><span>Sales</span></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh"><span>Needs you at campaign level</span><span style="color:var(--red)">1</span></div>
+            <div class="nrow" style="padding:0;border:none">
+              <div class="nhead"><div class="nico i-r">💰</div>
+                <div style="flex:1"><div class="nwhat">Your wallet is short</div>
+                <div class="nwho">SET 2 · REELS · ₹4,200 NEEDED</div></div></div>
+              <div class="nwhy">A content set can't publish until the wallet covers the fees plus platform fee.</div>
+              <div class="nfoot"><button class="btn pri sm">Top up</button></div>
+            </div>
+          </div>
+
+          <div class="lhd"><span>Sets · 2</span></div>
+          <div class="tr">
+            <div class="av">S1</div>
+            <div class="m">
+              <div class="bn">Sarees</div>
+              <div class="tm">Sales · 2 creators · 25 products · 10% off ₹5,000+</div>
+              <div class="dots"><span class="dt d"></span><span class="dt d"></span><span class="dt n"></span><span class="dt"></span><span class="dt"></span><span class="dt"></span><span class="lbl">MOST AT STEP 3</span></div>
+              <div class="st c-you" style="margin-top:6px"><span class="dot d-you"></span>₹51,000 SOLD</div>
+            </div>
+            <div class="nb">3</div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">S2</div>
+            <div class="m">
+              <div class="bn">Reels</div>
+              <div class="tm">Content · 2 creators · 1 reel + 2 stories · ₹30,000</div>
+              <div class="dots"><span class="dt d"></span><span class="dt d"></span><span class="dt d"></span><span class="dt w"></span><span class="dt"></span><span class="dt"></span><span class="lbl">MOST AT STEP 4</span></div>
+              <div class="st c-them" style="margin-top:6px"><span class="dot d-them"></span>2 OF 6 DELIVERABLES LIVE · NO SELLING</div>
+            </div>
+            <div class="nb">0</div><div class="chev">›</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">This campaign</div>
+            <div class="trm"><div class="k">Sold · Sarees set only</div><div class="v">₹51,000</div></div>
+            <div class="trm"><div class="k">Commission owed</div><div class="v">₹9,180</div></div>
+            <div class="trm"><div class="k">Fees committed · Reels set</div><div class="v">₹30,000</div></div>
+            <div class="trm"><div class="k">Shop posts live</div><div class="v">4</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">A mixed campaign keeps the two halves apart. <b>The content set sells nothing</b>, so it contributes no sales — only a fee commitment.</div>
+          </div>
+          <div class="dsec">
+            <div class="brow"><button class="btn sec">+ Add a set</button><button class="btn dgr">End campaign</button></div>
+          </div>
+        </div>
+      </div><span class="lvl">LEVEL 2</span></div>
+      <div class="cap">Sets list. <b>Campaign-level work sits above it</b>, because it belongs to no creator.<span class="id">61 · 62 · 147</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>What only exists at campaign level</h3>
+        <div class="tscroll"><table>
+          <tr><th>Owed item</th><th>Why it isn't a creator's</th></tr>
+          <tr><td><b>Wallet short</b></td><td>Blocks a whole content set from publishing</td></tr>
+          <tr><td><b>Campaign never published</b></td><td>Sits in draft with sets built and nobody invited</td></tr>
+          <tr><td><b>An offer expired</b></td><td>Every creator in the set loses their shopper reason at once</td></tr>
+          <tr><td><b>A sales campaign running with zero sales for 30 days</b></td><td>Worth surfacing — nothing is broken, but nothing is happening</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>The six mini-bars on each set row</b> are the six steps. Filled green is done, black is where most creators currently are, blue is waiting on someone else. It answers "how far along is this set" without opening it.</div>
+      <div class="note good"><b>"All creators" as a second sub-tab</b> flattens both sets into one roster, for a brand who thinks in people rather than sets. Same rows, no set grouping.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ L3 -->
+<div class="view" id="v3">
+  <div class="vh">Level 3 · A set, and its creators</div>
+  <div class="vids">LEDGER 73 · 80 · needs-you at set level</div>
+  <div class="vs">Tapping a set shows who's in it, what step each one is on, and whose turn it is — plus anything owed by the set itself.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Campaigns</b> › <b>Festive Season</b> › Sarees</div>
+          <div class="navrow"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 1 · Sarees</div><div class="sub">SALES · 2 CREATORS · 25 PRODUCTS</div></div><div class="needpill">3</div></div>
+        </div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh"><span>Needs you at set level</span><span style="color:var(--red)">1</span></div>
+            <div class="nrow" style="padding:0;border:none">
+              <div class="nhead"><div class="nico i-r">🏷</div>
+                <div style="flex:1"><div class="nwhat">Your offer expires in 4 days</div>
+                <div class="nwho">10% OFF ₹5,000+ · ENDS 31 AUG</div></div></div>
+              <div class="nwhy">When it expires both creators lose the reason a shopper buys through them. Extend it or pick another.</div>
+              <div class="nfoot"><span class="due soon">4 days</span><button class="btn pri sm">Extend</button></div>
+            </div>
+          </div>
+
+          <div class="lhd"><span>Creators · 2</span><span style="color:var(--blue)">+ Add</span></div>
+          <div class="tr">
+            <div class="pic">👩</div>
+            <div class="m">
+              <div class="bn">Asha M.</div>
+              <div class="tm">18% · post by 28 Aug · her end, you ship</div>
+              <div class="dots"><span class="dt d"></span><span class="dt d"></span><span class="dt n"></span><span class="dt"></span><span class="dt"></span><span class="dt"></span><span class="lbl">STEP 3 OF 6</span></div>
+              <div class="st c-you" style="margin-top:6px"><span class="dot d-you"></span>YOUR TURN — ONE SAREE MISSING</div>
+            </div>
+            <div class="nb">1</div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="pic">👩</div>
+            <div class="m">
+              <div class="bn">Meera S.</div>
+              <div class="tm">15% · post by 30 Aug · store visit</div>
+              <div class="dots"><span class="dt d"></span><span class="dt d"></span><span class="dt d"></span><span class="dt n"></span><span class="dt"></span><span class="dt"></span><span class="lbl">STEP 4 OF 6</span></div>
+              <div class="st c-adm" style="margin-top:6px"><span class="dot d-adm"></span>2 POSTS WITH THE REVIEW TEAM</div>
+            </div>
+            <div class="nb">1</div><div class="chev">›</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">This set</div>
+            <div class="trm"><div class="k">Aim</div><div class="v">Sales · commission only</div></div>
+            <div class="trm"><div class="k">They can sell</div><div class="v" style="font-size:11.5px;color:var(--blue)">Sarees · 25 →</div></div>
+            <div class="trm"><div class="k">Shopper offer</div><div class="v" style="font-size:11.5px;color:var(--blue)">10% off ₹5,000+ →</div></div>
+            <div class="trm"><div class="k">Sold</div><div class="v">₹51,000</div></div>
+            <div class="trm"><div class="k">Shop posts live</div><div class="v">4</div></div>
+          </div>
+          <div class="dsec"><button class="btn sec">Edit this set</button></div>
+        </div>
+      </div><span class="lvl">LEVEL 3</span></div>
+      <div class="cap">Creators, each with a <b>step number and whose turn</b>. Set-level work above.<span class="id">73 · 80</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>What only exists at set level</h3>
+        <div class="tscroll"><table>
+          <tr><th>Owed item</th><th>Why it isn't a creator's</th></tr>
+          <tr><td><b>The offer is expiring or expired</b></td><td>One offer serves every creator in the set</td></tr>
+          <tr><td><b>A creator has no allocation</b></td><td>She'd be contracted and unable to sell anything</td></tr>
+          <tr><td><b>The set has no creators</b></td><td>Built and left empty</td></tr>
+          <tr><td><b>Every product in scope is out of stock</b></td><td>Her posts are live and lead nowhere</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>The creator row is the same object as the Creators tab row</b> — same photo, same step derivation, same turn logic. A brand who knows Asha from the negotiation recognises her here without relearning anything.</div>
+      <div class="note good"><b>"They can sell" and "Shopper offer" are tappable</b> from here, not only inside the wizard. A running set can be adjusted without going back through creation.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ L4 -->
+<div class="view" id="v4">
+  <div class="vh">Level 4 · A creator, and the six steps</div>
+  <div class="vids">LEDGER the full spine · brand side</div>
+  <div class="vs">This is the screen you said was missing. Every step shows its owner; only the brand's steps carry a button.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Festive Season</b> › <b>Sarees</b> › Asha M.</div>
+          <div class="navrow"><div class="bk">‹</div><div class="pic">👩</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">SALES · 18% · POST BY 28 AUG</div></div></div>
+        </div>
+        <div class="spine">
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">14 Aug</span></div>
+            <div class="sd">4 moves · 15% → 22% → 18%</div></div><div class="chev">›</div></div>
+
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Both signed <span class="sbadge b-done">16 Aug</span></div>
+            <div class="sd">Briefed from your agreement</div></div><div class="chev">›</div></div>
+
+          <div class="step now"><div class="rail"></div><div class="sn now">3</div>
+            <div class="sc">
+              <div class="stt">The shoot <span class="sbadge b-you">your turn</span></div>
+              <div class="sd">Parcel delivered 21 Aug. She flagged <b>Cotton Handloom — Indigo</b> as not in the box.</div>
+              <div class="sact"><div class="bstack">
+                <button class="btn pri">Sort the missing saree</button>
+                <button class="btn sec">Open the shoot</button>
+              </div></div>
+            </div>
+          </div>
+
+          <div class="step"><div class="rail"></div><div class="sn adm">4</div>
+            <div class="sc"><div class="stt">Her shop posts <span class="sbadge b-adm">not yours</span></div>
+            <div class="sd">2 live · 1 with our review team. You're told only about posts using <b>only</b> your products.</div></div><div class="chev">›</div></div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">5</div>
+            <div class="sc"><div class="stt">Her Instagram post <span class="sbadge b-you">yours later</span></div>
+            <div class="sd">You approve the reel, then confirm it's live.</div></div></div>
+
+          <div class="step"><div class="rail"></div><div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete</div>
+            <div class="sd">You hoped for 5 posts — guidance only.</div></div></div>
+        </div>
+        <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+          <div class="dh">Her results so far</div>
+          <div class="trm"><div class="k">Sold through her</div><div class="v">₹51,000</div></div>
+          <div class="trm"><div class="k">Commission to her</div><div class="v">₹9,180</div></div>
+          <div class="trm"><div class="k">Shop posts live</div><div class="v">2</div></div>
+        </div>
+      </div><span class="lvl">LEVEL 4</span></div>
+      <div class="cap">The spine. <b>Step 4 carries no button</b> and says why.<span class="id">full spine</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Kanchi Silks</b> › Festive Season</div>
+          <div class="navrow"><div class="bk">‹</div><div class="av">KS</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">SALES · 18% · POST BY 28 AUG</div></div></div>
+        </div>
+        <div class="spine">
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Terms agreed <span class="sbadge b-done">14 Aug</span></div>
+            <div class="sd">18% · post by 28 Aug</div></div><div class="chev">›</div></div>
+          <div class="step done"><div class="rail"></div><div class="sn done">✓</div>
+            <div class="sc"><div class="stt">Signed <span class="sbadge b-done">16 Aug</span></div></div><div class="chev">›</div></div>
+          <div class="step now"><div class="rail"></div><div class="sn now">3</div>
+            <div class="sc"><div class="stt">The shoot <span class="sbadge b-them">waiting on them</span></div>
+            <div class="sd">You flagged the Indigo saree missing on 25 Aug. Kanchi Silks is deciding whether to resend.</div></div></div>
+          <div class="step"><div class="rail"></div><div class="sn todo">4</div>
+            <div class="sc"><div class="stt">Your shop posts</div>
+            <div class="sd">After the shoot, make posts in Create.</div></div></div>
+          <div class="step"><div class="rail"></div><div class="sn todo">5</div>
+            <div class="sc"><div class="stt">Go live on Instagram</div></div></div>
+          <div class="step"><div class="rail"></div><div class="sn todo">6</div>
+            <div class="sc"><div class="stt">Complete</div></div></div>
+        </div>
+      </div><span class="lvl">CREATOR</span></div>
+      <div class="cap">Her side of the same collaboration. <b>Same step numbers, mirrored turn.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>Identical step numbers on both phones.</b> When the brand rings Asha and says "we're stuck on step 3", they are both looking at the same thing. One shared truth beats two internally consistent stories.</div>
+      <div class="card">
+        <h3>The six steps, brand side</h3>
+        <div class="tscroll"><table>
+          <tr><th>Step</th><th>Badge</th><th>Button?</th></tr>
+          <tr><td>1 Agree</td><td>done</td><td>opens the diary</td></tr>
+          <tr><td>2 Sign</td><td>done</td><td>opens the contract</td></tr>
+          <tr><td>3 Shoot</td><td><b>your turn</b></td><td>slot · parcel · shortfall</td></tr>
+          <tr><td>4 Shop posts</td><td><b>not yours</b></td><td><b>none</b> — read-only</td></tr>
+          <tr><td>5 Go live</td><td>yours later</td><td>approve reel · confirm live</td></tr>
+          <tr><td>6 Complete</td><td>—</td><td>none</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>A step with no button still shows its state.</b> Hiding step 4 would make the collaboration look stalled. Greyed with "not yours to review" tells them work is happening and it isn't theirs.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ L5 -->
+<div class="view" id="v5">
+  <div class="vh">Level 5 · Inside a step</div>
+  <div class="vids">LEDGER 50 · 115–118 · 135–140</div>
+  <div class="vs">Tapping a step opens the thing itself. Every step also opens its history — same page both sides see.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Sarees</b> › <b>Asha M.</b> › Step 3</div>
+          <div class="navrow"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">The shoot</div><div class="sub">REMOTE · YOU SHIPPED</div></div></div>
+        </div>
+        <div class="body">
+          <div class="dsec"><div class="wait r"><b>Asha says one item is missing.</b> She confirmed the other two on 25 Aug.</div></div>
+          <div class="dsec">
+            <div class="dh">What you sent · 3</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v" style="color:var(--green);font-size:11px">✓ RECEIVED</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="color:var(--green);font-size:11px">✓ RECEIVED</div></div>
+            <div class="trm"><div class="k">Cotton Handloom — Indigo</div><div class="v" style="color:var(--red);font-size:11px">✕ MISSING</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Send the missing saree</button>
+              <button class="btn sec">Drop it — she'll shoot the other two</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Either way her shoot goes ahead.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Courier</div>
+            <div class="trm"><div class="k">Delhivery</div><div class="v" style="font-family:'JetBrains Mono';font-size:11px">DL8829174C</div></div>
+            <div class="trm"><div class="k">Delivered</div><div class="v">21 Aug, 2:40 PM</div></div>
+          </div>
+          <div class="dsec"><button class="btn sec">See what happened here</button></div>
+        </div>
+      </div><span class="lvl">LEVEL 5</span></div>
+      <div class="cap">Step 3 opened. <b>The action itself, with the drill-down exhausted.</b><span class="id">115 · 117 · 118</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Asha M.</b> › <b>Step 3</b> › History</div>
+          <div class="navrow"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What happened here</div><div class="sub">STEP 3 · THE SHOOT</div></div></div>
+        </div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">7 moves</div>
+            <div style="position:relative;padding-left:20px">
+              <div style="position:absolute;left:5px;top:6px;bottom:8px;width:1.5px;background:var(--lineSoft)"></div>
+              <div style="position:relative;padding-bottom:13px"><div style="position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:var(--mut2);border:2.5px solid #fff"></div>
+                <div style="font-size:12px;font-weight:800">Shoot plan created</div><div style="font-size:10px;color:var(--mut);font-weight:700">16 AUG · ON SIGNATURE</div></div>
+              <div style="position:relative;padding-bottom:13px"><div style="position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:var(--blue);border:2.5px solid #fff"></div>
+                <div style="font-size:12px;font-weight:800">You dispatched 3 items</div><div style="font-size:10px;color:var(--mut);font-weight:700">18 AUG · DELHIVERY</div></div>
+              <div style="position:relative;padding-bottom:13px"><div style="position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:var(--mut2);border:2.5px solid #fff"></div>
+                <div style="font-size:12px;font-weight:800">Delivered</div><div style="font-size:10px;color:var(--mut);font-weight:700">21 AUG, 2:40 PM</div></div>
+              <div style="position:relative;padding-bottom:13px"><div style="position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:var(--y);border:2.5px solid #fff"></div>
+                <div style="font-size:12px;font-weight:800">Asha confirmed 2 of 3</div><div style="font-size:10px;color:var(--mut);font-weight:700">25 AUG · FLAGGED COTTON HANDLOOM</div></div>
+              <div style="position:relative"><div style="position:absolute;left:-19px;top:3px;width:11px;height:11px;border-radius:50%;background:var(--red);border:2.5px solid #fff"></div>
+                <div style="font-size:12px;font-weight:800">Waiting on you</div><div style="font-size:10px;color:var(--mut);font-weight:700">3 DAYS</div></div>
+            </div>
+          </div>
+          <div class="dsec"><div class="wait n">Asha sees this same page, word for word.</div></div>
+        </div>
+      </div><span class="lvl">LEVEL 5</span></div>
+      <div class="cap">Every step opens its diary. <b>One page, both sides.</b><span class="id">50 · 121</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav">
+          <div class="crumb"><b>Sarees</b> › <b>Meera S.</b> › Step 4</div>
+          <div class="navrow"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Her shop posts</div><div class="sub">NOT YOURS TO REVIEW</div></div></div>
+        </div>
+        <div class="body">
+          <div class="dsec"><div class="wait n">Our team checks quality. You'll be told about posts using <b>only</b> your products, once they're live.</div></div>
+          <div class="dsec">
+            <div class="dh">Live · 2</div>
+            <div class="trm"><div class="k">Festive Sarees<br><span style="font-size:10px;color:var(--mut2)">3 OF YOUR PRODUCTS</span></div><div class="v" style="font-size:11px;color:var(--green)">₹37,000</div></div>
+            <div class="trm"><div class="k">Wedding Edit<br><span style="font-size:10px;color:var(--mut2)">2 BRANDS — NOT EXCLUSIVE</span></div><div class="v" style="font-size:11px;color:var(--mut2)">HIDDEN</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">With the review team · 1</div>
+            <div class="trm"><div class="k">Party Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">SINCE 29 AUG</div></div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>A mixed-brand post is <b>hidden from you</b> — showing it would reveal who else she works with.</span></div>
+          </div>
+        </div>
+      </div><span class="lvl">LEVEL 5</span></div>
+      <div class="cap">A step with no action still opens. <b>The boundary is stated, not silent.</b><span class="id">131 · 132 · 160</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ ROLL-UP -->
+<div class="view" id="v6">
+  <div class="vh">How "needs you" adds up</div>
+  <div class="vids">needs-you aggregation</div>
+  <div class="vs">Every badge is the sum of what's beneath it, plus what's owed at that level. Tap it and it decomposes, all the way to a button.</div>
+
+  <div class="card">
+    <h3>The worked example on these screens</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Level</th><th>Own items</th><th>From below</th><th>Badge</th></tr>
+      <tr><td class="lv">5</td><td>Asha · step 3 · missing saree</td><td>1</td><td>—</td><td><b>1</b></td></tr>
+      <tr><td class="lv">4</td><td>Asha M. — all six steps</td><td>0</td><td>1</td><td><b>1</b></td></tr>
+      <tr><td class="lv">4</td><td>Meera S. — all six steps</td><td>0</td><td>1 <span style="color:var(--mut)">(post sent back)</span></td><td><b>1</b></td></tr>
+      <tr><td class="lv">3</td><td>Set 1 · Sarees</td><td>1 <span style="color:var(--mut)">(offer expiring)</span></td><td>2</td><td><b>3</b></td></tr>
+      <tr><td class="lv">3</td><td>Set 2 · Reels</td><td>0</td><td>0</td><td><b>0</b></td></tr>
+      <tr><td class="lv">2</td><td>Festive Season</td><td>1 <span style="color:var(--mut)">(wallet short)</span></td><td>3</td><td><b>4</b></td></tr>
+      <tr><td class="lv">2</td><td>Monsoon Cottons</td><td>0</td><td>2</td><td><b>2</b></td></tr>
+      <tr><td class="lv">1</td><td>Campaigns tab</td><td>0</td><td>6</td><td><b>6</b></td></tr>
+      <tr><td class="lv">0</td><td>Home / tab bar</td><td>0</td><td>6 campaigns + 4 creators</td><td><b>10</b></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>The tab bar badge is the only number that spans both halves.</b> 6 from Campaigns plus 4 from Creators. Home's Needs-you list flattens all ten, each row deep-linking straight to level 5 — so a brand can clear work without walking the ladder.</div>
+
+  <div class="card">
+    <h3>Where each kind of owed item is born</h3>
+    <div class="tscroll"><table>
+      <tr><th>Level</th><th>Items that originate here</th></tr>
+      <tr><td><b>Creator step</b></td><td>Answer a counter · answer a slot · resolve a shortfall · countersign · approve a reel · confirm live</td></tr>
+      <tr><td><b>Set</b></td><td>Offer expiring or expired · a creator with no allocation · empty set · everything in scope out of stock</td></tr>
+      <tr><td><b>Campaign</b></td><td>Wallet short · never published · 30 days of zero sales</td></tr>
+      <tr><td><b>Creators tab</b></td><td>Counters and pitches awaiting an answer · agreements about to expire</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>A badge never lies about depth.</b> If Festive Season shows 4 and its two sets show 3 and 0, the missing 1 is the campaign's own — and it is listed at the top of level 2, not buried. Numbers that don't reconcile are how people stop trusting badges.</div>
+
+  <div class="note info"><b>Ended campaigns carry no badge</b>, even if something technically remains. Nothing owed on a finished campaign should pull attention from live work.</div>
+</div>
+
+<!-- ⑧ COVERAGE -->
+<div class="view" id="v7">
+  <div class="vh">What this adds to FINAL 2</div>
+
+  <div class="card">
+    <h3>Screens</h3>
+    <div class="tscroll"><table>
+      <tr><th>Level</th><th>Screen</th><th>In FINAL 2?</th><th>Status</th></tr>
+      <tr><td class="lv">1</td><td>Campaigns landing</td><td>Yes — panel ①</td><td><span class="st2 s-ch">gains the needs-you badge</span></td></tr>
+      <tr><td class="lv">2</td><td><b>Campaign → sets</b></td><td><b>No</b></td><td><span class="st2 s-nw">new here</span></td></tr>
+      <tr><td class="lv">3</td><td><b>Set → creators</b></td><td><b>No</b></td><td><span class="st2 s-nw">new here</span></td></tr>
+      <tr><td class="lv">4</td><td><b>Creator → six steps</b></td><td><b>No</b> — only sketched in the navigation mockup</td><td><span class="st2 s-nw">new here</span></td></tr>
+      <tr><td class="lv">5</td><td>Step screens + diary</td><td>Drawn in FINAL 3, unlinked</td><td><span class="st2 s-ch">now reachable</span></td></tr>
+      <tr><td class="lv">—</td><td>Campaign wizard</td><td>Yes — panels ②–⑪</td><td><span class="st2 s-ex">unchanged</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Revised Campaigns tab count</h3>
+    <div class="tscroll"><table>
+      <tr><th>Was</th><th>Now</th></tr>
+      <tr><td>21 screens</td><td><b>24 screens</b> — plus campaign→sets, set→creators, creator→spine</td></tr>
+      <tr><td>57 actions</td><td>57 actions — <b>unchanged</b>. These three screens carry no new actions; they are navigation and roll-up.</td></tr>
+    </table></div>
+    <div class="note good" style="max-width:none;margin:11px 0 0">The tab arrangement's action counts stand. What changes is the screen count — three navigation layers that were specified in the ledger's spine but never drawn as their own screens.</div>
+  </div>
+
+  <div class="card">
+    <h3>Build order</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Slice</th><th>Note</th></tr>
+      <tr><td><b>1</b></td><td>Step derivation, server-side</td><td>One function both apps read. Levels 3 and 4 are meaningless without it.</td></tr>
+      <tr><td><b>2</b></td><td>Needs-you roll-up, server-side</td><td>One count per node. Computing it client-side would let the levels disagree.</td></tr>
+      <tr><td><b>3</b></td><td>Level 2 and 3 — sets and creators</td><td>Both are lists over data that already exists</td></tr>
+      <tr><td><b>4</b></td><td>Level 4 — the brand's spine</td><td>Mirrors the creator's; existing screens hang off it</td></tr>
+      <tr><td><b>5</b></td><td>Level 5 links</td><td>Wiring FINAL 3's screens onto their steps</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>Two things must be server-side.</b> The <b>step number</b> and the <b>needs-you count</b>. If either is derived in the app, the brand's screen and the creator's screen will eventually disagree about the same collaboration — and that is the failure this whole spine exists to prevent.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

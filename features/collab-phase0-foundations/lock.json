@@ -1,0 +1,125 @@
+{
+  "feature": "collab-phase0-foundations",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-15 chat: \"ok lock it and start building\"",
+  "approved_at": "2026-08-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "mockup_note": "N/A — this phase has no screens. No file under Packages/*/src is touched, so the mockup gate does not apply. Phases 1-8 all carry screens and will each have their mockup lock plus the founder's screen re-check.",
+  "notes": "LOCKED 2026-08-15. Spec, workflow, expected outputs and impact authored 2026-08-15. Phase 0 of 8 in features/collab-programme/00-phase-plan.md. Five foundations that five later phases read from: the step diary, one server-side step calculation, one server-side needs-you count, the creator's counter-back on her own pitch, and three corrections that capability arms. NOTHING VISIBLE CHANGES.",
+  "programme": {
+    "plan": "features/collab-programme/00-phase-plan.md",
+    "phase": 0,
+    "of": 8,
+    "mockups": "None for this phase. The programme's mockups are the action ledger (160 actions), FINAL 1-4 and the tab arrangement, under features/collab-navigation-spine/ and features/brand-mobile-spine/.",
+    "unblocks": [
+      "Phase 2 (creator Collabs spine)",
+      "Phase 4 (campaign drill-down)",
+      "Phase 5",
+      "Phase 6",
+      "Phase 7"
+    ]
+  },
+  "founder_decisions_2026_08_15": {
+    "A": "APPROVED BRANDS ARE PITCHABLE BY DEFAULT. Affects Phase 3, not this one. Outward-facing: 25 brands go from unreachable to reachable in one migration. The brand's five pitch filters (Phase 1) should land before or with it.",
+    "B": "THE INSTAGRAM HOLD LIFTS ON ONE LIVE SHOP POST. Affects Phase 7.",
+    "C": "MEDIA LIBRARY extend-vs-rebuild DEFERRED to Phase 7, decided when that phase opens.",
+    "process_addition": "A SCREEN RE-CHECK before the first screen of any phase is built — restate in plain language what is actually about to be built, screen by screen, against that phase's mockup. Recorded as step 7 of the per-phase checklist. Does not apply to Phase 0, which has no screens."
+  },
+  "scope": {
+    "in": [
+      "Migration: one diary table; three columns on creator pitches (rounds per side, who countered last); a factual backfill marking existing counters as brand-sent, since nobody else could have sent one",
+      "Diary writers on all six steps. An entry records WHAT CHANGED (15% -> 22%), not that something did. The shoot keeps its existing record AND writes here.",
+      "One server-side step calculation — what step a collaboration is on and whose turn it is, track-aware",
+      "One server-side needs-you count — per collaboration, set, campaign and tab; a parent equals its children plus its own",
+      "New route: the creator counters back on her own pitch, validated by the same rules the other direction uses, under the same admin-set round limits",
+      "Correction 1: brand acceptance settles the LATEST terms, whoever moved them last",
+      "Correction 2: the brand's counters on a pitch are capped at the same rounds the creator has (unbounded today)",
+      "Correction 3: nobody can accept their own counter — the check must look at WHO countered, not just that someone did"
+    ],
+    "out": [
+      "Any screen in any app. Zero files under Packages/* are touched.",
+      "Backfilling old history. The diary starts the day it ships; what was overwritten is gone, and inventing it would put fiction on a screen two people use to settle disagreements.",
+      "The brand's pitch settings screen — that is Phase 1.",
+      "Rendering the step number or the needs-you count anywhere — Phases 2 and 4."
+    ]
+  },
+  "why_this_phase_is_first": "Five later phases read from it. The history screens in FINAL 1 panel 8 and FINAL 4 level 5 cannot be built over four steps that keep no history. And if either app ever computes the step number or the needs-you count itself, the brand's screen and the creator's screen will eventually disagree about the same collaboration — the exact failure the whole spine exists to prevent.",
+  "prod_state_at_authoring": {
+    "checked_at": "2026-08-15",
+    "influencer_proposals": "0 rows — which is why the acceptance correction and the new round columns have zero blast radius today",
+    "brand_collab_requests": "2 rows, both status 'sent', untouched by this phase",
+    "existing_history_precedents": "production_event_log (the shoot — the model being generalised) and negotiation_turns (the older campaign flow). The pattern exists twice; this makes it one."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Not applicable — nothing on a phone changed. The first phase needing a device pass is Phase 4, which adds routes to native stacks.",
+    "deploy_class": "production-impacting (one migration + backend/src). Migration runs against production BEFORE the push. Explicit founder go required before the push, per feedback-push-is-the-deploy.",
+    "deploy_targets": [
+      "migration (production database)",
+      "Render (backend/src)"
+    ],
+    "not_targets": [
+      "Vercel — no web change",
+      "OTA — no app change"
+    ],
+    "qa_baseline": 386,
+    "safe_for_stale_clients": "YES, and asserted as check T22. Nothing reads the diary or the new columns until Phase 2; the two calculations are endpoints nobody calls yet; the corrections fire only in states no shipped app can produce."
+  },
+  "verification": {
+    "checks": 25,
+    "file": "03-expected-outputs.md",
+    "written_as": "things to try, not test names",
+    "fail_first_required": [
+      "T19 brand acceptance settles the latest terms",
+      "T20 the brand's counters are capped",
+      "T21 nobody accepts their own counter"
+    ],
+    "fail_first_rule": "Each correction gets a check written first, failing, then the fix. A check written after the fix proves only that the code does what it does.",
+    "assert_rule": "Assert what comes back in the response, not what the query does. A diary entry computed and then dropped by a serialiser is a feature that does not exist — that has happened in this repo before.",
+    "headline": "A negotiation from last month can be read back in full, by both parties, showing every offer that was ever on the table — and a creator can name her own price on her own pitch. Neither sentence is true today."
+  },
+  "flagged_risks": {
+    "diary_write_must_not_fail_its_action": "A diary write that throws must never take down the action it was recording. A missing history line is a nuisance; a counter that did not send because its history line failed is a defect.",
+    "two_writers_for_the_shoot": "The shoot keeps its existing record and also writes to the diary. Two writers for one truth is normally a smell; accepted here because the existing record is load-bearing for the admin production queue. If they ever disagree, the diary is wrong.",
+    "diary_shape": "It must carry six kinds of event without becoming a shapeless bag. If a rejection reason or a parcel shortfall does not fit cleanly, widen the shape now rather than migrate again in Phase 7.",
+    "pre_handshake_records": "A handful of collaborations predate the handshake and have no negotiation to record. Their step number needs an agreed answer rather than a silently chosen one — will come back to the founder rather than pick.",
+    "invisible_phase": "Nothing is visible, so nothing is obviously broken. This phase can only be proven by reading data back. If the checks are weak it ships unverified and surfaces in Phase 2 as a screen showing the wrong thing."
+  },
+  "progress": {
+    "as_of": "2026-08-15",
+    "status": "IMPLEMENTATION COMPLETE — not committed, not pushed, migration not yet run anywhere.",
+    "done": [
+      "Migration 152 — collab_events (5 anchors incl. post_id) + 3 columns on influencer_proposals + factual backfill. Runner scripts/run-152.js takes staging|prod.",
+      "collabEvents.service — record() never throws; list() reads a thread across anchors; diffTerms() builds the what-changed shape.",
+      "collabStep.service — pure step derivation, both record types + steps 2-6, track-aware; rollUp() and owes(). 9 constructed cases match T7-T9.",
+      "collabCounts.service — the needs-you query layer. forBrand() returns a tree that reconciles at every level; forCreator() returns a flat list.",
+      "Creator counter-back: service + controller + route, shared validator, shared round cap, notifies the brand.",
+      "Three corrections, all with checks.",
+      "Diary writers on steps 1-5: asked, countered (both directions, both record types), accepted, declined, pitched, signed, countersigned, every shoot action (mirrored from production_event_log), post approved/sent-back, deliverable submitted/changes-asked/approved/posted/confirmed-live.",
+      "qa/unit/collab-phase0-corrections.spec.ts — 16 checks.",
+      "06-diff/notes.md."
+    ],
+    "step6_note": "No step-6 writer. Nothing computes completion yet — that is Phase 8. Writing a completion entry now would mean inventing the event it records.",
+    "verification": {
+      "fail_first": "DEMONSTRATED by stash probe: 16 failed / 0 passed against pre-Phase-0 source, 16 passed after. Fixes were written before the checks; the probe is what makes the claim true. Recorded in 06-diff/notes.md.",
+      "unit_lane": "319 passed (was 303). Nothing weakened, skipped or deleted.",
+      "gov_check": "exit 0",
+      "syntax": "All 11 changed backend files pass node --check. Variable scope hand-verified at all 14 diary call sites after one real scope bug (a const declared inside a try, read outside it) was found and fixed.",
+      "NOT_verified": "THE MIGRATION HAS NOT RUN ANYWHERE. Staging Supabase host no longer resolves, Docker unavailable, no local DB credentials. The count service was probed read-only against production and failed exactly as expected (column p.counter_by does not exist), which proves the code depends on the migration but does not prove the migration works."
+    },
+    "found_while_building": {
+      "post_anchor": "creator_posts has no campaign_influencer_id — a post may span brands. Added post_id as a fifth diary anchor BEFORE the migration ran anywhere, per the contract's own \"widen the shape now\" guidance.",
+      "offer_expiry": "campaign_offers has only is_active — NO offer table anywhere carries an expiry. The FINAL 4 set-level \"offer expiring\" item is not computable and is excluded with the reason written inline. A silent .catch that would have hidden this was removed.",
+      "spec_correction": "acceptProposal REFUSES a countered pitch rather than silently settling the original terms. Spec corrected visibly."
+    },
+    "remaining": [
+      "Founder go, then: run migration 152 against production, verify, commit, push. Full pnpm qa (API lane needs a live backend) after deploy."
+    ]
+  }
+}

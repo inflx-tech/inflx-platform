@@ -16,6 +16,8 @@
  */
 
 const db                  = require('../config/db');
+// collab-phase0 — step 2 history: who signed, and when.
+const events              = require('../services/collabEvents.service');
 const env                 = require('../config/env');
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
@@ -402,6 +404,14 @@ const sign = asyncHandler(async (req, res) => {
     sendSms:  false,
   });
 
+  await events.record({
+    campaignInfluencerId: contract.campaign_influencer_id,
+    step: events.STEP.SIGN,
+    actorRole: 'creator',
+    actorUserId: req.user.sub,
+    action: 'signed',
+  });
+
   return success(res, { contract: rows[0] });
 });
 
@@ -472,6 +482,14 @@ async function _signOneContractInTx(client, contract, signedByUserId) {
     `UPDATE campaign_influencers SET status = 'contracted' WHERE id = $1`,
     [contract.campaign_influencer_id]
   );
+
+  await events.record({
+    campaignInfluencerId: contract.campaign_influencer_id,
+    step: events.STEP.SIGN,
+    actorRole: 'brand',
+    actorUserId: signedByUserId,
+    action: 'countersigned',
+  }, client);
 
   // 2b. Auto-create production_event row (mode from contracts.production_mode)
   try {

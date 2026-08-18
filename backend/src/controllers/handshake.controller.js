@@ -35,6 +35,9 @@
 const db = require('../config/db');
 const handshake = require('../services/handshake.service');
 const settings = require('../services/handshakeSettings.service');
+// collab-phase0 — the diary. Writes are non-fatal by design: a missing history line
+// is a nuisance, a counter that failed to send because of one is a defect.
+const events = require('../services/collabEvents.service');
 const terms = require('../services/collabTerms.model');
 const notificationService = require('../services/notification.service');
 const { success } = require('../utils/response');
@@ -149,6 +152,16 @@ const createRequests = asyncHandler(async (req, res) => {
         batchId,
       });
       sent.push(created);
+      await events.record({
+        requestId: created.id,
+        step: events.STEP.AGREE,
+        actorRole: 'brand',
+        actorUserId: req.user.sub,
+        action: 'asked',
+        termsSnapshot: created.terms_json,
+        note: message || null,
+        meta: { origin: created.origin },
+      });
     } catch (err) {
       if (err.kind === 'blocked' || err.kind === 'validation') {
         skipped.push({ influencer_id: influencerId, reason: err.message });
@@ -216,8 +229,16 @@ const listBrandRequests = asyncHandler(async (req, res) => {
  * Either side can be the accepter: the brand accepting the creator's counter, or the
  * creator accepting the brand's opening terms or counter.
  */
-async function acceptRequest(reqRow, acceptedBy) {
+async function acceptRequest(reqRow, acceptedBy, actorUserId) {
   const settled = currentTerms(reqRow);
+  await events.record({
+    requestId: reqRow.id,
+    step: events.STEP.AGREE,
+    actorRole: acceptedBy === 'brand' ? 'brand' : 'creator',
+    actorUserId: actorUserId || null,
+    action: 'accepted',
+    termsSnapshot: settled,
+  });
   return handshake.acceptIntoAgreement({
     source: 'request',
     sourceId: reqRow.id,
@@ -233,7 +254,7 @@ const brandAccept = asyncHandler(async (req, res) => {
   if (!handshake.ACTIVE_REQUEST_STATUSES.includes(reqRow.status)) {
     throw new AppError('VALIDATION_ERROR', `Cannot accept a request that is ${reqRow.status}`, 422);
   }
-  const agreement = await acceptRequest(reqRow, 'brand');
+  const agreement = await acceptRequest(reqRow, 'brand', req.user.sub);
 
   const { rows } = await db.query(
     `SELECT u.id AS user_id, u.fcm_token, u.phone FROM influencers i
@@ -256,7 +277,7 @@ const creatorAccept = asyncHandler(async (req, res) => {
   if (!handshake.ACTIVE_REQUEST_STATUSES.includes(reqRow.status)) {
     throw new AppError('VALIDATION_ERROR', `Cannot accept a request that is ${reqRow.status}`, 422);
   }
-  const agreement = await acceptRequest(reqRow, 'creator');
+  const agreement = await acceptRequest(reqRow, 'creator', req.user.sub);
 
   const { rows } = await db.query(
     `SELECT u.id AS user_id, u.fcm_token FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
@@ -278,9 +299,22 @@ function makeCounter(side) {
     const reqRow = await ownedRequest(req.params.id,
       side === 'brand' ? { brandId: actor.id } : { influencerId: actor.id });
 
+    const before = currentTerms(reqRow);
     const updated = await handshake.counterRequest({
       requestId: reqRow.id, side, counterTerms: req.body?.terms,
     }).catch(rethrow);
+    const after = currentTerms(updated);
+    await events.record({
+      requestId: reqRow.id,
+      step: events.STEP.AGREE,
+      actorRole: side === 'brand' ? 'brand' : 'creator',
+      actorUserId: req.user.sub,
+      action: 'countered',
+      termsSnapshot: after,
+      changed: events.diffTerms(before, after),
+      roundOf: Number(side === 'brand' ? updated.brand_rounds_used : updated.creator_rounds_used),
+      roundMax: (await settings.get()).counter_rounds_per_side,
+    });
 
     // Tell the other side, with what is left of the negotiation.
     const cfg = await settings.get();
@@ -313,6 +347,15 @@ function makeDecline(side) {
     const updated = await handshake.declineRequest({
       requestId: reqRow.id, side, reason: req.body?.reason,
     }).catch(rethrow);
+    await events.record({
+      requestId: reqRow.id,
+      step: events.STEP.AGREE,
+      actorRole: side === 'brand' ? 'brand' : 'creator',
+      actorUserId: req.user.sub,
+      action: 'declined',
+      termsSnapshot: currentTerms(reqRow),
+      note: req.body?.reason || null,
+    });
     return success(res, { request: updated });
   });
 }

@@ -8,6 +8,20 @@
  */
 
 const db = require('../config/db');
+// collab-phase0: counter rounds are admin-set, shared with the brand→creator direction.
+const settings = require('./handshakeSettings.service');
+const terms = require('./collabTerms.model');
+// Flat pitch columns -> the shared terms shape. handshake.service imports nothing from
+// here, so this direction is safe.
+const handshake = require('./handshake.service');
+
+/** The terms currently on the table: the pitch, with the latest counter settled over it. */
+function currentTermsOf(p) {
+  const c = p.counter_terms
+    ? (typeof p.counter_terms === 'string' ? JSON.parse(p.counter_terms) : p.counter_terms)
+    : null;
+  return handshake.termsFromProposal(p, c);
+}
 
 const PROPOSAL_TTL_DAYS = 7;
 const COOLDOWN_DAYS_AFTER_REJECT = 30;
@@ -343,16 +357,39 @@ async function reject(proposalId, message) {
   return rows[0];
 }
 
+/**
+ * Brand counters a pitch.
+ *
+ * collab-phase0: two changes.
+ *   1. BOUNDED. This was unbounded — a brand could counter forever and grind a
+ *      creator down. Now capped at handshake_settings.counter_rounds_per_side, the
+ *      same admin-set number the brand→creator direction has always used.
+ *   2. It can now answer the CREATOR's counter, not only a fresh pitch — otherwise
+ *      giving her a counter-back creates a conversation neither side can close.
+ */
 async function counter(proposalId, counterTerms, message) {
   const proposal = await getById(proposalId);
   if (!proposal) throw new Error('NOT_FOUND');
-  if (!['sent', 'viewed'].includes(proposal.status)) {
-    throw new Error(`Cannot counter in status "${proposal.status}". Only one counter round is allowed.`);
+
+  const answeringHerCounter = proposal.status === 'countered' && proposal.counter_by === 'creator';
+  if (!['sent', 'viewed'].includes(proposal.status) && !answeringHerCounter) {
+    if (proposal.status === 'countered' && proposal.counter_by === 'brand') {
+      throw new Error('You already countered. It is the creator\'s turn.');
+    }
+    throw new Error(`Cannot counter in status "${proposal.status}".`);
+  }
+
+  const cfg = await settings.get();
+  const used = Number(proposal.brand_rounds_used || 0);
+  if (used >= cfg.counter_rounds_per_side) {
+    throw new Error(`You have used both of your ${cfg.counter_rounds_per_side} counters — settle or decline.`);
   }
 
   const { rows } = await db.query(
     `UPDATE influencer_proposals
      SET status = 'countered',
+         counter_by = 'brand',
+         brand_rounds_used = brand_rounds_used + 1,
          brand_response_at = NOW(),
          brand_response_message = $2,
          counter_terms = $3,
@@ -360,6 +397,57 @@ async function counter(proposalId, counterTerms, message) {
      WHERE id = $1
      RETURNING *`,
     [proposalId, message || null, counterTerms ? JSON.stringify(counterTerms) : null]
+  );
+  return rows[0];
+}
+
+/**
+ * Creator counters back on her own pitch.
+ *
+ * collab-phase0: NEW. Until now her only replies to a brand's counter were accept or
+ * decline — pitch ₹20,000, get countered ₹8,000, and she could take ₹8,000 or walk.
+ * The brand→creator direction has always had two counters each; this makes the pitch
+ * direction symmetric under the same admin-set limit.
+ *
+ * Deliberately mirrors counter() above rather than sharing a body: the guards differ
+ * (she may only answer THEIR counter) and merging them would need a side flag that
+ * makes both harder to read.
+ */
+async function creatorCounter(proposalId, counterTerms) {
+  const proposal = await getById(proposalId);
+  if (!proposal) throw new Error('NOT_FOUND');
+
+  if (proposal.status !== 'countered') {
+    throw new Error(`Nothing to counter — this pitch is "${proposal.status}".`);
+  }
+  if (proposal.counter_by !== 'brand') {
+    throw new Error('You already countered. It is the brand\'s turn.');
+  }
+
+  const cfg = await settings.get();
+  const used = Number(proposal.creator_rounds_used || 0);
+  if (used >= cfg.counter_rounds_per_side) {
+    throw new Error(`You have used both of your ${cfg.counter_rounds_per_side} counters — accept or decline.`);
+  }
+
+  // Validated by the SAME module the brand→creator direction uses, against the terms
+  // CURRENTLY on the table rather than the opening pitch — so round two answers round
+  // one instead of re-litigating the original. A term either side marked as required
+  // is refused here, server-side, not merely hidden on a screen.
+  const current = currentTermsOf(proposal);
+  const check = terms.validateCounter(current, counterTerms);
+  if (!check.ok) { const e = new Error(check.message); e.field = check.field; throw e; }
+
+  const { rows } = await db.query(
+    `UPDATE influencer_proposals
+     SET status = 'countered',
+         counter_by = 'creator',
+         creator_rounds_used = creator_rounds_used + 1,
+         counter_terms = $2,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [proposalId, counterTerms ? JSON.stringify(counterTerms) : null]
   );
   return rows[0];
 }
@@ -415,6 +503,8 @@ module.exports = {
   markViewed,
   reject,
   counter,
+  creatorCounter,
+  currentTermsOf,
   withdraw,
   flag,
 };

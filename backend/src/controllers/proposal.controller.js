@@ -21,6 +21,9 @@ const notificationService = require('../services/notification.service');
 // contract.service import that used to live here is gone with it: a contract is now
 // created from the real campaign the brand builds, not drafted against a fabricated one.
 const handshake = require('../services/handshake.service');
+// collab-phase0 — the diary, and the admin-set round limits shared with the handshake.
+const events = require('../services/collabEvents.service');
+const settings = require('../services/handshakeSettings.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -149,6 +152,16 @@ const createProposal = asyncHandler(async (req, res) => {
     );
   }
 
+  await events.record({
+    proposalId: proposal.id,
+    step: events.STEP.AGREE,
+    actorRole: 'creator',
+    actorUserId: req.user.sub,
+    action: 'pitched',
+    termsSnapshot: proposalService.currentTermsOf(proposal),
+    note: pitch_title || null,
+  });
+
   return success(res, { proposal }, 201);
 });
 
@@ -192,10 +205,27 @@ const respondToCounter = asyncHandler(async (req, res) => {
   if (proposal.status !== 'countered') {
     throw new AppError('VALIDATION_ERROR', `Cannot respond to counter in status "${proposal.status}"`, 422);
   }
+  // collab-phase0 — CORRECTION 3: nobody accepts their own counter.
+  // The status check above is no longer sufficient. 'countered' is now also true when
+  // SHE countered, so without this a creator could accept the terms she herself just
+  // proposed and produce an agreement the brand never consented to.
+  if (proposal.counter_by === 'creator') {
+    throw new AppError('VALIDATION_ERROR',
+      'You cannot answer your own counter. Waiting on the brand.', 422);
+  }
   const action = String(req.body?.action || '').toLowerCase();  // 'accept' | 'decline'
   if (!['accept', 'decline'].includes(action)) {
     throw new AppError('VALIDATION_ERROR', 'action must be "accept" or "decline"', 422, 'action');
   }
+
+  await events.record({
+    proposalId: proposal.id,
+    step: events.STEP.AGREE,
+    actorRole: 'creator',
+    actorUserId: req.user.sub,
+    action: action === 'decline' ? 'declined' : 'accepted',
+    termsSnapshot: proposalService.currentTermsOf(proposal),
+  });
 
   if (action === 'decline') {
     await db.query(
@@ -212,11 +242,81 @@ const respondToCounter = asyncHandler(async (req, res) => {
   // resulting_campaign_influencer_id stays null until the agreement is briefed into a
   // real campaign — reporting an id here would point the app at a campaign that does
   // not exist, which is what the old fabricated stub was.
-  const agreement = await acceptedFlow(proposal, /* useCounterTerms */ true);
+  const agreement = await acceptedFlow(proposal);
   return success(res, {
     proposal: { ...proposal, status: 'accepted', resulting_campaign_influencer_id: null },
     agreement,
   });
+});
+
+/**
+ * POST /v1/influencers/me/proposals/:id/counter   Body: { counter_terms, message? }
+ *
+ * collab-phase0 — NEW. The creator counters back on her own pitch.
+ *
+ * Until now her only replies to a brand's counter were accept or decline: pitch
+ * ₹20,000, get countered ₹8,000, and take ₹8,000 or walk. The brand→creator direction
+ * has always had two counters each. This closes the asymmetry under the same
+ * admin-set limit — no new numbers are invented here.
+ */
+const creatorCounterProposal = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  const proposal = await proposalService.getById(req.params.id);
+  if (!proposal || proposal.influencer_id !== inf.id) {
+    throw new AppError('NOT_FOUND', 'Proposal not found', 404);
+  }
+  if (!req.body?.counter_terms) {
+    throw new AppError('VALIDATION_ERROR', 'counter_terms is required', 422, 'counter_terms');
+  }
+
+  // The terms on the table before she moves them — captured now so the diary can say
+  // what changed rather than merely that something did.
+  const before = proposalService.currentTermsOf(proposal);
+
+  let updated;
+  try {
+    // Validation lives in the service, mirroring the brand→creator direction exactly:
+    // it checks against the CURRENT terms, refuses a counter that touches a required
+    // term, and enforces the admin-set round cap.
+    updated = await proposalService.creatorCounter(proposal.id, req.body.counter_terms);
+  } catch (err) {
+    if (err.message === 'NOT_FOUND') throw new AppError('NOT_FOUND', 'Proposal not found', 404);
+    throw new AppError('VALIDATION_ERROR', err.message, 422, err.field || 'counter_terms');
+  }
+
+  const after = proposalService.currentTermsOf(updated);
+  const cfg = await settings.get();
+  await events.record({
+    proposalId: proposal.id,
+    step: events.STEP.AGREE,
+    actorRole: 'creator',
+    actorUserId: req.user.sub,
+    action: 'countered',
+    termsSnapshot: after,
+    changed: events.diffTerms(before, after),
+    note: req.body.message || null,
+    roundOf: Number(updated.creator_rounds_used),
+    roundMax: cfg.counter_rounds_per_side,
+  });
+
+  const { rows: brandRows } = await db.query(
+    `SELECT u.id AS user_id, u.fcm_token, u.phone
+     FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+    [proposal.brand_id]
+  );
+  const brand = brandRows[0];
+  if (brand) {
+    notify(
+      brand.user_id, brand.fcm_token, brand.phone,
+      'proposal.countered_by_creator',
+      'Creator countered your terms',
+      `${proposal.influencer_handle ? '@' + proposal.influencer_handle : 'The creator'} answered your counter. Review and accept, counter, or reject.`,
+      { screen: 'brand_proposal_inbox', proposal_id: proposal.id }
+    );
+  }
+
+  return success(res, { proposal: updated });
 });
 
 // ─── Brand endpoints ────────────────────────────────────────────────────────
@@ -288,11 +388,27 @@ const acceptProposal = asyncHandler(async (req, res) => {
   if (!proposal || proposal.brand_id !== brand.id) {
     throw new AppError('NOT_FOUND', 'Proposal not found', 404);
   }
-  if (!['sent', 'viewed'].includes(proposal.status)) {
+  // collab-phase0 — the brand may now accept HER counter, but never its own.
+  // Before this, any 'countered' pitch was un-acceptable by the brand, which would
+  // have made the creator's new counter-back a dead end nobody could close.
+  const answeringHerCounter = proposal.status === 'countered' && proposal.counter_by === 'creator';
+  if (!['sent', 'viewed'].includes(proposal.status) && !answeringHerCounter) {
+    if (proposal.status === 'countered' && proposal.counter_by === 'brand') {
+      throw new AppError('VALIDATION_ERROR',
+        'You cannot accept your own counter. It is the creator\'s turn to answer.', 422);
+    }
     throw new AppError('VALIDATION_ERROR', `Cannot accept in status "${proposal.status}"`, 422);
   }
 
-  const agreement = await acceptedFlow(proposal, /* useCounterTerms */ false);
+  await events.record({
+    proposalId: proposal.id,
+    step: events.STEP.AGREE,
+    actorRole: 'brand',
+    actorUserId: req.user.sub,
+    action: 'accepted',
+    termsSnapshot: proposalService.currentTermsOf(proposal),
+  });
+  const agreement = await acceptedFlow(proposal);
 
   // Notify influencer
   const { rows: infRows } = await db.query(
@@ -364,11 +480,30 @@ const counterProposal = asyncHandler(async (req, res) => {
   if (!req.body?.counter_terms) {
     throw new AppError('VALIDATION_ERROR', 'counter_terms is required', 422, 'counter_terms');
   }
+  // Captured before the update so the diary can say what moved, not merely that
+  // something did. Must live OUTSIDE the try — the record block below reads it.
+  const beforeTerms = proposalService.currentTermsOf(proposal);
   let updated;
   try {
     updated = await proposalService.counter(proposal.id, req.body.counter_terms, req.body.message || null);
   } catch (err) {
     throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+  {
+    const afterTerms = proposalService.currentTermsOf(updated);
+    const cfg2 = await settings.get();
+    await events.record({
+      proposalId: proposal.id,
+      step: events.STEP.AGREE,
+      actorRole: 'brand',
+      actorUserId: req.user.sub,
+      action: 'countered',
+      termsSnapshot: afterTerms,
+      changed: events.diffTerms(beforeTerms, afterTerms),
+      note: req.body.message || null,
+      roundOf: Number(updated.brand_rounds_used),
+      roundMax: cfg2.counter_rounds_per_side,
+    });
   }
 
   const { rows: infRows } = await db.query(
@@ -422,8 +557,18 @@ const flagProposal = asyncHandler(async (req, res) => {
 //
 // Existing stub campaigns are left alone — founder's call: "leave them, fresh one will
 // carry these."
-async function acceptedFlow(proposal, useCounterTerms) {
-  const counterTerms = useCounterTerms && proposal.counter_terms
+/**
+ * collab-phase0 — CORRECTION 1: settle the LATEST terms, whoever moved them last.
+ *
+ * This used to take a `useCounterTerms` boolean decided by the caller. That was safe
+ * only while a brand was the only party who could counter a pitch. Now that a creator
+ * can counter back, "the latest terms" is the single correct answer for every
+ * acceptance in both directions — if a counter exists, that is what is being accepted.
+ * Deciding it here rather than at each call site removes the possibility of one caller
+ * getting it wrong.
+ */
+async function acceptedFlow(proposal) {
+  const counterTerms = proposal.counter_terms
     ? (typeof proposal.counter_terms === 'string' ? JSON.parse(proposal.counter_terms) : proposal.counter_terms)
     : null;
 
@@ -502,6 +647,7 @@ module.exports = {
   getMyProposal,
   withdrawMyProposal,
   respondToCounter,
+  creatorCounterProposal,
   // Brand
   getBrandSettings,
   updateBrandSettings,

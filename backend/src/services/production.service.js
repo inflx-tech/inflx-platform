@@ -9,6 +9,10 @@
  */
 
 const db = require('../config/db');
+// collab-phase0 — the shoot already recorded everything in production_event_log; it
+// now MIRRORS into the shared diary so one screen can show any step's history.
+// The existing log stays: it is load-bearing for the admin production queue.
+const events = require('./collabEvents.service');
 
 const VALID_MODES = ['visit', 'shipment', 'remote'];
 const VALID_STATUSES = ['proposed', 'confirmed', 'in_progress', 'completed', 'cancelled'];
@@ -561,6 +565,29 @@ async function cancel(eventId, reason, actor) {
 
 async function logAction(client, eventId, userId, role, action, notes, metadata) {
   const exec = client || db;
+  // Mirror into the shared diary. Resolve the collaboration this shoot belongs to;
+  // if that lookup fails the shoot's own log below still happens, which is the point
+  // of keeping both.
+  try {
+    const { rows } = await exec.query(
+      `SELECT c.campaign_influencer_id
+         FROM production_events pe
+         JOIN contracts c ON c.id = pe.contract_id
+        WHERE pe.id = $1`, [eventId]);
+    if (rows[0]) {
+      await events.record({
+        campaignInfluencerId: rows[0].campaign_influencer_id,
+        step: events.STEP.SHOOT,
+        actorRole: role === 'influencer' ? 'creator' : (role || 'system'),
+        actorUserId: userId || null,
+        action,
+        note: notes || null,
+        meta: metadata || {},
+      }, exec);
+    }
+  } catch (e) {
+    console.warn('[production] diary mirror failed (non-fatal):', e.message);
+  }
   await exec.query(
     `INSERT INTO production_event_log
        (production_event_id, actor_user_id, actor_role, action, notes, metadata)

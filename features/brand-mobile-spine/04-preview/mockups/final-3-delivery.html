@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FINAL 3 — Sign, shoot, posts, social, completion, money</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:840px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.wrap{position:relative}
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:710px;overflow-y:auto}
+.tagapp{position:absolute;top:8px;left:8px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:5}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-both{background:var(--yBg);color:var(--yInk)}
+.t-a{background:var(--purpleBg);color:var(--purple)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:25px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--lineSoft)}
+.item:last-child{border-bottom:none}
+.thumb{width:36px;height:42px;border-radius:7px;background:#F0EDE7;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.item .n{flex:1;min-width:0}
+.item .nm{font-size:11.5px;font-weight:800}
+.item .mt{font-size:10px;color:var(--mut);font-weight:650;margin-top:1px}
+.cbx{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:transparent;flex-shrink:0}
+.cbx.on{background:var(--green);border-color:var(--green);color:#fff}
+.cbx.miss{background:var(--redBg);border-color:#F0C4BA;color:var(--red)}
+
+.rsn{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:11.5px;font-weight:700}
+.rsn.on{border-color:var(--red);border-width:1.5px;background:var(--redBg);color:var(--red)}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0}
+.rsn.on .rdo{border-color:var(--red);border-width:4.5px}
+
+.trk{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.trk .th{padding:9px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.trk .tb{padding:10px 12px}
+.pill{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+.p-ok{background:var(--greenBg);color:var(--green)}
+.p-wait{background:var(--blueBg);color:var(--blue)}
+.p-no{background:var(--redBg);color:var(--red)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 14px}
+.gc{aspect-ratio:3/4;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;border-radius:4px}
+.gc .b{position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;padding:1px 4px;border-radius:4px;color:#fff}
+.b-live{background:var(--green)}.b-rev{background:var(--blue)}.b-fix{background:var(--red)}
+.gc .p{position:absolute;bottom:4px;left:4px;font-size:7px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+.hero{width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:38px}
+.tagged{display:flex;gap:8px;overflow-x:auto;padding:11px 14px}
+.pcard{width:62px;flex-shrink:0}
+.pimg{width:62px;height:76px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.pnm{font-size:8.5px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+.stat3{display:flex;text-align:center;border-top:1px solid var(--lineSoft);border-bottom:1px solid var(--lineSoft)}
+.stat3 div{flex:1;padding:11px 4px;border-right:1px solid var(--lineSoft)}
+.stat3 div:last-child{border-right:none}
+.stat3 .n{font-family:'Outfit';font-size:15px;font-weight:800}
+.stat3 .l{font-size:8px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:2px}
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-blk{background:var(--redBg);color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>FINAL 3 — Sign · Shoot · Posts · Social · Completion · Money</h1>
+  <p>Actions 99–160 of the ledger · implementation spec · 2026-08-15</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① Sign 99–106</button>
+  <button class="tab" data-v="v1">② Slot 107–114</button>
+  <button class="tab" data-v="v2">③ Parcel 115–118</button>
+  <button class="tab" data-v="v3">④ Make posts 122–126</button>
+  <button class="tab" data-v="v4">⑤ Review 127–130</button>
+  <button class="tab" data-v="v5">⑥ Post detail 131–133</button>
+  <button class="tab" data-v="v6">⑦ Ordering rule 134–142</button>
+  <button class="tab" data-v="v7">⑧ Completion 143–148</button>
+  <button class="tab" data-v="v8">⑨ Her money 149–153</button>
+  <button class="tab" data-v="v9">⑩ Analytics 154–160</button>
+  <button class="tab" data-v="v10">⑪ Coverage</button>
+</div>
+
+<!-- ① SIGN -->
+<div class="view on" id="v0">
+  <div class="vh">Phase 5 · The invite, and signing</div>
+  <div class="vids">LEDGER 99–106</div>
+  <div class="vs">Because the terms were already agreed, accepting is one tap and there is nothing left to negotiate. A cold invite keeps the full choice.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Season</div><div class="sub">KANCHI SILKS · SALES</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">✓ Already agreed with you</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">28 Aug</div></div>
+            <div class="trm"><div class="k">Where you shoot</div><div class="v">Your end · they ship</div></div>
+            <div style="font-size:10.5px;color:var(--green);font-weight:700;margin-top:8px">Settled on 14 Aug. These are closed.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh" style="color:var(--blue)">New in this campaign</div>
+            <div class="trm"><div class="k">Your code</div><div class="v" style="font-family:'JetBrains Mono';font-size:12px">ASHA18</div></div>
+            <div class="trm"><div class="k">You can sell</div><div class="v">Sarees · 25 items</div></div>
+            <div class="trm"><div class="k">Shopper offer</div><div class="v" style="font-size:11.5px">10% off ₹5,000+</div></div>
+            <div class="trm"><div class="k">Campaign runs</div><div class="v" style="font-size:11.5px">From 1 Sep, ongoing</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Accept and sign</button>
+              <button class="btn sec">See the contract first</button>
+            </div>
+            <div class="lock" style="margin-top:10px">🔒 <span><b>No Negotiate button.</b> You settled the money and the timing already — there is nothing here left to argue.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">The split you get when an agreement exists. <b>One tap.</b><span class="id">100 · 101 · 103</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Monsoon Cottons</div><div class="sub">A BRAND YOU HAVEN'T MET</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait y">This brand invited you <b>without agreeing terms first</b>. Everything here is open.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">What they're offering</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">12%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">30 Sep</div></div>
+            <div class="trm"><div class="k">You can sell</div><div class="v">Cottons · 18 items</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">How you'd work</div>
+            <div class="chips"><span class="chip">Visit their store</span><span class="chip on">Shoot at your end</span></div>
+            <div style="margin-top:11px"><div class="dh">Are they sending products?</div>
+            <div class="chips"><span class="chip on">Yes</span><span class="chip">No</span></div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Asked here because there was no handshake. <b>Asked once</b> — never again after this.</div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Accept</button>
+              <button class="btn sec">Negotiate</button>
+              <button class="btn dgr">Decline</button>
+            </div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Cold invite. <b>All three choices stay</b>, and the shoot style is asked here.<span class="id">102 · 108</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Contracts to sign</div><div class="sub">3 WAITING ON YOU</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait y">All three creators have signed. <b>Nothing starts until you countersign.</b></div></div>
+          <div class="dsec">
+            <div class="item"><div class="cbx on">✓</div><div class="n"><div class="nm">Asha M.</div><div class="mt">18% · SIGNED 15 AUG</div></div></div>
+            <div class="item"><div class="cbx on">✓</div><div class="n"><div class="nm">Meera S.</div><div class="mt">15% · SIGNED 15 AUG</div></div></div>
+            <div class="item"><div class="cbx on">✓</div><div class="n"><div class="nm">Divya T.</div><div class="mt">20% · SIGNED 16 AUG</div></div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Countersign all 3</button>
+              <button class="btn sec">Read one first</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="dh">The moment you sign</div>
+            <div class="trm"><div class="k">Contract goes active</div><div class="v">✓</div></div>
+            <div class="trm"><div class="k">A shoot plan is created</div><div class="v">✓</div></div>
+            <div class="trm"><div class="k">Their products go live in her shop</div><div class="v">✓</div></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Bulk countersign. <b>States what signing sets off.</b><span class="id">104 · 105 · 106</span></div>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:16px"><b>All of phase 5 already works.</b> The settled-vs-new split, one-tap accept, bulk countersign and automatic shoot-plan creation are live. The only new row is <b>108</b> — asking the shoot style on a cold invite, because there is no agreement to read it from.</div>
+</div>
+
+<!-- ② SLOT -->
+<div class="view" id="v1">
+  <div class="vh">Phase 6 · Settling when and where</div>
+  <div class="vids">LEDGER 107 · 109–114 · 121</div>
+  <div class="vs">Six live endpoints with no screen on them. The shoot becomes its own destination on both phones.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">The shoot</div><div class="sub">KANCHI SILKS · STORE VISIT</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait b">Pick any day between <b>16 Aug</b> and <b>13 Sep</b>. Your post-by is 15 Sep — the shoot has to finish two days before so you have time to shoot and edit.</div></div>
+          <div class="dsec">
+            <div class="dh">Their suggestion</div>
+            <div class="trm"><div class="k">Thu 28 Aug</div><div class="v">2:00 PM</div></div>
+            <div class="trm"><div class="k">Expected time</div><div class="v">~3 hours</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Expected time is a guide for the store, <b>not a deadline for you</b>. Nothing counts as late.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Where</div>
+            <div style="font-size:12px;font-weight:700;line-height:1.6">Kanchi Silks<br>Benz Circle, Vijayawada 520010</div>
+            <div class="trm" style="margin-top:9px"><div class="k">Ask for</div><div class="v">Lakshmi R.</div></div>
+            <div class="trm"><div class="k">Phone</div><div class="v" style="font-size:11.5px">+91 98490 12345</div></div>
+            <button class="btn sec" style="margin-top:10px">Open in Maps</button>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Accept 28 Aug</button>
+              <button class="btn sec">Suggest another time · 2 left</button>
+              <button class="btn sec">Ask to do it remotely instead</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span><b>No shoot brief.</b> They don't tell you what to shoot — that's your craft, and it's why they picked you.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Store visit. <b>Date bounds computed server-side</b> — that already exists.<span class="id">110 · 111 · 112 · 113 · 114</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Shoots</div><div class="sub">4 ACROSS 2 CAMPAIGNS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Needs you · 2</div>
+            <div class="wait y" style="margin-bottom:8px"><b>Asha M.</b> suggested Tue 2 Sep, 11:00 AM — accept or counter</div>
+            <div class="wait r"><b>Ravi K.</b> — parcel delivered 4 days ago, receipt not confirmed</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Confirmed</div>
+            <div class="trm"><div class="k">Nisha P. · store visit</div><div class="v" style="font-size:11px">4 SEP, 10AM</div></div>
+            <div class="trm"><div class="k">Meera S. · we shipped</div><div class="v" style="font-size:11px;color:var(--blue)">IN TRANSIT</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Done</div>
+            <div class="trm"><div class="k">Divya T. · remote</div><div class="v" style="font-size:11px;color:var(--green)">28 AUG</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Set the visit address</div>
+            <div class="trm"><div class="k">Benz Circle, Vijayawada</div><div class="v" style="font-size:11px;color:var(--blue)">EDIT</div></div>
+            <div class="trm"><div class="k">Contact · Lakshmi R.</div><div class="v" style="font-size:11px;color:var(--blue)">EDIT</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px">Used for every store visit unless you change it per shoot.</div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">One list across every creator. <b>The roster endpoint already returns this.</b><span class="id">109</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>Almost all of this is a rendering job.</b> Propose, counter, accept, flip-to-remote, complete and the legal date window are six live endpoints. What's missing is a screen and a route — there is no production route in either navigator today.</div>
+      <div class="card">
+        <h3>What changes</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Change</th></tr>
+          <tr><td class="mono">107</td><td>Style comes from the agreement — <b>removed from contract approval</b>, where the creator had no say</td></tr>
+          <tr><td class="mono">113</td><td>"Duration" becomes <b>expected time</b>. Same field, honest label — creative work can't be scheduled to the minute</td></tr>
+          <tr><td class="mono">111</td><td>Two reschedules per side, then locked. Already enforced; now visible</td></tr>
+          <tr><td class="mono">121</td><td>The shoot <b>already records every action</b> — it's the only step that does. It just has no screen</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>The two-day rule is real and computed</b> — post-by minus 2 days, falling back to the posting window minus 3, then a one-year ceiling for open-ended sales campaigns. The screen shows the window; it doesn't invent it.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ PARCEL -->
+<div class="view" id="v2">
+  <div class="vh">Phase 6 · What's in the box</div>
+  <div class="vids">LEDGER 115–118</div>
+  <div class="vs">The genuinely new part of the shoot. Today a shipment carries a courier, a tracking number and four timestamps — and no idea what's inside.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What you're sending</div><div class="sub">TO ASHA M. · MUMBAI</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">From your catalogue</div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Kanjivaram Silk — Maroon</div><div class="mt">KS-114 · ₹18,500 · QTY 1</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Banarasi Silk — Gold</div><div class="mt">KS-207 · ₹24,000 · QTY 1</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Cotton Handloom — Indigo</div><div class="mt">KS-051 · ₹4,200 · QTY 1</div></div><div class="cbx on">✓</div></div>
+            <button class="btn sec" style="margin-top:10px">+ Add from catalogue</button>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Items are <b>picked, not typed</b> — so what she confirms and what she can tag in a post are the same things.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Courier</div>
+            <div class="g2">
+              <div><label class="fl2">Carrier</label><input class="inp" value="Delhivery"></div>
+              <div><label class="fl2">Expected</label><input class="inp" value="2026-08-21"></div>
+            </div>
+            <div style="margin-top:9px"><label class="fl2">Tracking number</label><input class="inp" value="DL8829174C"></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Mark dispatched · 3 items</button></div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Uses the <b>same product picker</b> as allocation and offers.<span class="id">115 · 116</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your parcel arrived</div><div class="sub">KANCHI SILKS · 3 ITEMS</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait b">Delivered <b>21 Aug, 2:40 PM</b>. Check each item and confirm.</div></div>
+          <div class="dsec">
+            <div class="dh">Tick what you received</div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Kanjivaram — Maroon</div><div class="mt">KS-114</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb">🥻</div><div class="n"><div class="nm">Banarasi — Gold</div><div class="mt">KS-207</div></div><div class="cbx on">✓</div></div>
+            <div class="item"><div class="thumb" style="opacity:.4">🥻</div><div class="n"><div class="nm" style="color:var(--red)">Cotton Handloom — Indigo</div><div class="mt" style="color:var(--red)">FLAGGED — NOT IN THE BOX</div></div><div class="cbx miss">!</div></div>
+            <div class="chips" style="margin-top:11px"><span class="chip">Mark one damaged</span></div>
+          </div>
+          <div class="dsec">
+            <div class="wait r"><b>1 item missing.</b> Kanchi Silks is told straight away, with the item named. You don't have to chase it.</div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Confirm — 2 of 3 received</button>
+              <button class="btn sec">Actually, everything arrived</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5"><b>A missing item never blocks your shoot or your posts.</b> Shoot what arrived.</div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">A flag, not a WhatsApp message. <b>The shortfall isn't her problem.</b><span class="id">117</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">One item missing</div><div class="sub">ASHA M. · REPORTED 25 AUG</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait r">Asha received 2 of 3. <b>Cotton Handloom — Indigo (KS-051)</b> wasn't in the box.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">What she has</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v" style="color:var(--green);font-size:11px">✓ RECEIVED</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="color:var(--green);font-size:11px">✓ RECEIVED</div></div>
+            <div class="trm"><div class="k">Cotton Handloom</div><div class="v" style="color:var(--red);font-size:11px">✕ MISSING</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Send the missing saree</button>
+              <button class="btn sec">Drop it — she'll shoot the other two</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Either way her shoot goes ahead. Dropping it removes that saree from what she can sell.</div>
+          </div>
+          <div class="dsec">
+            <div class="lock">📦 <span>Sending a replacement creates a <b>second parcel</b> on this shoot, tracked the same way.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Resolve the shortfall. <b>Both outcomes offered</b>, consequences stated.<span class="id">118</span></div>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:16px"><b>Bounded risk.</b> One new table for parcel items, no change to the existing shipment record, and production holds a single shoot row that never got past "proposed" — so there is nothing to backfill and nothing to regress.</div>
+</div>
+
+<!-- ④ MAKE POSTS -->
+<div class="view" id="v3">
+  <div class="vh">Phase 7 · Making shop posts</div>
+  <div class="vids">LEDGER 122–126</div>
+  <div class="vs">Creator-only. The brand does nothing here and sees nothing until a post is live.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">New post</div><div class="sub">FROM THE KANCHI SILKS SHOOT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Pick from your shoot footage</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+              <div style="aspect-ratio:3/4;border-radius:7px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:15px;outline:2px solid var(--ink);outline-offset:-2px">🖼</div>
+              <div style="aspect-ratio:3/4;border-radius:7px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:15px;outline:2px solid var(--ink);outline-offset:-2px">🎬</div>
+              <div style="aspect-ratio:3/4;border-radius:7px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:15px">🖼</div>
+              <div style="aspect-ratio:3/4;border-radius:7px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:15px">🖼</div>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5"><b>Uploaded once.</b> The same footage serves this post and your Instagram reel — no second upload, no second wait.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Concept</div>
+            <div class="chips"><span class="chip on">Festive Sarees</span><span class="chip">Party Sarees</span><span class="chip">Wedding</span><span class="chip gh">+ New</span></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Whose products</div>
+            <div class="chips"><span class="chip on">Kanchi Silks only</span><span class="chip">Several brands</span><span class="chip">My whole shelf</span></div>
+            <div class="wait n" style="margin-top:10px">Using only Kanchi Silks' products? <b>They'll be told when it goes live.</b> Mix in another brand and nobody is told.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Tag products · 3 of 25</div>
+            <div class="chips" style="margin-bottom:10px"><span class="chip on">All 25</span><span class="chip">Silk 14</span><span class="chip">Cotton 11</span></div>
+            <div class="tagged" style="padding:0">
+              <div class="pcard"><div class="pimg" style="outline:2px solid var(--ink);outline-offset:-2px">🥻</div><div class="pnm">Kanjivaram Maroon</div></div>
+              <div class="pcard"><div class="pimg" style="outline:2px solid var(--ink);outline-offset:-2px">🥻</div><div class="pnm">Banarasi Gold</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div></div>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px">Only what this collaboration lets you sell.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Caption</div>
+            <div class="wait n" style="text-align:left">Three ways to drape a Kanjivaram for the festive season 🪔</div>
+          </div>
+          <div class="dsec"><button class="btn pri">Send for review</button></div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Footage → concept → scope → products → caption. <b>Products grouped by category.</b><span class="id">122 · 123 · 124 · 125</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your posts</div><div class="sub">FROM THIS SHOOT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Live in your shop</div>
+            <div class="item"><div class="thumb">🖼</div><div class="n"><div class="nm">Festive Sarees</div><div class="mt">3 PRODUCTS · KANCHI SILKS ONLY</div></div><span class="pill p-ok">live</span></div>
+            <div class="item"><div class="thumb">🖼</div><div class="n"><div class="nm">Wedding Edit</div><div class="mt">5 PRODUCTS · 2 BRANDS</div></div><span class="pill p-ok">live</span></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Being reviewed</div>
+            <div class="item"><div class="thumb">🎬</div><div class="n"><div class="nm">Party Sarees</div><div class="mt">4 PRODUCTS</div></div><span class="pill p-wait">in review</span></div>
+            <div class="wait b" style="margin-top:9px">With our review team since <b>29 Aug, 4:12 PM</b>. We check quality only — never your concept.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Needs a fix</div>
+            <div class="item"><div class="thumb">🎬</div><div class="n"><div class="nm">Draped Three Ways</div><div class="mt">2 PRODUCTS</div></div><span class="pill p-no">fix</span></div>
+            <div class="wait r" style="margin-top:9px"><b>Video is too shaky to use.</b> Re-upload the clip — your concept and caption are kept.</div>
+            <button class="btn pri" style="margin-top:10px">Replace the clip</button>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap"><b>"With our review team since…"</b> — a wait with a clock is a queue.<span class="id">126 · 129</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>One media library.</b> She uploads the shoot once; shop posts and the Instagram reel both point at it. The asset table for this already exists, ships empty, and is currently switched off.</div>
+      <div class="note key"><b>Exclusivity is decided here, by her.</b> Choosing "Kanchi Silks only" is what triggers the brand notification later. Choosing several brands means nobody is told — the copy says so at the moment of choosing, not afterwards.</div>
+      <div class="note info"><b>Tagging is limited to her allocation.</b> A product she can't sell can't be tagged — which is why allocation is a publish blocker on the campaign.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ REVIEW -->
+<div class="view" id="v4">
+  <div class="vh">Phase 7 · The review desk</div>
+  <div class="vids">LEDGER 127–130</div>
+  <div class="vs">Quality only. The change that makes that real is replacing a free-text box with a closed list of technical faults.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Review queue</div><div class="sub">7 WAITING · OLDEST 6H</div></div></div>
+        <div class="body">
+          <div class="item" style="padding:11px 14px;border-bottom:1px solid var(--lineSoft)">
+            <div class="thumb">🎬</div>
+            <div class="n"><div class="nm">Party Sarees</div><div class="mt">ASHA M. · KANCHI SILKS · 6H AGO</div></div><div style="color:var(--mut2)">›</div>
+          </div>
+          <div class="item" style="padding:11px 14px;border-bottom:1px solid var(--lineSoft)">
+            <div class="thumb">🖼</div>
+            <div class="n"><div class="nm">Monsoon Layers</div><div class="mt">RAVI K. · 2 BRANDS · 4H AGO</div></div><div style="color:var(--mut2)">›</div>
+          </div>
+          <div class="item" style="padding:11px 14px;border-bottom:1px solid var(--lineSoft)">
+            <div class="thumb">🖼</div>
+            <div class="n"><div class="nm">Cotton Everyday</div><div class="mt">NISHA P. · 3H AGO</div></div><div style="color:var(--mut2)">›</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">This week</div>
+            <div class="trm"><div class="k">Approved</div><div class="v" style="color:var(--green)">34</div></div>
+            <div class="trm"><div class="k">Sent back</div><div class="v">6</div></div>
+            <div class="trm"><div class="k">Most common fault</div><div class="v" style="font-size:11.5px">Too dark · 3</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Countable only because faults are a fixed list. Free text can't be totalled.</div>
+          </div>
+        </div>
+      </div><span class="tagapp t-a">ADMIN</span></div>
+      <div class="cap">The queue. <b>Fault counts become possible</b> the moment reasons are structured.<span class="id">127</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Send back for a fix</div><div class="sub">PARTY SAREES · ASHA M.</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Pick the technical fault</div>
+            <div class="rsn"><span class="rdo"></span>Blurred or out of focus</div>
+            <div class="rsn on"><span class="rdo"></span>Video unusable — shake or motion</div>
+            <div class="rsn"><span class="rdo"></span>Too dark to see the product</div>
+            <div class="rsn"><span class="rdo"></span>Product cropped out of frame</div>
+            <div class="rsn"><span class="rdo"></span>Resolution below our minimum</div>
+            <div class="rsn"><span class="rdo"></span>Watermark or another brand visible</div>
+            <div class="rsn"><span class="rdo"></span>Tagged product isn't the one shown</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Optional note</div>
+            <div class="wait n">Free text is allowed <b>only alongside a fault above</b>, and only to help her fix it. It can never stand alone.</div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>There is <b>no reason here about concept, styling, product choice or how many posts</b>. Deliberate. The desk checks whether the file is usable, nothing else.</span></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Send back</button></div>
+        </div>
+      </div><span class="tagapp t-a">ADMIN</span></div>
+      <div class="cap">Today this is a <b>free-text box</b> — the single change that stops a quality desk becoming a creative one.<span class="id">128</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note key"><b>Actions 127 and 128 are one change.</b> "Reject on quality only" is a policy; a free-text box is how policies quietly stop being true. A closed list is what makes the rule enforceable — and it makes rejections countable, which the queue screen uses.</div>
+      <div class="card">
+        <h3>Who is told what</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Post</th><th>Notified</th></tr>
+          <tr><td class="mono">131</td><td>Every product is Kanchi Silks'</td><td><b>Kanchi Silks</b> — "Asha published Festive Sarees using your products"</td></tr>
+          <tr><td class="mono">131</td><td>Kanchi Silks + one other brand</td><td><b>Nobody.</b> Neither brand.</td></tr>
+          <tr><td class="mono">131</td><td>Her whole shelf</td><td><b>Nobody.</b></td></tr>
+          <tr><td class="mono">130</td><td>Any approved post</td><td>The creator, always</td></tr>
+        </table></div>
+        <div class="note info" style="max-width:none;margin:11px 0 0">Computed from the tagged products at approval: one distinct brand → notify it; more than one → notify no one. Approval currently notifies only the creator, so this is one branch on a path that already runs.</div>
+      </div>
+      <div class="note good"><b>The brand never sees a shop post before it is live</b>, and never gets a veto over her concept. Preview would be approval by another name.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ POST DETAIL -->
+<div class="view" id="v5">
+  <div class="vh">Phase 7 · Opening a post</div>
+  <div class="vids">LEDGER 132–133</div>
+  <div class="vs">There is no way to open a post today — she can list hers and that's all. This is a new screen with a new endpoint behind it, and it's where three other answers land.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your posts</div><div class="sub">14 LIVE · 2 IN REVIEW</div></div></div>
+        <div class="body">
+          <div class="dsec" style="padding-bottom:10px">
+            <div class="chips"><span class="chip on">All</span><span class="chip">Live 14</span><span class="chip">In review 2</span><span class="chip">Fix 1</span></div>
+          </div>
+          <div class="grid3">
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">3</span></div>
+            <div class="gc">🎬<span class="b b-live">LIVE</span><span class="p">5</span></div>
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">2</span></div>
+            <div class="gc">🎬<span class="b b-rev">REVIEW</span><span class="p">4</span></div>
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">1</span></div>
+            <div class="gc">🖼<span class="b b-fix">FIX</span><span class="p">2</span></div>
+            <div class="gc">🎬<span class="b b-live">LIVE</span><span class="p">6</span></div>
+            <div class="gc">🖼<span class="b b-live">LIVE</span><span class="p">3</span></div>
+            <div class="gc">🖼<span class="b b-rev">REVIEW</span><span class="p">2</span></div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft);margin-top:11px">
+            <div class="wait n">The small number is how many products that post carries.</div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Her grid. <b>Status on every tile</b>, so a stuck post is visible without opening it.<span class="id">133</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Sarees</div><div class="sub">LIVE SINCE 3 SEP · KANCHI SILKS</div></div></div>
+        <div class="body">
+          <div class="hero">🖼</div>
+          <div style="padding:12px 14px 0">
+            <div style="font-size:11.5px;font-weight:650;line-height:1.6">Three ways to drape a Kanjivaram for the festive season 🪔</div>
+            <div style="font-size:10.5px;color:var(--blue);font-weight:700;margin-top:6px">#kanjivaram #festivesarees #handloom</div>
+          </div>
+          <div class="tagged">
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">₹12,400</div></div>
+          </div>
+          <div class="stat3">
+            <div><div class="n">₹37,000</div><div class="l">SOLD THROUGH</div></div>
+            <div><div class="n">₹6,660</div><div class="l">YOU EARNED</div></div>
+            <div><div class="n">2</div><div class="l">ORDERS</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">About this post</div>
+            <div class="trm"><div class="k">Concept</div><div class="v">Festive Sarees</div></div>
+            <div class="trm"><div class="k">Brands in it</div><div class="v">Kanchi Silks only</div></div>
+            <div class="trm"><div class="k">Collaboration</div><div class="v">Festive Season</div></div>
+            <div class="trm"><div class="k">Approved</div><div class="v">3 Sep</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">How it performed</div>
+            <div class="wait n" style="text-align:center;padding:15px 12px">
+              <b style="color:var(--ink)">We're not counting views yet</b><br>
+              <span style="font-weight:650">Sales are tracked in full. Reach isn't measured on shop posts yet.</span>
+            </div>
+          </div>
+          <div class="dsec"><button class="btn sec">See what happened with this post</button></div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Media, caption, <b>tagged products, what it sold</b>, and a route to its diary.<span class="id">133 · 151 · 152 · 159</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Sarees</div><div class="sub">BY ASHA M. · USES ONLY YOUR PRODUCTS</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait g">✓ Asha published this on 3 Sep using <b>only your sarees</b>.</div></div>
+          <div class="hero">🖼</div>
+          <div class="tagged">
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+            <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">₹12,400</div></div>
+          </div>
+          <div class="stat3">
+            <div><div class="n">₹37,000</div><div class="l">SOLD</div></div>
+            <div><div class="n">2</div><div class="l">ORDERS</div></div>
+            <div><div class="n">₹6,660</div><div class="l">TO ASHA</div></div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span><b>Read-only.</b> You didn't review this and don't need to — our team checks quality, she chooses the concept.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Brand's view of an exclusive post. <b>No buttons at all.</b><span class="id">132</span></div>
+    </div>
+  </div>
+
+  <div class="note bad" style="margin-top:16px"><b>Worth restating before it looks small.</b> The creator can list her posts and that is the entire capability — there is no post-detail endpoint. This screen is a new endpoint, not a lightbox. It's also where per-post sales (151–152) and the reach gap (159) both surface, which is why it's worth building properly.</div>
+</div>
+
+<!-- ⑦ ORDERING RULE -->
+<div class="view" id="v6">
+  <div class="vh">Phase 8 · Shop first, then Instagram</div>
+  <div class="vids">LEDGER 134–142</div>
+  <div class="vs">Both reviews run at the same time. Only publishing is ordered — so traffic never lands on an empty shelf.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Going live</div><div class="sub">KANCHI SILKS · POST BY 15 SEP</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trk">
+              <div class="th"><span>① Your shop posts</span><span class="pill p-wait">in review</span></div>
+              <div class="tb">
+                <div class="trm" style="padding:5px 0"><div class="k">Festive Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">IN REVIEW</div></div>
+                <div class="trm" style="padding:5px 0"><div class="k">Party Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">IN REVIEW</div></div>
+              </div>
+            </div>
+            <div class="trk">
+              <div class="th"><span>② Your Instagram reel</span><span class="pill p-ok">brand approved</span></div>
+              <div class="tb">
+                <div class="trm" style="padding:5px 0"><div class="k">Submitted</div><div class="v" style="font-size:11px">28 AUG</div></div>
+                <div class="trm" style="padding:5px 0"><div class="k">Kanchi Silks approved</div><div class="v" style="font-size:11px;color:var(--green)">29 AUG</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dsec">
+            <button class="btn off">I've posted — add the link</button>
+            <div class="wait n" style="margin-top:10px">Your reel is approved and ready. <b>Hold on until at least one shop post is live</b> — otherwise people who tap through land on an empty shelf.<br><br>Both are being reviewed right now, side by side. Usually a few hours.</div>
+          </div>
+          <div class="dsec">
+            <div class="lock">⏳ <span>You are <b>not</b> waiting in two queues. The brand approved your reel while our team reviews your posts.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Locked. <b>Explains why, and promises she isn't queued twice.</b><span class="id">137 · 140</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Going live</div><div class="sub">KANCHI SILKS · POST BY 15 SEP</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trk">
+              <div class="th"><span>① Your shop posts</span><span class="pill p-ok">2 live</span></div>
+              <div class="tb">
+                <div class="trm" style="padding:5px 0"><div class="k">Festive Sarees</div><div class="v" style="font-size:11px;color:var(--green)">LIVE</div></div>
+                <div class="trm" style="padding:5px 0"><div class="k">Wedding Edit</div><div class="v" style="font-size:11px;color:var(--green)">LIVE</div></div>
+                <div class="trm" style="padding:5px 0"><div class="k">Party Sarees</div><div class="v" style="font-size:11px;color:var(--blue)">IN REVIEW</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="wait g">✓ <b>Your shop posts are live — you can post on Instagram now.</b></div>
+            <button class="btn pri" style="margin-top:10px">I've posted — add the link</button>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">2 of 3 are live. That's enough — one live post gives the traffic somewhere to land. Party Sarees can finish its review after.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Both clocks</div>
+            <div class="trm"><div class="k">Agreed deadline</div><div class="v">15 Sep</div></div>
+            <div class="trm"><div class="k">Covers</div><div class="v" style="font-size:11px">SHOP + SOCIAL, IN THAT ORDER</div></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Unlocked — <b>your exact words</b>. It says she may go, not that she was blocked.<span class="id">138 · 139 · 141</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Nisha's reel</div><div class="sub">YOUR APPROVAL · 2 ROUNDS LEFT</div></div></div>
+        <div class="body">
+          <div class="hero">🎬</div>
+          <div class="dsec">
+            <div style="font-size:11.5px;font-weight:650;line-height:1.6">"Three drapes, one Kanjivaram. Kanchi Silks sent me this maroon and I haven't taken it off 🪔"</div>
+            <div style="font-size:10.5px;color:var(--blue);font-weight:700;margin-top:6px">#kanchisilks #kanjivaram #festive</div>
+          </div>
+          <div class="dsec">
+            <div class="wait y">This carries your name in public. Approve it, or ask for changes — <b>2 rounds</b>.</div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Approve — she can post</button>
+              <button class="btn sec">Ask for a change</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span>Approving does <b>not</b> publish it. She posts once her shop posts are live, so the traffic has somewhere to land.</span></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">After she posts</div>
+            <div class="trm"><div class="k">You confirm it's live</div><div class="v">→</div></div>
+            <div class="trm"><div class="k">On a content set</div><div class="v" style="font-size:11px">RELEASES ₹7,500</div></div>
+            <div class="trm"><div class="k">On a sales set</div><div class="v" style="font-size:11px">FINISHES THE STEP</div></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Brand approval. <b>The lock note stops "I approved it, why isn't it up?"</b><span class="id">134 · 135 · 136 · 140</span></div>
+    </div>
+  </div>
+
+  <div class="note bad" style="margin-top:16px"><b>Nothing connects these two tracks today.</b> Verified: zero references to creator posts anywhere in the deliverable controller. The gate must be <b>server-side</b> — a UI-only hold is a suggestion. And <b>content sets must be exempt</b> (142): they have no shop posts, so the gate would block a paid reel forever. That needs its own test, not an intention.</div>
+</div>
+
+<!-- ⑧ COMPLETION -->
+<div class="view" id="v7">
+  <div class="vh">Phase 9 · Where it stands, and when it's done</div>
+  <div class="vids">LEDGER 143–148</div>
+  <div class="vs">Nothing computes this today — both sides infer it from four screens.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">SALES COLLABORATION</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where this stands</div>
+            <div class="trm"><div class="k">Shoot</div><div class="v" style="color:var(--green);font-size:12px">✓ DONE 2 SEP</div></div>
+            <div class="trm"><div class="k">At least one shop post live</div><div class="v" style="color:var(--green);font-size:12px">✓ 2 LIVE</div></div>
+            <div class="trm"><div class="k">Instagram post confirmed</div><div class="v" style="color:var(--blue);font-size:12px">⏳ AWAITING</div></div>
+          </div>
+          <div class="dsec"><div class="wait b">You posted on 6 Sep. Kanchi Silks confirms it's live — then this is complete.</div></div>
+          <div class="dsec">
+            <div class="dh">What they hoped for</div>
+            <div class="wait n"><b>3 posts · they hoped for 5</b><br>A hope they mentioned when you agreed terms. Not owed, changes nothing, nothing is withheld.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">If a post goes dark later</div>
+            <div class="wait g">A post counts as delivered <b>when it's approved</b> — not for as long as it stays visible. If they run out of stock or an offer expires, that's never your breach.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Earning</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Sales so far</div><div class="v">₹51,000</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">You earn when someone buys. No fee, no stages, nothing held back.</div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Sales track. <b>The hoped-for number rendered as guidance.</b><span class="id">143 · 145 · 146</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Nova Fit</div><div class="sub">CONTENT COLLABORATION</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Where this stands</div>
+            <div class="trm"><div class="k">Shoot</div><div class="v" style="color:var(--green);font-size:12px">✓ DONE 24 AUG</div></div>
+            <div class="trm"><div class="k">1 reel + 2 stories</div><div class="v" style="color:var(--green);font-size:12px">✓ ALL LIVE</div></div>
+            <div class="trm"><div class="k">Confirmed by brand</div><div class="v" style="color:var(--green);font-size:12px">✓ 28 AUG</div></div>
+          </div>
+          <div class="dsec"><div class="wait g">✓ Complete.</div></div>
+          <div class="dsec">
+            <div class="dh">Your fee</div>
+            <div class="trm"><div class="k">Agreed</div><div class="v">₹30,000</div></div>
+            <div class="trm"><div class="k">On signing</div><div class="v" style="color:var(--green);font-size:11px">₹7,500 RELEASED</div></div>
+            <div class="trm"><div class="k">Confirmed live</div><div class="v" style="color:var(--green);font-size:11px">₹7,500 RELEASED</div></div>
+            <div class="trm"><div class="k">+30 days</div><div class="v" style="color:var(--blue);font-size:11px">₹15,000 · 27 SEP</div></div>
+          </div>
+          <div class="dsec">
+            <div class="lock">🔒 <span><b>No shop posts here.</b> Nothing is being sold, so there's nothing for the shop to show.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Content track. Same screen, <b>genuinely different content.</b><span class="id">144 · 148</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>Completion, defined</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Track</th><th>Complete when</th></tr>
+          <tr><td class="mono">143</td><td><b>Sales</b></td><td>shoot done · <b>≥1</b> shop post approved and live · social post live and brand-confirmed</td></tr>
+          <tr><td class="mono">144</td><td><b>Content</b></td><td>deliverables live and confirmed · payment stages released</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>146 is the rule that protects her.</b> Completion is computed from the <b>approval event</b>, never from current visibility. A post going dark because the brand ran out of stock, raised a price, or let an offer expire never makes her non-compliant. She did the work.</div>
+      <div class="note good"><b>The sales completion screen must never grow a money bar</b> just because the content one has one. No wallet, no escrow, no stages in the sales track — only commission on sales that already happened.</div>
+      <div class="note info"><b>147 — ending a campaign</b> is the brand's, and only meaningful on sales, which runs open-ended by design.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑨ HER MONEY -->
+<div class="view" id="v8">
+  <div class="vh">What each collaboration paid her</div>
+  <div class="vids">LEDGER 149–153</div>
+  <div class="vs">The cheapest real win on the list — the sales are already stamped with campaign, creator and offer. Nobody wrote the line that adds them up.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Earnings</div><div class="sub">LIFETIME</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">You've earned</div>
+            <div class="big">₹14,000</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">ACROSS 2 COLLABORATIONS</div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Confirmed — yours</div><div class="v" style="color:var(--green)">₹9,700</div></div>
+            <div class="trm"><div class="k">In the return window</div><div class="v" style="color:var(--blue)">₹4,300</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Commission confirms 30 days after each sale, once it can't be returned.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">By collaboration <span style="color:var(--purple)">· new</span></div>
+            <div class="trm"><div class="k">Kanchi Silks · 18%</div><div class="v">₹9,180</div></div>
+            <div class="trm"><div class="k">Label Fern · 22%</div><div class="v">₹4,820</div></div>
+            <div class="trm"><div class="k">Nova Fit · fee</div><div class="v" style="font-size:11.5px">₹15,000 SEPARATE</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Fees and commission are shown apart — they behave completely differently.</div>
+          </div>
+          <div class="dsec"><button class="btn sec">Withdraw</button></div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap">Lifetime, <b>now split by collaboration.</b> Today only the top number exists.<span class="id">149 · 153</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">WHAT THIS PAID YOU</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">Your commission</div>
+            <div class="big">₹9,180</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">FROM ₹51,000 OF SALES · AT 18%</div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Confirmed</div><div class="v" style="color:var(--green)">₹6,300</div></div>
+            <div class="trm"><div class="k">In the return window</div><div class="v" style="color:var(--blue)">₹2,880</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Which of their products sold</div>
+            <div class="trm"><div class="k">🥻 Kanjivaram — Maroon<br><span style="font-size:10px;color:var(--mut2)">2 SOLD</span></div><div class="v">₹37,000<br><span style="font-size:10px;color:var(--green)">₹6,660 yours</span></div></div>
+            <div class="trm"><div class="k">🥻 Cotton Handloom<br><span style="font-size:10px;color:var(--mut2)">1 SOLD</span></div><div class="v">₹14,000<br><span style="font-size:10px;color:var(--green)">₹2,520 yours</span></div></div>
+            <div class="trm"><div class="k">🥻 Banarasi — Gold<br><span style="font-size:10px;color:var(--mut2)">0 SOLD</span></div><div class="v" style="color:var(--mut2)">—</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Which of your posts sold them</div>
+            <div class="trm"><div class="k">Festive Sarees</div><div class="v">₹37,000</div></div>
+            <div class="trm"><div class="k">Draped Three Ways</div><div class="v">₹14,000</div></div>
+            <div class="trm"><div class="k">Your Instagram reel</div><div class="v" style="color:var(--mut2)">—</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">A sale counts for whichever post the shopper came through. Never shared between two.</div>
+          </div>
+        </div>
+      </div><span class="tagapp t-c">CREATOR</span></div>
+      <div class="cap"><b>Per collaboration, per product, per post.</b> None of this exists today.<span class="id">150 · 151 · 152</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>No new recording needed.</b> Every sale already carries which campaign, which creator and which offer it came from — there are real stamped sales in production now. This is arithmetic over data you already keep.</div>
+      <div class="note key"><b>It closes an odd gap.</b> Today the brand can see what a campaign earned and the creator cannot see what a collaboration paid her — in a product where commission <i>is</i> her pay.</div>
+      <div class="note info"><b>Confirmed vs pending is not decoration.</b> Commission clears only after the return window. A creator who sees one number and receives a smaller one loses trust — so both, always, with the reason.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑩ ANALYTICS -->
+<div class="view" id="v9">
+  <div class="vh">Analytics — four cuts, one boundary</div>
+  <div class="vids">LEDGER 154–160</div>
+  <div class="vs">The brand sees what happened inside their own campaigns. Nothing about the creator's life outside them.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Season</div><div class="sub">HOW IT'S DOING</div></div></div>
+        <div class="stg"><span class="on">Overall</span><span>Creators</span><span>Products</span><span>Posts</span></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">Sales through creators</div>
+            <div class="big">₹82,300</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">11 ORDERS · ₹14,120 COMMISSION</div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Confirmed</div><div class="v" style="color:var(--green)">₹9,340</div></div>
+            <div class="trm"><div class="k">In return window</div><div class="v" style="color:var(--blue)">₹4,780</div></div>
+            <div class="trm"><div class="k">Average order</div><div class="v">₹7,481</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">By creator</div>
+            <div class="trm"><div class="k">Asha M. · 18%</div><div class="v">₹51,000</div></div>
+            <div class="trm"><div class="k">Nisha P. · 15%</div><div class="v">₹22,400</div></div>
+            <div class="trm"><div class="k">Divya T. · 20%</div><div class="v">₹8,900</div></div>
+            <div class="trm"><div class="k">Ravi K. · 18%</div><div class="v" style="color:var(--mut2)">₹0</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">By product</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v">5 · ₹92,500</div></div>
+            <div class="trm"><div class="k">Cotton Handloom</div><div class="v">3 · ₹12,600</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="color:var(--mut2)">0 sold</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">By post</div>
+            <div class="trm"><div class="k">Festive Sarees · Asha</div><div class="v">₹37,000</div></div>
+            <div class="trm"><div class="k">Draped Three Ways · Asha</div><div class="v">₹14,000</div></div>
+            <div class="trm"><div class="k">Silk Stories · Nisha</div><div class="v">₹22,400</div></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Four cuts of one number. <b>Per-campaign already exists</b> — the cuts are new.<span class="id">154 · 155 · 156 · 157</span></div>
+    </div>
+
+    <div>
+      <div class="wrap"><div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your products</div><div class="sub">39 LISTED · 25 IN CAMPAIGNS</div></div></div>
+        <div class="body">
+          <div class="dsec" style="padding-bottom:10px">
+            <div class="chips"><span class="chip on">All 39</span><span class="chip">Silk 14</span><span class="chip">Cotton 11</span><span class="chip">Bridal 6</span></div>
+          </div>
+          <div style="border-top:1px solid var(--lineSoft);padding:9px 12px">
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:7px"><span>SILK SAREES</span><span style="color:var(--mut2);font-family:'JetBrains Mono';font-size:9.5px">14 · 9 SELLING</span></div>
+            <div class="tagged" style="padding:0">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">5 sold</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr" style="color:var(--mut2)">0 sold</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">2 sold</div></div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--lineSoft);padding:9px 12px">
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;margin-bottom:7px"><span>BRIDAL</span><span style="color:var(--mut2);font-family:'JetBrains Mono';font-size:9.5px">6 · 0 SELLING</span></div>
+            <div class="tagged" style="padding:0">
+              <div class="pcard"><div class="pimg" style="opacity:.5">🥻</div><div class="pnm" style="color:var(--mut2)">Bridal Red</div><div class="ppr" style="color:var(--mut2)">₹52,000</div></div>
+            </div>
+            <div style="font-size:9.5px;color:var(--mut);font-weight:650;margin-top:7px">No creator can sell these — not in any campaign scope.</div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="lock">💻 <span>Adding and pricing products stays on the web. Here you see what's listed, who can sell it, and what moved.</span></div>
+          </div>
+        </div>
+      </div><span class="tagapp t-b">BRAND</span></div>
+      <div class="cap">Catalogue by category, with <b>how many are in a creator's scope</b> and what sold.<span class="id">158</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>The boundary — action 160</h3>
+        <div class="tscroll"><table>
+          <tr><th>The brand sees</th><th>The brand never sees</th></tr>
+          <tr><td>Sales through a creator, on their campaigns</td><td>Her sales for any other brand</td></tr>
+          <tr><td>Their own products' performance</td><td>Another brand's products in a mixed post</td></tr>
+          <tr><td>Reel numbers for content in their campaign</td><td>Her posts that don't involve them</td></tr>
+          <tr><td>Her public following, both kinds</td><td>Her total earnings on the platform</td></tr>
+          <tr><td>Posts using <b>only</b> their products</td><td>Mixed-brand posts — nobody is told</td></tr>
+        </table></div>
+      </div>
+      <div class="note key"><b>Mixed posts are the sharp edge.</b> A post carrying two labels is invisible to both brands — showing it to one reveals she works with the other. That rule exists in the notification logic; analytics must not quietly break it.</div>
+      <div class="note bad"><b>Action 159 stays blocked.</b> Shop-post reach can't be shown because nothing emits the signals and nothing reads them. Both ends have to be connected before either app shows a number — and until then, the honest empty state, never a zero.</div>
+      <div class="note good"><b>She sees the mirror.</b> What she earned, from which brand, through which post. Same data, cut by who's asking.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑪ COVERAGE -->
+<div class="view" id="v10">
+  <div class="vh">Coverage — every action 99–160 accounted for</div>
+
+  <div class="card">
+    <h3>Actions 99–160 → panels</h3>
+    <div class="tscroll"><table>
+      <tr><th>Actions</th><th>What</th><th>Panel</th><th>Status</th></tr>
+      <tr><td class="mono">99–107</td><td>Invite, settled-vs-new, one-tap accept, cold invite, sign, countersign, shoot plan</td><td>①</td><td><span class="st2 s-ex">works</span></td></tr>
+      <tr><td class="mono">108</td><td>Ask the shoot style on a cold invite</td><td>①</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">109–112, 114</td><td>Address, propose, counter, accept, flip to remote</td><td>②</td><td><span class="st2 s-ui">needs UI</span></td></tr>
+      <tr><td class="mono">113</td><td>Duration → expected time</td><td>②</td><td><span class="st2 s-ch">changes</span></td></tr>
+      <tr><td class="mono">115–118</td><td><b>Parcel, dispatch, item receipt, shortfall</b></td><td>③</td><td><span class="st2 s-nw">new · 116 exists</span></td></tr>
+      <tr><td class="mono">119–120</td><td>Mark done, admin queue</td><td>②</td><td><span class="st2 s-ex">works</span></td></tr>
+      <tr><td class="mono">121</td><td>Shoot history</td><td>FINAL 1 ⑧</td><td><span class="st2 s-ui">needs UI</span></td></tr>
+      <tr><td class="mono">122–123, 125</td><td>Create post, tag products, submit</td><td>④</td><td><span class="st2 s-ch">123 grouped</span></td></tr>
+      <tr><td class="mono">124</td><td>Reuse shoot footage — one library</td><td>④</td><td><span class="st2 s-ch">extends an existing table</span></td></tr>
+      <tr><td class="mono">126</td><td>"With our review team since…"</td><td>④</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">127, 129–130</td><td>Approve, fix, go live</td><td>⑤</td><td><span class="st2 s-ex">works</span></td></tr>
+      <tr><td class="mono">128</td><td><b>Fixed list of technical faults</b></td><td>⑤</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">131</td><td>Notify the brand — exclusive only</td><td>⑤</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">132</td><td>Brand reads an exclusive post</td><td>⑥</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">133</td><td><b>Open a post full-screen</b></td><td>⑥</td><td><span class="st2 s-nw">new endpoint</span></td></tr>
+      <tr><td class="mono">134–136, 139–141</td><td>Submit, approve, changes, publish, confirm, scrape</td><td>⑦</td><td><span class="st2 s-ex">works</span></td></tr>
+      <tr><td class="mono">137–138</td><td><b>The ordering rule + the unlock message</b></td><td>⑦</td><td><span class="st2 s-nw">new · server-side</span></td></tr>
+      <tr><td class="mono">142</td><td>Content sets exempt from the hold</td><td>⑦</td><td><span class="st2 s-nw">new · needs a test</span></td></tr>
+      <tr><td class="mono">143, 145–146</td><td>Sales completion, guidance, delivered-at-approval</td><td>⑧</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">144, 147–148</td><td>Content completion, end campaign, payment stages</td><td>⑧</td><td><span class="st2 s-ui">144 needs UI</span></td></tr>
+      <tr><td class="mono">149, 153</td><td>Lifetime earnings, confirmed vs pending</td><td>⑨</td><td><span class="st2 s-ex">works</span></td></tr>
+      <tr><td class="mono">150–152</td><td><b>Per collaboration, per product, per post</b></td><td>⑨</td><td><span class="st2 s-nw">new · cheapest win</span></td></tr>
+      <tr><td class="mono">154</td><td>Campaign conversions</td><td>⑩</td><td><span class="st2 s-ex">works</span></td></tr>
+      <tr><td class="mono">155–157</td><td>Cuts by creator, product, post</td><td>⑩</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">158</td><td>Catalogue by category</td><td>⑩</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">159</td><td>Shop-post reach</td><td>⑥⑩</td><td><span class="st2 s-blk">blocked · honest empty state only</span></td></tr>
+      <tr><td class="mono">160</td><td>The privacy boundary</td><td>⑩</td><td><span class="st2 s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Build order for this file</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Slice</th><th>Why here</th></tr>
+      <tr><td><b>1</b></td><td>Per-collaboration money (150–153)</td><td>Arithmetic over stamped sales. No new data, immediately visible, closes a real gap.</td></tr>
+      <tr><td><b>2</b></td><td>Post detail endpoint + screen (133, 132)</td><td>Three other answers land on it — build it before them</td></tr>
+      <tr><td><b>3</b></td><td>Shoot screen + route, both apps (107–114, 119–121)</td><td>Six live endpoints, no screen. Mostly rendering.</td></tr>
+      <tr><td><b>4</b></td><td>Parcel + receipt + shortfall (115–118)</td><td>One new table; reuses the product picker from FINAL 2</td></tr>
+      <tr><td><b>5</b></td><td>Fixed rejection faults + review timestamp (126, 128)</td><td>Small, and makes "quality only" actually enforceable</td></tr>
+      <tr><td><b>6</b></td><td>Exclusive-post notification (131–132)</td><td>One branch on an existing notify path</td></tr>
+      <tr><td><b>7</b></td><td><b>The ordering rule</b> (137–138, 142)</td><td>Server-side gate plus the exemption test. The biggest new mechanic here.</td></tr>
+      <tr><td><b>8</b></td><td>Completion computation (143–146)</td><td>Depends on 137 being in place first</td></tr>
+      <tr><td><b>9</b></td><td>Analytics cuts + catalogue (155–158, 160)</td><td>Same groupings as slice 1, other side</td></tr>
+      <tr><td><b>10</b></td><td>Media library (124)</td><td>Extends an existing table; needed before shop and social share footage</td></tr>
+      <tr><td>—</td><td>Shop-post reach (159)</td><td><b>Deferred.</b> Emit signals, then build the read, then the screen.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>All 160 actions are now drawn.</b> FINAL 1 covers 1–58, FINAL 2 covers 59–98, FINAL 3 covers 99–160. Every panel carries its ledger IDs and every file ends with a coverage table — so if a screen ever needs a control the ledger doesn't list, the ledger gets fixed first.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>
