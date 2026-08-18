@@ -1,0 +1,58 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sign-in surfaces — after dev-hint removal</title>
+<style>
+  body { margin:0; padding:28px; background:#F4F4F5; font-family:-apple-system,Segoe UI,Roboto,sans-serif; color:#18181B; }
+  h1 { font-size:17px; margin:0 0 4px; }
+  p.sub { font-size:12.5px; color:#71717A; margin:0 0 24px; }
+  .grid { display:flex; gap:22px; flex-wrap:wrap; }
+  .card { background:#fff; border:1px solid #E4E4E7; border-radius:14px; padding:18px; width:290px; }
+  .cap { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#A1A1AA; margin-bottom:14px; }
+  .boxes { display:flex; gap:7px; justify-content:center; margin:14px 0; }
+  .boxes i { width:38px; height:50px; border:1.5px solid #E4E4E7; border-radius:11px; display:grid; place-items:center;
+             font:700 20px ui-monospace,monospace; font-style:normal; color:#18181B; }
+  .cta { background:#FFD400; color:#18181B; font-weight:700; font-size:14px; text-align:center;
+         padding:13px; border-radius:11px; margin-top:14px; }
+  .hint { font-size:11.5px; color:#8A8A8F; text-align:center; margin-top:9px; }
+  .resend { font-size:12.5px; text-align:center; margin-top:12px; color:#52525B; }
+  .resend b { color:#E0A800; }
+  .field { border:1.5px solid #E4E4E7; border-radius:11px; padding:12px; font-size:14px; color:#18181B; }
+  .removed { margin-top:16px; padding:9px 11px; border-radius:9px; background:#FEF2F2;
+             border:1px solid #FECACA; font-size:11px; color:#B91C1C; }
+  .removed s { color:#B91C1C; opacity:.75; }
+</style>
+<h1>Sign-in surfaces — after removing the dev-mode OTP hints</h1>
+<p class="sub">Target state for <code>features/remove-dev-otp-hints</code>. Red footnote shows what each screen no longer renders.</p>
+
+<div class="grid">
+  <div class="card">
+    <div class="cap">Mobile · phone entry</div>
+    <div class="field">+91 98765 43210</div>
+    <div class="cta">Send OTP</div>
+    <div class="hint">We'll send a 6-digit code.</div>
+    <div class="removed">removed: <s>dev · OTP 000000</s> chip beside the hint</div>
+  </div>
+
+  <div class="card">
+    <div class="cap">Mobile · OTP entry</div>
+    <div class="boxes"><i>4</i><i>0</i><i>9</i><i>2</i><i>9</i><i>6</i></div>
+    <div class="hint">Auto-verifying when you fill the last digit</div>
+    <div class="cta">Verify</div>
+    <div class="removed">removed: <s>dev · 000000</s> chip beside the auto-verify line</div>
+  </div>
+
+  <div class="card">
+    <div class="cap">brand-web · /login</div>
+    <div class="boxes"><i>2</i><i>3</i><i>3</i><i>9</i><i>8</i><i>7</i></div>
+    <div class="resend">Didn't get it? <b>Resend OTP</b></div>
+    <div class="removed">removed: <s>dev · 000000</s> chip after Resend</div>
+  </div>
+
+  <div class="card">
+    <div class="cap">admin-web · /login</div>
+    <div class="hint" style="margin-top:0">OTP sent to +919876543210</div>
+    <div class="boxes"><i>6</i><i>1</i><i>5</i><i>6</i><i>2</i><i>6</i></div>
+    <div class="cta">Verify OTP</div>
+    <div class="removed">removed: <s>(dev: use 000000)</s> caption line</div>
+  </div>
+</div>

@@ -498,9 +498,6 @@ export default function LoginPage() {
                 >
                   {resending ? 'Resending…' : 'Resend OTP'}
                 </button>
-                <span className="ml-2 inline-block bg-[#FFF7CC] text-[#6B5A00] font-['JetBrains_Mono',ui-monospace,monospace] font-semibold text-[11px] px-2 py-0.5 rounded">
-                  dev · 000000
-                </span>
               </div>
 
               {error && (

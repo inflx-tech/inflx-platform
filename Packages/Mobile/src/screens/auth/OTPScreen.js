@@ -224,7 +224,6 @@ export default function OTPScreen({ navigation, route }) {
 
         <View style={styles.autoVerifyRow}>
           <Text style={styles.autoVerifyText}>Auto-verifying when you fill the last digit</Text>
-          <Text style={styles.devPill}> dev · 000000 </Text>
         </View>
 
         {error ? (
@@ -270,7 +269,6 @@ const styles = StyleSheet.create({
 
   autoVerifyRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' },
   autoVerifyText:{ fontSize: 11.5, color: P.muted2 },
-  devPill:       { fontSize: 10.5, color: P.yellowText, fontWeight: '600', backgroundColor: P.yellowPale, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 5, fontFamily: MONO, marginLeft: 6 },
 
   errorBox:      { backgroundColor: P.dangerPale, borderLeftWidth: 3, borderLeftColor: P.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 4 },
   errorText:     { fontSize: 12, color: P.dangerDeep, fontWeight: '500' },

@@ -133,7 +133,6 @@ export default function PhoneScreen({ navigation }) {
         </TouchableOpacity>
         <View style={styles.hintRow}>
           <Text style={styles.hintText}>We'll send a 6-digit code.</Text>
-          <Text style={styles.devPill}> dev · OTP 000000 </Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -171,5 +170,4 @@ const styles = StyleSheet.create({
   btnText:       { fontSize: 15, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
   hintRow:       { marginTop: 8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' },
   hintText:      { fontSize: 11.5, color: P.muted2 },
-  devPill:       { fontSize: 10.5, color: P.yellowText, fontWeight: '600', backgroundColor: P.yellowPale, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 5, fontFamily: Platform.OS === 'android' ? 'monospace' : 'Menlo', marginLeft: 4 },
 });

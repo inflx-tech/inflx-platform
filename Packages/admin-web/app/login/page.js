@@ -87,7 +87,6 @@ export default function LoginPage() {
         ) : (
           <form onSubmit={handleVerifyOtp}>
             <div className="mb-1 text-sm text-t2 text-center">OTP sent to +91{phone}</div>
-            <div className="text-xs text-t3 text-center mb-4">(dev: use 000000)</div>
             <div className="mb-4">
               <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Enter OTP</label>
               <div className="flex gap-2 justify-center">
