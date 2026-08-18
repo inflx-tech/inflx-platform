@@ -1,10 +1,13 @@
 'use strict';
 
+const axios = require('axios');
 const env = require('../config/env');
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
 
 const OTP_TTL_MINUTES = 10;
+const MSG91_OTP_URL = 'https://control.msg91.com/api/v5/otp';
+const MSG91_TIMEOUT_MS = 10000;
 
 /**
  * Generate and store an OTP for the given phone number.
@@ -67,11 +70,58 @@ function _generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+/** Never log a subscriber's full number — keep enough to correlate in support. */
+function _maskPhone(phone) {
+  return `••••${String(phone).slice(-4)}`;
+}
+
+/**
+ * Send the OTP through MSG91's v5 OTP endpoint.
+ *
+ * We pass our own `otp` rather than letting MSG91 generate one, so otp_codes
+ * stays the single source of truth and verifyOtp() needs no network call.
+ * The DLT-approved template (Inflx_OTP_Login) carries the ##OTP## variable
+ * that this value fills.
+ *
+ * Throws on any failure — the caller must not report "OTP sent" for an SMS
+ * that never left.
+ */
 async function _sendViaMSG91(phone, code) {
-  // Production: POST to MSG91 OTP endpoint
-  // Requires MSG91_AUTH_KEY and OTP_TEMPLATE_ID in env.
-  // Implementation left for production switch — set OTP_MOCK=false.
-  console.log(`[MSG91] Sending OTP ${code} to ${phone}`);
+  if (!env.MSG91_AUTH_KEY || !env.OTP_TEMPLATE_ID) {
+    console.error('[MSG91] OTP_MOCK is false but MSG91_AUTH_KEY / OTP_TEMPLATE_ID are not set');
+    throw new AppError('INTERNAL_ERROR', 'SMS provider is not configured', 500);
+  }
+
+  // Our phones are stored E.164 (+919876543210); MSG91 wants bare digits with
+  // the country code and no '+'. Stripping non-digits covers both forms.
+  const mobile = String(phone).replace(/\D/g, '');
+
+  let response;
+  try {
+    response = await axios.post(MSG91_OTP_URL, null, {
+      params: {
+        template_id: env.OTP_TEMPLATE_ID,
+        mobile,
+        otp: code,
+      },
+      headers: {
+        authkey: env.MSG91_AUTH_KEY,
+        accept: 'application/json',
+      },
+      timeout: MSG91_TIMEOUT_MS,
+    });
+  } catch (err) {
+    const detail = err.response ? JSON.stringify(err.response.data) : err.message;
+    console.error(`[MSG91] OTP send failed for ${_maskPhone(phone)}: ${detail}`);
+    throw new AppError('INTERNAL_ERROR', 'Could not send OTP. Please try again.', 502);
+  }
+
+  // MSG91 answers HTTP 200 with {"type":"error"} for template, DLT and
+  // insufficient-balance problems, so a 2xx alone does not mean it was sent.
+  if (!response.data || response.data.type !== 'success') {
+    console.error(`[MSG91] OTP rejected for ${_maskPhone(phone)}: ${JSON.stringify(response.data)}`);
+    throw new AppError('INTERNAL_ERROR', 'Could not send OTP. Please try again.', 502);
+  }
 }
 
 module.exports = { sendOtp, verifyOtp };

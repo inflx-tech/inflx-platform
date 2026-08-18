@@ -1,0 +1,26 @@
+{
+  "feature": "msg91-otp-live",
+  "area": "backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-08-18) — founder completed DLT registration, MSG91 panel setup, wallet funding and set OTP_MOCK=false on Render, then directed: 'lets assure present OTP SMS works fine, later i will add other things using templates created in DLT.'",
+  "approved_at": "2026-08-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING via Render (backend redeploy). Fixes a live sign-in outage: prod ran OTP_MOCK=false against the stub, so no OTP SMS reached any role. No migration. No OTA. No mobile or web source change.",
+  "fix": "Implement _sendViaMSG91() against MSG91 v5 OTP API: authkey header, template_id 6a840c9f172fc38ddf0d67c2, E.164 normalised to bare digits, our own otp passed so otp_codes stays source of truth. Throw on transport failure and on 200 + {type:'error'}. Mask phone and stop logging the plaintext code.",
+  "scope_deferred": "notification.service.js::_sendSms remains a stub by founder decision (2026-08-18); ~60 sendSms:true call sites stay push + in-app only until per-message DLT templates exist.",
+  "ui_governed": false,
+  "mobile_governed": false,
+  "release": {
+    "qa_all_green": false,
+    "qa_result": "420/422 passed, 1 skipped, 2 failed (qa/api/invariants-extended.spec.ts W5a + W5b), gate 1, run 2026-08-18T11-12-33-180Z.",
+    "qa_classification": "NOT a regression from this contract and NOT a backend defect. Classified as environment drift caused by the founder's OTP_MOCK=false flip on Render. Proof: qa targets production (QA_API_BASE default https://inflx-platform.onrender.com/v1) and this contract's code was unpushed at run time (git log origin/main..HEAD empty), so the suite could not have exercised it. Both tests hardcode otp:'000000', which only ever verified while OTP_MOCK=true; W5a/W5b assert role validation that sits AFTER otpService.verifyOtp() in auth.controller.js, so a real code makes the assertion unreachable. Released RED-with-classification rather than skipping, weakening or fabricating a green (no-fake-green).",
+    "qa_followup": "Two tests are structurally unreachable against a live-OTP production and will stay red until either (a) the qa lane is pointed at a backend with OTP_MOCK=true, or (b) the role check is moved ahead of verifyOtp() in auth.controller.js — which independently fixes a real bug where an invalid/missing role consumes the user's OTP and forces a re-request. Option (b) carries a mild user-enumeration tradeoff. Founder decision pending; to be carved as its own contract.",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pushed to origin/main 2026-08-18 → Render backend redeploy. release.released stays FALSE until (a) live OTP delivery is verified end-to-end on prod and (b) the W5a/W5b follow-up is resolved or explicitly overridden. gov-check forbids released=true while qa_all_green=false (GOVERNANCE.md §5) — correctly, and qa_all_green was NOT flipped to buy the gate. Vercel rebuild is a no-op (source untouched). No OTA."
+  }
+}
