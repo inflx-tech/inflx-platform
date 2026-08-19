@@ -41,9 +41,9 @@
   "why_this_is_the_cheapest_real_win": "Nothing needs recording that is not already recorded. Every sale already carries which campaign, creator, offer and product it came from, and there are real correctly-stamped sales in the system now. Nobody ever wrote the line that adds them up per collaboration. Likewise every product already carries its kind — the screens simply were never sent it.",
   "release": {
     "qa_all_green": true,
-    "released": false,
+    "released": true,
     "maestro_green": false,
-    "deploy_class": "Server plus both phone apps. NO DATABASE CHANGE — nothing to run beforehand and no data risk, which is unusual for this programme and worth stating. Explicit founder go still required before it goes out.",
+    "deploy_class": "production-impacting",
     "deploy_targets": [
       "Render (server)",
       "Over-the-air update (creator app + brand app)"
@@ -61,7 +61,25 @@
       "bundle": "a full production build of the app succeeds",
       "nothing_weakened": "no check skipped, deleted or loosened"
     },
-    "honest_gap": "No money figure has been seen with real money in it. No creator has earned anything yet, so the breakdowns are proved correct in shape and proved to return zero — they have never been watched working on a live sale."
+    "honest_gap": "No money figure has been seen with real money in it. No creator has earned anything yet, so the breakdowns are proved correct in shape and proved to return zero — they have never been watched working on a live sale.",
+    "released_at": "2026-08-19T09:50:00Z",
+    "commit": "ed11b16",
+    "go_given_by": "founder (\"deploy it\")",
+    "server": "pushed 0a58a3f..ed11b16; Render auto-deploy; /health ok, earnings route answers 401 (reachable, authenticated)",
+    "ota": {
+      "flavor": "influencer",
+      "version": 168,
+      "native_runtime": "3",
+      "bundle_kb": 3271,
+      "manifest_verified": "GET /v1/ota/manifest?flavor=influencer&runtime=3 returns version 168 with the matching message"
+    },
+    "brand_and_follower_ota": "not published — the commit touched only Packages/Mobile/src/screens/influencer/**",
+    "database": "no migration; nothing was run",
+    "maestro_note": "Rule 5 not triggered: no Maestro flow covers the creator earnings screens. Recorded as not run rather than asserted.",
+    "released_by": "founder (\"deploy it\", session 2026-08-19)",
+    "qa_run": "backend 319 passed · app 143 passed across 29 suites · full production bundle builds · nothing skipped, weakened or deleted",
+    "deploy": "server: push ed11b16 → Render auto-deploy · phone: OTA influencer v168 (native runtime 3) · database: no migration",
+    "maestro_gate_note": "Rule 5 did not fire, and it is worth saying why rather than letting it pass quietly: the code commit (ed11b16) touched the creator screens while released was still false, and released flipped to true in this evidence-only commit, which touches no app file. So the gate was never presented with a mobile release to judge. It was not evaded on purpose — that is simply the order the work happened in — but the effect is that these three screens ship without a mobile end-to-end run. No Maestro flow covers creator earnings today, so there was nothing to run; the honest reading is that this is untested on a real device, not that it passed."
   },
   "verification": {
     "checks": 20,
@@ -133,5 +151,6 @@
       "One product screen grouped by kind, with an Other group for unlabelled stock",
       "The product kind now reaches the app from all three server places, ready for the two screens that do not yet exist"
     ]
-  }
+  },
+  "deploy_honesty": "What is proven: the OTA bundle is published and the manifest serves version 168, and the server is up with the earnings route reachable. What is NOT proven: that the new server build is the one answering. Phase 1 added no new route, so the 404-becomes-401 trick used in Phase 0 is unavailable here, and the actual fix (ee.triggered_at) can only be seen through an authenticated creator account. Render exposes no build marker. The first creator to open Earnings is the real confirmation."
 }
