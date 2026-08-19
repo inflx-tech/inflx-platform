@@ -114,6 +114,28 @@ export default function App() {
 
         setRole(storedRole);
 
+        // Profile guard — a stored session only proves WHO the user is, not
+        // that they ever finished setting up their business/creator profile.
+        // A brand who verified OTP but never completed the registration form
+        // has a users row and no brands row; restoring their session dropped
+        // them straight into the tab bar, where every screen answers "profile
+        // not found" and there is no route back to the form (it lives in the
+        // auth stack). Confirm the profile in the background and, only on a
+        // definitive NOT_FOUND, return them to sign-in — the OTP screen already
+        // routes a profile-less account to the registration form. Network
+        // errors and 401s are deliberately ignored here: the API client owns
+        // session expiry, and a blip must never sign anyone out.
+        const PROFILE_PATH = { brand: '/brands/me', influencer: '/influencers/me', agency: '/agencies/me' };
+        if (PROFILE_PATH[storedRole]) {
+          const { api } = require('./src/services/api');
+          api.get(PROFILE_PATH[storedRole]).then(async (res) => {
+            if (!res.success && res.error?.code === 'NOT_FOUND') {
+              await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
+              setRole('');
+            }
+          }).catch(() => {});
+        }
+
         // If we have a cached OneSignal player ID, send it to backend
         const playerId = await AsyncStorage.getItem('inflx_onesignal_player_id');
         if (playerId && token) {

@@ -28,6 +28,7 @@ export default function BrandProfileScreen({ navigation }) {
   const [brand, setBrand]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
+  const [loadError, setLoadError] = useState(null); // 'no_profile' | 'load_failed'
 
   const [businessName, setBusinessName] = useState('');
   const [contactName,  setContactName]  = useState('');
@@ -45,7 +46,15 @@ export default function BrandProfileScreen({ navigation }) {
     setLoading(true);
     const res = await brandApi.getMe();
     setLoading(false);
-    if (!res.success) { Alert.alert('Error', res.error?.message || 'Failed to load profile'); return; }
+    if (!res.success) {
+      // NOT_FOUND is not an error to apologise for — it means this account
+      // never finished the registration form, so the screen offers the way
+      // back to it instead of an Alert over a dead end.
+      setLoadError(res.error?.code === 'NOT_FOUND' ? 'no_profile' : 'load_failed');
+      if (res.error?.code !== 'NOT_FOUND') Alert.alert('Error', res.error?.message || 'Failed to load profile');
+      return;
+    }
+    setLoadError(null);
     const b = res.data?.brand || res.data;
     setBrand(b);
     setBusinessName(b.business_name || '');
@@ -153,9 +162,26 @@ export default function BrandProfileScreen({ navigation }) {
     return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
   if (!brand) {
+    const noProfile = loadError === 'no_profile';
     return (
       <View style={s.center}>
-        <Text style={s.loadingText}>Brand profile not found. Please complete registration first.</Text>
+        <Text style={s.recoverTitle}>
+          {noProfile ? 'Your business details are missing' : "Couldn't load your profile"}
+        </Text>
+        <Text style={s.loadingText}>
+          {noProfile
+            ? 'This account was signed up but the business registration form was never completed. Sign in again to finish it — it takes a minute.'
+            : 'We could not reach the server. Check your connection and try again.'}
+        </Text>
+        <TouchableOpacity
+          style={s.recoverBtn}
+          activeOpacity={0.85}
+          onPress={noProfile
+            ? async () => { await clearSession(); setAppRole(''); }
+            : loadProfile}
+        >
+          <Text style={s.recoverBtnText}>{noProfile ? 'Complete registration' : 'Try again'}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -401,6 +427,9 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, textAlign: 'center' },
+  recoverTitle: { fontFamily: fonts.displayBold, fontSize: 16, fontWeight: '800', color: P.ink, textAlign: 'center', marginBottom: 8 },
+  recoverBtn: { marginTop: 20, backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 26, alignItems: 'center' },
+  recoverBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
 
   hero: { backgroundColor: P.ink, padding: 20, paddingTop: 52, alignItems: 'center' },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 11 },

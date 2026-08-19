@@ -40,6 +40,8 @@ export default function OTPScreen({ navigation, route }) {
   const inputRefs = useRef([]);
   const autoVerifyTimer = useRef(null);
   const hasAutoVerified = useRef(false);
+  const verifyInFlight   = useRef(false);
+  const verified         = useRef(false);
 
   // ── Clipboard auto-read (preserved) ──
   const checkClipboardForOtp = useCallback(async () => {
@@ -104,6 +106,7 @@ export default function OTPScreen({ navigation, route }) {
     setError('');
     setOtp(['', '', '', '', '', '']);
     hasAutoVerified.current = false;
+    verified.current        = false;
     setResending(true);
     const res = await authApi.sendOtp(phone);
     setResending(false);
@@ -113,12 +116,22 @@ export default function OTPScreen({ navigation, route }) {
   async function handleVerify() {
     const otpStr = otp.join('');
     if (otpStr.length < 6) return;
+    // Hard in-flight lock. `loading` is React state, so the auto-verify timer
+    // and a manual tap landing in the same tick both saw it as false and each
+    // sent a verify-otp. The second call always failed (the code is marked
+    // used on first verify) and its error tore down the session the first call
+    // had just created. A ref flips synchronously, so only one call can ever
+    // be in flight; `verified` then keeps a consumed code from being re-sent.
+    if (verifyInFlight.current || verified.current) return;
+    verifyInFlight.current = true;
     setError('');
     setLoading(true);
 
     const res = await authApi.verifyOtp(phone, otpStr, role);
     setLoading(false);
+    verifyInFlight.current = false;
     if (!res.success) { setError(res.error?.message || 'Invalid OTP'); return; }
+    verified.current = true;
 
     const { access_token, refresh_token, user } = res.data;
 

@@ -97,9 +97,20 @@ async function fetchOnce(method, path, body, token) {
   }
 }
 
+// Endpoints that ESTABLISH a session rather than consume one. A 401 from any
+// of these is the server's business answer ("Invalid or expired OTP"), not a
+// statement about the caller's stored session — so the refresh-and-clear dance
+// below must never run on them. It used to: a mistyped or already-used OTP
+// returned 401, the client "refreshed", retried, got 401 again and wiped the
+// tokens the user had just been issued seconds earlier. The visible damage was
+// a brand who signed in fine, reached the registration form with no session
+// left, and was told "Please sign in to continue." on submit — leaving a users
+// row with no matching brands row.
+const SESSION_ESTABLISHING_PATHS = ['/auth/refresh', '/auth/send-otp', '/auth/verify-otp'];
+
 async function request(method, path, body) {
-  // Skip refresh dance for the refresh endpoint itself.
-  const isRefreshCall = path === '/auth/refresh';
+  // Skip the refresh dance for the endpoints that hand out sessions.
+  const isSessionEstablishing = SESSION_ESTABLISHING_PATHS.includes(path.split('?')[0]);
   let token = await getToken();
 
   try {
@@ -109,7 +120,7 @@ async function request(method, path, body) {
     // The session is cleared ONLY when the server definitively rejects the
     // refresh token — a transient refresh failure is retryable and must
     // never wipe locally-stored tokens that are still valid server-side.
-    if (res.status === 401 && !isRefreshCall) {
+    if (res.status === 401 && !isSessionEstablishing) {
       const refreshed = await tryRefreshAccessToken();
       if (refreshed.token) {
         res = await fetchOnce(method, path, body, refreshed.token);
