@@ -23,8 +23,9 @@ Nothing gets built that isn't a row in the ledger.
 
 - One migration flipping approved brands to pitchable. Reversible per brand, and reversible
   wholesale if it goes badly.
-- The brand's five pitch filters (Phase 1) should land **before or with** it, so a brand who
-  starts receiving pitches has something to filter them with on day one.
+- A brand who suddenly starts receiving pitches **already has the controls** to turn them
+  off and filter them, on both the phone and the desk. Nothing needs to land first.
+  *(Corrected 2026-08-15 — I had recorded these as missing.)*
 - It is the only outward-facing change in the whole programme — worth its own line in the
   deploy note rather than riding in quietly.
 
@@ -74,12 +75,14 @@ other.
 - **Products carry their category everywhere.** All 92 products are labelled and not one screen
   is sent the label, so everything is a flat list. Fixing the three places that serve products
   fixes browsing, campaign scope and her shelf at once.
-- **The brand can set who may pitch them.** Six settings with a working backend and no screen
-  anywhere.
+- ~~**The brand can set who may pitch them.**~~ **REMOVED 2026-08-15 — it already exists.**
+  On checking the apps rather than trusting my own earlier note, a brand can already turn
+  pitches on and off and set all five filters, on both the phone and the desk, and it has
+  its own contract. I had recorded it as missing in four places and not one of those was
+  checked against the apps. Corrected everywhere. **Phase 1 is two items, not three.**
 
 **Final output.** She opens a collaboration and sees what it paid, which products sold and
-which post sold them. Anyone looking at products sees them grouped by kind. A brand can finally
-turn pitches on and filter them.
+which post sold them. Anyone looking at products sees them grouped by kind.
 
 **Layers.** Backend for the money grouping and the category fields. Both apps for the screens.
 No database change.

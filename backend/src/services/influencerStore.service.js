@@ -104,7 +104,9 @@ async function listStore(influencerId, client = db) {
 // brands), flagged with whether each is already stocked — powers the stocking UI.
 async function listStockable(influencerId, client = db) {
   const { rows } = await client.query(
+    // collab-phase1 — carries the product's own kind so her shelf can be grouped.
     `SELECT bp.id AS product_id, bp.name AS product_name, bp.price, bp.image_url, bp.section,
+            bp.category_key, bp.super_category, bp.category_node_id,
             b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
             EXISTS (
               SELECT 1 FROM influencer_store_inventory isi

@@ -9,6 +9,9 @@
  */
 
 const db = require('../config/db');
+// collab-phase1 — the two breakdowns this detail was missing: which products sold
+// (including the ones that did not) and which of her posts sold them.
+const breakdowns = require('./collabEarnings.service');
 const env = require('../config/env');
 
 /**
@@ -208,7 +211,7 @@ async function getInfluencerCampaignEarnings(influencerId) {
        ee.status,
        ee.released_at,
        ee.trigger_event,
-       ee.created_at
+       ee.triggered_at AS created_at
      FROM escrow_entries ee
      WHERE ee.campaign_influencer_id = ANY($1)
      ORDER BY ee.tranche_number ASC`,
@@ -338,7 +341,7 @@ async function getCampaignCommissionDetail(campaignInfluencerId, influencerId) {
        ee.status,
        ee.released_at,
        ee.trigger_event,
-       ee.created_at
+       ee.triggered_at AS created_at
      FROM escrow_entries ee
      WHERE ee.campaign_influencer_id = $1
      ORDER BY ee.tranche_number ASC`,
@@ -402,6 +405,12 @@ async function getCampaignCommissionDetail(campaignInfluencerId, influencerId) {
   const commConfirmed = commissionData.filter(c => c.status === 'confirmed').reduce((s, c) => s + c.commission_amount, 0);
   const commPending = commissionData.filter(c => c.status === 'pending').reduce((s, c) => s + c.commission_amount, 0);
 
+  // collab-phase1 — run together; neither depends on the other.
+  const [products, posts] = await Promise.all([
+    breakdowns.productsFor(campaignInfluencerId),
+    breakdowns.postsFor(campaignInfluencerId),
+  ]);
+
   return {
     campaign_influencer_id: ci.campaign_influencer_id,
     campaign_id: ci.campaign_id,
@@ -414,6 +423,14 @@ async function getCampaignCommissionDetail(campaignInfluencerId, influencerId) {
     commission_pct: ci.commission_pct ? parseFloat(ci.commission_pct) : null,
     tranches: trancheData,
     commissions: commissionData,
+    // collab-phase1 — a product she may sell but has NOT sold appears here showing zero.
+    // That is deliberate: it is what tells her which one is not working.
+    products,
+    posts,
+    // collab-phase1 — a product she may sell but has NOT sold appears here showing zero.
+    // That is deliberate: it is what tells her which one is not working.
+    products,
+    posts,
     summary: {
       tranche_earned: trancheEarned,
       tranche_pending: tranchePending,

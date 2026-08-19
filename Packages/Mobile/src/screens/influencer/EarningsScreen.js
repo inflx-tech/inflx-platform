@@ -86,11 +86,11 @@ export default function EarningsScreen() {
     >
       {/* Hero */}
       <View style={styles.headerCard}>
-        <Text style={styles.heroLabel}>AVAILABLE TO WITHDRAW</Text>
+        <Text style={styles.heroLabel}>YOURS TO KEEP</Text>
         <Text style={styles.heroAmount}>{fmtRupees(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
         <View style={styles.heroMiniRow}>
           <View style={styles.heroMini}>
-            <Text style={styles.heroMiniLabel}>PENDING</Text>
+            <Text style={styles.heroMiniLabel}>IN RETURN WINDOW</Text>
             <Text style={styles.heroMiniVal}>{fmtRupees(earnings?.pending_balance)}</Text>
           </View>
           <View style={styles.heroMini}>
@@ -102,6 +102,11 @@ export default function EarningsScreen() {
             <Text style={styles.heroMiniVal}>{fmtRupees(earnings?.total_earned)}</Text>
           </View>
         </View>
+        {/* collab-phase1 — say WHY money is held. Read as "pending", a creator assumes it
+            is arriving next week; when it does not, she stops trusting the number. */}
+        <Text style={styles.heroNote}>
+          Commission becomes yours 30 days after each sale, once it can no longer be returned.
+        </Text>
         <View style={styles.headerAccent} />
       </View>
 
@@ -306,6 +311,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
   },
   heroMiniVal: { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.85)', fontFamily: fonts.monoBold },
+  heroNote: {
+    fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 12, lineHeight: 16,
+    fontFamily: fonts.monoMedium,
+  },
 
   // Section
   sectionMargin: { margin: 14, marginBottom: 0, marginTop: 14 },

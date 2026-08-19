@@ -1,0 +1,137 @@
+{
+  "feature": "collab-phase1-earnings-and-categories",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-15 chat: \"ok pls lock it and start build\" — after the five changing screens were re-presented",
+  "approved_at": "2026-08-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_note": "features/collab-phase1-earnings-and-categories/04-preview/mockups/phase1-screens.html — the five screens this phase touches, each shown as today-vs-after, extracted from the already-agreed visibility mockup rather than redrawn.",
+  "notes": "LOCKED 2026-08-15. Authored 2026-08-15. Phase 1 of 8. TWO items: (1) what each collaboration actually paid her, split by product and by post, with confirmed money shown apart from money still in the return window; (2) products arrive with their kind attached so the three places she meets a product group them instead of showing one flat list. No database change. Nothing visible moves tab or screen.",
+  "programme": {
+    "plan": "features/collab-programme/00-phase-plan.md",
+    "phase": 1,
+    "of": 8,
+    "depends_on": "nothing — can start immediately",
+    "blocks": "nothing"
+  },
+  "correction_that_changed_this_phase": {
+    "what_i_got_wrong": "I recorded in four places — the action ledger, the phase plan, the Phase 0 lock, and FINAL 1 panel 1 — that a brand had no screen for controlling who may pitch them. That is FALSE. A brand can already turn pitches on and off and set all five filters, on the phone and on the desk, shipped under features/brand-mobile-proposal-filters.",
+    "how_it_happened": "I checked the server endpoints and the web dashboard folder, and never once opened the brand's phone app. That is the repo's own check-it-twice rule and I did not follow it.",
+    "consequence": "Phase 1 drops from three items to two. Phase 3 no longer has a dependency on it. All four records corrected 2026-08-15."
+  },
+  "scope": {
+    "in": [
+      "Add up what each collaboration paid her, from sales already recorded and already stamped with campaign, creator, offer and product",
+      "Inside a collaboration: which of that brand's products sold, and which of her posts sold them",
+      "Money she can count on shown APART from money still in the 30-day return window, everywhere it appears",
+      "Products arrive carrying their kind, in all three places she meets one: browsing a brand, seeing what she may sell in a campaign, and her own shelf",
+      "Unlabelled products group under 'Other' rather than disappearing"
+    ],
+    "out": [
+      "Any change to how money is calculated. This shows money that already exists, grouped a new way — no rate, rule or payout timing moves.",
+      "The brand's pitch controls — already built, see the correction above.",
+      "How a post performed (views, taps, saves). Nothing measures those yet.",
+      "Any navigation change. Nothing moves tab or screen — that is Phase 2.",
+      "The brand seeing sales cut by creator, product and post — that is Phase 8. I drafted it into this phase, then checked against the approved plan and pulled it back out. The groundwork here makes Phase 8 cheaper; it does not do Phase 8."
+    ]
+  },
+  "why_this_is_the_cheapest_real_win": "Nothing needs recording that is not already recorded. Every sale already carries which campaign, creator, offer and product it came from, and there are real correctly-stamped sales in the system now. Nobody ever wrote the line that adds them up per collaboration. Likewise every product already carries its kind — the screens simply were never sent it.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "Server plus both phone apps. NO DATABASE CHANGE — nothing to run beforehand and no data risk, which is unusual for this programme and worth stating. Explicit founder go still required before it goes out.",
+    "deploy_targets": [
+      "Render (server)",
+      "Over-the-air update (creator app + brand app)"
+    ],
+    "not_targets": [
+      "No migration",
+      "Vercel — no web change planned"
+    ],
+    "qa_baseline": 319,
+    "safe_for_stale_clients": "YES. The server sends more than before and removes nothing, so a phone that has not updated ignores the new fields and behaves exactly as it does today. Asserted as check P18.",
+    "qa_evidence": {
+      "ran_at": "2026-08-15",
+      "backend": "319 passed",
+      "app": "143 passed across 29 suites",
+      "bundle": "a full production build of the app succeeds",
+      "nothing_weakened": "no check skipped, deleted or loosened"
+    },
+    "honest_gap": "No money figure has been seen with real money in it. No creator has earned anything yet, so the breakdowns are proved correct in shape and proved to return zero — they have never been watched working on a live sale."
+  },
+  "verification": {
+    "checks": 20,
+    "file": "03-expected-outputs.md",
+    "the_three_that_matter_most": [
+      "P1 — the per-collaboration amounts must sum exactly to the lifetime figure she already sees. If they do not, a sale has been double-counted or lost, and showing her a wrong number about her own pay is worse than showing nothing.",
+      "P15 — the product's kind must arrive at the screen, not merely exist in storage. A label computed and then dropped before it reaches the app is a label that does not exist; that exact failure has happened in this system before.",
+      "P9 — a brand must not be able to reach anything beyond their own campaign. Not hidden on screen: unreachable."
+    ],
+    "test_data": "The sales already in the system. They are real and correctly stamped, so the totals have a right answer to check against rather than an invented one."
+  },
+  "flagged_risks": {
+    "trust_not_breakage": "The real exposure is showing a creator a number about her own pay. If the parts do not add up to the whole she will believe one is wrong, and she will be right. If money she can count on is blended with money still settling, she expects an amount and receives less. That is the fastest way to lose her confidence.",
+    "boundary_queries_are_new": "Cutting sales by creator means fresh queries walking from a campaign to a creator. The line about what a brand may see is not new, but this phase writes new queries across it, so it gets its own checks rather than being assumed.",
+    "makes_the_invisible_visible": "If attribution has ever been wrong, this is the phase where a creator finds out. That is the right outcome and worth being ready for rather than surprised by."
+  },
+  "stop_and_ask": [
+    "If the parts do not add up to the whole — that means I have misread how a sale is stamped, and I would rather ask than pick an interpretation and put a wrong number in front of a creator.",
+    "If most products turn out to be unlabelled — a handful in 'Other' is fine; if it is the majority, grouping is cosmetic and labelling is the real conversation."
+  ],
+  "progress": {
+    "as_of": "2026-08-15",
+    "status": "BUILT — awaiting deploy",
+    "remaining": [
+      "Deploy: server release plus an update to the creator app."
+    ]
+  },
+  "screens_changing": [
+    {
+      "screen": "Her earnings",
+      "state": "CHANGES",
+      "what": "Lifetime total stays exactly where it is. A split by collaboration appears beneath it, and confirmed money is shown apart from money still in the return window."
+    },
+    {
+      "screen": "Inside one collaboration — what it paid",
+      "state": "NEW",
+      "what": "What this collaboration paid her, which of that brand products sold, and which of her posts sold them."
+    },
+    {
+      "screen": "Browsing a brand catalogue",
+      "state": "CHANGES",
+      "what": "Grouped by kind instead of one flat list. Nothing else on the screen moves."
+    },
+    {
+      "screen": "What she can sell in a campaign",
+      "state": "CHANGES",
+      "what": "Same grouping, same words. The scope itself is unchanged."
+    },
+    {
+      "screen": "Her own shelf",
+      "state": "CHANGES",
+      "what": "Grouped by kind, still filterable by brand."
+    }
+  ],
+  "mockup_locked_by": "founder 2026-08-15 — the five changing screens were pulled from the agreed mockups and shown side by side with today, then locked with the phase",
+  "mockup_locked_at": "2026-08-15",
+  "what_it_turned_out_to_be": {
+    "note": "The contract predicted two items. Building it found that most of the first was already built, part of the second had nowhere to live, and one thing nobody knew about was broken. Recorded rather than tidied away.",
+    "already_existed": [
+      "The brand pitch controls — fully built on the phone and the desk, with their own contract. I had recorded them as missing in four places.",
+      "Her earnings split by collaboration — already built and already rendering. I built a duplicate and removed it."
+    ],
+    "nowhere_to_live": "Product grouping was written as three screens. Only ONE exists. Her shelf and browsing-a-brand-while-pitching are server capability with nothing in the app calling them — the browse one does not even have a helper. Those belong to later phases.",
+    "found_and_fixed": "Two earnings screens were already failing: the server asked the database for a date field that does not exist on that table. Any creator with a campaign would have hit it. It survived because the code returns early for creators with no campaigns, and until recently that was nearly everyone.",
+    "genuinely_new": [
+      "Which products sold in a collaboration, INCLUDING the ones that sold nothing",
+      "Which of her posts sold them",
+      "The two money labels renamed, with the reason written underneath",
+      "One product screen grouped by kind, with an Other group for unlabelled stock",
+      "The product kind now reaches the app from all three server places, ready for the two screens that do not yet exist"
+    ]
+  }
+}

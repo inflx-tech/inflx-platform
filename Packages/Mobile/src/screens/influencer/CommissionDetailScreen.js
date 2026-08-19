@@ -65,7 +65,10 @@ export default function CommissionDetailScreen({ route, navigation }) {
     );
   }
 
-  const { tranches, commissions, summary } = data;
+  // collab-phase1 — products and posts are new. Default to [] so an older server
+  // response (or a phone that loads before the server update) renders nothing rather
+  // than crashing on undefined.
+  const { tranches, commissions, summary, products = [], posts = [] } = data;
   const visibleCommissions = showAllCommissions ? commissions : commissions.slice(0, 5);
 
   // currentTrancheIdx = the index of the first non-released tranche
@@ -232,6 +235,69 @@ export default function CommissionDetailScreen({ route, navigation }) {
               )}
             </>
           )}
+
+        {/* collab-phase1 — WHICH PRODUCTS SOLD.
+            Every product she is allowed to sell appears, including the ones that sold
+            nothing. That is the point of the section: a zero tells her which product is
+            not working, and a list built only from sales could never show it. */}
+        {products.length > 0 && (
+          <>
+            <View style={styles.sectionTitleWrap}>
+              <Text style={styles.sectionTitle}>What sold</Text>
+            </View>
+            {products.map(pr => (
+              <View key={pr.product_id} style={styles.txRow}>
+                <View style={styles.txContent}>
+                  <View style={styles.txHeader}>
+                    <Text style={styles.txType} numberOfLines={1}>{pr.product_name}</Text>
+                    <Text style={[styles.txAmount, pr.units > 0 && { color: P.successText }]}>
+                      {pr.units > 0 ? fmtRupees(Math.round(pr.commission)) : '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.txFooter}>
+                    <Text style={styles.txDate}>
+                      {pr.units > 0
+                        ? `${pr.units} SOLD · ${fmtRupees(Math.round(pr.sales))}`
+                        : 'NONE SOLD YET'}
+                    </Text>
+                    {!!pr.category_key && (
+                      <Text style={styles.txPendingDays}>{String(pr.category_key).toUpperCase()}</Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* collab-phase1 — WHICH POST SOLD THEM.
+            Every sale already recorded the post the shopper came through; nothing ever
+            read it back. A sale counts for exactly one post, never split between two. */}
+        {posts.length > 0 && (
+          <>
+            <View style={styles.sectionTitleWrap}>
+              <Text style={styles.sectionTitle}>Which post sold them</Text>
+            </View>
+            {posts.map(po => (
+              <View key={po.post_id} style={styles.txRow}>
+                <View style={styles.txContent}>
+                  <View style={styles.txHeader}>
+                    <Text style={styles.txType} numberOfLines={1}>
+                      {po.caption || (po.media_kind === 'video' ? 'Video post' : 'Post')}
+                    </Text>
+                    <Text style={[styles.txAmount, { color: P.successText }]}>
+                      {fmtRupees(Math.round(po.commission))}
+                    </Text>
+                  </View>
+                  <View style={styles.txFooter}>
+                    <Text style={styles.txDate}>{po.orders} ORDER{po.orders === 1 ? '' : 'S'} · {fmtRupees(Math.round(po.sales))}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+
         </>
       )}
 

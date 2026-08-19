@@ -24,7 +24,7 @@
     ]
   },
   "founder_decisions_2026_08_15": {
-    "A": "APPROVED BRANDS ARE PITCHABLE BY DEFAULT. Affects Phase 3, not this one. Outward-facing: 25 brands go from unreachable to reachable in one migration. The brand's five pitch filters (Phase 1) should land before or with it.",
+    "A": "APPROVED BRANDS ARE PITCHABLE BY DEFAULT. Affects Phase 3, not this one. Outward-facing: 25 brands go from unreachable to reachable in one migration. CORRECTED 2026-08-15: the on/off switch and all five filters already exist on both surfaces, so nothing needs to land before it.",
     "B": "THE INSTAGRAM HOLD LIFTS ON ONE LIVE SHOP POST. Affects Phase 7.",
     "C": "MEDIA LIBRARY extend-vs-rebuild DEFERRED to Phase 7, decided when that phase opens.",
     "process_addition": "A SCREEN RE-CHECK before the first screen of any phase is built — restate in plain language what is actually about to be built, screen by screen, against that phase's mockup. Recorded as step 7 of the per-phase checklist. Does not apply to Phase 0, which has no screens."
@@ -43,7 +43,7 @@
     "out": [
       "Any screen in any app. Zero files under Packages/* are touched.",
       "Backfilling old history. The diary starts the day it ships; what was overwritten is gone, and inventing it would put fiction on a screen two people use to settle disagreements.",
-      "The brand's pitch settings screen — that is Phase 1.",
+      "The brand pitch settings screen — and NOT because it is Phase 1. CORRECTED 2026-08-15: it already exists on both the phone and the desk, with its own contract (features/brand-mobile-proposal-filters). My earlier note that it had no screen anywhere was never checked against the apps.",
       "Rendering the step number or the needs-you count anywhere — Phases 2 and 4."
     ]
   },
@@ -134,5 +134,10 @@
     "remaining": [
       "Nothing for Phase 0. Next: Phase 1 — per-collaboration earnings, product categories, brand pitch settings."
     ]
-  }
+  },
+  "corrections_after_ship": {
+    "pitch_settings_already_existed": "I recorded in four places — the action ledger (actions 6-11), the phase plan, this lock file, and FINAL 1 panel 1 — that a brand had no screen for controlling who may pitch them. FALSE. ProposalFiltersSheet.js on mobile and a settings panel on brand-web both edit the master switch and all five filters, shipped under features/brand-mobile-proposal-filters. The error came from checking the endpoints and the web dashboard folder but never the mobile brand app — a verify-twice failure. Phase 1 drops from three items to two."
+  },
+  "ui_governed": false,
+  "ui_governed_note": "Phase 0 touched ZERO files in either app — it was database and server only, and its own scope says so. The mockup and diff gates do not apply. This is honoured only because another contract in the same push (collab-phase1-earnings-and-categories) does carry the UI and is mockup-locked, so the app changes are never left uncovered."
 }

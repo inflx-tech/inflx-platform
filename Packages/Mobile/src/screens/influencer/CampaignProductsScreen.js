@@ -51,6 +51,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [editingNote, setEditingNote] = useState(null); // product_id being edited
+  const [activeKind, setActiveKind] = useState(null);   // collab-phase1 — chip filter
   const [noteText, setNoteText] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -120,6 +121,26 @@ export default function CampaignProductsScreen({ navigation, route }) {
   const brand = data?.brand;
   const notedCount = products.filter(p => p.influencer_note).length;
 
+  // collab-phase1 — group by the product's own kind, not the shop's trade.
+  // Every product already carries a kind; this screen was simply never sent it, which is
+  // why it could only ever be one flat list. Anything not yet labelled goes to 'Other' so
+  // it stays visible and sellable — hiding it would hide real stock, and hide the gap.
+  const groups = React.useMemo(() => {
+    const by = new Map();
+    for (const pr of products) {
+      const key = pr.category_key || pr.super_category || 'Other';
+      if (!by.has(key)) by.set(key, []);
+      by.get(key).push(pr);
+    }
+    // 'Other' always last, however many there are.
+    return [...by.entries()].sort((a, b) =>
+      a[0] === 'Other' ? 1 : b[0] === 'Other' ? -1 : a[0].localeCompare(b[0]));
+  }, [products]);
+
+  const visible = activeKind
+    ? groups.filter(([k]) => k === activeKind)
+    : groups;
+
   return (
     <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}>
       {/* Header */}
@@ -175,7 +196,31 @@ export default function CampaignProductsScreen({ navigation, route }) {
       </View>
 
       {/* Products list */}
-      {products.map(product => {
+      {/* collab-phase1 — one chip per kind, only when there is more than one to choose. */}
+      {groups.length > 1 && (
+        <View style={s.kindChips}>
+          <TouchableOpacity onPress={() => setActiveKind(null)}
+            style={[s.kindChip, !activeKind && s.kindChipOn]}>
+            <Text style={[s.kindChipTxt, !activeKind && s.kindChipTxtOn]}>ALL {products.length}</Text>
+          </TouchableOpacity>
+          {groups.map(([kind, items]) => (
+            <TouchableOpacity key={kind} onPress={() => setActiveKind(kind === activeKind ? null : kind)}
+              style={[s.kindChip, activeKind === kind && s.kindChipOn]}>
+              <Text style={[s.kindChipTxt, activeKind === kind && s.kindChipTxtOn]}>
+                {String(kind).toUpperCase()} {items.length}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {visible.map(([kind, items]) => (
+        <View key={kind}>
+          <View style={s.kindHeader}>
+            <Text style={s.kindHeaderTxt}>{String(kind).toUpperCase()}</Text>
+            <Text style={s.kindHeaderCount}>{items.length}</Text>
+          </View>
+      {items.map(product => {
         const isEditing = editingNote === product.id;
         const discount = data?.offers?.[0]?.discount_value;
 
@@ -273,6 +318,8 @@ export default function CampaignProductsScreen({ navigation, route }) {
           </View>
         );
       })}
+        </View>
+      ))}
 
       {products.length === 0 && (
         <View style={s.empty}>
@@ -315,6 +362,27 @@ const s = StyleSheet.create({
   stat: { flex: 1, alignItems: 'center' },
   statVal: { fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
   statLabel: { fontSize: 9, color: P.muted2, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700', fontFamily: fonts.monoMedium },
+
+  // collab-phase1 — the kind chips and section headers. Deliberately matched to this
+  // screen's existing idiom (yellow-pale selected state, ink text, bordered cards) rather
+  // than a new look, because only the arrangement is changing.
+  kindChips: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 7,
+    marginHorizontal: 14, marginTop: 4, marginBottom: 10,
+  },
+  kindChip: {
+    paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999,
+    borderWidth: 1, borderColor: P.border, backgroundColor: P.white,
+  },
+  kindChipOn: { backgroundColor: P.ink, borderColor: P.ink },
+  kindChipTxt: { fontSize: 10.5, color: P.muted, fontFamily: fonts.monoBold, letterSpacing: 0.3 },
+  kindChipTxtOn: { color: P.white },
+  kindHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 14, marginTop: 6, marginBottom: 8,
+  },
+  kindHeaderTxt: { fontSize: 10, color: P.ink, fontFamily: fonts.monoBold, letterSpacing: 0.5 },
+  kindHeaderCount: { fontSize: 10, color: P.muted, fontFamily: fonts.monoMedium },
 
   infoBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 9,

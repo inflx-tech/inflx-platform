@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phase 1 — the five screens that change</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1180px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.badge{font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:6px;letter-spacing:.3px}
+.b-ch{background:var(--yBg);color:var(--yInk)}
+.b-new{background:var(--purpleBg);color:var(--purple)}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:820px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:13px;line-height:1.55;max-width:920px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph.today{opacity:.72;border-style:dashed}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:660px;overflow-y:auto}
+.stamp{text-align:center;font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:6px;text-transform:uppercase}
+.s-now{background:#F2F2F2;color:var(--mut)}
+.s-after{background:var(--ink);color:var(--y)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.dh .new{color:var(--purple)}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:26px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:10px 12px;font-size:11.5px;font-weight:700;line-height:1.5}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.frow{padding:10px 14px 3px}
+.srch{margin:10px 14px 0;border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:11.5px;color:var(--mut2);font-weight:650}
+
+.catrow{border-top:1px solid var(--lineSoft);padding:9px 12px}
+.cathd{display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:var(--text2);letter-spacing:.2px;margin-bottom:7px}
+.cathd .n{color:var(--mut2);font-family:'JetBrains Mono';font-size:9.5px}
+.prow{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}
+.pcard{width:62px;flex-shrink:0}
+.pimg{width:62px;height:76px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.pnm{font-size:8.5px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+.flat{display:flex;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--lineSoft)}
+.flat .t{flex:1;font-size:11.5px;font-weight:700}
+.flat .p{font-size:11px;font-weight:800;font-family:'JetBrains Mono'}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1000px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+tr:last-child td{border-bottom:none}
+.st{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ch{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-no{background:var(--lineSoft);color:var(--mut)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Phase 1 — the five screens that change</h1>
+  <p>Pulled from the agreed mockups. Nothing redrawn. · 2026-08-15</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① The five</button>
+  <button class="tab" data-v="v1">② Her earnings</button>
+  <button class="tab" data-v="v2">③ What it paid</button>
+  <button class="tab" data-v="v3">④ Browsing a brand</button>
+  <button class="tab" data-v="v4">⑤ Campaign + shelf</button>
+  <button class="tab" data-v="v5">⑥ Not touching</button>
+</div>
+
+<!-- ① -->
+<div class="view on" id="v0">
+  <div class="vh">Five screens, and what happens to each</div>
+  <div class="vs">Everything here comes from mockups you have already seen. Nothing is a new design — this is the subset Phase 1 actually touches, so you are approving the change rather than a folder.</div>
+
+  <div class="card">
+    <h3>The five</h3>
+    <div class="tscroll"><table>
+      <tr><th></th><th>Screen</th><th></th><th>What is different</th></tr>
+      <tr><td><b>1</b></td><td>Her earnings</td><td><span class="st s-ch">changes</span></td><td>Lifetime total stays exactly where it is. A split by collaboration appears beneath it.</td></tr>
+      <tr><td><b>2</b></td><td>Inside one collaboration — what it paid</td><td><span class="st s-nw">new</span></td><td>What it paid, which of that brand's products sold, which of her posts sold them.</td></tr>
+      <tr><td><b>3</b></td><td>Browsing a brand</td><td><span class="st s-ch">changes</span></td><td>Grouped by kind instead of one flat list.</td></tr>
+      <tr><td><b>4</b></td><td>What she can sell in a campaign</td><td><span class="st s-ch">changes</span></td><td>Same grouping. The scope itself is untouched.</td></tr>
+      <tr><td><b>5</b></td><td>Her own shelf</td><td><span class="st s-ch">changes</span></td><td>Grouped by kind, still filterable by brand.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Four of the five already exist.</b> Only one is new — the screen inside a collaboration that says what it paid. The other four keep everything they have and gain one thing each.</div>
+
+  <div class="note key"><b>Where they came from.</b> Screens 1 and 2 are panel ② of the visibility mockup. Screens 3, 4 and 5 are panels ④ and ⑤ of the same file. If anything here looks different from what you remember agreeing, say so — that is exactly what this step is for.</div>
+
+  <div class="note bad"><b>One thing I removed before showing you this.</b> I had drafted the brand getting the same figures cut their way — by creator, by product, by post. Checking against the plan you approved, <b>that is Phase 8</b>, and including it here would have widened the phase without asking. Pulled back out. The brand's per-campaign total already works today and is untouched.</div>
+</div>
+
+<!-- ② EARNINGS -->
+<div class="view" id="v1">
+  <div class="vh">1 · Her earnings <span class="badge b-ch">CHANGES</span></div>
+  <div class="vs">The number she already knows stays put. What appears is where it came from.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph today">
+        <div class="stamp s-now">Today</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Earnings</div><div class="sub">LIFETIME</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">You've earned</div>
+            <div class="big">₹14,000</div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Available</div><div class="v">₹9,700</div></div>
+            <div class="trm"><div class="k">Pending</div><div class="v">₹4,300</div></div>
+          </div>
+          <div class="dsec"><button class="btn sec">Withdraw</button></div>
+          <div class="dsec">
+            <div class="wait n">That is the whole screen. She cannot tell which brand any of it came from.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">What she sees now.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="stamp s-after">After Phase 1</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Earnings</div><div class="sub">LIFETIME</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">You've earned</div>
+            <div class="big">₹14,000</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">ACROSS 2 COLLABORATIONS</div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Yours to keep</div><div class="v" style="color:var(--green)">₹9,700</div></div>
+            <div class="trm"><div class="k">Still in the return window</div><div class="v" style="color:var(--blue)">₹4,300</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Commission becomes yours 30 days after each sale, once it can't be returned.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh"><span class="new">Where it came from · new</span></div>
+            <div class="trm"><div class="k">Kanchi Silks · 18%</div><div class="v">₹9,180</div></div>
+            <div class="trm"><div class="k">Label Fern · 22%</div><div class="v">₹4,820</div></div>
+            <div class="trm"><div class="k">Nova Fit · a fee</div><div class="v" style="font-size:11.5px">₹15,000 separate</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">A fee is shown apart from commission — they behave completely differently.</div>
+          </div>
+          <div class="dsec"><button class="btn sec">Withdraw</button></div>
+        </div>
+      </div>
+      <div class="cap">Two additions. <b>₹14,000 and the Withdraw button do not move.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note key"><b>The rename is deliberate.</b> "Available / Pending" becomes "Yours to keep / Still in the return window", with the reason written underneath. A creator who reads "pending" and assumes it is coming next week is the person who loses trust when it does not.</div>
+      <div class="note good"><b>₹9,180 + ₹4,820 = ₹14,000.</b> If those parts ever fail to add up to the total she already knows, the phase is not done. That is the first thing checked.</div>
+      <div class="note info"><b>The fee sits apart on purpose.</b> Money for posts and money from sales are different promises. Adding them into one figure would make both meaningless.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ WHAT IT PAID -->
+<div class="view" id="v2">
+  <div class="vh">2 · Inside one collaboration — what it paid <span class="badge b-new">NEW</span></div>
+  <div class="vs">The only genuinely new screen in this phase. Reached by tapping a collaboration in the list above.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="stamp s-after">New</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">WHAT THIS PAID YOU</div></div></div>
+        <div class="body">
+          <div class="dsec" style="text-align:center">
+            <div class="dh" style="margin-bottom:4px">Your commission</div>
+            <div class="big">₹9,180</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:700;margin-top:4px">FROM ₹51,000 OF SALES · AT 18%</div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k">Yours to keep</div><div class="v" style="color:var(--green)">₹6,300</div></div>
+            <div class="trm"><div class="k">Still in the return window</div><div class="v" style="color:var(--blue)">₹2,880</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Which of their products sold</div>
+            <div class="trm"><div class="k">🥻 Kanjivaram — Maroon<br><span style="font-size:10px;color:var(--mut2)">2 SOLD</span></div><div class="v">₹37,000<br><span style="font-size:10px;color:var(--green)">₹6,660 yours</span></div></div>
+            <div class="trm"><div class="k">🥻 Cotton Handloom<br><span style="font-size:10px;color:var(--mut2)">1 SOLD</span></div><div class="v">₹14,000<br><span style="font-size:10px;color:var(--green)">₹2,520 yours</span></div></div>
+            <div class="trm"><div class="k">🥻 Banarasi — Gold<br><span style="font-size:10px;color:var(--mut2)">0 SOLD</span></div><div class="v" style="color:var(--mut2)">—</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Which of your posts sold them</div>
+            <div class="trm"><div class="k">Festive Sarees</div><div class="v">₹37,000</div></div>
+            <div class="trm"><div class="k">Draped Three Ways</div><div class="v">₹14,000</div></div>
+            <div class="trm"><div class="k">Your Instagram reel</div><div class="v" style="color:var(--mut2)">—</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">A sale counts for whichever post the shopper came through. Never split between two.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Three questions answered: how much, from what, and through which post.</div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note good"><b>A product that sold nothing still appears.</b> "Banarasi Gold — 0 sold" is information: it tells her which of the three sarees is not working. Dropping it would hide that.</div>
+
+      <div class="card">
+        <h3>Everything on this screen already exists in the records</h3>
+        <div class="tscroll"><table>
+          <tr><th>Shown</th><th>Where it comes from</th></tr>
+          <tr><td>₹51,000 of sales</td><td>Sales already stamped with this campaign and this creator</td></tr>
+          <tr><td>18%</td><td>The rate you both agreed</td></tr>
+          <tr><td>Which product sold</td><td>Every sale already names its product</td></tr>
+          <tr><td>Which post sold it</td><td>Every sale already names how the shopper arrived</td></tr>
+          <tr><td>Kept vs still settling</td><td>The 30-day return window, already tracked</td></tr>
+        </table></div>
+        <div class="note good" style="max-width:none;margin:11px 0 0">Not one new thing needs recording. This is arithmetic over what is already there — which is why it is the cheapest real win on the list.</div>
+      </div>
+
+      <div class="note info"><b>The Instagram reel shows a dash, not zero.</b> It has not sold anything <i>through the shop</i>, and that is normal — a reel drives people to the shop rather than selling directly. A zero would read as failure.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ BROWSING A BRAND -->
+<div class="view" id="v3">
+  <div class="vh">3 · Browsing a brand <span class="badge b-ch">CHANGES</span></div>
+  <div class="vs">One change: the products arrive carrying their kind, so they can be grouped.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph today">
+        <div class="stamp s-now">Today</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">FASHION</div></div></div>
+        <div class="body">
+          <div class="srch">🔍 Search by name…</div>
+          <div style="padding:10px 14px 4px;font-size:9.5px;font-weight:800;color:var(--mut);letter-spacing:.5px">39 PRODUCTS · NEWEST FIRST</div>
+          <div class="flat"><div class="pimg" style="width:34px;height:42px;font-size:14px">🥻</div><div class="t">Kanjivaram Maroon</div><div class="p">₹18,500</div></div>
+          <div class="flat"><div class="pimg" style="width:34px;height:42px;font-size:14px">🥻</div><div class="t">Handloom Indigo</div><div class="p">₹4,200</div></div>
+          <div class="flat"><div class="pimg" style="width:34px;height:42px;font-size:14px">🥻</div><div class="t">Sequin Rose</div><div class="p">₹15,000</div></div>
+          <div class="flat"><div class="pimg" style="width:34px;height:42px;font-size:14px">🥻</div><div class="t">Banarasi Gold</div><div class="p">₹24,000</div></div>
+          <div class="flat"><div class="pimg" style="width:34px;height:42px;font-size:14px">🥻</div><div class="t">Mangalgiri Rust</div><div class="p">₹3,600</div></div>
+          <div class="dsec"><div class="wait n">One list of 39, newest first. The only label anywhere on this screen is "fashion" — which is the shop's trade, not the saree's kind.</div></div>
+        </div>
+      </div>
+      <div class="cap">What she sees now. <b>Scroll and hope.</b></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="stamp s-after">After Phase 1</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Kanchi Silks</div><div class="sub">39 PRODUCTS · SAREES</div></div></div>
+        <div class="body">
+          <div class="srch">🔍 Search by name…</div>
+          <div class="frow" style="padding-bottom:11px">
+            <div class="chips"><span class="chip on">All 39</span><span class="chip">Silk 14</span><span class="chip">Cotton 11</span><span class="chip">Party 8</span><span class="chip">Bridal 6</span></div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>SILK SAREES</span><span class="n">14</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mysore Teal</div><div class="ppr">₹12,400</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>COTTON SAREES</span><span class="n">11</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Handloom Indigo</div><div class="ppr">₹4,200</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Mangalgiri Rust</div><div class="ppr">₹3,600</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>PARTY WEAR</span><span class="n">8</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Sequin Rose</div><div class="ppr">₹15,000</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>OTHER</span><span class="n">6 · NOT LABELLED YET</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">📦</div><div class="pnm">Untagged item</div><div class="ppr">₹1,200</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Same 39 products. <b>Search box unchanged.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>The labels already exist.</b> Every product in the system carries its kind and most sit in a proper tree. Nothing needs sorting — the screens simply were never sent the label.</div>
+      <div class="note key"><b>"Other" is deliberate.</b> Products not yet labelled stay visible and sellable, in a group that names the gap. Hiding them would hide real stock and hide the problem.</div>
+      <div class="note info"><b>What is not changing here:</b> the search box, which products appear, prices, images, or whether she can pitch this brand. Only the arrangement.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ CAMPAIGN + SHELF -->
+<div class="view" id="v4">
+  <div class="vh">4 and 5 · In a campaign, and her own shelf <span class="badge b-ch">BOTH CHANGE</span></div>
+  <div class="vs">The same grouping, in the other two places she meets a product. One piece of work serves all three.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="stamp s-after">After Phase 1</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">What you can sell</div><div class="sub">KANCHI SILKS · FESTIVE SEASON</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait b">You agreed to promote <b>sarees</b>. That's 25 of their 39 products.</div></div>
+          <div class="frow" style="padding-bottom:10px">
+            <div class="chips"><span class="chip on">All 25</span><span class="chip">Silk 14</span><span class="chip">Cotton 11</span></div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>SILK SAREES</span><span class="n">14</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Banarasi Gold</div><div class="ppr">₹24,000</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>COTTON SAREES</span><span class="n">11</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Handloom Indigo</div><div class="ppr">₹4,200</div></div>
+            </div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="wait n">14 products are outside what you agreed — party wear and bridal. <b>That has not changed</b>; it is only laid out more clearly.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">In a campaign. <b>What she may sell is untouched</b> — only how it reads.</div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="stamp s-after">After Phase 1</div>
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your shelf</div><div class="sub">EVERYTHING YOU CAN SELL · 4 BRANDS</div></div></div>
+        <div class="body">
+          <div class="frow">
+            <div style="font-size:9.5px;font-weight:800;color:var(--mut);letter-spacing:.5px;margin-bottom:7px">BRAND</div>
+            <div class="chips"><span class="chip on">All 4</span><span class="chip">Kanchi Silks</span><span class="chip">Label Fern</span></div>
+          </div>
+          <div class="frow" style="padding-bottom:11px">
+            <div style="font-size:9.5px;font-weight:800;color:var(--mut);letter-spacing:.5px;margin-bottom:7px">KIND</div>
+            <div class="chips"><span class="chip on">All 61</span><span class="chip">Sarees 25</span><span class="chip">Dresses 18</span><span class="chip">Denim 12</span><span class="chip">Other 6</span></div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>SAREES · 25</span><span class="n">KANCHI SILKS</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">₹18,500</div></div>
+              <div class="pcard"><div class="pimg">🥻</div><div class="pnm">Handloom Indigo</div><div class="ppr">₹4,200</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>DRESSES · 18</span><span class="n">LABEL FERN</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">👗</div><div class="pnm">Linen Midi Sage</div><div class="ppr">₹3,400</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>OTHER · 6</span><span class="n">NOT LABELLED YET</span></div>
+            <div class="prow">
+              <div class="pcard"><div class="pimg">📦</div><div class="pnm">Untagged item</div><div class="ppr">₹1,200</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Her shelf. <b>Brand filter kept</b>, kind filter added.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>One piece of work, three screens.</b> The same missing label causes the same flat list in all three places. Sending it once fixes all of them.</div>
+      <div class="note key"><b>Nothing about permissions moves.</b> What she may sell in a campaign is exactly what it was — the same products, the same scope. Only the arrangement changes.</div>
+      <div class="note info">If most products turn out to be unlabelled, "Other" will dominate and grouping will not help much. I will tell you rather than ship something that looks worse than the flat list.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ NOT TOUCHING -->
+<div class="view" id="v5">
+  <div class="vh">What this phase does not touch</div>
+  <div class="vs">The usual worry is "you didn't change my X, did you?". Here is the list.</div>
+
+  <div class="card">
+    <h3>Money</h3>
+    <div class="tscroll"><table>
+      <tr><th>Not changing</th><th></th></tr>
+      <tr><td>Any commission rate</td><td><span class="st s-no">untouched</span></td></tr>
+      <tr><td>The 30-day return window</td><td><span class="st s-no">untouched</span></td></tr>
+      <tr><td>When and how she is paid</td><td><span class="st s-no">untouched</span></td></tr>
+      <tr><td>Fees, payment stages, the wallet</td><td><span class="st s-no">untouched</span></td></tr>
+      <tr><td>Her lifetime total</td><td><span class="st s-no">same to the rupee</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Everything else</h3>
+    <div class="tscroll"><table>
+      <tr><th>Not changing</th><th></th></tr>
+      <tr><td>Where anything lives — no tab or screen moves</td><td><span class="st s-no">Phase 2</span></td></tr>
+      <tr><td>What she is allowed to sell in any campaign</td><td><span class="st s-no">untouched</span></td></tr>
+      <tr><td>The brand's controls over who may pitch them</td><td><span class="st s-no">already built</span></td></tr>
+      <tr><td>The brand's sales cut by creator, product, post</td><td><span class="st s-no">Phase 8</span></td></tr>
+      <tr><td>How a post performed — views, taps, saves</td><td><span class="st s-no">not measured yet</span></td></tr>
+      <tr><td>Anything in the shopper's app</td><td><span class="st s-no">untouched</span></td></tr>
+      <tr><td>The database</td><td><span class="st s-no">no change at all</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>An old phone keeps working exactly as it does today.</b> The server sends more than before and takes nothing away, so an app that has not updated simply ignores the extra and behaves as it always has.</div>
+
+  <div class="note key"><b>If any of these five screens is not what you remember agreeing, say so now.</b> Changing a drawing costs nothing. Changing it after it is built costs a rebuild.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>

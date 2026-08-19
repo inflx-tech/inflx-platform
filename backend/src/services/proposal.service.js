@@ -483,7 +483,12 @@ async function browseBrandProducts(brandId, { search, limit = 40 } = {}) {
   if (search && String(search).trim()) { params.push(`%${String(search).trim()}%`); where += ` AND name ILIKE $${params.length}`; }
   params.push(Math.min(Number(limit) || 40, 100));
   const { rows } = await db.query(
-    `SELECT id, name, price, image_url FROM brand_products WHERE ${where} ORDER BY created_at DESC NULLS LAST LIMIT $${params.length}`, params);
+    // collab-phase1 — send the product's OWN kind, not just the shop's trade. Every product
+    // already carries it; this screen was simply never given it, which is why it could only
+    // ever render one flat list.
+    `SELECT id, name, price, image_url, category_key, super_category, category_node_id
+       FROM brand_products WHERE ${where}
+      ORDER BY created_at DESC NULLS LAST LIMIT $${params.length}`, params);
   return rows;
 }
 

@@ -1440,7 +1440,8 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   let products;
   if (productIds.length > 0) {
     const { rows } = await db.query(
-      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json,
+               category_key, super_category, category_node_id
        FROM brand_products WHERE brand_id = $1 AND id = ANY($2) AND is_active = true
        ORDER BY section NULLS LAST, name`,
       [ci.brand_id, productIds]
@@ -1449,7 +1450,8 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   } else {
     // No specific products at all — return all brand products
     const { rows } = await db.query(
-      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json,
+               category_key, super_category, category_node_id
        FROM brand_products WHERE brand_id = $1 AND is_active = true
        ORDER BY section NULLS LAST, name`,
       [ci.brand_id]
