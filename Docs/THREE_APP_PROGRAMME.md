@@ -315,6 +315,44 @@ build it, then tune it on evidence.
 
 ---
 
+# PART 4b — The agreed screens, and which stage each one belongs to
+
+**Every mockup we agreed is still in the repo.** There are 331 mockup files in total, so the
+problem was never losing them — it was knowing which ones matter for the stage in hand.
+
+This is that index. **A stage's screen re-check reads only the rows below it**, never the
+other 320.
+
+To open any of them: `pnpm preview:open <the folder name>`
+
+| Stage | The agreed screens | Where |
+|---|---|---|
+| **All stages** | **The 160-action ledger** — the governing list. Nothing gets built that is not a row in it | `collab-navigation-spine/04-preview/mockups/03-action-ledger.html` |
+| **1** | Where everything lives in both apps' tabs | `collab-navigation-spine/…/navigation.html` |
+| **1** | Tab arrangement, both apps | `collab-navigation-spine/…/04-tab-arrangement.html` |
+| **1** | Invitations in, pitches out — the creator's side | `creator-collab-conversations/…/conversations.html` |
+| **1** | The brand's Creators tab — search, groups, asking | `brand-mobile-spine/…/final-1-creators.html` |
+| **2** | Follower discovery, all three scopes | `concept-stageb-discover/…/b1-discover.html` |
+| **2** | The creator store surface | `concept-stageb-discover/…/b4-mystore.html` |
+| **2** | The reel screen — from the work we are killing, kept for reference only | `follower-shoppable-reels/…/all-screens.html` |
+| **4** | Campaign, sets, creators | `brand-mobile-spine/…/final-2-campaign.html` |
+| **4** | The drill-down, level by level | `brand-mobile-spine/…/final-4-drilldown.html` |
+| **4, 8** | Step detail, tracking and catalogue | `step-detail-tracking-and-catalogue/…/visibility.html` |
+| **5** | Shoot, parcel, content, completion | `post-agreement-shoot-and-content/…/shoot-and-content.html` |
+| **5** | Delivery and review | `brand-mobile-spine/…/final-3-delivery.html` |
+| **8** | Earnings shape, already agreed and partly built | `collab-phase1-earnings-and-categories/…/phase1-screens.html` |
+
+**Stages 3, 6, 7 and 9 have no agreed screens yet.** Links and codes, comments, dual role and
+the feed were decided as *behaviour*, never drawn. Those stages gain a step: **mockups get
+drawn and locked by you before anything is built**, exactly as we did for the four finals.
+
+**Two things the index deliberately does not do.** It does not treat a mockup as more current
+than the running app — where they disagree, the screen re-check says so and you decide. And it
+does not include the older redesign-flow mockups, which describe screens that have since
+changed; if a stage needs one, it gets checked first and added here.
+
+---
+
 # PART 5 — How each stage will run
 
 Seven steps, every stage, no exceptions.
