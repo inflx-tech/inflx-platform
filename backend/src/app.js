@@ -87,12 +87,11 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Tighter limit on OTP endpoint to prevent SMS abuse
-// In dev (OTP_MOCK=true), allow more requests for testing
-const isDevOtp = process.env.OTP_MOCK === 'true';
+// Tighter limit on OTP endpoint to prevent SMS abuse. Every send now costs a
+// real SMS credit in every non-test environment, so it is never relaxed.
 const otpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: isDevOtp ? 100 : 5,  // 100 in dev, 5 in production
+  max: 5,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many OTP requests. Try again in 1 hour.' } },
   standardHeaders: true,
   legacyHeaders: false,

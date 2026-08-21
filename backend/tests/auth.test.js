@@ -3,6 +3,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const { truncateAll } = require('./helpers/db');
+const { latestOtp } = require('./helpers/factories');
 
 beforeEach(async () => {
   await truncateAll();
@@ -54,9 +55,10 @@ describe('POST /v1/auth/verify-otp', () => {
   });
 
   it('returns 200 with access_token, refresh_token, and user for correct OTP (new user)', async () => {
+    const otp = await latestOtp(phone);
     const res = await request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '000000', role: 'brand', name: 'My Brand' });
+      .send({ phone, otp, role: 'brand', name: 'My Brand' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -70,9 +72,13 @@ describe('POST /v1/auth/verify-otp', () => {
   });
 
   it('returns 401 UNAUTHORIZED for a wrong OTP', async () => {
+    // Codes are random now, so derive a value guaranteed not to match rather
+    // than hardcoding one that could collide (1-in-900k) and flake.
+    const real = await latestOtp(phone);
+    const wrong = real === '111111' ? '222222' : '111111';
     const res = await request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '111111', role: 'brand', name: 'My Brand' });
+      .send({ phone, otp: wrong, role: 'brand', name: 'My Brand' });
 
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe('UNAUTHORIZED');
@@ -82,13 +88,14 @@ describe('POST /v1/auth/verify-otp', () => {
     // Create user on first login
     await request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '000000', role: 'brand', name: 'My Brand' });
+      .send({ phone, otp: await latestOtp(phone), role: 'brand', name: 'My Brand' });
 
-    // Re-send OTP and log in again
+    // Re-send OTP and log in again — the first code is now spent, so this
+    // must read the newly minted one.
     await request(app).post('/v1/auth/send-otp').send({ phone });
     const res = await request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '000000' }); // no role or name needed
+      .send({ phone, otp: await latestOtp(phone) }); // no role or name needed
 
     expect(res.status).toBe(200);
     expect(res.body.data.user.role).toBe('brand');
@@ -97,7 +104,7 @@ describe('POST /v1/auth/verify-otp', () => {
   it('returns 422 VALIDATION_ERROR when role is missing for a new user', async () => {
     const res = await request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '000000' }); // new user but no role
+      .send({ phone, otp: await latestOtp(phone) }); // new user but no role
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
@@ -112,9 +119,10 @@ describe('POST /v1/auth/refresh', () => {
   async function getSession() {
     const phone = '+919000011111';
     await request(app).post('/v1/auth/send-otp').send({ phone });
+    const otp = await latestOtp(phone);
     return request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '000000', role: 'follower', name: 'Refresh Tester' });
+      .send({ phone, otp, role: 'follower', name: 'Refresh Tester' });
   }
 
   it('returns a new access_token when a valid refresh_token cookie is present', async () => {
@@ -142,9 +150,10 @@ describe('POST /v1/auth/logout', () => {
   it('returns 200 and makes the refresh token unusable afterwards', async () => {
     const phone = '+919000022222';
     await request(app).post('/v1/auth/send-otp').send({ phone });
+    const otp = await latestOtp(phone);
     const login = await request(app)
       .post('/v1/auth/verify-otp')
-      .send({ phone, otp: '000000', role: 'follower', name: 'Logout Tester' });
+      .send({ phone, otp, role: 'follower', name: 'Logout Tester' });
 
     const cookie = login.headers['set-cookie'][0];
     const token = login.body.data.access_token;

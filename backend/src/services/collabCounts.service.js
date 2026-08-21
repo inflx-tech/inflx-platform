@@ -221,4 +221,79 @@ async function forCreator(influencerId) {
   };
 }
 
-module.exports = { forBrand, forCreator };
+/**
+ * Stage 0 — her collaborations, each carrying the step number the SERVER derived.
+ *
+ * `forBrand` already returns step and turn per creator inside a campaign. The creator
+ * had no equivalent, so her app had nothing to read and would have had to work the
+ * number out for itself — which is precisely the disagreement this module exists to
+ * prevent. Same calculation, same inputs, her side of the table.
+ *
+ * Contract: features/stage-0-clear-the-decks.
+ */
+async function stepsForCreator(influencerId) {
+  const { rows } = await db.query(
+    `SELECT ci.id                       AS campaign_influencer_id,
+            ci.status                   AS ci_status,
+            cs.id                       AS set_id,
+            cs.name                     AS set_name,
+            cs.goal                     AS set_goal,
+            cam.id                      AS campaign_id,
+            cam.name                    AS campaign_name,
+            b.id                        AS brand_id,
+            b.business_name             AS brand_name,
+            con.status                  AS contract_status,
+            (pe.status = 'completed' OR pe.visit_completed_at IS NOT NULL) AS shoot_done,
+            pe.status                   AS shoot_status,
+            (SELECT count(*)::int FROM deliverables d
+              WHERE d.campaign_influencer_id = ci.id
+                AND d.status IN ('submitted','under_review'))              AS deliverables_awaiting_brand,
+            (SELECT count(*)::int FROM deliverables d
+              WHERE d.campaign_influencer_id = ci.id
+                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs   ON cs.id  = ci.set_id
+       JOIN campaigns cam      ON cam.id = cs.campaign_id
+       JOIN brands b           ON b.id   = cam.brand_id
+       LEFT JOIN contracts con ON con.campaign_influencer_id = ci.id
+       LEFT JOIN production_events pe ON pe.contract_id = con.id
+      WHERE ci.influencer_id = $1
+        AND cam.status NOT IN ('cancelled')
+      ORDER BY cam.created_at DESC`,
+    [influencerId]
+  );
+
+  return rows.map((a) => {
+    // Identical inputs to forBrand's call, so the same collaboration cannot report a
+    // different step to the two sides. The only difference is whose turn "yours" is,
+    // and that is read from `turn`, never recomputed.
+    const derived = step.stepForCollaboration(
+      { status: a.ci_status },
+      {
+        track: a.set_goal === 'engagement' ? 'content' : (a.set_goal === 'hybrid' ? 'both' : 'sales'),
+        contractSignedByBoth: a.contract_status === 'active',
+        shootDone: !!a.shoot_done,
+        shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
+        socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
+                   : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
+      }
+    );
+    return {
+      campaign_influencer_id: a.campaign_influencer_id,
+      campaign_id:   a.campaign_id,
+      campaign_name: a.campaign_name,
+      set_id:        a.set_id,
+      set_name:      a.set_name,
+      brand_id:      a.brand_id,
+      brand_name:    a.brand_name,
+      track:         a.set_goal === 'engagement' ? 'content' : (a.set_goal === 'hybrid' ? 'both' : 'sales'),
+      step:          derived.step,
+      step_label:    step.STEP_LABEL[derived.step] || null,
+      turn:          derived.turn,
+      closed:        !!derived.closed,
+      own:           step.owes(derived, step.TURN.YOU_CREATOR),
+    };
+  });
+}
+
+module.exports = { forBrand, forCreator, stepsForCreator };

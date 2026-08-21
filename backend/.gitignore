@@ -1,8 +1,15 @@
 node_modules/
 .env
+.env.staging
+.env.prod-backup
 *.log
 coverage/
 .DS_Store
 Thumbs.db
 tmp/
 /tmp/inflx-uploads/
+
+# Wipe backups and practice-world manifests hold real phone numbers and account
+# rows. They are operational artefacts, not source, and must never reach the repo.
+scripts/_backups/
+scripts/practice-world.manifest*.json

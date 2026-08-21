@@ -214,7 +214,12 @@ export const geoApi = {
 
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
-  verifyOtp: (phone, otp, name) => api.post('/auth/verify-otp', { phone, otp, role: 'brand', ...(name && { name }) }),
+  // Stage 0, job C — one number, many roles.
+  // This door serves brands AND admins, so it must not claim a role it cannot know.
+  // `default_role` means "use whatever account this number already holds; create a
+  // brand only if it holds none". Sending role:'brand' here would, under the new
+  // per-role lookup, silently turn every admin into a pending brand.
+  verifyOtp: (phone, otp, name) => api.post('/auth/verify-otp', { phone, otp, default_role: 'brand', ...(name && { name }) }),
   // Server-side revoke. Backend clears the HttpOnly refresh cookie and
   // marks the refresh token as used so it can't be replayed.
   logout: () => api.post('/auth/logout'),

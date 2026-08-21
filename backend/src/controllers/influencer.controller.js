@@ -11,6 +11,8 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveAvatars } = require('../utils/avatarResolver');
 const referralService = require('../services/referral.service');
+// Stage 0 — one step number and one needs-you count, both apps reading the same source.
+const collabCounts = require('../services/collabCounts.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -437,6 +439,21 @@ const search = asyncHandler(async (req, res) => {
 
   const conditions = [`(is_active_creator IS DISTINCT FROM FALSE)`];
   const params = [];
+
+  // Stage 0, job G — a brand searches PEOPLE, not prospects.
+  //
+  // v_searchable_creators unions two very different things: creators who have an
+  // account on INFLX, and Instagram handles an admin fed in for Apify to scrape.
+  // They render identically, so a brand could pick a scraped profile and open a
+  // negotiation with somebody who has never heard of us. Searching and starting a
+  // collaboration is the FIRST action in the whole product — having it lead nowhere
+  // is the worst possible place for a dead end.
+  //
+  // So brands see onboarded creators only. Admin still sees everything, because the
+  // scraped list is the prospect pipeline and its whole value is knowing who is on
+  // it and who has since joined.
+  const isAdmin = req.user?.role === 'admin';
+  if (!isAdmin) conditions.push(`source = 'onboarded'`);
 
   if (q) {
     params.push(`%${String(q).trim()}%`);
@@ -1630,6 +1647,10 @@ const getReferralInfo = asyncHandler(async (req, res) => {
  * cannot be offered as a location choice.
  */
 const getLocations = asyncHandler(async (req, res) => {
+  // Stage 0, job G — these counts drive the place picker, so they must count the
+  // same people the search will return. Promising "Vijayawada 10" and then showing
+  // a brand three is a worse lie than showing three from the start.
+  const isAdmin = req.user?.role === 'admin';
   const { rows } = await db.query(
     `SELECT
        LOWER(btrim(state)) AS state_key,
@@ -1639,6 +1660,7 @@ const getLocations = asyncHandler(async (req, res) => {
        COUNT(*)::int       AS creators
      FROM v_searchable_creators
      WHERE (is_active_creator IS DISTINCT FROM FALSE)
+       ${isAdmin ? '' : `AND source = 'onboarded'`}
        AND state IS NOT NULL AND btrim(state) <> ''
      GROUP BY LOWER(btrim(state)), LOWER(btrim(city))
      ORDER BY 2, 4`
@@ -1660,4 +1682,36 @@ const getLocations = asyncHandler(async (req, res) => {
   return success(res, { states });
 });
 
-module.exports = { register, getMe, updateMe, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/influencers/me/needs-you
+//
+// Stage 0 — the creator's half of the two server-side numbers. The brand has had a
+// "what needs me" answer since the inbox summary shipped; the creator has never had
+// one, and the step number she sees had no source at all.
+//
+// Both numbers come from collabCounts, which is the same module the brand's summary
+// reads. That is the whole point: when a brand rings a creator and says "we're stuck
+// on step 3", both phones got that 3 from here. Deriving it in either app is what
+// eventually makes the two screens disagree about the same collaboration.
+//
+// Nothing renders this yet — her Collabs tab is Stage 1. Shipping the doorway first
+// means both apps read the same answer from the day their screens land.
+// Contract: features/stage-0-clear-the-decks.
+// ─────────────────────────────────────────────────────────────────────────────
+const getNeedsYou = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerByUserId(req.user.sub);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const [counts, collaborations] = await Promise.all([
+    collabCounts.forCreator(influencer.id),
+    collabCounts.stepsForCreator(influencer.id),
+  ]);
+
+  return success(res, {
+    total: counts.total,
+    items: counts.items,
+    collaborations,
+  });
+});
+
+module.exports = { register, getMe, updateMe, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo, getNeedsYou };

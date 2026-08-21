@@ -157,11 +157,11 @@ async function _sendLegacyFcmPush(fcmToken, title, body, data) {
 }
 
 async function _sendSms(phone, message) {
-  if (env.OTP_MOCK) {
-    console.log(`[SMS MOCK] → ${phone}: ${message}`);
-    return;
-  }
-  // Production: POST to MSG91 SMS endpoint
+  // Intentional no-op. Transactional SMS is deferred by founder decision
+  // (2026-08-18): Indian DLT forbids free-form text, and these notification
+  // bodies are built dynamically, so each distinct wording would need its own
+  // DLT-approved template. Callers still get push + in-app delivery.
+  // See features/msg91-otp-live/lock.json → scope_deferred.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

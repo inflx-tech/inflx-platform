@@ -43,6 +43,13 @@ router.get('/me/ledger',   authenticate, requireRole('influencer'), ctrl.getLedg
 // ── Refer & Earn (Contract 4) — own referral code + earnings ─────────────────
 router.get('/me/referral', authenticate, requireRole('influencer'), ctrl.getReferralInfo);
 
+// ── Stage 0 — what needs her, and what step each collaboration is on ─────────
+// The brand has had its half of this since the inbox summary shipped. The creator
+// never had one, so her app had no source for the step number and would have had to
+// invent it. Both sides now read collabCounts. Nothing renders it until Stage 1.
+// Contract: features/stage-0-clear-the-decks.
+router.get('/me/needs-you', authenticate, requireRole('influencer'), ctrl.getNeedsYou);
+
 // ── My Campaigns (HIGH #6) ───────────────────────────────────────────────────
 router.get('/me/campaigns',                          authenticate, requireRole('influencer'), ctrl.getMyCampaigns);
 router.get('/me/campaigns/:campaign_influencer_id',  authenticate, requireRole('influencer'), ctrl.getMyCampaignDetail);

@@ -13,7 +13,6 @@ async function start() {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n[INFLX] API running on http://0.0.0.0:${PORT}`);
     console.log(`[INFLX] Environment: ${env.NODE_ENV}`);
-    console.log(`[INFLX] OTP mock: ${env.OTP_MOCK ? 'ON (OTP = 000000)' : 'OFF (real SMS)'}`);
     console.log(`[INFLX] Apify mock: ${env.APIFY_MOCK ? 'ON (fixture data)' : 'OFF (live scrape)'}`);
   });
 

@@ -17,6 +17,9 @@ const db           = require('../config/db');
 const { success }  = require('../utils/response');
 const AppError     = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+// Stage 0 — the needs-you tree, counted once on the server so the brand's screen and
+// the creator's screen can never disagree. Contract: features/stage-0-clear-the-decks.
+const collabCounts = require('../services/collabCounts.service');
 
 async function getBrandIdOrThrow(userId) {
   const { rows } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [userId]);
@@ -176,7 +179,17 @@ const getSummary = asyncHandler(async (req, res) => {
     [brandId]
   );
 
-  return success(res, { summary: rows[0] });
+  // Stage 0 — the needs-you tree, EXTENDED onto this endpoint rather than added as a
+  // second one. navigation.html: "One summary endpoint, extended — the new sources are
+  // added there rather than in five more calls." Two answers to the same question is
+  // how two badges start disagreeing.
+  //
+  // Every key above is returned unchanged, at the same name, in the same envelope: a
+  // phone that has not updated ignores `needs_you` and behaves exactly as it does today
+  // (check S8). The tree is additive, never a replacement.
+  const needsYou = await collabCounts.forBrand(brandId);
+
+  return success(res, { summary: rows[0], needs_you: needsYou });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

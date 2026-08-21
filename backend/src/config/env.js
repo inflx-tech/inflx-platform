@@ -36,7 +36,6 @@ module.exports = {
 
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
 
-  OTP_MOCK: process.env.OTP_MOCK !== 'false',
   MSG91_AUTH_KEY: process.env.MSG91_AUTH_KEY,
   OTP_TEMPLATE_ID: process.env.OTP_TEMPLATE_ID,
 

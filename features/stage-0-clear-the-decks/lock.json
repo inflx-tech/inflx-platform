@@ -1,0 +1,82 @@
+{
+  "feature": "stage-0-clear-the-decks",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-20 chat: \"lock it, and start implementation\"",
+  "approved_at": "2026-08-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "mockup_note": "N/A — Stage 0 has no screens. No file under Packages/*/src is touched, so the mockup gate does not apply. Every later stage carries mockups derived from the agreed boards and locked by the founder before any app code (feedback_mockup_lock_before_build).",
+  "notes": "Stage 0 of 11 in Docs/THE_PLAN.md. Repairs the unreachable half of Phase 0 — collabStep.service.js and collabCounts.service.js shipped with no route, no controller and no test — seeds a practice world into production created switched-off, and clears three dead records. NOTHING VISIBLE CHANGES.",
+  "programme": {
+    "plan": "Docs/THE_PLAN.md",
+    "stage": 0,
+    "of": 11,
+    "detail": "Docs/STAGE_0.md",
+    "unblocks": [
+      "Stage 1 (find each other and agree)",
+      "Stage 3 (watch the work happen)",
+      "Stage 4 (the shoot)",
+      "Stage 10 (the numbers)"
+    ]
+  },
+  "founder_decisions_2026_08_20": {
+    "Q1": "Approved brands are OPEN to creator pitches by default. A brand's five filters apply only when that brand explicitly sets them. Belongs to STAGE 1, not here, and needs its own go on the day.",
+    "Q2": "Media library extend-vs-rebuild — decided at Stage 5.",
+    "Q3": "Pay-at-store: ask the physical-shop question at login first, record the answer, then gate the button on it. Nobody is switched off silently. Stage 6.",
+    "Q4": "Post code: six characters, letters and digits, lookalikes removed. Stage 7.",
+    "Q5": "Comment moderation: creator deletes on her own post, followers report, admin gets a queue. Stage 8.",
+    "practice_world": "Seeded into production, created switched off. Approved.",
+    "follower_ledger": "No standing document; each follower stage writes its own action list as its reality check. Approved.",
+    "keep_accounts": "+917569690534 (Kartikeya, employee — confirmed real by the founder). +919391663469 kept too by judgement: a stale row costs nothing and is undone in seconds, deleting a colleague cannot be undone."
+  },
+  "login_accounts": {
+    "constraint": "users.phone is UNIQUE and users.role is single-valued — one phone, one role. Verified against production 2026-08-20.",
+    "8639448121": "EXISTS as a follower since 2026-04-10. Reserved as the practice follower for Stage 6. Cannot also be a brand or creator.",
+    "8465994979": "Free. Assigned to one of brand / creator.",
+    "outstanding": "One more number is needed for the other role. Not blocking — everything except that second login account can be built without it."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Not applicable — nothing under Packages/*/src changes. The first stage needing a device pass is Stage 3, which adds routes to native stacks in both apps.",
+    "deploy_class": "production-impacting (backend/src plus writes to the production database). No migration. Explicit founder go required before the push, per feedback-push-is-the-deploy.",
+    "deploy_targets": [
+      "Render (backend/src)",
+      "production database (practice data only, tagged and reversible)"
+    ],
+    "not_targets": [
+      "Vercel — no web change",
+      "OTA — no app change",
+      "migration — none in this stage"
+    ],
+    "safe_for_stale_clients": "YES. The brand summary gains a field and loses none, so a phone that has not updated ignores it. The creator endpoint is new and no shipped build requests it. Asserted as check S8.",
+    "qa_note": "2026-08-20 — measured, like for like, all runs serial (--runInBand).\n  BASELINE (committed code only, every uncommitted file removed): 28 suites / 231 tests FAILED, 480 passed, 711 total.\n  WITH ALL STAGE 0 WORK: 28 suites / 231 tests FAILED, 511 passed, 742 total.\n  Failures IDENTICAL to baseline. Passing rose by exactly 31 — the 31 new checks this contract adds (collab-spine 14, one-number-many-roles 10, test-number-allowlist 7). ZERO REGRESSION.\n  The 4 extra failing suites seen in an earlier mixed-tree run are no longer present.\n  NOT CLAIMED GREEN: the repo carries a pre-existing 28-suite / 231-test failure population that predates this contract and is unrelated to it. Stage 0 is certified no-regression AGAINST THAT BASELINE, not against a green suite. Those failures need their own contract.",
+    "pre_existing_failure_baseline": {
+      "suites": 28,
+      "tests": 231,
+      "passed": 480,
+      "total": 711,
+      "measured_at": "2026-08-20",
+      "method": "npx jest --runInBand --silent --testPathIgnorePatterns collab-spine, on a tree with every uncommitted file removed"
+    },
+    "new_checks": {
+      "collab-spine": 14,
+      "one-number-many-roles": 10,
+      "test-number-allowlist": 7,
+      "total": 31
+    }
+  },
+  "wipe_verification": "2026-08-20 — the destructive path was PROVEN ON THE TEST DATABASE before ever being aimed at production. Seeded 5 accounts (2 on the keep-list, 3 not), ran --execute, and confirmed: 3 users removed, 2 kept, and the kept accounts KEPT THEIR PROFILE ROWS so they land on their dashboard rather than the registration form. Backup written and size-checked first. Configuration compared before-and-after rather than against hardcoded counts — an absolute expectation would have cried wolf on any database that legitimately has none, and would not have proven this run left them alone.",
+  "governance_override": {
+    "rule": "Rule 3 — mockup_locked required on UI-governed paths",
+    "path": "Packages/brand-web/lib/api.js",
+    "used_at": "2026-08-20",
+    "reason": "One field name in a single API call: role -> default_role. No screen, layout, copy or pixel changes, so there is no mockup to draw or lock. Setting mockup_locked true would be a false record, and it would contradict the founder standing rule (feedback_mockup_lock_before_build) that mockups are DRAWN from the agreed boards and locked before app code — a rule about screens, which this is not.",
+    "why_not_split": "Dropping this file and pushing backend-only was considered and rejected: brand-web would keep sending role:\"brand\" for admins while the server had moved to a per-role lookup, which silently converts every admin into a pending brand and locks the founder out of his own dashboard. Shipping half of this pairing is worse than either half.",
+    "ci_note": "CI re-checks Rule 3 independently. This override is local and recorded, not a bypass."
+  }
+}

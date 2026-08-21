@@ -87,9 +87,67 @@ const verifyOtp = asyncHandler(async (req, res) => {
   // Verify OTP — throws AppError on failure
   await otpService.verifyOtp(phone, otp);
 
-  // Find or create the user
-  let { rows } = await db.query(`SELECT * FROM users WHERE phone = $1`, [phone]);
+  // ── Find or create the user, WITHIN THE REQUESTED ROLE ─────────────────────
+  // Stage 0, job C: one number, many roles. Until migration 153 this looked up
+  // by phone alone, so a number that already held a brand account was handed
+  // back as a brand no matter which app asked — and the app then refused it
+  // ("This phone is registered as Brand"). A founder could not be his own
+  // creator, and a brand could never buy from the shop as a follower.
+  //
+  // The rule is one number per ROLE, enforced by users_phone_role_key. Each role
+  // stays a separate account with its own approval, wallet and alerts, so
+  // everything downstream — every permission check, every foreign key — is
+  // untouched. Only this lookup changes.
+  //
+  // Every client already sends the role it wants: the phone apps derive it from
+  // the build flavour and brand-web hardcodes 'brand'. Nothing needs updating.
+  // Two kinds of caller, and they mean different things:
+  //
+  //   `role`         — "I am definitely this role." The phone apps are separate
+  //                    single-role builds (creator app, brand app), so the flavour
+  //                    IS the answer. Find that role, or create it. This is what
+  //                    lets one number register as a brand and then, in the creator
+  //                    app, be treated as a brand-new creator.
+  //
+  //   `default_role` — "Use whatever account this number already has; only if it
+  //                    has none, create one of this role." brand-web is a single
+  //                    door for brands AND admins, so it cannot know in advance.
+  //                    It previously sent role:'brand' for everyone and relied on
+  //                    the lookup ignoring it — which is exactly why an admin could
+  //                    sign in there at all. Under the per-role lookup that would
+  //                    have quietly turned every admin into a pending brand.
+  const strictRole  = role || null;
+  const fallbackRole = req.body?.default_role || null;
+  for (const [label, value] of [['role', strictRole], ['default_role', fallbackRole]]) {
+    if (value && !VALID_ROLES.includes(value)) {
+      throw new AppError('VALIDATION_ERROR', `${label} must be one of: ${VALID_ROLES.join(', ')}`, 422, label);
+    }
+  }
+
   let user;
+  let rows;
+
+  if (strictRole) {
+    ({ rows } = await db.query(
+      `SELECT * FROM users WHERE phone = $1 AND role = $2`, [phone, strictRole]
+    ));
+  } else {
+    // Resolve against every account this number holds. One is unambiguous. Several
+    // means we must not guess — signing someone into the wrong one silently is far
+    // worse than making them say which.
+    const { rows: all } = await db.query(
+      `SELECT * FROM users WHERE phone = $1 ORDER BY created_at`, [phone]
+    );
+    if (all.length > 1) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        `This number has ${all.length} accounts (${all.map(u => u.role).join(', ')}). Choose which one to sign in to.`,
+        422,
+        'role'
+      );
+    }
+    rows = all;
+  }
 
   if (rows.length === 0) {
     // New user — only role is required at this stage. Name + city + handles
@@ -101,9 +159,12 @@ const verifyOtp = asyncHandler(async (req, res) => {
     // with the name). The OTP service marks codes as used on first verify,
     // so the second call always failed with "Invalid OTP". Moving name
     // out of this step removes the double-verify entirely.
-    if (!role) throw new AppError('VALIDATION_ERROR', 'role is required for new users', 422, 'role');
-    if (!VALID_ROLES.includes(role)) {
-      throw new AppError('VALIDATION_ERROR', `role must be one of: ${VALID_ROLES.join(', ')}`, 422, 'role');
+    // Either kind of caller can open a brand-new account: the phone apps say the
+    // role outright, brand-web supplies the fallback. Both are already validated
+    // against VALID_ROLES above.
+    const newRole = strictRole || fallbackRole;
+    if (!newRole) {
+      throw new AppError('VALIDATION_ERROR', 'role is required for new users', 422, 'role');
     }
 
     // users.name is NOT NULL — use a placeholder until /register fills the
@@ -114,12 +175,12 @@ const verifyOtp = asyncHandler(async (req, res) => {
       `INSERT INTO users (phone, role, name, status)
        VALUES ($1, $2, $3, 'pending')
        RETURNING *`,
-      [phone, role, placeholderName]
+      [phone, newRole, placeholderName]
     );
     user = created.rows[0];
 
     // Create an empty profile row for follower role (brand/influencer do it via /register)
-    if (role === 'follower') {
+    if (newRole === 'follower') {
       await db.query(`INSERT INTO followers (user_id) VALUES ($1)`, [user.id]);
       // Followers are auto-approved
       await db.query(`UPDATE users SET status = 'approved' WHERE id = $1`, [user.id]);

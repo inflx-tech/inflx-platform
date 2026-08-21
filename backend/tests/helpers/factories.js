@@ -2,8 +2,8 @@
 
 /**
  * Test data factories.
- * Each factory creates a user via the real OTP flow (OTP_MOCK=true → 000000)
- * and returns { token, cookie, user }.
+ * Each factory creates a user via the real OTP flow, reading the generated
+ * code back out of otp_codes, and returns { token, cookie, user }.
  * Admin users are inserted directly to DB (no OTP flow needed in tests).
  */
 
@@ -19,11 +19,28 @@ function nextPhone() {
   return `+91${phoneCounter}`;
 }
 
+/**
+ * Read the freshest unused OTP for a phone straight from the table.
+ * There is no fixed test code any more — sendOtp() always mints a random
+ * one, and the SMS dispatch is skipped under NODE_ENV=test.
+ */
+async function latestOtp(phone) {
+  const { rows } = await query(
+    `SELECT code FROM otp_codes
+       WHERE phone = $1 AND used = false AND expires_at > now()
+       ORDER BY created_at DESC LIMIT 1`,
+    [phone]
+  );
+  if (rows.length === 0) throw new Error(`latestOtp: no live OTP row for ${phone}`);
+  return rows[0].code;
+}
+
 async function loginUser(phone, role, name) {
   await request(app).post('/v1/auth/send-otp').send({ phone });
+  const otp = await latestOtp(phone);
   const res = await request(app)
     .post('/v1/auth/verify-otp')
-    .send({ phone, otp: '000000', role, name });
+    .send({ phone, otp, role, name });
 
   if (res.status !== 200) {
     throw new Error(`loginUser failed: ${JSON.stringify(res.body)}`);
@@ -193,5 +210,6 @@ module.exports = {
   registerBrand,
   registerInfluencer,
   loginUser,
+  latestOtp,
   setBrandTier,
 };

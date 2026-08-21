@@ -9,13 +9,45 @@ const OTP_TTL_MINUTES = 10;
 const MSG91_FLOW_URL = 'https://control.msg91.com/api/v5/flow/';
 const MSG91_TIMEOUT_MS = 10000;
 
+const TEST_FIXED_CODE = '000000';
+
+/**
+ * Is this number on the test allowlist? (Stage 0, job D)
+ *
+ * Membership in test_phone_numbers is the ONLY route to a fixed code. There is
+ * deliberately no environment flag: OTP_MOCK was exactly that, and it was left on
+ * in production from 19 Aug until 20 Aug, during which every account on the
+ * platform could be signed into with 000000.
+ *
+ * A lookup failure returns false — the safe direction. If the table is missing or
+ * the database is unreachable, the caller sends a real SMS rather than silently
+ * falling back to a code anyone can guess.
+ */
+async function _isAllowlistedTestNumber(phone) {
+  try {
+    const { rows } = await db.query(
+      `SELECT 1 FROM test_phone_numbers WHERE phone = $1`, [phone]
+    );
+    return rows.length > 0;
+  } catch (err) {
+    console.error('[OTP] test-number lookup failed, treating as REAL:', err.message);
+    return false;
+  }
+}
+
 /**
  * Generate and store an OTP for the given phone number.
- * In mock mode (OTP_MOCK=true), the code is always '000000' — no SMS sent.
- * In production mode, sends via MSG91 and stores the real code.
+ *
+ * Real numbers ALWAYS get a real random code and a real SMS. Numbers on the test
+ * allowlist get the fixed code and no SMS, so the founder can hold dozens of
+ * practice accounts without spending credits or waiting for texts.
+ *
+ * Under the test runner the SMS is never dispatched (see _sendViaMSG91); the suite
+ * reads whatever code was stored straight out of otp_codes.
  */
 async function sendOtp(phone) {
-  const code = env.OTP_MOCK ? '000000' : _generateCode();
+  const isTestNumber = await _isAllowlistedTestNumber(phone);
+  const code = isTestNumber ? TEST_FIXED_CODE : _generateCode();
 
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
@@ -30,11 +62,14 @@ async function sendOtp(phone) {
     [phone, code, expiresAt]
   );
 
-  if (env.OTP_MOCK) {
-    console.log(`[OTP MOCK] ${phone} → ${code}`);
-  } else {
-    await _sendViaMSG91(phone, code);
+  // An allow-listed number has a code the founder already knows; sending it by SMS
+  // spends a credit to tell him nothing.
+  if (isTestNumber) {
+    console.log(`[OTP] ${_maskPhone(phone)} is an allow-listed test number — no SMS sent`);
+    return;
   }
+
+  await _sendViaMSG91(phone, code);
 }
 
 /**
@@ -93,8 +128,14 @@ function _maskPhone(phone) {
  * that never left.
  */
 async function _sendViaMSG91(phone, code) {
+  // Under the test runner we never touch the network: a live send would spend
+  // SMS credits and text a real handset on every factory login. Tests assert
+  // against the stored code instead. This is gated on NODE_ENV, deliberately
+  // NOT on a config flag — a flag is what let mock codes reach production.
+  if (process.env.NODE_ENV === 'test') return;
+
   if (!env.MSG91_AUTH_KEY || !env.OTP_TEMPLATE_ID) {
-    console.error('[MSG91] OTP_MOCK is false but MSG91_AUTH_KEY / OTP_TEMPLATE_ID are not set');
+    console.error('[MSG91] MSG91_AUTH_KEY / OTP_TEMPLATE_ID are not set');
     throw new AppError('INTERNAL_ERROR', 'SMS provider is not configured', 500);
   }
 
