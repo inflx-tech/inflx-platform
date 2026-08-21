@@ -42,7 +42,7 @@
     "qa_all_green": false,
     "released": false,
     "maestro_green": false,
-    "maestro_note": "Not applicable — nothing under Packages/*/src changes. The first stage needing a device pass is Stage 3, which adds routes to native stacks in both apps.",
+    "maestro_note": "Rule 5 not triggered: nothing under Packages/Mobile/src changed. The first stage needing a device pass is Stage 3.",
     "deploy_class": "production-impacting (backend/src plus writes to the production database). No migration. Explicit founder go required before the push, per feedback-push-is-the-deploy.",
     "deploy_targets": [
       "Render (backend/src)",
@@ -68,7 +68,21 @@
       "one-number-many-roles": 10,
       "test-number-allowlist": 7,
       "total": 31
-    }
+    },
+    "released_at": "2026-08-20",
+    "commit": "e45cf37",
+    "go_given_by": "founder chat: \"pls go\" (2026-08-20), after the wipe inventory was reviewed and Kartikeya confirmed real",
+    "deploy": {
+      "server": "pushed 7937ab0..e45cf37 → Render auto-deploy. CONFIRMED LIVE: GET /influencers/me/needs-you returns 401 where the old build returned 404 — a response only the new code can produce, since Express 404s unknown paths and auth is per-route.",
+      "migrations": "153 (one number many roles) + 154 (test-number allowlist) applied to production BEFORE the push. Verified functionally on production inside a rolled-back transaction: the same number was accepted as both brand and creator, and a second brand on that number was refused.",
+      "database": "Test world wiped — 521 accounts and all their work. Backup written first. 45 scraped prospects kept, their posts/captions/analytics/collab-history deleted. Configuration verified untouched before-and-after. Practice world seeded: 22 creators, 5 brands, 2 campaigns, 6 agreements, 2 groups, 16 attributed sales totalling Rs 29,958 commission.",
+      "vercel": "brand-web login field change rides the same push; Vercel auto-deploys.",
+      "ota": "N/A — no file under Packages/Mobile/src changed.",
+      "live_proof": "Signed in over the public API as a practice creator with the fixed code and called the new endpoint: returned 1 invitation and her collaboration at step 4 of 6 (Shop posts), turn: creator. The step number came from the server, which is the whole point of the stage."
+    },
+    "released_by": "founder (\"pls go\", 2026-08-20) — executed and verified by Claude",
+    "qa_all_green_note": "DELIBERATELY FALSE, and not a slip. The backend suite carries 28 suites / 231 tests failing on committed code ALONE, measured on a tree stripped of every uncommitted file. That population predates this contract and is unrelated to it. Stage 0 is certified NO-REGRESSION against that baseline — identical failures, with 36 new checks passing on top — which is a different and weaker claim than green, and the record should say so. Flipping this to true to satisfy the gate would be exactly the fake-green the charter forbids.",
+    "released_note": "HELD FALSE DELIBERATELY, and the work IS deployed and live — the deploy evidence below is complete and was verified end to end over the public API.\n\nThe gate for released=true requires qa_all_green !== false, and it does not accept an override. My qa_all_green is false and accurate: the backend suite carries 28 suites / 231 tests failing on COMMITTED CODE ALONE, measured on a tree stripped of every uncommitted file. Stage 0 did not cause them and cannot fix them.\n\nThat left three options. Flip qa_all_green to true — a fake-green, forbidden absolutely. Claim released=true past a gate built to stop exactly that — same lie, different field. Or hold the flag false, keep every piece of deploy evidence, and say plainly why. This is the third.\n\nPrecedent: collab-phase0-foundations did the same — deployed to production, released held false, proven by reading data back rather than by a green suite.\n\nTo flip this to true, the pre-existing 231 failures need their own contract and a real green. Recommended to the founder as the next piece of work."
   },
   "wipe_verification": "2026-08-20 — the destructive path was PROVEN ON THE TEST DATABASE before ever being aimed at production. Seeded 5 accounts (2 on the keep-list, 3 not), ran --execute, and confirmed: 3 users removed, 2 kept, and the kept accounts KEPT THEIR PROFILE ROWS so they land on their dashboard rather than the registration form. Backup written and size-checked first. Configuration compared before-and-after rather than against hardcoded counts — an absolute expectation would have cried wolf on any database that legitimately has none, and would not have proven this run left them alone.",
   "governance_override": {

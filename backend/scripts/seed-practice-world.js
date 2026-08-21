@@ -157,6 +157,17 @@ async function main() {
   // membership of this table is the only route to a fixed code.
   const allowlist = new Set();
   const registerTestNumber = async (phone, note) => {
+    // NEVER allow-list a number that is somebody's real login. The allowlist is per
+    // NUMBER, not per account — so adding the founder's number here would hand the
+    // fixed code to his SUPERADMIN account too, re-opening the exact hole this stage
+    // just closed. A real number keeps getting real codes for every role it holds.
+    const { rows: [real] } = await c.query(
+      `SELECT 1 AS hit FROM users WHERE phone = $1 AND role = 'admin' LIMIT 1`, [phone]
+    );
+    if (real) {
+      log(`${phone} holds an admin account — NOT allow-listed, real codes kept`);
+      return;
+    }
     await c.query(
       `INSERT INTO test_phone_numbers (phone, note) VALUES ($1,$2)
         ON CONFLICT (phone) DO UPDATE SET note = EXCLUDED.note`,
