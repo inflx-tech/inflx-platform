@@ -96,11 +96,43 @@ const TRUNCATE_SQL = `
  * actual blocker (pid / state / wait / query) is named — this
  * is diagnosis, NOT masking (the error is re-thrown).
  */
+/**
+ * Reference data that migrations seed and TRUNCATE ... CASCADE then destroys.
+ *
+ * The comment above TRUNCATE_SQL claims subscription_tiers and categories are "NOT
+ * truncated". Measured 2026-08-22: after migrations there are 4 tiers; after one
+ * truncateAll there are 0. CASCADE reaches them, and the note was simply wrong.
+ *
+ * The cost was not subtle. Campaign creation refuses to run without a 'free' tier —
+ * it answers 500 "free tier missing from subscription_tiers" — so from the first
+ * cleanup of the first suite onward, EVERY test that creates a campaign failed, and
+ * every test built on a campaign failed behind it. That single defect accounted for
+ * roughly three-quarters of the suite's ~232 failures.
+ *
+ * Re-seeding here rather than widening the truncate list: these rows are seeded by
+ * migration and are configuration, so the guarantee tests need is "they are present
+ * at the start of every test", which is what this restores.
+ */
+async function reseedReferenceData(client) {
+  await client.query(`
+    INSERT INTO subscription_tiers
+      (tier_key, name, monthly_price_inr, max_campaigns, max_sets_per_campaign,
+       max_influencers_per_cycle, max_products, is_enterprise, sort_order, description)
+    VALUES
+      ('free',       'Free',           0.00,  1, 1,  5,  10, false, 1, 'Starter plan'),
+      ('growth',     'Growth',      2499.00,  3, 3, 25, 100, false, 2, 'Growth plan'),
+      ('scale',      'Scale',       7999.00, 10, 5, 75, 500, false, 3, 'Scale plan'),
+      ('enterprise', 'Enterprise',     0.00, -1,-1, -1,  -1, true,  4, 'Enterprise plan')
+    ON CONFLICT (tier_key) DO NOTHING
+  `);
+}
+
 async function truncateAll() {
   const client = await pool.connect();
   try {
     await client.query(`SET lock_timeout = '8s'`);
     await client.query(TRUNCATE_SQL);
+    await reseedReferenceData(client);
   } catch (err) {
     if (/lock timeout|canceling statement due to lock timeout/i.test(err.message)) {
       try {

@@ -81,7 +81,7 @@ async function setupStoreScenario() {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Food Creators', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN', formats_json: ['reel'] });
+    .send({ name: 'Food Creators', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN', formats_json: [{ type: 'reel', count: 1 }] });
   const sid = setRes.body.data.set.id;
 
   // Offer
