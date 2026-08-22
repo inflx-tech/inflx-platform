@@ -23,10 +23,23 @@
     "destructive": "Migration 157 drops a column on a live database. Verified empty first: 22 influencers, 0 populated. Requires its own explicit go, separate from the deploy go.",
     "qa_note": "2026-08-22 — verified against PRODUCTION, not the test suite. The local test DB was unreachable throughout (container refusing connections, Docker refusing state changes) and the dev DB was five migrations stale, so neither could stand in.\n  Every changed statement was run against production inside a transaction and rolled back: search select, getPublicById select, and the write path — all passed, rollback confirmed clean.\n  avatar_url re-confirmed empty immediately before shipping: 22 rows, 0 populated.\n  Mobile 159/159. Android bundle clean.\n  NOT COVERED before deploy: the upload endpoint end to end — exercised against production after deploy.\n  NOT CLAIMED GREEN.",
     "owed": [
-      "Backend tests for the photo upload endpoint and the consolidated column.",
-      "Full serial backend suite against the 93-failure baseline — still owed from features/collab-working-style-two-questions.",
+      "Full serial backend suite once the local test DB is usable — still owed from features/collab-working-style-two-questions too.",
+      "Backend unit tests for the upload endpoint, to sit alongside the production checks.",
       "Founder device walk."
-    ]
+    ],
+    "deploy": {
+      "applied_2026_08_22": [
+        "migration 157 (ADD profile_image_r2_key) — applied to production BEFORE the push, so both the running and incoming code worked throughout",
+        "push 4843f29 — Render",
+        "migration 158 (DROP avatar_url) — applied AFTER the new backend was verified live; runner refuses unless the column is empty and the replacement exists. Guard read: total 22, populated 0, replacement present",
+        "OTA creator v171, brand v174 — both manifests confirmed serving"
+      ],
+      "production_verification": {
+        "creator_side": "signed in as a practice creator and ran the whole photo flow live: upload link issued, a PDF correctly refused, a real JPEG PUT into storage (HTTP 200), saved to her profile, returned as a URL that downloads (HTTP 200), storage key NOT leaked, cleared back to initials. 10/10.",
+        "brand_side": "signed in as a practice brand: creator search works, no storage keys leak, the SCRAPED picture is never sent, INFLX following present (top 90), her profile page carries INFLX 61 alongside Instagram 52,800. 11/11.",
+        "after_the_drop": "brand checks re-run after migration 158 — all still passing."
+      }
+    }
   },
   "approved_by": "founder 2026-08-22 chat: \"you continue with build\" then \"take best decision\"",
   "approved_at": "2026-08-22",
