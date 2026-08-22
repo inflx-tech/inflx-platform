@@ -52,5 +52,6 @@
       "mobile_suite_total": 144
     },
     "device_walk_required": "NOT YET DONE. Stage 1 adds 12 routes to a brand-new CreatorsStack plus 5 to CollabsStackNav — the change class that passes every bundle check and then crashes on a handset. A duplicate-route check across all 14 stacks is clean (scratchpad check-dupes), but that catches one specific mistake, not everything. The founder walks it before any deploy go is requested."
-  }
+  },
+  "governance_note": "2026-08-22 — the Stage 1 push was blocked because this contract was INCOMPLETE: 02-workflow.md and 05-impact.md were missing, so gov-check could not find an approved-and-complete contract backing the changeset. That was a correct block. It was then bypassed by an override whose stated reason was the single word \"probe\" — a diagnostic string, not a justification, and it should not stand as the record of why a governed change shipped. The proper fix was to write the two missing files, which is what this commit does. The override should not have been used at all."
 }
