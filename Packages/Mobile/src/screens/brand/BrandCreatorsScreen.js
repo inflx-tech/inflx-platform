@@ -6,6 +6,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
+import CreatorAvatar from '../../components/CreatorAvatar';
+// Rendered INSIDE this tab rather than pushed as their own pages.
+import BrandFindCreatorsScreen from './BrandFindCreatorsScreen';
+import BrandGroupsList from './BrandGroupsList';
 
 /**
  * BrandCreatorsScreen — everything that happens before a campaign exists.
@@ -191,27 +195,25 @@ export default function BrandCreatorsScreen({ navigation }) {
     return <View style={s.container}>{header}<View style={s.center}><ActivityIndicator color={ig.text} /></View></View>;
   }
 
-  // ── Find and Groups are their own screens; these are the doors to them ──────
-  if (tab === 'find' || tab === 'groups') {
+  // Stage 1 correction (founder, 2026-08-22): "search of brands and groups it is asking
+  // to open into new page instead directly showing them."
+  //
+  // These two were a placeholder with an "Open search" button — you tapped Find, and were
+  // asked to tap again. There was no reason for it. Both now render in the tab.
+  if (tab === 'find') {
     return (
       <View style={s.container}>
         {header}
-        <View style={s.doorWrap}>
-          <Icon name={tab === 'find' ? 'account-search-outline' : 'account-multiple-outline'} size={30} color={ig.mut2} />
-          <Text style={s.doorT}>{tab === 'find' ? 'Find creators' : 'Saved groups'}</Text>
-          <Text style={s.doorS}>
-            {tab === 'find'
-              ? 'Search by name, and filter by where they are, what they work in, and how big they are.'
-              : 'A group is a list you keep. Asking it sends one message to each member — then you negotiate with each separately.'}
-          </Text>
-          <TouchableOpacity
-            style={s.doorBtn}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate(tab === 'find' ? 'BrandInfluencerBrowse' : 'BrandGroups')}
-          >
-            <Text style={s.doorBtnT}>{tab === 'find' ? 'Open search' : `Open groups${groups.length ? ` (${groups.length})` : ''}`}</Text>
-          </TouchableOpacity>
-        </View>
+        <BrandFindCreatorsScreen navigation={navigation} route={{ params: {} }} embedded />
+      </View>
+    );
+  }
+
+  if (tab === 'groups') {
+    return (
+      <View style={s.container}>
+        {header}
+        <BrandGroupsList navigation={navigation} groups={groups} onChanged={load} />
       </View>
     );
   }
@@ -233,7 +235,7 @@ export default function BrandCreatorsScreen({ navigation }) {
             const soon = days != null && days <= 14;
             return (
               <View style={s.row}>
-                <View style={s.avatar}><Text style={s.avatarT}>{String(item.influencer_name || 'C').slice(0, 2).toUpperCase()}</Text></View>
+                <CreatorAvatar name={item.influencer_name || item.instagram_handle} avatarUrl={item.avatar_url} size={38} square />
                 <View style={{ flex: 1 }}>
                   <Text style={s.rowName}>{item.influencer_name || item.instagram_handle || 'Creator'}</Text>
                   <Text style={s.rowTerms}>{termsLine(item.settled_terms_json || item.terms_json)}</Text>
@@ -280,7 +282,7 @@ export default function BrandCreatorsScreen({ navigation }) {
               const tone = TONE[row.turn];
               return (
                 <TouchableOpacity key={`${row.kind}:${row.id}`} style={s.row} activeOpacity={0.7} onPress={() => openConversation(row)}>
-                  <View style={s.avatar}><Text style={s.avatarT}>{String(row.name).slice(0, 2).toUpperCase()}</Text></View>
+                  <CreatorAvatar name={row.name} avatarUrl={row.avatar_url} size={38} square />
                   <View style={{ flex: 1 }}>
                     <Text style={s.rowName}>{row.name}</Text>
                     <Text style={s.rowTerms}>

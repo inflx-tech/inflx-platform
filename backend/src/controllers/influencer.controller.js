@@ -580,7 +580,23 @@ const search = asyncHandler(async (req, res) => {
        commercial_post_rate, top_brand_partners, recommended_use_cases,
        avg_views, avg_likes, avg_comments,
        activity_status, linked_influencer_id,
-       is_inflx_verified, last_calculated_at
+       is_inflx_verified, last_calculated_at,
+       -- Stage 1 — how many people follow her ON INFLX. Counted live from the follow
+       -- table rather than stored, so it can never drift from what is actually true.
+       --
+       -- It leads the row in the app, ahead of Instagram, deliberately: social reach is
+       -- who might SEE a post; INFLX following is who can BUY without leaving. For a
+       -- brand choosing someone to sell for them, the second predicts revenue and the
+       -- first predicts attention.
+       --
+       -- A scraped prospect has no account, so no follows — NULL rather than 0, because
+       -- "nobody follows her here" and "she is not here" are different facts.
+       (SELECT count(*)::int FROM follower_follows ff
+         WHERE ff.influencer_id = v_searchable_creators.linked_influencer_id) AS inflx_followers,
+       -- Only the picture SHE uploaded. The scraped Instagram one is never shown to a
+       -- brand (founder decision 2026-08-22, migration 156).
+       (SELECT i2.avatar_url FROM influencers i2
+         WHERE i2.id = v_searchable_creators.linked_influencer_id) AS avatar_url
      FROM v_searchable_creators
      WHERE ${where}
      ORDER BY ${orderBy}, ig_handle

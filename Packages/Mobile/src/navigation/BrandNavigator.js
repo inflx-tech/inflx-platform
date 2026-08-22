@@ -28,6 +28,7 @@ import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScree
 import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 // Stage 1 — everything that happens before a campaign exists.
 import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
+import BrandFindCreatorsScreen from '../screens/brand/BrandFindCreatorsScreen';
 import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
 import BrandPlacePickerScreen from '../screens/brand/BrandPlacePickerScreen';
@@ -87,6 +88,9 @@ function CreatorsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CreatorsHome" component={BrandCreatorsScreen} />
+      {/* Stage 1 — the rebuilt search: three filters, each over a picker. The old
+          browse screen stays reachable from Home. */}
+      <Stack.Screen name="BrandFindCreators" component={BrandFindCreatorsScreen} />
       <Stack.Screen name="BrandInfluencerBrowse" component={BrandInfluencerBrowseScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
