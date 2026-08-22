@@ -10,6 +10,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveAvatars } = require('../utils/avatarResolver');
+const storageService = require('../services/storage.service');
 const referralService = require('../services/referral.service');
 // Stage 0 — one step number and one needs-you count, both apps reading the same source.
 const collabCounts = require('../services/collabCounts.service');
@@ -46,6 +47,9 @@ async function getInfluencerById(id) {
  */
 function sanitiseInfluencer(row) {
   const {
+    // Where her photo lives in storage. Internal — the response carries the
+    // resolved profile_image_url instead. Contract: features/creator-photo-and-reach
+    profile_image_r2_key: _photoKey,
     bank_account_no,
     upi_id,
     pan_number,
@@ -312,9 +316,21 @@ const register = asyncHandler(async (req, res) => {
 // GET /influencers/me
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Turn the stored object key into a URL that actually loads, in place.
+ * Presigned links expire, so this happens on every read rather than at upload.
+ * Contract: features/creator-photo-and-reach
+ */
+async function withOwnPhoto(row) {
+  await resolveAvatars([row], { urlField: 'profile_image_url', keyField: 'profile_image_r2_key' });
+  return row;
+}
+
 const getMe = asyncHandler(async (req, res) => {
   const influencer = await getInfluencerByUserId(req.user.sub);
   if (!influencer) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  await withOwnPhoto(influencer);
 
   const sanitised = sanitiseInfluencer(influencer);
   // Include phone as read-only for profile display
@@ -324,6 +340,41 @@ const getMe = asyncHandler(async (req, res) => {
     influencer: sanitised,
     user_status: influencer.user_status,
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /influencers/me/profile-image/upload-url
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Hand the creator a short-lived link to put her photo straight into storage.
+ * Contract: features/creator-photo-and-reach
+ *
+ * Same three-step shape the rest of the app already uses (ask for a URL, PUT the
+ * file, save the key) rather than posting the image through this server.
+ *
+ * The key is derived from HER id, so one creator can never overwrite another's
+ * photo by choosing a filename, and re-uploading replaces her own.
+ */
+const IMAGE_MIMES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+
+const getProfileImageUploadUrl = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerByUserId(req.user.sub);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const ct = String(req.body?.content_type || '').toLowerCase();
+  if (!IMAGE_MIMES.has(ct)) {
+    throw new AppError('VALIDATION_ERROR',
+      'Choose a JPEG, PNG or WebP photo.', 422, 'content_type');
+  }
+
+  const ext = ct === 'image/png' ? 'png' : ct === 'image/webp' ? 'webp' : 'jpg';
+  // Cache-busting suffix: without it, replacing the photo leaves the old one
+  // sitting in the phone's image cache under an identical key.
+  const key = `creator-photos/${influencer.id}/${Date.now()}.${ext}`;
+  const upload = await storageService.generateUploadUrl(key, ct);
+
+  return success(res, { key, ...upload });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -347,6 +398,10 @@ const updateMe = asyncHandler(async (req, res) => {
     city,
     full_name,
     name: userName,
+    // The key of a photo SHE uploaded, from the upload-url step. The scraped
+    // Instagram picture is never written here — founder instruction 2026-08-22.
+    // Contract: features/creator-photo-and-reach
+    profile_image_key,
   } = req.body;
 
   const updates = {};
@@ -359,6 +414,11 @@ const updateMe = asyncHandler(async (req, res) => {
   if (bio !== undefined) updates.bio = bio;
   if (city !== undefined) updates.city = city;
   if (full_name !== undefined) updates.full_name = full_name;
+  // '' clears the photo back to initials — a creator must be able to remove a
+  // picture of herself, so an empty string is a deliberate value, not a no-op.
+  if (profile_image_key !== undefined) {
+    updates.profile_image_r2_key = profile_image_key === '' ? null : profile_image_key;
+  }
 
   // Encrypt sensitive fields before storing
   if (upi_id !== undefined) updates.upi_id = encrypt(upi_id);
@@ -386,7 +446,9 @@ const updateMe = asyncHandler(async (req, res) => {
     await db.query(`UPDATE users SET name = $1 WHERE id = $2`, [nameUpdate, req.user.sub]);
   }
 
+
   const updated = await getInfluencerById(influencer.id);
+  await withOwnPhoto(updated);
   return success(res, { influencer: sanitiseInfluencer(updated) });
 });
 
@@ -594,9 +656,11 @@ const search = asyncHandler(async (req, res) => {
        (SELECT count(*)::int FROM follower_follows ff
          WHERE ff.influencer_id = v_searchable_creators.linked_influencer_id) AS inflx_followers,
        -- Only the picture SHE uploaded. The scraped Instagram one is never shown to a
-       -- brand (founder decision 2026-08-22, migration 156).
-       (SELECT i2.avatar_url FROM influencers i2
-         WHERE i2.id = v_searchable_creators.linked_influencer_id) AS avatar_url
+       -- brand (founder decision 2026-08-22). Migration 157 consolidated this onto
+       -- profile_image_r2_key — migration 156's avatar_url duplicated a column that
+       -- already existed for exactly this, and both were empty.
+       (SELECT i2.profile_image_r2_key FROM influencers i2
+         WHERE i2.id = v_searchable_creators.linked_influencer_id) AS profile_image_r2_key
      FROM v_searchable_creators
      WHERE ${where}
      ORDER BY ${orderBy}, ig_handle
@@ -604,6 +668,13 @@ const search = asyncHandler(async (req, res) => {
     params
   );
   await resolveAvatars(rows);
+  // Separately, the photo the creator uploaded herself. Kept apart from the line
+  // above on purpose: that one resolves the SCRAPED Instagram picture, which the
+  // apps must never display. Contract: features/creator-photo-and-reach
+  await resolveAvatars(rows, {
+    urlField: 'profile_image_url',
+    keyField: 'profile_image_r2_key',
+  });
 
   // Explicit brand-facing verification tag (product decision 2026-05-19):
   // search shows BOTH registered+admin-verified and scraped/pending
@@ -611,7 +682,13 @@ const search = asyncHandler(async (req, res) => {
   // genuinely admin-verified registered influencers only. Derived from the
   // view's is_inflx_verified, which migration 055 made approval-aware for
   // onboarded ((u.status='approved')) and verification-aware for scraped.
-  const creators = rows.map(r => ({ ...r, is_verified: r.is_inflx_verified === true }));
+
+  // The storage key is internal — strip it, and do not hand a brand the scraped
+  // picture under any name.
+  const creators = rows.map(({ profile_image_r2_key, profile_pic_r2_key, profile_pic_url, ...r }) => ({
+    ...r,
+    is_verified: r.is_inflx_verified === true,
+  }));
 
   return success(res, { creators }, 200, { page: pageNum, limit: limitNum, total, tier_counts: tierCounts });
 });
@@ -652,7 +729,11 @@ const getPublicById = asyncHandler(async (req, res) => {
        i.price_per_post_min, i.price_per_post_max,
        i.past_brands_json, i.collaboration_types_json,
        i.profile_image_url, i.age,
-       NULL::text AS profile_pic_r2_key,
+       i.profile_image_r2_key,
+       -- Counted live from the follow table, exactly as it is for a real person
+       -- who follows her tomorrow. Never a stored or estimated number.
+       (SELECT count(*)::int FROM follower_follows ff WHERE ff.influencer_id = i.id)
+         AS inflx_followers,
        u.name, u.id AS user_id, u.status AS user_status,
        'onboarded'::text AS source,
        TRUE AS is_inflx_verified,
@@ -663,11 +744,14 @@ const getPublicById = asyncHandler(async (req, res) => {
     [id]
   );
   if (legacy[0]) {
-    // No-op today (onboarded influencers upload their own image, so there is
-    // no scraped R2 key to swap in) but kept symmetrical with the scraped
-    // branch so the two cannot drift apart again.
-    await resolveAvatars(legacy, { urlField: 'profile_image_url' });
-    delete legacy[0].profile_pic_r2_key;
+    // Her own uploaded photo, turned into a URL that loads. This used to point at
+    // the scraped-picture key and was therefore permanently a no-op for onboarded
+    // creators — they have no scraped key. Contract: features/creator-photo-and-reach
+    await resolveAvatars(legacy, {
+      urlField: 'profile_image_url',
+      keyField: 'profile_image_r2_key',
+    });
+    delete legacy[0].profile_image_r2_key;
     return success(res, { influencer: legacy[0] });
   }
 
@@ -1730,4 +1814,4 @@ const getNeedsYou = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, getMe, updateMe, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo, getNeedsYou };
+module.exports = { register, getMe, updateMe, getProfileImageUploadUrl, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo, getNeedsYou };

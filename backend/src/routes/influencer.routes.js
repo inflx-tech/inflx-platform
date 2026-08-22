@@ -24,6 +24,9 @@ router.get('/analytics', authenticate, requireRole('brand', 'admin'), requireApp
 router.post('/register',  authenticate, requireRole('influencer'), ctrl.register);
 router.get('/me',         authenticate, requireRole('influencer'), ctrl.getMe);
 router.patch('/me',       authenticate, requireRole('influencer'), ctrl.updateMe);
+// Her own photo — the only route by which a picture of a creator is ever set.
+// Contract: features/creator-photo-and-reach
+router.post('/me/profile-image/upload-url', authenticate, requireRole('influencer'), ctrl.getProfileImageUploadUrl);
 
 // ── Offer inbox (Block B) ─────────────────────────────────────────────────────
 router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.getMyOffers);

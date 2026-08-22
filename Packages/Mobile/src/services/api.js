@@ -360,6 +360,9 @@ export const influencerApi = {
   getDiscoverOptions: () => api.get('/influencers/me/discover-options'),
   getMe: () => api.get('/influencers/me'),
   updateMe: (data) => api.patch('/influencers/me', data),
+  // Her own photo — ask for a short-lived link, PUT the file, then save the key.
+  // Contract: features/creator-photo-and-reach
+  getProfileImageUploadUrl: (body) => api.post('/influencers/me/profile-image/upload-url', body),
   getEarnings: () => api.get('/influencers/me/earnings'),
   getReferralInfo: () => api.get('/influencers/me/referral'),
   // Creator posts (Post/Concept P2) — the Post Composer + My Posts

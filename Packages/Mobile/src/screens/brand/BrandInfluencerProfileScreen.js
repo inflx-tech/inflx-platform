@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import CreatorAvatar from '../../components/CreatorAvatar';
 
 /**
  * BrandInfluencerProfileScreen — full influencer detail + invite-to-campaign modal.
@@ -66,11 +67,11 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
             <Text style={s.heroBackText}>‹ Back</Text>
           </TouchableOpacity>
 
-          <View style={s.avatar}>
-            <Text style={s.avatarText}>
-              {(inf.instagram_handle || inf.full_name || 'IN').slice(0, 2).toUpperCase()}
-            </Text>
-          </View>
+          <CreatorAvatar
+            name={inf.full_name || inf.instagram_handle}
+            avatarUrl={inf.profile_image_url}
+            size={72}
+          />
           <View style={s.handleRow}>
             <Text style={s.handle}>@{inf.instagram_handle || 'handle'}</Text>
             {inf.verified ? <Text style={s.verifiedTick}> ✓</Text> : null}
@@ -83,9 +84,43 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* Where her audience actually is.
+            Founder, 2026-08-22: "if i click on that creator it should display their
+            data like their followers in social medias (currently only insta and
+            youtube) and inflx following".
+
+            Three separate figures, not one total, because they are not the same
+            people and they are not worth the same. Instagram reach is who might SEE
+            a post. INFLX following is who can BUY without leaving. INFLX leads for
+            that reason.
+
+            Never summed — adding them would invent an audience that does not exist,
+            since the same person can be in two of them.
+            Contract: features/creator-photo-and-reach */}
+        <View style={s.reachRow}>
+          <Reach
+            label="INFLX"
+            value={inf.inflx_followers != null ? fmtCompact(inf.inflx_followers) : '—'}
+            note={inf.inflx_followers ? 'can buy here' : 'no followers yet'}
+            lead
+          />
+          <Reach
+            label="Instagram"
+            value={inf.followers_count != null ? fmtCompact(inf.followers_count) : '—'}
+            note={inf.instagram_handle ? `@${inf.instagram_handle}` : 'not connected'}
+          />
+          {/* No subscriber count exists anywhere on this platform yet, so a number
+              here would be invented. Saying so beats showing a confident zero. */}
+          <Reach
+            label="YouTube"
+            value="—"
+            note={inf.youtube_handle ? 'not counted yet' : 'not connected'}
+            muted
+          />
+        </View>
+
         {/* Stats grid */}
         <View style={s.statsGrid}>
-          <Stat label="Followers" value={fmtCompact(inf.followers_count)} />
           <Stat label="ER %"      value={inf.engagement_rate != null ? `${parseFloat(inf.engagement_rate).toFixed(1)}%` : '—'} />
           <Stat label="Avg Views" value={fmtCompact(inf.avg_views)} />
           <Stat label="Posts"     value={inf.total_posts ?? '—'} />
@@ -450,6 +485,20 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
   );
 }
 
+/**
+ * One audience, with a plain word about what it is worth. The note matters as much
+ * as the number: "150" means nothing until you know whether those people can buy.
+ */
+function Reach({ label, value, note, lead, muted }) {
+  return (
+    <View style={[s.reach, lead && s.reachLead]}>
+      <Text style={[s.reachLabel, lead && s.reachLabelLead]}>{label.toUpperCase()}</Text>
+      <Text style={[s.reachValue, muted && s.reachValueMuted]}>{value}</Text>
+      <Text style={s.reachNote}>{note}</Text>
+    </View>
+  );
+}
+
 function Stat({ label, value }) {
   return (
     <View style={s.statTile}>
@@ -488,6 +537,17 @@ function fmtCompact(n) {
 }
 
 const s = StyleSheet.create({
+  reachRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, marginTop: 14 },
+  reach: {
+    flex: 1, backgroundColor: P.white, borderRadius: 12, paddingVertical: 12,
+    paddingHorizontal: 10, borderWidth: 1, borderColor: P.border, alignItems: 'center',
+  },
+  reachLead: { borderColor: P.ink, borderWidth: 1.5 },
+  reachLabel: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted, letterSpacing: 0.4 },
+  reachLabelLead: { color: P.ink },
+  reachValue: { fontFamily: fonts.displayBlack, fontSize: 19, color: P.ink, marginTop: 4 },
+  reachValueMuted: { color: P.muted2 },
+  reachNote: { fontFamily: fonts.sansRegular, fontSize: 9, color: P.muted2, marginTop: 3, textAlign: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: P.bg },
   errorText: { fontFamily: fonts.sansBold, fontSize: 14, color: P.muted, marginBottom: 12 },
   backBtnFallback: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: P.yellow },

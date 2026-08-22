@@ -1,0 +1,35 @@
+{
+  "feature": "creator-photo-and-reach",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_note": "features/creator-photo-and-reach/04-preview/mockups/photo-and-reach.html — the two screens, before and after. Built from the live ProfileScreen and BrandInfluencerProfileScreen as they exist today.",
+  "notes": "Closes two items the founder raised on 2026-08-22 that were reported as 'next' and then not finished: the creator photo upload (without which the no-scraped-pictures rule could never be satisfied by anyone) and the three-way follower split on the creator profile page. Also removes influencers.avatar_url, a column added the previous day that duplicated the pre-existing profile_image_url; both were empty on production.",
+  "build_authorisation": "Founder 2026-08-22: 'yes correct, pls start building' for the original scope, then 'you continue with build' after being shown that both items were still open. No new mockups were drawn before building — this completes previously agreed scope rather than proposing new screens. The mockup is presented for lock BEFORE any deploy.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting — both phone apps via OTA, backend/src, AND a migration that DROPS a column.",
+    "deploy_targets": [
+      "migration 157 — ADD profile_image_r2_key (APPLIED to production before push)",
+      "Render (backend/src)",
+      "OTA (creator app + brand app)",
+      "migration 158 — DROP avatar_url, AFTER the new backend is verified live"
+    ],
+    "destructive": "Migration 157 drops a column on a live database. Verified empty first: 22 influencers, 0 populated. Requires its own explicit go, separate from the deploy go.",
+    "qa_note": "2026-08-22 — verified against PRODUCTION, not the test suite. The local test DB was unreachable throughout (container refusing connections, Docker refusing state changes) and the dev DB was five migrations stale, so neither could stand in.\n  Every changed statement was run against production inside a transaction and rolled back: search select, getPublicById select, and the write path — all passed, rollback confirmed clean.\n  avatar_url re-confirmed empty immediately before shipping: 22 rows, 0 populated.\n  Mobile 159/159. Android bundle clean.\n  NOT COVERED before deploy: the upload endpoint end to end — exercised against production after deploy.\n  NOT CLAIMED GREEN.",
+    "owed": [
+      "Backend tests for the photo upload endpoint and the consolidated column.",
+      "Full serial backend suite against the 93-failure baseline — still owed from features/collab-working-style-two-questions.",
+      "Founder device walk."
+    ]
+  },
+  "approved_by": "founder 2026-08-22 chat: \"you continue with build\" then \"take best decision\"",
+  "approved_at": "2026-08-22",
+  "mockup_locked_by": "founder 2026-08-22 — scope agreed in the earlier round (\"yes correct, pls start building\"), build re-authorised with \"you continue with build\". Completing agreed scope, not proposing new screens.",
+  "mockup_locked_at": "2026-08-22"
+}

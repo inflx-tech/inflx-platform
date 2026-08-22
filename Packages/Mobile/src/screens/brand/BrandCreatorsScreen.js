@@ -235,7 +235,7 @@ export default function BrandCreatorsScreen({ navigation }) {
             const soon = days != null && days <= 14;
             return (
               <View style={s.row}>
-                <CreatorAvatar name={item.influencer_name || item.instagram_handle} avatarUrl={item.avatar_url} size={38} square />
+                <CreatorAvatar name={item.influencer_name || item.instagram_handle} avatarUrl={item.profile_image_url} size={38} square />
                 <View style={{ flex: 1 }}>
                   <Text style={s.rowName}>{item.influencer_name || item.instagram_handle || 'Creator'}</Text>
                   <Text style={s.rowTerms}>{termsLine(item.settled_terms_json || item.terms_json)}</Text>
@@ -282,7 +282,7 @@ export default function BrandCreatorsScreen({ navigation }) {
               const tone = TONE[row.turn];
               return (
                 <TouchableOpacity key={`${row.kind}:${row.id}`} style={s.row} activeOpacity={0.7} onPress={() => openConversation(row)}>
-                  <CreatorAvatar name={row.name} avatarUrl={row.avatar_url} size={38} square />
+                  <CreatorAvatar name={row.name} avatarUrl={row.profile_image_url} size={38} square />
                   <View style={{ flex: 1 }}>
                     <Text style={s.rowName}>{row.name}</Text>
                     <Text style={s.rowTerms}>

@@ -14,7 +14,7 @@ import { ig } from '../theme/ig';
  * shown. The scraped Instagram picture is deliberately NOT used — a brand looking at a
  * creator should see what she chose to show, not what we took from her Instagram.
  *
- * So `avatar_url` is the only source. No upload means no picture, and she gets her
+ * So her uploaded `profile_image_url` is the only source. No upload means no picture, and she gets her
  * initials in a colour derived from her name — stable, so the same person is the same
  * colour on every screen and in every session. That is the honest empty state; a stock
  * silhouette would just be a picture nobody chose.

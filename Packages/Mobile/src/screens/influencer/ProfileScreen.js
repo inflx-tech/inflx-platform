@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
   TextInput, ActivityIndicator, Alert, Switch, RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { brandPalette as P, fonts, fmtNum } from '../../theme/tokens';
-import { influencerApi, clearSession } from '../../services/api';
+import { influencerApi, clearSession, uploadFile } from '../../services/api';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { AuthContext } from '../../../App';
 
 const LANGUAGE_OPTIONS = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi'];
@@ -45,6 +47,8 @@ export default function ProfileScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  // Her photo. Contract: features/creator-photo-and-reach
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [editSection, setEditSection] = useState(null); // 'profile' | 'bank' | 'content' | null
   const [pushEnabled, setPushEnabled] = useState(true);
 
@@ -228,6 +232,55 @@ export default function ProfileScreen({ navigation }) {
     suspended: P.dangerText,
   }[profile?.user_status] || P.muted;
 
+
+  /**
+   * Choose a photo. Three steps, the same shape the rest of the app uses: ask for a
+   * link, put the file straight into storage, then save the key on her profile.
+   *
+   * This is the ONLY way a picture of a creator is ever set. The platform holds a
+   * scraped Instagram picture for many creators and deliberately never shows it —
+   * founder instruction, 2026-08-22. Until this screen existed the rule had no way
+   * to be satisfied, so every creator was permanently initials.
+   */
+  async function pickPhoto() {
+    const r = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1, quality: 0.85, maxWidth: 1200, maxHeight: 1200 });
+    if (r.didCancel) return;
+    if (r.errorCode) { Alert.alert('Could not open photos', r.errorMessage || 'Try again.'); return; }
+    const asset = r.assets?.[0];
+    if (!asset?.uri) return;
+
+    setPhotoBusy(true);
+    try {
+      const urlRes = await influencerApi.getProfileImageUploadUrl({
+        content_type: asset.type || 'image/jpeg',
+      });
+      if (!urlRes.success) throw new Error(urlRes.error?.message || 'Could not start the upload');
+
+      const { url, method, key } = urlRes.data;
+      await uploadFile(url, method, asset.uri, asset.fileName || 'photo.jpg', asset.type || 'image/jpeg', key);
+
+      // Saving the key is what actually makes it hers — an uploaded file that was
+      // never recorded is a file nobody can find.
+      const saveRes = await influencerApi.updateMe({ profile_image_key: key });
+      if (!saveRes.success) throw new Error(saveRes.error?.message || 'Uploaded, but could not save it');
+
+      setProfile(prev => ({ ...(prev || {}), ...(saveRes.data?.influencer || {}) }));
+      Alert.alert('Photo updated', 'Brands will see this on your profile.');
+    } catch (e) {
+      Alert.alert('Could not update your photo', e.message || 'Try again.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
+  async function removePhoto() {
+    setPhotoBusy(true);
+    const res = await influencerApi.updateMe({ profile_image_key: '' });
+    setPhotoBusy(false);
+    if (res.success) setProfile(prev => ({ ...(prev || {}), ...(res.data?.influencer || {}) }));
+    else Alert.alert('Could not remove it', res.error?.message || 'Try again.');
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -237,11 +290,24 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Profile</Text>
         <View style={styles.avatarRow}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(profile?.instagram_handle || '??').slice(0, 2).toUpperCase()}
+          {/* Tap to change. A picture of a creator only ever comes from here.
+              Contract: features/creator-photo-and-reach */}
+          <TouchableOpacity onPress={pickPhoto} disabled={photoBusy} activeOpacity={0.75}>
+            <View style={styles.avatar}>
+              {photoBusy ? (
+                <ActivityIndicator color={P.ink} />
+              ) : profile?.profile_image_url ? (
+                <Image source={{ uri: profile.profile_image_url }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {(profile?.instagram_handle || '??').slice(0, 2).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <Text style={styles.photoHint}>
+              {photoBusy ? '…' : profile?.profile_image_url ? 'Change photo' : 'Add photo'}
             </Text>
-          </View>
+          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.handle}>@{profile?.instagram_handle}</Text>
             <Text style={styles.nameText}>{(profile?.name || profile?.full_name || 'No name set').toUpperCase()}</Text>
@@ -578,9 +644,12 @@ const styles = StyleSheet.create({
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
     width: 56, height: 56, borderRadius: 28,
+    overflow: 'hidden',
     backgroundColor: P.yellow,
     alignItems: 'center', justifyContent: 'center',
   },
+  avatarImg: { width: 56, height: 56, borderRadius: 28 },
+  photoHint: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.yellow, textAlign: 'center', marginTop: 5, letterSpacing: 0.3 },
   avatarText: { fontSize: 22, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
   handle: { fontSize: 16, fontWeight: '800', color: P.white, fontFamily: fonts.displayBold },
   nameText: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },

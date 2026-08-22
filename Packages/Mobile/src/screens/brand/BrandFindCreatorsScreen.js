@@ -218,7 +218,7 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
                 {(selecting || addToGroupId) && (
                   <View style={[s.box, on && s.boxOn]}><Text style={s.boxT}>{on ? '✓' : ''}</Text></View>
                 )}
-                <CreatorAvatar name={item.full_name || item.ig_handle} avatarUrl={item.avatar_url} size={42} />
+                <CreatorAvatar name={item.full_name || item.ig_handle} avatarUrl={item.profile_image_url} size={42} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.name}>{item.full_name || item.ig_handle}</Text>
                   <Text style={s.meta}>
