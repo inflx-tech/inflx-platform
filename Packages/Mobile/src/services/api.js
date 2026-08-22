@@ -190,6 +190,41 @@ export const brandApi = {
   declineCollabRequest:     (id, reason) => api.post(`/brands/me/collab-requests/${id}/decline`, { reason }),
   withdrawCollabRequest:    (id) => api.post(`/brands/me/collab-requests/${id}/withdraw`),
   listAgreements:           () => api.get('/brands/me/agreements'),
+
+  /* ── Stage 1 — everything before a campaign exists ─────────────────────────
+     All of this has been finished on the server for months and has never been
+     reachable from any surface: saved groups, asking a whole group, asking everyone
+     matching a filter, and the reach preview that says honestly who you did NOT
+     reach and why. It is the single largest block of finished-but-invisible work in
+     the system, and this is the first screen to call it.                        */
+
+  // Saved lists of creators.
+  listGroups:    () => api.get('/brands/me/influencer-groups'),
+  createGroup:   (name, influencerIds) => api.post('/brands/me/influencer-groups', { name, influencer_ids: influencerIds }),
+  renameGroup:   (id, name) => api.patch(`/brands/me/influencer-groups/${id}`, { name }),
+  deleteGroup:   (id) => api.delete(`/brands/me/influencer-groups/${id}`),
+  addToGroup:    (id, influencerIds) => api.post(`/brands/me/influencer-groups/${id}/members`, { influencer_ids: influencerIds }),
+  removeFromGroup: (id, influencerId) => api.delete(`/brands/me/influencer-groups/${id}/members/${influencerId}`),
+
+  // Who a filtered send would actually reach — matched, reachable, capped, and the
+  // reason for every drop. Asking for 41 and silently reaching 30 reads as "eleven
+  // people ignored me".
+  previewBroadcast: (filters) => api.post('/brands/me/collab-requests/broadcast-preview', { filters }),
+
+  // The same composer, three ways in. sendCollabRequest already takes influencer_id;
+  // these two are the group and the filtered set.
+  askGroup: (groupId, terms, message, overrides) =>
+    api.post('/brands/me/collab-requests', { group_id: groupId, terms, message, overrides }),
+  askMany:  (filters, terms, message) =>
+    api.post('/brands/me/collab-requests', { filters, terms, message }),
+
+  // Places to search in — state, then city, each with a real count of creators who
+  // are actually there. Only ever offers somewhere someone is.
+  listCreatorLocations: () => api.get('/influencers/locations'),
+
+  // Stage 1 — the negotiation history, the same page the creator reads.
+  getRequestDiary:  (id) => api.get(`/collab-diary/request/${id}`),
+  getPitchDiary:    (id) => api.get(`/collab-diary/proposal/${id}`),
   // Store preview — brand sees their store as customers see it
   getMyStorePreview: () => api.get('/brands/me/store-preview'),
   getWallet: () => api.get('/brands/me/wallet'),
@@ -397,6 +432,15 @@ export const influencerApi = {
   // collab-part2 — the pre-campaign handshake, creator side. Brands can now ask YOU;
   // these are the inbox, the responses, the mute/bar, and your agreements.
   listCollabRequests:     () => api.get('/influencers/me/collab-requests'),
+  // Stage 0 built this; Stage 1 is the first thing to read it. One count, computed on
+  // the server, so her badge and the brand's can never disagree about the same work.
+  getNeedsYou:            () => api.get('/influencers/me/needs-you'),
+  // Stage 1 — the negotiation history, the same page both sides see.
+  getRequestDiary:        (id) => api.get(`/collab-diary/request/${id}`),
+  getPitchDiary:          (id) => api.get(`/collab-diary/proposal/${id}`),
+  // Stage 1 — her counter on her OWN pitch. The route shipped long ago and no client
+  // has ever called it, so her only replies were accept or walk away.
+  counterMyProposal:      (id, terms, message) => api.post(`/influencers/me/proposals/${id}/counter`, { counter_terms: terms, message }),
   acceptCollabRequest:    (id) => api.post(`/influencers/me/collab-requests/${id}/accept`),
   counterCollabRequest:   (id, terms) => api.post(`/influencers/me/collab-requests/${id}/counter`, { terms }),
   declineCollabRequest:   (id, reason) => api.post(`/influencers/me/collab-requests/${id}/decline`, { reason }),

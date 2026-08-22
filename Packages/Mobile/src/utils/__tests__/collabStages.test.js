@@ -3,6 +3,15 @@ import {
   normalizeOffer, normalizeCampaign,
 } from '../collabStages';
 
+/* Stage 1 (features/stage-1-find-each-other-and-agree) changed the stage model with the
+   founder's locked approval: eight stages became six — Invitations · Pitches · To sign ·
+   Shoot · Content · Done. Three of the old ones were derived states a creator never saw,
+   and 'applied' could never be non-empty because nothing in the backend writes it.
+
+   These assertions were updated to the new behaviour rather than removed. Anything that
+   still holds — dedupe, offer-field backfill, null safety — is untouched, because that is
+   what proves the rework did not break what already worked. */
+
 // Helpers to build raw payload rows shaped like the real API.
 const offer = (id, status, extra = {}) => ({ id, status, brand_name: 'B', campaign_name: 'C', ...extra });
 const camp  = (ciId, status, extra = {}) => ({
@@ -11,31 +20,45 @@ const camp  = (ciId, status, extra = {}) => ({
 
 describe('deriveStage', () => {
   it('maps each status to its UI stage', () => {
-    expect(deriveStage({ status: 'invited' })).toBe('invites');
-    expect(deriveStage({ status: 'applied' })).toBe('applied');
-    expect(deriveStage({ status: 'negotiating' })).toBe('negotiating');
+    expect(deriveStage({ status: 'invited' })).toBe('invitations');
+    expect(deriveStage({ status: 'applied' })).toBe('pitches');
+    expect(deriveStage({ status: 'negotiating' })).toBe('invitations');
     expect(deriveStage({ status: 'accepted' })).toBe('to_sign');
     expect(deriveStage({ status: 'pending_influencer' })).toBe('to_sign');
     expect(deriveStage({ status: 'pending_brand' })).toBe('to_sign');
-    expect(deriveStage({ status: 'contracted' })).toBe('active');
-    expect(deriveStage({ status: 'active' })).toBe('active');
-    expect(deriveStage({ status: 'completed' })).toBe('completed');
+    expect(deriveStage({ status: 'contracted' })).toBe('shoot');
+    expect(deriveStage({ status: 'active' })).toBe('shoot');
+    expect(deriveStage({ status: 'completed' })).toBe('done');
   });
 
-  it('routes terminal statuses to archive', () => {
+  it('a finished conversation reads as Done, not a category of its own', () => {
+    // Archive was a ninth bucket for things that had simply ended. Six stages means a
+    // declined conversation is finished — which is what Done says.
     for (const s of ['declined', 'expired', 'rejected_by_brand', 'slots_filled', 'cancelled', 'walked_away']) {
-      expect(deriveStage({ status: s })).toBe('archive');
+      expect(deriveStage({ status: s })).toBe('done');
     }
   });
 
-  it('derives tracking when all deliverables are done on an active engagement', () => {
-    expect(deriveStage({ status: 'active', deliverable_count: 2, approved_count: 2 })).toBe('tracking');
-    expect(deriveStage({ status: 'active', deliverable_count: 2, approved_count: 1 })).toBe('active');
-    expect(deriveStage({ status: 'active', deliverable_count: 0, approved_count: 0 })).toBe('active');
+  it('signed work moves Shoot → Content → Done as there is progress to read', () => {
+    // Deliberately conservative: nothing here claims a shoot is finished, because the
+    // system has no way to know that until Stage 4 gives the shoot its own screen.
+    expect(deriveStage({ status: 'active', deliverable_count: 0, approved_count: 0 })).toBe('shoot');
+    expect(deriveStage({ status: 'active', deliverable_count: 2, approved_count: 1 })).toBe('content');
+    expect(deriveStage({ status: 'active', deliverable_count: 2, approved_count: 2 })).toBe('done');
   });
 
-  it('keeps unknown statuses visible (active bucket)', () => {
-    expect(deriveStage({ status: 'some_new_status' })).toBe('active');
+  it('keeps an unknown status visible rather than hiding it', () => {
+    expect(deriveStage({ status: 'some_new_status' })).toBe('shoot');
+  });
+
+  it('A CONVERSATION IS PLACED BY ITS DIRECTION, NOT ITS STATUS', () => {
+    // The heart of Stage 1. A brand asking her is an Invitation whatever state it is
+    // in, and her pitch is a Pitch — because direction is what she is choosing between.
+    expect(deriveStage({ source: 'request', status: 'sent' })).toBe('invitations');
+    expect(deriveStage({ source: 'request', status: 'countered' })).toBe('invitations');
+    expect(deriveStage({ source: 'request', status: 'agreed' })).toBe('invitations');
+    expect(deriveStage({ source: 'proposal', status: 'sent' })).toBe('pitches');
+    expect(deriveStage({ source: 'proposal', status: 'countered' })).toBe('pitches');
   });
 });
 
@@ -75,7 +98,7 @@ describe('mergeCollabs — dedupe (the core correctness requirement)', () => {
       [camp('ci-1', 'active', { deliverable_count: 3, approved_count: 3 })],
     );
     expect(merged[0].deliverable_count).toBe(3);
-    expect(merged[0].stage).toBe('tracking'); // all done → tracking
+    expect(merged[0].stage).toBe('done'); // every deliverable approved
     expect(merged[0].source).toBe('campaign');
   });
 
@@ -103,7 +126,7 @@ describe('mergeCollabs — dedupe (the core correctness requirement)', () => {
 
   it('attaches derived stage + turn to every row', () => {
     const merged = mergeCollabs([offer('ci-1', 'invited')], []);
-    expect(merged[0].stage).toBe('invites');
+    expect(merged[0].stage).toBe('invitations');
     expect(merged[0].turn).toBe('you');
   });
 });
@@ -120,31 +143,31 @@ describe('filterByStage + stageCounts', () => {
     expect(filterByStage(merged, 'all')).toHaveLength(5);
   });
   it('filters to a single stage', () => {
-    expect(filterByStage(merged, 'invites').map(c => c.ciId)).toEqual(['ci-1']);
-    expect(filterByStage(merged, 'active').map(c => c.ciId)).toEqual(['ci-3']);
-    expect(filterByStage(merged, 'archive').map(c => c.ciId)).toEqual(['ci-5']);
+    expect(filterByStage(merged, 'invitations').map(c => c.ciId)).toEqual(['ci-1', 'ci-2']);
+    expect(filterByStage(merged, 'content').map(c => c.ciId)).toEqual(['ci-3']);
+    expect(filterByStage(merged, 'done').map(c => c.ciId)).toEqual(['ci-4', 'ci-5']);
   });
   it('counts match the deduped set', () => {
     const counts = stageCounts(merged);
     expect(counts.all).toBe(5);
-    expect(counts.invites).toBe(1);
-    expect(counts.negotiating).toBe(1);
-    expect(counts.active).toBe(1);
-    expect(counts.completed).toBe(1);
-    expect(counts.archive).toBe(1);
+    expect(counts.invitations).toBe(2);   // invited + negotiating both read as invitations
+    expect(counts.content).toBe(1);
+    expect(counts.done).toBe(2);          // completed + expired
+    expect(counts.pitches).toBe(0);       // present and zero, never absent
+    expect(counts.shoot).toBe(0);
   });
 });
 
 describe('isPreSign routing', () => {
   it('pre-sign stages route to OfferDetail', () => {
-    expect(isPreSign({ stage: 'invites' })).toBe(true);
-    expect(isPreSign({ stage: 'negotiating' })).toBe(true);
+    expect(isPreSign({ stage: 'invitations' })).toBe(true);
+    expect(isPreSign({ stage: 'pitches' })).toBe(true);
     expect(isPreSign({ stage: 'to_sign' })).toBe(true);
   });
   it('post-sign stages route to CampaignDetail', () => {
-    expect(isPreSign({ stage: 'active' })).toBe(false);
-    expect(isPreSign({ stage: 'tracking' })).toBe(false);
-    expect(isPreSign({ stage: 'completed' })).toBe(false);
+    expect(isPreSign({ stage: 'shoot' })).toBe(false);
+    expect(isPreSign({ stage: 'content' })).toBe(false);
+    expect(isPreSign({ stage: 'done' })).toBe(false);
   });
 });
 

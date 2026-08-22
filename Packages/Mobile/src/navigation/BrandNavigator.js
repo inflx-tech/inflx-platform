@@ -26,6 +26,13 @@ import BrandRequestComposerScreen from '../screens/brand/BrandRequestComposerScr
 import BrandCollabRequestsScreen from '../screens/brand/BrandCollabRequestsScreen';
 import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScreen';
 import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
+// Stage 1 — everything that happens before a campaign exists.
+import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
+import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
+import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
+import BrandPlacePickerScreen from '../screens/brand/BrandPlacePickerScreen';
+import BrandAskManyScreen from '../screens/brand/BrandAskManyScreen';
+import BrandDiaryScreen from '../screens/brand/BrandDiaryScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 // Parity pack (contract: features/brand-mobile-parity-pack)
 import BrandOrdersScreen from '../screens/brand/BrandOrdersScreen';
@@ -67,6 +74,34 @@ function HomeStack() {
   );
 }
 
+/**
+ * Stage 1 — the Creators tab. Everything before a campaign exists: searching, saved
+ * groups, asking one or many, and every conversation in both directions.
+ *
+ * Route names here are deliberately distinct from the copies inside HomeStack. The
+ * same name in DIFFERENT stacks is fine and is already the pattern in this app
+ * (CampaignDetail lives in two, ContractPdf in three). What crashes on a device — and
+ * passes every bundle check first — is two screens sharing a name INSIDE one stack.
+ */
+function CreatorsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CreatorsHome" component={BrandCreatorsScreen} />
+      <Stack.Screen name="BrandInfluencerBrowse" component={BrandInfluencerBrowseScreen} />
+      <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
+      <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
+      <Stack.Screen name="BrandCollabRequests" component={BrandCollabRequestsScreen} />
+      <Stack.Screen name="ProposalInbox" component={BrandProposalInboxScreen} />
+      <Stack.Screen name="BrandGroups" component={BrandGroupsScreen} />
+      <Stack.Screen name="BrandGroupDetail" component={BrandGroupDetailScreen} />
+      <Stack.Screen name="BrandPlacePicker" component={BrandPlacePickerScreen} />
+      <Stack.Screen name="BrandAskMany" component={BrandAskManyScreen} />
+      <Stack.Screen name="BrandDiary" component={BrandDiaryScreen} />
+      <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
+    </Stack.Navigator>
+  );
+}
+
 function CampaignsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -88,6 +123,7 @@ function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
+      {/* Stage 1 — Alerts lives here now. Same screen, same route name it always had. */}
       <Stack.Screen name="Notifications" component={BrandNotificationsScreen} />
       <Stack.Screen name="MediaGallery" component={BrandMediaGalleryScreen} />
       <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
@@ -126,9 +162,12 @@ export default function BrandNavigator() {
       }}
     >
       <Tab.Screen name="Home"      component={HomeStack}                options={tabIcon('home-outline', 'Home')} />
+      <Tab.Screen name="Creators"  component={CreatorsStack}            options={tabIcon('account-multiple-outline', 'Creators')} />
       <Tab.Screen name="Campaigns" component={CampaignsStack}           options={tabIcon('bullhorn-outline', 'Campaigns')} />
       <Tab.Screen name="Wallet"    component={BrandWalletScreen}        options={tabIcon('wallet-outline', 'Wallet')} />
-      <Tab.Screen name="Alerts"    component={BrandNotificationsScreen} options={tabIcon('bell-outline', 'Alerts')} />
+      {/* Stage 1 — Alerts gives up its tab to Creators and moves under Profile. A tab
+          is somewhere you go on purpose; a feed you check when a badge appears is not.
+          The screen is unchanged and still reachable — only its home moved. */}
       <Tab.Screen name="Profile"   component={ProfileStack}             options={tabIcon('account-outline', 'Profile')} />
     </Tab.Navigator>
   );

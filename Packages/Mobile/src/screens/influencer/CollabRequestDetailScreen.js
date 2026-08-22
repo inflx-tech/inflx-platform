@@ -3,7 +3,9 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { brandPalette as P, fonts } from '../../theme/tokens';
+import { ig } from '../../theme/ig';
+// Stage 1 — restyled from brandPalette to the ig kit as part of moving into Collabs.
+// A yellow screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
 
 /**
@@ -51,7 +53,7 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   }, [requestId]);
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <View style={s.center}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator color={ig.y} /></View>;
   if (!req) return <View style={s.center}><Text style={s.gone}>This request is no longer available.</Text></View>;
 
   const t = req.terms_json || {};
@@ -259,46 +261,46 @@ function Field({ label, value, onChange, keyboardType, placeholder }) {
   return (
     <View style={{ marginBottom: 10 }}>
       <Text style={s.fl}>{label}</Text>
-      <TextInput style={s.inp} value={value} onChangeText={onChange} keyboardType={keyboardType} placeholder={placeholder} placeholderTextColor={P.muted3} />
+      <TextInput style={s.inp} value={value} onChangeText={onChange} keyboardType={keyboardType} placeholder={placeholder} placeholderTextColor={ig.mut2} />
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: P.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: P.bg },
-  gone: { fontFamily: fonts.sansRegular, color: P.muted, fontSize: 13 },
+  wrap: { flex: 1, backgroundColor: ig.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg },
+  gone: {, color: ig.text2, fontSize: 13 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  logo: { width: 40, height: 40, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
-  logoTxt: { fontFamily: fonts.monoBold, color: P.yellow, fontSize: 13 },
-  brandName: { fontFamily: fonts.sansBold, fontSize: 15, color: P.ink },
-  brandMeta: { fontFamily: fonts.sansRegular, fontSize: 11, color: P.muted2, marginTop: 1 },
-  st: { backgroundColor: P.bg2, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
-  stWarn: { backgroundColor: P.yellowPale },
-  stTxt: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted, textTransform: 'uppercase' },
-  msg: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.muted, fontStyle: 'italic', marginBottom: 12, lineHeight: 17 },
-  h: { fontFamily: fonts.monoBold, fontSize: 9.5, color: P.muted2, letterSpacing: 0.5, marginTop: 14, marginBottom: 6 },
-  row: { flexDirection: 'row', alignItems: 'center', backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, padding: 11, marginBottom: 7 },
-  rk: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink },
-  rv: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink },
-  tag: { fontFamily: fonts.monoBold, fontSize: 7.5, marginTop: 3, letterSpacing: 0.4 },
+  logo: { width: 40, height: 40, borderRadius: 10, backgroundColor: ig.text, alignItems: 'center', justifyContent: 'center' },
+  logoTxt: {, color: ig.y, fontSize: 13 },
+  brandName: {, fontSize: 15, color: ig.text },
+  brandMeta: {, fontSize: 11, color: ig.mut, marginTop: 1 },
+  st: { backgroundColor: ig.bgSoft, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
+  stWarn: { backgroundColor: ig.yBg },
+  stTxt: {, fontSize: 8.5, color: ig.text2, textTransform: 'uppercase' },
+  msg: {, fontSize: 12, color: ig.text2, fontStyle: 'italic', marginBottom: 12, lineHeight: 17 },
+  h: {, fontSize: 9.5, color: ig.mut, letterSpacing: 0.5, marginTop: 14, marginBottom: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', backgroundColor: ig.bg, borderRadius: 10, borderWidth: 1, borderColor: ig.line, padding: 11, marginBottom: 7 },
+  rk: {, fontSize: 12.5, color: ig.text },
+  rv: {, fontSize: 13, color: ig.text },
+  tag: {, fontSize: 7.5, marginTop: 3, letterSpacing: 0.4 },
   tagNeg: { color: '#047857' },
   tagReq: { color: '#B91C1C' },
-  tagPref: { color: P.yellowText },
-  openBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginTop: 10 },
-  openTxt: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: P.muted, lineHeight: 16 },
+  tagPref: { color: ig.yInk },
+  openBox: { backgroundColor: ig.bgSoft, borderRadius: 10, padding: 11, marginTop: 10 },
+  openTxt: {, fontSize: 11.5, color: ig.text2, lineHeight: 16 },
   counterBox: { marginTop: 14 },
-  fl: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted, letterSpacing: 0.4, marginBottom: 4, textTransform: 'uppercase' },
-  inp: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink },
+  fl: {, fontSize: 9, color: ig.text2, letterSpacing: 0.4, marginBottom: 4, textTransform: 'uppercase' },
+  inp: { backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontSize: 13, color: ig.text },
   chips: { flexDirection: 'row', gap: 7, marginBottom: 10, flexWrap: 'wrap' },
-  chip: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
-  chipAct: { backgroundColor: P.ink, borderColor: P.ink },
-  chipTxt: { fontFamily: fonts.sansBold, fontSize: 11, color: P.muted },
-  chipTxtAct: { color: P.yellow },
-  cta: { backgroundColor: P.yellow, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
-  ctaTxt: { fontFamily: fonts.displayBlack, fontSize: 13, color: P.ink, letterSpacing: 0.4 },
-  ctaInk: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
-  ctaInkTxt: { fontFamily: fonts.displayBlack, fontSize: 13, color: P.yellow, letterSpacing: 0.4 },
+  chip: { backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
+  chipAct: { backgroundColor: ig.text, borderColor: ig.text },
+  chipTxt: {, fontSize: 11, color: ig.text2 },
+  chipTxtAct: { color: ig.y },
+  cta: { backgroundColor: ig.y, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
+  ctaTxt: {, fontSize: 13, color: ig.text, letterSpacing: 0.4 },
+  ctaInk: { backgroundColor: ig.text, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
+  ctaInkTxt: {, fontSize: 13, color: ig.y, letterSpacing: 0.4 },
   ctaGhost: { borderRadius: 11, paddingVertical: 12, alignItems: 'center', marginTop: 6 },
-  ctaGhostTxt: { fontFamily: fonts.sansBold, fontSize: 12, color: '#B91C1C' },
+  ctaGhostTxt: {, fontSize: 12, color: '#B91C1C' },
 });

@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 1 — the screens that change</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:860px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.wrap{position:relative}
+.tagapp{position:absolute;top:-9px;left:10px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:2}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-both{background:var(--yBg);color:var(--yInk)}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:720px;overflow-y:auto}
+
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+.stg span.off{color:var(--mut2)}
+.stg .n{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:999px;padding:1px 5px;margin-left:3px}
+.stg span:not(.on) .n{background:var(--lineSoft);color:var(--mut)}
+
+.tr{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--lineSoft);align-items:flex-start}
+.av{width:38px;height:38px;border-radius:11px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:12px;font-weight:800;flex-shrink:0}
+.pic{width:38px;height:38px;border-radius:50%;background:#EDE7E0;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.tr .m{flex:1;min-width:0}
+.tr .bn{font-size:13px;font-weight:800;font-family:'Outfit'}
+.tr .tm{font-size:11px;color:var(--text2);font-weight:650;margin-top:2px}
+.tr .st{font-size:10px;font-weight:800;margin-top:5px;display:flex;align-items:center;gap:5px;letter-spacing:.2px}
+.tr .sub2{font-size:10px;color:var(--mut);font-weight:650;margin-top:3px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.c-you{color:var(--yInk)}.d-you{background:var(--y)}
+.c-them{color:var(--blue)}.d-them{background:var(--blue)}
+.c-nego{color:var(--purple)}.d-nego{background:var(--purple)}
+.c-done{color:var(--green)}.d-done{background:var(--green)}
+.c-closed{color:var(--red)}.d-closed{background:var(--red)}
+.chev{color:var(--mut2);font-size:15px;align-self:center}
+.lhd{padding:11px 14px 6px;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase}
+.prefrow{margin:10px 14px 4px;border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--text2)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.tag{font-size:8.5px;font-weight:800;letter-spacing:.35px;text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-left:6px}
+.tag.neg{background:var(--yBg);color:var(--yInk)}
+.tag.req{background:var(--redBg);color:var(--red)}
+.tag.pref{background:var(--lineSoft);color:var(--mut)}
+.quote{font-size:11.5px;color:var(--text2);font-style:italic;line-height:1.6;padding:10px 12px;background:#FAFAFA;border-radius:10px;border-left:2px solid var(--line)}
+
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+
+.btn{border:none;border-radius:10px;padding:11px;font-size:12.5px;font-weight:800;font-family:inherit;width:100%;text-align:center;display:block;margin-top:8px}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F7F7F7;color:var(--mut2);border:1px solid var(--lineSoft)}
+
+.diff{border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.diff .dr{display:flex;align-items:center;gap:8px;padding:8px 11px;border-bottom:1px solid var(--lineSoft);font-size:11.5px}
+.diff .dr:last-child{border-bottom:none}
+.diff .dk{flex:1;color:var(--mut);font-weight:700}
+.old{color:var(--mut2);text-decoration:line-through;font-weight:700;font-family:'JetBrains Mono';font-size:10.5px}
+.arw{color:var(--mut2);font-size:11px}
+.new{color:var(--ink);font-weight:800;font-family:'JetBrains Mono';font-size:11px}
+.same{color:var(--mut);font-weight:700;font-family:'JetBrains Mono';font-size:10.5px}
+
+.tl{position:relative;padding-left:18px}
+.tl::before{content:'';position:absolute;left:4px;top:5px;bottom:8px;width:1.5px;background:var(--lineSoft)}
+.ev{position:relative;padding-bottom:13px}
+.ev:last-child{padding-bottom:0}
+.ev::before{content:'';position:absolute;left:-17px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--mut2);border:2px solid #fff}
+.ev.you::before{background:var(--y)}.ev.brnd::before{background:var(--blue)}.ev.ok::before{background:var(--green)}
+.ev .w{font-size:11.5px;font-weight:800}
+.ev .d{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ev .x{font-size:11px;color:var(--text2);font-weight:650;margin-top:3px;line-height:1.5}
+
+.fol{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.folTop{background:var(--ink);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.folTop .n{font-family:'Outfit';font-size:20px;font-weight:800;color:var(--y)}
+.folTop .l{font-size:9px;font-weight:800;letter-spacing:.4px;line-height:1.35}
+.folRow{display:flex;align-items:center;gap:9px;padding:8px 12px;border-top:1px solid var(--lineSoft);font-size:11.5px}
+.folRow .n2{font-family:'JetBrains Mono';font-size:14px;font-weight:800;min-width:30px}
+.folRow .l2{font-weight:700;color:var(--text2);line-height:1.35}
+.folRow .l2 small{display:block;color:var(--mut);font-weight:650;font-size:10px}
+
+.tabbar{display:flex;border-top:1px solid var(--line);background:var(--white)}
+.tabbar div{flex:1;text-align:center;padding:9px 0 8px;font-size:9px;font-weight:700;color:var(--mut2)}
+.tabbar div.on{color:var(--ink)}
+.tabbar .ic{font-size:15px;display:block;margin-bottom:2px}
+.badge{display:inline-block;background:var(--y);color:var(--ink);font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;border-radius:999px;padding:1px 5px;margin-left:3px}
+
+.subtabs{display:flex;gap:14px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);font-size:11px;font-weight:700;color:var(--mut)}
+.subtabs .on{color:var(--ink);font-weight:800;border-bottom:2px solid var(--ink);padding-bottom:5px}
+
+.srch{margin:10px 14px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:11.5px;color:var(--mut2);font-weight:650}
+.frow{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--lineSoft)}
+.frow .fi{font-size:14px;width:18px;text-align:center}
+.frow .fl{flex:1}
+.frow .fk{font-size:9.5px;font-weight:800;color:var(--mut);letter-spacing:.4px;text-transform:uppercase}
+.frow .fv{font-size:12px;font-weight:800;margin-top:1px}
+.frow .fc{font-size:10.5px;color:var(--blue);font-weight:800}
+
+.pick{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);font-size:12px}
+.pick .cb{width:16px;height:16px;border:1.5px solid var(--line);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.pick .cb.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.pick .nm{flex:1;font-weight:700}
+.pick .ct{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--mut)}
+.pick.zero{opacity:.42}
+.pick.state{font-weight:800;background:#FAFAFA}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px}
+.chip{background:var(--ink);color:#fff;font-size:10.5px;font-weight:700;border-radius:999px;padding:4px 10px}
+.chip.gh{background:var(--lineSoft);color:var(--mut)}
+
+table.m{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px;max-width:940px}
+table.m th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);border-bottom:1px solid var(--border);padding:7px 9px}
+table.m td{border-bottom:1px solid var(--lineSoft);padding:7px 9px;vertical-align:top;font-weight:650}
+table.m td b{font-weight:800}
+.pill{font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.3px}
+.p-new{background:var(--purpleBg);color:var(--purple)}
+.p-move{background:var(--blueBg);color:var(--blue)}
+.p-wire{background:var(--yBg);color:var(--yInk)}
+.p-keep{background:var(--greenBg);color:var(--green)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Stage 1 — a brand and a creator find each other, and agree</h1>
+  <p>The screens this stage changes · drawn from FINAL 1 and the creator conversations board · for the founder's lock</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="1">① Her Collabs tab</button>
+  <button class="tab" data-v="2">② The brand's ask</button>
+  <button class="tab" data-v="3">③ Countering</button>
+  <button class="tab" data-v="4">④ Her pitches</button>
+  <button class="tab" data-v="5">⑤ The brand's Creators tab</button>
+  <button class="tab" data-v="6">⑥ Where, and who</button>
+  <button class="tab" data-v="7">⑦ Groups</button>
+  <button class="tab" data-v="8">⑧ Asking many</button>
+  <button class="tab" data-v="9">⑨ What happened here</button>
+  <button class="tab" data-v="10">⑩ What changes</button>
+</div>
+
+<!-- ①  HER COLLABS TAB -->
+<div class="view on" id="v1">
+  <div class="vh">Her Collabs tab — six stages, and the badge</div>
+  <div class="vs">A brand's request arrives on the first screen she already uses. Today it sits under Profile → Brand Proposals → third tab, which is why one went unseen for a week.</div>
+
+  <div class="note key"><b>Six stages replace eight.</b> Today's list is Invites · Applied · Negotiating · To sign · Active · Tracking · Completed · Archive — and three of those are states a creator never sees. <b>Empty stages stay visible and greyed</b> rather than disappearing: a strip that changes shape as work arrives is disorienting, and hiding "Done" is part of what let the original bug live.</div>
+
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-c">CREATOR</span>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">Collabs</div><div class="sub">2 need you · 1 waiting</div></div><div style="font-size:14px">🔔</div></div>
+        <div class="body">
+          <div class="stg">
+            <span class="on">Invitations<span class="n">2</span></span>
+            <span>Pitches<span class="n">1</span></span>
+            <span>To sign</span>
+            <span class="off">Shoot</span>
+            <span class="off">Content</span>
+            <span class="off">Done</span>
+          </div>
+          <div class="prefrow">⚙ Who can ask me, and my minimums <span style="margin-left:auto;color:var(--mut2)">›</span></div>
+          <div class="lhd">Needs you</div>
+          <div class="tr">
+            <div class="av">KS</div>
+            <div class="m">
+              <div class="bn">Kanchi Silks</div>
+              <div class="tm">15% commission · post by 24 Aug</div>
+              <div class="st c-you"><span class="dot d-you"></span>THEY ASKED YOU — ANSWER BY 22 AUG</div>
+            </div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="av">ZV</div>
+            <div class="m">
+              <div class="bn">Zavya Label</div>
+              <div class="tm">₹12,000 + 8% · post by 30 Aug</div>
+              <div class="st c-nego"><span class="dot d-nego"></span>THEY COUNTERED — 1 ROUND LEFT</div>
+              <div class="sub2">Asked 9 Aug · you countered 11 Aug</div>
+            </div><div class="chev">›</div>
+          </div>
+          <div class="lhd">Waiting on the brand</div>
+          <div class="tr">
+            <div class="av">MK</div>
+            <div class="m">
+              <div class="bn">Mokha Beauty</div>
+              <div class="tm">18% commission · post by 5 Sep</div>
+              <div class="st c-done"><span class="dot d-done"></span>TERMS AGREED — BUILDING YOUR CAMPAIGN</div>
+              <div class="sub2">Agreed 12 Aug · expires 10 Nov</div>
+            </div><div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div><span class="ic">⌂</span>Home</div>
+          <div class="on"><span class="ic">◈</span>Collabs<span class="badge">2</span></div>
+          <div><span class="ic">✚</span>Create</div>
+          <div><span class="ic">₹</span>Earnings</div>
+          <div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap"><b>Grouped by who owes the next move</b>, not by record type. The badge is the number built in Stage 0 — both apps read the same one.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="note good"><b>Her rules move with the inbox.</b> Mute, minimums and what she'll consider sit at the top of Invitations — where she is actually thinking about who may ask her — instead of three taps into Profile.</div>
+      <div class="note info"><b>One brand is one row</b>, whatever stage it is at. Mokha Beauty is a request, then an agreement, then a campaign — three records behind the scenes, one line here.</div>
+      <table class="m">
+        <tr><th>What each row carries</th><th>Why it earns the space</th></tr>
+        <tr><td><b>Money and time</b></td><td>The two terms always on the table. If a row shows one thing, it shows these.</td></tr>
+        <tr><td><b>Whose turn</b></td><td>Colour carries it: yellow is hers, blue is theirs, purple mid-negotiation, green agreed, red closed.</td></tr>
+        <tr><td><b>The deadline</b></td><td>Requests expire in 7 days. An inbox that hides the clock creates the dead request it exists to prevent.</td></tr>
+        <tr><td><b>History line</b></td><td>Only when there is any. A fresh request has no second line.</td></tr>
+      </table>
+      <div class="note bad" style="margin-top:14px"><b>What leaves.</b> The Profile row "Brand Proposals" is retired. Discover — browsing brands to pitch — is <b>kept</b>, and moves to the top of Pitches.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ②  THE BRAND'S ASK -->
+<div class="view" id="v2">
+  <div class="vh">The brand's ask, opened</div>
+  <div class="vs">Everything she needs on one screen: what they want, what is negotiable, what is not, and the three things she can do.</div>
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-c">CREATOR</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Kanchi Silks</div><div class="sub">FASHION · PAY PER SALE</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait y">Your turn — they asked you on 15 Aug. This expires <b>22 Aug</b>.</div></div>
+          <div class="dsec"><div class="quote">"This collaboration is going to be a great one for you and our brand."</div></div>
+          <div class="dsec">
+            <div class="dh">Must be agreed</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">15% <span class="tag neg">negotiable</span></div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">24 Aug 2026 <span class="tag neg">negotiable</span></div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">They also want</div>
+            <div class="trm"><div class="k">You'd promote</div><div class="v">Sarees <span class="tag req">must have</span></div></div>
+            <div class="trm"><div class="k">Where you shoot</div><div class="v">Your end <span class="tag pref">preference</span></div></div>
+            <div class="trm"><div class="k">Are they shipping?</div><div class="v">Yes <span class="tag pref">preference</span></div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">A <b>must have</b> cannot be countered. If it does not work for you, the honest answer is <b>Not interested</b>.</div>
+            <button class="btn pri">Accept these terms</button>
+            <button class="btn sec">Counter — suggest your terms</button>
+            <button class="btn dgr">Not interested</button>
+            <div style="text-align:center;font-size:10.5px;color:var(--mut);font-weight:700;margin-top:8px">You have 2 counters. They have 2.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">What happens if you accept</div>
+            <div class="ev" style="padding-bottom:9px"><div class="w">Terms are settled</div><div class="x">Money and timing locked in writing. <b>No campaign yet.</b></div></div>
+            <div class="ev" style="padding-bottom:9px"><div class="w">Kanchi Silks builds the campaign</div><div class="x">Briefed with these terms already filled in.</div></div>
+            <div class="ev"><div class="w">You accept in one tap</div><div class="x">Nothing left to renegotiate — the contract generates.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Accepting produces <b>an agreement, not a campaign</b> — a creator expecting work to start tomorrow needs telling.</div>
+    </div>
+    <div style="flex:1;min-width:320px">
+      <div class="note key"><b>Must-have versus preference is load-bearing.</b> A counter that quietly rewrites a must-have reads as agreement and is not one. So a must-have is shown locked here, and is <b>absent from the counter form entirely</b> — an input you cannot use is still an invitation to try.</div>
+      <table class="m">
+        <tr><th>State</th><th>Whose turn</th><th>What she is offered</th></tr>
+        <tr><td>Asked, or opened</td><td><b>Hers</b></td><td>Accept · Counter · Not interested</td></tr>
+        <tr><td>She countered</td><td>Theirs</td><td>Nothing — waiting, with rounds shown</td></tr>
+        <tr><td>They countered back</td><td><b>Hers</b></td><td>Accept · Counter again if rounds remain · Not interested</td></tr>
+        <tr><td>Agreed</td><td>Theirs</td><td>Nothing — the expiry date is shown</td></tr>
+        <tr><td>Campaign built</td><td><b>Hers</b></td><td>Review the campaign → one-tap accept</td></tr>
+        <tr><td>Declined or expired</td><td>—</td><td>Nothing — the reason is shown</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ③  COUNTERING -->
+<div class="view" id="v3">
+  <div class="vh">Countering — shown as what moved</div>
+  <div class="vs">A counter is never a blank form. Both sides see exactly what changed, and by how much.</div>
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-both">BOTH APPS</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Your counter</div><div class="sub">KANCHI SILKS · 2 ROUNDS LEFT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Money and time</div>
+            <div class="trm"><div class="k">Commission %</div><div class="v">22</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">2 Sep 2026</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Cannot be changed</div>
+            <div class="wait n">🔒 You'd promote <b>Sarees</b> — the brand marked this a must have</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">They will see</div>
+            <div class="diff">
+              <div class="dr"><div class="dk">Commission</div><span class="old">15%</span><span class="arw">→</span><span class="new">22%</span></div>
+              <div class="dr"><div class="dk">Post by</div><span class="old">24 Aug</span><span class="arw">→</span><span class="new">2 Sep</span></div>
+              <div class="dr"><div class="dk">Promote sarees</div><span class="same">unchanged</span></div>
+            </div>
+            <button class="btn pri">Send counter</button>
+            <div style="text-align:center;font-size:10.5px;color:var(--mut);font-weight:700;margin-top:8px">After this you have 1 counter left.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">The composer <b>omits</b> the must-have rather than greying it out.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Asha M.</div><div class="sub">YOU ASKED · SHE COUNTERED</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait y">Your turn. She answered 12 Aug — 1 counter left on your side, 1 on hers.</div></div>
+          <div class="dsec">
+            <div class="dh">What she moved</div>
+            <div class="diff">
+              <div class="dr"><div class="dk">Commission</div><span class="old">15%</span><span class="arw">→</span><span class="new">22%</span></div>
+              <div class="dr"><div class="dk">Post by</div><span class="old">24 Sep</span><span class="arw">→</span><span class="new">2 Oct</span></div>
+              <div class="dr"><div class="dk">Where she shoots</div><span class="same">her end — unchanged</span></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <button class="btn pri">Accept 22% · 2 Oct</button>
+            <button class="btn sec">Counter back · 1 left</button>
+            <button class="btn dgr">Not for us</button>
+            <div style="text-align:center;font-size:10.5px;color:var(--mut);font-weight:700;margin-top:8px">Declining starts a 30-day cooldown.</div>
+            <button class="btn off" style="margin-top:10px">See how you got here</button>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><b>Accept names the numbers</b> it is about to settle — never just "Accept".</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>This screen is built once and appears in both apps</b> — same buttons, same words, same diff. Only the names swap. That is what makes a disagreement about "what did we agree" impossible.</div>
+      <div class="note key"><b>Accept always states the terms.</b> "Accept proposal" hides which offer is being settled; "Accept 22% · 2 Oct" makes settling a stale one visible on screen.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④  HER PITCHES -->
+<div class="view" id="v4">
+  <div class="vh">Her pitches — and the reply she has never been able to give</div>
+  <div class="vs">The same shell, the other direction. Plus the one move that is missing today.</div>
+
+  <div class="note bad"><b>Today she can only say yes or walk away.</b> She pitches ₹20,000, the brand counters ₹8,000, and her only buttons are accept or decline — she cannot say ₹14,000. "Negotiate" currently means negotiate <i>only when the brand started it</i>. <b>Her side of this is already finished and unreachable</b>; this stage connects it.</div>
+
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-c">CREATOR</span>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">Collabs</div><div class="sub">1 needs you</div></div><div style="font-size:14px">🔔</div></div>
+        <div class="body">
+          <div class="stg">
+            <span>Invitations<span class="n">2</span></span>
+            <span class="on">Pitches<span class="n">1</span></span>
+            <span>To sign</span><span class="off">Shoot</span><span class="off">Content</span><span class="off">Done</span>
+          </div>
+          <div class="prefrow">🔍 Find brands to pitch <span style="margin-left:auto;color:var(--mut2)">›</span></div>
+          <div class="lhd">Needs you</div>
+          <div class="tr">
+            <div class="av">NF</div>
+            <div class="m">
+              <div class="bn">Nova Fit</div>
+              <div class="tm">You asked ₹20,000 · they offered ₹8,000</div>
+              <div class="st c-nego"><span class="dot d-nego"></span>THEY COUNTERED — YOUR MOVE</div>
+              <div class="sub2">Pitched 8 Aug · countered 13 Aug</div>
+            </div><div class="chev">›</div>
+          </div>
+          <div class="lhd">Waiting on the brand</div>
+          <div class="tr">
+            <div class="av">CS</div>
+            <div class="m">
+              <div class="bn">Cane &amp; Stone</div>
+              <div class="tm">₹15,000 + 5% · window 1–20 Sep</div>
+              <div class="st c-them"><span class="dot d-them"></span>SENT 14 AUG — NOT YET OPENED</div>
+            </div><div class="chev">›</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><b>"Not yet opened" is real information</b> — it is already recorded and has never been shown to her.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-c">CREATOR</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Nova Fit</div><div class="sub">YOUR PITCH · THEY COUNTERED</div></div></div>
+        <div class="body">
+          <div class="dsec"><div class="wait y">Nova Fit countered on 13 Aug. <b>Your move.</b></div></div>
+          <div class="dsec">
+            <div class="dh">What moved</div>
+            <div class="diff">
+              <div class="dr"><div class="dk">Fee</div><span class="old">₹20,000</span><span class="arw">→</span><span class="new">₹8,000</span></div>
+              <div class="dr"><div class="dk">Commission</div><span class="old">none</span><span class="arw">→</span><span class="new">6%</span></div>
+              <div class="dr"><div class="dk">Window</div><span class="same">1–20 Sep — unchanged</span></div>
+            </div>
+          </div>
+          <div class="dsec"><div class="quote">"We like the fit but the flat fee is above our band for a first collaboration. Happy to load the commission instead."</div></div>
+          <div class="dsec">
+            <button class="btn pri">Accept ₹8,000 + 6%</button>
+            <button class="btn sec">Counter back · 2 left</button>
+            <button class="btn dgr">Decline</button>
+            <div style="text-align:center;font-size:10.5px;color:var(--mut);font-weight:700;margin-top:8px">You have 2 counters. They have used 1 of 2.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><b>The same three buttons as an invitation.</b> She learns one grammar, not two.</div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note info"><b>Browsing brands stays where it is</b> — it is a directory, not a conversation. It moves to the top of Pitches and stays reachable from Profile, relabelled <b>"Find brands to pitch"</b> so it stops promising an inbox it no longer holds.</div>
+      <div class="note key"><b>One thing you should know.</b> Not one brand accepts pitches today — the setting is off by default, so this whole half is an empty room. You settled on 15 Aug that approved brands should be <b>open by default</b>, each free to switch off or add conditions. It is the only outward-facing change in Stage 1 and <b>gets its own go on the day.</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤  BRAND CREATORS TAB -->
+<div class="view" id="v5">
+  <div class="vh">The brand's Creators tab</div>
+  <div class="vs">Everything that happens before a campaign exists, in one place. Alerts gives up its tab and moves under Profile — a tab is somewhere you go on purpose; a feed you check when a badge appears is not.</div>
+
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">Creators</div><div class="sub">9 CONVERSATIONS · 3 AGREED</div></div><div style="font-size:11px;font-weight:800;color:var(--yInk);background:var(--yBg);padding:3px 8px;border-radius:999px">4 need you</div></div>
+        <div class="body">
+          <div class="subtabs"><span class="on">Talking</span><span>Agreed <b>3</b></span><span>Find</span><span>Groups <b>2</b></span></div>
+          <div class="lhd">Your turn · 4</div>
+          <div class="tr">
+            <div class="pic">👩</div>
+            <div class="m"><div class="bn">Asha M.</div>
+              <div class="tm">You asked 15% · she wants 22%</div>
+              <div class="st c-you"><span class="dot d-you"></span>SHE COUNTERED · 1 ROUND LEFT</div></div><div class="chev">›</div>
+          </div>
+          <div class="tr">
+            <div class="pic">👩</div>
+            <div class="m"><div class="bn">Priya N.</div>
+              <div class="tm">She pitched you · ₹18,000 + 6%</div>
+              <div class="st c-you"><span class="dot d-you"></span>HER PITCH · 2 DAYS UNANSWERED</div></div><div class="chev">›</div>
+          </div>
+          <div class="lhd">Waiting on them · 2</div>
+          <div class="tr">
+            <div class="pic">👩</div>
+            <div class="m"><div class="bn">Nisha P.</div>
+              <div class="tm">15% · post by 24 Sep</div>
+              <div class="st c-them"><span class="dot d-them"></span>OPENED, NOT ANSWERED</div></div><div class="chev">›</div>
+          </div>
+          <div class="lhd">From one broadcast · 30 sent</div>
+          <div class="tr">
+            <div class="av">📢</div>
+            <div class="m"><div class="bn">Fashion · AP + Telangana</div>
+              <div class="tm">4 agreed · 6 countering · 18 quiet · 2 declined</div>
+              <div class="st c-them"><span class="dot d-them"></span>EXPIRES 25 AUG</div></div><div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div><span class="ic">⌂</span>Home</div>
+          <div class="on"><span class="ic">👥</span>Creators<span class="badge">4</span></div>
+          <div><span class="ic">📣</span>Campaigns</div>
+          <div><span class="ic">₹</span>Wallet</div>
+          <div><span class="ic">☺</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap"><b>Requests out and pitches in, one list</b>, sorted by whose turn it is — never split by who started.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="note good"><b>Why one list.</b> Both are "a conversation with a creator about terms". Splitting them by who spoke first makes a brand check two places for the same job.</div>
+      <div class="note info"><b>A broadcast is one row, not thirty.</b> It opens into its thirty conversations, each negotiated separately.</div>
+      <table class="m">
+        <tr><th>Sub-tab</th><th>Holds</th></tr>
+        <tr><td><b>Talking</b></td><td>Your requests out, their pitches in, every counter both ways</td></tr>
+        <tr><td><b>Agreed</b></td><td>Settled terms waiting to be briefed, each with its expiry</td></tr>
+        <tr><td><b>Find</b></td><td>Search and filter · ask one · ask many</td></tr>
+        <tr><td><b>Groups</b></td><td>Saved lists · ask a whole group</td></tr>
+      </table>
+      <div class="note key" style="margin-top:14px"><b>A hard boundary.</b> A conversation lives here from the first approach until a campaign is drafted from it. The moment it is briefed it moves to Campaigns and never comes back. <b>Nothing is ever in both.</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥  WHERE AND WHO -->
+<div class="view" id="v6">
+  <div class="vh">Finding creators — where, and who</div>
+  <div class="vs">Four filter rows, never more. Each opens the same picker, so adding a filter later is adding a row.</div>
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Find creators</div><div class="sub">8 MATCH</div></div></div>
+        <div class="body">
+          <div class="srch">🔍 Search by name or handle…</div>
+          <div class="frow"><div class="fi">📍</div><div class="fl"><div class="fk">Where</div><div class="fv">2 states · 5 cities</div></div><div class="fc">Change</div></div>
+          <div class="frow"><div class="fi">🏷</div><div class="fl"><div class="fk">Works in</div><div class="fv">Fashion, Lifestyle</div></div><div class="fc">Change</div></div>
+          <div class="frow"><div class="fi">📷</div><div class="fl"><div class="fk">Social following</div><div class="fv">10K – 100K</div></div><div class="fc">Change</div></div>
+          <div class="frow"><div class="fi">🛍</div><div class="fl"><div class="fk">On INFLX</div><div class="fv">Any</div></div><div class="fc">Change</div></div>
+          <div class="lhd" style="display:flex;justify-content:space-between"><span>8 creators</span><span style="color:var(--blue)">Select</span></div>
+          <div class="tr"><div class="pic">👩</div><div class="m"><div class="bn">Priya N.</div><div class="tm">Vijayawada · Fashion</div><div class="sub2">920 on INFLX · 31.4K Instagram</div></div><div class="chev">›</div></div>
+          <div class="tr"><div class="pic">👩</div><div class="m"><div class="bn">Meera S.</div><div class="tm">Vijayawada · Lifestyle</div><div class="sub2">640 on INFLX · 18.2K Instagram</div></div><div class="chev">›</div></div>
+          <div class="tr" style="opacity:.5"><div class="pic">🧑</div><div class="m"><div class="bn">Rohit S.</div><div class="tm">Hyderabad · Lifestyle</div><div class="st c-closed"><span class="dot d-closed"></span>MUTED BRAND REQUESTS</div></div><div class="chev">›</div></div>
+        </div>
+      </div>
+      <div class="cap"><b>Muted creators are greyed, not hidden.</b> Hiding them looks like they do not exist.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">Where</div><div class="sub">2 STATES · 5 CITIES</div></div><div class="bk">✕</div></div>
+        <div class="body">
+          <div class="srch">🔍 Search a state or city…</div>
+          <div class="chips"><span class="chip">Vijayawada ✕</span><span class="chip">Guntur ✕</span><span class="chip">Hyderabad ✕</span><span class="chip gh">+2</span></div>
+          <div class="pick state"><div class="cb">–</div><div class="nm">Andhra Pradesh</div><div class="ct">8</div></div>
+          <div class="pick"><div class="cb on">✓</div><div class="nm" style="padding-left:14px">Vijayawada</div><div class="ct">4</div></div>
+          <div class="pick"><div class="cb on">✓</div><div class="nm" style="padding-left:14px">Guntur</div><div class="ct">2</div></div>
+          <div class="pick"><div class="cb"></div><div class="nm" style="padding-left:14px">Nellore</div><div class="ct">2</div></div>
+          <div class="pick zero"><div class="cb"></div><div class="nm" style="padding-left:14px">Visakhapatnam</div><div class="ct">0</div></div>
+          <div class="pick state"><div class="cb">–</div><div class="nm">Telangana</div><div class="ct">4</div></div>
+          <div class="pick"><div class="cb on">✓</div><div class="nm" style="padding-left:14px">Hyderabad</div><div class="ct">4</div></div>
+          <div class="pick state"><div class="cb"></div><div class="nm">Karnataka</div><div class="ct">2</div></div>
+          <div class="dsec"><button class="btn pri">Use these 5</button></div>
+        </div>
+      </div>
+      <div class="cap"><b>A count on every row</b>, and <b>zero-count rows greyed</b> — never offer a tap that leads nowhere.</div>
+    </div>
+
+    <div style="flex:1;min-width:290px">
+      <div class="note good"><b>The numbers here are real.</b> The lookup already exists and the web already uses it. It only ever offers places where creators actually are.</div>
+      <div class="note key"><b>Why a picker and not chips.</b> Chips work for four options and fall apart at forty. A summary row that never grows — "2 states · 5 cities" — survives any number of places.</div>
+      <div class="note info"><b>The count must match the search.</b> Promising "Vijayawada 10" and returning three is worse than saying three. Since Stage 0 both count only real members.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦  GROUPS -->
+<div class="view" id="v7">
+  <div class="vh">Groups — a list you keep</div>
+  <div class="vs">Asking a group sends one message to each member, then you negotiate with each separately. It never merges the deals.</div>
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Groups</div><div class="sub">2 SAVED LISTS</div></div></div>
+        <div class="body">
+          <div class="tr"><div class="av">SI</div><div class="m"><div class="bn">South India · fashion</div><div class="tm">6 creators · AP, Telangana</div><div class="st c-done"><span class="dot d-done"></span>ASKED 3 TIMES · 5 AGREED</div></div><div class="chev">›</div></div>
+          <div class="tr"><div class="av">WW</div><div class="m"><div class="bn">Worked with us before</div><div class="tm">3 creators</div><div class="st c-done"><span class="dot d-done"></span>ASKED ONCE · 2 AGREED</div></div><div class="chev">›</div></div>
+          <div class="dsec"><button class="btn sec">+ New group</button></div>
+          <div class="dsec"><div class="wait n"><b>What a group is.</b> A list you keep. Asking it sends one message to each member — then you negotiate with each separately.</div></div>
+        </div>
+      </div>
+      <div class="cap">The list exists on the server and has <b>never had a screen on the phone</b>.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">South India · fashion</div><div class="sub">6 CREATORS</div></div></div>
+        <div class="body">
+          <div class="dsec"><button class="btn pri">Ask this whole group</button><button class="btn sec">Add more creators</button></div>
+          <div class="lhd" style="display:flex;justify-content:space-between"><span>Members</span><span style="color:var(--blue)">Edit</span></div>
+          <div class="tr"><div class="pic">👩</div><div class="m"><div class="bn">Priya N.</div><div class="tm">Vijayawada · 920 on INFLX</div></div><div class="chev">✕</div></div>
+          <div class="tr"><div class="pic">👩</div><div class="m"><div class="bn">Meera S.</div><div class="tm">Vijayawada · 640 on INFLX</div></div><div class="chev">✕</div></div>
+          <div class="tr"><div class="pic">🧑</div><div class="m"><div class="bn">Karthik V.</div><div class="tm">Guntur · 410 on INFLX</div></div><div class="chev">✕</div></div>
+          <div class="dsec"><button class="btn sec">Rename</button><button class="btn dgr">Delete group</button></div>
+        </div>
+      </div>
+      <div class="cap">Asking the group runs <b>the same reach check</b> as a broadcast.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">6 selected</div><div class="sub">CHOOSE WHAT TO DO</div></div><div class="bk">✕</div></div>
+        <div class="body">
+          <div class="chips"><span class="chip">Priya N. ✕</span><span class="chip">Meera S. ✕</span><span class="chip">Nisha P. ✕</span><span class="chip gh">+3</span></div>
+          <div class="dsec">
+            <button class="btn pri">Ask all 6</button>
+            <button class="btn sec">Save as a group</button>
+            <button class="btn sec">Add to an existing group</button>
+          </div>
+          <div class="dsec"><div class="wait n">Asking six sends <b>six separate conversations</b>. You negotiate with each one on their own.</div></div>
+        </div>
+      </div>
+      <div class="cap">Multi-select from results — <b>bulk-add in one move</b>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧  ASKING MANY -->
+<div class="view" id="v8">
+  <div class="vh">Asking many — and the honest answer about who you reached</div>
+  <div class="vs">Every drop is named. A brand who asks for 41 and silently reaches 30 assumes eleven people ignored them.</div>
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Ask many</div><div class="sub">8 MATCH YOUR FILTERS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Who this reaches</div>
+            <div class="fol">
+              <div class="folTop"><div class="n">8</div><div class="l">MATCH WHAT<br>YOU ASKED FOR</div></div>
+              <div class="folRow"><div class="n2" style="color:var(--green)">6</div><div class="l2">can be reached<small>1 muted brand requests · 1 already has an open request from you</small></div></div>
+              <div class="folRow"><div class="n2">6</div><div class="l2">will be sent<small>Under your limit of 30</small></div></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="dh">The terms they all get</div>
+            <div class="trm"><div class="k">What you want</div><div class="v">Pay per sale</div></div>
+            <div class="trm"><div class="k">Commission</div><div class="v">15%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">24 Sep</div></div>
+            <div class="trm"><div class="k">Where she shoots</div><div class="v">Her end · you ship</div></div>
+            <button class="btn sec">Edit the terms</button>
+          </div>
+          <div class="dsec">
+            <div class="wait n">Each of the 6 negotiates separately. <b>You may end up with 6 different deals — that is intended.</b></div>
+            <button class="btn pri">Send to 6</button>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Matched → reachable → sent, <b>with a reason for every drop</b>.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-b">BRAND</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">Sent to 30</div><div class="sub">FASHION · AP + TG · 18 AUG</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="folRow" style="border:none;padding-left:0"><div class="n2" style="color:var(--green)">4</div><div class="l2">agreed<small>Ready to brief into a campaign</small></div></div>
+            <div class="folRow" style="padding-left:0"><div class="n2" style="color:var(--yInk)">6</div><div class="l2">countering you<small>Each needs an answer</small></div></div>
+            <div class="folRow" style="padding-left:0"><div class="n2" style="color:var(--mut)">11</div><div class="l2">opened, no reply</div></div>
+            <div class="folRow" style="padding-left:0"><div class="n2" style="color:var(--mut)">7</div><div class="l2">not opened yet</div></div>
+            <div class="folRow" style="padding-left:0"><div class="n2" style="color:var(--red)">2</div><div class="l2">said no</div></div>
+          </div>
+          <div class="lhd">Countering you · 6</div>
+          <div class="tr"><div class="pic">👩</div><div class="m"><div class="bn">Asha M.</div><div class="tm">wants 22% · 2 Oct</div><div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div></div>
+          <div class="tr"><div class="pic">👩</div><div class="m"><div class="bn">Priya N.</div><div class="tm">wants 18%</div><div class="st c-you"><span class="dot d-you"></span>YOUR TURN</div></div><div class="chev">›</div></div>
+          <div class="dsec"><div class="wait n">All 30 expire <b>25 Aug</b> if unanswered. You are warned before they do.</div></div>
+        </div>
+      </div>
+      <div class="cap"><b>One batch, thirty separate conversations</b>, tracked as a group.</div>
+    </div>
+
+    <div style="flex:1;min-width:290px">
+      <div class="note good"><b>Every number here is already worked out.</b> Matched, reachable, the reason for each drop and the cap all come from a calculation that has never been given a screen on any surface.</div>
+      <div class="note info"><b>The cap is yours to set</b> from admin — raise or lower it without an app update.</div>
+      <div class="note key"><b>Your live numbers are small.</b> With 22 creators, a fashion filter on Andhra Pradesh reaches a handful, not thirty. The funnel is drawn at the shape it will take as you grow; your first test will show single digits, and that is correct.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑨  DIARY -->
+<div class="view" id="v9">
+  <div class="vh">What happened here</div>
+  <div class="vs">Every offer that was ever on the table. One page, and both sides see it word for word.</div>
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-both">BOTH APPS</span>
+      <div class="ph">
+        <div class="nav"><div class="bk">‹</div><div style="flex:1"><div class="ttl">What happened here</div><div class="sub">TERMS · KANCHI SILKS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Settled on</div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v">28 Aug 2026</div></div>
+            <div class="trm"><div class="k">Agreed</div><div class="v">14 Aug, 6:02 PM</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">How you got there · 5 moves</div>
+            <div class="tl">
+              <div class="ev brnd"><div class="w">Kanchi Silks asked you</div><div class="d">11 AUG, 10:14 AM</div><div class="x">Commission 15% · post by 24 Aug · promote sarees (must have)</div></div>
+              <div class="ev"><div class="w">You opened it</div><div class="d">11 AUG, 7:40 PM</div></div>
+              <div class="ev you"><div class="w">You countered</div><div class="d">12 AUG, 9:05 AM · YOUR 1ST OF 2</div><div class="x">Commission 15% → 22% · post by 24 Aug → 2 Sep</div></div>
+              <div class="ev brnd"><div class="w">They countered back</div><div class="d">13 AUG, 4:20 PM · THEIR 1ST OF 2</div><div class="x">Commission 22% → 18% · post by 2 Sep → 28 Aug</div></div>
+              <div class="ev ok"><div class="w">You accepted</div><div class="d">14 AUG, 6:02 PM</div></div>
+            </div>
+          </div>
+          <div class="dsec"><div class="wait g">Kanchi Silks sees this same page, <b>word for word</b>.</div></div>
+        </div>
+      </div>
+      <div class="cap">Today the 15% and the 22% are gone — <b>only the 18% survives</b>.</div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="note key"><b>Why this matters more than it looks.</b> Only the latest offer is kept on the record itself — each counter overwrites the last. Everything <i>is</i> being written down separately as it happens; nothing can read it back. This stage adds the reading.</div>
+      <table class="m">
+        <tr><th>Each entry says</th><th>Why</th></tr>
+        <tr><td><b>Who moved</b></td><td>Colour-coded — brand blue, creator yellow, settled green</td></tr>
+        <tr><td><b>What they moved it to</b></td><td>"15% → 22%", not "countered". The change is the information.</td></tr>
+        <tr><td><b>When</b></td><td>Date and time — disputes are usually about order</td></tr>
+        <tr><td><b>Which round</b></td><td>"your 1st of 2" makes the remaining room visible</td></tr>
+      </table>
+      <div class="note bad" style="margin-top:14px"><b>It will start empty, and that is correct.</b> Your practice conversations were created before the recording began. The page fills the first time you walk a negotiation live — which your test does.</div>
+      <div class="note good"><b>Counting comes free.</b> Once every counter is kept individually, "how many rounds does a deal take" becomes answerable.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑩  WHAT CHANGES -->
+<div class="view" id="v10">
+  <div class="vh">What changes, screen by screen</div>
+  <div class="vs">Everything above, against what exists today. Nothing here is invented — each screen is an extract of a board already agreed.</div>
+
+  <table class="m" style="max-width:1100px">
+    <tr><th style="width:26%">Screen</th><th style="width:12%"></th><th>What is actually happening</th></tr>
+    <tr><td><b>Her Collabs list</b></td><td><span class="pill p-move">rework</span></td><td>Eight stages become six. Brand requests appear here for the first time. Badge added. Her rules move in from Profile.</td></tr>
+    <tr><td><b>The brand's ask</b></td><td><span class="pill p-move">moves</span></td><td>Exists today under Profile. Restyled to match Collabs and rehomed.</td></tr>
+    <tr><td><b>Counter composer</b></td><td><span class="pill p-move">rework</span></td><td>Exists. Gains the before-and-after diff and drops must-haves from the form.</td></tr>
+    <tr><td><b>Her pitch list</b></td><td><span class="pill p-move">moves</span></td><td>Exists under Profile. Moves into Collabs as its own stage.</td></tr>
+    <tr><td><b>Counter back on her own pitch</b></td><td><span class="pill p-wire">connect</span></td><td><b>Finished and unreachable.</b> The app half only.</td></tr>
+    <tr><td><b>Brand Creators tab</b></td><td><span class="pill p-new">new</span></td><td>New tab, replacing Alerts. Four sub-tabs.</td></tr>
+    <tr><td><b>Talking — both directions</b></td><td><span class="pill p-move">rework</span></td><td>Sent requests exist. Pitches received join the same list.</td></tr>
+    <tr><td><b>Agreed / ready to brief</b></td><td><span class="pill p-keep">exists</span></td><td>Already on the phone. Gains the expiry warning.</td></tr>
+    <tr><td><b>Find creators</b></td><td><span class="pill p-move">rework</span></td><td>Exists with a typed-in city. Becomes four filter rows.</td></tr>
+    <tr><td><b>The place picker</b></td><td><span class="pill p-new">new</span></td><td>New screen over a lookup that already exists and already has real counts.</td></tr>
+    <tr><td><b>Groups + group detail</b></td><td><span class="pill p-new">new</span></td><td>The list exists on the server. First screen on the phone.</td></tr>
+    <tr><td><b>Ask a group · ask many</b></td><td><span class="pill p-wire">connect</span></td><td>The reach calculation is finished. <b>No surface has ever offered it.</b></td></tr>
+    <tr><td><b>Broadcast as one row</b></td><td><span class="pill p-new">new</span></td><td>Thirty conversations, tracked as one.</td></tr>
+    <tr><td><b>The conversation</b></td><td><span class="pill p-move">rework</span></td><td>Built once, shipped to both apps.</td></tr>
+    <tr><td><b>What happened here</b></td><td><span class="pill p-new">new</span></td><td>Everything is recorded; nothing can read it. Needs one new way to read.</td></tr>
+    <tr><td><b>Brand pitch settings</b></td><td><span class="pill p-keep">dropped</span></td><td><b>Already exists on the phone.</b> Off the list.</td></tr>
+  </table>
+
+  <div class="note key" style="margin-top:18px"><b>What is NOT in Stage 1.</b> No campaign building — agreeing produces an agreement, not a campaign. No shoot, no posts, no completion. No brand web. No switching roles inside an app. And the "Brand workspace" label on the admin sign-in page is a visible text change, so it gets its own mockup rather than riding along here.</div>
+
+  <div class="note good"><b>One database change:</b> approved brands become open to creator pitches. Reversible per brand and wholesale. It is the only outward-facing change in this stage — some brands will notice via a pitch notification — so it gets its own go on the day.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
+    document.querySelectorAll('.view').forEach(function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    document.getElementById('v' + t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

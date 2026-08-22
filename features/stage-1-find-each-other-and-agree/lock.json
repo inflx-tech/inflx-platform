@@ -1,0 +1,56 @@
+{
+  "feature": "stage-1-find-each-other-and-agree",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-22 chat: \"ok pls lock it and start building\"",
+  "approved_at": "2026-08-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-22 chat: \"ok pls lock it and start building\" — after the ten boards were presented",
+  "mockup_locked_at": "2026-08-22",
+  "mockup_note": "features/stage-1-find-each-other-and-agree/04-preview/mockups/stage1-screens.html — ten boards covering every screen this stage touches. EXTRACTED from the already-agreed boards, not redesigned: FINAL 1 (brand-mobile-spine/04-preview/mockups/final-1-creators.html, ledger actions 1-58) and creator-collab-conversations/04-preview/mockups/conversations.html. Same layout, same components, same button wording. Board 10 states every screen against what exists today, marked new / rework / connect / already exists.",
+  "notes": "Stage 1 of 11 in Docs/THE_PLAN.md. A brand and a creator find each other and agree. Closes the reported bug: a real request sat unseen for Sagar Joshi because a brand's opening move is filed under Profile documents while every other brand interaction lives in Collabs. Scope is the phone apps only — brand web is a later concern by the founder's instruction.",
+  "programme": {
+    "plan": "Docs/THE_PLAN.md",
+    "stage": 1,
+    "of": 11,
+    "depends_on": "Stage 0 — the step number and needs-you count it displays, and the practice world it is tested in",
+    "drawn_from": [
+      "brand-mobile-spine/04-preview/mockups/final-1-creators.html (actions 1-58)",
+      "creator-collab-conversations/04-preview/mockups/conversations.html",
+      "collab-navigation-spine/04-tab-arrangement.html",
+      "collab-navigation-spine/03-action-ledger.html"
+    ]
+  },
+  "reality_check_2026_08_22": {
+    "brand_phone": "No Creators tab (Home, Campaigns, Wallet, Alerts, Profile). Search exists with a typed-in city. NO place picker, NO groups, NO way to ask a group or a filtered set — the reach calculation is finished and has never had a screen on any surface. Sent requests and agreed creators DO exist. Pitch settings ALREADY EXIST on the phone (components/brand/ProposalFiltersSheet.js) — dropped from scope.",
+    "creator_phone": "Requests live at Profile -> Brand Proposals -> third tab. No badge anywhere in the navigator. Eight stages driven by campaign status, and empty ones are hidden. Countering a brand's counter on her own pitch is finished server-side (POST /influencers/me/proposals/:id/counter) and no client calls it. Nothing can read the negotiation history.",
+    "production": "22 contactable creators (4 Vijayawada, 4 Hyderabad) · 11 conversations across every state · 6 agreements · 2 groups · 0 of 5 brands accept pitches · 0 history entries (the practice conversations predate the recording)."
+  },
+  "scope_dropped_after_reality_check": [
+    "Brand pitch settings — already on the phone, verified 2026-08-22",
+    "Agreed / ready-to-brief list — already on the phone"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed: this stage adds routes to native stacks in BOTH apps. Rule 5 applies at release.",
+    "deploy_class": "production-impacting (both phone apps via OTA, backend/src, and one migration opening approved brands to creator pitches).",
+    "deploy_targets": [
+      "OTA (creator app + brand app)",
+      "Render (backend/src)",
+      "migration — approved brands open to creator pitches"
+    ],
+    "outward_facing": "Opening approved brands to creator pitches is the only outward-facing change in this stage. Some brands will first notice via a pitch notification. Reversible per brand and wholesale. Requires its own explicit go on the day, separate from the deploy go.",
+    "qa_note": "2026-08-22 — measured like for like, serial runs.\n  BEFORE Stage 1 (after the test-suite repair): 24 suites / 93 tests failed, 658 passed, 751 total.\n  WITH STAGE 1: 24 suites / 93 tests failed, 667 passed, 760 total.\n  Failures IDENTICAL. Passing up by exactly 9 — the 9 new backend checks this stage adds (tests/collab-diary.test.js). ZERO REGRESSION.\n  Stage 0 + Stage 1 backend suites together: 49/49 green. Mobile suite: 144/144 green, including 22 checks on the reworked stage model.\n  NOT CLAIMED GREEN: the repo carries 93 pre-existing failures, classified 2026-08-22 as mostly stale tests speaking an older version of the API (see project_test_suite_debt). Stage 1 is certified no-regression against that baseline, not against a green suite.",
+    "new_checks": {
+      "collab-diary (backend)": 9,
+      "collabStages (mobile, reworked)": 22,
+      "mobile_suite_total": 144
+    },
+    "device_walk_required": "NOT YET DONE. Stage 1 adds 12 routes to a brand-new CreatorsStack plus 5 to CollabsStackNav — the change class that passes every bundle check and then crashes on a handset. A duplicate-route check across all 14 stacks is clean (scratchpad check-dupes), but that catches one specific mistake, not everything. The founder walks it before any deploy go is requested."
+  }
+}

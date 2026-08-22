@@ -3,7 +3,9 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Alert, Switch,
 } from 'react-native';
-import { brandPalette as P, fonts } from '../../theme/tokens';
+import { ig } from '../../theme/ig';
+// Stage 1 — restyled from brandPalette to the ig kit as part of moving into Collabs.
+// A yellow screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
 
 /**
@@ -60,7 +62,7 @@ export default function CollabPreferencesScreen() {
     else Alert.alert('Could not save', res.error?.message || 'Try again.');
   };
 
-  if (loading) return <View style={s.center}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator color={ig.y} /></View>;
 
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -69,7 +71,7 @@ export default function CollabPreferencesScreen() {
           <Text style={s.rk}>Brands can ask me</Text>
           <Text style={s.rs}>Turn off and no brand can send you a collaboration request — they are told why, not ignored.</Text>
         </View>
-        <Switch value={accepts} onValueChange={setAccepts} trackColor={{ true: P.yellow }} thumbColor={P.white} />
+        <Switch value={accepts} onValueChange={setAccepts} trackColor={{ true: ig.y }} thumbColor={ig.bg} />
       </View>
 
       <View style={[s.row, !accepts && { opacity: 0.45 }]}>
@@ -77,14 +79,14 @@ export default function CollabPreferencesScreen() {
           <Text style={s.rk}>Include me in bulk outreach</Text>
           <Text style={s.rs}>Filter-matched requests sent to many creators at once. You stay open to a brand approaching you directly.</Text>
         </View>
-        <Switch value={broadcasts} onValueChange={setBroadcasts} disabled={!accepts} trackColor={{ true: P.yellow }} thumbColor={P.white} />
+        <Switch value={broadcasts} onValueChange={setBroadcasts} disabled={!accepts} trackColor={{ true: ig.y }} thumbColor={ig.bg} />
       </View>
 
       <Text style={s.h}>ONLY ASK ME IF</Text>
       <Text style={s.fl}>Minimum commission %</Text>
-      <TextInput style={s.inp} value={minCommission} onChangeText={setMinCommission} keyboardType="numeric" placeholder="No minimum" placeholderTextColor={P.muted3} />
+      <TextInput style={s.inp} value={minCommission} onChangeText={setMinCommission} keyboardType="numeric" placeholder="No minimum" placeholderTextColor={ig.mut2} />
       <Text style={s.fl}>Minimum fee (₹)</Text>
-      <TextInput style={s.inp} value={minFee} onChangeText={setMinFee} keyboardType="numeric" placeholder="No minimum" placeholderTextColor={P.muted3} />
+      <TextInput style={s.inp} value={minFee} onChangeText={setMinFee} keyboardType="numeric" placeholder="No minimum" placeholderTextColor={ig.mut2} />
 
       <Text style={s.fl}>Aims I take (none selected = all)</Text>
       <View style={s.chips}>
@@ -107,19 +109,19 @@ export default function CollabPreferencesScreen() {
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: P.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: P.bg },
-  row: { flexDirection: 'row', alignItems: 'center', backgroundColor: P.white, borderRadius: 11, borderWidth: 1, borderColor: P.border, padding: 13, marginBottom: 9 },
-  rk: { fontFamily: fonts.sansBold, fontSize: 13, color: P.ink },
-  rs: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, marginTop: 3, lineHeight: 14 },
-  h: { fontFamily: fonts.monoBold, fontSize: 9.5, color: P.muted2, letterSpacing: 0.5, marginTop: 14, marginBottom: 8 },
-  fl: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted, letterSpacing: 0.4, marginBottom: 4, marginTop: 8, textTransform: 'uppercase' },
-  inp: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink },
+  wrap: { flex: 1, backgroundColor: ig.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg },
+  row: { flexDirection: 'row', alignItems: 'center', backgroundColor: ig.bg, borderRadius: 11, borderWidth: 1, borderColor: ig.line, padding: 13, marginBottom: 9 },
+  rk: {, fontSize: 13, color: ig.text },
+  rs: {, fontSize: 10.5, color: ig.mut, marginTop: 3, lineHeight: 14 },
+  h: {, fontSize: 9.5, color: ig.mut, letterSpacing: 0.5, marginTop: 14, marginBottom: 8 },
+  fl: {, fontSize: 9, color: ig.text2, letterSpacing: 0.4, marginBottom: 4, marginTop: 8, textTransform: 'uppercase' },
+  inp: { backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontSize: 13, color: ig.text },
   chips: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 2 },
-  chip: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  chipAct: { backgroundColor: P.ink, borderColor: P.ink },
-  chipTxt: { fontFamily: fonts.sansBold, fontSize: 11.5, color: P.muted },
-  chipTxtAct: { color: P.yellow },
-  cta: { backgroundColor: P.yellow, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 20 },
-  ctaTxt: { fontFamily: fonts.displayBlack, fontSize: 13, color: P.ink, letterSpacing: 0.4 },
+  chip: { backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  chipAct: { backgroundColor: ig.text, borderColor: ig.text },
+  chipTxt: {, fontSize: 11.5, color: ig.text2 },
+  chipTxtAct: { color: ig.y },
+  cta: { backgroundColor: ig.y, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 20 },
+  ctaTxt: {, fontSize: 13, color: ig.text, letterSpacing: 0.4 },
 });

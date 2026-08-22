@@ -77,6 +77,9 @@ const brandOfferRoutes      = require('./brandOffer.routes');
 
 // F-5 — server-persisted influencer groups (brand-scoped saved groups)
 const influencerGroupRoutes = require('./influencerGroup.routes');
+// Stage 1 — reading the negotiation history. Everything has been recorded since
+// migration 152; nothing could read it back until now.
+const collabDiaryRoutes = require('./collabDiary.routes');
 
 // Fashion-2 — creator-curated lookbooks (outfit collections)
 const lookbooksRoutes       = require('./lookbooks.routes');
@@ -232,6 +235,9 @@ router.use('/brands/me', brandOfferRoutes);
 
 // ── F-5 — server-persisted influencer groups (brand-scoped) ──────────────────
 router.use('/brands/me', influencerGroupRoutes);
+
+// ── Stage 1 — "what happened here", the same page for both sides ─────────────
+router.use('/collab-diary', collabDiaryRoutes);
 router.use('/follower',  returnsRoutes.followerRouter);
 router.use('/admin',     returnsRoutes.adminRouter);
 

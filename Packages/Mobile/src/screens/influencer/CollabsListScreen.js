@@ -18,7 +18,7 @@ import CollabRow from '../../components/collabs/CollabRow';
    ══════════════════════════════════════════════════════════════════════ */
 export default function CollabsListScreen({ navigation }) {
   const [collabs, setCollabs] = useState([]);
-  const [activeStage, setActiveStage] = useState('all');
+  const [activeStage, setActiveStage] = useState('invitations');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
@@ -26,14 +26,24 @@ export default function CollabsListScreen({ navigation }) {
   const load = useCallback(async () => {
     setError(false);
     // Pull the full picture from both sources; merge + dedupe client-side.
-    const [offersRes, campaignsRes] = await Promise.all([
+    // Stage 1 — brand requests and her own pitches join the list. Until now they
+    // lived under Profile -> Brand Proposals, which is why a real request sat unseen.
+    const [offersRes, campaignsRes, requestsRes, pitchesRes] = await Promise.all([
       influencerApi.getOffers(null),        // null = all statuses
       influencerApi.getMyCampaigns('all'),
+      influencerApi.listCollabRequests(),
+      influencerApi.listMyProposals(),
     ]);
     const offers = offersRes.success ? (offersRes.data?.offers || offersRes.data || []) : [];
     const campaigns = campaignsRes.success ? (campaignsRes.data?.campaigns || []) : [];
-    if (!offersRes.success && !campaignsRes.success) setError(true);
-    setCollabs(mergeCollabs(offers, campaigns));
+    const requests = requestsRes.success ? (requestsRes.data?.requests || []) : [];
+    const pitches = pitchesRes.success ? (pitchesRes.data?.proposals || []) : [];
+    // Only a total blackout is an error. One source failing must not blank the tab —
+    // she would rather see three of her four conversations than none of them.
+    if (!offersRes.success && !campaignsRes.success && !requestsRes.success && !pitchesRes.success) {
+      setError(true);
+    }
+    setCollabs(mergeCollabs(offers, campaigns, requests, pitches));
     setLoading(false);
   }, []);
 
@@ -48,22 +58,26 @@ export default function CollabsListScreen({ navigation }) {
   const counts = useMemo(() => stageCounts(collabs), [collabs]);
   const visible = useMemo(() => filterByStage(collabs, activeStage), [collabs, activeStage]);
 
-  const tabs = useMemo(() => {
-    const list = [{ key: 'all', label: STAGE_META.all.label }];
-    for (const s of COLLAB_STAGES) {
-      if (counts[s] > 0) list.push({ key: s, label: STAGE_META[s].label });
-    }
-    return list;
-  }, [counts]);
+  // Stage 1 — all six stages, always. The old list hid any stage with nothing in it,
+  // so the rail changed shape as work arrived and "Done" was invisible until it was
+  // too late to reassure anyone. She should be able to see the whole road.
+  const tabs = useMemo(
+    () => COLLAB_STAGES.map((k) => ({ key: k, label: STAGE_META[k].label })),
+    [],
+  );
 
   const youCount = useMemo(() => collabs.filter(c => c.turn === 'you').length, [collabs]);
   const activeCount = useMemo(
-    () => collabs.filter(c => c.stage === 'active' || c.stage === 'tracking').length,
+    () => collabs.filter(c => c.stage === 'shoot' || c.stage === 'content').length,
     [collabs],
   );
 
   function openCollab(c) {
-    // Unified hub (features/collab-detail) — one screen for every stage.
+    // A conversation about terms is not yet a collaboration — there is no campaign
+    // behind it, so the hub would have nothing to show. Both directions open a thread.
+    if (c.source === 'request') return navigation.navigate('CollabRequestDetail', { requestId: c.recordId });
+    if (c.source === 'proposal') return navigation.navigate('CollabPitchDetail', { proposalId: c.recordId });
+    // Unified hub (features/collab-detail) — one screen for every later stage.
     navigation.navigate('CollabDetail', { campaignInfluencerId: c.ciId });
   }
 
@@ -102,10 +116,14 @@ export default function CollabsListScreen({ navigation }) {
             <View style={styles.empty}>
               <Icon name={error ? 'alert-circle-outline' : 'inbox-outline'} size={30} color={ig.mut2} />
               <Text style={styles.emptyTitle}>
-                {error ? 'Could not load collabs' : activeStage === 'all' ? 'No collabs yet' : `Nothing in ${STAGE_META[activeStage].label}`}
+                {error ? 'Could not load collabs' : `Nothing in ${STAGE_META[activeStage].label}`}
               </Text>
               <Text style={styles.emptySub}>
-                {error ? 'Pull to retry.' : 'New brand offers will show up here.'}
+                {error ? 'Pull to retry.'
+                  : activeStage === 'invitations' ? 'When a brand asks to work with you, it lands here.'
+                  : activeStage === 'pitches' ? 'Brands you approach appear here.'
+                  : activeStage === 'shoot' || activeStage === 'content' ? 'Work in progress appears here once a contract is signed.'
+                  : 'Finished collaborations appear here.'}
               </Text>
             </View>
           }

@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AppState } from 'react-native';
+import { influencerApi } from '../services/api';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -31,6 +33,9 @@ import SendProposalScreen from '../screens/influencer/SendProposalScreen';
 // collab-part2 — the pre-campaign handshake: incoming brand requests + preferences.
 import CollabRequestDetailScreen from '../screens/influencer/CollabRequestDetailScreen';
 import CollabPreferencesScreen from '../screens/influencer/CollabPreferencesScreen';
+// Stage 1 — her pitch thread, and the history both sides read.
+import CollabPitchDetailScreen from '../screens/influencer/CollabPitchDetailScreen';
+import CollabDiaryScreen from '../screens/influencer/CollabDiaryScreen';
 // Concept P0 (2026-07-23): ExperienceStudio / MyStore / StockStore DELETED.
 // Concept P2: the Post Composer + My Posts replace the old studio.
 import PostComposerScreen from '../screens/influencer/PostComposerScreen';
@@ -64,10 +69,11 @@ function ProfileStackNav() {
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="MyContracts" component={InfluencerContractsScreen} />
       <ProfileStack.Screen name="ContractPdf" component={ContractPdfScreen} />
+      {/* Stage 1 — Discover (browsing brands to pitch) STAYS reachable from Profile:
+          it is a directory, not an inbox. The request inbox, her preferences and the
+          pitch composer moved to Collabs, where every other brand interaction lives. */}
       <ProfileStack.Screen name="ProposalsHub" component={ProposalsHubScreen} />
       <ProfileStack.Screen name="SendProposal" component={SendProposalScreen} />
-      <ProfileStack.Screen name="CollabRequestDetail" component={CollabRequestDetailScreen} />
-      <ProfileStack.Screen name="CollabPreferences" component={CollabPreferencesScreen} />
       {/* Legal — creators get the creator document set. */}
       <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
       <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
@@ -100,6 +106,14 @@ function CollabsStackNav() {
   return (
     <CollabsStack.Navigator screenOptions={{ headerShown: false }}>
       <CollabsStack.Screen name="CollabsList" component={CollabsListScreen} />
+      {/* Stage 1 — a brand's opening move now lives beside every other brand
+          interaction. It was filed under Profile documents, which is why a real
+          request sat unseen for a week. */}
+      <CollabsStack.Screen name="CollabRequestDetail" component={CollabRequestDetailScreen} />
+      <CollabsStack.Screen name="CollabPitchDetail" component={CollabPitchDetailScreen} />
+      <CollabsStack.Screen name="CollabDiary" component={CollabDiaryScreen} />
+      <CollabsStack.Screen name="CollabPreferences" component={CollabPreferencesScreen} />
+      <CollabsStack.Screen name="SendProposal" component={SendProposalScreen} />
       <CollabsStack.Screen name="CollabDetail" component={CollabDetailScreen} />
       <CollabsStack.Screen name="CollabTracking" component={CollabTrackingScreen} />
       <CollabsStack.Screen name="Negotiation" component={NegotiationScreen} />
@@ -131,6 +145,22 @@ const tabIcon = (iconName) => ({ color, size }) => (
 
 // IG-clean bottom bar: white surface, black active, grey inactive, hairline top.
 export default function InfluencerNavigator() {
+  // Stage 1 — the badge. Refreshed when the app comes back to the foreground rather
+  // than on a timer: a creator who has just answered something should not keep seeing
+  // a badge for it, and a poll would spend her battery to tell her nothing.
+  const [needsYou, setNeedsYou] = useState(0);
+
+  const refresh = useCallback(async () => {
+    const res = await influencerApi.getNeedsYou();
+    if (res.success) setNeedsYou(Number(res.data?.total || 0));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') refresh(); });
+    return () => sub.remove();
+  }, [refresh]);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -154,7 +184,19 @@ export default function InfluencerNavigator() {
       }}
     >
       <Tab.Screen name="Home"     component={HomeStackNav}     options={{ tabBarLabel: 'Home',     tabBarIcon: tabIcon('home-outline') }} />
-      <Tab.Screen name="Collabs"  component={CollabsStackNav}  options={{ tabBarLabel: 'Collabs',  tabBarIcon: tabIcon('briefcase-outline') }} />
+      <Tab.Screen
+        name="Collabs"
+        component={CollabsStackNav}
+        options={{
+          tabBarLabel: 'Collabs',
+          tabBarIcon: tabIcon('briefcase-outline'),
+          // Stage 1 — the one thing worth interrupting her for. The number comes from
+          // the server (Stage 0), so her badge and the brand's can never disagree
+          // about the same work. Undefined hides it; 0 would draw an empty circle.
+          tabBarBadge: needsYou > 0 ? needsYou : undefined,
+          tabBarBadgeStyle: { backgroundColor: ig.text, color: ig.bg, fontSize: 10, fontWeight: '800' },
+        }}
+      />
       <Tab.Screen name="Create"   component={CreateStackNav}   options={{ tabBarLabel: 'Create',   tabBarIcon: tabIcon('plus-box-outline') }} />
       <Tab.Screen name="Earnings" component={EarningsStackNav} options={{ tabBarLabel: 'Earnings', tabBarIcon: tabIcon('currency-inr') }} />
       <Tab.Screen name="Profile"  component={ProfileStackNav}  options={{ tabBarLabel: 'Profile',  tabBarIcon: tabIcon('account-outline') }} />

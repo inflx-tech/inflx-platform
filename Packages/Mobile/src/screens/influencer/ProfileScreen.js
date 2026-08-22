@@ -515,8 +515,8 @@ export default function ProfileScreen({ navigation }) {
             <Icon name="email-outline" size={18} color={P.yellowText} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.docLabel}>Brand Proposals</Text>
-            <Text style={styles.docHint}>DISCOVER + TRACK PITCHES</Text>
+            <Text style={styles.docLabel}>Find brands to pitch</Text>
+            <Text style={styles.docHint}>BROWSE BRANDS OPEN TO CREATORS</Text>
           </View>
           <Icon name="chevron-right" size={16} color={P.muted3} />
         </TouchableOpacity>
