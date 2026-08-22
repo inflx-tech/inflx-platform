@@ -212,14 +212,41 @@ export const geoApi = {
     api.post('/internal/geocode-maps-url', { google_maps_url, name, city }),
 };
 
+
+/**
+ * Which role is this door? Derived from where the page is being served, because that
+ * is the one thing the login screen always knows for certain.
+ *
+ *   admin.inflx.in  → admin      (and any admin.* host, plus /admin locally)
+ *   anything else   → brand      (the brand workspace)
+ *
+ * The phone apps do the same thing a different way: each is its own build, and the
+ * flavour is the answer.
+ */
+export function roleFromHost() {
+  if (typeof window === 'undefined') return 'brand';
+  const host = String(window.location.hostname || '').toLowerCase();
+  const path = String(window.location.pathname || '').toLowerCase();
+  if (host === 'admin.inflx.in' || host.startsWith('admin.')) return 'admin';
+  // Local development serves both from one origin, so fall back to the path.
+  if (path.startsWith('/admin')) return 'admin';
+  return 'brand';
+}
+
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
   // Stage 0, job C — one number, many roles.
-  // This door serves brands AND admins, so it must not claim a role it cannot know.
-  // `default_role` means "use whatever account this number already holds; create a
-  // brand only if it holds none". Sending role:'brand' here would, under the new
-  // per-role lookup, silently turn every admin into a pending brand.
-  verifyOtp: (phone, otp, name) => api.post('/auth/verify-otp', { phone, otp, default_role: 'brand', ...(name && { name }) }),
+  //
+  // The DOMAIN already knows who is arriving, so sign-in must never ask. The admin
+  // dashboard is its own subdomain; everything else on this app is the brand
+  // workspace. An earlier version sent a fallback and let the server ask "which of
+  // your 3 accounts?" — which is a question the page had already answered by
+  // existing at that address.
+  //
+  // Admin is lookup-only server-side: a number with no admin account is refused
+  // here, never turned into one.
+  verifyOtp: (phone, otp, name) =>
+    api.post('/auth/verify-otp', { phone, otp, role: roleFromHost(), ...(name && { name }) }),
   // Server-side revoke. Backend clears the HttpOnly refresh cookie and
   // marks the refresh token as used so it can't be replayed.
   logout: () => api.post('/auth/logout'),

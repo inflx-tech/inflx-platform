@@ -13,7 +13,17 @@ const env = require('../config/env');
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PHONE_REGEX = /^\+91[6-9]\d{9}$/; // Indian mobile numbers only
+
+// Roles a sign-in may CREATE. 'admin' is deliberately absent: admin accounts are
+// made by other admins, never self-served. If asking for role:'admin' could mint
+// one, anyone could hand themselves the keys by signing in.
 const VALID_ROLES = ['brand', 'influencer', 'follower', 'agency'];
+
+// Roles a sign-in may LOOK UP. Admin is here because the admin dashboard lives on
+// its own subdomain and therefore knows exactly who is arriving — it should never
+// have to ask. Lookup only: no match means "this number is not an admin", not
+// "let me make you one".
+const LOOKUP_ROLES = [...VALID_ROLES, 'admin'];
 
 function setRefreshCookie(res, token) {
   res.cookie('refresh_token', token, {
@@ -118,10 +128,11 @@ const verifyOtp = asyncHandler(async (req, res) => {
   //                    have quietly turned every admin into a pending brand.
   const strictRole  = role || null;
   const fallbackRole = req.body?.default_role || null;
-  for (const [label, value] of [['role', strictRole], ['default_role', fallbackRole]]) {
-    if (value && !VALID_ROLES.includes(value)) {
-      throw new AppError('VALIDATION_ERROR', `${label} must be one of: ${VALID_ROLES.join(', ')}`, 422, label);
-    }
+  if (strictRole && !LOOKUP_ROLES.includes(strictRole)) {
+    throw new AppError('VALIDATION_ERROR', `role must be one of: ${LOOKUP_ROLES.join(', ')}`, 422, 'role');
+  }
+  if (fallbackRole && !VALID_ROLES.includes(fallbackRole)) {
+    throw new AppError('VALIDATION_ERROR', `default_role must be one of: ${VALID_ROLES.join(', ')}`, 422, 'default_role');
   }
 
   let user;
@@ -165,6 +176,11 @@ const verifyOtp = asyncHandler(async (req, res) => {
     const newRole = strictRole || fallbackRole;
     if (!newRole) {
       throw new AppError('VALIDATION_ERROR', 'role is required for new users', 422, 'role');
+    }
+    // Asking to sign in to the admin dashboard on a number that has no admin account
+    // is a refusal, never an invitation to create one.
+    if (newRole === 'admin') {
+      throw new AppError('UNAUTHORIZED', 'This number is not an admin account.', 401);
     }
 
     // users.name is NOT NULL — use a placeholder until /register fills the

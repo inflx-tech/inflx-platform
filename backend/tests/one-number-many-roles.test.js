@@ -130,6 +130,71 @@ describe('the shared web door', () => {
   });
 });
 
+describe('each door knows who is arriving', () => {
+  // Reported from the live admin dashboard: signing in at admin.inflx.in with a
+  // number holding three accounts asked "choose which one" — a question the page had
+  // already answered by existing at that address. Every door knows its own role: the
+  // admin subdomain, the brand workspace, and each phone app's build flavour.
+
+  async function signInAtDoor(phone, doorRole) {
+    await request(app).post('/v1/auth/send-otp').send({ phone });
+    const otp = await latestOtp(phone);
+    return request(app).post('/v1/auth/verify-otp').send({ phone, otp, role: doorRole });
+  }
+
+  test('THE ADMIN DOOR NEVER ASKS, even with three accounts on the number', async () => {
+    await query(
+      `INSERT INTO users (phone, role, name, status) VALUES ($1,'admin','Aveen','approved')`,
+      [PHONE]
+    );
+    await signInAsApp(PHONE, 'brand');
+    await signInAsApp(PHONE, 'influencer');
+
+    const res = await signInAtDoor(PHONE, 'admin');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.role).toBe('admin');
+  });
+
+  test('the brand door signs the same number into its brand account', async () => {
+    await query(
+      `INSERT INTO users (phone, role, name, status) VALUES ($1,'admin','Aveen','approved')`,
+      [PHONE]
+    );
+    await signInAsApp(PHONE, 'brand');
+    await signInAsApp(PHONE, 'influencer');
+
+    const res = await signInAtDoor(PHONE, 'brand');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.role).toBe('brand');
+  });
+
+  test('the admin door REFUSES a number with no admin account, and creates nothing', async () => {
+    await signInAsApp(PHONE, 'brand');
+
+    const res = await signInAtDoor(PHONE, 'admin');
+
+    expect(res.status).toBe(401);
+
+    // The important half: asking for admin must never mint an admin.
+    const { rows } = await query(
+      `SELECT role FROM users WHERE phone = $1 ORDER BY role`, [PHONE]
+    );
+    expect(rows.map(r => r.role)).toEqual(['brand']);
+  });
+
+  test('nobody can hand themselves admin by asking for it at sign-in', async () => {
+    const res = await signInAtDoor('+919000000791', 'admin');
+
+    expect(res.status).toBe(401);
+    const { rows } = await query(
+      `SELECT count(*)::int AS n FROM users WHERE phone = $1`, ['+919000000791']
+    );
+    expect(rows[0].n).toBe(0);
+  });
+});
+
 describe('role validation', () => {
   test('an unknown role is refused', async () => {
     await request(app).post('/v1/auth/send-otp').send({ phone: PHONE });
