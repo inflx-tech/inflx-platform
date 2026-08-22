@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How you'd work together — two questions, not three answers</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:880px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.wrap{position:relative}
+.tagapp{position:absolute;top:-9px;left:10px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:2}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-old{background:var(--redBg);color:var(--red)}
+.t-new{background:var(--greenBg);color:var(--green)}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph.dim{opacity:.62}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:12px 14px 16px;max-height:660px;overflow-y:auto}
+
+.fl{font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;color:var(--mut);letter-spacing:.5px;margin:14px 0 6px}
+.fl:first-child{margin-top:0}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--white);border-radius:999px;padding:7px 12px;font-size:11.5px;font-weight:700;color:var(--mut)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--y)}
+.chip.strike{text-decoration:line-through;opacity:.55}
+.hint{font-size:10.5px;color:var(--mut2);font-weight:650;line-height:1.5;margin-top:7px}
+.imp{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.impb{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:9.5px;font-weight:800;color:var(--mut)}
+.impb.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.imph{font-size:9.5px;color:var(--mut2);font-weight:650;flex:1;min-width:120px}
+.inp{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px;color:var(--mut2);font-weight:600;background:var(--white)}
+.cta{background:var(--y);border-radius:11px;padding:12px;text-align:center;font-family:'Outfit';font-size:12.5px;font-weight:900;letter-spacing:.4px;margin-top:16px}
+
+.follow{border-left:2px solid var(--y);padding-left:11px;margin-top:11px;margin-left:2px}
+.newbadge{display:inline-block;background:var(--greenBg);color:var(--green);font-size:8px;font-weight:800;padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:middle;letter-spacing:.3px}
+
+.sec{border-bottom:1px solid var(--lineSoft);padding:12px 14px}
+.secH{font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;color:var(--mut);letter-spacing:.5px;margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12px}
+.kv .k{color:var(--mut);font-weight:650}
+.kv .v{font-weight:800;text-align:right}
+.tagreq{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;background:var(--redBg);color:var(--red);margin-left:5px}
+.tagpref{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:5px;background:var(--blueBg);color:var(--blue);margin-left:5px}
+
+table{border-collapse:collapse;width:100%;max-width:980px;background:var(--white);border:1px solid var(--border);border-radius:11px;overflow:hidden;font-size:11.5px}
+th{background:#F4F4F5;text-align:left;padding:9px 11px;font-size:9.5px;font-weight:800;color:var(--mut);letter-spacing:.4px;font-family:'JetBrains Mono'}
+td{padding:9px 11px;border-top:1px solid var(--lineSoft);font-weight:650;vertical-align:top}
+td b{font-weight:800}
+.pillA{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;background:var(--greenBg);color:var(--green)}
+.pillB{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;background:var(--yBg);color:var(--yInk)}
+.pillC{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;background:#F4F4F5;color:var(--mut)}
+
+.flow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:12px 0 4px}
+.step{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:11px;font-weight:750;max-width:190px}
+.step b{display:block;font-family:'Outfit';font-size:11.5px;font-weight:800;margin-bottom:2px}
+.step small{color:var(--mut);font-weight:650;font-size:10px}
+.arr{color:var(--mut2);font-weight:800;font-size:15px}
+.step.exists{border-color:#B6E3CD;background:var(--greenBg)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>How you'd work together — two questions, not three answers</h1>
+  <p>Founder, 2026-08-22 — "actually it is two, one is store visit and remote… remote selected then ask for product shipping involved… if yes then that flow will continue"</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">1 · The change</button>
+  <button class="tab" data-v="v2">2 · What she reads</button>
+  <button class="tab" data-v="v3">3 · What "yes" sets off</button>
+  <button class="tab" data-v="v4">4 · The same question, asked twice</button>
+  <button class="tab" data-v="v5">5 · Every screen affected</button>
+</div>
+
+<!-- ══════════════════════ 1 ══════════════════════ -->
+<div class="view on" id="v1">
+  <div class="vh">The change</div>
+  <div class="vs">Only the working-style block of the collaboration request changes. Aim, money, time, and what-they'd-promote are untouched.</div>
+
+  <div class="note key">
+    <b>Why the third option was wrong.</b> "Store visit", "We ship products" and "Remote" were offered as three answers to one question — but they are not the same kind of thing. The first two are about <b>where she works</b>. The third is about <b>whether a box moves</b>. Sitting them side by side forced a brand who ships products <i>and</i> expects a store visit to pick one and lose the other, and it hid the shipping question from every remote collaboration where it actually matters.
+  </div>
+
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph dim">
+        <div class="nav"><span class="bk">‹</span><div><div class="ttl">Ask to collaborate</div><div class="sub">TO PRIYA N.</div></div></div>
+        <div class="body">
+          <div class="fl">WHAT THEY'D PROMOTE · OPTIONAL</div>
+          <div class="chips"><span class="chip">Not stated</span><span class="chip on">Whole store</span><span class="chip">A category</span></div>
+          <div class="imp"><span class="impb">Requirement</span><span class="impb on">Preference</span></div>
+
+          <div class="fl">HOW YOU'D WORK TOGETHER · OPTIONAL</div>
+          <div class="chips">
+            <span class="chip">Not stated</span>
+            <span class="chip on">Store visit</span>
+            <span class="chip strike">We ship products</span>
+            <span class="chip">Remote</span>
+          </div>
+          <div class="imp"><span class="impb">Requirement</span><span class="impb on">Preference</span><span class="imph">asked as a question — declining is fine</span></div>
+          <div class="hint">Pick one. Shipping and visiting cannot both be true.</div>
+        </div>
+      </div>
+      <div class="cap">Three chips, one choice. <b>Shipping competes with location</b> instead of qualifying it.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph">
+        <div class="nav"><span class="bk">‹</span><div><div class="ttl">Ask to collaborate</div><div class="sub">TO PRIYA N.</div></div></div>
+        <div class="body">
+          <div class="fl">WHAT THEY'D PROMOTE · OPTIONAL</div>
+          <div class="chips"><span class="chip">Not stated</span><span class="chip on">Whole store</span><span class="chip">A category</span></div>
+          <div class="imp"><span class="impb">Requirement</span><span class="impb on">Preference</span></div>
+
+          <div class="fl">WHERE THEY'D WORK · OPTIONAL</div>
+          <div class="chips">
+            <span class="chip">Not stated</span>
+            <span class="chip">Store visit</span>
+            <span class="chip on">Remote</span>
+          </div>
+          <div class="hint">Store visit — she comes to you and shoots there. Remote — she shoots wherever she is.</div>
+
+          <div class="follow">
+            <div class="fl" style="margin-top:0">ARE YOU SENDING HER PRODUCTS?<span class="newbadge">NEW</span></div>
+            <div class="chips">
+              <span class="chip on">Yes, we'll ship</span>
+              <span class="chip">No</span>
+            </div>
+            <div class="hint">Only asked for remote. You'll add the courier and tracking number after you dispatch.</div>
+          </div>
+
+          <div class="imp"><span class="impb">Requirement</span><span class="impb on">Preference</span><span class="imph">asked as a question — declining is fine</span></div>
+          <div class="cta">SEND REQUEST</div>
+        </div>
+      </div>
+      <div class="cap">Two chips, then a follow-up that <b>only appears for remote</b>. Store visit never asks it — she is standing in your shop.</div>
+    </div>
+  </div>
+
+  <div class="note good" style="margin-top:16px">
+    <b>Nothing is stored differently.</b> Remote + "yes, we'll ship" is filed under the same word the platform already uses for a shipping collaboration. Every downstream piece — the address confirmation, the courier and tracking number, the delivery chase-up, the contract PDF — keeps working untouched, and there is nothing to migrate. <b>Checked against live data: 11 requests and 6 agreements exist, all of them store visit. Not one uses the option being retired.</b>
+  </div>
+</div>
+
+<!-- ══════════════════════ 2 ══════════════════════ -->
+<div class="view" id="v2">
+  <div class="vh">What she reads</div>
+  <div class="vs">The creator never sees a choice here — she sees what the brand decided. Today it reaches her as a single odd phrase; after the change it reaches her as two plain facts.</div>
+
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph dim">
+        <div class="nav"><span class="bk">‹</span><div><div class="ttl">Ravi Sarees</div><div class="sub">ASKED YOU TO COLLABORATE</div></div></div>
+        <div class="body" style="padding:0">
+          <div class="sec"><div class="secH">THE MONEY</div>
+            <div class="kv"><span class="k">Commission</span><span class="v">12%</span></div>
+            <div class="kv"><span class="k">Post by</span><span class="v">15 Sep</span></div>
+          </div>
+          <div class="sec"><div class="secH">HOW YOU'D WORK</div>
+            <div class="kv"><span class="k">Working style</span><span class="v">They ship products<span class="tagpref">PREFERENCE</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">"They ship products" — but <b>where does she shoot?</b> The line does not say, and she has no way to ask without countering.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph">
+        <div class="nav"><span class="bk">‹</span><div><div class="ttl">Ravi Sarees</div><div class="sub">ASKED YOU TO COLLABORATE</div></div></div>
+        <div class="body" style="padding:0">
+          <div class="sec"><div class="secH">THE MONEY</div>
+            <div class="kv"><span class="k">Commission</span><span class="v">12%</span></div>
+            <div class="kv"><span class="k">Post by</span><span class="v">15 Sep</span></div>
+          </div>
+          <div class="sec"><div class="secH">HOW YOU'D WORK</div>
+            <div class="kv"><span class="k">Where you'd work</span><span class="v">Remote<span class="tagpref">PREFERENCE</span></span></div>
+            <div class="kv"><span class="k">Products</span><span class="v">They'll ship to you</span></div>
+            <div class="hint">Your delivery address is taken from your profile once you both agree.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Two lines, each answering one question. She can see <b>she shoots at home and a parcel is coming</b>.</div>
+    </div>
+  </div>
+
+  <div class="note info" style="margin-top:16px">
+    The history page (<b>"What happened here"</b>) currently labels this term <span class="mono">"Where you shoot"</span>. That label was already only half right and becomes wrong once shipping rides along — it changes to <b>"How you work together"</b>.
+  </div>
+</div>
+
+<!-- ══════════════════════ 3 ══════════════════════ -->
+<div class="view" id="v3">
+  <div class="vh">What "yes" sets off</div>
+  <div class="vs">You asked that if shipping is involved, "that flow will continue". It already exists and is fully built — this change is what finally routes people into it on purpose rather than by accident.</div>
+
+  <div class="flow">
+    <div class="step exists"><b>Address confirmed</b><small>She confirms where to send it</small></div>
+    <span class="arr">→</span>
+    <div class="step exists"><b>You dispatch</b><small>Courier + tracking number</small></div>
+    <span class="arr">→</span>
+    <div class="step exists"><b>She confirms arrival</b><small>Marks it received</small></div>
+    <span class="arr">→</span>
+    <div class="step exists"><b>She shoots and posts</b><small>Content goes up</small></div>
+  </div>
+  <div class="note good">Every green box above is <b>already built and running in production today</b>, including a daily nudge to a creator who has not confirmed a parcel, and an alert to you if a shipment has been sitting untouched for two weeks. One shipping collaboration has already completed this way.</div>
+
+  <div class="note key">
+    <b>What this change does NOT do.</b> It does not build a new shipping flow, and it does not start the flow at handshake time. A parcel is only dispatched after the agreement becomes a real signed collaboration — answering "yes" here <b>records the intention</b> so nobody has to re-decide it later, and so she knows before she says yes that a box is coming.
+  </div>
+</div>
+
+<!-- ══════════════════════ 4 ══════════════════════ -->
+<div class="view" id="v4">
+  <div class="vh">The same question, asked twice</div>
+  <div class="vs">Found while making this change. Raising it rather than quietly fixing it, because it changes behaviour you have not asked for.</div>
+
+  <div class="note bad">
+    <b>The problem.</b> After you and the creator have already agreed "remote, we're shipping", the contract screen asks the very same question again from scratch — <b>three cards, none of them pre-filled</b>, in different words ("Visit / Shipment / Remote"). You can answer it differently from what you agreed, and nothing objects. The creator signs a contract whose working style contradicts the request she accepted.
+  </div>
+
+  <div class="row">
+    <div class="wrap">
+      <span class="tagapp t-old">TODAY · CONTRACT SCREEN</span>
+      <div class="ph dim">
+        <div class="nav"><span class="bk">‹</span><div><div class="ttl">Contract</div><div class="sub">PRIYA N. · DRAFT</div></div></div>
+        <div class="body">
+          <div class="fl">HOW WILL THE CONTENT BE PRODUCED?</div>
+          <div class="chips"><span class="chip">Visit</span><span class="chip">Shipment</span><span class="chip">Remote</span></div>
+          <div class="hint">Nothing selected. Nothing remembered. Different words from the ones you both agreed to.</div>
+        </div>
+      </div>
+      <div class="cap">Asked a second time, <b>in a second vocabulary</b>, with the agreement ignored.</div>
+    </div>
+
+    <div class="wrap">
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph">
+        <div class="nav"><span class="bk">‹</span><div><div class="ttl">Contract</div><div class="sub">PRIYA N. · DRAFT</div></div></div>
+        <div class="body">
+          <div class="fl">WHERE SHE'LL WORK</div>
+          <div class="chips"><span class="chip">Store visit</span><span class="chip on">Remote</span></div>
+          <div class="follow">
+            <div class="fl" style="margin-top:0">ARE YOU SENDING HER PRODUCTS?</div>
+            <div class="chips"><span class="chip on">Yes, we'll ship</span><span class="chip">No</span></div>
+          </div>
+          <div class="hint" style="color:var(--green);font-weight:800">Carried over from what you both agreed. Change it only if the plan changed.</div>
+        </div>
+      </div>
+      <div class="cap">Same two questions, same words — and <b>already answered</b> from the agreement.</div>
+    </div>
+  </div>
+
+  <div class="note info" style="margin-top:16px">
+    <b>Your call.</b> Item 1 (the request screen) is what you asked for and is going ahead. Item 2 is this one. Doing only item 1 leaves a brand who chose "Remote · we'll ship" being shown a "Shipment" card two screens later — a half-finished change. <b>Recommendation: do both in the same pass.</b>
+  </div>
+</div>
+
+<!-- ══════════════════════ 5 ══════════════════════ -->
+<div class="view" id="v5">
+  <div class="vh">Every screen affected</div>
+  <div class="vs">The complete list, so nothing is discovered on your handset.</div>
+
+  <table>
+    <tr><th>App</th><th>Screen</th><th>What changes</th><th>Class</th></tr>
+    <tr><td>Brand</td><td><b>Ask to collaborate</b></td><td>Working style becomes two questions. Third chip retired; shipping question appears only for remote.</td><td><span class="pillB">REWORK</span></td></tr>
+    <tr><td>Creator</td><td><b>Request detail</b></td><td>Reads back as two lines instead of one phrase. Also fixes what she sees for an existing shipping request.</td><td><span class="pillB">REWORK</span></td></tr>
+    <tr><td>Both</td><td><b>What happened here</b></td><td>Term relabelled "How you work together". If either side changes it mid-negotiation, the history shows the move.</td><td><span class="pillC">LABEL</span></td></tr>
+    <tr><td>Brand</td><td><b>Contract</b> <i>(item 2 — needs your go)</i></td><td>Same two questions, same words, pre-answered from the agreement.</td><td><span class="pillB">REWORK</span></td></tr>
+    <tr><td>—</td><td><b>Backend</b></td><td>Accepts and stores the same three values as today. No migration. No change to shipping, contracts, PDFs, reminders or admin alerts.</td><td><span class="pillA">UNCHANGED</span></td></tr>
+  </table>
+
+  <div class="note key" style="margin-top:16px">
+    <b>Risk.</b> Low. No database change, no change to money or timing, and no live conversation uses the option being retired. The one thing to watch on your handset is that choosing <b>Store visit never shows the shipping question</b>, and that <b>Remote + Yes</b> reads correctly on the creator's side.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

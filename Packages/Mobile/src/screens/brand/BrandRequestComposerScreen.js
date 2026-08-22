@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import { PLACES, SHIPPING, toMode } from '../../utils/workingStyle';
 
 /**
  * BrandRequestComposerScreen — a brand asks a creator to collaborate, BEFORE any
@@ -21,11 +22,9 @@ const AIMS = [
   { v: 'engagement', label: 'Pay for content' },
   { v: 'hybrid', label: 'Both' },
 ];
-const MODES = [
-  { v: 'visit', label: 'Store visit' },
-  { v: 'shipment', label: 'We ship products' },
-  { v: 'remote', label: 'Remote' },
-];
+// Working style is TWO questions, not three answers — PLACES and SHIPPING come from
+// utils/workingStyle, which the contract screen reads from too so the brand is never
+// asked the same thing in two different vocabularies.
 const SCOPES = [
   { v: 'store', label: 'Whole store' },
   { v: 'category', label: 'A category' },
@@ -42,7 +41,11 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
   const [scopeLevel, setScopeLevel] = useState('');
   const [scopeCategory, setScopeCategory] = useState('');
   const [scopeImp, setScopeImp] = useState('preference');
-  const [mode, setMode] = useState('');
+  // Where she works, and — only if remote — whether a box moves. Two answers, one
+  // stored term. `shipping` stays null until asked, so an unanswered question is
+  // distinguishable from a deliberate "no".
+  const [place, setPlace] = useState('');
+  const [shipping, setShipping] = useState(null);
   const [modeImp, setModeImp] = useState('preference');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -70,6 +73,13 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
       terms.scope = scopeLevel === 'category' ? { level: 'category', category: scopeCategory || null } : { level: 'store' };
       importance.scope = scopeImp;
     }
+    // Remote without an answer on shipping is not "no" — it is unanswered, and letting
+    // it default would quietly decide the thing this change exists to ask.
+    if (place === 'remote' && shipping == null) {
+      Alert.alert('One more thing', 'Say whether you are sending her products.');
+      return;
+    }
+    const mode = toMode(place, shipping);
     if (mode) { terms.mode = mode; importance.mode = modeImp; }
     if (Object.keys(importance).length) terms.importance = importance;
 
@@ -130,18 +140,46 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
         {scopeLevel === 'category' && <Field label="Category" value={scopeCategory} onChange={setScopeCategory} placeholder="e.g. Ethnic Wear" />}
         {!!scopeLevel && <Importance value={scopeImp} onChange={setScopeImp} />}
 
-        <Text style={s.fl}>HOW YOU'D WORK TOGETHER · OPTIONAL</Text>
+        <Text style={s.fl}>WHERE THEY'D WORK · OPTIONAL</Text>
         <View style={s.chips}>
-          <TouchableOpacity style={[s.chip, mode === '' && s.chipAct]} onPress={() => setMode('')}>
-            <Text style={[s.chipTxt, mode === '' && s.chipTxtAct]}>Not stated</Text>
+          <TouchableOpacity style={[s.chip, place === '' && s.chipAct]}
+            onPress={() => { setPlace(''); setShipping(null); }}>
+            <Text style={[s.chipTxt, place === '' && s.chipTxtAct]}>Not stated</Text>
           </TouchableOpacity>
-          {MODES.map(o => (
-            <TouchableOpacity key={o.v} style={[s.chip, mode === o.v && s.chipAct]} onPress={() => setMode(o.v)}>
-              <Text style={[s.chipTxt, mode === o.v && s.chipTxtAct]}>{o.label}</Text>
+          {PLACES.map(o => (
+            <TouchableOpacity key={o.v} style={[s.chip, place === o.v && s.chipAct]}
+              /* Leaving remote clears the shipping answer, so switching back cannot
+                 re-reveal a stale "yes" the brand never re-confirmed. */
+              onPress={() => { setPlace(o.v); if (o.v !== 'remote') setShipping(null); }}>
+              <Text style={[s.chipTxt, place === o.v && s.chipTxtAct]}>{o.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
-        {!!mode && <Importance value={modeImp} onChange={setModeImp} />}
+        {place === 'visit' && <Text style={s.hint}>They come to your store and shoot there.</Text>}
+
+        {/* Question two. Never asked of a store visit — she is standing in your shop. */}
+        {place === 'remote' && (
+          <View style={s.follow}>
+            <Text style={[s.fl, { marginTop: 0 }]}>ARE YOU SENDING HER PRODUCTS?</Text>
+            <View style={s.chips}>
+              {SHIPPING.map(o => (
+                <TouchableOpacity key={o.v} style={[s.chip, shipping === o.v && s.chipAct]}
+                  onPress={() => setShipping(o.v)}>
+                  <Text style={[s.chipTxt, shipping === o.v && s.chipTxtAct]}>{o.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={s.hint}>
+              {shipping === 'yes'
+                ? "You'll add the courier and tracking number after you dispatch."
+                : shipping === 'no'
+                  ? 'They shoot wherever they are, from your brief.'
+                  : 'Answer this before sending.'}
+            </Text>
+          </View>
+        )}
+
+        {!!place && <Importance value={modeImp} onChange={setModeImp} />}
 
         <Text style={s.hint}>Deliverables are deliberately not asked — the creator proposes what they can do, and it becomes part of the agreement.</Text>
 
@@ -193,6 +231,9 @@ const s = StyleSheet.create({
   chipTxtAct: { color: P.yellow },
   inp: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink },
   hint: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, lineHeight: 15, marginTop: 6 },
+  // The follow-up is indented under its parent question so it reads as a qualifier,
+  // not as a third thing of equal weight — which is the mistake being corrected.
+  follow: { borderLeftWidth: 2, borderLeftColor: P.yellow, paddingLeft: 11, marginTop: 11, marginLeft: 2 },
   impRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   impBtn: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   impAct: { backgroundColor: P.ink, borderColor: P.ink },

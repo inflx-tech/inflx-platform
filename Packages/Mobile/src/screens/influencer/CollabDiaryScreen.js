@@ -5,6 +5,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { influencerApi } from '../../services/api';
+import { describeMode } from '../../utils/workingStyle';
 
 /**
  * CollabDiaryScreen — "what happened here".
@@ -61,6 +62,17 @@ const fmtValue = (v) => {
   return String(v);
 };
 
+/**
+ * A move on the working style must read as a move, not as a stored word. "shipment →
+ * visit" says nothing; "Remote · they'll ship to you → Store visit" says what changed.
+ */
+const fmtFieldValue = (key, v) => {
+  if (key !== 'mode') return fmtValue(v);
+  const d = describeMode(v, 'creator');
+  if (!d) return fmtValue(v);
+  return d.shipping ? `${d.place} · ${d.shipping}` : d.place;
+};
+
 /** "money.commission_pct" reads as nothing; "Commission" reads as something. */
 const FIELD_LABEL = {
   'money.commission_pct': 'Commission',
@@ -69,7 +81,7 @@ const FIELD_LABEL = {
   'time.window_start': 'Window from',
   'time.window_end': 'Window to',
   'scope.category': 'What you promote',
-  'mode': 'Where you shoot',
+  'mode': 'How you work together',
   'aim': 'What it is for',
 };
 const fieldLabel = (k) => FIELD_LABEL[k] || String(k).split('.').pop().replace(/_/g, ' ');
@@ -175,9 +187,9 @@ export default function CollabDiaryScreen({ route, navigation, api }) {
                   {moved && Object.entries(e.changed).map(([k, v]) => (
                     <Text key={k} style={s.evMove}>
                       {fieldLabel(k)}{'  '}
-                      <Text style={s.evFrom}>{fmtValue(v?.from)}</Text>
+                      <Text style={s.evFrom}>{fmtFieldValue(k, v?.from)}</Text>
                       <Text style={s.evArrow}>{'  →  '}</Text>
-                      <Text style={s.evTo}>{fmtValue(v?.to)}</Text>
+                      <Text style={s.evTo}>{fmtFieldValue(k, v?.to)}</Text>
                     </Text>
                   ))}
 

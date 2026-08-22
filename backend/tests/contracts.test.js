@@ -494,3 +494,65 @@ describe('POST /v1/contracts/:id/brand-sign', () => {
     expect(parseFloat(payoutTx.amount)).toBe(2500); // T1 = 25% of 10000
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The working style agreed at handshake, carried to the contract
+// Contract: features/collab-working-style-two-questions
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Contract carries the working style already agreed', () => {
+  /**
+   * The brand and the creator settle "where she works" and "are we shipping" during the
+   * collaboration request. The contract screen used to ask the same thing again from a
+   * blank slate, in a different vocabulary, and let the brand answer it differently from
+   * the terms the creator had already accepted.
+   *
+   * The screen can only pre-answer it if the field actually reaches the client. A value
+   * computed in a query and then dropped before the response is the same as a value that
+   * was never computed — this asserts the payload, not the SQL.
+   */
+  it('returns agreed_mode from the linked agreement', async () => {
+    const { brandToken, ci, brandUser, inf } = await setupAcceptedOffer();
+
+    const { rows: [brand] } = await query(
+      `SELECT id FROM brands WHERE user_id = $1`, [brandUser.id]
+    );
+    // An agreement must name exactly one source — it is always the settlement of a
+    // request or a pitch, never free-standing. This one settles a brand's request.
+    const terms = JSON.stringify({ aim: 'conversion', mode: 'shipment' });
+    const { rows: [collabReq] } = await query(
+      `INSERT INTO brand_collab_requests (brand_id, influencer_id, terms_json, status, expires_at)
+       VALUES ($1, $2, $3, 'accepted', NOW() + INTERVAL '2 days') RETURNING id`,
+      [brand.id, inf.id, terms]
+    );
+    const { rows: [agreement] } = await query(
+      `INSERT INTO collab_agreements
+         (brand_id, influencer_id, status, terms_json, expires_at, source_request_id)
+       VALUES ($1, $2, 'open', $3, NOW() + INTERVAL '30 days', $4) RETURNING id`,
+      [brand.id, inf.id, terms, collabReq.id]
+    );
+    await query(
+      `UPDATE campaign_influencers SET agreement_id = $1 WHERE id = $2`,
+      [agreement.id, ci.id]
+    );
+
+    const res = await getContractByCIId(brandToken, ci.id);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.contract.agreed_mode).toBe('shipment');
+  });
+
+  /**
+   * A campaign built without any prior handshake is ordinary — most are. The join that
+   * fetches the agreed style must never be able to make a contract disappear.
+   */
+  it('still returns the contract when there was no prior agreement', async () => {
+    const { brandToken, ci } = await setupAcceptedOffer();
+
+    const res = await getContractByCIId(brandToken, ci.id);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.contract.id).toBeDefined();
+    expect(res.body.data.contract.agreed_mode).toBeNull();
+  });
+});

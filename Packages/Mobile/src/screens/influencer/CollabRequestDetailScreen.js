@@ -7,6 +7,7 @@ import { ig } from '../../theme/ig';
 // Stage 1 — restyled from brandPalette to the ig kit as part of moving into Collabs.
 // A yellow screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
+import { PLACES, SHIPPING, toMode, describeMode } from '../../utils/workingStyle';
 
 /**
  * CollabRequestDetailScreen — a brand's collaboration request, and the creator's answer.
@@ -24,7 +25,22 @@ import { influencerApi } from '../../services/api';
  * a real campaign on web, and then acceptance there is one click.
  */
 
-const MODE_LABEL = { visit: 'Store visit', shipment: 'They ship products', remote: 'Remote' };
+/**
+ * Working style reads as TWO lines, because it answers two questions: where she works,
+ * and whether a box moves. It used to arrive as one phrase — "They ship products" — which
+ * told her a parcel was coming but never told her where she was expected to shoot.
+ * Contract: features/collab-working-style-two-questions
+ */
+function WorkingStyleRows({ mode, tag, locked }) {
+  const d = describeMode(mode, 'creator');
+  if (!d) return null;
+  return (
+    <>
+      <Row k="Where you'd work" v={d.place} tag={tag} locked={locked} />
+      {d.shipping && <Row k="Products" v={d.shipping} />}
+    </>
+  );
+}
 const AIM_LABEL = { conversion: 'Pay per sale', engagement: 'Pay for content', hybrid: 'Fee + commission' };
 const fmtD = (d) => (d ? String(d).slice(0, 10) : '—');
 
@@ -39,7 +55,9 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   const [cCommission, setCCommission] = useState('');
   const [cFee, setCFee] = useState('');
   const [cPostBy, setCPostBy] = useState('');
-  const [cMode, setCMode] = useState('');
+  // Two answers, one stored term — the same shape the brand answered in.
+  const [cPlace, setCPlace] = useState('');
+  const [cShipping, setCShipping] = useState(null);
   const [cReels, setCReels] = useState('');
   const [cStories, setCStories] = useState('');
 
@@ -69,6 +87,7 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
     if (cFee) money.fee = Number(cFee);
     if (Object.keys(money).length) c.money = { ...t.money, ...money };
     if (cPostBy) c.time = t.time?.post_by !== undefined ? { post_by: cPostBy } : { ...t.time, window_end: cPostBy };
+    const cMode = toMode(cPlace, cShipping);
     if (cMode) c.mode = cMode;
     const deliverables = [];
     if (Number(cReels) > 0) deliverables.push({ type: 'reel', count: Number(cReels) });
@@ -94,6 +113,11 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   };
 
   const doCounter = async () => {
+    // Remote with the shipping question unanswered is not "no" — it is unanswered.
+    if (cPlace === 'remote' && cShipping == null) {
+      Alert.alert('One more thing', 'Say whether you want them to send you products.');
+      return;
+    }
     const counter = buildCounter();
     if (!Object.keys(counter).length) { Alert.alert('Nothing changed', 'Adjust at least one term to counter.'); return; }
     setBusy(true);
@@ -152,11 +176,11 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
 
         {(imp.scope === 'preference' || imp.mode === 'preference') && <Text style={s.h}>THEY'D PREFER — YOUR CALL</Text>}
         {t.scope && imp.scope === 'preference' && <Row k="You'd promote" v={scopeText(t.scope)} tag="their preference" />}
-        {t.mode && imp.mode === 'preference' && <Row k="Working style" v={MODE_LABEL[t.mode]} tag="their preference" />}
+        {t.mode && imp.mode === 'preference' && <WorkingStyleRows mode={t.mode} tag="their preference" />}
         {t.mode && imp.mode === 'requirement' && (
           <>
             <Text style={s.h}>ALSO REQUIRED</Text>
-            <Row k="Working style" v={MODE_LABEL[t.mode]} tag="required" locked />
+            <WorkingStyleRows mode={t.mode} tag="required" locked />
           </>
         )}
 
@@ -196,14 +220,37 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
             )}
             {counterable.includes('mode') && (
               <>
-                <Text style={s.fl}>Working style — their preference, so your call</Text>
+                {/* Her counter asks the same two questions, in the same words the brand
+                    was asked. Offering her one three-way chip row while the brand answers
+                    two would put the two sides back out of step. */}
+                <Text style={s.fl}>Where you'd work — their preference, so your call</Text>
                 <View style={s.chips}>
-                  {Object.entries(MODE_LABEL).map(([v, label]) => (
-                    <TouchableOpacity key={v} style={[s.chip, cMode === v && s.chipAct]} onPress={() => setCMode(cMode === v ? '' : v)}>
-                      <Text style={[s.chipTxt, cMode === v && s.chipTxtAct]}>{label}</Text>
+                  {PLACES.map(o => (
+                    <TouchableOpacity key={o.v} style={[s.chip, cPlace === o.v && s.chipAct]}
+                      onPress={() => {
+                        const next = cPlace === o.v ? '' : o.v;
+                        setCPlace(next);
+                        if (next !== 'remote') setCShipping(null);
+                      }}>
+                      <Text style={[s.chipTxt, cPlace === o.v && s.chipTxtAct]}>{o.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
+                {cPlace === 'remote' && (
+                  <>
+                    <Text style={s.fl}>Would they send you products?</Text>
+                    <View style={s.chips}>
+                      {SHIPPING.map(o => (
+                        <TouchableOpacity key={o.v} style={[s.chip, cShipping === o.v && s.chipAct]}
+                          onPress={() => setCShipping(o.v)}>
+                          <Text style={[s.chipTxt, cShipping === o.v && s.chipTxtAct]}>
+                            {o.v === 'yes' ? 'Yes, ship to me' : 'No'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </>
+                )}
               </>
             )}
             {!t.deliverables && (

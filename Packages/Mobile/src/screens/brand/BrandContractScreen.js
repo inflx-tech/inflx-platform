@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import { PLACES, SHIPPING, toMode, fromMode } from '../../utils/workingStyle';
 import DateTimeChipPicker from '../../components/DateTimeChipPicker';
 import StatusPill from '../../components/brand/StatusPill';
 
@@ -61,6 +62,10 @@ export default function BrandContractScreen({ route, navigation }) {
   const [extraNotes, setExtraNotes] = useState('');
   const [contentReq, setContentReq] = useState('');
   const [productionMode, setProductionMode] = useState('remote');
+  // Working style is two questions here too, in the same words the collaboration request
+  // asked them — the brand should never meet a second vocabulary for a settled decision.
+  // Contract: features/collab-working-style-two-questions
+  const [carriedOver, setCarriedOver] = useState(false);
   // Wallet snapshot — used for the live "can the brand actually pay this
   // contract?" check next to the bonus input. Refreshed at mount.
   const [walletBalance, setWalletBalance] = useState(0);
@@ -99,7 +104,14 @@ export default function BrandContractScreen({ route, navigation }) {
       setExtraNotes(parsed?.notes || '');
     }
     if (c.bonus_amount) setBonusAmount(String(c.bonus_amount));
-    if (c.production_mode) setProductionMode(c.production_mode);
+    if (c.production_mode) {
+      setProductionMode(c.production_mode);
+    } else if (c.agreed_mode) {
+      // Nothing chosen yet — carry over what the two sides already settled at handshake
+      // rather than asking the same question again from a blank slate.
+      setProductionMode(c.agreed_mode);
+      setCarriedOver(true);
+    }
 
     // Prefer saved text; fall back to backend-composed suggestion.
     const savedReq = (c.content_requirements || '').trim();
@@ -445,27 +457,56 @@ export default function BrandContractScreen({ route, navigation }) {
               );
             })()}
 
-            {/* Production mode — how will content actually get made? */}
-            <Text style={[styles.cardTitle, { marginTop: 16 }]}>How will the content be produced?</Text>
+            {/* Working style — the SAME two questions the collaboration request asked,
+                in the same words, pre-answered from what was agreed. It used to be three
+                cards named Visit / Shipment / Remote, remembered nothing, and let the
+                brand contradict the terms the creator had already accepted. */}
+            <Text style={[styles.cardTitle, { marginTop: 16 }]}>Where will she work?</Text>
             <View style={pmStyles.modeRow}>
-              {[
-                { v: 'visit',    label: 'Visit',    icon: '[VISIT]' },
-                { v: 'shipment', label: 'Shipment', icon: '[SHIP]' },
-                { v: 'remote',   label: 'Remote',   icon: '[REMOTE]' },
-              ].map(opt => (
-                <TouchableOpacity
-                  key={opt.v}
-                  style={[pmStyles.modeCard, productionMode === opt.v && pmStyles.modeCardActive]}
-                  onPress={() => setProductionMode(opt.v)}>
-                  <Text style={[pmStyles.modeIcon, productionMode === opt.v && pmStyles.modeIconActive]}>{opt.icon}</Text>
-                  <Text style={[pmStyles.modeLabel, productionMode === opt.v && pmStyles.modeLabelActive]}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
+              {PLACES.map(opt => {
+                const on = fromMode(productionMode).place === opt.v;
+                return (
+                  <TouchableOpacity
+                    key={opt.v}
+                    style={[pmStyles.modeCard, on && pmStyles.modeCardActive]}
+                    onPress={() => {
+                      setCarriedOver(false);
+                      setProductionMode(toMode(opt.v, opt.v === 'remote' ? fromMode(productionMode).shipping : null));
+                    }}>
+                    <Text style={[pmStyles.modeLabel, on && pmStyles.modeLabelActive]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+
+            {fromMode(productionMode).place === 'remote' && (
+              <>
+                <Text style={[styles.cardTitle, { marginTop: 12 }]}>Are you sending her products?</Text>
+                <View style={pmStyles.modeRow}>
+                  {SHIPPING.map(opt => {
+                    const on = fromMode(productionMode).shipping === opt.v;
+                    return (
+                      <TouchableOpacity
+                        key={opt.v}
+                        style={[pmStyles.modeCard, on && pmStyles.modeCardActive]}
+                        onPress={() => { setCarriedOver(false); setProductionMode(toMode('remote', opt.v)); }}>
+                        <Text style={[pmStyles.modeLabel, on && pmStyles.modeLabelActive]}>{opt.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+
+            {carriedOver && (
+              <Text style={pmStyles.carried}>
+                Carried over from what you both agreed. Change it only if the plan changed.
+              </Text>
+            )}
             <Text style={styles.helpText}>
-              {productionMode === 'visit'    ? "Influencer will visit your store / location. You'll fill in address + time after both parties sign."
-               : productionMode === 'shipment' ? "You'll ship product to the influencer. Address comes from their profile; you provide AWB after dispatch."
-               : "No physical exchange. Influencer creates content from your brief."}
+              {productionMode === 'visit'    ? "She comes to your store or location. You'll fill in the address and time after both parties sign."
+               : productionMode === 'shipment' ? "You'll ship product to her. Her address comes from her profile; you add the courier and tracking number after dispatch."
+               : "Nothing shipped. She creates content wherever she is, from your brief."}
             </Text>
           </View>
         )}
@@ -721,6 +762,9 @@ function BrandProductionPanel({ contractId }) {
   const [loading, setLoad]  = useState(true);
   const [saving, setSave]   = useState(false);
   const [dateRange, setDateRange] = useState(null);  // { earliest, latest } ISO
+  // Which place the brand tapped, while the shipping question is still open. Local to
+  // the set-up panel — nothing is written until both questions are answered.
+  const [pendingPlace, setPendingPlace] = useState(null);
 
   // Location form (sent without date/time on first save)
   const [vAddress, setVAddress] = useState('');
@@ -900,57 +944,56 @@ function BrandProductionPanel({ contractId }) {
       <View style={pmStyles.panel}>
         <Text style={pmStyles.panelTitle}>Set up production</Text>
         <Text style={[pmStyles.helpHeader, { marginTop: 4 }]}>
-          Pick how the influencer will get what they need for the shoot.
+          Where will she work?
         </Text>
+        {/* Same two questions as the collaboration request and the draft above, in the
+            same words. Nothing is written until both are answered — tapping Remote no
+            longer commits before the brand has said whether a box is moving. */}
         <View style={pmStyles.modeRow}>
-          <TouchableOpacity
-            style={[pmStyles.modeCard, mode === 'visit' && pmStyles.modeCardActive]}
-            disabled={saving}
-            onPress={async () => {
-              setSave(true);
-              const res = await brandApi.initialiseProduction(contractId, 'visit');
-              setSave(false);
-              if (res.success) load();
-              else Alert.alert('Failed', res.error?.message || 'Could not initialise');
-            }}
-          >
-            <Text style={[pmStyles.modeIcon, mode === 'visit' && pmStyles.modeIconActive]}>[VISIT]</Text>
-            <Text style={[pmStyles.modeLabel, mode === 'visit' && pmStyles.modeLabelActive]}>Visit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[pmStyles.modeCard, mode === 'shipment' && pmStyles.modeCardActive]}
-            disabled={saving}
-            onPress={async () => {
-              setSave(true);
-              const res = await brandApi.initialiseProduction(contractId, 'shipment');
-              setSave(false);
-              if (res.success) load();
-              else Alert.alert('Failed', res.error?.message || 'Could not initialise');
-            }}
-          >
-            <Text style={[pmStyles.modeIcon, mode === 'shipment' && pmStyles.modeIconActive]}>[SHIP]</Text>
-            <Text style={[pmStyles.modeLabel, mode === 'shipment' && pmStyles.modeLabelActive]}>Shipment</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[pmStyles.modeCard, mode === 'remote' && pmStyles.modeCardActive]}
-            disabled={saving}
-            onPress={async () => {
-              Alert.alert('Switch to remote?', 'No coordination needed — content is created from your brief alone.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Confirm', onPress: async () => {
+          {PLACES.map(opt => (
+            <TouchableOpacity
+              key={opt.v}
+              style={[pmStyles.modeCard, pendingPlace === opt.v && pmStyles.modeCardActive]}
+              disabled={saving}
+              onPress={async () => {
+                setPendingPlace(opt.v);
+                if (opt.v !== 'remote') {
                   setSave(true);
-                  const res = await brandApi.initialiseProduction(contractId, 'remote');
+                  const res = await brandApi.initialiseProduction(contractId, 'visit');
                   setSave(false);
                   if (res.success) load();
                   else Alert.alert('Failed', res.error?.message || 'Could not initialise');
-                }},
-              ]);
-            }}
-          >
-            <Text style={[pmStyles.modeIcon, mode === 'remote' && pmStyles.modeIconActive]}>[REMOTE]</Text>
-            <Text style={[pmStyles.modeLabel, mode === 'remote' && pmStyles.modeLabelActive]}>Remote</Text>
-          </TouchableOpacity>
+                }
+              }}
+            >
+              <Text style={[pmStyles.modeLabel, pendingPlace === opt.v && pmStyles.modeLabelActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
+
+        {pendingPlace === 'remote' && (
+          <>
+            <Text style={[pmStyles.helpHeader, { marginTop: 10 }]}>Are you sending her products?</Text>
+            <View style={pmStyles.modeRow}>
+              {SHIPPING.map(opt => (
+                <TouchableOpacity
+                  key={opt.v}
+                  style={pmStyles.modeCard}
+                  disabled={saving}
+                  onPress={async () => {
+                    setSave(true);
+                    const res = await brandApi.initialiseProduction(contractId, toMode('remote', opt.v));
+                    setSave(false);
+                    if (res.success) load();
+                    else Alert.alert('Failed', res.error?.message || 'Could not initialise');
+                  }}
+                >
+                  <Text style={pmStyles.modeLabel}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
+        )}
         {saving && <Text style={pmStyles.smallNote}>Setting up…</Text>}
       </View>
     );
@@ -1227,6 +1270,7 @@ function BrandProductionPanel({ contractId }) {
 }
 
 const pmStyles = StyleSheet.create({
+  carried: { fontSize: 11, fontWeight: '700', color: '#1A7F52', marginTop: 8, lineHeight: 16 },
   loadingBox: { padding: 24, alignItems: 'center' },
   panel:      { marginHorizontal: 14, marginTop: 12, padding: 13, borderRadius: 14, backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.border },
   panelHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },

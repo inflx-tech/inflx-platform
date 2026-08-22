@@ -166,6 +166,12 @@ const getContract = asyncHandler(async (req, res) => {
        cs.formats_json    AS set_formats_json,
        c.brand_id,
        c.brief            AS campaign_brief,
+       -- The working style the two sides already agreed at handshake, so the contract
+       -- screen can pre-answer it instead of asking the same question a second time
+       -- in a second vocabulary. LEFT JOIN: a campaign built without a prior
+       -- agreement is normal and must still return a contract.
+       -- Contract: features/collab-working-style-two-questions
+       ag.terms_json->>'mode' AS agreed_mode,
        u_inf.id  AS influencer_user_id,
        u_br.id   AS brand_user_id
      FROM contracts con
@@ -176,6 +182,7 @@ const getContract = asyncHandler(async (req, res) => {
      JOIN influencers          inf ON inf.id = ci.influencer_id
      JOIN users                u_inf ON u_inf.id = inf.user_id
      JOIN users                u_br  ON u_br.id  = b.user_id
+     LEFT JOIN collab_agreements ag ON ag.id = ci.agreement_id
      WHERE con.campaign_influencer_id = $1`,
     [ciId]
   );

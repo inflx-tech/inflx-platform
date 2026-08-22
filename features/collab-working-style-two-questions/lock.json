@@ -1,0 +1,34 @@
+{
+  "feature": "collab-working-style-two-questions",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_note": "features/collab-working-style-two-questions/04-preview/mockups/working-style.html — five boards. Drawn from the live BrandRequestComposerScreen and CollabRequestDetailScreen as they exist today, not redesigned: same chips, same importance row, same section headings, same wording style.",
+  "notes": "Founder instruction 2026-08-22: working style is two questions (store visit / remote), with product shipping asked only when remote. Stored vocabulary deliberately unchanged so the existing shipping machinery keeps working with no migration.",
+  "open_decisions": [
+    "RESOLVED 2026-08-22 — item 2 (BrandContractScreen asking the working style a second time) approved into scope by the founder in the same lock."
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting — both phone apps via OTA, plus one read-only addition to GET /v1/contracts/:campaign_influencer_id on Render. No migration.",
+    "deploy_targets": [
+      "OTA (brand app + creator app)",
+      "Render (backend/src — contract detail query)"
+    ],
+    "device_walk_required": "Yes — the conditional question and its reset are the whole change.",
+    "qa_note": "2026-08-22 — THE FULL REGRESSION PASS WAS NOT OBTAINED. Stated plainly rather than dressed up.\n  What IS proven:\n    · backend tests/contracts.test.js 21/21 serial, run while the test DB was healthy. Covers the ONLY endpoint changed, and includes two new checks asserting the payload carries agreed_mode and that a contract with no agreement still returns.\n    · backend tests/contract* 19/19 serial, same healthy window.\n    · mobile suite 159/159 (144 before; the 15 new are the working-style mapping checks).\n    · android bundle builds clean — the check that matters for these screens, since no test imports them.\n  What is NOT proven: zero regression across the whole backend suite.\n  Why: the local test database became unresponsive mid-verification. Two runs of IDENTICAL code returned 100 and then 126 failures against a 93 baseline — non-determinism, so neither number measures anything. Cause classified from the output: 120 \"Connection terminated\" plus 17 connect timeouts = 137 of the failures are the DB dropping connections, not code. Only 2 were real and both are pre-existing missing-module errors (collection-library, quotaCheck). The container then stopped accepting connections entirely and docker restart hung.\n  NOT CLAIMED GREEN. NOT CLAIMED NO-REGRESSION. This release is backed by targeted evidence plus a post-deploy check against production, and the full serial pass is OWED once the test database is back.",
+    "owed": [
+      "Full serial backend suite once the local test DB is healthy, measured like-for-like against the 93-failure baseline.",
+      "Device walk by the founder — the conditional question and its reset are the whole change."
+    ]
+  },
+  "approved_by": "founder 2026-08-22 chat: chose \"Lock both screens\" after the five boards were presented",
+  "approved_at": "2026-08-22",
+  "mockup_locked_by": "founder 2026-08-22 chat: chose \"Lock both screens\" after the five boards were presented",
+  "mockup_locked_at": "2026-08-22"
+}
