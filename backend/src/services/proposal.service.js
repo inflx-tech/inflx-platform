@@ -229,7 +229,16 @@ async function listForInfluencer(influencerId, { status } = {}) {
 
 // Brands the influencer can pitch right now (after applying their own filters).
 async function discoverEligibleBrands(influencerId, { search, category, city, limit = 30 } = {}) {
-  const params = [influencerId];
+  // influencerId is deliberately NOT a query parameter. Eligibility at this stage is a
+  // property of the BRAND — open to pitches, and approved. Per-creator eligibility is
+  // checked on submit, as the note at the end of this function already says.
+  //
+  // Passing it as $1 while never referencing it made Postgres reject the whole statement
+  // with "could not determine data type of parameter $1", so this endpoint returned a 500
+  // whenever no filter was applied. That is its default state, so "Find brands to pitch"
+  // has never worked for anyone. Found 2026-08-23 while verifying the brands being opened
+  // to creator pitches — opening them is worthless if the screen listing them errors.
+  const params = [];
   let q = `SELECT b.id, b.business_name, b.logo_url, b.category, b.proposal_filters,
                   u.city AS brand_city
            FROM   brands b
@@ -238,7 +247,7 @@ async function discoverEligibleBrands(influencerId, { search, category, city, li
              AND  u.status = 'approved'`;
   if (search) {
     params.push(`%${search}%`);
-    q += ` AND b.business_name ILIKE ${params.length}`;
+    q += ` AND b.business_name ILIKE $${params.length}`;
   }
   // collab-part6 §6.2 — category and city were already SELECTed and shown on every row;
   // only business_name was filterable, so a creator looking for fashion brands in their
@@ -246,11 +255,11 @@ async function discoverEligibleBrands(influencerId, { search, category, city, li
   // filters narrow, never widen.
   if (category) {
     params.push(category);
-    q += ` AND b.category = ${params.length}`;
+    q += ` AND b.category = $${params.length}`;
   }
   if (city) {
     params.push(city);
-    q += ` AND u.city = ${params.length}`;
+    q += ` AND u.city = $${params.length}`;
   }
   params.push(Math.min(limit, 100));
   q += ` ORDER BY b.created_at DESC LIMIT $${params.length}`;

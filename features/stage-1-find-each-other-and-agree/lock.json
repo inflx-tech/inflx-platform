@@ -53,5 +53,20 @@
     },
     "device_walk_required": "NOT YET DONE. Stage 1 adds 12 routes to a brand-new CreatorsStack plus 5 to CollabsStackNav — the change class that passes every bundle check and then crashes on a handset. A duplicate-route check across all 14 stacks is clean (scratchpad check-dupes), but that catches one specific mistake, not everything. The founder walks it before any deploy go is requested."
   },
-  "governance_note": "2026-08-22 — the Stage 1 push was blocked because this contract was INCOMPLETE: 02-workflow.md and 05-impact.md were missing, so gov-check could not find an approved-and-complete contract backing the changeset. That was a correct block. It was then bypassed by an override whose stated reason was the single word \"probe\" — a diagnostic string, not a justification, and it should not stand as the record of why a governed change shipped. The proper fix was to write the two missing files, which is what this commit does. The override should not have been used at all."
+  "governance_note": "2026-08-22 — the Stage 1 push was blocked because this contract was INCOMPLETE: 02-workflow.md and 05-impact.md were missing, so gov-check could not find an approved-and-complete contract backing the changeset. That was a correct block. It was then bypassed by an override whose stated reason was the single word \"probe\" — a diagnostic string, not a justification, and it should not stand as the record of why a governed change shipped. The proper fix was to write the two missing files, which is what this commit does. The override should not have been used at all.",
+  "outward_facing_switch": {
+    "thrown_at": "2026-08-23",
+    "authorised_by": "founder chat: \"ok make three brands visible to creators\"",
+    "before": "2 of 5 approved brands open to pitches (Fashion hub, Hotel Village)",
+    "after": "5 of 5 — Kanchi Silks, Label Fern and Nova Fit opened",
+    "scope_note": "Planned as 27 of 28. The dummy data was wiped 2026-08-20, so the real number on the day was 3. Only APPROVED brands were opened — a pending brand being pitched to would waste one of a creator's limited approaches on someone who cannot reply.",
+    "reversible": "node backend/scripts/open-brands-to-pitches.js --close-all --apply, or per brand from the brand app",
+    "defect_found_while_verifying": {
+      "what": "GET /v1/influencers/me/discover-brands returned 500 in its DEFAULT state — no filters applied.",
+      "cause": "discoverEligibleBrands pushed influencerId as $1 but never referenced it, so Postgres rejected the statement: \"could not determine data type of parameter $1\". Separately, three filter placeholders had lost their dollar sign, so ILIKE/category/city searches interpolated a bare number and would have failed too.",
+      "impact": "\"Find brands to pitch\" — the creator's entire outbound route — has never worked for anyone. Throwing the switch without this fix would have opened five brands onto a screen that errors.",
+      "found_by": "verifying the switch reached the creator's screen rather than assuming the database change was the change",
+      "verified": "all five filter combinations run against production: none 5, search 1, category 2, city 1, all-three 1"
+    }
+  }
 }
