@@ -121,3 +121,69 @@ describe('GET /brands/:id — the city the admin page could never show', () => {
     expect(b.user_status).toBeDefined();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 2 — the creator list
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('GET /admin/influencers — the list that never existed', () => {
+  /**
+   * Admin -> Influencers was a CSV upload box. A creator's page existed but nothing
+   * linked to it, so it could only be opened by typing an internal id into the address
+   * bar. Twenty-two creators were unreachable from the admin.
+   */
+  it('lists creators with the fields the page renders', async () => {
+    const { adminToken } = await scenario();
+
+    const res = await request(app)
+      .get('/v1/admin/influencers')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    const list = res.body.data.influencers;
+    expect(Array.isArray(list)).toBe(true);
+    expect(list.length).toBeGreaterThan(0);
+
+    const row = list[0];
+    for (const key of ['id', 'instagram_handle', 'city', 'status', 'phone', 'created_at']) {
+      expect(row).toHaveProperty(key);
+    }
+    // Counted live, never stored — the same rule as everywhere else.
+    expect(typeof row.inflx_followers).toBe('number');
+  });
+
+  it('reports how many are in each state', async () => {
+    const { adminToken } = await scenario();
+    const res = await request(app)
+      .get('/v1/admin/influencers')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    const s = res.body.data.summary;
+    expect(s.total).toBeGreaterThan(0);
+    expect(s).toHaveProperty('approved');
+    expect(s).toHaveProperty('pending');
+  });
+
+  it('finds a creator by phone number, not just by name', async () => {
+    const { adminToken, inf } = await scenario();
+    const { rows } = await query(
+      `SELECT u.phone FROM influencers i JOIN users u ON u.id = i.user_id WHERE i.id = $1`,
+      [inf.id]
+    );
+
+    const res = await request(app)
+      .get(`/v1/admin/influencers?search=${encodeURIComponent(rows[0].phone)}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.influencers.map(x => x.id)).toContain(inf.id);
+  });
+
+  it('is closed to a brand', async () => {
+    const { brandToken } = await scenario();
+    const res = await request(app)
+      .get('/v1/admin/influencers')
+      .set('Authorization', `Bearer ${brandToken}`);
+    expect(res.status).toBe(403);
+  });
+});

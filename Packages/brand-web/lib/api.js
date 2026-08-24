@@ -672,6 +672,10 @@ export const adminApi = {
   getCommerceSummary: (days = 30) => api.get(`/admin/commerce-summary?days=${days}`),
   updateOrderStatus: (id, data) => api.patch(`/admin/orders/${id}/status`, data),
   getBrands: (status, search, page) => api.get(`/admin/brands?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  // The creator list — same shape as getBrands so both pages behave identically.
+  // Contract: features/admin-account-review (item 2)
+  getInfluencers: (status, search, page) =>
+    api.get(`/admin/influencers?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   getBrandQueue: () => api.get('/admin/queue/brands'),
   getInfluencerQueue: () => api.get('/admin/queue/influencers'),
   updateBrandStatus: (id, data) => api.patch(`/admin/brands/${id}/status`, data),

@@ -68,6 +68,9 @@ router.post('/escrow/:id/release', authenticate, requireCapability('escrow'), ct
 
 // Influencer bulk upload — 'influencers'
 // ctrl.bulkUploadInfluencers is [multerMiddleware, asyncHandler] — spread into route
+// The creator list. Same capability as the bulk upload it now sits beside.
+// Contract: features/admin-account-review (item 2)
+router.get('/influencers', authenticate, requireCapability('influencers'), ctrl.getInfluencers);
 router.post('/influencers/bulk-upload', authenticate, requireCapability('influencers'), ...ctrl.bulkUploadInfluencers);
 
 // Admin user management — superadmin only (privilege-escalation guard: only a

@@ -55,3 +55,46 @@ the only admin is the founder's own number, which receives real SMS codes, so no
 check can sign in as an admin. Creating a practice admin on a fixed-code number would hand
 superadmin to anyone who guessed the number, so it has not been done. **This gap is worth
 solving deliberately and is recorded as owed.**
+
+---
+
+# Item 2 — the creator list
+
+## What was built
+
+`GET /v1/admin/influencers?status=&search=&page=` — deliberately the same shape as the
+existing `getBrands`, so the two lists behave identically rather than each inventing its
+own conventions.
+
+The page is now the list: summary cards, the same five status tabs, search, status pills,
+and click-through to a creator's account. **The bulk upload was not removed** — it moved
+into a panel behind a header button. Uploading is occasional; browsing is every time.
+
+Two deliberate choices:
+
+* **INFLX following leads, Instagram second.** The same ordering as everywhere else, for
+  the same reason: Instagram reach is who might *see* a post, INFLX following is who can
+  *buy* without leaving.
+* **Phone is searchable.** The practice creators are known by number, not by name.
+* Pending accounts sort to the top, so anyone waiting is the first thing seen.
+
+## Verified against production
+
+The local test database was still unreachable, so the list query was run against
+production directly, every path:
+
+| Path | Result |
+|---|---|
+| Unfiltered page | 20 rows, full page |
+| Every row carries a status | yes |
+| INFLX counts | top 90 |
+| Search by name | "deepa" → Deepa K. |
+| Search by phone | "7900000119" → Anita B. |
+| Search by city | "Hyderabad" → 4 |
+| Status filter | 20 approved on page 1 |
+| Summary | 22 total, 22 approved, 0 pending |
+
+brand-web builds clean; both `/admin/influencers` and `/admin/influencers/[id]` compile.
+
+Four more tests written (`tests/admin-account-review.test.js`, now 9), including one that
+asserts a **brand gets 403** from the admin list. **Not run** — same reason.

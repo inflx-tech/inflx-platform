@@ -1354,6 +1354,88 @@ const getBrands = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/influencers?status=&search=&page=
+//
+// The creator list. Until now Admin -> Influencers was a CSV upload box and nothing
+// else, so a creator's page could only be opened by typing her internal id into the
+// address bar — which means, in practice, never. Deliberately the same shape as
+// getBrands above, so the two lists behave identically.
+// Contract: features/admin-account-review (item 2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getInfluencers = asyncHandler(async (req, res) => {
+  const page   = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit  = Math.min(50, parseInt(req.query.limit || '20', 10));
+  const offset = (page - 1) * limit;
+  const status = req.query.status || 'all';
+  const search = (req.query.search || '').trim();
+
+  const conditions = [];
+  const params     = [];
+  let paramIdx     = 1;
+
+  if (status !== 'all') {
+    conditions.push(`u.status = $${paramIdx++}`);
+    params.push(status);
+  }
+
+  if (search) {
+    // Phone is searchable on purpose — the practice creators are known by number.
+    conditions.push(`(
+      i.full_name ILIKE $${paramIdx} OR
+      u.name ILIKE $${paramIdx} OR
+      i.instagram_handle ILIKE $${paramIdx} OR
+      u.phone ILIKE $${paramIdx} OR
+      i.city ILIKE $${paramIdx}
+    )`);
+    params.push(`%${search}%`);
+    paramIdx++;
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const { rows: summaryRows } = await db.query(`
+    SELECT
+      COUNT(*)                                       AS total,
+      COUNT(*) FILTER (WHERE u.status = 'approved')  AS approved,
+      COUNT(*) FILTER (WHERE u.status = 'pending')   AS pending,
+      COUNT(*) FILTER (WHERE u.status = 'rejected')  AS rejected,
+      COUNT(*) FILTER (WHERE u.status = 'suspended') AS suspended
+    FROM influencers i JOIN users u ON u.id = i.user_id
+  `);
+  const summary = {
+    total:     parseInt(summaryRows[0].total, 10),
+    approved:  parseInt(summaryRows[0].approved, 10),
+    pending:   parseInt(summaryRows[0].pending, 10),
+    rejected:  parseInt(summaryRows[0].rejected, 10),
+    suspended: parseInt(summaryRows[0].suspended, 10),
+  };
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*) AS total FROM influencers i JOIN users u ON u.id = i.user_id ${where}`,
+    params
+  );
+  const total = parseInt(countRows[0].total, 10);
+
+  const { rows: influencers } = await db.query(`
+    SELECT i.id, i.instagram_handle, i.youtube_handle, i.full_name,
+           i.followers_count, i.engagement_rate, i.city, i.state, i.tier,
+           i.scrape_last_run, i.created_at,
+           u.name, u.phone, u.status,
+           -- Counted live, exactly as everywhere else on the platform.
+           (SELECT COUNT(*)::int FROM follower_follows ff WHERE ff.influencer_id = i.id)
+             AS inflx_followers
+    FROM influencers i
+    JOIN users u ON u.id = i.user_id
+    ${where}
+    ORDER BY u.status = 'pending' DESC, i.created_at DESC
+    LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
+  `, [...params, limit, offset]);
+
+  return success(res, { influencers, summary }, 200, { page, limit, total });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/analytics?days=30
 // Time-series, top campaigns/influencers, category breakdown, funnel
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1761,6 +1843,7 @@ const getAgencies = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getInfluencers,
   getBrandQueue,
   getInfluencerQueue,
   updateBrandStatus,
