@@ -629,3 +629,65 @@ flagged rather than done.
 A first probe reported this item green while reading the wrong response shape: it was still
 seeing my duplicate endpoint, which Render had not yet dropped. Re-probed once the deletion
 landed.
+
+---
+
+# Item 11 — one ask template, three ways in
+
+Founder: *"when i click on ask the group then one screen opened, that is not identical to
+the one which we do by selecting individual creator. all three should be … similar ask
+template."*
+
+## Not a styling difference — two of the three were dead
+
+There were **two** composers. This batch upgraded one of them. The moment items 4 and 6
+made deliverables and working style required, the other began failing outright.
+
+Proven against production **before** the fix:
+
+| Way in | Result |
+|---|---|
+| Ask a group, sales collab | ✗ *"say where she would work"* |
+| Ask a filtered set, sales collab | ✗ *"say where she would work"* |
+| Ask a group, paid collab | ✗ *"say what the fee buys"* |
+
+**Two of the three ways to ask a creator could not send anything at all.** A break this
+batch introduced, found by the founder rather than by me — the ask-many screen was never
+opened while items 3, 4, 6, 8 and 9 were built.
+
+## The intent was written down months ago
+
+`services/api.js` already said it:
+
+```
+// The same composer, three ways in. sendCollabRequest already takes influencer_id;
+// these two are the group and the filtered set.
+```
+
+The API supported all three from one endpoint. Two screens were built anyway. **Keeping
+them in step was never going to work** — this is the third time in a fortnight the same
+shape has bitten: two creator searches, two listing-tree endpoints, two composers.
+
+## What was done
+
+`BrandAskManyScreen` is **deleted**. The one composer now takes an individual, a group, or
+a filter, and picks the matching call. Nothing of the bulk screen was lost:
+
+* the **reach preview** for a filtered ask — matched, reachable, what will actually be
+  sent, and what falls outside the cap — still comes first, before the terms
+* the **result page** still names how many were asked and **who was skipped, with the
+  reason**, because an alert cannot carry that and silently dropping people is the thing
+  that screen existed to prevent
+
+## Verified live
+
+Sending exactly what the one composer now builds:
+
+| | |
+|---|---|
+| Group · sales | **1 asked** |
+| Group · paid | works — 0 asked, all already have agreements |
+| Filtered set · sales | works — 0 asked, same reason |
+| Skipped reasons returned | *"You already have an agreement with this creator — brief them into a campaign instead."* |
+
+Mobile 202/202. Bundle builds. Duplicate-route check clean. No migration.

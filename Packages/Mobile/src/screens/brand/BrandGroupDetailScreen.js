@@ -94,7 +94,7 @@ export default function BrandGroupDetailScreen({ route, navigation }) {
             <TouchableOpacity
               style={s.pri}
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('BrandAskMany', { groupId, groupName: group?.name })}
+              onPress={() => navigation.navigate('BrandRequestComposer', { groupId, groupName: group?.name })}
             >
               <Text style={s.priT}>Ask this whole group</Text>
             </TouchableOpacity>

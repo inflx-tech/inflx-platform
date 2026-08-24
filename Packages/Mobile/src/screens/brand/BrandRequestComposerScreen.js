@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  Alert, KeyboardAvoidingView, Platform,
+  Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
@@ -52,8 +52,46 @@ const SCOPES = [
   { v: 'products', label: 'Specific products' },
 ];
 
+/**
+ * ONE ask template, three ways in.
+ * Contract: features/collab-terms-by-aim (item 11)
+ *
+ * Asking one creator, asking a group, and asking a filtered set were TWO screens. This
+ * one gained every change in this batch; the other did not — so the moment deliverables
+ * and working style became required, asking a group or a filtered set began failing
+ * outright. Proven against production before this fix:
+ *
+ *   group,    sales collab -> "say where she would work"
+ *   filtered, sales collab -> "say where she would work"
+ *   group,    paid  collab -> "say what the fee buys"
+ *
+ * Two of the three ways to ask a creator were dead. The api layer had said the intent
+ * out loud for months — "the same composer, three ways in" — and two screens were built
+ * anyway. Keeping them in step was never going to work; there is now only one.
+ */
 export default function BrandRequestComposerScreen({ route, navigation }) {
-  const { influencerId, influencerName, influencerHandle } = route.params || {};
+  const {
+    influencerId, influencerName, influencerHandle,
+    groupId, groupName, filters,
+  } = route.params || {};
+  const isGroup = !!groupId;
+  const isFiltered = !isGroup && !influencerId && !!filters;
+  const isBulk = isGroup || isFiltered;
+
+  // Who a filtered ask actually reaches — matched, reachable, and what will be sent,
+  // with the reason for every drop. Asking for 41 and quietly reaching 30 reads as
+  // eleven people ignoring you.
+  const [preview, setPreview] = useState(null);
+  const [previewing, setPreviewing] = useState(isFiltered);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (!isFiltered) return;
+    brandApi.previewBroadcast(filters || {}).then(res => {
+      setPreviewing(false);
+      if (res.success) setPreview(res.data);
+    });
+  }, [isFiltered, filters]);
   const [aim, setAim] = useState('conversion');
   const [commission, setCommission] = useState('');
   const [fee, setFee] = useState('');
@@ -146,26 +184,109 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
     if (Object.keys(importance).length) terms.importance = importance;
 
     setBusy(true);
-    const res = await brandApi.sendCollabRequest({ influencer_id: influencerId, terms, message: message || null });
+    // The same terms, whichever way in. Contract: features/collab-terms-by-aim (item 11)
+    const res = isGroup
+      ? await brandApi.askGroup(groupId, terms, message || null)
+      : isFiltered
+        ? await brandApi.askMany(filters || {}, terms, message || null)
+        : await brandApi.sendCollabRequest({ influencer_id: influencerId, terms, message: message || null });
     setBusy(false);
-    if (res.success) {
-      const skipped = res.data?.skipped || [];
-      if (res.data?.sent_count > 0) {
-        Alert.alert('Request sent', `${influencerName || 'The creator'} will see it in their inbox. Track it under Collab Requests.`, [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
-      } else {
-        Alert.alert('Not sent', skipped[0]?.reason || 'This creator cannot be reached right now.');
-      }
+
+    if (!res.success) {
+      return Alert.alert('Could not send', res.error?.message || 'Try again.');
+    }
+
+    // A bulk ask gets its own page: how many were asked, and who was skipped with the
+    // reason. An alert cannot carry that, and silently dropping people is the thing this
+    // screen exists to avoid.
+    if (isBulk) return setResult(res.data);
+
+    const skipped = res.data?.skipped || [];
+    if (res.data?.sent_count > 0) {
+      Alert.alert('Request sent', `${influencerName || 'The creator'} will see it in their inbox. Track it under Collab Requests.`, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } else {
-      Alert.alert('Could not send', res.error?.message || 'Try again.');
+      Alert.alert('Not sent', skipped[0]?.reason || 'This creator cannot be reached right now.');
     }
   };
+
+  // ── After a bulk send: the honest outcome, including who was skipped and why ──
+  if (result) {
+    const skipped = result.skipped || [];
+    return (
+      <ScrollView style={s.wrap} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        <Text style={s.bigN}>{result.sent_count}</Text>
+        <Text style={s.bigL}>
+          {result.sent_count === 1 ? 'creator was asked' : 'creators were asked'}
+        </Text>
+
+        {skipped.length > 0 && (
+          <View style={s.skipBox}>
+            <Text style={s.skipH}>{skipped.length} skipped, and why</Text>
+            {skipped.map((sk, i) => (
+              <Text key={i} style={s.skipT}>• {sk.reason}</Text>
+            ))}
+          </View>
+        )}
+
+        <Text style={s.hint}>
+          {result.sent_count === 1
+            ? 'That is one conversation, negotiated on its own.'
+            : `Those are ${result.sent_count} separate conversations. You negotiate with each one on their own, and may end up with ${result.sent_count} different deals — that is intended.`}
+        </Text>
+
+        <TouchableOpacity style={s.cta} onPress={() => navigation.popToTop()}>
+          <Text style={s.ctaTxt}>BACK TO CREATORS</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={s.wrap} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        <Text style={s.sub}>To <Text style={s.subB}>{influencerName || influencerHandle}</Text> — no campaign needed. Money and time are always negotiable; everything else is optional.</Text>
+        <Text style={s.sub}>
+          To <Text style={s.subB}>
+            {isGroup ? (groupName || 'this group')
+              : isFiltered ? 'everyone who matches your filters'
+              : (influencerName || influencerHandle)}
+          </Text> — no campaign needed. Every term below is negotiable.
+        </Text>
+
+        {/* Who a filtered ask reaches, before the terms — a brand should know the size
+            of what they are about to send. */}
+        {isFiltered && (
+          <View style={s.reach}>
+            {previewing ? (
+              <ActivityIndicator color={P.ink} />
+            ) : preview ? (
+              <>
+                <Text style={s.reachH}>
+                  {Math.min(preview.reachable, preview.cap ?? preview.reachable)} will be asked
+                </Text>
+                <Text style={s.reachS}>
+                  {preview.matched} match what you asked for · {preview.reachable} can be reached
+                  {preview.cap != null && preview.reachable > preview.cap
+                    ? ` · ${preview.reachable - preview.cap} over your limit of ${preview.cap}`
+                    : ''}
+                </Text>
+              </>
+            ) : (
+              <Text style={s.reachS}>Could not work out who this reaches. Try again.</Text>
+            )}
+          </View>
+        )}
+
+        {isGroup && (
+          <View style={s.reach}>
+            <Text style={s.reachS}>
+              Everyone on this list is checked before sending — anyone who has muted brand
+              requests, or already has an open request from you, is named rather than
+              silently dropped.
+            </Text>
+          </View>
+        )}
 
         <Text style={s.fl}>AIM</Text>
         <View style={s.chips}>
@@ -359,6 +480,14 @@ const s = StyleSheet.create({
   inp: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink },
   hint: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, lineHeight: 15, marginTop: 6 },
   negTag: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted },
+  reach: { backgroundColor: P.bg2 || P.bg, borderRadius: 10, padding: 12, marginBottom: 14 },
+  reachH: { fontFamily: fonts.displayBlack, fontSize: 17, color: P.ink },
+  reachS: { fontFamily: fonts.sansRegular, fontSize: 11, color: P.muted, marginTop: 3, lineHeight: 16 },
+  bigN: { fontFamily: fonts.displayBlack, fontSize: 46, color: P.ink },
+  bigL: { fontFamily: fonts.sansBold, fontSize: 13, color: P.muted, marginBottom: 16 },
+  skipBox: { backgroundColor: P.bg2 || P.bg, borderRadius: 10, padding: 12, marginBottom: 14 },
+  skipH: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink, marginBottom: 6 },
+  skipT: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: P.muted, lineHeight: 18 },
   pickRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderColor: P.border, borderRadius: 9,

@@ -33,7 +33,6 @@ import BrandCategoryPickerScreen from '../screens/brand/BrandCategoryPickerScree
 import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
 import BrandPlacePickerScreen from '../screens/brand/BrandPlacePickerScreen';
-import BrandAskManyScreen from '../screens/brand/BrandAskManyScreen';
 import BrandDiaryScreen from '../screens/brand/BrandDiaryScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 // Parity pack (contract: features/brand-mobile-parity-pack)
@@ -105,7 +104,6 @@ function CreatorsStack() {
       <Stack.Screen name="BrandGroups" component={BrandGroupsScreen} />
       <Stack.Screen name="BrandGroupDetail" component={BrandGroupDetailScreen} />
       <Stack.Screen name="BrandPlacePicker" component={BrandPlacePickerScreen} />
-      <Stack.Screen name="BrandAskMany" component={BrandAskManyScreen} />
       <Stack.Screen name="BrandDiary" component={BrandDiaryScreen} />
       <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
     </Stack.Navigator>

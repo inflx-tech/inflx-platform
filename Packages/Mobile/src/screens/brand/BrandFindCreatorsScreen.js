@@ -263,7 +263,7 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
             <TouchableOpacity
               style={s.actionBtn}
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('BrandAskMany', {
+              onPress={() => navigation.navigate('BrandRequestComposer', {
                 filters: {
                   ...(cities.length ? { cities } : {}),
                   ...(niches.length ? { niches } : {}),
