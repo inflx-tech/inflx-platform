@@ -545,6 +545,20 @@ in the admin brand list, now provably breaking a feature.
 One resolver now, case-insensitive, returning **null** for a business with no tree at all
 rather than inventing a vertical with no nodes.
 
+## I built a duplicate endpoint, and deleted it
+
+Correcting my own record above: I added `GET /brands/me/listing-tree` to the brand
+controller and only discovered on the live probe that **a route at that exact path already
+existed** — the brand's own inventory tree, annotated with how many of their products sit
+under each category. Mine was shadowed and never ran.
+
+The existing one was also **better**: those per-category counts tell a brand it is about to
+name a category it has nothing in. Mine had no counts.
+
+So mine is deleted. This is the same fault as the two creator-search screens found on
+2026-08-25 — a second thing doing one job — caught this time before it reached anybody.
+**The picker flattens the existing tree client-side.**
+
 ## What was already there
 
 The tree is real: **333 nodes**, fashion (234) and furniture (99), with parents, depth and
@@ -578,3 +592,14 @@ exists in production today. The tree query run against production: 234 fashion n
 195 leaves, real paths.
 
 Mobile 202/202. Bundle builds. Duplicate-route check clean. No migration.
+
+### The casing bug existed in two places, written the same wrong way
+
+Both `getOfferCategories` and `getMyListingTree` carried their own copy of
+
+```
+cat.startsWith('fashion') ? 'fashion' : cat
+```
+
+Two copies, the same defect in each. It now lives once, in `utils/vertical`, which is the
+only real fix — two copies drifting apart is how the bug came to exist twice.

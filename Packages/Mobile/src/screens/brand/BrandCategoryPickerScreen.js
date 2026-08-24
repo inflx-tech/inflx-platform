@@ -25,6 +25,11 @@ import { brandApi } from '../../services/api';
  * The list is FLAT with a readable path — "Women › Ethnic Wear › Saree" — rather than an
  * expanding tree. There are 195 leaves in fashion; searching a flat list beats opening
  * three levels on a phone, and the path says where each one sits.
+ *
+ * It reads the endpoint that ALREADY existed for the brand's own inventory tree, which
+ * annotates every node with how many of this brand's products sit under it. I began by
+ * writing a second endpoint doing the same job without those counts; it was shadowed by
+ * this one at the same path and never ran. Deleted — one answer, not two.
  */
 
 export default function BrandCategoryPickerScreen({ route, navigation }) {
@@ -37,10 +42,24 @@ export default function BrandCategoryPickerScreen({ route, navigation }) {
   useEffect(() => {
     brandApi.getListingTree().then(res => {
       setLoading(false);
-      if (res.success) {
-        setNodes(res.data?.nodes || []);
-        setVertical(res.data?.vertical || null);
-      }
+      if (!res.success) return;
+      setVertical(res.data?.vertical || null);
+      // Flatten the nested tree into rows a search box can work through, keeping the
+      // trail so each row says where it sits.
+      const out = [];
+      const walk = (node, trail) => {
+        const path = [...trail, node.name];
+        out.push({
+          id: node.id,
+          name: node.name,
+          path: path.join(' › '),
+          is_leaf: node.is_leaf,
+          product_count: node.product_count || 0,
+        });
+        (node.children || []).forEach(child => walk(child, path));
+      };
+      (res.data?.tree || []).forEach(root => walk(root, []));
+      setNodes(out);
     });
   }, []);
 
@@ -108,6 +127,11 @@ export default function BrandCategoryPickerScreen({ route, navigation }) {
                   {parts.length > 0 && <Text style={s.trail}>{parts.join(' › ')}</Text>}
                   <Text style={[s.leaf, on && s.leafOn]}>{leaf}</Text>
                 </View>
+                {item.product_count > 0 ? (
+                  <Text style={s.count}>{item.product_count}</Text>
+                ) : (
+                  <Text style={s.countNone}>none yet</Text>
+                )}
                 {on && <Icon name="check" size={17} color={ig.green} />}
               </TouchableOpacity>
             );
@@ -154,6 +178,8 @@ const s = StyleSheet.create({
   trail: { fontSize: 10.5, color: ig.mut2, marginBottom: 2 },
   leaf: { fontSize: 13.5, fontWeight: '700', color: ig.text },
   leafOn: { color: ig.green },
+  count: { fontSize: 11.5, fontWeight: '800', color: ig.mut },
+  countNone: { fontSize: 10.5, color: ig.mut2 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, gap: 7 },
   emptyT: { fontSize: 13.5, fontWeight: '800', color: ig.text, marginTop: 4, textAlign: 'center' },
   emptyS: { fontSize: 11.5, color: ig.mut, textAlign: 'center', lineHeight: 17 },

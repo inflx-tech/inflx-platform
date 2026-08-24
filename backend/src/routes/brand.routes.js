@@ -83,9 +83,6 @@ router.get('/me/dishes/search',     authenticate, requireRole('brand'), ctrl.sea
 // Tag picker options — fixed vocabulary for this brand's business (+ 'ALL')
 router.get('/me/tag-options',       authenticate, requireRole('brand'), ctrl.getTagOptions);
 router.get('/me/offer-categories',  authenticate, requireRole('brand'), ctrl.getOfferCategories);
-// The brand's own slice of the listing tree, so a collaboration can name a REAL category
-// instead of typing one. Contract: features/collab-terms-by-aim (item 9)
-router.get('/me/listing-tree',      authenticate, requireRole('brand'), ctrl.getListingTree);
 
 // Excel bulk upload
 router.get('/me/listing-template/download',  authenticate, requireRole('brand'), ctrl.downloadListingTemplate);

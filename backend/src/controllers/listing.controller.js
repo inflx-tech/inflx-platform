@@ -19,6 +19,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const taxonomy = require('../services/taxonomy.service');
+const { verticalFor } = require('../utils/vertical');
 const tagsService = require('../services/tags.service');
 const { OFFER_BEST_PCT, offerFieldsFromPct } = require('../services/sectionRules.service');
 const bulk = require('../services/listingBulk.service');
@@ -615,10 +616,14 @@ const getMyListingTree = asyncHandler(async (req, res) => {
   const brand = brows[0];
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  const cat = String(brand.category || '');
-  const vertical = cat.startsWith('furniture') ? 'furniture'
-    : cat.startsWith('fashion') ? 'fashion'
-    : cat;
+  // Was case-SENSITIVE, so a brand carrying 'Fashion' rather than 'fashion' resolved to
+  // a vertical that matches no node and got an EMPTY tree. Kanchi Silks, with 11
+  // products, was in exactly that state — verified against production.
+  // Contract: features/collab-terms-by-aim (item 9)
+  const vertical = verticalFor(brand.category);
+  // A restaurant has no listing tree. Saying so beats an empty list that reads as a
+  // loading failure.
+  if (!vertical) return success(res, { vertical: null, tree: [] });
   const tree = await taxonomy.getTree(vertical);
 
   // One grouped count over the brand's products; roll up the tree client-free.
