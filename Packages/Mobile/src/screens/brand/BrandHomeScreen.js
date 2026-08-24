@@ -60,7 +60,10 @@ const QUICK_ACTIONS = [
   { label: 'Wallet',        icon: 'wallet-outline',         target: 'Wallet' },
   { label: 'Enquiries',     icon: 'email-outline',          target: 'BrandEnquiries' },
   { label: 'Conversions',   icon: 'currency-inr',           target: 'BrandConversions' },
-  { label: 'Influencers',   icon: 'account-search-outline', target: 'BrandInfluencerBrowse' },
+  // Was BrandInfluencerBrowse — the old creator search, now retired. The Creators tab
+  // holds the current one, with the three filters, INFLX counts and photos.
+  // Contract: features/stage-1-find-each-other-and-agree
+  { label: 'Creators',      icon: 'account-search-outline', target: 'CreatorsHome', tab: 'Creators' },
   { label: 'Creator market',icon: 'chart-line',             target: 'BrandInfluencerAnalytics' },
   { label: 'Plan & billing',icon: 'cog-outline',            target: 'BrandSettingsHub', tab: 'Profile' },
   { label: 'Negotiations',  icon: 'handshake-outline',      target: 'Campaigns' },

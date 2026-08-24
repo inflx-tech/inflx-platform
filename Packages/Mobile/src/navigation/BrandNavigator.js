@@ -19,7 +19,6 @@ import BrandNegotiationScreen from '../screens/brand/BrandNegotiationScreen';
 import BrandContractScreen from '../screens/brand/BrandContractScreen';
 import BrandEnquiriesScreen from '../screens/brand/BrandEnquiriesScreen';
 import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
-import BrandInfluencerBrowseScreen from '../screens/brand/BrandInfluencerBrowseScreen';
 import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfileScreen';
 // collab-part2 — the pre-campaign handshake, brand side.
 import BrandRequestComposerScreen from '../screens/brand/BrandRequestComposerScreen';
@@ -60,7 +59,6 @@ function HomeStack() {
       <Stack.Screen name="BrandContract" component={BrandContractScreen} />
       <Stack.Screen name="BrandEnquiries" component={BrandEnquiriesScreen} />
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
-      <Stack.Screen name="BrandInfluencerBrowse"  component={BrandInfluencerBrowseScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       {/* collab-part2 — the pre-campaign handshake, brand side. */}
       <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
@@ -88,10 +86,12 @@ function CreatorsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CreatorsHome" component={BrandCreatorsScreen} />
-      {/* Stage 1 — the rebuilt search: three filters, each over a picker. The old
-          browse screen stays reachable from Home. */}
+      {/* Stage 1 — the rebuilt search: three filters, each over a picker.
+          The old browse screen has been retired: nothing navigated to it except a
+          Home tile and the group flow, and the group flow was pointed at it BY
+          MISTAKE, which is how "add to group" came to open a screen that had never
+          heard of groups. Two creator searches is how they drift apart. */}
       <Stack.Screen name="BrandFindCreators" component={BrandFindCreatorsScreen} />
-      <Stack.Screen name="BrandInfluencerBrowse" component={BrandInfluencerBrowseScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
       <Stack.Screen name="BrandCollabRequests" component={BrandCollabRequestsScreen} />

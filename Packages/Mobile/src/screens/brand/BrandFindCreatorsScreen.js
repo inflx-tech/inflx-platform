@@ -188,7 +188,7 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
         )}
         {!addToGroupId && results.length > 0 && (
           <TouchableOpacity onPress={() => { setSelecting(v => !v); setPicked(new Set()); }} activeOpacity={0.7}>
-            <Text style={s.clear}>{selecting ? 'Done' : 'Select'}</Text>
+            <Text style={s.clear}>{selecting ? 'Done' : 'Ask several'}</Text>
           </TouchableOpacity>
         )}
       </View>

@@ -10,6 +10,10 @@ import CreatorAvatar from '../../components/CreatorAvatar';
 // Rendered INSIDE this tab rather than pushed as their own pages.
 import BrandFindCreatorsScreen from './BrandFindCreatorsScreen';
 import BrandGroupsList from './BrandGroupsList';
+// Who may approach you is a pre-campaign decision, so it belongs in this tab — not
+// under Profile, where nobody looks for it.
+// Contract: features/stage-1-find-each-other-and-agree
+import ProposalFiltersSheet from '../../components/brand/ProposalFiltersSheet';
 
 /**
  * BrandCreatorsScreen — everything that happens before a campaign exists.
@@ -97,14 +101,19 @@ export default function BrandCreatorsScreen({ navigation }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Pitch settings, surfaced here rather than three taps away under Profile.
+  const [pitchSettings, setPitchSettings] = useState(null);
+  const [pitchOpen, setPitchOpen] = useState(false);
 
   const load = useCallback(async () => {
-    const [rq, pi, ag, gr] = await Promise.all([
+    const [rq, pi, ag, gr, ps] = await Promise.all([
       brandApi.listSentCollabRequests(),
       brandApi.listProposals(),
       brandApi.listAgreements(),
       brandApi.listGroups(),
+      brandApi.getProposalSettings(),
     ]);
+    if (ps.success) setPitchSettings(ps.data?.brand || ps.data);
     // One source failing must not blank the tab — three of four conversations beats none.
     if (rq.success) setRequests(rq.data?.requests || []);
     if (pi.success) setPitches(pi.data?.proposals || []);
@@ -275,6 +284,29 @@ export default function BrandCreatorsScreen({ navigation }) {
         data={sections}
         keyExtractor={(sec) => sec.title}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ig.text} />}
+        /* Who may approach you, stated and changeable where the approaches arrive.
+           It used to live under Profile -> Influencer Proposals behind a control
+           labelled "Filters" — which reads as "show me fewer of these", not "decide
+           who is allowed to reach me". Two very different things that looked the same.
+           Contract: features/stage-1-find-each-other-and-agree */
+        ListHeaderComponent={
+          pitchSettings ? (
+            <TouchableOpacity style={s.pitchBar} activeOpacity={0.7} onPress={() => setPitchOpen(true)}>
+              <View style={[s.pitchDot, { backgroundColor: pitchSettings.accepts_proposals ? ig.green : ig.mut2 }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.pitchT}>Who can pitch you</Text>
+                <Text style={s.pitchS}>
+                  {pitchSettings.accepts_proposals
+                    ? (Object.keys(pitchSettings.proposal_filters || {}).length
+                        ? 'Open to pitches, with conditions'
+                        : 'Open to pitches from anyone')
+                    : 'Closed — no creator can approach you'}
+                </Text>
+              </View>
+              <Icon name="chevron-right" size={18} color={ig.mut2} />
+            </TouchableOpacity>
+          ) : null
+        }
         renderItem={({ item: sec }) => (
           <View>
             <Text style={s.sectionH}>{sec.title}</Text>
@@ -308,11 +340,25 @@ export default function BrandCreatorsScreen({ navigation }) {
         }
         contentContainerStyle={sections.length === 0 ? { flexGrow: 1 } : { paddingBottom: 28 }}
       />
+      <ProposalFiltersSheet
+        visible={pitchOpen}
+        settings={pitchSettings}
+        onClose={() => setPitchOpen(false)}
+        onSaved={() => { setPitchOpen(false); load(); }}
+      />
     </View>
   );
 }
 
 const s = StyleSheet.create({
+  pitchBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: ig.lineSoft, backgroundColor: ig.bg,
+  },
+  pitchDot: { width: 7, height: 7, borderRadius: 4 },
+  pitchT: { fontSize: 12.5, fontWeight: '800', color: ig.text },
+  pitchS: { fontSize: 11, color: ig.mut, marginTop: 2 },
   container: { flex: 1, backgroundColor: ig.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

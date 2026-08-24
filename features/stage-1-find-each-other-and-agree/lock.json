@@ -76,5 +76,19 @@
     "fix": "One route name. Both screens verified to live in CreatorsStack, so the navigate resolves — a cross-stack navigate fails silently at runtime and passes every build check.",
     "found_while_sweeping": "The BrandFindCreators ROUTE was never navigated to by anything. The Find screen works only because it is rendered inline inside the Creators tab. So the brand app carried two creator search screens, and the one place that needed the new one used the old one. With this fix, BrandInfluencerBrowse has no entry point at all and should be retired — two search screens is how they drift apart, and this bug was that drift.",
     "verified": "Mobile suite 159/159. Duplicate-route check clean across all stacks. Android bundle builds. Group detail already reloads on focus, so added creators appear on return."
+  },
+  "creators_tab_pass_2026_08_25": {
+    "founder": "\"keep this influencer proposals in creators tab, it is not new right ..all this is actions before making detailed campaign\", then \"take your best decision on this UI/UX\".",
+    "decision": "FOUR sub-tabs, not five. Talking already holds both directions sorted by whose turn it is, so a Pitches tab would show the same conversations twice, and five labels across a phone truncate. What was missing was a way in and an honest name, not a tab.",
+    "changes": [
+      "\"Who can pitch you\" moved to the top of Talking, stating the position in words and opening the existing settings sheet. It was under Profile > Influencer Proposals behind a control labelled \"Filters\" — which reads as show-me-fewer, not decide-who-may-reach-me.",
+      "Bulk send relabelled from \"Select\" (a mode name) to \"Ask several\", so the screen says what it can do before anything is picked.",
+      "Old creator search BrandInfluencerBrowse retired; the Home tile now opens the Creators tab."
+    ],
+    "mistakes_caught": [
+      "I claimed the old screen had no entry point left. It did — my grep searched for navigate('BrandInfluencerBrowse' and missed the Home screen, which reaches it via a target: property. Removing it from the navigator first would have left a Home tile pointing at nothing.",
+      "Three style tokens did not exist: fonts is not imported in that screen, and neither ig.sunk nor ig.white are real (ig.bg is). The fonts reference would have thrown at module load — builds cleanly, dies on the handset. Now verified mechanically: all 12 ig.* tokens resolve, all 11 Home tiles point at registered routes."
+    ],
+    "verified": "Mobile 159/159 · duplicate-route check clean across all stacks · Android bundle builds."
   }
 }

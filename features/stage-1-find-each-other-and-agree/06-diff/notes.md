@@ -76,3 +76,54 @@ the stage added).
 
 **Not claimed green** — the repo carries 93 pre-existing failures, and the full serial
 suite has not been runnable since 22 August.
+
+---
+
+# Creators tab pass — 2026-08-25
+
+Founder: *"keep this influencer proposals in creators tab, it is not new right ..all this
+is actions before making detailed campaign"*, then *"take your best decision on this UI/UX"*.
+
+## The decision: four sub-tabs, not five
+
+Talking already holds **both directions** — requests out and pitches in — sorted by whose
+turn it is. A fifth Pitches tab would show the same conversations twice, and five labels
+across a phone start truncating.
+
+What was missing was never a tab. It was **a way in and an honest name.**
+
+## What changed
+
+**"Who can pitch you" now sits at the top of Talking** — where the approaches actually
+arrive. It states the current position in words (*open to anyone* / *open with conditions*
+/ *closed — no creator can approach you*) and opens the existing settings sheet.
+
+It used to live under **Profile → Influencer Proposals**, behind a control labelled
+**"Filters"**. That word reads as *show me fewer of these*, not *decide who may reach me*.
+Two very different things wearing the same label.
+
+**Bulk send announces itself.** The control read **"Select"** — a mode name, not an
+outcome — as a small link beside "Clear". It now reads **"Ask several"**, so the screen
+says what it can do before you have selected anybody.
+
+**The old creator search is retired.** With the group flow re-pointed, the Home tile was
+its last entry point; that tile now opens the Creators tab. `BrandInfluencerBrowse` is
+gone from the navigator.
+
+## Two mistakes caught while doing it
+
+**I claimed the old screen had no entry point left. It did.** My grep looked for
+`navigate('BrandInfluencerBrowse'` and missed the Home screen, which reaches it through a
+`target:` property instead. Removing it from the navigator first would have left a Home
+tile pointing at nothing. Found by grepping the name rather than the call.
+
+**Three style tokens did not exist** — `fonts` is not imported in that screen at all, and
+neither `ig.sunk` nor `ig.white` are real (`ig.bg` is). The `fonts` one would have thrown
+at module load: a fault that builds cleanly and dies on the handset. Now checked
+mechanically — all 12 `ig.*` tokens in that screen resolve, and all 11 Home tiles point at
+registered routes.
+
+## Evidence
+
+Mobile 159/159 · duplicate-route check clean across all stacks · Android bundle builds ·
+every `ig.*` token resolves · every Home tile resolves.
