@@ -203,15 +203,18 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
           <Row k="You'd promote" v={scopeText(t.scope)} tag="required" locked />
         )}
 
-        {(imp.scope === 'preference' || imp.mode === 'preference') && <Text style={s.h}>THEY'D PREFER — YOUR CALL</Text>}
+        {/* Where she works sits with the money and the date now — it is asked on every
+            collaboration and is always negotiable.
+
+            This used to render ONLY when a preference or requirement marker was
+            present. New requests carry no marker, so leaving it would have shown her
+            no working style at all — a regression hidden behind a condition that used
+            to be true and quietly stopped being.
+            Contract: features/collab-terms-by-aim (item 6) */}
+        {t.mode && <WorkingStyleRows mode={t.mode} tag="negotiable" />}
+
+        {imp.scope === 'preference' && <Text style={s.h}>THEY'D PREFER — YOUR CALL</Text>}
         {t.scope && imp.scope === 'preference' && <Row k="You'd promote" v={scopeText(t.scope)} tag="their preference" />}
-        {t.mode && imp.mode === 'preference' && <WorkingStyleRows mode={t.mode} tag="their preference" />}
-        {t.mode && imp.mode === 'requirement' && (
-          <>
-            <Text style={s.h}>ALSO REQUIRED</Text>
-            <WorkingStyleRows mode={t.mode} tag="required" locked />
-          </>
-        )}
 
         {/* A brand can no longer send a paid request without naming what the fee buys,
             so this only speaks to older conversations. On a sales collaboration it is

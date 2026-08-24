@@ -58,7 +58,6 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
   // distinguishable from a deliberate "no".
   const [place, setPlace] = useState('');
   const [shipping, setShipping] = useState(null);
-  const [modeImp, setModeImp] = useState('preference');
   // Counts per format. A fee with nothing named is the ambiguity this exists to remove.
   const [deliverables, setDeliverables] = useState({});
   const [message, setMessage] = useState('');
@@ -98,14 +97,20 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
       terms.scope = scopeLevel === 'category' ? { level: 'category', category: scopeCategory || null } : { level: 'store' };
       importance.scope = scopeImp;
     }
+    // Where she works is asked on every collaboration now, and is always negotiable —
+    // so it no longer carries a requirement/preference marker.
+    // Contract: features/collab-terms-by-aim (item 6)
+    if (!place) {
+      Alert.alert('Missing', 'Say where she would work — a store visit or remote.');
+      return;
+    }
     // Remote without an answer on shipping is not "no" — it is unanswered, and letting
-    // it default would quietly decide the thing this change exists to ask.
+    // it default would quietly decide the thing that question exists to ask.
     if (place === 'remote' && shipping == null) {
       Alert.alert('One more thing', 'Say whether you are sending her products.');
       return;
     }
-    const mode = toMode(place, shipping);
-    if (mode) { terms.mode = mode; importance.mode = modeImp; }
+    terms.mode = toMode(place, shipping);
     if (Object.keys(importance).length) terms.importance = importance;
 
     setBusy(true);
@@ -195,12 +200,8 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
         {scopeLevel === 'category' && <Field label="Category" value={scopeCategory} onChange={setScopeCategory} placeholder="e.g. Ethnic Wear" />}
         {!!scopeLevel && <Importance value={scopeImp} onChange={setScopeImp} />}
 
-        <Text style={s.fl}>WHERE THEY'D WORK · OPTIONAL</Text>
+        <Text style={s.fl}>WHERE SHE'D WORK<Text style={s.negTag}>  · NEGOTIABLE</Text></Text>
         <View style={s.chips}>
-          <TouchableOpacity style={[s.chip, place === '' && s.chipAct]}
-            onPress={() => { setPlace(''); setShipping(null); }}>
-            <Text style={[s.chipTxt, place === '' && s.chipTxtAct]}>Not stated</Text>
-          </TouchableOpacity>
           {PLACES.map(o => (
             <TouchableOpacity key={o.v} style={[s.chip, place === o.v && s.chipAct]}
               /* Leaving remote clears the shipping answer, so switching back cannot
@@ -234,7 +235,6 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
           </View>
         )}
 
-        {!!place && <Importance value={modeImp} onChange={setModeImp} />}
 
         {aim === 'conversion' && (
           <Text style={s.hint}>Deliverables are not asked on a sales collaboration — she earns on what she sells, so counting posts measures the wrong thing.</Text>

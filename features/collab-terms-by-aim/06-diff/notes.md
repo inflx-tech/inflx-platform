@@ -360,3 +360,63 @@ The marker is gone, and a test pins the old payload as refused so it cannot retu
 | An invented format in a counter | refused |
 
 Mobile 188/188. Bundle builds. All 11 `ig.*` tokens in that screen resolve.
+
+---
+
+# Item 6 — where she works, always negotiable
+
+Founder: *"lets store visit or remote make them negotiable if it is open for negotiation"*,
+and later: *"Money, time, style of promotion (store or remote) and finally deliverables —
+all these should be negotiable in pay for content. If it is sale then percentage, time,
+style of content making — these three are enough."*
+
+## What changed
+
+Working style was **optional**, with a "Not stated" chip and a requirement-or-preference
+marker. It is now **asked on every collaboration** and **always negotiable** — it sits
+beside money and time.
+
+A term cannot be both negotiable and marked *"cannot be countered"*, so the marker control
+is gone from the brand's screen.
+
+## Legacy markers are tolerated, not refused — and that asymmetry is deliberate
+
+Item 4 could **refuse** a leftover marker on deliverables outright, because no live
+conversation carried one.
+
+Working style is different. On the day this shipped, **all 14 live requests carried a
+marker** — twelve `preference`, two `requirement`. Refusing would have broken every one of
+those conversations the moment either side countered.
+
+So the marker is **ignored, not honoured**. The two conversations that said "this cannot be
+countered" become counterable, which is precisely the change that was asked for.
+
+## A regression this nearly shipped
+
+Her screen rendered the working style **only when a marker was present**:
+
+```
+{t.mode && imp.mode === 'preference' && <WorkingStyleRows … />}
+{t.mode && imp.mode === 'requirement' && <WorkingStyleRows … />}
+```
+
+New requests carry no marker. Leaving that would have shown her **no working style at
+all** — a regression hidden behind a condition that used to be true and quietly stopped
+being. It now renders whenever a style is stated, marked negotiable.
+
+## Proved against live data, correctly the second time
+
+A first check reported **2 of 14 requests would break**. That was my harness, not the
+platform: it validated a *counter* — a partial change like `{money: 22%}` — as though it
+were complete terms. The platform settles the counter onto the original first.
+
+Re-run the way the platform actually does it: **14/14 requests and 8/8 agreements valid**,
+including the two mid-negotiation ones.
+
+## Verified
+
+10 assertions: no style refused · all three ways accepted · an invented style refused ·
+counterable on both deal types · a style once marked "requirement" is now counterable ·
+legacy markers tolerated.
+
+Mobile 188/188. Bundle builds. No migration.

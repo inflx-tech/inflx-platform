@@ -204,3 +204,68 @@ describe('countering, with deliverables only where they belong', () => {
     expect(model.validateCounter(paidReq, { deliverables: [{ type: 'tiktok', count: 1 }] }).ok).toBe(false);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 6 — where she works, always negotiable
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('working style is asked every time, and can always be countered', () => {
+  /**
+   * The founder: "Money, time, style of promotion (store or remote) and finally
+   * deliverables — all these should be negotiable in pay for content. If it is sale then
+   * percentage, time, style of content making — these three are enough."
+   *
+   * So it is asked on every collaboration. A term cannot be both negotiable and marked
+   * "cannot be countered", so it no longer takes a marker.
+   */
+  const base = (aim, extra = {}) => ({
+    aim,
+    money: aim === 'conversion' ? { commission_pct: 18 } : { fee: 25000 },
+    time: { post_by: '2026-09-15' },
+    ...(aim !== 'conversion' ? { deliverables: [{ type: 'reel', count: 2 }] } : {}),
+    ...extra,
+  });
+
+  it('a request with no working style is refused', () => {
+    const r = model.validateTerms(base('conversion'));
+    expect(r.ok).toBe(false);
+    expect(r.field).toBe('terms.mode');
+  });
+
+  it('accepts each way of working', () => {
+    for (const mode of ['visit', 'remote', 'shipment']) {
+      expect(model.validateTerms(base('conversion', { mode })).ok).toBe(true);
+    }
+  });
+
+  it('refuses a way of working that does not exist', () => {
+    expect(model.validateTerms(base('conversion', { mode: 'teleport' })).ok).toBe(false);
+  });
+
+  it('is counterable on both kinds of deal', () => {
+    expect(model.counterableTerms(base('conversion', { mode: 'visit' }))).toContain('mode');
+    expect(model.counterableTerms(base('engagement', { mode: 'remote' }))).toContain('mode');
+  });
+
+  it('she can counter a style the brand once marked a requirement', () => {
+    /**
+     * Two live requests carried mode as a "requirement" — meaning it could not be
+     * countered. The founder has since made the term negotiable, so those become
+     * counterable. That is the intended consequence, not an oversight.
+     */
+    const original = base('conversion', { mode: 'visit', importance: { mode: 'requirement' } });
+    expect(model.validateCounter(original, { mode: 'remote' }).ok).toBe(true);
+  });
+
+  it('TOLERATES a legacy marker instead of refusing it', () => {
+    /**
+     * Deliverables could refuse a marker outright because no live conversation carried
+     * one. Working style is different: on the day this shipped, ALL 14 live requests
+     * carried a marker — twelve 'preference', two 'requirement'. Refusing would have
+     * broken every one of them the moment either side countered. The marker is ignored,
+     * not honoured.
+     */
+    expect(model.validateTerms(base('conversion', { mode: 'visit', importance: { mode: 'preference' } })).ok).toBe(true);
+    expect(model.validateTerms(base('conversion', { mode: 'visit', importance: { mode: 'requirement' } })).ok).toBe(true);
+  });
+});

@@ -72,10 +72,21 @@ const PRIMARY_TERMS = ['money', 'time'];
  * part of the deal rather than a nicety — required whenever a fee is involved, and always
  * negotiable. A commission buys nothing in advance, so there it is merely allowed.
  */
-const OPTIONAL_TERMS = ['scope', 'mode'];
+const OPTIONAL_TERMS = ['scope'];
 
 /** Only these may be changed by a counter — a requirement never can. */
-const NEGOTIABLE_TERMS = ['money', 'time'];
+/**
+ * Only these may be changed by a counter — a requirement never can.
+ *
+ * Working style joined this list in item 6. The founder listed it among the things a
+ * creator may push back on: "Money, time, style of promotion (store or remote) and
+ * finally deliverables — all these should be negotiable in pay for content. If it is
+ * sale then percentage, time, style of content making — these three are enough."
+ *
+ * So it is asked on every collaboration and can always be countered. A term cannot be
+ * both negotiable and marked "cannot be countered", so it no longer takes a marker.
+ */
+const NEGOTIABLE_TERMS = ['money', 'time', 'mode'];
 
 const fail = (field, message) => ({ ok: false, field, message });
 const OK = { ok: true };
@@ -232,6 +243,15 @@ function validateTerms(terms) {
   const del = validateDeliverables(aim, terms.deliverables);
   if (!del.ok) return del;
 
+  // Where she works — asked on every collaboration, and always negotiable.
+  // Contract: features/collab-terms-by-aim (item 6)
+  if (terms.mode == null || terms.mode === '') {
+    return fail('terms.mode', 'say where she would work — a store visit or remote');
+  }
+  if (!MODES.includes(String(terms.mode).toLowerCase())) {
+    return fail('terms.mode', 'mode must be one of: ' + MODES.join(', '));
+  }
+
   const importance = terms.importance && typeof terms.importance === 'object' ? terms.importance : {};
 
   // Deliverables no longer take a requirement/preference marker — on a paid
@@ -241,6 +261,18 @@ function validateTerms(terms) {
     return fail('terms.importance.deliverables',
       'deliverables are always negotiable on a paid collaboration — they take no requirement marker');
   }
+
+  // A marker on `mode` is LEGACY and deliberately tolerated rather than refused.
+  //
+  // Deliverables could be refused outright because no live conversation carried a
+  // marker for them. Working style is different: on the day item 6 shipped, all 14 live
+  // requests carried one — twelve 'preference' and two 'requirement'. Refusing it would
+  // have broken every one of those conversations the moment either side countered.
+  //
+  // The marker simply no longer means anything: the term is negotiable either way, so
+  // the two 'requirement' conversations become counterable, which is precisely the
+  // change the founder asked for. It is ignored, not honoured.
+  // Contract: features/collab-terms-by-aim (item 6)
 
   for (const key of OPTIONAL_TERMS) {
     const stated = terms[key] != null;
