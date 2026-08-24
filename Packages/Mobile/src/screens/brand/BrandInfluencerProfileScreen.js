@@ -6,6 +6,8 @@ import {
 import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import CreatorAvatar from '../../components/CreatorAvatar';
+// Dates are chosen, not typed. Contract: features/collab-terms-by-aim (item 2)
+import DateField from '../../components/DateField';
 
 /**
  * BrandInfluencerProfileScreen — full influencer detail + invite-to-campaign modal.
@@ -455,14 +457,12 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
                   </>
                 )}
 
-                <Field label="Posting date (optional)" hint="Format: YYYY-MM-DD. Influencer has 48 hours to accept — leave blank if flexible.">
-                  <TextInput
-                    style={s.input}
+                <Field label="Posting date (optional)" hint="She has 48 hours to accept — leave blank if flexible.">
+                  <DateField
                     value={postingDate}
-                    onChangeText={setPostingDate}
-                    placeholder="e.g. 2026-05-15"
-                    placeholderTextColor={P.muted3}
-                    autoCapitalize="none"
+                    onChange={setPostingDate}
+                    placeholder="Any date is fine"
+                    style={{ marginBottom: 0 }}
                   />
                 </Field>
 

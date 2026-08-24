@@ -6,6 +6,8 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
+// Dates are chosen, not typed. Contract: features/collab-terms-by-aim (item 2)
+import DateField from '../../components/DateField';
 
 const GOAL_OPTIONS = [
   { v: 'engagement', label: 'ENGAGEMENT (FEE)' },
@@ -196,10 +198,15 @@ export default function SendProposalScreen({ route, navigation }) {
 
         <Text style={styles.label}>POSTING WINDOW (OPTIONAL)</Text>
         <View style={styles.inputRow}>
-          <TextInput style={[styles.input, { flex: 1, marginHorizontal: 0 }]} value={windowStart} onChangeText={setWindowStart}
-            placeholder="From YYYY-MM-DD" placeholderTextColor={P.muted3} />
-          <TextInput style={[styles.input, { flex: 1, marginHorizontal: 0 }]} value={windowEnd} onChangeText={setWindowEnd}
-            placeholder="To YYYY-MM-DD" placeholderTextColor={P.muted3} />
+          <View style={{ flex: 1 }}>
+            <DateField value={windowStart} onChange={setWindowStart} placeholder="From" style={{ marginBottom: 0 }} />
+          </View>
+          <View style={{ flex: 1 }}>
+            {/* A window that ends before it begins is not a proposal anybody can accept,
+                so the picker will not offer those days. */}
+            <DateField value={windowEnd} onChange={setWindowEnd} placeholder="To"
+              minDate={windowStart || undefined} style={{ marginBottom: 0 }} />
+          </View>
         </View>
 
         <Text style={styles.label}>PORTFOLIO SAMPLES (UP TO 3 URLS)</Text>

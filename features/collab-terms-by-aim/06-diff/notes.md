@@ -148,3 +148,57 @@ quietly detaching it from the app.
 
 Mobile **183/183** (178 before this pass; 5 replaced the ones asserting dead stage names,
 plus the guard). Bundle builds.
+
+---
+
+# Item 2 — dates are chosen, not typed
+
+Founder: *"while creating invitation, start date entry is better if we keep date picker
+instead typing."*
+
+## All five, not one
+
+Every date in the collaboration flow was a text box with a placeholder reading
+`2026-09-15`:
+
+| Screen | Field |
+|---|---|
+| Brand — ask one creator | Post by · Window start · Window end |
+| Brand — ask several at once | Post by |
+| Brand — invite from a profile | Posting date |
+| Creator — counter an offer | Post by / Window end |
+| Creator — pitch a brand | Window from · Window to |
+
+On a phone that is four ways to fail: the wrong format, the wrong month, a date already
+gone, or a typo nobody notices until a deadline is missed.
+
+## Written in JavaScript on purpose
+
+`@react-native-community/datetimepicker` is in `package.json` — but **nothing in the app
+imports it**, so there is no evidence it is compiled into the installed APK. Mobile changes
+ship over the air, and **an over-the-air bundle cannot add a native module**: it would
+crash on launch, uncatchably, on the founder's handset.
+
+A pure-JavaScript calendar is slightly more code and carries none of that risk. It goes out
+in the next OTA like everything else.
+
+## Two rules the picker enforces that a text box could not
+
+* **The past is not offered.** A posting deadline already gone is never a real answer.
+* **A window cannot end before it starts.** The "to" picker will not show days before the
+  "from" date, so a backwards window can no longer be saved.
+
+## The timezone trap, pinned
+
+`new Date('2026-09-15')` parses as **UTC midnight**, so anywhere behind UTC it renders as
+the 14th. India is ahead of UTC, but the app should not depend on where it runs, so the
+picker reads the year, month and day by hand. A test asserts the day survives, including
+for rows that carry a full timestamp rather than a plain date.
+
+The value in and out is still `YYYY-MM-DD` — **the exact string the text boxes produced, so
+nothing behind these screens changed.**
+
+## Evidence
+
+Mobile **188/188** (183 before; 5 date checks added). Bundle builds. No typed date field
+remains anywhere in the app.

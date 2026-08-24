@@ -13,7 +13,7 @@
   "mockup_note": "features/collab-terms-by-aim/04-preview/mockups/collab-terms.html — eight boards drawn from the live screens, with every proposed value traced to a field that exists and is populated in production.",
   "items": {
     "1": "Sales collab leads with the percentage, not ₹0 — SHIPPED. Second pass 2026-08-25 after the founder showed the LIST still reading ₹0: the fault lived in four places, not one (CollabRow, normalizeRequest, normalizeProposal, and getMyCampaigns never sending commission_pct). The list and the detail page now share one description of the deal.",
-    "2": "Date pickers wherever a date is entered",
+    "2": "Date pickers wherever a date is entered — SHIPPED. Five fields across five screens. Written in JS rather than using the native picker, because nothing in the app imports @react-native-community/datetimepicker so there is no evidence it is in the installed APK, and an OTA cannot add a native module.",
     "3": "Pay-for-content: one date, a deadline, no window",
     "4": "Deliverables asked of the brand on a fee deal",
     "5": "Deliverables not asked of the creator on a sales deal",

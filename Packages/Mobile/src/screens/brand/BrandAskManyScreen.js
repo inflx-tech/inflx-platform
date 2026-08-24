@@ -6,6 +6,8 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
+// Dates are chosen, not typed. Contract: features/collab-terms-by-aim (item 2)
+import DateField from '../../components/DateField';
 
 /**
  * BrandAskManyScreen — asking a group, or everyone matching a filter.
@@ -216,7 +218,7 @@ export default function BrandAskManyScreen({ route, navigation }) {
             )}
 
             <Text style={s.label}>Post by</Text>
-            <TextInput style={s.input} value={postBy} onChangeText={setPostBy} placeholder="2026-09-24" placeholderTextColor={ig.mut2} />
+            <DateField value={postBy} onChange={setPostBy} style={{ marginBottom: 0 }} />
 
             <Text style={s.label}>A note (optional)</Text>
             <TextInput

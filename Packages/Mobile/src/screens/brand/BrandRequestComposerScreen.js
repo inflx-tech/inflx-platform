@@ -6,6 +6,8 @@ import {
 import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PLACES, SHIPPING, toMode } from '../../utils/workingStyle';
+// Dates are chosen, not typed. Contract: features/collab-terms-by-aim (item 2)
+import DateField from '../../components/DateField';
 
 /**
  * BrandRequestComposerScreen — a brand asks a creator to collaborate, BEFORE any
@@ -117,11 +119,13 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
         {aim !== 'engagement' && <Field label="Commission % · negotiable" value={commission} onChange={setCommission} keyboardType="numeric" placeholder="e.g. 12" />}
         {aim !== 'conversion' && <Field label="Fee ₹ · negotiable" value={fee} onChange={setFee} keyboardType="numeric" placeholder="e.g. 25000" />}
         {aim === 'conversion'
-          ? <Field label="Post by (YYYY-MM-DD) · negotiable" value={postBy} onChange={setPostBy} placeholder="2026-09-15" />
+          ? <DateField label="Post by · negotiable" value={postBy} onChange={setPostBy} />
           : (
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}><Field label="Window start" value={winStart} onChange={setWinStart} placeholder="2026-09-10" /></View>
-              <View style={{ flex: 1 }}><Field label="Window end" value={winEnd} onChange={setWinEnd} placeholder="2026-09-24" /></View>
+              <View style={{ flex: 1 }}><DateField label="Window start" value={winStart} onChange={setWinStart} /></View>
+              {/* Cannot end before it starts — the picker refuses rather than letting a
+                  brand save a window that runs backwards. */}
+              <View style={{ flex: 1 }}><DateField label="Window end" value={winEnd} onChange={setWinEnd} minDate={winStart || undefined} /></View>
             </View>
           )}
         {aim === 'conversion' && <Text style={s.hint}>A sales collaboration has no end date — this is the posting expectation.</Text>}

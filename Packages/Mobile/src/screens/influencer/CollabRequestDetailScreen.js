@@ -8,6 +8,7 @@ import { ig } from '../../theme/ig';
 // A loud coloured screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
 import { PLACES, SHIPPING, toMode, describeMode } from '../../utils/workingStyle';
+import DateField from '../../components/DateField';
 
 /**
  * CollabRequestDetailScreen — a brand's collaboration request, and the creator's answer.
@@ -216,7 +217,12 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
               <Field label={`Fee ₹ (they said ${t.money.fee})`} value={cFee} onChange={setCFee} keyboardType="numeric" />
             )}
             {counterable.includes('time') && (
-              <Field label={`${t.time?.post_by ? 'Post by' : 'Window end'} (YYYY-MM-DD)`} value={cPostBy} onChange={setCPostBy} placeholder={fmtD(t.time?.post_by || t.time?.window_end)} />
+              <DateField
+                label={t.time?.post_by ? 'Post by' : 'Window end'}
+                value={cPostBy}
+                onChange={setCPostBy}
+                placeholder={`They said ${fmtD(t.time?.post_by || t.time?.window_end)}`}
+              />
             )}
             {counterable.includes('mode') && (
               <>
