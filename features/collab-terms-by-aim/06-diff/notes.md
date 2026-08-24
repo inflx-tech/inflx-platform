@@ -603,3 +603,29 @@ cat.startsWith('fashion') ? 'fashion' : cat
 
 Two copies, the same defect in each. It now lives once, in `utils/vertical`, which is the
 only real fix — two copies drifting apart is how the bug came to exist twice.
+
+### Live verification, and one honest gap
+
+Against production, on the surviving endpoint:
+
+| | |
+|---|---|
+| Capitalised brand resolves its tree | **vertical=fashion** (was `Fashion`, empty) |
+| Tree arrives | 234 nodes |
+| Leaves pickable | 195 |
+| Readable path | "Women › Ethnic Wear › Saree" |
+| Previously empty category list | **19 categories** |
+| Per-category product counts | **all zero — see below** |
+
+**The counts are correct and will read "none yet" everywhere.** Not a fault in the
+endpoint: **none of the 18 practice products carry a category link** —
+Kanchi Silks 11, Label Fern 4, Nova Fit 3, all with `category_node_id` NULL. They were
+seeded before the listing tree mattered.
+
+So the column works and currently has nothing to count. Linking the practice products to
+real nodes would make it visible, and is **data seeding rather than part of this item** —
+flagged rather than done.
+
+A first probe reported this item green while reading the wrong response shape: it was still
+seeing my duplicate endpoint, which Render had not yet dropped. Re-probed once the deletion
+landed.
