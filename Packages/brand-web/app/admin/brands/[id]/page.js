@@ -287,8 +287,35 @@ export default function BrandProfilePage() {
   const [commerceInput, setCommerceInput] = useState('');
   const [savingCommerce, setSavingCommerce] = useState(false);
   const [toast, setToast] = useState('');
+  // The decision, made here rather than on a different page.
+  const [decision, setDecision] = useState(null);   // 'approved' | 'rejected' | 'suspended'
+  const [reason, setReason] = useState('');
+  const [deciding, setDeciding] = useState(false);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
+
+  /**
+   * Approve or reject without leaving the page.
+   * These buttons used to live only on the Approvals list, so an admin read the account
+   * here, navigated away, and found the person again in a list to act on them. That is
+   * how the wrong account gets approved.
+   */
+  async function decide() {
+    if (decision === 'rejected' && !reason.trim()) { showToast('A reason is required to reject'); return; }
+    setDeciding(true);
+    const res = await adminApi.updateBrandStatus(id, {
+      status: decision,
+      ...(reason.trim() ? { reason: reason.trim() } : {}),
+    });
+    setDeciding(false);
+    if (res.success) {
+      setBrand(prev => ({ ...prev, user_status: decision, status: decision }));
+      setDecision(null); setReason('');
+      showToast(decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Rejected' : 'Suspended');
+    } else {
+      showToast(res.error?.message || 'Could not save that');
+    }
+  }
 
   async function saveFee() {
     const pct = parseFloat(feeInput);
@@ -345,6 +372,27 @@ export default function BrandProfilePage() {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(p || 0);
   }
 
+  const status     = brand.user_status || brand.status;
+  const isApproved = status === 'approved';
+  const isPending  = status === 'pending';
+
+  // How long someone has been waiting is the one thing a queue cannot tell you at a
+  // glance, and it is the difference between "new" and "forgotten".
+  const waitingDays = brand.created_at
+    ? Math.floor((Date.now() - new Date(brand.created_at).getTime()) / 86400000)
+    : null;
+
+  // What they did not give us. Neither is required to trade — but they are the easiest
+  // things to ask for, so the screen should say which are absent rather than leave the
+  // admin to notice the gaps.
+  const missing = [
+    !brand.gstin && 'GST number',
+    !brand.address_line && 'street address',
+    !brand.pincode && 'pincode',
+    !brand.latitude && 'map pin',
+    !brand.logo_url && 'logo',
+  ].filter(Boolean);
+
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-2 mb-4">
@@ -367,7 +415,14 @@ export default function BrandProfilePage() {
               <div className="text-xs text-t3">{brand.name}{brand.name ? ' · ' : ''}{brand.phone}</div>
             </div>
           </div>
-          <StatusBadge status={brand.user_status || brand.status} />
+          <div className="flex items-center gap-2">
+            {isPending && waitingDays != null && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-pale text-yellow-700 whitespace-nowrap">
+                {waitingDays === 0 ? 'today' : waitingDays === 1 ? 'waiting 1 day' : `waiting ${waitingDays} days`}
+              </span>
+            )}
+            <StatusBadge status={status} />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -393,6 +448,70 @@ export default function BrandProfilePage() {
           </div>
         </div>
 
+        {/* What is absent. Said plainly, because an admin should not have to notice
+            gaps by scanning for dashes. Contract: features/admin-account-review */}
+        {isPending && missing.length > 0 && (
+          <div className="mt-4 p-3 bg-surface2 rounded-lg">
+            <div className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-1">Before you decide</div>
+            <div className="text-xs text-t2">
+              No {missing.join(', no ')}. None of these are required to trade — they are
+              simply the easiest things to ask for if you want more certainty.
+            </div>
+          </div>
+        )}
+
+        {/* The decision, on the page that holds the facts. */}
+        {status !== 'rejected' && (
+          <div className="mt-4 pt-4 border-t border-border">
+            {!decision ? (
+              <div className="flex gap-2 flex-wrap">
+                {!isApproved && (
+                  <button onClick={() => setDecision('approved')}
+                    className="px-5 py-2.5 bg-teal text-white font-bold text-xs rounded-xl hover:opacity-90 transition-opacity">
+                    Approve
+                  </button>
+                )}
+                <button onClick={() => setDecision('rejected')}
+                  className="px-5 py-2.5 bg-white border-2 border-red/30 text-red font-bold text-xs rounded-xl hover:bg-red-pale transition-colors">
+                  Reject…
+                </button>
+                {isApproved && (
+                  <button onClick={() => setDecision('suspended')}
+                    className="px-5 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl hover:bg-surface2 transition-colors">
+                    Suspend…
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="text-xs font-bold text-t1 mb-2">
+                  {decision === 'approved' ? `Approve ${brand.business_name || 'this brand'}?`
+                    : decision === 'rejected' ? 'Reject — tell them why'
+                    : 'Suspend — tell them why'}
+                </div>
+                {decision !== 'approved' && (
+                  <textarea
+                    value={reason} onChange={e => setReason(e.target.value)}
+                    placeholder="They will see this. Be specific enough to act on."
+                    rows={3}
+                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-xs mb-2"
+                  />
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={decide} disabled={deciding}
+                    className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity">
+                    {deciding ? 'Saving…' : 'Confirm'}
+                  </button>
+                  <button onClick={() => { setDecision(null); setReason(''); }}
+                    className="px-4 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {brand.rejection_reason && (
           <div className="mt-4 p-3 bg-red-pale border border-red/15 rounded-lg">
             <div className="text-xs font-bold text-red mb-1">Rejection Reason</div>
@@ -401,6 +520,12 @@ export default function BrandProfilePage() {
         )}
       </div>
 
+      {/* Trading settings. Only for a brand that is already IN — you cannot set a
+          meaningful fee for someone you have not let in yet, and leading a review with
+          fee controls buries the facts the decision actually needs.
+          Contract: features/admin-account-review (item 3) */}
+      {isApproved && (
+      <>
       {/* Per-brand platform fee override */}
       <div className="bg-white rounded-xl border border-border p-5 mb-4">
         <h3 className="font-display text-sm font-bold text-t1 mb-1">Override Platform Fee</h3>
@@ -481,6 +606,8 @@ export default function BrandProfilePage() {
 
       {/* Phase A14 — Feature Overrides */}
       <FeatureOverridesCard brandId={id} onToast={showToast} />
+      </>
+      )}
 
       {toast && <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">{toast}</div>}
     </div>

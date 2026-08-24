@@ -98,3 +98,51 @@ brand-web builds clean; both `/admin/influencers` and `/admin/influencers/[id]` 
 
 Four more tests written (`tests/admin-account-review.test.js`, now 9), including one that
 asserts a **brand gets 403** from the admin list. **Not run** — same reason.
+
+---
+
+# Item 3 — the review layout
+
+## What changed
+
+**The decision moved to the page that holds the facts.** Approve, Reject and Suspend now
+sit on the account page itself. They used to exist only on the Approvals list, so an admin
+read an account on one page, navigated away, and found the person again in a list to act on
+them. Rejecting asks for a reason, and the endpoint refuses without one.
+
+**Trading settings are hidden until a brand is in.** Override Platform Fee, L3 Commerce
+Commission Override and Feature Overrides now render only for an `approved` brand — you
+cannot set a meaningful fee for someone you have not admitted, and leading a review with
+fee controls buries the facts the decision needs. The creator page hides **TDS Controls**
+the same way: TDS is about paying someone, not about admitting them.
+
+**Two things the screen now says out loud:**
+
+* **"Waiting N days"** beside a pending account. How long someone has been waiting is what
+  separates *new* from *forgotten*, and no list conveys it at a glance.
+* **What is absent** — "No GST number, no logo." Stated plainly rather than leaving an
+  admin to notice gaps by scanning for dashes. The wording makes clear none are required.
+
+**On the creator page:** an **Open on Instagram ↗** link, and a warning when a creator has
+never been scraped — *"These Instagram figures have never been checked against Instagram."*
+Thirty seconds on the real profile beats any number this screen can show, and a follower
+count nobody has verified should not be presented as confidently as one that has been.
+
+## What is deliberately NOT here
+
+No document uploads, no verification queue, no scoring. Six brands and one person waiting.
+The address-versus-pin agreement check is **item 4**, still open.
+
+## Verification
+
+Both admin pages compile (`✓ Compiled successfully`). The endpoints were read to confirm
+the page sends the shape the server accepts — `{ status, reason }` — and that
+`/admin/brands/:id/status` looks up by **brand id**, which is the id the page holds. A
+mismatch there would have produced a 404 on every approval.
+
+Five more tests written (14 in the file): approve by the id the page has, reject refused
+without a reason, the reason recorded, creator approval, and a brand getting 403.
+**Not run** — the local test database is still unreachable.
+
+**Still not covered end to end:** no admin HTTP path can be exercised automatically,
+because there is no practice admin account. Recorded as owed.

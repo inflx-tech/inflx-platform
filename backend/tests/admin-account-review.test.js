@@ -187,3 +187,76 @@ describe('GET /admin/influencers — the list that never existed', () => {
     expect(res.status).toBe(403);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 3 — deciding on the page that holds the facts
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Approve and reject from the account page', () => {
+  /**
+   * These buttons used to live only on the Approvals list, so an admin read the account
+   * on one page, navigated away, and found the person again in a list to act on them.
+   * The detail page now calls the same endpoints directly — these assert the shape the
+   * page sends is the shape the server accepts, and that the id it holds is the id the
+   * endpoint looks up by.
+   */
+  it('approves a brand by its brand id — the id the page has', async () => {
+    const { adminToken, brand } = await scenario();
+    await query(`UPDATE users SET status = 'pending' WHERE id = (SELECT user_id FROM brands WHERE id = $1)`, [brand.id]);
+
+    const res = await request(app)
+      .patch(`/v1/admin/brands/${brand.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'approved' });
+
+    expect(res.status).toBe(200);
+    const { rows } = await query(
+      `SELECT u.status FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`, [brand.id]);
+    expect(rows[0].status).toBe('approved');
+  });
+
+  it('refuses to reject a brand without a reason', async () => {
+    const { adminToken, brand } = await scenario();
+    const res = await request(app)
+      .patch(`/v1/admin/brands/${brand.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'rejected' });
+    expect(res.status).toBe(422);
+  });
+
+  it('records the reason a brand was rejected, so they can be told', async () => {
+    const { adminToken, brand } = await scenario();
+    const res = await request(app)
+      .patch(`/v1/admin/brands/${brand.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'rejected', reason: 'Address could not be verified' });
+
+    expect(res.status).toBe(200);
+    const { rows } = await query(`SELECT rejection_reason FROM brands WHERE id = $1`, [brand.id]);
+    expect(rows[0].rejection_reason).toBe('Address could not be verified');
+  });
+
+  it('approves a creator by her influencer id', async () => {
+    const { adminToken, inf } = await scenario();
+    await query(`UPDATE users SET status = 'pending' WHERE id = (SELECT user_id FROM influencers WHERE id = $1)`, [inf.id]);
+
+    const res = await request(app)
+      .patch(`/v1/admin/influencers/${inf.id}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'approved' });
+
+    expect(res.status).toBe(200);
+    const { rows } = await query(
+      `SELECT u.status FROM influencers i JOIN users u ON u.id = i.user_id WHERE i.id = $1`, [inf.id]);
+    expect(rows[0].status).toBe('approved');
+  });
+
+  it('will not let a brand approve anybody', async () => {
+    const { brandToken, inf } = await scenario();
+    const res = await request(app)
+      .patch(`/v1/admin/influencers/${inf.id}/status`)
+      .set('Authorization', `Bearer ${brandToken}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(403);
+  });
+});

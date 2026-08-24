@@ -22,8 +22,30 @@ export default function InfluencerProfilePage() {
   // Wave 1 — per-influencer TDS controls (override + exempt).
   const [tdsInput, setTdsInput] = useState('');
   const [savingTds, setSavingTds] = useState(false);
+  // The decision, made on the page that holds the facts.
+  // Contract: features/admin-account-review (item 3)
+  const [decision, setDecision] = useState(null);
+  const [reason, setReason] = useState('');
+  const [deciding, setDeciding] = useState(false);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
+
+  async function decide() {
+    if (decision !== 'approved' && !reason.trim()) { showToast('A reason is required'); return; }
+    setDeciding(true);
+    const res = await adminApi.updateInfluencerStatus(id, {
+      status: decision,
+      ...(reason.trim() ? { reason: reason.trim() } : {}),
+    });
+    setDeciding(false);
+    if (res.success) {
+      setInfluencer(prev => ({ ...prev, user_status: decision, status: decision }));
+      setDecision(null); setReason('');
+      showToast(decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Rejected' : 'Suspended');
+    } else {
+      showToast(res.error?.message || 'Could not save that');
+    }
+  }
 
   // Wave 1 — save or clear the per-influencer TDS override + exempt flag.
   async function saveTdsControls({ exempt, clear = false }) {
@@ -78,6 +100,13 @@ export default function InfluencerProfilePage() {
   if (error) return <div className="p-4 bg-red-pale rounded-xl text-red text-sm">{error}</div>;
   if (!influencer) return null;
 
+  const status     = influencer.user_status || influencer.status;
+  const isApproved = status === 'approved';
+  const isPending  = status === 'pending';
+  const waitingDays = influencer.created_at
+    ? Math.floor((Date.now() - new Date(influencer.created_at).getTime()) / 86400000)
+    : null;
+
   const statCfg = [
     { label: 'Followers', value: (influencer.followers_count || 0).toLocaleString('en-IN') },
     { label: 'Eng. Rate', value: influencer.engagement_rate ? `${influencer.engagement_rate}%` : '—' },
@@ -102,6 +131,17 @@ export default function InfluencerProfilePage() {
               <div className="text-xs text-t3">{[influencer.phone, influencer.city, influencer.state].filter(Boolean).join(' · ')}</div>
             </div>
           </div>
+          {isPending && waitingDays != null && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-pale text-yellow-700 whitespace-nowrap">
+              {waitingDays === 0 ? 'today' : waitingDays === 1 ? 'waiting 1 day' : `waiting ${waitingDays} days`}
+            </span>
+          )}
+          <a
+            href={influencer.instagram_handle ? `https://instagram.com/${influencer.instagram_handle}` : undefined}
+            target="_blank" rel="noopener noreferrer"
+            className="px-4 py-2 bg-white border border-border text-t2 font-bold text-xs rounded-xl hover:border-navy hover:text-navy transition-colors whitespace-nowrap">
+            Open on Instagram ↗
+          </a>
           <button onClick={rescrape} disabled={rescraping}
             className="px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 font-bold text-xs rounded-xl hover:bg-orange-100 disabled:opacity-50 transition-colors">
             {rescraping ? 'Scraping…' : '↻ Rescrape'}
@@ -131,8 +171,70 @@ export default function InfluencerProfilePage() {
                 : 'Global default'
           } />
         </div>
+
+        {/* The follower numbers on this page are a claim until somebody checks them.
+            Saying so is more useful than a confident figure. */}
+        {!influencer.scrape_last_run && (
+          <div className="mt-4 p-3 bg-gold-pale rounded-lg text-xs text-yellow-700">
+            These Instagram figures have never been checked against Instagram. Open the
+            handle before trusting them.
+          </div>
+        )}
+
+        {status !== 'rejected' && (
+          <div className="mt-4 pt-4 border-t border-border">
+            {!decision ? (
+              <div className="flex gap-2 flex-wrap">
+                {!isApproved && (
+                  <button onClick={() => setDecision('approved')}
+                    className="px-5 py-2.5 bg-teal text-white font-bold text-xs rounded-xl hover:opacity-90 transition-opacity">
+                    Approve
+                  </button>
+                )}
+                <button onClick={() => setDecision('rejected')}
+                  className="px-5 py-2.5 bg-white border-2 border-red/30 text-red font-bold text-xs rounded-xl hover:bg-red-pale transition-colors">
+                  Reject…
+                </button>
+                {isApproved && (
+                  <button onClick={() => setDecision('suspended')}
+                    className="px-5 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl hover:bg-surface2 transition-colors">
+                    Suspend…
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="text-xs font-bold text-t1 mb-2">
+                  {decision === 'approved'
+                    ? `Approve @${influencer.instagram_handle || 'this creator'}?`
+                    : 'Tell them why'}
+                </div>
+                {decision !== 'approved' && (
+                  <textarea value={reason} onChange={e => setReason(e.target.value)}
+                    placeholder="She will see this. Be specific enough to act on."
+                    rows={3}
+                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-xs mb-2" />
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={decide} disabled={deciding}
+                    className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity">
+                    {deciding ? 'Saving…' : 'Confirm'}
+                  </button>
+                  <button onClick={() => { setDecision(null); setReason(''); }}
+                    className="px-4 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* TDS is about paying someone, not about admitting them. It only means anything
+          once she is in. Contract: features/admin-account-review (item 3) */}
+      {isApproved && (
+      <>
       {/* Wave 1 — Per-influencer TDS controls.
           By default, withdrawal.service deducts the global payment_config.tds_pct.
           Admin can: (a) set a per-influencer override %, or (b) mark exempt (0%)
@@ -193,6 +295,8 @@ export default function InfluencerProfilePage() {
           </button>
         </div>
       </div>
+      </>
+      )}
 
       {toast && <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">{toast}</div>}
     </div>
