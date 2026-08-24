@@ -40,5 +40,14 @@
     "item 2 — the creator list (3fd8864)",
     "item 3 — the review layout (041c830)",
     "item 4 — the address-versus-pin check"
+  ],
+  "follow_ups": [
+    {
+      "reported": "founder 2026-08-24: \"phone number should also visible to admin, it is not showing now\"",
+      "outcome": "Could not reproduce — the onboarded-creator path was already correct and deployed. There is no way to sign in as an admin (the only admin is the founder's own number, which takes real SMS), so this could not be confirmed on screen. That gap has now blocked diagnosis three times.",
+      "real_gap_found": "GET /influencers/:id has TWO branches — onboarded, and SCRAPED creator profiles. Only the first had an admin block. 45 scraped profiles exist and carry bio_phone and manual_phone; both were stored and neither could ever be seen. manual_phone wins when both exist, because a human typed it.",
+      "also": "Phone promoted from small grey text to a labelled field on both detail pages, alongside Contact person (brand) and Where (creator).",
+      "verified": "Against production: onboarded creator phone arrives (+917900000119); scraped branch runs and carries the field; 1 of 45 scraped profiles holds a number; all 7 brands carry a phone. brand-web compiles."
+    }
   ]
 }

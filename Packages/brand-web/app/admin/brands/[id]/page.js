@@ -451,6 +451,11 @@ export default function BrandProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
+          {/* Phone as a labelled field. It was small grey text beside the contact name,
+              which is not where anyone looks for the one thing they need to reach a
+              business. Contract: features/admin-account-review */}
+          <Field label="Phone" value={brand.phone || 'Not provided'} />
+          <Field label="Contact person" value={brand.name || 'Not provided'} />
           <Field label="Category" value={brand.category} />
           {/* City lives on the user record. This asked for brand.city, which does not
               exist, so it was always a dash. */}

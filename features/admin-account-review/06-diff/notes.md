@@ -195,3 +195,48 @@ brand-web compiles.
 "Never checked against Instagram" is already on the creator page.
 
 ## All four items are now built.
+
+---
+
+# Follow-up — the phone number
+
+Founder, 2026-08-24: *"phone number should also visible to admin, it is not showing now."*
+
+## Could not reproduce it — and that is itself the finding
+
+The onboarded-creator path was already correct and already deployed. I could not confirm
+it on screen because **there is no way for me to sign in as an admin** — the only admin is
+the founder's own number, which takes a real SMS. That gap has now blocked diagnosis three
+times.
+
+So rather than guess at one screen, this closes every place a number could fail to appear.
+
+## A real gap, found while looking
+
+`GET /influencers/:id` has **two branches**: an onboarded creator, and a **scraped**
+creator profile. Only the first got an admin block. The scraped branch had none at all.
+
+There are **45 scraped creator profiles** in production, and the table carries `bio_phone`
+(scraped out of her Instagram bio) and `manual_phone` (typed in by an admin). Both were
+stored and **neither could ever be seen** — a scraped creator's page offered no way to
+reach her. `manual_phone` wins when both exist, because a human typed it.
+
+Only 1 of the 45 currently has a number, so this changes little today. It stops being
+nothing the moment anyone starts filling them in.
+
+## Made unmissable rather than merely present
+
+The number was small grey text beside the contact name — not where anyone looks for the
+one thing they need to contact a business. It is now a **labelled field** on both pages,
+alongside **Contact person** on the brand page and **Where** on the creator page.
+
+## Verified against production
+
+| Path | Result |
+|---|---|
+| Onboarded creator → admin | phone arrives (+917900000119) |
+| Scraped creator → admin | branch runs, phone field present |
+| Scraped creators holding a number | 1 of 45 |
+| Brands | all 7 carry a phone |
+
+brand-web compiles.

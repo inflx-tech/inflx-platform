@@ -828,6 +828,21 @@ const getPublicById = asyncHandler(async (req, res) => {
     [id]
   );
   if (scraped[0]) {
+    // Admin-only detail for a SCRAPED creator. She has no account, so there is no
+    // users.phone — but a number is often scraped out of her bio, and an admin may have
+    // typed one in by hand. Both were stored and neither could ever be seen: this branch
+    // had no admin block at all, so a scraped creator's page showed no way to reach her.
+    // manual_phone wins, because a human typed it.
+    // Contract: features/admin-account-review
+    if (req.user.role === 'admin') {
+      const { rows: [priv] } = await db.query(
+        `SELECT COALESCE(manual_phone, bio_phone) AS phone,
+                manual_phone, bio_phone
+           FROM creator_profiles WHERE id = $1`,
+        [id]
+      );
+      if (priv) Object.assign(scraped[0], priv);
+    }
     // The fix for the reported blank avatar. Search already did this; detail
     // did not, so it returned the raw Instagram CDN URL — which decays in 1-2
     // weeks (see utils/avatarResolver.js). A 76-day-old row therefore rendered

@@ -158,6 +158,11 @@ export default function InfluencerProfilePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
+          {/* The number is the whole point of an admin looking her up. It was small grey
+              text in the header; scraped creators had none at all until the endpoint was
+              taught to send it. Contract: features/admin-account-review */}
+          <Field label="Phone" value={influencer.phone || 'No number on file'} />
+          <Field label="Where" value={[influencer.city, influencer.state].filter(Boolean).join(', ') || 'Not stated'} />
           <Field label="Niche" value={(influencer.niche || []).join(', ')} />
           <Field label="Language" value={(influencer.language || []).join(', ')} />
           <Field label="Registered" value={influencer.created_at ? new Date(influencer.created_at).toLocaleDateString('en-IN') : '—'} />
