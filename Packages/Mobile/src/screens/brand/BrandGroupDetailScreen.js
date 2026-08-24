@@ -105,7 +105,14 @@ export default function BrandGroupDetailScreen({ route, navigation }) {
           <TouchableOpacity
             style={s.sec2}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('BrandInfluencerBrowse', { addToGroupId: groupId })}
+            /* Was 'BrandInfluencerBrowse' — the OLD creator search, which has never heard of
+                groups. It was handed addToGroupId, ignored it, and opened a profile on tap
+                with "add to campaign" and "request collaboration". There was no way to add
+                anyone to a group.
+                'BrandFindCreators' is the screen that understands the mode: it ticks rows
+                instead of opening profiles, and shows an "Add to group" button.
+                Contract: features/stage-1-find-each-other-and-agree */
+              onPress={() => navigation.navigate('BrandFindCreators', { addToGroupId: groupId })}
           >
             <Text style={s.sec2T}>Add more creators</Text>
           </TouchableOpacity>

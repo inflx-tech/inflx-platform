@@ -68,5 +68,13 @@
       "found_by": "verifying the switch reached the creator's screen rather than assuming the database change was the change",
       "verified": "all five filter combinations run against production: none 5, search 1, category 2, city 1, all-three 1"
     }
+  },
+  "defect_2026_08_25": {
+    "reported": "founder: \"if i click on add to group it is opening influencer search, but when i click on particular influencer then asking add to campaign and request collabration. no options for adding to group\"",
+    "cause": "BrandGroupDetailScreen navigated to BrandInfluencerBrowse — the OLD creator search — passing addToGroupId. That screen has never heard of groups, so it ignored the parameter and opened a profile on tap. The screen that understands the mode is BrandFindCreators, built in this same stage: it ticks rows instead of opening profiles and shows an \"Add to group\" button.",
+    "my_mistake": "I built BrandFindCreators in Stage 1 and never re-pointed the group flow at it.",
+    "fix": "One route name. Both screens verified to live in CreatorsStack, so the navigate resolves — a cross-stack navigate fails silently at runtime and passes every build check.",
+    "found_while_sweeping": "The BrandFindCreators ROUTE was never navigated to by anything. The Find screen works only because it is rendered inline inside the Creators tab. So the brand app carried two creator search screens, and the one place that needed the new one used the old one. With this fix, BrandInfluencerBrowse has no entry point at all and should be retired — two search screens is how they drift apart, and this bug was that drift.",
+    "verified": "Mobile suite 159/159. Duplicate-route check clean across all stacks. Android bundle builds. Group detail already reloads on focus, so added creators appear on return."
   }
 }
