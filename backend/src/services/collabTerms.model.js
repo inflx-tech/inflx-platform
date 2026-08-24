@@ -53,11 +53,26 @@ const IMPORTANCE = ['requirement', 'preference'];
 const MODES = ['visit', 'shipment', 'remote'];
 const SCOPES = ['store', 'category', 'products'];
 
+/**
+ * What a fee can buy. Deliberately the SAME five words contracts and campaign briefs
+ * already use (see contract.controller TYPE_LABELS) — not a new list invented for the
+ * handshake, which would need translating at every boundary.
+ * Contract: features/collab-terms-by-aim (item 4)
+ */
+const DELIVERABLE_TYPES = ['reel', 'post', 'story', 'youtube_video', 'youtube_short'];
+
 /** Terms that must appear on every request or pitch. */
 const PRIMARY_TERMS = ['money', 'time'];
 
 /** Optional terms. Each, if stated, needs an importance marker. */
-const OPTIONAL_TERMS = ['scope', 'mode', 'deliverables'];
+/**
+ * Optional terms. Each, if stated, needs an importance marker.
+ *
+ * Deliverables left this list in item 4. A fee buys specific work, so what it buys is
+ * part of the deal rather than a nicety — required whenever a fee is involved, and always
+ * negotiable. A commission buys nothing in advance, so there it is merely allowed.
+ */
+const OPTIONAL_TERMS = ['scope', 'mode'];
 
 /** Only these may be changed by a counter — a requirement never can. */
 const NEGOTIABLE_TERMS = ['money', 'time'];
@@ -148,13 +163,50 @@ function validateScope(scope) {
   return OK;
 }
 
-function validateDeliverables(d) {
+/**
+ * What the money buys.
+ * Contract: features/collab-terms-by-aim (item 4)
+ *
+ * REQUIRED when a fee is involved. The founder: "if pay per content as an option chosen,
+ * one more important thing is what deliverables he can expect for the mentioned amount —
+ * this is important for pay for content. This is not required for commission based on
+ * sale." A fee with nothing named is exactly the ambiguity this removes.
+ *
+ * ALLOWED but never demanded on a commission-only deal. She earns by selling, so counting
+ * her posts measures the wrong thing — but a brand that still wants a minimum commitment
+ * is not prevented from asking for one.
+ *
+ * Counts, not free text: "2 reels and 3 stories" can be checked against what she actually
+ * delivered. A sentence can only be argued about later.
+ */
+function validateDeliverables(aim, d) {
+  const buysWithAFee = aim === 'engagement' || aim === 'hybrid';
+
+  if (d == null) {
+    if (buysWithAFee) {
+      return fail('terms.deliverables', 'say what the fee buys — at least one deliverable');
+    }
+    return OK;
+  }
+
   if (!Array.isArray(d) || d.length === 0) {
     return fail('terms.deliverables', 'deliverables must be a non-empty list when stated');
   }
+
+  const seen = new Set();
   for (let i = 0; i < d.length; i += 1) {
-    if (!d[i] || !d[i].type) return fail(`terms.deliverables[${i}].type`, 'each deliverable needs a type');
-    if (!isPosNum(d[i].count)) return fail(`terms.deliverables[${i}].count`, 'each deliverable needs a count');
+    const item = d[i];
+    if (!item || !item.type) return fail('terms.deliverables[' + i + '].type', 'each deliverable needs a type');
+    const type = String(item.type).toLowerCase();
+    if (!DELIVERABLE_TYPES.includes(type)) {
+      return fail('terms.deliverables[' + i + '].type',
+        'deliverable type must be one of: ' + DELIVERABLE_TYPES.join(', '));
+    }
+    // Two entries for the same thing is not a richer deal, it is an unanswerable one:
+    // does "2 reels" plus "3 reels" mean two, three, or five?
+    if (seen.has(type)) return fail('terms.deliverables[' + i + '].type', type + ' is listed twice');
+    seen.add(type);
+    if (!isPosNum(item.count)) return fail('terms.deliverables[' + i + '].count', 'each deliverable needs a count');
   }
   return OK;
 }
@@ -177,7 +229,18 @@ function validateTerms(terms) {
   const time = validateTime(aim, terms.time);
   if (!time.ok) return time;
 
+  const del = validateDeliverables(aim, terms.deliverables);
+  if (!del.ok) return del;
+
   const importance = terms.importance && typeof terms.importance === 'object' ? terms.importance : {};
+
+  // Deliverables no longer take a requirement/preference marker — on a paid
+  // collaboration they are part of the deal and always negotiable. A leftover marker is
+  // a half-filled form, and ignoring it would lose whatever the sender meant by it.
+  if (importance.deliverables != null) {
+    return fail('terms.importance.deliverables',
+      'deliverables are always negotiable on a paid collaboration — they take no requirement marker');
+  }
 
   for (const key of OPTIONAL_TERMS) {
     const stated = terms[key] != null;
@@ -203,7 +266,6 @@ function validateTerms(terms) {
         return fail('terms.mode', `mode must be one of: ${MODES.join(', ')}`);
       }
     }
-    if (key === 'deliverables') { const r = validateDeliverables(terms.deliverables); if (!r.ok) return r; }
   }
 
   return OK;
@@ -244,11 +306,20 @@ function validateCounter(original, counter) {
   return OK;
 }
 
-/** Which terms this side is allowed to edit in a counter. Drives the UI. */
+/**
+ * Which terms this side is allowed to edit in a counter. Drives the UI.
+ *
+ * On a PAID collaboration, deliverables are negotiable — the founder listed them
+ * alongside money, time and working style as things a creator may push back on. On a
+ * commission-only deal they are not part of the bargain, so they stay out.
+ * Contract: features/collab-terms-by-aim (item 4)
+ */
 function counterableTerms(original) {
   const importance = (original && original.importance) || {};
   const optional = OPTIONAL_TERMS.filter(k => importance[k] !== 'requirement' || original[k] == null);
-  return [...NEGOTIABLE_TERMS, ...optional];
+  const aim = String((original && original.aim) || '').toLowerCase();
+  const paid = aim === 'engagement' || aim === 'hybrid';
+  return [...NEGOTIABLE_TERMS, ...(paid ? ['deliverables'] : []), ...optional];
 }
 
 /** Merge an accepted counter into the settled terms an agreement records. */
@@ -260,7 +331,7 @@ function settle(original, counter) {
 }
 
 module.exports = {
-  AIMS, IMPORTANCE, MODES, SCOPES,
+  AIMS, IMPORTANCE, MODES, SCOPES, DELIVERABLE_TYPES,
   PRIMARY_TERMS, OPTIONAL_TERMS, NEGOTIABLE_TERMS,
   moneyShapeFor,
   validateTerms,

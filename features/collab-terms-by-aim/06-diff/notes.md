@@ -259,3 +259,62 @@ including one that touches no database of its own. The suite is written and wait
 
 Mobile 188/188. Bundle builds. **No migration** — all 14 live requests and 8 agreements
 already carry `post_by`, and none carries a window.
+
+---
+
+# Item 4 — what the fee buys
+
+Founder: *"if pay per content as an option chosen one more important thing is what
+deliverables he can expecting for mentioned amount ....this is important for pay for
+content.....this is not required for commission based on sale."*
+
+## The rule
+
+**A fee buys specific work, so both sides must know what it buys.** A commission buys
+nothing in advance — she earns only if she sells, so counting her posts measures the wrong
+thing.
+
+| | Deliverables |
+|---|---|
+| Pay for content | **required**, and negotiable |
+| Fee + commission | **required**, and negotiable |
+| Pay per sale | not asked — but a brand wanting a minimum commitment is not prevented |
+
+"Not required" is not the same as forbidden. A sales brand that still wants one reel can
+say so; it is simply never demanded.
+
+## Deliverables stopped being an "optional extra"
+
+They used to sit beside scope and working style as an optional term needing a
+requirement-or-preference marker. On a paid collaboration that is wrong twice over: they
+are **part of the deal**, and the founder listed them among the things a creator may push
+back on. So they left `OPTIONAL_TERMS`, take **no marker at all**, and appear in the
+counterable set for paid deals only.
+
+A leftover marker is **refused** rather than ignored — it contradicts itself, and silently
+dropping it would lose whatever the sender meant.
+
+## Reused vocabulary, and two rules a text box could not enforce
+
+`reel · post · story · youtube_video · youtube_short` — the same five words a campaign
+brief and a contract already use. Anything else is refused, so a typo cannot create a
+deliverable type nothing downstream understands.
+
+* **The same format twice is refused.** "2 reels" plus "3 reels" is not a richer deal, it
+  is an unanswerable one — does it mean two, three, or five?
+* **A count of zero is refused.** That is not a deliverable.
+
+## On the brand's screen
+
+A stepper per format, headed **"WHAT ₹25,000 BUYS · NEGOTIABLE"** — the heading names the
+actual fee as it is typed. Shown only when there is a fee. On a sales collaboration the
+section is absent and a line says why.
+
+## Verified
+
+11 assertions, run directly against the model: required for both paid aims, optional for
+sales, allowed for sales, vocabulary enforced, duplicates refused, zero refused, leftover
+marker refused, negotiable on paid and not on sales.
+
+Mobile 188/188. Bundle builds. All seven palette tokens the new screen block uses exist.
+No migration — terms are stored as one flexible record.

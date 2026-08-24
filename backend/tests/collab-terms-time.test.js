@@ -79,3 +79,80 @@ describe('accepting a pitch still produces valid terms', () => {
     expect(model.validateTerms(fromPitch('engagement', '2026-09-10', null)).ok).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 4 — what the fee buys
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('deliverables belong to a fee, not to a commission', () => {
+  /**
+   * The founder: "if pay per content as an option chosen, one more important thing is
+   * what deliverables he can expect for the mentioned amount — this is important for pay
+   * for content. This is not required for commission based on sale."
+   *
+   * A fee buys specific work, so both sides must know what it buys. A commission buys
+   * nothing in advance — she earns only if she sells, so counting her posts measures the
+   * wrong thing.
+   */
+  const D = [{ type: 'reel', count: 2 }, { type: 'story', count: 3 }];
+  const terms = (aim, extra = {}) => ({
+    aim,
+    money: aim === 'conversion' ? { commission_pct: 18 }
+      : aim === 'hybrid' ? { fee: 10000, commission_pct: 5 } : { fee: 25000 },
+    time: { post_by: '2026-09-15' },
+    ...extra,
+  });
+
+  it('a paid collaboration must say what the fee buys', () => {
+    const r = model.validateTerms(terms('engagement'));
+    expect(r.ok).toBe(false);
+    expect(r.field).toBe('terms.deliverables');
+  });
+
+  it('a fee-plus-commission deal must say it too', () => {
+    expect(model.validateTerms(terms('hybrid')).ok).toBe(false);
+  });
+
+  it('a sales collaboration does not have to', () => {
+    expect(model.validateTerms(terms('conversion')).ok).toBe(true);
+  });
+
+  it('but a sales brand wanting a minimum commitment is not prevented', () => {
+    // "Not required" is not the same as forbidden.
+    expect(model.validateTerms(terms('conversion', { deliverables: D })).ok).toBe(true);
+  });
+
+  it('accepts the platform vocabulary and nothing else', () => {
+    expect(model.validateTerms(terms('engagement', { deliverables: D })).ok).toBe(true);
+    const bad = model.validateTerms(terms('engagement', { deliverables: [{ type: 'tiktok', count: 1 }] }));
+    expect(bad.ok).toBe(false);
+    expect(bad.message).toMatch(/reel, post, story, youtube_video, youtube_short/);
+  });
+
+  it('refuses the same format twice', () => {
+    // "2 reels" plus "3 reels" is not a richer deal, it is an unanswerable one.
+    const r = model.validateTerms(terms('engagement', {
+      deliverables: [{ type: 'reel', count: 2 }, { type: 'reel', count: 3 }],
+    }));
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/twice/);
+  });
+
+  it('refuses a count of zero — that is not a deliverable', () => {
+    expect(model.validateTerms(terms('engagement', { deliverables: [{ type: 'reel', count: 0 }] })).ok).toBe(false);
+  });
+
+  it('refuses a leftover requirement marker', () => {
+    // Deliverables are always negotiable on a paid deal, so a marker contradicts itself.
+    const r = model.validateTerms(terms('engagement', {
+      deliverables: D, importance: { deliverables: 'requirement' },
+    }));
+    expect(r.ok).toBe(false);
+    expect(r.field).toBe('terms.importance.deliverables');
+  });
+
+  it('lets her counter the deliverables on a paid deal, but not on a sales one', () => {
+    expect(model.counterableTerms(terms('engagement', { deliverables: D }))).toContain('deliverables');
+    expect(model.counterableTerms(terms('conversion'))).not.toContain('deliverables');
+  });
+});

@@ -15,7 +15,7 @@
     "1": "Sales collab leads with the percentage, not ₹0 — SHIPPED. Second pass 2026-08-25 after the founder showed the LIST still reading ₹0: the fault lived in four places, not one (CollabRow, normalizeRequest, normalizeProposal, and getMyCampaigns never sending commission_pct). The list and the detail page now share one description of the deal.",
     "2": "Date pickers wherever a date is entered — SHIPPED. Five fields across five screens. Written in JS rather than using the native picker, because nothing in the app imports @react-native-community/datetimepicker so there is no evidence it is in the installed APK, and an OTA cannot add a native module.",
     "3": "Pay-for-content: one date, a deadline, no window — SHIPPED. Also caught a break it would have caused: handshake.termsFromProposal emitted a window for paid pitches, which the new rule refuses, so ACCEPTING a pay-for-content pitch would have failed validation. Her own pitch screen now offers one date too.",
-    "4": "Deliverables asked of the brand on a fee deal",
+    "4": "Deliverables asked of the brand on a fee deal — SHIPPED. Required for engagement/hybrid, allowed but never demanded on conversion. Left OPTIONAL_TERMS: they take no requirement marker and are always negotiable on a paid deal. Vocabulary reused from contracts; duplicates and zero counts refused.",
     "5": "Deliverables not asked of the creator on a sales deal",
     "6": "Where she works becomes negotiable, loses requirement/preference",
     "7": "Counter in place, beside each term, with a change count",

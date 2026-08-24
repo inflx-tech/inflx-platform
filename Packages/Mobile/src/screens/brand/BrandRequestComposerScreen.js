@@ -27,6 +27,18 @@ const AIMS = [
 // Working style is TWO questions, not three answers — PLACES and SHIPPING come from
 // utils/workingStyle, which the contract screen reads from too so the brand is never
 // asked the same thing in two different vocabularies.
+/**
+ * What a fee buys. The platform's existing five words — the same ones a campaign brief
+ * and a contract already use, so nothing needs translating downstream.
+ * Contract: features/collab-terms-by-aim (item 4)
+ */
+const DELIVERABLES = [
+  { v: 'reel',          label: 'Instagram Reel' },
+  { v: 'post',          label: 'Instagram Post' },
+  { v: 'story',         label: 'Instagram Story' },
+  { v: 'youtube_video', label: 'YouTube Video' },
+  { v: 'youtube_short', label: 'YouTube Short' },
+];
 const SCOPES = [
   { v: 'store', label: 'Whole store' },
   { v: 'category', label: 'A category' },
@@ -47,6 +59,8 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
   const [place, setPlace] = useState('');
   const [shipping, setShipping] = useState(null);
   const [modeImp, setModeImp] = useState('preference');
+  // Counts per format. A fee with nothing named is the ambiguity this exists to remove.
+  const [deliverables, setDeliverables] = useState({});
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -65,6 +79,20 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
     // Contract: features/collab-terms-by-aim (item 3)
     if (!postBy) { Alert.alert('Missing', 'Choose the date she must post by.'); return; }
     terms.time.post_by = postBy;
+    // A fee buys specific work, so both sides must know what it buys. Not asked on a
+    // sales collaboration: she earns only if she sells, so counting posts measures the
+    // wrong thing.
+    if (aim !== 'conversion') {
+      const list = DELIVERABLES
+        .filter(d => Number(deliverables[d.v]) > 0)
+        .map(d => ({ type: d.v, count: Number(deliverables[d.v]) }));
+      if (list.length === 0) {
+        Alert.alert('Missing', 'Say what the fee buys — at least one deliverable.');
+        return;
+      }
+      terms.deliverables = list;
+    }
+
     const importance = {};
     if (scopeLevel) {
       terms.scope = scopeLevel === 'category' ? { level: 'category', category: scopeCategory || null } : { level: 'store' };
@@ -119,6 +147,39 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
           onChange={setPostBy}
           hint="She must have posted by this date. The campaign starts then."
         />
+
+        {/* What the fee buys. Shown only when there IS a fee — a commission buys
+            nothing in advance, so counting her posts would measure the wrong thing.
+            Contract: features/collab-terms-by-aim (item 4) */}
+        {aim !== 'conversion' && (
+          <>
+            <Text style={s.fl}>
+              {fee ? `WHAT ₹${Number(fee).toLocaleString('en-IN')} BUYS` : 'WHAT THE FEE BUYS'}
+              <Text style={s.negTag}>  · NEGOTIABLE</Text>
+            </Text>
+            {DELIVERABLES.map(d => {
+              const n = Number(deliverables[d.v]) || 0;
+              const bump = (by) => setDeliverables(prev => ({
+                ...prev, [d.v]: Math.max(0, (Number(prev[d.v]) || 0) + by),
+              }));
+              return (
+                <View key={d.v} style={s.delRow}>
+                  <Text style={[s.delLabel, n > 0 && s.delLabelOn]}>{d.label}</Text>
+                  <View style={s.stepper}>
+                    <TouchableOpacity style={s.stepBtn} onPress={() => bump(-1)} disabled={n === 0}>
+                      <Text style={[s.stepTxt, n === 0 && s.stepTxtOff]}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={[s.stepN, n > 0 && s.stepNOn]}>{n}</Text>
+                    <TouchableOpacity style={s.stepBtn} onPress={() => bump(1)}>
+                      <Text style={s.stepTxt}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+            <Text style={s.hint}>She can counter these along with the money and the date.</Text>
+          </>
+        )}
 
         <Text style={s.fl}>WHAT THEY'D PROMOTE · OPTIONAL</Text>
         <View style={s.chips}>
@@ -175,7 +236,9 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
 
         {!!place && <Importance value={modeImp} onChange={setModeImp} />}
 
-        <Text style={s.hint}>Deliverables are deliberately not asked — the creator proposes what they can do, and it becomes part of the agreement.</Text>
+        {aim === 'conversion' && (
+          <Text style={s.hint}>Deliverables are not asked on a sales collaboration — she earns on what she sells, so counting posts measures the wrong thing.</Text>
+        )}
 
         <Field label="Message" value={message} onChange={setMessage} placeholder="Why you want to work with them" multiline />
 
@@ -225,6 +288,22 @@ const s = StyleSheet.create({
   chipTxtAct: { color: P.white },
   inp: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink },
   hint: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, lineHeight: 15, marginTop: 6 },
+  negTag: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted },
+  delRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  delLabel: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: P.muted },
+  delLabelOn: { fontFamily: fonts.sansBold, color: P.ink },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepBtn: {
+    width: 26, height: 26, borderRadius: 7, borderWidth: 1, borderColor: P.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepTxt: { fontFamily: fonts.sansBold, fontSize: 15, color: P.ink, lineHeight: 18 },
+  stepTxtOff: { color: P.muted2 },
+  stepN: { fontFamily: fonts.monoBold, fontSize: 13, color: P.muted2, minWidth: 14, textAlign: 'center' },
+  stepNOn: { color: P.ink },
   // The follow-up is indented under its parent question so it reads as a qualifier,
   // not as a third thing of equal weight — which is the mistake being corrected.
   follow: { borderLeftWidth: 2, borderLeftColor: P.ink, paddingLeft: 11, marginTop: 11, marginLeft: 2 },
