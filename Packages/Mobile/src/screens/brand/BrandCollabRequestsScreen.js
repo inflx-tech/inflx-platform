@@ -71,7 +71,7 @@ export default function BrandCollabRequestsScreen({ navigation }) {
     else Alert.alert('Failed', res.error?.message || 'Try again.');
   };
 
-  if (loading) return <View style={s.center}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator color={P.ink} /></View>;
 
   const sections = [
     ...(agreements.length ? [{ header: 'READY TO BRIEF' }] : []),
@@ -172,7 +172,7 @@ const s = StyleSheet.create({
   cardAgreed: { borderColor: '#A7F3D0', backgroundColor: '#F7FEF9' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   av: { width: 32, height: 32, borderRadius: 16, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
-  avTxt: { fontFamily: fonts.monoBold, color: P.yellow, fontSize: 12 },
+  avTxt: { fontFamily: fonts.monoBold, color: P.white, fontSize: 12 },
   name: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink },
   meta: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, marginTop: 1 },
   st: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted2, letterSpacing: 0.4 },
@@ -182,10 +182,10 @@ const s = StyleSheet.create({
   diffK: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted3, width: 70, letterSpacing: 0.3, textTransform: 'uppercase' },
   diffOld: { fontFamily: fonts.monoMedium, fontSize: 11.5, color: P.muted2, textDecorationLine: 'line-through' },
   diffArr: { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted3 },
-  diffNew: { fontFamily: fonts.monoBold, fontSize: 11.5, color: P.yellowText, backgroundColor: P.yellowPale, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1 },
+  diffNew: { fontFamily: fonts.monoBold, fontSize: 11.5, color: P.warnText, backgroundColor: P.warnPale, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1 },
   btnRow: { flexDirection: 'row', gap: 8, marginTop: 9 },
-  btnPri: { flex: 1, backgroundColor: P.yellow, borderRadius: 9, paddingVertical: 10, alignItems: 'center' },
-  btnPriTxt: { fontFamily: fonts.displayBlack, fontSize: 11, color: P.ink, letterSpacing: 0.3 },
+  btnPri: { flex: 1, backgroundColor: P.ink, borderRadius: 9, paddingVertical: 10, alignItems: 'center' },
+  btnPriTxt: { fontFamily: fonts.displayBlack, fontSize: 11, color: P.white, letterSpacing: 0.3 },
   btnDgr: { borderRadius: 9, paddingVertical: 10, paddingHorizontal: 13, alignItems: 'center', borderWidth: 1, borderColor: '#FBCBC4' },
   btnDgrTxt: { fontFamily: fonts.sansBold, fontSize: 11, color: '#B91C1C' },
   withdraw: { marginTop: 8, alignSelf: 'flex-start' },

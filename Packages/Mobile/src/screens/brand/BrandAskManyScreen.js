@@ -262,7 +262,7 @@ const s = StyleSheet.create({
 
   funnel: { borderWidth: 1, borderColor: ig.line, borderRadius: 12, overflow: 'hidden' },
   fTop: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: ig.text, paddingHorizontal: 13, paddingVertical: 11 },
-  fTopN: { fontSize: 22, fontWeight: '800', color: ig.y },
+  fTopN: { fontSize: 22, fontWeight: '800', color: ig.bg },
   fTopL: { fontSize: 9.5, fontWeight: '800', color: ig.bg, letterSpacing: 0.4, lineHeight: 13 },
   fRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 13, paddingVertical: 10, borderTopWidth: 1, borderTopColor: ig.lineSoft },
   fN: { fontSize: 16, fontWeight: '800', color: ig.text, minWidth: 30 },

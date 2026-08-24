@@ -102,7 +102,7 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
     return (
       <View style={s.container}>
         <ScreenHeader title="Influencers" back onBack={() => navigation.goBack()} />
-        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
       </View>
     );
   }
@@ -232,7 +232,7 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {filtered.length === 0 ? (
           <EmptyState
@@ -253,7 +253,7 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
             const trMark = (state) => {
               if (state === 'released') return { ch: '✓', col: P.successText };
               if (state === 'locked')   return { ch: '○', col: P.ink };
-              if (state === 'queued')   return { ch: '◐', col: P.yellowHover };
+              if (state === 'queued')   return { ch: '◐', col: P.warn };
               return { ch: '—', col: P.muted3 };
             };
             const t1m = trMark(tr.t1), t2m = trMark(tr.t2), t3m = trMark(tr.t3);
@@ -331,7 +331,7 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
                         onPress={() => handleApproveApplication(ci)}
                         disabled={isBusy}
                       >
-                        {isBusy ? <ActivityIndicator size="small" color={P.yellow} /> : <Text style={s.btnApproveText}>Approve</Text>}
+                        {isBusy ? <ActivityIndicator size="small" color={P.white} /> : <Text style={s.btnApproveText}>Approve</Text>}
                       </TouchableOpacity>
                     </>
                   )}
@@ -384,12 +384,12 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { fontFamily: fonts.sansBold, fontSize: 13, color: P.dangerText, marginBottom: 16, textAlign: 'center' },
-  goBackBtn: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: P.yellow, borderRadius: 10 },
-  goBackBtnText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.ink },
+  goBackBtn: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: P.ink, borderRadius: 10 },
+  goBackBtnText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.white},
 
   searchRow: { paddingHorizontal: 14, paddingTop: 12 },
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingHorizontal: 12, height: 40 },
-  searchWrapFocused: { borderColor: P.yellow },
+  searchWrapFocused: { borderColor: P.ink },
   searchIcon: { fontFamily: fonts.monoBold, fontSize: 13, color: P.muted2, marginRight: 8 },
   searchInput: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 13, color: P.ink, paddingVertical: 0, height: '100%' },
   searchClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
@@ -417,7 +417,7 @@ const s = StyleSheet.create({
 
   delProgress: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   delProgressBg: { flex: 1, height: 4, backgroundColor: P.bg2, borderRadius: 99, overflow: 'hidden' },
-  delProgressFill: { height: '100%', backgroundColor: P.yellow, borderRadius: 99 },
+  delProgressFill: { height: '100%', backgroundColor: P.ink, borderRadius: 99 },
   delProgressText: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2 },
 
   trRow: { flexDirection: 'row', gap: 14, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: P.bg2, borderRadius: 7 },
@@ -430,11 +430,11 @@ const s = StyleSheet.create({
   btnReject: { backgroundColor: P.bg2, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 7, borderWidth: 1, borderColor: P.border },
   btnRejectText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.dangerText, letterSpacing: 0.2 },
   btnApprove: { backgroundColor: P.ink, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 7 },
-  btnApproveText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: P.yellow, letterSpacing: 0.2 },
+  btnApproveText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
   btnCancel: { backgroundColor: P.white, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 7, borderWidth: 1, borderColor: P.dangerPale },
   btnCancelText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.dangerText, letterSpacing: 0.2 },
-  btnChat: { backgroundColor: P.yellow, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 7 },
-  btnChatText: { fontFamily: fonts.displayBold, fontSize: 10.5, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
+  btnChat: { backgroundColor: P.ink, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 7 },
+  btnChatText: { fontFamily: fonts.displayBold, fontSize: 10.5, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
   btnContract: { backgroundColor: P.successPale, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 7 },
   btnContractText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.successText, letterSpacing: 0.2 },
 });

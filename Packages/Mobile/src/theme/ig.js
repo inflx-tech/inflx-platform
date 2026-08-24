@@ -4,8 +4,13 @@
    screen in the IA redesign program.
 
    White surfaces, black text, hairline dividers. Colour is spent only where it
-   carries meaning: yellow = your turn · blue = waiting on brand ·
+   carries meaning: amber = your turn · blue = waiting on brand ·
    purple = negotiating · green = done/live · red = closed.
+
+   De-yellow pass: the "your turn" signal used to be brand yellow (#FFC107),
+   which read as decoration rather than state. It is now amber — same role,
+   same token names (y / yInk / yBg), no brand colour. Primary CTAs are ink
+   with white labels; they never take the signal colour.
    ════════════════════════════════════════════════════════════════════════ */
 export const ig = {
   bg:       '#FFFFFF',
@@ -17,9 +22,9 @@ export const ig = {
   line:     '#DBDBDB',
   lineSoft: '#EFEFEF',
 
-  y:        '#FFC107',  // your turn
-  yInk:     '#7A6200',
-  yBg:      '#FFF6D6',
+  y:        '#EA580C',  // your turn
+  yInk:     '#C2410C',
+  yBg:      '#FFF7ED',
 
   green:    '#1A7F52',
   greenBg:  '#EAF7F0',

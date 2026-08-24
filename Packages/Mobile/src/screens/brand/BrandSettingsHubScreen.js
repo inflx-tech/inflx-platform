@@ -19,16 +19,16 @@ const SUB_PILL = {
   active:    { bg: P.successPale, fg: P.successText },
   past_due:  { bg: P.dangerPale,  fg: P.dangerText },
   cancelled: { bg: P.bg2,         fg: P.muted },
-  pending_mandate: { bg: P.yellowPale, fg: P.yellowText },
+  pending_mandate: { bg: P.warnPale, fg: P.warnText },
 };
 const INV_PILL = {
   paid:    { bg: P.successPale, fg: P.successText },
-  pending: { bg: P.yellowPale,  fg: P.yellowText },
+  pending: { bg: P.warnPale,  fg: P.warnText },
   failed:  { bg: P.dangerPale,  fg: P.dangerText },
 };
 const PAYOUT_LABEL = {
   activated: { label: 'Connected & active', pill: { bg: P.successPale, fg: P.successText } },
-  created:   { label: 'Being verified by Razorpay', pill: { bg: P.yellowPale, fg: P.yellowText } },
+  created:   { label: 'Being verified by Razorpay', pill: { bg: P.warnPale, fg: P.warnText } },
   needs_clarification: { label: 'Razorpay needs more details', pill: { bg: P.dangerPale, fg: P.dangerText } },
   suspended: { label: 'Suspended', pill: { bg: P.dangerPale, fg: P.dangerText } },
 };
@@ -66,7 +66,7 @@ export default function BrandSettingsHubScreen({ navigation }) {
     else Alert.alert('Could not connect', res?.error?.message || 'Add your bank details in Wallet first, then retry.');
   }
 
-  if (loading) return <View style={{ flex: 1, backgroundColor: P.bg, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.yellow} /></View>;
+  if (loading) return <View style={{ flex: 1, backgroundColor: P.bg, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.ink} /></View>;
 
   const subscription = sub?.subscription || {};
   const tier  = sub?.tier || {};
@@ -81,13 +81,12 @@ export default function BrandSettingsHubScreen({ navigation }) {
           <Text style={s.backText}>← BACK</Text>
         </TouchableOpacity>
         <Text style={s.title}>Plan & billing</Text>
-        <View style={s.rule} />
         <Text style={s.subtitle}>Subscription, invoices and payout account</Text>
       </View>
 
       <ScrollView
         style={{ flex: 1 }} contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} />}
       >
         {/* ── Subscription ── */}
         <Text style={s.section}>SUBSCRIPTION</Text>
@@ -201,12 +200,11 @@ function UsageBar({ label, used, max }) {
 }
 
 const s = StyleSheet.create({
-  header:    { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14 },
+  header:    { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back:      { paddingBottom: 6 },
-  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
-  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  rule:      { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 6 },
-  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6 },
+  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: P.muted2 },
+  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.3 },
+  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: 6 },
   section:   { fontSize: 10.5, fontWeight: '800', color: P.muted2, letterSpacing: 0.6, marginTop: 14, marginBottom: 6, paddingHorizontal: 2 },
   card:      { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 12, padding: 14 },
   planName:  { fontSize: 15, fontWeight: '800', color: P.ink },
@@ -216,13 +214,13 @@ const s = StyleSheet.create({
   usageLbl:  { fontSize: 11.5, color: P.muted },
   usageVal:  { fontSize: 11.5, fontWeight: '700', color: P.ink2 },
   track:     { height: 5, backgroundColor: P.bg2, borderRadius: 3, marginTop: 3 },
-  fill:      { height: 5, backgroundColor: P.yellow, borderRadius: 3 },
-  btnFill:   { backgroundColor: P.yellow, borderRadius: 10, paddingVertical: 11, alignItems: 'center', marginTop: 12 },
-  btnFillTxt:{ fontSize: 13, fontWeight: '800', color: P.ink },
+  fill:      { height: 5, backgroundColor: P.ink, borderRadius: 3 },
+  btnFill:   { backgroundColor: P.ink, borderRadius: 10, paddingVertical: 11, alignItems: 'center', marginTop: 12 },
+  btnFillTxt:{ fontSize: 13, fontWeight: '800', color: P.white},
   btnGhost:  { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingVertical: 11, alignItems: 'center', marginTop: 12 },
   btnGhostTxt:{ fontSize: 13, fontWeight: '700', color: P.ink2 },
   invRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
   invTier:   { fontSize: 12.5, fontWeight: '700', color: P.ink },
-  pdfLink:   { fontSize: 11, fontWeight: '700', color: P.yellowText },
+  pdfLink:   { fontSize: 11, fontWeight: '700', color: P.ink },
   emptyLine: { fontSize: 12.5, color: P.muted3 },
 });

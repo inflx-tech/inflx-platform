@@ -17,7 +17,7 @@ const SOURCE_LABEL = { subscription: 'Subscription', protection_fee: 'Protection
 const SOURCE_STYLE = {
   subscription:   { bg: '#E0F2FE', fg: '#075985' },
   protection_fee: { bg: '#DCFCE7', fg: '#166534' },
-  commission:     { bg: P.yellowPale, fg: P.yellowText },
+  commission:     { bg: P.warnPale, fg: P.warnText },
 };
 
 function fmtDate(d) {
@@ -67,11 +67,11 @@ export default function ReferAndEarnScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={P.yellow} style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={P.ink} style={{ marginTop: 40 }} />
       ) : (
         <ScrollView
           contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}
         >
           {/* Hero */}
           <View style={styles.hero}>
@@ -93,7 +93,7 @@ export default function ReferAndEarnScreen() {
                 <Text style={styles.btnGhostText}>Copy</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={shareCode} activeOpacity={0.8}>
-                <Icon name="share-variant" size={16} color={P.ink} />
+                <Icon name="share-variant" size={16} color={P.white} />
                 <Text style={styles.btnPrimaryText}>Share</Text>
               </TouchableOpacity>
             </View>
@@ -131,7 +131,7 @@ export default function ReferAndEarnScreen() {
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.rowAmt}>{fmtRupees(r.amount)}</Text>
                     <View style={[styles.pill, r.payout_status === 'paid' ? styles.pillPaid : styles.pillPending]}>
-                      <Text style={[styles.pillText, { color: r.payout_status === 'paid' ? '#fff' : P.yellowText }]}>{r.payout_status}</Text>
+                      <Text style={[styles.pillText, { color: r.payout_status === 'paid' ? '#fff' : P.warnText }]}>{r.payout_status}</Text>
                     </View>
                   </View>
                 </View>
@@ -147,7 +147,7 @@ export default function ReferAndEarnScreen() {
 function HowRow({ icon, text, last }) {
   return (
     <View style={[styles.howRow, last && { marginBottom: 0 }]}>
-      <Icon name={icon} size={18} color={P.yellowText} style={{ width: 24 }} />
+      <Icon name={icon} size={18} color={P.ink} style={{ width: 24 }} />
       <Text style={styles.howText}>{text}</Text>
     </View>
   );
@@ -159,23 +159,23 @@ const styles = StyleSheet.create({
   appbarTitle: { fontFamily: fonts.displayBold, fontSize: 17, color: P.ink },
 
   hero: { backgroundColor: P.ink, borderRadius: 18, padding: 18 },
-  heroLabel: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 0.5, color: P.yellow },
+  heroLabel: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 0.5, color: P.white },
   heroAmount: { fontFamily: fonts.displayBlack, fontSize: 34, color: P.white, marginTop: 2 },
   heroSub: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.muted3, marginTop: 2 },
 
   codeCard: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 16, padding: 16, marginTop: 12 },
   cap: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 0.4, color: P.muted2 },
-  codeChip: { backgroundColor: P.yellowPale, borderWidth: 1.5, borderColor: P.yellow, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 8 },
+  codeChip: { backgroundColor: P.bg2, borderWidth: 1.5, borderColor: P.ink, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, marginTop: 8 },
   codeText: { fontFamily: fonts.monoBold, fontSize: 22, letterSpacing: 1, color: P.ink, textAlign: 'center' },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   btn: { flex: 1, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  btnPrimary: { backgroundColor: P.yellow },
-  btnPrimaryText: { fontFamily: fonts.displayBold, fontSize: 14, color: P.ink },
+  btnPrimary: { backgroundColor: P.ink },
+  btnPrimaryText: { fontFamily: fonts.displayBold, fontSize: 14, color: P.white},
   btnGhost: { backgroundColor: P.white, borderWidth: 1.5, borderColor: P.ink },
   btnGhostText: { fontFamily: fonts.displayBold, fontSize: 14, color: P.ink },
 
   sectionTitle: { fontFamily: fonts.displayBold, fontSize: 13, color: P.ink, marginTop: 18, marginBottom: 8, marginHorizontal: 4 },
-  how: { backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.yellowPale, borderRadius: 14, padding: 14 },
+  how: { backgroundColor: P.bg2, borderWidth: 1, borderColor: P.bg2, borderRadius: 14, padding: 14 },
   howRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
   howText: { flex: 1, fontFamily: fonts.sansRegular, fontSize: 12.5, color: P.ink2, lineHeight: 18 },
 
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   rowAmt: { fontFamily: fonts.displayBlack, fontSize: 14, color: P.ink },
   pill: { borderRadius: 99, paddingHorizontal: 7, paddingVertical: 1, marginTop: 2 },
   pillPaid: { backgroundColor: P.tealDeep },
-  pillPending: { backgroundColor: P.white, borderWidth: 1, borderColor: P.yellow },
+  pillPending: { backgroundColor: P.white, borderWidth: 1, borderColor: P.warn },
   pillText: { fontFamily: fonts.monoBold, fontSize: 9, textTransform: 'uppercase' },
 
   emptyCard: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderStyle: 'dashed', borderRadius: 14, padding: 24, alignItems: 'center' },

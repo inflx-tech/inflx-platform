@@ -67,7 +67,7 @@ export default function BrandConversionsScreen({ route, navigation }) {
           sub={campaignId ? `Transactions for ${campaignName || 'this campaign'}` : 'Every transaction your influencers have driven'}
           back onBack={() => navigation.goBack()}
         />
-        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
       </View>
     );
   }
@@ -82,7 +82,7 @@ export default function BrandConversionsScreen({ route, navigation }) {
 
       <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {summary && (
           <View style={s.sumGrid}>
@@ -229,7 +229,7 @@ const s = StyleSheet.create({
   chip: { backgroundColor: P.bg2, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: P.border },
   chipActive: { backgroundColor: P.ink, borderColor: P.ink },
   chipText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.muted },
-  chipTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
+  chipTextActive: { color: P.white, fontFamily: fonts.monoBold },
 
   card: { backgroundColor: P.white, borderRadius: 14, padding: 13, marginBottom: 8, borderWidth: 1, borderColor: P.border },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, gap: 8 },
@@ -238,7 +238,7 @@ const s = StyleSheet.create({
   followerName: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '700', color: P.ink },
   influencerLabel: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.muted2, marginTop: 2 },
   campaignLabel: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted3, marginTop: 2 },
-  productLabel: { fontFamily: fonts.sansBold, fontSize: 10.5, color: P.yellowText, fontWeight: '700', marginTop: 2 },
+  productLabel: { fontFamily: fonts.sansBold, fontSize: 10.5, color: P.ink, fontWeight: '700', marginTop: 2 },
   amount: { fontFamily: fonts.monoBold, fontSize: 15, fontWeight: '900', color: P.ink },
   date: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted3, marginTop: 2 },
 

@@ -9,7 +9,7 @@ import CreatorAvatar from '../../components/CreatorAvatar';
 
 /**
  * BrandInfluencerProfileScreen — full influencer detail + invite-to-campaign modal.
- * Flow 20 (2026-05-25): navy-deep hero + orange CTA → ink hero + yellow CTA.
+ * Flow 20 (2026-05-25): navy-deep hero + orange CTA → ink hero + ink CTA.
  */
 
 // collab-part1-corrections §1.4 — these keys used to be posted straight into
@@ -41,7 +41,7 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
   }, [influencerId]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
   if (!inf) {
     return (
@@ -190,7 +190,7 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
             influencerHandle: inf?.instagram_handle ? `@${inf.instagram_handle}` : '',
           })}
           activeOpacity={0.85}>
-          <Text style={[s.inviteBtnText, { color: P.yellow }]}>Request Collaboration</Text>
+          <Text style={[s.inviteBtnText, { color: P.white }]}>Request Collaboration</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.inviteBtn} onPress={() => setInviteOpen(true)} activeOpacity={0.85}>
           <Text style={s.inviteBtnText}>Invite to Campaign</Text>
@@ -340,7 +340,7 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
               <>
                 <Text style={s.stepTitle}>1. Pick a campaign</Text>
                 {loadingCampaigns ? (
-                  <ActivityIndicator color={P.yellow} style={{ marginVertical: 20 }} />
+                  <ActivityIndicator color={P.ink} style={{ marginVertical: 20 }} />
                 ) : campaigns.length === 0 ? (
                   <View style={s.emptyPanel}>
                     <Text style={s.emptyPanelTitle}>No eligible campaigns</Text>
@@ -369,7 +369,7 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
                 </TouchableOpacity>
                 <Text style={s.stepTitle}>2. Pick a set in "{pickedCampaign.name}"</Text>
                 {loadingSets ? (
-                  <ActivityIndicator color={P.yellow} style={{ marginVertical: 20 }} />
+                  <ActivityIndicator color={P.ink} style={{ marginVertical: 20 }} />
                 ) : sets.length === 0 ? (
                   <Text style={s.emptyPanelBody}>This campaign has no sets yet.</Text>
                 ) : (
@@ -472,7 +472,7 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
                   disabled={submitting}
                   activeOpacity={0.85}
                 >
-                  {submitting ? <ActivityIndicator color={P.ink} /> : <Text style={s.submitBtnText}>Send Invite</Text>}
+                  {submitting ? <ActivityIndicator color={P.white} /> : <Text style={s.submitBtnText}>Send Invite</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -550,19 +550,19 @@ const s = StyleSheet.create({
   reachNote: { fontFamily: fonts.sansRegular, fontSize: 9, color: P.muted2, marginTop: 3, textAlign: 'center' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: P.bg },
   errorText: { fontFamily: fonts.sansBold, fontSize: 14, color: P.muted, marginBottom: 12 },
-  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: P.yellow },
-  backFallbackText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink, fontWeight: '800' },
+  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: P.ink },
+  backFallbackText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.white, fontWeight: '800' },
 
-  hero: { backgroundColor: P.ink, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 24, alignItems: 'center' },
+  hero: { backgroundColor: P.white, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 24, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   heroBack: { alignSelf: 'flex-start', marginBottom: 14 },
-  heroBackText: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.65)', fontWeight: '600' },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  heroBackText: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted2, fontWeight: '600' },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   avatarText: { fontFamily: fonts.displayBold, fontSize: 26, fontWeight: '900', color: P.ink },
   handleRow: { flexDirection: 'row', alignItems: 'center' },
-  handle: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.white, letterSpacing: -0.3 },
-  verifiedTick: { fontFamily: fonts.displayBold, fontSize: 14, color: P.yellow, fontWeight: '900' },
-  fullName: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 },
-  heroMeta: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: 'rgba(255,255,255,0.55)', marginTop: 6, letterSpacing: 0.4 },
+  handle: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.ink, letterSpacing: -0.3 },
+  verifiedTick: { fontFamily: fonts.displayBold, fontSize: 14, color: P.ink, fontWeight: '900' },
+  fullName: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted2, marginTop: 3 },
+  heroMeta: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.muted2, marginTop: 6, letterSpacing: 0.4 },
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingTop: 12, gap: 7 },
   statTile: { width: '31.8%', backgroundColor: P.white, borderRadius: 10, padding: 9, borderWidth: 1, borderColor: P.border },
@@ -575,15 +575,15 @@ const s = StyleSheet.create({
   priceText: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink, fontWeight: '700' },
   hint: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.muted2, marginTop: 4 },
   chipList: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  chipNiche: { backgroundColor: P.yellowPale, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
-  chipNicheText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.yellowText },
+  chipNiche: { backgroundColor: P.bg2, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
+  chipNicheText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.ink },
   chipLang: { backgroundColor: P.engPale, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
   chipLangText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.eng },
   pastBrandRow: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, lineHeight: 20 },
 
   footerBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border, padding: 12 },
-  inviteBtn: { backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  inviteBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink },
+  inviteBtn: { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  inviteBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.white},
 
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
@@ -593,18 +593,18 @@ const s = StyleSheet.create({
   modalClose: { fontFamily: fonts.monoBold, fontSize: 22, color: P.muted2, paddingHorizontal: 4, lineHeight: 22 },
   stepTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink, marginBottom: 10, marginTop: 4 },
   breadcrumbBack: { paddingVertical: 6 },
-  breadcrumbBackText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.yellowText, fontWeight: '700' },
+  breadcrumbBackText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink, fontWeight: '700' },
 
   pickRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 6, backgroundColor: P.white },
   pickRowTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink },
   pickRowMeta: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.muted2, marginTop: 2 },
   chev: { fontFamily: fonts.monoBold, fontSize: 18, color: P.muted2, fontWeight: '800' },
 
-  emptyPanel: { backgroundColor: P.bg2, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: P.yellowPale, borderStyle: 'dashed' },
+  emptyPanel: { backgroundColor: P.bg2, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: P.bg2, borderStyle: 'dashed' },
   emptyPanelTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink, marginBottom: 6 },
   emptyPanelBody: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, textAlign: 'center', lineHeight: 16 },
 
-  confirmCard: { backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.yellowPale, borderRadius: 12, padding: 12, marginBottom: 14 },
+  confirmCard: { backgroundColor: P.bg2, borderWidth: 1, borderColor: P.bg2, borderRadius: 12, padding: 12, marginBottom: 14 },
   confirmLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 6 },
   confirmValue: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink, marginTop: 2 },
 
@@ -616,8 +616,8 @@ const s = StyleSheet.create({
   offerTypeChip: { flex: 1, backgroundColor: P.bg, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: P.border },
   offerTypeChipActive: { backgroundColor: P.ink, borderColor: P.ink },
   offerTypeChipText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.muted },
-  offerTypeChipTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
+  offerTypeChipTextActive: { color: P.white, fontFamily: fonts.monoBold },
 
-  submitBtn: { backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
-  submitBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink },
+  submitBtn: { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
+  submitBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.white},
 });

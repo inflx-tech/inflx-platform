@@ -25,9 +25,9 @@ const FORMAT_OPTIONS = [
  * SendProposalScreen — form to send an outbound pitch.
  *
  * Flow 36 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
- * yellowPale criteria card with Outfit-Black title.
+ * neutral criteria card with Outfit-Black title.
  * Ink-bordered inputs + ink-active goal chips + bg2 deliverable counter btns.
- * Ink/yellow Outfit-Black UPPERCASE SEND PROPOSAL CTA.
+ * Ink/white Outfit-Black UPPERCASE SEND PROPOSAL CTA.
  * KeyboardAvoidingView + form validation preserved verbatim.
  */
 
@@ -126,7 +126,7 @@ export default function SendProposalScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {loadingCriteria ? (
           <View style={{ padding: 24, alignItems: 'center' }}>
-            <ActivityIndicator color={P.yellow} />
+            <ActivityIndicator color={P.ink} />
           </View>
         ) : criteria && (
           <View style={styles.criteriaCard}>
@@ -218,7 +218,7 @@ export default function SendProposalScreen({ route, navigation }) {
           onPress={submit}
           disabled={submitting}>
           {submitting
-            ? <ActivityIndicator color={P.yellow} />
+            ? <ActivityIndicator color={P.white} />
             : <Text style={styles.submitTxt}>SEND PROPOSAL</Text>}
         </TouchableOpacity>
       </ScrollView>
@@ -241,14 +241,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBlack },
   headerSub: { fontSize: 10, color: P.muted2, marginTop: 3, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
-  // Criteria card — yellowPale
+  // Criteria card — neutral
   criteriaCard: {
     margin: 14, marginBottom: 14, padding: 12,
-    backgroundColor: P.yellowPale, borderRadius: 11,
-    borderWidth: 1, borderColor: '#F0DA88',
+    backgroundColor: P.bg2, borderRadius: 11,
+    borderWidth: 1, borderColor: P.border,
   },
   criteriaTitle: {
-    fontSize: 11, fontWeight: '900', color: P.yellowText,
+    fontSize: 11, fontWeight: '900', color: P.ink,
     textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 6,
     fontFamily: fonts.displayBlack,
   },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   },
   goalChipActive: { backgroundColor: P.ink, borderColor: P.ink },
   goalChipTxt: { fontSize: 10, fontWeight: '800', color: P.muted, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.monoBold },
-  goalChipTxtActive: { color: P.yellow, fontWeight: '900' },
+  goalChipTxtActive: { color: P.white, fontWeight: '900' },
 
   // Deliverable counter rows
   deliverableRow: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: P.ink, borderRadius: 12, alignItems: 'center',
   },
   submitTxt: {
-    color: P.yellow, fontSize: 14, fontWeight: '900',
+    color: P.white, fontSize: 14, fontWeight: '900',
     letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack,
   },
 });

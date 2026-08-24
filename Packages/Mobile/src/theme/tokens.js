@@ -175,6 +175,18 @@ export const brandPalette = {
   border:       '#E4E4E7',
   borderSoft:   '#F4F4F5',
 
+  // Status / feedback ramp.
+  //
+  // De-yellow pass (brand-mobile + influencer-mobile): yellow was doing two
+  // unrelated jobs — brand decoration AND the pending/waiting/new signal. The
+  // decoration is gone (those surfaces are now white/ink/grey); the signal
+  // moved onto this warn ramp, which is orange so it never reads as brand
+  // colour. The `yellow*` keys below are retained ONLY for the follower app
+  // and non-migrated screens — do not reach for them in brand/influencer code.
+  warn:         '#EA580C',
+  warnPale:     '#FFF7ED',
+  warnText:     '#C2410C',
+
   // Status pales (per Flow 15 brand-web pattern)
   success:      '#10B981',
   successPale:  '#D1FAE5',

@@ -26,7 +26,7 @@ function formatTxType(type) {
  *
  * Flow 34 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
  * JetBrains Mono fonts + StatusPill canonical for tranche status.
- * Unified success/yellow tranche timeline + ink-bordered yellow current
+ * Unified success/amber tranche timeline + ink-bordered current
  * step per design call #3 (matches Flow 32/33 timeline pattern).
  */
 
@@ -49,7 +49,7 @@ export default function CommissionDetailScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={P.yellow} />
+        <ActivityIndicator size="large" color={P.ink} />
       </View>
     );
   }
@@ -75,11 +75,11 @@ export default function CommissionDetailScreen({ route, navigation }) {
   const currentTrancheIdx = (tranches || []).findIndex(t => t.status !== 'released');
 
   return (
-    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}>
+    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}>
       {/* Hero */}
       <View style={styles.headerCard}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={14} color={P.muted2} />
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={2}>{data.campaign_name}</Text>
@@ -101,7 +101,6 @@ export default function CommissionDetailScreen({ route, navigation }) {
             <Text style={styles.headerStatVal}>{fmtRupees(Math.round(summary.total_earned + summary.total_pending))}</Text>
           </View>
         </View>
-        <View style={styles.headerAccent} />
       </View>
 
       {/* Info row */}
@@ -193,9 +192,9 @@ export default function CommissionDetailScreen({ route, navigation }) {
                   <Text style={styles.commSummaryLabel}>CONFIRMED</Text>
                   <Text style={[styles.commSummaryVal, { color: P.successText }]}>{fmtRupees(Math.round(summary.commission_confirmed))}</Text>
                 </View>
-                <View style={[styles.commSummaryCard, { borderLeftColor: P.yellow }]}>
+                <View style={[styles.commSummaryCard, { borderLeftColor: P.ink }]}>
                   <Text style={styles.commSummaryLabel}>PENDING (30D)</Text>
-                  <Text style={[styles.commSummaryVal, { color: P.yellowText }]}>{fmtRupees(Math.round(summary.commission_pending))}</Text>
+                  <Text style={[styles.commSummaryVal, { color: P.warnText }]}>{fmtRupees(Math.round(summary.commission_pending))}</Text>
                 </View>
               </View>
 
@@ -203,7 +202,7 @@ export default function CommissionDetailScreen({ route, navigation }) {
               {visibleCommissions.map(c => (
                 <View key={c.transaction_id} style={styles.txRow}>
                   <View style={styles.txLeft}>
-                    <View style={[styles.txDot, { backgroundColor: c.status === 'confirmed' ? P.success : P.yellow }]} />
+                    <View style={[styles.txDot, { backgroundColor: c.status === 'confirmed' ? P.success : P.warn }]} />
                   </View>
                   <View style={styles.txContent}>
                     <View style={styles.txHeader}>
@@ -321,27 +320,26 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
   errorText: { fontSize: 14, color: P.muted, marginBottom: 12, fontFamily: fonts.sansRegular },
   retryBtn: { backgroundColor: P.ink, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 11 },
-  retryBtnText: { fontSize: 12, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  retryBtnText: { fontSize: 12, fontWeight: '900', color: P.white, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
   // Hero
-  headerCard: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  headerCard: { backgroundColor: P.white, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
-  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
-  headerTitle: { fontSize: 20, fontWeight: '900', color: P.white, marginBottom: 4, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
-  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 14, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  backText: { fontSize: 10, color: P.muted2, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: P.ink, marginBottom: 4, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  headerSub: { fontSize: 11, color: P.muted2, marginBottom: 14, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
   headerStatsRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 11, padding: 12,
+    backgroundColor: P.bg2, borderRadius: 11, padding: 12,
   },
   headerStat: { flex: 1, alignItems: 'center' },
   headerStatLabel: {
-    fontSize: 9, color: 'rgba(255,255,255,0.5)', marginBottom: 3,
+    fontSize: 9, color: P.muted2, marginBottom: 3,
     textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '800', fontFamily: fonts.monoBold,
   },
-  headerStatVal: { fontSize: 14.5, fontWeight: '900', color: P.white, fontFamily: fonts.monoBold },
-  headerStatDivider: { width: 1, height: 26, backgroundColor: 'rgba(255,255,255,0.12)' },
+  headerStatVal: { fontSize: 14.5, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  headerStatDivider: { width: 1, height: 26, backgroundColor: P.bg2 },
 
   // Section
   sectionTitleWrap: { margin: 14, marginBottom: 8, marginTop: 14 },
@@ -370,10 +368,10 @@ const styles = StyleSheet.create({
   },
   timelineDotReleased: { backgroundColor: P.success, borderColor: P.success },
   timelineDotCurrent: {
-    backgroundColor: P.yellow, borderWidth: 3, borderColor: P.ink,
+    backgroundColor: P.ink, borderWidth: 3, borderColor: P.ink,
     width: 18, height: 18, borderRadius: 9, marginTop: 9,
   },
-  timelineDotNum: { fontSize: 10, color: P.ink, fontWeight: '900', fontFamily: fonts.displayBlack },
+  timelineDotNum: { fontSize: 10, color: P.white, fontWeight: '900', fontFamily: fonts.displayBlack },
   timelineDotNumInactive: { fontSize: 8, color: P.muted3, fontWeight: '900', fontFamily: fonts.displayBlack },
   timelineLine: { width: 2, flex: 1, backgroundColor: P.border, marginVertical: 2 },
   timelineLineActive: { backgroundColor: P.success },
@@ -414,7 +412,7 @@ const styles = StyleSheet.create({
   txAmount: { fontSize: 13, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
   txFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   txDate: { fontSize: 10, color: P.muted2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
-  txPendingDays: { fontSize: 9.5, fontWeight: '800', color: P.yellowText, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  txPendingDays: { fontSize: 9.5, fontWeight: '800', color: P.warnText, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold },
   txConfirmed: { fontSize: 9.5, fontWeight: '800', color: P.successText, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
   // Show more

@@ -114,7 +114,7 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
         style={{ marginHorizontal: 16, marginTop: 8, backgroundColor: P.ink, borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
         onPress={() => navigation.navigate('BrandCollabRequests')}
         activeOpacity={0.85}>
-        <Text style={{ fontFamily: fonts.sansBold, fontSize: 12, color: P.yellow }}>Collab requests & agreed creators →</Text>
+        <Text style={{ fontFamily: fonts.sansBold, fontSize: 12, color: P.white }}>Collab requests & agreed creators →</Text>
       </TouchableOpacity>
 
       <View style={s.searchBar}>
@@ -238,11 +238,11 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
 
       <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {loading ? (
           <View style={{ padding: 40, alignItems: 'center' }}>
-            <ActivityIndicator color={P.yellow} size="large" />
+            <ActivityIndicator color={P.ink} size="large" />
           </View>
         ) : influencers.length === 0 ? (
           <View style={{ margin: 16 }}>
@@ -311,13 +311,13 @@ const s = StyleSheet.create({
   searchBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6, backgroundColor: P.bg },
   searchInput: { flex: 1, backgroundColor: P.white, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontFamily: fonts.sansMedium, fontSize: 13, color: P.ink, borderWidth: 1, borderColor: P.border },
   searchBtn: { backgroundColor: P.ink, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  searchBtnText: { fontFamily: fonts.monoBold, color: P.yellow, fontWeight: '800', fontSize: 11.5 },
+  searchBtnText: { fontFamily: fonts.monoBold, color: P.white, fontWeight: '800', fontSize: 11.5 },
 
   sortRow: { backgroundColor: P.bg, paddingTop: 6, paddingBottom: 4, flexGrow: 0 },
   sortChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: P.white, borderWidth: 1, borderColor: P.border },
   sortChipActive: { backgroundColor: P.ink, borderColor: P.ink },
   sortChipText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.muted },
-  sortChipTextActive: { color: P.yellow, fontFamily: fonts.monoBold, fontWeight: '800' },
+  sortChipTextActive: { color: P.white, fontFamily: fonts.monoBold, fontWeight: '800' },
 
   filterToggle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: P.bg },
   filterToggleText: { fontFamily: fonts.sansBold, fontSize: 11.5, fontWeight: '700', color: P.ink2 },
@@ -330,21 +330,21 @@ const s = StyleSheet.create({
   filterActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   clearBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: P.bg2, alignItems: 'center' },
   clearBtnText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '800', color: P.muted },
-  applyBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: P.yellow, alignItems: 'center' },
-  applyBtnText: { fontFamily: fonts.displayBold, fontSize: 11, fontWeight: '800', color: P.ink },
+  applyBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center' },
+  applyBtnText: { fontFamily: fonts.displayBold, fontSize: 11, fontWeight: '800', color: P.white},
 
   tierRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 10 },
   chipSm: { backgroundColor: P.bg2, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: P.border },
   chipSmActive: { backgroundColor: P.ink, borderColor: P.ink },
   chipSmText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.muted },
-  chipSmTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
+  chipSmTextActive: { color: P.white, fontFamily: fonts.monoBold },
 
   card: { backgroundColor: P.white, borderRadius: 14, padding: 12, marginHorizontal: 14, marginTop: 8, borderWidth: 1, borderColor: P.border, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '900', color: P.ink },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '900', color: P.white},
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 6 },
   cardHandle: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '800', color: P.ink, flex: 1 },
-  cardTier: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.yellowText, backgroundColor: P.yellowPale, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, textTransform: 'capitalize' },
+  cardTier: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.ink, backgroundColor: P.bg2, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, textTransform: 'capitalize' },
   cardName: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted2, marginTop: 1 },
   cardStatsRow: { flexDirection: 'row', gap: 11, marginTop: 4 },
   cardStat: { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.ink, fontWeight: '700' },

@@ -65,7 +65,7 @@ export default function BrandProfileScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={16} color={P.muted2} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
 
@@ -86,7 +86,6 @@ export default function BrandProfileScreen({ navigation, route }) {
             )}
           </View>
         </View>
-        <View style={styles.headerRule} />
       </View>
 
       {/* Brand Details */}
@@ -144,31 +143,30 @@ const styles = StyleSheet.create({
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 20 },
   errorText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, marginBottom: 16, textAlign: 'center' },
   retryBtn:  { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 22 },
-  retryText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.yellow, letterSpacing: 0.3 },
+  retryText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.white, letterSpacing: 0.3 },
 
-  // Header (ink topbar with yellow rule)
-  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerRule: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  // Header (white topbar, ink text, hairline rule)
+  header: { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 22, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back:      { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
-  backText:  { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)', fontWeight: '700' },
+  backText:  { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.muted2, fontWeight: '700' },
   profileRow:{ flexDirection: 'row', alignItems: 'center', gap: 14 },
-  logo:      { width: 68, height: 68, borderRadius: 16, backgroundColor: P.yellow },
+  logo:      { width: 68, height: 68, borderRadius: 16, backgroundColor: P.ink },
   logoFallback: {
     width: 68, height: 68, borderRadius: 16,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     justifyContent: 'center', alignItems: 'center',
   },
-  logoInitial:  { fontFamily: fonts.displayBlack, fontSize: 30, fontWeight: '900', color: P.ink },
-  businessName: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white },
+  logoInitial:  { fontFamily: fonts.displayBlack, fontSize: 30, fontWeight: '900', color: P.white },
+  businessName: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.ink },
   categoryBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: P.bg2,
     borderRadius: 6,
     paddingHorizontal: 9,
     paddingVertical: 3,
     marginTop: 6,
   },
-  categoryText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: 'rgba(255,255,255,0.92)', textTransform: 'capitalize', letterSpacing: 0.3 },
+  categoryText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.muted2, textTransform: 'capitalize', letterSpacing: 0.3 },
 
   // Card
   card: {
@@ -197,13 +195,13 @@ const styles = StyleSheet.create({
 
   // Stats
   statBox: {
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     borderWidth: 1.5,
-    borderColor: P.yellow,
+    borderColor: P.ink,
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',
   },
   statNumber: { fontFamily: fonts.displayBlack, fontSize: 32, fontWeight: '900', color: P.ink, lineHeight: 36 },
-  statLabel:  { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.yellowText, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 6 },
+  statLabel:  { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.ink, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 6 },
 });

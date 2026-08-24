@@ -149,7 +149,7 @@ export default function BrandNegotiationScreen({ route, navigation }) {
           <Text style={s.headerTitle}>Negotiation</Text>
           <View style={{ width: 32 }} />
         </View>
-        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
       </View>
     );
   }
@@ -188,7 +188,6 @@ export default function BrandNegotiationScreen({ route, navigation }) {
           </TouchableOpacity>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={s.headerTitle}>Negotiation</Text>
-            <View style={s.headerRule} />
             <Text style={s.headerSub} numberOfLines={1}>
               {influencerName || negotiation.influencer_name || 'Influencer'}
               {influencerHandle ? ` @${influencerHandle}` : ''}
@@ -209,8 +208,8 @@ export default function BrandNegotiationScreen({ route, navigation }) {
           </View>
           <Text style={s.arrow}>→</Text>
           <View style={[s.summaryBox, s.summaryBoxCurrent]}>
-            <Text style={[s.summaryLabel, { color: P.yellowText }]}>LATEST</Text>
-            <Text style={[s.summaryValue, { color: P.yellowText }]}>
+            <Text style={[s.summaryLabel, { color: P.ink }]}>LATEST</Text>
+            <Text style={[s.summaryValue, { color: P.ink }]}>
               {renderProposal(negotiation.current_fee, negotiation.current_commission_pct)}
             </Text>
           </View>
@@ -235,7 +234,7 @@ export default function BrandNegotiationScreen({ route, navigation }) {
                   style={[s.turnBubble, isBrand ? s.turnBrand : s.turnInfluencer]}
                 >
                   <View style={s.turnHeader}>
-                    <Text style={[s.turnAuthor, { color: isBrand ? P.yellowText : P.ink2 }]}>
+                    <Text style={[s.turnAuthor, { color: isBrand ? P.ink : P.ink2 }]}>
                       {isBrand ? 'YOU (BRAND)' : (influencerName || negotiation.influencer_name || 'INFLUENCER').toUpperCase()}
                     </Text>
                     <Text style={s.turnAction}>Counter Offer</Text>
@@ -323,7 +322,7 @@ export default function BrandNegotiationScreen({ route, navigation }) {
               activeOpacity={0.85}
             >
               {submitting ? (
-                <ActivityIndicator color={P.yellow} size="small" />
+                <ActivityIndicator color={P.white} size="small" />
               ) : (
                 <Text style={s.sendCounterBtnText}>SEND COUNTER OFFER</Text>
               )}
@@ -356,22 +355,23 @@ const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
   emptyIcon: { fontFamily: fonts.displayBold, fontSize: 36, fontWeight: '800', color: P.dangerText, marginBottom: 8 },
   emptyText: { fontFamily: fonts.sansBold, fontSize: 14, fontWeight: '600', color: P.muted },
-  backFallback: { marginTop: 16, backgroundColor: P.yellow, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
-  backFallbackText: { fontFamily: fonts.sansBold, color: P.ink, fontWeight: '800', fontSize: 14 },
+  backFallback: { marginTop: 16, backgroundColor: P.ink, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 },
+  backFallbackText: { fontFamily: fonts.sansBold, color: P.white, fontWeight: '800', fontSize: 14 },
 
   header: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 52,
     paddingBottom: 16,
     paddingHorizontal: 16,
     gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
   headerBack: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  headerBackText: { fontFamily: fonts.monoBold, fontSize: 22, fontWeight: '700', color: P.white },
-  headerTitle: { fontFamily: fonts.displayBold, fontSize: 18, fontWeight: '800', color: P.white, letterSpacing: -0.2 },
-  headerRule: { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 4, marginBottom: 4 },
+  headerBackText: { fontFamily: fonts.monoBold, fontSize: 22, fontWeight: '700', color: P.ink },
+  headerTitle: { fontFamily: fonts.displayBold, fontSize: 18, fontWeight: '800', color: P.ink, letterSpacing: -0.2 },
   headerSub: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.7)' },
   headerSub2: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
 
@@ -381,7 +381,7 @@ const s = StyleSheet.create({
     borderRadius: 14, padding: 12, borderWidth: 1, borderColor: P.border, gap: 8,
   },
   summaryBox: { flex: 1, alignItems: 'center', backgroundColor: P.bg2, borderRadius: 10, padding: 10 },
-  summaryBoxCurrent: { backgroundColor: P.yellowPale },
+  summaryBoxCurrent: { backgroundColor: P.bg2 },
   summaryLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted2, letterSpacing: 0.5, marginBottom: 2 },
   summaryValue: { fontFamily: fonts.monoBold, fontSize: 13, fontWeight: '800', color: P.ink, textAlign: 'center' },
   arrow: { fontFamily: fonts.monoBold, fontSize: 14, fontWeight: '700', color: P.muted2 },
@@ -392,7 +392,7 @@ const s = StyleSheet.create({
   emptyThreadText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2 },
 
   turnBubble: { marginBottom: 10, padding: 11, borderRadius: 14, borderWidth: 1 },
-  turnBrand: { backgroundColor: P.yellow50, borderColor: P.yellowPale, marginLeft: 35 },
+  turnBrand: { backgroundColor: P.bg2, borderColor: P.bg2, marginLeft: 35 },
   turnInfluencer: { backgroundColor: P.white, borderColor: P.border, marginRight: 35 },
   turnHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
   turnAuthor: { fontFamily: fonts.monoBold, fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
@@ -422,10 +422,10 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  sendCounterBtnText: { fontFamily: fonts.monoBold, color: P.yellow, fontWeight: '800', fontSize: 13, letterSpacing: 0.3 },
+  sendCounterBtnText: { fontFamily: fonts.monoBold, color: P.white, fontWeight: '800', fontSize: 13, letterSpacing: 0.3 },
 
-  waitingPanel: { backgroundColor: P.yellowPale, padding: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: P.yellow },
-  waitingText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.yellowText, fontWeight: '600' },
+  waitingPanel: { backgroundColor: P.warnPale, padding: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: P.warn },
+  waitingText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.warnText, fontWeight: '600' },
   closedPanel: { backgroundColor: P.bg2, padding: 14, alignItems: 'center', borderTopWidth: 1, borderTopColor: P.border },
   closedText: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted, textAlign: 'center', lineHeight: 18 },
 });

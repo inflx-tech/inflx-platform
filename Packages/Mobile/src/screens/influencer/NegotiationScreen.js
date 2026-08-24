@@ -238,7 +238,7 @@ export default function NegotiationScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={16} color={P.muted2} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Negotiation</Text>
@@ -251,7 +251,6 @@ export default function NegotiationScreen({ navigation, route }) {
         {negotiation.campaign_name && (
           <Text style={styles.headerCampaign}>{negotiation.campaign_name}</Text>
         )}
-        <View style={styles.headerRule} />
       </View>
 
       {/* Original vs Current */}
@@ -465,15 +464,14 @@ const styles = StyleSheet.create({
   emptyText: { fontFamily: fonts.displayBold, fontSize: 16, fontWeight: '800', color: P.ink, marginBottom: 6 },
   emptySubtext: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted, textAlign: 'center', lineHeight: 18, marginBottom: 20 },
 
-  // Header (ink topbar with yellow rule)
-  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 18, position: 'relative' },
-  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  // Header (white topbar, ink text, hairline rule)
+  header: { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 18, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
-  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)', fontWeight: '700' },
-  headerTitle: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white },
+  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.muted2, fontWeight: '700' },
+  headerTitle: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.ink },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  headerBrand: { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.4, fontWeight: '700' },
-  headerCampaign: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
+  headerBrand: { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, fontWeight: '700' },
+  headerCampaign: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted2, marginTop: 3 },
 
   // Card
   card: {
@@ -507,15 +505,15 @@ const styles = StyleSheet.create({
 
   // Turn-info banner
   turnInfo: {
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     borderRadius: 10,
     paddingVertical: 9,
     paddingHorizontal: 13,
     alignItems: 'center',
   },
-  turnInfoLabel: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText, textTransform: 'uppercase', letterSpacing: 0.3 },
+  turnInfoLabel: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.ink, textTransform: 'uppercase', letterSpacing: 0.3 },
 
-  // Turn bubbles (L=bg2 brand · R=yellowPale influencer)
+  // Turn bubbles (L=bg2 brand · R=warnPale influencer)
   noTurnsText: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted2 },
   turnBubble: {
     marginBottom: 10,
@@ -529,8 +527,8 @@ const styles = StyleSheet.create({
     marginRight: 36,
   },
   turnBubbleRight: {
-    backgroundColor: P.yellowPale,
-    borderColor: '#F0DA88',
+    backgroundColor: P.bg2,
+    borderColor: P.border,
     marginLeft: 36,
   },
   turnHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
@@ -582,7 +580,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
-  acceptBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2 },
+  acceptBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, fontWeight: '900', color: P.white, textTransform: 'uppercase', letterSpacing: 0.2 },
   counterSection: { marginBottom: 14 },
   counterLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted2, marginBottom: 9, textTransform: 'uppercase', letterSpacing: 0.4 },
   inputWrap: {
@@ -615,7 +613,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
   },
-  counterBtnText: { fontFamily: fonts.displayBlack, fontSize: 13, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2 },
+  counterBtnText: { fontFamily: fonts.displayBlack, fontSize: 13, fontWeight: '900', color: P.white, textTransform: 'uppercase', letterSpacing: 0.2 },
   declineBtn: {
     backgroundColor: P.dangerPale,
     borderRadius: 12,
@@ -639,5 +637,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 22,
   },
-  backBtnText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.yellow, letterSpacing: 0.3 },
+  backBtnText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.white, letterSpacing: 0.3 },
 });

@@ -34,9 +34,9 @@ function ReadOnlyRow({ label, value, valueStyle }) {
  * ProfileScreen — settings hub with 3 inline edit modes.
  *
  * Flow 35 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
- * Yellow avatar tile with ink Outfit-Black initials (matches Flow 32 MyStore).
+ * Ink avatar tile with white Outfit-Black initials (matches Flow 32 MyStore).
  * 📨📝 doc-row emojis replaced with MCI email-outline + file-document-outline
- * in yellowPale tiles per locked design call #2.
+ * in neutral tiles per locked design call #2.
  * Push toggle "ON" track = success-green per locked design call #4.
  * All 3 edit modes + UPI XOR Bank XOR PAN validation preserved verbatim.
  */
@@ -215,19 +215,19 @@ export default function ProfileScreen({ navigation }) {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={styles.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
 
   const statusColor = {
     approved: P.success,
-    pending: P.yellow,
+    pending: P.warn,
     rejected: P.danger,
     suspended: P.danger,
   }[profile?.user_status] || P.muted3;
 
   const statusTextColor = {
     approved: P.successText,
-    pending: P.yellowText,
+    pending: P.warnText,
     rejected: P.dangerText,
     suspended: P.dangerText,
   }[profile?.user_status] || P.muted;
@@ -284,7 +284,7 @@ export default function ProfileScreen({ navigation }) {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}
     >
       {/* ── Ink header with avatar ── */}
       <View style={styles.header}>
@@ -295,7 +295,7 @@ export default function ProfileScreen({ navigation }) {
           <TouchableOpacity onPress={pickPhoto} disabled={photoBusy} activeOpacity={0.75}>
             <View style={styles.avatar}>
               {photoBusy ? (
-                <ActivityIndicator color={P.ink} />
+                <ActivityIndicator color={P.white} />
               ) : profile?.profile_image_url ? (
                 <Image source={{ uri: profile.profile_image_url }} style={styles.avatarImg} />
               ) : (
@@ -319,7 +319,6 @@ export default function ProfileScreen({ navigation }) {
             </View>
           </View>
         </View>
-        <View style={styles.headerAccent} />
       </View>
 
       {/* ── Instagram Stats (read-only, from Apify) ── */}
@@ -371,7 +370,7 @@ export default function ProfileScreen({ navigation }) {
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}
               onPress={saveProfile} disabled={saving}
             >
-              {saving ? <ActivityIndicator color={P.yellow} /> : <Text style={styles.saveBtnText}>SAVE PROFILE INFO</Text>}
+              {saving ? <ActivityIndicator color={P.white} /> : <Text style={styles.saveBtnText}>SAVE PROFILE INFO</Text>}
             </TouchableOpacity>
           </>
         ) : (
@@ -444,7 +443,7 @@ export default function ProfileScreen({ navigation }) {
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}
               onPress={saveContent} disabled={saving}
             >
-              {saving ? <ActivityIndicator color={P.yellow} /> : <Text style={styles.saveBtnText}>SAVE CONTENT PREFERENCES</Text>}
+              {saving ? <ActivityIndicator color={P.white} /> : <Text style={styles.saveBtnText}>SAVE CONTENT PREFERENCES</Text>}
             </TouchableOpacity>
           </>
         ) : (
@@ -514,7 +513,7 @@ export default function ProfileScreen({ navigation }) {
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}
               onPress={saveBank} disabled={saving}
             >
-              {saving ? <ActivityIndicator color={P.yellow} /> : <Text style={styles.saveBtnText}>SAVE PAYMENT DETAILS</Text>}
+              {saving ? <ActivityIndicator color={P.white} /> : <Text style={styles.saveBtnText}>SAVE PAYMENT DETAILS</Text>}
             </TouchableOpacity>
           </>
         ) : (
@@ -578,7 +577,7 @@ export default function ProfileScreen({ navigation }) {
           style={styles.docRow}
           onPress={() => navigation.navigate('ProposalsHub')}>
           <View style={styles.docIco}>
-            <Icon name="email-outline" size={18} color={P.yellowText} />
+            <Icon name="email-outline" size={18} color={P.ink} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.docLabel}>Find brands to pitch</Text>
@@ -590,7 +589,7 @@ export default function ProfileScreen({ navigation }) {
           style={[styles.docRow, { borderTopWidth: 1, borderTopColor: P.borderSoft, marginTop: 4 }]}
           onPress={() => navigation.navigate('MyContracts')}>
           <View style={styles.docIco}>
-            <Icon name="file-document-outline" size={18} color={P.yellowText} />
+            <Icon name="file-document-outline" size={18} color={P.ink} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.docLabel}>My Contracts</Text>
@@ -610,7 +609,7 @@ export default function ProfileScreen({ navigation }) {
           style={styles.docRow}
           onPress={() => navigation.navigate('LegalList')}>
           <View style={styles.docIco}>
-            <Icon name="shield-check-outline" size={18} color={P.yellowText} />
+            <Icon name="shield-check-outline" size={18} color={P.ink} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.docLabel}>Legal &amp; Policies</Text>
@@ -634,28 +633,27 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 
-  // Ink header
-  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  // White header
+  header: { backgroundColor: P.white, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   headerTitle: {
-    fontSize: 20, fontWeight: '900', color: P.white, marginBottom: 16,
+    fontSize: 20, fontWeight: '900', color: P.ink, marginBottom: 16,
     letterSpacing: -0.3, fontFamily: fonts.displayBlack,
   },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
     width: 56, height: 56, borderRadius: 28,
     overflow: 'hidden',
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarImg: { width: 56, height: 56, borderRadius: 28 },
-  photoHint: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.yellow, textAlign: 'center', marginTop: 5, letterSpacing: 0.3 },
-  avatarText: { fontSize: 22, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
-  handle: { fontSize: 16, fontWeight: '800', color: P.white, fontFamily: fonts.displayBold },
-  nameText: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  photoHint: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted2, textAlign: 'center', marginTop: 5, letterSpacing: 0.3 },
+  avatarText: { fontSize: 22, fontWeight: '900', color: P.white, fontFamily: fonts.displayBlack },
+  handle: { fontSize: 16, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  nameText: { fontSize: 11, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
   statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  statusText: { fontSize: 10, color: P.muted2, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
   // Stats bar
   statsRow: {
@@ -728,24 +726,24 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: P.ink, borderColor: P.ink },
   chipText: { fontSize: 10, color: P.muted, fontWeight: '700', textTransform: 'capitalize', fontFamily: fonts.monoMedium },
-  chipTextActive: { color: P.yellow, fontWeight: '900', fontFamily: fonts.monoBold },
+  chipTextActive: { color: P.white, fontWeight: '900', fontFamily: fonts.monoBold },
 
-  // Save button — ink + yellow Outfit-Black UPPERCASE
+  // Save button — ink + white Outfit-Black UPPERCASE
   saveBtn: {
     backgroundColor: P.ink, borderRadius: 12,
     paddingVertical: 13, alignItems: 'center', marginTop: 12,
   },
   saveBtnText: {
-    fontSize: 13, fontWeight: '900', color: P.yellow,
+    fontSize: 13, fontWeight: '900', color: P.white,
     letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack,
   },
 
-  // Warning / info boxes — yellowPale per design call
+  // Warning / info boxes — warnPale (state) per design call
   warningBox: {
-    backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, marginTop: 8,
-    borderWidth: 1, borderColor: '#F0DA88',
+    backgroundColor: P.warnPale, borderRadius: 10, padding: 11, marginTop: 8,
+    borderWidth: 1, borderColor: P.warn,
   },
-  warningText: { fontSize: 10.5, color: P.yellowText, lineHeight: 16, fontFamily: fonts.sansRegular },
+  warningText: { fontSize: 10.5, color: P.warnText, lineHeight: 16, fontFamily: fonts.sansRegular },
   tdsInfoBox: {
     backgroundColor: P.infoPale, borderRadius: 10, padding: 11, marginTop: 8,
     borderWidth: 1, borderColor: '#BFD9F2',
@@ -758,11 +756,11 @@ const styles = StyleSheet.create({
   settingLabel: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
   settingDesc: { fontSize: 10.5, color: P.muted2, marginTop: 2, fontFamily: fonts.sansRegular },
 
-  // Doc rows — yellowPale MCI tiles
+  // Doc rows — neutral MCI tiles
   docRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
   docIco: {
     width: 36, height: 36, borderRadius: 9,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   docLabel: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },

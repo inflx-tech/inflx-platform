@@ -18,8 +18,10 @@ describe('collabs-list modules load', () => {
 
   it('exports are the expected shapes', () => {
     const { ig, IG_TONE } = require('../../../theme/ig');
-    expect(ig.y).toBe('#FFC107');
-    expect(IG_TONE.you.dot).toBe('#FFC107');
+    // De-yellow pass: the 'your turn' signal moved off brand yellow (#FFC107)
+    // onto amber. Same token, same role — the asserted value tracks the design.
+    expect(ig.y).toBe('#EA580C');
+    expect(IG_TONE.you.dot).toBe('#EA580C');
     expect(typeof require('../CollabsListScreen').default).toBe('function');
     expect(typeof require('../CollabDetailScreen').default).toBe('function');
     expect(typeof require('../../../components/collabs/StageTabs').default).toBe('function');

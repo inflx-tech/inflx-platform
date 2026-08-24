@@ -258,7 +258,6 @@ export default function BrandContractScreen({ route, navigation }) {
             <StatusPill status={status} />
           </View>
         </View>
-        <View style={styles.headerRule} />
       </View>
 
       <ScrollView
@@ -373,7 +372,7 @@ export default function BrandContractScreen({ route, navigation }) {
                           onPress={() => setClauseValue(c.id, opt)}
                           style={[styles.optionChip, cur.value === opt && styles.optionChipOn]}
                         >
-                          <Text style={[styles.optionChipText, cur.value === opt && { color: P.yellow }]}>
+                          <Text style={[styles.optionChipText, cur.value === opt && { color: P.white }]}>
                             {opt} {c.optionLabel || ''}
                           </Text>
                         </TouchableOpacity>
@@ -587,7 +586,7 @@ export default function BrandContractScreen({ route, navigation }) {
             disabled={disabled}
           >
             {submitting
-              ? <ActivityIndicator color={P.yellow} />
+              ? <ActivityIndicator color={P.white} />
               : walletShort
               ? <Text style={styles.actionBtnText}>Top up wallet to send</Text>
               : <Text style={styles.actionBtnText}>
@@ -603,15 +602,15 @@ export default function BrandContractScreen({ route, navigation }) {
             disabled={submitting}
           >
             {submitting
-              ? <ActivityIndicator color={P.yellow} />
+              ? <ActivityIndicator color={P.white} />
               : <Text style={styles.actionBtnText}>Counter-sign Contract</Text>}
           </TouchableOpacity>
         )}
         {/* "Waiting on influencer" banner — only after they've actually signed,
             since editable pending_influencer is handled above. */}
         {isPendingInf && contract.influencer_signed_at && (
-          <View style={[styles.card, { backgroundColor: P.yellowPale, borderColor: '#F0DA88' }]}>
-            <Text style={[styles.cardTitle, { color: P.yellowText }]}>\u23F3 Waiting on Influencer</Text>
+          <View style={[styles.card, { backgroundColor: P.bg2, borderColor: P.border }]}>
+            <Text style={[styles.cardTitle, { color: P.warnText }]}>\u23F3 Waiting on Influencer</Text>
             <Text style={styles.helpText}>You sent the contract. The influencer will get a notification to review and sign.</Text>
           </View>
         )}
@@ -650,23 +649,22 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, fontFamily: fonts.sansMedium },
   emptyText:   { fontSize: 14, color: P.muted, marginBottom: 16, fontFamily: fonts.sansMedium },
   backBtn:     { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: P.ink, borderRadius: 10 },
-  backBtnText: { color: P.yellow, fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800' },
+  backBtnText: { color: P.white, fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800' },
 
-  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 16, position: 'relative' },
+  header: { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 16, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back:   { marginBottom: 8 },
-  backText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontFamily: fonts.monoBold, fontWeight: '700' },
+  backText: { fontSize: 11, color: P.muted2, fontFamily: fonts.monoBold, fontWeight: '700' },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: P.white, fontFamily: fonts.displayBold, letterSpacing: -0.2 },
-  headerSub:   { fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3, fontFamily: fonts.sansMedium },
-  statusPillWrap: { backgroundColor: 'rgba(255,255,255,0.92)', padding: 3, borderRadius: 999, marginTop: 2 },
-  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold, letterSpacing: -0.2 },
+  headerSub:   { fontSize: 11.5, color: P.muted2, marginTop: 3, fontFamily: fonts.sansMedium },
+  statusPillWrap: { backgroundColor: P.bg2, padding: 3, borderRadius: 999, marginTop: 2 },
 
   draftBanner: {
-    margin: 14, padding: 13, backgroundColor: P.yellowPale,
-    borderRadius: 12, borderWidth: 1, borderColor: '#F0DA88',
+    margin: 14, padding: 13, backgroundColor: P.warnPale,
+    borderRadius: 12, borderWidth: 1, borderColor: P.warn,
   },
-  draftTitle: { fontSize: 13, fontWeight: '800', color: P.yellowText, marginBottom: 5, fontFamily: fonts.displayBold },
-  draftBody:  { fontSize: 11.5, color: P.yellowText, lineHeight: 17, fontFamily: fonts.sansMedium },
+  draftTitle: { fontSize: 13, fontWeight: '800', color: P.warnText, marginBottom: 5, fontFamily: fonts.displayBold },
+  draftBody:  { fontSize: 11.5, color: P.warnText, lineHeight: 17, fontFamily: fonts.sansMedium },
 
   card: {
     margin: 14, marginBottom: 0, padding: 14,
@@ -731,7 +729,7 @@ const styles = StyleSheet.create({
     borderRadius: 12, alignItems: 'center',
   },
   actionBtnDisabled: { opacity: 0.5 },
-  actionBtnText: { color: P.yellow, fontSize: 14, fontWeight: '900', fontFamily: fonts.displayBlack, letterSpacing: 0.2 },
+  actionBtnText: { color: P.white, fontSize: 14, fontWeight: '900', fontFamily: fonts.displayBlack, letterSpacing: 0.2 },
   pdfBtn: {
     marginHorizontal: 14, marginTop: 12, borderRadius: 11, paddingVertical: 11,
     alignItems: 'center', backgroundColor: P.white, borderWidth: 1.5, borderColor: P.ink,
@@ -1272,14 +1270,14 @@ function BrandProductionPanel({ contractId }) {
 const pmStyles = StyleSheet.create({
   carried: { fontSize: 11, fontWeight: '700', color: '#1A7F52', marginTop: 8, lineHeight: 16 },
   loadingBox: { padding: 24, alignItems: 'center' },
-  panel:      { marginHorizontal: 14, marginTop: 12, padding: 13, borderRadius: 14, backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.border },
+  panel:      { marginHorizontal: 14, marginTop: 12, padding: 13, borderRadius: 14, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border },
   panelHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   panelTitle: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold, textTransform: 'uppercase', letterSpacing: 0.3, flex: 1 },
-  panelIco:   { fontFamily: fonts.monoBold, fontSize: 10, color: P.yellow, backgroundColor: P.ink, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', letterSpacing: 0.4, textTransform: 'none' },
+  panelIco:   { fontFamily: fonts.monoBold, fontSize: 10, color: P.white, backgroundColor: P.ink, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', letterSpacing: 0.4, textTransform: 'none' },
 
   remoteBox:   { marginHorizontal: 14, marginTop: 12, padding: 18, borderRadius: 14, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border, alignItems: 'center' },
-  remoteTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 4, fontFamily: fonts.displayBold, textAlign: 'center' },
-  remoteIco:   { fontFamily: fonts.monoBold, fontSize: 11, color: P.ink, backgroundColor: P.yellow, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, overflow: 'hidden', letterSpacing: 0.4 },
+  remoteTitle: { fontSize: 14, fontWeight: '800', color: P.white, marginBottom: 4, fontFamily: fonts.displayBold, textAlign: 'center' },
+  remoteIco:   { fontFamily: fonts.monoBold, fontSize: 11, color: P.white, backgroundColor: P.ink, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, overflow: 'hidden', letterSpacing: 0.4 },
   remoteBody:  { fontSize: 11, color: P.muted, textAlign: 'center', lineHeight: 16, fontFamily: fonts.sansMedium },
 
   fieldLabel: { fontSize: 9.5, fontWeight: '800', color: P.muted, marginTop: 9, marginBottom: 4, fontFamily: fonts.monoBold, textTransform: 'uppercase', letterSpacing: 0.4 },
@@ -1289,10 +1287,10 @@ const pmStyles = StyleSheet.create({
   windowChip: { paddingHorizontal: 10, paddingVertical: 5, backgroundColor: P.white, borderRadius: 14, borderWidth: 1, borderColor: P.border },
   windowChipActive: { backgroundColor: P.ink, borderColor: P.ink },
   windowChipTxt: { fontSize: 10, fontWeight: '800', color: P.muted2, fontFamily: fonts.monoBold },
-  windowChipTxtActive: { color: P.yellow },
+  windowChipTxtActive: { color: P.white },
 
   primaryBtn:    { marginTop: 10, paddingVertical: 11, backgroundColor: P.ink, borderRadius: 10, alignItems: 'center' },
-  primaryBtnTxt: { color: P.yellow, fontSize: 12, fontWeight: '800', fontFamily: fonts.displayBold, letterSpacing: 0.2 },
+  primaryBtnTxt: { color: P.white, fontSize: 12, fontWeight: '800', fontFamily: fonts.displayBold, letterSpacing: 0.2 },
   primaryBtnAlt: { marginTop: 7, paddingVertical: 11, backgroundColor: P.success, borderRadius: 10, alignItems: 'center' },
   primaryBtnAltTxt: { color: P.white, fontSize: 12, fontWeight: '800', fontFamily: fonts.displayBold },
   secondaryBtn:  { marginTop: 7, paddingVertical: 10, backgroundColor: P.white, borderRadius: 10, borderWidth: 1.5, borderColor: P.ink, alignItems: 'center' },
@@ -1301,17 +1299,17 @@ const pmStyles = StyleSheet.create({
   linkBtnTxt:    { color: P.muted, fontSize: 10.5, fontWeight: '700', textDecorationLine: 'underline', fontFamily: fonts.monoBold },
   smallNote:     { fontSize: 9.5, color: P.muted2, marginTop: 5, textAlign: 'center', fontFamily: fonts.monoMedium },
   helpHeader:    { fontSize: 11, color: P.muted, marginBottom: 4, lineHeight: 16, fontFamily: fonts.sansMedium },
-  dateHint:      { fontSize: 9.5, color: P.yellowText, marginTop: 4, marginBottom: 4, textAlign: 'center', fontWeight: '700', fontFamily: fonts.monoBold, backgroundColor: P.yellowPale, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
+  dateHint:      { fontSize: 9.5, color: P.warnText, marginTop: 4, marginBottom: 4, textAlign: 'center', fontWeight: '700', fontFamily: fonts.monoBold, backgroundColor: P.warnPale, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
 
   slotCard:      { padding: 11, backgroundColor: P.white, borderRadius: 10, borderWidth: 1.5, borderColor: P.success, marginVertical: 4 },
   slotLabel:     { fontSize: 9.5, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fonts.monoBold, letterSpacing: 0.4 },
   slotTime:      { fontSize: 15, fontWeight: '800', color: P.ink, marginBottom: 3, fontFamily: fonts.displayBold },
   slotMeta:      { fontSize: 10.5, color: P.muted, fontFamily: fonts.monoMedium },
 
-  flipBanner:    { backgroundColor: P.yellowPale, borderRadius: 10, padding: 10, marginBottom: 9, borderWidth: 1, borderColor: '#F0DA88' },
+  flipBanner:    { backgroundColor: P.warnPale, borderRadius: 10, padding: 10, marginBottom: 9, borderWidth: 1, borderColor: P.warn },
   flipBannerTxt: { fontSize: 11, color: P.ink2, lineHeight: 15, marginBottom: 7, fontFamily: fonts.sansMedium },
   flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 11, paddingVertical: 5, backgroundColor: P.ink, borderRadius: 7 },
-  flipConfirmBtnTxt: { color: P.yellow, fontSize: 10, fontWeight: '800', fontFamily: fonts.monoBold },
+  flipConfirmBtnTxt: { color: P.white, fontSize: 10, fontWeight: '800', fontFamily: fonts.monoBold },
 
   addrBox:    { padding: 10, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 9 },
   addrLabel:  { fontSize: 9, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fonts.monoBold, letterSpacing: 0.4 },
@@ -1330,9 +1328,9 @@ const pmStyles = StyleSheet.create({
   // Mode picker (mono-bracket icons — used inline in editing card AND in setup-production picker)
   modeRow:        { flexDirection: 'row', gap: 7, marginTop: 6 },
   modeCard:       { flex: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', backgroundColor: P.white, borderRadius: 11, borderWidth: 2, borderColor: P.border },
-  modeCardActive: { borderColor: P.ink, backgroundColor: P.yellowPale },
+  modeCardActive: { borderColor: P.ink, backgroundColor: P.bg2 },
   modeIcon:       { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, backgroundColor: P.bg2, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5, overflow: 'hidden', letterSpacing: 0.4 },
-  modeIconActive: { backgroundColor: P.ink, color: P.yellow },
+  modeIconActive: { backgroundColor: P.ink, color: P.white },
   modeLabel:      { fontSize: 11, fontWeight: '800', color: P.muted2, marginTop: 6, fontFamily: fonts.displayBold },
   modeLabelActive:{ color: P.ink },
 });

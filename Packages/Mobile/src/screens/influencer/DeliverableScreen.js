@@ -374,7 +374,7 @@ const s = StyleSheet.create({
 
   media: { width: '100%', height: 200, borderRadius: 11, backgroundColor: ig.bgSoft, marginBottom: 8 },
   videoBox: { backgroundColor: ig.text, borderRadius: 11, padding: 28, alignItems: 'center' },
-  videoTxt: { fontSize: 11, color: ig.y, fontWeight: '700', marginTop: 7 },
+  videoTxt: { fontSize: 11, color: ig.bg, fontWeight: '700', marginTop: 7 },
   videoSel: { backgroundColor: ig.bgSoft, borderRadius: 10, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: ig.line, marginBottom: 8 },
   videoSelTxt: { fontSize: 11.5, color: ig.text, fontWeight: '700', marginTop: 8 },
   videoSelSub: { fontSize: 10, color: ig.mut, marginTop: 3 },
@@ -429,12 +429,12 @@ const s = StyleSheet.create({
   sb: { width: '31.5%', backgroundColor: ig.bgSoft, borderRadius: 10, padding: 10, alignItems: 'center' },
   sv: { fontSize: 15, fontWeight: '900', color: ig.text },
   sl: { fontSize: 8, fontWeight: '800', color: ig.mut, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3 },
-  erBox: { backgroundColor: ig.yBg, borderRadius: 10, padding: 10, marginTop: 8, alignItems: 'center', borderWidth: 1, borderColor: '#F0DA88' },
+  erBox: { backgroundColor: ig.yBg, borderRadius: 10, padding: 10, marginTop: 8, alignItems: 'center', borderWidth: 1, borderColor: ig.y },
   erV: { fontSize: 20, fontWeight: '900', color: ig.yInk },
   erL: { fontSize: 8.5, fontWeight: '800', color: ig.yInk, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
 
   celCard: { alignItems: 'center', borderWidth: 1, borderColor: ig.line, borderRadius: 13, padding: 20, marginBottom: 10 },
-  celTile: { width: 54, height: 54, borderRadius: 13, backgroundColor: ig.y, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  celTile: { width: 54, height: 54, borderRadius: 13, backgroundColor: ig.text, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   celT: { fontSize: 16, fontWeight: '900', color: ig.text, marginBottom: 5 },
   celS: { fontSize: 11.5, color: ig.mut, textAlign: 'center', lineHeight: 16 },
 });

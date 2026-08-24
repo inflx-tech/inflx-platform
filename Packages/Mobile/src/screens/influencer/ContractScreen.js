@@ -154,7 +154,7 @@ export default function ContractScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={P.yellow} />
+        <ActivityIndicator size="large" color={P.ink} />
         <Text style={styles.loadingText}>Loading contract…</Text>
       </View>
     );
@@ -194,7 +194,7 @@ export default function ContractScreen({ navigation, route }) {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={14} color={P.muted2} />
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
@@ -206,7 +206,6 @@ export default function ContractScreen({ navigation, route }) {
             <StatusPill status={contract.status} />
           </View>
         </View>
-        <View style={styles.headerAccent} />
       </View>
 
       {/* ── Contract Active Banner ──────────────────────────────────────── */}
@@ -469,7 +468,7 @@ export default function ContractScreen({ navigation, route }) {
             </View>
 
             <View style={styles.trancheRow}>
-              <View style={[styles.trancheDot, { backgroundColor: P.yellow }]} />
+              <View style={[styles.trancheDot, { backgroundColor: P.warn }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
                 <Text style={styles.trancheDesc}>Released when content goes live</Text>
@@ -621,7 +620,7 @@ export default function ContractScreen({ navigation, route }) {
               disabled={signing}
             >
               {signing ? (
-                <ActivityIndicator color={P.yellow} />
+                <ActivityIndicator color={P.white} />
               ) : (
                 <Text style={styles.signBtnText}>SIGN CONTRACT</Text>
               )}
@@ -698,7 +697,7 @@ export default function ContractScreen({ navigation, route }) {
                 disabled={signing || !typedName.trim()}
               >
                 {signing ? (
-                  <ActivityIndicator color={P.yellow} />
+                  <ActivityIndicator color={P.white} />
                 ) : (
                   <Text style={styles.signBtnText}>SIGN NOW</Text>
                 )}
@@ -854,7 +853,7 @@ function InfluencerProductionPanel({ contractId }) {
     ]);
   }
 
-  if (loading) return <View style={ipStyles.loading}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={ipStyles.loading}><ActivityIndicator color={P.ink} /></View>;
   if (mode === 'remote') {
     return (
       <View style={ipStyles.remoteBox}>
@@ -1148,7 +1147,7 @@ const ipStyles = StyleSheet.create({
 
   actionRow:    { flexDirection: 'row', gap: 8, marginTop: 8 },
   primaryBtn:   { flex: 1, paddingVertical: 12, backgroundColor: P.ink, borderRadius: 10, alignItems: 'center', marginTop: 8 },
-  primaryTxt:   { color: P.yellow, fontSize: 12, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  primaryTxt:   { color: P.white, fontSize: 12, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
   altBtn:       { flex: 1, paddingVertical: 12, backgroundColor: P.white, borderRadius: 10, alignItems: 'center', marginTop: 8, borderWidth: 1.5, borderColor: P.ink },
   altTxt:       { color: P.ink, fontSize: 12, fontWeight: '800', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBold },
 
@@ -1163,10 +1162,10 @@ const ipStyles = StyleSheet.create({
   linkBtn:      { marginTop: 8, paddingVertical: 8, alignItems: 'center' },
   linkBtnTxt:   { color: P.muted2, fontSize: 11, fontWeight: '700', textDecorationLine: 'underline', fontFamily: fonts.sansRegular },
 
-  flipBanner:   { backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, marginBottom: 10, borderWidth: 1, borderColor: '#F0DA88' },
+  flipBanner:   { backgroundColor: P.warnPale, borderRadius: 10, padding: 11, marginBottom: 10, borderWidth: 1, borderColor: P.warn },
   flipBannerTxt:{ fontSize: 11, color: P.ink, lineHeight: 15, marginBottom: 8, fontFamily: fonts.sansRegular },
   flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 7, backgroundColor: P.ink, borderRadius: 8 },
-  flipConfirmBtnTxt: { color: P.yellow, fontSize: 11, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  flipConfirmBtnTxt: { color: P.white, fontSize: 11, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 
   completeTxt:  { fontSize: 12, color: P.successText, fontWeight: '800', marginTop: 8, textAlign: 'center', fontFamily: fonts.displayBold },
 
@@ -1183,16 +1182,15 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },
   errorText: { fontSize: 14, color: P.muted, marginBottom: 16, fontFamily: fonts.sansRegular },
   goBackBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: P.ink, borderRadius: 12 },
-  goBackBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  goBackBtnText: { fontSize: 13, fontWeight: '900', color: P.white, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
-  // Header — ink + yellow rule
-  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  // Header — white surface, ink text
+  header: { backgroundColor: P.white, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
-  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  backText: { fontSize: 10, color: P.muted2, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  title: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
-  sub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  title: { fontSize: 20, fontWeight: '900', color: P.ink, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  sub: { fontSize: 11, color: P.muted2, marginTop: 4, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
   // Banners
   activeBanner: { backgroundColor: P.success, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
@@ -1200,20 +1198,20 @@ const styles = StyleSheet.create({
   successBanner: { backgroundColor: P.successPale, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: P.success },
   successBannerText: { fontSize: 11, fontWeight: '800', color: P.successText, letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
-  // PDF button — ink + yellow
+  // PDF button — ink + white
   pdfBtn: { margin: 16, marginBottom: 0, backgroundColor: P.ink, paddingVertical: 13, borderRadius: 12, alignItems: 'center' },
-  pdfBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  pdfBtnText: { fontSize: 13, fontWeight: '900', color: P.white, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 
-  // Draft banner — yellowPale
-  draftBanner: { margin: 16, marginBottom: 0, padding: 14, backgroundColor: P.yellowPale, borderRadius: 12, borderWidth: 1, borderColor: '#F0DA88' },
-  draftBannerTitle: { fontSize: 13, fontWeight: '800', color: P.yellowText, marginBottom: 4, fontFamily: fonts.displayBold },
-  draftBannerBody: { fontSize: 12, color: P.yellowText, lineHeight: 17, fontFamily: fonts.sansRegular },
+  // Draft banner — warnPale (state)
+  draftBanner: { margin: 16, marginBottom: 0, padding: 14, backgroundColor: P.warnPale, borderRadius: 12, borderWidth: 1, borderColor: P.warn },
+  draftBannerTitle: { fontSize: 13, fontWeight: '800', color: P.warnText, marginBottom: 4, fontFamily: fonts.displayBold },
+  draftBannerBody: { fontSize: 12, color: P.warnText, lineHeight: 17, fontFamily: fonts.sansRegular },
 
-  // Clause highlight box — yellowPale
-  clauseHighlightBox: { margin: 16, marginBottom: 0, padding: 14, backgroundColor: P.yellowPale, borderRadius: 14, borderWidth: 1, borderColor: P.yellow },
-  clauseHighlightTitle: { fontSize: 13, fontWeight: '900', color: P.yellowText, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  // Clause highlight box — warnPale (state)
+  clauseHighlightBox: { margin: 16, marginBottom: 0, padding: 14, backgroundColor: P.warnPale, borderRadius: 14, borderWidth: 1, borderColor: P.warn },
+  clauseHighlightTitle: { fontSize: 13, fontWeight: '900', color: P.warnText, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
   clauseHighlightItem: { fontSize: 12.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
-  clauseHighlightDesc: { fontSize: 11, color: P.yellowText, lineHeight: 15, marginTop: 2, marginLeft: 12, fontFamily: fonts.sansRegular },
+  clauseHighlightDesc: { fontSize: 11, color: P.warnText, lineHeight: 15, marginTop: 2, marginLeft: 12, fontFamily: fonts.sansRegular },
 
   body: { flex: 1 },
 
@@ -1246,8 +1244,8 @@ const styles = StyleSheet.create({
   trancheTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4 },
   trancheTotalLabel: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
   trancheTotalValue: { fontSize: 18, fontWeight: '900', color: P.successText, fontFamily: fonts.monoBold },
-  tdsNote: { backgroundColor: P.yellowPale, borderRadius: 8, padding: 10, marginTop: 12, borderWidth: 1, borderColor: '#F0DA88' },
-  tdsText: { fontSize: 11, color: P.yellowText, lineHeight: 15, fontFamily: fonts.sansRegular },
+  tdsNote: { backgroundColor: P.warnPale, borderRadius: 8, padding: 10, marginTop: 12, borderWidth: 1, borderColor: P.warn },
+  tdsText: { fontSize: 11, color: P.warnText, lineHeight: 15, fontFamily: fonts.sansRegular },
 
   // Brief / Guidelines
   briefBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 12 },
@@ -1269,7 +1267,7 @@ const styles = StyleSheet.create({
   signHint: { fontSize: 11.5, color: P.muted, marginBottom: 12, lineHeight: 17, fontFamily: fonts.sansRegular },
   signBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   signBtnDisabled: { opacity: 0.5 },
-  signBtnText: { fontSize: 14, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  signBtnText: { fontSize: 14, fontWeight: '900', color: P.white, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 
   // Success state
   successState: { alignItems: 'center', paddingVertical: 8 },

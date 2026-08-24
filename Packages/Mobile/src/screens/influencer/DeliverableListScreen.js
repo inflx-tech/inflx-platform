@@ -60,7 +60,7 @@ function isOverdue(deadline) {
  *
  * Flow 33 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
  * JetBrains Mono fonts + StatusPill canonical map (replaces ad-hoc
- * StatusBadge). Yellow progress fill (matches Flow 31/32 pattern).
+ * StatusBadge). Ink progress fill (matches Flow 31/32 pattern).
  * 5 per-row CTA tints (warn/danger/info/success-pre/success-post-live).
  * DELIVERABLE_ICONS type emojis preserved verbatim per design call #4.
  */
@@ -146,24 +146,23 @@ export default function DeliverableListScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={14} color={P.muted2} />
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Deliverables</Text>
         <Text style={styles.headerSub}>
           {brand_name ? `${brand_name}` : ''}{brand_name && campaign_name ? ' — ' : ''}{campaign_name || ''}
         </Text>
-        <View style={styles.headerAccent} />
       </View>
 
       <ScrollView
         style={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}
       >
         {/* Loading state */}
         {loading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={P.yellow} />
+            <ActivityIndicator size="large" color={P.ink} />
             <Text style={styles.loadingText}>Loading deliverables…</Text>
           </View>
         )}
@@ -197,8 +196,8 @@ export default function DeliverableListScreen({ navigation, route }) {
 
             <View style={styles.statsRow}>
               {progress.needsAction > 0 && (
-                <View style={[styles.statChip, { backgroundColor: P.yellowPale }]}>
-                  <Text style={[styles.statChipText, { color: P.yellowText }]}>
+                <View style={[styles.statChip, { backgroundColor: P.bg2 }]}>
+                  <Text style={[styles.statChipText, { color: P.ink }]}>
                     {progress.needsAction} NEEDS ACTION
                   </Text>
                 </View>
@@ -324,7 +323,7 @@ export default function DeliverableListScreen({ navigation, route }) {
 
 // CTA tone palette
 const ctaStyles = {
-  warn:    { bg: { backgroundColor: P.yellowPale  }, fg: { color: P.yellowText  } },
+  warn:    { bg: { backgroundColor: P.warnPale  }, fg: { color: P.warnText  } },
   danger:  { bg: { backgroundColor: P.dangerPale  }, fg: { color: P.dangerText  } },
   info:    { bg: { backgroundColor: P.infoPale    }, fg: { color: P.info        } },
   success: { bg: { backgroundColor: P.successPale }, fg: { color: P.successText } },
@@ -338,15 +337,11 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: P.muted2, fontFamily: fonts.sansRegular },
 
   // Header
-  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerAccent: {
-    position: 'absolute', left: 18, bottom: 8, width: 30, height: 3,
-    backgroundColor: P.yellow, borderRadius: 2,
-  },
+  header: { backgroundColor: P.white, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 14 },
-  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
-  headerTitle: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
-  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: '700', fontFamily: fonts.monoMedium },
+  backText: { fontSize: 10, color: P.muted2, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: P.ink, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  headerSub: { fontSize: 11, color: P.muted2, marginTop: 3, fontWeight: '700', fontFamily: fonts.monoMedium },
 
   scrollContent: { flex: 1 },
 
@@ -372,7 +367,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 24,
   },
-  retryText: { fontSize: 12, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  retryText: { fontSize: 12, fontWeight: '900', color: P.white, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
   // Card
   card: {
@@ -404,7 +399,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     borderRadius: 4,
   },
   progressText: { fontSize: 11, color: P.muted, marginBottom: 11, fontWeight: '700', fontFamily: fonts.monoMedium },
@@ -438,7 +433,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   deliverableCardAction: {
-    borderColor: P.yellow,
+    borderColor: P.ink,
     borderWidth: 1.5,
   },
   deliverableCardOverdue: {

@@ -11,7 +11,7 @@ import StatusPill from '../../components/brand/StatusPill';
  *
  * Flow 34 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
  * JetBrains Mono fonts + StatusPill canonical (replaces StatusBadge).
- * Ink hero with yellow-mono "Available to Withdraw" amount per design call #1.
+ * White header with ink "Available to Withdraw" amount per design call #1.
  * MCI cellphone/bank method icons per design call #2 (replaces 📱/🏦).
  * TDS 10% client-side math preserved verbatim.
  */
@@ -76,13 +76,13 @@ export default function EarningsScreen() {
 
   function getGoalStyle(goal) {
     if (goal === 'conversion') return { bg: P.convPale, fg: P.conv };
-    return { bg: P.yellowPale, fg: P.yellowText };
+    return { bg: P.bg2, fg: P.ink };
   }
 
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}
     >
       {/* Hero */}
       <View style={styles.headerCard}>
@@ -107,7 +107,6 @@ export default function EarningsScreen() {
         <Text style={styles.heroNote}>
           Commission becomes yours 30 days after each sale, once it can no longer be returned.
         </Text>
-        <View style={styles.headerAccent} />
       </View>
 
       {/* Refer & Earn entry (Contract 4) */}
@@ -124,7 +123,7 @@ export default function EarningsScreen() {
       <View style={styles.sectionMargin}>
         <Text style={styles.sectionTitle}>Campaign Earnings</Text>
         {campaignLoading ? (
-          <ActivityIndicator size="small" color={P.yellow} style={{ marginVertical: 16 }} />
+          <ActivityIndicator size="small" color={P.ink} style={{ marginVertical: 16 }} />
         ) : campaignEarnings.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No campaign earnings yet</Text>
@@ -157,7 +156,7 @@ export default function EarningsScreen() {
                   </View>
                   <View style={styles.campaignStat}>
                     <Text style={styles.campaignStatLabel}>PENDING</Text>
-                    <Text style={[styles.campaignStatVal, { color: P.yellowText }]}>{fmtRupees(Math.round(c.total_pending))}</Text>
+                    <Text style={[styles.campaignStatVal, { color: P.warnText }]}>{fmtRupees(Math.round(c.total_pending))}</Text>
                   </View>
                   <View style={styles.campaignStat}>
                     <Text style={styles.campaignStatLabel}>TOTAL</Text>
@@ -165,7 +164,7 @@ export default function EarningsScreen() {
                   </View>
                 </View>
 
-                {/* Progress bar — success + yellow */}
+                {/* Progress bar — success + amber */}
                 <View style={styles.progressBarBg}>
                   <View style={[styles.progressBarFill, { flex: c.total_earned || 0.001 }]} />
                   <View style={[styles.progressBarPending, { flex: c.total_pending || 0.001 }]} />
@@ -196,7 +195,7 @@ export default function EarningsScreen() {
             const active = method === m.key;
             return (
               <TouchableOpacity key={m.key} onPress={() => setMethod(m.key)} style={[styles.methodCard, active && styles.methodCardActive]}>
-                <Icon name={m.icon} size={20} color={active ? P.yellow : P.ink} />
+                <Icon name={m.icon} size={20} color={active ? P.ink : P.ink} />
                 <Text style={[styles.methodLabel, active && { color: P.white }]}>{m.key.toUpperCase()}</Text>
               </TouchableOpacity>
             );
@@ -252,7 +251,7 @@ export default function EarningsScreen() {
           }}
         >
           <View style={styles.tdsCertIco}>
-            <Icon name="file-document-outline" size={18} color={P.yellowText} />
+            <Icon name="file-document-outline" size={18} color={P.ink} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.tdsCertTitle}>Download TDS Certificate</Text>
@@ -287,32 +286,31 @@ export default function EarningsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   // Refer & Earn entry tile (Contract 4)
-  referTile: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: P.yellowPale, borderWidth: 1, borderColor: P.yellow, borderRadius: 16, padding: 14, marginHorizontal: 16, marginTop: 14 },
+  referTile: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.ink, borderRadius: 16, padding: 14, marginHorizontal: 16, marginTop: 14 },
   referEmoji: { fontSize: 26 },
   referTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: P.ink },
-  referSub: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.yellowText, marginTop: 1 },
+  referSub: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.ink, marginTop: 1 },
 
   // Hero
-  headerCard: { backgroundColor: P.ink, padding: 20, paddingTop: 50, paddingBottom: 22, position: 'relative' },
-  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  headerCard: { backgroundColor: P.white, padding: 20, paddingTop: 50, paddingBottom: 22, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   heroLabel: {
-    fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '800',
+    fontSize: 10, color: P.muted2, fontWeight: '800',
     textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: fonts.monoBold,
   },
   heroAmount: {
-    fontSize: 36, fontWeight: '900', color: P.yellow, marginTop: 6,
+    fontSize: 36, fontWeight: '900', color: P.ink, marginTop: 6,
     letterSpacing: -0.6, fontFamily: fonts.monoBold,
   },
   heroMiniRow: { flexDirection: 'row', gap: 18, marginTop: 14 },
   heroMini: { flexDirection: 'column' },
   heroMiniLabel: {
-    fontSize: 9, color: 'rgba(255,255,255,0.45)', marginBottom: 3,
+    fontSize: 9, color: P.muted2, marginBottom: 3,
     textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700',
     fontFamily: fonts.monoMedium,
   },
-  heroMiniVal: { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.85)', fontFamily: fonts.monoBold },
+  heroMiniVal: { fontSize: 13, fontWeight: '800', color: P.muted2, fontFamily: fonts.monoBold },
   heroNote: {
-    fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 12, lineHeight: 16,
+    fontSize: 11, color: P.muted2, marginTop: 12, lineHeight: 16,
     fontFamily: fonts.monoMedium,
   },
 
@@ -352,7 +350,7 @@ const styles = StyleSheet.create({
   campaignStatVal: { fontSize: 13.5, fontWeight: '900', fontFamily: fonts.monoBold },
   progressBarBg: { flexDirection: 'row', height: 4, borderRadius: 2, backgroundColor: P.border, overflow: 'hidden', marginBottom: 9 },
   progressBarFill: { backgroundColor: P.success, borderRadius: 2 },
-  progressBarPending: { backgroundColor: P.yellow, borderRadius: 2 },
+  progressBarPending: { backgroundColor: P.warn, borderRadius: 2 },
   campaignFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   campaignFooterText: { fontSize: 10, color: P.muted2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
   campaignChevron: { fontSize: 10.5, fontWeight: '800', color: P.ink, letterSpacing: 0.2, fontFamily: fonts.monoBold },
@@ -382,14 +380,14 @@ const styles = StyleSheet.create({
     fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold,
   },
 
-  // TDS preview card — yellowPale
+  // TDS preview card — warnPale (state)
   tdsCard: {
-    backgroundColor: P.yellowPale, borderRadius: 11, padding: 12, marginBottom: 11,
-    borderWidth: 1, borderColor: '#F0DA88',
+    backgroundColor: P.warnPale, borderRadius: 11, padding: 12, marginBottom: 11,
+    borderWidth: 1, borderColor: P.warn,
   },
   tdsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
-  tdsRowTotal: { borderTopWidth: 1, borderTopColor: '#F0DA88', marginTop: 5, paddingTop: 8 },
-  tdsLabel: { fontSize: 11.5, color: P.yellowText, fontWeight: '600', fontFamily: fonts.sansRegular },
+  tdsRowTotal: { borderTopWidth: 1, borderTopColor: P.warn, marginTop: 5, paddingTop: 8 },
+  tdsLabel: { fontSize: 11.5, color: P.warnText, fontWeight: '600', fontFamily: fonts.sansRegular },
   tdsLabelBold: { fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
   tdsVal: { fontSize: 12, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold },
 
@@ -397,7 +395,7 @@ const styles = StyleSheet.create({
   withdrawBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 14, alignItems: 'center' },
   withdrawBtnDisabled: { opacity: 0.5 },
   withdrawBtnText: {
-    fontSize: 13.5, fontWeight: '900', color: P.yellow,
+    fontSize: 13.5, fontWeight: '900', color: P.white,
     letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack,
   },
 
@@ -409,7 +407,7 @@ const styles = StyleSheet.create({
   },
   tdsCertIco: {
     width: 38, height: 38, borderRadius: 9,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.warnPale,
     alignItems: 'center', justifyContent: 'center',
   },
   tdsCertTitle: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },

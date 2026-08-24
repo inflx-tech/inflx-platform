@@ -25,11 +25,11 @@ function fmtDate(iso) {
  * ProposalsHubScreen — 2-tab outbound proposals hub.
  *
  * Flow 36 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
- * Yellow-underline active tab + Outfit-Black UPPERCASE labels per design call #1.
- * Yellow brand-logo tile with ink Outfit-Black initials per design call #2.
- * 'sent' status rendered inline as yellowPale 'SENT' pill (sender-POV) per
+ * Ink-underline active tab + Outfit-Black UPPERCASE labels per design call #1.
+ * Ink brand-logo tile with white Outfit-Black initials per design call #2.
+ * 'sent' status rendered inline as warnPale 'SENT' pill (sender-POV) per
  * design call #3; canonical StatusPill for other 6 statuses.
- * Counter Accept CTA = ink/yellow + ghost-ink Decline per design call #4.
+ * Counter Accept CTA = ink/white + ghost-ink Decline per design call #4.
  */
 
 export default function ProposalsHubScreen({ navigation }) {
@@ -84,7 +84,7 @@ function BrandRequestsTab({ navigation }) {
     return bits.join(' · ') || '—';
   };
 
-  if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={P.ink} /></View>;
 
   return (
     <FlatList
@@ -145,13 +145,13 @@ function DiscoverTab({ navigation }) {
     return () => clearTimeout(t);
   }, [load]);
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={styles.center}><ActivityIndicator color={P.ink} /></View>;
 
   return (
     <FlatList
       data={brands}
       keyExtractor={b => b.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.yellow]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.ink]} />}
       ListHeaderComponent={
         <View>
           <View style={styles.toolbar}>
@@ -256,13 +256,13 @@ function MyProposalsTab({ navigation }) {
     else Alert.alert('Failed', res.error?.message || 'Could not respond');
   }
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={P.yellow} /></View>;
+  if (loading) return <View style={styles.center}><ActivityIndicator color={P.ink} /></View>;
 
   return (
     <FlatList
       data={proposals}
       keyExtractor={p => p.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.yellow]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.ink]} />}
       renderItem={({ item: p }) => {
         const canWithdraw = ['sent', 'viewed', 'countered'].includes(p.status);
         return (
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: P.border,
   },
   tab: { paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: P.yellow },
+  tabActive: { borderBottomColor: P.ink },
   tabLabel: { fontSize: 12.5, fontWeight: '800', color: P.muted2, letterSpacing: 0.2, fontFamily: fonts.displayBold },
   tabLabelActive: { color: P.ink, fontWeight: '900', fontFamily: fonts.displayBlack },
 
@@ -387,11 +387,11 @@ const styles = StyleSheet.create({
   },
   brandLogoBox: {
     width: 44, height: 44, borderRadius: 11,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   brandLogo: { width: '100%', height: '100%' },
-  brandLogoPlaceholder: { fontSize: 13, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  brandLogoPlaceholder: { fontSize: 13, fontWeight: '900', color: P.white, fontFamily: fonts.displayBlack },
   brandName: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
   brandMeta: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
@@ -407,13 +407,13 @@ const styles = StyleSheet.create({
 
   // Inline 'SENT' pill (sender-POV per design call #3)
   sentPill: {
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.warnPale,
     paddingHorizontal: 9, paddingVertical: 3,
     borderRadius: 999,
     alignSelf: 'flex-start',
   },
   sentPillText: {
-    fontSize: 9.5, fontWeight: '800', color: P.yellowText,
+    fontSize: 9.5, fontWeight: '800', color: P.warnText,
     textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold,
   },
 
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   counterBtnAltTxt: { fontSize: 11.5, fontWeight: '800', color: P.ink, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBold },
   counterBtnPrimary: { flex: 1, backgroundColor: P.ink, paddingVertical: 9, borderRadius: 9, alignItems: 'center' },
-  counterBtnPrimaryTxt: { fontSize: 11.5, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  counterBtnPrimaryTxt: { fontSize: 11.5, fontWeight: '900', color: P.white, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
   // Withdraw link
   withdrawLink: { paddingVertical: 7, alignSelf: 'flex-start', marginTop: 4 },
@@ -476,8 +476,8 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
   emptyTile: {
     width: 66, height: 66, borderRadius: 14,
-    backgroundColor: P.yellowPale,
-    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    backgroundColor: P.bg2,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.ink,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   reqStatus: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted2, letterSpacing: 0.4 },
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   fchip: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   fchipOn: { backgroundColor: P.ink, borderColor: P.ink },
   fchipTxt: { fontSize: 10.5, fontWeight: '700', color: P.muted, fontFamily: fonts.sansBold },
-  fchipTxtOn: { color: P.yellow },
+  fchipTxtOn: { color: P.white },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },
   emptySub: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, fontFamily: fonts.sansRegular },
 });

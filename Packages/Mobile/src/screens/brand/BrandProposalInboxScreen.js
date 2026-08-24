@@ -24,7 +24,7 @@ const STATUS_TABS = [
 
 // Canonical status → palette (Flow 20)
 const STATUS_PILL = {
-  sent:      { bg: P.yellowPale,  fg: P.yellowText,  label: 'New' },
+  sent:      { bg: P.warnPale,  fg: P.warnText,  label: 'New' },
   viewed:    { bg: P.infoPale,    fg: P.info,        label: 'Viewed' },
   countered: { bg: P.convPale,    fg: P.conv,        label: 'Countered' },
   accepted:  { bg: P.successPale, fg: P.successText, label: 'Accepted' },
@@ -126,12 +126,12 @@ export default function BrandProposalInboxScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
       ) : (
         <FlatList
           data={proposals}
           keyExtractor={p => p.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} colors={[P.ink]} />}
           renderItem={({ item: p }) => {
             const pill = STATUS_PILL[p.status] || STATUS_PILL.sent;
             return (
@@ -340,15 +340,15 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 52, paddingBottom: 14, backgroundColor: P.ink },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-  backIcon: { fontFamily: fonts.monoBold, fontSize: 22, color: P.white, lineHeight: 22, fontWeight: '400' },
-  headerTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayBold, fontSize: 17, fontWeight: '700', color: P.white },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 52, paddingBottom: 14, backgroundColor: P.white, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  backIcon: { fontFamily: fonts.monoBold, fontSize: 22, color: P.ink, lineHeight: 22, fontWeight: '400' },
+  headerTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayBold, fontSize: 17, fontWeight: '700', color: P.ink },
 
-  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.yellowPale, borderBottomWidth: 1, borderBottomColor: P.yellow, paddingHorizontal: 14, paddingVertical: 10 },
-  bannerText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.yellowText, flex: 1 },
+  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.warnPale, borderBottomWidth: 1, borderBottomColor: P.warn, paddingHorizontal: 14, paddingVertical: 10 },
+  bannerText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.warnText, flex: 1 },
   bannerBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: P.ink, borderRadius: 99 },
-  bannerBtnTxt: { fontFamily: fonts.monoBold, color: P.yellow, fontSize: 10.5, fontWeight: '800' },
+  bannerBtnTxt: { fontFamily: fonts.monoBold, color: P.white, fontSize: 10.5, fontWeight: '800' },
 
   acceptedBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.successPale, borderBottomWidth: 1, borderBottomColor: P.success, paddingHorizontal: 14, paddingVertical: 8 },
   acceptedTxt: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.successText, flex: 1 },
@@ -373,8 +373,8 @@ const s = StyleSheet.create({
   cardDate: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted3, marginLeft: 'auto' },
 
   empty: { alignItems: 'center', padding: 30, marginTop: 30, gap: 10 },
-  emptyIcon: { width: 52, height: 52, borderRadius: 13, backgroundColor: P.yellowPale, alignItems: 'center', justifyContent: 'center' },
-  emptyIconText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText, letterSpacing: 0.4 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 13, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  emptyIconText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.ink, letterSpacing: 0.4 },
   emptyTitle: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '700', color: P.ink },
   emptySub: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, textAlign: 'center', maxWidth: 260, lineHeight: 17 },
 });
@@ -407,7 +407,7 @@ const ms = StyleSheet.create({
   btnAltTxt: { fontFamily: fonts.sansBold, color: P.muted, fontSize: 12, fontWeight: '800' },
   btnCounter: { flex: 1, paddingVertical: 11, backgroundColor: P.convPale, borderRadius: 10, alignItems: 'center' },
   btnCounterTxt: { fontFamily: fonts.sansBold, color: P.conv, fontSize: 12, fontWeight: '800' },
-  btnAccept: { flex: 1, paddingVertical: 11, backgroundColor: P.yellow, borderRadius: 10, alignItems: 'center' },
+  btnAccept: { flex: 1, paddingVertical: 11, backgroundColor: P.ink, borderRadius: 10, alignItems: 'center' },
   btnAcceptTxt: { fontFamily: fonts.sansBold, color: P.ink, fontSize: 12, fontWeight: '800' },
   btnRejectConfirm: { flex: 1, paddingVertical: 11, backgroundColor: P.danger, borderRadius: 10, alignItems: 'center' },
 

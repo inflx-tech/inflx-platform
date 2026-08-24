@@ -87,12 +87,12 @@ export default function InfluencerContractsScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={P.yellow} /></View>
+        <View style={styles.center}><ActivityIndicator color={P.ink} /></View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={c => c.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.yellow]} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.ink]} />}
           renderItem={({ item: c }) => {
             const total = Number(c.influencer_fee || 0) + Number(c.bonus_amount || 0);
             return (
@@ -122,7 +122,7 @@ export default function InfluencerContractsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.empty}>
               <View style={styles.emptyTile}>
-                <Icon name="file-document-outline" size={32} color={P.yellowText} />
+                <Icon name="file-document-outline" size={32} color={P.ink} />
               </View>
               <Text style={styles.emptyTitle}>No contracts yet</Text>
               <Text style={styles.emptySub}>Signed contracts with brands show up here for quick access.</Text>
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: P.bg2 },
   filterChipActive: { backgroundColor: P.ink },
   filterChipLabel: { fontSize: 10, fontWeight: '800', color: P.muted, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.monoBold },
-  filterChipLabelActive: { color: P.yellow, fontWeight: '900' },
+  filterChipLabelActive: { color: P.white, fontWeight: '900' },
 
   card: {
     backgroundColor: P.white, borderRadius: 11,
@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
   emptyTile: {
     width: 66, height: 66, borderRadius: 14,
-    backgroundColor: P.yellowPale,
-    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    backgroundColor: P.bg2,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.ink,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },

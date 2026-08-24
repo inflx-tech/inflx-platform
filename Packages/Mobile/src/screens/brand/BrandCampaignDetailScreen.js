@@ -14,11 +14,11 @@ import { StageRail, PrimeBar } from '../../components/brand/CampaignStageRail';
 
 // ── locked palette (inline) ──
 const P = {
-  bg:'#FAFAFA', surface:'#FFFFFF', surface2:'#F4F4F5',
+  bg:'#FAFAFA', surface:'#FFFFFF', surface2:'#F4F4F5', bg2:'#F4F4F5',
   ink:'#0A0A0A', ink2:'#1F1F22',
   muted:'#52525B', muted2:'#71717A', muted3:'#A1A1AA',
   border:'#E4E4E7', border2:'#D4D4D8',
-  yellow:'#FFC107', yellowHover:'#E0A800', yellowPale:'#FFF7CC', yellow50:'#FFFDEB', yellowText:'#6B5A00',
+  warn:'#EA580C', warnPale:'#FFF7ED', warnText:'#C2410C',
   success:'#10B981', successPale:'#D1FAE5', successDeep:'#047857',
   danger:'#E8401A', dangerPale:'#FDEEE9', dangerDeep:'#B91C1C',
   white:'#FFFFFF',
@@ -26,8 +26,8 @@ const P = {
 
 const STATUS_BADGE = {
   draft:          { bg: P.surface2,   text: P.muted,        dot: P.muted2,     label: 'Draft' },
-  pending_wallet: { bg: P.yellowPale, text: P.yellowText,   dot: P.yellowHover, label: 'Needs funding' },
-  published:      { bg: P.yellowPale, text: P.yellowText,   dot: P.yellowHover, label: 'Published' },
+  pending_wallet: { bg: P.warnPale, text: P.warnText,   dot: P.warn, label: 'Needs funding' },
+  published:      { bg: P.warnPale, text: P.warnText,   dot: P.warn, label: 'Published' },
   active:         { bg: P.successPale,text: P.successDeep,  dot: P.success,    label: 'Active' },
   live:           { bg: P.successPale,text: P.successDeep,  dot: P.success,    label: 'Live' },
   completed:      { bg: P.surface2,   text: P.ink2,         dot: P.muted2,     label: 'Completed' },
@@ -463,7 +463,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               onPress={() => navigation.navigate('Wallet')}
             >
               <View style={styles.tileHead}>
-                <View style={[styles.tileIcon, styles.tileIconDark]}><Icon name="currency-inr" size={17} color={P.yellow} /></View>
+                <View style={[styles.tileIcon, styles.tileIconDark]}><Icon name="currency-inr" size={17} color={P.white} /></View>
                 <Text style={styles.tileArrow}>›</Text>
               </View>
               <Text style={styles.tileLabel}>Escrow</Text>
@@ -500,7 +500,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               onPress={() => navigation.navigate('BrandConversions', { campaignId, campaignName: campaign.name })}
             >
               <View style={styles.tileHead}>
-                <View style={[styles.tileIcon, styles.tileIconDark]}><Icon name="cart-outline" size={17} color={P.yellow} /></View>
+                <View style={[styles.tileIcon, styles.tileIconDark]}><Icon name="cart-outline" size={17} color={P.white} /></View>
                 <Text style={styles.tileArrow}>›</Text>
               </View>
               <Text style={styles.tileLabel}>Conversions</Text>
@@ -547,7 +547,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   endBtn: { backgroundColor: '#0A0A0A', borderRadius: 11, paddingVertical: 12, alignItems: 'center', marginHorizontal: 14, marginTop: 10 },
-  endBtnTxt: { color: '#FFC107', fontSize: 12.5, fontWeight: '800', letterSpacing: 0.4 },
+  endBtnTxt: { color: P.white, fontSize: 12.5, fontWeight: '800', letterSpacing: 0.4 },
   container: { flex: 1, backgroundColor: P.bg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 24 },
   errorText: { fontSize: 13, color: P.dangerDeep, marginBottom: 16, textAlign: 'center' },
@@ -555,14 +555,14 @@ const styles = StyleSheet.create({
   goBackBtnText: { fontSize: 13, fontWeight: '700', color: P.ink },
 
   // Header
-  header: { backgroundColor: P.ink, paddingHorizontal: 16, paddingTop: 52, paddingBottom: 14 },
+  header: { backgroundColor: P.white, paddingHorizontal: 16, paddingTop: 52, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   backBtn: { paddingVertical: 4 },
-  backBtnText: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.65)' },
+  backBtnText: { fontSize: 12.5, fontWeight: '600', color: P.muted2 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginTop: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  headerDates: { fontFamily: 'monospace', fontSize: 10.5, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
-  headerMeta: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 5 },
-  headerMetaV: { color: P.white, fontWeight: '600' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: P.ink, letterSpacing: -0.3 },
+  headerDates: { fontFamily: 'monospace', fontSize: 10.5, color: P.muted2, marginTop: 3 },
+  headerMeta: { fontSize: 11, color: P.muted2, marginTop: 5 },
+  headerMetaV: { color: P.ink, fontWeight: '600' },
 
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 100 },
   statusDot: { width: 4, height: 4, borderRadius: 2 },
@@ -571,10 +571,10 @@ const styles = StyleSheet.create({
   scroll: { padding: 12, gap: 10 },
 
   // Summary card
-  summaryCard: { backgroundColor: P.yellow50, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(255,193,7,0.32)', position: 'relative', overflow: 'hidden' },
-  // IG-clean: decorative yellow corner blobs removed.
+  summaryCard: { backgroundColor: P.bg2, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: P.border, position: 'relative', overflow: 'hidden' },
+  // IG-clean: decorative corner blobs removed.
   summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 },
-  summaryLabel: { fontSize: 11, fontWeight: '700', color: P.yellowText, letterSpacing: 0.5, textTransform: 'uppercase' },
+  summaryLabel: { fontSize: 11, fontWeight: '700', color: P.ink, letterSpacing: 0.5, textTransform: 'uppercase' },
   summaryPct: { fontFamily: 'monospace', fontWeight: '700', fontSize: 36, color: P.ink, letterSpacing: -1, lineHeight: 36 },
   summaryPctMute: { fontSize: 22, color: P.muted2 },
   summaryFraction: { fontSize: 10.5, color: P.muted, textAlign: 'right' },
@@ -589,22 +589,22 @@ const styles = StyleSheet.create({
 
   // Section headers (inline)
   sectionHeadInline: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 6, marginBottom: 2 },
-  sectionPill: { width: 3, height: 11, backgroundColor: P.yellow, borderRadius: 2 },
+  sectionPill: { width: 3, height: 11, backgroundColor: P.ink, borderRadius: 2 },
   sectionHead: { fontSize: 11, fontWeight: '700', color: P.ink, letterSpacing: 0.4, textTransform: 'uppercase' },
   sectionHeadCount: { marginLeft: 'auto', fontFamily: 'monospace', fontSize: 11, color: P.muted2, fontWeight: '700' },
 
   // Action queue
   actionRow: { backgroundColor: P.surface, borderWidth: 1, borderColor: P.border, borderRadius: 12, padding: 11, paddingLeft: 12, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  actionRowPending: { borderLeftWidth: 3, borderLeftColor: P.yellow },
+  actionRowPending: { borderLeftWidth: 3, borderLeftColor: P.warn },
   actionRowDanger:  { borderLeftWidth: 3, borderLeftColor: P.danger },
   actionIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  actionIconPending: { backgroundColor: P.yellowPale },
+  actionIconPending: { backgroundColor: P.warnPale },
   actionIconDanger:  { backgroundColor: P.dangerPale },
   actionIconGlyph: { fontSize: 13, fontWeight: '800' },
   actionTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink, marginBottom: 2 },
   actionMeta:  { fontSize: 10.5, color: P.muted },
   actionCountPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 100 },
-  actionCountPillPending: { backgroundColor: P.yellow },
+  actionCountPillPending: { backgroundColor: P.warn },
   actionCountPillDanger:  { backgroundColor: P.danger },
   actionCountText: { fontSize: 11, fontWeight: '700', color: P.ink, fontFamily: 'monospace' },
   actionArrow: { fontSize: 18, color: P.muted2, fontWeight: '700' },
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tileHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tileIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center' },
+  tileIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
   tileIconDark: { backgroundColor: P.ink },
   tileArrow: { fontFamily: 'monospace', fontWeight: '700', color: P.muted3, fontSize: 14 },
   tileLabel: { fontSize: 9.5, fontWeight: '700', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 4 },

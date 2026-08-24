@@ -19,7 +19,7 @@ const TABS = [
 ];
 
 const PILL = {
-  pending:   { bg: P.yellowPale,  fg: P.yellowText,  label: 'PENDING' },
+  pending:   { bg: P.warnPale,  fg: P.warnText,  label: 'PENDING' },
   confirmed: { bg: P.successPale, fg: P.successText, label: 'CONFIRMED' },
   rejected:  { bg: P.dangerPale,  fg: P.dangerText,  label: 'REJECTED' },
   cancelled: { bg: P.bg2,         fg: P.muted,       label: 'CANCELLED' },
@@ -66,7 +66,6 @@ export default function BrandBookingsScreen({ navigation }) {
           <Text style={s.backText}>← BACK</Text>
         </TouchableOpacity>
         <Text style={s.title}>Bookings</Text>
-        <View style={s.rule} />
         <Text style={s.subtitle}>Confirm tables, slots and appointments</Text>
       </View>
 
@@ -88,12 +87,12 @@ export default function BrandBookingsScreen({ navigation }) {
       </ScrollView>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.yellow} /></View>
+        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.ink} /></View>
       ) : (
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(tab); }} tintColor={P.yellow} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(tab); }} tintColor={P.ink} />}
         >
           {bookings.length === 0 ? (
             <View style={s.empty}>
@@ -157,7 +156,7 @@ export default function BrandBookingsScreen({ navigation }) {
 
 function Stat({ label, value, hot }) {
   return (
-    <View style={[s.stat, hot && { borderColor: P.yellow, backgroundColor: P.yellow50 }]}>
+    <View style={[s.stat, hot && { borderColor: P.ink, backgroundColor: P.bg2 }]}>
       <Text style={s.statVal}>{value}</Text>
       <Text style={s.statLbl}>{label}</Text>
     </View>
@@ -165,21 +164,20 @@ function Stat({ label, value, hot }) {
 }
 
 const s = StyleSheet.create({
-  header:    { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14 },
+  header:    { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back:      { paddingBottom: 6 },
-  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
-  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  rule:      { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 6 },
-  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6 },
+  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: P.muted2 },
+  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.3 },
+  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: 6 },
   statsRow:  { flexDirection: 'row', paddingHorizontal: 14, paddingTop: 12, gap: 8 },
   stat:      { flex: 1, backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingVertical: 8, alignItems: 'center' },
   statVal:   { fontSize: 14, fontWeight: '800', color: P.ink },
   statLbl:   { fontSize: 9.5, color: P.muted2, marginTop: 1, textAlign: 'center' },
   chipsRow:  { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
   chip:      { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 6 },
-  chipOn:    { backgroundColor: P.yellowPale, borderColor: P.yellow },
+  chipOn:    { backgroundColor: P.bg2, borderColor: P.ink },
   chipTxt:   { fontSize: 11.5, fontWeight: '600', color: P.muted },
-  chipTxtOn: { color: P.yellowText },
+  chipTxtOn: { color: P.ink },
   card:      { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 12, padding: 14, marginBottom: 10 },
   dateBadge: { width: 52, backgroundColor: P.bg2, borderRadius: 10, alignItems: 'center', paddingVertical: 8 },
   dateMon:   { fontSize: 9, fontWeight: '800', color: P.muted2, letterSpacing: 0.6 },
@@ -187,15 +185,15 @@ const s = StyleSheet.create({
   dateTime:  { fontSize: 9.5, fontWeight: '700', color: P.muted, marginTop: 1 },
   cardName:  { fontSize: 14, fontWeight: '700', color: P.ink, flex: 1, marginRight: 8 },
   cardMeta:  { fontSize: 11.5, color: P.muted2, marginTop: 2 },
-  via:       { fontSize: 11, color: P.yellowText, fontWeight: '600', marginTop: 2 },
+  via:       { fontSize: 11, color: P.ink, fontWeight: '600', marginTop: 2 },
   notes:     { fontSize: 11.5, color: P.muted, fontStyle: 'italic', marginTop: 4, backgroundColor: P.bg2, borderRadius: 8, padding: 8 },
   amount:    { fontSize: 12, fontWeight: '700', color: P.ink2, marginTop: 6 },
   pill:      { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
   pillTxt:   { fontSize: 9, fontWeight: '800', letterSpacing: 0.4 },
   actions:   { flexDirection: 'row', gap: 8, marginTop: 12 },
   btn:       { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  btnFill:   { backgroundColor: P.yellow },
-  btnFillTxt:{ fontSize: 13, fontWeight: '800', color: P.ink },
+  btnFill:   { backgroundColor: P.ink },
+  btnFillTxt:{ fontSize: 13, fontWeight: '800', color: P.white},
   btnGhost:  { backgroundColor: P.white, borderWidth: 1, borderColor: P.border },
   btnGhostTxt:{ fontSize: 13, fontWeight: '700', color: P.dangerText },
   empty:     { alignItems: 'center', paddingTop: 70 },

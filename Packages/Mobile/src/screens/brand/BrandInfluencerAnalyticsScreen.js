@@ -39,7 +39,6 @@ export default function BrandInfluencerAnalyticsScreen({ navigation }) {
           <Text style={s.backText}>← BACK</Text>
         </TouchableOpacity>
         <Text style={s.title}>Creator market</Text>
-        <View style={s.rule} />
         <Text style={s.subtitle}>Who's out there, what they cost, who performs</Text>
       </View>
 
@@ -56,11 +55,11 @@ export default function BrandInfluencerAnalyticsScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.yellow} /></View>
+        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.ink} /></View>
       ) : (
         <ScrollView
           style={{ flex: 1 }} contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} />}
         >
           <View style={s.tilesRow}>
             <Tile label="Creators" value={ov.total ?? '—'} />
@@ -147,17 +146,16 @@ function Leaderboard({ title, rows, metric, navigation }) {
 }
 
 const s = StyleSheet.create({
-  header:    { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14 },
+  header:    { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back:      { paddingBottom: 6 },
-  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
-  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  rule:      { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 6 },
-  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6 },
+  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: P.muted2 },
+  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.3 },
+  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: 6 },
   filters:   { paddingHorizontal: 14, paddingTop: 10 },
   chip:      { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
-  chipOn:    { backgroundColor: P.yellowPale, borderColor: P.yellow },
+  chipOn:    { backgroundColor: P.bg2, borderColor: P.ink },
   chipTxt:   { fontSize: 11.5, fontWeight: '600', color: P.muted },
-  chipTxtOn: { color: P.yellowText },
+  chipTxtOn: { color: P.ink },
   cityInput: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: P.ink2, marginTop: 8 },
   tilesRow:  { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tile:      { flex: 1, backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
@@ -168,13 +166,13 @@ const s = StyleSheet.create({
   barLbl:    { fontSize: 12, color: P.ink2, fontWeight: '600', maxWidth: '75%' },
   barN:      { fontSize: 12, color: P.muted2, fontWeight: '700' },
   track:     { height: 5, backgroundColor: P.bg2, borderRadius: 3, marginTop: 3 },
-  fill:      { height: 5, backgroundColor: P.yellow, borderRadius: 3 },
+  fill:      { height: 5, backgroundColor: P.ink, borderRadius: 3 },
   rateRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
   rateTier:  { width: 64, fontSize: 10.5, fontWeight: '800', color: P.muted },
   rateVal:   { flex: 1, fontSize: 12.5, fontWeight: '700', color: P.ink },
   rateN:     { fontSize: 10.5, color: P.muted3 },
   lbRow:     { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
-  lbRank:    { width: 24, fontSize: 13, fontWeight: '800', color: P.yellowText },
+  lbRank:    { width: 24, fontSize: 13, fontWeight: '800', color: P.ink },
   lbHandle:  { fontSize: 13, fontWeight: '700', color: P.ink },
   lbMeta:    { fontSize: 11, color: P.muted2, marginTop: 1 },
   lbGo:      { fontSize: 14, color: P.muted3, paddingLeft: 8 },

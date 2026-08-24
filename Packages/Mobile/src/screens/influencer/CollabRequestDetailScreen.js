@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { ig } from '../../theme/ig';
 // Stage 1 — restyled from brandPalette to the ig kit as part of moving into Collabs.
-// A yellow screen one tap inside a white tab reads as a different app.
+// A loud coloured screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
 import { PLACES, SHIPPING, toMode, describeMode } from '../../utils/workingStyle';
 
@@ -319,7 +319,7 @@ const s = StyleSheet.create({
   gone: { color: ig.text2, fontSize: 13 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   logo: { width: 40, height: 40, borderRadius: 10, backgroundColor: ig.text, alignItems: 'center', justifyContent: 'center' },
-  logoTxt: { color: ig.y, fontSize: 13 },
+  logoTxt: { color: ig.bg, fontSize: 13 },
   brandName: { fontSize: 15, color: ig.text },
   brandMeta: { fontSize: 11, color: ig.mut, marginTop: 1 },
   st: { backgroundColor: ig.bgSoft, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
@@ -343,11 +343,11 @@ const s = StyleSheet.create({
   chip: { backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
   chipAct: { backgroundColor: ig.text, borderColor: ig.text },
   chipTxt: { fontSize: 11, color: ig.text2 },
-  chipTxtAct: { color: ig.y },
-  cta: { backgroundColor: ig.y, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
-  ctaTxt: { fontSize: 13, color: ig.text, letterSpacing: 0.4 },
+  chipTxtAct: { color: ig.bg },
+  cta: { backgroundColor: ig.text, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
+  ctaTxt: { fontSize: 13, color: ig.bg, letterSpacing: 0.4 },
   ctaInk: { backgroundColor: ig.text, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
-  ctaInkTxt: { fontSize: 13, color: ig.y, letterSpacing: 0.4 },
+  ctaInkTxt: { fontSize: 13, color: ig.bg, letterSpacing: 0.4 },
   ctaGhost: { borderRadius: 11, paddingVertical: 12, alignItems: 'center', marginTop: 6 },
   ctaGhostTxt: { fontSize: 12, color: '#B91C1C' },
 });

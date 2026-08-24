@@ -240,10 +240,10 @@ export default function BrandActionRequiredScreen({ navigation }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 14, paddingTop: 12 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {currentData.loading && !currentData.loaded ? (
-          <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>
+          <View style={s.center}><ActivityIndicator size="large" color={P.ink} /></View>
         ) : currentData.items.length === 0 ? (
           <EmptyState icon={currentTab.emptyIcon} title={currentTab.emptyMsg} />
         ) : (
@@ -421,25 +421,25 @@ const s = StyleSheet.create({
   tabBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99, backgroundColor: P.bg2 },
   tabBtnActive: { backgroundColor: P.ink },
   tabText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.muted },
-  tabTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
+  tabTextActive: { color: P.white, fontFamily: fonts.monoBold },
   tabCount: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '700', color: P.muted2 },
   tabCountActive: { color: 'rgba(255,255,255,0.85)' },
 
-  bulkBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 11, backgroundColor: P.yellow50, borderBottomWidth: 1, borderBottomColor: P.yellowPale, gap: 10 },
+  bulkBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 11, backgroundColor: P.bg2, borderBottomWidth: 1, borderBottomColor: P.bg2, gap: 10 },
   selectAllRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 },
   bulkSelectLabel: { fontFamily: fonts.sansBold, fontSize: 11.5, fontWeight: '700', color: P.ink, flexShrink: 1 },
   bulkSelectLabelV: { fontFamily: fonts.monoBold },
   bulkSignBtn: { backgroundColor: P.ink, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   bulkSignBtnDisabled: { opacity: 0.4 },
-  bulkSignBtnText: { fontFamily: fonts.monoBold, color: P.yellow, fontSize: 11.5, fontWeight: '800', letterSpacing: 0.2 },
+  bulkSignBtnText: { fontFamily: fonts.monoBold, color: P.white, fontSize: 11.5, fontWeight: '800', letterSpacing: 0.2 },
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 2, borderColor: P.border, backgroundColor: P.white, alignItems: 'center', justifyContent: 'center' },
   checkboxOn: { backgroundColor: P.ink, borderColor: P.ink },
-  checkboxMark: { fontFamily: fonts.monoBold, fontSize: 12, color: P.yellow, fontWeight: '800', lineHeight: 13 },
+  checkboxMark: { fontFamily: fonts.monoBold, fontSize: 12, color: P.white, fontWeight: '800', lineHeight: 13 },
 
   center: { padding: 60, alignItems: 'center', justifyContent: 'center' },
 
   card: { backgroundColor: P.white, marginBottom: 8, borderRadius: 14, padding: 13, borderWidth: 1, borderColor: P.border },
-  cardSelected: { borderColor: P.ink, backgroundColor: P.yellow50 },
+  cardSelected: { borderColor: P.ink, backgroundColor: P.bg2 },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: 8 },
   cardTitle: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '700', color: P.ink },
@@ -448,17 +448,17 @@ const s = StyleSheet.create({
   cardLineV: { color: P.ink, fontWeight: '700' },
   cardLineLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4 },
   cardLineValue: { fontFamily: fonts.monoBold, fontSize: 14, fontWeight: '800', color: P.ink, marginTop: 2 },
-  cardHint: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.yellowText, marginTop: 8, textAlign: 'right' },
-  cardReviewLink: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.yellowText, marginTop: 10, textAlign: 'right' },
+  cardHint: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.warnText, marginTop: 8, textAlign: 'right' },
+  cardReviewLink: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.ink, marginTop: 10, textAlign: 'right' },
 
-  tierTag: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.yellowText, backgroundColor: P.yellowPale, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, textTransform: 'capitalize' },
+  tierTag: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.ink, backgroundColor: P.bg2, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, textTransform: 'capitalize' },
 
   appActions: { marginTop: 10, flexDirection: 'column', gap: 8 },
   appProfileLink: { paddingVertical: 4 },
-  appProfileLinkText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.yellowText },
+  appProfileLinkText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.ink },
   appButtonsRow: { flexDirection: 'row', gap: 8 },
   appApproveBtn: { flex: 1, backgroundColor: P.ink, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
-  appApproveText: { fontFamily: fonts.monoBold, fontSize: 11.5, fontWeight: '800', color: P.yellow, letterSpacing: 0.2 },
+  appApproveText: { fontFamily: fonts.monoBold, fontSize: 11.5, fontWeight: '800', color: P.white, letterSpacing: 0.2 },
   appRejectBtn: { flex: 1, backgroundColor: P.dangerPale, paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: P.dangerPale },
   appRejectText: { fontFamily: fonts.sansBold, fontSize: 11.5, fontWeight: '800', color: P.dangerText },
 
@@ -466,5 +466,5 @@ const s = StyleSheet.create({
   failureError: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.dangerText, marginTop: 6 },
   retryBtn: { backgroundColor: P.ink, padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 },
   retryBtnDisabled: { opacity: 0.5 },
-  retryBtnText: { fontFamily: fonts.monoBold, color: P.yellow, fontSize: 11.5, fontWeight: '800' },
+  retryBtnText: { fontFamily: fonts.monoBold, color: P.white, fontSize: 11.5, fontWeight: '800' },
 });

@@ -66,7 +66,7 @@ export default function BrandStorePreviewScreen({ navigation }) {
       <View style={s.container}>
         <Header navigation={navigation} subtitle="This is what customers see" />
         <View style={s.loadingWrap}>
-          <ActivityIndicator size="large" color={P.yellow} />
+          <ActivityIndicator size="large" color={P.ink} />
         </View>
       </View>
     );
@@ -93,7 +93,7 @@ export default function BrandStorePreviewScreen({ navigation }) {
 
       <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {/* Brand info card */}
         <View style={s.brandCard}>
@@ -210,7 +210,6 @@ function Header({ navigation, subtitle }) {
         </TouchableOpacity>
         <View style={s.headerL}>
           <Text style={s.headerTitle}>My Store</Text>
-          <View style={s.headerRule} />
           <Text style={s.headerSub}>{subtitle}</Text>
         </View>
       </View>
@@ -223,10 +222,12 @@ const s = StyleSheet.create({
 
   // ── Header (ink) ─────────────────────────────────────────
   header: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     paddingTop: 52,
     paddingBottom: 14,
     paddingHorizontal: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
   headerInner: {
     flexDirection: 'row',
@@ -235,14 +236,14 @@ const s = StyleSheet.create({
   },
   backBtn: {
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
     marginRight: 8, flexShrink: 0,
   },
   backBtnText: {
     fontFamily: fonts.monoBold,
     fontSize: 13, fontWeight: '700',
-    color: P.white,
+    color: P.ink,
   },
   headerL: {
     flex: 1, minWidth: 0, flexDirection: 'column', gap: 5,
@@ -250,15 +251,11 @@ const s = StyleSheet.create({
   headerTitle: {
     fontFamily: fonts.displayBold,
     fontSize: 18, fontWeight: '700',
-    color: P.white, letterSpacing: -0.2,
-  },
-  headerRule: {
-    width: 30, height: 3,
-    backgroundColor: P.yellow, borderRadius: 2,
+    color: P.ink, letterSpacing: -0.2,
   },
   headerSub: {
     fontFamily: fonts.sansMedium,
-    fontSize: 11, color: 'rgba(255,255,255,0.55)',
+    fontSize: 11, color: P.muted2,
   },
 
   // ── Loading ──────────────────────────────────────────────
@@ -273,12 +270,12 @@ const s = StyleSheet.create({
   },
   brandTile: {
     width: 48, height: 48, borderRadius: 12,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     alignItems: 'center', justifyContent: 'center',
   },
   brandTileText: {
     fontFamily: fonts.displayBold,
-    fontSize: 20, fontWeight: '800', color: P.ink,
+    fontSize: 20, fontWeight: '800', color: P.white,
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   brandName: {
@@ -338,12 +335,12 @@ const s = StyleSheet.create({
   creatorRowLast: { borderBottomWidth: 0 },
   creatorAvatar: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   creatorInitial: {
     fontFamily: fonts.displayBold,
-    fontSize: 12, fontWeight: '800', color: P.yellowText,
+    fontSize: 12, fontWeight: '800', color: P.ink,
   },
   creatorName: {
     fontFamily: fonts.displayBold,
@@ -354,12 +351,12 @@ const s = StyleSheet.create({
     fontSize: 10, color: P.muted2, marginTop: 1,
   },
   creatorOffersPill: {
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99,
   },
   creatorOffersText: {
     fontFamily: fonts.sansBold,
-    fontSize: 10.5, fontWeight: '700', color: P.yellowText,
+    fontSize: 10.5, fontWeight: '700', color: P.ink,
   },
 
   // ── Products ─────────────────────────────────────────────
@@ -397,19 +394,19 @@ const s = StyleSheet.create({
   empty: {
     margin: 30,
     backgroundColor: P.white,
-    borderWidth: 1.5, borderColor: P.yellowPale, borderStyle: 'dashed',
+    borderWidth: 1.5, borderColor: P.bg2, borderStyle: 'dashed',
     borderRadius: 18,
     paddingVertical: 36, paddingHorizontal: 22,
     alignItems: 'center', gap: 10,
   },
   emptyIcon: {
     width: 52, height: 52, borderRadius: 13,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   emptyIconText: {
     fontFamily: fonts.monoBold,
-    fontSize: 11, fontWeight: '800', color: P.yellowText, letterSpacing: 0.4,
+    fontSize: 11, fontWeight: '800', color: P.ink, letterSpacing: 0.4,
   },
   emptyTitle: {
     fontFamily: fonts.displayBold,

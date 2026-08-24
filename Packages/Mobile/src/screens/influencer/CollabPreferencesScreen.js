@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { ig } from '../../theme/ig';
 // Stage 1 — restyled from brandPalette to the ig kit as part of moving into Collabs.
-// A yellow screen one tap inside a white tab reads as a different app.
+// A loud coloured screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
 
 /**
@@ -121,7 +121,7 @@ const s = StyleSheet.create({
   chip: { backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   chipAct: { backgroundColor: ig.text, borderColor: ig.text },
   chipTxt: { fontSize: 11.5, color: ig.text2 },
-  chipTxtAct: { color: ig.y },
-  cta: { backgroundColor: ig.y, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 20 },
-  ctaTxt: { fontSize: 13, color: ig.text, letterSpacing: 0.4 },
+  chipTxtAct: { color: ig.bg },
+  cta: { backgroundColor: ig.text, borderRadius: 11, paddingVertical: 13, alignItems: 'center', marginTop: 20 },
+  ctaTxt: { fontSize: 13, color: ig.bg, letterSpacing: 0.4 },
 });

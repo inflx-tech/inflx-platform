@@ -18,7 +18,7 @@ const TYPE_CONFIG = {
   pay_at_store:   { label: 'WALK-IN', emoji: '🏪', toneBg: P.successPale, toneFg: P.successText },
   prebook:        { label: 'BOOKING', emoji: '📅', toneBg: P.infoPale,    toneFg: P.info },
   online_order:   { label: 'ORDER',   emoji: '📦', toneBg: P.convPale,    toneFg: P.conv },
-  redirect_click: { label: 'CLICK',   emoji: '🔗', toneBg: P.yellowPale,  toneFg: P.yellowText },
+  redirect_click: { label: 'CLICK',   emoji: '🔗', toneBg: P.bg2,  toneFg: P.ink },
 };
 
 // stakeholder-sale-info S-C — short date for the commission-release chip.
@@ -56,7 +56,7 @@ export default function TransactionFeedScreen({ navigation }) {
   const onRefresh = () => { setRefreshing(true); loadData(); };
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={P.ink} /></View>;
   }
 
   return (
@@ -80,7 +80,7 @@ export default function TransactionFeedScreen({ navigation }) {
             <Text style={s.summaryLabel}>TOTAL COMMISSION</Text>
           </View>
           <View style={s.summaryCard}>
-            <Text style={[s.summaryVal, { color: P.yellowText }]}>{summary.total_transactions}</Text>
+            <Text style={[s.summaryVal, { color: P.ink }]}>{summary.total_transactions}</Text>
             <Text style={s.summaryLabel}>TOTAL ORDERS</Text>
           </View>
           <View style={s.summaryCard}>
@@ -93,7 +93,7 @@ export default function TransactionFeedScreen({ navigation }) {
       <FlatList
         data={transactions}
         keyExtractor={item => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}
         contentContainerStyle={{ padding: 14, paddingBottom: 100 }}
         renderItem={({ item: tx }) => {
           const cfg = TYPE_CONFIG[tx.transaction_type] || { label: (tx.transaction_type || '').toUpperCase(), emoji: '•', toneBg: P.bg2, toneFg: P.muted };
@@ -194,7 +194,7 @@ const s = StyleSheet.create({
   txExtraText: { fontSize: 9.5, color: P.muted, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
   // stakeholder-sale-info S-C — commission release status chip
   chip: { alignSelf: 'flex-start', fontSize: 9.5, fontWeight: '800', paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20, overflow: 'hidden', fontFamily: fonts.monoBold },
-  chipPend: { backgroundColor: P.yellowPale, color: P.yellowText },
+  chipPend: { backgroundColor: P.warnPale, color: P.warnText },
   chipRel: { backgroundColor: P.successPale, color: P.successText },
 
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },

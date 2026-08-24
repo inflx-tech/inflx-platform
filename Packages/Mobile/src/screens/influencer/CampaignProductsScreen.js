@@ -42,7 +42,7 @@ const CATEGORY_EMOJI = {
  *
  * Flow 32 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/JetBrains
  * Mono fonts. successPale Live badge + bg2 note cards + ink-bordered note input
- * + ink/yellow Outfit-Black UPPERCASE CTAs. No action emoji per design call #4.
+ * + ink/white Outfit-Black UPPERCASE CTAs. No action emoji per design call #4.
  */
 
 export default function CampaignProductsScreen({ navigation, route }) {
@@ -114,7 +114,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={P.ink} /></View>;
   }
 
   const products = data?.products || [];
@@ -142,7 +142,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
     : groups;
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.ink]} />}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
@@ -165,7 +165,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
           <Text style={s.statLabel}>Live in store</Text>
         </View>
         <View style={s.stat}>
-          <Text style={[s.statVal, { color: P.yellowText }]}>{notedCount}</Text>
+          <Text style={[s.statVal, { color: P.warnText }]}>{notedCount}</Text>
           <Text style={s.statLabel}>With note</Text>
         </View>
       </View>
@@ -183,13 +183,13 @@ export default function CampaignProductsScreen({ navigation, route }) {
             <Text style={s.createPostTitle}>Create Post with these products</Text>
             <Text style={s.createPostSub}>Pick a concept → photos → tag products → followers shop your post</Text>
           </View>
-          <Icon name="chevron-right" size={22} color={P.yellow} />
+          <Icon name="chevron-right" size={22} color={P.white} />
         </TouchableOpacity>
       )}
 
       {/* Info banner */}
       <View style={s.infoBanner}>
-        <Icon name="information-outline" size={20} color={P.yellowText} style={{ marginTop: 1 }} />
+        <Icon name="information-outline" size={20} color={P.ink} style={{ marginTop: 1 }} />
         <Text style={s.infoText}>
           Followers discover these products through YOUR POSTS. Create a post above — optional: add a short recommendation note per product below.
         </Text>
@@ -364,7 +364,7 @@ const s = StyleSheet.create({
   statLabel: { fontSize: 9, color: P.muted2, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700', fontFamily: fonts.monoMedium },
 
   // collab-phase1 — the kind chips and section headers. Deliberately matched to this
-  // screen's existing idiom (yellow-pale selected state, ink text, bordered cards) rather
+  // screen's existing idiom (grey selected state, ink text, bordered cards) rather
   // than a new look, because only the arrangement is changing.
   kindChips: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 7,
@@ -387,10 +387,10 @@ const s = StyleSheet.create({
   infoBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 9,
     marginHorizontal: 14, marginTop: 12, marginBottom: 12, padding: 11,
-    backgroundColor: P.yellowPale,
-    borderRadius: 11, borderWidth: 1, borderColor: '#F0DA88',
+    backgroundColor: P.warnPale,
+    borderRadius: 11, borderWidth: 1, borderColor: P.warn,
   },
-  infoText: { flex: 1, fontSize: 11.5, color: P.yellowText, lineHeight: 17, fontFamily: fonts.sansRegular },
+  infoText: { flex: 1, fontSize: 11.5, color: P.warnText, lineHeight: 17, fontFamily: fonts.sansRegular },
 
   productCard: {
     marginHorizontal: 14, marginBottom: 10,
@@ -467,7 +467,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
     backgroundColor: P.ink,
   },
-  publishText: { fontSize: 12, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  publishText: { fontSize: 12, fontWeight: '900', color: P.white, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
   quickPublish: {
     paddingVertical: 13, paddingHorizontal: 14,
@@ -481,8 +481,8 @@ const s = StyleSheet.create({
 
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
   emptyTile: {
-    width: 66, height: 66, borderRadius: 14, backgroundColor: P.yellowPale,
-    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    width: 66, height: 66, borderRadius: 14, backgroundColor: P.bg2,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.ink,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },

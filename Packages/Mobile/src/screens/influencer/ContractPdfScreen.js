@@ -11,8 +11,8 @@ import { influencerApi, brandApi } from '../../services/api';
  * ContractPdfScreen — shared between influencer + brand roles.
  *
  * Flow 35 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
- * Yellow-bg + ink-text + MCI download-outline Download CTA (inverts usual
- * ink/yellow pattern for pop against ink hero) per locked design call #3.
+ * Ink-bg + white-text + MCI download-outline Download CTA (matches the usual
+ * ink/white pattern for pop against the white header) per locked design call #3.
  * WebView + Google Docs Viewer wrap + androidLayerType + originWhitelist
  * preserved byte-for-byte.
  *
@@ -85,24 +85,23 @@ export default function ContractPdfScreen({ route, navigation }) {
     <View style={styles.outer}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={14} color={P.muted2} />
           <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Contract PDF</Text>
           {signedUrl && (
             <TouchableOpacity onPress={handleOpen} style={styles.downloadBtn}>
-              <Icon name="download" size={14} color={P.ink} />
+              <Icon name="download" size={14} color={P.white} />
               <Text style={styles.downloadBtnText}>DOWNLOAD</Text>
             </TouchableOpacity>
           )}
         </View>
-        <View style={styles.headerAccent} />
       </View>
 
       {loadingUrl && (
         <View style={styles.center}>
-          <ActivityIndicator color={P.yellow} />
+          <ActivityIndicator color={P.ink} />
           <Text style={styles.loadingText}>Preparing contract…</Text>
         </View>
       )}
@@ -123,7 +122,7 @@ export default function ContractPdfScreen({ route, navigation }) {
           startInLoadingState
           renderLoading={() => (
             <View style={styles.center}>
-              <ActivityIndicator color={P.yellow} />
+              <ActivityIndicator color={P.ink} />
               <Text style={styles.loadingText}>Rendering contract…</Text>
             </View>
           )}
@@ -140,21 +139,20 @@ export default function ContractPdfScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   outer: { flex: 1, backgroundColor: P.bg },
 
-  header: { backgroundColor: P.ink, paddingTop: 50, paddingBottom: 22, paddingHorizontal: 18, position: 'relative' },
-  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  header: { backgroundColor: P.white, paddingTop: 50, paddingBottom: 22, paddingHorizontal: 18, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
-  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  backText: { fontSize: 10, color: P.muted2, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 18, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  title: { fontSize: 18, fontWeight: '900', color: P.ink, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
 
-  // Download CTA — yellow-bg + ink-text (inverts ink/yellow pattern per locked design call #3)
+  // Download CTA — ink-bg + white-text
   downloadBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: 10,
   },
-  downloadBtnText: { color: P.ink, fontWeight: '900', fontSize: 11.5, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  downloadBtnText: { color: P.white, fontWeight: '900', fontSize: 11.5, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: { fontSize: 12, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },
@@ -162,5 +160,5 @@ const styles = StyleSheet.create({
   errorSub: { fontSize: 11.5, color: P.muted, marginTop: 6, textAlign: 'center', fontFamily: fonts.sansRegular },
 
   retryBtn: { marginTop: 14, backgroundColor: P.ink, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10 },
-  retryBtnText: { color: P.yellow, fontWeight: '900', fontSize: 12, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  retryBtnText: { color: P.white, fontWeight: '900', fontSize: 12, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 });

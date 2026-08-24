@@ -14,6 +14,7 @@ import Logo from '../../components/Logo';
 // ── locked palette (inline; consolidation deferred to a future token contract) ──
 const P = {
   bg:           '#FAFAFA',
+  bg2:          '#F4F4F5',
   surface:      '#FFFFFF',
   surface2:     '#F4F4F5',
   ink:          '#0A0A0A',
@@ -23,11 +24,9 @@ const P = {
   muted3:       '#A1A1AA',
   border:       '#E4E4E7',
   border2:      '#D4D4D8',
-  yellow:       '#FFC107',
-  yellowHover:  '#E0A800',
-  yellowPale:   '#FFF7CC',
-  yellow50:     '#FFFDEB',
-  yellowText:   '#6B5A00',
+  warn:         '#EA580C',
+  warnPale:     '#FFF7ED',
+  warnText:     '#C2410C',
   success:      '#10B981',
   successPale:  '#D1FAE5',
   successDeep:  '#047857',
@@ -39,8 +38,8 @@ const P = {
 
 const STATUS_BADGE = {
   draft:          { bg: P.surface2,   text: P.muted,        dot: P.muted2 },
-  pending_wallet: { bg: P.yellowPale, text: P.yellowText,   dot: P.yellowHover },
-  published:      { bg: P.yellowPale, text: P.yellowText,   dot: P.yellowHover },
+  pending_wallet: { bg: P.warnPale, text: P.warnText,   dot: P.warn },
+  published:      { bg: P.warnPale, text: P.warnText,   dot: P.warn },
   active:         { bg: P.successPale,text: P.successDeep,  dot: P.success },
   live:           { bg: P.successPale,text: P.successDeep,  dot: P.success },
   completed:      { bg: P.surface2,   text: P.ink2,         dot: P.muted2 },
@@ -164,7 +163,7 @@ export default function BrandHomeScreen({ navigation }) {
             onPress={() => navigation.navigate('Profile', { screen: 'BrandProfile' })}
           >
             <View style={[styles.bannerIcon, banner.tone === 'danger' ? styles.bannerIconDanger : styles.bannerIconPending]}>
-              <Icon name="alert-circle-outline" size={16} color={banner.tone === 'danger' ? P.white : P.yellow} />
+              <Icon name="alert-circle-outline" size={16} color={banner.tone === 'danger' ? P.white : P.warn} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.bannerTitle}>{banner.title}</Text>
@@ -173,7 +172,7 @@ export default function BrandHomeScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        {/* ── Wallet card — yellow-pale gradient + corner accent + ink Top-up ── */}
+        {/* ── Wallet card — neutral tint + ink Top-up ── */}
         <View style={styles.walletCard}>
           <Text style={styles.walletLabel}>Wallet balance</Text>
           <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
@@ -192,7 +191,7 @@ export default function BrandHomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Action Required (white card with yellow left-stripe + yellow-pale icon-circle) */}
+        {/* Action Required (white card with amber left-stripe + amber-pale icon-circle) */}
         {inboxSummary && inboxTotal > 0 && (
           <TouchableOpacity
             style={styles.actionCard}
@@ -243,7 +242,7 @@ export default function BrandHomeScreen({ navigation }) {
           <Text style={styles.webCtaArrow}>›</Text>
         </TouchableOpacity>
 
-        {/* Quick Actions (6 tiles, 2 columns, yellow icon-in-circle) */}
+        {/* Quick Actions (6 tiles, 2 columns, ink icon-in-circle) */}
         <View style={styles.section}>
           <View style={styles.sectionHeadRow}>
             <View style={styles.sectionTitlePill} />
@@ -326,9 +325,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 
-  // Ink header
+  // White header
   header: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     paddingHorizontal: 18,
     paddingTop: 52,
     paddingBottom: 14,
@@ -336,11 +335,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
   headerBrand: {
     fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.85)',
+    color: P.muted2,
     flexShrink: 1,
     textAlign: 'right',
   },
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 0,
   },
-  bannerPending: { backgroundColor: P.yellowPale, borderColor: 'rgba(255,193,7,0.45)' },
+  bannerPending: { backgroundColor: P.warnPale, borderColor: P.warn },
   bannerDanger:  { backgroundColor: P.dangerPale, borderColor: 'rgba(232,64,26,0.25)' },
   bannerIcon: {
     width: 22, height: 22, borderRadius: 11,
@@ -368,22 +369,22 @@ const styles = StyleSheet.create({
   bannerTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink, marginBottom: 2 },
   bannerBody:  { fontSize: 11.5, color: P.ink2, lineHeight: 16 },
 
-  // Wallet card — yellow-pale gradient with corner accent
+  // Wallet card — neutral tint
   walletCard: {
-    backgroundColor: P.yellow50,
+    backgroundColor: P.bg2,
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,193,7,0.32)',
+    borderColor: P.border,
     position: 'relative',
     overflow: 'hidden',
     marginTop: 4,
   },
-  // IG-clean: decorative yellow corner blobs removed.
+  // IG-clean: decorative corner blobs removed.
   walletLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: P.yellowText,
+    color: P.ink,
     letterSpacing: 0.7,
     textTransform: 'uppercase',
     marginBottom: 4,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     alignItems: 'center',
   },
-  topupBtnText: { fontSize: 12.5, fontWeight: '700', color: P.yellow, letterSpacing: 0.2 },
+  topupBtnText: { fontSize: 12.5, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
 
   // Action Required card
   actionCard: {
@@ -426,35 +427,35 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0, left: 0,
     width: 3, height: '100%',
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
   },
   actionCardIcon: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   actionCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
   actionCardTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink },
   actionCardCount: {
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     paddingHorizontal: 6, paddingVertical: 1,
     borderRadius: 100,
   },
-  actionCardCountText: { fontSize: 10.5, fontWeight: '700', color: P.ink },
+  actionCardCountText: { fontSize: 10.5, fontWeight: '700', color: P.white},
   actionCardBody: { fontSize: 11, color: P.muted },
   actionCardArrow: { fontSize: 18, color: P.muted2, fontWeight: '700' },
 
-  // Wallet alert (yellow-pale)
+  // Wallet alert (amber-pale — a state, not decoration)
   walletAlert: {
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.warnPale,
     borderRadius: 10,
     padding: 12,
-    borderWidth: 1, borderColor: 'rgba(255,193,7,0.4)',
-    borderLeftWidth: 3, borderLeftColor: P.yellow,
+    borderWidth: 1, borderColor: P.warn,
+    borderLeftWidth: 3, borderLeftColor: P.warn,
   },
   walletAlertTitle: { fontSize: 12, fontWeight: '700', color: P.ink, marginBottom: 2 },
   walletAlertBody:  { fontSize: 11, color: P.ink2, lineHeight: 15, marginBottom: 4 },
-  walletAlertCta:   { fontSize: 11.5, color: P.yellowHover, fontWeight: '700' },
+  walletAlertCta:   { fontSize: 11.5, color: P.warn, fontWeight: '700' },
 
   // Web Dashboard CTA
   webCta: {
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
   section: { marginTop: 4 },
   sectionHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
   sectionHeadRowSpread: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  sectionTitlePill: { width: 3, height: 13, backgroundColor: P.yellow, borderRadius: 2 },
+  sectionTitlePill: { width: 3, height: 13, backgroundColor: P.ink, borderRadius: 2 },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: P.ink },
   seeAll: { fontSize: 11.5, fontWeight: '700', color: P.ink },
 
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 6,
   },
-  // IG-clean: neutral icon tile (was a solid yellow circle with a glyph).
+  // IG-clean: neutral icon tile (was a solid colour circle with a glyph).
   quickIcon: {
     width: 38, height: 38, borderRadius: 11,
     backgroundColor: ig.bgSoft,

@@ -20,14 +20,14 @@ import { brandApi } from '../../services/api';
  */
 
 const GOAL_BADGE = {
-  engagement: { bg: P.yellowPale,  text: P.yellowText,  dot: P.yellowHover, label: 'Engagement' },
+  engagement: { bg: P.warnPale,  text: P.warnText,  dot: P.warn, label: 'Engagement' },
   conversion: { bg: P.successPale, text: P.successText, dot: P.success,     label: 'Conversion' },
   hybrid:     { bg: P.bg2,         text: P.ink2,        dot: P.muted2,      label: 'Hybrid' },
 };
 
 const STATUS_DOT = {
   active: P.success, live: P.success, contracted: P.success, accepted: P.success,
-  negotiating: P.yellowHover, applied: P.yellowHover, published: P.yellowHover, pending_wallet: P.yellowHover,
+  negotiating: P.warn, applied: P.warn, published: P.warn, pending_wallet: P.warn,
   invited: P.muted2, draft: P.muted2, completed: P.muted2,
   declined: P.danger, rejected_by_brand: P.danger, cancelled: P.danger,
   expired: P.muted3, slots_filled: P.muted3,
@@ -65,7 +65,7 @@ export default function BrandCampaignSetsListScreen({ navigation, route }) {
       <View style={styles.container}>
         <Header navigation={navigation} campaignName={null} count={null} />
         <View style={styles.center}>
-          <ActivityIndicator color={P.yellow} size="large" />
+          <ActivityIndicator color={P.ink} size="large" />
         </View>
       </View>
     );
@@ -98,7 +98,7 @@ export default function BrandCampaignSetsListScreen({ navigation, route }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {sets.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -227,7 +227,6 @@ function Header({ navigation, campaignName, count, campaignId }) {
       <View style={styles.headerRow}>
         <View style={styles.headerL}>
           <Text style={styles.headerTitle}>Campaign sets</Text>
-          <View style={styles.headerRule} />
           {campaignId ? (
             <Text style={styles.headerCrumb}>/campaigns/{campaignId.slice(0, 8)}/sets</Text>
           ) : null}
@@ -253,22 +252,24 @@ const styles = StyleSheet.create({
   },
   goBackBtn: {
     paddingHorizontal: 18, paddingVertical: 10,
-    backgroundColor: P.yellow, borderRadius: 10,
+    backgroundColor: P.ink, borderRadius: 10,
   },
   goBackBtnText: {
     fontFamily: fonts.sansBold,
-    fontSize: 13, fontWeight: '700', color: P.ink,
+    fontSize: 13, fontWeight: '700', color: P.white,
   },
 
   // ── Header ──────────────────────────────────────────────
   header: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
   backBtn: { paddingVertical: 2, paddingBottom: 6 },
   backBtnText: {
     fontFamily: fonts.sansMedium,
-    fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)',
+    fontSize: 11.5, fontWeight: '600', color: P.muted2,
   },
   headerRow: {
     flexDirection: 'row',
@@ -280,23 +281,19 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: fonts.displayBold,
     fontSize: 18, fontWeight: '700',
-    color: P.white, letterSpacing: -0.2,
-  },
-  headerRule: {
-    width: 30, height: 3,
-    backgroundColor: P.yellow, borderRadius: 2,
+    color: P.ink, letterSpacing: -0.2,
   },
   headerCrumb: {
     fontFamily: fonts.monoMedium,
-    fontSize: 9.5, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.3,
+    fontSize: 9.5, color: P.muted2, letterSpacing: 0.3,
   },
   headerCountChip: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: P.bg2,
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99,
   },
   headerCountText: {
     fontFamily: fonts.monoBold,
-    fontSize: 10.5, fontWeight: '800', color: P.yellow,
+    fontSize: 10.5, fontWeight: '800', color: P.ink,
   },
 
   // ── List + cards ────────────────────────────────────────
@@ -304,19 +301,19 @@ const styles = StyleSheet.create({
 
   emptyCard: {
     backgroundColor: P.white,
-    borderWidth: 1.5, borderColor: P.yellowPale, borderStyle: 'dashed',
+    borderWidth: 1.5, borderColor: P.bg2, borderStyle: 'dashed',
     borderRadius: 18,
     paddingVertical: 36, paddingHorizontal: 22,
     alignItems: 'center', gap: 10,
   },
   emptyIcon: {
     width: 52, height: 52, borderRadius: 13,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   emptyIconText: {
     fontFamily: fonts.monoBold,
-    fontSize: 11, fontWeight: '800', color: P.yellowText, letterSpacing: 0.4,
+    fontSize: 11, fontWeight: '800', color: P.ink, letterSpacing: 0.4,
   },
   emptyText: {
     fontFamily: fonts.displayBold,
@@ -421,16 +418,16 @@ const styles = StyleSheet.create({
 
   viewAllBtn: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: P.yellowPale, borderRadius: 10,
+    backgroundColor: P.bg2, borderRadius: 10,
     paddingHorizontal: 13, paddingVertical: 10,
     marginTop: 4,
   },
   viewAllText: {
     fontFamily: fonts.sansBold,
-    fontSize: 11.5, fontWeight: '700', color: P.yellowText, letterSpacing: 0.2,
+    fontSize: 11.5, fontWeight: '700', color: P.ink, letterSpacing: 0.2,
   },
   viewAllArrow: {
     fontFamily: fonts.monoBold,
-    fontSize: 13, color: P.yellowText, fontWeight: '800',
+    fontSize: 13, color: P.ink, fontWeight: '800',
   },
 });

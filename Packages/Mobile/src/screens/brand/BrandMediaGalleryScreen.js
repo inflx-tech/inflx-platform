@@ -95,7 +95,7 @@ function UsageBar({ usage }) {
   const pct = Math.min(100, usage.used_pct || 0);
   const usedMb   = (usage.used_bytes / (1024 * 1024)).toFixed(1);
   const quotaMb  = Math.floor(usage.quota_bytes / (1024 * 1024));
-  const color = pct >= 90 ? P.danger : pct >= 75 ? P.yellowHover : P.ink;
+  const color = pct >= 90 ? P.danger : pct >= 75 ? P.warn : P.ink;
   return (
     <View style={s.usageWrap}>
       <View style={s.usageRow}>
@@ -221,7 +221,7 @@ function AssetsTab() {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
 
   return (
@@ -229,7 +229,7 @@ function AssetsTab() {
       data={assets}
       keyExtractor={a => a.id}
       numColumns={2}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} colors={[P.ink]} />}
       ListHeaderComponent={
         <View>
           <UsageBar usage={usage} />
@@ -327,7 +327,7 @@ function LinksTab() {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
 
   return (
@@ -335,7 +335,7 @@ function LinksTab() {
       <FlatList
         data={links}
         keyExtractor={l => l.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} colors={[P.ink]} />}
         ListHeaderComponent={
           <View>
             <Text style={s.sectionHint}>
@@ -482,14 +482,14 @@ function ContractsTab({ navigation }) {
   });
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
 
   return (
     <FlatList
       data={filtered}
       keyExtractor={c => c.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} colors={[P.ink]} />}
       ListHeaderComponent={
         <View style={s.searchWrap}>
           <TextInput
@@ -547,7 +547,7 @@ const s = StyleSheet.create({
 
   tabs: { flexDirection: 'row', backgroundColor: P.white, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: P.border, gap: 18 },
   tab: { paddingVertical: 11, paddingHorizontal: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: P.yellow },
+  tabActive: { borderBottomColor: P.ink },
   tabLabel: { fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.muted2 },
   tabLabelActive: { color: P.ink, fontWeight: '700' },
 
@@ -565,10 +565,10 @@ const s = StyleSheet.create({
   filterChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 99, backgroundColor: P.bg2, marginRight: 6 },
   filterChipActive: { backgroundColor: P.ink },
   filterChipLabel: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.muted },
-  filterChipLabelActive: { color: P.yellow, fontFamily: fonts.monoBold },
+  filterChipLabelActive: { color: P.white, fontFamily: fonts.monoBold },
 
   uploadBtn: { backgroundColor: P.ink, paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginTop: 4 },
-  uploadBtnText: { fontFamily: fonts.displayBold, color: P.yellow, fontWeight: '800', fontSize: 13.5, letterSpacing: 0.3 },
+  uploadBtnText: { fontFamily: fonts.displayBold, color: P.white, fontWeight: '800', fontSize: 13.5, letterSpacing: 0.3 },
   uploadHint: { fontFamily: fonts.sansMedium, marginTop: 5, marginBottom: 12, fontSize: 9.5, color: P.muted2, textAlign: 'center', lineHeight: 14 },
 
   card: { flex: 1, backgroundColor: P.white, borderRadius: 12, margin: 5, borderWidth: 1, borderColor: P.border, overflow: 'hidden' },
@@ -580,7 +580,7 @@ const s = StyleSheet.create({
   cardMeta: { fontFamily: fonts.monoMedium, fontSize: 9.5, color: P.muted2, marginTop: 2 },
   cardActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7, paddingTop: 6, borderTopWidth: 1, borderTopColor: P.borderSoft },
   actionBtn: { paddingVertical: 3, paddingHorizontal: 4 },
-  actionTxtOpen: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.yellowText },
+  actionTxtOpen: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.ink },
   actionTxtDelete: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.dangerText },
 
   linkCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: P.white, borderRadius: 12, borderWidth: 1, borderColor: P.border, padding: 12, marginBottom: 8, gap: 12 },
@@ -598,8 +598,8 @@ const s = StyleSheet.create({
   formLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted, marginBottom: 4, marginTop: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
   formInput: { fontFamily: fonts.sansMedium, backgroundColor: P.bg2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: P.ink },
   modalFooter: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  primaryBtn: { flex: 1, backgroundColor: P.yellow, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  primaryBtnText: { fontFamily: fonts.displayBold, color: P.ink, fontWeight: '800', fontSize: 13 },
+  primaryBtn: { flex: 1, backgroundColor: P.ink, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  primaryBtnText: { fontFamily: fonts.displayBold, color: P.white, fontWeight: '800', fontSize: 13 },
   secondaryBtn: { flex: 1, backgroundColor: P.bg2, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   secondaryBtnText: { fontFamily: fonts.sansBold, color: P.muted, fontWeight: '800', fontSize: 13 },
 

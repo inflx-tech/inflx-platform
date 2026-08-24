@@ -5,7 +5,7 @@ import { brandPalette as P, fonts } from '../../theme/tokens';
 /**
  * <EmptyState icon title sub />
  *
- * Dashed-yellow border card with a yellow-pale tile + Outfit title +
+ * Dashed hairline card with a neutral tile + Outfit title +
  * PJS muted sub. Introduced in Flow 21 (2026-05-25). Replaces inline
  * equivalents in Flows 18-20.
  *
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: P.white,
     borderWidth: 1.5,
-    borderColor: P.yellowPale,
+    borderColor: P.border,
     borderStyle: 'dashed',
     borderRadius: 18,
     paddingVertical: 36,
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 13,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoBold,
     fontSize: 11,
     fontWeight: '800',
-    color: P.yellowText,
+    color: P.ink,
     letterSpacing: 0.4,
   },
   title: {

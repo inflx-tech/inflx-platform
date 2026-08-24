@@ -110,8 +110,8 @@ function getNavTarget(type, dataJson) {
 function NotificationCard({ item, onPress }) {
   const isUnread = !item.is_read;
   const ic = getNotificationIcon(item.type);
-  const tileBg = isUnread ? P.yellowPale : TONE_BG[ic.tone];
-  const tileFg = isUnread ? P.yellowText : TONE_FG[ic.tone];
+  const tileBg = isUnread ? P.bg2 : TONE_BG[ic.tone];
+  const tileFg = isUnread ? P.ink : TONE_FG[ic.tone];
   return (
     <TouchableOpacity
       style={[styles.card, isUnread && styles.cardUnread]}
@@ -204,7 +204,7 @@ export default function NotificationsScreen({ navigation }) {
       {/* ─── Header ─── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
-          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Icon name="chevron-left" size={16} color={P.muted2} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
@@ -215,16 +215,15 @@ export default function NotificationsScreen({ navigation }) {
             disabled={markingRead}
           >
             {markingRead ? (
-              <ActivityIndicator size="small" color={P.ink} />
+              <ActivityIndicator size="small" color={P.white} />
             ) : (
               <>
-                <Icon name="check-all" size={14} color={P.ink} />
+                <Icon name="check-all" size={14} color={P.white} />
                 <Text style={styles.markAllText}>MARK ALL AS READ ({unreadCount})</Text>
               </>
             )}
           </TouchableOpacity>
         )}
-        <View style={styles.headerRule} />
       </View>
 
       {/* ─── Error ─── */}
@@ -241,7 +240,7 @@ export default function NotificationsScreen({ navigation }) {
       {notifications.length === 0 && !error ? (
         <View style={styles.emptyWrap}>
           <View style={styles.emptyTile}>
-            <Icon name="bell-outline" size={32} color={P.yellowText} />
+            <Icon name="bell-outline" size={32} color={P.ink} />
           </View>
           <Text style={styles.emptyTitle}>No notifications yet</Text>
           <Text style={styles.emptyMsg}>
@@ -269,21 +268,20 @@ const styles = StyleSheet.create({
   centerWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: P.bg },
   loadingText: { marginTop: 12, fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2 },
 
-  // Header (ink topbar with yellow rule)
-  header: { backgroundColor: P.ink, paddingTop: 50, paddingHorizontal: 18, paddingBottom: 16, position: 'relative' },
+  // Header (white topbar, ink text, hairline rule)
+  header: { backgroundColor: P.white, paddingTop: 50, paddingHorizontal: 18, paddingBottom: 16, position: 'relative', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
-  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: 'rgba(255,255,255,0.65)' },
-  headerTitle: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.white, marginBottom: 10 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: P.muted2 },
+  headerTitle: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.ink, marginBottom: 10 },
   markAllBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     borderRadius: 8,
     paddingHorizontal: 13,
     paddingVertical: 7,
     alignSelf: 'flex-start',
   },
-  markAllText: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
-  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  markAllText: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.white, letterSpacing: 0.3 },
 
   // Error
   errorBanner: {
@@ -310,13 +308,13 @@ const styles = StyleSheet.create({
     borderColor: P.border,
     position: 'relative',
   },
-  cardUnread: { backgroundColor: P.yellow50, borderColor: '#F0DA88' },
+  cardUnread: { backgroundColor: P.bg2, borderColor: P.border },
   unreadDot: {
     position: 'absolute',
     top: 14, left: 6,
     width: 6, height: 6,
     borderRadius: 3,
-    backgroundColor: P.yellow,
+    backgroundColor: P.warn,
   },
   iconWrap: {
     width: 38, height: 38, borderRadius: 10,
@@ -335,9 +333,9 @@ const styles = StyleSheet.create({
   emptyTile: {
     width: 66, height: 66,
     borderRadius: 14,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     borderWidth: 1.5,
-    borderColor: P.yellow,
+    borderColor: P.ink,
     borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 16,

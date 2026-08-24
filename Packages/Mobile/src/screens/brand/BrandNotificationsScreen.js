@@ -18,7 +18,7 @@ const TYPE_ICONS = {
 // Type → avatar tile palette. Mirrors Flow 15 brand-web notifications surface
 // so a brand sees the same colour language across web + mobile.
 const TYPE_AVATAR = {
-  account_approved:     { bg: P.yellowPale,  fg: P.yellowText },
+  account_approved:     { bg: P.warnPale,  fg: P.warnText },
   account_rejected:     { bg: P.dangerPale,  fg: P.dangerText },
   offer_accepted:       { bg: P.successPale, fg: P.successText },
   offer_declined:       { bg: P.dangerPale,  fg: P.dangerText },
@@ -27,10 +27,10 @@ const TYPE_AVATAR = {
   content_submitted:    { bg: P.infoPale,    fg: P.info },
   content_approved:     { bg: P.successPale, fg: P.successText },
   content_live:         { bg: P.successPale, fg: P.successText },
-  tranche_released:     { bg: P.yellowPale,  fg: P.yellowText },
-  commission_earned:    { bg: P.yellowPale,  fg: P.yellowText },
+  tranche_released:     { bg: P.warnPale,  fg: P.warnText },
+  commission_earned:    { bg: P.warnPale,  fg: P.warnText },
   low_wallet:           { bg: P.dangerPale,  fg: P.dangerText },
-  withdrawal_processed: { bg: P.yellowPale,  fg: P.yellowText },
+  withdrawal_processed: { bg: P.warnPale,  fg: P.warnText },
 };
 const FALLBACK_AVATAR = { bg: P.bg2, fg: P.muted2 };
 
@@ -154,11 +154,10 @@ export default function BrandNotificationsScreen({ navigation }) {
         <View style={styles.topbar}>
           <View style={styles.topbarL}>
             <Text style={styles.title}>Notifications</Text>
-            <View style={styles.rule} />
           </View>
         </View>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color={P.yellow} size="large" />
+          <ActivityIndicator color={P.ink} size="large" />
           <Text style={styles.loadingTxt}>Loading…</Text>
         </View>
       </View>
@@ -170,7 +169,6 @@ export default function BrandNotificationsScreen({ navigation }) {
       <View style={styles.topbar}>
         <View style={styles.topbarL}>
           <Text style={styles.title}>Notifications</Text>
-          <View style={styles.rule} />
           <View style={[styles.cntChip, unreadCount === 0 && styles.cntChipZero]}>
             <Text style={[styles.cntChipText, unreadCount === 0 && styles.cntChipTextZero]}>
               {unreadCount} UNREAD
@@ -196,8 +194,8 @@ export default function BrandNotificationsScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={P.yellow}
-            colors={[P.yellow]}
+            tintColor={P.ink}
+            colors={[P.ink]}
           />
         }
       >
@@ -262,7 +260,7 @@ const styles = StyleSheet.create({
 
   // ── Topbar (ink, replaces navy) ──────────────────────────────
   topbar: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     paddingHorizontal: 20,
     paddingTop: 52,
     paddingBottom: 16,
@@ -270,6 +268,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
   topbarL: {
     flexDirection: 'column',
@@ -280,21 +280,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontSize: 22,
     fontWeight: '700',
-    color: P.white,
+    color: P.ink,
     letterSpacing: -0.3,
-  },
-  rule: {
-    width: 36,
-    height: 3,
-    backgroundColor: P.yellow,
-    borderRadius: 2,
   },
   cntChip: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 99,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     marginTop: 2,
   },
   cntChipZero: {
@@ -314,18 +308,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 99,
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     flexShrink: 0,
   },
   markAllPillBusy: {
-    backgroundColor: P.yellow,
+    backgroundColor: P.ink,
     opacity: 0.4,
   },
   markAllText: {
     fontFamily: fonts.sansBold,
     fontSize: 11.5,
     fontWeight: '700',
-    color: P.ink,
+    color: P.white,
   },
 
   // ── Scroll body ─────────────────────────────────────────────
@@ -353,8 +347,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   notifCardUnread: {
-    backgroundColor: P.yellow50,
-    borderColor: P.yellowPale,
+    backgroundColor: P.bg2,
+    borderColor: P.bg2,
   },
   notifAvatar: {
     width: 38,
@@ -362,13 +356,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
   },
   notifAvatarText: {
     fontFamily: fonts.monoBold,
     fontSize: 9.5,
     fontWeight: '800',
-    color: P.yellowText,
+    color: P.ink,
     letterSpacing: 0.4,
   },
   notifMid: {
@@ -408,11 +402,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansBold,
     fontSize: 10.5,
     fontWeight: '700',
-    color: P.yellowText,
+    color: P.ink,
   },
   notifLinkChevron: {
     fontFamily: fonts.monoBold,
-    color: P.yellow,
+    color: P.muted,
     fontWeight: '800',
   },
   unreadDot: {
@@ -422,7 +416,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: P.yellow,
+    backgroundColor: P.warn,
   },
 
   // ── Empty state ─────────────────────────────────────────────
@@ -431,7 +425,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
     backgroundColor: P.white,
     borderWidth: 1.5,
-    borderColor: P.yellowPale,
+    borderColor: P.bg2,
     borderStyle: 'dashed',
     borderRadius: 18,
     paddingVertical: 42,
@@ -443,7 +437,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 14,
-    backgroundColor: P.yellowPale,
+    backgroundColor: P.bg2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -451,7 +445,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoBold,
     fontSize: 12,
     fontWeight: '800',
-    color: P.yellowText,
+    color: P.ink,
     letterSpacing: 0.4,
   },
   emptyTitle: {

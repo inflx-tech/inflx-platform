@@ -5,13 +5,16 @@ import { brandPalette as P, fonts } from '../../theme/tokens';
 /**
  * <ScreenHeader title sub back onBack count countLabel />
  *
- * Ink topbar component. Single source of truth for brand-mobile screens
- * (Flow 21+). Replaces inline ink-topbar markup in Flows 18-20 (deferred
+ * White topbar component. Single source of truth for brand-mobile screens
+ * (Flow 21+). Replaces inline topbar markup in Flows 18-20 (deferred
  * retroactive migration).
  *
+ * White surface, ink text, hairline rule underneath. No colour accent — the
+ * former ink bar + yellow underline were retired in the white/black pass.
+ *
  * Props:
- *   - title:      string (Outfit-Bold 22 white)
- *   - sub:        optional string (PJS Medium 11 muted-white)
+ *   - title:      string (Outfit-Bold 22 ink)
+ *   - sub:        optional string (PJS Medium 11 muted)
  *   - back:       optional bool — render "‹ Back" link above title
  *   - onBack:     optional callback for back tap
  *   - count:      optional number — render count chip on right
@@ -37,7 +40,6 @@ export default function ScreenHeader({ title, sub, back, onBack, count, countLab
       <View style={styles.row}>
         <View style={styles.l}>
           {title ? <Text style={styles.title}>{title}</Text> : null}
-          <View style={styles.rule} />
           {sub ? <Text style={styles.sub}>{sub}</Text> : null}
         </View>
 
@@ -55,17 +57,19 @@ export default function ScreenHeader({ title, sub, back, onBack, count, countLab
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     paddingHorizontal: 18,
     paddingTop: 52,
     paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
   backLink: { paddingBottom: 6 },
   backText: {
     fontFamily: fonts.sansMedium,
     fontSize: 11.5,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
+    color: P.muted2,
   },
   row: {
     flexDirection: 'row',
@@ -78,22 +82,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontSize: 22,
     fontWeight: '700',
-    color: P.white,
+    color: P.ink,
     letterSpacing: -0.3,
-  },
-  rule: {
-    width: 30,
-    height: 3,
-    backgroundColor: P.yellow,
-    borderRadius: 2,
   },
   sub: {
     fontFamily: fonts.sansMedium,
     fontSize: 11,
-    color: 'rgba(255,255,255,0.55)',
+    color: P.muted2,
   },
   countChip: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: P.bg2,
+    borderWidth: 1,
+    borderColor: P.border,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 99,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoBold,
     fontSize: 10.5,
     fontWeight: '800',
-    color: P.yellow,
+    color: P.ink,
     letterSpacing: 0.2,
   },
 });

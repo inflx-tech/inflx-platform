@@ -22,8 +22,8 @@ const STATUS_FILTERS = [
 
 // Canonical status → palette map (Flow 20)
 const STATUS_PILL = {
-  submitted: { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
-  new:       { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
+  submitted: { bg: P.warnPale,  fg: P.warnText,  label: 'NEW' },
+  new:       { bg: P.warnPale,  fg: P.warnText,  label: 'NEW' },
   contacted: { bg: P.infoPale,    fg: P.info,        label: 'CONTACTED' },
   responded: { bg: P.infoPale,    fg: P.info,        label: 'RESPONDED' },
   converted: { bg: P.successPale, fg: P.successText, label: 'CONVERTED' },
@@ -121,7 +121,7 @@ export default function BrandEnquiriesScreen({ navigation }) {
     return (
       <View style={{ flex: 1, backgroundColor: P.bg }}>
         <Header navigation={navigation} />
-        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
       </View>
     );
   }
@@ -146,7 +146,7 @@ export default function BrandEnquiriesScreen({ navigation }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 14 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {enquiries.length === 0 ? (
           <View style={s.emptyCard}>
@@ -266,7 +266,6 @@ function Header({ navigation }) {
         <Text style={s.backText}>‹ Back</Text>
       </TouchableOpacity>
       <Text style={s.title}>Enquiries</Text>
-      <View style={s.rule} />
       <Text style={s.subtitle}>Followers who asked about your business via your influencers</Text>
     </View>
   );
@@ -290,23 +289,22 @@ function InfoRow({ label, value, mono }) {
 const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14 },
+  header: { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back: { paddingBottom: 6 },
-  backText: { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
-  title: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  rule: { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 6 },
-  subtitle: { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6 },
+  backText: { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: P.muted2 },
+  title: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.3 },
+  subtitle: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: 6 },
 
   chipsRow: { backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border, maxHeight: 48 },
   chipsRowContent: { paddingHorizontal: 14, gap: 6, alignItems: 'center', paddingVertical: 8 },
   chip: { backgroundColor: P.bg2, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: P.border },
   chipActive: { backgroundColor: P.ink, borderColor: P.ink },
   chipText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.muted },
-  chipTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
+  chipTextActive: { color: P.white, fontFamily: fonts.monoBold },
 
-  emptyCard: { backgroundColor: P.white, borderWidth: 1.5, borderColor: P.yellowPale, borderStyle: 'dashed', borderRadius: 18, paddingVertical: 36, paddingHorizontal: 22, alignItems: 'center', gap: 10 },
-  emptyIcon: { width: 52, height: 52, borderRadius: 13, backgroundColor: P.yellowPale, alignItems: 'center', justifyContent: 'center' },
-  emptyIconText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText, letterSpacing: 0.4 },
+  emptyCard: { backgroundColor: P.white, borderWidth: 1.5, borderColor: P.bg2, borderStyle: 'dashed', borderRadius: 18, paddingVertical: 36, paddingHorizontal: 22, alignItems: 'center', gap: 10 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 13, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  emptyIconText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.ink, letterSpacing: 0.4 },
   emptyText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '700', color: P.ink },
   emptySub: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, maxWidth: 260 },
 

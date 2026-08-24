@@ -12,17 +12,17 @@ import { brandPalette as P, fonts } from '../../theme/tokens';
  * Props:
  *   - status: string from the canonical map (or unknown → bg2/muted2)
  *   - mode:   'default' | 'transaction'
- *             - 'transaction' overrides `pending` to yellowPale/yellowText
+ *             - 'transaction' overrides `pending` to warnPale/warnText
  *               (in-flight transaction context, not stale-terminal).
  */
 
 export const STATUS_MAP_DEFAULT = {
   // new/pending-actionable
-  new:       { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
-  submitted: { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
-  sent:      { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
-  applied:   { bg: P.yellowPale,  fg: P.yellowText,  label: 'APPLIED' },     // Flow 22
-  negotiating: { bg: P.yellowPale, fg: P.yellowText, label: 'NEGOTIATING' }, // Flow 22
+  new:       { bg: P.warnPale,  fg: P.warnText,  label: 'NEW' },
+  submitted: { bg: P.warnPale,  fg: P.warnText,  label: 'NEW' },
+  sent:      { bg: P.warnPale,  fg: P.warnText,  label: 'NEW' },
+  applied:   { bg: P.warnPale,  fg: P.warnText,  label: 'APPLIED' },     // Flow 22
+  negotiating: { bg: P.warnPale, fg: P.warnText, label: 'NEGOTIATING' }, // Flow 22
   pending:   { bg: P.bg2,         fg: P.muted2,      label: 'PENDING' },
 
   // viewed / responded / contacted (engaged)
@@ -57,18 +57,18 @@ export const STATUS_MAP_DEFAULT = {
   walked_away:  { bg: P.bg2, fg: P.muted2, label: 'CLOSED' },       // Flow 23 (negotiation terminal)
 
   // Negotiation in-flight
-  awaiting_brand:      { bg: P.yellowPale, fg: P.yellowText, label: 'YOUR TURN' },  // Flow 23
+  awaiting_brand:      { bg: P.warnPale, fg: P.warnText, label: 'YOUR TURN' },  // Flow 23
   awaiting_influencer: { bg: P.infoPale,   fg: P.info,       label: 'WAITING' },    // Flow 23
   agreed:              { bg: P.successPale,fg: P.successText, label: 'AGREED' },    // Flow 23
-  open:                { bg: P.yellowPale, fg: P.yellowText, label: 'OPEN' },       // Flow 23
+  open:                { bg: P.bg2, fg: P.ink, label: 'OPEN' },       // Flow 23
 
   // Contract lifecycle (Flow 25)
   draft:              { bg: P.bg2,        fg: P.muted2,     label: 'DRAFT' },                // Flow 25
-  pending_influencer: { bg: P.yellowPale, fg: P.yellowText, label: 'AWAITING INFLUENCER' }, // Flow 25
-  pending_brand:      { bg: P.yellowPale, fg: P.yellowText, label: 'YOUR TURN' },           // Flow 25
+  pending_influencer: { bg: P.warnPale, fg: P.warnText, label: 'AWAITING INFLUENCER' }, // Flow 25
+  pending_brand:      { bg: P.warnPale, fg: P.warnText, label: 'YOUR TURN' },           // Flow 25
 
   // Production-event lifecycle (Flow 27)
-  proposed:    { bg: P.yellowPale,  fg: P.yellowText,  label: 'PROPOSED' },    // Flow 27
+  proposed:    { bg: P.bg2,  fg: P.ink,  label: 'PROPOSED' },    // Flow 27
   confirmed:   { bg: P.successPale, fg: P.successText, label: 'CONFIRMED' },   // Flow 27
   in_progress: { bg: P.infoPale,    fg: P.info,        label: 'IN PROGRESS' }, // Flow 27
 
@@ -78,7 +78,7 @@ export const STATUS_MAP_DEFAULT = {
 
   // Campaign + deliverable + tranche statuses (Flow 31)
   published:          { bg: P.infoPale,    fg: P.info,        label: 'PUBLISHED' }, // Flow 31 (campaign_status)
-  revision_requested: { bg: P.yellowPale,  fg: P.yellowText,  label: 'REVISION' },  // Flow 31 (deliverable_status)
+  revision_requested: { bg: P.warnPale,  fg: P.warnText,  label: 'REVISION' },  // Flow 31 (deliverable_status)
   locked:             { bg: P.bg2,         fg: P.muted2,      label: 'LOCKED' },    // Flow 31 (tranche_status)
   released:           { bg: P.successPale, fg: P.successText, label: 'RELEASED' },  // Flow 31 (tranche_status)
 };
@@ -91,7 +91,7 @@ export default function StatusPill({ status, mode = 'default' }) {
 
   // In-flight transaction context: 'pending' is actionable, not terminal
   if (mode === 'transaction' && key === 'pending') {
-    cfg = { bg: P.yellowPale, fg: P.yellowText, label: 'PENDING' };
+    cfg = { bg: P.warnPale, fg: P.warnText, label: 'PENDING' };
   }
 
   // Influencer-POV (Flow 30): flip role-perspective on the 2 negotiation-
@@ -99,7 +99,7 @@ export default function StatusPill({ status, mode = 'default' }) {
   // influencer-side consumers need them inverted to make sense.
   if (mode === 'influencer') {
     if (key === 'awaiting_brand')      cfg = { bg: P.infoPale,   fg: P.info,       label: 'WAITING' };
-    if (key === 'awaiting_influencer') cfg = { bg: P.yellowPale, fg: P.yellowText, label: 'YOUR TURN' };
+    if (key === 'awaiting_influencer') cfg = { bg: P.warnPale, fg: P.warnText, label: 'YOUR TURN' };
   }
 
   return (

@@ -39,7 +39,7 @@ export function PrimeBar({ prime, onPress, busy, subtitle }) {
         <Text style={s.primeTitle}>{prime.label}</Text>
         {subtitle ? <Text style={s.primeSub}>{subtitle}</Text> : null}
       </View>
-      {busy ? <ActivityIndicator color={ig.y} /> : <Text style={s.primeGo}>→</Text>}
+      {busy ? <ActivityIndicator color={ig.bg} /> : <Text style={s.primeGo}>→</Text>}
     </TouchableOpacity>
   );
 }
@@ -56,7 +56,7 @@ const s = StyleSheet.create({
   prime: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: ig.text, borderRadius: 12, padding: 14, marginBottom: 12 },
   primeTitle: { color: '#fff', fontSize: 14.5, fontWeight: '800' },
   primeSub: { color: 'rgba(255,255,255,0.65)', fontSize: 11.5, marginTop: 2 },
-  primeGo: { color: ig.y, fontSize: 20, fontWeight: '800' },
+  primeGo: { color: ig.bg, fontSize: 20, fontWeight: '800' },
 
   calm: { borderWidth: 1, borderColor: ig.line, borderRadius: 12, padding: 13, marginBottom: 12 },
   calmTxt: { fontSize: 13, fontWeight: '700', color: ig.mut, textAlign: 'center' },

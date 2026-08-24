@@ -159,7 +159,7 @@ export default function BrandProfileScreen({ navigation }) {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
   if (!brand) {
     const noProfile = loadError === 'no_profile';
@@ -366,7 +366,7 @@ export default function BrandProfileScreen({ navigation }) {
         </View>
 
         <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
-          {saving ? <ActivityIndicator color={P.ink} /> : <Text style={s.saveBtnText}>Save Changes</Text>}
+          {saving ? <ActivityIndicator color={P.white} /> : <Text style={s.saveBtnText}>Save Changes</Text>}
         </TouchableOpacity>
 
         <View style={s.card}>
@@ -428,20 +428,20 @@ const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   loadingText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, textAlign: 'center' },
   recoverTitle: { fontFamily: fonts.displayBold, fontSize: 16, fontWeight: '800', color: P.ink, textAlign: 'center', marginBottom: 8 },
-  recoverBtn: { marginTop: 20, backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 26, alignItems: 'center' },
-  recoverBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
+  recoverBtn: { marginTop: 20, backgroundColor: P.ink, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 26, alignItems: 'center' },
+  recoverBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.white, letterSpacing: 0.3 },
 
-  hero: { backgroundColor: P.ink, padding: 20, paddingTop: 52, alignItems: 'center' },
-  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 11 },
-  avatarText: { fontFamily: fonts.displayBold, fontSize: 24, fontWeight: '900', color: P.ink },
-  brandName: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.white, marginBottom: 8, letterSpacing: -0.3 },
+  hero: { backgroundColor: P.white, padding: 20, paddingTop: 52, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
+  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginBottom: 11 },
+  avatarText: { fontFamily: fonts.displayBold, fontSize: 24, fontWeight: '900', color: P.white },
+  brandName: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.ink, marginBottom: 8, letterSpacing: -0.3 },
 
   statusBanner: { margin: 14, marginBottom: 0, padding: 12, borderRadius: 12, borderWidth: 1 },
-  statusBannerWarn: { backgroundColor: P.yellowPale, borderColor: P.yellow },
+  statusBannerWarn: { backgroundColor: P.warnPale, borderColor: P.warn },
   statusBannerError: { backgroundColor: P.dangerPale, borderColor: P.dangerPale },
   statusBannerTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', marginBottom: 3 },
   statusBannerBody: { fontFamily: fonts.sansMedium, fontSize: 11, lineHeight: 16 },
-  statusBannerWarnText: { color: P.yellowText },
+  statusBannerWarnText: { color: P.warnText },
   statusBannerErrorText: { color: P.dangerText },
 
   card: { margin: 14, marginBottom: 0, backgroundColor: P.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: P.border },
@@ -456,16 +456,16 @@ const s = StyleSheet.create({
   inputReadOnly: { backgroundColor: P.bg2, color: P.muted3 },
   inputTextarea: { minHeight: 68, textAlignVertical: 'top' },
 
-  addBranchBtn: { borderWidth: 1, borderColor: P.yellow, borderRadius: 99, paddingHorizontal: 11, paddingVertical: 5 },
-  addBranchBtnText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText },
+  addBranchBtn: { borderWidth: 1, borderColor: P.ink, borderRadius: 99, paddingHorizontal: 11, paddingVertical: 5 },
+  addBranchBtnText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '800', color: P.ink },
   branchBox: { borderWidth: 1, borderColor: P.border, borderRadius: 12, padding: 11, marginBottom: 10, backgroundColor: P.bg },
   branchHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 },
   branchIndex: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase' },
   removeText: { fontFamily: fonts.sansBold, fontSize: 11, color: P.dangerText, fontWeight: '700' },
   emptyText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, textAlign: 'center', paddingVertical: 10 },
 
-  saveBtn: { margin: 14, backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
+  saveBtn: { margin: 14, backgroundColor: P.ink, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  saveBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.white, letterSpacing: 0.3 },
 
   linkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: P.border, gap: 10 },
   linkRowLast: { borderBottomWidth: 0 },

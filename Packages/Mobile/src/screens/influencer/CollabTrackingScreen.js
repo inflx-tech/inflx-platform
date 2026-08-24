@@ -160,7 +160,7 @@ const s = StyleSheet.create({
   emptyT: { fontSize: 13.5, fontWeight: '700', color: ig.text, marginTop: 10 },
   emptyS: { fontSize: 11.5, color: ig.mut, textAlign: 'center', marginTop: 4, lineHeight: 16 },
 
-  soon: { marginLeft: 'auto', backgroundColor: ig.yBg, borderWidth: 1, borderColor: '#F0DA88', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  soon: { marginLeft: 'auto', backgroundColor: ig.yBg, borderWidth: 1, borderColor: ig.y, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   soonTxt: { fontSize: 8.5, fontWeight: '800', color: ig.yInk, textTransform: 'uppercase', letterSpacing: 0.3 },
   phTxt: { fontSize: 12, color: ig.mut, lineHeight: 17, marginBottom: 12 },
   phRow: { flexDirection: 'row', gap: 6 },

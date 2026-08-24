@@ -130,7 +130,6 @@ export default function BrandOffersLibraryScreen({ navigation }) {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
             <Text style={s.title}>Offer library</Text>
-            <View style={s.rule} />
           </View>
           <TouchableOpacity style={s.newBtn} onPress={() => setBuilder(true)}>
             <Text style={s.newBtnTxt}>+ New offer</Text>
@@ -150,11 +149,11 @@ export default function BrandOffersLibraryScreen({ navigation }) {
       </ScrollView>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.yellow} /></View>
+        <View style={{ flex: 1, justifyContent: 'center' }}><ActivityIndicator size="large" color={P.ink} /></View>
       ) : (
         <ScrollView
           style={{ flex: 1 }} contentContainerStyle={{ padding: 14, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.ink} />}
         >
           {visible.length === 0 ? (
             <View style={s.empty}>
@@ -197,7 +196,7 @@ export default function BrandOffersLibraryScreen({ navigation }) {
                 </Text>
 
                 <Text style={s.sheetSection}>WHERE IT'S USED</Text>
-                {attachments === null ? <ActivityIndicator color={P.yellow} style={{ marginVertical: 8 }} />
+                {attachments === null ? <ActivityIndicator color={P.ink} style={{ marginVertical: 8 }} />
                   : attachments.length === 0 ? <Text style={s.sheetEmpty}>Not attached to any campaign yet.</Text>
                   : attachments.slice(0, 6).map((a, i) => (
                     <Text key={i} style={s.attachRow} numberOfLines={1}>
@@ -365,19 +364,18 @@ export default function BrandOffersLibraryScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  header:    { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14 },
+  header:    { backgroundColor: P.white, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   back:      { paddingBottom: 6 },
-  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
-  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  rule:      { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 6 },
-  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6 },
-  newBtn:    { backgroundColor: P.yellow, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8 },
-  newBtnTxt: { fontSize: 12, fontWeight: '800', color: P.ink },
+  backText:  { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: P.muted2 },
+  title:     { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.3 },
+  subtitle:  { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: 6 },
+  newBtn:    { backgroundColor: P.ink, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8 },
+  newBtnTxt: { fontSize: 12, fontWeight: '800', color: P.white },
   chipsRow:  { paddingHorizontal: 14, paddingVertical: 10, gap: 6 },
   chip:      { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 6 },
-  chipOn:    { backgroundColor: P.yellowPale, borderColor: P.yellow },
+  chipOn:    { backgroundColor: P.bg2, borderColor: P.ink },
   chipTxt:   { fontSize: 11.5, fontWeight: '600', color: P.muted },
-  chipTxtOn: { color: P.yellowText },
+  chipTxtOn: { color: P.ink },
   card:      { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 12, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'center' },
   cardIcon:  { fontSize: 20 },
   cardName:  { fontSize: 14, fontWeight: '700', color: P.ink },
@@ -394,8 +392,8 @@ const s = StyleSheet.create({
   label:     { fontSize: 11, fontWeight: '700', color: P.ink2, marginTop: 14, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
   input:     { backgroundColor: P.bg, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: P.ink2 },
   btn:       { borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  btnFill:   { backgroundColor: P.yellow },
-  btnFillTxt:{ fontSize: 13.5, fontWeight: '800', color: P.ink },
+  btnFill:   { backgroundColor: P.ink },
+  btnFillTxt:{ fontSize: 13.5, fontWeight: '800', color: P.white},
   btnGhost:  { backgroundColor: P.white, borderWidth: 1, borderColor: P.border },
   btnGhostTxt:{ fontSize: 13, fontWeight: '700', color: P.dangerText },
   btnPlain:  { backgroundColor: 'transparent' },

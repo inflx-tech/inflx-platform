@@ -22,11 +22,9 @@ const P = {
   muted3:       '#A1A1AA',
   border:       '#E4E4E7',
   border2:      '#D4D4D8',
-  yellow:       '#FFC107',
-  yellowHover:  '#E0A800',
-  yellowPale:   '#FFF7CC',
-  yellow50:     '#FFFDEB',
-  yellowText:   '#6B5A00',
+  warn:         '#EA580C',
+  warnPale:     '#FFF7ED',
+  warnText:     '#C2410C',
   success:      '#10B981',
   successPale:  '#D1FAE5',
   successDeep:  '#047857',
@@ -38,8 +36,8 @@ const P = {
 
 const STATUS_CFG = {
   draft:           { label: 'Draft',          bg: P.surface2,    text: P.muted,        dot: P.muted2 },
-  pending_wallet:  { label: 'Needs funding',  bg: P.yellowPale,  text: P.yellowText,   dot: P.yellowHover },
-  published:       { label: 'Published',      bg: P.yellowPale,  text: P.yellowText,   dot: P.yellowHover },
+  pending_wallet:  { label: 'Needs funding',  bg: P.warnPale,  text: P.warnText,   dot: P.warn },
+  published:       { label: 'Published',      bg: P.warnPale,  text: P.warnText,   dot: P.warn },
   active:          { label: 'Active',         bg: P.successPale, text: P.successDeep,  dot: P.success },
   live:            { label: 'Live',           bg: P.successPale, text: P.successDeep,  dot: P.success },
   completed:       { label: 'Completed',      bg: P.surface2,    text: P.ink2,         dot: P.muted2 },
@@ -348,16 +346,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 
-  // Ink header
+  // White header
   header: {
-    backgroundColor: P.ink,
+    backgroundColor: P.white,
     paddingHorizontal: 18,
     paddingTop: 52,
     paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: P.border,
   },
-  title: { fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.4 },
-  countLine: { fontSize: 11.5, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  countV: { color: P.white, fontWeight: '600' },
+  title: { fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.4 },
+  countLine: { fontSize: 11.5, color: P.muted2, marginTop: 4 },
+  countV: { color: P.ink, fontWeight: '600' },
 
   // Search
   searchRow: { paddingHorizontal: 14, paddingTop: 12 },
@@ -371,8 +371,8 @@ const styles = StyleSheet.create({
     height: 40,
   },
   searchInputWrapFocused: {
-    borderColor: P.yellow,
-    shadowColor: P.yellow,
+    borderColor: P.ink,
+    shadowColor: P.ink,
     shadowOpacity: 0.25,
     shadowRadius: 0,
     shadowOffset: { width: 0, height: 0 },
@@ -424,10 +424,10 @@ const styles = StyleSheet.create({
   bulkCount: { color: P.white, fontWeight: '700' },
   bulkActions: { flexDirection: 'row', gap: 5, alignItems: 'center' },
   bulkBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  bulkBtnCancel: { backgroundColor: P.yellow },
+  bulkBtnCancel: { backgroundColor: P.ink },
   bulkBtnDel:    { backgroundColor: P.danger },
   bulkBtnDisabled: { opacity: 0.4 },
-  bulkBtnTextCancel: { fontSize: 10.5, fontWeight: '700', color: P.ink },
+  bulkBtnTextCancel: { fontSize: 10.5, fontWeight: '700', color: P.white},
   bulkBtnTextDel:    { fontSize: 10.5, fontWeight: '700', color: P.white },
   bulkClearBtn: { paddingHorizontal: 6, paddingVertical: 6 },
   bulkClearText: { fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: '600' },

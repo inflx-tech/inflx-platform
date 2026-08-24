@@ -295,7 +295,7 @@ export default function BrandWalletScreen({ navigation }) {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>;
   }
 
   const balance        = wallet?.wallet_balance || 0;
@@ -306,7 +306,7 @@ export default function BrandWalletScreen({ navigation }) {
     <View style={{ flex: 1, backgroundColor: P.bg }}>
       <ScrollView
         style={s.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         <View style={s.header}>
           <Text style={s.title}>Wallet</Text>
@@ -360,13 +360,13 @@ export default function BrandWalletScreen({ navigation }) {
               activeOpacity={0.85}
             >
               {(toppingUp || verifying)
-                ? <ActivityIndicator color={P.yellow} size="small" />
+                ? <ActivityIndicator color={P.white} size="small" />
                 : <Text style={s.topupBtnText}>Top Up</Text>}
             </TouchableOpacity>
           </View>
           {verifying && (
             <View style={s.verifyingRow}>
-              <ActivityIndicator size="small" color={P.yellowText} />
+              <ActivityIndicator size="small" color={P.ink} />
               <Text style={s.verifyingText}>Verifying payment…</Text>
             </View>
           )}
@@ -442,7 +442,7 @@ export default function BrandWalletScreen({ navigation }) {
             activeOpacity={0.85}
           >
             {savingBank
-              ? <ActivityIndicator color={P.ink} size="small" />
+              ? <ActivityIndicator color={P.white} size="small" />
               : <Text style={s.bankSaveBtnText}>Save Payout Details</Text>}
           </TouchableOpacity>
         </View>
@@ -523,7 +523,7 @@ export default function BrandWalletScreen({ navigation }) {
               startInLoadingState={true}
               renderLoading={() => (
                 <View style={s.webviewLoading}>
-                  <ActivityIndicator size="large" color={P.yellow} />
+                  <ActivityIndicator size="large" color={P.ink} />
                   <Text style={{ marginTop: 12, color: P.muted, fontFamily: fonts.sansMedium }}>Loading payment gateway…</Text>
                 </View>
               )}
@@ -540,17 +540,17 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
-  title: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white, letterSpacing: -0.3 },
+  header: { backgroundColor: P.white, padding: 20, paddingTop: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
+  title: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.ink, letterSpacing: -0.3 },
 
-  // Balance card — ink hero with yellow accent on mini-stats
+  // Balance card — ink hero, white mini-stats
   balanceCard: { margin: 14, marginBottom: 0, backgroundColor: P.ink, borderRadius: 18, padding: 18 },
   balanceLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', fontWeight: '800', letterSpacing: 1 },
   balanceAmt: { fontFamily: fonts.monoBold, fontSize: 34, fontWeight: '900', color: P.white, marginTop: 4, marginBottom: 14, letterSpacing: -0.5 },
   balanceRow: { flexDirection: 'row', gap: 14 },
   balanceStat: { flex: 1 },
   balanceStatLabel: { fontFamily: fonts.monoBold, fontSize: 9.5, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.4 },
-  balanceStatVal: { fontFamily: fonts.monoBold, fontSize: 15, fontWeight: '800', color: P.yellow, marginTop: 3 },
+  balanceStatVal: { fontFamily: fonts.monoBold, fontSize: 15, fontWeight: '800', color: P.white, marginTop: 3 },
 
   // Sections
   section: { margin: 14, marginTop: 18, marginBottom: 0 },
@@ -561,7 +561,7 @@ const s = StyleSheet.create({
   quickChip: { flex: 1, paddingVertical: 9, borderRadius: 10, backgroundColor: P.bg2, alignItems: 'center', borderWidth: 1, borderColor: P.border },
   quickChipActive: { backgroundColor: P.ink, borderColor: P.ink },
   quickText: { fontFamily: fonts.sansBold, fontSize: 11.5, fontWeight: '700', color: P.muted },
-  quickTextActive: { fontFamily: fonts.monoBold, color: P.yellow, fontWeight: '800' },
+  quickTextActive: { fontFamily: fonts.monoBold, color: P.white, fontWeight: '800' },
 
   // Topup
   topupRow: { flexDirection: 'row', gap: 10 },
@@ -569,19 +569,19 @@ const s = StyleSheet.create({
   rupeeSign: { paddingHorizontal: 12, fontFamily: fonts.monoBold, fontSize: 16, fontWeight: '700', color: P.muted },
   topupField: { flex: 1, paddingVertical: 11, fontFamily: fonts.monoMedium, fontSize: 15, color: P.ink },
   topupBtn: { backgroundColor: P.ink, borderRadius: 12, paddingHorizontal: 20, justifyContent: 'center' },
-  topupBtnText: { fontFamily: fonts.monoBold, fontSize: 13, fontWeight: '800', color: P.yellow, letterSpacing: 0.2 },
+  topupBtnText: { fontFamily: fonts.monoBold, fontSize: 13, fontWeight: '800', color: P.white, letterSpacing: 0.2 },
 
   // Verifying
-  verifyingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: P.yellowPale, borderRadius: 8 },
-  verifyingText: { fontFamily: fonts.sansBold, fontSize: 12, fontWeight: '600', color: P.yellowText },
+  verifyingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: P.warnPale, borderRadius: 8 },
+  verifyingText: { fontFamily: fonts.sansBold, fontSize: 12, fontWeight: '600', color: P.warnText },
 
   // Bank
   bankHint: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: -4, marginBottom: 12 },
   bankField: { marginBottom: 10 },
   bankLabel: { fontFamily: fonts.monoBold, fontSize: 9.5, fontWeight: '800', color: P.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
   bankInput: { fontFamily: fonts.sansMedium, borderWidth: 1, borderColor: P.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: P.ink, backgroundColor: P.white },
-  bankSaveBtn: { marginTop: 8, backgroundColor: P.yellow, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
-  bankSaveBtnText: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
+  bankSaveBtn: { marginTop: 8, backgroundColor: P.ink, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+  bankSaveBtnText: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '800', color: P.white, letterSpacing: 0.3 },
 
   // Transactions
   emptyTx: { paddingVertical: 24, alignItems: 'center' },
@@ -601,9 +601,9 @@ const s = StyleSheet.create({
 
   // Razorpay WebView modal
   webviewContainer: { flex: 1, backgroundColor: P.bg },
-  webviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.ink, paddingTop: 52, paddingBottom: 14, paddingHorizontal: 16 },
+  webviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.white, paddingTop: 52, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.border },
   webviewClose: { width: 60 },
-  webviewCloseText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.yellow },
-  webviewTitle: { fontFamily: fonts.displayBold, fontSize: 15, fontWeight: '800', color: P.white },
+  webviewCloseText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.muted },
+  webviewTitle: { fontFamily: fonts.displayBold, fontSize: 15, fontWeight: '800', color: P.ink },
   webviewLoading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 });

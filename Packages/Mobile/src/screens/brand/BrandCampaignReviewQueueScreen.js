@@ -119,7 +119,7 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
     return (
       <View style={s.container}>
         <ScreenHeader title="Review queue" back onBack={() => navigation.goBack()} />
-        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
       </View>
     );
   }
@@ -182,7 +182,7 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} colors={[P.ink]} />}
       >
         {tab === 'live' && liveQueue.length > 0 && (
           <View style={s.hint}>
@@ -239,7 +239,7 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
                         onPress={() => handleReviewDeliverable(d.id, 'approve')}
                         disabled={isBusy}
                       >
-                        {isBusy ? <ActivityIndicator size="small" color={P.yellow} /> : <Text style={s.btnApproveText}>Approve</Text>}
+                        {isBusy ? <ActivityIndicator size="small" color={P.white} /> : <Text style={s.btnApproveText}>Approve</Text>}
                       </TouchableOpacity>
                     </>
                   ) : (
@@ -266,22 +266,22 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { fontFamily: fonts.sansBold, fontSize: 13, color: P.dangerText, marginBottom: 16, textAlign: 'center' },
-  goBackBtn: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: P.yellow, borderRadius: 10 },
-  goBackBtnText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.ink },
+  goBackBtn: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: P.ink, borderRadius: 10 },
+  goBackBtnText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.white},
 
   tabBar: { flexDirection: 'row', backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border, paddingHorizontal: 14, gap: 14, paddingTop: 8, paddingBottom: 0 },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: P.yellow },
+  tabActive: { borderBottomColor: P.ink },
   tabText: { fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.muted2 },
   tabTextActive: { color: P.ink, fontWeight: '700' },
   tabCount: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: P.muted3, backgroundColor: P.bg2, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 99 },
-  tabCountActive: { color: P.ink, backgroundColor: P.yellowPale },
+  tabCountActive: { color: P.ink, backgroundColor: P.bg2 },
 
   list: { padding: 14, gap: 8 },
 
-  hint: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, borderLeftWidth: 3, borderLeftColor: P.yellow, marginBottom: 4 },
+  hint: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: P.warnPale, borderRadius: 10, padding: 11, borderLeftWidth: 3, borderLeftColor: P.warn, marginBottom: 4 },
   hintIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  hintIconGlyph: { fontFamily: fonts.displayBold, fontSize: 12, fontWeight: '800', color: P.yellow },
+  hintIconGlyph: { fontFamily: fonts.displayBold, fontSize: 12, fontWeight: '800', color: P.white },
   hintText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.ink2, lineHeight: 16 },
   hintTextV: { fontFamily: fonts.sansBold, fontWeight: '700', color: P.ink },
 
@@ -295,13 +295,13 @@ const s = StyleSheet.create({
 
   urlRow: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: P.bg2, borderRadius: 8 },
   urlLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '700', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2 },
-  urlText: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.yellowHover },
+  urlText: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.ink2 },
 
   actionRow: { flexDirection: 'row', gap: 6, justifyContent: 'flex-end' },
   btnRevise: { backgroundColor: P.bg2, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: P.border },
   btnReviseText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
   btnApprove: { backgroundColor: P.ink, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 8 },
-  btnApproveText: { fontFamily: fonts.monoBold, fontSize: 11, fontWeight: '700', color: P.yellow, letterSpacing: 0.2 },
+  btnApproveText: { fontFamily: fonts.monoBold, fontSize: 11, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
   btnConfirmLive: { backgroundColor: P.success, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
   btnConfirmLiveText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
 });

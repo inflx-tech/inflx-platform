@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   turnCalm: { borderColor: ig.line, backgroundColor: ig.bg },
   turnN: { width: 44, height: 44, borderRadius: 12, backgroundColor: ig.y, alignItems: 'center', justifyContent: 'center' },
   turnNCalm: { backgroundColor: ig.bgSoft },
-  turnNTxt: { fontSize: 22, fontWeight: '900', color: ig.text },
+  turnNTxt: { fontSize: 22, fontWeight: '900', color: ig.bg },
   turnNTxtCalm: { color: ig.mut },
   turnMid: { flex: 1 },
   turnT: { fontSize: 15, fontWeight: '800', color: ig.text },
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
 
   arow: { flexDirection: 'row', alignItems: 'center', gap: 11, borderBottomWidth: 1, borderBottomColor: ig.lineSoft, paddingVertical: 12 },
   athumb: { width: 36, height: 36, borderRadius: 9, backgroundColor: ig.text, alignItems: 'center', justifyContent: 'center' },
-  athumbTxt: { color: ig.y, fontSize: 11, fontWeight: '800' },
+  athumbTxt: { color: ig.bg, fontSize: 11, fontWeight: '800' },
   amid: { flex: 1, minWidth: 0 },
   aname: { fontSize: 13.5, fontWeight: '700', color: ig.text },
   asub: { fontSize: 11, color: ig.mut, marginTop: 1 },
