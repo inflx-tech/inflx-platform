@@ -269,3 +269,49 @@ describe('working style is asked every time, and can always be countered', () =>
     expect(model.validateTerms(base('conversion', { mode: 'visit', importance: { mode: 'requirement' } })).ok).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 8 — naming the exact products
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('a hand-picked list of products', () => {
+  /**
+   * "Their whole store" and "a category" both keep absorbing new arrivals — a product
+   * added next month is inside the deal without anybody agreeing to it. A hand-picked
+   * list never does.
+   *
+   * The names travel with the ids so an agreement still reads properly if a product is
+   * renamed or removed afterwards. A count she cannot act on is not a term.
+   */
+  const base = (scope) => ({
+    aim: 'conversion', money: { commission_pct: 18 }, time: { post_by: '2026-09-15' },
+    mode: 'visit', scope, importance: { scope: 'preference' },
+  });
+
+  it('accepts a picked list carrying its names', () => {
+    expect(model.validateTerms(base({
+      level: 'products',
+      product_ids: ['a', 'b'],
+      product_names: ['Kanjivaram Silk — Maroon', 'Banarasi Silk — Gold'],
+    })).ok).toBe(true);
+  });
+
+  it('still accepts one without names, for anything sent before this shipped', () => {
+    expect(model.validateTerms(base({ level: 'products', product_ids: ['a'] })).ok).toBe(true);
+  });
+
+  it('refuses an empty list — "specific products" with none named is not a term', () => {
+    const r = model.validateTerms(base({ level: 'products', product_ids: [] }));
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/at least one product/);
+  });
+
+  it('refuses the level with no ids at all', () => {
+    expect(model.validateTerms(base({ level: 'products' })).ok).toBe(false);
+  });
+
+  it('leaves the two broad options working', () => {
+    expect(model.validateTerms(base({ level: 'store' })).ok).toBe(true);
+    expect(model.validateTerms(base({ level: 'category', category: 'Ethnic Wear' })).ok).toBe(true);
+  });
+});

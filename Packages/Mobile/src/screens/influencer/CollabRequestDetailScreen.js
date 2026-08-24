@@ -421,11 +421,26 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   );
 }
 
+/**
+ * What she would be promoting, in her words.
+ * Contract: features/collab-terms-by-aim (item 8)
+ *
+ * A hand-picked list used to read as "3 specific products" — a count she could not act
+ * on. The brand's picker now sends the NAMES alongside the ids for exactly this: an
+ * agreement should say what was offered on the day, even if a product is renamed or
+ * removed afterwards.
+ */
 function scopeText(scope) {
   if (!scope) return '—';
   if (scope.level === 'store') return 'Their whole store';
   if (scope.level === 'category') return scope.category || 'A category';
-  return `${(scope.product_ids || []).length} specific products`;
+
+  const names = scope.product_names || [];
+  const count = (scope.product_ids || []).length;
+  if (names.length === 0) return count === 1 ? '1 specific product' : `${count} specific products`;
+  // Three names is about as much as a row can carry before it stops being readable.
+  if (names.length <= 3) return names.join(' · ');
+  return `${names.slice(0, 3).join(' · ')} +${names.length - 3} more`;
 }
 
 function Row({ k, v, tag, locked }) {

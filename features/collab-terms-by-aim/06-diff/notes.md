@@ -474,3 +474,47 @@ an importance marker, which the terms model refuses on both negotiable terms.
 
 Mobile **202/202** (188 before; 14 counter-diff checks added). Bundle builds. All 13
 `ig.*` tokens in that screen resolve.
+
+---
+
+# Item 8 — naming the exact products
+
+Founder: *"also what they should promote, here you need to add products also, we have now
+only entire store, category, apart from this add individual product also as an option."*
+
+## Why this is more than a third chip
+
+**"Their whole store" and "a category" both keep absorbing new arrivals.** A saree added
+next month is inside the deal without anybody agreeing to it. **A hand-picked list never
+does** — and that difference was invisible while those were the only two options.
+
+## What was already there, and what was not
+
+The terms model **already** accepted `level: 'products'` with `product_ids`, and already
+refused an empty list. The creator's screen already rendered a products scope. **Only the
+brand had no way to choose them.**
+
+So this is a picker, not a new concept: search your catalogue, tick what she may promote,
+done. Kanchi Silks has 11 products to pick from; a brand with none is told to add them on
+the web dashboard rather than shown an empty list with no explanation. Products not
+currently live in the store are shown and marked, rather than hidden — a brand may well
+want a creator promoting something about to launch.
+
+## The names travel with the ids
+
+A picked list used to reach her as **"3 specific products"** — a count she could not act
+on. The picker now sends the **names** alongside the ids.
+
+That is deliberate rather than convenient: an agreement is a record of what was offered
+**on the day**. If a product is renamed or deleted next month, the agreement should still
+say what was on the table. She sees up to three names, then "+2 more" — about as much as a
+row carries before it stops being readable.
+
+## Verified
+
+6 assertions: a picked list with names accepted · without names still accepted (anything
+sent before this) · an empty list refused · the level with no ids refused · whole store and
+category both still working.
+
+Mobile 202/202. Bundle builds. Duplicate-route check clean across all stacks. All palette
+tokens resolve. No migration.

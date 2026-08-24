@@ -39,9 +39,17 @@ const DELIVERABLES = [
   { v: 'youtube_video', label: 'YouTube Video' },
   { v: 'youtube_short', label: 'YouTube Short' },
 ];
+/**
+ * What she promotes. 'Their whole store' and 'a category' both keep absorbing new
+ * arrivals — a product added next month is inside the deal without anyone agreeing to
+ * it. A hand-picked list never does, and that difference was invisible while these were
+ * the only two options.
+ * Contract: features/collab-terms-by-aim (item 8)
+ */
 const SCOPES = [
   { v: 'store', label: 'Whole store' },
   { v: 'category', label: 'A category' },
+  { v: 'products', label: 'Specific products' },
 ];
 
 export default function BrandRequestComposerScreen({ route, navigation }) {
@@ -52,6 +60,9 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
   const [postBy, setPostBy] = useState('');
   const [scopeLevel, setScopeLevel] = useState('');
   const [scopeCategory, setScopeCategory] = useState('');
+  // Ids are the link; names are the snapshot she reads. Both travel — see the picker.
+  const [productIds, setProductIds] = useState([]);
+  const [productNames, setProductNames] = useState([]);
   const [scopeImp, setScopeImp] = useState('preference');
   // Where she works, and — only if remote — whether a box moves. Two answers, one
   // stored term. `shipping` stays null until asked, so an unanswered question is
@@ -94,7 +105,19 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
 
     const importance = {};
     if (scopeLevel) {
-      terms.scope = scopeLevel === 'category' ? { level: 'category', category: scopeCategory || null } : { level: 'store' };
+      if (scopeLevel === 'products') {
+        if (productIds.length === 0) {
+          Alert.alert('Missing', 'Pick at least one product, or choose a whole category.');
+          return;
+        }
+        // Names ride along so the agreement still reads properly if a product is
+        // renamed or removed later. Contract: features/collab-terms-by-aim (item 8)
+        terms.scope = { level: 'products', product_ids: productIds, product_names: productNames };
+      } else if (scopeLevel === 'category') {
+        terms.scope = { level: 'category', category: scopeCategory || null };
+      } else {
+        terms.scope = { level: 'store' };
+      }
       importance.scope = scopeImp;
     }
     // Where she works is asked on every collaboration now, and is always negotiable —
@@ -198,6 +221,27 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
           ))}
         </View>
         {scopeLevel === 'category' && <Field label="Category" value={scopeCategory} onChange={setScopeCategory} placeholder="e.g. Ethnic Wear" />}
+
+        {scopeLevel === 'products' && (
+          <TouchableOpacity
+            style={s.pickRow}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('BrandProductPicker', {
+              selected: productIds,
+              onDone: (ids, names) => { setProductIds(ids); setProductNames(names); },
+            })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={s.pickT}>
+                {productIds.length === 0 ? 'Choose products' : `${productIds.length} chosen`}
+              </Text>
+              {productNames.length > 0 && (
+                <Text style={s.pickS} numberOfLines={2}>{productNames.join(' · ')}</Text>
+              )}
+            </View>
+            <Text style={s.pickArrow}>›</Text>
+          </TouchableOpacity>
+        )}
         {!!scopeLevel && <Importance value={scopeImp} onChange={setScopeImp} />}
 
         <Text style={s.fl}>WHERE SHE'D WORK<Text style={s.negTag}>  · NEGOTIABLE</Text></Text>
@@ -289,6 +333,14 @@ const s = StyleSheet.create({
   inp: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 9, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink },
   hint: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, lineHeight: 15, marginTop: 6 },
   negTag: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted },
+  pickRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1, borderColor: P.border, borderRadius: 9,
+    paddingHorizontal: 11, paddingVertical: 11, marginTop: 6,
+  },
+  pickT: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink },
+  pickS: { fontFamily: fonts.sansRegular, fontSize: 10.5, color: P.muted2, marginTop: 3, lineHeight: 15 },
+  pickArrow: { fontFamily: fonts.sansBold, fontSize: 17, color: P.muted2 },
   delRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.border,
