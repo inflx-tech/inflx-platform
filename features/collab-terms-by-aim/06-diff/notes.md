@@ -420,3 +420,57 @@ counterable on both deal types · a style once marked "requirement" is now count
 legacy markers tolerated.
 
 Mobile 188/188. Bundle builds. No migration.
+
+---
+
+# Item 7 — counter where the number is
+
+Founder: *"when influencer is click on counter, then it should be like at that place only
+we get counter. means at commission button beside it enter counter percentage, if date is
+ok for creator then he click OK then same date will come. instead separate form below
+arrange adjacent only."*
+
+## What was there
+
+Tapping Counter revealed a **second copy of the whole offer** further down the page, with
+the brand's terms as grey placeholder text. She had to retype anything she wanted to keep.
+
+That is not just extra work — it is how a creator who only wanted more money **moved the
+date as well**, by retyping it slightly differently. The history then recorded two moves
+where one was meant.
+
+## What it is now
+
+The terms themselves become editable, in place. The heading changes from **MUST BE
+AGREED** to **CHANGE WHAT YOU DISAGREE WITH**, and each row shows either:
+
+* **✓ fine** — she has not touched it
+* **was 18%** — she has, and here is what it was
+
+Every control opens **pre-filled with the brand's own figure**, so *no change* is the
+default. Tapping Remote and then Store visit again counts as **no change at all** — she
+ended where she started.
+
+The button counts: **SEND COUNTER · 2 CHANGES**, and is disabled at zero rather than
+sending an empty counter.
+
+## The part that decides what travels
+
+Pre-filling every control means the screen now holds a **complete copy of the deal**.
+Sending all of it would record four moves where one happened — the same fault in a new
+costume.
+
+So the comparison lives in `utils/collabCounter` with **14 tests**, not inside the screen.
+It decides what travels and what the button says; a mistake there would show up as a
+counter that quietly changed something she never touched, which is precisely what item 7
+removes.
+
+Pinned by those tests: an untouched offer sends **nothing**; changing the commission is
+**one** change and does not re-send the date; countering a fee **leaves the agreed
+deliverables alone**; deliverables never count on a sales deal; and a counter never carries
+an importance marker, which the terms model refuses on both negotiable terms.
+
+## Evidence
+
+Mobile **202/202** (188 before; 14 counter-diff checks added). Bundle builds. All 13
+`ig.*` tokens in that screen resolve.

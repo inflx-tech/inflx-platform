@@ -9,6 +9,9 @@ import { ig } from '../../theme/ig';
 import { influencerApi } from '../../services/api';
 import { PLACES, SHIPPING, toMode, describeMode } from '../../utils/workingStyle';
 import DateField from '../../components/DateField';
+// One implementation of 'what did she actually change', shared with its tests.
+// Contract: features/collab-terms-by-aim (item 7)
+import { changedTerms, buildCounter as buildCounterPayload } from '../../utils/collabCounter';
 
 /**
  * CollabRequestDetailScreen — a brand's collaboration request, and the creator's answer.
@@ -32,6 +35,27 @@ import DateField from '../../components/DateField';
  * told her a parcel was coming but never told her where she was expected to shoot.
  * Contract: features/collab-working-style-two-questions
  */
+/**
+ * One term, in the one place it lives — read it, or change it, without the page moving.
+ * Contract: features/collab-terms-by-aim (item 7)
+ *
+ * `was` is shown only once she has actually moved it, so the row stays quiet until
+ * there is something to say.
+ */
+function TermRow({ label, children, was, unchanged }) {
+  return (
+    <View style={s.termRow}>
+      <Text style={s.termLabel}>{label}</Text>
+      <View style={s.termBody}>{children}</View>
+      {was != null ? (
+        <Text style={s.wasTag}>was {was}</Text>
+      ) : unchanged ? (
+        <Text style={s.okTag}>✓ fine</Text>
+      ) : null}
+    </View>
+  );
+}
+
 function WorkingStyleRows({ mode, tag, locked }) {
   const d = describeMode(mode, 'creator');
   if (!d) return null;
@@ -96,32 +120,44 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   // A commission buys nothing in advance, so deliverables are not part of that bargain.
   const paidDeal = t.aim === 'engagement' || t.aim === 'hybrid';
 
-  const buildCounter = () => {
-    const c = {};
-    const money = {};
-    if (cCommission) money.commission_pct = Number(cCommission);
-    if (cFee) money.fee = Number(cFee);
-    if (Object.keys(money).length) c.money = { ...t.money, ...money };
-    // Always post_by. Countering with a window would now be refused by the terms model,
-    // and a counter that silently fails is worse than one that never offered the option.
-    if (cPostBy) c.time = { post_by: cPostBy };
-    const cMode = toMode(cPlace, cShipping);
-    if (cMode) c.mode = cMode;
-    // Only on a paid collaboration. She earns on what she sells in a commission deal,
-    // so being asked to promise posts there was asking the wrong question.
-    //
-    // No importance marker: deliverables are always negotiable on a paid deal, and the
-    // terms model now REFUSES a marker here. Sending one would have made every counter
-    // that touched deliverables fail validation.
-    // Contract: features/collab-terms-by-aim (item 5)
-    if (paidDeal && cDeliverables) {
-      const list = DELIVERABLES
-        .filter(d => Number(cDeliverables[d.v]) > 0)
-        .map(d => ({ type: d.v, count: Number(cDeliverables[d.v]) }));
-      if (list.length) c.deliverables = list;
-    }
-    return c;
+  /**
+   * Countering starts from what they OFFERED, not from an empty form.
+   * Contract: features/collab-terms-by-aim (item 7)
+   *
+   * The old form was a second copy of the offer further down the page, with the brand's
+   * terms as grey placeholder text. She had to retype anything she wanted to keep, and a
+   * creator who only wanted more money could move the date by retyping it slightly
+   * differently — changing two terms while meaning to change one.
+   *
+   * Filling every control with the current value makes 'no change' the default, so a
+   * counter says exactly what she touched and nothing else.
+   */
+  function startCounter() {
+    const cur = fromMode(t.mode);
+    setCCommission(t.money?.commission_pct != null ? String(t.money.commission_pct) : '');
+    setCFee(t.money?.fee != null ? String(t.money.fee) : '');
+    setCPostBy(t.time?.post_by || t.time?.window_end || '');
+    setCPlace(cur.place);
+    setCShipping(cur.shipping);
+    setCDeliverables(Object.fromEntries(
+      DELIVERABLES.map(d => {
+        const a = (t.deliverables || []).find(x => x.type === d.v);
+        return [d.v, a ? a.count : 0];
+      }),
+    ));
+    setCountering(true);
+  }
+
+  // Which terms she has actually moved. Lives in utils/collabCounter with 14 tests: it
+  // decides what travels, and a mistake here shows as a counter that quietly changed
+  // something she never touched — the exact fault item 7 removes.
+  const edits = {
+    commission: cCommission, fee: cFee, postBy: cPostBy,
+    place: cPlace, shipping: cShipping, deliverables: cDeliverables,
   };
+  const changed = countering ? changedTerms(t, edits) : [];
+
+  const buildCounter = () => buildCounterPayload(t, edits, changed);
 
   const doAccept = async () => {
     setBusy(true);
@@ -186,19 +222,63 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
 
         {!!req.message && <Text style={s.msg}>“{req.message}”</Text>}
 
-        <Text style={s.h}>MUST BE AGREED</Text>
+        <Text style={s.h}>{countering ? 'CHANGE WHAT YOU DISAGREE WITH' : 'MUST BE AGREED'}</Text>
+
+        {/* Countering happens HERE, on the term itself — not in a second copy of the
+            offer further down the page. Contract: features/collab-terms-by-aim (item 7) */}
         {t.money?.commission_pct != null && (
-          <Row k="Commission" v={`${t.money.commission_pct}%`} tag="negotiable" />
+          countering ? (
+            <TermRow
+              label="Commission"
+              was={changed.includes('money') ? `${t.money.commission_pct}%` : null}
+              unchanged={!changed.includes('money')}
+            >
+              <View style={s.inlineInput}>
+                <TextInput
+                  style={s.inlineTxt}
+                  value={cCommission}
+                  onChangeText={setCCommission}
+                  keyboardType="numeric"
+                />
+                <Text style={s.inlineUnit}>%</Text>
+              </View>
+            </TermRow>
+          ) : <Row k="Commission" v={`${t.money.commission_pct}%`} tag="negotiable" />
         )}
-        {t.money?.fee != null && <Row k="Fee" v={`₹${Number(t.money.fee).toLocaleString('en-IN')}`} tag="negotiable" />}
+
+        {t.money?.fee != null && (
+          countering ? (
+            <TermRow
+              label="Fee"
+              was={changed.includes('money') ? `₹${Number(t.money.fee).toLocaleString('en-IN')}` : null}
+              unchanged={!changed.includes('money')}
+            >
+              <View style={s.inlineInput}>
+                <Text style={s.inlineUnit}>₹</Text>
+                <TextInput
+                  style={s.inlineTxt}
+                  value={cFee}
+                  onChangeText={setCFee}
+                  keyboardType="numeric"
+                />
+              </View>
+            </TermRow>
+          ) : <Row k="Fee" v={`₹${Number(t.money.fee).toLocaleString('en-IN')}`} tag="negotiable" />
+        )}
         {/* One date now, whatever the deal. Older conversations that still carry a window
             fall back to showing it rather than a blank row.
             Contract: features/collab-terms-by-aim (item 3) */}
-        {t.time?.post_by
-          ? <Row k="Post by" v={fmtD(t.time.post_by)} tag="negotiable" />
-          : t.time?.window_end
-            ? <Row k="Post by" v={fmtD(t.time.window_end)} tag="negotiable" />
-            : null}
+        {countering ? (
+          <TermRow
+            label="Post by"
+            was={changed.includes('time') ? fmtD(t.time?.post_by || t.time?.window_end) : null}
+            unchanged={!changed.includes('time')}
+          >
+            <DateField value={cPostBy} onChange={setCPostBy} style={{ marginBottom: 0 }} />
+          </TermRow>
+        ) : (t.time?.post_by || t.time?.window_end) ? (
+          <Row k="Post by" v={fmtD(t.time.post_by || t.time.window_end)} tag="negotiable" />
+        ) : null}
         {t.scope && imp.scope === 'requirement' && (
           <Row k="You'd promote" v={scopeText(t.scope)} tag="required" locked />
         )}
@@ -211,7 +291,34 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
             no working style at all — a regression hidden behind a condition that used
             to be true and quietly stopped being.
             Contract: features/collab-terms-by-aim (item 6) */}
-        {t.mode && <WorkingStyleRows mode={t.mode} tag="negotiable" />}
+        {t.mode && (countering ? (
+          <TermRow
+            label="Where you'd work"
+            was={changed.includes('mode') ? (describeMode(t.mode, 'creator') || {}).place : null}
+            unchanged={!changed.includes('mode')}
+          >
+            <View style={s.chips}>
+              {PLACES.map(o => (
+                <TouchableOpacity key={o.v} style={[s.chip, cPlace === o.v && s.chipAct]}
+                  onPress={() => { setCPlace(o.v); if (o.v !== 'remote') setCShipping(null); }}>
+                  <Text style={[s.chipTxt, cPlace === o.v && s.chipTxtAct]}>{o.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {cPlace === 'remote' && (
+              <View style={[s.chips, { marginTop: 6 }]}>
+                {SHIPPING.map(o => (
+                  <TouchableOpacity key={o.v} style={[s.chip, cShipping === o.v && s.chipAct]}
+                    onPress={() => setCShipping(o.v)}>
+                    <Text style={[s.chipTxt, cShipping === o.v && s.chipTxtAct]}>
+                      {o.v === 'yes' ? 'Ship to me' : 'No'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </TermRow>
+        ) : <WorkingStyleRows mode={t.mode} tag="negotiable" />)}
 
         {imp.scope === 'preference' && <Text style={s.h}>THEY'D PREFER — YOUR CALL</Text>}
         {t.scope && imp.scope === 'preference' && <Row k="You'd promote" v={scopeText(t.scope)} tag="their preference" />}
@@ -226,10 +333,32 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
           </View>
         )}
 
-        {paidDeal && t.deliverables && (
+        {paidDeal && (t.deliverables || countering) && (
           <>
-            <Text style={s.h}>WHAT THE FEE BUYS</Text>
-            {t.deliverables.map(d => (
+            <Text style={s.h}>
+              WHAT THE FEE BUYS
+              {countering && changed.includes('deliverables') ? '  ·  CHANGED' : ''}
+            </Text>
+            {countering ? DELIVERABLES.map(d => {
+              const n = Number((cDeliverables || {})[d.v]) || 0;
+              const bump = (by) => setCDeliverables(prev => ({
+                ...(prev || {}), [d.v]: Math.max(0, (Number((prev || {})[d.v]) || 0) + by),
+              }));
+              return (
+                <View key={d.v} style={s.delRow}>
+                  <Text style={[s.delLabel, n > 0 && s.delLabelOn]}>{d.label}</Text>
+                  <View style={s.stepper}>
+                    <TouchableOpacity style={s.stepBtn} onPress={() => bump(-1)} disabled={n === 0}>
+                      <Text style={[s.stepTxt, n === 0 && s.stepTxtOff]}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={[s.stepN, n > 0 && s.stepNOn]}>{n}</Text>
+                    <TouchableOpacity style={s.stepBtn} onPress={() => bump(1)}>
+                      <Text style={s.stepTxt}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            }) : t.deliverables.map(d => (
               <Row
                 key={d.type}
                 k={(DELIVERABLES.find(x => x.v === d.type) || {}).label || d.type}
@@ -246,7 +375,7 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
               <Text style={s.ctaTxt}>ACCEPT THESE TERMS</Text>
             </TouchableOpacity>
             {roundsLeft > 0 && (
-              <TouchableOpacity style={s.ctaInk} disabled={busy} onPress={() => setCountering(true)}>
+              <TouchableOpacity style={s.ctaInk} disabled={busy} onPress={startCounter}>
                 <Text style={s.ctaInkTxt}>COUNTER ({roundsLeft} LEFT)</Text>
               </TouchableOpacity>
             )}
@@ -256,98 +385,21 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
           </View>
         )}
 
+        {/* The terms above ARE the counter form now. All that is left is to send it —
+            and the button says how much she actually moved, so nothing goes by accident.
+            Contract: features/collab-terms-by-aim (item 7) */}
         {active && countering && (
-          <View style={s.counterBox}>
-            <Text style={s.h}>YOUR COUNTER</Text>
-            {counterable.includes('money') && t.money?.commission_pct != null && (
-              <Field label={`Commission % (they said ${t.money.commission_pct})`} value={cCommission} onChange={setCCommission} keyboardType="numeric" placeholder={`e.g. ${Number(t.money.commission_pct) + 3}`} />
-            )}
-            {counterable.includes('money') && t.money?.fee != null && (
-              <Field label={`Fee ₹ (they said ${t.money.fee})`} value={cFee} onChange={setCFee} keyboardType="numeric" />
-            )}
-            {counterable.includes('time') && (
-              <DateField
-                label="Post by"
-                value={cPostBy}
-                onChange={setCPostBy}
-                placeholder={`They said ${fmtD(t.time?.post_by || t.time?.window_end)}`}
-              />
-            )}
-            {counterable.includes('mode') && (
-              <>
-                {/* Her counter asks the same two questions, in the same words the brand
-                    was asked. Offering her one three-way chip row while the brand answers
-                    two would put the two sides back out of step. */}
-                <Text style={s.fl}>Where you'd work — their preference, so your call</Text>
-                <View style={s.chips}>
-                  {PLACES.map(o => (
-                    <TouchableOpacity key={o.v} style={[s.chip, cPlace === o.v && s.chipAct]}
-                      onPress={() => {
-                        const next = cPlace === o.v ? '' : o.v;
-                        setCPlace(next);
-                        if (next !== 'remote') setCShipping(null);
-                      }}>
-                      <Text style={[s.chipTxt, cPlace === o.v && s.chipTxtAct]}>{o.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                {cPlace === 'remote' && (
-                  <>
-                    <Text style={s.fl}>Would they send you products?</Text>
-                    <View style={s.chips}>
-                      {SHIPPING.map(o => (
-                        <TouchableOpacity key={o.v} style={[s.chip, cShipping === o.v && s.chipAct]}
-                          onPress={() => setCShipping(o.v)}>
-                          <Text style={[s.chipTxt, cShipping === o.v && s.chipTxtAct]}>
-                            {o.v === 'yes' ? 'Yes, ship to me' : 'No'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </>
-                )}
-              </>
-            )}
-            {/* Only on a paid collaboration. On a sales deal she earns by selling, so
-                being asked to promise posts was asking the wrong question entirely.
-                Pre-filled with what the brand asked for, so countering the money does
-                not silently wipe deliverables she was happy with.
-                Contract: features/collab-terms-by-aim (item 5) */}
-            {paidDeal && (
-              <>
-                <Text style={s.fl}>What you'll deliver</Text>
-                {DELIVERABLES.map(d => {
-                  const asked = (t.deliverables || []).find(x => x.type === d.v);
-                  const current = cDeliverables ? cDeliverables[d.v] : (asked ? asked.count : 0);
-                  const n = Number(current) || 0;
-                  const bump = (by) => setCDeliverables(prev => {
-                    const base = prev || Object.fromEntries(
-                      DELIVERABLES.map(x => {
-                        const a = (t.deliverables || []).find(y => y.type === x.v);
-                        return [x.v, a ? a.count : 0];
-                      }),
-                    );
-                    return { ...base, [d.v]: Math.max(0, (Number(base[d.v]) || 0) + by) };
-                  });
-                  return (
-                    <View key={d.v} style={s.delRow}>
-                      <Text style={[s.delLabel, n > 0 && s.delLabelOn]}>{d.label}</Text>
-                      <View style={s.stepper}>
-                        <TouchableOpacity style={s.stepBtn} onPress={() => bump(-1)} disabled={n === 0}>
-                          <Text style={[s.stepTxt, n === 0 && s.stepTxtOff]}>−</Text>
-                        </TouchableOpacity>
-                        <Text style={[s.stepN, n > 0 && s.stepNOn]}>{n}</Text>
-                        <TouchableOpacity style={s.stepBtn} onPress={() => bump(1)}>
-                          <Text style={s.stepTxt}>+</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                })}
-              </>
-            )}
-            <TouchableOpacity style={s.cta} disabled={busy} onPress={doCounter}>
-              <Text style={s.ctaTxt}>{busy ? 'SENDING…' : 'SEND COUNTER'}</Text>
+          <View style={{ marginTop: 18 }}>
+            <TouchableOpacity
+              style={[s.cta, changed.length === 0 && s.ctaOff]}
+              disabled={busy || changed.length === 0}
+              onPress={doCounter}
+            >
+              <Text style={s.ctaTxt}>
+                {busy ? 'SENDING…'
+                  : changed.length === 0 ? 'CHANGE SOMETHING TO COUNTER'
+                  : `SEND COUNTER · ${changed.length} CHANGE${changed.length === 1 ? '' : 'S'}`}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.ctaGhost} onPress={() => setCountering(false)}>
               <Text style={s.ctaGhostTxt}>Back</Text>
@@ -398,6 +450,21 @@ function Field({ label, value, onChange, keyboardType, placeholder }) {
 }
 
 const s = StyleSheet.create({
+  termRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: ig.lineSoft,
+  },
+  termLabel: { fontSize: 12, color: ig.mut, width: 104 },
+  termBody: { flex: 1 },
+  wasTag: { fontSize: 10, fontWeight: '800', color: ig.yInk, backgroundColor: ig.yBg, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5 },
+  okTag: { fontSize: 10, fontWeight: '800', color: ig.green, backgroundColor: ig.greenBg, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5 },
+  inlineInput: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: ig.line, borderRadius: 8, paddingHorizontal: 10,
+  },
+  inlineTxt: { flex: 1, fontSize: 14, fontWeight: '700', color: ig.text, paddingVertical: 8 },
+  inlineUnit: { fontSize: 13, color: ig.mut },
+  ctaOff: { opacity: 0.45 },
   delRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: ig.lineSoft,

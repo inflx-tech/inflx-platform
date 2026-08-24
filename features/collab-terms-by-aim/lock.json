@@ -18,7 +18,7 @@
     "4": "Deliverables asked of the brand on a fee deal — SHIPPED. Required for engagement/hybrid, allowed but never demanded on conversion. Left OPTIONAL_TERMS: they take no requirement marker and are always negotiable on a paid deal. Vocabulary reused from contracts; duplicates and zero counts refused.",
     "5": "Deliverables not asked of the creator on a sales deal — SHIPPED. Also repairs a break item 4 introduced: her counter attached importance:{deliverables:preference}, which item 4 now refuses, so every counter touching deliverables would have failed validation. Her form is now paid-only, uses all five formats, and pre-fills from the brand request so countering the money does not wipe agreed deliverables.",
     "6": "Where she works becomes negotiable, loses requirement/preference — SHIPPED. Now required and always counterable on both aims. Legacy markers TOLERATED rather than refused: unlike deliverables, all 14 live requests carried one, so refusing would have broken every live conversation on the next counter. Also caught a regression: her screen only rendered the working style when a marker was present, so new markerless requests would have shown her none at all.",
-    "7": "Counter in place, beside each term, with a change count",
+    "7": "Counter in place, beside each term, with a change count — SHIPPED. The separate second copy of the offer is gone. Controls pre-fill from the brand offer so no-change is the default; the comparison lives in utils/collabCounter with 14 tests because it decides what travels.",
     "8": "Specific products as a scope option",
     "9": "Category from the listing tree, not typed",
     "10": "Pitch settings moved — SHIPPED 2026-08-25 under stage-1"
