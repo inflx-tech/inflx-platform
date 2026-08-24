@@ -12,7 +12,7 @@
   "mockup_locked_at": "2026-08-25",
   "mockup_note": "features/collab-terms-by-aim/04-preview/mockups/collab-terms.html — eight boards drawn from the live screens, with every proposed value traced to a field that exists and is populated in production.",
   "items": {
-    "1": "Sales collab leads with the percentage, not ₹0 — IN PROGRESS",
+    "1": "Sales collab leads with the percentage, not ₹0 — SHIPPED. Second pass 2026-08-25 after the founder showed the LIST still reading ₹0: the fault lived in four places, not one (CollabRow, normalizeRequest, normalizeProposal, and getMyCampaigns never sending commission_pct). The list and the detail page now share one description of the deal.",
     "2": "Date pickers wherever a date is entered",
     "3": "Pay-for-content: one date, a deadline, no window",
     "4": "Deliverables asked of the brand on a fee deal",
@@ -30,6 +30,9 @@
     "maestro_green": false,
     "maestro_note": "Mobile-governed. Rule 5 applies at release.",
     "deploy_class": "production-impacting (creator app via OTA). Item 1 has no backend change and no migration.",
-    "deploy_targets": ["OTA (creator app)"]
+    "deploy_targets": [
+      "OTA (creator app)"
+    ],
+    "qa_note": "2026-08-25 — item 1. Mobile 178/178 (was 159 before this contract; 14 money checks plus 5 list-level checks added). Android bundle builds. The shipped list query verified against production: four sales campaigns carry 18/15/20/22 and two content campaigns carry ₹30,000 and ₹25,000.\n  Backend change is one SELECT list (commission_pct, influencer_budget) on the creator campaigns list. No migration.\n  NOT CLAIMED GREEN — the full serial backend suite has not been runnable since 2026-08-22."
   }
 }

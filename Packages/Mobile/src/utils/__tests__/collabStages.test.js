@@ -186,3 +186,67 @@ describe('normalizers', () => {
     expect(n.source).toBe('campaign');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The ₹0, on the LIST this time
+// Contract: features/collab-terms-by-aim (item 1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('a row must be able to say what the deal pays', () => {
+  /**
+   * The first fix changed the campaign DETAIL screen and was reported as done. The list
+   * the founder actually looks at first has its own normalisers and its own row
+   * component, and still showed "Fee ₹0".
+   *
+   * These pin the shape a row needs, so the list and the page it opens cannot disagree
+   * about what someone earns.
+   */
+  const { normalizeRequest, normalizeProposal } = require('../collabStages');
+  const { describePay } = require('../collabPay');
+
+  it("a brand's sales request shows the percentage, not ₹0", () => {
+    const row = normalizeRequest({
+      id: 'r1', business_name: 'Kanchi Silks',
+      terms_json: { aim: 'conversion', money: { commission_pct: 18 }, time: { post_by: '2026-09-15' } },
+      status: 'sent',
+    });
+    expect(row.commission_pct).toBe(18);
+    const pay = describePay(row);
+    expect(pay.value).toBe('18%');
+    expect(pay.label).toBe('Commission');
+  });
+
+  it("a brand's content request still shows the fee", () => {
+    const row = normalizeRequest({
+      id: 'r2', business_name: 'Kanchi Silks',
+      terms_json: { aim: 'engagement', money: { fee: 25000 } },
+      status: 'sent',
+    });
+    expect(describePay(row).label).toBe('Fee');
+  });
+
+  it('her sales pitch shows the percentage she asked for', () => {
+    const row = normalizeProposal({
+      id: 'p1', business_name: 'Kanchi Silks',
+      proposed_commission_pct: 20, proposed_fee: null, status: 'sent',
+    });
+    expect(describePay(row).value).toBe('20%');
+  });
+
+  it('a counter supersedes what she first proposed', () => {
+    const row = normalizeProposal({
+      id: 'p2', business_name: 'Kanchi Silks',
+      proposed_commission_pct: 20, status: 'countered',
+      counter_terms: { aim: 'conversion', money: { commission_pct: 14 } },
+    });
+    expect(describePay(row).value).toBe('14%');
+  });
+
+  it('carries the aim, so a row with no money yet still knows which deal it is', () => {
+    const row = normalizeRequest({
+      id: 'r3', business_name: 'X', terms_json: { aim: 'conversion', money: {} }, status: 'sent',
+    });
+    expect(row.goal).toBe('conversion');
+    expect(describePay(row).value).toBe('Not set yet');
+  });
+});

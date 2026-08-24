@@ -1113,6 +1113,11 @@ const getMyCampaigns = asyncHandler(async (req, res) => {
        ci.id AS campaign_influencer_id,
        ci.status AS influencer_status,
        ci.agreed_fee,
+       -- The list showed "Fee ₹0" for every sales collaboration because this was never
+       -- sent. The detail screen selects it; the list did not.
+       -- Contract: features/collab-terms-by-aim (item 1)
+       ci.commission_pct,
+       ci.influencer_budget,
        ci.posting_date,
        ci.contract_signed_at,
        ci.brand_signed_at,

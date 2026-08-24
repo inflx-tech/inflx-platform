@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ig, IG_TONE } from '../../theme/ig';
 import { fmtRupees } from '../../theme/tokens';
+// One description of what a collaboration pays, shared with the detail screen so the list
+// and the page it opens can never disagree. Contract: features/collab-terms-by-aim
+import { describePay } from '../../utils/collabPay';
 
 /* One Collabs feed row (IG-clean). features/collabs-list.
    Presentation only — stage/turn are derived in utils/collabStages. */
@@ -51,6 +54,7 @@ function expiryLabel(iso) {
 }
 
 export default function CollabRow({ collab, onPress }) {
+  const pay = describePay(collab);
   const badge = badgeFor(collab);
   const tone = IG_TONE[badge.tone] || IG_TONE.neutral;
   const hint = hintFor(collab);
@@ -75,8 +79,8 @@ export default function CollabRow({ collab, onPress }) {
 
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <Text style={styles.statL}>Fee</Text>
-          <Text style={styles.statV}>{fmtRupees(collab.fee)}</Text>
+          <Text style={styles.statL}>{pay.label}</Text>
+          <Text style={styles.statV}>{pay.value}</Text>
         </View>
         {expires != null && (
           <View style={styles.stat}>

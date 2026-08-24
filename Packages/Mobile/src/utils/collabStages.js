@@ -179,6 +179,11 @@ export function normalizeRequest(r) {
     status:          r.status,
     terms_line:      termsLine(settled),
     fee:             settled?.money?.fee || 0,
+    // What the row needs to describe the deal rather than assume a fee.
+    // Contract: features/collab-terms-by-aim (item 1)
+    goal:            settled?.aim || null,
+    commission_pct:  settled?.money?.commission_pct != null ? settled.money.commission_pct : null,
+    agreed_fee:      settled?.money?.fee != null ? settled.money.fee : null,
     expires_at:      r.expires_at || null,
     counter_by:      r.counter_by || null,
     deliverable_count: 0,
@@ -200,6 +205,13 @@ export function normalizeProposal(p) {
       money: { fee: p.proposed_fee, commission_pct: p.proposed_commission_pct },
     }),
     fee:             p.proposed_fee || 0,
+    goal:            p.counter_terms?.aim || p.aim || null,
+    commission_pct:  p.counter_terms?.money?.commission_pct != null
+                       ? p.counter_terms.money.commission_pct
+                       : (p.proposed_commission_pct != null ? p.proposed_commission_pct : null),
+    agreed_fee:      p.counter_terms?.money?.fee != null
+                       ? p.counter_terms.money.fee
+                       : (p.proposed_fee != null ? p.proposed_fee : null),
     expires_at:      p.expires_at || null,
     counter_by:      p.counter_by || null,
     viewed_at:       p.viewed_at || null,
@@ -218,6 +230,11 @@ export function normalizeOffer(o) {
     campaign_name:   o.campaign_name || '',
     status:          o.status,
     fee:             o.agreed_fee || o.influencer_budget || o.per_influencer_budget || o.set_budget || 0,
+    // Kept beside the fee so a row can say what the deal actually pays. A sales
+    // collaboration has no fee, and showing 0 told the creator the work was unpaid.
+    commission_pct:  o.commission_pct != null ? o.commission_pct : null,
+    agreed_fee:      o.agreed_fee != null ? o.agreed_fee : null,
+    influencer_budget: o.influencer_budget != null ? o.influencer_budget : null,
     deliverable_type: o.deliverable_type || null,
     offer_expires_at: o.offer_expires_at || null,
     declined_reason:  o.declined_reason || null,
@@ -239,6 +256,9 @@ export function normalizeCampaign(c) {
     campaign_name:   c.campaign_name || '',
     status:          c.influencer_status,
     fee:             c.agreed_fee || 0,
+    commission_pct:  c.commission_pct != null ? c.commission_pct : null,
+    agreed_fee:      c.agreed_fee != null ? c.agreed_fee : null,
+    influencer_budget: c.influencer_budget != null ? c.influencer_budget : null,
     deliverable_type: null,
     offer_expires_at: null,
     declined_reason:  null,
