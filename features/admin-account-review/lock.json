@@ -27,7 +27,7 @@
       "Render (backend/src)",
       "Vercel (brand-web admin pages)"
     ],
-    "qa_note": "2026-08-24 — verified against PRODUCTION, not the test suite. The local test DB was unreachable throughout (container refusing connections, Docker refusing state changes).\n  Proven: both shipped queries run against production and return every field the pages need — business_name distinct from contact name, city Karnal, state Haryana, user_status pending, gstin, address_line, pincode, formatted_address; and the admin-only creator block returning phone, wallet and last-checked. brand-web builds clean.\n  Written but NOT RUN: tests/admin-account-review.test.js — 5 checks, including the one that matters (a brand must not receive a creator phone or balances).\n  NOT CLAIMED GREEN.\n  ITEM 2 — creator list query verified against production on every path: unfiltered 20 rows, status filter, search by name, by phone, by city, and the summary (22 total). brand-web builds clean. 4 more tests written (9 total), including a brand getting 403 from the admin list. NOT RUN.\n  ITEM 3 — both admin pages compile. Endpoint shapes and id semantics confirmed by reading the controllers: {status, reason}, and /admin/brands/:id/status looks up by BRAND id, which is what the page holds. 5 more tests written (14 total). NOT RUN.",
+    "qa_note": "2026-08-24 — verified against PRODUCTION, not the test suite. The local test DB was unreachable throughout (container refusing connections, Docker refusing state changes).\n  Proven: both shipped queries run against production and return every field the pages need — business_name distinct from contact name, city Karnal, state Haryana, user_status pending, gstin, address_line, pincode, formatted_address; and the admin-only creator block returning phone, wallet and last-checked. brand-web builds clean.\n  Written but NOT RUN: tests/admin-account-review.test.js — 5 checks, including the one that matters (a brand must not receive a creator phone or balances).\n  NOT CLAIMED GREEN.\n  ITEM 2 — creator list query verified against production on every path: unfiltered 20 rows, status filter, search by name, by phone, by city, and the summary (22 total). brand-web builds clean. 4 more tests written (9 total), including a brand getting 403 from the admin list. NOT RUN.\n  ITEM 3 — both admin pages compile. Endpoint shapes and id semantics confirmed by reading the controllers: {status, reason}, and /admin/brands/:id/status looks up by BRAND id, which is what the page holds. 5 more tests written (14 total). NOT RUN.\n  ITEM 4 — the pin-agreement logic run verbatim against every real brand: Preeti agrees on Karnal, Fashion hub on Guntur, Aveen fashion boutique on Kukatpally; four brands have no pin and say so. Two synthetic cases: a Vijayawada address with a Dubai pin IS flagged, and a locality inside its own city is NOT (the false-alarm case that would make the check worthless). brand-web compiles.",
     "owed": [
       "Run tests/admin-account-review.test.js once the test DB is usable.",
       "A practice ADMIN account. Today the only admin is the founder's own number, which takes real SMS, so no admin flow can be tested automatically. A fixed-code superadmin would be a security hole, so this needs a deliberate answer.",
@@ -38,6 +38,7 @@
   "items_done": [
     "item 1 — the data faults (ed1bf82)",
     "item 2 — the creator list (3fd8864)",
-    "item 3 — the review layout"
+    "item 3 — the review layout (041c830)",
+    "item 4 — the address-versus-pin check"
   ]
 }

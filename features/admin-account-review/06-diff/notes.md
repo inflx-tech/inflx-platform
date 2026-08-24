@@ -146,3 +146,52 @@ without a reason, the reason recorded, creator approval, and a brand getting 403
 
 **Still not covered end to end:** no admin HTTP path can be exercised automatically,
 because there is no practice admin account. Recorded as owed.
+
+---
+
+# Item 4 — does the pin agree with the address?
+
+## What it does
+
+Both values were already stored and never compared. The page now says one of four things
+under the address:
+
+* **agrees** — "The pin agrees with the address they typed (Karnal)."
+* **differs** — "Worth a look. They typed X, but the pin resolves to Y."
+* **a pin with no resolved address** — nothing to compare against, said so
+* **no pin at all** — said so, rather than left blank
+
+## Deliberately a soft signal
+
+A disagreement is **not** proof of anything, and the wording says so. A pin legitimately
+resolves to the larger city that contains a locality, and Indian city names have several
+accepted spellings. So it names what disagrees and leaves the judgement where it belongs.
+**It never blocks approval.**
+
+That restraint is the whole design. A check that cries wolf on a Benz Circle address with
+a Vijayawada pin would be worse than no check, because it would be ignored within a week.
+
+## Verified against every real brand, plus the two cases that matter
+
+| Brand | Verdict |
+|---|---|
+| Preeti chouhan | agrees on **Karnal** |
+| Fashion hub | agrees on **Guntur** |
+| Aveen fashion boutique | agrees on **Kukatpally** |
+| Hotel Village, and the three practice brands | no pin — said plainly |
+
+And the two synthetic cases the design exists for:
+
+* a **Vijayawada address with a Dubai pin** → **flagged**
+* a **locality inside its own city** (Benz Circle / Vijayawada) → **not flagged**, correctly
+
+The second matters more than the first. Any check can catch an obvious fake; the question
+is whether it stays quiet when it should.
+
+brand-web compiles.
+
+## The other half of item 4 shipped in item 3
+
+"Never checked against Instagram" is already on the creator page.
+
+## All four items are now built.

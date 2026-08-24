@@ -385,6 +385,31 @@ export default function BrandProfilePage() {
   // What they did not give us. Neither is required to trade — but they are the easiest
   // things to ask for, so the screen should say which are absent rather than leave the
   // admin to notice the gaps.
+  /**
+   * Does the pin they dropped agree with the address they typed?
+   * Contract: features/admin-account-review (item 4)
+   *
+   * Both values are already stored, so this costs nothing. When a Vijayawada address
+   * carries a pin in another state, that is the single most useful thing an approval
+   * screen can tell you.
+   *
+   * Deliberately a SOFT signal. A disagreement is not proof of anything — a pin can
+   * legitimately resolve to the larger city that contains a locality, and Indian city
+   * names have several accepted spellings. So it says what disagrees and leaves the
+   * judgement where it belongs. It never blocks approval.
+   */
+  const pinCheck = (() => {
+    const pin = (brand.formatted_address || '').toLowerCase();
+    if (!brand.latitude && !brand.formatted_address) return { kind: 'none' };
+    if (!pin) return { kind: 'coords' };
+
+    const typed = [brand.locality, brand.city, brand.state].filter(Boolean);
+    if (typed.length === 0) return { kind: 'nothing-typed' };
+
+    const hit = typed.find(t => pin.includes(String(t).toLowerCase()));
+    return hit ? { kind: 'agrees', on: hit } : { kind: 'differs', typed: typed.join(', ') };
+  })();
+
   const missing = [
     !brand.gstin && 'GST number',
     !brand.address_line && 'street address',
@@ -446,6 +471,31 @@ export default function BrandProfilePage() {
             <Field label="Map pin" value={brand.formatted_address || (brand.latitude ? `${brand.latitude}, ${brand.longitude}` : 'No pin dropped')} />
             <Field label="Wallet Balance" value={fmtMoney(brand.wallet_balance)} />
           </div>
+
+          {pinCheck.kind === 'agrees' && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-teal-deep">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal flex-shrink-0" />
+              The pin agrees with the address they typed ({pinCheck.on}).
+            </div>
+          )}
+          {pinCheck.kind === 'differs' && (
+            <div className="mt-3 p-3 bg-gold-pale rounded-lg text-xs text-yellow-700">
+              <strong>Worth a look.</strong> They typed <strong>{pinCheck.typed}</strong>, but
+              the pin they dropped resolves to <strong>{brand.formatted_address}</strong>.
+              Those may still be the same place — a pin often names the larger city, and city
+              names have several spellings — but it is worth asking.
+            </div>
+          )}
+          {pinCheck.kind === 'coords' && (
+            <div className="mt-3 text-xs text-t3">
+              A pin was dropped but never resolved to an address, so it cannot be compared.
+            </div>
+          )}
+          {pinCheck.kind === 'none' && (
+            <div className="mt-3 text-xs text-t3">
+              No pin was dropped, so there is nothing to check the address against.
+            </div>
+          )}
         </div>
 
         {/* What is absent. Said plainly, because an admin should not have to notice
