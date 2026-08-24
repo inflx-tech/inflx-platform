@@ -50,11 +50,25 @@ Managed by `backend/scripts/seed-practice-world.js`. Every row it creates is wri
 `backend/scripts/practice-world.manifest.json`, and
 `backend/scripts/remove-practice-world.js` removes exactly what that manifest lists.
 
-| Purpose | Number | State |
+| Purpose | Number | Signs in with |
 |---|---|---|
-| Practice follower | 8639448121 | Already a follower since 2026-04-10 |
-| Practice brand *or* creator | 8465994979 | Free |
-| The other of the two | *not yet supplied* | Needed before both sides can be walked |
+| **Superadmin — the founder** | **8639448121** | **Real SMS. This number holds NOTHING else.** |
+| Practice brand — Kanchi Silks | 7900000190 | Fixed code |
+| Practice brand — Label Fern | 7900000191 | Fixed code |
+| Practice brand — Nova Fit | 7900000192 | Fixed code |
+| Practice creator — Asha M. | 7900000110 | Fixed code |
+| Practice creators — Meera S. … Anita B. | 7900000111–119 | Fixed code |
+| Practice follower | 7900000199 | Fixed code |
+| Reserved, unused | 8465994979 | — |
+
+> **8639448121 is the superadmin and nothing else.** Between 21 and 24 August it also
+> carried Kanchi Silks (practice) and Asha M. (practice), because the practice world was
+> seeded pointing at it. Opening the brand app on that number signed the founder into a
+> practice shop. Both accounts were moved to the practice numbers above on 24 August;
+> nothing was deleted and the practice world was unaffected.
+>
+> **One number can hold several roles — that capability is real and still works.** It is
+> simply not something to spend on the founder’s own number for scenery accounts.
 
 **The ~21 scenery creators never log in.** They exist so a creator search returns a realistic
 result set. They carry reserved phone numbers in the `+9179000001xx` block and no SIM.

@@ -34,8 +34,8 @@
   },
   "login_accounts": {
     "constraint": "users.phone is UNIQUE and users.role is single-valued — one phone, one role. Verified against production 2026-08-20.",
-    "8639448121": "EXISTS as a follower since 2026-04-10. Reserved as the practice follower for Stage 6. Cannot also be a brand or creator.",
-    "8465994979": "Free. Assigned to one of brand / creator.",
+    "8639448121": "SUPERADMIN ONLY, confirmed by the founder 2026-08-24. No brand, no creator, no follower. The follower row that existed since 2026-04-10 was removed by the Stage 0 wipe and deliberately not restored.",
+    "8465994979": "Still free — never used. The practice brand and creator ended up on +917900000190 and +917900000110 instead.",
     "outstanding": "One more number is needed for the other role. Not blocking — everything except that second login account can be built without it."
   },
   "release": {
@@ -92,5 +92,18 @@
     "reason": "One field name in a single API call: role -> default_role. No screen, layout, copy or pixel changes, so there is no mockup to draw or lock. Setting mockup_locked true would be a false record, and it would contradict the founder standing rule (feedback_mockup_lock_before_build) that mockups are DRAWN from the agreed boards and locked before app code — a rule about screens, which this is not.",
     "why_not_split": "Dropping this file and pushing backend-only was considered and rejected: brand-web would keep sending role:\"brand\" for admins while the server had moved to a per-role lookup, which silently converts every admin into a pending brand and locks the founder out of his own dashboard. Shipping half of this pairing is worse than either half.",
     "ci_note": "CI re-checks Rule 3 independently. This override is local and recorded, not a bypass."
+  },
+  "defect_2026_08_24": {
+    "reported_by": "founder — \"when i am trying to login using my number 8639448121, it is login to kanchi silks practice account as brand in brand app\"",
+    "what_happened": "The practice world was seeded on 2026-08-21 with --brand-phone and --creator-phone BOTH pointed at +918639448121, the founder's real number, to demonstrate one-number-many-roles. So his number carried admin + Kanchi Silks (practice) + Asha M. (practice), and opening the brand app on it signed him into a practice shop.",
+    "why_it_is_a_defect": "It contradicted the decision recorded in THIS FILE under login_accounts: \"8639448121 ... Reserved as the practice follower for Stage 6. Cannot also be a brand or creator.\" The number actually reserved for the practice brand/creator, +918465994979, was left unused. The written decision was right and the seeding ignored it.",
+    "also_true": "His follower account (since 2026-04-10) was removed by the wipe and never restored. He has now decided the number should be superadmin ONLY, so it has not been recreated.",
+    "fix": "scripts/unbind-founder-practice-accounts.js — MOVED rather than deleted. Kanchi Silks is not scenery: it holds 11 conversations, 6 agreements and 2 groups, i.e. the whole Stage 1 practice world. Nothing references a user by phone, so changing the phone preserves every relationship.",
+    "moved": {
+      "Kanchi Silks (practice)": "+918639448121 -> +917900000190",
+      "Asha M. (practice)": "+918639448121 -> +917900000110"
+    },
+    "verified": "Database: +918639448121 now holds exactly one account, admin \"Aveen\". Live: Kanchi Silks signs in on its new number, is still Kanchi Silks, and both groups (AP fashion, Worked with us before) survived; Asha M. signs in on hers. NOTE the two negative login probes are weak evidence — his number receives real SMS codes, so the fixed code fails regardless of which accounts exist. The database check is the proof.",
+    "lesson": "One-number-many-roles is a capability, not an instruction to use the founder's own number for scenery. Practice accounts belong on reserved practice numbers."
   }
 }
