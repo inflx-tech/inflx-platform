@@ -16,7 +16,7 @@
     "2": "Date pickers wherever a date is entered — SHIPPED. Five fields across five screens. Written in JS rather than using the native picker, because nothing in the app imports @react-native-community/datetimepicker so there is no evidence it is in the installed APK, and an OTA cannot add a native module.",
     "3": "Pay-for-content: one date, a deadline, no window — SHIPPED. Also caught a break it would have caused: handshake.termsFromProposal emitted a window for paid pitches, which the new rule refuses, so ACCEPTING a pay-for-content pitch would have failed validation. Her own pitch screen now offers one date too.",
     "4": "Deliverables asked of the brand on a fee deal — SHIPPED. Required for engagement/hybrid, allowed but never demanded on conversion. Left OPTIONAL_TERMS: they take no requirement marker and are always negotiable on a paid deal. Vocabulary reused from contracts; duplicates and zero counts refused.",
-    "5": "Deliverables not asked of the creator on a sales deal",
+    "5": "Deliverables not asked of the creator on a sales deal — SHIPPED. Also repairs a break item 4 introduced: her counter attached importance:{deliverables:preference}, which item 4 now refuses, so every counter touching deliverables would have failed validation. Her form is now paid-only, uses all five formats, and pre-fills from the brand request so countering the money does not wipe agreed deliverables.",
     "6": "Where she works becomes negotiable, loses requirement/preference",
     "7": "Counter in place, beside each term, with a change count",
     "8": "Specific products as a scope option",

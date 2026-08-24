@@ -42,6 +42,18 @@ function WorkingStyleRows({ mode, tag, locked }) {
     </>
   );
 }
+/**
+ * What a fee buys — the platform's five words, the same ones the brand chose from.
+ * Contract: features/collab-terms-by-aim (item 5)
+ */
+const DELIVERABLES = [
+  { v: 'reel',          label: 'Instagram Reel' },
+  { v: 'post',          label: 'Instagram Post' },
+  { v: 'story',         label: 'Instagram Story' },
+  { v: 'youtube_video', label: 'YouTube Video' },
+  { v: 'youtube_short', label: 'YouTube Short' },
+];
+
 const AIM_LABEL = { conversion: 'Pay per sale', engagement: 'Pay for content', hybrid: 'Fee + commission' };
 const fmtD = (d) => (d ? String(d).slice(0, 10) : '—');
 
@@ -59,8 +71,9 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   // Two answers, one stored term — the same shape the brand answered in.
   const [cPlace, setCPlace] = useState('');
   const [cShipping, setCShipping] = useState(null);
-  const [cReels, setCReels] = useState('');
-  const [cStories, setCStories] = useState('');
+  // Counts per format, pre-filled from what the brand asked for so a counter about
+  // money does not silently wipe the deliverables she already agreed to.
+  const [cDeliverables, setCDeliverables] = useState(null);
 
   const load = useCallback(async () => {
     const res = await influencerApi.listCollabRequests();
@@ -80,6 +93,8 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
   const counterable = req.counterable_terms || ['money', 'time'];
   const roundsLeft = req.rounds_left != null ? req.rounds_left : 2;
   const active = ['sent', 'viewed', 'countered'].includes(req.status);
+  // A commission buys nothing in advance, so deliverables are not part of that bargain.
+  const paidDeal = t.aim === 'engagement' || t.aim === 'hybrid';
 
   const buildCounter = () => {
     const c = {};
@@ -92,12 +107,18 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
     if (cPostBy) c.time = { post_by: cPostBy };
     const cMode = toMode(cPlace, cShipping);
     if (cMode) c.mode = cMode;
-    const deliverables = [];
-    if (Number(cReels) > 0) deliverables.push({ type: 'reel', count: Number(cReels) });
-    if (Number(cStories) > 0) deliverables.push({ type: 'story', count: Number(cStories) });
-    if (deliverables.length) {
-      c.deliverables = deliverables;
-      c.importance = { deliverables: 'preference' };
+    // Only on a paid collaboration. She earns on what she sells in a commission deal,
+    // so being asked to promise posts there was asking the wrong question.
+    //
+    // No importance marker: deliverables are always negotiable on a paid deal, and the
+    // terms model now REFUSES a marker here. Sending one would have made every counter
+    // that touched deliverables fail validation.
+    // Contract: features/collab-terms-by-aim (item 5)
+    if (paidDeal && cDeliverables) {
+      const list = DELIVERABLES
+        .filter(d => Number(cDeliverables[d.v]) > 0)
+        .map(d => ({ type: d.v, count: Number(cDeliverables[d.v]) }));
+      if (list.length) c.deliverables = list;
     }
     return c;
   };
@@ -192,10 +213,28 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
           </>
         )}
 
-        {!t.deliverables && (
+        {/* A brand can no longer send a paid request without naming what the fee buys,
+            so this only speaks to older conversations. On a sales collaboration it is
+            silent: deliverables were never part of that deal.
+            Contract: features/collab-terms-by-aim (item 5) */}
+        {paidDeal && !t.deliverables && (
           <View style={s.openBox}>
-            <Text style={s.openTxt}>They haven't specified deliverables — tell them what you can do when you counter, or just accept and settle it in the campaign brief.</Text>
+            <Text style={s.openTxt}>They haven't said what the fee buys — tell them what you can do when you counter, or accept and settle it in the campaign brief.</Text>
           </View>
+        )}
+
+        {paidDeal && t.deliverables && (
+          <>
+            <Text style={s.h}>WHAT THE FEE BUYS</Text>
+            {t.deliverables.map(d => (
+              <Row
+                key={d.type}
+                k={(DELIVERABLES.find(x => x.v === d.type) || {}).label || d.type}
+                v={String(d.count)}
+                tag="negotiable"
+              />
+            ))}
+          </>
         )}
 
         {active && !countering && (
@@ -266,13 +305,42 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
                 )}
               </>
             )}
-            {!t.deliverables && (
+            {/* Only on a paid collaboration. On a sales deal she earns by selling, so
+                being asked to promise posts was asking the wrong question entirely.
+                Pre-filled with what the brand asked for, so countering the money does
+                not silently wipe deliverables she was happy with.
+                Contract: features/collab-terms-by-aim (item 5) */}
+            {paidDeal && (
               <>
                 <Text style={s.fl}>What you'll deliver</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <View style={{ flex: 1 }}><Field label="Reels" value={cReels} onChange={setCReels} keyboardType="numeric" /></View>
-                  <View style={{ flex: 1 }}><Field label="Stories" value={cStories} onChange={setCStories} keyboardType="numeric" /></View>
-                </View>
+                {DELIVERABLES.map(d => {
+                  const asked = (t.deliverables || []).find(x => x.type === d.v);
+                  const current = cDeliverables ? cDeliverables[d.v] : (asked ? asked.count : 0);
+                  const n = Number(current) || 0;
+                  const bump = (by) => setCDeliverables(prev => {
+                    const base = prev || Object.fromEntries(
+                      DELIVERABLES.map(x => {
+                        const a = (t.deliverables || []).find(y => y.type === x.v);
+                        return [x.v, a ? a.count : 0];
+                      }),
+                    );
+                    return { ...base, [d.v]: Math.max(0, (Number(base[d.v]) || 0) + by) };
+                  });
+                  return (
+                    <View key={d.v} style={s.delRow}>
+                      <Text style={[s.delLabel, n > 0 && s.delLabelOn]}>{d.label}</Text>
+                      <View style={s.stepper}>
+                        <TouchableOpacity style={s.stepBtn} onPress={() => bump(-1)} disabled={n === 0}>
+                          <Text style={[s.stepTxt, n === 0 && s.stepTxtOff]}>−</Text>
+                        </TouchableOpacity>
+                        <Text style={[s.stepN, n > 0 && s.stepNOn]}>{n}</Text>
+                        <TouchableOpacity style={s.stepBtn} onPress={() => bump(1)}>
+                          <Text style={s.stepTxt}>+</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
               </>
             )}
             <TouchableOpacity style={s.cta} disabled={busy} onPress={doCounter}>
@@ -327,6 +395,21 @@ function Field({ label, value, onChange, keyboardType, placeholder }) {
 }
 
 const s = StyleSheet.create({
+  delRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: ig.lineSoft,
+  },
+  delLabel: { fontSize: 12.5, color: ig.mut },
+  delLabelOn: { fontWeight: '800', color: ig.text },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepBtn: {
+    width: 26, height: 26, borderRadius: 7, borderWidth: 1, borderColor: ig.line,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepTxt: { fontSize: 15, fontWeight: '700', color: ig.text, lineHeight: 18 },
+  stepTxtOff: { color: ig.mut2 },
+  stepN: { fontSize: 13, fontWeight: '700', color: ig.mut2, minWidth: 14, textAlign: 'center' },
+  stepNOn: { color: ig.text },
   wrap: { flex: 1, backgroundColor: ig.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg },
   gone: { color: ig.text2, fontSize: 13 },

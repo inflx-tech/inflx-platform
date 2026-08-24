@@ -318,3 +318,45 @@ marker refused, negotiable on paid and not on sales.
 
 Mobile 188/188. Bundle builds. All seven palette tokens the new screen block uses exist.
 No migration — terms are stored as one flexible record.
+
+---
+
+# Item 5 — stop asking her the wrong question
+
+Founder: *"when creator counter it is asking what you deliver, this is not required for
+sale as an option. this is required for pay for content only."*
+
+## What changed
+
+Her counter form asked **"What you'll deliver — Reels, Stories"** on every request,
+including a commission-only one. On a sales deal she earns by selling; being asked to
+promise posts was asking the wrong question entirely.
+
+It now appears **only on a paid collaboration**, uses the platform's five formats rather
+than two, and is **pre-filled with what the brand asked for** — so a counter about money
+does not silently wipe deliverables she was already happy with.
+
+She can also now **see what the fee buys** when reading the request, listed and marked
+negotiable. Previously the brand's deliverables were not shown to her at all.
+
+## The break this repairs
+
+Her counter attached `importance: { deliverables: 'preference' }`.
+
+Item 4 made deliverables always negotiable on a paid deal and **refuses a marker**. So that
+payload would have failed validation on **every counter that touched deliverables** — a
+break introduced by item 4 that only surfaced when building item 5.
+
+The marker is gone, and a test pins the old payload as refused so it cannot return.
+
+## Verified against the live model
+
+| | |
+|---|---|
+| Sales counter on money alone | accepted |
+| **The old payload with the marker** | **refused — the break, pinned** |
+| Paid counter moving money and deliverables | accepted |
+| Paid counter on money alone keeps agreed deliverables | accepted |
+| An invented format in a counter | refused |
+
+Mobile 188/188. Bundle builds. All 11 `ig.*` tokens in that screen resolve.

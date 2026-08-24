@@ -156,3 +156,51 @@ describe('deliverables belong to a fee, not to a commission', () => {
     expect(model.counterableTerms(terms('conversion'))).not.toContain('deliverables');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 5 — her counter, and the break item 4 nearly caused
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('countering, with deliverables only where they belong', () => {
+  const salesReq = { aim: 'conversion', money: { commission_pct: 18 }, time: { post_by: '2026-09-15' } };
+  const paidReq = {
+    aim: 'engagement', money: { fee: 25000 }, time: { post_by: '2026-09-15' },
+    deliverables: [{ type: 'reel', count: 2 }, { type: 'story', count: 3 }],
+  };
+
+  it('a sales counter on money alone is accepted', () => {
+    expect(model.validateCounter(salesReq, { money: { commission_pct: 22 } }).ok).toBe(true);
+  });
+
+  it('refuses the payload her screen used to send', () => {
+    /**
+     * Her counter form attached importance: { deliverables: 'preference' }. Item 4 made
+     * deliverables always negotiable on a paid deal and refuses a marker — so that old
+     * payload would have failed validation on EVERY counter that touched deliverables.
+     * This is the break item 5 repairs, pinned so it cannot come back.
+     */
+    const r = model.validateCounter(salesReq, {
+      money: { commission_pct: 22 },
+      deliverables: [{ type: 'reel', count: 1 }],
+      importance: { deliverables: 'preference' },
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  it('a paid counter may move the money and the deliverables together', () => {
+    expect(model.validateCounter(paidReq, {
+      money: { fee: 30000 },
+      deliverables: [{ type: 'reel', count: 3 }, { type: 'story', count: 3 }],
+    }).ok).toBe(true);
+  });
+
+  it('countering only the money keeps the deliverables already agreed', () => {
+    // Her screen pre-fills the steppers from the brand's request for exactly this reason:
+    // a counter about money must not silently wipe what she was happy with.
+    expect(model.validateCounter(paidReq, { money: { fee: 30000 } }).ok).toBe(true);
+  });
+
+  it('she cannot invent a format either', () => {
+    expect(model.validateCounter(paidReq, { deliverables: [{ type: 'tiktok', count: 1 }] }).ok).toBe(false);
+  });
+});
