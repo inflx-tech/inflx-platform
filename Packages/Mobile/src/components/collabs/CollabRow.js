@@ -18,32 +18,69 @@ function prettify(s) {
   return String(s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/**
+ * Stage 1 rebuilt the stages as invitations · pitches · to_sign · shoot · content · done.
+ * This switch was never updated, so EVERY row fell through to the default and read
+ * "Archived" — including an invitation nobody had answered yet. Three more things broke
+ * silently with it: the hint, the expiry countdown and the delivered count, all of which
+ * tested a stage name that no longer exists.
+ * Contract: features/collab-terms-by-aim
+ */
 export function badgeFor(c) {
   const s = String(c.status || '').toLowerCase();
   if (TERMINAL_LABEL[s]) return { label: TERMINAL_LABEL[s], tone: 'closed' };
+  const settled = s === 'agreed' || s === 'accepted';
+
   switch (c.stage) {
-    case 'invites':     return { label: 'New invite', tone: 'you' };
-    case 'applied':     return { label: 'Applied', tone: 'brand' };
-    case 'negotiating': return c.turn === 'you' ? { label: 'Your turn', tone: 'nego' } : { label: 'Waiting', tone: 'brand' };
-    case 'to_sign':     return { label: 'To sign', tone: 'you' };
-    case 'active':      return { label: 'Active', tone: c.turn === 'you' ? 'you' : 'brand' };
-    case 'tracking':    return { label: 'Tracking', tone: 'done' };
-    case 'completed':   return { label: 'Completed', tone: 'done' };
-    default:            return { label: prettify(c.status) || '—', tone: 'neutral' };
+    case 'invitations':
+      if (settled) return { label: 'Agreed', tone: 'done' };
+      return c.turn === 'you' ? { label: 'Your turn', tone: 'you' }
+           : c.turn === 'brand' ? { label: 'Waiting on them', tone: 'brand' }
+           : { label: prettify(s) || 'Invitation', tone: 'neutral' };
+    case 'pitches':
+      if (settled) return { label: 'Accepted', tone: 'done' };
+      return c.turn === 'you' ? { label: 'Your turn', tone: 'you' }
+           : { label: 'Sent', tone: 'brand' };
+    case 'to_sign':  return { label: 'To sign', tone: 'you' };
+    case 'shoot':    return { label: 'Shoot', tone: c.turn === 'you' ? 'you' : 'brand' };
+    case 'content':  return c.turn === 'you' ? { label: 'Your turn', tone: 'you' }
+                                             : { label: 'With brand', tone: 'brand' };
+    case 'done':     return { label: 'Done', tone: 'done' };
+    default:         return { label: prettify(s) || '—', tone: 'neutral' };
   }
 }
 
+/** What she should do about it — the line that decides whether she opens the row. */
 function hintFor(c) {
-  switch (c.stage) {
-    case 'invites':     return { text: 'Tap to accept, negotiate or pass', go: 'View' };
-    case 'applied':     return { text: 'Brand is choosing creators', wait: true };
-    case 'negotiating': return c.turn === 'you' ? { text: 'Your move on the offer', go: 'Open' } : { text: 'Waiting for brand reply', wait: true };
-    case 'to_sign':     return { text: 'Contract ready for you', go: 'Review & sign' };
-    case 'active':      return c.turn === 'you' ? { text: 'Content to deliver', go: 'Open' } : { text: 'With brand for review', wait: true };
-    case 'tracking':    return { text: 'Live — tracking performance', go: 'View' };
-    case 'completed':   return { text: 'Completed', go: 'Earnings' };
-    default:            return { text: c.declined_reason ? `Reason: ${prettify(c.declined_reason)}` : 'Archived', wait: true };
+  const s = String(c.status || '').toLowerCase();
+  if (TERMINAL_LABEL[s]) {
+    return { text: c.declined_reason ? `Reason: ${prettify(c.declined_reason)}` : TERMINAL_LABEL[s], wait: true };
   }
+  const settled = s === 'agreed' || s === 'accepted';
+
+  switch (c.stage) {
+    case 'invitations':
+      if (settled) return { text: 'Terms agreed — waiting for the campaign', wait: true };
+      return c.turn === 'you' ? { text: 'Tap to accept, counter or pass', go: 'Open' }
+           : { text: 'Waiting for the brand to reply', wait: true };
+    case 'pitches':
+      if (settled) return { text: 'They accepted — waiting for the campaign', wait: true };
+      return c.turn === 'you' ? { text: 'They countered — your move', go: 'Open' }
+           : { text: 'Waiting for the brand to decide', wait: true };
+    case 'to_sign':  return { text: 'Contract ready for you', go: 'Review & sign' };
+    case 'shoot':    return { text: 'Arrange the shoot', go: 'Open' };
+    case 'content':  return c.turn === 'you' ? { text: 'Content to deliver', go: 'Open' }
+                                             : { text: 'With the brand for review', wait: true };
+    case 'done':     return { text: 'Finished', wait: true };
+    default:         return { text: prettify(s) || '—', wait: true };
+  }
+}
+
+/** "15 Sep" — a date she can read, not an ISO string. */
+function fmtDay(v) {
+  const d = new Date(String(v).slice(0, 10));
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
 function expiryLabel(iso) {
@@ -60,8 +97,19 @@ export default function CollabRow({ collab, onPress }) {
   const hint = hintFor(collab);
   const actionable = collab.turn === 'you' && !hint.wait;
 
-  const expires = collab.stage === 'invites' ? expiryLabel(collab.offer_expires_at) : null;
-  const showDelivered = (collab.stage === 'active' || collab.stage === 'tracking') && collab.deliverable_count > 0;
+  // The date she is actually committing to. It sits in the settled terms and was never
+  // surfaced on the list, so the deadline only appeared once she opened the row.
+  const rawPostBy = collab.raw?.counter_terms_json?.time?.post_by
+    || collab.raw?.terms_json?.time?.post_by
+    || collab.raw?.counter_terms?.time?.post_by
+    || collab.posting_date
+    || null;
+  const postBy = rawPostBy ? fmtDay(rawPostBy) : null;
+
+  const openStage = collab.stage === 'invitations' || collab.stage === 'pitches';
+  const expires = openStage ? expiryLabel(collab.offer_expires_at || collab.expires_at) : null;
+  const showDelivered = (collab.stage === 'content' || collab.stage === 'shoot' || collab.stage === 'done')
+    && collab.deliverable_count > 0;
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.65}>
@@ -82,6 +130,12 @@ export default function CollabRow({ collab, onPress }) {
           <Text style={styles.statL}>{pay.label}</Text>
           <Text style={styles.statV}>{pay.value}</Text>
         </View>
+        {postBy && (
+          <View style={styles.stat}>
+            <Text style={styles.statL}>Post by</Text>
+            <Text style={styles.statV}>{postBy}</Text>
+          </View>
+        )}
         {expires != null && (
           <View style={styles.stat}>
             <Text style={styles.statL}>Expires</Text>

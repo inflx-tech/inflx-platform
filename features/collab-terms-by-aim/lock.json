@@ -34,5 +34,6 @@
       "OTA (creator app)"
     ],
     "qa_note": "2026-08-25 — item 1. Mobile 178/178 (was 159 before this contract; 14 money checks plus 5 list-level checks added). Android bundle builds. The shipped list query verified against production: four sales campaigns carry 18/15/20/22 and two content campaigns carry ₹30,000 and ₹25,000.\n  Backend change is one SELECT list (commission_pct, influencer_budget) on the creator campaigns list. No migration.\n  NOT CLAIMED GREEN — the full serial backend suite has not been runnable since 2026-08-22."
-  }
+  },
+  "regression_found_2026_08_25": "CollabRow still switched on the PRE-Stage-1 stage names, so every row fell through to its default: the hint read \"Archived\" on unanswered invitations, the badge showed a raw status instead of whose turn it is, and the expiry countdown and delivered count had never once rendered. The smoke test stayed green by asserting five stage names the app had stopped producing. Fixed, and the test now guards that the stages it uses equal COLLAB_STAGES."
 }

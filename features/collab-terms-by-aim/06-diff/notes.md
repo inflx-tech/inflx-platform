@@ -104,3 +104,47 @@ assert what it will show.
 Mobile **178/178** (was 173 — five new list-level checks). Bundle builds. The shipped list
 query run against production: four sales campaigns now carry 18 / 15 / 20 / 22, two content
 campaigns carry ₹30,000 and ₹25,000.
+
+---
+
+## The Collabs row — asked for "some other details", found a regression
+
+Founder: *"in collab tab in creators app it is better to show some other details as well."*
+
+Looking at what to add turned up why the row looked so bare. **Stage 1 renamed the stages**
+to `invitations · pitches · to_sign · shoot · content · done`. `CollabRow` was never
+updated, so it still switched on `invites`, `negotiating`, `active`, `tracking`,
+`completed`. **Every row fell through to the default.**
+
+Four things had been broken since, silently:
+
+| | Was |
+|---|---|
+| The hint under every row | **"Archived"** — on invitations nobody had answered |
+| The badge | the raw status, so "Viewed" instead of "Your turn" |
+| The expiry countdown | tested `stage === 'invites'` — **never once shown** |
+| The delivered count | tested `'active'`/`'tracking'` — **never once shown** |
+
+### Why no test caught it
+
+`collabsList.smoke.test.js` asserted `badgeFor` against `'invites'`, `'negotiating'`,
+`'tracking'`, `'completed'`, `'archive'` — **five stage names the app had stopped
+producing.** It stayed green by feeding the component a vocabulary that no longer existed.
+
+The real fix is the guard now at the top of that describe block: the stages used in the
+test must equal `COLLAB_STAGES`. Renaming a stage breaks the test on the spot instead of
+quietly detaching it from the app.
+
+### What the row says now
+
+* **Whose turn it is** — "Your turn" / "Waiting on them" / "Agreed", and a hint that names
+  the next action: *"Tap to accept, counter or pass"*, *"Waiting for the brand to reply"*.
+* **Post by** — the deadline she is actually committing to. It was computed by the
+  normalisers all along and never rendered, so the one date that binds her only appeared
+  after she opened the row.
+* **Expires** and **Delivered** work again.
+
+## Evidence
+
+Mobile **183/183** (178 before this pass; 5 replaced the ones asserting dead stage names,
+plus the guard). Bundle builds.
