@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig, IG_TONE } from '../../theme/ig';
 import { fmtRupees } from '../../theme/tokens';
+import { describePay } from '../../utils/collabPay';
 import { influencerApi } from '../../services/api';
 import { deriveStage, whoseTurn } from '../../utils/collabStages';
 import { heroFor, sectionsFor, spineFor } from '../../utils/collabDetailModel';
@@ -89,6 +90,11 @@ export default function CollabDetailScreen({ route, navigation }) {
   const spine = spineFor(record.stage);
   const tone = IG_TONE[hero.tone] || IG_TONE.neutral;
 
+  // What she actually earns, in the shape the deal has. Lives in utils/collabPay so a
+  // figure that decides whether someone accepts work can be checked without a handset.
+  // Contract: features/collab-terms-by-aim (item 1)
+  const pay = describePay(c);
+
   const campaignName = c.campaign_name;
   const brandName = c.brand_name;
 
@@ -116,7 +122,7 @@ export default function CollabDetailScreen({ route, navigation }) {
   }
 
   function confirmAccept() {
-    Alert.alert('Accept this offer?', `${brandName} · ${fmtRupees(c.agreed_fee || c.influencer_budget || 0)}`, [
+    Alert.alert('Accept this offer?', `${brandName} · ${pay.short}`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Accept', onPress: async () => {
         setBusy(true);
@@ -132,7 +138,11 @@ export default function CollabDetailScreen({ route, navigation }) {
     Alert.alert('Pass on this offer?', 'This declines the invite.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Not a fit', style: 'destructive', onPress: () => submitDecline('not_a_fit') },
-      { text: 'Fee too low', style: 'destructive', onPress: () => submitDecline('fee_too_low') },
+      {
+        text: pay.label === 'Commission' ? 'Commission too low' : 'Fee too low',
+        style: 'destructive',
+        onPress: () => submitDecline('fee_too_low'),
+      },
     ]);
   }
   async function submitDecline(reason) {
@@ -156,7 +166,8 @@ export default function CollabDetailScreen({ route, navigation }) {
         <Text style={styles.brand}>{brandName}</Text>
         <Text style={styles.camp}>{campaignName}</Text>
         <Text style={styles.meta}>
-          {fmtRupees(c.agreed_fee || c.influencer_budget || 0)}
+          {pay.headline}
+          {pay.note ? ` ${pay.note}` : ''}
           {prettyGoal(c.goal) ? ` · ${prettyGoal(c.goal)}` : ''}
           {/* collab-part5 — "Ongoing" tells the creator their links keep working, which is
               the whole point of an open-ended sales collaboration. */}
@@ -235,7 +246,7 @@ export default function CollabDetailScreen({ route, navigation }) {
 
                 <Text style={styles.termsTitle}>{c.settled_terms ? 'New in this campaign' : 'Terms & brief'}</Text>
                 {!c.settled_terms ? (
-                  <View style={styles.termsRow}><Text style={styles.tl}>Fee</Text><Text style={styles.tv}>{fmtRupees(c.agreed_fee || c.influencer_budget || 0)}</Text></View>
+                  <View style={styles.termsRow}><Text style={styles.tl}>{pay.label}</Text><Text style={styles.tv}>{pay.value}</Text></View>
                 ) : null}
                 {/* collab-part6 §6.1 — what she may sell. 'Their whole store' and a
                     category keep absorbing new arrivals; a hand-picked list never does,

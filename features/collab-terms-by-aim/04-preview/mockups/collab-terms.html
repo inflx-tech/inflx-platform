@@ -1,0 +1,485 @@
+<title>What Is On The Table</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ground:#FBFAF7;--surface:#FFFFFF;--sunk:#F4F2EA;
+  --ink:#16150F;--ink2:#3D3A2E;--mut:#6E6A5C;--mut2:#96917F;
+  --rule:#E4E0D3;--rule2:#F0EDE2;
+  --accent:#B07E00;--accentBg:#FBF3D9;
+  --done:#1A6B4A;--doneBg:#E8F3ED;
+  --open:#A93A20;--openBg:#FAEDE9;
+  --hold:#4A5B8C;--holdBg:#EDF0F9;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#141309;--surface:#1D1B12;--sunk:#232116;
+  --ink:#F4F1E4;--ink2:#DAD5C2;--mut:#A19B86;--mut2:#78735F;
+  --rule:#332F21;--rule2:#282518;
+  --accent:#E8B33D;--accentBg:#2E2712;
+  --done:#5FC08F;--doneBg:#14291F;
+  --open:#E58B6E;--openBg:#2E1912;
+  --hold:#93A6DA;--holdBg:#191D2C;
+}}
+:root[data-theme="dark"]{
+  --ground:#141309;--surface:#1D1B12;--sunk:#232116;
+  --ink:#F4F1E4;--ink2:#DAD5C2;--mut:#A19B86;--mut2:#78735F;
+  --rule:#332F21;--rule2:#282518;
+  --accent:#E8B33D;--accentBg:#2E2712;
+  --done:#5FC08F;--doneBg:#14291F;
+  --open:#E58B6E;--openBg:#2E1912;
+  --hold:#93A6DA;--holdBg:#191D2C;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Archivo',system-ui,sans-serif;margin:0;text-wrap:balance;letter-spacing:-0.015em}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px 96px}
+.mast{padding:56px 0 28px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+.mast h1{font-size:clamp(32px,5.5vw,50px);font-weight:800;line-height:1.03;margin:14px 0 0}
+.mast .sf{font-size:19px;color:var(--mut);margin:16px 0 0;max-width:62ch}
+.tabs{display:flex;gap:5px;padding:12px 0;flex-wrap:wrap;position:sticky;top:0;background:var(--ground);z-index:30;border-bottom:1px solid var(--rule)}
+.tab{border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;color:var(--mut);font-family:'Archivo',sans-serif}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.view{display:none;padding:30px 0 0}
+.view.on{display:block}
+.vh{font-size:clamp(21px,3vw,28px);font-weight:700;margin-bottom:6px}
+.vs{font-size:18px;color:var(--ink2);margin-bottom:24px;max-width:66ch}
+p{margin:0 0 16px;max-width:66ch}
+ul{margin:0 0 16px;padding-left:20px;max-width:66ch}
+li{margin-bottom:7px}
+strong{font-weight:600}
+
+.note{border:1px solid var(--rule);border-left-width:3px;padding:16px 18px;margin:0 0 18px;font-size:16px;max-width:72ch}
+.note p{font-size:16px}.note p:last-child{margin-bottom:0}
+.note .h{font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;display:block;margin-bottom:6px}
+.n-open{border-left-color:var(--open);background:var(--openBg)}.n-open .h{color:var(--open)}
+.n-hold{border-left-color:var(--hold);background:var(--holdBg)}.n-hold .h{color:var(--hold)}
+.n-done{border-left-color:var(--done);background:var(--doneBg)}.n-done .h{color:var(--done)}
+.n-key{border-left-color:var(--accent);background:var(--accentBg)}.n-key .h{color:var(--accent)}
+
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;background:var(--surface);font-size:14.5px}
+th{background:var(--sunk);text-align:left;padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+td{padding:10px 13px;border-top:1px solid var(--rule2);vertical-align:top}
+.yes{color:var(--done);font-weight:700}
+.no{color:var(--mut2)}
+.bad{color:var(--open);font-weight:600}
+
+.screens{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.ph{width:320px;border:1px solid var(--rule);border-radius:20px;background:var(--surface);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.06);flex-shrink:0}
+.ph.old{opacity:.62}
+.phbar{padding:10px 14px;background:var(--sunk);border-bottom:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.phb{padding:14px}
+.fl{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;color:var(--mut);letter-spacing:.11em;text-transform:uppercase;margin:14px 0 6px}
+.fl:first-child{margin-top:0}
+.fl .neg{color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:700;color:var(--mut)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--accent)}
+.chip.strike{text-decoration:line-through;opacity:.5}
+.inp{border:1px solid var(--rule);border-radius:8px;padding:9px 11px;font-size:12.5px;color:var(--ink);font-weight:600;background:var(--surface);display:flex;justify-content:space-between;align-items:center}
+.inp .ph2{color:var(--mut2);font-weight:400}
+.inp .cal{color:var(--accent);font-size:13px}
+.hint{font-size:10.5px;color:var(--mut2);margin-top:6px;line-height:1.5}
+.cta{background:var(--accent);color:#fff;border-radius:10px;padding:11px;text-align:center;font-family:'Archivo';font-size:12.5px;font-weight:800;margin-top:16px}
+.cap{font-size:12.5px;color:var(--mut);margin-top:10px;line-height:1.5;max-width:320px}
+.cap b{color:var(--ink)}
+.tagapp{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.3px;margin-bottom:6px}
+.t-new{background:var(--doneBg);color:var(--done)}
+.t-old{background:var(--openBg);color:var(--open)}
+
+.dl{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule2);font-size:12.5px}
+.dl:last-child{border-bottom:0}
+.stepper{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700}
+.stepper span.b{width:22px;height:22px;border:1px solid var(--rule);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--mut)}
+.row2{display:flex;gap:8px;align-items:center}
+.row2 .inp{flex:1}
+.ok{background:var(--doneBg);color:var(--done);border-radius:8px;padding:9px 11px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.tree{font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:2;color:var(--ink2)}
+.tree .sel{background:var(--accentBg);color:var(--accent);font-weight:700;border-radius:4px;padding:1px 6px}
+.foot{margin-top:70px;padding-top:20px;border-top:2px solid var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut2);letter-spacing:.04em;line-height:1.9}
+@media (max-width:640px){body{font-size:16px}.wrap{padding:0 18px 64px}.ph{width:100%}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="kicker">Mockup · ten changes · nothing built</div>
+  <h1>What Is On The Table</h1>
+  <p class="sf">The collaboration screens, redrawn around one idea: <strong>what can be negotiated depends on how she is being paid.</strong> Every screen here is drawn from the live app.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">1 · The rule</button>
+  <button class="tab" data-v="v2">2 · Asking</button>
+  <button class="tab" data-v="v3">3 · Deliverables</button>
+  <button class="tab" data-v="v4">4 · What she promotes</button>
+  <button class="tab" data-v="v5">5 · Her side</button>
+  <button class="tab" data-v="v6">6 · Countering</button>
+  <button class="tab" data-v="v7">7 · The listing tree</button>
+  <button class="tab" data-v="v8">8 · Every change</button>
+</div>
+
+<!-- ═══════ 1 ═══════ -->
+<div class="view on" id="v1">
+  <div class="vh">One rule underneath all ten changes</div>
+  <p class="vs">Paying for content and paying for sales are different deals, so different things are on the table. Today the app treats them almost identically, and that is what produces the ₹0 and the wrong questions.</p>
+
+  <div class="tw"><table>
+    <tr><th>Term</th><th>Pay for content</th><th>Pay per sale</th><th>Today</th></tr>
+    <tr><td><b>Money</b></td><td class="yes">Fee · negotiable</td><td class="yes">Commission % · negotiable</td><td>negotiable</td></tr>
+    <tr><td><b>Time</b></td><td class="yes">Post by · negotiable</td><td class="yes">Post by · negotiable</td><td>negotiable</td></tr>
+    <tr><td><b>Where she works</b></td><td class="yes">negotiable</td><td class="yes">negotiable</td><td class="bad">optional, marked requirement or preference</td></tr>
+    <tr><td><b>Deliverables</b></td><td class="yes">negotiable</td><td class="no">not asked</td><td class="bad">never asked of the brand</td></tr>
+    <tr><td><b>What she promotes</b></td><td>optional</td><td>optional</td><td>optional</td></tr>
+  </table></div>
+
+  <div class="note n-key">
+    <span class="h">Why deliverables belong only to a fee</span>
+    <p>A fee buys a specific piece of work, so both sides must know what it buys. A commission buys nothing — she earns only if she sells, so counting her posts is measuring the wrong thing. That single distinction fixes two of your ten points at once: the brand is now <em>asked</em> for deliverables on a fee deal, and the creator <em>stops</em> being asked for them on a sales deal.</p>
+  </div>
+
+  <div class="note n-hold">
+    <span class="h">"Where she works" can no longer be a requirement</span>
+    <p>Today you mark it <b>requirement</b> — meaning it cannot be countered — or <b>preference</b>. You have asked for it to be negotiable, and a term cannot be both. So it moves up beside money and time, and the requirement/preference marker survives only on <b>what she promotes</b>.</p>
+  </div>
+
+  <div class="note n-done">
+    <span class="h">Nothing live is disturbed</span>
+    <p>Checked before drawing: all <b>14 requests</b> and <b>8 agreements</b> in production are pay-per-sale, <b>none</b> uses a posting window, and <b>none</b> states deliverables. Every change here lands on empty ground.</p>
+  </div>
+</div>
+
+<!-- ═══════ 2 ═══════ -->
+<div class="view" id="v2">
+  <div class="vh">Asking a creator</div>
+  <p class="vs">The two deals become visibly different forms. Dates become pickers throughout — you should never type <span class="mono">2026-09-15</span> into a phone.</p>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-old">TODAY · PAY FOR CONTENT</span>
+      <div class="ph old"><div class="phbar"><span>Ask to collaborate</span><span>Priya N.</span></div><div class="phb">
+        <div class="fl">Aim</div>
+        <div class="chips"><span class="chip">Pay per sale</span><span class="chip on">Pay for content</span><span class="chip">Both</span></div>
+        <div class="fl">Fee ₹ · negotiable</div>
+        <div class="inp"><span>25000</span></div>
+        <div class="fl">Window start</div>
+        <div class="inp"><span class="ph2">2026-09-10</span></div>
+        <div class="fl">Window end</div>
+        <div class="inp"><span class="ph2">2026-09-24</span></div>
+        <div class="hint">Deliverables are deliberately not asked — the creator proposes what she can do.</div>
+      </div></div>
+      <p class="cap">Two dates, both typed, and <b>the brand never says what ₹25,000 buys</b>.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED · PAY FOR CONTENT</span>
+      <div class="ph"><div class="phbar"><span>Ask to collaborate</span><span>Priya N.</span></div><div class="phb">
+        <div class="fl">Aim</div>
+        <div class="chips"><span class="chip">Pay per sale</span><span class="chip on">Pay for content</span><span class="chip">Both</span></div>
+
+        <div class="fl">Fee ₹ <span class="neg">· negotiable</span></div>
+        <div class="inp"><span>25,000</span></div>
+
+        <div class="fl">Post by <span class="neg">· negotiable</span></div>
+        <div class="inp"><span>15 Sep 2026</span><span class="cal">▾</span></div>
+        <div class="hint">She must have posted by this date. The campaign starts then.</div>
+
+        <div class="fl">Where she works <span class="neg">· negotiable</span></div>
+        <div class="chips"><span class="chip">Store visit</span><span class="chip on">Remote</span></div>
+        <div class="chips" style="margin-top:7px"><span class="chip on">We'll ship</span><span class="chip">No</span></div>
+
+        <div class="fl">What ₹25,000 buys <span class="neg">· negotiable</span></div>
+        <div class="dl"><span>Instagram Reel</span><span class="stepper"><span class="b">−</span>2<span class="b">+</span></span></div>
+        <div class="dl"><span>Instagram Story</span><span class="stepper"><span class="b">−</span>3<span class="b">+</span></span></div>
+        <div class="dl"><span>Instagram Post</span><span class="stepper"><span class="b">−</span>0<span class="b">+</span></span></div>
+        <div class="dl"><span>YouTube Video</span><span class="stepper"><span class="b">−</span>0<span class="b">+</span></span></div>
+        <div class="cta">SEND REQUEST</div>
+      </div></div>
+      <p class="cap">One date, from a picker. <b>Four negotiable terms, each marked.</b> The fee now buys something specific.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED · PAY PER SALE</span>
+      <div class="ph"><div class="phbar"><span>Ask to collaborate</span><span>Priya N.</span></div><div class="phb">
+        <div class="fl">Aim</div>
+        <div class="chips"><span class="chip on">Pay per sale</span><span class="chip">Pay for content</span><span class="chip">Both</span></div>
+
+        <div class="fl">Commission % <span class="neg">· negotiable</span></div>
+        <div class="inp"><span>18</span></div>
+        <div class="hint">She earns 18% of everything she sells. No fee is paid.</div>
+
+        <div class="fl">Post by <span class="neg">· negotiable</span></div>
+        <div class="inp"><span>15 Sep 2026</span><span class="cal">▾</span></div>
+
+        <div class="fl">Where she works <span class="neg">· negotiable</span></div>
+        <div class="chips"><span class="chip on">Store visit</span><span class="chip">Remote</span></div>
+
+        <div class="hint" style="color:var(--accent);font-weight:600">
+          Deliverables are not asked. She earns only if she sells, so counting posts
+          measures the wrong thing.
+        </div>
+        <div class="cta">SEND REQUEST</div>
+      </div></div>
+      <p class="cap"><b>Three terms, exactly as you specified.</b> Shorter than the fee deal, and honestly so.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 3 ═══════ -->
+<div class="view" id="v3">
+  <div class="vh">Deliverables — using the words the platform already has</div>
+  <p class="vs">I proposed inventing a list. I then found the platform already has one, used by contracts and campaign briefs.</p>
+
+  <div class="tw"><table>
+    <tr><th>Stored as</th><th>On screen</th></tr>
+    <tr><td class="mono">reel</td><td>Instagram Reel</td></tr>
+    <tr><td class="mono">post</td><td>Instagram Post</td></tr>
+    <tr><td class="mono">story</td><td>Instagram Story</td></tr>
+    <tr><td class="mono">youtube_video</td><td>YouTube Video</td></tr>
+    <tr><td class="mono">youtube_short</td><td>YouTube Short</td></tr>
+  </table></div>
+
+  <div class="note n-key">
+    <span class="h">Deliberately reusing it rather than inventing a second list</span>
+    <p>This programme has twice had to clean up a vocabulary that got written two different ways — offer types on web versus mobile, and a duplicated offer-type normaliser. A third would cost more than it saves. These five words already travel from a campaign brief into a contract; a handshake that used different ones would need translating at every boundary.</p>
+    <p><strong>If this list is wrong, now is the moment to change it</strong> — but it should change everywhere, not just here.</p>
+  </div>
+
+  <p><strong>Counts, not free text.</strong> "2 reels and 3 stories" is checkable — the platform can tell whether she delivered. A sentence cannot be checked by anything except an argument later.</p>
+</div>
+
+<!-- ═══════ 4 ═══════ -->
+<div class="view" id="v4">
+  <div class="vh">What she promotes</div>
+  <p class="vs">Two options today. Three proposed — and the middle one stops being typed.</p>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph old"><div class="phbar"><span>What they'd promote</span><span>Optional</span></div><div class="phb">
+        <div class="chips"><span class="chip">Not stated</span><span class="chip on">Whole store</span><span class="chip">A category</span></div>
+        <div class="fl">Category</div>
+        <div class="inp"><span class="ph2">e.g. Ethnic Wear</span></div>
+        <div class="hint">Typed by hand. Nothing checks it exists.</div>
+      </div></div>
+      <p class="cap">A free-text box. <b>"Ethnic Wear", "ethnic wear" and "Ethnicwear" are three different categories</b> to the platform.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph"><div class="phbar"><span>What she promotes</span><span>Optional</span></div><div class="phb">
+        <div class="chips">
+          <span class="chip">Not stated</span><span class="chip">Whole store</span>
+          <span class="chip on">A category</span><span class="chip">Specific products</span>
+        </div>
+        <div class="fl">Pick from your catalogue</div>
+        <div class="tree">
+          Women<br>
+          &nbsp;&nbsp;└ Ethnic Wear<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;├ <span class="sel">Sarees ✓</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;├ Lehengas<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;└ Kurtis
+        </div>
+        <div class="hint">Chosen from your listing tree, so it is a real category with real products behind it.</div>
+        <div class="fl">Requirement or preference</div>
+        <div class="chips"><span class="chip">Requirement</span><span class="chip on">Preference</span></div>
+      </div></div>
+      <p class="cap">The tree you already built. <b>This is the only marker that keeps requirement/preference</b>, now that style is negotiable.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED · SPECIFIC PRODUCTS</span>
+      <div class="ph"><div class="phbar"><span>What she promotes</span><span>Optional</span></div><div class="phb">
+        <div class="chips">
+          <span class="chip">Not stated</span><span class="chip">Whole store</span>
+          <span class="chip">A category</span><span class="chip on">Specific products</span>
+        </div>
+        <div class="fl">3 selected</div>
+        <div class="dl"><span>Kanchi Silk Saree — Red</span><span style="color:var(--done)">✓</span></div>
+        <div class="dl"><span>Kanchi Silk Saree — Green</span><span style="color:var(--done)">✓</span></div>
+        <div class="dl"><span>Bridal Lehenga — Maroon</span><span style="color:var(--done)">✓</span></div>
+        <div class="dl" style="color:var(--mut2)"><span>Cotton Kurti — Blue</span><span>+</span></div>
+      </div></div>
+      <p class="cap">Your product list already has a backend, so this is a picker over data that exists.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ 5 ═══════ -->
+<div class="view" id="v5">
+  <div class="vh">Her side — the ₹0</div>
+  <p class="vs">Your campaign was correct. The screen only ever knew how to show a fee.</p>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph old"><div class="phbar"><span>Collab</span><span>Kanchi Silks</span></div><div class="phb">
+        <div style="font-family:'Archivo';font-size:26px;font-weight:800">₹0</div>
+        <div class="hint">Fee</div>
+        <div class="fl">Terms</div>
+        <div class="dl"><span>Fee</span><b>₹0</b></div>
+        <div class="dl"><span>Post by</span><b>15 Sep</b></div>
+      </div></div>
+      <p class="cap"><b>She is told she will earn nothing.</b> The commission is sent by the server; this screen never asks for it.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph"><div class="phbar"><span>Collab</span><span>Kanchi Silks</span></div><div class="phb">
+        <div style="font-family:'Archivo';font-size:30px;font-weight:800;color:var(--accent)">18%</div>
+        <div class="hint" style="font-size:12px;color:var(--ink2)">of everything you sell</div>
+        <div class="fl">Terms</div>
+        <div class="dl"><span>Commission</span><b>18%</b></div>
+        <div class="dl"><span>Post by</span><b>15 Sep 2026</b></div>
+        <div class="dl"><span>Where you work</span><b>Store visit</b></div>
+        <div class="hint">No fee is paid on a sales collaboration — you earn on what you sell.</div>
+      </div></div>
+      <p class="cap">The percentage leads, at the size the fee used to. <b>The sentence underneath is the part that matters</b> — a number alone still leaves her guessing.</p>
+    </div>
+  </div>
+
+  <div class="note n-open" style="margin-top:20px">
+    <span class="h">This is the same fault as the admin pages</span>
+    <p>The value exists and is delivered; the screen does not read it. That is now the third place it has happened. Worth a sweep of its own once these land — <strong>not part of this batch</strong>.</p>
+  </div>
+</div>
+
+<!-- ═══════ 6 ═══════ -->
+<div class="view" id="v6">
+  <div class="vh">Countering, where the number is</div>
+  <p class="vs">Today she scrolls past the terms to a separate form and re-enters everything. Proposed: she changes the thing she disagrees with, in place.</p>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph old"><div class="phbar"><span>Their offer</span><span>Countering</span></div><div class="phb">
+        <div class="dl"><span>Commission</span><b>18%</b></div>
+        <div class="dl"><span>Post by</span><b>15 Sep</b></div>
+        <div class="fl" style="color:var(--open)">Your counter</div>
+        <div class="fl">Commission % (they said 18)</div>
+        <div class="inp"><span class="ph2">e.g. 21</span></div>
+        <div class="fl">Post by (YYYY-MM-DD)</div>
+        <div class="inp"><span class="ph2">2026-09-15</span></div>
+        <div class="fl">What you'll deliver</div>
+        <div class="row2"><div class="inp"><span class="ph2">Reels</span></div><div class="inp"><span class="ph2">Stories</span></div></div>
+        <div class="hint" style="color:var(--open)">Asked on a sales deal, where it means nothing.</div>
+      </div></div>
+      <p class="cap">A second copy of the whole offer, lower down, <b>with the terms repeated as placeholder text</b>.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph"><div class="phbar"><span>Their offer</span><span>Countering</span></div><div class="phb">
+        <div class="fl">Commission</div>
+        <div class="row2">
+          <div class="inp"><span>21</span><span style="color:var(--mut2)">%</span></div>
+          <div class="ok">was 18</div>
+        </div>
+
+        <div class="fl">Post by</div>
+        <div class="row2">
+          <div class="inp"><span>15 Sep 2026</span><span class="cal">▾</span></div>
+          <div class="ok">✓ fine</div>
+        </div>
+
+        <div class="fl">Where you work</div>
+        <div class="chips"><span class="chip">Store visit</span><span class="chip on">Remote</span></div>
+        <div class="row2" style="margin-top:7px"><div class="ok" style="background:var(--accentBg);color:var(--accent)">they asked for store visit</div></div>
+
+        <div class="cta">SEND COUNTER · 1 CHANGE</div>
+      </div></div>
+      <p class="cap">One list. Touch what you disagree with; <b>leave the rest and it means you accept it</b>. The button counts your changes so nothing is sent by accident.</p>
+    </div>
+  </div>
+
+  <div class="note n-key" style="margin-top:20px">
+    <span class="h">"✓ fine" is doing real work</span>
+    <p>You asked that if the date is acceptable she taps OK and the same date carries. That is what this is — but it also removes the commonest cause of a confusing counter: a creator who only wanted more money but re-typed the date slightly differently and moved two terms without meaning to.</p>
+  </div>
+
+  <p><strong>And deliverables appear here only on a fee deal</strong> — the same stepper the brand used, pre-filled with what the brand asked for. On a sales deal the question is absent.</p>
+</div>
+
+<!-- ═══════ 7 ═══════ -->
+<div class="view" id="v7">
+  <div class="vh">The listing tree, and what it reaches</div>
+  <p class="vs">This is the largest of the ten and the only one that leaves the collaboration screens. Drawing it separately so it can be judged — or deferred — on its own.</p>
+
+  <p>You asked for two connected things:</p>
+  <ul>
+    <li>a category chosen from the <strong>listing engine tree</strong>, not typed</li>
+    <li>and that choice <strong>constraining which products can appear in her post</strong></li>
+  </ul>
+
+  <div class="note n-hold">
+    <span class="h">What exists, and what does not</span>
+    <p>The tree is real and the follower app already browses it. <strong>The brand phone app has never been connected to it</strong> — no category picker, no product picker, no endpoint feeding either. The product list does have a backend already, so "specific products" is much cheaper than "a category".</p>
+  </div>
+
+  <div class="tw"><table>
+    <tr><th>Piece</th><th>State</th><th>Work</th></tr>
+    <tr><td>Product picker for the brand app</td><td class="yes">backend exists</td><td>Small</td></tr>
+    <tr><td>Category tree picker for the brand app</td><td class="bad">no endpoint for this app</td><td>Medium</td></tr>
+    <tr><td>Carrying the choice into the agreement</td><td class="yes">the term already travels</td><td>Small</td></tr>
+    <tr><td><b>Constraining her post to that scope</b></td><td class="bad">not connected</td><td><b>Large</b></td></tr>
+  </table></div>
+
+  <div class="note n-key">
+    <span class="h">My recommendation: split it</span>
+    <p>Take <strong>specific products</strong> and <strong>the category picker</strong> with the other nine changes — they are part of the same screen and the same conversation.</p>
+    <p>Take <strong>"only those products appear in her post"</strong> separately. It is not a collaboration-screen change at all; it is a rule about posting, and it touches the post composer, the product picker and the scope check. Bolting it onto this batch would double the size and delay the nine changes that are ready.</p>
+  </div>
+</div>
+
+<!-- ═══════ 8 ═══════ -->
+<div class="view" id="v8">
+  <div class="vh">Every change, and what it costs</div>
+  <p class="vs">Your ten, plus the two I found while drawing.</p>
+
+  <div class="tw"><table>
+    <tr><th>#</th><th>Change</th><th>Where</th><th>Size</th></tr>
+    <tr><td class="mono">1</td><td>Sales collab leads with the <b>percentage</b>, not ₹0</td><td>Creator app</td><td>Small</td></tr>
+    <tr><td class="mono">2</td><td><b>Date pickers</b> everywhere a date is entered</td><td>Both apps</td><td>Small</td></tr>
+    <tr><td class="mono">3</td><td>Pay-for-content: <b>one date</b>, a deadline, no window</td><td>Both · backend</td><td>Small</td></tr>
+    <tr><td class="mono">4</td><td><b>Deliverables asked of the brand</b> on a fee deal</td><td>Brand · backend</td><td>Medium</td></tr>
+    <tr><td class="mono">5</td><td>Deliverables <b>not asked</b> of the creator on a sales deal</td><td>Creator app</td><td>Small</td></tr>
+    <tr><td class="mono">6</td><td><b>Where she works becomes negotiable</b>, loses requirement/preference</td><td>Both · backend</td><td>Medium</td></tr>
+    <tr><td class="mono">7</td><td><b>Counter in place</b>, beside each term, with a change count</td><td>Creator app</td><td>Medium</td></tr>
+    <tr><td class="mono">8</td><td><b>Specific products</b> as a scope option</td><td>Brand app</td><td>Small</td></tr>
+    <tr><td class="mono">9</td><td><b>Category from the listing tree</b>, not typed</td><td>Brand · backend</td><td>Medium</td></tr>
+    <tr><td class="mono">10</td><td><b>Pitch settings moved</b> out of the pitch inbox to where you'd look</td><td>Brand app</td><td>Small</td></tr>
+    <tr style="background:var(--sunk)"><td class="mono">—</td><td><i>Post scope constrained to the agreed category</i></td><td><i>Posting</i></td><td><b>Deferred</b></td></tr>
+  </table></div>
+
+  <div class="note n-done">
+    <span class="h">No migration, and nothing live disturbed</span>
+    <p>All 14 requests and 8 agreements in production are pay-per-sale, none uses a posting window, none states deliverables. The terms are stored as a single flexible record, so widening what is negotiable needs no database change.</p>
+  </div>
+
+  <div class="note n-open">
+    <span class="h">One thing to decide</span>
+    <p>The five deliverable words — <b>Reel, Post, Story, YouTube Video, YouTube Short</b> — are the platform's existing vocabulary, already travelling from campaign briefs into contracts. Confirm them, or change them <em>everywhere</em>. Not just here.</p>
+  </div>
+</div>
+
+<div class="foot">
+  MOCKUP ONLY — NOTHING BUILT<br>
+  LOCK THE BOARDS AND IMPLEMENTATION STARTS AT ITEM 1<br>
+  ITEM 4'S POST-SCOPE RULE PROPOSED FOR ITS OWN PASS
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</div>

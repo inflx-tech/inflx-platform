@@ -1,0 +1,35 @@
+{
+  "feature": "collab-terms-by-aim",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-25 chat: \"yes changes landed, then move to remaining changes one by one clearly\" — after the eight boards were presented",
+  "approved_at": "2026-08-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-25 chat: \"yes changes landed, then move to remaining changes one by one clearly\"",
+  "mockup_locked_at": "2026-08-25",
+  "mockup_note": "features/collab-terms-by-aim/04-preview/mockups/collab-terms.html — eight boards drawn from the live screens, with every proposed value traced to a field that exists and is populated in production.",
+  "items": {
+    "1": "Sales collab leads with the percentage, not ₹0 — IN PROGRESS",
+    "2": "Date pickers wherever a date is entered",
+    "3": "Pay-for-content: one date, a deadline, no window",
+    "4": "Deliverables asked of the brand on a fee deal",
+    "5": "Deliverables not asked of the creator on a sales deal",
+    "6": "Where she works becomes negotiable, loses requirement/preference",
+    "7": "Counter in place, beside each term, with a change count",
+    "8": "Specific products as a scope option",
+    "9": "Category from the listing tree, not typed",
+    "10": "Pitch settings moved — SHIPPED 2026-08-25 under stage-1"
+  },
+  "deferred": "Constraining her post to the agreed category — a posting rule, not a collaboration screen. Its own pass.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed. Rule 5 applies at release.",
+    "deploy_class": "production-impacting (creator app via OTA). Item 1 has no backend change and no migration.",
+    "deploy_targets": ["OTA (creator app)"]
+  }
+}
