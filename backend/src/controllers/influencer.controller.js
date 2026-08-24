@@ -728,7 +728,7 @@ const getPublicById = asyncHandler(async (req, res) => {
        i.bio, i.website,
        i.price_per_post_min, i.price_per_post_max,
        i.past_brands_json, i.collaboration_types_json,
-       i.profile_image_url, i.age,
+       i.profile_image_url, i.age, i.created_at,
        i.profile_image_r2_key,
        -- Counted live from the follow table, exactly as it is for a real person
        -- who follows her tomorrow. Never a stored or estimated number.
@@ -744,6 +744,20 @@ const getPublicById = asyncHandler(async (req, res) => {
     [id]
   );
   if (legacy[0]) {
+    // Admin-only detail. Kept out of the shared select on purpose — this endpoint also
+    // serves BRANDS, and a creator's personal number and earnings are not theirs to see.
+    // Contract: features/admin-account-review
+    if (req.user.role === 'admin') {
+      const { rows: [priv] } = await db.query(
+        `SELECT u.phone, u.status,
+                i.wallet_balance, i.pending_balance,
+                i.scrape_last_run, i.tds_exempt, i.tds_override_pct
+           FROM influencers i JOIN users u ON u.id = i.user_id
+          WHERE i.id = $1`,
+        [id]
+      );
+      if (priv) Object.assign(legacy[0], priv);
+    }
     // Her own uploaded photo, turned into a URL that loads. This used to point at
     // the scraped-picture key and was therefore permanently a no-op for onboarded
     // creators — they have no scraped key. Contract: features/creator-photo-and-reach

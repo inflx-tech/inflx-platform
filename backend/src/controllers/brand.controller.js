@@ -31,7 +31,11 @@ function validateProductFields(schema, body) {
 
 async function getBrandByUserId(userId) {
   const { rows } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.fcm_token
+    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.fcm_token,
+            -- A brand's city and state live on the USER row — there is no brands.city
+            -- column. The admin page asked for brand.city and so always printed a dash.
+            -- Contract: features/admin-account-review
+            u.city, u.state, u.created_at AS user_created_at
      FROM brands b
      JOIN users u ON u.id = b.user_id
      WHERE b.user_id = $1`,
@@ -42,7 +46,10 @@ async function getBrandByUserId(userId) {
 
 async function getBrandById(brandId) {
   const { rows } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.fcm_token
+    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.fcm_token,
+            -- Same reason as above: the admin brand page asked for brand.city, which does
+            -- not exist on brands. Contract: features/admin-account-review
+            u.city, u.state, u.created_at AS user_created_at
      FROM brands b
      JOIN users u ON u.id = b.user_id
      WHERE b.id = $1`,

@@ -1,0 +1,376 @@
+<title>Reviewing an Account</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ground:#FBFAF7;--surface:#FFFFFF;--sunk:#F4F2EA;
+  --ink:#16150F;--ink2:#3D3A2E;--mut:#6E6A5C;--mut2:#96917F;
+  --rule:#E4E0D3;--rule2:#F0EDE2;
+  --accent:#B07E00;--accentBg:#FBF3D9;
+  --done:#1A6B4A;--doneBg:#E8F3ED;
+  --open:#A93A20;--openBg:#FAEDE9;
+  --hold:#4A5B8C;--holdBg:#EDF0F9;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#141309;--surface:#1D1B12;--sunk:#232116;
+  --ink:#F4F1E4;--ink2:#DAD5C2;--mut:#A19B86;--mut2:#78735F;
+  --rule:#332F21;--rule2:#282518;
+  --accent:#E8B33D;--accentBg:#2E2712;
+  --done:#5FC08F;--doneBg:#14291F;
+  --open:#E58B6E;--openBg:#2E1912;
+  --hold:#93A6DA;--holdBg:#191D2C;
+}}
+:root[data-theme="dark"]{
+  --ground:#141309;--surface:#1D1B12;--sunk:#232116;
+  --ink:#F4F1E4;--ink2:#DAD5C2;--mut:#A19B86;--mut2:#78735F;
+  --rule:#332F21;--rule2:#282518;
+  --accent:#E8B33D;--accentBg:#2E2712;
+  --done:#5FC08F;--doneBg:#14291F;
+  --open:#E58B6E;--openBg:#2E1912;
+  --hold:#93A6DA;--holdBg:#191D2C;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:'Archivo',system-ui,sans-serif;margin:0;text-wrap:balance;letter-spacing:-0.015em}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px 96px}
+.mast{padding:56px 0 30px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+.mast h1{font-size:clamp(32px,5.5vw,50px);font-weight:800;line-height:1.03;margin:14px 0 0}
+.mast .sf{font-size:19px;color:var(--mut);margin:16px 0 0;max-width:62ch}
+section{margin-top:60px}
+.shead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:26px}
+.shead h2{font-size:clamp(21px,3vw,28px);font-weight:700}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:3px}
+.t-open{background:var(--openBg);color:var(--open)}
+.t-done{background:var(--doneBg);color:var(--done)}
+.t-hold{background:var(--holdBg);color:var(--hold)}
+p{margin:0 0 16px;max-width:66ch}
+.lede{font-size:19px;color:var(--ink2)}
+ul{margin:0 0 16px;padding-left:20px;max-width:66ch}
+li{margin-bottom:7px}
+strong{font-weight:600}
+hr{border:0;border-top:1px solid var(--rule);margin:40px 0}
+
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;background:var(--surface);font-size:14.5px}
+th{background:var(--sunk);text-align:left;padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+td{padding:10px 13px;border-top:1px solid var(--rule2);vertical-align:top}
+td.mono{font-size:12.5px}
+.bad{color:var(--open);font-weight:600}
+.good{color:var(--done);font-weight:600}
+
+.note{border:1px solid var(--rule);border-left-width:3px;padding:16px 18px;margin:0 0 18px;font-size:16px;max-width:72ch}
+.note p{font-size:16px}.note p:last-child{margin-bottom:0}
+.note .h{font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;display:block;margin-bottom:6px}
+.n-open{border-left-color:var(--open);background:var(--openBg)}.n-open .h{color:var(--open)}
+.n-hold{border-left-color:var(--hold);background:var(--holdBg)}.n-hold .h{color:var(--hold)}
+.n-done{border-left-color:var(--done);background:var(--doneBg)}.n-done .h{color:var(--done)}
+.n-key{border-left-color:var(--accent);background:var(--accentBg)}.n-key .h{color:var(--accent)}
+
+/* ── the mock screen ── */
+.screens{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.scr{flex:1 1 480px;min-width:320px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);overflow:hidden;box-shadow:0 2px 14px rgba(0,0,0,.05)}
+.scr.old{opacity:.72}
+.scrbar{padding:9px 14px;background:var(--sunk);border-bottom:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;gap:10px}
+.scrbar .r{color:var(--mut2)}
+.scrbody{padding:16px}
+.rowhead{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.ava{width:44px;height:44px;border-radius:9px;background:var(--accentBg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-weight:800;font-size:13px;flex-shrink:0}
+.rowhead .nm{font-family:'Archivo';font-size:17px;font-weight:800;line-height:1.2}
+.rowhead .sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut);margin-top:3px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.07em;padding:3px 7px;border-radius:3px;text-transform:uppercase;white-space:nowrap}
+.pl-wait{background:var(--accentBg);color:var(--accent)}
+.pl-ok{background:var(--doneBg);color:var(--done)}
+.pl-no{background:var(--openBg);color:var(--open)}
+.grp{border-top:1px solid var(--rule2);padding-top:12px;margin-top:12px}
+.grph{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--mut2);margin-bottom:8px}
+.kv{display:grid;grid-template-columns:118px 1fr;gap:4px 12px;font-size:14px}
+.kv dt{color:var(--mut);font-size:12.5px;padding-top:2px}
+.kv dd{margin:0;font-weight:600;color:var(--ink)}
+.kv dd.empty{color:var(--mut2);font-weight:400}
+.miss{background:var(--sunk);border-radius:7px;padding:10px 12px;font-size:13px;color:var(--ink2);margin-top:10px}
+.miss b{font-family:'Archivo';font-size:11.5px;display:block;margin-bottom:4px;color:var(--mut)}
+.flag{display:flex;gap:8px;align-items:flex-start;background:var(--openBg);border-radius:7px;padding:10px 12px;font-size:13px;color:var(--open);margin-top:10px;font-weight:600}
+.acts{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap}
+.btn{font-family:'Archivo';font-size:12.5px;font-weight:800;padding:10px 18px;border-radius:8px;border:1.5px solid transparent}
+.b-ok{background:var(--done);color:#fff}
+.b-no{background:transparent;border-color:var(--open);color:var(--open)}
+.b-mute{background:transparent;border-color:var(--rule);color:var(--mut)}
+.dash{border:1px dashed var(--rule);border-radius:7px;padding:12px;text-align:center;color:var(--mut2);font-size:12.5px;margin-top:10px}
+.cap{font-size:12.5px;color:var(--mut);margin-top:10px;line-height:1.5;max-width:52ch}
+.cap b{color:var(--ink)}
+
+.foot{margin-top:70px;padding-top:20px;border-top:2px solid var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut2);letter-spacing:.04em;line-height:1.9}
+@media (max-width:640px){body{font-size:16px}.wrap{padding:0 18px 64px}.kv{grid-template-columns:1fr;gap:1px}.kv dt{padding-top:8px}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="kicker">Proposal · admin · not yet built</div>
+  <h1>Reviewing an Account</h1>
+  <p class="sf">The admin brand page shows dashes where the data exists, and fee controls where the facts should be. Here is why, and what it should be instead.</p>
+</header>
+
+<!-- ═══════ 1 ═══════ -->
+<section>
+  <div class="shead"><h2>Why the fields are empty</h2><span class="tag t-open">Ten faults</span></div>
+
+  <p class="lede">The data is <strong>not missing</strong>. Preeti Chouhan gave you her full address, her pincode and a map pin. The page is asking for it by the wrong names, so it prints a dash and moves on.</p>
+
+  <div class="tw"><table>
+    <tr><th>On screen</th><th>The page asks for</th><th>What the platform actually calls it</th><th>Result</th></tr>
+    <tr><td><b>Name in the header</b></td><td class="mono">brand_name</td><td class="mono">business_name</td><td class="bad">Falls back to the <b>person's</b> name — "Fashion hub" would read "Kartikeya"</td></tr>
+    <tr><td><b>City</b></td><td class="mono">brand.city</td><td class="mono">on the user, and never sent</td><td class="bad">Always a dash</td></tr>
+    <tr><td><b>GST Number</b></td><td class="mono">gst_number</td><td class="mono">gstin</td><td class="bad">Dash even when supplied</td></tr>
+    <tr><td><b>Status badge</b></td><td class="mono">status</td><td class="mono">user_status</td><td class="bad">Blank grey pill</td></tr>
+    <tr><td><b>Address · pincode · map pin</b></td><td colspan="2">never displayed at all</td><td class="bad">Held, never shown</td></tr>
+  </table></div>
+
+  <p>The creator page has the same disease, plus one that matters more:</p>
+
+  <div class="tw"><table>
+    <tr><th>On screen</th><th>Fault</th><th>Result</th></tr>
+    <tr><td><b>Phone</b></td><td>Not sent by the server at all</td><td class="bad">Blank</td></tr>
+    <tr><td><b>Pending balance</b></td><td>Divides by 100. Money has been held in <b>rupees</b> since last year</td><td class="bad">Shows <b>one-hundredth</b> of what she is owed — ₹4,000 reads as ₹40</td></tr>
+    <tr><td><b>Last scraped</b></td><td>Not sent by the server</td><td class="bad">Blank</td></tr>
+    <tr><td><b>Approve / Reject</b></td><td>Not on the page — only in Approvals</td><td class="bad">You must review in one place and decide in another</td></tr>
+    <tr><td><b>The creator list</b></td><td>Admin → Influencers is a <b>CSV upload box</b>. There is no list</td><td class="bad">Your 22 creators cannot be opened at all</td></tr>
+  </table></div>
+
+  <div class="note n-key">
+    <span class="h">These are ten small faults with one cause</span>
+    <p>Both pages were written against a different shape of data than the server sends, and nothing ever failed loudly — a name that does not exist simply prints a dash. <strong>That is why it looks like missing data rather than a broken screen.</strong></p>
+  </div>
+</section>
+
+<hr>
+
+<!-- ═══════ 2 ═══════ -->
+<section>
+  <div class="shead"><h2>The deeper problem</h2><span class="tag t-hold">Wrong screen for the job</span></div>
+
+  <p class="lede">Even with every field fixed, that page would still be the wrong page — because it answers the wrong question.</p>
+
+  <p>An admin opening a <strong>pending</strong> account is asking one thing: <em>is this a real business, and do I let them trade here?</em></p>
+
+  <p>What the page leads with instead is <strong>Override Platform Fee</strong>, <strong>L3 Commerce Commission Override</strong>, <strong>Feature Overrides</strong> and <strong>Wallet Balance</strong>. Every one of those is about how an <em>already-approved</em> brand trades. None of them help you decide whether Preeti Chouhan is real. You cannot set a meaningful fee for someone you have not let in yet.</p>
+
+  <div class="note n-open">
+    <span class="h">And the decision is somewhere else entirely</span>
+    <p>Having read the account, you cannot act on it. <strong>Approve and Reject live on the Approvals page.</strong> So you read here, remember, navigate away, and find them again in a list. That is how the wrong person gets approved.</p>
+  </div>
+
+  <p><strong>Proposal: one page, two states, driven by status.</strong></p>
+  <ul>
+    <li><strong>Pending → a review page.</strong> The facts you need, what is missing, anything that looks wrong, and the two buttons. Nothing else.</li>
+    <li><strong>Approved → an account page.</strong> Those same facts stay at the top, and the fee and feature controls appear below — where they finally mean something.</li>
+  </ul>
+</section>
+
+<hr>
+
+<!-- ═══════ 3 ═══════ -->
+<section>
+  <div class="shead"><h2>Reviewing a brand</h2><span class="tag t-done">Proposed</span></div>
+  <p class="lede">Preeti Chouhan's real record, drawn as it would appear. Every value below is a field that exists and is filled today — nothing here is invented.</p>
+
+  <div class="screens">
+    <div>
+      <div class="scr old">
+        <div class="scrbar"><span>Today</span><span class="r">Brand profile</span></div>
+        <div class="scrbody">
+          <div class="rowhead">
+            <div class="ava">PR</div>
+            <div style="flex:1">
+              <div class="nm">Preeti Chouhan</div>
+              <div class="sub">+919350833678</div>
+            </div>
+            <span class="pill" style="background:var(--rule2);color:var(--mut2)">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          </div>
+          <dl class="kv">
+            <dt>Category</dt><dd>home_beauty</dd>
+            <dt>City</dt><dd class="empty">—</dd>
+            <dt>GST Number</dt><dd class="empty">—</dd>
+            <dt>Platform Fee</dt><dd>8.00%</dd>
+            <dt>Wallet Balance</dt><dd>₹0</dd>
+            <dt>Registered</dt><dd>23/8/2026</dd>
+          </dl>
+          <div class="dash">Override Platform Fee · L3 Commission Override · Feature Overrides</div>
+        </div>
+      </div>
+      <p class="cap">Six fields, <b>two of them dashes</b>, three about money she cannot yet spend, a blank status pill — and <b>no way to approve her</b>.</p>
+    </div>
+
+    <div>
+      <div class="scr">
+        <div class="scrbar"><span>Proposed</span><span class="r">Waiting 1 day</span></div>
+        <div class="scrbody">
+          <div class="rowhead">
+            <div class="ava">PC</div>
+            <div style="flex:1">
+              <div class="nm">Preeti chouhan</div>
+              <div class="sub">HOME &amp; BEAUTY · KARNAL, HARYANA</div>
+            </div>
+            <span class="pill pl-wait">Waiting</span>
+          </div>
+
+          <div class="grp">
+            <div class="grph">Who applied</div>
+            <dl class="kv">
+              <dt>Contact</dt><dd>Preeti Chouhan</dd>
+              <dt>Phone</dt><dd>+91 93508 33678 &nbsp;<span class="pill pl-ok">Verified</span></dd>
+              <dt>Applied</dt><dd>23 Aug 2026, 1:17pm</dd>
+            </dl>
+          </div>
+
+          <div class="grp">
+            <div class="grph">Where they are</div>
+            <dl class="kv">
+              <dt>Address</dt><dd>House no. 225/7</dd>
+              <dt>Area</dt><dd>Karnal — 132001</dd>
+              <dt>Map pin</dt><dd>Karnal, Haryana, India &nbsp;<span class="pill pl-ok">Matches</span></dd>
+            </dl>
+          </div>
+
+          <div class="grp">
+            <div class="grph">Proof of business</div>
+            <dl class="kv">
+              <dt>GST</dt><dd class="empty">Not provided</dd>
+              <dt>Logo</dt><dd class="empty">Not uploaded</dd>
+            </dl>
+            <div class="miss">
+              <b>Before you decide</b>
+              No GST number and no logo. Neither is required to trade, but both are the
+              easiest things to ask for if you want more certainty.
+            </div>
+          </div>
+
+          <div class="acts">
+            <span class="btn b-ok">Approve</span>
+            <span class="btn b-no">Reject…</span>
+            <span class="btn b-mute">Ask for more</span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">Everything she actually told you, grouped by the question it answers — and the decision <b>on the same screen</b>.</p>
+    </div>
+  </div>
+
+  <div class="note n-key" style="margin-top:22px">
+    <span class="h">The one genuinely new idea: does the pin agree with the address?</span>
+    <p>She typed "Karnal" and her phone dropped a pin that resolves to <strong>Karnal, Haryana</strong>. Those agree, so the page says so and you move on.</p>
+    <p>When they <em>disagree</em> — a Vijayawada address with a pin in Dubai — that is the single most useful thing an approval screen can tell you, and it costs nothing because both values are already stored. <strong>This is the only check I would add.</strong> I am not proposing document uploads or verification workflows; you have five brands, not five thousand.</p>
+  </div>
+</section>
+
+<hr>
+
+<!-- ═══════ 4 ═══════ -->
+<section>
+  <div class="shead"><h2>Reviewing a creator</h2><span class="tag t-done">Proposed</span></div>
+  <p class="lede">A different question. A brand is judged on <em>is this a real business</em>; a creator on <em>is this really her account, and is the audience real</em>.</p>
+
+  <div class="screens">
+    <div>
+      <div class="scr">
+        <div class="scrbar"><span>Proposed</span><span class="r">Creator</span></div>
+        <div class="scrbody">
+          <div class="rowhead">
+            <div class="ava">AB</div>
+            <div style="flex:1">
+              <div class="nm">Anita B.</div>
+              <div class="sub">@anita_practice · HYDERABAD</div>
+            </div>
+            <span class="pill pl-ok">Approved</span>
+          </div>
+
+          <div class="grp">
+            <div class="grph">Who she is</div>
+            <dl class="kv">
+              <dt>Phone</dt><dd>+91 79000 00119 &nbsp;<span class="pill pl-ok">Verified</span></dd>
+              <dt>Where</dt><dd>Hyderabad, Telangana</dd>
+              <dt>Joined</dt><dd>21 Aug 2026</dd>
+            </dl>
+          </div>
+
+          <div class="grp">
+            <div class="grph">Her audience</div>
+            <dl class="kv">
+              <dt>INFLX</dt><dd>61 followers</dd>
+              <dt>Instagram</dt><dd>52,800 &nbsp;·&nbsp; <span style="color:var(--accent)">open @anita_practice ↗</span></dd>
+              <dt>YouTube</dt><dd class="empty">Not connected</dd>
+              <dt>Engagement</dt><dd>4.8%</dd>
+              <dt>Checked</dt><dd class="empty">Never scraped</dd>
+            </dl>
+            <div class="flag">
+              The Instagram figures have never been checked against Instagram. Open the
+              handle before trusting them.
+            </div>
+          </div>
+
+          <div class="grp">
+            <div class="grph">What she posts</div>
+            <dl class="kv">
+              <dt>Niches</dt><dd>Fashion, Lifestyle</dd>
+              <dt>Languages</dt><dd>Telugu, English</dd>
+            </dl>
+          </div>
+
+          <div class="acts">
+            <span class="btn b-mute">Re-check Instagram</span>
+            <span class="btn b-no">Suspend…</span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">The handle is a <b>link you can open</b>. Thirty seconds on Instagram beats any number this screen could show you.</p>
+    </div>
+
+    <div style="flex:1 1 380px;min-width:300px">
+      <p><strong>Why the handle link matters more than the numbers.</strong> A follower count on your screen is only ever a claim — someone typed it, or a scraper read it weeks ago. Opening the real profile is the actual check, so the screen should make that one tap.</p>
+
+      <p><strong>Why "never scraped" is stated out loud.</strong> Every one of your creators shows a follower count that has never once been verified against Instagram. Right now the screen presents those numbers exactly as confidently as verified ones. It should not.</p>
+
+      <p><strong>Payout details deliberately excluded.</strong> Whether she has given a UPI ID or PAN is stored, and it is not an approval question — it matters when she is owed money, not when she joins. Putting it here invites approving someone <em>because</em> their bank details look complete.</p>
+
+      <div class="note n-hold">
+        <span class="h">And the list has to exist</span>
+        <p>Admin → Influencers is a CSV upload box. Before any of the above is reachable, that page needs to become a <strong>list of your creators</strong> — name, handle, city, followers, status — matching the Brands list you already have.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<!-- ═══════ 5 ═══════ -->
+<section>
+  <div class="shead"><h2>What I would build, in order</h2><span class="tag t-hold">Your call</span></div>
+
+  <div class="tw"><table>
+    <tr><th>#</th><th>Work</th><th>Why this order</th><th>Size</th></tr>
+    <tr><td class="mono">1</td><td><b>Fix the ten faults</b> — the four wrong field names, the missing phone, the hundred-fold money error, and send the address, pincode, city and pin to the page</td><td>Cheapest, and it stops the screen lying about a creator's balance</td><td>Small</td></tr>
+    <tr><td class="mono">2</td><td><b>The creator list</b> in the admin, replacing the CSV box as the landing page</td><td>Until this exists your 22 creators cannot be opened at all</td><td>Small</td></tr>
+    <tr><td class="mono">3</td><td><b>The review layout</b> — facts grouped by question, decision buttons on the page, fees hidden until approved</td><td>Needs 1 and 2 done first</td><td>Medium</td></tr>
+    <tr><td class="mono">4</td><td><b>The address-versus-pin check</b>, and "never scraped" said plainly</td><td>The only new judgement the screen makes</td><td>Small</td></tr>
+  </table></div>
+
+  <div class="note n-done">
+    <span class="h">Nothing here needs a database change</span>
+    <p>Every field on both proposed screens already exists and is already stored. This is a screen problem and a "send the field to the page" problem — not a data problem.</p>
+  </div>
+
+  <div class="note n-open">
+    <span class="h">One thing I am not proposing</span>
+    <p>No document uploads, no verification queue, no scoring. You have <strong>six brands and one person waiting</strong>. A review screen that takes longer to build than it saves is the wrong answer today — this is about seeing what you already collected.</p>
+  </div>
+</section>
+
+<div class="foot">
+  PROPOSAL ONLY — NOTHING BUILT<br>
+  LOCK THE SCREENS AND I START AT ITEM 1<br>
+  EVERY FIELD SHOWN EXISTS IN PRODUCTION TODAY
+</div>
+
+</div>

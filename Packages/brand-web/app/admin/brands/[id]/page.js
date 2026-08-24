@@ -357,23 +357,40 @@ export default function BrandProfilePage() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-navy-pale flex items-center justify-center text-sm font-bold text-navy font-display">
-              {(brand.brand_name || brand.name || '').slice(0, 2).toUpperCase()}
+              {(brand.business_name || brand.name || '').slice(0, 2).toUpperCase()}
             </div>
             <div>
-              <div className="font-display text-base font-bold text-t1">{brand.brand_name || brand.name}</div>
-              <div className="text-xs text-t3">{brand.phone}</div>
+              {/* The business is what is being reviewed. This read brand_name, which the
+                  server does not send, so it fell through to the CONTACT's name — "Fashion
+                  hub" displayed as "Kartikeya". Contract: features/admin-account-review */}
+              <div className="font-display text-base font-bold text-t1">{brand.business_name || brand.name}</div>
+              <div className="text-xs text-t3">{brand.name}{brand.name ? ' · ' : ''}{brand.phone}</div>
             </div>
           </div>
-          <StatusBadge status={brand.status} />
+          <StatusBadge status={brand.user_status || brand.status} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Category" value={brand.category} />
-          <Field label="City" value={brand.city} />
-          <Field label="GST Number" value={brand.gst_number} />
-          <Field label="Platform Fee" value={brand.platform_fee_pct ? `${brand.platform_fee_pct}%` : '8% (default)'} />
-          <Field label="Wallet Balance" value={fmtMoney(brand.wallet_balance)} />
+          {/* City lives on the user record. This asked for brand.city, which does not
+              exist, so it was always a dash. */}
+          <Field label="City" value={[brand.city, brand.state].filter(Boolean).join(', ')} />
+          {/* The column is gstin. gst_number was never a field, so a supplied GST number
+              still showed as missing. */}
+          <Field label="GST Number" value={brand.gstin || 'Not provided'} />
           <Field label="Registered" value={brand.created_at ? new Date(brand.created_at).toLocaleDateString('en-IN') : '—'} />
+        </div>
+
+        {/* Where they are — collected at sign-up and never once displayed, which is the
+            single most useful thing when deciding whether a business is real. */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-2">Address</div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Street" value={brand.address_line || 'Not provided'} />
+            <Field label="Area · Pincode" value={[brand.locality, brand.pincode].filter(Boolean).join(' — ') || 'Not provided'} />
+            <Field label="Map pin" value={brand.formatted_address || (brand.latitude ? `${brand.latitude}, ${brand.longitude}` : 'No pin dropped')} />
+            <Field label="Wallet Balance" value={fmtMoney(brand.wallet_balance)} />
+          </div>
         </div>
 
         {brand.rejection_reason && (

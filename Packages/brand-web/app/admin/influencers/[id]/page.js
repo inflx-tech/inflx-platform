@@ -81,8 +81,8 @@ export default function InfluencerProfilePage() {
   const statCfg = [
     { label: 'Followers', value: (influencer.followers_count || 0).toLocaleString('en-IN') },
     { label: 'Eng. Rate', value: influencer.engagement_rate ? `${influencer.engagement_rate}%` : '—' },
-    { label: 'Wallet', value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((influencer.wallet_balance || 0) / 100) },
-    { label: 'Status', value: influencer.status },
+    { label: 'Wallet', value: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(influencer.wallet_balance || 0) },
+    { label: 'Status', value: influencer.user_status || influencer.status || '—' },
   ];
 
   return (
@@ -99,7 +99,7 @@ export default function InfluencerProfilePage() {
             </div>
             <div>
               <div className="font-display text-base font-bold text-t1">@{influencer.instagram_handle}</div>
-              <div className="text-xs text-t3">{influencer.phone} · {influencer.city}</div>
+              <div className="text-xs text-t3">{[influencer.phone, influencer.city, influencer.state].filter(Boolean).join(' · ')}</div>
             </div>
           </div>
           <button onClick={rescrape} disabled={rescraping}
@@ -121,8 +121,8 @@ export default function InfluencerProfilePage() {
           <Field label="Niche" value={(influencer.niche || []).join(', ')} />
           <Field label="Language" value={(influencer.language || []).join(', ')} />
           <Field label="Registered" value={influencer.created_at ? new Date(influencer.created_at).toLocaleDateString('en-IN') : '—'} />
-          <Field label="Last Scraped" value={influencer.scrape_last_run ? new Date(influencer.scrape_last_run).toLocaleString('en-IN') : '—'} />
-          <Field label="Pending Balance" value={new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((influencer.pending_balance || 0) / 100)} />
+          <Field label="Last checked" value={influencer.scrape_last_run ? new Date(influencer.scrape_last_run).toLocaleString('en-IN') : 'Never checked against Instagram'} />
+          <Field label="Pending Balance" value={new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(influencer.pending_balance || 0)} />
           <Field label="TDS Status" value={
             influencer.tds_exempt
               ? 'Exempt (0%)'
