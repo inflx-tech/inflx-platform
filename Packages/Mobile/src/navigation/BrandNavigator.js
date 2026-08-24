@@ -29,6 +29,7 @@ import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
 import BrandFindCreatorsScreen from '../screens/brand/BrandFindCreatorsScreen';
 import BrandProductPickerScreen from '../screens/brand/BrandProductPickerScreen';
+import BrandCategoryPickerScreen from '../screens/brand/BrandCategoryPickerScreen';
 import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
 import BrandPlacePickerScreen from '../screens/brand/BrandPlacePickerScreen';
@@ -65,6 +66,8 @@ function HomeStack() {
       <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
       {/* Pick the exact products a creator would promote — item 8. */}
       <Stack.Screen name="BrandProductPicker" component={BrandProductPickerScreen} />
+      {/* A real category from the listing tree, not typed — item 9. */}
+      <Stack.Screen name="BrandCategoryPicker" component={BrandCategoryPickerScreen} />
       <Stack.Screen name="BrandCollabRequests" component={BrandCollabRequestsScreen} />
       <Stack.Screen name="BrandStorePreview"      component={BrandStorePreviewScreen} />
       <Stack.Screen name="ContractPdf"            component={ContractPdfScreen} />

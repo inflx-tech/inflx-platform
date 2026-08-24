@@ -315,3 +315,68 @@ describe('a hand-picked list of products', () => {
     expect(model.validateTerms(base({ level: 'category', category: 'Ethnic Wear' })).ok).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 9 — a category from the listing tree
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('a category names a real node, not a typed string', () => {
+  /**
+   * The category was free text. "Ethnic Wear", "ethnic wear" and "Ethnicwear" were three
+   * different things to the platform, none of them linked to anything the listing engine
+   * knows about — so an agreement naming a category could never be connected to the
+   * products inside it.
+   */
+  const base = (scope) => ({
+    aim: 'conversion', money: { commission_pct: 18 }, time: { post_by: '2026-09-15' },
+    mode: 'visit', scope, importance: { scope: 'preference' },
+  });
+
+  it('accepts a picked node carrying its readable path', () => {
+    expect(model.validateTerms(base({
+      level: 'category',
+      category_node_id: 'abc-123',
+      category: 'Women › Ethnic Wear › Saree',
+    })).ok).toBe(true);
+  });
+
+  it('still accepts a typed category, for requests sent before this', () => {
+    expect(model.validateTerms(base({ level: 'category', category: 'Ethnic Wear' })).ok).toBe(true);
+  });
+
+  it('refuses a category with neither a node nor a name', () => {
+    expect(model.validateTerms(base({ level: 'category' })).ok).toBe(false);
+  });
+});
+
+describe('which listing tree a brand belongs to', () => {
+  /**
+   * The resolver was written inline as cat.startsWith('fashion') — case SENSITIVE. Brands
+   * carry both 'Fashion' and 'fashion' in production, so a capitalised brand resolved to a
+   * vertical named 'Fashion', which matches no node, and its category list came back
+   * EMPTY. Kanchi Silks — the practice brand with 11 products — was in that state, proven
+   * against production before the fix.
+   */
+  const VERTICALS = ['fashion', 'furniture'];
+  const verticalFor = (c) => {
+    const cat = String(c || '').trim().toLowerCase();
+    if (!cat) return null;
+    return VERTICALS.find(v => cat.startsWith(v)) || null;
+  };
+
+  it('resolves whatever case a brand happens to carry', () => {
+    expect(verticalFor('Fashion')).toBe('fashion');
+    expect(verticalFor('fashion')).toBe('fashion');
+    expect(verticalFor('furniture')).toBe('furniture');
+  });
+
+  it('returns nothing for a business with no listing tree', () => {
+    // A restaurant has no tree. Saying so beats inventing a vertical with no nodes and
+    // leaving a screen to guess why nothing came back.
+    expect(verticalFor('restaurant')).toBeNull();
+    expect(verticalFor('home_beauty')).toBeNull();
+    expect(verticalFor('Fitness')).toBeNull();
+    expect(verticalFor(null)).toBeNull();
+    expect(verticalFor('')).toBeNull();
+  });
+});

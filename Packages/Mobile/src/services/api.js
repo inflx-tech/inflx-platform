@@ -332,6 +332,9 @@ export const brandApi = {
   deleteOffer:         (id) => api.delete(`/brands/me/offers/${id}`),
   getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),
   listProducts:        () => api.get('/brands/me/products'),
+  // The brand's own slice of the listing tree, so a collaboration names a REAL category
+  // instead of free text. Contract: features/collab-terms-by-aim (item 9)
+  getListingTree:      () => api.get('/brands/me/listing-tree'),
   // Billing + subscription + payouts
   listInvoices:          () => api.get('/brands/me/billing/invoices?limit=100'),
   getSubscription:       () => api.get('/brands/me/subscription'),

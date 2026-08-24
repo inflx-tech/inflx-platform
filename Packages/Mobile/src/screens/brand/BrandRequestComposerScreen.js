@@ -59,7 +59,10 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
   const [fee, setFee] = useState('');
   const [postBy, setPostBy] = useState('');
   const [scopeLevel, setScopeLevel] = useState('');
-  const [scopeCategory, setScopeCategory] = useState('');
+  // The node's id is the link to the listing tree; the path is what she reads.
+  // Contract: features/collab-terms-by-aim (item 9)
+  const [categoryNodeId, setCategoryNodeId] = useState(null);
+  const [categoryPath, setCategoryPath] = useState('');
   // Ids are the link; names are the snapshot she reads. Both travel — see the picker.
   const [productIds, setProductIds] = useState([]);
   const [productNames, setProductNames] = useState([]);
@@ -114,7 +117,13 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
         // renamed or removed later. Contract: features/collab-terms-by-aim (item 8)
         terms.scope = { level: 'products', product_ids: productIds, product_names: productNames };
       } else if (scopeLevel === 'category') {
-        terms.scope = { level: 'category', category: scopeCategory || null };
+        if (!categoryNodeId) {
+          Alert.alert('Missing', 'Pick a category from your listing tree.');
+          return;
+        }
+        // The id links the agreement to the tree; the path keeps it readable if the
+        // tree is reorganised later.
+        terms.scope = { level: 'category', category_node_id: categoryNodeId, category: categoryPath };
       } else {
         terms.scope = { level: 'store' };
       }
@@ -220,7 +229,24 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
             </TouchableOpacity>
           ))}
         </View>
-        {scopeLevel === 'category' && <Field label="Category" value={scopeCategory} onChange={setScopeCategory} placeholder="e.g. Ethnic Wear" />}
+        {scopeLevel === 'category' && (
+          <TouchableOpacity
+            style={s.pickRow}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('BrandCategoryPicker', {
+              selectedId: categoryNodeId,
+              onDone: (id, path) => { setCategoryNodeId(id); setCategoryPath(path); },
+            })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={s.pickT}>{categoryPath || 'Choose a category'}</Text>
+              {!categoryPath && (
+                <Text style={s.pickS}>From your listing tree, so it links to real products</Text>
+              )}
+            </View>
+            <Text style={s.pickArrow}>›</Text>
+          </TouchableOpacity>
+        )}
 
         {scopeLevel === 'products' && (
           <TouchableOpacity

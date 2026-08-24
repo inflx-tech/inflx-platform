@@ -518,3 +518,63 @@ category both still working.
 
 Mobile 202/202. Bundle builds. Duplicate-route check clean across all stacks. All palette
 tokens resolve. No migration.
+
+---
+
+# Item 9 — a category from the listing tree
+
+Founder: *"if we select category, as a promotion material then, it should appear from our
+listing engine tree."*
+
+## A bug underneath, proven live before touching anything
+
+There was already a brand endpoint mapping a brand to its listing vertical. It read:
+
+```
+cat.startsWith('fashion') ? 'fashion' : cat
+```
+
+**Case-sensitive.** Brands carry both `Fashion` and `fashion` in production, so a
+capitalised brand resolved to a vertical named `Fashion` — which matches no node — and its
+category list came back **empty**.
+
+Checked against production first: **Kanchi Silks, the practice brand with 11 products,
+returned `vertical=Fashion, categories=0`.** This is the same casing split flagged days ago
+in the admin brand list, now provably breaking a feature.
+
+One resolver now, case-insensitive, returning **null** for a business with no tree at all
+rather than inventing a vertical with no nodes.
+
+## What was already there
+
+The tree is real: **333 nodes**, fashion (234) and furniture (99), with parents, depth and
+leaves. The terms model already accepted `scope.category_node_id`. A public
+`/listing/tree` endpoint already existed.
+
+**Only the brand app had no way in.** So this is a picker plus one brand-scoped endpoint,
+not a new taxonomy.
+
+## Flat with a path, not an expanding tree
+
+`GET /brands/me/listing-tree` returns the brand's own slice, flattened, each node carrying
+a readable path — **"Women › Ethnic Wear › Saree"**.
+
+There are **195 leaves** in fashion. Searching a flat list beats opening three levels on a
+phone, and the path says where each one sits. Only leaves are offered: *"Women"* is not a
+category anyone promotes.
+
+## The id travels with the path
+
+Same decision as item 8. The **id** links the agreement to the tree — which is what makes
+the deferred piece possible later, constraining her post to the products inside the agreed
+category. The **path** keeps it readable if the tree is reorganised.
+
+A typed category is still accepted, so requests sent before this keep working.
+
+## Verified
+
+4 assertions on the scope shape, 7 on the resolver — including every category string that
+exists in production today. The tree query run against production: 234 fashion nodes,
+195 leaves, real paths.
+
+Mobile 202/202. Bundle builds. Duplicate-route check clean. No migration.

@@ -392,6 +392,61 @@ const resubmit = asyncHandler(async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Products CRUD  (brand_products table)
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /brands/me/listing-tree
+//
+// The brand's own slice of the listing tree, so a collaboration can name a REAL category
+// instead of free text. Typed categories meant "Ethnic Wear", "ethnic wear" and
+// "Ethnicwear" were three different things to the platform, and none of them linked to
+// anything the listing engine knows about.
+//
+// Flattened with a readable path rather than returned nested: a phone picker wants a list
+// it can search, and "Women › Ethnic Wear › Sarees" says more in one line than three
+// levels of indentation do on a small screen.
+// Contract: features/collab-terms-by-aim (item 9)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getListingTree = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const vertical = verticalFor(brand.category);
+  // A restaurant has no listing tree. Saying so plainly beats an empty list that looks
+  // like a loading failure.
+  if (!vertical) return success(res, { vertical: null, nodes: [] });
+
+  const { rows } = await db.query(
+    `SELECT id, parent_id, name, depth, is_leaf, category
+       FROM category_nodes
+      WHERE vertical = $1
+      ORDER BY depth, sort_order, name`,
+    [vertical]
+  );
+
+  const byId = new Map(rows.map(r => [r.id, r]));
+  const pathOf = (r) => {
+    const parts = [];
+    let cur = r;
+    // Guarded against a cycle: a malformed tree must not hang the request.
+    for (let i = 0; cur && i < 12; i += 1) {
+      parts.unshift(cur.name);
+      cur = cur.parent_id ? byId.get(cur.parent_id) : null;
+    }
+    return parts.join(' › ');
+  };
+
+  const nodes = rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    path: pathOf(r),
+    depth: r.depth,
+    is_leaf: r.is_leaf,
+    category: r.category,
+  }));
+
+  return success(res, { vertical, nodes });
+});
+
 // GET  /brands/me/products
 // POST /brands/me/products
 // PATCH /brands/me/products/:pid
@@ -415,6 +470,28 @@ const getCategorySchema = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /brands/me/products
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Which listing tree a brand belongs to.
+ * Contract: features/collab-terms-by-aim (item 9)
+ *
+ * This was written inline as cat.startsWith('fashion'), which is case-SENSITIVE. Brands
+ * carry both 'Fashion' and 'fashion' in production, so a brand whose category is
+ * capitalised resolved to a vertical named 'Fashion' — which matches no node — and its
+ * category list came back EMPTY. Kanchi Silks, the practice brand with 11 products, was
+ * in exactly that state.
+ *
+ * Verticals are also not the same thing as brand categories: a restaurant has no listing
+ * tree at all. Returning null says so, rather than inventing a vertical with no nodes and
+ * leaving a screen to guess why nothing came back.
+ */
+const VERTICALS = ['fashion', 'furniture'];
+
+function verticalFor(brandCategory) {
+  const cat = String(brandCategory || '').trim().toLowerCase();
+  if (!cat) return null;
+  return VERTICALS.find(v => cat.startsWith(v)) || null;
+}
 
 const listProducts = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
@@ -454,10 +531,7 @@ const listProducts = asyncHandler(async (req, res) => {
 const getOfferCategories = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
-  const cat = String(brand.category || '');
-  const vertical = cat.startsWith('furniture') ? 'furniture'
-    : cat.startsWith('fashion') ? 'fashion'
-    : cat;
+  const vertical = verticalFor(brand.category);
   const { rows } = await db.query(
     `SELECT DISTINCT category FROM category_nodes
       WHERE vertical = $1 AND category IS NOT NULL AND category <> ''
@@ -1235,6 +1309,7 @@ module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue, searchDishes,
   listProducts, createProduct, updateProduct, deleteProduct, getTagOptions, getOfferCategories,
+  getListingTree,
   listBrandOrders, listAllTransactions, getPublicProfile, storePreview,
   getListingConfig, getQualityScore, getListingPreview,
   downloadListingTemplate, bulkUploadProducts, getTemplateColumns,

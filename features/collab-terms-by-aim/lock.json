@@ -20,10 +20,10 @@
     "6": "Where she works becomes negotiable, loses requirement/preference — SHIPPED. Now required and always counterable on both aims. Legacy markers TOLERATED rather than refused: unlike deliverables, all 14 live requests carried one, so refusing would have broken every live conversation on the next counter. Also caught a regression: her screen only rendered the working style when a marker was present, so new markerless requests would have shown her none at all.",
     "7": "Counter in place, beside each term, with a change count — SHIPPED. The separate second copy of the offer is gone. Controls pre-fill from the brand offer so no-change is the default; the comparison lives in utils/collabCounter with 14 tests because it decides what travels.",
     "8": "Specific products as a scope option — SHIPPED. The model already accepted the shape; only the brand had no picker. Names travel with the ids so an agreement still reads properly after a product is renamed or removed.",
-    "9": "Category from the listing tree, not typed",
+    "9": "Category from the listing tree, not typed — SHIPPED. Found and fixed a live bug underneath: the brand-to-vertical resolver was case-sensitive, so any brand with a capitalised category (Kanchi Silks) got an EMPTY category list. New brand-scoped endpoint returns the tree flattened with readable paths; the node id travels with the path.",
     "10": "Pitch settings moved — SHIPPED 2026-08-25 under stage-1"
   },
-  "deferred": "Constraining her post to the agreed category — a posting rule, not a collaboration screen. Its own pass.",
+  "deferred": "Constraining her post to the agreed category — a posting rule, not a collaboration screen. Now UNBLOCKED: the agreement carries a real category_node_id for the first time.",
   "release": {
     "qa_all_green": false,
     "released": false,
