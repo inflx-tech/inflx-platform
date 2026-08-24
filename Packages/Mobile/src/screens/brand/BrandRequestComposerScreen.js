@@ -38,8 +38,6 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
   const [commission, setCommission] = useState('');
   const [fee, setFee] = useState('');
   const [postBy, setPostBy] = useState('');
-  const [winStart, setWinStart] = useState('');
-  const [winEnd, setWinEnd] = useState('');
   const [scopeLevel, setScopeLevel] = useState('');
   const [scopeCategory, setScopeCategory] = useState('');
   const [scopeImp, setScopeImp] = useState('preference');
@@ -62,14 +60,11 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
       if (!Number(fee)) { Alert.alert('Missing', 'A fee is required for this aim.'); return; }
       terms.money.fee = Number(fee);
     }
-    if (aim === 'conversion') {
-      if (!postBy) { Alert.alert('Missing', 'A post-by date is required.'); return; }
-      terms.time.post_by = postBy;
-    } else {
-      if (!winStart || !winEnd) { Alert.alert('Missing', 'A posting window is required.'); return; }
-      terms.time.window_start = winStart;
-      terms.time.window_end = winEnd;
-    }
+    // One date, whatever the deal. It means the same thing in both: she must have posted
+    // by then, and the campaign starts then.
+    // Contract: features/collab-terms-by-aim (item 3)
+    if (!postBy) { Alert.alert('Missing', 'Choose the date she must post by.'); return; }
+    terms.time.post_by = postBy;
     const importance = {};
     if (scopeLevel) {
       terms.scope = scopeLevel === 'category' ? { level: 'category', category: scopeCategory || null } : { level: 'store' };
@@ -118,17 +113,12 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
 
         {aim !== 'engagement' && <Field label="Commission % · negotiable" value={commission} onChange={setCommission} keyboardType="numeric" placeholder="e.g. 12" />}
         {aim !== 'conversion' && <Field label="Fee ₹ · negotiable" value={fee} onChange={setFee} keyboardType="numeric" placeholder="e.g. 25000" />}
-        {aim === 'conversion'
-          ? <DateField label="Post by · negotiable" value={postBy} onChange={setPostBy} />
-          : (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}><DateField label="Window start" value={winStart} onChange={setWinStart} /></View>
-              {/* Cannot end before it starts — the picker refuses rather than letting a
-                  brand save a window that runs backwards. */}
-              <View style={{ flex: 1 }}><DateField label="Window end" value={winEnd} onChange={setWinEnd} minDate={winStart || undefined} /></View>
-            </View>
-          )}
-        {aim === 'conversion' && <Text style={s.hint}>A sales collaboration has no end date — this is the posting expectation.</Text>}
+        <DateField
+          label="Post by · negotiable"
+          value={postBy}
+          onChange={setPostBy}
+          hint="She must have posted by this date. The campaign starts then."
+        />
 
         <Text style={s.fl}>WHAT THEY'D PROMOTE · OPTIONAL</Text>
         <View style={s.chips}>

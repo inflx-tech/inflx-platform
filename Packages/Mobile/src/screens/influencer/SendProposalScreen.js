@@ -45,8 +45,9 @@ export default function SendProposalScreen({ route, navigation }) {
   const [fee, setFee]                   = useState('');
   const [commission, setCommission]     = useState('');
   const [deliverables, setDeliverables] = useState({}); // { reel: 1, post: 0, ... }
-  const [windowStart, setWindowStart]   = useState('');
-  const [windowEnd, setWindowEnd]       = useState('');
+  // One date, matching what a brand now asks: the day she will have posted by.
+  // Contract: features/collab-terms-by-aim (item 3)
+  const [postBy, setPostBy]             = useState('');
   const [link1, setLink1] = useState('');
   const [link2, setLink2] = useState('');
   const [link3, setLink3] = useState('');
@@ -95,8 +96,11 @@ export default function SendProposalScreen({ route, navigation }) {
       proposed_fee: fee ? Number(fee) : null,
       proposed_commission_pct: commission ? Number(commission) : null,
       proposed_deliverables: Object.entries(deliverables).map(([type, count]) => ({ type, count })),
-      proposed_posting_window_start: windowStart || null,
-      proposed_posting_window_end:   windowEnd   || null,
+      // The deadline lands in the existing window_end column — it IS the end of the
+      // window, and reusing it avoids a migration for a field with no live rows.
+      // Start is deliberately left empty: a pitch now offers a date, not a duration.
+      proposed_posting_window_start: null,
+      proposed_posting_window_end:   postBy || null,
       portfolio_links: portfolioLinks,
     });
     setSubmitting(false);
@@ -196,18 +200,13 @@ export default function SendProposalScreen({ route, navigation }) {
           </View>
         ))}
 
-        <Text style={styles.label}>POSTING WINDOW (OPTIONAL)</Text>
-        <View style={styles.inputRow}>
-          <View style={{ flex: 1 }}>
-            <DateField value={windowStart} onChange={setWindowStart} placeholder="From" style={{ marginBottom: 0 }} />
-          </View>
-          <View style={{ flex: 1 }}>
-            {/* A window that ends before it begins is not a proposal anybody can accept,
-                so the picker will not offer those days. */}
-            <DateField value={windowEnd} onChange={setWindowEnd} placeholder="To"
-              minDate={windowStart || undefined} style={{ marginBottom: 0 }} />
-          </View>
-        </View>
+        <Text style={styles.label}>YOU'LL POST BY (OPTIONAL)</Text>
+        <DateField
+          value={postBy}
+          onChange={setPostBy}
+          placeholder="Choose a date"
+          hint="The day you would have posted by. Leave it blank if you are flexible."
+        />
 
         <Text style={styles.label}>PORTFOLIO SAMPLES (UP TO 3 URLS)</Text>
         <TextInput style={styles.input} value={link1} onChangeText={setLink1}

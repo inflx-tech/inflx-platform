@@ -14,7 +14,7 @@
   "items": {
     "1": "Sales collab leads with the percentage, not ₹0 — SHIPPED. Second pass 2026-08-25 after the founder showed the LIST still reading ₹0: the fault lived in four places, not one (CollabRow, normalizeRequest, normalizeProposal, and getMyCampaigns never sending commission_pct). The list and the detail page now share one description of the deal.",
     "2": "Date pickers wherever a date is entered — SHIPPED. Five fields across five screens. Written in JS rather than using the native picker, because nothing in the app imports @react-native-community/datetimepicker so there is no evidence it is in the installed APK, and an OTA cannot add a native module.",
-    "3": "Pay-for-content: one date, a deadline, no window",
+    "3": "Pay-for-content: one date, a deadline, no window — SHIPPED. Also caught a break it would have caused: handshake.termsFromProposal emitted a window for paid pitches, which the new rule refuses, so ACCEPTING a pay-for-content pitch would have failed validation. Her own pitch screen now offers one date too.",
     "4": "Deliverables asked of the brand on a fee deal",
     "5": "Deliverables not asked of the creator on a sales deal",
     "6": "Where she works becomes negotiable, loses requirement/preference",
@@ -33,7 +33,7 @@
     "deploy_targets": [
       "OTA (creator app)"
     ],
-    "qa_note": "2026-08-25 — item 1. Mobile 178/178 (was 159 before this contract; 14 money checks plus 5 list-level checks added). Android bundle builds. The shipped list query verified against production: four sales campaigns carry 18/15/20/22 and two content campaigns carry ₹30,000 and ₹25,000.\n  Backend change is one SELECT list (commission_pct, influencer_budget) on the creator campaigns list. No migration.\n  NOT CLAIMED GREEN — the full serial backend suite has not been runnable since 2026-08-22."
+    "qa_note": "2026-08-25 — item 1. Mobile 178/178 (was 159 before this contract; 14 money checks plus 5 list-level checks added). Android bundle builds. The shipped list query verified against production: four sales campaigns carry 18/15/20/22 and two content campaigns carry ₹30,000 and ₹25,000.\n  Backend change is one SELECT list (commission_pct, influencer_budget) on the creator campaigns list. No migration.\n  NOT CLAIMED GREEN — the full serial backend suite has not been runnable since 2026-08-22.\n  ITEM 3 — 12 assertions run directly against collabTerms.model (jest globalSetup connects to the test DB before any suite runs, so no suite can execute while it is down). tests/collab-terms-time.test.js is written and waiting. Mobile 188/188. Bundle builds. No migration: all 14 live requests and 8 agreements already carry post_by and none carries a window."
   },
   "regression_found_2026_08_25": "CollabRow still switched on the PRE-Stage-1 stage names, so every row fell through to its default: the hint read \"Archived\" on unanswered invitations, the badge showed a raw status instead of whose turn it is, and the expiry countdown and delivered count had never once rendered. The smoke test stayed green by asserting five stage names the app had stopped producing. Fixed, and the test now guards that the stages it uses equal COLLAB_STAGES."
 }

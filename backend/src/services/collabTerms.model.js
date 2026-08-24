@@ -104,24 +104,31 @@ function validateMoney(aim, money) {
   return OK;
 }
 
+/**
+ * Time is ONE date, whatever the aim, and it means the same thing in both: she must have
+ * posted by then, and the campaign starts then.
+ * Contract: features/collab-terms-by-aim (item 3)
+ *
+ * A paid collaboration used to demand a posting WINDOW — a start and an end. The founder,
+ * asked what a single date would mean, was explicit: "not post any time from this date —
+ * by that time they should post and campaign should start." That is a deadline, which is
+ * exactly what a sales collaboration already had. Two shapes for one idea meant the two
+ * halves of the app phrased the same commitment differently and could not be compared.
+ *
+ * Windows are refused rather than quietly ignored. Silently dropping a date somebody
+ * deliberately set is how a creator ends up held to a deadline she never agreed to.
+ *
+ * Nothing live is disturbed: checked on 2026-08-25, all 14 requests and 8 agreements in
+ * production carry post_by and NONE carries a window.
+ */
 function validateTime(aim, time) {
   if (!time || typeof time !== 'object') return fail('terms.time', 'time is required');
 
-  if (aim === 'conversion') {
-    // A single post-by date. A conversion collaboration has no duration, so a window
-    // would be meaningless here.
-    if (!isDate(time.post_by)) return fail('terms.time.post_by', 'a post-by date is required');
-    if (time.window_start || time.window_end) {
-      return fail('terms.time', 'a conversion collaboration has no duration — use post_by, not a window');
-    }
-    return OK;
-  }
+  if (!isDate(time.post_by)) return fail('terms.time.post_by', 'a post-by date is required');
 
-  // engagement / hybrid — a real posting window
-  if (!isDate(time.window_start)) return fail('terms.time.window_start', 'a posting window start is required');
-  if (!isDate(time.window_end))   return fail('terms.time.window_end', 'a posting window end is required');
-  if (new Date(time.window_end) < new Date(time.window_start)) {
-    return fail('terms.time.window_end', 'the window cannot end before it starts');
+  if (time.window_start || time.window_end) {
+    return fail('terms.time',
+      'a collaboration has one date — the day she must have posted by. Use post_by, not a window');
   }
   return OK;
 }

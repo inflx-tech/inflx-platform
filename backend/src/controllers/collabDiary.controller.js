@@ -141,9 +141,12 @@ const proposalDiary = asyncHandler(async (req, res) => {
           fee: record.proposed_fee,
           commission_pct: record.proposed_commission_pct,
         },
+        // One date now, everywhere. The window's end was always the date she committed
+        // to; window_start is still read so an older pitch that only carried a start
+        // shows something rather than nothing.
+        // Contract: features/collab-terms-by-aim (item 3)
         time: {
-          window_start: record.proposed_posting_window_start,
-          window_end: record.proposed_posting_window_end,
+          post_by: record.proposed_posting_window_end || record.proposed_posting_window_start,
         },
       },
       settled_at: record.brand_response_at || null,

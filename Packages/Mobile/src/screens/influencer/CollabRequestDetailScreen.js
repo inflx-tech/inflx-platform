@@ -87,7 +87,9 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
     if (cCommission) money.commission_pct = Number(cCommission);
     if (cFee) money.fee = Number(cFee);
     if (Object.keys(money).length) c.money = { ...t.money, ...money };
-    if (cPostBy) c.time = t.time?.post_by !== undefined ? { post_by: cPostBy } : { ...t.time, window_end: cPostBy };
+    // Always post_by. Countering with a window would now be refused by the terms model,
+    // and a counter that silently fails is worse than one that never offered the option.
+    if (cPostBy) c.time = { post_by: cPostBy };
     const cMode = toMode(cPlace, cShipping);
     if (cMode) c.mode = cMode;
     const deliverables = [];
@@ -168,9 +170,14 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
           <Row k="Commission" v={`${t.money.commission_pct}%`} tag="negotiable" />
         )}
         {t.money?.fee != null && <Row k="Fee" v={`₹${Number(t.money.fee).toLocaleString('en-IN')}`} tag="negotiable" />}
+        {/* One date now, whatever the deal. Older conversations that still carry a window
+            fall back to showing it rather than a blank row.
+            Contract: features/collab-terms-by-aim (item 3) */}
         {t.time?.post_by
           ? <Row k="Post by" v={fmtD(t.time.post_by)} tag="negotiable" />
-          : <Row k="Posting window" v={`${fmtD(t.time?.window_start)} → ${fmtD(t.time?.window_end)}`} tag="negotiable" />}
+          : t.time?.window_end
+            ? <Row k="Post by" v={fmtD(t.time.window_end)} tag="negotiable" />
+            : null}
         {t.scope && imp.scope === 'requirement' && (
           <Row k="You'd promote" v={scopeText(t.scope)} tag="required" locked />
         )}
@@ -218,7 +225,7 @@ export default function CollabRequestDetailScreen({ route, navigation }) {
             )}
             {counterable.includes('time') && (
               <DateField
-                label={t.time?.post_by ? 'Post by' : 'Window end'}
+                label="Post by"
                 value={cPostBy}
                 onChange={setCPostBy}
                 placeholder={`They said ${fmtD(t.time?.post_by || t.time?.window_end)}`}

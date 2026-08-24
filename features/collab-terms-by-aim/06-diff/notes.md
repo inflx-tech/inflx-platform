@@ -202,3 +202,60 @@ nothing behind these screens changed.**
 
 Mobile **188/188** (183 before; 5 date checks added). Bundle builds. No typed date field
 remains anywhere in the app.
+
+---
+
+# Item 3 — one date, and it is a deadline
+
+Founder, asked what a single date would mean: *"not post any time from this date — by that
+time they should post and campaign should start."*
+
+## What changed
+
+A paid collaboration demanded a posting **window** — a start and an end. A sales
+collaboration already had a single **post-by** date. Two shapes for one idea, so the two
+halves of the app phrased the same commitment differently and could not be compared.
+
+Now **every aim carries one date**, meaning the same thing in both: she must have posted
+by then, and the campaign starts then.
+
+## A window is refused, not ignored
+
+The rule rejects terms that still carry one. Silently dropping a date somebody
+deliberately set is how a creator ends up held to a deadline she never agreed to — so the
+brand is told instead.
+
+## The break this nearly shipped
+
+`handshake.termsFromProposal` turns a creator's pitch into terms. For a paid collaboration
+it emitted `{ window_start, window_end }` — which the new rule refuses. **Accepting a
+pay-for-content pitch would have failed validation**, with nothing on screen to explain
+why.
+
+It now emits `post_by` from the window's end for every aim. The end was always the date she
+actually committed to; the start was never a commitment, only a hint about when she might
+begin. The same correction was needed in the history page.
+
+## Her pitch matches too
+
+`SendProposalScreen` offered a from/to window while a brand now offers one date — the exact
+drift this batch exists to remove. It asks for one date, stored in the existing
+`proposed_posting_window_end` column: that column *is* the end of the window, so no
+migration was needed. **Zero pitches exist in production**, so nothing was disturbed.
+
+## Verified
+
+| | |
+|---|---|
+| All three aims accept a post-by date | pass |
+| All three refuse terms with no date | pass |
+| A window is refused on paid **and** sales | pass |
+| A pitch converts to valid terms, all three aims | pass |
+| An older pitch carrying only a start still converts | pass |
+
+**12 assertions, run directly against the module** — jest's globalSetup connects to the
+test database before any suite starts, so while that database is down no suite can execute,
+including one that touches no database of its own. The suite is written and waiting.
+
+Mobile 188/188. Bundle builds. **No migration** — all 14 live requests and 8 agreements
+already carry `post_by`, and none carries a window.

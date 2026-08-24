@@ -339,12 +339,15 @@ function termsFromProposal(p, counterTerms = null) {
   if (commission != null) money.commission_pct = Number(commission);
   if (fee != null) money.fee = Number(fee);
 
-  // Conversion has no duration, so its time is a single post-by date. A pitch only has
-  // a window, so the window's END is the post-by — that is the date the creator
-  // committed to having posted by.
-  const time = aim === 'conversion'
-    ? { post_by: wEnd || wStart }
-    : { window_start: wStart, window_end: wEnd };
+  // ONE date, whatever the aim — she must have posted by then, and the campaign starts
+  // then. The window's END was always the date she actually committed to; the start was
+  // never a commitment, only a hint about when she might begin.
+  //
+  // This branch used to emit a window for a paid collaboration. Since the terms model now
+  // refuses windows, leaving it would have made ACCEPTING a pay-for-content pitch fail
+  // validation — a break that no screen would have explained.
+  // Contract: features/collab-terms-by-aim (item 3)
+  const time = { post_by: wEnd || wStart };
 
   const out = { aim, money, time };
 
