@@ -387,11 +387,14 @@ export default function BrandProfileScreen({ navigation }) {
             <Text style={s.linkLabel}>Media Gallery</Text>
             <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.linkRow} onPress={() => navigation.navigate('ProposalInbox')}>
-            <Text style={s.linkIcon}>[P]</Text>
-            <Text style={s.linkLabel}>Influencer Proposals</Text>
-            <Text style={s.linkArrow}>›</Text>
-          </TouchableOpacity>
+          {/* 'Influencer Proposals' lived here. Everything before a campaign exists now
+              lives in the Creators tab — pitches appear in Talking beside the brand's own
+              requests, and 'Who can pitch you' sits at the top of that list.
+
+              Reported as MOVED once before, when in truth it had only been ADDED to
+              Creators and left here as well: two doors to one thing, which is the fault
+              this stage kept repeating.
+              Contract: features/stage-1-find-each-other-and-agree */}
           {/* Legal — brands get the widest set, because a brand is both a
               seller and an advertiser: everyone's six, plus the Brand
               Agreement, the refunds they must honour, the disclosure rules

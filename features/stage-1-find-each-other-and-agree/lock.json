@@ -89,7 +89,8 @@
       "I claimed the old screen had no entry point left. It did — my grep searched for navigate('BrandInfluencerBrowse' and missed the Home screen, which reaches it via a target: property. Removing it from the navigator first would have left a Home tile pointing at nothing.",
       "Three style tokens did not exist: fonts is not imported in that screen, and neither ig.sunk nor ig.white are real (ig.bg is). The fonts reference would have thrown at module load — builds cleanly, dies on the handset. Now verified mechanically: all 12 ig.* tokens resolve, all 11 Home tiles point at registered routes."
     ],
-    "verified": "Mobile 159/159 · duplicate-route check clean across all stacks · Android bundle builds."
+    "verified": "Mobile 159/159 · duplicate-route check clean across all stacks · Android bundle builds.",
+    "correction": "Reported as MOVED; it had only been ADDED. The Profile > Influencer Proposals row was still there, so pitches lived in two places at once — the same two-doors-to-one-thing fault this stage kept hitting, immediately after writing the lesson about it. Now genuinely moved: the Profile row is gone, pitches are reached from Talking, and the orphaned ProposalInbox registration in ProfileStack was removed."
   },
   "window_closed_2026_08_25": {
     "handover": "Docs/STAGE_1_HANDOVER.md — read this first when picking Stage 1 up in a new window.",

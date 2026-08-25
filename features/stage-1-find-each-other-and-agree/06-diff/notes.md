@@ -127,3 +127,29 @@ registered routes.
 
 Mobile 159/159 · duplicate-route check clean across all stacks · Android bundle builds ·
 every `ig.*` token resolves · every Home tile resolves.
+
+
+---
+
+## Correction, 2026-08-25 — "moved" was the wrong word
+
+The founder asked where pitches actually live. Checked: **both places.**
+
+The note above says the control *"moved to the top of Talking"*. It was **added** there and
+**left under Profile as well** — two doors to one thing, which is the fault this stage kept
+repeating and which I had just finished writing a lesson about.
+
+Now genuinely moved:
+
+* **Profile → Influencer Proposals is gone.** Everything before a campaign lives in the
+  Creators tab.
+* Pitches appear in **Talking**, beside the brand's own requests, ordered by whose turn it
+  is — and tapping one opens the pitch inbox, which is the only way in now.
+* **"Who can pitch you"** sits at the top of that list.
+* The inbox route was **registered in two stacks**; the Profile one had nothing left
+  pointing at it and is removed. A dead registration is the same fault in miniature.
+
+**Nothing is lost.** Talking already listed every pitch, including closed ones, so the
+Profile row was a second entrance to a room that already had one.
+
+Mobile 202/202. Bundle builds. Duplicate-route check clean.

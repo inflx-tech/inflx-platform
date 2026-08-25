@@ -135,7 +135,9 @@ function ProfileStack() {
       <Stack.Screen name="Notifications" component={BrandNotificationsScreen} />
       <Stack.Screen name="MediaGallery" component={BrandMediaGalleryScreen} />
       <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
-      <Stack.Screen name="ProposalInbox" component={BrandProposalInboxScreen} />
+      {/* ProposalInbox was registered here too, for the Profile row that has now gone.
+          Nothing in this stack navigates to it — pitches are reached from Creators.
+          A dead registration is the same two-of-one-thing fault in miniature. */}
       <Stack.Screen name="BrandSettingsHub" component={BrandSettingsHubScreen} />
       {/* Legal — brands get the brand document set. */}
       <Stack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'brand' }} />
