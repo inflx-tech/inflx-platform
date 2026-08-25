@@ -80,5 +80,21 @@
   "carried_from_stage_2": {
     "punch_list_open": "The founder walked Stage 2 and called it almost ok, with UI and cosmetic changes to follow in one batch. Stage 2 is NOT closed.",
     "not_cosmetic": "One Stage 2 item is missing FUNCTION, not polish, and was found while surveying this stage: the phone's offer builder cannot set a minimum basket, a scope, a redemption mode or an expiry. buildDiscount hardcodes scope:'store'. So every offer built on a phone applies to the whole store, and nothing on a phone can give an offer a deadline — which is why the set-level offer-expiry item here will always count zero. Recorded in stage-2's 06-diff/notes.md section 2.3a."
+  },
+  "practice_shelf_2026_08_26": {
+    "authorised_by": "founder chat: \"you turn it on all those products ... as well as add dummy images,categories as well for look and feel as real ones.\"",
+    "script": "backend/scripts/seed-practice-product-shelf.js — dry run by default, --apply to write, --revert to undo.",
+    "scope": "ONLY brands whose name ends in \"(practice)\". The script refuses to run if that set is empty, and verified afterwards that 0 non-practice products were altered.",
+    "before": "total 18 · active 0 · pushed 0 · with_image 0 · categorised 0",
+    "after": "total 18 · active 18 · pushed 18 · with_image 18 · categorised 18",
+    "categories": "Real leaf nodes from the live fashion tree, matched on the product name. Nothing invented: all 11 Kanchi products are sarees and are filed as Saree. Label Fern: Dress x2, Shirt, Trousers. Nova Fit: Sports Top, Active Co-ord, Active Shorts. The script REFUSES to run if any product matches no rule, rather than letting it file itself silently under Other.",
+    "images": "picsum.photos with a deterministic seed per product, so each keeps the same picture across reloads and devices. STOCK PHOTOGRAPHY, NOT THESE PRODUCTS — swapping for real photography later is one UPDATE. All three sampled URLs return 200.",
+    "outward_facing": "is_active + pushed_to_store is what puts a product into FOLLOWER DISCOVERY (follower.controller:1699, 1789). The practice brands products are now publicly browsable in the shopping app. Intended — a walk against an empty shop proves nothing — but real, and stated rather than discovered later.",
+    "effect_on_the_ladder": "Re-ran collabCounts against production: NOTHING_TO_BUY correctly stopped firing on both selling sets, and Kanchi Silks total fell from 8 to 6. Still reconciles at every level."
+  },
+  "found_2026_08_26_no_fix_path": {
+    "what": "NO_ALLOCATION still fires on both selling sets — 4 collaborations whose creator has nothing to sell. That is REAL and correct, not seed data.",
+    "the_problem": "Those campaigns are ACTIVE. Allocation is written at invite time by the Stage 2 wizard, and updateInfluencer refuses anything that is not a draft. So the item names a problem the brand CANNOT FIX FROM THE PHONE — which breaks FINAL 4 rule that a badge can always be walked down to a button.",
+    "decision_needed_in_slice_4_or_5": "Either the creator spine gains a control that sets allocation on a LIVE collaboration, or this item has to say plainly that it is fixed on the web. Inventing neither: flagged for the founder."
   }
 }
