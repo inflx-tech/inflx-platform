@@ -90,5 +90,21 @@
       "Three style tokens did not exist: fonts is not imported in that screen, and neither ig.sunk nor ig.white are real (ig.bg is). The fonts reference would have thrown at module load — builds cleanly, dies on the handset. Now verified mechanically: all 12 ig.* tokens resolve, all 11 Home tiles point at registered routes."
     ],
     "verified": "Mobile 159/159 · duplicate-route check clean across all stacks · Android bundle builds."
+  },
+  "window_closed_2026_08_25": {
+    "handover": "Docs/STAGE_1_HANDOVER.md — read this first when picking Stage 1 up in a new window.",
+    "shipped": "32 pushes over four days. Brand app v183, creator app v181. The Creators tab, the six-stage Collabs tab, search, groups, bulk ask, the shared history page, the eleven terms changes, and the admin account review.",
+    "bugs_found_and_fixed": 21,
+    "recurring_fault": "Four of the 21 were the same shape — two things doing one job, only one getting the change: two creator searches, two listing-tree endpoints, two ask composers, and a group flow pointed at the wrong screen. Each found late, twice by the founder.",
+    "not_done": [
+      "THE GATE: the founder has never walked Stage 1 on a handset. Not one screen used by a thumb.",
+      "The full backend suite has not run since 2026-08-22 — local test DB unreachable, Docker refusing state changes. Work since was verified against production directly, which is stronger for those changes but is not the broad no-regression sweep.",
+      "No practice admin account — blocked diagnosis three times.",
+      "The public sign-up door at inflx.in is open and sends real SMS to anyone. Awaiting a decision.",
+      "Preeti Chouhan waiting for approval since 2026-08-23.",
+      "All 18 practice products carry no category link, so the new category picker reads \"none yet\" everywhere.",
+      "Brand web still carries the old three-way working-style picker and the old creator search."
+    ],
+    "deferred_now_unblocked": "Constraining her post to the agreed category. Agreements carry a real category_node_id as of item 9."
   }
 }
