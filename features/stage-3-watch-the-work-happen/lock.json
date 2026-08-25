@@ -111,5 +111,17 @@
     ],
     "now_written": "Packages/Mobile/src/utils/__tests__/stepStageAgreement.test.js and an N-8 block in brandNeedsYou.test.js. Mobile 37 suites / 296 tests green.",
     "why_C4_matters_most": "It is the exact fault Stage 3 cleaned up. Her spine matched on stage names Stage 1 renamed; nobody re-checked the join and it highlighted nothing for months, while three unit tests kept passing because they fed the helper the OLD names. The useful test is not whether either module works — both did — but whether the two vocabularies still line up. That join had nothing watching it."
+  },
+  "deployed_2026_08_26": {
+    "authorised_by": "founder chat: \"deploy it\"",
+    "commit": "b9395f3",
+    "migration": "NONE — Stage 3 added no table, column or route.",
+    "render": "backend/src deployed by push. Service verified healthy (401 on an authenticated route, sub-second after warm-up). WHICH COMMIT is running CANNOT be proven externally this time: Stage 3 changed no public response shape, so the route-existence proof used for Stage 2 does not apply. The first real proof is the walk — the campaign-level and set-level items only appear on screen if the new backend is serving them.",
+    "ota": {
+      "brand": "version 187",
+      "creator": "version 182",
+      "verified": "Both manifests re-read and both signed bundles downloaded (200, 3,561,145 bytes each). Inside the SHIPPED brand bundle: the creator spine screen and the campaign-level items section. Inside the SHIPPED creator bundle: her server-driven step labels, and ZERO occurrences of spineFor — the broken second step model is genuinely gone from what her phone will run."
+    },
+    "gate_note": "The founder gave the deploy go BEFORE walking the handsets. Recorded plainly: THE_PLAN names Stage 3 as the stage where the device check stops being skipped, and it has not happened yet. Same order as Stage 2, which was deployed and then walked successfully. released stays FALSE until the walk and the Maestro run."
   }
 }
