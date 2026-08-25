@@ -101,5 +101,15 @@
     "data_fixed": "backend/scripts/fix-legacy-missing-allocation.js set the four to whole-store. Each can now sell 11 products. Kanchi Silks total fell from 6 to 4.",
     "duplication_closed": "Adding the invite rule created a THIRD inline copy of \"what is a selling set\". All three now read SELLING_GOALS from collabOwedItems, pinned by a test asserting they are the same object."
   },
-  "slices_done_2026_08_26": "All seven. 1 owed items · 2 the tree read at last · 3 levels 2+3 · 4 the per-creator spine · 5 step wiring · 6 the creator second spine DELETED · 7 Maestro flow written (not yet run — needs a device)."
+  "slices_done_2026_08_26": "All seven. 1 owed items · 2 the tree read at last · 3 levels 2+3 · 4 the per-creator spine · 5 step wiring · 6 the creator second spine DELETED · 7 Maestro flow written (not yet run — needs a device).",
+  "expected_outputs_audit_2026_08_26": {
+    "method": "Read 03-expected-outputs row by row against what is actually pinned, rather than recalling it.",
+    "found_unwritten": [
+      "C-4 — her stage and her step agree",
+      "N-3 — finished campaigns contribute nothing",
+      "N-8 — nothing counted twice, nothing counted nowhere"
+    ],
+    "now_written": "Packages/Mobile/src/utils/__tests__/stepStageAgreement.test.js and an N-8 block in brandNeedsYou.test.js. Mobile 37 suites / 296 tests green.",
+    "why_C4_matters_most": "It is the exact fault Stage 3 cleaned up. Her spine matched on stage names Stage 1 renamed; nobody re-checked the join and it highlighted nothing for months, while three unit tests kept passing because they fed the helper the OLD names. The useful test is not whether either module works — both did — but whether the two vocabularies still line up. That join had nothing watching it."
+  }
 }

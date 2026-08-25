@@ -91,6 +91,51 @@ describe('Stage 3 · the tree reconciles, and the app reads it that way', () => 
   });
 });
 
+describe('N-8 · nothing is counted twice, and nothing is counted nowhere', () => {
+  // The rule the whole ladder rests on. A badge is trusted only while its parts can be
+  // found; a number that appears at two levels, or at none, is how people stop believing
+  // badges entirely.
+  it('every owed thing in the tree appears exactly once in the flattened list', () => {
+    const rows = flatten(TREE);
+
+    // Count the LEAVES independently of the roll-up: every level's own items, plus every
+    // creator who owes the brand something.
+    let leaves = 0;
+    for (const c of TREE.campaigns) {
+      leaves += (c.items || []).length;
+      for (const s of c.sets) {
+        leaves += (s.items || []).length;
+        leaves += s.creators.filter(cr => cr.own > 0).length;
+      }
+    }
+
+    // The flattened list is neither shorter (something counted nowhere) nor longer
+    // (something counted twice) than the leaves it was built from.
+    expect(rows).toHaveLength(leaves);
+
+    // And the leaves add up to the badge the brand saw at the top.
+    const campaignsTotal = TREE.campaigns.reduce((n, c) => n + c.total, 0);
+    expect(leaves).toBe(campaignsTotal);
+  });
+
+  it('a set-level item is never also counted against one of its creators', () => {
+    // Sarees owes 2 things and BOTH belong to the set. If either had been attributed to
+    // Asha or Meera as well, the set would read 4.
+    const sarees = TREE.campaigns[0].sets[0];
+    expect(sarees.items).toHaveLength(2);
+    expect(sarees.creators.every(cr => cr.own === 0)).toBe(true);
+    expect(sarees.total).toBe(2);
+  });
+
+  it('every flattened row can be traced back to the level that owns it', () => {
+    for (const r of flatten(TREE)) {
+      if (r.level === 'campaign') { expect(r.set_id).toBeUndefined(); }
+      if (r.level === 'set')      { expect(r.set_id).toBeTruthy(); expect(r.campaign_influencer_id).toBeUndefined(); }
+      if (r.level === 'creator')  { expect(r.campaign_influencer_id).toBeTruthy(); }
+    }
+  });
+});
+
 describe('Stage 3 · finding a node', () => {
   it('finds a campaign, a set anywhere, and a creator anywhere', () => {
     expect(campaignNode(TREE, 'camp-fs').name).toBe('Festive Season 2026');
