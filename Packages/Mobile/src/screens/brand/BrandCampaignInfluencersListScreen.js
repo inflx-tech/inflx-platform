@@ -6,6 +6,11 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+// Stage 3 — level 3 of the ladder. Every creator row carries the step she is on and
+// whose turn it is, from the server, so her phone and this one cannot disagree.
+// Contract: features/stage-3-watch-the-work-happen
+import { useNeedsYou, creatorNode, setNode, badgeFor } from '../../utils/brandNeedsYou';
+import { NeedBadge, StepBars, OwedItems, StaleNote, STEP_LABELS, turnLabel, turnTone } from '../../components/brand/NeedsYou';
 import ScreenHeader from '../../components/brand/ScreenHeader';
 import StatusPill from '../../components/brand/StatusPill';
 import EmptyState from '../../components/brand/EmptyState';
@@ -26,6 +31,7 @@ const OPEN_GROUP_HIDDEN = new Set(['invited', 'declined', 'rejected_by_brand', '
 
 export default function BrandCampaignInfluencersListScreen({ navigation, route }) {
   const { campaignId, statusFilter: initialStatusFilter } = route.params || {};
+  const { tree, failed: needsFailed } = useNeedsYou();
   const [campaign, setCampaign]   = useState(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -269,10 +275,34 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
                   <TouchableOpacity
                     style={{ flex: 1, minWidth: 0 }}
                     activeOpacity={0.7}
-                    onPress={() => ci.influencer_id && navigation.navigate('BrandInfluencerProfile', { influencerId: ci.influencer_id })}
+                    // Stage 3 — the row now opens WHERE THE WORK IS, not who she is. Her
+                    // public profile is a different question, still reachable from the spine.
+                    // A roster row inside a campaign is about this collaboration.
+                    onPress={() => navigation.navigate('BrandCreatorSpine', {
+                      campaignInfluencerId: ci.id,
+                      campaignId,
+                      setName: ci.set_name,
+                      influencerName: ci.influencer_name,
+                    })}
                   >
                     <Text style={s.cardName} numberOfLines={1}>{ci.influencer_name || 'Influencer'}</Text>
                     <Text style={s.cardHandle} numberOfLines={1}>@{ci.instagram_handle || '—'}</Text>
+                    {/* Stage 3 — which of the six steps, and whose move. Both from the
+                        server: the status pill above says what the ROW is, this says
+                        where the WORK is, and they are different questions. */}
+                    {(() => {
+                      const node = creatorNode(tree, ci.id);
+                      if (!node?.step) return null;
+                      const tone = turnTone(node.turn, { asBrand: true });
+                      return (
+                        <>
+                          <StepBars step={node.step} tone={tone.dot} />
+                          <Text style={[s.cardStep, { color: tone.fg }]}>
+                            {(STEP_LABELS[node.step] || '').toUpperCase()} · {turnLabel(node.turn, { asBrand: true })}
+                          </Text>
+                        </>
+                      );
+                    })()}
                     {ci.set_name ? (
                       <View style={s.cardSetChip}>
                         <Text style={s.cardSetChipText} numberOfLines={1}>{ci.set_name}</Text>
@@ -411,6 +441,7 @@ const s = StyleSheet.create({
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
   cardName: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '700', color: P.ink, letterSpacing: 0.1 },
   cardHandle: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2, marginTop: 1 },
+  cardStep:   { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.2, marginTop: 4 },
   cardSetChip: { backgroundColor: P.bg2, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99, alignSelf: 'flex-start', marginTop: 4 },
   cardSetChipText: { fontFamily: fonts.sansMedium, fontSize: 9.5, color: P.muted },
   cardFee: { fontFamily: fonts.monoBold, fontSize: 12, fontWeight: '700', color: P.ink },

@@ -14,11 +14,11 @@ Board: `04-preview/mockups/stage3-screens.html` —
 |---|---|---|
 | 1 | Server — the campaign-level and set-level owed items | **done** |
 | 2 | Brand reads `needs_you` — tab badge, campaign badges | **done** |
-| 3 | Levels 2 and 3 gain badges, steps and level-own sections | not started |
-| 4 | Level 4 — the per-creator spine | not started |
-| 5 | Level 5 wiring, and honest notes where Stage 4/5 has not landed | not started |
-| 6 | Creator — delete the second spine, render the server's six | not started |
-| 7 | A Maestro flow over the ladder | not started |
+| 3 | Levels 2 and 3 gain badges, steps and level-own sections | **done** |
+| 4 | Level 4 — the per-creator spine | **done** |
+| 5 | Level 5 wiring, and honest notes where Stage 4/5 has not landed | **done** |
+| 6 | Creator — delete the second spine, render the server's six | **done** |
+| 7 | A Maestro flow over the ladder | **written, not yet run on a device** |
 
 **Nothing is deployed.**
 
@@ -158,14 +158,69 @@ and this particular rule decides whether someone can be contracted with an empty
 three now read one `SELLING_GOALS`, pinned by a test asserting they are literally the same
 object.
 
+## 5b. Slices 3–7 — what shipped
+
+| Board | Built | Diverged? |
+|---|---|---|
+| ③ campaign-level items above the sets | `BrandCampaignSetsListScreen` | no |
+| ③ set badge + six mini-bars | same screen | **yes — see below** |
+| ④ set-level items above the roster | rendered on the set card | no |
+| ④ creator row: step + whose turn | `BrandCampaignInfluencersListScreen` | no |
+| ⑤ the per-creator spine | `BrandCreatorSpineScreen` — new | no |
+| ⑥ each step opens the thing | four of six wired; two say which stage brings them | no |
+| ⑤ right — her side, same six | `CollabDetailScreen` + `utils/creatorSteps` | no |
+| R-8 | `qa/maestro/flows/06-brand-campaign-ladder.yaml` | no |
+
+### The set's mini-bars show the EARLIEST step, not the commonest
+
+The board labels them "most at step 3". As built a set shows the **lowest** step among its
+creators.
+
+**Why:** a set with one creator at step 6 and one at step 2 is a set at step 2 — that is
+where the work still is. "Most" would read 6 on a two-person set and tell a brand the
+opposite of the truth.
+
+### Four steps open something, two say what they are waiting for
+
+Steps 1, 2, 5 and 6 open the agreement, the contract, the review queue and what it earned.
+Steps 3 and 4 do not, and say so:
+
+* **3 · the shoot** — *"gets its own screen in Stage 4. Until then this is where it stands."*
+* **4 · shop posts** — *"our team checks quality. You are told about posts using only your
+  products, once they are live."* — badged **NOT YOURS**, and deliberately still visible.
+  Hiding it would make the collaboration look stalled.
+
+A dead tap is worse than an honest sentence.
+
+### The roster row now opens the work, not the person
+
+It used to open her public profile. Inside a campaign, a roster row is about **this
+collaboration** — so it opens her six steps. Who she is remains a different question, one
+tap further in.
+
+### The second step model is deleted, and three tests went with it
+
+`collabDetailModel.SPINE` and `spineFor` are gone. Their three unit tests **passed while the
+thing they tested was broken in the app** — they fed `spineFor` the OLD stage names, so it
+worked in the test and returned −1 on the real screen.
+
+They are replaced by tests that pin the deletion and the replacement. That pair is the
+strongest argument in this repo for testing what a screen actually does rather than what a
+helper can do when handed ideal input.
+
+---
+
 ## 6. Evidence so far
 
 | Check | Result |
 |---|---|
 | The roll-up, run **read-only against production** with the new items | reconciles at every level; every `own` equals its item count |
 | `qa/unit` | **zero new failures** against the HEAD baseline |
-| New executing checks | **35** — 22 on the owed items, 13 on reading the tree |
-| Mobile suite | **35 suites / 269 tests green**, up from 256 |
+| New executing checks | **35** on the server — 22 owed items, 13 reading the tree |
+| Mobile suite | **36 suites / 287 tests green**, up from 256 |
+| Duplicate-route check | clean across **18 navigators** in both apps |
+| Android bundle | builds, and all five new screens' copy is present in the output |
+| Maestro flow | **written, not yet run** — needs a connected device |
 | Android bundle | builds |
 | Backend suite | **NOT RUN** — the test database has refused connections since 2026-08-22 |
 

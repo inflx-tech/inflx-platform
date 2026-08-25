@@ -72,22 +72,17 @@ export function sectionsFor(d) {
   return out;
 }
 
-/** Progress-spine nodes with the current one flagged. */
-export const SPINE = [
-  { key: 'invite', label: 'Invite', stages: ['invites', 'applied'] },
-  { key: 'nego',   label: 'Nego',   stages: ['negotiating'] },
-  { key: 'sign',   label: 'Sign',   stages: ['to_sign'] },
-  { key: 'active', label: 'Active', stages: ['active'] },
-  { key: 'track',  label: 'Track',  stages: ['tracking'] },
-  { key: 'done',   label: 'Done',   stages: ['completed'] },
-];
-
-/** Returns spine nodes with { state: 'done'|'current'|'todo' } for a stage. */
-export function spineFor(stage) {
-  const idx = SPINE.findIndex(n => n.stages.includes(stage));
-  // archive / unknown → no highlight
-  return SPINE.map((n, i) => ({
-    ...n,
-    state: idx < 0 ? 'todo' : i < idx ? 'done' : i === idx ? 'current' : 'todo',
-  }));
-}
+/**
+ * SPINE and spineFor were DELETED by Stage 3, not repaired.
+ * Contract: features/stage-3-watch-the-work-happen
+ *
+ * They were a SECOND step model — Invite · Nego · Sign · Active · Track · Done — competing
+ * with the six the server decides in collabStep.service. And they were already broken:
+ * spineFor matched on stage names that Stage 1 renamed, and the two lists overlapped in
+ * exactly ONE value, so findIndex returned -1 and every node rendered "todo". Her spine
+ * highlighted nothing at all.
+ *
+ * The step now comes from GET /influencers/me/needs-you via utils/creatorSteps, which is
+ * the same number the brand reads. Do not reintroduce a local derivation: two of them is
+ * how her phone and his start telling different stories about one collaboration.
+ */

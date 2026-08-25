@@ -9,7 +9,13 @@ import { fmtRupees } from '../../theme/tokens';
 import { describePay } from '../../utils/collabPay';
 import { influencerApi } from '../../services/api';
 import { deriveStage, whoseTurn } from '../../utils/collabStages';
-import { heroFor, sectionsFor, spineFor } from '../../utils/collabDetailModel';
+import { heroFor, sectionsFor } from '../../utils/collabDetailModel';
+// Stage 3 — the six steps come from the SERVER now, so her screen and the brand's cannot
+// disagree about the same collaboration. The old client-side spine is deleted, not fixed:
+// it matched on stage names Stage 1 renamed and highlighted nothing.
+// Contract: features/stage-3-watch-the-work-happen
+import { useCreatorSteps, stepFor } from '../../utils/creatorSteps';
+import { STEP_LABELS_CREATOR, turnLabel, turnTone } from '../../components/brand/NeedsYou';
 
 /* ════════════════════════════════════════════════════════════════════════
    CollabDetailScreen — features/collab-detail. The unified engagement hub
@@ -87,7 +93,9 @@ export default function CollabDetailScreen({ route, navigation }) {
 
   const hero = heroFor({ ...record, pendingDeliverable });
   const sections = sectionsFor(record);
-  const spine = spineFor(record.stage);
+  // Stage 3 — where this collaboration has actually got to, decided once on the server.
+  const { data: stepData, failed: stepsFailed } = useCreatorSteps();
+  const mine = stepFor(stepData, ciId);
   const tone = IG_TONE[hero.tone] || IG_TONE.neutral;
 
   // What she actually earns, in the shape the deal has. Lives in utils/collabPay so a
@@ -174,12 +182,13 @@ export default function CollabDetailScreen({ route, navigation }) {
           {c.start_date ? ` · ${fmtDate(c.start_date)}–${c.end_date ? fmtDate(c.end_date) : 'Ongoing'}` : ''}
         </Text>
 
-        {/* progress spine */}
+        {/* Stage 3 — the same six steps the brand sees, with the same current step. When
+            he rings and says "we're stuck on step 3", you are both looking at one fact. */}
         <View style={styles.spine}>
-          {spine.map(n => (
-            <View key={n.key} style={styles.spineNode}>
-              <View style={[styles.spineBar, n.state === 'done' && styles.spineBarDone, n.state === 'current' && styles.spineBarCur]} />
-              <Text style={[styles.spineTxt, n.state === 'current' && styles.spineTxtCur]}>{n.label}</Text>
+          {[1, 2, 3, 4, 5, 6].map(n => (
+            <View key={n} style={styles.spineNode}>
+              <View style={[styles.spineBar, mine && n < mine.step && styles.spineBarDone, mine && n === mine.step && styles.spineBarCur]} />
+              <Text style={[styles.spineTxt, mine && n === mine.step && styles.spineTxtCur]}>{STEP_LABELS_CREATOR[n]}</Text>
             </View>
           ))}
         </View>

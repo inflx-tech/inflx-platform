@@ -43,7 +43,8 @@
   "open_question_for_founder": {
     "question": "FINAL 4 says the tab-bar badge is the only number spanning both halves. The server already returns it; the brand app shows NO tab badge at all today. Turning it on means a number appears on the brand's tab bar for the first time — against today's data, 8.",
     "recommendation": "Turn it on. It is the entry point to everything else in this stage, and a ladder nobody is told to climb gets climbed by nobody. Flagged because it is the one change a brand notices without opening anything.",
-    "blocks_this_stage": false
+    "blocks_this_stage": false,
+    "answered": "founder 2026-08-26: \"for question two your decision is fine continue with that\". TWO badges — one true number per tab — stands. The board drew one number spanning both halves; a badge lives on a tab, so a single 6 on Campaigns would be wrong about Campaigns. Divergence accepted."
   },
   "scope_excluded": [
     "The shoot screen — Stage 4. Level 5 links to what exists and says which stage brings the rest.",
@@ -66,7 +67,8 @@
       "OTA (creator app)"
     ],
     "outward_facing": "One visible change without anyone opening anything: a badge appears on the brand's tab bar, reading 8 today. Nothing is new — those eight things have been owed all along and the server has counted them since Stage 0. The change is that the brand is now told.",
-    "device_walk_required": "YES, and THE_PLAN names this as the stage where the skipped device check stops being skipped. Screens land in BOTH apps' navigation. The founder walks W1-W9 on both handsets before any deploy go."
+    "device_walk_required": "YES, and THE_PLAN names this as the stage where the skipped device check stops being skipped. Screens land in BOTH apps' navigation. The founder walks W1-W9 on both handsets before any deploy go.",
+    "qa_note": "2026-08-26 — qa/unit 364 passed, ZERO new failures against the HEAD baseline (293 passed / 16 failed). Mobile 36 suites / 287 tests green, up from 256. Duplicate-route check clean across 18 navigators in BOTH apps. Android bundle builds and every new screen is in it. The roll-up run read-only against production reconciles at every level. BACKEND SUITE NOT RUN — test DB unreachable since 2026-08-22. NOT CLAIMED GREEN; certified no-regression."
   },
   "build_order": [
     "1 — server: the three campaign-level and two set-level owed items",
@@ -98,5 +100,6 @@
     "but_the_hole_was_still_open": "invite has NO draft guard, so a creator could still be added to an ALREADY-RUNNING campaign with no allocation, and publish would never fire again. Closed at invite: a selling set now refuses a creator with no allocation at the moment the row is written.",
     "data_fixed": "backend/scripts/fix-legacy-missing-allocation.js set the four to whole-store. Each can now sell 11 products. Kanchi Silks total fell from 6 to 4.",
     "duplication_closed": "Adding the invite rule created a THIRD inline copy of \"what is a selling set\". All three now read SELLING_GOALS from collabOwedItems, pinned by a test asserting they are the same object."
-  }
+  },
+  "slices_done_2026_08_26": "All seven. 1 owed items · 2 the tree read at last · 3 levels 2+3 · 4 the per-creator spine · 5 step wiring · 6 the creator second spine DELETED · 7 Maestro flow written (not yet run — needs a device)."
 }

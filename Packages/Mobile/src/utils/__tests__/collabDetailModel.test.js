@@ -1,4 +1,4 @@
-import { heroFor, sectionsFor, spineFor } from '../collabDetailModel';
+import { heroFor, sectionsFor } from '../collabDetailModel';
 
 describe('heroFor — one correct action per stage', () => {
   it('invite → accept/negotiate/pass', () => {
@@ -54,18 +54,35 @@ describe('sectionsFor — stage gating', () => {
   });
 });
 
-describe('spineFor — progress state', () => {
-  it('marks done/current/todo around the stage', () => {
-    const s = spineFor('to_sign');
-    expect(s.find(n => n.key === 'invite').state).toBe('done');
-    expect(s.find(n => n.key === 'nego').state).toBe('done');
-    expect(s.find(n => n.key === 'sign').state).toBe('current');
-    expect(s.find(n => n.key === 'active').state).toBe('todo');
+describe('spineFor is GONE, and must stay gone', () => {
+  // Stage 3 deleted it. These three tests used to pass while the thing they tested was
+  // BROKEN IN THE APP: spineFor matched on stage names Stage 1 renamed, so the screen fed
+  // it 'shoot' / 'content' / 'invitations' and got -1 back — every node 'todo', nothing
+  // highlighted. The tests passed because they passed it the OLD names.
+  //
+  // That is the strongest argument in this repo for testing what the screen actually does
+  // rather than what a helper can do when fed ideal input.
+  it('the second step model is no longer exported', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('../collabDetailModel');
+    expect(mod.spineFor).toBeUndefined();
+    expect(mod.SPINE).toBeUndefined();
   });
-  it('applied maps to the invite node (current)', () => {
-    expect(spineFor('applied').find(n => n.key === 'invite').state).toBe('current');
+
+  it('the six steps now come from the server, via creatorSteps', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { stepFor } = require('../creatorSteps');
+    const data = { collaborations: [{ campaign_influencer_id: 'ci-1', step: 3, turn: 'nobody' }] };
+    expect(stepFor(data, 'ci-1')).toEqual({ step: 3, turn: 'nobody', state: null });
   });
-  it('archive → no current highlight', () => {
-    expect(spineFor('archive').every(n => n.state === 'todo')).toBe(true);
+
+  it('an unknown collaboration returns null, never a default of step 1', () => {
+    // A screen that renders step 1 when it does not know is lying to her about where the
+    // work is. Null is what lets it say "we can't say" instead.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { stepFor } = require('../creatorSteps');
+    expect(stepFor({ collaborations: [] }, 'ci-1')).toBeNull();
+    expect(stepFor(null, 'ci-1')).toBeNull();
+    expect(stepFor({ collaborations: [{ campaign_influencer_id: 'ci-1' }] }, 'ci-1')).toBeNull();
   });
 });

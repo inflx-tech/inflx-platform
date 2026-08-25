@@ -6,6 +6,11 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+// Stage 3 — level 2 of the ladder. What is owed by the campaign itself sits above the
+// sets; each set carries its own badge and how far along it is.
+// Contract: features/stage-3-watch-the-work-happen
+import { useNeedsYou, campaignNode, badgeFor } from '../../utils/brandNeedsYou';
+import { NeedBadge, StepBars, OwedItems, StaleNote } from '../../components/brand/NeedsYou';
 
 /**
  * BrandCampaignSetsListScreen — per-campaign sets list drill-down from
@@ -42,6 +47,10 @@ function formatDate(dateStr) {
 
 export default function BrandCampaignSetsListScreen({ navigation, route }) {
   const { campaignId } = route.params || {};
+  // One shared fetch with the tab bar and the campaign list, so a badge here can never
+  // disagree with the badge that led the brand to this screen.
+  const { tree, failed: needsFailed, refresh: refreshNeeds } = useNeedsYou();
+  const campNode = campaignNode(tree, campaignId);
   const [campaign, setCampaign]     = useState(null);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -107,6 +116,15 @@ export default function BrandCampaignSetsListScreen({ navigation, route }) {
             <Text style={styles.emptySubText}>Sets organise influencers by content type, location, or campaign goal.</Text>
           </View>
         ) : (
+          <>
+          {/* Stage 3 — what is owed by the CAMPAIGN itself, above the sets, because it
+              belongs to no creator. If the badge that brought the brand here is bigger
+              than the sets below, this is where the difference is. */}
+          <OwedItems items={campNode?.items} title="Needs you at campaign level" />
+          <StaleNote failed={needsFailed} />
+          </>
+        )}
+        {sets.length > 0 && (
           sets.map(set => {
             const goal   = (set.goal || '').toLowerCase();
             const goalCfg = GOAL_BADGE[goal] || GOAL_BADGE.engagement;
@@ -124,6 +142,16 @@ export default function BrandCampaignSetsListScreen({ navigation, route }) {
             const remaining = visible.length - roster.length;
 
             const setBudget = set.set_budget || set.budget;
+
+            // Stage 3 — this set's own node in the needs-you tree. `total` is what the
+            // badge shows; `items` is what that number is made of. Reading both from
+            // the same node is what stops them disagreeing.
+            const setNodeHere = (campNode?.sets || []).find(x => String(x.set_id) === String(set.id));
+            // How far along the set is: the step most of its creators are on. Not an
+            // average — a set with one creator at 6 and one at 2 is a set at 2, because
+            // that is where the work still is.
+            const steps = (setNodeHere?.creators || []).map(c => Number(c.step || 0)).filter(Boolean);
+            const setStep = steps.length ? Math.min(...steps) : 0;
 
             return (
               <View key={set.id} style={styles.card}>
@@ -144,13 +172,27 @@ export default function BrandCampaignSetsListScreen({ navigation, route }) {
                       )}
                     </View>
                   </View>
-                  {goal && (
-                    <View style={[styles.goalBadge, { backgroundColor: goalCfg.bg }]}>
-                      <View style={[styles.goalDot, { backgroundColor: goalCfg.dot }]} />
-                      <Text style={[styles.goalText, { color: goalCfg.text }]}>{goalCfg.label}</Text>
-                    </View>
-                  )}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <NeedBadge n={badgeFor(setNodeHere)} />
+                    {goal && (
+                      <View style={[styles.goalBadge, { backgroundColor: goalCfg.bg }]}>
+                        <View style={[styles.goalDot, { backgroundColor: goalCfg.dot }]} />
+                        <Text style={[styles.goalText, { color: goalCfg.text }]}>{goalCfg.label}</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
+
+                {/* Stage 3 — how far along this set is, without opening it. */}
+                {setStep > 0 && <StepBars step={setStep} />}
+
+                {/* Stage 3 — owed by the SET itself, not by anyone in it. Above the
+                    roster, so a badge bigger than its creators is explained here. */}
+                {!!setNodeHere?.items?.length && (
+                  <View style={{ marginHorizontal: -12 }}>
+                    <OwedItems items={setNodeHere.items} title="Needs you in this set" />
+                  </View>
+                )}
 
                 {/* Funnel row for open_group */}
                 {isOpenGroup && (

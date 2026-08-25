@@ -38,6 +38,8 @@ import BrandAllocationScreen from '../screens/brand/BrandAllocationScreen';
 import BrandBasketPreviewScreen from '../screens/brand/BrandBasketPreviewScreen';
 import BrandCampaignReviewScreen from '../screens/brand/BrandCampaignReviewScreen';
 import BrandAgreementDetailScreen from '../screens/brand/BrandAgreementDetailScreen';
+// Stage 3 — level 4 of the ladder: one creator, her six steps.
+import BrandCreatorSpineScreen from '../screens/brand/BrandCreatorSpineScreen';
 // Stage 3 — the needs-you tree the app has been fetching and discarding since Stage 0.
 // Contract: features/stage-3-watch-the-work-happen
 import { useNeedsYou } from '../utils/brandNeedsYou';
@@ -134,6 +136,7 @@ function CampaignsStack() {
       <Stack.Screen name="BrandBasketPreview" component={BrandBasketPreviewScreen} />
       <Stack.Screen name="BrandCampaignReview" component={BrandCampaignReviewScreen} />
       <Stack.Screen name="BrandAgreementDetail" component={BrandAgreementDetailScreen} />
+      <Stack.Screen name="BrandCreatorSpine" component={BrandCreatorSpineScreen} />
       <Stack.Screen name="BrandDiary" component={BrandDiaryScreen} />
       <Stack.Screen name="BrandCampaignInfluencersList" component={BrandCampaignInfluencersListScreen} />
       <Stack.Screen name="BrandCampaignSetsList" component={BrandCampaignSetsListScreen} />

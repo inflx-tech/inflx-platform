@@ -1,0 +1,92 @@
+# Flow 06 — the brand walks the ladder down to a creator's six steps.
+#
+# Contract: features/stage-3-watch-the-work-happen (03-expected-outputs R-8)
+#
+# WHY THIS FLOW EXISTS
+# Stage 3 adds screens to BOTH apps' navigation, and THE_PLAN names it as the stage where
+# the skipped device check stops being skipped. Every earlier check — jest, the bundle
+# build, the duplicate-route scan — passes on a screen that then crashes on a handset,
+# because none of them mount a navigator. This one does.
+#
+# It also closes the gap Stage 2 left open: 03-brand-launch only proves the app boots.
+#
+# WHAT IT PROVES, AND WHAT IT DOES NOT
+# It proves the ladder is WALKABLE: every tap lands on a real screen, and the number on
+# each rung is on the screen below it. It does NOT check the arithmetic — that is what the
+# executing checks over collabCounts are for, and they run without a device.
+#
+# It asserts on WORDS THE SCREENS OWN, never on numbers, because the practice world changes
+# as the founder uses it and a flow that fails when the data moves is a flow nobody runs.
+
+appId: in.inflx.app.brand
+---
+- launchApp:
+    clearState: false
+
+# ── The brand is signed in and lands on Home ─────────────────────────────────
+- extendedWaitUntil:
+    visible: "Campaigns"
+    timeout: 30000
+- takeScreenshot: 06-ladder-01-home
+
+# ── Level 1 · the campaign list, with its badges ─────────────────────────────
+- tapOn: "Campaigns"
+- extendedWaitUntil:
+    visible:
+      text: "New"
+      enabled: true
+    timeout: 20000
+- assertVisible: "total"          # the count line: "N total · N live · N draft"
+- takeScreenshot: 06-ladder-02-campaigns
+
+# ── Level 2 · a campaign, and its sets ───────────────────────────────────────
+# Tap the first campaign card by its status pill rather than by name — names are practice
+# data and change; a running campaign always carries one.
+- tapOn:
+    text: "Active"
+    index: 0
+- extendedWaitUntil:
+    visible: "Sets"
+    timeout: 20000
+- takeScreenshot: 06-ladder-03-campaign
+
+- tapOn: "Sets"
+- extendedWaitUntil:
+    visible: "Set"
+    timeout: 20000
+- takeScreenshot: 06-ladder-04-sets
+
+# ── Level 3 · a set, and its creators, each with a step ──────────────────────
+- tapOn:
+    text: "View all influencers in this set"
+    index: 0
+- extendedWaitUntil:
+    visible: "STEP"               # every creator row now says which of the six she is on
+    timeout: 20000
+- takeScreenshot: 06-ladder-05-creators
+
+# ── Level 4 · one creator, her six steps ─────────────────────────────────────
+# The roster row opens WHERE THE WORK IS, not who she is (Stage 3, slice 5).
+- tapOn:
+    text: "STEP.*"
+    index: 0
+- extendedWaitUntil:
+    visible: "Terms agreed"        # step 1 of the spine
+    timeout: 20000
+# All six must be on the screen, including the ones that are not the brand's to act on.
+# Hiding a step would make the collaboration look stalled.
+- assertVisible: "The shoot"
+- assertVisible: "Shop posts"
+- assertVisible: "NOT YOURS"       # step 4 is the review desk's, and says so
+- assertVisible: "Complete"
+- assertVisible: "She sees the same six steps"
+- takeScreenshot: 06-ladder-06-spine
+
+# ── Back out the way we came in, so the flow leaves nothing open ─────────────
+- back
+- back
+- back
+- extendedWaitUntil:
+    visible: "Campaigns"
+    timeout: 20000
+- takeScreenshot: 06-ladder-07-back
