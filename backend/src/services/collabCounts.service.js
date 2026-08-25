@@ -22,6 +22,8 @@
 
 const db = require('../config/db');
 const step = require('./collabStep.service');
+// Stage 3 — what is owed at a level that belongs to no creator, as a LIST.
+const owedItems = require('./collabOwedItems.service');
 
 /**
  * Everything owed to a BRAND, as a tree that reconciles at every level.
@@ -95,32 +97,21 @@ async function forBrand(brandId) {
   // ── Owed at set level and campaign level ─────────────────────────────────────
   // These belong to no single creator, which is exactly why they need their own line.
   //
-  // NOT COUNTED HERE, and deliberately: "your offer is expiring".
-  // campaign_offers has no expiry column — only is_active. Verified against production
-  // 2026-08-15; no offer table anywhere carries a valid-until date. The FINAL 4 mockup
-  // shows an expiring-offer item at set level, and it cannot be computed until offers
-  // gain an expiry. Counting zero is honest; inventing a date is not.
+  // Stage 3 moved them into collabOwedItems and turned them into a LIST. A bare integer
+  // is a badge you cannot walk down, and FINAL 4 rule is that tapping a number gets you
+  // to a button every time — which a screen cannot do if it was only told "2".
   //
-  // Nor is there a silent catch on this query. An earlier draft had one, which would
-  // have swallowed exactly the missing-column error above and reported "nothing owed"
-  // forever.
-  const { rows: setOwn } = await db.query(
-    `SELECT cs.id AS set_id,
-            (SELECT count(*)::int FROM campaign_influencers ci2
-              WHERE ci2.set_id = cs.id
-                AND cs.goal <> 'engagement'
-                AND ci2.alloc_scope IS NULL)                               AS creators_without_allocation
-       FROM campaign_sets cs
-       JOIN campaigns cam ON cam.id = cs.campaign_id
-      WHERE cam.brand_id = $1
-        AND cam.status NOT IN ('cancelled', 'completed')`,
-    [brandId]
-  );
-
-  const setOwnById = new Map(
-    setOwn.map(r => [r.set_id, Number(r.creators_without_allocation || 0)])
-  );
-
+  // `own` is now the length of that list, so the badge and the things it is made of are
+  // the same fact and cannot disagree.
+  //
+  // The older note here said an expiring offer could not be computed because offers had
+  // no expiry. That is stale: campaign_influencers.offer_valid_until (migration 148) and
+  // brand_offers.store_ends_at both exist. It IS computed now, and returns nothing until
+  // something writes a deadline — which no screen can do yet. See collabOwedItems.
+  const [setItems, campaignItems] = await Promise.all([
+    owedItems.forSets(brandId, db),
+    owedItems.forCampaigns(brandId, db),
+  ]);
   // ── Assemble, then roll up ───────────────────────────────────────────────────
   const campaigns = new Map();
   for (const a of assignments) {
@@ -139,13 +130,19 @@ async function forBrand(brandId) {
 
     if (!campaigns.has(a.campaign_id)) {
       campaigns.set(a.campaign_id, {
-        campaign_id: a.campaign_id, name: a.campaign_name, own: 0, sets: new Map(),
+        campaign_id: a.campaign_id,
+        name: a.campaign_name,
+        items: campaignItems.get(a.campaign_id) || [],
+        sets: new Map(),
       });
     }
     const camp = campaigns.get(a.campaign_id);
     if (!camp.sets.has(a.set_id)) {
       camp.sets.set(a.set_id, {
-        set_id: a.set_id, name: a.set_name, own: setOwnById.get(a.set_id) || 0, creators: [],
+        set_id: a.set_id,
+        name: a.set_name,
+        items: setItems.get(a.set_id) || [],
+        creators: [],
       });
     }
     camp.sets.get(a.set_id).creators.push({
@@ -161,14 +158,16 @@ async function forBrand(brandId) {
   const out = [...campaigns.values()].map(camp => {
     const sets = [...camp.sets.values()].map(s => ({
       ...s,
-      total: step.rollUp({ own: s.own, children: s.creators.map(cr => ({ own: cr.own })) }),
+      own: s.items.length,
+      total: step.rollUp({ own: s.items.length, children: s.creators.map(cr => ({ own: cr.own })) }),
     }));
     return {
       campaign_id: camp.campaign_id,
       name: camp.name,
-      own: camp.own,
+      own: camp.items.length,
+      items: camp.items,
       sets,
-      total: step.rollUp({ own: camp.own, children: sets.map(s => ({ own: s.total })) }),
+      total: step.rollUp({ own: camp.items.length, children: sets.map(s => ({ own: s.total })) }),
     };
   });
 

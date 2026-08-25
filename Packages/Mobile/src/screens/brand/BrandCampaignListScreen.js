@@ -8,6 +8,9 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fmtRupees } from '../../theme/tokens';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
+// Stage 3 — the needs-you tree, read for the first time.
+// Contract: features/stage-3-watch-the-work-happen
+import { useNeedsYou, campaignNode, badgeFor } from '../../utils/brandNeedsYou';
 
 // ── locked palette (inline) ──
 const P = {
@@ -61,6 +64,9 @@ export default function BrandCampaignListScreen({ navigation }) {
   const [selected, setSelected]   = useState(new Set());
   const [bulkBusy, setBulkBusy]   = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  // One shared fetch across the tab bar, this list and the drill-down, so a badge can
+  // never disagree with the screen underneath it.
+  const { tree, refresh: refreshNeeds } = useNeedsYou();
 
   async function load() {
     const res = await brandApi.getCampaigns();
@@ -72,9 +78,9 @@ export default function BrandCampaignListScreen({ navigation }) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await load();
+    await Promise.all([load(), refreshNeeds()]);
     setRefreshing(false);
-  }, []);
+  }, [refreshNeeds]);
 
   // Per-status counts for chip badges
   const counts = useMemo(() => {
@@ -317,6 +323,17 @@ export default function BrandCampaignListScreen({ navigation }) {
                 >
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardName} numberOfLines={2}>{c.name}</Text>
+                    {/* Stage 3 — everything owed inside this campaign, at any depth. The
+                        server excludes ended and cancelled campaigns, so a finished one
+                        never carries a number no matter what technically remains. */}
+                    {(() => {
+                      const n = badgeFor(campaignNode(tree, c.id));
+                      return n ? (
+                        <View style={styles.needBadge}>
+                          <Text style={styles.needBadgeTxt}>{n}</Text>
+                        </View>
+                      ) : null;
+                    })()}
                     <View style={[styles.statusBadge, { backgroundColor: sCfg.bg }]}>
                       <View style={[styles.statusDot, { backgroundColor: sCfg.dot }]} />
                       <Text style={[styles.statusText, { color: sCfg.text }]}>{sCfg.label}</Text>
@@ -484,7 +501,9 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
 
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 5 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 5 },
+  needBadge: { backgroundColor: P.ink, borderRadius: 100, minWidth: 20, paddingHorizontal: 6, paddingVertical: 2, alignItems: 'center' },
+  needBadgeTxt: { fontSize: 10.5, fontWeight: '800', color: P.white },
   cardName: { fontSize: 13.5, fontWeight: '700', color: P.ink, flex: 1, letterSpacing: 0.1 },
 
   statusBadge: {

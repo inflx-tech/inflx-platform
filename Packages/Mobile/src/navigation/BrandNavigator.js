@@ -38,6 +38,9 @@ import BrandAllocationScreen from '../screens/brand/BrandAllocationScreen';
 import BrandBasketPreviewScreen from '../screens/brand/BrandBasketPreviewScreen';
 import BrandCampaignReviewScreen from '../screens/brand/BrandCampaignReviewScreen';
 import BrandAgreementDetailScreen from '../screens/brand/BrandAgreementDetailScreen';
+// Stage 3 — the needs-you tree the app has been fetching and discarding since Stage 0.
+// Contract: features/stage-3-watch-the-work-happen
+import { useNeedsYou } from '../utils/brandNeedsYou';
 import BrandCategoryPickerScreen from '../screens/brand/BrandCategoryPickerScreen';
 import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
@@ -170,7 +173,24 @@ const tabIcon = (iconName, label) => ({
   tabBarIcon: ({ color, size }) => <Icon name={iconName} size={size ?? 24} color={color} />,
 });
 
+// Stage 3 — undefined hides the badge; 0 would draw an empty circle. An absence reads as
+// calm, a zero reads as a state. Same rule the creator's navigator already follows.
+const badge = (n) => ({
+  tabBarBadge: Number(n) > 0 ? Number(n) : undefined,
+  tabBarBadgeStyle: { backgroundColor: ig.text, color: ig.bg, fontSize: 10, fontWeight: '800' },
+});
+
 export default function BrandNavigator() {
+  // Stage 3 — the tab badge. The number comes from the server (Stage 0), so the brand's
+  // badge and the creator's can never disagree about the same work. Refreshed when the
+  // app returns to the foreground rather than on a timer: a brand who has just dealt with
+  // something should not keep seeing a badge for it.
+  const { tree } = useNeedsYou();
+  const campaignsBadge = Number(
+    (tree?.campaigns || []).reduce((n, c) => n + Number(c.total || 0), 0)
+  );
+  const creatorsBadge = Number(tree?.creators_tab || 0);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -189,8 +209,8 @@ export default function BrandNavigator() {
       }}
     >
       <Tab.Screen name="Home"      component={HomeStack}                options={tabIcon('home-outline', 'Home')} />
-      <Tab.Screen name="Creators"  component={CreatorsStack}            options={tabIcon('account-multiple-outline', 'Creators')} />
-      <Tab.Screen name="Campaigns" component={CampaignsStack}           options={tabIcon('bullhorn-outline', 'Campaigns')} />
+      <Tab.Screen name="Creators"  component={CreatorsStack}            options={{ ...tabIcon('account-multiple-outline', 'Creators'), ...badge(creatorsBadge) }} />
+      <Tab.Screen name="Campaigns" component={CampaignsStack}           options={{ ...tabIcon('bullhorn-outline', 'Campaigns'), ...badge(campaignsBadge) }} />
       <Tab.Screen name="Wallet"    component={BrandWalletScreen}        options={tabIcon('wallet-outline', 'Wallet')} />
       {/* Stage 1 — Alerts gives up its tab to Creators and moves under Profile. A tab
           is somewhere you go on purpose; a feed you check when a badge appears is not.
