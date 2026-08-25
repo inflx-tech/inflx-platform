@@ -34,6 +34,8 @@
       "OTA (brand app)",
       "Render (backend)"
     ],
-    "verification": "Test DB unreachable since 22 Aug. Backend change proved against production directly — see 06-diff/notes.md section 5. Full backend suite NOT run."
+    "verification": "Test DB unreachable since 22 Aug. Backend change proved against production directly — see 06-diff/notes.md section 5. Full backend suite NOT run.",
+    "deployed_at": "2026-08-25",
+    "deployed_evidence": "Pushed 46fd03b. Brand OTA version 185 published, manifest confirms flavor=brand native_runtime=3. Backend deploy PROVED live by probing the ask endpoint as practice brand Kanchi Silks with influencer_ids=[a non-existent uuid]: returned 201 with a generated broadcast_batch_id and skipped=[that exact id, \"Creator not found\"]. The old code would have returned 422 \"Send to one creator, a group, or a set of filters\" because it ignored the field. The skipped list echoing back exactly the id sent also proves recipients IS the hand-picked set. Confirmed 0 rows written; production origins unchanged at direct x14, group x1."
   }
 }
