@@ -37,14 +37,79 @@
 const PAID_GOALS = ['engagement', 'hybrid'];
 
 /**
+ * A paid set's own budget, when the caller did not type one.
+ * Contract: features/stage-2-build-a-campaign-from-the-phone (§5.2)
+ *
+ * THE BOARD vs THE CODE
+ * FINAL 2 draws a content set's budget as "calculated — adds up from what you agreed with
+ * each creator at step 3". createSet, until this change, REQUIRED it to be typed. The
+ * phone wizard has no sensible moment to type it: the fees are already settled, one per
+ * creator, and asking the brand to re-enter their sum is asking them to get it wrong.
+ *
+ * WHY THIS ONLY FILLS NULLS, AND ONLY FOR HANDPICK SETS
+ * The first draft of this made the derivation unconditional — every paid set's budget
+ * becomes the sum of its creators' fees. Reading brand-web's own validation stopped that:
+ *
+ *   · web line 827 allows the typed budget to EXCEED the sum of the per-creator fees, on
+ *     purpose. That headroom is the brand's, and overwriting it would shrink a budget they
+ *     deliberately padded.
+ *   · an OPEN-GROUP paid set has no creator list at all — its money is a projection,
+ *     per_influencer_budget × max_cap. Summing an empty roster would write zero and then
+ *     publish would refuse the campaign for having no budget.
+ *
+ * So: a typed budget is always kept. NULL on a paid HANDPICK set means "derive me", which
+ * is the same idiom campaign_influencers.alloc_scope already uses for "not yet set".
+ *
+ * AND ONLY WHILE THE CAMPAIGN IS A DRAFT. This guard was NOT in the design — it came out
+ * of checking production before shipping. There is a LIVE campaign ("Festive Season 2026",
+ * status active) whose engagement set carries set_budget NULL while its two creators hold
+ * ₹55,000 of agreed fees. Without this line, the first later set write would have filled
+ * that in and moved an ACTIVE campaign's total_budget from NULL to 55000 — a money field
+ * that escrow and the wallet gate both read, on a campaign whose fee base was locked at
+ * publish. More "correct" is not the same as safe to change underneath a running
+ * campaign. Building a campaign only ever happens in draft, so the board loses nothing.
+ *
+ * The status exclusions below are the real enum, checked against production: 'cancelled'
+ * is NOT a campaign_influencer_status value, so it must not appear here.
+ */
+const SPENT_STATUSES_EXCLUDED = ['declined', 'expired', 'rejected_by_brand', 'slots_filled'];
+
+async function recomputeSetBudgets(campaignId, conn) {
+  const { rows } = await conn.query(
+    `UPDATE campaign_sets s
+        SET set_budget = COALESCE((
+              SELECT SUM(COALESCE(ci.agreed_fee, 0))
+                FROM campaign_influencers ci
+               WHERE ci.set_id = s.id
+                 AND ci.status <> ALL($3::campaign_influencer_status[])
+            ), 0)
+       FROM campaigns c
+      WHERE c.id = s.campaign_id
+        AND s.campaign_id = $1
+        AND c.status = 'draft'
+        AND s.goal = ANY($2)
+        AND s.set_budget IS NULL
+        AND COALESCE(s.influencer_mode, 'handpick') = 'handpick'
+      RETURNING s.id, s.set_budget`,
+    [campaignId, PAID_GOALS, SPENT_STATUSES_EXCLUDED]
+  );
+  return rows;
+}
+
+/**
  * Recompute and persist a campaign's derived total_budget and end_date from its sets.
  * Safe to call inside a transaction by passing the client.
  * Returns the values written, so callers can hand them straight back to the client
  * instead of re-reading (and so tests can assert the delivered value, not the query).
+ *
+ * Set budgets are filled FIRST, so the campaign total is a sum over numbers that are
+ * themselves already correct. Two entry points expressing that order separately is how
+ * they would eventually disagree.
  */
 async function recompute(campaignId, client = null) {
   // eslint-disable-next-line global-require
   const conn = client || require('../config/db');
+  await recomputeSetBudgets(campaignId, conn);
   const { rows: sets } = await conn.query(
     `SELECT goal, set_budget, window_end FROM campaign_sets WHERE campaign_id = $1`,
     [campaignId]
@@ -81,4 +146,4 @@ function derive(sets) {
   };
 }
 
-module.exports = { recompute, derive, PAID_GOALS };
+module.exports = { recompute, recomputeSetBudgets, derive, PAID_GOALS };

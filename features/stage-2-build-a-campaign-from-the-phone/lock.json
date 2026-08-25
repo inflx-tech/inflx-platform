@@ -1,0 +1,136 @@
+{
+  "feature": "stage-2-build-a-campaign-from-the-phone",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-25 chat: \"lock it and pls start implementation\"",
+  "approved_at": "2026-08-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-25 chat: \"lock it and pls start implementation\" — after the ten boards were presented",
+  "mockup_locked_at": "2026-08-25",
+  "mockup_note": "features/stage-2-build-a-campaign-from-the-phone/04-preview/mockups/stage2-screens.html — ten boards covering every screen this stage touches. EXTRACTED from the already-agreed FINAL 2 (brand-mobile-spine/04-preview/mockups/final-2-campaign.html, ledger actions 59-98) and collab-navigation-spine/03-action-ledger.html. Same stylesheet, same components, same button wording. Board 10 states every screen and every server rule against what exists today, read from the actual files on 2026-08-25.",
+  "notes": "Stage 2 of 11 in Docs/THE_PLAN.md. A brand builds a campaign from the phone. Scope is the brand phone only. Nothing outward-facing. LOCKED 2026-08-25. The two board-versus-code divergences in 01-spec.md sections 5.1 and 5.2 were presented before the lock and proceed as recommended.",
+  "programme": {
+    "plan": "Docs/THE_PLAN.md",
+    "stage": 2,
+    "of": 11,
+    "depends_on": "Stage 1 — the agreements this wizard briefs from, and the Creators tab it links out to",
+    "drawn_from": [
+      "brand-mobile-spine/04-preview/mockups/final-2-campaign.html (actions 59-98)",
+      "collab-navigation-spine/03-action-ledger.html",
+      "collab-navigation-spine/04-tab-arrangement.html"
+    ]
+  },
+  "reality_check_2026_08_25": {
+    "method": "Every verdict read from the named file, not from memory. Full detail in 01-spec.md section 2.",
+    "brand_phone": "NO campaign wizard of any kind. BrandNavigator registers CampaignList, CampaignDetail, BrandCampaignSetsList, BrandCampaignInfluencersList, BrandCampaignReviewQueue and no create route. The current way in is BrandCampaignListScreen.js:336 — openWebDashboard('/dashboard/campaigns'), labelled 'Create new campaign on web'. brandApi has no createCampaign, updateCampaign, createSet, updateSet or deleteSet.",
+    "already_on_the_phone": "Agreements list (brandApi.listAgreements). Category picker backed by the real listing tree. Offer builder in BrandOffersLibraryScreen + utils/offerBuilders. Read-only sets list.",
+    "duplicate_found": "TWO product pickers already exist — screens/brand/BrandProductPickerScreen.js (186 lines, full screen, request composer) and components/brand/ProductPickerSheet.js (95 lines, modal, offer builders). Ledger #86 names four callers for this picker. A third would guarantee the drift that produced four of Stage 1's twenty-one bugs. Slice 1 merges them.",
+    "server_exists": "POST /campaigns ignores budget and end_date and derives both (campaignRollup, Part 5). campaign_sets.goal is the shared aim vocabulary. invite accepts agreement_id, validates owner/creator/status/aim and returns agreement_warnings naming every moved term. Allocation columns alloc_scope/alloc_category_node_id/alloc_category/alloc_product_ids resolve live (migration 148). resolveBestOffer picks one winner, never stacked. GET /brands/me/products returns a resolved image_url, price and category; GET /brands/me/listing-tree returns the tree.",
+    "server_gaps": [
+      "channels — searched all of backend/src and all 156 migrations. One comment in collabTerms.model.js:18. No column, no field, no validation.",
+      "set_budget is TYPED and REQUIRED for engagement/hybrid (campaign.controller.js:646). The board says calculated from the agreed fees.",
+      "publish enforces ONE of the five named blockers — the wallet. Missing: creator with no allocation, sales set with no offer, agreement expired mid-wizard, offer on an unlisted product. Read campaign.controller.js:1400-1583 line by line.",
+      "no brand-authenticated basket preview. The resolver exists; the only HTTP door onto it is POST /transactions/cart/price, which is follower-authenticated."
+    ],
+    "brand_web": "app/dashboard/campaigns/new/page.js, 2759 lines, three steps and five sub-steps. Pre-fills from ONE agreement via ?agreement=<id> (:715-755). The multi-select aim-filtered pick-list the board draws has never existed on any surface."
+  },
+  "board_versus_code_divergences": {
+    "consumption_timing": {
+      "board": "ledger #77 — the agreement is consumed on PUBLISH",
+      "code": "campaign.controller.js:1182 consumes it inside INVITE, in a guarded transaction that cannot double-brief",
+      "answer": "Leave the transaction alone. The phone holds ticked agreements in local state and does not invite until publish, so abandoning the wizard writes nothing and consumes nothing. Cost: an agreement can lapse between ticking and publishing — which is why that is one of the five publish blockers.",
+      "needs_founder": false
+    },
+    "set_budget_source": {
+      "board": "step 2 shows a content set's budget as calculated from what was agreed with each creator",
+      "code": "createSet throws 'set_budget is required for engagement and hybrid goals'",
+      "answer": "Make it derived server-side from SUM(agreed_fee) of that set's creators, recomputed on every invite and set write — the same shape as campaignRollup. set_budget becomes optional on write. Brand-web keeps sending a typed value and is overwritten by the identical number it already displays.",
+      "needs_founder": true,
+      "why_it_needs_a_look": "This is the ONE change in the stage that touches a rule brand-web depends on. Strictly loosening, so no existing caller can start failing, but it is not phones-only and the founder's standing instruction is phones first."
+    }
+  },
+  "open_question_for_founder": {
+    "question": "Ledger #94 lets an offer be redeemed in store, online, or both. THE_PLAN Stage 6 flags that Pay-at-store is currently ON for all brands and nothing has ever asked a brand whether they have a counter.",
+    "recommendation": "Build both toggles as drawn and leave the Pay-at-store question to Stage 6, where it belongs. An offer's redemption mode is a different switch. Flagged so it is not a surprise later.",
+    "blocks_this_stage": false
+  },
+  "scope_excluded": [
+    "Adding or pricing products on the phone — the founder's boundary, and the only desk job left after this stage",
+    "Open-group / broadcast sets — ledger #71 removes 'who posts?' entirely; every phone-built set is handpick from agreements. Also still defective per D-3/D-4 in Docs/TEST_PLAN_PARTS_1_TO_6.md",
+    "Cold invites — deliberate; everything downstream assumes terms are settled",
+    "Rewriting brand-web's wizard",
+    "Volume / BOGO / bundle / free-gift CREATION on the phone — the library manages all five; the phone creates discounts",
+    "The needs-you roll-up and the campaign drill-down — that is Stage 3"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed: this stage adds a deep new route tree to the brand app's CampaignsStack. Rule 5 applies at release.",
+    "deploy_class": "production-impacting (brand app via OTA, backend/src, and one additive migration).",
+    "deploy_targets": [
+      "OTA (brand app only — no creator-app change)",
+      "Render (backend/src)",
+      "migration — campaign_sets.channels_json, additive JSONB, nullable, no backfill"
+    ],
+    "outward_facing": "None. No creator, shopper or admin sees a change. The only behaviour reaching an existing surface is the derived set budget, which overwrites a typed value with the number brand-web already displays.",
+    "qa_note": "2026-08-25 — measured like for like against a clean worktree at HEAD.\n  BASELINE (HEAD, qa/unit): 293 passed, 16 failed.\n  WITH STAGE 2 (qa/unit):   338 passed, 15 failed.\n  NEW FAILURES CAUSED BY STAGE 2: ZERO. Every remaining failure is in the baseline set.\n  (The 16th baseline failure, legal-sync, passes in the working tree — a fresh-worktree artefact, NOT something Stage 2 fixed.)\n  New executing checks: 34 (stage2-publish-gate 18, stage2-set-budget-and-channels 16).\n  Mobile suite: 34 suites / 256 tests green, up from 205 — +51 from stage2CampaignWizard.test.js.\n  Duplicate-route check: clean across 18 navigators in both apps. Android JS bundle builds, and every new screen copy was verified present in the output.\n  BACKEND SUITE NOT RUN: TEST_DATABASE_URL (localhost:5544) refuses connections with ECONNRESET; the container reports Up but docker logs hangs — the same failure recorded on 2026-08-22. The backend half is verified by the 34 executing checks plus READ-ONLY queries against production for every changed statement. That is stronger for those statements and WEAKER than the broad did-anything-else-break sweep. It is not claimed as one.\n  NOT CLAIMED GREEN. Certified no-regression against the documented pre-existing baseline.",
+    "device_walk_required": "NOT YET DONE, and it is the gate. Seven new routes in the brand app CampaignsStack — the change class the Stage 1 handover names as 'passes every automatic check and then crashes on a real device', skipped six times running. The duplicate-route check is clean and the bundle builds, but that catches two specific mistakes, not everything. BEFORE the walk: the 18 practice products need switching on, or every product screen will read as broken (see found_while_checking_production).",
+    "deploy_order": "1) migration 159 (backend/scripts/run-159.js — additive, idempotent, guarded, no row touched)  2) Render, backend/src  3) OTA, brand app only. The backend writes channels_json, so the migration must land first. No creator-app change."
+  },
+  "build_order": [
+    "1 — merge the two product pickers into one component and re-point both existing callers",
+    "2 — server: derived set budget, the channels column, the four publish blockers",
+    "3 — the app's API layer: create/update campaigns and sets (5 thin methods)",
+    "4 — landing rework, shell, sets list, step 1, step 2 with its three branches",
+    "5 — step 3, the agreements pick-list and the agreement detail",
+    "6 — step 4, both sections, allocation, the offer",
+    "7 — the basket preview endpoint and its screen",
+    "8 — review, drift, the five blockers, publish"
+  ],
+  "implemented_2026_08_25": {
+    "slices_done": "1 to 8 — the picker merge, the server rules, the API layer, and all seven wizard screens.",
+    "merges_not_additions": [
+      "TWO product pickers merged into components/brand/ProductPicker (+ a modal wrapper). Both previous callers keep their original contract: the screen still returns (ids, names), the offer builder still returns [{id,name}]. A test pins that exactly ONE implementation remains.",
+      "The offer builder extracted out of BrandOffersLibraryScreen into components/brand/OfferBuilderSheet, so the wizard uses the SAME one.",
+      "termsLine/settledLine moved out of BrandCreatorsScreen into utils/agreementSummary, now shared with three wizard screens."
+    ],
+    "backend": [
+      "migration 159 — campaign_sets.channels_json, additive JSONB, nullable, no backfill. NOT YET APPLIED to production.",
+      "services/publishGate.service.js — the four missing publish blockers, in ONE place shared by publish and the new GET /campaigns/:id/publish-check.",
+      "services/campaignChannels.js — the channel vocabulary, its own module so phone and web cannot drift.",
+      "campaignRollup.recomputeSetBudgets — a paid handpick set budget derived from the sum of its agreed fees, DRAFT CAMPAIGNS ONLY (see narrowing below).",
+      "offerResolution.scoreAllCandidates — split out of resolveBestOffer so the brand basket preview shows the losers too, WITHOUT a second copy of the discount maths.",
+      "POST /campaigns/preview-basket — the brand-side door onto that same resolver.",
+      "GET /brands/me/products now returns category_node_id, category_label and category_path so the picker can group by the real listing tree."
+    ],
+    "mobile": [
+      "BrandCampaignCreate · BrandCampaignBuilder · BrandSetWizard · BrandAllocation · BrandBasketPreview · BrandCampaignReview · BrandAgreementDetail — seven new screens, all registered in CampaignsStack (a cross-stack navigate fails silently at runtime).",
+      "BrandCampaignListScreen — the create-on-web link REPLACED by a header + New. Not accompanied: two doors to one job is the Stage 1 fault.",
+      "utils/campaignDraft — the picks the wizard holds before publish. Deliberately NOT persisted, so abandoning the wizard consumes no agreement (ledger #77).",
+      "brandApi gained createCampaign, updateCampaign, createCampaignSet, updateCampaignSet, deleteCampaignSet, getPublishCheck, previewBasket."
+    ],
+    "narrowed_after_checking_production": {
+      "what": "01-spec.md section 5.2 said set_budget becomes derived. As built it derives ONLY when the caller sent none, ONLY on handpick sets, and ONLY while the campaign is a draft.",
+      "why_draft_only": "Production carries a LIVE campaign (Festive Season 2026, active) whose engagement set has set_budget NULL while its two creators hold Rs 55,000 of agreed fees. Without the guard the next set write would have moved an ACTIVE campaign total_budget from NULL to 55000 — a field escrow and the wallet gate both read, on a campaign whose fee base was locked at publish.",
+      "why_typed_values_are_kept": "brand-web deliberately allows a typed budget to exceed the fee sum (page.js:827). Overwriting it would silently shrink a budget the brand padded on purpose.",
+      "why_handpick_only": "An open-group paid set has no roster to sum; its money is a projection. Deriving would write zero and publish would then refuse the campaign for having no budget.",
+      "proven": "The derivation UPDATE was run against production inside a transaction that was ROLLED BACK. It matched 0 rows on both live campaigns."
+    },
+    "found_while_checking_production": {
+      "practice_products_all_switched_off": "All 18 practice products are is_active=false, pushed_to_store=false, no images, no categories. The picker will show them all marked 'not live' under Other/uncategorised; the basket preview will say 'Nothing is live in your store yet'; and any offer scoped to them is refused by the unlisted-product blocker. All CORRECT against this data, and all will read as broken on a walk. Needs a production data fix before the handset walk — not made, needs its own go.",
+      "cancelled_is_not_a_valid_status": "campaign.controller.cancelInfluencer writes SET status='cancelled', which is NOT in the campaign_influencer_status enum (checked against the live database). Cancelling an individual creator from a campaign is broken, and has been since before this stage. Out of Stage 2 scope — filed for the founder to schedule. The derived-budget exclusion list deliberately omits 'cancelled' for this reason."
+    },
+    "my_mistakes": [
+      "Called offerConfig.collectProductIds with ONE argument; it takes (offerType, config). That made the offer-on-an-unlisted-product blocker collect nothing and silently never fire. Caught by an executing test, not by reading.",
+      "Flipped four backend files from CRLF to LF while editing, which broke a source-assertion test that slices on CRLF. Restored — the working tree is shared with another window and a whole-file line-ending flip makes a diff unreadable."
+    ],
+    "tests_updated_not_worked_around": [
+      "agreement-briefing.spec.ts pinned the whole success() call as one literal; it broke when a field arrived ALONGSIDE the warnings. Now asserts the warnings reach the 201 — the actual promise.",
+      "campaign-end-and-open-ended.spec.ts asserted a bare COUNT of three recompute occurrences. Stage 2 added two more legitimate write paths, so it failed because the rule became MORE true. Now names the five handlers."
+    ]
+  }
+}

@@ -428,15 +428,26 @@ const listProducts = asyncHandler(async (req, res) => {
   if (section) { params.push(section); conditions.push(`section = $${params.length}`); }
   if (is_active !== undefined) { params.push(is_active === 'true'); conditions.push(`is_active = $${params.length}`); }
 
+  // category_label / category_path come from the listing tree, so the shared product
+  // picker can GROUP products the way the catalogue is actually organised rather than by
+  // the older free-text `section`. Contract: features/stage-2-build-a-campaign-from-the-phone
+  // (slice 1, ledger #86/#87). category_nodes carries denormalised segment and category,
+  // so the readable path is a join and not a recursive walk.
+  // Products with no node keep NULL and the picker files them under "Other ·
+  // uncategorised" — visible and selectable, because hiding them would hide real stock.
   const { rows } = await db.query(
-    `SELECT id, name, description, price, category_key, sku, section,
-            veg_flag, duration_mins, variants_json, image_url, facets,
-            is_active, is_bookable, stock, availability_json,
-            booking_config_json, tags, pushed_to_store,
-            badge, is_featured, featured_sort, created_at, updated_at
-     FROM brand_products
-     WHERE ${conditions.join(' AND ')}
-     ORDER BY section NULLS LAST, name ASC`,
+    `SELECT p.id, p.name, p.description, p.price, p.category_key, p.sku, p.section,
+            p.veg_flag, p.duration_mins, p.variants_json, p.image_url, p.facets,
+            p.is_active, p.is_bookable, p.stock, p.availability_json,
+            p.booking_config_json, p.tags, p.pushed_to_store,
+            p.badge, p.is_featured, p.featured_sort, p.created_at, p.updated_at,
+            p.category_node_id,
+            cn.name AS category_label,
+            NULLIF(concat_ws(' › ', cn.segment, cn.category, cn.name), '') AS category_path
+     FROM brand_products p
+     LEFT JOIN category_nodes cn ON cn.id = p.category_node_id
+     WHERE ${conditions.map(c => `p.${c}`).join(' AND ')}
+     ORDER BY cn.name NULLS LAST, p.section NULLS LAST, p.name ASC`,
     params
   );
 

@@ -239,6 +239,31 @@ export const brandApi = {
   getCampaigns: () => api.get('/campaigns'),
   getCampaign: (id) => api.get(`/campaigns/${id}`),
   getCampaignLive: (id) => api.get(`/campaigns/${id}/live`),
+
+  // ── Stage 2 · building a campaign from the phone ───────────────────────────
+  // Contract: features/stage-2-build-a-campaign-from-the-phone
+  // Every endpoint below already existed on the server — the app could list, publish and
+  // end a campaign but had no way to CREATE one, so the Campaigns tab ended in a link
+  // that opened the web dashboard. These are the five thin methods that were missing.
+  //
+  // createCampaign takes a name and a start date and NOTHING else. The server ignores any
+  // budget or end date sent to it and derives both from the sets (Part 5), so sending
+  // them would be a lie the screen tells itself.
+  createCampaign: (data) => api.post('/campaigns', data),
+  updateCampaign: (id, data) => api.patch(`/campaigns/${id}`, data),
+  // set_budget is OMITTED for a paid set built on the phone: the server derives it from
+  // the sum of that set's agreed fees and keeps it in step with every later invite.
+  createCampaignSet: (campaignId, data) => api.post(`/campaigns/${campaignId}/sets`, data),
+  updateCampaignSet: (campaignId, setId, data) => api.patch(`/campaigns/${campaignId}/sets/${setId}`, data),
+  deleteCampaignSet: (campaignId, setId) => api.delete(`/campaigns/${campaignId}/sets/${setId}`),
+
+  // What the Review screen shows BEFORE the brand presses Publish. The same evaluation
+  // publish enforces, so the screen can never offer a button the server refuses.
+  getPublishCheck: (id) => api.get(`/campaigns/${id}/publish-check`),
+  // "What a shopper pays" — runs the shopping app's own offer resolver, so the preview
+  // cannot disagree with the till.
+  previewBasket: (data) => api.post('/campaigns/preview-basket', data),
+
   publishCampaign: (id) => api.post(`/campaigns/${id}/publish`),
   cancelCampaign: (id) => api.post(`/campaigns/${id}/cancel`),
   // collab-part5 — the deliberate finish (completes, not aborts). The only way to close

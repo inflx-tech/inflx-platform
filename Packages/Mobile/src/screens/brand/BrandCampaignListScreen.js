@@ -8,7 +8,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fmtRupees } from '../../theme/tokens';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
-import { openWebDashboard } from '../../utils/openWebDashboard';
 
 // ── locked palette (inline) ──
 const P = {
@@ -180,14 +179,25 @@ export default function BrandCampaignListScreen({ navigation }) {
       contentContainerStyle={{ paddingBottom: 32 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
     >
-      {/* ── Ink header ── */}
+      {/* ── Header · Stage 2 put Create where a brand already looks for it ── */}
       <View style={styles.header}>
-        <Text style={styles.title}>Campaigns</Text>
-        <Text style={styles.countLine}>
-          <Text style={styles.countV}>{campaigns.length}</Text> total{'  ·  '}
-          <Text style={styles.countV}>{liveCount}</Text> live{'  ·  '}
-          <Text style={styles.countV}>{draftCount}</Text> draft{draftCount !== 1 ? 's' : ''}
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Campaigns</Text>
+            <Text style={styles.countLine}>
+              <Text style={styles.countV}>{campaigns.length}</Text> total{'  ·  '}
+              <Text style={styles.countV}>{liveCount}</Text> live{'  ·  '}
+              <Text style={styles.countV}>{draftCount}</Text> draft{draftCount !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.newBtn}
+            onPress={() => navigation.navigate('BrandCampaignCreate')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.newBtnTxt}>+ New</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ── Search row ── */}
@@ -332,12 +342,6 @@ export default function BrandCampaignListScreen({ navigation }) {
         )}
       </View>
 
-      {/* ── Bottom create-on-web CTA ── */}
-      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/dashboard/campaigns')}>
-        <Text style={styles.webLinkIcon}>🌐</Text>
-        <Text style={styles.webLinkText}>Create new campaign on web</Text>
-        <Text style={styles.webLinkArrow}>›</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -356,6 +360,9 @@ const styles = StyleSheet.create({
     borderBottomColor: P.border,
   },
   title: { fontSize: 22, fontWeight: '700', color: P.ink, letterSpacing: -0.4 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  newBtn: { backgroundColor: P.ink, borderRadius: 9, paddingHorizontal: 13, paddingVertical: 8, marginTop: 2 },
+  newBtnTxt: { fontSize: 12, fontWeight: '800', color: P.white },
   countLine: { fontSize: 11.5, color: P.muted2, marginTop: 4 },
   countV: { color: P.ink, fontWeight: '600' },
 
@@ -494,18 +501,8 @@ const styles = StyleSheet.create({
   metaSep:  { fontSize: 10.5, color: P.muted3 },
   metaBudget: { fontSize: 10.5, color: P.ink, fontWeight: '600' },
 
-  // Bottom CTA
-  webLink: {
-    marginHorizontal: 14, marginTop: 14,
-    backgroundColor: P.surface,
-    borderRadius: 12,
-    padding: 13,
-    borderWidth: 1, borderColor: P.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  webLinkIcon: { fontSize: 16 },
-  webLinkText: { flex: 1, fontSize: 11.5, fontWeight: '600', color: P.ink },
-  webLinkArrow: { fontSize: 18, color: P.muted2, fontWeight: '700' },
+  // The old create-on-web CTA and its styles were removed by Stage 2.
+  // Ledger #59: the list, and ONE Create control. Leaving the web link beside the new
+  // + New button would be two doors to one job — the fault that produced four of Stage
+  // 1's twenty-one bugs. Contract: features/stage-2-build-a-campaign-from-the-phone
 });

@@ -230,10 +230,29 @@ test('B1 — creating a campaign no longer demands an end date', () => {
   expect(create).toContain('end_date must be after start_date');
 });
 
-test('the derivation runs on every set mutation, not just creation', () => {
+test('the derivation runs on every write that can move the numbers, not just creation', () => {
   // If a brand switches a set from paid to sales, or deletes the last sales set, the
-  // campaign's dates and total must follow. Three write paths, three recomputes.
-  expect((controller.match(/campaignRollup\.recompute/g) || []).length).toBe(3);
+  // campaign's dates and total must follow.
+  //
+  // This used to assert a bare COUNT of three. Stage 2 made a paid handpick set's budget
+  // derivable from the sum of its agreed fees (§5.2), which added two more write paths
+  // that can move the numbers — inviting a creator, and editing her fee. A count is the
+  // wrong assertion for "every path is covered": it fails when the rule becomes MORE
+  // true, and it would pass if someone moved a recompute from one handler to another.
+  // So name the handlers instead, and let the list grow deliberately.
+  const handlerNames = ['createSet', 'updateSet', 'deleteSet', 'invite', 'updateInfluencer'];
+  const bodyOf = (name: string) => {
+    const start = controller.indexOf(`const ${name} = asyncHandler`);
+    expect(start, `${name} handler not found`).toBeGreaterThan(-1);
+    // Skip past this handler's OWN "= asyncHandler" before looking for the next one —
+    // a fixed +20 lands inside the declaration for any name longer than a few letters.
+    const next = controller.indexOf('= asyncHandler', start + `const ${name} = asyncHandler`.length);
+    return controller.slice(start, next === -1 ? undefined : next);
+  };
+  for (const name of handlerNames) {
+    expect(bodyOf(name), `${name} must recompute the derived numbers`)
+      .toContain('campaignRollup.recompute');
+  }
 });
 
 test('campaign PATCH no longer accepts the derived fields', () => {

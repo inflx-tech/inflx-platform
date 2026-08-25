@@ -38,7 +38,9 @@
  * stays untouched and the risk here is confined to WHICH offer is chosen.
  */
 
-const db = require('../config/db');
+// db is required LAZILY (see campaignRollup for the same reason): fetchLiveGlobalOffers
+// takes its connection as an argument so the candidate rules can be executed against a
+// stubbed catalogue without booting the database config.
 const offerService = require('./offer.service');
 
 // A brand with a pathological number of published offers would turn checkout into a
@@ -62,9 +64,11 @@ const NO_OFFER = Object.freeze({
  * surface uses, so a product's headline discount and a creator's checkout agree on
  * which offers are real.
  */
-async function fetchLiveGlobalOffers(brandId) {
+async function fetchLiveGlobalOffers(brandId, conn = null) {
   if (!brandId) return [];
-  const { rows } = await db.query(
+  // eslint-disable-next-line global-require
+  const cx = conn || require('../config/db');
+  const { rows } = await cx.query(
     `SELECT id, name, offer_type, offer_config_json
        FROM brand_offers
       WHERE brand_id = $1
@@ -101,7 +105,7 @@ function creatorOfferExpired(ci, now = new Date()) {
 /**
  * Build the candidate list. Creator-specific first — it is the tie-break winner.
  */
-async function buildCandidates({ ci, brandId, now }) {
+async function buildCandidates({ ci, brandId, now, conn }) {
   const candidates = [];
 
   const type = ci?.offer_type ?? ci?.ci_offer_type ?? null;
@@ -114,7 +118,7 @@ async function buildCandidates({ ci, brandId, now }) {
     });
   }
 
-  for (const g of await fetchLiveGlobalOffers(brandId)) {
+  for (const g of await fetchLiveGlobalOffers(brandId, conn)) {
     candidates.push({
       source: 'global',
       offer_id: g.id,
@@ -127,21 +131,30 @@ async function buildCandidates({ ci, brandId, now }) {
 }
 
 /**
- * Score every candidate against the whole cart and return the best.
+ * Score EVERY candidate against the cart and say which one wins.
  *
  * Ties go to the creator-specific offer: equal money, but it is the one the brand
  * chose for this creator, so it is the honest thing to name on a receipt.
  *
- * @returns the winning resolveOfferDiscount result plus offer_source
- *          ('creator' | 'global' | null) and offer_id.
+ * Split out of resolveBestOffer for the brand's basket preview
+ * (features/stage-2-build-a-campaign-from-the-phone, ledger #96), which has to show the
+ * losers too — "Buy 2 get 1 free · not applied · needs 3 items" is the sentence that
+ * stops a brand publishing an offer they have not seen resolve.
+ *
+ * The preview must never carry its own copy of this loop. An offer preview that can
+ * disagree with checkout is worse than no preview at all, because the brand then trusts
+ * a number that will not happen.
+ *
+ * @returns { candidates: [{ source, offer_id, offerType, discount_amount, reason,
+ *            applied }], best: null | { scored, c, amount } }
  */
-async function resolveBestOffer({
-  ci, brandId, items = [], priceMap, variantPriceMap, productMetaMap, billAmount, now,
+async function scoreAllCandidates({
+  ci, brandId, items = [], priceMap, variantPriceMap, productMetaMap, billAmount, now, conn,
 }) {
-  const candidates = await buildCandidates({ ci, brandId, now });
-  if (candidates.length === 0) return { ...NO_OFFER };
-
+  const candidates = await buildCandidates({ ci, brandId, now, conn });
+  const scoredAll = [];
   let best = null;
+
   for (const c of candidates) {
     const scored = offerService.resolveOfferDiscount({
       offerType: c.offerType,
@@ -153,6 +166,14 @@ async function resolveBestOffer({
       billAmount,
     });
     const amount = Number(scored.discount_amount || 0);
+    scoredAll.push({
+      source: c.source,
+      offer_id: c.offer_id,
+      offer_type: c.offerType,
+      discount_amount: amount,
+      reason: scored.reason || null,
+      applied: amount > 0,
+    });
     if (amount <= 0) continue;                       // did not apply to this cart
 
     if (!best) { best = { scored, c, amount }; continue; }
@@ -162,6 +183,23 @@ async function resolveBestOffer({
       best = { scored, c, amount };
     }
   }
+
+  scoredAll.forEach((s) => {
+    s.wins = !!best && s.source === best.c.source && s.offer_id === best.c.offer_id && s.applied;
+  });
+
+  return { candidates: scoredAll, best, considered: candidates.length };
+}
+
+/**
+ * The winner alone — what every checkout path calls.
+ *
+ * @returns the winning resolveOfferDiscount result plus offer_source
+ *          ('creator' | 'global' | null) and offer_id.
+ */
+async function resolveBestOffer(args) {
+  const { candidates, best, considered } = await scoreAllCandidates(args);
+  if (considered === 0) return { ...NO_OFFER };
 
   if (!best) {
     // Candidates existed but none applied — keep WHY, it is the difference between
@@ -175,6 +213,7 @@ async function resolveBestOffer({
 
 module.exports = {
   resolveBestOffer,
+  scoreAllCandidates,
   fetchLiveGlobalOffers,
   creatorOfferExpired,
   MAX_GLOBAL_CANDIDATES,

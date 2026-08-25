@@ -12,6 +12,15 @@ const {
 } = require('../services/offerConfig.validator');
 // collab-part2 — consuming a handshake agreement when it is briefed into a set.
 const handshakeService = require('../services/handshake.service');
+// stage-2 — the one definition of what must be true before a campaign may be published,
+// shared by publish and by the Review screen's read-only check.
+const publishGate = require('../services/publishGate.service');
+// stage-2 ledger #96 — the brand's basket preview goes through the SAME resolver the
+// shopping app's checkout uses. A preview that can disagree with the till is worse than
+// no preview.
+const offerResolution = require('../services/offerResolution.service');
+// stage-2 ledger #69 — the one place the channel vocabulary is written down.
+const campaignChannels = require('../services/campaignChannels');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase A12.2 — discover_filter entitlement helper.
@@ -617,6 +626,18 @@ function assertValidFormats(formatsJson) {
   }
 }
 
+/**
+ * stage-2 §5.3 / ledger #69 — the sales-set mirror of formats_json.
+ *
+ * The rule itself lives in services/campaignChannels so the phone, the web wizard and any
+ * later reader all name the same channels. This is only the HTTP shell that turns its
+ * verdict into the error shape the API speaks.
+ */
+function assertValidChannels(goal, channels) {
+  const v = campaignChannels.validateChannels(goal, channels);
+  if (!v.ok) throw new AppError('VALIDATION_ERROR', v.message, 422, v.field);
+}
+
 const createSet = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   const campaign = await getCampaignOrThrow(req.params.id, brand.id);
@@ -635,6 +656,8 @@ const createSet = asyncHandler(async (req, res) => {
     formats_json,
     assets_json,
     open_group_filters,
+    // stage-2 §5.3 — sales/hybrid guidance: which channels a creator here may use.
+    channels_json,
   } = req.body;
 
   if (!name || !name.trim()) {
@@ -646,13 +669,24 @@ const createSet = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', `goal must be one of: ${VALID_GOALS.join(', ')}`, 422, 'goal');
   }
 
-  // Engagement/Hybrid require set_budget; Conversion must not have one
-  if ((goal === 'engagement' || goal === 'hybrid') && set_budget == null) {
-    throw new AppError('VALIDATION_ERROR', 'set_budget is required for engagement and hybrid goals', 422, 'set_budget');
+  // stage-2 §5.2 — a paid HANDPICK set may omit set_budget, in which case campaignRollup
+  // derives it from the sum of that set's agreed fees, and keeps it in step with every
+  // later invite. That is what makes the board's "Budget · calculated" honest instead of
+  // asking the brand to re-add numbers they already settled one at a time.
+  //
+  // Still required for OPEN-GROUP paid sets: they have no creator list to sum — their
+  // money is a projection (per_influencer_budget × max_cap) — so deriving would write
+  // zero and publish would then refuse the campaign for having no budget. A typed value
+  // is always kept, so brand-web's deliberate headroom over the fee sum survives.
+  const isOpenGroup = (influencer_mode || 'handpick') === 'open_group';
+  if ((goal === 'engagement' || goal === 'hybrid') && set_budget == null && isOpenGroup) {
+    throw new AppError('VALIDATION_ERROR', 'set_budget is required for an open-group engagement or hybrid set — there is no creator list to derive it from', 422, 'set_budget');
   }
   if (goal === 'conversion' && set_budget != null) {
     throw new AppError('VALIDATION_ERROR', 'set_budget must not be set for conversion goals', 422, 'set_budget');
   }
+
+  assertValidChannels(goal, channels_json);
 
   // Coupon prefix is optional for conversion/hybrid handpick sets (each invite
   // can carry its own coupon_code); open-group joiners have no per-influencer
@@ -675,8 +709,8 @@ const createSet = asyncHandler(async (req, res) => {
     `INSERT INTO campaign_sets
        (campaign_id, name, goal, influencer_mode, set_budget, per_influencer_budget,
         max_cap, window_start, window_end, brief, coupon_prefix,
-        formats_json, assets_json, open_group_filters)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        formats_json, assets_json, open_group_filters, channels_json)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      RETURNING *`,
     [
       campaign.id,
@@ -693,6 +727,9 @@ const createSet = asyncHandler(async (req, res) => {
       formats_json ? JSON.stringify(formats_json) : '[]',
       assets_json ? JSON.stringify(assets_json) : '[]',
       open_group_filters ? JSON.stringify(open_group_filters) : '{}',
+      // NULL, not '{}' — "this set never stated a channel expectation" is a different
+      // thing from "it stated an empty one", and only NULL is true of every set today.
+      channels_json ? JSON.stringify(channels_json) : null,
     ]
   );
 
@@ -708,15 +745,22 @@ const updateSet = asyncHandler(async (req, res) => {
   const allowed = [
     'name', 'goal', 'influencer_mode', 'set_budget', 'per_influencer_budget',
     'max_cap', 'window_start', 'window_end', 'brief', 'coupon_prefix',
-    'formats_json', 'assets_json', 'open_group_filters',
+    'formats_json', 'assets_json', 'open_group_filters', 'channels_json',
   ];
   if (req.body.formats_json !== undefined) assertValidFormats(req.body.formats_json);
+  if (req.body.channels_json !== undefined) {
+    // The goal being edited in the same call wins; otherwise the stored one applies.
+    assertValidChannels(req.body.goal !== undefined ? req.body.goal : set.goal, req.body.channels_json);
+  }
 
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) {
       if (['formats_json', 'assets_json', 'open_group_filters'].includes(field)) {
         updates[field] = JSON.stringify(req.body[field]);
+      } else if (field === 'channels_json') {
+        // Explicit null clears it — the wizard's back button must be able to unsay this.
+        updates[field] = req.body[field] === null ? null : JSON.stringify(req.body[field]);
       } else {
         updates[field] = req.body[field];
       }
@@ -1226,7 +1270,13 @@ const invite = asyncHandler(async (req, res) => {
     phone: inf.phone,
   });
 
-  return success(res, { campaign_influencer: ci, agreement_warnings }, 201);
+  // stage-2 §5.2 — a paid handpick set whose budget was never typed takes the sum of its
+  // agreed fees, and that sum has just changed. recompute fills the set first and then
+  // rolls the campaign total up from it, so the two can never be out of step by one
+  // invite. A set whose budget WAS typed is untouched.
+  const campaign_derived = await campaignRollup.recompute(campaign.id);
+
+  return success(res, { campaign_influencer: ci, agreement_warnings, campaign_derived }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1354,7 +1404,12 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     ]
   );
 
-  return success(res, { campaign_influencer: rows[0] });
+  // stage-2 §5.2 — editing a creator's fee moves a derived set budget with it. Without
+  // this, changing a fee on a phone-built set would leave the budget at the old sum and
+  // the wallet gate would be checked against a number nobody agreed to.
+  const campaign_derived = await campaignRollup.recompute(campaign.id);
+
+  return success(res, { campaign_influencer: rows[0], campaign_derived });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1397,6 +1452,156 @@ const createOffer = asyncHandler(async (req, res) => {
 // POST /campaigns/:id/publish
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * POST /campaigns/preview-basket — "what a shopper pays".
+ * Contract: features/stage-2-build-a-campaign-from-the-phone · ledger #96
+ * Board: 04-preview/mockups/stage2-screens.html panel ⑧
+ *
+ * The brand picks a sample basket and sees every offer that could apply, which one wins,
+ * what the shopper pays, and what the creator earns. Offer stacking is the single most
+ * confusing thing about running a shop, and a brand publishing an offer they have never
+ * seen resolve is how "why did this sell for that price?" arrives a week later.
+ *
+ * WHY IT GOES THROUGH THE SAME RESOLVER
+ * offerResolution.scoreAllCandidates is the function the shopping app's checkout uses. A
+ * preview with its own copy of the arithmetic would eventually disagree with the till,
+ * and a preview that can disagree with the till is worse than no preview — the brand
+ * trusts a number that will not happen. So this endpoint builds the resolver's inputs and
+ * renders its output. It holds no discount maths of its own.
+ *
+ * The only door onto that resolver before this was POST /transactions/cart/price, which
+ * is follower-authenticated. A brand could not call it.
+ */
+const previewBasket = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  const {
+    product_ids = [],
+    quantities = {},
+    commission_pct,
+    brand_offer_id,
+    offer_type,
+    offer_config_json,
+  } = req.body || {};
+
+  if (!Array.isArray(product_ids) || product_ids.length === 0) {
+    throw new AppError('VALIDATION_ERROR', 'Pick at least one product for the sample basket', 422, 'product_ids');
+  }
+  if (product_ids.length > 20) {
+    throw new AppError('VALIDATION_ERROR', 'A sample basket is capped at 20 products', 422, 'product_ids');
+  }
+  // ANY($2::uuid[]) makes Postgres reject a malformed id with a 500 rather than a refusal
+  // the client can read. Check the shape here so a bad id is a named 422.
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!product_ids.every(id => UUID.test(String(id)))) {
+    throw new AppError('VALIDATION_ERROR', 'product_ids must be product ids', 422, 'product_ids');
+  }
+
+  // Only this brand's live products — a preview against someone else's catalogue, or
+  // against stock that is not listed, would be a preview of something that cannot happen.
+  const { rows: products } = await db.query(
+    `SELECT id, name, price, image_url, is_active
+       FROM brand_products
+      WHERE brand_id = $1 AND id = ANY($2::uuid[]) AND is_active = true`,
+    [brand.id, product_ids]
+  );
+  if (!products.length) {
+    throw new AppError('VALIDATION_ERROR', 'None of those products are live in your store', 422, 'product_ids');
+  }
+
+  const items = products.map(p => ({
+    product_id: p.id,
+    variant_id: null,
+    quantity: Math.max(1, Number(quantities[p.id] || 1)),
+  }));
+  const priceMap = new Map(products.map(p => [p.id, parseFloat(p.price) || 0]));
+  const subtotal = items.reduce((sum, i) => sum + (priceMap.get(i.product_id) || 0) * i.quantity, 0);
+
+  // The candidate shape the resolver expects from a campaign_influencers row. Built here
+  // rather than read from the database because the brand is previewing an offer they have
+  // not saved yet — that is the whole point of a preview.
+  const ci = (offer_type || brand_offer_id)
+    ? { offer_type: offer_type || null, offer_config_json: offer_config_json || {}, brand_offer_id: brand_offer_id || null }
+    : null;
+
+  const { candidates, best } = await offerResolution.scoreAllCandidates({
+    ci, brandId: brand.id, items, priceMap, variantPriceMap: new Map(), billAmount: subtotal,
+  });
+
+  const discount = best ? Number(best.amount) : 0;
+  const shopperPays = Math.max(0, parseFloat((subtotal - discount).toFixed(2)));
+  const pct = commission_pct != null ? Number(commission_pct) : null;
+
+  return success(res, {
+    basket: products.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: parseFloat(p.price) || 0,
+      image_url: p.image_url || null,
+      quantity: items.find(i => i.product_id === p.id).quantity,
+    })),
+    subtotal: parseFloat(subtotal.toFixed(2)),
+    // Every candidate, winner and losers alike, each with the reason it did not apply.
+    candidates,
+    winner: best ? { source: best.c.source, offer_id: best.c.offer_id, offer_type: best.c.offerType, discount_amount: parseFloat(discount.toFixed(2)) } : null,
+    shopper_pays: shopperPays,
+    // Commission is earned on what the shopper actually paid, not on the list price.
+    creator_earns: pct != null && pct > 0 ? parseFloat((shopperPays * pct / 100).toFixed(2)) : null,
+    commission_pct: pct,
+  });
+});
+
+/**
+ * GET /campaigns/:id/publish-check — what the Review screen shows before Publish.
+ * Contract: features/stage-2-build-a-campaign-from-the-phone · ledger #63
+ *
+ * Read-only, and it is the SAME evaluation publish enforces. A screen that computed its
+ * own version of "can this publish" would eventually offer a Publish button the server
+ * refuses, or grey one out that would have worked.
+ *
+ * The wallet is reported here too, so the Review screen can state the shortfall in the
+ * same list rather than surfacing it only as a failed publish.
+ */
+const publishCheck = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  const campaign = await getCampaignOrThrow(req.params.id, brand.id);
+
+  const { blockers, warnings } = await publishGate.evaluate(campaign.id, brand.id);
+
+  const { rows: sets } = await db.query(
+    `SELECT goal, set_budget FROM campaign_sets WHERE campaign_id = $1`, [campaign.id]);
+  const needsBudget = sets.some(s => s.goal === 'engagement' || s.goal === 'hybrid');
+
+  let wallet = null;
+  if (needsBudget) {
+    const { rows: brows } = await db.query(`SELECT wallet_balance FROM brands WHERE id = $1`, [brand.id]);
+    const balance = parseFloat(brows[0].wallet_balance) || 0;
+    const required = parseFloat(campaign.total_budget) || 0;
+    wallet = { required, balance, short: Math.max(0, required - balance) };
+    if (required <= 0) {
+      blockers.push({
+        code: 'NO_BUDGET',
+        message: 'This campaign has a set you pay for, but its budget works out at zero. Check the fees you agreed with each creator.',
+        field: 'total_budget',
+      });
+    } else if (balance < required) {
+      blockers.push({
+        code: 'WALLET_INSUFFICIENT',
+        message: `Your wallet is short by ₹${(required - balance).toFixed(2)}. A content set can't publish until the wallet covers the fees.`,
+        field: 'wallet_balance',
+        required, balance,
+      });
+    }
+  }
+
+  return success(res, {
+    can_publish: blockers.length === 0 && campaign.status === 'draft',
+    status: campaign.status,
+    blockers,
+    warnings,
+    wallet,
+  });
+});
+
 const publish = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   const campaign = await getCampaignOrThrow(req.params.id, brand.id);
@@ -1412,6 +1617,28 @@ const publish = asyncHandler(async (req, res) => {
   );
   if (!sets.length) {
     throw new AppError('VALIDATION_ERROR', 'Campaign must have at least one set before publishing', 422);
+  }
+
+  // stage-2 slice 2 — the four blockers that did not exist. Until now publish enforced
+  // only the wallet, so a creator could be contracted into a sales set with NOTHING to
+  // sell: since Part 4, having something to sell is the gate for appearing in the shopping
+  // app at all. The rules live in publishGate so the Review screen and this path cannot
+  // disagree about whether a campaign is publishable.
+  //
+  // Deliberately BEFORE the wallet check: a brand should not be told to top up money for a
+  // campaign that is broken for a different reason.
+  const gate = await publishGate.evaluate(campaign.id, brand.id);
+  if (gate.blockers.length) {
+    const first = gate.blockers[0];
+    throw new AppError(
+      'VALIDATION_ERROR',
+      gate.blockers.length === 1
+        ? first.message
+        : `${first.message} (and ${gate.blockers.length - 1} other thing${gate.blockers.length === 2 ? '' : 's'} to fix)`,
+      422,
+      first.field,
+      { blockers: gate.blockers, warnings: gate.warnings }
+    );
   }
 
   // Phase A12.5 — open-group feature gates fire BEFORE wallet check / tx open,
@@ -2676,6 +2903,8 @@ module.exports = {
   updateInfluencer,
   createOffer,
   publish,
+  publishCheck,
+  previewBasket,
   getLiveHierarchy,
   searchInfluencers,
   openGroupMatches,

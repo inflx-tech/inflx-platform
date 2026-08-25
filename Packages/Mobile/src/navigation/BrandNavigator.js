@@ -29,6 +29,15 @@ import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
 import BrandFindCreatorsScreen from '../screens/brand/BrandFindCreatorsScreen';
 import BrandProductPickerScreen from '../screens/brand/BrandProductPickerScreen';
+// Stage 2 — building a campaign from the phone.
+// Contract: features/stage-2-build-a-campaign-from-the-phone
+import BrandCampaignCreateScreen from '../screens/brand/BrandCampaignCreateScreen';
+import BrandCampaignBuilderScreen from '../screens/brand/BrandCampaignBuilderScreen';
+import BrandSetWizardScreen from '../screens/brand/BrandSetWizardScreen';
+import BrandAllocationScreen from '../screens/brand/BrandAllocationScreen';
+import BrandBasketPreviewScreen from '../screens/brand/BrandBasketPreviewScreen';
+import BrandCampaignReviewScreen from '../screens/brand/BrandCampaignReviewScreen';
+import BrandAgreementDetailScreen from '../screens/brand/BrandAgreementDetailScreen';
 import BrandCategoryPickerScreen from '../screens/brand/BrandCategoryPickerScreen';
 import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
@@ -113,6 +122,16 @@ function CampaignsStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CampaignList" component={BrandCampaignListScreen} />
       <Stack.Screen name="CampaignDetail" component={BrandCampaignDetailScreen} />
+      {/* Stage 2 — the campaign wizard. All in this stack, because a cross-stack
+          navigate fails silently at runtime and passes every build check. */}
+      <Stack.Screen name="BrandCampaignCreate" component={BrandCampaignCreateScreen} />
+      <Stack.Screen name="BrandCampaignBuilder" component={BrandCampaignBuilderScreen} />
+      <Stack.Screen name="BrandSetWizard" component={BrandSetWizardScreen} />
+      <Stack.Screen name="BrandAllocation" component={BrandAllocationScreen} />
+      <Stack.Screen name="BrandBasketPreview" component={BrandBasketPreviewScreen} />
+      <Stack.Screen name="BrandCampaignReview" component={BrandCampaignReviewScreen} />
+      <Stack.Screen name="BrandAgreementDetail" component={BrandAgreementDetailScreen} />
+      <Stack.Screen name="BrandDiary" component={BrandDiaryScreen} />
       <Stack.Screen name="BrandCampaignInfluencersList" component={BrandCampaignInfluencersListScreen} />
       <Stack.Screen name="BrandCampaignSetsList" component={BrandCampaignSetsListScreen} />
       <Stack.Screen name="BrandCampaignReviewQueue" component={BrandCampaignReviewQueueScreen} />

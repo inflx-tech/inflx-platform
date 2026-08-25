@@ -17,6 +17,11 @@ router.patch('/:id',   ...brandApproved, ctrl.update);
 router.delete('/:id',  ...brandApproved, ctrl.remove);
 
 // ── Campaign Publish / Cancel ─────────────────────────────────────────────────
+// stage-2 ledger #96 — brand-side basket preview. Static path, so it is declared BEFORE
+// the /:id routes that would otherwise swallow it.
+router.post('/preview-basket', ...brandAuth, ctrl.previewBasket);
+
+router.get('/:id/publish-check', ...brandAuth, ctrl.publishCheck);
 router.post('/:id/publish', ...brandAuth, ctrl.publish);
 router.post('/:id/cancel',  ...brandAuth, ctrl.cancel);
 // collab-part5 — the deliberate finish. Distinct from cancel: completes rather than

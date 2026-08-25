@@ -6,7 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
-import { fromMode } from '../../utils/workingStyle';
+import { termsLine, settledLine, byExpiry } from '../../utils/agreementSummary';
 import CreatorAvatar from '../../components/CreatorAvatar';
 // Rendered INSIDE this tab rather than pushed as their own pages.
 import BrandFindCreatorsScreen from './BrandFindCreatorsScreen';
@@ -41,51 +41,17 @@ const SUB_TABS = [
 ];
 
 const fmtD = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '');
-const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
-
-/** Money and time, the two terms a row always shows. */
-function termsLine(t) {
-  if (!t) return '';
-  const bits = [];
-  if (t.money?.fee != null) bits.push(money(t.money.fee));
-  if (t.money?.commission_pct != null) bits.push(`${t.money.commission_pct}%`);
-  if (t.time?.post_by) bits.push(`post by ${String(t.time.post_by).slice(0, 10)}`);
-  return bits.join(' · ');
-}
-
-const DEL_WORD = {
-  reel: 'reel', post: 'post', story: 'story',
-  youtube_video: 'YouTube video', youtube_short: 'YouTube Short',
-};
 
 /**
- * What was actually SETTLED — the reason this row exists.
- * Contract: features/creators-tab-shape (item 9)
+ * termsLine and settledLine MOVED to utils/agreementSummary in Stage 2.
+ * Contract: features/creators-tab-shape (item 9) · features/stage-2-build-a-campaign-from-the-phone
  *
- * termsLine above is for a conversation in flight, where money and the date are what
- * keep changing. An agreement is finished, and the brand reading this row is about to
- * brief the creator: it needs to say what the fee BUYS and where she works, because
- * those are the two things a brief has to be written around.
+ * The campaign wizard needs the same two lines in three more places — the agreement
+ * pick-list, the agreement detail it opens, and the read-back at step 4. Leaving a copy
+ * here would be the fault this programme has already had to fix four times: two things
+ * doing one job, and only one of them getting the change. The rules they encode are
+ * unchanged, and they are now checkable without a handset.
  */
-function settledLine(t) {
-  if (!t) return '';
-  const bits = [];
-  if (t.money?.fee != null) bits.push(money(t.money.fee));
-  if (t.money?.commission_pct != null) bits.push(`${t.money.commission_pct}% per sale`);
-  // "2 reels · 1 story" rather than "3 deliverables" — a count alone briefs nobody.
-  if (Array.isArray(t.deliverables) && t.deliverables.length) {
-    t.deliverables.forEach(d => {
-      const w = DEL_WORD[d.type] || d.type;
-      bits.push(`${d.count} ${w}${d.count > 1 ? 's' : ''}`);
-    });
-  }
-  // Read the stored value, not the sentence describeMode builds from it — matching on
-  // prose would break the moment that wording is edited.
-  const { place, shipping } = fromMode(t.mode);
-  if (place === 'visit') bits.push('store visit');
-  else if (place === 'remote') bits.push(shipping === 'yes' ? 'remote, you ship' : 'remote');
-  return bits.join(' · ');
-}
 
 /**
  * Whose turn — the single thing that orders this list.
@@ -275,18 +241,14 @@ export default function BrandCreatorsScreen({ navigation }) {
   // Soonest-expiring first. An agreement 90 days unbriefed is lost, and a list ordered
   // by when it was agreed buries exactly the row that needs acting on. Anything with no
   // clock sits at the end rather than jumping the queue.
-  const byExpiry = [...agreements].sort((x, y) => {
-    const a1 = x.expires_at ? new Date(x.expires_at).getTime() : Infinity;
-    const b1 = y.expires_at ? new Date(y.expires_at).getTime() : Infinity;
-    return a1 - b1;
-  });
+  const sortedAgreements = byExpiry(agreements);
 
   if (tab === 'agreed') {
     return (
       <View style={s.container}>
         {header}
         <FlatList
-          data={byExpiry}
+          data={sortedAgreements}
           keyExtractor={(a) => String(a.id)}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ig.text} />}
           renderItem={({ item }) => {
@@ -318,7 +280,7 @@ export default function BrandCreatorsScreen({ navigation }) {
               <Text style={s.emptyS}>When a creator accepts, they wait here until you build a campaign.</Text>
             </View>
           }
-          contentContainerStyle={byExpiry.length === 0 ? { flexGrow: 1 } : { paddingBottom: 28 }}
+          contentContainerStyle={sortedAgreements.length === 0 ? { flexGrow: 1 } : { paddingBottom: 28 }}
         />
       </View>
     );

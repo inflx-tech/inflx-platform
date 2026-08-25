@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 2 — A brand builds a campaign from the phone</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:840px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:710px;overflow-y:auto}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.wiz{display:flex;gap:5px;padding:11px 14px 9px;border-bottom:1px solid var(--lineSoft)}
+.wstep{flex:1;height:3px;border-radius:2px;background:var(--lineSoft)}
+.wstep.on{background:var(--ink)}.wstep.done{background:var(--green)}
+.wlab{padding:10px 14px 0;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase}
+.wq{padding:2px 14px 11px;font-family:'Outfit';font-size:16px;font-weight:800;line-height:1.3}
+.opt{margin:0 14px 8px;border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+.opt.on{border-color:var(--ink);border-width:1.5px;background:#FAFAFA}
+.opt .ot{font-size:12.5px;font-weight:800;font-family:'Outfit';display:flex;justify-content:space-between;align-items:center}
+.opt .od{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:3px;line-height:1.5}
+.opt .oc{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;background:var(--lineSoft);color:var(--mut)}
+.opt.on .oc{background:var(--ink);color:#fff}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.chip .x{margin-left:5px;opacity:.6}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.inp.ph2{color:var(--mut2);font-weight:600}
+.inp.calc{background:#F7F7F7;color:var(--mut);border-style:dashed}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.setcard{margin:0 14px 9px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sethd{padding:10px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);display:flex;justify-content:space-between;font-size:11.5px;font-weight:800}
+.setbd{padding:10px 12px}
+
+.tr{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--lineSoft);align-items:flex-start}
+.pic{width:38px;height:38px;border-radius:50%;background:#EDE7E0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tr .m{flex:1;min-width:0}
+.tr .bn{font-size:12.5px;font-weight:800;font-family:'Outfit'}
+.tr .tm{font-size:10.5px;color:var(--text2);font-weight:650;margin-top:2px}
+.tr .st{font-size:9.5px;font-weight:800;margin-top:4px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.c-you{color:var(--yInk)}.d-you{background:var(--y)}
+.c-done{color:var(--green)}.d-done{background:var(--green)}
+.chev{color:var(--mut2);font-size:15px;align-self:center}
+.cbx{width:19px;height:19px;border-radius:5px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:transparent;flex-shrink:0;margin-top:10px}
+.cbx.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cbx.rd{border-radius:50%}
+.lhd{padding:11px 14px 6px;font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;display:flex;justify-content:space-between}
+
+.catrow{border-top:1px solid var(--lineSoft);padding:9px 12px}
+.cathd{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:800;color:var(--text2);letter-spacing:.2px;margin-bottom:7px}
+.cathd .n{color:var(--mut2);font-family:'JetBrains Mono';font-size:9.5px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pc{position:relative}
+.pimg{width:100%;aspect-ratio:4/5;border-radius:7px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:17px}
+.pc .tk{position:absolute;top:3px;right:3px;width:17px;height:17px;border-radius:5px;border:1.5px solid #fff;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:transparent}
+.pc.on .tk{background:var(--ink);border-color:var(--ink);color:#fff}
+.pc.on .pimg{outline:2px solid var(--ink);outline-offset:-2px}
+.pnm{font-size:8px;font-weight:700;margin-top:3px;line-height:1.25;color:var(--text2)}
+.ppr{font-size:8.5px;font-weight:800;font-family:'JetBrains Mono'}
+.srch{margin:10px 12px;border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:11.5px;color:var(--mut2);font-weight:650}
+.selbar{position:sticky;bottom:0;background:var(--white);border-top:1px solid var(--line);padding:10px 14px}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-rm{background:var(--redBg);color:var(--red)}
+.gsale{background:var(--greenBg);color:var(--green);font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px}
+.gcont{background:var(--blueBg);color:var(--blue);font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px}
+.gboth{background:var(--purpleBg);color:var(--purple);font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px}
+.tbar{display:flex;border-top:1px solid var(--lineSoft);padding:8px 0 10px;background:var(--white)}
+.tbar div{flex:1;text-align:center;font-size:8.5px;font-weight:800;color:var(--mut2)}
+.tbar div.on{color:var(--ink)}
+.tbar .ic{font-size:15px;display:block;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Stage 2 — A brand builds a campaign from the phone</h1>
+  <p>features/stage-2-build-a-campaign-from-the-phone · 2026-08-25 · EXTRACTED from FINAL 2 (brand-mobile-spine) and action ledger 59–98. Same layout, same components, same button wording.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① The whole wizard</button>
+  <button class="tab" data-v="v1">② Campaigns landing</button>
+  <button class="tab" data-v="v2">③ Shell + sets</button>
+  <button class="tab" data-v="v3">④ Step 1 · the aim</button>
+  <button class="tab" data-v="v4">⑤ Step 2 · basics</button>
+  <button class="tab" data-v="v5">⑥ Step 3 · agreements</button>
+  <button class="tab" data-v="v6">⑦ Step 4 ① what she sells</button>
+  <button class="tab" data-v="v7">⑧ Step 4 ② the offer</button>
+  <button class="tab" data-v="v8">⑨ Review + blockers</button>
+  <button class="tab" data-v="v9">⑩ Against what exists</button>
+</div>
+
+<!-- ① MAP -->
+<div class="view on" id="v0">
+  <div class="vh">Twelve screens, four steps, one new idea</div>
+  <div class="vs">Everything here comes out of FINAL 2. Nothing was redesigned. What changed is which of those screens Stage 2 actually builds, and what each one costs against the code that exists today.</div>
+
+  <div class="note key"><b>The one new idea, and the reason this fits on a phone at all.</b> The old wizard asked the brand to invent commission, dates and terms for every creator. After the handshake all of that already exists — so step 4 section ① is a <b>read-back</b>, and the only genuine decision left in the whole wizard is <b>one offer</b>.</div>
+
+  <div class="card">
+    <h3>The twelve screens</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Screen</th><th>Ledger</th><th>What it asks</th><th>Against today</th></tr>
+      <tr><td class="mono">S1</td><td><b>Campaigns landing</b></td><td class="mono">59</td><td>nothing — the list, and one + New</td><td><span class="st2 s-ch">rework</span></td></tr>
+      <tr><td class="mono">S2</td><td><b>The shell</b></td><td class="mono">60</td><td>a name and a start date</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S3</td><td><b>Your sets</b></td><td class="mono">61 · 62</td><td>add, edit, remove — then review</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S4</td><td><b>Step 1 · the aim</b></td><td class="mono">64</td><td>sales · content · both</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S5</td><td><b>Step 2 · basics</b></td><td class="mono">65–71</td><td>three branches off one screen</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S6</td><td><b>Step 3 · agreements</b></td><td class="mono">72–77</td><td>tick who belongs in this set</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S7</td><td><b>Agreement detail</b></td><td class="mono">75</td><td>re-read the terms, open the diary</td><td><span class="st2 s-ch">connect</span></td></tr>
+      <tr><td class="mono">S8</td><td><b>Step 4 · terms</b></td><td class="mono">78–82</td><td>read back ①, decide ②</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S9</td><td><b>What she can sell</b></td><td class="mono">83–85 · 88</td><td>store · category · products</td><td><span class="st2 s-ch">rework</span></td></tr>
+      <tr><td class="mono">S10</td><td><b>Product picker</b></td><td class="mono">86 · 87 · 93</td><td>grouped, searchable, images</td><td><span class="st2 s-ui">merge two into one</span></td></tr>
+      <tr><td class="mono">S11</td><td><b>Basket preview</b></td><td class="mono">96</td><td>which offer wins, what she earns</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td class="mono">S12</td><td><b>Review and publish</b></td><td class="mono">63</td><td>drift, blockers, publish</td><td><span class="st2 s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note good"><b>Two things already on this phone get reused rather than rebuilt.</b> The <b>offer builder</b> — the offers library already creates discounts on the phone — and the <b>category picker</b>, already backed by the real listing tree. Neither is redrawn here.</div>
+
+  <div class="note bad"><b>One thing gets merged, not added.</b> The brand app already carries <b>two</b> product pickers — a full screen for the request composer, and a modal for the offer builders. Ledger #86 says this picker has four callers. A third would guarantee they drift, which is the fault behind four of Stage 1's twenty-one bugs. So the first slice of this stage merges them.</div>
+
+  <div class="note info"><b>What is deliberately not here.</b> Open-group sets, cold invites, adding or pricing products, and the needs-you drill-down. The first two are removed by ledger #71 and #76; the third is the founder's boundary; the fourth is Stage 3.</div>
+</div>
+
+<!-- ② LANDING -->
+<div class="view" id="v1">
+  <div class="vh">Campaigns landing — the link becomes a button</div>
+  <div class="vids">LEDGER 59 · rework of BrandCampaignListScreen</div>
+  <div class="vs">The list, and one Create control. Nothing competes with those two.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div style="flex:1"><div class="ttl">Campaigns</div><div class="sub">2 RUNNING &middot; 1 ENDED</div></div><button class="btn pri" style="width:auto;padding:7px 13px;font-size:11px">+ New</button></div>
+        <div class="body">
+          <div class="tr">
+            <div class="pic" style="border-radius:11px;background:var(--ink);color:#fff;font-family:'Outfit';font-size:11px;font-weight:800">FS</div>
+            <div class="m"><div class="bn">Festive Season 2026</div>
+              <div class="tm">Sales &middot; 2 sets &middot; 4 creators &middot; started 1 Sep</div>
+              <div class="st c-you"><span class="dot d-you"></span>2 CREATORS NEED YOU &middot; &#8377;82,300 SOLD</div></div>
+            <div class="chev">&#8250;</div>
+          </div>
+          <div class="tr">
+            <div class="pic" style="border-radius:11px;background:var(--ink);color:#fff;font-family:'Outfit';font-size:11px;font-weight:800">MC</div>
+            <div class="m"><div class="bn">Monsoon Cottons</div>
+              <div class="tm">Content &middot; 1 set &middot; 2 creators &middot; ends 30 Sep</div>
+              <div class="st c-done"><span class="dot d-done"></span>ALL MOVING &middot; &#8377;30,000 COMMITTED</div></div>
+            <div class="chev">&#8250;</div>
+          </div>
+          <div class="tr" style="opacity:.55">
+            <div class="pic" style="border-radius:11px;background:#EFEFEF;color:#8E8E8E;font-family:'Outfit';font-size:11px;font-weight:800">SS</div>
+            <div class="m"><div class="bn">Summer Silks</div>
+              <div class="tm">Sales &middot; ended 30 Jun</div>
+              <div class="st c-done"><span class="dot d-done"></span>ENDED &middot; &#8377;1,24,000 SOLD</div></div>
+            <div class="chev">&#8250;</div>
+          </div>
+          <div class="dsec" style="border-top:1px solid var(--lineSoft)">
+            <div class="wait y"><b>3 creators agreed and waiting.</b> Build a campaign before their agreements lapse.</div>
+            <button class="btn sec" style="margin-top:10px">Build one with those 3</button>
+          </div>
+        </div>
+        <div class="tbar">
+          <div><span class="ic">&#8962;</span>Home</div><div><span class="ic">&#128101;</span>Creators</div>
+          <div class="on"><span class="ic">&#128227;</span>Campaigns</div><div><span class="ic">&#8377;</span>Wallet</div><div><span class="ic">&#9786;</span>Profile</div>
+        </div>
+      </div>
+      <div class="cap">Every row leads with <b>who needs you</b> and <b>what it sold</b>.<span class="id">59</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note bad"><b>What is removed.</b> The bottom of this screen currently reads <code>Create new campaign on web</code> and opens a browser. It is <b>replaced</b>, not accompanied — leaving both would be two doors to one job, which is the exact fault Stage 1 kept hitting.</div>
+
+      <div class="card">
+        <h3>What each row must carry</h3>
+        <div class="tscroll"><table>
+          <tr><th>Element</th><th>Why</th></tr>
+          <tr><td><b>Aim &middot; sets &middot; creators</b></td><td>The shape, without opening it</td></tr>
+          <tr><td><b>Dates</b></td><td>Sales says <b>started</b> — it has no end date. Content says <b>ends</b>.</td></tr>
+          <tr><td><b>Money</b></td><td>Sales shows what sold. Content shows what is committed.</td></tr>
+          <tr><td><b>Who needs you</b></td><td>The only reason to tap in urgently</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note info"><b>The agreements nudge sits at the bottom deliberately.</b> It matters — ninety days and a negotiation is lost — but it is not what the brand came to this screen for. Home carries the urgent version; this is the reminder in context.</div>
+      <div class="note good"><b>Ended campaigns stay, greyed, and still open.</b> A sales campaign that ran and finished is a track record, not clutter.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ SHELL -->
+<div class="view" id="v2">
+  <div class="vh">The shell — two fields, then the sets do the work</div>
+  <div class="vids">LEDGER 60 · 61 · 62</div>
+  <div class="vs">A campaign holds sets. The shell asks two things and gets out of the way.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">New campaign</div><div class="sub">STEP 1 &middot; NAME IT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <label class="fl2">Campaign name</label>
+            <input class="inp" value="Festive Season 2026">
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px">Creators see this name on their invite.</div>
+          </div>
+          <div class="dsec">
+            <label class="fl2">Starts</label>
+            <input class="inp" value="1 Sep 2026">
+          </div>
+          <div class="dsec">
+            <div class="lock">&#128274; <span><b>No end date and no budget here.</b> Both belong to a set, and both depend on the aim you pick inside it.</span></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Add the first set</button></div>
+        </div>
+      </div>
+      <div class="cap">Two fields. <b>Nothing else lives at campaign level.</b><span class="id">60</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive Season 2026</div><div class="sub">STARTS 1 SEP &middot; 2 SETS</div></div></div>
+        <div class="body">
+          <div class="lhd"><span>Your sets</span></div>
+          <div class="setcard">
+            <div class="sethd"><span>Set 1 &middot; Sarees</span><span class="gsale">SALES &middot; READY</span></div>
+            <div class="setbd">
+              <div class="trm"><div class="k">Creators</div><div class="v" style="font-size:11.5px">2 agreed</div></div>
+              <div class="trm"><div class="k">They can sell</div><div class="v" style="font-size:11.5px">Sarees &middot; 25</div></div>
+              <div class="trm"><div class="k">Follower offer</div><div class="v" style="font-size:11.5px">10% off &#8377;5,000+</div></div>
+              <div class="brow" style="margin-top:9px"><button class="btn sec" style="padding:7px;font-size:11px">Edit</button><button class="btn dgr" style="padding:7px;font-size:11px">Remove</button></div>
+            </div>
+          </div>
+          <div class="setcard">
+            <div class="sethd"><span>Set 2 &middot; Reels</span><span class="gcont">CONTENT</span></div>
+            <div class="setbd">
+              <div class="trm"><div class="k">Creators</div><div class="v" style="font-size:11.5px">1 agreed</div></div>
+              <div class="trm"><div class="k">Deliverables</div><div class="v" style="font-size:11.5px">1 reel + 2 stories</div></div>
+              <div class="trm"><div class="k">Budget</div><div class="v" style="font-size:11.5px">&#8377;30,000 <span class="chip gh" style="padding:1px 6px">calculated</span></div></div>
+              <div class="brow" style="margin-top:9px"><button class="btn sec" style="padding:7px;font-size:11px">Edit</button><button class="btn dgr" style="padding:7px;font-size:11px">Remove</button></div>
+            </div>
+          </div>
+          <div class="dsec"><button class="btn sec">+ Add another set</button></div>
+          <div class="dsec">
+            <div class="wait n">A campaign can hold a sales set and a content set together. <b>Each behaves by its own aim.</b></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Review and publish</button></div>
+        </div>
+      </div>
+      <div class="cap">Sets list. <b>Mixed aims are allowed</b> and each set keeps its own rules.<span class="id">61 &middot; 62</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note key"><b>Why the shell is so thin.</b> Everything that used to sit at campaign level — budget, end date, who posts — either belongs to a set or was already settled at the agreement. What is left is a name and a start date.</div>
+      <div class="note good"><b>The server already agrees with this.</b> <code>POST /campaigns</code> takes a name and a start date and <b>ignores</b> any budget or end date sent to it — it writes NULL for both and derives them from the sets. That rule shipped in Part 5. This screen is the first one built to match it.</div>
+      <div class="note info"><b>A set is the unit of work.</b> One aim, one group of creators, one scope of products, one offer. Two sets in a campaign are two independent arrangements that happen to share a name.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ AIM -->
+<div class="view" id="v3">
+  <div class="vh">Step 1 · Pick the aim</div>
+  <div class="vids">LEDGER 64</div>
+  <div class="vs">This one choice decides every other field in the wizard. Each card says what the aim actually commits you to, not just what it is called.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 1</div><div class="sub">STEP 1 OF 4</div></div></div>
+        <div class="wiz"><span class="wstep on"></span><span class="wstep"></span><span class="wstep"></span><span class="wstep"></span></div>
+        <div class="body">
+          <div class="wlab">The aim</div>
+          <div class="wq">What is this set for?</div>
+
+          <div class="opt on">
+            <div class="ot"><span>Sales</span><span class="oc">NO MONEY UP FRONT</span></div>
+            <div class="od">Creators earn a commission on what they sell. They drive the traffic — you are not buying posts. No budget, no end date, and a shopper offer is required.</div>
+          </div>
+          <div class="opt">
+            <div class="ot"><span>Content</span><span class="oc">YOU PAY A FEE</span></div>
+            <div class="od">You buy agreed posts for an agreed fee. Nothing is being sold. Budget and end date are both calculated for you, and there is no shopper offer.</div>
+          </div>
+          <div class="opt">
+            <div class="ot"><span>Both</span><span class="oc">FEE + COMMISSION</span></div>
+            <div class="od">A smaller fee, plus commission on sales. You specify deliverables and set a shopper offer.</div>
+          </div>
+
+          <div class="dsec" style="border-top:1px solid var(--lineSoft);margin-top:6px">
+            <div class="wait n">You cannot change the aim after creators are added — <b>their agreements were made against it.</b></div>
+          </div>
+          <div class="dsec"><button class="btn pri">Continue</button></div>
+        </div>
+      </div>
+      <div class="cap">Each option states its <b>commercial consequence</b>.<span class="id">64</span></div>
+    </div>
+
+    <div style="flex:1;min-width:380px">
+      <div class="card">
+        <h3>What the aim decides, all the way down</h3>
+        <div class="tscroll"><table>
+          <tr><th>Field</th><th><span class="gsale">SALES</span></th><th><span class="gcont">CONTENT</span></th><th><span class="gboth">BOTH</span></th></tr>
+          <tr><td><b>End date</b></td><td>never asked</td><td>calculated</td><td>calculated</td></tr>
+          <tr><td><b>Budget</b></td><td>none anywhere</td><td>calculated</td><td>calculated</td></tr>
+          <tr><td><b>Step 2 asks</b></td><td>which channels they will use</td><td>how many reels / posts / stories</td><td>as content, plus channels</td></tr>
+          <tr><td><b>Shopper offer</b></td><td><b>required</b></td><td>none</td><td><b>required</b></td></tr>
+          <tr><td><b>Allocation</b></td><td><b>required</b> — she must have something to sell</td><td>optional</td><td><b>required</b></td></tr>
+          <tr><td><b>Payment stages</b></td><td>none — she earns on a sale</td><td>3 tranches</td><td>3 tranches on the fee</td></tr>
+          <tr><td><b>Which agreements show at step 3</b></td><td>sales only</td><td>content only</td><td>both only</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note key"><b>The row that matters most is the shopper offer.</b> On a sales set the creator has nothing to sell without one — allocation gives her the products, the offer gives someone a reason to buy through her. On a content set there is no shop involved at all, so asking would be nonsense.</div>
+
+      <div class="note good"><b>These three words already exist in the database.</b> <code>campaign_sets.goal</code> is <code>engagement | conversion | hybrid</code>. The friendly labels stay in the UI only — the terms model deliberately reuses the existing vocabulary rather than inventing a second one that would need translating at every boundary.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ BASICS -->
+<div class="view" id="v4">
+  <div class="vh">Step 2 · Basics — one screen, three branches</div>
+  <div class="vids">LEDGER 65–71</div>
+  <div class="vs">On content you are buying labour, so you say exactly what you are buying. On sales the creator carries the performance-marketing burden, so you ask what reach she brings instead.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 1 &middot; Sales</div><div class="sub">STEP 2 OF 4</div></div></div>
+        <div class="wiz"><span class="wstep done"></span><span class="wstep on"></span><span class="wstep"></span><span class="wstep"></span></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Name and dates</div>
+            <label class="fl2">Set name</label>
+            <input class="inp" value="Sarees">
+            <div class="g2" style="margin-top:9px">
+              <div><label class="fl2">Starts</label><input class="inp" value="1 Sep"></div>
+              <div><label class="fl2">Ends</label><input class="inp calc" value="Never" disabled></div>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px;line-height:1.5"><b>No end date on a sales set.</b> Each creator's own post-by date comes from what you agreed with her — the set itself just keeps running.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Budget</div>
+            <input class="inp calc" value="None" disabled>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px;line-height:1.5">Commission is paid out of a sale that already happened. <b>Nothing is held.</b></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">How they will drive traffic</div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-bottom:9px;line-height:1.5">You are not buying posts here — so we ask what reach they bring, not what they must publish.</div>
+            <label class="fl2">Channels a creator may use</label>
+            <div class="chips"><span class="chip on">Instagram</span><span class="chip on">YouTube</span><span class="chip">WhatsApp</span><span class="chip on">Their INFLX shop</span></div>
+            <label class="fl2" style="margin-top:11px">Minimum channels she should have</label>
+            <div class="chips"><span class="chip">1</span><span class="chip on">2</span><span class="chip">3</span></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Guidance for who fits this set — <b>it does not block anyone you have already agreed with.</b></div>
+          </div>
+
+          <div class="dsec">
+            <div class="lock">&#128274; <span><b>No "who posts?" step.</b> You settled that at the agreement — whether you canvassed openly or asked one person, and who said yes.</span></div>
+          </div>
+          <div class="dsec"><div class="brow"><button class="btn sec">Back</button><button class="btn pri">Continue</button></div></div>
+        </div>
+      </div>
+      <div class="cap">Sales. End date and budget <b>disabled and explained</b>, never hidden.<span class="id">65 &middot; 66 &middot; 67 &middot; 68 &middot; 69 &middot; 71</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 2 &middot; Content</div><div class="sub">STEP 2 OF 4</div></div></div>
+        <div class="wiz"><span class="wstep done"></span><span class="wstep on"></span><span class="wstep"></span><span class="wstep"></span></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Name and dates</div>
+            <label class="fl2">Set name</label>
+            <input class="inp" value="Reels">
+            <label class="fl2" style="margin-top:9px">Posting window</label>
+            <div class="g2">
+              <div><input class="inp" value="5 Sep"></div>
+              <div><input class="inp" value="25 Sep"></div>
+            </div>
+            <div class="trm" style="margin-top:9px"><div class="k">Set ends</div><div class="v" style="font-size:11.5px">25 Sep <span class="chip gh" style="padding:1px 6px">calculated</span></div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px;line-height:1.5">Calculated, not typed. A content set ends when the last agreed post is due.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">What you are buying</div>
+            <div class="trm"><div class="k">Instagram Reel</div><div class="v">1</div></div>
+            <div class="trm"><div class="k">Instagram Story</div><div class="v">2</div></div>
+            <div class="trm"><div class="k">Instagram Post</div><div class="v" style="color:var(--mut2)">0</div></div>
+            <div class="trm"><div class="k">YouTube Short</div><div class="v" style="color:var(--mut2)">0</div></div>
+            <button class="btn sec" style="margin-top:9px">Change what you are buying</button>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Budget</div>
+            <input class="inp calc" value="&#8377;30,000 · calculated" disabled>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px;line-height:1.5">Adds up from what you agreed with each creator at step 3. <b>Your wallet must cover it before you can publish.</b></div>
+          </div>
+
+          <div class="dsec">
+            <div class="lock">&#128274; <span><b>No shopper offer on a content set.</b> Nothing is being sold, so there is nothing to discount.</span></div>
+          </div>
+          <div class="dsec"><div class="brow"><button class="btn sec">Back</button><button class="btn pri">Continue</button></div></div>
+        </div>
+      </div>
+      <div class="cap">Content. <b>Deliverables specified</b>, budget and end date calculated.<span class="id">65–70</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note key"><b>Why "channels" replaces "content format" on sales.</b> On content the brand buys labour and can reasonably say "1 reel + 2 stories". On sales the creator only earns if she sells — dictating post counts is unfair and unenforceable. Asking about her channels tells you the reach you are getting without pretending to own her output.</div>
+
+      <div class="note bad"><b>Channels do not exist anywhere today.</b> I searched the whole backend and all 156 migrations: the only occurrence of the word is a comment. This is the stage's one new database column — additive, nullable, guidance only, blocking nothing.</div>
+
+      <div class="note good"><b>Disabled-and-explained beats hidden.</b> A brand who has used the old wizard will look for the budget field. Showing it greyed with "you pay nothing up front" teaches the model; removing it silently just looks broken.</div>
+
+      <div class="card">
+        <h3>The "Both" branch</h3>
+        <div class="tscroll"><table>
+          <tr><th>Asks</th><th>Behaviour</th></tr>
+          <tr><td>Posting window &middot; set ends</td><td>as content</td></tr>
+          <tr><td>What you are buying</td><td>as content</td></tr>
+          <tr><td>Channels</td><td>as sales</td></tr>
+          <tr><td>Budget</td><td>calculated — <b>the fee half only</b>. Commission is paid from sales that already happened</td></tr>
+          <tr><td>Shopper offer</td><td><b>required</b> — there is selling in it</td></tr>
+        </table></div>
+        <div class="note good" style="max-width:none;margin:11px 0 0">"Both" is not a special case. It asks the content question and the sales question. <b>No new logic — just both sets of fields.</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ AGREEMENTS -->
+<div class="view" id="v5">
+  <div class="vh">Step 3 · Tick the agreements you already hold</div>
+  <div class="vids">LEDGER 72–77</div>
+  <div class="vs">This is not a creator search. It is a pick-list of agreements you already hold, filtered to the ones that match this set's aim.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 1 &middot; Sarees</div><div class="sub">STEP 3 OF 4</div></div></div>
+        <div class="wiz"><span class="wstep done"></span><span class="wstep done"></span><span class="wstep on"></span><span class="wstep"></span></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Who is in this set?</div>
+            <div style="font-size:11px;color:var(--text2);font-weight:650;line-height:1.5"><b>These people already agreed terms with you.</b> Tick who belongs in this set.</div>
+            <div class="chips" style="margin-top:10px"><span class="chip on">Sales agreements &middot; 3</span><span class="chip gh">Content &middot; 1 — wrong aim</span></div>
+          </div>
+
+          <div class="tr">
+            <div class="cbx on">&#10003;</div>
+            <div class="pic">&#128105;</div>
+            <div class="m"><div class="bn">Asha M.</div>
+              <div class="tm">18% &middot; post by 28 Aug &middot; her end, you ship</div>
+              <div class="st c-done"><span class="dot d-done"></span>AGREED 14 AUG &middot; 88 DAYS LEFT</div></div>
+            <div class="chev">&#8250;</div>
+          </div>
+          <div class="tr">
+            <div class="cbx on">&#10003;</div>
+            <div class="pic">&#128105;</div>
+            <div class="m"><div class="bn">Meera S.</div>
+              <div class="tm">15% &middot; post by 30 Aug &middot; store visit</div>
+              <div class="st c-done"><span class="dot d-done"></span>AGREED 12 AUG &middot; 86 DAYS LEFT</div></div>
+            <div class="chev">&#8250;</div>
+          </div>
+          <div class="tr">
+            <div class="cbx"></div>
+            <div class="pic">&#128105;</div>
+            <div class="m"><div class="bn">Divya T.</div>
+              <div class="tm">20% &middot; post by 5 Sep &middot; remote, no shipping</div>
+              <div class="st" style="color:var(--red)"><span class="dot" style="background:var(--red)"></span>AGREED &middot; 9 DAYS LEFT</div></div>
+            <div class="chev">&#8250;</div>
+          </div>
+
+          <div class="dsec">
+            <div class="lock">&#128274; <span><b>You cannot add someone who has not agreed.</b> Agree first, brief after.</span></div>
+            <button class="btn sec" style="margin-top:10px">Go and ask someone new</button>
+          </div>
+          <div class="dsec"><div class="brow"><button class="btn sec">Back</button><button class="btn pri">Continue &middot; 2 picked</button></div></div>
+        </div>
+      </div>
+      <div class="cap">Filtered by aim. <b>Expiry countdown on every row</b>, red under 14 days.<span class="id">72 &middot; 73 &middot; 74 &middot; 76</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div class="pic">&#128105;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha M.</div><div class="sub">AGREEMENT &middot; 14 AUG</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">What you both settled</div>
+            <div class="trm"><div class="k">Aim</div><div class="v" style="font-size:11.5px">Pay per sale</div></div>
+            <div class="trm"><div class="k">Commission</div><div class="v">18%</div></div>
+            <div class="trm"><div class="k">Post by</div><div class="v" style="font-size:11.5px">28 Aug</div></div>
+            <div class="trm"><div class="k">Where she shoots</div><div class="v" style="font-size:11.5px">Her end</div></div>
+            <div class="trm"><div class="k">You are shipping</div><div class="v" style="font-size:11.5px">Yes</div></div>
+            <div class="trm"><div class="k">She would promote</div><div class="v" style="font-size:11.5px">Sarees</div></div>
+          </div>
+          <div class="dsec"><button class="btn sec">See how you got here</button></div>
+          <div class="dsec">
+            <div class="wait b">Adding her to this set brings all of this across, pre-filled. Change any of it at step 4 and <b>she is told which term moved, by name</b>.</div>
+          </div>
+          <div class="dsec"><button class="btn pri">Add her to Set 1</button></div>
+        </div>
+      </div>
+      <div class="cap">Tapping a row opens the agreement — and <b>its diary</b>.<span class="id">75</span></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="card">
+        <h3>The rules on this step</h3>
+        <div class="tscroll"><table>
+          <tr><th></th><th>Rule</th></tr>
+          <tr><td class="mono">74</td><td><b>Filtered by aim.</b> A sales set cannot show a content agreement — the terms would not mean the same thing. The count of what was hidden is shown, so nothing disappears silently</td></tr>
+          <tr><td class="mono">73</td><td><b>One agreement, one set.</b> Once used it leaves the pool, so it cannot be double-briefed</td></tr>
+          <tr><td class="mono">72</td><td><b>Days-left on every row</b>, red under 14. This screen is where an expiring agreement is most likely to be noticed</td></tr>
+          <tr><td class="mono">76</td><td><b>No stranger can be added.</b> The link out goes to the Creators tab, so the dead end has an exit</td></tr>
+          <tr><td class="mono">77</td><td><b>Consumed on publish, not on tick.</b> Abandoning the wizard must not burn the agreement</td></tr>
+        </table></div>
+      </div>
+
+      <div class="note good"><b>Everything this screen needs is already delivered.</b> <code>GET /brands/me/agreements</code> returns the photo, the handle, the settled terms, the date agreed and the expiry — filtered to ready-and-unexpired. The aim is inside the terms. No new endpoint.</div>
+
+      <div class="note key"><b>How #77 is honoured without touching a working transaction.</b> The agreement is consumed inside <code>invite</code>, guarded so it can never be briefed twice. So the phone simply <b>does not invite until publish</b> — ticking is local state. Abandon the wizard and nothing was written at all.</div>
+
+      <div class="note bad"><b>The risk that creates, and how it is answered.</b> An agreement can lapse between ticking and publishing. That is why "a chosen agreement expired mid-wizard" is one of the five publish blockers, and why it has to be built here rather than assumed.</div>
+
+      <div class="note info"><b>Cold invites are the deliberate exception.</b> If you ever need to invite someone with no agreement, that stays a separate flow with full accept, decline and negotiate on her side. It does not sneak in here, because everything downstream assumes terms are settled.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ STEP 4 ① -->
+<div class="view" id="v6">
+  <div class="vh">Step 4 · ① What each creator gets — and the one gap to fill</div>
+  <div class="vids">LEDGER 78–80 · 83–88</div>
+  <div class="vs">Already settled, so this section reads back rather than asks. The one thing still to set per creator is what she may sell.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 1 &middot; Sarees</div><div class="sub">STEP 4 OF 4</div></div></div>
+        <div class="wiz"><span class="wstep done"></span><span class="wstep done"></span><span class="wstep done"></span><span class="wstep on"></span></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">&#9312; What each creator gets &middot; already agreed</div>
+            <div class="setcard" style="margin:0 0 9px">
+              <div class="sethd"><span>Asha M.</span><span>18%</span></div>
+              <div class="setbd">
+                <div class="trm"><div class="k">Post by</div><div class="v" style="font-size:11.5px">28 Aug</div></div>
+                <div class="trm"><div class="k">Where she shoots</div><div class="v" style="font-size:11.5px">Her end &middot; you ship</div></div>
+                <div class="trm"><div class="k">She can sell</div><div class="v" style="font-size:11.5px;color:var(--blue)">Sarees &middot; 25 &#8594;</div></div>
+                <button class="btn sec" style="margin-top:9px;padding:7px;font-size:11px">Change what she can sell</button>
+              </div>
+            </div>
+            <div class="setcard" style="margin:0">
+              <div class="sethd"><span>Meera S.</span><span>15%</span></div>
+              <div class="setbd">
+                <div class="trm"><div class="k">Post by</div><div class="v" style="font-size:11.5px">30 Aug</div></div>
+                <div class="trm"><div class="k">Where she shoots</div><div class="v" style="font-size:11.5px">Store visit</div></div>
+                <div class="trm"><div class="k">She can sell</div><div class="v" style="font-size:11.5px;color:var(--red)">Not set yet &#8594;</div></div>
+                <button class="btn pri" style="margin-top:9px;padding:7px;font-size:11px">Set what she can sell</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="wait y">Editing an agreed term is allowed but <b>never silent</b>. Change Asha's 18% and she is told the commission moved, by name, when the invite arrives.</div>
+          </div>
+          <div class="dsec">
+            <div class="lock">&#128274; <span><b>Every creator on a sales set must have something to sell.</b> You cannot publish with "not set yet".</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Read-back, with <b>one gap to fill per creator</b>.<span class="id">78 &middot; 79 &middot; 80</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">What Meera can sell</div><div class="sub">SET 1 &middot; SAREES</div></div></div>
+        <div class="body">
+          <div class="wlab">Scope</div>
+          <div class="wq">Pick how much of your store</div>
+
+          <div class="opt">
+            <div class="ot"><span>Your whole store</span><span class="oc">39</span></div>
+            <div class="od">Everything you list, now and in future. <b>New products join automatically.</b></div>
+          </div>
+          <div class="opt on">
+            <div class="ot"><span>A category</span><span class="oc">25</span></div>
+            <div class="od">Pick one branch of your catalogue. Everything under it comes with it, <b>including things you add later</b>.</div>
+          </div>
+          <div class="opt">
+            <div class="ot"><span>Specific products</span><span class="oc">CHOOSE</span></div>
+            <div class="od">Hand-pick exactly what she may sell. <b>New products do not join automatically.</b></div>
+          </div>
+
+          <div class="dsec" style="border-top:1px solid var(--lineSoft);margin-top:6px">
+            <div class="dh">Which category</div>
+            <div class="chips"><span class="chip on">Sarees &middot; 25</span><span class="chip">Silk &middot; 14</span><span class="chip">Cotton &middot; 11</span><span class="chip">Party &middot; 8</span></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px">Picking Sarees includes Silk and Cotton beneath it.</div>
+          </div>
+          <div class="dsec">
+            <div class="wait g">&#10003; Meera can sell <b>25 products</b>, and anything you add to Sarees later.</div>
+          </div>
+          <div class="dsec"><button class="btn pri">Save</button></div>
+        </div>
+      </div>
+      <div class="cap">Three scopes. <b>Auto-join stated on each, before it is chosen.</b><span class="id">83 &middot; 84 &middot; 85 &middot; 88</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#10005;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Choose products</div><div class="sub">6 SELECTED OF 39</div></div></div>
+        <div class="srch">&#128269; Search by name&hellip;</div>
+        <div style="padding:0 12px"><div class="chips"><span class="chip on">All &middot; 39</span><span class="chip">Silk &middot; 14</span><span class="chip">Cotton &middot; 11</span><span class="chip">Party &middot; 8</span></div></div>
+        <div class="body" style="max-height:520px">
+          <div class="catrow">
+            <div class="cathd"><span>SILK SAREES</span><span class="n">3 OF 14 &middot; SELECT ALL</span></div>
+            <div class="pgrid">
+              <div class="pc on"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Kanjivaram Maroon</div><div class="ppr">&#8377;18,500</div></div>
+              <div class="pc on"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Banarasi Gold</div><div class="ppr">&#8377;24,000</div></div>
+              <div class="pc on"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Mysore Teal</div><div class="ppr">&#8377;12,400</div></div>
+              <div class="pc"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Tussar Ivory</div><div class="ppr">&#8377;9,800</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>COTTON SAREES</span><span class="n">3 OF 11 &middot; SELECT ALL</span></div>
+            <div class="pgrid">
+              <div class="pc on"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Handloom Indigo</div><div class="ppr">&#8377;4,200</div></div>
+              <div class="pc on"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Mangalgiri Rust</div><div class="ppr">&#8377;3,600</div></div>
+              <div class="pc on"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Jamdani White</div><div class="ppr">&#8377;6,900</div></div>
+              <div class="pc"><div class="pimg">&#129525;</div><div class="tk">&#10003;</div><div class="pnm">Kalamkari Ochre</div><div class="ppr">&#8377;5,100</div></div>
+            </div>
+          </div>
+          <div class="catrow">
+            <div class="cathd"><span>OTHER</span><span class="n">0 OF 6 &middot; UNCATEGORISED</span></div>
+            <div class="pgrid">
+              <div class="pc"><div class="pimg">&#128230;</div><div class="tk">&#10003;</div><div class="pnm">Untagged item</div><div class="ppr">&#8377;1,200</div></div>
+            </div>
+            <div style="font-size:9.5px;color:var(--mut);font-weight:650;margin-top:7px;line-height:1.45">6 products have no category. They are still sellable — worth tagging them on the web.</div>
+          </div>
+        </div>
+        <div class="selbar">
+          <div style="font-size:10.5px;font-weight:800;color:var(--mut);margin-bottom:7px">6 selected &middot; &#8377;69,600 total value</div>
+          <button class="btn pri">Use these 6</button>
+        </div>
+      </div>
+      <div class="cap">Grouped by category, images, select-all, running count.<span class="id">86 &middot; 87</span></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:16px">
+    <div class="card" style="flex:1;min-width:420px">
+      <h3>One picker, four callers</h3>
+      <div class="tscroll"><table>
+        <tr><th></th><th>Caller</th><th>Difference</th><th>Today</th></tr>
+        <tr><td class="mono">86</td><td>Allocation — what she may sell</td><td>multi-select, no limit</td><td><span class="st2 s-nw">this stage</span></td></tr>
+        <tr><td class="mono">93</td><td>Offer scope — what is discounted</td><td>multi-select, warns on unlisted products</td><td><span class="st2 s-ex">a modal exists</span></td></tr>
+        <tr><td class="mono">—</td><td>Request composer — what she would promote</td><td>multi-select</td><td><span class="st2 s-ex">a screen exists</span></td></tr>
+        <tr><td class="mono">115</td><td>Parcel builder — what is in the box</td><td>adds a quantity per item</td><td><span class="st2 s-nw">Stage 4</span></td></tr>
+        <tr><td class="mono">123</td><td>Creator tagging products in a post</td><td>limited to her allocation</td><td><span class="st2 s-nw">Stage 5</span></td></tr>
+      </table></div>
+      <div class="note bad" style="max-width:none;margin:11px 0 0"><b>Two already exist and they are not the same thing.</b> <code>BrandProductPickerScreen</code> is a full screen with search and a category filter; <code>ProductPickerSheet</code> is a 95-line modal with a flat list and no images. Building a third for allocation is exactly how the four end up disagreeing. <b>Slice 1 of this stage merges them and re-points both callers.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>The data is already there.</b> <code>GET /brands/me/products</code> returns a resolved <code>image_url</code>, the price, and the category — and <code>GET /brands/me/listing-tree</code> returns the tree. Nothing new is needed on the server for this picker.</div>
+      <div class="note key"><b>"Other" is deliberate.</b> Uncategorised products stay visible and selectable, with a nudge to tag them. Hiding them would hide real stock — and right now <b>every practice product is uncategorised</b>, so without this group the picker would look empty and broken on the first walk.</div>
+      <div class="note info"><b>Auto-join is the difference that matters.</b> Store and category scopes pick up new products silently; hand-picked lists do not. A brand who hand-picks and then adds stock will wonder why she is not selling it — so each option says so <b>before</b> it is chosen.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑧ OFFER -->
+<div class="view" id="v7">
+  <div class="vh">Step 4 · ② What their followers get</div>
+  <div class="vids">LEDGER 81 · 82 · 89–98</div>
+  <div class="vs">The only genuinely open decision in the whole wizard. Reuse a saved offer, or build one — then see it resolve before you publish.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Set 1 &middot; Sarees</div><div class="sub">STEP 4 &middot; SECTION &#9313;</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">&#9313; What their followers get &middot; your decision</div>
+            <div style="font-size:11px;color:var(--text2);font-weight:650;line-height:1.5">A shopper needs a reason to buy through her rather than walk into your shop. <b>That reason is this offer.</b></div>
+            <div class="chips" style="margin-top:10px"><span class="chip on">Use a saved offer</span><span class="chip">Make a new one</span></div>
+          </div>
+
+          <div class="setcard">
+            <div class="sethd"><span>10% off &#8377;5,000+</span><span class="gsale">SELECTED</span></div>
+            <div class="setbd">
+              <div class="trm"><div class="k">Type</div><div class="v" style="font-size:11.5px">Discount</div></div>
+              <div class="trm"><div class="k">Applies to</div><div class="v" style="font-size:11.5px">Sarees &middot; 25</div></div>
+              <div class="trm"><div class="k">Redeemed</div><div class="v" style="font-size:11.5px">In store or online</div></div>
+              <div class="trm"><div class="k">Runs until</div><div class="v" style="font-size:11.5px">31 Oct</div></div>
+            </div>
+          </div>
+          <div class="setcard" style="opacity:.55">
+            <div class="sethd"><span>Buy 2 get 1 free</span><span class="chip gh" style="padding:1px 6px">USED IN 1 SET</span></div>
+            <div class="setbd">
+              <div class="trm"><div class="k">Applies to</div><div class="v" style="font-size:11.5px">Cotton &middot; 11</div></div>
+              <div class="trm"><div class="k">Runs until</div><div class="v" style="font-size:11.5px;color:var(--red)">Expired 1 Aug</div></div>
+            </div>
+          </div>
+
+          <div class="dsec">
+            <div class="wait n"><b>Only one offer applies per basket</b> — the best one for that shopper. Never stacked. A creator's own offer wins a tie.</div>
+          </div>
+          <div class="dsec"><div class="brow"><button class="btn sec">Back</button><button class="btn pri">Save this set</button></div></div>
+        </div>
+      </div>
+      <div class="cap">Library first. <b>Expired offers greyed, not hidden</b> — reusable by extending.<span class="id">81 &middot; 89</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Discount</div><div class="sub">STEP 2 &middot; THE DETAIL</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">How much off</div>
+            <div class="chips"><span class="chip on">Percentage</span><span class="chip">Flat amount</span></div>
+            <input class="inp" value="10" style="margin-top:9px">
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px">10% off the qualifying items.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Minimum basket &middot; optional</div>
+            <input class="inp" value="&#8377;5,000">
+          </div>
+          <div class="dsec">
+            <div class="dh">What it applies to</div>
+            <div class="chips"><span class="chip">Whole store</span><span class="chip on">A category</span><span class="chip">Specific products</span></div>
+            <div class="chips" style="margin-top:9px"><span class="chip on">Sarees &middot; 25</span><span class="chip">Silk &middot; 14</span><span class="chip">Cotton &middot; 11</span></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5"><b>Same picker as allocation.</b> Products not listed in your store cannot carry an offer.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">How it is redeemed</div>
+            <div class="chips"><span class="chip on">In store</span><span class="chip on">Online order</span></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Runs until</div>
+            <input class="inp" value="31 Oct 2026">
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:7px">On expiry it stops applying <b>and stops advertising itself</b>.</div>
+          </div>
+          <div class="dsec"><button class="btn pri">Preview it</button></div>
+        </div>
+      </div>
+      <div class="cap">Value &#8594; minimum &#8594; scope &#8594; redemption &#8594; expiry.<span class="id">91–95 &middot; 98</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">What a shopper pays</div><div class="sub">PREVIEW &middot; SAMPLE BASKET</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">A basket of 2</div>
+            <div class="trm"><div class="k">Kanjivaram Maroon</div><div class="v" style="font-size:11.5px">&#8377;18,500</div></div>
+            <div class="trm"><div class="k">Handloom Indigo</div><div class="v" style="font-size:11.5px">&#8377;4,200</div></div>
+            <div class="trm"><div class="k"><b>Subtotal</b></div><div class="v">&#8377;22,700</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Offers that could apply</div>
+            <div class="setcard" style="margin:0 0 8px">
+              <div class="sethd"><span>10% off &#8377;5,000+</span><span class="gsale">WINS</span></div>
+              <div class="setbd"><div class="trm"><div class="k">Saves</div><div class="v" style="color:var(--green)">&#8377;2,270</div></div></div>
+            </div>
+            <div class="setcard" style="margin:0;opacity:.55">
+              <div class="sethd"><span>Buy 2 get 1 free</span><span class="chip gh" style="padding:1px 6px">NOT APPLIED</span></div>
+              <div class="setbd"><div class="trm"><div class="k">Would save</div><div class="v" style="font-size:11.5px">&#8377;0 &middot; needs 3 items</div></div></div>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="trm"><div class="k"><b>Shopper pays</b></div><div class="v" style="font-size:16px">&#8377;20,430</div></div>
+            <div class="trm"><div class="k">Asha earns at 18%</div><div class="v" style="color:var(--green)">&#8377;3,677</div></div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">One offer per basket — whichever is best for the shopper. A creator's own offer wins a tie.</div>
+          </div>
+          <div class="dsec"><div class="bstack">
+            <button class="btn pri">Use it in this set</button>
+            <button class="btn sec">Save to my library too</button>
+          </div></div>
+        </div>
+      </div>
+      <div class="cap">The preview. <b>Which offer wins, and what the creator earns.</b><span class="id">96 &middot; 97</span></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:16px">
+    <div style="flex:1;min-width:340px">
+      <div class="note key"><b>The preview is the piece worth insisting on.</b> Offer stacking is the single most confusing thing about running a shop, and a brand publishing an offer they have never seen resolve is how you get "why did this sell for that price?" a week later.</div>
+      <div class="note good"><b>It must use the same resolver the shopping app uses.</b> <code>resolveBestOffer</code> already exists and already picks one winner, never stacking. This stage adds a brand-authenticated door onto it — <b>not a second copy of the maths</b>. A preview that can disagree with checkout is worse than no preview.</div>
+    </div>
+    <div style="flex:1;min-width:340px">
+      <div class="note info"><b>The offer builder is not redrawn.</b> The brand app already creates discounts from the offers library, with the five types validated server-side. This stage points the wizard at what exists and adds only the scope-via-shared-picker step and the preview.</div>
+      <div class="note bad"><b>Section &#9313; is closed on a content set</b>, with the reason stated — nothing is being sold, so there is no basket for an offer to apply to. Payment stages (25 / 25 / 50) appear in its place, and the wallet requirement is named.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑨ REVIEW -->
+<div class="view" id="v8">
+  <div class="vh">Review and publish — drift is named, five things can block</div>
+  <div class="vids">LEDGER 63 · 77 · 79</div>
+  <div class="vs">The last screen validates everything above it. Drift is warned by name. Five states refuse to publish at all — and four of those five do not exist today.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Review</div><div class="sub">FESTIVE SEASON 2026</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="trm"><div class="k">Starts</div><div class="v" style="font-size:11.5px">1 Sep 2026</div></div>
+            <div class="trm"><div class="k">Ends</div><div class="v" style="font-size:11.5px;color:var(--mut2)">Ongoing &middot; one set is sales</div></div>
+            <div class="trm"><div class="k">Sets</div><div class="v">2</div></div>
+            <div class="trm"><div class="k">Creators</div><div class="v">3</div></div>
+            <div class="trm"><div class="k">Wallet needed</div><div class="v">&#8377;32,400</div></div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">Before you publish</div>
+            <div class="wait y" style="margin-bottom:8px"><b>Asha's commission moved.</b> You agreed 18%, this set says 20%. She will be told the commission changed.</div>
+            <div class="wait g">&#10003; Everything else matches what you agreed.</div>
+          </div>
+
+          <div class="dsec">
+            <div class="dh">What happens next</div>
+            <div class="trm"><div class="k">3 invites go out</div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">They accept in one tap</div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">3 agreements consumed</div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">Shoot plans created on signing</div><div class="v" style="color:var(--green)">&#10003;</div></div>
+          </div>
+
+          <div class="dsec"><div class="bstack">
+            <button class="btn pri">Publish</button>
+            <button class="btn sec">Go back and fix the 20%</button>
+          </div></div>
+        </div>
+      </div>
+      <div class="cap">Drift is surfaced <b>by name</b>, with a route back to fix it.<span class="id">63 &middot; 79</span></div>
+    </div>
+
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Cannot publish yet</div><div class="sub">3 THINGS TO FIX</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait r" style="margin-bottom:8px"><b>Meera has nothing to sell.</b> She would be contracted and invisible in the shopping app. Set what she can sell.</div>
+            <div class="wait r" style="margin-bottom:8px"><b>Set 1 has no shopper offer.</b> Nothing gives a shopper a reason to buy through her rather than walk in.</div>
+            <div class="wait r"><b>Your wallet is short by &#8377;4,200.</b> A content set cannot publish until the wallet covers the fees plus the platform fee.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Also worth knowing</div>
+            <div class="wait y"><b>Divya's agreement expires in 2 days.</b> If it lapses before you publish, she drops out and you have to ask her again from the start.</div>
+          </div>
+          <div class="dsec"><div class="bstack">
+            <button class="btn pri">Fix the first one</button>
+            <button class="btn off">Publish</button>
+          </div></div>
+        </div>
+      </div>
+      <div class="cap">Every blocker <b>names the thing at fault</b> and offers the way to it.<span class="id">63</span></div>
+    </div>
+
+    <div style="flex:1;min-width:320px">
+      <div class="card">
+        <h3>The five publish blockers, against what the server does today</h3>
+        <div class="tscroll"><table>
+          <tr><th>Blocked when</th><th>Why</th><th>Today</th></tr>
+          <tr><td><b>A creator on a sales set has no allocation</b></td><td>She would be contracted and unable to sell anything</td><td><span class="st2 s-nw">does not exist</span></td></tr>
+          <tr><td><b>A sales or both set has no shopper offer</b></td><td>Nothing gives a shopper a reason to buy through her</td><td><span class="st2 s-nw">does not exist</span></td></tr>
+          <tr><td><b>The wallet does not cover a content budget</b></td><td>Existing rule, unchanged</td><td><span class="st2 s-ex">already blocks</span></td></tr>
+          <tr><td><b>A chosen agreement expired mid-wizard</b></td><td>Terms are no longer live — send her back to Talking</td><td><span class="st2 s-nw">does not exist</span></td></tr>
+          <tr><td><b>An offer covers products not in the store</b></td><td>You cannot discount what you do not list</td><td><span class="st2 s-nw">does not exist</span></td></tr>
+        </table></div>
+      </div>
+
+      <div class="note bad"><b>This is the largest backend gap in the stage, and the one that matters commercially.</b> A creator can be published into a sales set today <b>with nothing to sell</b> — contracted, and invisible to every shopper. The wallet is the only thing publish currently refuses.</div>
+
+      <div class="note key"><b>Drift is warned, never blocked.</b> A brand may have a good reason to change a term. What must never happen is changing it silently — she is told which one moved, by name, when the invite lands. The server already returns those warnings; this screen is the first place a brand sees them before committing.</div>
+
+      <div class="note good"><b>Agreements are consumed on publish, not earlier.</b> Abandoning the wizard halfway leaves every agreement intact and back in the ready-to-brief pool.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑩ REALITY -->
+<div class="view" id="v9">
+  <div class="vh">Every screen and rule, against what exists today</div>
+  <div class="vs">Read from the actual files on 25 August 2026, not from memory. This is the board to argue with before anything is built.</div>
+
+  <div class="card">
+    <h3>The brand phone</h3>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Today</th><th>Verdict</th></tr>
+      <tr><td><b>Campaigns landing</b></td><td>Exists. Ends in a link that opens the web dashboard</td><td><span class="st2 s-ch">rework — the link becomes + New</span></td></tr>
+      <tr><td><b>Any campaign wizard</b></td><td><b>Does not exist.</b> No create route of any kind in the navigator</td><td><span class="st2 s-nw">new — S2 to S8, S12</span></td></tr>
+      <tr><td><b>Create in the app's API layer</b></td><td><b>Missing.</b> The app can list, publish and end a campaign; it cannot create one, or create a set</td><td><span class="st2 s-nw">new — 5 methods</span></td></tr>
+      <tr><td><b>Agreements list</b></td><td>Already wired and already used by the Creators tab</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td><b>Product picker</b></td><td><b>Two of them</b> — a screen and a modal, different data handling</td><td><span class="st2 s-ui">merge into one, re-point both callers</span></td></tr>
+      <tr><td><b>Category picker</b></td><td>Exists, backed by the real listing tree</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td><b>Offer builder</b></td><td>Exists in the offers library; creates discounts on the phone</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td><b>Sets list</b></td><td>Exists, read-only, inside a running campaign</td><td><span class="st2 s-nw">the editable one is new</span></td></tr>
+      <tr><td><b>Basket preview</b></td><td>Nowhere on any surface</td><td><span class="st2 s-nw">new</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>The server</h3>
+    <div class="tscroll"><table>
+      <tr><th>Rule</th><th>Today</th><th>Verdict</th></tr>
+      <tr><td>Campaign takes a name and a start date; budget and end date derived</td><td>Shipped in Part 5 and working</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td>Three aims, one vocabulary</td><td><code>campaign_sets.goal</code>, shared with the terms model</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td>Briefing an agreement, with drift warnings</td><td>Validates owner, creator, status and aim; returns every moved term by name</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td>Allocation — store / category / products, resolved live</td><td>Shipped in Part 4; auto-join is by construction</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td>One offer per basket, best for the shopper</td><td><code>resolveBestOffer</code>, never stacked</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td><b>Channels a set may use</b></td><td><b>Nowhere.</b> Searched the whole backend and all 156 migrations — one comment, no field</td><td><span class="st2 s-nw">one additive column</span></td></tr>
+      <tr><td><b>Content set budget</b></td><td><b>Typed, and required.</b> The board says calculated from the agreed fees</td><td><span class="st2 s-ch">becomes derived</span></td></tr>
+      <tr><td><b>Publish blockers</b></td><td><b>One of five.</b> Only the wallet</td><td><span class="st2 s-nw">four new</span></td></tr>
+      <tr><td><b>Brand-side basket preview</b></td><td>The resolver exists; the only door onto it is follower-authenticated</td><td><span class="st2 s-nw">one endpoint onto the same resolver</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>Two places where the agreed board and the live code disagree.</b> Both are named in the spec with an answer, rather than resolved in silence.<br><br>
+  <b>One — when an agreement is consumed.</b> The board says on publish. The code does it inside the invite. Answer: leave the transaction alone and never invite until publish, so ticking writes nothing and abandoning burns nothing.<br><br>
+  <b>Two — where a content set's budget comes from.</b> The board says calculated. The code requires it typed. Answer: the server derives it from the sum of that set's agreed fees, exactly as it already derives the campaign total. Web keeps sending a typed value and is overwritten by the identical number.</div>
+
+  <div class="card">
+    <h3>Build order</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Slice</th><th>Why here</th></tr>
+      <tr><td><b>1</b></td><td><b>Merge the two product pickers into one component</b></td><td>Four callers depend on it. Merge first, or build a third and guarantee the drift</td></tr>
+      <tr><td><b>2</b></td><td>Server: derived set budget &middot; the channels column &middot; the four publish blockers</td><td>Every screen above validates against these. Building screens first means building them twice</td></tr>
+      <tr><td><b>3</b></td><td>The app's API layer: create and update campaigns and sets</td><td>Five thin methods. Nothing can be built until they exist</td></tr>
+      <tr><td><b>4</b></td><td>Landing rework, shell, sets list, step 1, step 2 with its three branches</td><td>The spine of the wizard, all against endpoints that already work</td></tr>
+      <tr><td><b>5</b></td><td>Step 3 — the agreements pick-list and the agreement detail</td><td>Needs the aim filter and the expiry countdown; no new endpoint</td></tr>
+      <tr><td><b>6</b></td><td>Step 4 — both sections, allocation, the offer</td><td>Hangs off slice 1's picker and the existing offer builder</td></tr>
+      <tr><td><b>7</b></td><td>The basket preview endpoint and its screen</td><td>A door onto the existing resolver</td></tr>
+      <tr><td><b>8</b></td><td>Review, drift, the five blockers, publish</td><td>Last, because it validates everything above it</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>The gate has not moved.</b> This stage adds a deep new route tree to a native stack — the change class that passes every automatic check and then crashes on a handset, skipped six times running. <b>The founder walks it on a phone before any deploy is requested</b>, and the duplicate-route check runs across every stack in both apps.</div>
+
+  <div class="note good"><b>Nothing here is outward-facing.</b> No creator sees a change, no shopper sees a change, and nothing a brand can already do stops working. The only behaviour that reaches an existing surface is the derived set budget, which overwrites a typed value with the number web already displays.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>
