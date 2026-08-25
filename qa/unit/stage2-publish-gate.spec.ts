@@ -221,6 +221,38 @@ test('a campaign with no sets at all says so and stops there', async () => {
   expect(codes(r)).toEqual(['NO_SETS']);
 });
 
+test('invite refuses a selling-set creator with no allocation, using the SAME rule', () => {
+  // Stage 3, 2026-08-26. The founder asked the obvious question: if allocation is
+  // compulsory, how can anyone have nothing to sell? Two answers, and both matter.
+  //
+  //   1. The four rows that prompted it were seeded 21 August — four days before Stage 2.
+  //   2. The hole they came through was STILL OPEN. `invite` has no draft guard, so a
+  //      creator can be added to an already-running campaign, and publish never fires
+  //      again, so the gate never sees her.
+  //
+  // Closed at invite. Pinned here as a SOURCE check, which is weaker than the executing
+  // tests around it and is stated as such: the rule is three lines inside a controller that
+  // cannot be loaded without a database.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const src = require('fs').readFileSync(path.join(ROOT, 'backend/src/controllers/campaign.controller.js'), 'utf8');
+  const invite = src.slice(src.indexOf('const invite = asyncHandler'), src.indexOf('const updateInfluencer = asyncHandler'));
+  expect(invite).toContain('SELLING_GOALS.includes(set.goal) && !alloc');
+  expect(invite).toContain('contracted and invisible in the shopping app');
+});
+
+test('there is ONE definition of a selling set, not three', () => {
+  // It was written out three times by 2026-08-26 — publishGate, collabOwedItems, and inline
+  // in the controller. Three copies of one rule is how they drift, and this one decides
+  // whether a creator can be published with an empty shelf.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const owed = require(path.join(ROOT, 'backend/src/services/collabOwedItems.service.js'));
+  expect(gate.SELLING_GOALS).toBe(owed.SELLING_GOALS);
+  expect(gate.SELLING_GOALS).toEqual(['conversion', 'hybrid']);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const src = require('fs').readFileSync(path.join(ROOT, 'backend/src/controllers/campaign.controller.js'), 'utf8');
+  expect(src).toContain("const { SELLING_GOALS } = require('../services/collabOwedItems.service')");
+});
+
 test('declined and expired creators carry no obligations — they are excluded by the query', async () => {
   // The service filters them in SQL; this pins the intent so a later edit to the status
   // list is a deliberate choice rather than an accident.

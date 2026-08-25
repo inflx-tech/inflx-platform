@@ -34,8 +34,10 @@
 // qa/unit/stage2-publish-gate.spec.ts proves the BEHAVIOUR rather than asserting that a
 // source file contains a string.
 const offerConfig = require('./offerConfig.validator');
-
-const SELLING_GOALS = ['conversion', 'hybrid'];
+// One definition of what a selling set is. It was written out three times by 2026-08-26 —
+// here, in collabOwedItems, and inline in campaign.controller.invite. Three copies of one
+// rule is how they drift, which is the fault this programme keeps having to fix.
+const { SELLING_GOALS } = require('./collabOwedItems.service');
 
 /** A creator row that is out of the running carries no obligations. */
 const DEAD_STATUSES = ['declined', 'expired', 'rejected_by_brand', 'slots_filled'];

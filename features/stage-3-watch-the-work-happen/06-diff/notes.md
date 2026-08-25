@@ -113,23 +113,50 @@ reconciles at every level.
 
 ---
 
-## 5. A finding the seeding did NOT fix
+## 5. The creators with nothing to sell — asked, answered, closed
 
-**`NO_ALLOCATION` still fires on four live collaborations, and there is no button.**
+I put this to the founder as a design choice: give her page a control, or say "fix it on
+the web". **Both were wrong, and the founder's reply is why:**
 
-Those campaigns are **active**. Allocation is written at invite time by the Stage 2 wizard,
-and `updateInfluencer` refuses anything that is not a draft. So the item correctly names a
-real problem the brand **cannot fix from the phone** — which breaks FINAL 4's rule that a
-badge can always be walked down to a button.
+> "while making detailed campaign make it should be compulsory allocate products or entire
+> store or category means he allocated products, then how we can say to creator you cant
+> sell anything?"
 
-Two honest answers, and the choice is the founder's:
+Exactly right. **It IS compulsory.** Stage 2 refuses to publish a selling set with an
+unallocated creator. So how did four exist?
 
-1. The creator's spine gains a control that sets allocation on a **live** collaboration.
-2. The item says plainly that this one is fixed on the web.
+**Checked, not assumed.** All four rows were written **21 August** — four days before Stage
+2 shipped — and both campaigns have `published_at` NULL, meaning they were seeded straight
+into `active` and never went through publish at all. Legacy data. No new control needed.
 
-**Neither invented.** Flagged for slice 4 or 5.
+### But the hole they came through was still open
 
----
+`invite` has **no draft guard**. A brand can add a creator to an **already-running**
+campaign, and publish never fires again — so the gate never sees her. That was a live route
+to exactly the state Part 4 exists to prevent.
+
+**Closed at invite.** A selling set now refuses a creator with no allocation at the moment
+the row is written, with the same wording the publish blocker uses. A cold invite is not
+exempt: whether terms were settled beforehand has nothing to do with whether she has
+anything on her shelf.
+
+### And the data is fixed
+
+`backend/scripts/fix-legacy-missing-allocation.js` — dry run by default. Set the four to
+**whole store**: Kanchi is a saree house whose entire catalogue is sarees, and store scope
+auto-joins anything added later, which is what briefing your own shop should mean. No
+hand-picked list was guessed on anyone's behalf.
+
+Each of the four can now sell **11 products**. Kanchi Silks' total fell from **6 to 4** —
+three conversations, and Nisha's reel waiting on the brand.
+
+### One thing my own fix broke, and I caught it
+
+Adding the invite rule created a **third** inline copy of "what counts as a selling set" —
+alongside `publishGate` and `collabOwedItems`. Three copies of one rule is how they drift,
+and this particular rule decides whether someone can be contracted with an empty shelf. All
+three now read one `SELLING_GOALS`, pinned by a test asserting they are literally the same
+object.
 
 ## 6. Evidence so far
 

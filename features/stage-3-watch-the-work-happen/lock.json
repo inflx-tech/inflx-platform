@@ -93,8 +93,10 @@
     "effect_on_the_ladder": "Re-ran collabCounts against production: NOTHING_TO_BUY correctly stopped firing on both selling sets, and Kanchi Silks total fell from 8 to 6. Still reconciles at every level."
   },
   "found_2026_08_26_no_fix_path": {
-    "what": "NO_ALLOCATION still fires on both selling sets — 4 collaborations whose creator has nothing to sell. That is REAL and correct, not seed data.",
-    "the_problem": "Those campaigns are ACTIVE. Allocation is written at invite time by the Stage 2 wizard, and updateInfluencer refuses anything that is not a draft. So the item names a problem the brand CANNOT FIX FROM THE PHONE — which breaks FINAL 4 rule that a badge can always be walked down to a button.",
-    "decision_needed_in_slice_4_or_5": "Either the creator spine gains a control that sets allocation on a LIVE collaboration, or this item has to say plainly that it is fixed on the web. Inventing neither: flagged for the founder."
+    "RESOLVED": "The founder saw straight through this: \"while making detailed campaign it should be compulsory to allocate... then how can we say to a creator you cant sell anything?\"",
+    "the_answer": "It IS compulsory — Stage 2 blocks publishing a selling set with an unallocated creator. All four rows were written 21 August, four days before Stage 2 shipped, and both campaigns have published_at NULL, so they were seeded straight into active and never went through publish at all. Legacy data, not a design gap. No new UI control is needed.",
+    "but_the_hole_was_still_open": "invite has NO draft guard, so a creator could still be added to an ALREADY-RUNNING campaign with no allocation, and publish would never fire again. Closed at invite: a selling set now refuses a creator with no allocation at the moment the row is written.",
+    "data_fixed": "backend/scripts/fix-legacy-missing-allocation.js set the four to whole-store. Each can now sell 11 products. Kanchi Silks total fell from 6 to 4.",
+    "duplication_closed": "Adding the invite rule created a THIRD inline copy of \"what is a selling set\". All three now read SELLING_GOALS from collabOwedItems, pinned by a test asserting they are the same object."
   }
 }

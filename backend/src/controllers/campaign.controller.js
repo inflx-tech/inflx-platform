@@ -15,6 +15,8 @@ const handshakeService = require('../services/handshake.service');
 // stage-2 — the one definition of what must be true before a campaign may be published,
 // shared by publish and by the Review screen's read-only check.
 const publishGate = require('../services/publishGate.service');
+// The one definition of what a selling set is — shared with publishGate and the roll-up.
+const { SELLING_GOALS } = require('../services/collabOwedItems.service');
 // stage-2 ledger #96 — the brand's basket preview goes through the SAME resolver the
 // shopping app's checkout uses. A preview that can disagree with the till is worse than
 // no preview.
@@ -1074,6 +1076,32 @@ const invite = asyncHandler(async (req, res) => {
   const alloc = await resolveAllocation({
     brandId: brand.id, alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
   });
+
+  // stage-3 — a creator on a SELLING set must be told what she may sell, at the moment the
+  // row is written. Not only at publish.
+  //
+  // WHY THIS IS HERE AND NOT ONLY IN publishGate. Stage 2 made allocation compulsory to
+  // PUBLISH, which is where a brand builds a campaign, and that closed the common case.
+  // But `invite` has no draft guard: a brand can add a creator to an ALREADY-RUNNING
+  // campaign, and publish never runs again, so the gate never fires. That left a live route
+  // to exactly the state Part 4 exists to prevent — contracted, and invisible in the
+  // shopping app, because the resolver returns her no products.
+  //
+  // Found 2026-08-26 when the founder asked the obvious question: if allocation is
+  // compulsory, how can anyone have nothing to sell? The four rows that prompted it were
+  // seeded on 21 August, four days before Stage 2 shipped — but the hole they came through
+  // was still open.
+  //
+  // A cold invite is not exempt. Whether terms were settled beforehand has nothing to do
+  // with whether she has anything on her shelf.
+  if (SELLING_GOALS.includes(set.goal) && !alloc) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Say what this creator may sell before adding her. On a selling set a creator with no allocation is contracted and invisible in the shopping app.',
+      422,
+      'alloc_scope'
+    );
+  }
 
   const goal = set.goal;
 
