@@ -161,5 +161,44 @@
       "The 18 practice products are all is_active=false with no images or categories, so every product screen will read as broken until they are switched on. Needs its own go.",
       "released stays FALSE and maestro_green stays FALSE until the walk happens."
     ]
+  },
+  "post_deploy_correction_2026_08_25": {
+    "what": "EMPTY_SET was a SIXTH publish blocker. The board locks five. Demoted to a warning.",
+    "how_it_was_found": "The founder asked whether Stage 2 was complete against its contract. Auditing 03-expected-outputs row by row surfaced it — not a test failure, and not something any check would have caught.",
+    "what_it_broke": "campaign.controller.invite has NO draft guard, so a brand can publish a campaign and invite creators into it afterwards. That is a real existing workflow — it is how an open-ended sales campaign gets topped up — and refusing to publish an empty set removed it.",
+    "the_distinction": "The WIZARD still refuses to publish a set nobody was pencilled into. That is a client rule about a half-finished wizard, not a server rule about what a campaign may be. Two different questions; the server must answer the narrower one.",
+    "pinned_by": [
+      "an empty handpick set WARNS but does not refuse",
+      "the ONLY things that refuse a publish are the five the board locks — a whitelist, so a seventh invented later fails here",
+      "B-8 — a plain content campaign clears the gate entirely, so the WALLET check is reachable. The gate runs BEFORE the wallet check, so any blocker firing there would mask WALLET_INSUFFICIENT."
+    ],
+    "lesson": "An \"obviously right\" addition to a locked list still needs the existing paths checked. The five were locked for a reason; the sixth was mine.",
+    "requalified": "qa/unit re-measured against the same HEAD baseline: still ZERO new failures."
+  },
+  "contract_completion_2026_08_25": {
+    "built_and_deployed": "All eight build-order slices. Migration 159, Render, brand OTA v186.",
+    "verified": [
+      "D-1, D-2 — the column and the untouched rows, read from production.",
+      "D-5 — the end-date rule, by the pre-existing derive() tests.",
+      "B-3 — the campaign total, same.",
+      "B-4 to B-7 — the four new blockers, by 20 executing checks against a stubbed catalogue.",
+      "B-8 — the wallet check is still reachable (added by the correction above).",
+      "B-11 (shape half) — the channel vocabulary, by 10 executing checks.",
+      "M-1, M-13 — the landing rework and the single picker, by the mobile wiring test.",
+      "R-3, R-4, R-5, R-6 — no-regression, mobile green, no duplicate routes, diff notes written."
+    ],
+    "NOT_yet_verified": [
+      "D-3, D-4, D-6, D-7 — every end-state assertion that needs a campaign actually built and published. Nothing has been through the wizard yet.",
+      "D-8 / W7 — abandoning the wizard leaves agreements ready. The draft store is unit-tested; the end-to-end case is not.",
+      "B-1, B-2 — createSet accepting a paid set with no budget, and the budget recomputing on invite. The rules are pinned; the API round-trip is not.",
+      "B-9, B-10 — drift warns without blocking, and the preview agrees with checkout. Both need the API.",
+      "M-2 to M-12 — every screen assertion. They need a thumb.",
+      "R-1 — brand web still builds and publishes a campaign the old way. NOT exercised at all.",
+      "R-2 — the creator one-click accept is unchanged. Reasoned, not run.",
+      "R-7 — the founder handset walk. THE GATE."
+    ],
+    "why_not_verified": "The backend test database has refused connections since 2026-08-22, so no API-level test can run. Everything provable without it was proved; everything else is honestly listed above rather than assumed.",
+    "maestro": "qa/maestro/flows/03-brand-launch.yaml exists but only proves the brand app boots. NO flow covers the campaign wizard. Rule 5 requires release.maestro_green before released can be set true, so a wizard flow has to be written before Stage 2 can be marked released.",
+    "step_14_release": "NOT RECORDED. released=false, maestro_green=false, qa_all_green=false. Stage 2 is DEPLOYED but not RELEASED, and the difference is deliberate."
   }
 }

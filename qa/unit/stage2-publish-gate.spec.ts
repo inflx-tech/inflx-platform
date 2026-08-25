@@ -95,6 +95,20 @@ test('allocation is NOT demanded on a content set — nothing is being sold ther
   expect(codes(r)).not.toContain('NO_SHOPPER_OFFER');
 });
 
+test('B-8 — a plain content campaign clears the gate entirely, so the WALLET check is reachable', async () => {
+  // The gate runs BEFORE the wallet check in publish(), deliberately: a brand should not be
+  // told to top up money for a campaign that is broken for a different reason. The cost of
+  // that ordering is that any blocker firing here MASKS the wallet message. So the
+  // canonical wallet case — a content set, creators in it, nothing else wrong — must come
+  // through with an empty blocker list, or the pre-existing WALLET_INSUFFICIENT refusal
+  // silently stops being the thing a short brand sees.
+  const r = await gate.evaluate(CAMPAIGN, BRAND, fakeConn({
+    sets: [contentSet()],
+    cis: [creator({ set_id: 'set-content', alloc_scope: null, offer_type: null, brand_offer_id: null })],
+  }));
+  expect(r.blockers).toEqual([]);
+});
+
 test('B-5 — a sales set where nobody has an offer, and no live global offer exists, is refused', async () => {
   const r = await gate.evaluate(CAMPAIGN, BRAND, fakeConn({
     sets: [salesSet()],
@@ -172,9 +186,34 @@ test('B-7 — an offer whose products are all live passes', async () => {
   expect(codes(r)).not.toContain('OFFER_ON_UNLISTED_PRODUCT');
 });
 
-test('an empty handpick set is refused', async () => {
+test('an empty handpick set WARNS but does not refuse', async () => {
+  // This was a blocker for about an hour, and it was wrong. `invite` has no draft guard,
+  // so a brand can publish a campaign and invite creators into it afterwards — that is how
+  // an open-ended sales campaign gets topped up. Refusing an empty set would remove a real
+  // existing workflow, and it is not one of the five blockers the board locks.
   const r = await gate.evaluate(CAMPAIGN, BRAND, fakeConn({ sets: [salesSet()], cis: [] }));
-  expect(codes(r)).toContain('EMPTY_SET');
+  expect(codes(r)).not.toContain('EMPTY_SET');
+  expect(r.warnings.map((w: any) => w.code)).toContain('EMPTY_SET');
+});
+
+test('the ONLY things that refuse a publish are the five the board locks', async () => {
+  // Guards the mistake above from coming back in another shape. Every blocker this service
+  // can emit must map to a locked rule; a sixth refusal invented later gets caught here.
+  const LOCKED = [
+    'NO_SETS',                    // pre-existing, kept
+    'NO_ALLOCATION', 'EMPTY_ALLOCATION',
+    'NO_SHOPPER_OFFER',
+    'AGREEMENT_MISSING', 'AGREEMENT_NOT_LIVE',
+    'OFFER_ON_UNLISTED_PRODUCT',
+  ];
+  const r = await gate.evaluate(CAMPAIGN, BRAND, fakeConn({
+    sets: [salesSet(), contentSet()],
+    cis: [
+      creator({ alloc_scope: null, offer_type: null, agreement_id: 'a1', agreement_status: 'cancelled' }),
+      creator({ id: 'ci-2', set_id: 'set-content', influencer_name: 'Nisha P.', offer_type: null }),
+    ],
+  }));
+  for (const b of r.blockers) expect(LOCKED).toContain(b.code);
 });
 
 test('a campaign with no sets at all says so and stops there', async () => {

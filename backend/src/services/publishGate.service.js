@@ -210,15 +210,28 @@ async function evaluate(campaignId, brandId, conn = null) {
   }
 
   // ── Emptiness, and the expiry warning ──────────────────────────────────────
+  //
+  // EMPTY_SET IS A WARNING, NOT A BLOCKER — and it was a blocker for about an hour.
+  //
+  // I added it as a sixth refusal on top of the five the board locks. Auditing the
+  // contract afterwards caught what that breaks: `invite` has NO draft guard, so a brand
+  // can publish a campaign and invite creators into it afterwards. That is a real,
+  // existing workflow — it is how an open-ended sales campaign gets topped up — and
+  // refusing to publish an empty set would have taken it away.
+  //
+  // The wizard still refuses it, because a set you pencilled nobody into is a set you did
+  // not finish. That is a CLIENT rule about a half-built wizard, not a server rule about
+  // what a campaign may be. The two are different questions and the server must answer the
+  // narrower one.
   for (const set of sets) {
     const members = cis.filter(ci => ci.set_id === set.id);
     if (!members.length && (set.influencer_mode || 'handpick') === 'handpick') {
-      blockers.push(blocker(
-        'EMPTY_SET',
-        `"${set.name}" has no creators in it.`,
-        'set',
-        { set_id: set.id, set_name: set.name }
-      ));
+      warnings.push({
+        code: 'EMPTY_SET',
+        message: `"${set.name}" has no creators in it yet. You can publish and invite them afterwards, but nothing happens in this set until you do.`,
+        set_id: set.id,
+        set_name: set.name,
+      });
     }
   }
 

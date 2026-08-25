@@ -205,6 +205,27 @@ Two existing assertions were also updated rather than worked around:
 
 ---
 
+## 6b. A defect I shipped and then caught, same day
+
+**EMPTY_SET was a sixth publish blocker. It should never have been one.**
+
+The board locks five refusals. I added a sixth — "this set has no creators in it" — because
+it looked obviously right. Auditing the contract after deploying caught what it breaks:
+`invite` has **no draft guard**, so a brand can publish a campaign and invite creators into
+it afterwards. That is a real existing workflow, and the sixth blocker took it away.
+
+Demoted to a warning. The **wizard** still refuses to publish a set nobody was pencilled
+into — that is a client rule about a half-finished wizard, not a server rule about what a
+campaign may be. Two different questions; the server must answer the narrower one.
+
+Two tests now pin it: the empty set warns instead of refusing, and a whitelist test fails if
+any blocker code appears that is not one of the locked five. A second test covers what the
+ordering cost could have been — a plain content campaign must clear the gate entirely, or
+the pre-existing wallet refusal would be masked by a blocker firing before it.
+
+**The lesson worth keeping:** "obviously right" additions to a locked list still need the
+existing paths checked. The five were locked for a reason; the sixth was mine.
+
 ## 7. What to check on the handset
 
 Walk `02-workflow.md` W1–W8. The things most likely to be wrong:
