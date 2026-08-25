@@ -19,7 +19,7 @@ import { brandApi } from '../../services/api';
  * next month is inside the deal without anybody agreeing to it. A hand-picked list never
  * does. That difference was invisible while the only options were the two broad ones.
  *
- * Same shape as BrandPlacePicker: a callback in the route params, so the composer keeps
+ * A callback in the route params, so the composer keeps
  * its state and nothing has to be threaded back through navigation.
  */
 

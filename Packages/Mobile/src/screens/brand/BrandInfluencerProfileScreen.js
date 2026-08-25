@@ -192,7 +192,12 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
             influencerHandle: inf?.instagram_handle ? `@${inf.instagram_handle}` : '',
           })}
           activeOpacity={0.85}>
-          <Text style={[s.inviteBtnText, { color: P.white }]}>Request Collaboration</Text>
+          {/* The ask always names WHO. "Request Collaboration" could be about anyone;
+              "Ask Priya" is about the person on the screen.
+              Contract: features/creators-tab-shape (item 6) */}
+          <Text style={[s.inviteBtnText, { color: P.white }]}>
+            Ask {(inf?.full_name || inf?.name || inf?.instagram_handle || 'this creator').split(' ')[0]}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.inviteBtn} onPress={() => setInviteOpen(true)} activeOpacity={0.85}>
           <Text style={s.inviteBtnText}>Invite to Campaign</Text>

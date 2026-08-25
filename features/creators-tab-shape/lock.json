@@ -1,0 +1,39 @@
+{
+  "feature": "creators-tab-shape",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-25 chat: \"ok your decision is fine and good..continue with the mockups we drawn now.....keep sent ,received under talking\"",
+  "approved_at": "2026-08-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-25 chat: \"continue with the mockups we drawn now\" — after the eight boards were presented",
+  "mockup_locked_at": "2026-08-25",
+  "mockup_note": "features/creators-tab-shape/04-preview/mockups/creators-tab.html — eight boards. Every number on them is real production data: 15 requests sent, 0 pitches received, 8 agreements, 22 creators, and the true city and niche spreads.",
+  "founder_decision": "Four tabs, with Sent and Received as a switch inside Talking, chosen over five top-level tabs which would truncate on a phone.",
+  "items": {
+    "1": "Talking splits into Sent and Received, with counts",
+    "2": "'Who can pitch you' moves to the top of Received",
+    "3": "Find: search on top, active filters as removable chips",
+    "4": "Find: one bottom sheet for all filters, live counts, 'Show N'",
+    "5": "The separate Where picker page retired",
+    "6": "The ask button always names who and how many",
+    "7": "Find's bar: Ask all N, or Ask N plus Save as group",
+    "8": "Empty states that explain themselves",
+    "9": "Agreed rows show what was settled; expiring first"
+  },
+  "out_of_scope": "Selecting several agreed creators to build one campaign — Stage 2. Drawn on the boards, deliberately not built.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed. Rule 5 applies at release.",
+    "deploy_class": "production-impacting. Brand app via OTA, AND backend via Render: the ask endpoint gained a fourth recipient mode (influencer_ids) so a hand-picked set can be sent. No migration.",
+    "deploy_targets": [
+      "OTA (brand app)",
+      "Render (backend)"
+    ],
+    "verification": "Test DB unreachable since 22 Aug. Backend change proved against production directly — see 06-diff/notes.md section 5. Full backend suite NOT run."
+  }
+}

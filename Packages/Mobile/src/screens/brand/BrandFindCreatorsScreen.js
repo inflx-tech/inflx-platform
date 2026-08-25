@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  ActivityIndicator, Modal, Alert,
+  ActivityIndicator, Modal, Alert, ScrollView,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
@@ -51,8 +51,18 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
   const [size, setSize] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [nicheOpen, setNicheOpen] = useState(false);
-  const [sizeOpen, setSizeOpen] = useState(false);
+  // One sheet for every filter, raised from the bottom. Three rows used to sit on the
+  // screen whether or not they were doing anything, and each opened its own page.
+  // Contract: features/creators-tab-shape (items 3-5)
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Nothing applies until confirmed, so a combination can be explored and backed out of.
+  const [draft, setDraft] = useState(null);
+  const [places, setPlaces] = useState([]);
+  // Saving a set as a group only means anything once something is ticked, so it lives
+  // on the bar rather than in the header. Contract: features/creators-tab-shape (item 7)
+  const [namingGroup, setNamingGroup] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [savingGroup, setSavingGroup] = useState(false);
   const [availableNiches, setAvailableNiches] = useState([]);
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState(new Set());
@@ -95,6 +105,31 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
 
   const activeCount = (cities.length ? 1 : 0) + (niches.length ? 1 : 0) + (size ? 1 : 0);
 
+  // Places with their real counts, so a filter is never offered that returns nobody.
+  // These come from the same endpoint the retired Where page used.
+  useEffect(() => {
+    brandApi.listCreatorLocations().then(res => {
+      if (res.success) setPlaces(res.data?.states || []);
+    });
+  }, []);
+
+  const openFilters = () => {
+    setDraft({ cities: [...cities], niches: [...niches], size });
+    setFiltersOpen(true);
+  };
+  const applyFilters = () => {
+    if (draft) { setCities(draft.cities); setNiches(draft.niches); setSize(draft.size); }
+    setFiltersOpen(false);
+  };
+
+  // The chips a brand can strike off one at a time, rather than opening a page to
+  // un-choose something.
+  const chips = [
+    ...cities.map(c => ({ label: c, drop: () => setCities(cities.filter(x => x !== c)) })),
+    ...niches.map(n => ({ label: n, drop: () => setNiches(niches.filter(x => x !== n)) })),
+    ...(size ? [{ label: (SIZE_BANDS.find(b => b.key === size) || {}).label || size, drop: () => setSize('') }] : []),
+  ];
+
   const summary = useMemo(() => ({
     where: cities.length === 0 ? 'Anywhere'
       : cities.length <= 2 ? cities.join(', ')
@@ -115,6 +150,24 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+
+  function saveAsGroup() {
+    setGroupName('');
+    setNamingGroup(true);
+  }
+
+  async function confirmGroup() {
+    const name = groupName.trim();
+    if (!name) return Alert.alert('Name it', 'Give the group a name you will recognise later.');
+    setSavingGroup(true);
+    const res = await brandApi.createGroup(name, [...picked]);
+    setSavingGroup(false);
+    if (!res.success) return Alert.alert('Could not save', res.error?.message || 'Please try again.');
+    setNamingGroup(false);
+    setSelecting(false);
+    setPicked(new Set());
+    Alert.alert('Saved', `${name} — ${res.data?.group?.member_count ?? '' } creators. You can ask the whole group in one move from Groups.`);
   }
 
   async function addPickedToGroup() {
@@ -166,29 +219,29 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
         )}
       </View>
 
-      <FilterRow
-        icon="map-marker-outline" label="Where" value={summary.where}
-        onPress={() => navigation.navigate('BrandPlacePicker', {
-          selected: cities,
-          onDone: (next) => setCities(next),
-        })}
-      />
-      <FilterRow icon="tag-outline" label="Works in" value={summary.works} onPress={() => setNicheOpen(true)} />
-      <FilterRow icon="account-group-outline" label="Size" value={summary.size} onPress={() => setSizeOpen(true)} />
+      {/* Active filters only. With nothing chosen this is one line, not five.
+          Contract: features/creators-tab-shape (item 3) */}
+      <View style={s.chipStrip}>
+        {chips.map((c, i) => (
+          <TouchableOpacity key={`${c.label}-${i}`} style={[s.chip, s.chipOn]} activeOpacity={0.7} onPress={c.drop}>
+            <Text style={s.chipTxtOn}>{c.label}</Text>
+            <Icon name="close" size={12} color={ig.bg} />
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity style={[s.chip, s.chipAdd]} activeOpacity={0.7} onPress={openFilters}>
+          <Icon name="tune-variant" size={13} color={ig.text} />
+          <Text style={s.chipTxtAdd}>Filters</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={s.resultsHead}>
         <Text style={s.resultsN}>
           {loading ? 'Searching…' : `${results.length} creator${results.length === 1 ? '' : 's'}`}
           {activeCount > 0 ? ` · ${activeCount} filter${activeCount === 1 ? '' : 's'}` : ''}
         </Text>
-        {activeCount > 0 && (
-          <TouchableOpacity onPress={() => { setCities([]); setNiches([]); setSize(''); }} activeOpacity={0.7}>
-            <Text style={s.clear}>Clear</Text>
-          </TouchableOpacity>
-        )}
         {!addToGroupId && results.length > 0 && (
           <TouchableOpacity onPress={() => { setSelecting(v => !v); setPicked(new Set()); }} activeOpacity={0.7}>
-            <Text style={s.clear}>{selecting ? 'Done' : 'Ask several'}</Text>
+            <Text style={s.clear}>{selecting ? 'Done' : 'Select'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -252,93 +305,205 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
       )}
 
       {/* Multi-select turns into the three things you can do with a selection. */}
-      {picked.size > 0 && (
+      {/* The bar always names WHO and HOW MANY — never just "Ask". A brand about to
+          write to fourteen people should see the number before the form.
+
+          It used to read "Ask all N" with N ticked and then send the FILTERS, so ticking
+          two people wrote to everyone who matched.
+          Contract: features/creators-tab-shape (items 6-7) */}
+      {!loading && (picked.size > 0 || (!addToGroupId && results.length > 0)) && (
         <View style={s.actionBar}>
-          <Text style={s.actionN}>{picked.size} selected</Text>
-          {addToGroupId ? (
-            <TouchableOpacity style={s.actionBtn} onPress={addPickedToGroup} activeOpacity={0.85}>
-              <Text style={s.actionT}>Add to group</Text>
-            </TouchableOpacity>
+          {picked.size > 0 ? (
+            <>
+              <Text style={s.actionN}>{picked.size} selected</Text>
+              {addToGroupId ? (
+                <TouchableOpacity style={s.actionBtn} onPress={addPickedToGroup} activeOpacity={0.85}>
+                  <Text style={s.actionT}>Add to group</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity style={s.actionGhost} activeOpacity={0.85} onPress={saveAsGroup}>
+                    <Text style={s.actionGhostT}>Save as group</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.actionBtn}
+                    activeOpacity={0.85}
+                    onPress={() => navigation.navigate('BrandRequestComposer', {
+                      influencerIds: [...picked],
+                    })}
+                  >
+                    <Text style={s.actionT}>Ask {picked.size}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </>
           ) : (
-            <TouchableOpacity
-              style={s.actionBtn}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('BrandRequestComposer', {
-                filters: {
-                  ...(cities.length ? { cities } : {}),
-                  ...(niches.length ? { niches } : {}),
-                  ...(band.min != null ? { min_followers: band.min } : {}),
-                },
-              })}
-            >
-              <Text style={s.actionT}>Ask all {picked.size}</Text>
-            </TouchableOpacity>
+            <>
+              <Text style={s.actionN}>
+                {activeCount > 0 ? `${results.length} match your filters` : `${results.length} creators`}
+              </Text>
+              <TouchableOpacity style={s.actionGhost} activeOpacity={0.85}
+                onPress={() => { setSelecting(true); setPicked(new Set()); }}>
+                <Text style={s.actionGhostT}>Select</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.actionBtn}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('BrandRequestComposer', {
+                  filters: {
+                    ...(cities.length ? { cities } : {}),
+                    ...(niches.length ? { niches } : {}),
+                    ...(band.min != null ? { min_followers: band.min } : {}),
+                  },
+                })}
+              >
+                <Text style={s.actionT}>Ask all {results.length}</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       )}
 
       {/* Works in */}
-      <Modal visible={nicheOpen} transparent animationType="slide" onRequestClose={() => setNicheOpen(false)}>
-        <View style={s.sheetWrap}>
-          <View style={s.sheet}>
-            <View style={s.sheetHead}>
-              <Text style={s.sheetH}>Works in</Text>
-              <TouchableOpacity onPress={() => setNicheOpen(false)}><Icon name="close" size={20} color={ig.text} /></TouchableOpacity>
+      <Modal visible={namingGroup} transparent animationType="fade" onRequestClose={() => setNamingGroup(false)}>
+        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setNamingGroup(false)}>
+          <TouchableOpacity style={s.nameCard} activeOpacity={1} onPress={() => {}}>
+            <Text style={s.nameH}>Name this group</Text>
+            <Text style={s.nameS}>{picked.size} creators. You can ask the whole group in one move later.</Text>
+            <TextInput
+              style={s.nameInput}
+              value={groupName}
+              onChangeText={setGroupName}
+              placeholder="AP fashion"
+              placeholderTextColor={ig.mut2}
+              autoFocus
+            />
+            <View style={s.nameRow}>
+              <TouchableOpacity onPress={() => setNamingGroup(false)}>
+                <Text style={s.nameCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.nameSave} onPress={confirmGroup} disabled={savingGroup}>
+                <Text style={s.nameSaveT}>{savingGroup ? 'Saving…' : 'Save group'}</Text>
+              </TouchableOpacity>
             </View>
-            {availableNiches.length === 0 && <Text style={s.sheetEmpty}>No categories yet.</Text>}
-            {availableNiches.map(n => {
-              const key = n.niche || n;
-              const count = n.count;
-              const on = niches.includes(key);
-              const empty = count === 0;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[s.pick, empty && s.rowMuted]}
-                  activeOpacity={empty ? 1 : 0.7}
-                  onPress={empty ? undefined : () => toggleNiche(key)}
-                >
-                  <View style={[s.box, on && s.boxOn]}><Text style={s.boxT}>{on ? '✓' : ''}</Text></View>
-                  <Text style={s.pickT}>{key}</Text>
-                  {count != null && <Text style={s.pickC}>{count}</Text>}
-                </TouchableOpacity>
-              );
-            })}
-            <TouchableOpacity style={s.sheetDone} onPress={() => setNicheOpen(false)} activeOpacity={0.85}>
-              <Text style={s.sheetDoneT}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
-      {/* Size */}
-      <Modal visible={sizeOpen} transparent animationType="slide" onRequestClose={() => setSizeOpen(false)}>
-        <View style={s.sheetWrap}>
-          <View style={s.sheet}>
-            <View style={s.sheetHead}>
-              <Text style={s.sheetH}>Size</Text>
-              <TouchableOpacity onPress={() => setSizeOpen(false)}><Icon name="close" size={20} color={ig.text} /></TouchableOpacity>
-            </View>
-            <Text style={s.sheetNote}>Instagram following.</Text>
-            {SIZE_BANDS.map(b => (
-              <TouchableOpacity
-                key={b.key || 'any'}
-                style={s.pick}
-                activeOpacity={0.7}
-                onPress={() => { setSize(b.key); setSizeOpen(false); }}
-              >
-                <View style={[s.radio, size === b.key && s.radioOn]} />
-                <Text style={s.pickT}>{b.label}</Text>
+      {/* ONE sheet, raised from the bottom, holding every filter. Three rows used to sit
+          on the screen doing nothing, and each opened its own page — including a whole
+          page just for choosing a city, now retired.
+
+          Nothing applies until "Show N" is tapped, so a combination can be explored and
+          backed out of. Every option carries a real count, so a brand is never offered a
+          filter that returns nobody.
+          Contract: features/creators-tab-shape (items 4-5) */}
+      <Modal visible={filtersOpen} transparent animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
+        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setFiltersOpen(false)}>
+          <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}}>
+            <View style={s.grab} />
+            <Text style={s.sheetH}>Filters</Text>
+            <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+              <Text style={s.sheetL}>Where</Text>
+              <View style={s.sheetChips}>
+                {places.flatMap(st => (st.cities || []).map(city => {
+                  const name = city.city || city.name || city;
+                  const n = city.count ?? city.creators ?? null;
+                  const on = (draft?.cities || []).includes(name);
+                  return (
+                    <TouchableOpacity key={`${st.state}-${name}`} style={[s.chip, on && s.chipOn]} activeOpacity={0.7}
+                      onPress={() => setDraft(d => ({
+                        ...d,
+                        cities: on ? d.cities.filter(x => x !== name) : [...d.cities, name],
+                      }))}>
+                      <Text style={on ? s.chipTxtOn : s.chipTxt}>{name}{n != null ? ` ${n}` : ""}</Text>
+                    </TouchableOpacity>
+                  );
+                }))}
+                {places.length === 0 && <Text style={s.sheetMuted}>No places to filter by yet.</Text>}
+              </View>
+
+              <Text style={s.sheetL}>Works in</Text>
+              <View style={s.sheetChips}>
+                {availableNiches.map(n => {
+                  const label = n.niche || n.name || n;
+                  const count = n.count ?? null;
+                  const on = (draft?.niches || []).includes(label);
+                  return (
+                    <TouchableOpacity key={label} style={[s.chip, on && s.chipOn]} activeOpacity={0.7}
+                      onPress={() => setDraft(d => ({
+                        ...d,
+                        niches: on ? d.niches.filter(x => x !== label) : [...d.niches, label],
+                      }))}>
+                      <Text style={on ? s.chipTxtOn : s.chipTxt}>{label}{count != null ? ` ${count}` : ""}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                {availableNiches.length === 0 && <Text style={s.sheetMuted}>No categories to filter by yet.</Text>}
+              </View>
+
+              <Text style={s.sheetL}>Size · followers on Instagram</Text>
+              <View style={s.sheetChips}>
+                {SIZE_BANDS.map(b => {
+                  const on = (draft?.size || "") === b.key;
+                  return (
+                    <TouchableOpacity key={b.key || "any"} style={[s.chip, on && s.chipOn]} activeOpacity={0.7}
+                      onPress={() => setDraft(d => ({ ...d, size: on ? "" : b.key }))}>
+                      <Text style={on ? s.chipTxtOn : s.chipTxt}>{b.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            <View style={s.sheetBar}>
+              <TouchableOpacity onPress={() => setDraft({ cities: [], niches: [], size: "" })}>
+                <Text style={s.sheetClear}>Clear all</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+              <TouchableOpacity style={s.sheetApply} onPress={applyFilters} activeOpacity={0.85}>
+                <Text style={s.sheetApplyT}>Show creators</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
 }
 
 const s = StyleSheet.create({
+  chipStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingHorizontal: 14, paddingBottom: 10 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: ig.line, borderRadius: 999,
+    paddingHorizontal: 11, paddingVertical: 6,
+  },
+  chipOn: { backgroundColor: ig.text, borderColor: ig.text },
+  chipAdd: { borderStyle: 'dashed', borderColor: ig.text },
+  chipTxt: { fontSize: 11.5, fontWeight: '700', color: ig.mut },
+  chipTxtOn: { fontSize: 11.5, fontWeight: '700', color: ig.bg },
+  chipTxtAdd: { fontSize: 11.5, fontWeight: '800', color: ig.text },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.42)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: ig.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 14, paddingBottom: 22 },
+  grab: { width: 34, height: 4, borderRadius: 2, backgroundColor: ig.line, alignSelf: 'center', marginBottom: 12 },
+  sheetH: { fontSize: 16, fontWeight: '800', color: ig.text, marginBottom: 6 },
+  sheetL: { fontSize: 9, fontWeight: '800', color: ig.mut, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 14, marginBottom: 7 },
+  sheetChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  sheetMuted: { fontSize: 11.5, color: ig.mut2 },
+  sheetBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 },
+  sheetClear: { fontSize: 12, fontWeight: '700', color: ig.mut },
+  sheetApply: { backgroundColor: ig.text, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 11 },
+  sheetApplyT: { fontSize: 12.5, fontWeight: '800', color: ig.bg },
+  actionGhost: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.38)', borderRadius: 8, paddingHorizontal: 11, paddingVertical: 7 },
+  actionGhostT: { fontSize: 11, fontWeight: '800', color: ig.bg },
+  nameCard: { backgroundColor: ig.bg, borderRadius: 16, padding: 18, margin: 24 },
+  nameH: { fontSize: 16, fontWeight: '800', color: ig.text },
+  nameS: { fontSize: 11.5, color: ig.mut, marginTop: 4, lineHeight: 16 },
+  nameInput: { borderWidth: 1, borderColor: ig.line, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 10, fontSize: 13.5, color: ig.text, marginTop: 14 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 16, marginTop: 16 },
+  nameCancel: { fontSize: 12.5, fontWeight: '700', color: ig.mut },
+  nameSave: { backgroundColor: ig.text, borderRadius: 9, paddingHorizontal: 18, paddingVertical: 10 },
+  nameSaveT: { fontSize: 12.5, fontWeight: '800', color: ig.bg },
   container: { flex: 1, backgroundColor: ig.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 40 },
 

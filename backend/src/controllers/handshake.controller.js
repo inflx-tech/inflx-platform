@@ -97,7 +97,10 @@ function currentTerms(req) {
 
 const createRequests = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
-  const { influencer_id, group_id, filters, terms: termsJson, message, overrides } = req.body || {};
+  const {
+    influencer_id, influencer_ids, group_id, filters,
+    terms: termsJson, message, overrides,
+  } = req.body || {};
 
   const shape = terms.validateTerms(termsJson);
   if (!shape.ok) throw new AppError('VALIDATION_ERROR', shape.message, 422, shape.field);
@@ -109,6 +112,15 @@ const createRequests = asyncHandler(async (req, res) => {
 
   if (influencer_id) {
     recipients = [influencer_id];
+  } else if (Array.isArray(influencer_ids) && influencer_ids.length) {
+    // A hand-picked set. Find lets a brand tick several creators and ask exactly those;
+    // until now the screen sent the FILTERS instead, so ticking two people and pressing
+    // ask wrote to everyone who matched — silently the wrong recipients.
+    // Contract: features/creators-tab-shape (item 7)
+    origin = 'picked';
+    recipients = [...new Set(influencer_ids.map(String))];
+    const { rows } = await db.query('SELECT gen_random_uuid() AS id');
+    batchId = rows[0].id;
   } else if (group_id) {
     origin = 'group';
     const { rows } = await db.query(

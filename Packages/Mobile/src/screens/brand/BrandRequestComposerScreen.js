@@ -72,11 +72,12 @@ const SCOPES = [
 export default function BrandRequestComposerScreen({ route, navigation }) {
   const {
     influencerId, influencerName, influencerHandle,
-    groupId, groupName, filters,
+    groupId, groupName, filters, influencerIds,
   } = route.params || {};
+  const isPicked = Array.isArray(influencerIds) && influencerIds.length > 0;
   const isGroup = !!groupId;
-  const isFiltered = !isGroup && !influencerId && !!filters;
-  const isBulk = isGroup || isFiltered;
+  const isFiltered = !isGroup && !isPicked && !influencerId && !!filters;
+  const isBulk = isGroup || isFiltered || isPicked;
 
   // Who a filtered ask actually reaches — matched, reachable, and what will be sent,
   // with the reason for every drop. Asking for 41 and quietly reaching 30 reads as
@@ -187,7 +188,9 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
     // The same terms, whichever way in. Contract: features/collab-terms-by-aim (item 11)
     const res = isGroup
       ? await brandApi.askGroup(groupId, terms, message || null)
-      : isFiltered
+      : isPicked
+        ? await brandApi.askSome(influencerIds, terms, message || null)
+        : isFiltered
         ? await brandApi.askMany(filters || {}, terms, message || null)
         : await brandApi.sendCollabRequest({ influencer_id: influencerId, terms, message: message || null });
     setBusy(false);
@@ -249,6 +252,7 @@ export default function BrandRequestComposerScreen({ route, navigation }) {
         <Text style={s.sub}>
           To <Text style={s.subB}>
             {isGroup ? (groupName || 'this group')
+              : isPicked ? `${influencerIds.length} creators you picked`
               : isFiltered ? 'everyone who matches your filters'
               : (influencerName || influencerHandle)}
           </Text> — no campaign needed. Every term below is negotiable.

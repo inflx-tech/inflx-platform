@@ -1,0 +1,525 @@
+<title>Two Ways In, Three Ways To Ask</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --ground:#FBFAF7;--surface:#FFFFFF;--sunk:#F4F2EA;
+  --ink:#16150F;--ink2:#3D3A2E;--mut:#6E6A5C;--mut2:#96917F;
+  --rule:#E4E0D3;--rule2:#F0EDE2;
+  --accent:#B07E00;--accentBg:#FBF3D9;
+  --done:#1A6B4A;--doneBg:#E8F3ED;
+  --open:#A93A20;--openBg:#FAEDE9;
+  --hold:#4A5B8C;--holdBg:#EDF0F9;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#141309;--surface:#1D1B12;--sunk:#232116;
+  --ink:#F4F1E4;--ink2:#DAD5C2;--mut:#A19B86;--mut2:#78735F;
+  --rule:#332F21;--rule2:#282518;
+  --accent:#E8B33D;--accentBg:#2E2712;
+  --done:#5FC08F;--doneBg:#14291F;
+  --open:#E58B6E;--openBg:#2E1912;
+  --hold:#93A6DA;--holdBg:#191D2C;
+}}
+:root[data-theme="dark"]{
+  --ground:#141309;--surface:#1D1B12;--sunk:#232116;
+  --ink:#F4F1E4;--ink2:#DAD5C2;--mut:#A19B86;--mut2:#78735F;
+  --rule:#332F21;--rule2:#282518;
+  --accent:#E8B33D;--accentBg:#2E2712;
+  --done:#5FC08F;--doneBg:#14291F;
+  --open:#E58B6E;--openBg:#2E1912;
+  --hold:#93A6DA;--holdBg:#191D2C;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:'Source Serif 4',Georgia,serif;font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:'Archivo',system-ui,sans-serif;margin:0;text-wrap:balance;letter-spacing:-0.015em}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 96px}
+.mast{padding:52px 0 26px;border-bottom:2px solid var(--ink)}
+.kicker{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+.mast h1{font-size:clamp(31px,5.4vw,48px);font-weight:800;line-height:1.04;margin:14px 0 0}
+.mast .sf{font-size:19px;color:var(--mut);margin:16px 0 0;max-width:62ch}
+.tabs{display:flex;gap:5px;padding:12px 0;flex-wrap:wrap;position:sticky;top:0;background:var(--ground);z-index:30;border-bottom:1px solid var(--rule)}
+.tab{border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer;color:var(--mut);font-family:'Archivo',sans-serif}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.view{display:none;padding:30px 0 0}
+.view.on{display:block}
+.vh{font-size:clamp(21px,3vw,28px);font-weight:700;margin-bottom:6px}
+.vs{font-size:18px;color:var(--ink2);margin-bottom:24px;max-width:66ch}
+p{margin:0 0 16px;max-width:66ch}
+ul{margin:0 0 16px;padding-left:20px;max-width:66ch}
+li{margin-bottom:7px}
+strong{font-weight:600}
+
+.note{border:1px solid var(--rule);border-left-width:3px;padding:16px 18px;margin:0 0 18px;font-size:16px;max-width:72ch}
+.note p{font-size:16px}.note p:last-child{margin-bottom:0}
+.note .h{font-family:'Archivo',sans-serif;font-weight:700;font-size:14px;display:block;margin-bottom:6px}
+.n-open{border-left-color:var(--open);background:var(--openBg)}.n-open .h{color:var(--open)}
+.n-hold{border-left-color:var(--hold);background:var(--holdBg)}.n-hold .h{color:var(--hold)}
+.n-done{border-left-color:var(--done);background:var(--doneBg)}.n-done .h{color:var(--done)}
+.n-key{border-left-color:var(--accent);background:var(--accentBg)}.n-key .h{color:var(--accent)}
+
+.tw{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule)}
+table{border-collapse:collapse;width:100%;background:var(--surface);font-size:14.5px}
+th{background:var(--sunk);text-align:left;padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+td{padding:10px 13px;border-top:1px solid var(--rule2);vertical-align:top}
+.bad{color:var(--open);font-weight:600}
+.good{color:var(--done);font-weight:600}
+
+/* phones */
+.screens{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.ph{width:310px;border:1px solid var(--rule);border-radius:22px;background:var(--surface);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0;position:relative}
+.ph.old{opacity:.6}
+.phbar{padding:9px 14px;background:var(--sunk);border-bottom:1px solid var(--rule);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.phb{padding:0 0 12px}
+.hd{padding:13px 14px 9px}
+.hd .t{font-family:'Archivo';font-size:19px;font-weight:800}
+.hd .s{font-size:11px;color:var(--mut);margin-top:2px}
+.stabs{display:flex;gap:14px;padding:0 14px;border-bottom:1px solid var(--rule2)}
+.stabs span{font-size:12px;font-weight:700;color:var(--mut2);padding-bottom:8px;border-bottom:2px solid transparent;white-space:nowrap}
+.stabs span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+.stabs span .n{font-family:'JetBrains Mono';font-size:9.5px;background:var(--rule2);color:var(--mut);border-radius:999px;padding:1px 5px;margin-left:3px}
+.stabs span.on .n{background:var(--ink);color:var(--surface)}
+.seg{display:flex;gap:6px;padding:10px 14px 8px}
+.seg span{flex:1;text-align:center;font-size:11.5px;font-weight:800;padding:7px;border-radius:8px;background:var(--sunk);color:var(--mut)}
+.seg span.on{background:var(--ink);color:var(--surface)}
+.row{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--rule2);align-items:center}
+.av{width:36px;height:36px;border-radius:10px;background:var(--accentBg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Archivo';font-size:11px;font-weight:800;flex-shrink:0}
+.row .m{flex:1;min-width:0}
+.row .nm{font-size:13px;font-weight:800;font-family:'Archivo'}
+.row .sub{font-size:10.5px;color:var(--mut);margin-top:2px}
+.pill{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.p-you{background:var(--accentBg);color:var(--accent)}
+.p-them{background:var(--holdBg);color:var(--hold)}
+.p-done{background:var(--doneBg);color:var(--done)}
+.p-off{background:var(--rule2);color:var(--mut2)}
+.sech{font-family:'JetBrains Mono';font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--mut2);padding:11px 14px 5px}
+.search{display:flex;align-items:center;gap:8px;margin:10px 14px 8px;padding:9px 11px;border:1px solid var(--rule);border-radius:9px;font-size:12px;color:var(--mut2)}
+.chips{display:flex;gap:6px;padding:0 14px 9px;flex-wrap:wrap}
+.chip{border:1px solid var(--rule);border-radius:999px;padding:5px 10px;font-size:10.5px;font-weight:700;color:var(--mut)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.chip.add{border-style:dashed;color:var(--accent);border-color:var(--accent)}
+.bar{position:absolute;left:12px;right:12px;bottom:12px;background:var(--ink);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px}
+.bar .n{flex:1;font-size:11.5px;font-weight:700;color:var(--surface)}
+.bar .b{background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;white-space:nowrap}
+.bar .b2{background:transparent;border:1px solid rgba(255,255,255,.35);color:var(--surface);border-radius:8px;padding:6px 11px;font-size:11px;font-weight:800;white-space:nowrap}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--rule);border-radius:16px 16px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.13);padding:12px 14px 16px}
+.grab{width:34px;height:4px;border-radius:2px;background:var(--rule);margin:0 auto 12px}
+.sheeth{font-family:'Archivo';font-size:14px;font-weight:800;margin-bottom:10px}
+.fl{font-family:'JetBrains Mono';font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--mut);margin:11px 0 6px}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.32)}
+.empty{padding:34px 22px;text-align:center}
+.empty .t{font-size:13px;font-weight:800;font-family:'Archivo';margin-bottom:5px}
+.empty .s{font-size:11px;color:var(--mut);line-height:1.6}
+.cap{font-size:12.5px;color:var(--mut);margin-top:10px;line-height:1.5;max-width:310px}
+.cap b{color:var(--ink)}
+.tagapp{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.3px;margin-bottom:6px}
+.t-new{background:var(--doneBg);color:var(--done)}
+.t-old{background:var(--openBg);color:var(--open)}
+
+.flow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.step{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 13px;font-size:12px;font-weight:700;max-width:210px}
+.step b{display:block;font-family:'Archivo';font-size:12.5px;font-weight:800;margin-bottom:3px}
+.step small{color:var(--mut);font-weight:600;font-size:10.5px;line-height:1.5;display:block}
+.arr{color:var(--mut2);font-weight:800;font-size:16px}
+.foot{margin-top:66px;padding-top:20px;border-top:2px solid var(--ink);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut2);letter-spacing:.04em;line-height:1.9}
+@media (max-width:640px){body{font-size:16px}.wrap{padding:0 18px 64px}.ph{width:100%}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="kicker">Mockup · brand Creators tab · nothing built</div>
+  <h1>Two Ways In, Three Ways To Ask</h1>
+  <p class="sf">The Creators tab redrawn around the two shapes a collaboration actually has — and a Find screen that puts search where your thumb is.</p>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">1 · The shape</button>
+  <button class="tab" data-v="v2">2 · Sent &amp; Received</button>
+  <button class="tab" data-v="v3">3 · Agreed</button>
+  <button class="tab" data-v="v4">4 · Find, redrawn</button>
+  <button class="tab" data-v="v5">5 · The filter sheet</button>
+  <button class="tab" data-v="v6">6 · Three ways to ask</button>
+  <button class="tab" data-v="v7">7 · Empty states</button>
+  <button class="tab" data-v="v8">8 · What changes</button>
+</div>
+
+<!-- ═══ 1 ═══ -->
+<div class="view on" id="v1">
+  <div class="vh">The shape you described</div>
+  <p class="vs">Everything in this tab follows from two facts, and the current design hides both of them.</p>
+
+  <div class="flow">
+    <div class="step"><b>She pitches you</b><small>A creator approaches</small></div>
+    <span class="arr">→</span>
+    <div class="step" style="border-color:var(--accent)"><b>Talking</b><small>Terms going back and forth</small></div>
+    <span class="arr">→</span>
+    <div class="step" style="border-color:var(--done)"><b>Agreed</b><small>Settled, waiting for a campaign</small></div>
+  </div>
+  <div class="flow">
+    <div class="step"><b>You invite her</b><small>One person, a group, or everyone matching a filter</small></div>
+    <span class="arr">→</span>
+    <div class="step" style="border-color:var(--accent)"><b>Talking</b><small>The same place</small></div>
+    <span class="arr">→</span>
+    <div class="step" style="border-color:var(--done)"><b>Agreed</b><small>The same place</small></div>
+  </div>
+
+  <div class="note n-key">
+    <span class="h">Two ways in, one road afterwards</span>
+    <p>A pitch and an invitation are different at the start and identical after it — both become terms going back and forth, and both end up agreed or closed. So the <strong>direction</strong> should be visible while it still matters, and stop mattering once it does not.</p>
+  </div>
+
+  <div class="note n-open">
+    <span class="h">What today's design gets wrong</span>
+    <p><strong>Talking merges both directions into one list.</strong> I built it that way on purpose — arguing a brand should not check two places — and you have looked at it and said the opposite. You are right: a request you sent and an approach you did not ask for are different jobs. One needs chasing; the other needs a decision.</p>
+    <p>And <strong>Agreed sits beside Talking as a peer</strong>, when it is really the far end of the same road.</p>
+  </div>
+
+  <p><strong>Proposed:</strong> Talking splits into <strong>Sent</strong> and <strong>Received</strong>. Agreed keeps its own tab, because a settled deal waiting to be briefed is a different job again — it is work for you, not a conversation.</p>
+</div>
+
+<!-- ═══ 2 ═══ -->
+<div class="view" id="v2">
+  <div class="vh">Talking · Sent and Received</div>
+  <p class="vs">Same four tabs across the top. Inside Talking, a switch — because these are two jobs, not one list.</p>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph old"><div class="phbar"><span>Creators</span><span>Kanchi Silks</span></div><div class="phb">
+        <div class="hd"><div class="t">Creators</div><div class="s">7 conversations · 8 agreed</div></div>
+        <div class="stabs"><span class="on">Talking</span><span>Agreed<i class="n">8</i></span><span>Find</span><span>Groups<i class="n">2</i></span></div>
+        <div class="sech">Your turn · 2</div>
+        <div class="row"><div class="av">PN</div><div class="m"><div class="nm">Priya N.</div><div class="sub">18% · post by 15 Sep</div></div><span class="pill p-you">Your turn</span></div>
+        <div class="row"><div class="av">KV</div><div class="m"><div class="nm">Karthik V.</div><div class="sub">15% · post by 15 Sep</div></div><span class="pill p-you">Your turn</span></div>
+        <div class="sech">Waiting on them · 4</div>
+        <div class="row"><div class="av">MS</div><div class="m"><div class="nm">Meera S.</div><div class="sub">15% · post by 15 Sep</div></div><span class="pill p-them">Waiting</span></div>
+      </div></div>
+      <p class="cap">Requests you sent and pitches you received, <b>indistinguishable in one list</b>.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED · SENT</span>
+      <div class="ph"><div class="phbar"><span>Creators</span><span>Kanchi Silks</span></div><div class="phb">
+        <div class="hd"><div class="t">Creators</div><div class="s">7 talking · 8 agreed</div></div>
+        <div class="stabs"><span class="on">Talking<i class="n">7</i></span><span>Agreed<i class="n">8</i></span><span>Find</span><span>Groups<i class="n">2</i></span></div>
+        <div class="seg"><span class="on">Sent 7</span><span>Received 0</span></div>
+        <div class="sech">Your turn · 2</div>
+        <div class="row"><div class="av">PN</div><div class="m"><div class="nm">Priya N.</div><div class="sub">She countered · 22%</div></div><span class="pill p-you">Your turn</span></div>
+        <div class="row"><div class="av">KV</div><div class="m"><div class="nm">Karthik V.</div><div class="sub">She countered · 19%</div></div><span class="pill p-you">Your turn</span></div>
+        <div class="sech">Waiting on them · 4</div>
+        <div class="row"><div class="av">MS</div><div class="m"><div class="nm">Meera S.</div><div class="sub">Opened, not answered</div></div><span class="pill p-them">Waiting</span></div>
+        <div class="row"><div class="av">DT</div><div class="m"><div class="nm">Divya T.</div><div class="sub">Not opened yet</div></div><span class="pill p-them">Waiting</span></div>
+        <div class="sech">Closed · 1</div>
+        <div class="row"><div class="av">LD</div><div class="m"><div class="nm">Lakshmi D.</div><div class="sub">She said no</div></div><span class="pill p-off">Declined</span></div>
+      </div></div>
+      <p class="cap">People <b>you</b> approached. Ordered by who owes a move — yours first, always.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED · RECEIVED</span>
+      <div class="ph"><div class="phbar"><span>Creators</span><span>Kanchi Silks</span></div><div class="phb">
+        <div class="hd"><div class="t">Creators</div><div class="s">7 talking · 8 agreed</div></div>
+        <div class="stabs"><span class="on">Talking<i class="n">7</i></span><span>Agreed<i class="n">8</i></span><span>Find</span><span>Groups<i class="n">2</i></span></div>
+        <div class="seg"><span>Sent 7</span><span class="on">Received 0</span></div>
+        <div class="row" style="background:var(--sunk);border-bottom-color:var(--rule)">
+          <div style="width:7px;height:7px;borderRadius:4px;background:var(--done);border-radius:4px"></div>
+          <div class="m"><div class="nm" style="font-size:12.5px">Who can pitch you</div><div class="sub">Open to anyone</div></div>
+          <span style="color:var(--mut2);font-size:15px">›</span>
+        </div>
+        <div class="empty">
+          <div class="t">Nobody has pitched yet</div>
+          <div class="s">You are open to pitches, so creators can approach you. When one does, she lands here and the tab counts her.</div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Empty today — 0 pitches ever.</b> So the tab has to explain itself rather than look broken.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 3 ═══ -->
+<div class="view" id="v3">
+  <div class="vh">Agreed — the far end of the road</div>
+  <p class="vs">Once terms are settled the direction stops mattering. Whether she pitched you or you asked her, the job is the same: brief it into a campaign before it expires.</p>
+
+  <div class="screens">
+    <div>
+      <div class="ph"><div class="phbar"><span>Creators</span><span>Agreed</span></div><div class="phb">
+        <div class="hd"><div class="t">Creators</div><div class="s">7 talking · 8 agreed</div></div>
+        <div class="stabs"><span>Talking<i class="n">7</i></span><span class="on">Agreed<i class="n">8</i></span><span>Find</span><span>Groups<i class="n">2</i></span></div>
+        <div class="sech">Expiring soon · 2</div>
+        <div class="row"><div class="av">SR</div><div class="m"><div class="nm">Sneha R.</div><div class="sub">22% · store visit · 2 reels</div></div><span class="pill" style="background:var(--openBg);color:var(--open)">9 days</span></div>
+        <div class="row"><div class="av">DT</div><div class="m"><div class="nm">Divya T.</div><div class="sub">20% · remote</div></div><span class="pill" style="background:var(--openBg);color:var(--open)">12 days</span></div>
+        <div class="sech">Ready to brief · 6</div>
+        <div class="row"><div class="av">AM</div><div class="m"><div class="nm">Asha M.</div><div class="sub">18% · store visit</div></div><span class="pill p-done">Ready</span></div>
+        <div class="row"><div class="av">RK</div><div class="m"><div class="nm">Ravi K.</div><div class="sub">18% · store visit</div></div><span class="pill p-done">Ready</span></div>
+        <div class="bar"><span class="n">2 selected</span><span class="b">Build a campaign</span></div>
+      </div></div>
+      <p class="cap">Expiring first, because <b>90 days unbriefed and the whole negotiation is lost</b>.</p>
+    </div>
+
+    <div style="flex:1 1 340px;min-width:300px">
+      <div class="note n-key">
+        <span class="h">One addition worth making here</span>
+        <p>Agreed is where Stage 2 begins — building a campaign from people who have already said yes. Selecting several and building one campaign from them is the natural motion, and the tab is the only place that list exists.</p>
+        <p><strong>Drawn, not proposed for this batch.</strong> It belongs to Stage 2; putting the selection here now would be building half of it.</p>
+      </div>
+      <p><strong>The terms are on the row.</strong> Today an agreed row shows money and a date. It should show what was actually settled — the money, where she works, and what the fee buys — because that is what you are about to brief.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 4 ═══ -->
+<div class="view" id="v4">
+  <div class="vh">Find, redrawn</div>
+  <p class="vs">Search on top, where a thumb reaches. Filters out of the way until you want them.</p>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-old">TODAY</span>
+      <div class="ph old"><div class="phbar"><span>Find creators</span><span></span></div><div class="phb">
+        <div class="search"><span>🔍</span><span>Search creators</span></div>
+        <div class="row"><span style="color:var(--mut)">📍</span><div class="m"><div class="sub">WHERE</div><div class="nm" style="font-size:12.5px">Anywhere</div></div><span style="color:var(--mut2)">›</span></div>
+        <div class="row"><span style="color:var(--mut)">🏷</span><div class="m"><div class="sub">WORKS IN</div><div class="nm" style="font-size:12.5px">Anything</div></div><span style="color:var(--mut2)">›</span></div>
+        <div class="row"><span style="color:var(--mut)">👥</span><div class="m"><div class="sub">SIZE</div><div class="nm" style="font-size:12.5px">Any size</div></div><span style="color:var(--mut2)">›</span></div>
+        <div class="sech">22 creators</div>
+        <div class="row"><div class="av">DK</div><div class="m"><div class="nm">Deepa K.</div><div class="sub">90 on INFLX · 63,200 Instagram</div></div></div>
+        <div class="row"><div class="av">MT</div><div class="m"><div class="nm">Manoj T.</div><div class="sub">74 on INFLX · 58,400 Instagram</div></div></div>
+      </div></div>
+      <p class="cap"><b>Three filter rows eat the top third of the screen</b>, whether you are filtering or not — and each one opens its own page.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">PROPOSED</span>
+      <div class="ph"><div class="phbar"><span>Find creators</span><span></span></div><div class="phb">
+        <div class="search"><span>🔍</span><span>Search by name or handle</span></div>
+        <div class="chips">
+          <span class="chip on">Vijayawada ✕</span>
+          <span class="chip on">Fashion ✕</span>
+          <span class="chip add">＋ Filters</span>
+        </div>
+        <div class="sech">4 creators · 2 selected</div>
+        <div class="row"><div class="av">✓</div><div class="m"><div class="nm">Priya N.</div><div class="sub">33 on INFLX · 41,000 Instagram</div></div></div>
+        <div class="row"><div class="av">✓</div><div class="m"><div class="nm">Asha M.</div><div class="sub">38 on INFLX · 48,200 Instagram</div></div></div>
+        <div class="row"><div class="av">MS</div><div class="m"><div class="nm">Meera S.</div><div class="sub">15 on INFLX · 31,400 Instagram</div></div></div>
+        <div class="row"><div class="av">NP</div><div class="m"><div class="nm">Nisha P.</div><div class="sub">4 on INFLX · 18,900 Instagram</div></div></div>
+        <div class="bar"><span class="n">2 selected</span><span class="b2">Save as group</span><span class="b">Ask 2</span></div>
+      </div></div>
+      <p class="cap">Search first. Active filters as <b>chips you can remove with one tap</b>. Everything else is creators.</p>
+    </div>
+  </div>
+
+  <div class="note n-key" style="margin-top:20px">
+    <span class="h">Why chips rather than rows</span>
+    <p>A filter row occupies the same space whether or not it is doing anything. A chip only exists once you have chosen something, and removing it is one tap rather than opening a page to un-choose.</p>
+    <p>With nothing filtered the top of the screen is just <strong>search and “＋ Filters”</strong> — two lines instead of five.</p>
+  </div>
+</div>
+
+<!-- ═══ 5 ═══ -->
+<div class="view" id="v5">
+  <div class="vh">The filter sheet</div>
+  <p class="vs">One sheet from the bottom, all three filters, applied together — instead of three separate pages.</p>
+
+  <div class="screens">
+    <div>
+      <div class="ph">
+        <div class="phbar"><span>Find creators</span><span></span></div>
+        <div class="phb" style="min-height:430px">
+          <div class="search"><span>🔍</span><span>Search by name or handle</span></div>
+          <div class="chips"><span class="chip add">＋ Filters</span></div>
+          <div class="sech">22 creators</div>
+          <div class="row"><div class="av">DK</div><div class="m"><div class="nm">Deepa K.</div><div class="sub">90 on INFLX</div></div></div>
+          <div class="row"><div class="av">MT</div><div class="m"><div class="nm">Manoj T.</div><div class="sub">74 on INFLX</div></div></div>
+        </div>
+        <div class="dim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="sheeth">Filters</div>
+          <div class="fl">Where · 14 of 22 are in AP &amp; Telangana</div>
+          <div class="chips" style="padding:0 0 4px">
+            <span class="chip on">Vijayawada 4</span><span class="chip">Hyderabad 4</span>
+            <span class="chip">Guntur 2</span><span class="chip">Nellore 2</span>
+          </div>
+          <div class="fl">Works in</div>
+          <div class="chips" style="padding:0 0 4px">
+            <span class="chip on">Fashion 13</span><span class="chip">Fitness 4</span>
+            <span class="chip">Lifestyle 3</span><span class="chip">Beauty 2</span>
+          </div>
+          <div class="fl">Size · followers on Instagram</div>
+          <div class="chips" style="padding:0 0 4px">
+            <span class="chip">Under 10k</span><span class="chip on">10k–50k</span><span class="chip">50k+</span>
+          </div>
+          <div class="bar" style="position:static;margin-top:14px">
+            <span class="n">4 match</span><span class="b2">Clear all</span><span class="b">Show 4</span>
+          </div>
+        </div>
+      </div>
+      <p class="cap">Every option carries <b>a real count</b>, so you never pick a filter that returns nobody.</p>
+    </div>
+
+    <div style="flex:1 1 340px;min-width:300px">
+      <div class="note n-done">
+        <span class="h">The counts already exist</span>
+        <p>Places, niches and tier counts are all computed on the server today and used by the current pickers. Nothing new has to be calculated — this is the same data in one sheet instead of three pages.</p>
+      </div>
+      <p><strong>The button counts before you commit.</strong> "Show 4" is the honest version of "Apply" — you know what you are about to get while you are still choosing.</p>
+      <p><strong>Nothing applies until you tap it.</strong> Tapping chips changes the count in the button, not the list behind. So you can explore a combination and back out of it.</p>
+      <div class="note n-hold">
+        <span class="h">One thing I would drop</span>
+        <p>The separate <strong>Where</strong> picker screen — a full page for choosing a city — stops being needed. Its counts move into this sheet. Fewer screens doing one job is the lesson this stage keeps teaching.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 6 ═══ -->
+<div class="view" id="v6">
+  <div class="vh">Three ways to ask, one motion</div>
+  <p class="vs">You said the three asks should be clear. They already share one form — what they have never shared is a way of showing <em>who</em> you are about to ask.</p>
+
+  <div class="tw"><table>
+    <tr><th>Way</th><th>Where it starts</th><th>What the button says</th></tr>
+    <tr><td><b>One creator</b></td><td>Tap her row → her profile</td><td>Ask Priya</td></tr>
+    <tr><td><b>Several</b></td><td>Tick rows in Find</td><td>Ask 3</td></tr>
+    <tr><td><b>Everyone matching</b></td><td>Filter, tick nobody</td><td>Ask all 14</td></tr>
+    <tr><td><b>A group</b></td><td>Groups → open one</td><td>Ask AP fashion · 6</td></tr>
+  </table></div>
+
+  <div class="note n-key">
+    <span class="h">The rule that makes it clear</span>
+    <p><strong>The button always names who, and how many.</strong> Never "Ask" or "Send" alone. A brand about to write to fourteen people should see the number before the form, not after it.</p>
+    <p>Everything after that button is <strong>identical</strong> — the same terms, in the same order, whichever way you arrived. That part is already true as of yesterday; this makes it visible.</p>
+  </div>
+
+  <div class="screens">
+    <div>
+      <span class="tagapp t-new">NOTHING TICKED</span>
+      <div class="ph"><div class="phbar"><span>Find creators</span><span></span></div><div class="phb" style="min-height:250px">
+        <div class="search"><span>🔍</span><span>Search by name or handle</span></div>
+        <div class="chips"><span class="chip on">Vijayawada ✕</span><span class="chip add">＋ Filters</span></div>
+        <div class="sech">4 creators</div>
+        <div class="row"><div class="av">PN</div><div class="m"><div class="nm">Priya N.</div><div class="sub">33 on INFLX</div></div></div>
+        <div class="row"><div class="av">AM</div><div class="m"><div class="nm">Asha M.</div><div class="sub">38 on INFLX</div></div></div>
+        <div class="bar"><span class="n">4 match your filters</span><span class="b2">Select</span><span class="b">Ask all 4</span></div>
+      </div></div>
+      <p class="cap">No ticking needed for the common case: <b>filter, then ask everyone who matched</b>.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">SOME TICKED</span>
+      <div class="ph"><div class="phbar"><span>Find creators</span><span></span></div><div class="phb" style="min-height:250px">
+        <div class="search"><span>🔍</span><span>Search by name or handle</span></div>
+        <div class="chips"><span class="chip on">Vijayawada ✕</span><span class="chip add">＋ Filters</span></div>
+        <div class="sech">4 creators · 2 selected</div>
+        <div class="row"><div class="av">✓</div><div class="m"><div class="nm">Priya N.</div><div class="sub">33 on INFLX</div></div></div>
+        <div class="row"><div class="av">✓</div><div class="m"><div class="nm">Asha M.</div><div class="sub">38 on INFLX</div></div></div>
+        <div class="bar"><span class="n">2 selected</span><span class="b2">Save as group</span><span class="b">Ask 2</span></div>
+      </div></div>
+      <p class="cap">Ticking switches the bar. <b>Save as group appears only here</b>, because that is the only moment it means anything.</p>
+    </div>
+
+    <div>
+      <span class="tagapp t-new">A GROUP</span>
+      <div class="ph"><div class="phbar"><span>Groups</span><span>AP fashion</span></div><div class="phb" style="min-height:250px">
+        <div class="hd"><div class="t">AP fashion</div><div class="s">6 creators · made 21 Aug</div></div>
+        <div class="row"><div class="av">PN</div><div class="m"><div class="nm">Priya N.</div><div class="sub">Vijayawada · 33 on INFLX</div></div></div>
+        <div class="row"><div class="av">AM</div><div class="m"><div class="nm">Asha M.</div><div class="sub">Vijayawada · 38 on INFLX</div></div></div>
+        <div class="row"><div class="av">MS</div><div class="m"><div class="nm">Meera S.</div><div class="sub">Vijayawada · 15 on INFLX</div></div></div>
+        <div class="bar"><span class="n">6 in this group</span><span class="b2">Add more</span><span class="b">Ask 6</span></div>
+      </div></div>
+      <p class="cap">Same bar, same shape, same words. <b>"Add more" opens Find in picking mode</b> — the bug you hit last week, by design this time.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 7 ═══ -->
+<div class="view" id="v7">
+  <div class="vh">Empty states</div>
+  <p class="vs">Three of these tabs are empty or near-empty on your platform today. An empty tab that does not explain itself reads as broken — and you have already hit that once, with "Archived".</p>
+
+  <div class="screens">
+    <div>
+      <div class="ph"><div class="phbar"><span>Received</span><span>0 pitches</span></div><div class="phb" style="min-height:260px">
+        <div class="empty">
+          <div class="t">Nobody has pitched yet</div>
+          <div class="s">You are open to pitches, so creators can approach you. When one does, she lands here and this tab counts her.</div>
+        </div>
+      </div></div>
+      <p class="cap"><b>True today: 0 pitches, ever.</b> It says you are open, so silence means nobody has come — not that something is broken.</p>
+    </div>
+
+    <div>
+      <div class="ph"><div class="phbar"><span>Received</span><span>closed</span></div><div class="phb" style="min-height:260px">
+        <div class="empty">
+          <div class="t">You are closed to pitches</div>
+          <div class="s">No creator can approach you right now. Open it and they can — you set the conditions.</div>
+          <div style="margin-top:14px"><span class="chip on" style="padding:8px 14px">Who can pitch you</span></div>
+        </div>
+      </div></div>
+      <p class="cap">The other reason for silence, <b>named rather than left to guess</b>.</p>
+    </div>
+
+    <div>
+      <div class="ph"><div class="phbar"><span>Groups</span><span>none</span></div><div class="phb" style="min-height:260px">
+        <div class="empty">
+          <div class="t">No groups yet</div>
+          <div class="s">A group is a set of creators you keep — the people you worked with before, or everyone you found in one city. Find creators, tick a few, and save them.</div>
+          <div style="margin-top:14px"><span class="chip on" style="padding:8px 14px">Find creators</span></div>
+        </div>
+      </div></div>
+      <p class="cap">An empty state that <b>says what the thing is for</b>, and offers the one action that fills it.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 8 ═══ -->
+<div class="view" id="v8">
+  <div class="vh">What changes, and what it costs</div>
+
+  <div class="tw"><table>
+    <tr><th>#</th><th>Change</th><th>Size</th></tr>
+    <tr><td class="mono">1</td><td><b>Talking splits into Sent and Received</b>, with counts on each</td><td>Small</td></tr>
+    <tr><td class="mono">2</td><td>The <b>"Who can pitch you"</b> bar moves to the top of Received, where pitches arrive</td><td>Small</td></tr>
+    <tr><td class="mono">3</td><td>Find: <b>search on top</b>, active filters as removable chips</td><td>Small</td></tr>
+    <tr><td class="mono">4</td><td>Find: <b>one bottom sheet</b> for all three filters, with live counts and a "Show 4" button</td><td>Medium</td></tr>
+    <tr><td class="mono">5</td><td>The separate <b>Where picker page is retired</b> — its counts move into the sheet</td><td>Small</td></tr>
+    <tr><td class="mono">6</td><td><b>The ask button always names who and how many</b>, in all four places</td><td>Small</td></tr>
+    <tr><td class="mono">7</td><td>Find's bar: <b>Ask all N</b> with nothing ticked, <b>Ask N / Save as group</b> once ticked</td><td>Small</td></tr>
+    <tr><td class="mono">8</td><td><b>Empty states</b> that explain themselves — Received, Groups, and no-results</td><td>Small</td></tr>
+    <tr><td class="mono">9</td><td>Agreed rows show <b>what was actually settled</b>, and expiring ones come first</td><td>Small</td></tr>
+    <tr style="background:var(--sunk)"><td class="mono">—</td><td><i>Selecting several agreed creators to build one campaign</i></td><td><b>Stage 2</b></td></tr>
+  </table></div>
+
+  <div class="note n-done">
+    <span class="h">No backend work, no migration</span>
+    <p>Every number on these screens is already computed and already sent: the city and niche counts, the tier bands, whose turn it is, the expiry clock. This is a rearrangement of what the apps already receive.</p>
+  </div>
+
+  <div class="note n-key">
+    <span class="h">One decision I would like from you</span>
+    <p>I have drawn <strong>Sent</strong> and <strong>Received</strong> as a switch inside Talking, keeping four tabs across the top.</p>
+    <p>The alternative is <strong>five tabs</strong> — Sent · Received · Agreed · Find · Groups — which is more literal to what you asked for, but five labels start truncating on a phone and Find and Groups get squeezed.</p>
+    <p><strong>Tell me which</strong>, and whether anything on these boards is wrong before I build.</p>
+  </div>
+</div>
+
+<div class="foot">
+  MOCKUP ONLY — NOTHING BUILT<br>
+  EVERY NUMBER SHOWN IS REAL: 15 REQUESTS SENT · 0 PITCHES RECEIVED · 8 AGREED · 22 CREATORS<br>
+  LOCK THE BOARDS AND IMPLEMENTATION STARTS AT ITEM 1
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</div>

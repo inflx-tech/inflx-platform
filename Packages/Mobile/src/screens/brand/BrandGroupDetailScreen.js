@@ -96,7 +96,9 @@ export default function BrandGroupDetailScreen({ route, navigation }) {
               activeOpacity={0.85}
               onPress={() => navigation.navigate('BrandRequestComposer', { groupId, groupName: group?.name })}
             >
-              <Text style={s.priT}>Ask this whole group</Text>
+              {/* Names the group and the number, so a brand about to write to six people
+                  sees six before the form. Contract: features/creators-tab-shape (item 6) */}
+              <Text style={s.priT}>Ask {group?.name || "this group"} · {members.length}</Text>
             </TouchableOpacity>
           ) : (
             /* An empty group cannot be asked. Saying so beats a button that fails. */

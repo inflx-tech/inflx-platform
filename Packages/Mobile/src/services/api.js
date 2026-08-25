@@ -215,6 +215,11 @@ export const brandApi = {
   // these two are the group and the filtered set.
   askGroup: (groupId, terms, message, overrides) =>
     api.post('/brands/me/collab-requests', { group_id: groupId, terms, message, overrides }),
+  // A hand-picked set. Find lets a brand tick several creators; until this existed the
+  // screen sent the FILTERS instead, so ticking two people asked everyone who matched.
+  // Contract: features/creators-tab-shape (item 7)
+  askSome:  (influencerIds, terms, message) =>
+    api.post('/brands/me/collab-requests', { influencer_ids: influencerIds, terms, message }),
   askMany:  (filters, terms, message) =>
     api.post('/brands/me/collab-requests', { filters, terms, message }),
 

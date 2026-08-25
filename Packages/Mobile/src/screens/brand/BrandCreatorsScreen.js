@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
+import { fromMode } from '../../utils/workingStyle';
 import CreatorAvatar from '../../components/CreatorAvatar';
 // Rendered INSIDE this tab rather than pushed as their own pages.
 import BrandFindCreatorsScreen from './BrandFindCreatorsScreen';
@@ -49,6 +50,40 @@ function termsLine(t) {
   if (t.money?.fee != null) bits.push(money(t.money.fee));
   if (t.money?.commission_pct != null) bits.push(`${t.money.commission_pct}%`);
   if (t.time?.post_by) bits.push(`post by ${String(t.time.post_by).slice(0, 10)}`);
+  return bits.join(' · ');
+}
+
+const DEL_WORD = {
+  reel: 'reel', post: 'post', story: 'story',
+  youtube_video: 'YouTube video', youtube_short: 'YouTube Short',
+};
+
+/**
+ * What was actually SETTLED — the reason this row exists.
+ * Contract: features/creators-tab-shape (item 9)
+ *
+ * termsLine above is for a conversation in flight, where money and the date are what
+ * keep changing. An agreement is finished, and the brand reading this row is about to
+ * brief the creator: it needs to say what the fee BUYS and where she works, because
+ * those are the two things a brief has to be written around.
+ */
+function settledLine(t) {
+  if (!t) return '';
+  const bits = [];
+  if (t.money?.fee != null) bits.push(money(t.money.fee));
+  if (t.money?.commission_pct != null) bits.push(`${t.money.commission_pct}% per sale`);
+  // "2 reels · 1 story" rather than "3 deliverables" — a count alone briefs nobody.
+  if (Array.isArray(t.deliverables) && t.deliverables.length) {
+    t.deliverables.forEach(d => {
+      const w = DEL_WORD[d.type] || d.type;
+      bits.push(`${d.count} ${w}${d.count > 1 ? 's' : ''}`);
+    });
+  }
+  // Read the stored value, not the sentence describeMode builds from it — matching on
+  // prose would break the moment that wording is edited.
+  const { place, shipping } = fromMode(t.mode);
+  if (place === 'visit') bits.push('store visit');
+  else if (place === 'remote') bits.push(shipping === 'yes' ? 'remote, you ship' : 'remote');
   return bits.join(' · ');
 }
 
@@ -104,6 +139,10 @@ export default function BrandCreatorsScreen({ navigation }) {
   // Pitch settings, surfaced here rather than three taps away under Profile.
   const [pitchSettings, setPitchSettings] = useState(null);
   const [pitchOpen, setPitchOpen] = useState(false);
+  // Sent or Received. A request you sent needs chasing; an approach you did not ask for
+  // needs a decision. Merging them — which is what I built first — hid that difference.
+  // Contract: features/creators-tab-shape (item 1)
+  const [side, setSide] = useState('sent');
 
   const load = useCallback(async () => {
     const [rq, pi, ag, gr, ps] = await Promise.all([
@@ -159,6 +198,12 @@ export default function BrandCreatorsScreen({ navigation }) {
     const rank = { you: 0, them: 1, none: 2 };
     return rows.sort((a, b) => (rank[a.turn] - rank[b.turn]) || (new Date(b.at) - new Date(a.at)));
   }, [requests, pitches]);
+
+  // Every row already carries its direction, so this is a partition of a list that
+  // exists — not a new query. A conversation belongs to exactly one side.
+  const sent     = talking.filter(r => r.kind === 'request');
+  const received = talking.filter(r => r.kind === 'proposal');
+  const sideRows = side === 'sent' ? sent : received;
 
   const yourTurn = talking.filter(r => r.turn === 'you');
   const waiting  = talking.filter(r => r.turn === 'them');
@@ -227,12 +272,21 @@ export default function BrandCreatorsScreen({ navigation }) {
     );
   }
 
+  // Soonest-expiring first. An agreement 90 days unbriefed is lost, and a list ordered
+  // by when it was agreed buries exactly the row that needs acting on. Anything with no
+  // clock sits at the end rather than jumping the queue.
+  const byExpiry = [...agreements].sort((x, y) => {
+    const a1 = x.expires_at ? new Date(x.expires_at).getTime() : Infinity;
+    const b1 = y.expires_at ? new Date(y.expires_at).getTime() : Infinity;
+    return a1 - b1;
+  });
+
   if (tab === 'agreed') {
     return (
       <View style={s.container}>
         {header}
         <FlatList
-          data={agreements}
+          data={byExpiry}
           keyExtractor={(a) => String(a.id)}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ig.text} />}
           renderItem={({ item }) => {
@@ -247,7 +301,7 @@ export default function BrandCreatorsScreen({ navigation }) {
                 <CreatorAvatar name={item.influencer_name || item.instagram_handle} avatarUrl={item.profile_image_url} size={38} square />
                 <View style={{ flex: 1 }}>
                   <Text style={s.rowName}>{item.influencer_name || item.instagram_handle || 'Creator'}</Text>
-                  <Text style={s.rowTerms}>{termsLine(item.settled_terms_json || item.terms_json)}</Text>
+                  <Text style={s.rowTerms}>{settledLine(item.terms_json)}</Text>
                   <Text style={[s.rowStatus, { color: soon ? ig.red : ig.mut }]}>
                     {days != null
                       ? (days <= 0 ? 'EXPIRED' : soon ? `EXPIRES IN ${days} DAYS` : `EXPIRES ${fmtD(item.expires_at)}`)
@@ -264,7 +318,7 @@ export default function BrandCreatorsScreen({ navigation }) {
               <Text style={s.emptyS}>When a creator accepts, they wait here until you build a campaign.</Text>
             </View>
           }
-          contentContainerStyle={agreements.length === 0 ? { flexGrow: 1 } : { paddingBottom: 28 }}
+          contentContainerStyle={byExpiry.length === 0 ? { flexGrow: 1 } : { paddingBottom: 28 }}
         />
       </View>
     );
@@ -272,9 +326,11 @@ export default function BrandCreatorsScreen({ navigation }) {
 
   // ── Talking ────────────────────────────────────────────────────────────────
   const sections = [
-    { title: `Your turn · ${yourTurn.length}`, rows: yourTurn },
-    { title: `Waiting on them · ${waiting.length}`, rows: waiting },
-    { title: 'Closed', rows: closed },
+    { title: `Your turn · ${sideRows.filter(r => r.turn === 'you').length}`,
+      rows: sideRows.filter(r => r.turn === 'you') },
+    { title: `Waiting on ${side === 'sent' ? 'them' : 'you'} · ${sideRows.filter(r => r.turn === 'them').length}`,
+      rows: sideRows.filter(r => r.turn === 'them') },
+    { title: 'Closed', rows: sideRows.filter(r => r.turn === 'none') },
   ].filter(sec => sec.rows.length > 0);
 
   return (
@@ -290,7 +346,23 @@ export default function BrandCreatorsScreen({ navigation }) {
            who is allowed to reach me". Two very different things that looked the same.
            Contract: features/stage-1-find-each-other-and-agree */
         ListHeaderComponent={
-          pitchSettings ? (
+          <>
+            {/* Sent or Received — two jobs, not one list.
+                Contract: features/creators-tab-shape (item 1) */}
+            <View style={s.seg}>
+              <TouchableOpacity style={[s.segBtn, side === 'sent' && s.segOn]}
+                activeOpacity={0.7} onPress={() => setSide('sent')}>
+                <Text style={[s.segT, side === 'sent' && s.segTOn]}>Sent {sent.length}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[s.segBtn, side === 'received' && s.segOn]}
+                activeOpacity={0.7} onPress={() => setSide('received')}>
+                <Text style={[s.segT, side === 'received' && s.segTOn]}>Received {received.length}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Who may approach you belongs where approaches arrive — not over the
+                list of people you approached. Contract: features/creators-tab-shape (item 2) */}
+            {side === 'received' && pitchSettings ? (
             <TouchableOpacity style={s.pitchBar} activeOpacity={0.7} onPress={() => setPitchOpen(true)}>
               <View style={[s.pitchDot, { backgroundColor: pitchSettings.accepts_proposals ? ig.green : ig.mut2 }]} />
               <View style={{ flex: 1 }}>
@@ -305,8 +377,34 @@ export default function BrandCreatorsScreen({ navigation }) {
               </View>
               <Icon name="chevron-right" size={18} color={ig.mut2} />
             </TouchableOpacity>
-          ) : null
+            ) : null}
+          </>
         }
+        ListEmptyComponent={
+          side === 'received' ? (
+            <View style={s.empty}>
+              <Icon name="email-outline" size={30} color={ig.mut2} />
+              {pitchSettings && pitchSettings.accepts_proposals === false ? (
+                <>
+                  <Text style={s.emptyT}>You are closed to pitches</Text>
+                  <Text style={s.emptyS}>No creator can approach you right now. Open it and they can — you set the conditions.</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={s.emptyT}>Nobody has pitched yet</Text>
+                  <Text style={s.emptyS}>You are open to pitches, so creators can approach you. When one does, she lands here and this tab counts her.</Text>
+                </>
+              )}
+            </View>
+          ) : (
+            <View style={s.empty}>
+              <Icon name="account-search-outline" size={30} color={ig.mut2} />
+              <Text style={s.emptyT}>You have not asked anyone yet</Text>
+              <Text style={s.emptyS}>Find creators, then ask one, a group, or everyone who matches your filters.</Text>
+            </View>
+          )
+        }
+        contentContainerStyle={sections.length === 0 ? { flexGrow: 1 } : undefined}
         renderItem={({ item: sec }) => (
           <View>
             <Text style={s.sectionH}>{sec.title}</Text>
@@ -357,6 +455,11 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: ig.lineSoft, backgroundColor: ig.bg,
   },
   pitchDot: { width: 7, height: 7, borderRadius: 4 },
+  seg: { flexDirection: 'row', gap: 6, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 8 },
+  segBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8, backgroundColor: ig.bgSoft },
+  segOn: { backgroundColor: ig.text },
+  segT: { fontSize: 11.5, fontWeight: '800', color: ig.mut },
+  segTOn: { color: ig.bg },
   pitchT: { fontSize: 12.5, fontWeight: '800', color: ig.text },
   pitchS: { fontSize: 11, color: ig.mut, marginTop: 2 },
   container: { flex: 1, backgroundColor: ig.bg },
