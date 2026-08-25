@@ -200,5 +200,12 @@
     "why_not_verified": "The backend test database has refused connections since 2026-08-22, so no API-level test can run. Everything provable without it was proved; everything else is honestly listed above rather than assumed.",
     "maestro": "qa/maestro/flows/03-brand-launch.yaml exists but only proves the brand app boots. NO flow covers the campaign wizard. Rule 5 requires release.maestro_green before released can be set true, so a wizard flow has to be written before Stage 2 can be marked released.",
     "step_14_release": "NOT RECORDED. released=false, maestro_green=false, qa_all_green=false. Stage 2 is DEPLOYED but not RELEASED, and the difference is deliberate."
+  },
+  "handset_walk_2026_08_25": {
+    "done": true,
+    "founder": "\"in stage 2 i went to walkthrough. this is almost ok. small changes which is mostly UI and cosmotics.\"",
+    "verdict": "THE GATE IS CLEARED. The stage works on a handset. No crash, no dead route — which is what seven new routes in a native stack most risked.",
+    "open": "A punch list of UI and cosmetic changes, to be given in one batch. Stage 2 is NOT closed until they land.",
+    "released_still_false": "released and maestro_green stay false: the cosmetics are outstanding, no Maestro flow covers the wizard (Rule 5), and the API-level checks in 03-expected-outputs remain unproven while the test database is down."
   }
 }

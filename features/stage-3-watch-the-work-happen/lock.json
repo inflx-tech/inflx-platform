@@ -1,0 +1,80 @@
+{
+  "feature": "stage-3-watch-the-work-happen",
+  "spec_version": "1.0.0",
+  "status": "awaiting-lock",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "mockup_note": "features/stage-3-watch-the-work-happen/04-preview/mockups/stage3-screens.html — eight boards. EXTRACTED from the already-agreed FINAL 4 (brand-mobile-spine/04-preview/mockups/final-4-drilldown.html) using its stylesheet verbatim. Panel 7 is NOT a worked example: it is collabCounts.forBrand executed read-only against PRODUCTION on 2026-08-26. Panel 8 states every screen and every server rule against what exists today.",
+  "notes": "Stage 3 of 11 in Docs/THE_PLAN.md. Both sides watch the work happen — the campaign drill-down, the six-step spine on both phones, and the needs-you roll-up rendered for the first time. Scope is the two phone apps plus counting work in one existing service. NOT LOCKED.",
+  "programme": {
+    "plan": "Docs/THE_PLAN.md",
+    "stage": 3,
+    "of": 11,
+    "depends_on": "Stage 0 for collabStep + collabCounts (both verified working against production), and Stage 2 for the campaigns there are to drill into",
+    "drawn_from": [
+      "brand-mobile-spine/04-preview/mockups/final-4-drilldown.html",
+      "collab-navigation-spine/03-action-ledger.html"
+    ]
+  },
+  "reality_check_2026_08_26": {
+    "method": "Every verdict read from the named file or run read-only against production. The roll-up itself was EXECUTED against the live database rather than reasoned about. Full detail in 01-spec.md section 2.",
+    "the_good_news": "collabCounts.forBrand already returns the whole campaigns->sets->creators tree with a step and a turn per creator, and it RECONCILES AT EVERY LEVEL on live data. Kanchi Silks: tab 8 = campaigns 5 + creators tab 3; Festive Season 0 own + 3 beneath = 3; Monsoon Cottons 0 + 2 = 2. Stage 3 is overwhelmingly a screen job.",
+    "the_brand_throws_it_away": "BrandHomeScreen:83 and BrandActionRequiredScreen:65 both call the endpoint carrying the tree. Grep for needs_you across the whole app: ZERO hits. Computed on every call, discarded every time. No tab badge, no campaign badge, no step number anywhere in screens/brand (the only step hit is Stage 2's wizard rail, a different thing).",
+    "the_creator_has_two_step_models": "The server's six are Agree/Sign/Shoot/Shop posts/Go live/Complete. collabDetailModel.SPINE is Invite/Nego/Sign/Active/Track/Done — the OLD model. AND spineFor matches on stage names Stage 1 renamed: SPINE expects invites/applied/negotiating/to_sign/active/tracking/completed, deriveStage now emits invitations/pitches/to_sign/shoot/content/done. They overlap in EXACTLY ONE value. findIndex returns -1 for everything else, so every node renders 'todo' and NO CURRENT STEP IS HIGHLIGHTED. Same shape as Stage 1 bug #9, live right now.",
+    "creator_reads_the_badge_only": "InfluencerNavigator:154 calls getNeedsYou and uses `total` for the tab badge. The `collaborations` array — the per-collaboration step — is fetched and discarded.",
+    "counting_gaps": [
+      "campaign level: camp.own is HARDCODED 0. All three board items — wallet short, never published, 30 days zero sales — are unbuilt.",
+      "set level: only 'creator with no allocation' of four. Empty set and everything-out-of-stock are unbuilt.",
+      "offer expiring: the service comments that it CANNOT be computed because offers have no expiry, verified 2026-08-15. That comment is now half stale — campaign_influencers.offer_valid_until (migration 148) and brand_offers.store_ends_at both exist. Checked against production: 0 of 6 collaborations and 0 of 1 offers carry one, because nothing writes them and the phone's offer builder cannot set one. So it is computable and honestly zero, which is a different statement."
+    ],
+    "production_data": "2 campaigns, 3 sets, 6 collaborations at invited/contracted/active/active/active/completed, 1 submitted deliverable, 3 shop posts. Steps 2, 3, 4 and 6 all represented with three different turns — varied enough to walk the whole ladder. BUT not one contract is signed (contract_signed_at and brand_signed_at NULL on all six, including those marked active)."
+  },
+  "decisions_taken": {
+    "delete_the_creators_second_spine": "Not repair it. Two derivations kept in step forever is the fault this programme has now fixed five times, and this one is already broken. Cost: her spine gains a network dependency — mitigated because the navigator already makes that call for the badge, so the result is shared rather than re-fetched. It must render from cache on failure, never blank.",
+    "missing_owed_items_go_in_collabCounts": "Not in the screens. An item counted in a screen is invisible to the roll-up, so the badge above it would be wrong — the one failure the spine exists to prevent.",
+    "brand_spine_lives_in_the_campaigns_stack": "The ladder is Campaigns > campaign > set > creator > step. A cross-stack navigate resolves to nothing at runtime while passing every build check — the Stage 1 lesson, and why Stage 2 put all seven wizard screens in one stack."
+  },
+  "open_question_for_founder": {
+    "question": "FINAL 4 says the tab-bar badge is the only number spanning both halves. The server already returns it; the brand app shows NO tab badge at all today. Turning it on means a number appears on the brand's tab bar for the first time — against today's data, 8.",
+    "recommendation": "Turn it on. It is the entry point to everything else in this stage, and a ladder nobody is told to climb gets climbed by nobody. Flagged because it is the one change a brand notices without opening anything.",
+    "blocks_this_stage": false
+  },
+  "scope_excluded": [
+    "The shoot screen — Stage 4. Level 5 links to what exists and says which stage brings the rest.",
+    "Content-live ordering — Stage 5.",
+    "Adding an expiry to offers — Stage 2's punch list.",
+    "Open-group sets — out of scope since Stage 2 and still defective per D-3/D-4 of the test plan.",
+    "A new endpoint for the tree — it already ships on inbox-summary. A second door is how two badges start disagreeing.",
+    "Changing what a step MEANS — collabStep is the agreed spine and is rendered, not redesigned.",
+    "Brand web — phones first."
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed: this stage adds routes to BOTH apps. Rule 5 applies at release. R-8 requires a Maestro flow over the brand ladder — the gap Stage 2 left open, and the gate on marking EITHER stage released.",
+    "deploy_class": "production-impacting (both phone apps via OTA, and backend/src). NO MIGRATION — no new table, column or route.",
+    "deploy_targets": ["Render (backend/src)", "OTA (brand app)", "OTA (creator app)"],
+    "outward_facing": "One visible change without anyone opening anything: a badge appears on the brand's tab bar, reading 8 today. Nothing is new — those eight things have been owed all along and the server has counted them since Stage 0. The change is that the brand is now told.",
+    "device_walk_required": "YES, and THE_PLAN names this as the stage where the skipped device check stops being skipped. Screens land in BOTH apps' navigation. The founder walks W1-W9 on both handsets before any deploy go."
+  },
+  "build_order": [
+    "1 — server: the three campaign-level and two set-level owed items",
+    "2 — brand: read needs_you at last (tab badge, campaign badges)",
+    "3 — brand: levels 2 and 3 gain badges, steps and their level-own sections",
+    "4 — brand: level 4, the per-creator spine (the genuinely new screen)",
+    "5 — brand: level 5 wiring, plus honest notes where Stage 4/5 has not landed",
+    "6 — creator: delete the second spine, render the server's six",
+    "7 — a Maestro flow over the ladder"
+  ],
+  "carried_from_stage_2": {
+    "punch_list_open": "The founder walked Stage 2 and called it almost ok, with UI and cosmetic changes to follow in one batch. Stage 2 is NOT closed.",
+    "not_cosmetic": "One Stage 2 item is missing FUNCTION, not polish, and was found while surveying this stage: the phone's offer builder cannot set a minimum basket, a scope, a redemption mode or an expiry. buildDiscount hardcodes scope:'store'. So every offer built on a phone applies to the whole store, and nothing on a phone can give an offer a deadline — which is why the set-level offer-expiry item here will always count zero. Recorded in stage-2's 06-diff/notes.md section 2.3a."
+  }
+}

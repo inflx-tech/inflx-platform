@@ -51,6 +51,30 @@ composer, so a brand recognises it rather than learning a second way to pick a c
 the same phone. A nested tree on a 300px-wide screen is also where the web version's
 control got hard to use.
 
+### 2.3a CORRECTION — the offer builder is NARROWER than the board, and I said otherwise
+
+**Found 2026-08-26 while surveying Stage 3. My own §2.3 below was incomplete and the
+summary I gave the founder was wrong.**
+
+I reported the offer builder as "reused rather than rebuilt", implying it covered ledger
+#90–#95. It does not. `utils/offerBuilders.buildDiscount` hardcodes `scope: 'store'`, and
+`components/brand/OfferBuilderSheet` has no field for any of:
+
+| Ledger | What the board draws | Built? |
+|---|---|---|
+| #92 | a minimum basket | **no** |
+| #93 | what it applies to — store / category / specific products, via the shared picker | **no — hardcoded to the whole store** |
+| #94 | how it is redeemed — in store / online | **no** |
+| #95 | an expiry | **no** |
+
+**The consequence is not cosmetic.** Every offer built from the phone applies to the whole
+store, so "what she may sell" and "what is discounted" cannot differ when the offer is made
+on a phone — which is the exact conflation migration 148 existed to undo. And because
+nothing on the phone sets an expiry, the set-level "your offer expires in 4 days" item in
+FINAL 4 will always count zero.
+
+This belongs on the Stage 2 punch list as **missing function, not polish**.
+
 ### 2.3 A new offer is created live, with no "save as draft"
 
 The library offers both **Save & activate** and **Save as draft**. Inside the wizard only
