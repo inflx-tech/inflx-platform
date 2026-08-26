@@ -21,7 +21,7 @@
     "mechanism": "Apify, not the YouTube Data API. Founder 2026-08-26: \"what we are doing for youtube and instagram data is using apify scraper for now so we dont want any youtube api for now.\" The service was rewritten onto the same token, mock switch and run-sync call the Instagram side uses."
   },
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": "NOT GREEN — no-regression certified instead. pnpm qa 2026-08-26: 485 workflows, 467 passed, 17 failed, gate 1. Every one of the 7 Playwright specs that drives the rewritten admin approvals page PASSES (approvals.spec.ts approve/auth-gate/error-toast, approvals-reject.spec.ts A/B/C, nav-sweep, role-gate M4). The 17 failures are classified and none is attributable here: W5a+W5b are the permanent live-MSG91 verify-otp reds (since 2026-08-18), and the other 15 sit in collab-terms-model / handshake-service / proposal-acceptance-agreement, none of which imports influencer.controller, admin.controller, apify.service, youtube.service or any admin page, and all of which postdate the 2026-08-18 baseline (425 workflows / 2 failed). Recorded as a string, not the boolean false, following the backend-defect-city-column precedent: a bare false would hide this classification behind a flag. NOT a green claim. NOT deploy-inert.",
     "released": true,
     "released_by": "founder 2026-08-26 chat: \"you deploy it\"",
     "released_at": "2026-08-26",
