@@ -80,10 +80,33 @@ async function scrapePostEngagement(live_url) {
 
 // ─── Normalisation ──────────────────────────────────────────────────────────
 
+/**
+ * Field names vary between Apify actors and between actor versions — the engagement
+ * normaliser below has handled that for a while and the profile one never did. It read
+ * exactly two spellings and fell through to 0 for everything else, so a shape it did not
+ * recognise was stored as a creator with no audience. `null` is the honest value for
+ * "the scrape came back and we could not read a number out of it": the admin screens
+ * render it as never-measured, whereas a 0 claims we looked and found nobody.
+ * Contract: features/admin-creator-review-completeness
+ */
+function firstNumber(...candidates) {
+  for (const c of candidates) {
+    if (c == null || c === '') continue;
+    const n = Number(c);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
 function normalise(raw) {
   return {
-    followers_count: raw.followersCount || raw.followers_count || 0,
-    engagement_rate: raw.engagementRate || raw.engagement_rate || 0,
+    followers_count: firstNumber(
+      raw.followersCount, raw.followers_count, raw.followers,
+      raw.subscribersCount, raw.edge_followed_by?.count
+    ),
+    engagement_rate: firstNumber(
+      raw.engagementRate, raw.engagement_rate, raw.engagement
+    ),
     niche: raw.niche || [],
     scrape_data: raw,
   };

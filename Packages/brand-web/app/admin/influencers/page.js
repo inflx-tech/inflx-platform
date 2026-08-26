@@ -210,13 +210,17 @@ export default function InfluencersPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-border overflow-x-auto">
-        <div className="min-w-[860px]">
-          <div className="grid grid-cols-[1.5fr_1fr_0.8fr_0.7fr_0.7fr_0.6fr_0.8fr] gap-2 px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3">
+        <div className="min-w-[980px]">
+          <div className="grid grid-cols-[1.6fr_1fr_0.8fr_0.6fr_0.7fr_0.7fr_0.6fr_0.8fr] gap-2 px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3">
             <div>Creator</div>
             <div>Contact</div>
             <div>City</div>
             <div>INFLX</div>
             <div>Instagram</div>
+            {/* She is asked for a YouTube channel at signup. Until this column existed it
+                was stored and never shown, so a YouTube-first creator was indistinguishable
+                from one with no audience. Contract: features/admin-creator-review-completeness */}
+            <div>YouTube</div>
             <div>Status</div>
             <div>Joined</div>
           </div>
@@ -234,7 +238,7 @@ export default function InfluencersPage() {
               <div
                 key={i.id}
                 onClick={() => router.push(`/admin/influencers/${i.id}`)}
-                className="grid grid-cols-[1.5fr_1fr_0.8fr_0.7fr_0.7fr_0.6fr_0.8fr] gap-2 px-4 py-3 border-b border-border last:border-0 items-center cursor-pointer hover:bg-surface2/50 transition-colors"
+                className="grid grid-cols-[1.6fr_1fr_0.8fr_0.6fr_0.7fr_0.7fr_0.6fr_0.8fr] gap-2 px-4 py-3 border-b border-border last:border-0 items-center cursor-pointer hover:bg-surface2/50 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 rounded-lg bg-orange-pale flex items-center justify-center text-[10px] font-bold text-orange-deep font-display flex-shrink-0">
@@ -242,7 +246,10 @@ export default function InfluencersPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-xs font-medium text-t1 truncate">{i.full_name || i.name || '--'}</div>
-                    <div className="text-[10px] text-t3 truncate">@{i.instagram_handle || '--'}</div>
+                    <div className="text-[10px] text-t3 truncate">
+                      @{i.instagram_handle || '--'}
+                      {i.youtube_handle && ` · yt/@${String(i.youtube_handle).replace(/^@+/, '')}`}
+                    </div>
                   </div>
                 </div>
                 <div className="text-xs text-t2 truncate">{i.phone || '--'}</div>
@@ -250,7 +257,22 @@ export default function InfluencersPage() {
                 {/* INFLX leads, as it does everywhere else: reach on Instagram is who might
                     see a post; INFLX following is who can buy without leaving. */}
                 <div className="text-xs font-semibold text-t1">{fmtNum(i.inflx_followers)}</div>
-                <div className="text-xs text-t2">{fmtNum(i.followers_count)}</div>
+                {/* Never checked is not zero. A dash says "we have not looked"; a 0 would
+                    claim we looked and found nobody. */}
+                <div className="text-xs text-t2">
+                  {i.scrape_last_run && i.followers_count != null
+                    ? fmtNum(i.followers_count)
+                    : <span className="text-t3">--</span>}
+                </div>
+                <div className="text-xs text-t2">
+                  {!i.youtube_handle
+                    ? <span className="text-t3">--</span>
+                    : !i.youtube_scrape_last_run
+                      ? <span className="text-t3 italic text-[10px]">not checked</span>
+                      : i.youtube_subscribers == null
+                        ? <span className="text-t3 italic text-[10px]">hidden</span>
+                        : fmtNum(i.youtube_subscribers)}
+                </div>
                 <div><StatusBadge status={i.status} /></div>
                 <div className="text-xs text-t3">
                   {i.created_at ? new Date(i.created_at).toLocaleDateString('en-IN') : '--'}

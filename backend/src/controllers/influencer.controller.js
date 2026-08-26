@@ -2,6 +2,9 @@
 
 const db = require('../config/db');
 const apifyService = require('../services/apify.service');
+// The YouTube half of a creator's reach. Asked for at signup, never measured until now.
+// Contract: features/admin-creator-review-completeness
+const youtubeService = require('../services/youtube.service');
 const notificationService = require('../services/notification.service');
 const marketingAutomation = require('../services/marketingAutomation.service');
 const pdfService = require('../services/pdf.service');
@@ -77,6 +80,45 @@ function normaliseHandle(value) {
   if (!value) return null;
   const trimmed = String(value).trim().replace(/^@+/, '').toLowerCase();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Fetch this creator's YouTube channel figures and store them.
+ *
+ * Only writes on a real answer. A channel that could not be found, or a key that is not
+ * configured, leaves the columns exactly as they were — including
+ * youtube_scrape_last_run, so the admin screen keeps saying "never checked" rather than
+ * claiming a fresh measurement of nothing. Contract: features/admin-creator-review-completeness
+ *
+ * @returns the youtube.service result, so a caller that wants to report it can.
+ */
+async function refreshYouTubeStats(influencerId, youtubeHandle) {
+  const yt = await youtubeService.fetchChannel(youtubeHandle);
+  if (!yt.configured || !yt.found) return yt;
+
+  await db.query(
+    `UPDATE influencers
+        SET youtube_channel_id      = $1,
+            youtube_title           = $2,
+            youtube_subscribers     = $3,
+            youtube_views           = $4,
+            youtube_videos          = $5,
+            youtube_thumbnail_url   = $6,
+            youtube_scrape_data     = $7,
+            youtube_scrape_last_run = now()
+      WHERE id = $8`,
+    [
+      yt.channel_id,
+      yt.title,
+      yt.subscribers,
+      yt.views,
+      yt.videos,
+      yt.thumbnail_url,
+      JSON.stringify(yt.raw || {}),
+      influencerId,
+    ]
+  );
+  return yt;
 }
 
 /**
@@ -230,22 +272,49 @@ const register = asyncHandler(async (req, res) => {
   // creators not yet in creator_profiles still get baseline metrics.
   const scraped = await apifyService.scrapeProfile(instagramHandle);
 
+  // full_name and city are written HERE as well as on users, not only on users.
+  // They used to live only on the users row, so influencers.city was NULL for every
+  // creator who signed up in the app — which is why the admin review page said
+  // "Where: Not stated" for someone who had typed her city, and why the Influencers
+  // list showed a dash. The search view worked around it in migration 146; the admin
+  // read paths never were. Fixing the write closes it at the source for new rows; the
+  // COALESCE reads below carry every row that predates this.
+  // Contract: features/admin-creator-review-completeness
   const { rows } = await db.query(
     `INSERT INTO influencers
-       (user_id, instagram_handle, youtube_handle, followers_count, engagement_rate,
+       (user_id, instagram_handle, youtube_handle, full_name, city,
+        followers_count, engagement_rate,
         niche, scrape_data, scrape_last_run)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+     VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, $7, $8, $9, now())
      RETURNING *`,
     [
       userId,
       instagramHandle,
       youtubeHandle,
+      fullName,
+      city,
       scraped.followers_count,
       scraped.engagement_rate,
       scraped.niche,
       JSON.stringify(scraped.scrape_data),
     ]
   );
+
+  // Her YouTube figures, if she gave us a channel.
+  //
+  // Awaited, not fired-and-forgotten. A detached write that lands after the response has
+  // gone is a race — against the test suite's teardown, and against an admin opening her
+  // record a second later and seeing figures appear under them. One channels.list call is
+  // cheaper than the Apify scrape this function already waits for, so awaiting costs
+  // nothing anyone will notice. The try/catch is what keeps it safe: a slow, missing or
+  // unconfigured YouTube lookup must never be the thing that fails a signup.
+  if (youtubeHandle) {
+    try {
+      await refreshYouTubeStats(rows[0].id, youtubeHandle);
+    } catch (e) {
+      console.error('[register] youtube fetch failed:', e.message);
+    }
+  }
 
   const influencer = rows[0];
 
@@ -719,10 +788,18 @@ const getPublicById = asyncHandler(async (req, res) => {
   // 1. Onboarded influencer (legacy)
   const { rows: legacy } = await db.query(
     `SELECT
-       i.id, i.instagram_handle, i.youtube_handle, i.full_name,
+       i.id, i.instagram_handle, i.youtube_handle,
+       -- A creator who signed up in the app has her name and city on the USERS row —
+       -- registration wrote them there and nowhere else until 2026-08-26. Reading
+       -- i.city alone is why this page said "Where: Not stated" for someone who had
+       -- typed her city. Contract: features/admin-creator-review-completeness
+       COALESCE(i.full_name, u.name)   AS full_name,
        i.followers_count, i.engagement_rate, i.engagement_rate AS view_based_er,
        i.niche, i.secondary_niche,
-       i.language, i.tier, i.city, i.state, i.gender, i.platform,
+       i.language, i.tier,
+       COALESCE(i.city,  u.city)       AS city,
+       COALESCE(i.state, u.state)      AS state,
+       i.gender, i.platform,
        i.avg_views, i.avg_likes, i.avg_comments, i.avg_shares, i.avg_saves,
        i.total_posts, i.verified,
        i.bio, i.website,
@@ -730,6 +807,13 @@ const getPublicById = asyncHandler(async (req, res) => {
        i.past_brands_json, i.collaboration_types_json,
        i.profile_image_url, i.age, i.created_at,
        i.profile_image_r2_key,
+       -- YouTube reach, alongside Instagram reach rather than merged into it. Two
+       -- audiences, two numbers; adding them would invent a creator who does not exist.
+       -- NULL subscribers means never measured, which the screen states rather than
+       -- rounding to 0. Contract: features/admin-creator-review-completeness
+       i.youtube_channel_id, i.youtube_title, i.youtube_subscribers,
+       i.youtube_views, i.youtube_videos, i.youtube_thumbnail_url,
+       i.youtube_scrape_last_run,
        -- Counted live from the follow table, exactly as it is for a real person
        -- who follows her tomorrow. Never a stored or estimated number.
        (SELECT count(*)::int FROM follower_follows ff WHERE ff.influencer_id = i.id)
@@ -766,6 +850,12 @@ const getPublicById = asyncHandler(async (req, res) => {
       keyField: 'profile_image_r2_key',
     });
     delete legacy[0].profile_image_r2_key;
+    // A handle is not a link. Creators paste @name, youtube.com/@name and /channel/UC…
+    // interchangeably; the server knows which is which, so it hands the page a URL that
+    // opens rather than making every caller guess.
+    legacy[0].youtube_url = youtubeService.channelUrl(legacy[0].youtube_handle);
+    legacy[0].instagram_url = legacy[0].instagram_handle
+      ? `https://instagram.com/${legacy[0].instagram_handle}` : null;
     return success(res, { influencer: legacy[0] });
   }
 
@@ -851,6 +941,10 @@ const getPublicById = asyncHandler(async (req, res) => {
     await resolveAvatars(scraped, { urlField: 'profile_image_url' });
     // Internal storage key — never part of the public response.
     delete scraped[0].profile_pic_r2_key;
+    // Same openable links the onboarded branch hands over, so one page renders both.
+    scraped[0].youtube_url = youtubeService.channelUrl(scraped[0].youtube_handle);
+    scraped[0].instagram_url = scraped[0].instagram_handle
+      ? `https://instagram.com/${scraped[0].instagram_handle}` : null;
     return success(res, { influencer: scraped[0] });
   }
 
@@ -1076,8 +1170,32 @@ const rescrape = asyncHandler(async (req, res) => {
     ]
   );
 
+  // The button says "refresh her figures", and a creator's figures are not only
+  // Instagram's. If she gave us a channel, this checks it in the same click. A YouTube
+  // failure is reported, never thrown: the Instagram refresh already succeeded and
+  // losing it to a bad channel name would be the worse outcome.
+  // Contract: features/admin-creator-review-completeness
+  let youtube = null;
+  if (influencer.youtube_handle) {
+    try {
+      youtube = await refreshYouTubeStats(influencer.id, influencer.youtube_handle);
+    } catch (e) {
+      console.error('[rescrape] youtube fetch failed:', e.message);
+      youtube = { configured: true, found: false, reason: e.message };
+    }
+  }
+
   const updated = await getInfluencerById(influencer.id);
-  return success(res, { influencer: sanitiseInfluencer(updated), scraped_at: new Date().toISOString() });
+  return success(res, {
+    influencer: sanitiseInfluencer(updated),
+    scraped_at: new Date().toISOString(),
+    youtube: youtube && {
+      attempted:  true,
+      configured: youtube.configured,
+      found:      youtube.found,
+      ...(youtube.reason ? { reason: youtube.reason } : {}),
+    },
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

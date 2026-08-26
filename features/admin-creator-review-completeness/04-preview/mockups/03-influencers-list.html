@@ -1,0 +1,89 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Influencers list — YouTube column</title>
+<style>
+  :root{--navy:#1B2A4A;--t1:#1a1a1a;--t2:#4a4a4a;--t3:#8a8a8a;--border:#e8e8e8;
+        --surface2:#f6f7f9;--orange-pale:#fff1e6;--orange-deep:#b45309;
+        --gold-pale:#fff8e1;--gold-text:#a16207;--teal-pale:#e6f7f4;--teal-deep:#0f766e;}
+  *{box-sizing:border-box}
+  body{font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif;background:#f2f3f5;color:var(--t1);padding:28px;margin:0}
+  h1{font-size:20px;margin:0 0 2px}
+  .sub{font-size:12px;color:var(--t3);margin:0 0 16px}
+  .tbl{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-width:980px}
+  .hd,.rw{display:grid;grid-template-columns:1.6fr 1fr .8fr .6fr .7fr .7fr .6fr .8fr;gap:8px;padding:10px 16px;align-items:center}
+  .hd{background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;
+      letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+  .rw{border-bottom:1px solid var(--border);font-size:12px}
+  .rw:last-child{border-bottom:0}
+  .cre{display:flex;gap:8px;align-items:center;min-width:0}
+  .av{width:32px;height:32px;border-radius:8px;background:var(--orange-pale);color:var(--orange-deep);
+      display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:0 0 auto}
+  .nm{font-size:12px;font-weight:500}
+  .hn{font-size:10px;color:var(--t3)}
+  .bg{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--gold-pale);color:var(--gold-text)}
+  .bg.ok{background:var(--teal-pale);color:var(--teal-deep)}
+  .dim{color:var(--t3)}
+  .it{color:var(--t3);font-style:italic;font-size:10px}
+  .note{margin-top:18px;font-size:11px;color:var(--t3);max-width:900px;line-height:1.6}
+  .note b{color:var(--t2)}
+</style>
+<h1>Influencers</h1>
+<p class="sub">Everyone on the platform. Click a row to open their account.</p>
+
+<div class="tbl">
+  <div class="hd">
+    <div>Creator</div><div>Contact</div><div>City</div><div>INFLX</div>
+    <div>Instagram</div><div>YouTube</div><div>Status</div><div>Joined</div>
+  </div>
+
+  <div class="rw">
+    <div class="cre"><div class="av">AN</div><div>
+      <div class="nm">Anusha Somepalli</div>
+      <div class="hn">@anusha9somepalli · yt/@anushasomepalli</div></div></div>
+    <div>+918465994979</div>
+    <div>Hyderabad</div>
+    <div style="font-weight:600">0</div>
+    <div class="dim">--</div>
+    <div><span class="it">not checked</span></div>
+    <div><span class="bg">pending</span></div>
+    <div class="dim">26/8/2026</div>
+  </div>
+
+  <div class="rw">
+    <div class="cre"><div class="av">PR</div><div>
+      <div class="nm">Priya Sharma</div>
+      <div class="hn">@priyacooks</div></div></div>
+    <div>+919000000001</div>
+    <div>Vijayawada</div>
+    <div style="font-weight:600">412</div>
+    <div>180,000</div>
+    <div class="dim">--</div>
+    <div><span class="bg ok">approved</span></div>
+    <div class="dim">14/5/2026</div>
+  </div>
+
+  <div class="rw">
+    <div class="cre"><div class="av">AR</div><div>
+      <div class="nm">Arun Mehta</div>
+      <div class="hn">@arunfashion · yt/@arunmehta</div></div></div>
+    <div>+919000000002</div>
+    <div>Mumbai</div>
+    <div style="font-weight:600">1,208</div>
+    <div>240,000</div>
+    <div>96,300</div>
+    <div><span class="bg ok">approved</span></div>
+    <div class="dim">02/6/2026</div>
+  </div>
+</div>
+
+<p class="note">
+  <b>Two changes.</b> A YouTube column, because a creator is asked for a channel at signup
+  and until now it was stored and shown nowhere — row 3 is a creator with a real YouTube
+  audience who was indistinguishable from row 2. And the City column now fills in: it read
+  <code>influencers.city</code>, which is NULL for everyone who signed up in the app, so it
+  was a dash for every self-registered creator including row 1.<br><br>
+  <b>Three states, three renderings.</b> <span class="dim">--</span> = no channel on file.
+  <span class="it">not checked</span> = she gave us one and nobody has looked. A number =
+  measured. The Instagram column follows the same rule: an unmeasured profile shows a dash,
+  not the 0 that used to imply we had looked and found nobody.
+</p>

@@ -42,6 +42,16 @@ module.exports = {
   APIFY_MOCK: process.env.APIFY_MOCK !== 'false',
   APIFY_TOKEN: process.env.APIFY_TOKEN,
 
+  // The Apify actor that reads a YouTube channel. A creator's channel is asked for at
+  // signup and was never measured until now — the admin saw her Instagram numbers and had
+  // no way to tell a YouTube-first creator from a small one. Same APIFY_TOKEN, same
+  // mock switch, same run-sync call as the Instagram side.
+  //
+  // Overridable because actor quality on Apify moves: swapping actors is an env change on
+  // Render and a restart, not a code deploy. Use ~ not / in the id.
+  // Contract: features/admin-creator-review-completeness
+  APIFY_YOUTUBE_ACTOR: process.env.APIFY_YOUTUBE_ACTOR || 'streamers~youtube-scraper',
+
   FCM_MOCK: process.env.FCM_MOCK !== 'false',
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || '',
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || '',

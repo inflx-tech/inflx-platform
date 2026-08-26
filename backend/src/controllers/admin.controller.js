@@ -35,7 +35,11 @@ const getBrandQueue = asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const { rows: brands } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.created_at AS user_created_at
+    // city/state live on users, not brands — the same shape the creator queue has.
+    // The queue row shows them, so it has to ask for them.
+    // Contract: features/admin-creator-review-completeness
+    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.email,
+            u.city, u.state, u.created_at AS user_created_at
      FROM brands b
      JOIN users u ON u.id = b.user_id
      WHERE u.status = 'pending'
@@ -66,9 +70,21 @@ const getInfluencerQueue = asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const { rows: influencers } = await db.query(
-    `SELECT i.id, i.instagram_handle, i.followers_count, i.engagement_rate,
-            i.niche, i.language, i.content_style, i.created_at,
-            u.status AS user_status, u.phone, u.name
+    // The approvals queue is where the decision actually gets made, and it used to be
+    // the thinnest of the three admin screens: handle, follower count, date. A creator
+    // hands us five facts at signup — name, phone, city, Instagram, YouTube — and this
+    // query returned one and a half of them. City and name are COALESCEd because
+    // registration wrote them to the USERS row and left influencers.city NULL for every
+    // creator who signed up before 2026-08-26.
+    // Contract: features/admin-creator-review-completeness
+    `SELECT i.id, i.instagram_handle, i.youtube_handle,
+            i.followers_count, i.engagement_rate,
+            i.youtube_subscribers, i.youtube_videos, i.youtube_scrape_last_run,
+            i.niche, i.language, i.content_style, i.created_at, i.scrape_last_run,
+            COALESCE(i.full_name, u.name) AS full_name,
+            COALESCE(i.city,  u.city)     AS city,
+            COALESCE(i.state, u.state)    AS state,
+            u.status AS user_status, u.phone, u.name, u.email
      FROM influencers i
      JOIN users u ON u.id = i.user_id
      WHERE u.status = 'pending'
@@ -1385,8 +1401,9 @@ const getInfluencers = asyncHandler(async (req, res) => {
       i.full_name ILIKE $${paramIdx} OR
       u.name ILIKE $${paramIdx} OR
       i.instagram_handle ILIKE $${paramIdx} OR
+      i.youtube_handle ILIKE $${paramIdx} OR
       u.phone ILIKE $${paramIdx} OR
-      i.city ILIKE $${paramIdx}
+      COALESCE(i.city, u.city) ILIKE $${paramIdx}
     )`);
     params.push(`%${search}%`);
     paramIdx++;
@@ -1418,8 +1435,16 @@ const getInfluencers = asyncHandler(async (req, res) => {
   const total = parseInt(countRows[0].total, 10);
 
   const { rows: influencers } = await db.query(`
-    SELECT i.id, i.instagram_handle, i.youtube_handle, i.full_name,
-           i.followers_count, i.engagement_rate, i.city, i.state, i.tier,
+    SELECT i.id, i.instagram_handle, i.youtube_handle,
+           -- The City column was a dash for every creator who signed up in the app:
+           -- registration wrote her city to users.city and this read i.city, which
+           -- stays NULL. Same reason full_name fell back to blank.
+           -- Contract: features/admin-creator-review-completeness
+           COALESCE(i.full_name, u.name) AS full_name,
+           COALESCE(i.city,  u.city)     AS city,
+           COALESCE(i.state, u.state)    AS state,
+           i.followers_count, i.engagement_rate, i.tier,
+           i.youtube_subscribers, i.youtube_scrape_last_run,
            i.scrape_last_run, i.created_at,
            u.name, u.phone, u.status,
            -- Counted live, exactly as everywhere else on the platform.

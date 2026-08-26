@@ -1,0 +1,58 @@
+{
+  "feature": "admin-creator-review-completeness",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-26 chat: \"these things not clearly showing pls verify and fix these\"",
+  "approved_at": "2026-08-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-26 chat: \"pls verify and fix these\" — boards drawn from the real production record in the founder's screenshot (@anusha9somepalli, registered 26/8/2026)",
+  "mockup_locked_at": "2026-08-26",
+  "mockup_note": "features/admin-creator-review-completeness/04-preview/mockups/ — three boards: the approvals row, the creator record, the influencers list. Every value shown is a field that exists and is populated today; nothing invented. The boards were drawn from the shipped implementation rather than ahead of it — the founder's instruction was 'verify and fix', not 'propose'. Recorded here rather than papered over.",
+  "parent_contract": "features/admin-account-review",
+  "scope": {
+    "fault_1": "influencers.city is NULL for every app signup; every admin read selected it. 'Where: Not stated' for a creator who typed her city.",
+    "fault_2": "The creator's name never appeared on the review page — returned by the API, rendered nowhere.",
+    "fault_3": "The YouTube channel is collected at signup, stored, returned, and shown on no admin screen.",
+    "fault_4": "The approvals row showed 3 of the 5 facts a creator supplies, discarding phone and name the endpoint already sent.",
+    "fault_5": "No YouTube measurement exists anywhere. A YouTube-first creator reads 0 followers, 0.00%.",
+    "mechanism": "Apify, not the YouTube Data API. Founder 2026-08-26: \"what we are doing for youtube and instagram data is using apify scraper for now so we dont want any youtube api for now.\" The service was rewritten onto the same token, mock switch and run-sync call the Instagram side uses."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": true,
+    "released_by": "founder 2026-08-26 chat: \"you deploy it\"",
+    "released_at": "2026-08-26",
+    "maestro_green": false,
+    "maestro_note": "Rule 5 not triggered — nothing under Packages/Mobile/src changes.",
+    "deploy_class": "production-impacting (backend/src on Render, brand-web on Vercel) PLUS a migration.",
+    "deploy_targets": [
+      "Postgres — migration 160, run MANUALLY and FIRST",
+      "Render (backend/src)",
+      "Vercel (brand-web admin pages)"
+    ],
+    "deploy_order": "Migration 160 must be applied BEFORE the push. Every new read path selects i.youtube_subscribers; code landing ahead of the columns 500s the admin queue, the creator record and the influencers list.",
+    "config_owed": "None required. YouTube rides the existing APIFY_TOKEN, the same one Instagram uses. APIFY_YOUTUBE_ACTOR is optional and defaults to streamers~youtube-scraper; set it on Render only to swap actors. NOTE: APIFY_MOCK must be false on Render for either platform to be scraped for real.",
+    "qa_note": "NOT CLAIMED GREEN. Verified against PRODUCTION, not the test suite — the test DB has been unreachable since 2026-08-24. Proven: migration 160 applied clean; all five rewritten queries execute against prod and return every field the pages need; youtube.service parsing verified against all 8 handle forms and all 11 number formats including the nested aboutChannelInfo shape; brand-web next build compiles /admin/approvals, /admin/influencers and /admin/influencers/[id]. Written but NOT RUN: backend/tests/admin-creator-review.test.js (13 checks, including a brand receiving YouTube reach but never a phone or a balance).",
+    "migration_applied": "160 applied to PRODUCTION before the push, per the order rule in 05-impact.md. run-160.js output: BEFORE 0/8 columns, 25 influencers, 1 with a youtube_handle → AFTER 8/8 columns, 25 rows, 1 with handle, 0 measured. No row touched.",
+    "production_verification": "All five new queries run verbatim against the production DB before pushing. Proof on the exact creator from the founder screenshot: Somepalli Anusha — name resolves (was blank), city resolves to Ongole (page said \"Not stated\"), and youtube_handle anusha1298 exists and had never been rendered anywhere. Across the whole table the COALESCE reads take city from 22/25 to 25/25 and full_name from 22/25 to 25/25 — the 3 gained are the self-registered creators. Brand queue returns Preeti chouhan with city Karnal.",
+    "owed": [
+      "Run backend/tests/admin-creator-review.test.js once the test DB is usable.",
+      "Confirm APIFY_MOCK=false on Render — with the mock on, neither Instagram nor YouTube is really scraped.",
+      "Confirm the streamers~youtube-scraper actor is available on the account's Apify plan; swap via APIFY_YOUTUBE_ACTOR if not.",
+      "A practice ADMIN account — the fourth contract to record this gap."
+    ]
+  },
+  "items_done": [
+    "fault 1 — city/full_name written at source + COALESCEd on every admin read",
+    "fault 2 — her name leads the review page",
+    "fault 3 — YouTube handle shown and linked on all three screens",
+    "fault 4 — approvals row carries all five supplied facts",
+    "fault 5 — YouTube reach scraped via Apify (migration 160 + youtube.service.js)",
+    "adjacent — apify.service normalise() no longer stores an unreadable scrape as 0 followers",
+    "adjacent — rescrape re-reads the record instead of assigning the sanitised payload (it was wiping phone and city off the page)"
+  ],
+  "notes": "Step 5 gate. Founder's message is the lock instruction, in the same form as the parent contract's."
+}

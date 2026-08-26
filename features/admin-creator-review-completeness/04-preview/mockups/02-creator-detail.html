@@ -1,0 +1,113 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Creator record — admin</title>
+<style>
+  :root{--navy:#1B2A4A;--t1:#1a1a1a;--t2:#4a4a4a;--t3:#8a8a8a;--border:#e8e8e8;
+        --border2:#dcdcdc;--surface2:#f6f7f9;--orange-pale:#fff1e6;--orange-deep:#b45309;
+        --gold-pale:#fff8e1;--gold-text:#a16207;--teal:#0f9b8e;--red:#c0392b;}
+  *{box-sizing:border-box}
+  body{font:14px/1.45 -apple-system,Segoe UI,Roboto,sans-serif;background:#f2f3f5;color:var(--t1);padding:28px;margin:0}
+  .wrap{max-width:760px}
+  .crumb{font-size:11px;color:var(--t3);margin-bottom:14px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .idblock{display:flex;gap:12px;align-items:center;min-width:0}
+  .av{width:48px;height:48px;border-radius:12px;background:var(--orange-pale);color:var(--orange-deep);
+      display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex:0 0 auto}
+  .name{font-size:16px;font-weight:700}
+  .handles{font-size:12px;color:var(--t3)}
+  .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .wait{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--gold-pale);color:var(--gold-text)}
+  .obtn{font-size:12px;font-weight:700;padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--t2)}
+  .obtn.yt{border-color:#f0c7c2;color:var(--red)}
+  .obtn.re{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+  .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px}
+  .stat{background:var(--surface2);border-radius:10px;padding:10px 6px;text-align:center}
+  .sl{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+  .sv{font-size:14px;font-weight:700;margin:2px 0}
+  .sv.muted{font-size:10px;font-style:italic;font-weight:600;color:var(--t3);line-height:1.25}
+  .ss{font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--t3)}
+  .sect{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin:0 0 8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+  .fl{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+  .fv{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;color:var(--t2)}
+  .fv.link{color:var(--navy)}
+  .fv.none{color:var(--t3);font-style:italic}
+  .warn{background:var(--gold-pale);color:var(--gold-text);border-radius:8px;padding:12px;font-size:12px;margin-top:8px}
+  .decide{border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;gap:8px}
+  .dbtn{font-size:12px;font-weight:700;padding:10px 20px;border-radius:12px;background:var(--teal);color:#fff;border:0}
+  .dbtn.sec{background:#fff;border:2px solid #eebdb7;color:var(--red)}
+  .note{font-size:11px;color:var(--t3);max-width:760px;line-height:1.6}
+  .note b{color:var(--t2)}
+</style>
+<div class="wrap">
+<div class="crumb">← Approvals · All creators</div>
+
+<div class="card">
+  <div class="top">
+    <div class="idblock">
+      <div class="av">AN</div>
+      <div>
+        <div class="name">Anusha Somepalli</div>
+        <div class="handles">@anusha9somepalli · YouTube @anushasomepalli</div>
+      </div>
+    </div>
+    <div class="acts">
+      <span class="wait">today</span>
+      <span class="obtn">Instagram ↗</span>
+      <span class="obtn yt">YouTube ↗</span>
+      <span class="obtn re">↻ Refresh both</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="sl">Instagram</div><div class="sv muted">Never checked</div><div class="ss">followers</div></div>
+    <div class="stat"><div class="sl">Eng. Rate</div><div class="sv muted">—</div><div class="ss">instagram</div></div>
+    <div class="stat"><div class="sl">YouTube</div><div class="sv muted">Never checked</div><div class="ss">subscribers</div></div>
+    <div class="stat"><div class="sl">INFLX</div><div class="sv">0</div><div class="ss">followers</div></div>
+    <div class="stat"><div class="sl">Wallet</div><div class="sv">₹0</div><div class="ss">balance</div></div>
+    <div class="stat"><div class="sl">Status</div><div class="sv">pending</div><div class="ss">account</div></div>
+  </div>
+
+  <div class="sect">What she supplied at signup</div>
+  <div class="grid">
+    <div><div class="fl">Full name</div><div class="fv">Anusha Somepalli</div></div>
+    <div><div class="fl">Phone</div><div class="fv">+918465994979</div></div>
+    <div><div class="fl">Where</div><div class="fv">Hyderabad, Telangana</div></div>
+    <div><div class="fl">Registered</div><div class="fv">26/8/2026</div></div>
+    <div><div class="fl">Instagram handle</div><div class="fv link">@anusha9somepalli ↗</div></div>
+    <div><div class="fl">YouTube channel</div><div class="fv link">@anushasomepalli ↗</div></div>
+  </div>
+
+  <div class="sect">Platform record</div>
+  <div class="grid">
+    <div><div class="fl">Niche</div><div class="fv none">Not stated</div></div>
+    <div><div class="fl">Language</div><div class="fv none">Not stated</div></div>
+    <div><div class="fl">Instagram last checked</div><div class="fv none">Never checked against Instagram</div></div>
+    <div><div class="fl">YouTube last checked</div><div class="fv none">Never checked against YouTube</div></div>
+    <div><div class="fl">Pending Balance</div><div class="fv">₹0</div></div>
+    <div><div class="fl">TDS Status</div><div class="fv">Global default</div></div>
+  </div>
+
+  <div class="warn">These Instagram figures have never been checked against Instagram. Open the handle before trusting them.</div>
+  <div class="warn">She gave us a YouTube channel and it has never been checked. Press Refresh, or open the channel — her real audience may not be on Instagram at all.</div>
+
+  <div class="decide">
+    <span class="dbtn">Approve</span>
+    <span class="dbtn sec">Reject…</span>
+  </div>
+</div>
+
+<p class="note">
+  <b>Three faults this board fixes.</b> The header was the Instagram handle, so an admin
+  approving an account could not see whose account it was — her name is returned by the API
+  and was rendered nowhere. "Where" read <i>Not stated</i> for a creator who typed a city,
+  because registration writes it to <code>users.city</code> and every admin query read
+  <code>influencers.city</code>, which is NULL for app signups. Her YouTube channel was
+  asked for at signup, stored, returned by the API, and shown on no screen.<br><br>
+  <b>Reach is per platform and never summed.</b> Six tiles, two of them audiences that do
+  not overlap. 8k subscribers and 8k Instagram followers are not 16k people, and a single
+  merged "reach" number would invent a creator who does not exist. TDS controls stay hidden
+  until she is approved, exactly as <code>admin-account-review</code> item 3 set out.
+</p>
+</div>

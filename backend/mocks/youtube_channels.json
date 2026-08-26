@@ -1,0 +1,35 @@
+{
+  "_comment": "Shaped like one item from an Apify YouTube actor's dataset — a video row that carries the channel's own totals. Field names and the mixed number formats ('8.12K', '406,000') are deliberate: the normaliser has to survive both.",
+
+  "_default": {
+    "channelId": "UCmockDefaultChannel00000",
+    "channelName": "Mock Creator Channel",
+    "channelUrl": "https://www.youtube.com/@mockcreator",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/mock/default.jpg",
+    "numberOfSubscribers": 24500,
+    "channelTotalViews": "1,830,000",
+    "channelTotalVideos": 142,
+    "title": "A mock video",
+    "viewCount": 18400
+  },
+
+  "anusha9somepalli": {
+    "channelId": "UCmockAnusha0000000000000",
+    "channelName": "Anusha Somepalli",
+    "channelUrl": "https://www.youtube.com/@anusha9somepalli",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/mock/anusha.jpg",
+    "aboutChannelInfo": {
+      "numberOfSubscribers": "8.12K",
+      "channelTotalViews": "406,000 views",
+      "channelTotalVideos": 63
+    },
+    "title": "Saree draping in 60 seconds",
+    "viewCount": 12800
+  },
+
+  "nofigures": {
+    "channelId": "UCmockNoFigures0000000000",
+    "channelName": "Channel That Returned Nothing",
+    "title": "A video with no channel totals attached"
+  }
+}
