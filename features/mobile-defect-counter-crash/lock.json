@@ -1,0 +1,26 @@
+{
+  "feature": "mobile-defect-counter-crash",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-26 chat: \"in creator app , when click on counter the agreement app is crashing. pls check and fix it\"",
+  "approved_at": "2026-08-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "not applicable — a one-word import fix changes no screen design. No mockup was drawn and none is needed; the screen is unchanged apart from no longer crashing.",
+  "mockup_locked_at": "2026-08-26",
+  "mockup_note": "No mockup. This is a defect fix that restores an existing screen to the behaviour its own contract (collab-terms-by-aim item 7) already specified.",
+  "notes": "fromMode was used in CollabRequestDetailScreen.startCounter and never imported. Live since 7af6997 on 2026-08-24. Found by the founder on a handset.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed. released stays false until the founder confirms the counter works on the handset that showed the crash.",
+    "deploy_class": "production-impacting (creator app via OTA only).",
+    "deploy_targets": ["OTA (creator app) — version 183"],
+    "outward_facing": "None beyond a crash stopping.",
+    "qa_note": "Mobile 38 suites / 298 tests green, up from 296. Bundle builds. The new guard was validated by reverting the fix, watching it FAIL, restoring, watching it pass.",
+    "device_walk_required": "The founder re-taps counter on the phone that crashed."
+  }
+}

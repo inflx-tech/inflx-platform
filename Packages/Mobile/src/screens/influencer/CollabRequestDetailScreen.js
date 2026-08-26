@@ -7,7 +7,11 @@ import { ig } from '../../theme/ig';
 // Stage 1 — restyled from brandPalette to the ig kit as part of moving into Collabs.
 // A loud coloured screen one tap inside a white tab reads as a different app.
 import { influencerApi } from '../../services/api';
-import { PLACES, SHIPPING, toMode, describeMode } from '../../utils/workingStyle';
+// fromMode was USED here and never imported — startCounter calls it to pre-fill the form
+// from what the brand offered. The reference only throws when the function RUNS, so the
+// module imported fine, the bundle built, and tapping "counter" crashed her app.
+// Found by the founder on a handset, 2026-08-26.
+import { PLACES, SHIPPING, toMode, fromMode, describeMode } from '../../utils/workingStyle';
 import DateField from '../../components/DateField';
 // One implementation of 'what did she actually change', shared with its tests.
 // Contract: features/collab-terms-by-aim (item 7)
