@@ -18,9 +18,13 @@
     "maestro_green": false,
     "maestro_note": "Mobile-governed. released stays false until the founder confirms the counter works on the handset that showed the crash.",
     "deploy_class": "production-impacting (creator app via OTA only).",
-    "deploy_targets": ["OTA (creator app) — version 183"],
+    "deploy_targets": [
+      "OTA (creator app) — version 183"
+    ],
     "outward_facing": "None beyond a crash stopping.",
     "qa_note": "Mobile 38 suites / 298 tests green, up from 296. Bundle builds. The new guard was validated by reverting the fix, watching it FAIL, restoring, watching it pass.",
-    "device_walk_required": "The founder re-taps counter on the phone that crashed."
-  }
+    "device_walk_required": "DONE. Founder re-tapped counter on the handset that crashed, 2026-08-26: \"yes working\".",
+    "released_note": "released stays FALSE, and this is the honest answer rather than the convenient one. Governance requires qa_all_green for a release flip; qa_all_green is FALSE because the repo suite has never been green (93 pre-existing failures, backend suite unrunnable since 2026-08-22). Setting it true, or deleting the field so the check passes on undefined, would both be the fake-green this repo forbids. THE FIX IS VERIFIED AND LIVE — the founder re-tapped counter on the handset that crashed and confirmed it works. released is a stronger claim than \"it works\", and Stages 1, 2 and 3 all sit at false for the same reason."
+  },
+  "verified_2026_08_26": "Creator OTA v183 live. Founder: \"yes working\". Brand app untouched at v187."
 }
