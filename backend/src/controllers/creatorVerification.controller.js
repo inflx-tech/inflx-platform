@@ -70,7 +70,7 @@ const verify = asyncHandler(async (req, res) => {
 
   // Fetch the target profile + its claim cluster
   const { rows: target } = await db.query(
-    `SELECT id, claim_user_id, verification_status FROM creator_profiles WHERE id = $1`,
+    `SELECT id, claim_user_id, linked_influencer_id, verification_status FROM creator_profiles WHERE id = $1`,
     [profileId]
   );
   if (target.length === 0) throw new AppError('NOT_FOUND', 'Creator profile not found', 404);
@@ -105,12 +105,28 @@ const verify = asyncHandler(async (req, res) => {
       );
     }
 
-    // Sync user.status to 'approved' for the claiming user (their account is now confirmed)
-    if (target[0].claim_user_id) {
-      await db.query(
-        `UPDATE users SET status = 'approved' WHERE id = $1 AND status = 'pending'`,
-        [target[0].claim_user_id]
+    // features/admin-people-pipeline (01-spec.md resolution): verifying here is now
+    // the ONLY remaining path to an influencer's 'approved' status — closing the
+    // previous 3-way duplicate (this queue / Approvals / the influencer detail
+    // page). Mirror onto the linked influencers row (same rejection_reason /
+    // approved_at / approved_by bookkeeping admin.controller.updateInfluencerStatus
+    // already uses) and the underlying users row, which is the field every admin
+    // list actually reads for the status badge (neither `brands` nor `influencers`
+    // has its own `status` column — verify-twice against 001_initial_schema.sql).
+    // Conflict-cluster siblings never carry their own linked_influencer_id (only
+    // the single-match / stub-claim paths in influencer.controller.js set it), so
+    // only the winning row's influencer/user status ever changes here.
+    if (target[0].linked_influencer_id) {
+      const { rows: infRows } = await db.query(
+        `UPDATE influencers
+            SET rejection_reason = NULL, approved_at = NOW(), approved_by = $1
+          WHERE id = $2
+          RETURNING user_id`,
+        [adminId, target[0].linked_influencer_id]
       );
+      if (infRows[0]) {
+        await db.query(`UPDATE users SET status = 'approved' WHERE id = $1`, [infRows[0].user_id]);
+      }
     }
 
     await db.query('COMMIT');
@@ -128,19 +144,50 @@ const verify = asyncHandler(async (req, res) => {
 
 const reject = asyncHandler(async (req, res) => {
   const reason = req.body?.reason ? String(req.body.reason).slice(0, 1000) : null;
+  const profileId = req.params.id;
 
-  const { rows } = await db.query(
-    `UPDATE creator_profiles
-        SET verification_status = 'rejected',
-            rejection_reason    = $1
-      WHERE id = $2 AND verification_status = 'claimed'
-      RETURNING *`,
-    [reason, req.params.id]
+  const { rows: target } = await db.query(
+    `SELECT id, linked_influencer_id, verification_status FROM creator_profiles WHERE id = $1`,
+    [profileId]
   );
-  if (rows.length === 0) {
+  if (target.length === 0 || target[0].verification_status !== 'claimed') {
     throw new AppError('NOT_FOUND', 'Profile not found or not in claimed state', 404);
   }
-  return success(res, { rejected: rows[0] });
+
+  await db.query('BEGIN');
+  try {
+    const { rows: rejectedRows } = await db.query(
+      `UPDATE creator_profiles
+          SET verification_status = 'rejected',
+              rejection_reason    = $1
+        WHERE id = $2
+        RETURNING *`,
+      [reason, profileId]
+    );
+
+    // features/admin-people-pipeline (01-spec.md resolution): a rejected identity
+    // check means the account doesn't go live — it must not stay dangling in
+    // 'pending' on the influencers/users side. Same rejection_reason mirrored to
+    // both rows; same linked_influencer_id gate as verify() above.
+    if (target[0].linked_influencer_id) {
+      const { rows: infRows } = await db.query(
+        `UPDATE influencers
+            SET rejection_reason = $1, approved_at = NULL, approved_by = NULL
+          WHERE id = $2
+          RETURNING user_id`,
+        [reason, target[0].linked_influencer_id]
+      );
+      if (infRows[0]) {
+        await db.query(`UPDATE users SET status = 'rejected' WHERE id = $1`, [infRows[0].user_id]);
+      }
+    }
+
+    await db.query('COMMIT');
+    return success(res, { rejected: rejectedRows[0] });
+  } catch (e) {
+    await db.query('ROLLBACK');
+    throw e;
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

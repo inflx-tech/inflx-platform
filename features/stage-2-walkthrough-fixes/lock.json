@@ -1,0 +1,79 @@
+{
+  "feature": "stage-2-walkthrough-fixes",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-27 — six screenshots plus a punch list, walked on a handset",
+  "approved_at": "2026-08-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_note": "features/stage-2-walkthrough-fixes/04-preview/mockups/batch-a-screens.html — five boards, drawn in the ALREADY-AGREED Stage 4 stylesheet verbatim. Re-styling would have put a new thing to judge in front of the founder alongside the thing he asked for. Awaiting his nod before any app code.",
+  "notes": "Batch A of the Stage 2 walkthrough punch list. Nine changes, eight of them removals, one unblocking. Phone-only: no server, no migration, no brand-web.",
+  "founder_decisions_2026_08_27": {
+    "which_sets": "SALES SETS ONLY. Pay-for-content sets keep their posting window, budget and format counts — the budget is the figure the wallet must cover before publishing, so removing it there would stop content campaigns going live.",
+    "minimum_channels": "REMOVE. 'Channels a creator may use' is the only survivor in that block, trimmed to Instagram and YouTube. Minimum-channels was guidance that never blocked anyone anyway.",
+    "batching": "TWO BATCHES. Batch A now (removals + optional offer). Batch B next: the offer moves to creator level and the phone builder reaches parity with web — screens drawn and agreed first.",
+    "old_stage_strip": "REBUILD the campaign screen to match Stage 3, as its OWN stage. Not folded into this punch list.",
+    "hidden_creators_explanation": "REMOVE ENTIRELY. I proposed keeping the fact as a plain sentence and showed it on board 3; he saw the trade-off and said it is not necessary. Consequence, accepted: the six are still filtered out and the screen no longer says why.",
+    "step_4_offer_routes": "Asked on 2026-08-27 to remove 'See what a shopper pays', then WITHDREW it the same day once told that button is the only navigate() into BrandBasketPreview (BrandSetWizardScreen.js:311). KEEP IT. Step 4 changes only in that the offer stops being compulsory."
+  },
+  "verified_against_production_2026_08_27": {
+    "campaign_sets_has_no_offer_columns": "Confirmed by information_schema. The offer lives on campaign_influencers (brand_offer_id, offer_type, offer_config_json, offer_expires_at, offer_valid_until, promoted_brand_offer_ids), all nullable.",
+    "rows_carrying_an_offer_today": 0,
+    "conclusion": "The data model has always held offers PER CREATOR and has never required one. The wizard invented the mandatory set-level rule. Making it optional is a correction, not a relaxation."
+  },
+  "known_live_defect_not_fixed_here": {
+    "what": "buildDiscount in Packages/Mobile/src/utils/offerBuilders.js hardcodes scope: 'store'.",
+    "effect": "Every offer built on a phone silently applies to the WHOLE STORE. Ask for '20% off sarees' and you get 20% off everything.",
+    "why_not_now": "It is part of the builder-parity work in Batch B, which needs boards. Batch A reduces the exposure by not forcing anyone through that builder to save a set.",
+    "first_flagged": "features/stage-2-build-a-campaign-from-the-phone/06-diff/notes.md section 2.3a, 2026-08-25 — the founder independently hit it on 2026-08-27."
+  },
+  "scope_excluded": [
+    "Batch B — the offer at creator level, and the phone builder reaching parity with web (free-gift type, scope, redemption channels, the pay-at-store applicability warning)",
+    "The campaign screen's old six-stage strip (Fund · Roster · Contracts · Production · Review · Payout) — its own stage",
+    "Anything a pay-for-content set needs",
+    "Server, database, brand-web"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (brand app OTA only — no backend, no migration, no web).",
+    "deploy_targets": [
+      "OTA (brand app)"
+    ],
+    "outward_facing": "None. No shopper, creator or admin surface changes.",
+    "device_walk_required": "YES. W1-W3 in 02-workflow.md. W2 is the one that matters: a pay-for-content set must be EXACTLY as it was, and a removal leaking into that branch would not crash — it would silently strip a field and refuse to publish later.",
+    "diff_notes": "features/stage-2-walkthrough-fixes/06-diff/notes.md"
+  },
+  "mockup_locked_by": "founder 2026-08-27 — boards presented twice; he corrected two items, then said go",
+  "mockup_locked_at": "2026-08-27",
+  "build_2026_08_27": {
+    "changes_made": [
+      "1 — the lock note on BrandCampaignCreateScreen",
+      "2/3/4 — dates become DateField; the greyed Ends·Never goes on a sales set, with its note",
+      "5 — Budget block becomes content-only; min-channels, its guidance, the not-buying-posts paragraph and the no-who-posts note all go",
+      "6 — channels trimmed to Instagram and YouTube",
+      "7 — the hidden-wrong-aim chip goes, and NOTHING replaces it (the filter itself is untouched)",
+      "8 — Go and ask someone new goes, with its handler",
+      "9 — canFinish drops the offer clause; the red blocker line no longer mentions an offer"
+    ],
+    "payload_change": "channels_json is now { allowed } — the minimum is no longer sent, because the brand can no longer choose one. Read campaignChannels.js first: minimum is optional in validateChannels and describeChannels renders without it. Grepped every reader across backend, mobile and web — there are none.",
+    "dead_code_removed": [
+      "minChannels state + props + destructure",
+      "onGoAsk and its navigate(Creators)",
+      "wrongAim — the useMemo now returns the list directly"
+    ],
+    "test_rewritten": "stage2CampaignWizard.test.js asserted the wizard navigates to Creators. Now false. Rewritten to assert the opposite fact — coverage moved, not dropped.",
+    "verification": {
+      "mobile": "31 new executing checks (batchAWizardTrim.test.js). Full suite 40 suites / 380 tests passing.",
+      "mutation": "7 deliberate breakages, 7 caught — including the Budget removal leaking into content sets.",
+      "two_of_my_own_assertions_failed_first": "Both were too crude, not the code. One banned !!chosenOffer everywhere though it still legitimately renders the picked offer; one grabbed the first of four buyingContent branches instead of the Budget one. Corrected, not loosened.",
+      "claim": "Certified no-regression. NEVER claimed green."
+    },
+    "blocking_release": [
+      "The founder walks W1-W3. W2 (a pay-for-content set) is the one that matters."
+    ]
+  }
+}

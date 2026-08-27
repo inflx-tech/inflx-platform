@@ -4,7 +4,12 @@ import path from 'node:path';
 
 /**
  * WORKFLOW: admin approvals — approve a pending brand.
- * Contract: features/admin-approvals/ (locked 2026-05-18).
+ * Contract: features/admin-approvals/ (locked 2026-05-18); decision UI
+ * relocated by features/admin-people-pipeline (2026-08-27) — approving a
+ * brand now happens on Brands -> Pending Verification, not on /admin/approvals
+ * (which became a summary-only dashboard with no action buttons at all — see
+ * that contract's 01-spec.md for why: the same decision used to be makeable
+ * from three screens that didn't always agree).
  *
  * Admin surface is brand-web /admin/* (port 3002), NOT the thin
  * Packages/admin-web app. Two gates protect it:
@@ -83,11 +88,11 @@ test.describe('WORKFLOW: admin approvals — approve a pending brand', () => {
     await seedAdminSession(context, page);
     const cap = await stubAdminApis(page);
 
-    await page.goto('/admin/approvals');
+    await page.goto('/admin/brands?tab=pending');
 
     // Gate passed — not bounced to /login
-    await expect(page).toHaveURL(/\/admin\/approvals/);
-    await expect(page.getByRole('heading', { name: 'Approval Queue' })).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/brands/);
+    await expect(page.getByRole('heading', { name: 'Brands' })).toBeVisible();
     await expect(page.getByText('QA Diner')).toBeVisible();
     await page.screenshot({
       path: path.join(shotDir('before'), 'admin-approvals__queue.png'),
@@ -121,7 +126,7 @@ test.describe('WORKFLOW: admin approvals — approve a pending brand', () => {
     await seedAdminSession(context, page);
     await stubAdminApis(page, { patchSucceeds: false });
 
-    await page.goto('/admin/approvals');
+    await page.goto('/admin/brands?tab=pending');
     await expect(page.getByText('QA Diner')).toBeVisible();
     await page.getByRole('button', { name: 'Approve' }).click();
 

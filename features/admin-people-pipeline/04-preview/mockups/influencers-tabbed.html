@@ -1,0 +1,484 @@
+<!-- preview-size: desktop -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin — Influencers (tabbed)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy: { DEFAULT: '#1B2D5E', deep: '#111E42', mid: '#243672', light: '#2E4494', pale: '#EEF1FB' },
+          orange: { DEFAULT: '#F47920', deep: '#D4601A', pale: '#FEF0E4' },
+          gold: { DEFAULT: '#FFB800', deep: '#E0A000', pale: '#FFF8E1' },
+          teal: { DEFAULT: '#00B894', deep: '#007A63', pale: '#E0FAF5' },
+          red: { DEFAULT: '#E8401A', pale: '#FDEEE9' },
+          purple: { DEFAULT: '#7F77DD', pale: '#EEEDFE' },
+          bg: '#F4F6FB', surface: '#FFFFFF', surface2: '#F2F4F9',
+          border: '#E0E4EF', border2: '#C8CEDF',
+          t1: '#0D1630', t2: '#4A5278', t3: '#8B91AD',
+        },
+        fontFamily: {
+          display: ['Outfit', 'sans-serif'],
+          body: ['Plus Jakarta Sans', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+</style>
+</head>
+<body class="bg-bg font-body">
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <div class="w-48 bg-navy-deep flex flex-col flex-shrink-0 overflow-y-auto">
+      <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div class="font-display text-base font-extrabold text-white">INFL<span class="bg-gradient-to-r from-red to-orange bg-clip-text text-transparent">X</span></div>
+        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">SUPERADMIN</span>
+      </div>
+      <nav class="flex-1 px-2 py-2">
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">OVERVIEW</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📊</span><span>Platform Stats</span></div>
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">PEOPLE</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/85"><span class="text-xs w-4 text-center">✅</span><span class="flex-1">Approvals</span><span class="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">4</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 bg-gold/15 text-gold font-semibold"><span class="text-xs w-4 text-center">⭐</span><span class="flex-1">Influencers</span><span class="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">3</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">🏢</span><span>Brands</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">🚚</span><span>Production Queue</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📦</span><span>Orders</span></div>
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">OUTREACH</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📥</span><span>Inbox</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📊</span><span>Funnel</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">🛠️</span><span>Settings</span></div>
+      </nav>
+      <div class="px-3 py-3 border-t border-white/5">
+        <div class="text-[10px] text-white/40 mb-1">+919000000099</div>
+        <div class="text-[10px] text-white/30">Sign out →</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="h-11 bg-white border-b border-border flex items-center px-4 flex-shrink-0">
+        <div class="font-display text-sm font-bold text-t1">Influencers</div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-bg">
+        <div class="max-w-6xl">
+
+          <div class="flex items-start justify-between gap-3 mb-4 flex-wrap">
+            <div>
+              <h1 class="font-display text-xl font-extrabold text-t1">Influencers</h1>
+              <p class="text-xs text-t3 mt-0.5">Every creator, from first scrape to live on the platform — one pipeline, four stages.</p>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex border-b border-border mb-4">
+            <button onclick="showTab('leads')" id="tab-btn-leads" class="tab-btn flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px border-navy text-navy transition-colors">
+              Leads <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold-pale text-yellow-700">128</span>
+            </button>
+            <button onclick="showTab('invited')" id="tab-btn-invited" class="tab-btn flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px border-transparent text-t3 hover:text-t1 transition-colors">
+              Invited <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-surface2 text-t3">6</span>
+            </button>
+            <button onclick="showTab('pending')" id="tab-btn-pending" class="tab-btn flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px border-transparent text-t3 hover:text-t1 transition-colors">
+              Pending Verification <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange text-white">3</span>
+            </button>
+            <button onclick="showTab('live')" id="tab-btn-live" class="tab-btn flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px border-transparent text-t3 hover:text-t1 transition-colors">
+              Live <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-surface2 text-t3">312</span>
+            </button>
+          </div>
+
+          <!-- ===== LEADS ===== -->
+          <div id="panel-leads" class="tabpanel active">
+            <div class="bg-white rounded-xl border border-border p-3 mb-3">
+              <div class="flex flex-wrap gap-2 items-center">
+                <select class="text-xs border border-border rounded-lg px-2 py-1.5 bg-white"><option>All statuses</option><option>Not contacted</option><option>Contacted</option><option>Interested</option></select>
+                <select class="text-xs border border-border rounded-lg px-2 py-1.5 bg-white"><option>Any score</option><option>High (70+)</option></select>
+                <select class="text-xs border border-border rounded-lg px-2 py-1.5 bg-white"><option>All cities</option><option>Hyderabad</option><option>Pune</option><option>Bangalore</option></select>
+                <select class="text-xs border border-border rounded-lg px-2 py-1.5 bg-white"><option>All niches</option><option>Food</option><option>Fitness</option><option>Fashion</option></select>
+                <input type="text" placeholder="Handle or name" class="text-xs border border-border rounded-lg px-2 py-1.5 w-40">
+                <button class="text-xs bg-navy text-white px-3 py-1.5 rounded-lg font-semibold">Search</button>
+                <button onclick="document.getElementById('bulk-import-modal').classList.remove('hidden')" class="ml-auto text-xs bg-white border border-border2 text-t2 px-3.5 py-1.5 rounded-lg font-bold hover:bg-surface2 transition">Bulk Import (CSV)</button>
+                <button onclick="document.getElementById('add-lead-modal').classList.remove('hidden')" class="text-xs bg-orange text-white px-3.5 py-1.5 rounded-lg font-bold hover:bg-orange/90 transition">+ Add Lead</button>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl border border-border overflow-hidden">
+              <table class="w-full text-xs">
+                <thead class="bg-surface2 text-t3">
+                  <tr>
+                    <th class="text-left px-3 py-2 font-bold">Handle</th>
+                    <th class="text-left px-3 py-2 font-bold">Name</th>
+                    <th class="text-left px-3 py-2 font-bold">City</th>
+                    <th class="text-left px-3 py-2 font-bold">Niche</th>
+                    <th class="text-left px-3 py-2 font-bold">Tier</th>
+                    <th class="text-right px-3 py-2 font-bold">Followers</th>
+                    <th class="text-right px-3 py-2 font-bold">Score</th>
+                    <th class="text-left px-3 py-2 font-bold">Status</th>
+                    <th class="text-left px-3 py-2 font-bold">Channels</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-border hover:bg-surface2/50">
+                    <td class="px-3 py-2 font-mono text-[11px]">@kabir.travels</td>
+                    <td class="px-3 py-2">Kabir Anand</td>
+                    <td class="px-3 py-2">Delhi</td>
+                    <td class="px-3 py-2 text-t2">Travel</td>
+                    <td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">micro</span></td>
+                    <td class="px-3 py-2 text-right tabular-nums">1,45,000</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-bold">91</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-pale text-teal-deep">interested</span></td>
+                    <td class="px-3 py-2"><span class="text-[10px]">📞✉️💬</span></td>
+                  </tr>
+                  <tr class="border-t border-border hover:bg-surface2/50">
+                    <td class="px-3 py-2 font-mono text-[11px]">@ananya.eats</td>
+                    <td class="px-3 py-2">Ananya Rao</td>
+                    <td class="px-3 py-2">Hyderabad</td>
+                    <td class="px-3 py-2 text-t2">Food</td>
+                    <td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">micro</span></td>
+                    <td class="px-3 py-2 text-right tabular-nums">92,400</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-bold">88</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface2 text-t3">not_contacted</span></td>
+                    <td class="px-3 py-2"><span class="text-[10px]">📞✉️</span></td>
+                  </tr>
+                  <tr class="border-t border-border hover:bg-surface2/50">
+                    <td class="px-3 py-2 font-mono text-[11px]">@rohit.fitlife</td>
+                    <td class="px-3 py-2">Rohit Malhotra</td>
+                    <td class="px-3 py-2">Pune</td>
+                    <td class="px-3 py-2 text-t2">Fitness</td>
+                    <td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">macro</span></td>
+                    <td class="px-3 py-2 text-right tabular-nums">3,10,000</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-bold">76</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-pale text-yellow-700">contacted</span></td>
+                    <td class="px-3 py-2"><span class="text-[10px]">📞💬</span></td>
+                  </tr>
+                  <tr class="border-t border-border hover:bg-surface2/50">
+                    <td class="px-3 py-2 font-mono text-[11px]">@meera.beauty</td>
+                    <td class="px-3 py-2">Meera Iyer</td>
+                    <td class="px-3 py-2">Chennai</td>
+                    <td class="px-3 py-2 text-t2">Beauty</td>
+                    <td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">micro</span></td>
+                    <td class="px-3 py-2 text-right tabular-nums">76,500</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-bold">63</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface2 text-t3">not_contacted</span></td>
+                    <td class="px-3 py-2"><span class="text-[10px]">✉️</span></td>
+                  </tr>
+                  <tr class="border-t border-border hover:bg-surface2/50">
+                    <td class="px-3 py-2 font-mono text-[11px]">@sneha.styles</td>
+                    <td class="px-3 py-2">Sneha Kulkarni</td>
+                    <td class="px-3 py-2">Bangalore</td>
+                    <td class="px-3 py-2 text-t2">Fashion</td>
+                    <td class="px-3 py-2"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">nano</span></td>
+                    <td class="px-3 py-2 text-right tabular-nums">18,200</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-bold">54</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-pale text-teal-deep">replied</span></td>
+                    <td class="px-3 py-2"><span class="text-[10px]">✉️💬</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ===== INVITED ===== -->
+          <div id="panel-invited" class="tabpanel">
+            <div class="bg-white rounded-xl border border-border p-1.5 inline-flex gap-1 mb-3">
+              <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gold/15 text-gold">🔔 New (2)</span>
+              <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-t3">📞 Contacted (1)</span>
+              <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-t3">✅ Converted (2)</span>
+              <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-t3">⌛ Expired (1)</span>
+            </div>
+            <div class="bg-white rounded-xl border border-border overflow-hidden divide-y divide-border">
+              <div class="p-3 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">PN</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span class="font-semibold text-sm text-t1">@priya.cooksdaily</span>
+                    <span class="text-xs text-t3">· Priya Nair</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">micro</span>
+                    <span class="text-[10px] text-t3">64,200 followers</span>
+                  </div>
+                  <div class="text-[11px] text-t3 mb-1">From <span class="font-semibold text-t1">Curry Leaf Kitchens</span> · proposed fee <span class="font-semibold text-t1">₹8,000</span> · waiting 3d</div>
+                  <div class="text-[11px] text-t2 bg-surface2 border border-border rounded px-2 py-1.5"><span class="font-bold text-t3 mr-1">Brand message:</span>Would love Priya for our Diwali sweets launch reel.</div>
+                </div>
+                <div class="flex gap-1 flex-shrink-0">
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white">✓ Mark contacted</span>
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2">Expire</span>
+                </div>
+              </div>
+              <div class="p-3 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">AV</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span class="font-semibold text-sm text-t1">@arjun.streetstyle</span>
+                    <span class="text-xs text-t3">· Arjun Verma</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">macro</span>
+                  </div>
+                  <div class="text-[11px] text-t3 mb-1">From <span class="font-semibold text-t1">Urban Thread Co.</span> · proposed fee <span class="font-semibold text-t1">₹12,500</span> · waiting 1d</div>
+                </div>
+                <div class="flex gap-1 flex-shrink-0">
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white">✓ Mark contacted</span>
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2">Expire</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== PENDING VERIFICATION ===== -->
+          <div id="panel-pending" class="tabpanel">
+            <div class="bg-white rounded-xl border border-border p-4 mb-3">
+              <p class="text-xs text-t3">Influencers who signed up and claimed a handle. Call them, confirm identity, then verify or reject. This is the only place an influencer account gets approved.</p>
+            </div>
+
+            <!-- normal card -->
+            <div class="bg-white rounded-xl border border-border overflow-hidden mb-3">
+              <div class="px-3 py-2 bg-surface2 border-b border-border">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-semibold text-xs text-t1">Ishaan Kapoor</span>
+                  <span class="text-[10px] text-t3 font-mono">+91 98xxx xx210</span>
+                  <span class="text-[10px] text-t3">signed up as <span class="font-semibold text-t2">@ishaan.rides</span></span>
+                </div>
+              </div>
+              <div class="p-3 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">IR</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span class="font-semibold text-sm text-t1">@ishaan.rides</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gold-pale text-yellow-700">CLAIMED</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">micro</span>
+                  </div>
+                  <div class="text-[11px] text-t3">54,300 followers · requested 2 days ago</div>
+                </div>
+                <div class="flex gap-1 flex-shrink-0">
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white">✓ Verify</span>
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2">Reject</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- conflict cluster -->
+            <div class="bg-white rounded-xl border border-orange/40 overflow-hidden mb-3">
+              <div class="px-3 py-2 bg-orange/10 border-b border-border">
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-xs text-t1">Neha Joshi</span>
+                    <span class="text-[10px] text-t3 font-mono">+91 97xxx xx884</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange text-white whitespace-nowrap">⚠ CONFLICT — 2 candidates</span>
+                </div>
+                <p class="mt-1 text-[10px] text-t3 leading-relaxed">This user matched multiple scraped profiles. Verifying one will auto-reject the others.</p>
+              </div>
+              <div class="divide-y divide-border">
+                <div class="p-3 flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">NF</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                      <span class="font-semibold text-sm text-t1">@neha.fitfoodie</span>
+                      <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gold-pale text-yellow-700">CLAIMED</span>
+                    </div>
+                    <div class="text-[11px] text-t3">32,000 followers</div>
+                  </div>
+                  <div class="flex gap-1 flex-shrink-0">
+                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white">✓ Verify</span>
+                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2">Reject</span>
+                  </div>
+                </div>
+                <div class="p-3 flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">NJ</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                      <span class="font-semibold text-sm text-t1">yt: NehaJoshiVlogs</span>
+                      <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gold-pale text-yellow-700">CLAIMED</span>
+                    </div>
+                    <div class="text-[11px] text-t3">YT: NehaJoshiVlogs</div>
+                  </div>
+                  <div class="flex gap-1 flex-shrink-0">
+                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white">✓ Verify</span>
+                    <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2">Reject</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-border overflow-hidden">
+              <div class="p-3 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">DO</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span class="font-semibold text-sm text-t1">@devansh.oberoi</span>
+                    <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-gold-pale text-yellow-700">CLAIMED</span>
+                  </div>
+                  <div class="text-[11px] text-t3">12,900 followers · requested 5 hours ago</div>
+                </div>
+                <div class="flex gap-1 flex-shrink-0">
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white">✓ Verify</span>
+                  <span class="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2">Reject</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== LIVE ===== -->
+          <div id="panel-live" class="tabpanel">
+            <div class="flex gap-2 mb-3 flex-wrap">
+              <span class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-navy text-white">All (312)</span>
+              <span class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-border text-t2">Approved (298)</span>
+              <span class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-border text-t2">Suspended (14)</span>
+            </div>
+            <div class="bg-white rounded-xl border border-border overflow-hidden">
+              <div class="grid grid-cols-[1.4fr_0.9fr_0.65fr_0.5fr_0.6fr_0.55fr_0.65fr_0.7fr] gap-2 px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3">
+                <div>Creator</div><div>Contact</div><div>City</div><div>INFLX</div><div>Instagram</div><div>Status</div><div>Joined</div><div>Actions</div>
+              </div>
+              <div class="grid grid-cols-[1.4fr_0.9fr_0.65fr_0.5fr_0.6fr_0.55fr_0.65fr_0.7fr] gap-2 px-4 py-3 border-b border-border items-center">
+                <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-orange-pale flex items-center justify-center text-[10px] font-bold text-orange-deep">PS</div><div><div class="text-xs font-medium text-t1">Priya Sharma</div><div class="text-[10px] text-t3">@priyacooks</div></div></div>
+                <div class="text-xs text-t2">+919000000001</div>
+                <div class="text-xs text-t2">Vijayawada</div>
+                <div class="text-xs font-semibold text-t1">4,120</div>
+                <div class="text-xs text-t2">1,80,000</div>
+                <div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-pale text-teal-deep">approved</span></div>
+                <div class="text-[10px] text-t3">12 Mar 2026</div>
+                <div><button onclick="openSuspendModal('Priya Sharma')" class="px-2 py-1 text-[10px] font-bold bg-surface2 text-t3 border border-border rounded-lg hover:bg-red-pale hover:text-red hover:border-red/20 transition-colors">Suspend</button></div>
+              </div>
+              <div class="grid grid-cols-[1.4fr_0.9fr_0.65fr_0.5fr_0.6fr_0.55fr_0.65fr_0.7fr] gap-2 px-4 py-3 border-b border-border items-center">
+                <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-orange-pale flex items-center justify-center text-[10px] font-bold text-orange-deep">AM</div><div><div class="text-xs font-medium text-t1">Arun Mehta</div><div class="text-[10px] text-t3">@arunfashion</div></div></div>
+                <div class="text-xs text-t2">+919000000002</div>
+                <div class="text-xs text-t2">Mumbai</div>
+                <div class="text-xs font-semibold text-t1">6,730</div>
+                <div class="text-xs text-t2">2,40,000</div>
+                <div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-pale text-teal-deep">approved</span></div>
+                <div class="text-[10px] text-t3">03 Jan 2026</div>
+                <div><button onclick="openSuspendModal('Arun Mehta')" class="px-2 py-1 text-[10px] font-bold bg-surface2 text-t3 border border-border rounded-lg hover:bg-red-pale hover:text-red hover:border-red/20 transition-colors">Suspend</button></div>
+              </div>
+              <div class="grid grid-cols-[1.4fr_0.9fr_0.65fr_0.5fr_0.6fr_0.55fr_0.65fr_0.7fr] gap-2 px-4 py-3 items-center">
+                <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-orange-pale flex items-center justify-center text-[10px] font-bold text-orange-deep">RG</div><div><div class="text-xs font-medium text-t1">Ritika Gupta</div><div class="text-[10px] text-t3">@ritika.wanders</div></div></div>
+                <div class="text-xs text-t2">+919000000041</div>
+                <div class="text-xs text-t2">Jaipur</div>
+                <div class="text-xs font-semibold text-t1">890</div>
+                <div class="text-xs text-t2">41,200</div>
+                <div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface2 text-t3">suspended</span></div>
+                <div class="text-[10px] text-t3">19 Nov 2025</div>
+                <div><button onclick="openReinstateModal('Ritika Gupta')" class="px-2 py-1 text-[10px] font-bold bg-teal-pale text-teal-deep border border-teal/20 rounded-lg hover:bg-teal hover:text-white transition-colors">Reinstate</button></div>
+              </div>
+            </div>
+            <p class="text-[10px] text-t3 mt-2">Approving or rejecting a NEW signup still happens only in Influencers → Pending Verification — that's the one place identity gets decided. Suspend/Reinstate here is a different, narrower action: it only ever applies to an already-approved creator, turning dashboard access off and back on.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Lead modal -->
+  <div id="add-lead-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 w-[420px] shadow-2xl">
+      <h3 class="font-display text-base font-bold text-t1 mb-1">Add Lead — Influencer</h3>
+      <p class="text-xs text-t3 mb-4">Folded in from the old standalone "Add Lead" nav item.</p>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <input placeholder="Handle" class="border border-border2 rounded-lg px-3 py-2 text-xs col-span-2">
+        <input placeholder="Full name" class="border border-border2 rounded-lg px-3 py-2 text-xs col-span-2">
+        <input placeholder="City" class="border border-border2 rounded-lg px-3 py-2 text-xs">
+        <input placeholder="State" class="border border-border2 rounded-lg px-3 py-2 text-xs">
+        <input placeholder="Niche" class="border border-border2 rounded-lg px-3 py-2 text-xs">
+        <input placeholder="Sub-niche" class="border border-border2 rounded-lg px-3 py-2 text-xs">
+        <input placeholder="Phone" class="border border-border2 rounded-lg px-3 py-2 text-xs col-span-2">
+      </div>
+      <div class="flex gap-2">
+        <button class="flex-1 py-2.5 bg-navy text-white font-bold rounded-xl text-sm">Add Lead</button>
+        <button onclick="document.getElementById('add-lead-modal').classList.add('hidden')" class="px-4 py-2.5 bg-surface2 text-t2 font-bold rounded-xl text-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Import (CSV) modal -->
+  <div id="bulk-import-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 w-[560px] shadow-2xl">
+      <h3 class="font-display text-base font-bold text-t1 mb-1">Bulk Import — Leads (CSV paste)</h3>
+      <p class="text-xs text-t3 mb-3">Restored from the old "Add Lead" page's Bulk mode. Add many leads at once — influencers and brands can be mixed in the same paste.</p>
+      <div class="text-xs text-t3 mb-2 bg-surface2 border border-border rounded-lg px-3 py-2">
+        One row per line: <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-border2">type,handle,name,city,category,subcategory,phone,email</span>
+        <br>
+        Where <span class="font-bold">type</span> is <span class="font-mono">influencer</span> or <span class="font-mono">brand</span>. Empty fields are allowed.
+      </div>
+      <textarea rows="10" placeholder="influencer,aishbakes,Aish,Hyderabad,food,baking,9876543210,aish@bakes.com
+brand,goldencafe,Golden Cafe,Bangalore,restaurant,cafe,9999999999,info@goldencafe.in" class="w-full text-xs border border-border rounded-lg px-3 py-2 font-mono mb-4"></textarea>
+      <div class="flex gap-2">
+        <button class="flex-1 py-2.5 bg-orange text-white font-bold rounded-xl text-sm hover:bg-orange/90 transition">Import</button>
+        <button onclick="document.getElementById('bulk-import-modal').classList.add('hidden')" class="px-4 py-2.5 bg-surface2 text-t2 font-bold rounded-xl text-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suspend modal (Live tab — already-approved creator only) -->
+  <div id="suspend-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 w-96 shadow-2xl">
+      <h3 class="font-display text-base font-bold text-t1 mb-1">Suspend Creator</h3>
+      <p class="text-xs text-t3 mb-4"><span id="suspend-name" class="font-semibold text-t1">—</span></p>
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Suspension Reason (required)</label>
+        <textarea id="suspend-reason" oninput="document.getElementById('suspend-confirm-btn').disabled = !this.value.trim()"
+          placeholder="e.g. Repeated content policy violations flagged by brands"
+          class="w-full border-2 border-border2 rounded-xl p-3 text-sm text-t1 outline-none focus:border-gold resize-none" rows="3"></textarea>
+      </div>
+      <div class="mb-4 p-3 bg-red-pale border border-red/20 rounded-xl">
+        <div class="text-xs text-red font-medium">This creator will be suspended and lose access to their dashboard.</div>
+      </div>
+      <div class="flex gap-2">
+        <button id="suspend-confirm-btn" disabled class="flex-1 py-2.5 font-bold rounded-xl text-sm disabled:opacity-40 text-white bg-gradient-to-r from-red to-orange">Confirm Suspension</button>
+        <button onclick="closeSuspendModal()" class="px-4 py-2.5 bg-surface2 text-t2 font-bold rounded-xl text-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reinstate modal (Live tab — already-suspended creator only) -->
+  <div id="reinstate-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 w-96 shadow-2xl">
+      <h3 class="font-display text-base font-bold text-t1 mb-1">Reinstate Creator</h3>
+      <p class="text-xs text-t3 mb-4"><span id="reinstate-name" class="font-semibold text-t1">—</span></p>
+      <div class="mb-4 p-3 bg-teal-pale border border-teal/20 rounded-xl">
+        <div class="text-xs text-teal-deep font-medium">This creator will be restored to approved and regain dashboard access. Their previous suspension note will be cleared and they will be notified immediately.</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="flex-1 py-2.5 font-bold rounded-xl text-sm text-white bg-gradient-to-r from-teal to-teal-deep">Confirm Reinstate</button>
+        <button onclick="closeReinstateModal()" class="px-4 py-2.5 bg-surface2 text-t2 font-bold rounded-xl text-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(name) {
+      document.querySelectorAll('.tabpanel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('border-navy', 'text-navy');
+        b.classList.add('border-transparent', 'text-t3');
+      });
+      const btn = document.getElementById('tab-btn-' + name);
+      btn.classList.add('border-navy', 'text-navy');
+      btn.classList.remove('border-transparent', 'text-t3');
+    }
+
+    function openSuspendModal(name) {
+      document.getElementById('suspend-name').textContent = name;
+      document.getElementById('suspend-reason').value = '';
+      document.getElementById('suspend-confirm-btn').disabled = true;
+      document.getElementById('suspend-modal').classList.remove('hidden');
+    }
+    function closeSuspendModal() {
+      document.getElementById('suspend-modal').classList.add('hidden');
+    }
+    function openReinstateModal(name) {
+      document.getElementById('reinstate-name').textContent = name;
+      document.getElementById('reinstate-modal').classList.remove('hidden');
+    }
+    function closeReinstateModal() {
+      document.getElementById('reinstate-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

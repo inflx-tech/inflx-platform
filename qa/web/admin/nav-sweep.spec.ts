@@ -27,10 +27,6 @@ const ROUTES = [
   '/admin/influencers',
   '/admin/production-queue',
   '/admin/master-dishes',
-  '/admin/marketing/leads',
-  '/admin/marketing/add',
-  '/admin/marketing/verifications',
-  '/admin/marketing/invitations',
   '/admin/marketing/inbox',
   '/admin/marketing/funnel',
   '/admin/marketing/settings',
@@ -43,6 +39,18 @@ const ROUTES = [
   '/admin/pricing/categories',
   '/admin/settings/payments',
   '/admin/users',
+];
+
+// features/admin-people-pipeline: Triage/Add Lead/Verifications/Invitations
+// stopped being their own nav rows and folded into tabs on Influencers/Brands
+// (see 03-expected-outputs.md's fold-in map). The old routes are now
+// server-side redirects, not pages of their own, so they get their own
+// "lands somewhere real" assertion instead of the "stays put" one above.
+const REDIRECTS = [
+  { from: '/admin/marketing/leads', to: '/admin/influencers' },
+  { from: '/admin/marketing/add', to: '/admin/influencers' },
+  { from: '/admin/marketing/verifications', to: '/admin/influencers' },
+  { from: '/admin/marketing/invitations', to: '/admin/influencers' },
 ];
 
 test.describe('WORKFLOW: admin navigation sweep', () => {
@@ -64,6 +72,24 @@ test.describe('WORKFLOW: admin navigation sweep', () => {
 
       // (b) route resolved server-side (no NAV→404 drift)
       expect(status, `route ${route} returned HTTP ${status}`).toBeLessThan(400);
+    });
+  }
+
+  for (const { from, to } of REDIRECTS) {
+    test(`superseded route ${from} redirects to ${to} (not gated out, resolves)`, async ({ page, context }) => {
+      await seedAdminSession(context, page);
+      await stubApiPermissive(page);
+
+      const resp = await page.goto(from, { waitUntil: 'domcontentloaded' });
+      const status = resp?.status() ?? 0;
+      const pathname = new URL(page.url()).pathname;
+
+      expect(pathname, `admin was redirected away from ${from} (→ ${pathname})`).not.toMatch(/\/login/);
+      expect(
+        pathname === to || pathname.startsWith(to + '/'),
+        `expected ${from} to redirect into ${to}, landed on ${pathname}`,
+      ).toBeTruthy();
+      expect(status, `redirect target for ${from} returned HTTP ${status}`).toBeLessThan(400);
     });
   }
 });

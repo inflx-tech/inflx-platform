@@ -5,6 +5,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
+import DateField from '../../components/DateField';
 
 /**
  * BrandCampaignCreateScreen — the shell. Two fields, then the sets do the work.
@@ -74,29 +75,20 @@ export default function BrandCampaignCreateScreen({ navigation }) {
         </View>
 
         <View style={s.sec}>
-          <Text style={s.label}>Starts</Text>
-          <TextInput
-            style={s.input}
+          {/* Batch A — was a text box expecting YYYY-MM-DD. On a phone that is four ways to
+              fail: wrong format, wrong month, a date already past, or a typo nobody catches
+              until a deadline is missed. DateField is pure JS on purpose — an over-the-air
+              bundle cannot add a native module. The value in and out is the same string the
+              text box produced, so nothing behind this screen changes.
+              Contract: features/stage-2-walkthrough-fixes */}
+          <DateField
+            label="Starts"
             value={start}
-            onChangeText={setStart}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={ig.mut2}
-            keyboardType={undefined}
+            onChange={setStart}
+            placeholder="Choose a start date"
           />
-          {!isISODate(start) && !!start && (
-            <Text style={s.err}>Use the form 2026-09-01.</Text>
-          )}
         </View>
 
-        <View style={s.sec}>
-          <View style={s.lock}>
-            <Icon name="lock-outline" size={15} color={ig.mut} />
-            <Text style={s.lockT}>
-              <Text style={s.lockB}>No end date and no budget here.</Text> Both belong to a set,
-              and both depend on the aim you pick inside it.
-            </Text>
-          </View>
-        </View>
 
         <View style={s.sec}>
           <TouchableOpacity

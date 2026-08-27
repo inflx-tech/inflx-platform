@@ -6,6 +6,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
+import DateField from '../../components/DateField';
 import { brandApi } from '../../services/api';
 import CreatorAvatar from '../../components/CreatorAvatar';
 import OfferBuilderSheet from '../../components/brand/OfferBuilderSheet';
@@ -52,11 +53,13 @@ const AIM_CARDS = [
   },
 ];
 
+// Batch A — founder, 2026-08-27: Instagram and YouTube only. The server still ACCEPTS the
+// other five (campaignChannels.VALID_CHANNELS), and sets created before today keep whatever
+// they were given — this narrows what a brand may newly pick, not what the platform knows.
+// Contract: features/stage-2-walkthrough-fixes
 const CHANNELS = [
   { key: 'instagram', label: 'Instagram' },
   { key: 'youtube', label: 'YouTube' },
-  { key: 'whatsapp', label: 'WhatsApp' },
-  { key: 'inflx_shop', label: 'Their INFLX shop' },
 ];
 
 const FORMATS = [
@@ -82,7 +85,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   const [windowStart, setWindowStart] = useState('');
   const [windowEnd, setWindowEnd] = useState('');
   const [channels, setChannels] = useState([]);
-  const [minChannels, setMinChannels] = useState(1);
   const [formats, setFormats] = useState(FORMATS.map(f => ({ type: f.type, count: 0 })));
   const [derivedBudget, setDerivedBudget] = useState(null);
   // step 3
@@ -159,17 +161,18 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     [campaignId, setId, picked.length]
   );
 
-  const { matching, wrongAim } = useMemo(() => {
+  const matching = useMemo(() => {
     const live = byExpiry(agreements).filter(a => !inUseElsewhere.has(a.id));
-    const match = [];
-    const wrong = [];
-    live.forEach((a) => {
+    // Ledger #74 — a sales set cannot show a content agreement. The terms would not mean the
+    // same thing: one settled a commission, the other a fee for named deliverables.
+    //
+    // Batch A — the count of what this filters out used to be shown as a chip. Founder,
+    // 2026-08-27: not necessary. So the wrong-aim agreements are simply not listed, and the
+    // screen no longer says how many there were.
+    return live.filter((a) => {
       const aim = (a.terms_json || {}).aim || null;
-      // Ledger #74 — a sales set cannot show a content agreement. The terms would not mean
-      // the same thing: one settled a commission, the other a fee for named deliverables.
-      if (goal && aim && aim !== goal) wrong.push(a); else match.push(a);
+      return !(goal && aim && aim !== goal);
     });
-    return { matching: match, wrongAim: wrong };
   }, [agreements, goal, inUseElsewhere]);
 
   const pickedIds = useMemo(() => new Set(picked.map(p => p.agreement_id)), [picked]);
@@ -210,7 +213,11 @@ export default function BrandSetWizardScreen({ route, navigation }) {
       window_end: buyingContent ? (windowEnd || null) : null,
       formats_json: buyingContent ? formats.filter(f => Number(f.count) > 0) : [],
       // Guidance only — it blocks nobody you have already agreed with.
-      channels_json: selling && channels.length ? { allowed: channels, minimum: Number(minChannels) || 0 } : null,
+      // Batch A — `minimum` is no longer sent: the brand can no longer choose one, and
+      // storing a number nobody picked would be guidance we invented. The server treats it as
+      // optional (campaignChannels.validateChannels) and describeChannels renders the list
+      // without it. Existing sets keep whatever they were given.
+      channels_json: selling && channels.length ? { allowed: channels } : null,
       // set_budget is DELIBERATELY not sent for a paid set: the server derives it from the
       // sum of this set's agreed fees and keeps it in step with every later invite (§5.2).
     };
@@ -274,7 +281,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
             windowStart={windowStart} setWindowStart={setWindowStart}
             windowEnd={windowEnd} setWindowEnd={setWindowEnd}
             channels={channels} setChannels={setChannels}
-            minChannels={minChannels} setMinChannels={setMinChannels}
             formats={formats} setFormats={setFormats}
             derivedBudget={derivedBudget}
             saving={saving}
@@ -285,10 +291,9 @@ export default function BrandSetWizardScreen({ route, navigation }) {
 
         {step === 2 && (
           <StepCreators
-            matching={matching} wrongAim={wrongAim} pickedIds={pickedIds}
+            matching={matching} pickedIds={pickedIds}
             onToggle={togglePick}
             onOpen={(a) => navigation.navigate('BrandAgreementDetail', { agreement: a })}
-            onGoAsk={() => navigation.navigate('Creators')}
             onBack={() => setStep(1)}
             onContinue={() => setStep(3)}
           />
@@ -388,7 +393,7 @@ function StepAim({ goal, locked, onPick, onContinue }) {
 function StepBasics(p) {
   const {
     goal, selling, buyingContent, name, setName, windowStart, setWindowStart,
-    windowEnd, setWindowEnd, channels, setChannels, minChannels, setMinChannels,
+    windowEnd, setWindowEnd, channels, setChannels,
     formats, setFormats, derivedBudget, saving, onBack, onContinue,
   } = p;
 
@@ -405,29 +410,29 @@ function StepBasics(p) {
         <Text style={s.label}>Set name</Text>
         <TextInput style={s.input} value={name} onChangeText={setName} placeholder="e.g. Sarees" placeholderTextColor={ig.mut2} />
 
-        <View style={{ flexDirection: 'row', gap: 9, marginTop: 9 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.label}>{buyingContent ? 'Posting window from' : 'Starts'}</Text>
-            <TextInput style={s.input} value={windowStart} onChangeText={setWindowStart} placeholder="YYYY-MM-DD" placeholderTextColor={ig.mut2} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.label}>{buyingContent ? 'To' : 'Ends'}</Text>
-            {buyingContent ? (
-              <TextInput style={s.input} value={windowEnd} onChangeText={setWindowEnd} placeholder="YYYY-MM-DD" placeholderTextColor={ig.mut2} />
-            ) : (
-              // Disabled-and-explained beats hidden. A brand who has used the old wizard
-              // will look for this field; showing it greyed teaches the rule.
-              <View style={[s.input, s.inputCalc]}><Text style={s.calcT}>Never</Text></View>
-            )}
-          </View>
-        </View>
+        {/* Batch A — calendars, not text boxes. `YYYY-MM-DD` typed on a phone is four ways
+            to fail: wrong format, wrong month, a date already past, or a typo nobody catches
+            until a deadline is missed. DateField is pure JS deliberately — an over-the-air
+            bundle cannot add a native module, and its value is the same string as before.
 
-        {!buyingContent && (
-          <Text style={s.help}>
-            <Text style={s.helpB}>No end date on a sales set.</Text> Each creator&apos;s own post-by date
-            comes from what you agreed with her — the set itself just keeps running.
-          </Text>
+            The greyed "Ends · Never" is gone on a SALES set. It was there to teach a brand
+            coming from the old wizard where the field went; that wizard is retired and the
+            lesson is no longer worth a row on the screen.
+
+            A CONTENT set keeps both halves — its window is real, not derived. */}
+        {buyingContent ? (
+          <View style={{ flexDirection: 'row', gap: 9, marginTop: 9 }}>
+            <View style={{ flex: 1 }}>
+              <DateField label="Posting window from" value={windowStart} onChange={setWindowStart} placeholder="Choose a date" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <DateField label="To" value={windowEnd} onChange={setWindowEnd} placeholder="Choose a date" minDate={windowStart || undefined} />
+            </View>
+          </View>
+        ) : (
+          <DateField label="Starts" value={windowStart} onChange={setWindowStart} placeholder="Choose a start date" style={{ marginTop: 9 }} />
         )}
+
         {buyingContent && (
           <Text style={s.help}>
             The set ends when the last agreed post is due — <Text style={s.helpB}>calculated, not typed.</Text>
@@ -435,21 +440,26 @@ function StepBasics(p) {
         )}
       </View>
 
-      <View style={s.sec2}>
-        <Text style={s.dh}>Budget</Text>
-        <View style={[s.input, s.inputCalc]}>
-          <Text style={s.calcT}>
-            {!buyingContent ? 'None'
-              : derivedBudget != null ? `₹${derivedBudget.toLocaleString('en-IN')} · calculated`
-                : 'Calculated at step 3'}
+      {/* Batch A — Budget is gone from a SALES set: it always read "None", because
+          commission comes out of a sale that already happened and nothing is held.
+
+          It STAYS on a content set, where it is the figure the wallet must cover before the
+          campaign can publish. Removing it there would not crash — the campaign would simply
+          refuse to go live weeks later, which is worse. */}
+      {buyingContent && (
+        <View style={s.sec2}>
+          <Text style={s.dh}>Budget</Text>
+          <View style={[s.input, s.inputCalc]}>
+            <Text style={s.calcT}>
+              {derivedBudget != null ? `₹${derivedBudget.toLocaleString('en-IN')} · calculated` : 'Calculated at step 3'}
+            </Text>
+          </View>
+          <Text style={s.help}>
+            Adds up from what you agreed with each creator at step 3. Your wallet must cover it
+            before you can publish.
           </Text>
         </View>
-        <Text style={s.help}>
-          {!buyingContent
-            ? 'Commission is paid out of a sale that already happened. Nothing is held.'
-            : 'Adds up from what you agreed with each creator at step 3. Your wallet must cover it before you can publish.'}
-        </Text>
-      </View>
+      )}
 
       {buyingContent && (
         <View style={s.sec2}>
@@ -477,45 +487,16 @@ function StepBasics(p) {
       {selling && (
         <View style={s.sec2}>
           <Text style={s.dh}>How they will drive traffic</Text>
-          <Text style={s.help}>
-            You are not buying posts here — so we ask what reach they bring, not what they must publish.
-          </Text>
-          <Text style={[s.label, { marginTop: 11 }]}>Channels a creator may use</Text>
-          <View style={s.chips}>
+          <View style={[s.chips, { marginTop: 6 }]}>
             {CHANNELS.map(c => (
               <TouchableOpacity key={c.key} style={[s.chip, channels.includes(c.key) && s.chipOn]} onPress={() => toggleChannel(c.key)} activeOpacity={0.8}>
                 <Text style={[s.chipT, channels.includes(c.key) && s.chipTOn]}>{c.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={[s.label, { marginTop: 11 }]}>Minimum channels she should have</Text>
-          <View style={s.chips}>
-            {[1, 2, 3].map(n => (
-              <TouchableOpacity
-                key={n}
-                style={[s.chip, minChannels === n && s.chipOn, n > channels.length && s.chipDim]}
-                onPress={() => setMinChannels(n)}
-                activeOpacity={0.8}
-              >
-                <Text style={[s.chipT, minChannels === n && s.chipTOn]}>{n}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={s.help}>
-            Guidance for who fits this set — <Text style={s.helpB}>it does not block anyone you have already agreed with.</Text>
-          </Text>
         </View>
       )}
 
-      <View style={s.sec}>
-        <View style={s.lock}>
-          <Icon name="lock-outline" size={15} color={ig.mut} />
-          <Text style={s.lockT}>
-            <Text style={s.lockB}>No &quot;who posts?&quot; step.</Text> You settled that at the agreement —
-            whether you canvassed openly or asked one person, and who said yes.
-          </Text>
-        </View>
-      </View>
 
       <View style={[s.sec, { flexDirection: 'row', gap: 8 }]}>
         <TouchableOpacity style={[s.btn, s.btnSec, { flex: 1 }]} onPress={onBack} activeOpacity={0.85}>
@@ -530,7 +511,7 @@ function StepBasics(p) {
 }
 
 /* ── Step 3 · the agreements pick-list ─────────────────────────────────────── */
-function StepCreators({ matching, wrongAim, pickedIds, onToggle, onOpen, onGoAsk, onBack, onContinue }) {
+function StepCreators({ matching, pickedIds, onToggle, onOpen, onBack, onContinue }) {
   return (
     <>
       <View style={s.sec2}>
@@ -542,13 +523,6 @@ function StepCreators({ matching, wrongAim, pickedIds, onToggle, onOpen, onGoAsk
           <View style={[s.chip, s.chipOn]}>
             <Text style={[s.chipT, s.chipTOn]}>Matching agreements · {matching.length}</Text>
           </View>
-          {wrongAim.length > 0 && (
-            // Naming what was hidden turns a mystery into a fact. A brand who expects four
-            // rows and sees three would otherwise read this screen as a bug.
-            <View style={[s.chip, s.chipGhost]}>
-              <Text style={[s.chipT, { color: ig.mut }]}>{wrongAim.length} hidden — wrong aim</Text>
-            </View>
-          )}
         </View>
       </View>
 
@@ -596,9 +570,6 @@ function StepCreators({ matching, wrongAim, pickedIds, onToggle, onOpen, onGoAsk
             <Text style={s.lockB}>You cannot add someone who has not agreed.</Text> Agree first, brief after.
           </Text>
         </View>
-        <TouchableOpacity style={[s.btn, s.btnSec, { marginTop: 10 }]} onPress={onGoAsk} activeOpacity={0.85}>
-          <Text style={s.btnSecT}>Go and ask someone new</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={[s.sec, { flexDirection: 'row', gap: 8 }]}>
@@ -626,7 +597,12 @@ function StepTerms(p) {
   } = p;
 
   const everyoneAllocated = !selling || picked.every(c => c.alloc?.alloc_scope);
-  const canFinish = picked.length > 0 && everyoneAllocated && (!selling || !!chosenOffer);
+  // Batch A — the offer clause is gone. Founder, 2026-08-27: "dont make this mandatory".
+  // Nothing underneath ever required it: campaign_sets has no offer columns at all, and the
+  // offer lives on campaign_influencers, per creator, nullable. The wizard invented the rule.
+  // Allocation stays compulsory — a different rule, and a real one: a contracted creator with
+  // no allocation is contracted and invisible in the shopping app.
+  const canFinish = picked.length > 0 && everyoneAllocated;
 
   return (
     <>
@@ -783,8 +759,7 @@ function StepTerms(p) {
         <View style={s.sec}>
           <Text style={s.blockT}>
             {picked.length === 0 ? 'Pick at least one creator at step 3.'
-              : !everyoneAllocated ? 'Every creator on a sales set must have something to sell.'
-                : 'Choose a shopper offer, or build one.'}
+              : 'Every creator on a sales set must have something to sell.'}
           </Text>
         </View>
       )}

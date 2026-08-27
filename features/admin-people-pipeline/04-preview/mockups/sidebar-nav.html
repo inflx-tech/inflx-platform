@@ -1,0 +1,175 @@
+<!-- preview-size: desktop -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin nav — PEOPLE / OUTREACH regroup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy: { DEFAULT: '#1B2D5E', deep: '#111E42', mid: '#243672', light: '#2E4494', pale: '#EEF1FB' },
+          orange: { DEFAULT: '#F47920', deep: '#D4601A', pale: '#FEF0E4' },
+          gold: { DEFAULT: '#FFB800', deep: '#E0A000', pale: '#FFF8E1' },
+          teal: { DEFAULT: '#00B894', deep: '#007A63', pale: '#E0FAF5' },
+          red: { DEFAULT: '#E8401A', pale: '#FDEEE9' },
+          purple: { DEFAULT: '#7F77DD', pale: '#EEEDFE' },
+          bg: '#F4F6FB', surface: '#FFFFFF', surface2: '#F2F4F9',
+          border: '#E0E4EF', border2: '#C8CEDF',
+          t1: '#0D1630', t2: '#4A5278', t3: '#8B91AD',
+        },
+        fontFamily: {
+          display: ['Outfit', 'sans-serif'],
+          body: ['Plus Jakarta Sans', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap">
+<style>
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>
+</head>
+<body class="bg-bg font-body">
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar (new PEOPLE/OUTREACH nav) -->
+    <div class="w-48 bg-navy-deep flex flex-col flex-shrink-0 overflow-y-auto">
+      <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div class="font-display text-base font-extrabold text-white">
+          INFL<span class="bg-gradient-to-r from-red to-orange bg-clip-text text-transparent">X</span>
+        </div>
+        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">SUPERADMIN</span>
+      </div>
+
+      <nav class="flex-1 px-2 py-2">
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">OVERVIEW</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📊</span><span>Platform Stats</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📈</span><span>Analytics</span></div>
+
+        <div class="px-2 pt-3 pb-1 flex items-center gap-1.5">
+          <span class="text-[9px] font-bold text-gold uppercase tracking-widest">PEOPLE</span>
+          <span class="text-[8px] font-bold px-1 py-0.5 rounded bg-gold/20 text-gold">regrouped</span>
+        </div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 bg-gold/15 text-gold font-semibold">
+          <span class="text-xs w-4 text-center">✅</span><span class="flex-1">Approvals</span>
+          <span class="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">4</span>
+        </div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/85 hover:bg-white/7">
+          <span class="text-xs w-4 text-center">⭐</span><span class="flex-1">Influencers</span>
+          <span class="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">3</span>
+        </div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/85 hover:bg-white/7">
+          <span class="text-xs w-4 text-center">🏢</span><span class="flex-1">Brands</span>
+          <span class="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">1</span>
+        </div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">🚚</span><span>Production Queue</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📦</span><span>Orders</span></div>
+
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">CONTENT</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">📮</span><span>Post Queue</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">💡</span><span>Concepts</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">🧺</span><span>Collections</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/55"><span class="text-xs w-4 text-center">🧭</span><span>Discover Builder</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/40 italic"><span class="text-xs w-4 text-center">🏷️</span><span>…more (unchanged)</span></div>
+
+        <div class="px-2 pt-3 pb-1 flex items-center gap-1.5">
+          <span class="text-[9px] font-bold text-gold uppercase tracking-widest">OUTREACH</span>
+          <span class="text-[8px] font-bold px-1 py-0.5 rounded bg-gold/20 text-gold">was MARKETING</span>
+        </div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/85 hover:bg-white/7"><span class="text-xs w-4 text-center">📥</span><span>Inbox</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/85 hover:bg-white/7"><span class="text-xs w-4 text-center">📊</span><span>Funnel</span></div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/85 hover:bg-white/7"><span class="text-xs w-4 text-center">🛠️</span><span>Settings</span></div>
+
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">REFERRALS</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/40 italic"><span class="text-xs w-4 text-center">🤝</span><span>…unchanged</span></div>
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">FINANCE</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/40 italic"><span class="text-xs w-4 text-center">💸</span><span>…unchanged</span></div>
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">PRICING</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/40 italic"><span class="text-xs w-4 text-center">💎</span><span>…unchanged</span></div>
+        <div class="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">SETTINGS</div>
+        <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium mb-0.5 text-white/40 italic"><span class="text-xs w-4 text-center">👥</span><span>…unchanged</span></div>
+      </nav>
+
+      <div class="px-3 py-3 border-t border-white/5">
+        <div class="text-[10px] text-white/40 mb-1">+919000000099</div>
+        <div class="text-[10px] text-white/30">Sign out →</div>
+      </div>
+    </div>
+
+    <!-- Main: before/after explainer -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="h-11 bg-white border-b border-border flex items-center px-4 flex-shrink-0">
+        <div class="font-display text-sm font-bold text-t1">Sidebar nav — before / after this contract</div>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 bg-bg">
+        <div class="max-w-3xl">
+          <p class="text-xs text-t2 mb-5 leading-relaxed">
+            Left: the sidebar exactly as it will read after this change — PEOPLE and OUTREACH
+            are new section headers; every other section (OVERVIEW, CONTENT, REFERRALS,
+            FINANCE, PRICING, SETTINGS) is untouched. Badge counts on Approvals / Influencers /
+            Brands are the same pending-count badges that exist today, just now visible on the
+            tabbed pages themselves too.
+          </p>
+
+          <div class="bg-white rounded-xl border border-border overflow-hidden mb-4">
+            <div class="px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3">Before — 12 nav rows across 2 sections</div>
+            <div class="grid grid-cols-2 divide-x divide-border text-xs">
+              <div class="p-4">
+                <div class="font-bold text-t1 mb-2">MANAGEMENT (5)</div>
+                <ul class="space-y-1 text-t2">
+                  <li>✅ Approvals</li>
+                  <li>🏢 Brands</li>
+                  <li>⭐ Influencers</li>
+                  <li>🚚 Production Queue</li>
+                  <li>📦 Orders</li>
+                </ul>
+              </div>
+              <div class="p-4">
+                <div class="font-bold text-t1 mb-2">MARKETING (7)</div>
+                <ul class="space-y-1 text-t2">
+                  <li>🎯 Triage</li>
+                  <li>➕ Add Lead</li>
+                  <li>🔍 Verifications</li>
+                  <li>📨 Invitations</li>
+                  <li>📥 Inbox</li>
+                  <li>📊 Funnel</li>
+                  <li>🛠️ M-Settings</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-teal/30 overflow-hidden">
+            <div class="px-4 py-2.5 bg-teal-pale border-b border-teal/20 text-[10px] font-bold uppercase tracking-wider text-teal-deep">After — 8 nav rows across 2 sections</div>
+            <div class="grid grid-cols-2 divide-x divide-border text-xs">
+              <div class="p-4">
+                <div class="font-bold text-t1 mb-2">PEOPLE (5)</div>
+                <ul class="space-y-1 text-t2">
+                  <li>✅ Approvals <span class="text-t3">— summary only, no actions</span></li>
+                  <li>⭐ Influencers <span class="text-t3">— 4 tabs</span></li>
+                  <li>🏢 Brands <span class="text-t3">— 3 tabs</span></li>
+                  <li>🚚 Production Queue</li>
+                  <li>📦 Orders</li>
+                </ul>
+              </div>
+              <div class="p-4">
+                <div class="font-bold text-t1 mb-2">OUTREACH (3)</div>
+                <ul class="space-y-1 text-t2">
+                  <li>📥 Inbox</li>
+                  <li>📊 Funnel</li>
+                  <li>🛠️ Settings <span class="text-t3">— renamed from M-Settings</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -60,11 +60,6 @@ export default function InfluencerProfilePage() {
   // Wave 1 — per-influencer TDS controls (override + exempt).
   const [tdsInput, setTdsInput] = useState('');
   const [savingTds, setSavingTds] = useState(false);
-  // The decision, made on the page that holds the facts.
-  // Contract: features/admin-account-review (item 3)
-  const [decision, setDecision] = useState(null);
-  const [reason, setReason] = useState('');
-  const [deciding, setDeciding] = useState(false);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 4000); }
 
@@ -72,23 +67,6 @@ export default function InfluencerProfilePage() {
     const res = await adminApi.getInfluencerById(id);
     if (res.success) setInfluencer(res.data?.influencer || res.data);
     return res;
-  }
-
-  async function decide() {
-    if (decision !== 'approved' && !reason.trim()) { showToast('A reason is required'); return; }
-    setDeciding(true);
-    const res = await adminApi.updateInfluencerStatus(id, {
-      status: decision,
-      ...(reason.trim() ? { reason: reason.trim() } : {}),
-    });
-    setDeciding(false);
-    if (res.success) {
-      setInfluencer(prev => ({ ...prev, user_status: decision, status: decision }));
-      setDecision(null); setReason('');
-      showToast(decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Rejected' : 'Suspended');
-    } else {
-      showToast(res.error?.message || 'Could not save that');
-    }
   }
 
   // Wave 1 — save or clear the per-influencer TDS override + exempt flag.
@@ -222,9 +200,9 @@ export default function InfluencerProfilePage() {
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-2 mb-4">
-        <a href="/admin/approvals" className="text-xs text-t3 hover:text-t2">← Approvals</a>
+        <a href="/admin/influencers?tab=live" className="text-xs text-t3 hover:text-t2">← All creators</a>
         <span className="text-xs text-t3">·</span>
-        <a href="/admin/influencers" className="text-xs text-t3 hover:text-t2">All creators</a>
+        <a href="/admin/influencers?tab=pending" className="text-xs text-t3 hover:text-t2">Pending Verification</a>
       </div>
 
       <div className="bg-white rounded-xl border border-border p-5 mb-4">
@@ -358,54 +336,29 @@ export default function InfluencerProfilePage() {
           </div>
         )}
 
-        {status !== 'rejected' && (
-          <div className="mt-4 pt-4 border-t border-border">
-            {!decision ? (
-              <div className="flex gap-2 flex-wrap">
-                {!isApproved && (
-                  <button onClick={() => setDecision('approved')}
-                    className="px-5 py-2.5 bg-teal text-white font-bold text-xs rounded-xl hover:opacity-90 transition-opacity">
-                    Approve
-                  </button>
-                )}
-                <button onClick={() => setDecision('rejected')}
-                  className="px-5 py-2.5 bg-white border-2 border-red/30 text-red font-bold text-xs rounded-xl hover:bg-red-pale transition-colors">
-                  Reject…
-                </button>
-                {isApproved && (
-                  <button onClick={() => setDecision('suspended')}
-                    className="px-5 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl hover:bg-surface2 transition-colors">
-                    Suspend…
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div>
-                <div className="text-xs font-bold text-t1 mb-2">
-                  {decision === 'approved'
-                    ? `Approve ${displayName || `@${influencer.instagram_handle || 'this creator'}`}?`
-                    : 'Tell them why'}
-                </div>
-                {decision !== 'approved' && (
-                  <textarea value={reason} onChange={e => setReason(e.target.value)}
-                    placeholder="She will see this. Be specific enough to act on."
-                    rows={3}
-                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-xs mb-2" />
-                )}
-                <div className="flex gap-2 flex-wrap">
-                  <button onClick={decide} disabled={deciding}
-                    className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity">
-                    {deciding ? 'Saving…' : 'Confirm'}
-                  </button>
-                  <button onClick={() => { setDecision(null); setReason(''); }}
-                    className="px-4 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+        {/* Status is read-only here — decided exclusively on Influencers → Pending
+            Verification (features/admin-people-pipeline). This page used to carry
+            its own standalone approve/reject/suspend button; that was one of three
+            places the same decision could be made and they didn't always agree. */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-t3">Account status</span>
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+              status === 'approved' ? 'bg-teal-pale text-teal-deep'
+              : status === 'rejected' ? 'bg-red-pale text-red'
+              : status === 'suspended' ? 'bg-surface2 text-t3'
+              : 'bg-gold-pale text-yellow-700'
+            }`}>
+              {status || '—'}
+            </span>
           </div>
-        )}
+          <p className="text-[11px] text-t3 mt-1.5">
+            Read-only. To approve, reject, or change this creator's status, go to{' '}
+            <a href="/admin/influencers?tab=pending" className="text-navy font-semibold hover:underline">
+              Influencers → Pending Verification →
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* TDS is about paying someone, not about admitting them. It only means anything

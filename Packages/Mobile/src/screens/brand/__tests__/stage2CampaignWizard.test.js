@@ -73,7 +73,21 @@ describe('Stage 2 · every route the wizard navigates to is registered', () => {
     expect(targetsIn('screens/brand/BrandCampaignBuilderScreen.js')).toEqual(
       expect.arrayContaining(['BrandSetWizard', 'BrandCampaignReview']));
     expect(targetsIn('screens/brand/BrandSetWizardScreen.js')).toEqual(
-      expect.arrayContaining(['BrandAgreementDetail', 'BrandAllocation', 'BrandBasketPreview', 'Creators']));
+      expect.arrayContaining(['BrandAgreementDetail', 'BrandAllocation', 'BrandBasketPreview']));
+  });
+
+  it('the wizard no longer walks you out to the Creators tab', () => {
+    // Batch A — "Go and ask someone new" is gone. Founder, 2026-08-27: it caused confusion,
+    // and he was right for a reason beyond clutter. You cannot add anyone who has not already
+    // agreed — the lock note directly above the button says so — and a button that leaves a
+    // half-built set to do a thing that would not help is an invitation to lose the work.
+    //
+    // Rewritten rather than deleted: the old assertion said the wizard DOES navigate to
+    // 'Creators'. That is now false, so the assertion states the opposite fact instead of
+    // quietly dropping the coverage.
+    // Contract: features/stage-2-walkthrough-fixes
+    expect(targetsIn('screens/brand/BrandSetWizardScreen.js')).not.toContain('Creators');
+    expect(read('screens/brand/BrandSetWizardScreen.js')).not.toContain('Go and ask someone new');
   });
 
   it('the Campaigns landing opens the wizard, and no longer offers the web', () => {

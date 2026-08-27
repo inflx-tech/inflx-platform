@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 4 — The shoot</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:840px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.wrap{position:relative}
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:710px;overflow-y:auto}
+.tagapp{position:absolute;top:8px;left:8px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:5}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-both{background:var(--yBg);color:var(--yInk)}
+.t-a{background:var(--purpleBg);color:var(--purple)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:25px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--lineSoft)}
+.item:last-child{border-bottom:none}
+.thumb{width:36px;height:42px;border-radius:7px;background:#F0EDE7;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.item .n{flex:1;min-width:0}
+.item .nm{font-size:11.5px;font-weight:800}
+.item .mt{font-size:10px;color:var(--mut);font-weight:650;margin-top:1px}
+.cbx{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:transparent;flex-shrink:0}
+.cbx.on{background:var(--green);border-color:var(--green);color:#fff}
+.cbx.miss{background:var(--redBg);border-color:#F0C4BA;color:var(--red)}
+
+.rsn{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:11.5px;font-weight:700}
+.rsn.on{border-color:var(--red);border-width:1.5px;background:var(--redBg);color:var(--red)}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0}
+.rsn.on .rdo{border-color:var(--red);border-width:4.5px}
+
+.trk{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.trk .th{padding:9px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.trk .tb{padding:10px 12px}
+.pill{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+.p-ok{background:var(--greenBg);color:var(--green)}
+.p-wait{background:var(--blueBg);color:var(--blue)}
+.p-no{background:var(--redBg);color:var(--red)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 14px}
+.gc{aspect-ratio:3/4;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;border-radius:4px}
+.gc .b{position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;padding:1px 4px;border-radius:4px;color:#fff}
+.b-live{background:var(--green)}.b-rev{background:var(--blue)}.b-fix{background:var(--red)}
+.gc .p{position:absolute;bottom:4px;left:4px;font-size:7px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+.hero{width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:38px}
+.tagged{display:flex;gap:8px;overflow-x:auto;padding:11px 14px}
+.pcard{width:62px;flex-shrink:0}
+.pimg{width:62px;height:76px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.pnm{font-size:8.5px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+.stat3{display:flex;text-align:center;border-top:1px solid var(--lineSoft);border-bottom:1px solid var(--lineSoft)}
+.stat3 div{flex:1;padding:11px 4px;border-right:1px solid var(--lineSoft)}
+.stat3 div:last-child{border-right:none}
+.stat3 .n{font-family:'Outfit';font-size:15px;font-weight:800}
+.stat3 .l{font-size:8px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:2px}
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-blk{background:var(--redBg);color:var(--red)}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Stage 2 walkthrough — Batch A</h1>
+  <p>What the campaign wizard looks like AFTER the removals. Founder's punch list, 2026-08-27.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">① Name it</button>
+  <button class="tab" data-v="v2">② Basics</button>
+  <button class="tab" data-v="v3">③ Creators</button>
+  <button class="tab" data-v="v4">④ Terms</button>
+  <button class="tab" data-v="v5">⑤ What changed</button>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── ① -->
+<div class="view on" id="v1">
+  <div class="vh">Naming the campaign</div>
+  <div class="vids">REMOVAL 1</div>
+  <div class="vs">One block goes. Nothing else on this screen moves.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">New campaign</div><div class="sub">STEP 1 &middot; NAME IT</div></div></div>
+          <div class="body">
+            <div class="dsec">
+              <div class="dh">Campaign name</div>
+              <div class="inp">Summer camping</div>
+              <div class="cap" style="margin:6px 0 0">Creators see this name on their invite.</div>
+            </div>
+            <div class="dsec">
+              <div class="dh">Starts</div>
+              <div class="inp">Wed 27 Aug 2026 &nbsp;&nbsp;📅</div>
+            </div>
+            <div class="btn pri">Add the first set</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">The lock note is gone. <b>The screen ends at the button.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:280px">
+      <div class="note bad"><b>Removed.</b> “No end date and no budget here. Both belong to a set, and both depend on the aim you pick inside it.”</div>
+      <div class="note info"><b>Why it was there:</b> it explained an absence to a brand who had used the older wizard, where both fields sat on this screen. That wizard is gone and nobody is looking for them any more, so the note now explains a thing that is not missing.</div>
+      <div class="note good"><b>Also here:</b> the start date becomes a <b>calendar picker</b>. It was a text box expecting <code>YYYY-MM-DD</code> — four ways to fail on a phone: wrong format, wrong month, a date already past, or a typo nobody catches until a deadline is missed. Every other date in the app already uses the picker.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── ② -->
+<div class="view" id="v2">
+  <div class="vh">Set basics — a sales set</div>
+  <div class="vids">REMOVALS 2–6 &middot; SALES SETS ONLY</div>
+  <div class="vs">Five blocks go. One survives, trimmed. <b>Pay-for-content sets are untouched</b> — see the note.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sarees</div><div class="sub">STEP 2 OF 4 &middot; BASICS</div></div></div>
+          <div class="body">
+            <div class="dsec">
+              <div class="dh">Set name</div>
+              <div class="inp">Sarees</div>
+            </div>
+            <div class="dsec">
+              <div class="dh">Starts</div>
+              <div class="inp">Thu 27 Aug 2026 &nbsp;&nbsp;📅</div>
+            </div>
+            <div class="dsec">
+              <div class="dh">How they will drive traffic</div>
+              <div class="chips" style="margin-top:6px">
+                <div class="chip on">Instagram</div>
+                <div class="chip on">YouTube</div>
+              </div>
+            </div>
+            <div class="brow" style="margin-top:10px">
+              <div class="btn sec" style="flex:1">Back</div>
+              <div class="btn pri" style="flex:1">Continue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Three fields and a button. <b>Was eleven blocks.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>Removed on a sales set:</b> the greyed “Ends · Never” field · “No end date on a sales set…” · the whole <b>Budget</b> block and its note · <b>Minimum channels she should have</b> (1 / 2 / 3) and its guidance line · the “You are not buying posts here…” paragraph · the “No &quot;who posts?&quot; step” lock note.</div>
+      <div class="note key"><b>Channels trimmed to two.</b> WhatsApp and “Their INFLX shop” are gone. Instagram and YouTube only.</div>
+      <div class="note good"><b>Pay-for-content sets keep everything.</b> There, “Posting window from → To” is a real window, <b>Budget</b> is the figure your wallet must cover before you can publish, and “What you are buying” (2 reels, 3 stories…) is the point of the set. Deleting those would stop content campaigns going live at all.</div>
+      <div class="note info"><b>Both dates become calendar pickers</b>, on both kinds of set.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── ③ -->
+<div class="view" id="v3">
+  <div class="vh">Who is in this set</div>
+  <div class="vids">REMOVALS 7–8</div>
+  <div class="vs">Two things go, and nothing replaces either of them.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sarees</div><div class="sub">STEP 3 OF 4 &middot; CREATORS</div></div></div>
+          <div class="body">
+            <div class="dsec">
+              <div class="dh">Who is in this set?</div>
+              <div class="cap" style="margin:0 0 4px"><b>These people already agreed terms with you.</b> Tick who belongs in this set.</div>
+            </div>
+            <div class="chips" style="margin:0 0 6px"><div class="chip on">Matching agreements &middot; 3</div></div>
+            <div class="item"><div class="cbx on">✓</div><div style="flex:1"><b>Anita B. (practice)</b><div class="cap" style="margin:0">13% per sale &middot; store visit</div></div></div>
+            <div class="item"><div class="cbx on">✓</div><div style="flex:1"><b>Arjun P. (practice)</b><div class="cap" style="margin:0">13% per sale &middot; remote, you ship</div></div></div>
+            <div class="item"><div class="cbx on">✓</div><div style="flex:1"><b>Asha M. (practice)</b><div class="cap" style="margin:0">14% per sale &middot; store visit</div></div></div>
+            <div class="lock">You cannot add someone who has not agreed. Agree first, brief after.</div>
+            <div class="brow" style="margin-top:10px">
+              <div class="btn sec" style="flex:1">Back</div>
+              <div class="btn pri" style="flex:1">Continue &middot; 3 picked</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Heading, list, lock note, buttons. <b>Nothing else.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>Removed:</b> the “6 hidden — wrong aim” chip, and the <b>“Go and ask someone new”</b> button.</div>
+      <div class="note key"><b>Founder, 2026-08-27: the explanation is not necessary either.</b> I had proposed keeping it as a plain sentence. He has seen that and said no, so it goes.</div>
+      <div class="note info"><b>What that means, stated once and then dropped:</b> the six are still filtered out — they agreed pay-for-content, and a commission set cannot hold them. The screen simply no longer says so. A brand who agreed with nine and sees three will not be told why. <b>His call, made with the trade-off in front of him.</b></div>
+      <div class="note good"><b>“Go and ask someone new” was worse than clutter.</b> You cannot add anyone who has not already agreed — the lock note right above says so. A button that walks you out of a half-built set to do a thing that would not help is an invitation to lose your work.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── ④ -->
+<div class="view" id="v4">
+  <div class="vh">Terms — and the offer stops blocking you</div>
+  <div class="vids">CHANGE 9 &middot; THE ONLY NON-REMOVAL</div>
+  <div class="vs">Nothing on this screen moves. The offer simply stops being compulsory.</div>
+
+  <div class="row">
+    <div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sarees</div><div class="sub">STEP 4 OF 4 &middot; TERMS</div></div></div>
+          <div class="body">
+            <div class="dsec">
+              <div class="dh">① What each creator gets &middot; already agreed</div>
+              <div class="trm"><div class="k">What was settled</div><div class="v">14% per sale &middot; store visit</div></div>
+              <div class="trm"><div class="k">She can sell</div><div class="v">Men › Topwear › Jacket</div></div>
+              <div class="btn sec">Change what she can sell</div>
+            </div>
+            <div class="dsec">
+              <div class="dh">② What their followers get &middot; optional</div>
+              <div class="cap" style="margin:0 0 6px">A shopper needs a reason to buy through her rather than walk into your shop. If you want to give one, this is it.</div>
+              <div class="item"><div class="cbx"></div><div style="flex:1"><b>Yoy</b><div class="cap" style="margin:0">DISCOUNT &middot; ACTIVE</div></div></div>
+              <div class="btn sec">Make a new one</div>
+              <div class="btn sec">See what a shopper pays</div>
+              <div class="cap" style="margin:8px 0 0">No offer chosen. <b>You can save without one</b> and add it later.</div>
+            </div>
+            <div class="brow" style="margin-top:10px">
+              <div class="btn sec" style="flex:1">Back</div>
+              <div class="btn pri" style="flex:1">Save this set</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><b>Save this set is black, with no offer picked.</b></div>
+    </div>
+
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>Removed:</b> the block. “Save this set” was greyed out and “Choose a shopper offer, or build one.” sat under it in red until you picked one.</div>
+      <div class="note good"><b>Nothing underneath ever required it.</b> <code>campaign_sets</code> has no offer columns at all — checked against the live database. The offer lives on <code>campaign_influencers</code>, per creator, and is nullable. The wizard invented the rule; the data never had it.</div>
+      <div class="note key"><b>Still Batch B, not this one:</b> moving the offer to creator level, and bringing the phone's builder up to the web's. Those need screens drawn and agreed first.</div>
+      <div class="note bad"><b>Live bug, unfixed until Batch B:</b> every offer built on the phone is silently a <b>whole-store</b> offer. <code>buildDiscount</code> hardcodes <code>scope: 'store'</code>. Ask for “20% off sarees” and you get 20% off everything. It is safer to leave the offer optional than to make people build one through a builder that does this.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────── ⑤ -->
+<div class="view" id="v5">
+  <div class="vh">What changed, and what deliberately did not</div>
+  <div class="vids">SCOPE</div>
+
+  <div class="note good"><b>In Batch A — nine changes, eight of them removals.</b> No new screen, no new field, no server change, no database change. Every one of them takes something away or stops something blocking you.</div>
+
+  <div class="grid3">
+    <div class="gc">
+      <div class="dh">Batch A · now</div>
+      <div class="cap">1 · The lock note on “Name it”</div>
+      <div class="cap">2 · “Ends · Never” + its note</div>
+      <div class="cap">3 · Budget block + its note</div>
+      <div class="cap">4 · Minimum channels + guidance</div>
+      <div class="cap">5 · The “no who posts?” note</div>
+      <div class="cap">6 · WhatsApp + INFLX shop chips</div>
+      <div class="cap">7 · The “hidden — wrong aim” chip</div>
+      <div class="cap">8 · “Go and ask someone new”</div>
+      <div class="cap">9 · The offer stops being compulsory</div>
+      <div class="cap">+ every typed date becomes a picker</div>
+    </div>
+    <div class="gc">
+      <div class="dh">Batch B · screens first</div>
+      <div class="cap">The offer moves to <b>creator</b> level</div>
+      <div class="cap">Pick from the library, or build one just for this creator</div>
+      <div class="cap"><b>Free gift</b> — on web, missing on phone</div>
+      <div class="cap"><b>Scope</b> — store / category / products</div>
+      <div class="cap"><b>Where it redeems</b> — pay at store, online, pre-book, enquiry</div>
+      <div class="cap">The warning that a paper bill cannot honour a product-level offer</div>
+    </div>
+    <div class="gc">
+      <div class="dh">Its own stage</div>
+      <div class="cap">The campaign screen still shows the <b>older six</b>:</div>
+      <div class="cap">Fund · Roster · Contracts · Production · Review · Payout</div>
+      <div class="cap">Stage 3 agreed a different six:</div>
+      <div class="cap">Agree · Sign · Shoot · Shop posts · Go live · Complete</div>
+      <div class="cap"><b>Two vocabularies, half the words colliding.</b> Rebuilt properly, not patched.</div>
+    </div>
+  </div>
+
+  <div class="note info" style="margin-top:14px"><b>Deliberately not touched:</b> anything a pay-for-content set needs. Its posting window, its budget and its “what you are buying” counts all stay. Your screenshots were all commission sets, and that is the only path these removals apply to.</div>
+  <div class="note key"><b>What to check when you walk it:</b> build one <b>commission</b> set and one <b>pay-for-content</b> set. The commission one should feel short. The content one should be exactly as it was — if anything is missing there, that is the bug this batch could introduce.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
+    document.querySelectorAll('.view').forEach(function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

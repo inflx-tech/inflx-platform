@@ -21,6 +21,11 @@ import { seedAdminSession, stubAdminApis, shotDir } from '../_helpers/adminSessi
  * anywhere to normalise the two names. The assertions below now encode the
  * contract the server actually enforces.
  * Contract: features/admin-approval-consolidation/.
+ *
+ * 2026-08-27 — features/admin-people-pipeline relocated brand reject from
+ * /admin/approvals (now a summary-only dashboard, no action buttons) to
+ * Brands -> Pending Verification. Same UI shape (reason-picker, required
+ * "Other" text, disabled Confirm until a reason exists), new URL.
  */
 
 test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
@@ -28,7 +33,7 @@ test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
     await seedAdminSession(context, page);
     const cap = await stubAdminApis(page);
 
-    await page.goto('/admin/approvals');
+    await page.goto('/admin/brands?tab=pending');
     await expect(page.getByText('QA Diner')).toBeVisible();
 
     await page.getByRole('button', { name: 'Reject', exact: true }).click();
@@ -54,7 +59,7 @@ test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
     await seedAdminSession(context, page);
     const cap = await stubAdminApis(page);
 
-    await page.goto('/admin/approvals');
+    await page.goto('/admin/brands?tab=pending');
     await expect(page.getByText('QA Diner')).toBeVisible();
     await page.getByRole('button', { name: 'Reject', exact: true }).click();
 
@@ -77,7 +82,7 @@ test.describe('WORKFLOW: admin approvals — reject with a reason', () => {
     await seedAdminSession(context, page);
     const cap = await stubAdminApis(page);
 
-    await page.goto('/admin/approvals');
+    await page.goto('/admin/brands?tab=pending');
     await expect(page.getByText('QA Diner')).toBeVisible();
     await page.getByRole('button', { name: 'Reject', exact: true }).click();
     await expect(page.getByText('Select rejection reason')).toBeVisible();

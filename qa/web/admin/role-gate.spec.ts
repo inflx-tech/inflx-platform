@@ -65,7 +65,9 @@ test.describe('WORKFLOW: admin role-gate matrix', () => {
 
     await page.goto('/admin/approvals');
     await expect(page).toHaveURL(/\/admin\/approvals/);
-    await expect(page.getByRole('heading', { name: 'Approval Queue' })).toBeVisible();
+    // features/admin-people-pipeline: Approvals is now a summary dashboard
+    // (heading "Approvals", not the old decision-desk "Approval Queue").
+    await expect(page.getByRole('heading', { name: 'Approvals' })).toBeVisible();
     await page.screenshot({
       path: path.join(shotDir('after'), 'admin-role-gate__m4-allowed.png'),
       fullPage: true,

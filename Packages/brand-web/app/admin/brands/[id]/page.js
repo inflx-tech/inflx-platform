@@ -287,35 +287,8 @@ export default function BrandProfilePage() {
   const [commerceInput, setCommerceInput] = useState('');
   const [savingCommerce, setSavingCommerce] = useState(false);
   const [toast, setToast] = useState('');
-  // The decision, made here rather than on a different page.
-  const [decision, setDecision] = useState(null);   // 'approved' | 'rejected' | 'suspended'
-  const [reason, setReason] = useState('');
-  const [deciding, setDeciding] = useState(false);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
-
-  /**
-   * Approve or reject without leaving the page.
-   * These buttons used to live only on the Approvals list, so an admin read the account
-   * here, navigated away, and found the person again in a list to act on them. That is
-   * how the wrong account gets approved.
-   */
-  async function decide() {
-    if (decision === 'rejected' && !reason.trim()) { showToast('A reason is required to reject'); return; }
-    setDeciding(true);
-    const res = await adminApi.updateBrandStatus(id, {
-      status: decision,
-      ...(reason.trim() ? { reason: reason.trim() } : {}),
-    });
-    setDeciding(false);
-    if (res.success) {
-      setBrand(prev => ({ ...prev, user_status: decision, status: decision }));
-      setDecision(null); setReason('');
-      showToast(decision === 'approved' ? 'Approved' : decision === 'rejected' ? 'Rejected' : 'Suspended');
-    } else {
-      showToast(res.error?.message || 'Could not save that');
-    }
-  }
 
   async function saveFee() {
     const pct = parseFloat(feeInput);
@@ -421,9 +394,11 @@ export default function BrandProfilePage() {
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-2 mb-4">
-        <a href="/admin/brands" className="text-xs text-t3 hover:text-t2">← Brands</a>
+        <a href="/admin/brands?tab=live" className="text-xs text-t3 hover:text-t2">← Brands</a>
         <span className="text-t3">/</span>
         <span className="text-xs text-t2 font-medium">Brand Profile</span>
+        <span className="text-t3">·</span>
+        <a href="/admin/brands?tab=pending" className="text-xs text-t3 hover:text-t2">Pending Verification</a>
       </div>
 
       <div className="bg-white rounded-xl border border-border p-5 mb-4">
@@ -515,57 +490,23 @@ export default function BrandProfilePage() {
           </div>
         )}
 
-        {/* The decision, on the page that holds the facts. */}
-        {status !== 'rejected' && (
-          <div className="mt-4 pt-4 border-t border-border">
-            {!decision ? (
-              <div className="flex gap-2 flex-wrap">
-                {!isApproved && (
-                  <button onClick={() => setDecision('approved')}
-                    className="px-5 py-2.5 bg-teal text-white font-bold text-xs rounded-xl hover:opacity-90 transition-opacity">
-                    Approve
-                  </button>
-                )}
-                <button onClick={() => setDecision('rejected')}
-                  className="px-5 py-2.5 bg-white border-2 border-red/30 text-red font-bold text-xs rounded-xl hover:bg-red-pale transition-colors">
-                  Reject…
-                </button>
-                {isApproved && (
-                  <button onClick={() => setDecision('suspended')}
-                    className="px-5 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl hover:bg-surface2 transition-colors">
-                    Suspend…
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div>
-                <div className="text-xs font-bold text-t1 mb-2">
-                  {decision === 'approved' ? `Approve ${brand.business_name || 'this brand'}?`
-                    : decision === 'rejected' ? 'Reject — tell them why'
-                    : 'Suspend — tell them why'}
-                </div>
-                {decision !== 'approved' && (
-                  <textarea
-                    value={reason} onChange={e => setReason(e.target.value)}
-                    placeholder="They will see this. Be specific enough to act on."
-                    rows={3}
-                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-xs mb-2"
-                  />
-                )}
-                <div className="flex gap-2 flex-wrap">
-                  <button onClick={decide} disabled={deciding}
-                    className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity">
-                    {deciding ? 'Saving…' : 'Confirm'}
-                  </button>
-                  <button onClick={() => { setDecision(null); setReason(''); }}
-                    className="px-4 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+        {/* Status is read-only here — decided exclusively on Brands → Pending
+            Verification (features/admin-people-pipeline). This page and the Brands
+            list used to each carry their own approve/reject/suspend control; they
+            didn't always agree — a suspended or rejected brand had no button,
+            anywhere, that put them back to approved. */}
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-t3">Account status</span>
+            <StatusBadge status={status} />
           </div>
-        )}
+          <p className="text-[11px] text-t3 mt-1.5">
+            Read-only. To approve, reject, or change this brand's status, go to{' '}
+            <a href="/admin/brands?tab=pending" className="text-navy font-semibold hover:underline">
+              Brands → Pending Verification →
+            </a>
+          </p>
+        </div>
 
         {brand.rejection_reason && (
           <div className="mt-4 p-3 bg-red-pale border border-red/15 rounded-lg">

@@ -1,0 +1,22 @@
+{
+  "feature": "admin-people-pipeline",
+  "area": "brand-web-admin-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-08-27) — approved the flow diagram artifact (influencer/brand pipeline + single approval gate), then confirmed 'lock it start implementation' after reviewing this spec/workflow/mockup package.",
+  "approved_at": "2026-08-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Implemented, then extended per founder request: Bulk CSV lead import and Suspend/Reinstate restored on both Leads/Live tabs (mockups updated and re-reviewed first). Review caught a real gap the implementing agent missed: updateInfluencerStatus/updateBrandStatus had no server-side guard, so reconnecting them for Suspend/Reinstate could still be called directly with status='approved' on a pending row, bypassing the single verification gate. Fixed in admin.controller.js (influencer: approved requires prior status='suspended'; both: suspended requires prior status='approved'). Re-ran pnpm qa after the fix: 466 passed / 18 failed / 1 skipped, identical to baseline. Zero new regressions across all three passes (initial redesign, bulk/suspend restoration, backend hardening). Uncommitted — push not yet authorized.",
+  "release": {
+    "qa_all_green": false,
+    "qa_note": "466/485 green; 18 pre-existing/unrelated failures carried over unchanged across all 3 implementation passes (see project test-suite debt). Zero regressions introduced by this contract, independently re-run after the final backend fix.",
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-08-27) — 4 mockups (sidebar-nav, influencers-tabbed, brands-tabbed, approvals-summary) built against real admin Tailwind tokens, verified rendering clean, reviewed against the pre-agreed flow-diagram artifact.",
+  "mockup_locked_at": "2026-08-27"
+}

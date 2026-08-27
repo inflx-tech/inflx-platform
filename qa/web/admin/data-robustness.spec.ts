@@ -116,14 +116,16 @@ test.describe('WORKFLOW: A5b admin data-robustness', () => {
     expect(e, e.join(' | ')).toHaveLength(0);
   });
 
-  // ---- marketing/leads ----
+  // ---- influencers Leads tab (was /admin/marketing/leads — folded in by
+  // features/admin-people-pipeline; same content, new home, per
+  // 03-expected-outputs.md's fold-in map) ----
   for (const [label, payload] of [['empty []', EMPTY], ['odd {}', ODD]] as const) {
     test(`leads — ${label} → no crash, on route, shell intact`, async ({ page, context }) => {
       const e = errs(page);
       await seedAdminSession(context, page);
       await routeApi(page, payload);
-      await page.goto('/admin/marketing/leads', { waitUntil: 'domcontentloaded' });
-      await expect(page).toHaveURL(/\/admin\/marketing\/leads/);
+      await page.goto('/admin/influencers?tab=leads', { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(/\/admin\/influencers/);
       await expect(page.getByText('INFL').first()).toBeVisible();
       if (label === 'empty []') await evidence(page, 'leads');
       expect(e, e.join(' | ')).toHaveLength(0);
@@ -141,10 +143,10 @@ test.describe('WORKFLOW: A5b admin data-robustness', () => {
           industries: [], sub_industries: [], creator_tiers: [], brand_tiers: [],
         },
       },
-      { match: '/admin/marketing/leads', data: [{ id: 'ld_1', target_type: 'brand', name: 'QA Lead' }] },
+      { match: '/admin/marketing/leads', data: [{ id: 'ld_1', target_type: 'influencer', name: 'QA Lead' }] },
     ]);
-    await page.goto('/admin/marketing/leads', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/admin\/marketing\/leads/);
+    await page.goto('/admin/influencers?tab=leads', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/influencers/);
     await expect(page.getByText('INFL').first()).toBeVisible();
     expect(e, e.join(' | ')).toHaveLength(0);
   });

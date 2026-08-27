@@ -129,6 +129,17 @@ const updateBrandStatus = asyncHandler(async (req, res) => {
   if (!brandRows.length) throw new AppError('NOT_FOUND', 'Brand not found', 404);
   const brand = brandRows[0];
 
+  // Suspend only ever applies to an already-approved brand (matches the
+  // Live tab, which only ever renders Suspend on approved rows) — a pending
+  // or already-rejected brand can't be "suspended". Approve is intentionally
+  // left unguarded here: unlike influencers, brands have no separate
+  // verification transaction, so this same status='approved' write is the
+  // legitimate single path for both Pending Verification's new-signup
+  // approve and the Live tab's reinstate-a-suspended-brand action.
+  if (status === 'suspended' && brand.user_status !== 'approved') {
+    throw new AppError('VALIDATION_ERROR', 'Only an already-approved brand can be suspended.', 422, 'status');
+  }
+
   if (status === 'approved') {
     // Approve, or reinstate a suspended/rejected brand. Clears any prior
     // rejection/suspension note and stamps fresh approval provenance.
@@ -205,8 +216,27 @@ const updateInfluencerStatus = asyncHandler(async (req, res) => {
   if (!infRows.length) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
   const influencer = infRows[0];
 
+  // A NEW signup (user_status='pending') may only ever become 'approved'
+  // through creatorVerification.controller.js's verify() — the single-gate
+  // fix admin-people-pipeline shipped. This endpoint now exists only to
+  // suspend an approved creator or reinstate a suspended one; reusing it to
+  // approve a pending row would silently reopen the exact 3-way-duplicate
+  // bug that contract closed, and would skip the transaction that keeps
+  // creator_profiles.verification_status in sync with influencers/users.
+  if (status === 'approved' && influencer.user_status !== 'suspended') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'A new signup can only be approved from Influencers → Pending Verification, not this endpoint. This route now only reinstates a suspended creator.',
+      422,
+      'status'
+    );
+  }
+  if (status === 'suspended' && influencer.user_status !== 'approved') {
+    throw new AppError('VALIDATION_ERROR', 'Only an already-approved creator can be suspended.', 422, 'status');
+  }
+
   if (status === 'approved') {
-    // Approve, or reinstate a suspended/rejected influencer.
+    // Reinstating a suspended influencer.
     await db.query(
       `UPDATE influencers SET rejection_reason = NULL, approved_at = now(), approved_by = $2 WHERE id = $1`,
       [influencer.id, adminUserId]
