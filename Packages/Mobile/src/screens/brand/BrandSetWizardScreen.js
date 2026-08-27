@@ -41,7 +41,9 @@ const STEPS = ['The aim', 'Basics', 'Creators', 'Terms'];
 const AIM_CARDS = [
   {
     goal: 'conversion', title: 'Sales', chip: 'NO MONEY UP FRONT',
-    body: 'Creators earn a commission on what they sell. They drive the traffic — you are not buying posts. No budget, no end date, and a shopper offer is required.',
+    // Batch A — this said "a shopper offer is required". It is not, and after Batch A the
+    // wizard will happily save without one, so the card was contradicting the button.
+    body: 'Creators earn a commission on what they sell. They drive the traffic — you are not buying posts. No budget and no end date. A shopper offer is optional.',
   },
   {
     goal: 'engagement', title: 'Content', chip: 'YOU PAY A FEE',
@@ -49,7 +51,10 @@ const AIM_CARDS = [
   },
   {
     goal: 'hybrid', title: 'Both', chip: 'FEE + COMMISSION',
-    body: 'A smaller fee, plus commission on sales. You specify deliverables and set a shopper offer.',
+    // Batch A — used to end "...and set a shopper offer", which read as a requirement. It is
+    // not one any more, on any set type. A card that promises a step the wizard no longer
+    // asks for is a small lie that costs trust the first time a brand notices.
+    body: 'A smaller fee, plus commission on sales. You specify the deliverables, and she sells too.',
   },
 ];
 

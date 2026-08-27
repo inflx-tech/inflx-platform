@@ -11,7 +11,7 @@
   "mockup_note": "features/stage-2-walkthrough-fixes/04-preview/mockups/batch-a-screens.html — five boards, drawn in the ALREADY-AGREED Stage 4 stylesheet verbatim. Re-styling would have put a new thing to judge in front of the founder alongside the thing he asked for. Awaiting his nod before any app code.",
   "notes": "Batch A of the Stage 2 walkthrough punch list. Nine changes, eight of them removals, one unblocking. Phone-only: no server, no migration, no brand-web.",
   "founder_decisions_2026_08_27": {
-    "which_sets": "SALES SETS ONLY. Pay-for-content sets keep their posting window, budget and format counts — the budget is the figure the wallet must cover before publishing, so removing it there would stop content campaigns going live.",
+    "which_sets": "SALES SETS ONLY — where \"sales\" means the CONVERSION aim. There are THREE aims: conversion (Pay per sale), engagement (Pay for content) and hybrid (Both). A hybrid set is BOTH selling AND buyingContent, so it keeps the content half (budget, posting window, deliverable counts) AND the sales half (channels, compulsory allocation).",
     "minimum_channels": "REMOVE. 'Channels a creator may use' is the only survivor in that block, trimmed to Instagram and YouTube. Minimum-channels was guidance that never blocked anyone anyway.",
     "batching": "TWO BATCHES. Batch A now (removals + optional offer). Batch B next: the offer moves to creator level and the phone builder reaches parity with web — screens drawn and agreed first.",
     "old_stage_strip": "REBUILD the campaign screen to match Stage 3, as its OWN stage. Not folded into this punch list.",
@@ -67,13 +67,20 @@
     ],
     "test_rewritten": "stage2CampaignWizard.test.js asserted the wizard navigates to Creators. Now false. Rewritten to assert the opposite fact — coverage moved, not dropped.",
     "verification": {
-      "mobile": "31 new executing checks (batchAWizardTrim.test.js). Full suite 40 suites / 380 tests passing.",
-      "mutation": "7 deliberate breakages, 7 caught — including the Budget removal leaking into content sets.",
+      "mobile": "49 executing checks (batchAWizardTrim.test.js), 18 of them covering all three aims. Full suite 40 suites / 398 tests passing.",
+      "mutation": "12 deliberate breakages, 12 caught — 7 on the removals, 5 on the three-aim coverage.",
       "two_of_my_own_assertions_failed_first": "Both were too crude, not the code. One banned !!chosenOffer everywhere though it still legitimately renders the picked offer; one grabbed the first of four buyingContent branches instead of the Budget one. Corrected, not loosened.",
       "claim": "Certified no-regression. NEVER claimed green."
     },
     "blocking_release": [
       "The founder walks W1-W3. W2 (a pay-for-content set) is the one that matters."
     ]
+  },
+  "founder_check_2026_08_27": {
+    "quote": "same will not apply for pay for content and Both one... you should ensure this. is it noted?",
+    "answer_at_the_time": "PARTLY. The behaviour was already correct, because hybrid sets both flags. But it was correct by construction, not by verification — nothing in the contract named hybrid and no check covered it.",
+    "what_changed": "18 executing checks now walk all three aims through every branch. Five mutations prove they bite, including flipping hybrid out of each flag in turn.",
+    "what_it_found": "Two stale cards. The Sales card said \"a shopper offer is required\" — flatly false after Batch A, and contradicting the button three taps later. The Both card promised \"and set a shopper offer\". Both corrected.",
+    "and_a_fake_green_in_my_own_test": "The card assertion looked for a constant named AIMS; it is AIM_CARDS. indexOf returned -1, the slice came back empty, and the check passed while testing nothing. Caught by asking why a check I expected to FAIL was green."
   }
 }

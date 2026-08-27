@@ -43,21 +43,78 @@ Explicitly **not** in this batch. Recorded here so it is not lost.
 
 ---
 
-## 3. The one place his instruction cannot be applied literally
+## 3. Three aims, not two — the founder's check, 2026-08-27
 
-`BrandSetWizardScreen` builds **both** kinds of set, and every block he listed is inside a
-`{selling && …}` or `{!buyingContent && …}` branch. His six screenshots are all **sales** sets.
+`BrandSetWizardScreen` builds sets for **three** aims, and every Batch A removal is guarded by
+two flags that a single set can carry **both** of:
 
-On a **pay-for-content** set:
+| Aim | Label on screen | `selling` | `buyingContent` |
+|---|---|---|---|
+| `conversion` | Pay per sale | yes | no |
+| `engagement` | Pay for content | no | yes |
+| `hybrid` | **Both** | **yes** | **yes** |
 
-* `Posting window from → To` is a real window, not a greyed "Never"
-* **Budget** is `derivedBudget` — the figure the wallet must cover before the campaign can
-  publish. Removing it would stop content campaigns going live.
-* **What you are buying** (2 reels, 3 stories…) is the entire point of the set
+```js
+const selling       = goal === 'conversion' || goal === 'hybrid';
+const buyingContent = goal === 'engagement' || goal === 'hybrid';
+```
 
-**Founder's decision, 2026-08-27: sales sets only.** Content sets are untouched.
+His six screenshots were all `conversion`. He then asked directly:
 
----
+> *"same will not apply for pay for content and Both one... you should ensure this. is it noted?"*
+
+**Honest answer at the time: partly.**
+
+The behaviour was already correct. A hybrid set keeps the content half's budget, posting window
+and deliverable counts, because those sit behind `buyingContent`. It keeps the sales half's
+channels question and compulsory allocation, because those sit behind `selling`.
+
+But that was correct **by construction, not by verification**. Nothing in this contract named
+`hybrid`, and **no check covered it** — `grep -rn hybrid` across the brand test folder returned
+nothing. Correct-by-luck is one refactor away from wrong-and-silent, which is exactly the
+failure shape this programme keeps producing.
+
+**Now pinned.** Eighteen executing checks walk all three aims through every branch, and five
+mutations prove they bite — including flipping `hybrid` out of each flag in turn, and moving
+the Budget block from one flag to the other.
+
+### What a hybrid set keeps
+
+* **Budget** — it owes a fee, and the wallet must cover it before publishing
+* **Both halves of the posting window** — its window is real, not derived
+* **What you are buying** — the reel / story / post counts
+* **The channels question** — it also sells, so asking what drives traffic is a real question
+* **Compulsory allocation** — she sells, so she needs to know what she may sell
+
+### What it loses, deliberately, along with every other aim
+
+* Minimum channels and its guidance line
+* The *No "who posts?" step* note
+* The offer gate
+
+### One thing this check found
+
+The sentence *"You are not buying posts here — so we ask what reach they bring, not what they
+must publish"* sat behind `selling`. So a **hybrid set saw it — and on a hybrid set you ARE
+buying posts.**
+
+Batch A removes it, which fixes a small untruth nobody had reported. It was removed as clutter;
+it turns out to have also been wrong.
+
+### And two stale cards
+
+Checking the three aims properly surfaced copy that Batch A had made false:
+
+* **Sales card** — *"a shopper offer is required"*. Flatly untrue after Batch A, and
+  contradicting the Save button three taps later.
+* **Both card** — *"...and set a shopper offer"*, which read as a requirement.
+
+Both corrected, and pinned by assertions.
+
+⚠️ **A fake green in my own test, caught here.** The card assertion looked for a constant named
+`AIMS`; it is `AIM_CARDS`. `indexOf` returned `-1`, the slice came back empty, and the check
+passed while testing nothing at all. Found only by asking why a check I *expected to fail* was
+green. It is now guarded by two assertions that the slice really does contain the cards.
 
 ## 4. The chip, and the sentence I proposed instead
 

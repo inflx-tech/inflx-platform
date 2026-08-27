@@ -37,6 +37,19 @@ Build one. **Everything must be exactly as it was:**
 from it. The risk is that a removal leaks into the content path, and the first sign would be a
 missing budget or a campaign that will not publish.
 
+## W2b · A "Both" set — the third aim
+
+Build one. It is the only kind that a mistake in EITHER branch can break, because it counts as
+both selling and buying content. It must show:
+
+* **Budget** — it owes a fee
+* **Both halves of the posting window**
+* **What you are buying** — the reel and story counts
+* **The channels question** — it sells too
+* **Compulsory allocation** at step 4 — she sells, so she must know what she may sell
+
+And it must NOT show minimum channels, the "no who posts?" note, or an offer gate.
+
 ## W3 · Add an offer afterwards
 
 Open the saved commission set, pick an offer, save again. It must attach. Optional means

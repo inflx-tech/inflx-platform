@@ -35,6 +35,17 @@ function branchOwning(src, opener, mustContain) {
   }
 }
 
+/**
+ * Prose explaining why a phrase was removed usually quotes the phrase. A check that cannot
+ * tell a comment from rendered copy only ever punishes a file for documenting its own change
+ * — the trap the Stage 4 shot-list assertion fell into first time round.
+ */
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 function branchAt(src, i, opener) {
   let depth = 0;
   for (let j = i + opener.length - 1; j < src.length; j += 1) {
@@ -256,5 +267,142 @@ describe('Batch A · M-10 · every token and helper still resolves', () => {
     const used = new Set([...src.matchAll(/\bs\.(\w+)\b/g)].map(m => m[1]));
     const missing = [...used].filter(k => !defined.has(k));
     expect(missing).toEqual([]);
+  });
+});
+
+describe('Batch A · the THIRD deal type — "Both" — keeps everything either half needs', () => {
+  const src = read(WIZARD);
+
+  /**
+   * FOUNDER, 2026-08-27: "same will not apply for pay for content and Both one... you should
+   * ensure this."
+   *
+   * He was right to ask. Batch A's removals are guarded by `selling` and `buyingContent`, and
+   * a set can be BOTH. Nothing in the contract named hybrid, and no check covered it — the
+   * behaviour happened to be correct because of how those two flags are derived, not because
+   * anyone had verified it. "Correct by luck" is one refactor away from "wrong and silent".
+   *
+   * The three goals, and what each resolves to:
+   *
+   *   goal          selling  buyingContent   what it means
+   *   conversion    yes      no              Pay per sale  — commission only
+   *   engagement    no       yes             Pay for content — a fee for named deliverables
+   *   hybrid        YES      YES             Both — a smaller fee AND commission
+   *
+   * So a hybrid set must keep the CONTENT half's budget, posting window and deliverable
+   * counts, AND the SALES half's channels and compulsory allocation. It is the only set type
+   * that a mistake in either branch can break.
+   */
+  const RESOLVE = { conversion: [true, false], engagement: [false, true], hybrid: [true, true] };
+  const selling = g => RESOLVE[g][0];
+  const buyingContent = g => RESOLVE[g][1];
+
+  it('the derivation is exactly what this table models', () => {
+    // If these two lines ever change, every assertion below becomes a fiction.
+    expect(src).toContain("const selling = goal === 'conversion' || goal === 'hybrid';");
+    expect(src).toContain("const buyingContent = goal === 'engagement' || goal === 'hybrid';");
+  });
+
+  it('"Both" is offered as a real third choice, not a variant of the other two', () => {
+    const card = src.slice(src.indexOf("goal: 'hybrid'"), src.indexOf("goal: 'hybrid'") + 220);
+    expect(card).toContain("title: 'Both'");
+    expect(card).toContain('FEE + COMMISSION');
+  });
+
+  it.each([
+    ['conversion', 'Pay per sale'],
+    ['engagement', 'Pay for content'],
+    ['hybrid', 'Both'],
+  ])('%s (%s) — Budget shows exactly when a fee is owed', (goal) => {
+    // Budget is the figure the wallet must cover before publishing. A hybrid set owes a fee,
+    // so it MUST keep the block. Batch A moved Budget behind `buyingContent`, which is true
+    // for hybrid — this asserts that is deliberate rather than incidental.
+    const guarded = branchOwning(src, '{buyingContent && (', '<Text style={s.dh}>Budget</Text>');
+    expect(guarded).toContain('derivedBudget');
+    expect(buyingContent(goal)).toBe(goal !== 'conversion');
+  });
+
+  it.each(['engagement', 'hybrid'])('%s keeps BOTH halves of the posting window', (goal) => {
+    expect(buyingContent(goal)).toBe(true);
+    const both = src.slice(src.indexOf('{buyingContent ? ('), src.indexOf(') : ('));
+    expect(both).toContain('Posting window from');
+    expect(both).toContain('label="To"');
+  });
+
+  it('conversion alone gets the single start date', () => {
+    expect(buyingContent('conversion')).toBe(false);
+    const salesHalf = src.slice(src.indexOf(') : ('), src.indexOf(') : (') + 400);
+    expect(salesHalf).toContain('label="Starts"');
+  });
+
+  it.each(['engagement', 'hybrid'])('%s keeps "What you are buying"', (goal) => {
+    expect(buyingContent(goal)).toBe(true);
+    const formats = branchOwning(src, '{buyingContent && (', 'What you are buying');
+    expect(formats).toContain('FORMATS.map');
+  });
+
+  it.each(['conversion', 'hybrid'])('%s keeps the channels question', (goal) => {
+    // A hybrid set sells, so asking which channels drive traffic is still a real question.
+    expect(selling(goal)).toBe(true);
+    const ch = branchOwning(src, '{selling && (', 'How they will drive traffic');
+    expect(ch).toContain('CHANNELS.map');
+  });
+
+  it('a content-only set is never asked about channels', () => {
+    // The server refuses channels_json on an engagement set outright — asking would be a
+    // category error: nothing is being sold, so there is no traffic to drive.
+    expect(selling('engagement')).toBe(false);
+    const svc = fs.readFileSync(
+      path.resolve(SRC, '../../../backend/src/services/campaignChannels.js'), 'utf8');
+    expect(svc).toContain('channels_json does not apply to a content set');
+  });
+
+  it.each(['conversion', 'hybrid'])('%s still requires allocation for every creator', (goal) => {
+    // The rule Batch A must NOT have relaxed. A hybrid creator sells, so she needs to know
+    // what she may sell — otherwise she is contracted and invisible in the shopping app.
+    expect(selling(goal)).toBe(true);
+    expect(src).toContain('const everyoneAllocated = !selling || picked.every(c => c.alloc?.alloc_scope);');
+  });
+
+  it('the removals that hit every set were meant to hit every set', () => {
+    // These four sat outside both branches, or inside `selling` where hybrid also lives.
+    // Listed explicitly so a later reader can see the blast radius was considered.
+    for (const gone of [
+      'who posts?',                  // outside both — every set
+      'Minimum channels',            // inside `selling` — conversion AND hybrid
+      'Choose a shopper offer',      // the gate, every set
+      'Go and ask someone new',      // outside both — every set
+    ]) {
+      expect(src).not.toContain(gone);
+    }
+  });
+
+  it('the sentence that was WRONG on a hybrid set is gone', () => {
+    // "You are not buying posts here — so we ask what reach they bring, not what they must
+    // publish." That sat inside `selling`, so a hybrid set saw it — and on a hybrid set you
+    // ARE buying posts. Removing it fixed a small lie nobody had noticed.
+    expect(src).not.toContain('You are not buying posts here');
+  });
+
+  it('no card promises a shopper offer now that one is optional', () => {
+    // The hybrid card used to end "...and set a shopper offer", which read as a requirement.
+    // After Batch A it is not one, on any set type.
+    // The constant is AIM_CARDS. My first version looked for 'const AIMS', which does not
+    // exist — indexOf returned -1, the slice came back empty, and the assertion passed while
+    // testing nothing. Caught by asking why a check I expected to FAIL was green.
+    const from = src.indexOf('const AIM_CARDS');
+    const to = src.indexOf('const CHANNELS');
+    expect(from).toBeGreaterThan(-1);
+    expect(to).toBeGreaterThan(from);
+    // Comments stripped: the note explaining WHY the phrase was removed quotes the phrase,
+    // and a check that cannot tell those apart only ever punishes the file for documenting
+    // its own change. Same trap the Stage 4 shot-list check fell into.
+    const cards = stripComments(src.slice(from, to));
+    expect(cards).toContain("title: 'Both'");   // the slice really does hold the cards
+    expect(cards).not.toMatch(/set a shopper offer/);
+    // The Sales card was worse: it said an offer IS REQUIRED, which after Batch A is flatly
+    // false — the card was contradicting the button three taps later.
+    expect(cards).not.toMatch(/shopper offer is required/);
+    expect(cards).toContain("A shopper offer is optional");
   });
 });

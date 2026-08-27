@@ -136,16 +136,16 @@ shorter and one fact poorer.
 
 | What | How |
 |---|---|
-| The changes | **31 executing checks**, `batchAWizardTrim.test.js` |
-| Are they real? | **Mutation-tested. Seven deliberate breakages, seven caught** — including the one that matters most: the Budget removal leaking into content sets |
+| The changes | **49 executing checks**, `batchAWizardTrim.test.js` — 18 of them covering all three aims |
+| Are they real? | **Mutation-tested. Twelve deliberate breakages, twelve caught** — including the one that matters most: the Budget removal leaking into content sets |
 | The branch risk | Asserted structurally. The Budget check finds the branch that *owns* the Budget heading rather than assuming it is the first of four `buyingContent` blocks — an assertion that silently tests the wrong branch is worse than none |
 | Server contract | Read `campaignChannels.js` before changing the payload, and grepped every reader of `minimum` across backend, mobile and web |
-| Regression | Full mobile suite: **40 suites, 380 tests, all passing** |
+| Regression | Full mobile suite: **40 suites, 398 tests, all passing** |
 
-Two of the 31 checks failed first time. **Both were my assertions being too crude, not the
+Three of the 49 checks were wrong first time. **Both were my assertions being too crude, not the
 code** — one banned `!!chosenOffer` everywhere when it is still legitimately used to render the
-picked offer, and one grabbed the first `buyingContent` branch instead of the Budget one.
-Corrected rather than loosened.
+picked offer, one grabbed the first `buyingContent` branch instead of the Budget one, and one
+was vacuous (see section 8). Corrected rather than loosened.
 
 **Certified no-regression. Never claimed green** — the backend suite is unaffected by this batch
 and still cannot run.
@@ -161,3 +161,48 @@ campaign would refuse to publish weeks later.
 
 Then build a commission set and see whether four blocks feels *right* rather than merely
 shorter. Only a person can answer that.
+
+---
+
+## 8. The founder's check on the third aim, 2026-08-27
+
+> *"same will not apply for pay for content and Both one... you should ensure this. is it noted?"*
+
+**It was not, properly.** The behaviour was already right, but for the wrong reason.
+
+There are **three** aims, and the removals are guarded by two flags a set can carry both of:
+
+| Aim | Label | `selling` | `buyingContent` |
+|---|---|---|---|
+| `conversion` | Pay per sale | yes | no |
+| `engagement` | Pay for content | no | yes |
+| `hybrid` | **Both** | **yes** | **yes** |
+
+A hybrid set keeps the content half (budget, posting window, deliverable counts) *and* the
+sales half (channels, compulsory allocation) — because it sets both flags. That was true before
+he asked. What was **not** true is that anyone had checked it: the contract never named
+`hybrid`, and a grep for it across the brand test folder returned nothing.
+
+**Eighteen checks** now walk all three aims through every branch, proved by **five mutations**
+including flipping `hybrid` out of each flag in turn.
+
+### What the check found
+
+1. **The Sales card said *"a shopper offer is required"*.** Flatly false after Batch A — the
+   card was contradicting the Save button three taps later.
+2. **The Both card said *"...and set a shopper offer"***, which read as a requirement.
+3. **A sentence that was wrong on a hybrid set** — *"You are not buying posts here"* sat behind
+   `selling`, so a Both set saw it, and on a Both set you **are** buying posts. Batch A had
+   already removed it as clutter; it turns out to have also been untrue.
+
+### ⚠️ And a fake green in my own test
+
+The card assertion looked for a constant named `AIMS`. It is `AIM_CARDS`. `indexOf` returned
+`-1`, the slice came back empty, and the check **passed while testing nothing**.
+
+Found only because I expected that particular check to fail and it did not. It now asserts the
+slice really contains the cards before asserting anything about them.
+
+That is the second time in this batch a check of mine was weaker than it looked — the first was
+the store-scope fixture in Stage 4. Both were found by mutation testing or by disbelieving a
+green, never by reading.
