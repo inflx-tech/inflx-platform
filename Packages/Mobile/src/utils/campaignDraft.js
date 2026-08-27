@@ -151,7 +151,31 @@ export function invitePayload(creator, set, offer) {
     if (Array.isArray(alloc.alloc_product_ids) && alloc.alloc_product_ids.length) {
       body.alloc_product_ids = alloc.alloc_product_ids;
     }
-    if (offer && offer.brand_offer_id) body.brand_offer_id = offer.brand_offer_id;
+    // stage-2-offers-parity — HER offer wins over the set's.
+    //
+    // The offer was asked once for the whole set. The database has always stored it per
+    // creator (campaign_influencers.brand_offer_id / offer_type / offer_config_json), and
+    // campaign_sets has no offer columns at all — so the set-level question was storing an
+    // answer somewhere the schema never had a place for.
+    //
+    // `offer` stays as a fallback so a draft saved before this change still sends what it had.
+    const own = creator.offer || null;
+    const eff = own || offer || null;
+
+    if (eff?.brand_offer_id) {
+      body.brand_offer_id = eff.brand_offer_id;
+    } else if (eff?.offer_type && eff?.offer_config_json) {
+      // A bespoke offer, built for this creator alone. It does not join the library — it is
+      // stored on her row, and the server validates it exactly as it validates a library one.
+      body.offer_type = eff.offer_type;
+      body.offer_config_json = eff.offer_config_json;
+    }
+
+    // Her window. Founder, 2026-08-27: "set date is for all creators... one individual creator
+    // may be work from different time." A creator who starts three weeks late should not carry
+    // an offer that has been discounting to nobody for three weeks.
+    if (eff?.valid_from) body.offer_valid_from = eff.valid_from;
+    if (eff?.valid_until) body.offer_valid_until = eff.valid_until;
   }
 
   return body;

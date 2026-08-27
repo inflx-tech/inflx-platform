@@ -10,6 +10,7 @@ import DateField from '../../components/DateField';
 import { brandApi } from '../../services/api';
 import CreatorAvatar from '../../components/CreatorAvatar';
 import OfferBuilderSheet from '../../components/brand/OfferBuilderSheet';
+import CreatorOfferSheet from '../../components/brand/CreatorOfferSheet';
 import * as draft from '../../utils/campaignDraft';
 import {
   settledLine, byExpiry, daysLeft, expiryLine, AIM_LABEL,
@@ -98,6 +99,9 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   // step 4
   const [offers, setOffers] = useState([]);
   const [chosenOffer, setChosenOffer] = useState(null);
+  // stage-2-offers-parity — whose offer sheet is open. The offer belongs to a creator now:
+  // campaign_influencers has always stored it, and campaign_sets has no offer columns at all.
+  const [offerFor, setOfferFor] = useState(null);
   const [builderOpen, setBuilderOpen] = useState(false);
 
   const selling = goal === 'conversion' || goal === 'hybrid';
@@ -309,6 +313,7 @@ export default function BrandSetWizardScreen({ route, navigation }) {
             selling={selling} buyingContent={buyingContent}
             picked={picked} offers={offers} chosenOffer={chosenOffer}
             derivedBudget={derivedBudget}
+            onGiveOffer={setOfferFor}
             onSetAllocation={(c) => navigation.navigate('BrandAllocation', {
               campaignId, setId, agreementId: c.agreement_id, creatorName: c.name, current: c.alloc,
             })}
@@ -329,6 +334,20 @@ export default function BrandSetWizardScreen({ route, navigation }) {
           />
         )}
       </ScrollView>
+
+      {/* stage-2-offers-parity — HER offer. Two routes in, exactly as the founder described:
+          pick one from the library, or build one for her alone. Optional either way. */}
+      <CreatorOfferSheet
+        visible={!!offerFor}
+        creator={offerFor}
+        value={offerFor?.offer || null}
+        onClose={() => setOfferFor(null)}
+        onSave={(next) => {
+          const id = offerFor?.agreement_id;
+          setPicked(prev => prev.map(c => (c.agreement_id === id ? { ...c, offer: next } : c)));
+          setOfferFor(null);
+        }}
+      />
 
       <OfferBuilderSheet
         visible={builderOpen}
@@ -594,11 +613,26 @@ function StepCreators({ matching, pickedIds, onToggle, onOpen, onBack, onContinu
   );
 }
 
+/**
+ * What her shoppers get, in one line. Named so the row reads as a sentence rather than as a
+ * field: "Her shoppers get — 3% off, until 30 Sep".
+ *
+ * "None" is deliberate rather than blank. An offer is optional, and a blank space beside a
+ * label reads as something that failed to load.
+ */
+function offerLine(offer) {
+  if (!offer) return 'None';
+  const bits = [offer.name || String(offer.offer_type || 'Offer').replace('_', ' ')];
+  if (offer.valid_until) bits.push(`until ${fmtShort(offer.valid_until)}`);
+  else if (offer.valid_from) bits.push(`from ${fmtShort(offer.valid_from)}`);
+  return bits.join(' · ');
+}
+
 /* ── Step 4 · terms ────────────────────────────────────────────────────────── */
 function StepTerms(p) {
   const {
     selling, buyingContent, picked, offers, chosenOffer, derivedBudget,
-    onSetAllocation, onChooseOffer, onBuildOffer, onPreview, onBack, onDone,
+    onSetAllocation, onGiveOffer, onChooseOffer, onBuildOffer, onPreview, onBack, onDone,
   } = p;
 
   const everyoneAllocated = !selling || picked.every(c => c.alloc?.alloc_scope);
@@ -641,6 +675,19 @@ function StepTerms(p) {
                     >
                       <Text style={c.alloc?.alloc_scope ? s.miniSecT : s.miniPriT}>
                         {c.alloc?.alloc_scope ? 'Change what she can sell' : 'Set what she can sell'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* stage-2-offers-parity — HER offer. Optional, and shown on the row so a
+                        brand can read the whole deal without opening anything. */}
+                    <KV k="Her shoppers get" v={offerLine(c.offer)} />
+                    <TouchableOpacity
+                      style={[s.mini, s.miniSec]}
+                      onPress={() => onGiveOffer(c)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={s.miniSecT}>
+                        {c.offer ? 'Change her offer' : 'Give her an offer'}
                       </Text>
                     </TouchableOpacity>
                   </>

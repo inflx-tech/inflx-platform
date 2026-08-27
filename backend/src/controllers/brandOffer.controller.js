@@ -71,12 +71,18 @@ const listOffers = asyncHandler(async (req, res) => {
 });
 
 // ── POST /brands/me/offers ───────────────────────────────────────────────────
-// Body: { name, offer_type, offer_config_json, availing_modes? }
+// Body: { name, offer_type, offer_config_json, availing_modes?,
+//         store_starts_at?, store_ends_at? }
+//
+// stage-2-offers-parity — the two dates used to be PATCH-only, so a brand could not give
+// an offer a validity window while creating it; they had to save it and then edit it. The
+// columns, and the checkout rule that refuses an offer outside them, both predate this.
 const createOffer = asyncHandler(async (req, res) => {
   const brandId = await getBrandIdByUserId(req.user.sub);
   if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  const { name, offer_type, offer_config_json, availing_modes } = req.body || {};
+  const { name, offer_type, offer_config_json, availing_modes,
+          store_starts_at, store_ends_at } = req.body || {};
 
   if (!name || !String(name).trim()) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
@@ -96,6 +102,16 @@ const createOffer = asyncHandler(async (req, res) => {
   if (availing_modes && availing_modes.length) {
     cols.push('availing_modes'); vals.push(availing_modes);
   }
+
+  // The window. Either end may be omitted, and omitted means no limit — the same meaning
+  // NULL already carries in the column and at checkout. An end before the start is a typo
+  // rather than a policy, so it is refused here rather than stored and puzzled over later.
+  if (store_starts_at && store_ends_at && new Date(store_ends_at) < new Date(store_starts_at)) {
+    throw new AppError('VALIDATION_ERROR',
+      'The offer ends before it starts.', 422, 'store_ends_at');
+  }
+  if (store_starts_at) { cols.push('store_starts_at'); vals.push(store_starts_at); }
+  if (store_ends_at)   { cols.push('store_ends_at');   vals.push(store_ends_at); }
   const placeholders = vals.map((_, i) => `$${i + 1}`).join(', ');
 
   const { rows } = await db.query(

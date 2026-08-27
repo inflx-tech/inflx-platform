@@ -1036,6 +1036,10 @@ const invite = asyncHandler(async (req, res) => {
     alloc_category,
     alloc_product_ids,
     offer_valid_until,
+    // stage-2-offers-parity — the START of this creator's offer. Founder, 2026-08-27:
+    // "set date is for all creators... one individual creator may be work from different
+    // time." A set has one start date for everybody; creators do not all begin on it.
+    offer_valid_from,
     // collab-part2 — briefing a handshake agreement into this set. Optional: a cold
     // invite (no prior agreement) is unchanged.
     agreement_id,
@@ -1217,12 +1221,12 @@ const invite = asyncHandler(async (req, res) => {
         -- collab-part4 §4.1/§4.4 — allocation (what they may sell) + the offer's own
         -- deadline. NOT offer_expires_at above, which is the invitation clock.
         alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
-        offer_valid_until,
+        offer_valid_until, offer_valid_from,
         -- collab-part2 — the agreement this assignment was briefed from. Presence is
         -- what tells the creator's acceptance flow the terms were already settled.
         agreement_id)
      VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-             $17, $18, $19, $20::jsonb, $21, $22)
+             $17, $18, $19, $20::jsonb, $21, $23, $22)
      RETURNING *`,
     [
       set.id,
@@ -1247,6 +1251,7 @@ const invite = asyncHandler(async (req, res) => {
       alloc && alloc.product_ids ? JSON.stringify(alloc.product_ids) : null,
       offer_valid_until || null,
       agreement ? agreement.id : null,
+      offer_valid_from || null,
     ]
   );
 
@@ -1348,6 +1353,11 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     alloc_category,
     alloc_product_ids,
     offer_valid_until,
+    // stage-2-offers-parity — the matching START. Same CASE-WHEN shape as the end, so an
+    // omitted value leaves the stored one alone rather than clearing it: this endpoint is
+    // called for unrelated edits too, and wiping an offer's start as a side effect of
+    // changing a posting date is the kind of bug nobody traces back.
+    offer_valid_from,
   } = req.body;
 
   // An omitted alloc_scope leaves the existing allocation ALONE rather than
@@ -1407,7 +1417,8 @@ const updateInfluencer = asyncHandler(async (req, res) => {
        alloc_category_node_id = CASE WHEN $14::text IS NULL THEN alloc_category_node_id ELSE $15 END,
        alloc_category         = CASE WHEN $14::text IS NULL THEN alloc_category         ELSE $16 END,
        alloc_product_ids      = CASE WHEN $14::text IS NULL THEN alloc_product_ids      ELSE $17::jsonb END,
-       offer_valid_until      = CASE WHEN $18::text IS NULL THEN offer_valid_until      ELSE $18::timestamptz END
+       offer_valid_until      = CASE WHEN $18::text IS NULL THEN offer_valid_until      ELSE $18::timestamptz END,
+       offer_valid_from       = CASE WHEN $19::text IS NULL THEN offer_valid_from       ELSE $19::timestamptz END
      WHERE id = $1
      RETURNING *`,
     [
@@ -1429,6 +1440,7 @@ const updateInfluencer = asyncHandler(async (req, res) => {
       alloc ? alloc.category : null,
       alloc && alloc.product_ids ? JSON.stringify(alloc.product_ids) : null,
       offer_valid_until != null ? offer_valid_until : null,
+      offer_valid_from != null ? offer_valid_from : null,
     ]
   );
 

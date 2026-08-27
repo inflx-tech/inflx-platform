@@ -1,16 +1,15 @@
 {
   "feature": "stage-2-offers-parity",
   "spec_version": "1.0.0",
-  "status": "awaiting_mockup_lock",
+  "status": "built",
   "approved": true,
   "approved_by": "founder 2026-08-27: \"we concentrate on offers, it should be very clear like what we have in web ... it should also have start and end date for that one where offer valid period should also taken into consideration. pls complete all pending things clearly\"",
   "approved_at": "2026-08-27",
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "mockup_locked": false,
-  "mockup_note": "features/stage-2-offers-parity/04-preview/mockups/offers.html — five boards, drawn in the already-agreed stylesheet. Awaiting the founder before any app code.",
-  "notes": "Batch B. Fix the whole-store defect, reach parity with web, add the validity window the founder asked for, and move the offer to the creator. NO migration — every column already exists.",
-
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_note": "features/stage-2-offers-parity/04-preview/mockups/offers.html — five boards, drawn in the already-agreed stylesheet. Presented 2026-08-27; the founder answered the open question and said complete it.",
+  "notes": "Batch B. Fix the whole-store defect, reach parity with web, add the validity window the founder asked for, and move the offer to the creator. ONE additive migration (162) — every other column already existed.",
   "surveyed_2026_08_27": {
     "method": "Every line read from the file named, or run read-only against production.",
     "live_defect": "buildDiscount AND buildVolume both hardcode scope:'store' in Packages/Mobile/src/utils/offerBuilders.js, lines 16 and 35. Every discount and volume offer built on a phone covers the whole store, whatever the brand intended. Production holds 2 offers in total, both discount, BOTH whole-store — including one named 'Yoy' at 3%.",
@@ -23,7 +22,6 @@
     "not_a_duplicate": "offer_valid_until and offer_expires_at look like duplicates and are not. The DB column comment documents them as the discount deadline and the invitation-acceptance clock respectively.",
     "reusable_today": "ProductPicker (this would be its FIFTH caller, as ledger #86 predicted), BrandCategoryPickerScreen, DateField and BrandOffersLibraryScreen all already exist. Nothing needs building from scratch."
   },
-
   "open_question_for_founder": {
     "question": "A per-creator offer has an END date in the database (offer_valid_until) and NO start column.",
     "options": {
@@ -32,9 +30,8 @@
       "C": "No per-creator window at all — the library offer carries the dates and hers inherits them."
     },
     "blocks_this_stage": false,
-    "answered": null
+    "answered": "OPTION B. Founder: \"keep that start date as well... set date is for all creators... say one individual creator may be work from different time. offer start and end per creator is necessary.\" He overruled my recommendation, correctly — deriving her start from the set would have meant a creator who begins three weeks late carries an offer that has been discounting to nobody, with no way to say so. Migration 162 adds offer_valid_from."
   },
-
   "build_order": [
     "1 — scope on discount and volume, with the two existing pickers (the live bug)",
     "2 — free_gift, the fifth type",
@@ -43,7 +40,6 @@
     "5 — the offer moves to the creator: pick from library, or build bespoke",
     "6 — a check that reads BOTH builders and compares what they produce"
   ],
-
   "scope_excluded": [
     "Web — reaching parity with it is the job; changing it is not",
     "The shopper side — already reads and honours store_ends_at",
@@ -51,17 +47,48 @@
     "Publishing an offer to the store (published_to_store)",
     "The campaign screen's old six-stage strip — its own stage"
   ],
-
   "release": {
     "qa_all_green": false,
     "released": false,
     "maestro_green": false,
-    "deploy_class": "production-impacting (brand app OTA + backend/src). NO migration — every column already exists.",
+    "deploy_class": "production-impacting (migration 162 + backend/src + brand app OTA).",
     "deploy_targets": [
+      "migration 162 — APPLIED 2026-08-27",
       "Render (backend/src)",
       "OTA (brand app)"
     ],
     "outward_facing": "Indirect. Offers a brand builds AFTER this can be scoped and dated, which changes what shoppers are charged. Nothing already stored is reinterpreted.",
-    "device_walk_required": "YES. W1-W5, and W4 especially — a date that saves but never reaches checkout would look exactly like it worked."
+    "device_walk_required": "YES. W1-W5, and W4 especially — a date that saves but never reaches checkout would look exactly like it worked.",
+    "diff_notes": "features/stage-2-offers-parity/06-diff/notes.md"
+  },
+  "mockup_locked_by": "founder 2026-08-27 — boards presented, then he answered the open question and said complete it",
+  "mockup_locked_at": "2026-08-27",
+  "build_2026_08_27": {
+    "done": [
+      "1 — scope on discount and volume, with the category and product pickers (the live bug, TWO places not one)",
+      "2 — free_gift, the fifth type, with multiple pairings as web allows",
+      "3 — availing_modes sent explicitly, plus the pay-at-store applicability warning",
+      "4 — the validity window, and POST accepting it (it was PATCH-only)",
+      "5 — the offer moved to the creator: library pick or bespoke build, plus HER dates",
+      "6 — offerParity.test.js runs WEB'S OWN BUILDER against the phone's and compares objects"
+    ],
+    "migration": "162_creator_offer_valid_from — applied to production 2026-08-27. 6 rows before, 6 after, nothing touched, 0 carrying a start.",
+    "found_while_building": {
+      "round_trip_defect": "Web writes products as {id,name,price}; the phone wrote {id}. The server only needs the id — but web's editor rehydrates its pickers STRAIGHT OUT of the stored config, so a bundle or BOGO built on a phone showed nameless, priceless products when opened on web. Live until now.",
+      "a_test_that_encoded_the_bug": "offerBuilders.test.js asserted scope:store as the expected output of buildDiscount. It was pinning the defect in place, making a fix look like a regression. Rewritten to the new intent, not deleted.",
+      "my_own_lie_on_a_screen": "The first cut of the bespoke route reused the builder as-is, which POSTs to the library — so a \"bespoke\" offer joined the library while the sheet's hint said it did not. Fixed by adding an inline mode that runs every check and returns the config instead of saving a row.",
+      "undeclared_variable": "The first backend patch used offer_valid_from in the UPDATE statement without destructuring it there. node --check cannot see that; it is a ReferenceError at request time on a live endpoint. Caught by a check that walks every use looking for a declaration in the same function."
+    },
+    "verification": {
+      "builders": "23 checks, running web's own buildOfferConfig against the phone's on identical input.",
+      "backend": "12 executing checks via scripts/run-test-file.js.",
+      "per_creator": "21 checks over the payload and the wiring.",
+      "mutation": "16 deliberate breakages, 16 caught.",
+      "regression": "Full mobile suite 42 suites / 450 tests.",
+      "claim": "Certified no-regression. NEVER claimed green — the backend suite still cannot run."
+    },
+    "blocking_release": [
+      "The founder walks W1-W5. W4 especially: a date that saves but never reaches checkout looks exactly like it worked."
+    ]
   }
 }
