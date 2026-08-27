@@ -56,10 +56,10 @@
     "maestro_note": "Mobile-governed: new routes in BOTH navigators. Rule 5 applies at release. R-8 requires a Maestro flow over the shoot.",
     "deploy_class": "production-impacting (both phone apps via OTA, backend/src, and one additive migration).",
     "deploy_targets": [
-      "migration — production_event_items",
-      "Render (backend/src)",
-      "OTA (brand app)",
-      "OTA (creator app)"
+      "migration 161 — APPLIED 2026-08-27",
+      "Render (backend/src) — LIVE",
+      "OTA (brand app) — pending",
+      "OTA (creator app) — pending"
     ],
     "outward_facing": "None. No shopper or admin surface changes. The one behaviour change reaching something live is that confirming receipt stops completing the shoot — and the single live shipment has never been through that path.",
     "device_walk_required": "YES. New routes in TWO navigators — the change class that has now crashed a handset three times in this programme, every one found by the founder holding a phone, most recently 2026-08-26. The founder walks W1-W7 on both handsets before any deploy go.",
@@ -89,7 +89,7 @@
   "build_2026_08_27": {
     "status": "all eight slices built; NOT deployed, NOT walked on a device",
     "slices_done": [
-      "1 — production_event_items + parcel.service; dispatch refuses an empty box",
+      "1 — production_event_items (migration 161) + parcel.service; dispatch refuses an empty box",
       "2 — per-item receipt, the shortfall, and the receipt/completion split, with 25 executing checks written BEFORE any screen",
       "3 — ShootScreen (creator) + BrandShootScreen, routes in both navigators, step 3 and her logistics door wired",
       "4 — window with its reason, accept, counter with reschedules-left, flip-to-remote",
@@ -114,9 +114,14 @@
       "brand_default_visit_address": "Board panel 2 shows a brand-level default visit address. NOT BUILT — no such column, no assertion names it, not in the build order. Adding a column and a settings screen on the strength of a decoration would widen the stage silently. Recorded in 06-diff/notes.md section 4."
     },
     "blocking_release": [
-      "The migration is NOT applied. Until it runs, /brands/me/shoots will 500 — it counts parcel items.",
       "The founder walks W1-W7 on BOTH handsets. New routes in two navigators, in five places.",
       "Maestro 07 has not been run — needs a device."
-    ]
+    ],
+    "migration_applied_2026_08_27": {
+      "number": "161 — renumbered from 160, which collided with 160_influencer_youtube_stats.sql from parallel work (already applied in production).",
+      "urgency": "The Stage 4 backend was ALREADY LIVE — the commit was pushed by the other window before the migration ran, so /v1/brands/me/shoots and the parcel endpoints existed on Render referencing a table that did not. Confirmed by route existence: 401 on /v1/production-events/:id/items against 404 on a fake verb.",
+      "result": "Applied via scripts/run-161.js. Before and after: 4 production_events, 3 completed, 0 log entries — unchanged. 14 columns, 3 indexes including uq_pei_event_parcel_product. New table empty.",
+      "verified": "Ran the exact listBrandShoots query against production afterwards: resolves, returns Kanchi Silks four shoots in needs-you order."
+    }
   }
 }

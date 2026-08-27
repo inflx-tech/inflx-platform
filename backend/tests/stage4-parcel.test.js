@@ -164,7 +164,7 @@ describe('Stage 4 — D-4: a resend is a second parcel, not an edit', () => {
     // a resend would collide with the original row, and the fact that something went missing
     // would be overwritten by the fix for it.
     const sql = fs.readFileSync(
-      require.resolve('../migrations/160_production_event_items.sql'), 'utf8');
+      require.resolve('../migrations/161_production_event_items.sql'), 'utf8');
     expect(sql).toMatch(/UNIQUE INDEX[\s\S]*?\(production_event_id, parcel_no, product_id\)/);
     expect(sql).not.toMatch(/ON production_event_items \(production_event_id, product_id\)/);
   });

@@ -228,5 +228,5 @@ suite has not run since 22 August and this stage does not change that.
 * **The device walk.** New routes in two navigators, in five places. The gate is unchanged: the
   founder walks W1–W7 on both handsets before any deploy go.
 * **`qa/maestro/flows/07-brand-shoot.yaml`** — written, **not yet run**. Needs a device.
-* **The migration is not applied.** `160_production_event_items.sql` is dry-run-verified and
+* **The migration is not applied.** `161_production_event_items.sql` is dry-run-verified and
   waiting. Until it runs, `/brands/me/shoots` will 500, because it counts parcel items.
