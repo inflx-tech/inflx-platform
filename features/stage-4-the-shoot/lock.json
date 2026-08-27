@@ -1,0 +1,71 @@
+{
+  "feature": "stage-4-the-shoot",
+  "spec_version": "1.0.0",
+  "status": "awaiting-lock",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "mockup_note": "features/stage-4-the-shoot/04-preview/mockups/stage4-screens.html — seven boards. EXTRACTED from the already-agreed FINAL 3 panels 2 and 3 (brand-mobile-spine/04-preview/mockups/final-3-delivery.html) using its stylesheet verbatim. Ledger actions 107-118. Board 7 states every screen and server rule against what exists today.",
+  "notes": "Stage 4 of 11 in Docs/THE_PLAN.md. The shoot — settle a time, send the goods, confirm what arrived. Scope is both phone apps, one additive table, and one behaviour change to a live endpoint. NOT LOCKED.",
+  "programme": {
+    "plan": "Docs/THE_PLAN.md",
+    "stage": 4,
+    "of": 11,
+    "depends_on": "Stage 1 for working style as two questions · Stage 2 for the shared product picker (this is its 4th caller, as ledger #86 predicted) · Stage 3 for the six-step spine whose step 3 currently says 'Stage 4 brings this'",
+    "drawn_from": [
+      "brand-mobile-spine/04-preview/mockups/final-3-delivery.html (panels 2 and 3, ledger 107-118)",
+      "collab-navigation-spine/03-action-ledger.html"
+    ]
+  },
+  "reality_check_2026_08_27": {
+    "method": "Every verdict read from the named file or run read-only against production. Full detail in 01-spec.md section 2.",
+    "the_good_news": "EIGHT coordination endpoints already exist and work: propose-slot, accept, counter-propose, flip-to-remote, dispatch, confirm-received, complete, cancel. The legal date window is computed server-side (getVisitDateRange: post-by minus 2 days, else posting window minus 3, else campaign end minus 3; earliest is tomorrow). Two reschedules per side are enforced and counted separately. production_event_log records EVERY action — the shoot is the only step in the whole spine that does this.",
+    "and_none_of_it_has_a_screen": "Grep both navigators for a production route: ZERO hits. The shoot is a panel inside the contract page on both phones — BrandContractScreen:628 'Production coordination panel' and ContractScreen:366 'Production Arrangement'. So a notification about the shoot can only point at a contract and hope the reader scrolls. getLog exists and nothing calls it.",
+    "the_box_has_no_contents": "production_events carries shipment_courier, shipment_awb and four timestamps. Searched the whole schema and backend/src for a parcel or shipment items: NOTHING. A shipment knows it was sent and when it landed and has no idea what is inside it. This is the genuinely new work.",
+    "receipt_completes_the_shoot_and_should_not": "confirmReceived sets status='completed'. So today the box landing IS the shoot finishing — which would advance her to step 4 before she has photographed anything, on both phones. See decisions_taken.",
+    "never_actually_used": "Production holds 4 shoots (1 shipment confirmed on Delhivery, 3 visits completed) but NO visit carries a slot and production_event_log has ZERO entries — the practice world was seeded straight into its end state rather than driven through the endpoints. Every endpoint above is live in the sense that it exists and is tested, not in the sense that anyone has driven it. Stage 4's walk is the first real exercise of any of it."
+  },
+  "decisions_taken": {
+    "split_receipt_from_completion": "Confirming receipt will move the shoot to in_progress, not completed. It finishes when SHE says the shoot is done — which is what `complete` already exists for and what the visit path already does. Cost: it changes the field collabStep reads for shootDone, which is what Stage 3's step number depends on. B-9 pins the outcome — a received parcel with no shoot yet must still read step 3 on both phones.",
+    "parcel_items_are_a_table_not_json": "One row per item: which product, how many, and her verdict. She answers per item and the brand resends per item, so each has its own small history. A JSON blob would make 'she flagged the Indigo saree' a string-edit rather than a row. And a resend is a SECOND parcel, not an edit — overwriting the first would erase the fact that something went wrong.",
+    "dropping_an_item_only_touches_a_handpicked_allocation": "The board says dropping an item 'removes that saree from what she can sell'. True on a hand-picked list. On store or category scope the item is still in scope, and carving a hole in a scope Part 4 defined as resolved live would be inventing a rule. Flagged because it is the one place this board reaches into another stage's machinery."
+  },
+  "open_question_for_founder": {
+    "question": "The board's creator screen has 'Mark one damaged' beside the missing flag. Missing and damaged are different problems — one never arrived, one did and is unusable — and the platform has no rule about who bears a damaged item.",
+    "recommendation": "Record it and treat it exactly like missing: she shoots what she can, the brand resends or drops it. That is true, useful, and invents no liability rule. If damaged should be handled differently from missing, that is a commercial decision I should not make.",
+    "blocks_this_stage": false
+  },
+  "scope_excluded": [
+    "Telling her what to shoot — her craft, and the founder's own rule. The screen states the aim and the scope, never a shot list.",
+    "Re-opening working style — Stage 1 settled it as two questions.",
+    "Goods travelling creator to creator — deliberately left out of Docs/THE_PLAN.md; four commercial questions with money attached that are the founder's to answer.",
+    "Live courier tracking — the AWB is recorded and shown; integration is its own work.",
+    "The content that comes after — Stage 5.",
+    "Brand web — phones first."
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "maestro_note": "Mobile-governed: new routes in BOTH navigators. Rule 5 applies at release. R-8 requires a Maestro flow over the shoot.",
+    "deploy_class": "production-impacting (both phone apps via OTA, backend/src, and one additive migration).",
+    "deploy_targets": ["migration — production_event_items", "Render (backend/src)", "OTA (brand app)", "OTA (creator app)"],
+    "outward_facing": "None. No shopper or admin surface changes. The one behaviour change reaching something live is that confirming receipt stops completing the shoot — and the single live shipment has never been through that path.",
+    "device_walk_required": "YES. New routes in TWO navigators — the change class that has now crashed a handset three times in this programme, every one found by the founder holding a phone, most recently 2026-08-26. The founder walks W1-W7 on both handsets before any deploy go."
+  },
+  "build_order": [
+    "1 — the parcel table, and dispatch with contents",
+    "2 — confirming per item, the shortfall, and the receipt split (with its tests, before any screen)",
+    "3 — the shoot screen in both apps, and the route from step 3",
+    "4 — the slot panel: window, accept, counter, flip",
+    "5 — the parcel builder and her confirm screen",
+    "6 — the brand's shoots list",
+    "7 — the diary, rendered on both sides",
+    "8 — a Maestro flow over the shoot"
+  ]
+}

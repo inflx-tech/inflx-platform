@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 4 — The shoot</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:840px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.wrap{position:relative}
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:710px;overflow-y:auto}
+.tagapp{position:absolute;top:8px;left:8px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:5}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-both{background:var(--yBg);color:var(--yInk)}
+.t-a{background:var(--purpleBg);color:var(--purple)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:25px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--lineSoft)}
+.item:last-child{border-bottom:none}
+.thumb{width:36px;height:42px;border-radius:7px;background:#F0EDE7;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.item .n{flex:1;min-width:0}
+.item .nm{font-size:11.5px;font-weight:800}
+.item .mt{font-size:10px;color:var(--mut);font-weight:650;margin-top:1px}
+.cbx{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:transparent;flex-shrink:0}
+.cbx.on{background:var(--green);border-color:var(--green);color:#fff}
+.cbx.miss{background:var(--redBg);border-color:#F0C4BA;color:var(--red)}
+
+.rsn{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:11.5px;font-weight:700}
+.rsn.on{border-color:var(--red);border-width:1.5px;background:var(--redBg);color:var(--red)}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0}
+.rsn.on .rdo{border-color:var(--red);border-width:4.5px}
+
+.trk{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.trk .th{padding:9px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.trk .tb{padding:10px 12px}
+.pill{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+.p-ok{background:var(--greenBg);color:var(--green)}
+.p-wait{background:var(--blueBg);color:var(--blue)}
+.p-no{background:var(--redBg);color:var(--red)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 14px}
+.gc{aspect-ratio:3/4;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;border-radius:4px}
+.gc .b{position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;padding:1px 4px;border-radius:4px;color:#fff}
+.b-live{background:var(--green)}.b-rev{background:var(--blue)}.b-fix{background:var(--red)}
+.gc .p{position:absolute;bottom:4px;left:4px;font-size:7px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+.hero{width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:38px}
+.tagged{display:flex;gap:8px;overflow-x:auto;padding:11px 14px}
+.pcard{width:62px;flex-shrink:0}
+.pimg{width:62px;height:76px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.pnm{font-size:8.5px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+.stat3{display:flex;text-align:center;border-top:1px solid var(--lineSoft);border-bottom:1px solid var(--lineSoft)}
+.stat3 div{flex:1;padding:11px 4px;border-right:1px solid var(--lineSoft)}
+.stat3 div:last-child{border-right:none}
+.stat3 .n{font-family:'Outfit';font-size:15px;font-weight:800}
+.stat3 .l{font-size:8px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:2px}
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-blk{background:var(--redBg);color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>Stage 4 — The shoot</h1>
+  <p>features/stage-4-the-shoot · 2026-08-27 · EXTRACTED from FINAL 3 panels ② and ③ (brand-mobile-spine), same stylesheet. Ledger actions 107–118. Every verdict below was read from the code or run against production.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v0">① What already works</button>
+  <button class="tab" data-v="v1">② The shoots list</button>
+  <button class="tab" data-v="v2">③ Settling when</button>
+  <button class="tab" data-v="v3">④ What's in the box</button>
+  <button class="tab" data-v="v4">⑤ She confirms</button>
+  <button class="tab" data-v="v5">⑥ A shortfall</button>
+  <button class="tab" data-v="v6">⑦ Against what exists</button>
+</div>
+
+<!-- ① -->
+<div class="view on" id="v0">
+  <div class="vh">Eight endpoints, no screen, and an empty box</div>
+  <div class="vs">The shoot is the best-built step in the whole spine and the only one nobody can see. It is also the only step that already writes down everything that happens to it.</div>
+
+  <div class="note good"><b>Already live, and untouched by this stage.</b> A shoot plan is created the moment both sides sign. Propose a slot · accept · counter-propose · flip a store visit to remote · dispatch · confirm receipt · mark done · cancel. The <b>legal date window</b> is computed server-side — post-by minus two days, falling back to the posting window minus three. <b>Two reschedules per side</b>, counted separately, then locked. And every action writes to a log.</div>
+
+  <div class="note bad"><b>And there is no screen.</b> Grep both navigators for a production route: <b>zero hits</b>. The shoot lives as a panel inside the contract page on both phones — <code>BrandContractScreen:628</code> and <code>ContractScreen:366</code>. So a notification saying "Asha suggested Tuesday" can only point at a contract and hope she scrolls. Stage 3's step 3 currently says <i>"gets its own screen in Stage 4"</i>.</div>
+
+  <div class="note key"><b>The box has no contents.</b> A shipment carries a courier, a tracking number and four timestamps, and <b>no idea what is inside it</b>. Searched the whole schema and backend: nothing. That is the genuinely new work here — and the picker it needs was built in Stage 2 and is waiting for its fourth caller.</div>
+
+  <div class="card">
+    <h3>What is real today</h3>
+    <div class="tscroll"><table>
+      <tr><th>Thing</th><th>Verdict</th><th>Where</th></tr>
+      <tr><td>Shoot plan auto-created on signing</td><td><span class="st2 s-ex">exists</span></td><td><code>autoCreateForContract</code></td></tr>
+      <tr><td>Propose · accept · counter · flip-to-remote</td><td><span class="st2 s-ex">exists</span></td><td>4 endpoints</td></tr>
+      <tr><td>Dispatch · confirm receipt · complete · cancel</td><td><span class="st2 s-ex">exists</span></td><td>4 endpoints</td></tr>
+      <tr><td>The two-day window, computed</td><td><span class="st2 s-ex">exists</span></td><td><code>getVisitDateRange</code></td></tr>
+      <tr><td>Two reschedules per side</td><td><span class="st2 s-ex">exists</span></td><td><code>RESCHEDULE_LIMIT_PER_SIDE</code></td></tr>
+      <tr><td>Every action written down</td><td><span class="st2 s-ex">exists</span></td><td><code>production_event_log</code> — the only step in the spine that does</td></tr>
+      <tr><td><b>A route in either navigator</b></td><td><span class="st2 s-nw">missing</span></td><td>zero hits</td></tr>
+      <tr><td><b>A shoots list across creators</b></td><td><span class="st2 s-nw">missing</span></td><td>—</td></tr>
+      <tr><td><b>What is in the parcel</b></td><td><span class="st2 s-nw">missing</span></td><td>no table, no field</td></tr>
+      <tr><td><b>Confirming per item, and a shortfall</b></td><td><span class="st2 s-nw">missing</span></td><td>receipt is all-or-nothing</td></tr>
+      <tr><td>The log, rendered</td><td><span class="st2 s-nw">never shown</span></td><td><code>getLog</code> exists, nothing calls it</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note info"><b>Two things to know before the walk.</b> Production holds <b>4 shoots</b> — one shipment on Delhivery, three visits already marked complete — but <b>no visit carries a slot and the log has 0 entries</b>, because the practice world was seeded straight into its end state rather than driven through the endpoints. <b>This machinery has never actually been used by a person.</b> Stage 4's walk will be the first time.</div>
+</div>
+
+<!-- ② -->
+<div class="view" id="v1">
+  <div class="vh">One list, every shoot</div>
+  <div class="vids">LEDGER 109 · brand</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Shoots</div><div class="sub">4 ACROSS 2 CAMPAIGNS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">Needs you &middot; 2</div>
+            <div class="wait y" style="margin-bottom:8px"><b>Asha M.</b> suggested Tue 2 Sep, 11:00 AM — accept or counter</div>
+            <div class="wait r"><b>Ravi K.</b> — parcel delivered 4 days ago, receipt not confirmed</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Confirmed</div>
+            <div class="trm"><div class="k">Nisha P. &middot; store visit</div><div class="v" style="font-size:11px">4 SEP, 10AM</div></div>
+            <div class="trm"><div class="k">Meera S. &middot; we shipped</div><div class="v" style="font-size:11px;color:var(--blue)">IN TRANSIT</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Done</div>
+            <div class="trm"><div class="k">Divya T. &middot; remote</div><div class="v" style="font-size:11px;color:var(--green)">28 AUG</div></div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Your visit address</div>
+            <div class="trm"><div class="k">Benz Circle, Vijayawada</div><div class="v" style="font-size:11px;color:var(--blue)">EDIT</div></div>
+            <div class="trm"><div class="k">Contact &middot; Lakshmi R.</div><div class="v" style="font-size:11px;color:var(--blue)">EDIT</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px">Used for every store visit unless you change it per shoot.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">One list across every creator. <b>Needs you first.</b><span class="id">109</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note good"><b>The data is already there.</b> The roster endpoint returns every assignment with its production event attached. This is a list over something that already arrives.</div>
+      <div class="note key"><b>Why a list at all.</b> A brand with four creators has four shoots at four different points, and today the only way to see any of them is to open a contract page one at a time. The shoot is the step most likely to stall quietly — a parcel delivered and never confirmed looks exactly like nothing happening.</div>
+      <div class="note info"><b>The address is set once.</b> A store visit happens at the same shop every time. Asking per shoot would be asking the same question four times.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ③ -->
+<div class="view" id="v2">
+  <div class="vh">Settling when — the store visit</div>
+  <div class="vids">LEDGER 107 · 110–114 · 121</div>
+  <div class="vs">Six of these endpoints are live. What is missing is a screen.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">The shoot</div><div class="sub">KANCHI SILKS &middot; STORE VISIT</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait b">Pick any day between <b>16 Aug</b> and <b>13 Sep</b>. Your post-by is 15 Sep — the shoot has to finish two days before, so you have time to shoot and edit.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Their suggestion</div>
+            <div class="trm"><div class="k">Day</div><div class="v">Thu 28 Aug</div></div>
+            <div class="trm"><div class="k">Time</div><div class="v">2:00 PM</div></div>
+            <div class="trm"><div class="k">Expected time</div><div class="v" style="font-size:11.5px">~3 hours</div></div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:8px;line-height:1.5">Expected time is a guide for the store, <b>not a deadline for you</b>. Nothing counts as late.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Where</div>
+            <div class="trm"><div class="k">Kanchi Silks</div><div class="v" style="font-size:11px">BENZ CIRCLE, VIJAYAWADA</div></div>
+            <div class="trm"><div class="k">Ask for</div><div class="v" style="font-size:11.5px">Lakshmi R.</div></div>
+            <div class="trm"><div class="k">Phone</div><div class="v" style="font-size:11px">+91 98490 12345</div></div>
+            <button class="btn sec" style="margin-top:9px">Open in Maps</button>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Accept 28 Aug</button>
+              <button class="btn sec">Suggest another time &middot; 2 left</button>
+              <button class="btn sec">Ask to do it remotely instead</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="lock">&#128274; <span><b>No shoot brief.</b> They don&#39;t tell you what to shoot — that&#39;s your craft, and it&#39;s why they picked you.</span></div>
+          </div>
+          <div class="dsec"><button class="btn sec">See what happened here</button></div>
+        </div>
+      </div>
+      <div class="cap">Her side. The window is <b>computed, not invented</b> — that already exists.<span class="id">110–114</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="card">
+        <h3>What is already enforced, and now becomes visible</h3>
+        <div class="tscroll"><table>
+          <tr><th>Rule</th><th>Today</th></tr>
+          <tr><td>Earliest is <b>tomorrow</b> — the other side needs a day</td><td><span class="st2 s-ex">computed</span></td></tr>
+          <tr><td>Latest is <b>post-by minus two days</b>, so she can shoot and edit</td><td><span class="st2 s-ex">computed</span></td></tr>
+          <tr><td>Falls back to the posting window minus three, then the campaign end</td><td><span class="st2 s-ex">computed</span></td></tr>
+          <tr><td><b>Two reschedules per side</b>, counted separately</td><td><span class="st2 s-ex">enforced, invisible</span></td></tr>
+          <tr><td>Either side may ask to flip to remote; the other confirms</td><td><span class="st2 s-ex">exists</span></td></tr>
+        </table></div>
+        <div class="note good" style="max-width:none;margin:11px 0 0"><b>The screen shows the window; it does not invent it.</b> Every date rule above is already computed server-side, which is why this panel is a rendering job rather than a rewrite.</div>
+      </div>
+
+      <div class="note key"><b>&quot;Duration&quot; becomes &quot;expected time&quot;.</b> Same field, honest label. Creative work cannot be scheduled to the minute, and a word that implies it can is a word that makes someone feel late.</div>
+      <div class="note info"><b>Two left</b> is shown before it runs out, not after. A cap you discover by hitting it is a cap that feels arbitrary.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ -->
+<div class="view" id="v3">
+  <div class="vh">What&#39;s in the box</div>
+  <div class="vids">LEDGER 115 · 116 · the genuinely new part</div>
+  <div class="vs">Today a shipment knows it was sent and when it landed, and has no idea what is inside it.</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">What you&#39;re sending</div><div class="sub">TO ASHA M. &middot; MUMBAI</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="dh">From your catalogue</div>
+            <div class="trm"><div class="k">&#129525; Kanjivaram Silk — Maroon<br><span style="font-size:9.5px;color:var(--mut2)">KS-114 &middot; &#8377;18,500 &middot; QTY 1</span></div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">&#129525; Banarasi Silk — Gold<br><span style="font-size:9.5px;color:var(--mut2)">KS-207 &middot; &#8377;24,000 &middot; QTY 1</span></div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">&#129525; Cotton Handloom — Indigo<br><span style="font-size:9.5px;color:var(--mut2)">KS-051 &middot; &#8377;4,200 &middot; QTY 1</span></div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <button class="btn sec" style="margin-top:10px">+ Add from catalogue</button>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Items are <b>picked, not typed</b> — so what she confirms and what she can tag in a post are the same things.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Courier</div>
+            <div class="g2">
+              <div><label class="fl2">Carrier</label><input class="inp" value="Delhivery"></div>
+              <div><label class="fl2">Expected</label><input class="inp" value="21 Aug"></div>
+            </div>
+            <label class="fl2" style="margin-top:9px">Tracking number</label>
+            <input class="inp" value="DL8829174C">
+          </div>
+          <div class="dsec"><button class="btn pri">Mark dispatched &middot; 3 items</button></div>
+        </div>
+      </div>
+      <div class="cap">The parcel builder. <b>The same picker as allocation and offers.</b><span class="id">115 &middot; 116</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note good"><b>Its fourth caller, exactly as predicted.</b> Ledger #86 said this picker has four callers — allocation, offer scope, the parcel builder, and the creator tagging products in a post. Stage 2 merged two implementations into one component precisely so this stage would not build a third. Nothing new is designed here; it is configured.</div>
+
+      <div class="note key"><b>Picked, not typed, is the whole point.</b> If a brand types &quot;3 sarees&quot; into a note, she confirms a sentence and tags a product, and the two can never be reconciled. Picking from the catalogue makes the box, her receipt and her post the same three objects.</div>
+
+      <div class="note bad"><b>A parcel with nothing in it is refused.</b> Dispatch needs at least one item. Today it would happily send an empty box, because there was no box to fill.</div>
+
+      <div class="note info"><b>A resend is a second parcel, not an edit.</b> It gets its own courier, its own tracking number and its own delivery. Overwriting the first would erase the fact that something went wrong.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑤ -->
+<div class="view" id="v4">
+  <div class="vh">She confirms, item by item</div>
+  <div class="vids">LEDGER 117</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Your parcel arrived</div><div class="sub">KANCHI SILKS &middot; 3 ITEMS</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait b">Delivered <b>21 Aug, 2:40 PM</b>. Check each item and confirm.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">Tick what you received</div>
+            <div class="trm"><div class="k">&#129525; Kanjivaram — Maroon<br><span style="font-size:9.5px;color:var(--mut2)">KS-114</span></div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">&#129525; Banarasi — Gold<br><span style="font-size:9.5px;color:var(--mut2)">KS-207</span></div><div class="v" style="color:var(--green)">&#10003;</div></div>
+            <div class="trm"><div class="k">&#129525; Cotton Handloom — Indigo<br><span style="font-size:9.5px;color:var(--red)">FLAGGED — NOT IN THE BOX</span></div><div class="v" style="color:var(--red)">&#33;</div></div>
+            <button class="btn sec" style="margin-top:10px">Mark one damaged</button>
+          </div>
+          <div class="dsec">
+            <div class="wait y"><b>1 item missing.</b> Kanchi Silks is told straight away, with the item named. <b>You don&#39;t have to chase it.</b></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Confirm — 2 of 3 received</button>
+              <button class="btn sec">Actually, everything arrived</button>
+            </div>
+          </div>
+          <div class="dsec">
+            <div class="lock">&#128274; <span>A missing item never blocks your shoot or your posts. <b>Shoot what arrived.</b></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cap"><b>A flag, not a WhatsApp message.</b> The shortfall isn&#39;t her problem.<span class="id">117</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note bad"><b>Today this is one button and a free-text box.</b> <code>confirm-received</code> stamps a timestamp and takes a note. She cannot say which item is missing, so the only route is a message to a human — which is exactly the chasing this screen removes.</div>
+
+      <div class="note key"><b>And it does one more thing it should not.</b> Confirming receipt currently sets the shoot to <b>completed</b>. So a courier handing over a box would finish her shoot — advancing her to step 4 before she has photographed anything, on both phones. <b>This stage splits them:</b> receiving moves it to in-progress; the shoot finishes when she says it is done.</div>
+
+      <div class="note info"><b>&quot;Mark one damaged&quot; needs a decision.</b> Missing and damaged are different problems and the platform has no rule about who bears a damaged item. The recommendation is to record it and treat it exactly like missing — she shoots what she can, the brand resends or drops it. That invents no liability rule. <b>It is the founder&#39;s call.</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ -->
+<div class="view" id="v5">
+  <div class="vh">The brand answers a shortfall</div>
+  <div class="vids">LEDGER 118</div>
+
+  <div class="row">
+    <div>
+      <div class="ph">
+        <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">One item missing</div><div class="sub">ASHA M. &middot; REPORTED 25 AUG</div></div></div>
+        <div class="body">
+          <div class="dsec">
+            <div class="wait r"><b>Asha received 2 of 3.</b> Cotton Handloom — Indigo (KS-051) wasn&#39;t in the box.</div>
+          </div>
+          <div class="dsec">
+            <div class="dh">What she has</div>
+            <div class="trm"><div class="k">Kanjivaram — Maroon</div><div class="v" style="font-size:11px;color:var(--green)">&#10003; RECEIVED</div></div>
+            <div class="trm"><div class="k">Banarasi — Gold</div><div class="v" style="font-size:11px;color:var(--green)">&#10003; RECEIVED</div></div>
+            <div class="trm"><div class="k">Cotton Handloom</div><div class="v" style="font-size:11px;color:var(--red)">&#10005; MISSING</div></div>
+          </div>
+          <div class="dsec">
+            <div class="bstack">
+              <button class="btn pri">Send the missing saree</button>
+              <button class="btn sec">Drop it — she&#39;ll shoot the other two</button>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut);font-weight:650;margin-top:9px;line-height:1.5">Either way her shoot goes ahead. Dropping it removes that saree from what she can sell.</div>
+          </div>
+          <div class="dsec">
+            <div class="wait n">&#128230; Sending a replacement creates a <b>second parcel</b> on this shoot, tracked the same way.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cap">Both outcomes offered. <b>Her shoot is never blocked either way.</b><span class="id">118</span></div>
+    </div>
+
+    <div style="flex:1;min-width:340px">
+      <div class="note key"><b>The rule underneath this screen.</b> A shortfall is the brand&#39;s problem. She is never asked to chase it, never blocked by it, and never has to explain it. The two buttons are the brand&#39;s two honest options and there is no third.</div>
+
+      <div class="note bad"><b>&quot;Removes that saree from what she can sell&quot; needs care.</b> If she was allocated the <b>whole store</b> or a <b>category</b>, that item is still in scope — Part 4 defined those scopes as resolved live, and carving a hole in one would be inventing a rule. So dropping removes the id <b>only on a hand-picked allocation</b>. Stated here because it is the one place this board reaches into another stage&#39;s machinery.</div>
+
+      <div class="note good"><b>Nothing about this is new machinery.</b> A second parcel is another dispatch on the same shoot, which the existing endpoint already does. What is new is knowing which item it replaces.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ⑦ -->
+<div class="view" id="v6">
+  <div class="vh">Every screen and rule, against what exists today</div>
+  <div class="vs">Read from the actual files and from production on 27 August 2026. This is the board to argue with before anything is built.</div>
+
+  <div class="card">
+    <h3>The server</h3>
+    <div class="tscroll"><table>
+      <tr><th>Rule</th><th>Today</th><th>Verdict</th></tr>
+      <tr><td>Eight coordination endpoints</td><td>All live</td><td><span class="st2 s-ex">reuse, untouched</span></td></tr>
+      <tr><td>The date window, the reschedule cap</td><td>Computed and enforced</td><td><span class="st2 s-ex">reuse</span></td></tr>
+      <tr><td>The action log</td><td>Written on every mutation, never read</td><td><span class="st2 s-ch">render it</span></td></tr>
+      <tr><td><b>What is in the parcel</b></td><td><b>Nothing.</b> No table, no field, no concept</td><td><span class="st2 s-nw">one additive table</span></td></tr>
+      <tr><td><b>Confirming per item</b></td><td>All-or-nothing, plus a free-text note</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td><b>Receipt completes the shoot</b></td><td>Yes — and it should not</td><td><span class="st2 s-ui">split it</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>Both phones</h3>
+    <div class="tscroll"><table>
+      <tr><th>Screen</th><th>Today</th><th>Verdict</th></tr>
+      <tr><td><b>A route for the shoot</b></td><td>None, in either navigator</td><td><span class="st2 s-nw">new, both apps</span></td></tr>
+      <tr><td>Where the shoot lives</td><td>A panel inside the contract page, both sides</td><td><span class="st2 s-ch">moves out</span></td></tr>
+      <tr><td><b>A shoots list</b></td><td>Nowhere</td><td><span class="st2 s-nw">new</span></td></tr>
+      <tr><td>The parcel builder</td><td>—</td><td><span class="st2 s-ex">the Stage 2 picker, 4th caller</span></td></tr>
+      <tr><td>Step 3 of the spine</td><td>Says &quot;Stage 4 brings this&quot;</td><td><span class="st2 s-ch">opens the shoot</span></td></tr>
+      <tr><td>Working style, two questions</td><td>Stage 1</td><td><span class="st2 s-ex">done, not reopened</span></td></tr>
+    </table></div>
+  </div>
+
+  <div class="note bad"><b>The machinery has never been used by a person.</b> Production holds four shoots, but no visit has a slot and the log has <b>zero entries</b> — the practice world was seeded straight into its end state. Every endpoint listed as &quot;live&quot; above is live in the sense that it exists and is tested, not in the sense that anyone has driven it. <b>Stage 4&#39;s walk is the first real exercise of any of it</b>, and that is worth expecting a few surprises from.</div>
+
+  <div class="card">
+    <h3>Build order</h3>
+    <div class="tscroll"><table>
+      <tr><th>#</th><th>Slice</th><th>Why here</th></tr>
+      <tr><td><b>1</b></td><td>The parcel table, and dispatch with contents</td><td>Everything downstream needs items to exist</td></tr>
+      <tr><td><b>2</b></td><td>Confirming per item, the shortfall, and the receipt split</td><td>The split touches the field Stage 3&#39;s step number reads — do it with the tests, not after the screens</td></tr>
+      <tr><td><b>3</b></td><td>The shoot screen, both apps, and the route from step 3</td><td>Turns eight endpoints into something a person can reach</td></tr>
+      <tr><td><b>4</b></td><td>The slot panel — window, accept, counter, flip</td><td>All six endpoints already exist</td></tr>
+      <tr><td><b>5</b></td><td>The parcel builder and her confirm screen</td><td>Hangs off slices 1 and 2</td></tr>
+      <tr><td><b>6</b></td><td>The brand&#39;s shoots list</td><td>A list over data the roster already returns</td></tr>
+      <tr><td><b>7</b></td><td>The diary, rendered on both sides</td><td>Already written, never shown</td></tr>
+      <tr><td><b>8</b></td><td>A Maestro flow over the shoot</td><td>Same gate as Stage 3</td></tr>
+    </table></div>
+  </div>
+
+  <div class="note key"><b>The gate has not moved.</b> New routes in <b>two</b> navigators — the change class that passes every automatic check and then crashes on a handset. That has happened three times in this programme and every one was found by the founder holding a phone, most recently on 26 August. The founder walks both handsets, and a Maestro flow lands with the stage.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+    document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+    window.scrollTo(0,0);
+  });
+});
+</script>
+</body>
+</html>
