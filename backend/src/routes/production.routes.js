@@ -11,6 +11,12 @@
  *   POST   /v1/production-events/:id/confirm-received  — influencer received
  *   POST   /v1/production-events/:id/complete          — mark visit done
  *   POST   /v1/production-events/:id/cancel            — admin cancel
+ *
+ *   stage-4 — the parcel:
+ *   GET    /v1/production-events/:id/items                 — what is in the box (both)
+ *   POST   /v1/production-events/:id/items                 — brand packs it
+ *   DELETE /v1/production-events/:id/items/:itemId         — brand unpacks (pre-dispatch)
+ *   POST   /v1/production-events/:id/items/:itemId/drop    — brand drops a flagged item
  */
 
 const { Router } = require('express');
@@ -56,5 +62,29 @@ router.post('/production-events/:id/confirm-received', authenticate, requireRole
 router.post('/production-events/:id/complete',         authenticate, requireRole('brand', 'influencer'), ctrl.complete);
 router.post('/production-events/:id/flip-to-remote',   authenticate, requireRole('brand', 'influencer'), ctrl.flipToRemote);
 router.post('/production-events/:id/cancel',           authenticate, requireAnyAdminRole, ctrl.adminCancel);
+
+
+// ─── The parcel (stage-4) ───────────────────────────────────────────────────
+// Both parties read it — she cannot confirm a box she cannot see. Only the brand changes it.
+router.get(
+  '/production-events/:id/items',
+  authenticate, requireRole('brand', 'influencer'),
+  ctrl.getParcel
+);
+router.post(
+  '/production-events/:id/items',
+  authenticate, requireRole('brand'),
+  ctrl.addParcelItems
+);
+router.delete(
+  '/production-events/:id/items/:itemId',
+  authenticate, requireRole('brand'),
+  ctrl.removeParcelItem
+);
+router.post(
+  '/production-events/:id/items/:itemId/drop',
+  authenticate, requireRole('brand'),
+  ctrl.dropParcelItem
+);
 
 module.exports = router;

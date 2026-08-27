@@ -1,0 +1,97 @@
+# Flow 07 — the brand walks a shoot, from the tile to the diary.
+#
+# Contract: features/stage-4-the-shoot (03-expected-outputs R-8, M-1, M-2, M-8)
+#
+# WHY THIS FLOW EXISTS
+# Stage 4 adds routes to BOTH navigators, in five places. That is the exact change class that
+# has crashed a handset three times in this programme, and every one of the three was found by
+# the founder holding a phone rather than by anything automatic. jest, the bundle build and the
+# duplicate-route scan all pass on a screen that then dies on the device, because none of them
+# mount a navigator. This one does.
+#
+# It also exercises machinery that has NEVER BEEN DRIVEN BY A PERSON. Eight coordination
+# endpoints have existed and been tested for months; production_event_log has zero entries and
+# no visit carries a slot, because the practice world was seeded straight into its end state.
+# "Live" there means it exists, not that anyone has used it. This is the first real exercise.
+#
+# WHAT IT PROVES, AND WHAT IT DOES NOT
+# It proves the shoot is REACHABLE and does not crash: the tile opens a list, a row opens a
+# shoot, and the diary renders. It does NOT check who may complete a shoot or what a shortfall
+# does — those are decision rules, and they are proved by the executing checks in
+# backend/tests/stage4-parcel.test.js, which need no device.
+#
+# It asserts on WORDS THE SCREENS OWN, never on names or numbers: the practice world changes
+# every time the founder uses it, and a flow that fails when the data moves is a flow nobody
+# runs twice.
+
+appId: in.inflx.app.brand
+---
+- launchApp:
+    clearState: false
+
+# ── Home ────────────────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Campaigns"
+    timeout: 30000
+- takeScreenshot: 07-shoot-01-home
+
+# ── M-2 · one list, across every campaign ───────────────────────────────────
+# The tile is new. Before Stage 4 the shoot had no door at all on either phone — a grep of
+# both navigators for a production route returned zero.
+- extendedWaitUntil:
+    visible: "Shoots"
+    timeout: 20000
+- tapOn: "Shoots"
+
+# If the route were registered in a different stack the tap would silently do nothing and the
+# app would sit on Home. Waiting on a word only the list owns is what catches that.
+- extendedWaitUntil:
+    visible:
+      text: "ACROSS EVERY CAMPAIGN|NEEDS YOU"
+    timeout: 20000
+- takeScreenshot: 07-shoot-02-list
+
+# ── The list is either populated or honestly empty. Both are a pass ─────────
+# Production holds four shoots today, and a brand with none must not see a spinner forever.
+- runFlow:
+    when:
+      visible: "No shoots yet"
+    commands:
+      - assertVisible: "A shoot appears here the moment a contract is signed"
+      - takeScreenshot: 07-shoot-03-empty
+      # Nothing further to walk. An empty list is a real state, not a failure.
+      - stopApp
+
+# ── M-1 · a row opens the shoot ─────────────────────────────────────────────
+# Tapped by a word the row owns rather than by a creator's name, which is practice data.
+- tapOn:
+    text: "YOUR MOVE|WAITING ON HER"
+    index: 0
+- extendedWaitUntil:
+    visible: "The shoot"
+    timeout: 20000
+- takeScreenshot: 07-shoot-04-detail
+
+# ── M-8 · the diary renders, on the brand's side ────────────────────────────
+# getLog has existed the whole time with nothing calling it, so none of this was ever visible.
+# It will be nearly empty on existing shoots — only actions taken from now on appear, and the
+# empty state says so rather than inventing a history.
+- scrollUntilVisible:
+    element:
+      text: "What happened here"
+    direction: DOWN
+    timeout: 20000
+- takeScreenshot: 07-shoot-05-diary
+
+# ── Back out cleanly ────────────────────────────────────────────────────────
+# A screen that renders and then crashes on the way back is still a crash.
+- back
+- extendedWaitUntil:
+    visible:
+      text: "ACROSS EVERY CAMPAIGN|NEEDS YOU"
+    timeout: 15000
+- back
+- extendedWaitUntil:
+    visible: "Campaigns"
+    timeout: 15000
+- takeScreenshot: 07-shoot-06-back-on-home

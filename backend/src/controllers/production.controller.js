@@ -10,6 +10,8 @@
 
 const db = require('../config/db');
 const productionService = require('../services/production.service');
+// stage-4 — what is in the box, and who may say the shoot is done.
+const parcel = require('../services/parcel.service');
 const notificationService = require('../services/notification.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
@@ -362,6 +364,15 @@ const dispatch = asyncHandler(async (req, res) => {
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'brand');
 
+  // stage-4 — a parcel with no contents is a note, not a shipment. Without this she gets a
+  // courier number and a box, and no way to say WHICH of three sarees never turned up.
+  const packed = await parcel.listItems(event.id, db);
+  if (packed.length === 0) {
+    throw new AppError('VALIDATION_ERROR',
+      'Add what you are sending before you dispatch. She confirms the parcel item by item, so an empty box gives her nothing to confirm.',
+      422, 'items');
+  }
+
   let updated;
   try {
     updated = await productionService.dispatchShipment(event.id, req.body || {}, actorFromReq(req));
@@ -388,6 +399,19 @@ const confirmReceived = asyncHandler(async (req, res) => {
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'influencer');
 
+  // stage-4 — her answers ride along, one per item. Optional: a shipment dispatched before
+  // this stage has no items, and she must still be able to say the box arrived.
+  let receipt = null;
+  if (Array.isArray(req.body?.answers) && req.body.answers.length) {
+    receipt = await parcel.recordReceipt(event.id, req.body.answers, db);
+    if (!receipt.ok) throw new AppError('VALIDATION_ERROR', receipt.message, 422, receipt.field);
+    await productionService.logAction(null, event.id, req.user.sub, 'influencer', 'receipt_recorded',
+      receipt.shortfall.length
+        ? `Flagged: ${receipt.shortfall.map(i => i.name).join(', ')}`
+        : 'Everything arrived',
+      { received: receipt.received, total: receipt.total, shortfall: receipt.shortfall.length });
+  }
+
   let updated;
   try {
     updated = await productionService.confirmReceived(event.id, req.body?.notes, actorFromReq(req));
@@ -395,15 +419,30 @@ const confirmReceived = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', err.message, 422);
   }
 
-  notify(
-    contract.brand_user_id, contract.brand_fcm, contract.brand_phone,
-    'production.received',
-    'Influencer confirmed receipt',
-    `${contract.influencer_name} confirmed they received the package for "${contract.campaign_name}".`,
-    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
-  );
+  // A SHORTFALL IS THE BRAND'S PROBLEM, NOT HERS. So the brand is told immediately, with the
+  // item NAMED — not 'there was a problem with your shipment', which makes her explain it.
+  const short = receipt?.shortfall || [];
+  if (short.length) {
+    const names = short.map(i => i.name).filter(Boolean);
+    const listed = names.length <= 2 ? names.join(' and ') : `${names[0]} and ${names.length - 1} more`;
+    notify(
+      contract.brand_user_id, contract.brand_fcm, contract.brand_phone,
+      'production.shortfall',
+      'Something did not arrive',
+      `${contract.influencer_name} received the parcel for "${contract.campaign_name}" but flagged ${listed}. She is shooting the rest — resend or drop it.`,
+      { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id, production_event_id: event.id }
+    );
+  } else {
+    notify(
+      contract.brand_user_id, contract.brand_fcm, contract.brand_phone,
+      'production.received',
+      'Influencer confirmed receipt',
+      `${contract.influencer_name} confirmed they received the package for "${contract.campaign_name}".`,
+      { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
+    );
+  }
 
-  return success(res, { production_event: updated });
+  return success(res, { production_event: updated, receipt });
 });
 
 // POST /v1/production-events/:id/complete
@@ -411,13 +450,22 @@ const complete = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'either');
-  if (event.mode !== 'visit') {
-    throw new AppError('VALIDATION_ERROR', 'complete only applies to visit-mode events', 422);
+
+  // stage-4 — this used to refuse anything that was not a visit, which meant a REMOTE shoot
+  // had no way of being marked done at all. Who may mark it now depends on the mode, and the
+  // rule lives in parcel.service so the endpoint and the screen read one answer:
+  //   store visit       — either party (the brand was there)
+  //   remote / shipment — the creator alone (the brand cannot see whether she has shot)
+  // Founder, 2026-08-27. Enforced inside completeShoot; checked here to answer 403 not 422.
+  if (!parcel.canComplete(event.mode, req.user.role)) {
+    throw new AppError('FORBIDDEN',
+      'Only the creator can say the shoot is done — you cannot see whether it has happened yet. She submits the content next, and that is the proof.',
+      403);
   }
 
   let updated;
   try {
-    updated = await productionService.completeVisit(event.id, req.body?.notes, actorFromReq(req));
+    updated = await productionService.completeShoot(event.id, req.body?.notes, actorFromReq(req));
   } catch (err) {
     throw new AppError('VALIDATION_ERROR', err.message, 422);
   }
@@ -429,8 +477,8 @@ const complete = asyncHandler(async (req, res) => {
   notify(
     target.uid, target.fcm, target.phone,
     'production.completed',
-    'Visit marked complete',
-    `The visit for "${contract.campaign_name}" was marked complete. Time to start the content.`,
+    'Shoot marked done',
+    `The shoot for "${contract.campaign_name}" was marked done. Time to start the content.`,
     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
   );
 
@@ -506,6 +554,177 @@ const listCampaignProduction = asyncHandler(async (req, res) => {
   return success(res, { production: rows });
 });
 
+
+// GET /v1/brands/me/shoots — every shoot this brand has, across every campaign.
+//
+// stage-4 · M-2 · board panel ②
+//
+// WHY BRAND-WIDE AND NOT PER CAMPAIGN
+// listCampaignProduction already exists and is scoped to one campaign. That is the wrong shape
+// for the question a brand actually asks in the morning, which is "what is waiting on me
+// today" — and shoots waiting on them are spread across whatever campaigns happen to be
+// running. A per-campaign list makes them visit four screens to answer one question.
+//
+// NEEDS-YOU FIRST, DECIDED HERE
+// The ordering is computed server-side, for the same reason Stage 3's step number is: the
+// creator's app renders the same shoot, and two clients working out "whose turn" separately
+// is how they end up disagreeing about one fact.
+const listBrandShoots = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+
+  const { rows } = await db.query(
+    `SELECT
+        pe.id                AS production_event_id,
+        pe.mode,
+        pe.status            AS production_status,
+        pe.slot_proposed_by,
+        pe.reschedule_count_brand,
+        pe.reschedule_count_influencer,
+        pe.visit_scheduled_at, pe.visit_completed_at,
+        pe.visit_address, pe.visit_city,
+        pe.shipment_courier, pe.shipment_awb,
+        pe.shipment_dispatched_at, pe.shipment_expected_at,
+        pe.shipment_delivered_at, pe.shipment_received_confirmed_at,
+        con.id               AS contract_id,
+        ci.id                AS campaign_influencer_id,
+        u.name               AS influencer_name,
+        inf.instagram_handle,
+        inf.profile_image_url,
+        c.id                 AS campaign_id,
+        c.name               AS campaign_name,
+        -- What is in the box, counted here rather than in a second round trip per row.
+        (SELECT count(*) FROM production_event_items i
+          WHERE i.production_event_id = pe.id AND i.dropped_at IS NULL)          AS item_count,
+        (SELECT count(*) FROM production_event_items i
+          WHERE i.production_event_id = pe.id AND i.dropped_at IS NULL
+            AND i.receipt_status IN ('missing', 'damaged'))                      AS shortfall_count
+     FROM production_events pe
+     JOIN contracts            con ON con.id = pe.contract_id
+     JOIN campaign_influencers ci  ON ci.id  = con.campaign_influencer_id
+     JOIN campaign_sets        cs  ON cs.id  = ci.set_id
+     JOIN campaigns            c   ON c.id   = cs.campaign_id
+     JOIN influencers          inf ON inf.id = ci.influencer_id
+     JOIN users                u   ON u.id   = inf.user_id
+     WHERE c.brand_id = $1
+       AND pe.status <> 'cancelled'
+     ORDER BY
+       -- Needs you first. A shoot is the brand's move when they proposed nothing, when she
+       -- has suggested a time they have not answered, or when a confirmed shipment has not
+       -- gone out. Everything else is hers or nobody's, and sorts underneath.
+       CASE
+         WHEN pe.status = 'proposed'  AND pe.visit_scheduled_at IS NULL              THEN 0
+         WHEN pe.status = 'proposed'  AND pe.slot_proposed_by = 'influencer'         THEN 0
+         WHEN pe.status = 'confirmed' AND pe.mode = 'shipment'
+              AND pe.shipment_dispatched_at IS NULL                                 THEN 0
+         ELSE 1
+       END,
+       -- Then a shortfall they have not answered, then soonest first.
+       CASE WHEN EXISTS (
+         SELECT 1 FROM production_event_items i
+          WHERE i.production_event_id = pe.id AND i.dropped_at IS NULL
+            AND i.receipt_status IN ('missing', 'damaged')
+       ) THEN 0 ELSE 1 END,
+       COALESCE(pe.visit_scheduled_at, pe.shipment_expected_at, pe.created_at) ASC`,
+    [brand.id]
+  );
+
+  return success(res, { shoots: rows });
+});
+
+// ─── The parcel ─────────────────────────────────────────────────────────────
+// stage-4 · features/stage-4-the-shoot · board panels ④ ⑤ ⑥
+//
+// Before this, a shipment knew it was sent and when it landed and had NO IDEA what was in it.
+// So a brand typed "3 sarees" into a note, she confirmed a sentence, and nothing could
+// reconcile the two. Items are PICKED from the catalogue so the box, her receipt and the
+// products she can tag in a post are the same objects.
+
+// GET /v1/production-events/:id/items — both parties. She needs to see it to confirm it.
+const getParcel = asyncHandler(async (req, res) => {
+  const event = await getEventOrThrow(req.params.id);
+  const contract = await getContractByEvent(event);
+  await ensureParty(contract, req, 'either');
+
+  const [items, summary] = await Promise.all([
+    parcel.listItems(event.id, db),
+    parcel.summarise(event.id, db),
+  ]);
+  return success(res, { items, summary });
+});
+
+// POST /v1/production-events/:id/items — brand packs the box.
+// Body: { items: [{ product_id, quantity }], parcel_no? }
+const addParcelItems = asyncHandler(async (req, res) => {
+  const event = await getEventOrThrow(req.params.id);
+  const contract = await getContractByEvent(event);
+  await ensureParty(contract, req, 'brand');
+
+  const result = await parcel.addItems(event.id, {
+    brandId:  contract.brand_id,
+    items:    req.body?.items,
+    parcelNo: Number(req.body?.parcel_no || 1),
+  }, db);
+  if (!result.ok) throw new AppError('VALIDATION_ERROR', result.message, 422, result.field);
+
+  await productionService.logAction(null, event.id, req.user.sub, 'brand', 'parcel_packed',
+    `${result.items.length} item(s) added to parcel ${req.body?.parcel_no || 1}`,
+    { count: result.items.length, parcel_no: Number(req.body?.parcel_no || 1) });
+
+  return success(res, { items: result.items, summary: await parcel.summarise(event.id, db) });
+});
+
+// DELETE /v1/production-events/:id/items/:itemId — brand takes something back out.
+const removeParcelItem = asyncHandler(async (req, res) => {
+  const event = await getEventOrThrow(req.params.id);
+  const contract = await getContractByEvent(event);
+  await ensureParty(contract, req, 'brand');
+
+  // Once it has gone, taking a row out would erase the record of what was sent. After
+  // dispatch the honest move is to DROP it, which is a different verb with a timestamp.
+  if (event.shipment_dispatched_at) {
+    throw new AppError('VALIDATION_ERROR',
+      'This parcel has already gone. You can drop an item she flagged, but you cannot change what was in the box.',
+      422);
+  }
+
+  const result = await parcel.removeItem(event.id, req.params.itemId, db);
+  if (!result.ok) throw new AppError('NOT_FOUND', 'That item is not in this parcel', 404);
+
+  await productionService.logAction(null, event.id, req.user.sub, 'brand', 'parcel_item_removed',
+    'An item was taken out before dispatch', null);
+  return success(res, { summary: await parcel.summarise(event.id, db) });
+});
+
+// POST /v1/production-events/:id/items/:itemId/drop — brand answers a shortfall by dropping.
+const dropParcelItem = asyncHandler(async (req, res) => {
+  const event = await getEventOrThrow(req.params.id);
+  const contract = await getContractByEvent(event);
+  await ensureParty(contract, req, 'brand');
+
+  const result = await parcel.dropItem(event.id, req.params.itemId, db);
+  if (!result.ok) throw new AppError('NOT_FOUND', result.message, 404);
+
+  await productionService.logAction(null, event.id, req.user.sub, 'brand', 'item_dropped',
+    `${result.item.name_at_dispatch || 'An item'} was dropped rather than resent`,
+    { removed_from_allocation: result.removedFromAllocation });
+
+  // Tell her, because it changes what she is shooting — and, on a hand-picked list, what she
+  // may sell. Saying nothing would leave her waiting for a replacement that is not coming.
+  notify(
+    contract.influencer_user_id, contract.influencer_fcm, contract.influencer_phone,
+    'production.item_dropped',
+    'One item is not coming',
+    `${contract.brand_name} has dropped ${result.item.name_at_dispatch || 'an item'} from this shoot. Shoot the rest — nothing else changes.`,
+    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id, production_event_id: event.id }
+  );
+
+  return success(res, {
+    item: result.item,
+    removed_from_allocation: result.removedFromAllocation,
+    summary: await parcel.summarise(event.id, db),
+  });
+});
+
 module.exports = {
   getProduction,
   listCampaignProduction,
@@ -520,4 +739,9 @@ module.exports = {
   complete,
   flipToRemote,
   adminCancel,
+  listBrandShoots,
+  getParcel,
+  addParcelItems,
+  removeParcelItem,
+  dropParcelItem,
 };

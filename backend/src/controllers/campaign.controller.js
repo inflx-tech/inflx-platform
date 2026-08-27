@@ -1850,10 +1850,19 @@ const getLiveHierarchy = asyncHandler(async (req, res) => {
 
   for (const set of sets) {
     const { rows: influencers } = await db.query(
-      `SELECT ci.*, inf.instagram_handle, u.name AS influencer_name, u.phone AS influencer_phone
+      `SELECT ci.*, inf.instagram_handle, u.name AS influencer_name, u.phone AS influencer_phone,
+              -- stage-4 — the spine's step 3 opens the shoot, and a shoot is reached through its
+              -- contract. Without this the button had nothing to navigate with. LEFT JOIN LATERAL:
+              -- a creator who has not signed has no contract, and that is a normal state, not a
+              -- missing row.
+              con.id AS contract_id, con.production_mode AS contract_production_mode
        FROM campaign_influencers ci
        JOIN influencers inf ON inf.id = ci.influencer_id
        JOIN users u ON u.id = inf.user_id
+       LEFT JOIN LATERAL (
+         SELECT c2.id, c2.production_mode FROM contracts c2
+          WHERE c2.campaign_influencer_id = ci.id ORDER BY c2.created_at DESC LIMIT 1
+       ) con ON TRUE
        WHERE ci.set_id = $1 ORDER BY ci.id ASC`,
       [set.id]
     );

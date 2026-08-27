@@ -325,6 +325,17 @@ export const brandApi = {
   dispatchProduction:          (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
   completeProduction:          (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
 
+  // stage-4 — the parcel. Before this a shipment knew it was sent and had no idea what was
+  // in it, so "3 sarees" lived in a free-text note and nothing could reconcile it with what
+  // she confirmed or what she later tagged in a post.
+  getParcel:                   (eventId)         => api.get(`/production-events/${eventId}/items`),
+  // stage-4 — every shoot across every campaign. The per-campaign roster answers the wrong
+  // question: what is waiting on a brand is spread over whatever campaigns are running.
+  listShoots:                  ()                => api.get('/brands/me/shoots'),
+  addParcelItems:              (eventId, data)   => api.post(`/production-events/${eventId}/items`, data),
+  removeParcelItem:            (eventId, itemId) => api.delete(`/production-events/${eventId}/items/${itemId}`),
+  dropParcelItem:              (eventId, itemId) => api.post(`/production-events/${eventId}/items/${itemId}/drop`),
+
   // Proposals (Phase Q) — brand side
   getProposalSettings:    () => api.get('/brands/me/proposal-settings'),
   updateProposalSettings: (data) => api.patch('/brands/me/proposal-settings', data),
@@ -446,6 +457,10 @@ export const influencerApi = {
   counterProposeProduction:     (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),
   confirmProductionReceived:    (eventId, data)   => api.post(`/production-events/${eventId}/confirm-received`, data),
   completeProduction:           (eventId, data)   => api.post(`/production-events/${eventId}/complete`, data),
+
+  // stage-4 — she reads the parcel so she can confirm it item by item. Read-only on her side:
+  // what is in the box is the brand's statement, and her answer is a separate verb.
+  getParcel:                    (eventId)         => api.get(`/production-events/${eventId}/items`),
   flipProductionToRemote:       (eventId, data)   => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
 
   // Proposals (Phase Q)

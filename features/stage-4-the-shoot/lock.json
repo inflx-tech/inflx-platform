@@ -1,17 +1,17 @@
 {
   "feature": "stage-4-the-shoot",
   "spec_version": "1.0.0",
-  "status": "awaiting-lock",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "mockup_locked": false,
-  "mockup_locked_by": null,
-  "mockup_locked_at": null,
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder 2026-08-27 chat: \"go with your recommendation and start implement\" plus the completion ruling below",
+  "approved_at": "2026-08-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-27 — after the seven boards were presented",
+  "mockup_locked_at": "2026-08-27",
   "mockup_note": "features/stage-4-the-shoot/04-preview/mockups/stage4-screens.html — seven boards. EXTRACTED from the already-agreed FINAL 3 panels 2 and 3 (brand-mobile-spine/04-preview/mockups/final-3-delivery.html) using its stylesheet verbatim. Ledger actions 107-118. Board 7 states every screen and server rule against what exists today.",
-  "notes": "Stage 4 of 11 in Docs/THE_PLAN.md. The shoot — settle a time, send the goods, confirm what arrived. Scope is both phone apps, one additive table, and one behaviour change to a live endpoint. NOT LOCKED.",
+  "notes": "Stage 4 of 11 in Docs/THE_PLAN.md. The shoot — settle a time, send the goods, confirm what arrived. Scope is both phone apps, one additive table, and one behaviour change to a live endpoint. LOCKED 2026-08-27.",
   "programme": {
     "plan": "Docs/THE_PLAN.md",
     "stage": 4,
@@ -38,7 +38,8 @@
   "open_question_for_founder": {
     "question": "The board's creator screen has 'Mark one damaged' beside the missing flag. Missing and damaged are different problems — one never arrived, one did and is unusable — and the platform has no rule about who bears a damaged item.",
     "recommendation": "Record it and treat it exactly like missing: she shoots what she can, the brand resends or drops it. That is true, useful, and invents no liability rule. If damaged should be handled differently from missing, that is a commercial decision I should not make.",
-    "blocks_this_stage": false
+    "blocks_this_stage": false,
+    "answered": "founder 2026-08-27: go with the recommendation. Damaged is recorded and treated exactly like missing — she shoots what she can, the brand resends or drops it. No liability rule invented."
   },
   "scope_excluded": [
     "Telling her what to shoot — her craft, and the founder's own rule. The screen states the aim and the scope, never a shot list.",
@@ -54,9 +55,15 @@
     "maestro_green": false,
     "maestro_note": "Mobile-governed: new routes in BOTH navigators. Rule 5 applies at release. R-8 requires a Maestro flow over the shoot.",
     "deploy_class": "production-impacting (both phone apps via OTA, backend/src, and one additive migration).",
-    "deploy_targets": ["migration — production_event_items", "Render (backend/src)", "OTA (brand app)", "OTA (creator app)"],
+    "deploy_targets": [
+      "migration — production_event_items",
+      "Render (backend/src)",
+      "OTA (brand app)",
+      "OTA (creator app)"
+    ],
     "outward_facing": "None. No shopper or admin surface changes. The one behaviour change reaching something live is that confirming receipt stops completing the shoot — and the single live shipment has never been through that path.",
-    "device_walk_required": "YES. New routes in TWO navigators — the change class that has now crashed a handset three times in this programme, every one found by the founder holding a phone, most recently 2026-08-26. The founder walks W1-W7 on both handsets before any deploy go."
+    "device_walk_required": "YES. New routes in TWO navigators — the change class that has now crashed a handset three times in this programme, every one found by the founder holding a phone, most recently 2026-08-26. The founder walks W1-W7 on both handsets before any deploy go.",
+    "diff_notes": "features/stage-4-the-shoot/06-diff/notes.md — written 2026-08-27, panel by panel, with the divergence stated."
   },
   "build_order": [
     "1 — the parcel table, and dispatch with contents",
@@ -67,5 +74,49 @@
     "6 — the brand's shoots list",
     "7 — the diary, rendered on both sides",
     "8 — a Maestro flow over the shoot"
-  ]
+  ],
+  "founder_ruling_2026_08_27": {
+    "quote": "\"shoot phase done when creator agreed for shoot plan when store visit planned...next after completion of shooting then creator and brand both confirmed shoot is done...next after that content submission. next if the shoot is remote then creator confirm that shoot is done....for store visit we keep both brand and creator as confirming parties, for remote only creator as confirming member because brand dont know at this stage whether shoot is done or not. anyway creator needs to submit the content in next stages for both brand so we confirm this by doing so.\"",
+    "what_it_settles": "It answers 01-spec section 5.1 better than my own recommendation did, and it adds a rule I had not asked about: WHO may say the shoot is done depends on the MODE.",
+    "the_rule": {
+      "store_visit": "EITHER party may mark it done. The brand was there — they know it happened.",
+      "remote_or_shipment": "ONLY the creator. The brand cannot see whether she has shot anything, so letting them close it would be letting them assert something they cannot know.",
+      "receipt_is_not_completion": "Confirming a parcel arrived moves the shoot to in_progress, never completed. The box landing is not the shooting happening.",
+      "the_real_proof": "Content submission in Stage 5 is the actual evidence the shoot happened. The confirmation here is a marker, not the proof — which is why it is safe to let the creator alone give it on a remote shoot."
+    },
+    "against_the_code": "completeVisit already allows EITHER party and already refuses any mode that is not visit — so the store-visit half is already right. For shipment/remote there is currently NO way to mark a shoot done at all: the only completion path is confirmReceived, which is creator-only and wrongly sets completed. So the change is to let complete accept a shipment from the CREATOR ONLY, and to stop confirmReceived completing anything."
+  },
+  "build_2026_08_27": {
+    "status": "all eight slices built; NOT deployed, NOT walked on a device",
+    "slices_done": [
+      "1 — production_event_items + parcel.service; dispatch refuses an empty box",
+      "2 — per-item receipt, the shortfall, and the receipt/completion split, with 25 executing checks written BEFORE any screen",
+      "3 — ShootScreen (creator) + BrandShootScreen, routes in both navigators, step 3 and her logistics door wired",
+      "4 — window with its reason, accept, counter with reschedules-left, flip-to-remote",
+      "5 — the parcel builder (ProductPicker, 4th caller) and her item-by-item confirm, plus one-tap Everything arrived",
+      "6 — BrandShootsListScreen + GET /v1/brands/me/shoots, needs-you ordered server-side",
+      "7 — ShootDiary, one component, rendered on both sides from the same rows",
+      "8 — qa/maestro/flows/07-brand-shoot.yaml WRITTEN, not yet run"
+    ],
+    "server_changes_beyond_the_spec": {
+      "date_range_basis": "getVisitDateRange now returns which of FOUR rules produced the latest legal date. The field did not exist, and the board requires the window to explain itself. The fourth branch (open-ended sales campaign) has no end date at all, so the generic sentence would have named a date that does not exist.",
+      "contract_id_on_live_hierarchy": "The brand spine had no contract to navigate with, so step 3 would have shown a note whatever the screen did. LEFT JOIN LATERAL; production_mode aliased so it cannot shadow a ci.* column.",
+      "parcel_actions_write_the_diary": "B-8. The same production_event_log, not a second one."
+    },
+    "verification": {
+      "backend": "25/25 executing checks via scripts/run-test-file.js (jest globalSetup still blocked by the test DB, down since 2026-08-22). Mutation-tested: 4 rules broken, 4 caught.",
+      "mobile": "50/50 executing checks; full suite 39 suites / 335 tests passing. Mutation-tested: 5 breakages, 5 caught.",
+      "migration": "Dry-run against PRODUCTION inside a rolled-back transaction — applies cleanly, 14 columns, 3 indexes, production_events unchanged at 4 rows (D-2), table confirmed absent after rollback.",
+      "columns": "Every new column resolved against production with LIMIT 0.",
+      "claim": "Certified no-regression. NEVER claimed green."
+    },
+    "diverged": {
+      "brand_default_visit_address": "Board panel 2 shows a brand-level default visit address. NOT BUILT — no such column, no assertion names it, not in the build order. Adding a column and a settings screen on the strength of a decoration would widen the stage silently. Recorded in 06-diff/notes.md section 4."
+    },
+    "blocking_release": [
+      "The migration is NOT applied. Until it runs, /brands/me/shoots will 500 — it counts parcel items.",
+      "The founder walks W1-W7 on BOTH handsets. New routes in two navigators, in five places.",
+      "Maestro 07 has not been run — needs a device."
+    ]
+  }
 }

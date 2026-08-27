@@ -56,6 +56,8 @@ import BrandSettingsHubScreen from '../screens/brand/BrandSettingsHubScreen';
 import BrandInfluencerAnalyticsScreen from '../screens/brand/BrandInfluencerAnalyticsScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
 import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
+import BrandShootScreen from '../screens/brand/BrandShootScreen';
+import BrandShootsListScreen from '../screens/brand/BrandShootsListScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -71,6 +73,11 @@ function HomeStack() {
       <Stack.Screen name="BrandCampaignReviewQueue" component={BrandCampaignReviewQueueScreen} />
       <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
       <Stack.Screen name="BrandContract" component={BrandContractScreen} />
+      {/* Stage 4 — the shoot finally has a door. Registered in EVERY stack that carries
+          BrandContract: a cross-stack navigate fails silently at runtime and passes every
+          build check, which is how a button ends up doing nothing on a handset. */}
+      <Stack.Screen name="BrandShoot" component={BrandShootScreen} />
+      <Stack.Screen name="BrandShootsList" component={BrandShootsListScreen} />
       <Stack.Screen name="BrandEnquiries" component={BrandEnquiriesScreen} />
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
@@ -143,6 +150,11 @@ function CampaignsStack() {
       <Stack.Screen name="BrandCampaignReviewQueue" component={BrandCampaignReviewQueueScreen} />
       <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
       <Stack.Screen name="BrandContract" component={BrandContractScreen} />
+      {/* Stage 4 — the shoot finally has a door. Registered in EVERY stack that carries
+          BrandContract: a cross-stack navigate fails silently at runtime and passes every
+          build check, which is how a button ends up doing nothing on a handset. */}
+      <Stack.Screen name="BrandShoot" component={BrandShootScreen} />
+      <Stack.Screen name="BrandShootsList" component={BrandShootsListScreen} />
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />

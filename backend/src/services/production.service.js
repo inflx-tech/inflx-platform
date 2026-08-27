@@ -9,6 +9,9 @@
  */
 
 const db = require('../config/db');
+// stage-4 — who may say a shoot is done, and what is in a parcel. One place, so an
+// endpoint and a screen cannot answer the question differently.
+const parcel = require('./parcel.service');
 // collab-phase0 — the shoot already recorded everything in production_event_log; it
 // now MIRRORS into the shared diary so one screen can show any step's history.
 // The existing log stays: it is load-bearing for the admin production queue.
@@ -48,13 +51,17 @@ async function getVisitDateRange(contractId) {
   // campaign.end_date − 3d. Visit has to leave enough room for the
   // influencer to shoot + edit + post.
   let latest;
+  let basis;
   if (r.posting_date) {
+    basis = 'post_by';
     latest = new Date(r.posting_date);
     latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING);
   } else if (r.content_end_date) {
+    basis = 'posting_window';
     latest = new Date(r.content_end_date);
     latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
   } else if (r.campaign_end_date) {
+    basis = 'campaign_end';
     latest = new Date(r.campaign_end_date);
     latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
   } else {
@@ -63,12 +70,17 @@ async function getVisitDateRange(contractId) {
     // campaign runs open-ended by design, so it has no end_date to work back from.
     // A year out is the deliberate ceiling for scheduling a visit against an
     // open-ended collaboration — far enough not to obstruct, near enough to stay sane.
+    basis = 'open_ended';
     latest = new Date();
     latest.setUTCFullYear(latest.getUTCFullYear() + 1);
   }
   latest.setUTCHours(23, 59, 59, 999);
 
-  return { earliest: earliest.toISOString(), latest: latest.toISOString() };
+  // stage-4 — `basis` says WHICH of the four rules produced `latest`. The board is explicit
+  // that the window has to explain itself: "post-by minus two days" is a rule neither party
+  // set, and a range that looks arbitrary gets argued with. The screen turns this into a
+  // sentence; it must never do the arithmetic itself and guess. Additive to the response.
+  return { earliest: earliest.toISOString(), latest: latest.toISOString(), basis };
 }
 
 function isWithinRange(iso, range) {
@@ -506,11 +518,18 @@ async function confirmReceived(eventId, notes, actor) {
   }
   if (actor.role !== 'influencer') throw new Error('Only influencer can confirm receipt');
 
+  // stage-4 — RECEIVING IS NOT SHOOTING. This used to set status='completed', so a courier
+  // handing over a box finished her shoot and pushed her collaboration to step 4 before she
+  // had photographed anything — on BOTH phones, agreeing on a number that was wrong.
+  //
+  // It now moves to in_progress. The shoot finishes when someone says the SHOOTING is done,
+  // and who may say that depends on the mode — see complete() below.
+  // Founder, 2026-08-27. Contract: features/stage-4-the-shoot
   const { rows } = await db.query(
     `UPDATE production_events
      SET shipment_received_confirmed_at = NOW(),
          shipment_delivered_at = COALESCE(shipment_delivered_at, NOW()),
-         status = 'completed',
+         status = 'in_progress',
          shipment_notes = COALESCE($2, shipment_notes),
          updated_at = NOW()
      WHERE id = $1
@@ -521,18 +540,39 @@ async function confirmReceived(eventId, notes, actor) {
   return rows[0];
 }
 
-// Mark visit done. Either party may call. confirmed → completed.
-async function completeVisit(eventId, notes, actor) {
+/**
+ * Mark the SHOOTING done. stage-4 — this used to be visit-only, so a remote shoot had no way
+ * to be finished at all: its only completion path was confirmReceived, which conflated the
+ * box arriving with the photographs being taken.
+ *
+ * WHO MAY CALL IT DEPENDS ON THE MODE (founder, 2026-08-27):
+ *   store visit        — EITHER party. The brand was there; they know it happened.
+ *   remote / shipment  — THE CREATOR ALONE. The brand cannot see whether she has shot
+ *                        anything, so letting them close it would be letting them assert
+ *                        something they cannot know.
+ *
+ * The real evidence is Stage 5's content submission. This is a marker, not proof — which is
+ * exactly why it is safe for her to give it alone on a remote shoot.
+ *
+ * The rule lives in parcel.service.canComplete so an endpoint and a screen read one answer.
+ */
+async function completeShoot(eventId, notes, actor) {
   const event = await getById(eventId);
   if (!event) throw new Error('NOT_FOUND');
-  if (event.mode !== 'visit') throw new Error('WRONG_MODE');
   if (!['confirmed', 'in_progress'].includes(event.status)) {
-    throw new Error(`Cannot complete visit in status "${event.status}"`);
+    throw new Error(`Cannot complete a shoot in status "${event.status}"`);
+  }
+  if (!parcel.canComplete(event.mode, actor.role)) {
+    throw new Error(
+      event.mode === 'visit'
+        ? 'Only the brand or the creator can mark this visit done'
+        : 'Only the creator can say the shoot is done — you cannot see whether it has happened'
+    );
   }
 
   const { rows } = await db.query(
     `UPDATE production_events
-     SET visit_completed_at = NOW(),
+     SET visit_completed_at = COALESCE(visit_completed_at, NOW()),
          status = 'completed',
          updated_at = NOW()
      WHERE id = $1
@@ -604,6 +644,10 @@ module.exports = {
   autoCreateForContract,
   getByContractId,
   getById,
+  // stage-4 — the parcel endpoints write to the SAME diary. B-8: every new action is
+  // recorded. A second log for the parcel would be two things doing one job, and the
+  // shoot is the only step in the whole spine that has a diary worth keeping whole.
+  logAction,
   getLog,
   getVisitDateRange,
   setVisitDetails,
@@ -612,7 +656,10 @@ module.exports = {
   counterPropose,
   dispatchShipment,
   confirmReceived,
-  completeVisit,
+  completeShoot,
+  // Kept pointing at the same function: brandApi and the contract screens still call it,
+  // and renaming a live export to make a diff tidy is how a caller quietly breaks.
+  completeVisit: completeShoot,
   cancel,
   requestRemoteFlip,
   confirmRemoteFlip,

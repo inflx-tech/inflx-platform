@@ -4,6 +4,7 @@ const { Router } = require('express');
 const { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireApproved, requireBrandFeature } = require('../middleware/auth');
 const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/brand.controller');
+const productionCtrl = require('../controllers/production.controller');
 const subCtrl = require('../controllers/subscription.controller');
 
 const walletRoutes = require('./wallet.routes');
@@ -38,6 +39,15 @@ router.get('/me/applications',   authenticate, requireRole('brand'), inboxCtrl.l
 
 // Escrow overview (Phase 3 — Block E)
 router.get('/me/escrow', authenticate, requireRole('brand'), getBrandEscrow);
+
+// stage-4 — every shoot this brand has, ACROSS every campaign. The per-campaign roster
+// (/campaigns/:id/production) already existed and answers the wrong question: the shoots
+// waiting on a brand are spread over whatever campaigns happen to be running, so a
+// per-campaign list makes them visit four screens to answer one. Needs-you order is
+// decided server-side, same reasoning as Stage 3's step number.
+// Registered HERE rather than in production.routes: every other brand /me/* route lives in
+// this file, and mounting it elsewhere would depend on router fall-through to work at all.
+router.get('/me/shoots', authenticate, requireRole('brand'), productionCtrl.listBrandShoots);
 
 // Campaign-specific escrow breakdown
 router.get('/me/campaigns/:campaign_id/escrow', authenticate, requireRole('brand'), getCampaignEscrow);

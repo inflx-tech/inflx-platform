@@ -63,7 +63,12 @@ function destinationFor(step, ctx) {
     case 2:
       return { label: 'Open the contract', go: () => ctx.nav.navigate('BrandContract', { campaignInfluencerId: ctx.ciId }) };
     case 3:
-      return { note: 'Settling a time and sending the goods gets its own screen in Stage 4. Until then this is where it stands.' };
+      // Stage 4 built it. The shoot had eight working endpoints and no door on either phone —
+      // a notification about a shoot could only point at a contract and hope they scrolled.
+      return ctx.contractId
+        ? { label: 'Open the shoot', go: () => ctx.nav.navigate('BrandShoot', {
+            contractId: ctx.contractId, creatorName: ctx.creatorName, campaignName: ctx.campaignName }) }
+        : { note: 'The shoot opens once both sides have signed.' };
     case 4:
       return { note: 'Our team checks quality. You are told about posts using only your products, once they are live.' };
     case 5:
@@ -153,6 +158,8 @@ export default function BrandCreatorSpineScreen({ route, navigation }) {
                 ciId: campaignInfluencerId,
                 campaignId,
                 campaignName,
+                contractId: detail?.contract_id,
+                creatorName: name,
                 agreementId: detail?.agreement_id,
                 agreement: detail?.agreement,
               });

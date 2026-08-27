@@ -112,7 +112,21 @@ export default function CollabDetailScreen({ route, navigation }) {
       case 'negotiate': navigation.navigate('Negotiation', { campaign_influencer_id: ciId }); break;
       case 'sign':      navigation.navigate('Contract', { campaignInfluencerId: ciId }); break;
       case 'contract':  navigation.navigate('Contract', { campaignInfluencerId: ciId }); break;
-      case 'logistics': navigation.navigate('Contract', { campaignInfluencerId: ciId }); break;
+      // Stage 4 — this used to drop her on the contract page and leave her to scroll to a
+      // panel three-quarters of the way down. The shoot has its own screen now.
+      case 'logistics':
+        if (data?.contract?.id) {
+          navigation.navigate('Shoot', {
+            contractId: data.contract.id,
+            campaignInfluencerId: ciId,
+            campaignName,
+            brandName,
+          });
+        } else {
+          // No contract yet means nothing to arrange. The contract page is the honest place.
+          navigation.navigate('Contract', { campaignInfluencerId: ciId });
+        }
+        break;
       case 'deliverables':
         navigation.navigate('DeliverableList', { campaign_influencer_id: ciId, campaign_name: campaignName, brand_name: brandName });
         break;

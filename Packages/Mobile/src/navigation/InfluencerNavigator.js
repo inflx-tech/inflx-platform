@@ -42,6 +42,7 @@ import PostComposerScreen from '../screens/influencer/PostComposerScreen';
 import MyStoreScreen from '../screens/influencer/MyStoreScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
 import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
+import ShootScreen from '../screens/influencer/ShootScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
@@ -87,6 +88,7 @@ function HomeStackNav() {
       <HomeStack.Screen name="HomeMain" component={HomeScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
       <HomeStack.Screen name="Contract" component={ContractScreen} />
+      <HomeStack.Screen name="Shoot" component={ShootScreen} />
       <HomeStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <HomeStack.Screen name="Deliverable" component={DeliverableScreen} />
       <HomeStack.Screen name="DeliverableList" component={DeliverableListScreen} />
@@ -118,6 +120,8 @@ function CollabsStackNav() {
       <CollabsStack.Screen name="CollabTracking" component={CollabTrackingScreen} />
       <CollabsStack.Screen name="Negotiation" component={NegotiationScreen} />
       <CollabsStack.Screen name="Contract" component={ContractScreen} />
+      {/* Stage 4 — her shoot, out of the contract page and onto its own screen. */}
+      <CollabsStack.Screen name="Shoot" component={ShootScreen} />
       <CollabsStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <CollabsStack.Screen name="Deliverable" component={DeliverableScreen} />
       <CollabsStack.Screen name="DeliverableList" component={DeliverableListScreen} />

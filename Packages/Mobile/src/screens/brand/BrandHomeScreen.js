@@ -57,6 +57,10 @@ const QUICK_ACTIONS = [
   { label: 'Bookings',      icon: 'calendar-outline',       target: 'BrandBookings' },
   { label: 'Offers',        icon: 'tag-outline',            target: 'BrandOffersLibrary' },
   { label: 'Campaigns',     icon: 'bullhorn-outline',       target: 'Campaigns' },
+  // Stage 4 — one list across every campaign. The shoots waiting on a brand are spread over
+  // whatever campaigns are running, so a per-campaign roster made them open four screens to
+  // answer one question. Contract: features/stage-4-the-shoot
+  { label: 'Shoots',        icon: 'camera-outline',         target: 'BrandShootsList' },
   { label: 'Wallet',        icon: 'wallet-outline',         target: 'Wallet' },
   { label: 'Enquiries',     icon: 'email-outline',          target: 'BrandEnquiries' },
   { label: 'Conversions',   icon: 'currency-inr',           target: 'BrandConversions' },
