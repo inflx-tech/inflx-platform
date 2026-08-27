@@ -1,18 +1,43 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert,
+  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import { PLACES, SHIPPING, fromMode } from '../../utils/workingStyle';
+import { changedTerms, buildCounter } from '../../utils/collabCounter';
+import DateField from '../../components/DateField';
 
 /**
  * BrandCollabRequestsScreen — the brand's sent requests + agreed creators, on mobile.
  * Contract: features/collab-part2-precampaign-handshake (mockup ③⑥⑦).
  *
- * A creator's counter renders as old → new per moved term, with Accept / Decline.
+ * A creator's counter renders as old → new per moved term, with Accept / Counter back /
+ * Decline — the mockup's view ⑥ locked all three; only the first and third ever shipped.
+ * `brandApi.counterCollabRequest` and its backend route already existed and were unused.
+ *
  * Agreed creators appear under READY TO BRIEF — and since detailed campaign creation is
  * web-only by locked scope, the row says so instead of pretending a tap could build one.
  */
+
+const DELIVERABLES = [
+  { v: 'reel',          label: 'Reel' },
+  { v: 'post',          label: 'Post' },
+  { v: 'story',         label: 'Story' },
+  { v: 'youtube_video', label: 'YouTube Video' },
+  { v: 'youtube_short', label: 'YouTube Short' },
+];
+
+/** The terms currently on the table — the original, or the latest counter over it.
+ * Mirrors backend/src/controllers/handshake.controller.js currentTerms(): a shallow
+ * settle, not a deep merge, matching how buildCounter() already sends complete
+ * money/deliverables objects for any field it touches. */
+function currentTerms(req) {
+  const o = req.terms_json || {};
+  const c = req.counter_terms_json;
+  if (!c) return o;
+  return { ...o, ...c, importance: { ...(o.importance || {}), ...(c.importance || {}) } };
+}
 
 const fmtD = (d) => (d ? String(d).slice(0, 10) : '—');
 
@@ -51,13 +76,26 @@ function diffRows(req) {
 export default function BrandCollabRequestsScreen({ navigation }) {
   const [requests, setRequests] = useState([]);
   const [agreements, setAgreements] = useState([]);
+  const [roundsPerSide, setRoundsPerSide] = useState(2);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(null);
 
+  // Counter form — one at a time, keyed by which card is open.
+  const [counteringId, setCounteringId] = useState(null);
+  const [cCommission, setCCommission] = useState('');
+  const [cFee, setCFee] = useState('');
+  const [cPostBy, setCPostBy] = useState('');
+  const [cPlace, setCPlace] = useState('');
+  const [cShipping, setCShipping] = useState(null);
+  const [cDeliverables, setCDeliverables] = useState(null);
+
   const load = useCallback(async () => {
     const [rq, ag] = await Promise.all([brandApi.listSentCollabRequests(), brandApi.listAgreements()]);
-    if (rq.success) setRequests(rq.data?.requests || []);
+    if (rq.success) {
+      setRequests(rq.data?.requests || []);
+      if (rq.data?.counter_rounds_per_side != null) setRoundsPerSide(rq.data.counter_rounds_per_side);
+    }
     if (ag.success) setAgreements(ag.data?.agreements || []);
     setLoading(false);
   }, []);
@@ -70,6 +108,144 @@ export default function BrandCollabRequestsScreen({ navigation }) {
     if (res.success) { if (okMsg) Alert.alert(okMsg); load(); }
     else Alert.alert('Failed', res.error?.message || 'Try again.');
   };
+
+  /** Starts from what's on the table now, not a blank form — mirrors the creator's
+   * counter screen: every control pre-filled makes "no change" the default. */
+  function startCounter(r) {
+    const t = currentTerms(r);
+    const cur = fromMode(t.mode);
+    setCCommission(t.money?.commission_pct != null ? String(t.money.commission_pct) : '');
+    setCFee(t.money?.fee != null ? String(t.money.fee) : '');
+    setCPostBy(t.time?.post_by || t.time?.window_end || '');
+    setCPlace(cur.place);
+    setCShipping(cur.shipping);
+    setCDeliverables(Object.fromEntries(
+      DELIVERABLES.map(d => {
+        const a = (t.deliverables || []).find(x => x.type === d.v);
+        return [d.v, a ? a.count : 0];
+      }),
+    ));
+    setCounteringId(r.id);
+  }
+
+  const doCounter = async (r) => {
+    const t = currentTerms(r);
+    if (cPlace === 'remote' && cShipping == null) {
+      Alert.alert('One more thing', 'Say whether you want them to ship products.');
+      return;
+    }
+    const edits = { commission: cCommission, fee: cFee, postBy: cPostBy, place: cPlace, shipping: cShipping, deliverables: cDeliverables };
+    const changed = changedTerms(t, edits);
+    const counter = buildCounter(t, edits, changed);
+    if (!Object.keys(counter).length) { Alert.alert('Nothing changed', 'Adjust at least one term to counter.'); return; }
+    setBusy(r.id);
+    const res = await brandApi.counterCollabRequest(r.id, counter);
+    setBusy(null);
+    if (res.success) {
+      setCounteringId(null);
+      Alert.alert('Counter sent', 'They will see exactly what you moved.');
+      load();
+    } else {
+      Alert.alert('Could not counter', res.error?.message || 'Try again.');
+    }
+  };
+
+  /** The counter form for one card — commission/fee, post-by, working style,
+   * and deliverables (paid deals only), the same fields collabCounter.js already
+   * knows how to diff. */
+  function renderCounterForm(r) {
+    const t = currentTerms(r);
+    const edits = { commission: cCommission, fee: cFee, postBy: cPostBy, place: cPlace, shipping: cShipping, deliverables: cDeliverables };
+    const changed = changedTerms(t, edits);
+    const paidDeal = t.aim === 'engagement' || t.aim === 'hybrid';
+    const busyNow = busy === r.id;
+
+    return (
+      <View style={s.form}>
+        {t.money?.commission_pct != null && (
+          <View style={s.field}>
+            <Text style={s.fl}>Commission{changed.includes('money') && <Text style={s.flChanged}>  · CHANGED</Text>}</Text>
+            <View style={s.inlineInput}>
+              <TextInput style={s.inlineTxt} value={cCommission} onChangeText={setCCommission} keyboardType="numeric" />
+              <Text style={s.inlineUnit}>%</Text>
+            </View>
+          </View>
+        )}
+        {t.money?.fee != null && (
+          <View style={s.field}>
+            <Text style={s.fl}>Fee{changed.includes('money') && <Text style={s.flChanged}>  · CHANGED</Text>}</Text>
+            <View style={s.inlineInput}>
+              <Text style={s.inlineUnit}>₹</Text>
+              <TextInput style={s.inlineTxt} value={cFee} onChangeText={setCFee} keyboardType="numeric" />
+            </View>
+          </View>
+        )}
+        <View style={s.field}>
+          <Text style={s.fl}>Post by{changed.includes('time') && <Text style={s.flChanged}>  · CHANGED</Text>}</Text>
+          <DateField value={cPostBy} onChange={setCPostBy} style={{ marginBottom: 0 }} />
+        </View>
+        <View style={s.field}>
+          <Text style={s.fl}>Working style{changed.includes('mode') && <Text style={s.flChanged}>  · CHANGED</Text>}</Text>
+          <View style={s.chips}>
+            {PLACES.map(o => (
+              <TouchableOpacity key={o.v} style={[s.chip, cPlace === o.v && s.chipAct]}
+                onPress={() => { setCPlace(o.v); if (o.v !== 'remote') setCShipping(null); }}>
+                <Text style={[s.chipTxt, cPlace === o.v && s.chipTxtAct]}>{o.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {cPlace === 'remote' && (
+            <View style={[s.chips, { marginTop: 6 }]}>
+              {SHIPPING.map(o => (
+                <TouchableOpacity key={o.v} style={[s.chip, cShipping === o.v && s.chipAct]}
+                  onPress={() => setCShipping(o.v)}>
+                  <Text style={[s.chipTxt, cShipping === o.v && s.chipTxtAct]}>{o.v === 'yes' ? 'Ship to them' : 'No'}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {paidDeal && (
+          <View style={s.field}>
+            <Text style={s.fl}>What the fee buys{changed.includes('deliverables') && <Text style={s.flChanged}>  · CHANGED</Text>}</Text>
+            {DELIVERABLES.map(d => {
+              const n = Number((cDeliverables || {})[d.v]) || 0;
+              const bump = (by) => setCDeliverables(prev => ({
+                ...(prev || {}), [d.v]: Math.max(0, (Number((prev || {})[d.v]) || 0) + by),
+              }));
+              return (
+                <View key={d.v} style={s.delRow}>
+                  <Text style={[s.delLabel, n > 0 && s.delLabelOn]}>{d.label}</Text>
+                  <View style={s.stepper}>
+                    <TouchableOpacity style={s.stepBtn} onPress={() => bump(-1)} disabled={n === 0}>
+                      <Text style={[s.stepTxt, n === 0 && s.stepTxtOff]}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={[s.stepN, n > 0 && s.stepNOn]}>{n}</Text>
+                    <TouchableOpacity style={s.stepBtn} onPress={() => bump(1)}>
+                      <Text style={s.stepTxt}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        <View style={s.btnRow}>
+          <TouchableOpacity style={[s.btnPri, changed.length === 0 && s.btnOff]} disabled={busyNow || changed.length === 0}
+            onPress={() => doCounter(r)}>
+            <Text style={s.btnPriTxt}>
+              {busyNow ? 'SENDING…' : changed.length === 0 ? 'CHANGE SOMETHING TO COUNTER' : `SEND COUNTER · ${changed.length} CHANGE${changed.length === 1 ? '' : 'S'}`}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.btnGhost} disabled={busyNow} onPress={() => setCounteringId(null)}>
+            <Text style={s.btnGhostTxt}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   if (loading) return <View style={s.center}><ActivityIndicator color={P.ink} /></View>;
 
@@ -111,6 +287,8 @@ export default function BrandCollabRequestsScreen({ navigation }) {
 
         const r = item.request;
         const rows = r.status === 'countered' && r.counter_by === 'creator' ? diffRows(r) : [];
+        const isCountering = counteringId === r.id;
+        const roundsLeft = roundsPerSide - Number(r.brand_rounds_used || 0);
         return (
           <View style={s.card}>
             <View style={s.head}>
@@ -122,7 +300,7 @@ export default function BrandCollabRequestsScreen({ navigation }) {
               <Text style={s.st}>{r.status.toUpperCase()}</Text>
             </View>
 
-            {rows.length > 0 && (
+            {rows.length > 0 && !isCountering && (
               <View style={s.diff}>
                 {rows.map(([k, a, b]) => (
                   <View key={k} style={s.diffRow}>
@@ -142,8 +320,15 @@ export default function BrandCollabRequestsScreen({ navigation }) {
                     <Text style={s.btnDgrTxt}>Decline</Text>
                   </TouchableOpacity>
                 </View>
+                {roundsLeft > 0 && (
+                  <TouchableOpacity style={s.counterBtn} disabled={busy === r.id} onPress={() => startCounter(r)}>
+                    <Text style={s.counterBtnTxt}>COUNTER BACK ({roundsLeft} LEFT)</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
+
+            {isCountering && renderCounterForm(r)}
 
             {['sent', 'viewed'].includes(r.status) && (
               <TouchableOpacity style={s.withdraw} disabled={busy === r.id}
@@ -188,8 +373,44 @@ const s = StyleSheet.create({
   btnPriTxt: { fontFamily: fonts.displayBlack, fontSize: 11, color: P.white, letterSpacing: 0.3 },
   btnDgr: { borderRadius: 9, paddingVertical: 10, paddingHorizontal: 13, alignItems: 'center', borderWidth: 1, borderColor: '#FBCBC4' },
   btnDgrTxt: { fontFamily: fonts.sansBold, fontSize: 11, color: '#B91C1C' },
+  btnOff: { opacity: 0.45 },
+  btnGhost: { borderRadius: 9, paddingVertical: 10, paddingHorizontal: 13, alignItems: 'center' },
+  btnGhostTxt: { fontFamily: fonts.sansBold, fontSize: 11, color: P.muted },
+  counterBtn: { borderRadius: 9, paddingVertical: 10, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: P.ink },
+  counterBtnTxt: { fontFamily: fonts.displayBlack, fontSize: 10.5, color: P.ink, letterSpacing: 0.3 },
   withdraw: { marginTop: 8, alignSelf: 'flex-start' },
   withdrawTxt: { fontFamily: fonts.sansBold, fontSize: 11, color: P.muted },
   emptyTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: P.ink, marginBottom: 6 },
   emptySub: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17 },
+
+  form: { borderTopWidth: 1, borderTopColor: P.bg2, marginTop: 9, paddingTop: 9 },
+  field: { marginBottom: 11 },
+  fl: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted3, letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 5 },
+  flChanged: { color: P.warnText },
+  inlineInput: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1, borderColor: P.border, borderRadius: 8, paddingHorizontal: 10,
+  },
+  inlineTxt: { flex: 1, fontFamily: fonts.sansBold, fontSize: 13, color: P.ink, paddingVertical: 8 },
+  inlineUnit: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.muted },
+  chips: { flexDirection: 'row', gap: 7, flexWrap: 'wrap' },
+  chip: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 7 },
+  chipAct: { backgroundColor: P.ink, borderColor: P.ink },
+  chipTxt: { fontFamily: fonts.sansRegular, fontSize: 11, color: P.muted },
+  chipTxtAct: { color: P.white },
+  delRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: P.bg2,
+  },
+  delLabel: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.muted },
+  delLabelOn: { fontFamily: fonts.sansBold, color: P.ink },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepBtn: {
+    width: 24, height: 24, borderRadius: 6, borderWidth: 1, borderColor: P.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepTxt: { fontFamily: fonts.sansBold, fontSize: 14, color: P.ink, lineHeight: 17 },
+  stepTxtOff: { color: P.muted3 },
+  stepN: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.muted3, minWidth: 14, textAlign: 'center' },
+  stepNOn: { color: P.ink },
 });

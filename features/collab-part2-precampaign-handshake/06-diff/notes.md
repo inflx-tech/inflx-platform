@@ -111,3 +111,22 @@ the OTA publish performs. On-device verification is owed at the founder walkthro
 
 **Held:** the web group/broadcast composer entry points (API complete), and Maestro —
 skipped a third time by founder decision, so released stays false.
+
+## Fix — brand-side counter, mobile (2026-08-27)
+
+Founder walkthrough (screenshot, "Creators" tab) found the mobile brand screen offered
+only **Accept / Decline** on a creator's counter — no way for the brand to counter back.
+The locked mockup's view ⑥ ("The brand reads the counter") always showed a third button,
+**"Counter back (N left)"**, and the spec's founder decision #7 is explicitly symmetric
+("two counters each, then settle or drop"). The backend route
+(`POST /brands/me/collab-requests/:id/counter`) and its mobile API client function
+(`brandApi.counterCollabRequest`) were built at the same time as the rest of the handshake
+but never wired to a button — dead code since 2026-08-12.
+
+`Packages/Mobile/src/screens/brand/BrandCollabRequestsScreen.js` gains a "COUNTER BACK (N
+LEFT)" button next to Accept/Decline (shown while rounds remain), opening an inline
+counter form — commission/fee, post-by date, working style, deliverables for paid deals —
+reusing the same side-agnostic `utils/collabCounter.js` diff/build logic and
+`utils/workingStyle.js` mode mapping the creator's counter screen already used. No backend
+or API change; brand-web carries the identical gap and is explicitly out of scope for this
+fix (founder: mobile only, 2026-08-27 chat).
