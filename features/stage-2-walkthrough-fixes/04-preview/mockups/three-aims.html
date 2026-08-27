@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 4 — The shoot</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:840px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.wrap{position:relative}
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:710px;overflow-y:auto}
+.tagapp{position:absolute;top:8px;left:8px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:5}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-both{background:var(--yBg);color:var(--yInk)}
+.t-a{background:var(--purpleBg);color:var(--purple)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:25px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--lineSoft)}
+.item:last-child{border-bottom:none}
+.thumb{width:36px;height:42px;border-radius:7px;background:#F0EDE7;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.item .n{flex:1;min-width:0}
+.item .nm{font-size:11.5px;font-weight:800}
+.item .mt{font-size:10px;color:var(--mut);font-weight:650;margin-top:1px}
+.cbx{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:transparent;flex-shrink:0}
+.cbx.on{background:var(--green);border-color:var(--green);color:#fff}
+.cbx.miss{background:var(--redBg);border-color:#F0C4BA;color:var(--red)}
+
+.rsn{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:11.5px;font-weight:700}
+.rsn.on{border-color:var(--red);border-width:1.5px;background:var(--redBg);color:var(--red)}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0}
+.rsn.on .rdo{border-color:var(--red);border-width:4.5px}
+
+.trk{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.trk .th{padding:9px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.trk .tb{padding:10px 12px}
+.pill{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+.p-ok{background:var(--greenBg);color:var(--green)}
+.p-wait{background:var(--blueBg);color:var(--blue)}
+.p-no{background:var(--redBg);color:var(--red)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 14px}
+.gc{aspect-ratio:3/4;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;border-radius:4px}
+.gc .b{position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;padding:1px 4px;border-radius:4px;color:#fff}
+.b-live{background:var(--green)}.b-rev{background:var(--blue)}.b-fix{background:var(--red)}
+.gc .p{position:absolute;bottom:4px;left:4px;font-size:7px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+.hero{width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:38px}
+.tagged{display:flex;gap:8px;overflow-x:auto;padding:11px 14px}
+.pcard{width:62px;flex-shrink:0}
+.pimg{width:62px;height:76px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.pnm{font-size:8.5px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+.stat3{display:flex;text-align:center;border-top:1px solid var(--lineSoft);border-bottom:1px solid var(--lineSoft)}
+.stat3 div{flex:1;padding:11px 4px;border-right:1px solid var(--lineSoft)}
+.stat3 div:last-child{border-right:none}
+.stat3 .n{font-family:'Outfit';font-size:15px;font-weight:800}
+.stat3 .l{font-size:8px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:2px}
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-blk{background:var(--redBg);color:var(--red)}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>The three aims, side by side</h1>
+  <p>What each kind of set actually shows after Batch A. Derived from the code, not drawn from memory.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">② Basics</button>
+  <button class="tab" data-v="v2">④ Terms</button>
+  <button class="tab" data-v="v3">The matrix</button>
+</div>
+
+<div class="view on" id="v1">
+  <div class="vh">Step 2 — Basics</div>
+  <div class="vs">The same screen, three aims. <b>Only the commission one was in your screenshots.</b></div>
+  <div class="row">
+    
+    <div>
+      <div class="cap" style="margin:0 0 6px"><b>Pay per sale</b> &middot; <span class="mono" style="font-size:10px">CONVERSION</span></div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sarees</div><div class="sub">STEP 2 OF 4 &middot; BASICS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">Set name</div><div class="inp">Sarees</div></div>
+            <div class="dsec"><div class="dh">Starts</div><div class="inp">Thu 27 Aug 2026 &nbsp;📅</div></div>
+            <div class="dsec"><div class="dh">How they will drive traffic</div>
+              <div class="chips" style="margin-top:6px"><div class="chip on">Instagram</div><div class="chip on">YouTube</div></div></div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Continue</div></div></div>
+        </div></div>
+      <div class="cap">Three fields. <b>Nothing is being funded, so no budget.</b></div>
+    </div>
+    
+    <div>
+      <div class="cap" style="margin:0 0 6px"><b>Pay for content</b> &middot; <span class="mono" style="font-size:10px">ENGAGEMENT</span></div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive reels</div><div class="sub">STEP 2 OF 4 &middot; BASICS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">Set name</div><div class="inp">Festive reels</div></div>
+            <div class="dsec"><div class="dh">Posting window</div>
+              <div class="g2"><div class="inp">27 Aug &nbsp;📅</div><div class="inp">30 Sep &nbsp;📅</div></div>
+              <div class="cap" style="margin:6px 0 0">The set ends when the last agreed post is due — <b>calculated, not typed.</b></div></div>
+            <div class="dsec"><div class="dh">Budget</div><div class="inp">₹48,000 &middot; calculated</div>
+              <div class="cap" style="margin:6px 0 0">Adds up from what you agreed with each creator. <b>Your wallet must cover it before you can publish.</b></div></div>
+            <div class="dsec"><div class="dh">What you are buying</div>
+              <div class="trm"><div class="k">Instagram Reel</div><div class="v">2</div></div>
+              <div class="trm"><div class="k">Instagram Story</div><div class="v">3</div></div>
+              <div class="trm"><div class="k">Instagram Post</div><div class="v">1</div></div></div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Continue</div></div></div>
+        </div></div>
+      <div class="cap">Untouched by Batch A. <b>Budget and window are the point.</b></div>
+    </div>
+    
+    <div>
+      <div class="cap" style="margin:0 0 6px"><b>Both</b> &middot; <span class="mono" style="font-size:10px">HYBRID</span></div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Diwali push</div><div class="sub">STEP 2 OF 4 &middot; BASICS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">Set name</div><div class="inp">Diwali push</div></div>
+            <div class="dsec"><div class="dh">Posting window</div>
+              <div class="g2"><div class="inp">27 Aug &nbsp;📅</div><div class="inp">30 Sep &nbsp;📅</div></div></div>
+            <div class="dsec"><div class="dh">Budget</div><div class="inp">₹22,000 &middot; calculated</div>
+              <div class="cap" style="margin:6px 0 0">The fee half. Commission is paid out of sales that already happened.</div></div>
+            <div class="dsec"><div class="dh">What you are buying</div>
+              <div class="trm"><div class="k">Instagram Reel</div><div class="v">1</div></div>
+              <div class="trm"><div class="k">Instagram Story</div><div class="v">2</div></div></div>
+            <div class="dsec"><div class="dh">How they will drive traffic</div>
+              <div class="chips" style="margin-top:6px"><div class="chip on">Instagram</div><div class="chip on">YouTube</div></div></div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Continue</div></div></div>
+        </div></div>
+      <div class="cap">Everything from <b>both</b> columns — fee and traffic.</div>
+    </div>
+  </div>
+  <div class="note key"><b>What Batch A actually removed here:</b> on the left column only — the greyed “Ends · Never”, the “no end date on a sales set” note, a Budget row that always read “None”, minimum channels, and two explanatory paragraphs. The middle column lost nothing at all.</div>
+  <div class="note good"><b>The “Both” column is the one to walk.</b> It is the only aim a mistake in <b>either</b> branch can break, because it counts as selling <b>and</b> as buying content.</div>
+</div>
+
+<div class="view" id="v2">
+  <div class="vh">Step 4 — Terms</div>
+  <div class="vs">Your rule, already in the code: <b>a content set gets no offer.</b></div>
+  <div class="row">
+    
+    <div>
+      <div class="cap" style="margin:0 0 6px"><b>Pay per sale</b> &middot; <span class="mono" style="font-size:10px">CONVERSION</span></div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sarees</div><div class="sub">STEP 4 OF 4 &middot; TERMS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">① What each creator gets &middot; already agreed</div>
+              <div class="trm"><div class="k">What was settled</div><div class="v">14% per sale</div></div>
+              <div class="trm"><div class="k">She can sell</div><div class="v">Men › Topwear</div></div>
+              <div class="btn sec">Change what she can sell</div></div>
+            <div class="dsec"><div class="dh">② What their followers get &middot; optional</div>
+              <div class="item"><div class="cbx"></div><div style="flex:1"><b>Yoy</b><div class="cap" style="margin:0">DISCOUNT &middot; ACTIVE</div></div></div>
+              <div class="btn sec">Make a new one</div>
+              <div class="btn sec">See what a shopper pays</div></div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Save this set</div></div></div>
+        </div></div>
+      <div class="cap">Allocation <b>and</b> an offer. No payment — nothing is funded.</div>
+    </div>
+    
+    <div>
+      <div class="cap" style="margin:0 0 6px"><b>Pay for content</b> &middot; <span class="mono" style="font-size:10px">ENGAGEMENT</span></div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Festive reels</div><div class="sub">STEP 4 OF 4 &middot; TERMS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">① What each creator gets &middot; already agreed</div>
+              <div class="trm"><div class="k">What was settled</div><div class="v">₹12,000 fee</div></div>
+              <div class="cap" style="margin:4px 0 0">No allocation. Nothing is being sold here.</div></div>
+            <div class="dsec"><div class="dh">② What their followers get</div>
+              <div class="cap" style="margin:0;background:var(--bgSoft, #F5F5F5);padding:10px;border-radius:9px"><b>Not applicable on a content set.</b> You are buying posts, not selling through her — there is no basket for an offer to apply to.</div></div>
+            <div class="dsec"><div class="dh">Payment</div>
+              <div class="trm"><div class="k">Total to fund</div><div class="v">₹48,000</div></div>
+              <div class="cap" style="margin:4px 0 0">Held in escrow, released in three tranches.</div></div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Save this set</div></div></div>
+        </div></div>
+      <div class="cap"><b>No allocation. No offer.</b> A payment block instead.</div>
+    </div>
+    
+    <div>
+      <div class="cap" style="margin:0 0 6px"><b>Both</b> &middot; <span class="mono" style="font-size:10px">HYBRID</span></div>
+      <div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Diwali push</div><div class="sub">STEP 4 OF 4 &middot; TERMS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">① What each creator gets &middot; already agreed</div>
+              <div class="trm"><div class="k">What was settled</div><div class="v">₹5,000 + 8% per sale</div></div>
+              <div class="trm"><div class="k">She can sell</div><div class="v">Whole store</div></div>
+              <div class="btn sec">Change what she can sell</div></div>
+            <div class="dsec"><div class="dh">② What their followers get &middot; optional</div>
+              <div class="item"><div class="cbx"></div><div style="flex:1"><b>Yoy</b><div class="cap" style="margin:0">DISCOUNT &middot; ACTIVE</div></div></div>
+              <div class="btn sec">Make a new one</div>
+              <div class="btn sec">See what a shopper pays</div></div>
+            <div class="dsec"><div class="dh">Payment</div>
+              <div class="trm"><div class="k">Total to fund</div><div class="v">₹22,000</div></div>
+              <div class="cap" style="margin:4px 0 0">The fee half only. Commission comes out of real sales.</div></div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Save this set</div></div></div>
+        </div></div>
+      <div class="cap">Allocation, an offer, <b>and</b> a payment block.</div>
+    </div>
+  </div>
+  <div class="note good"><b>“There is no basket for an offer to apply to.”</b> That sentence was already on the content set before today — it says why, rather than just hiding the section. Batch A did not touch it.</div>
+  <div class="note key"><b>What Batch A changed here, on every aim:</b> the offer stopped being compulsory. Allocation is still compulsory wherever anything is sold — the left and right columns, not the middle.</div>
+</div>
+
+<div class="view" id="v3">
+  <div class="vh">Every block, every aim</div>
+  <div class="vs">Read out of the file by walking the conditions — not written by hand.</div>
+  <table class="tbl">
+    <tr><th>Block</th><th>Pay per sale</th><th>Pay for content</th><th>Both</th></tr>
+    <tr><td>Set name</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Starts (one date)</td><td class="y">yes</td><td class="n">—</td><td class="n">—</td></tr>
+    <tr><td>Posting window (two dates)</td><td class="n">—</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Budget</td><td class="n">—</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>What you are buying</td><td class="n">—</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>How they will drive traffic</td><td class="y">yes</td><td class="n">—</td><td class="y">yes</td></tr>
+    <tr><td>Who is in this set</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>① What each creator gets</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>— what she can sell</td><td class="y">yes</td><td class="n">—</td><td class="y">yes</td></tr>
+    <tr><td>② An offer for shoppers</td><td class="y">yes</td><td class="n">— not applicable</td><td class="y">yes</td></tr>
+    <tr><td>Payment</td><td class="n">—</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Allocation compulsory to save</td><td class="y">yes</td><td class="n">—</td><td class="y">yes</td></tr>
+    <tr><td>Offer compulsory to save</td><td class="n">— no longer</td><td class="n">—</td><td class="n">— no longer</td></tr>
+  </table>
+  <div class="note info"><b>How this table was produced.</b> A script walks the screen file, finds every section heading, works out which condition encloses it, and resolves that for all three aims. If the code changes, the table changes with it — it cannot drift into being a nice-looking lie.</div>
+  <div class="note key"><b>18 checks now hold this in place</b>, proved by breaking it five ways on purpose — including making “Both” stop counting as a selling set, and moving the Budget block behind the wrong condition. All five were caught.</div>
+</div>
+
+<style>
+.tbl{border-collapse:collapse;width:100%;max-width:900px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:12px}
+.tbl th{background:var(--ink);color:#fff;text-align:left;padding:9px 12px;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase}
+.tbl td{padding:8px 12px;border-top:1px solid var(--lineSoft);font-weight:650}
+.tbl td.y{color:var(--green);font-weight:800}
+.tbl td.n{color:var(--mut)}
+</style>
+
+<script>
+document.querySelectorAll('.tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
+    document.querySelectorAll('.view').forEach(function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>
