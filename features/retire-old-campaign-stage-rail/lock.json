@@ -1,0 +1,55 @@
+{
+  "feature": "retire-old-campaign-stage-rail",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-27: \"remove that old screen now\" — having already been shown the strip in his own screenshot and having chosen, earlier the same day, to rebuild the screen as its own stage. This is the narrower ask he then made.",
+  "approved_at": "2026-08-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-27 — direct instruction; the before/after board records what went and what stayed",
+  "mockup_locked_at": "2026-08-27",
+  "mockup_note": "features/retire-old-campaign-stage-rail/04-preview/mockups/before-after.html — the campaign screen with and without the strip.",
+  "notes": "Removes the pre-Stage-3 six-stage rail and the vocabulary behind it. Phone only: no server, no migration, no web.",
+  "what_went": [
+    "the six-stage strip",
+    "StageRail",
+    "CAMPAIGN_STAGES / stageIndex / stageTrack",
+    "stageKey from the helper return"
+  ],
+  "renamed": {
+    "utils/campaignStages.js": "utils/campaignPrime.js",
+    "deriveCampaignStage": "campaignPrimeAction",
+    "components/brand/CampaignStageRail.js": "components/brand/CampaignPrimeBar.js"
+  },
+  "what_stayed": "PrimeBar and the prime action. It shared ONE function with the rail, so taking the stage half without the action half was the whole job — a draft campaign losing its Fund wallet & publish button was the real risk, and R-5 walks every status.",
+  "tests_rewritten": [
+    "campaignStages.test.js → campaignPrime.test.js — prime half intact, stageTrack block replaced by checks that the vocabulary is GONE",
+    "brandCommandCenter.smoke.test.js — asserted StageRail exists; now asserts the opposite fact"
+  ],
+  "my_own_check_was_wrong": "R-9 walks every file for imports of the old names and flagged ITSELF, because the test contains the strings it searches for. It now skips its own file.",
+  "verification": {
+    "checks": "15 in campaignPrime.test.js",
+    "mutation": "5 breakages, 5 caught",
+    "regression": "42 suites / 455 tests",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "scope_excluded": [
+    "Rebuilding the screen around Stage 3 six — still its own stage",
+    "Web",
+    "Anything server-side"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (brand app OTA only).",
+    "deploy_targets": [
+      "OTA (brand app)"
+    ],
+    "outward_facing": "None.",
+    "device_walk_required": "YES. Open a DRAFT campaign and confirm Fund wallet & publish is still there — that button and the removed strip shared one function.",
+    "diff_notes": "features/retire-old-campaign-stage-rail/06-diff/notes.md"
+  }
+}

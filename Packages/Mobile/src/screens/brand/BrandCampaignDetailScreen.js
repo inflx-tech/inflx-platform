@@ -9,8 +9,8 @@ import { fmtRupees } from '../../theme/tokens';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
-import { deriveCampaignStage } from '../../utils/campaignStages';
-import { StageRail, PrimeBar } from '../../components/brand/CampaignStageRail';
+import { campaignPrimeAction } from '../../utils/campaignPrime';
+import { PrimeBar } from '../../components/brand/CampaignPrimeBar';
 
 // ── locked palette (inline) ──
 const P = {
@@ -228,7 +228,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   }
 
   // ── Command-center stage + primary action (A6) ──
-  const stageInfo = deriveCampaignStage(campaign.status, {
+  const stageInfo = campaignPrimeAction(campaign.status, {
     applicationsCount, reviewsCount, liveConfirmCount, negotiatingCount,
   });
 
@@ -307,8 +307,14 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
       >
 
-        {/* ── Command center: stage rail + one primary action (A6) ── */}
-        <StageRail current={stageInfo.stageKey} />
+        {/* ── One primary action. ──────────────────────────────────────────
+            The six-stage rail that used to sit above this is gone. Founder,
+            2026-08-27, having spotted it in a screenshot: it showed
+            Fund · Roster · Contracts · Production · Review · Payout, which is a
+            DIFFERENT six from the one Stage 3 agreed — Agree · Sign · Shoot ·
+            Shop posts · Go live · Complete — with half the words colliding, and
+            measuring the campaign rather than one collaboration.
+            Contract: features/retire-old-campaign-stage-rail */}
         <PrimeBar prime={stageInfo.prime} onPress={onPrimePress} busy={publishing} subtitle={primeSubtitle} />
 
         {['published', 'active', 'live'].includes(campaign.status) && (
