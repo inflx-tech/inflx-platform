@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 4 — The shoot</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{
+  --white:#FFFFFF;--bg:#FAFAFA;--ink:#0A0A0A;--text2:#262626;--mut:#8E8E8E;--mut2:#B0B0B0;
+  --line:#DBDBDB;--lineSoft:#EFEFEF;--y:#FFC107;--yInk:#7A6200;--yBg:#FFF6D6;
+  --green:#1A7F52;--greenBg:#EAF7F0;--red:#C4321B;--redBg:#FBEEEA;
+  --blue:#3B6FE0;--blueBg:#EDF2FD;--purple:#6D3FC4;--purpleBg:#F2ECFB;--border:#E4E4E7;
+  margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Outfit',system-ui,sans-serif;margin:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.top{background:var(--ink);color:#fff;padding:14px 22px}
+.top h1{font-size:15px;font-weight:800}
+.top p{margin:3px 0 0;font-size:11px;color:var(--mut2);font-weight:600}
+.tabs{display:flex;gap:5px;padding:11px 18px;background:var(--white);border-bottom:1px solid var(--border);flex-wrap:wrap;position:sticky;top:0;z-index:30}
+.tab{border:1px solid var(--border);background:var(--white);border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mut);font-family:inherit}
+.tab:hover{border-color:var(--mut2);color:var(--ink)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.view{display:none;padding:20px;max-width:1220px;margin:0 auto}
+.view.on{display:block}
+.vh{font-size:17px;font-weight:800;margin-bottom:3px}
+.vids{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--purple);background:var(--purpleBg);display:inline-block;padding:2px 8px;border-radius:5px;margin-bottom:8px}
+.vs{font-size:12px;color:var(--mut);font-weight:600;margin-bottom:15px;max-width:840px}
+.note{font-size:11.5px;font-weight:650;border-radius:10px;padding:10px 13px;margin-bottom:14px;line-height:1.55;max-width:940px}
+.note.key{background:var(--yBg);border:1px solid #F5E4A8;color:var(--yInk)}
+.note.good{background:var(--greenBg);border:1px solid #B6E3CD;color:var(--green)}
+.note.bad{background:var(--redBg);border:1px solid #F0C4BA;color:var(--red)}
+.note.info{background:var(--blueBg);border:1px solid #C7D8F8;color:var(--blue)}
+.note code{font-family:'JetBrains Mono',monospace;font-size:10.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:10.5px;font-weight:700;color:var(--mut);text-align:center;margin-top:8px;max-width:300px;line-height:1.5}
+.cap b{color:var(--ink);font-weight:800}
+.cap .id{font-family:'JetBrains Mono';font-size:9px;color:var(--purple);display:block;margin-top:3px}
+
+.wrap{position:relative}
+.ph{width:300px;border:1px solid var(--line);border-radius:22px;background:var(--white);overflow:hidden;box-shadow:0 3px 16px rgba(0,0,0,.07);flex-shrink:0}
+.ph .nav{padding:12px 14px 9px;border-bottom:1px solid var(--lineSoft);display:flex;align-items:center;gap:9px}
+.ph .nav .ttl{font-family:'Outfit';font-size:16px;font-weight:800}
+.ph .nav .sub{font-size:10.5px;color:var(--mut);font-weight:650;margin-top:1px}
+.ph .nav .bk{font-size:15px;color:var(--ink);font-weight:700}
+.body{padding:0 0 10px;max-height:710px;overflow-y:auto}
+.tagapp{position:absolute;top:8px;left:8px;font-size:8px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.3px;z-index:5}
+.t-b{background:var(--blueBg);color:var(--blue)}
+.t-c{background:var(--greenBg);color:var(--green)}
+.t-both{background:var(--yBg);color:var(--yInk)}
+.t-a{background:var(--purpleBg);color:var(--purple)}
+
+.dsec{padding:13px 14px;border-bottom:1px solid var(--lineSoft)}
+.dsec:last-child{border-bottom:none}
+.dh{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:var(--mut);text-transform:uppercase;margin-bottom:9px}
+.trm{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--lineSoft)}
+.trm:last-child{border-bottom:none}
+.trm .k{font-size:11.5px;color:var(--mut);font-weight:650}
+.trm .v{font-size:12.5px;font-weight:800;text-align:right;font-family:'Outfit'}
+.big{font-family:'Outfit';font-size:25px;font-weight:800;letter-spacing:-.5px}
+.wait{border-radius:11px;padding:11px 13px;font-size:11.5px;font-weight:700;line-height:1.55}
+.wait.b{background:var(--blueBg);color:var(--blue)}
+.wait.g{background:var(--greenBg);color:var(--green)}
+.wait.y{background:var(--yBg);color:var(--yInk)}
+.wait.r{background:var(--redBg);color:var(--red)}
+.wait.p{background:var(--purpleBg);color:var(--purple)}
+.wait.n{background:#F7F7F7;color:var(--mut)}
+.lock{display:flex;gap:9px;align-items:flex-start;background:#F7F7F7;border:1px dashed var(--line);border-radius:11px;padding:11px 12px;font-size:11px;color:var(--mut);font-weight:700;line-height:1.55}
+
+.btn{border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;text-align:center}
+.btn.pri{background:var(--ink);color:#fff}
+.btn.sec{background:var(--white);border:1px solid var(--line);color:var(--ink)}
+.btn.dgr{background:var(--white);border:1px solid #F0C4BA;color:var(--red)}
+.btn.off{background:#F4F4F4;color:var(--mut2);border:1px solid var(--lineSoft)}
+.bstack{display:flex;flex-direction:column;gap:8px}
+.brow{display:flex;gap:8px}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--text2);background:var(--white)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.gh{background:#FAFAFA;border-style:dashed;color:var(--mut);font-size:10px}
+.fl2{display:block;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);margin-bottom:4px}
+.inp{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:12px;font-family:inherit;background:var(--white);font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--lineSoft)}
+.item:last-child{border-bottom:none}
+.thumb{width:36px;height:42px;border-radius:7px;background:#F0EDE7;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.item .n{flex:1;min-width:0}
+.item .nm{font-size:11.5px;font-weight:800}
+.item .mt{font-size:10px;color:var(--mut);font-weight:650;margin-top:1px}
+.cbx{width:21px;height:21px;border-radius:6px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:transparent;flex-shrink:0}
+.cbx.on{background:var(--green);border-color:var(--green);color:#fff}
+.cbx.miss{background:var(--redBg);border-color:#F0C4BA;color:var(--red)}
+
+.rsn{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:11.5px;font-weight:700}
+.rsn.on{border-color:var(--red);border-width:1.5px;background:var(--redBg);color:var(--red)}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0}
+.rsn.on .rdo{border-color:var(--red);border-width:4.5px}
+
+.trk{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.trk .th{padding:9px 12px;background:#FAFAFA;border-bottom:1px solid var(--lineSoft);font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between}
+.trk .tb{padding:10px 12px}
+.pill{display:inline-block;font-size:9px;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.3px;text-transform:uppercase}
+.p-ok{background:var(--greenBg);color:var(--green)}
+.p-wait{background:var(--blueBg);color:var(--blue)}
+.p-no{background:var(--redBg);color:var(--red)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 14px}
+.gc{aspect-ratio:3/4;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;border-radius:4px}
+.gc .b{position:absolute;top:4px;right:4px;font-size:7px;font-weight:800;padding:1px 4px;border-radius:4px;color:#fff}
+.b-live{background:var(--green)}.b-rev{background:var(--blue)}.b-fix{background:var(--red)}
+.gc .p{position:absolute;bottom:4px;left:4px;font-size:7px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;border-radius:4px}
+.hero{width:100%;aspect-ratio:4/5;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:38px}
+.tagged{display:flex;gap:8px;overflow-x:auto;padding:11px 14px}
+.pcard{width:62px;flex-shrink:0}
+.pimg{width:62px;height:76px;border-radius:8px;background:#F0EDE7;display:flex;align-items:center;justify-content:center;font-size:19px}
+.pnm{font-size:8.5px;font-weight:700;margin-top:4px;line-height:1.3;color:var(--text2)}
+.ppr{font-size:9px;font-weight:800;font-family:'JetBrains Mono';margin-top:1px}
+.stat3{display:flex;text-align:center;border-top:1px solid var(--lineSoft);border-bottom:1px solid var(--lineSoft)}
+.stat3 div{flex:1;padding:11px 4px;border-right:1px solid var(--lineSoft)}
+.stat3 div:last-child{border-right:none}
+.stat3 .n{font-family:'Outfit';font-size:15px;font-weight:800}
+.stat3 .l{font-size:8px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-top:2px}
+.stg{display:flex;gap:13px;padding:9px 14px;border-bottom:1px solid var(--lineSoft);overflow-x:auto}
+.stg span{font-size:11px;font-weight:700;color:var(--mut);white-space:nowrap;padding-bottom:5px;border-bottom:2px solid transparent}
+.stg span.on{color:var(--ink);font-weight:800;border-bottom-color:var(--ink)}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:13px;max-width:1080px}
+.card>h3{font-size:13.5px;font-weight:800;margin-bottom:9px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:800;text-align:left;padding:7px 9px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+td{font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--lineSoft);vertical-align:top;font-weight:650}
+td.mono{font-family:'JetBrains Mono';font-size:10px;color:var(--purple);font-weight:800;width:58px}
+tr:last-child td{border-bottom:none}
+.st2{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.s-ex{background:var(--greenBg);color:var(--green)}
+.s-ui{background:var(--yBg);color:var(--yInk)}
+.s-nw{background:var(--purpleBg);color:var(--purple)}
+.s-ch{background:var(--blueBg);color:var(--blue)}
+.s-blk{background:var(--redBg);color:var(--red)}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>Offers — parity with web, a validity window, and per creator</h1>
+  <p>Batch B. Founder's ask, 2026-08-27. Every fact below was read from the code or run against production.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-v="v1">① Her offer</button>
+  <button class="tab" data-v="v2">② Pick or build</button>
+  <button class="tab" data-v="v3">③ What it applies to</button>
+  <button class="tab" data-v="v4">④ Where &amp; when</button>
+  <button class="tab" data-v="v5">⑤ The gap list</button>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── ① -->
+<div class="view on" id="v1">
+  <div class="vh">The offer moves to the creator</div>
+  <div class="vids">P5 &middot; the founder's model</div>
+  <div class="vs">Today it is asked once for the whole set. <b>The database has always stored it per creator.</b></div>
+  <div class="row">
+    <div><div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Sarees</div><div class="sub">STEP 4 OF 4 &middot; TERMS</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">What each creator gets &middot; already agreed</div></div>
+            <div class="dsec">
+              <div class="trm"><div class="k"><b>Asha M.</b></div><div class="v">14% per sale</div></div>
+              <div class="cap" style="margin:2px 0 6px">Can sell &middot; Men › Topwear</div>
+              <div class="brow"><div class="btn sec" style="flex:1">What she can sell</div><div class="btn sec" style="flex:1">Give her an offer</div></div>
+            </div>
+            <div class="dsec">
+              <div class="trm"><div class="k"><b>Arjun P.</b></div><div class="v">13% per sale</div></div>
+              <div class="cap" style="margin:2px 0 6px">Can sell &middot; Whole store</div>
+              <div class="chips" style="margin:0 0 6px"><div class="chip on">Yoy &middot; 3% off &middot; until 30 Sep</div></div>
+              <div class="brow"><div class="btn sec" style="flex:1">What she can sell</div><div class="btn sec" style="flex:1">Change offer</div></div>
+            </div>
+            <div class="brow" style="margin-top:10px"><div class="btn sec" style="flex:1">Back</div><div class="btn pri" style="flex:1">Save this set</div></div></div>
+        </div></div><div class="cap">One row per creator. <b>An offer is hers, not the set&rsquo;s.</b></div></div>
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>This is not a new model — it is the one the database already has.</b> <code>campaign_influencers</code> carries <code>brand_offer_id</code>, <code>offer_type</code>, <code>offer_config_json</code> and <code>offer_valid_until</code>, all nullable. <code>campaign_sets</code> has <b>no offer columns at all.</b></div>
+      <div class="note key"><b>Still optional.</b> Batch A already removed the gate. A creator with no offer saves fine — she just sells at normal prices, on her commission.</div>
+      <div class="note info"><b>Rows using any of it today: zero.</b> Of six creators in production, none carries an offer. So this path has never been driven by anybody — expect the first real run to find something.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── ② -->
+<div class="view" id="v2">
+  <div class="vh">Two ways in</div>
+  <div class="vids">P5</div>
+  <div class="vs">Exactly what the founder described: <b>one you already made, or one built for her alone.</b></div>
+  <div class="row">
+    <div><div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Asha&rsquo;s offer</div><div class="sub">SAREES &middot; 14% PER SALE</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">From your library</div>
+              <div class="item"><div class="cbx on">✓</div><div style="flex:1"><b>Yoy</b><div class="cap" style="margin:0">3% OFF &middot; WHOLE STORE &middot; ACTIVE</div></div></div>
+              <div class="item"><div class="cbx"></div><div style="flex:1"><b>Discount10</b><div class="cap" style="margin:0">10% OFF &middot; WHOLE STORE &middot; ACTIVE</div></div></div>
+            </div>
+            <div class="dsec"><div class="dh">Or make one just for Asha</div>
+              <div class="btn sec">Build a new offer</div>
+              <div class="cap" style="margin:6px 0 0">Saved against this campaign, this set and this creator. It does not join your library.</div>
+            </div>
+            <div class="dsec"><div class="dh">When it runs</div>
+              <div class="g2"><div class="inp">27 Aug &nbsp;📅</div><div class="inp">30 Sep &nbsp;📅</div></div>
+            </div>
+            <div class="btn pri">Give Asha this offer</div>
+            <div class="btn sec">She gets no offer</div></div>
+        </div></div><div class="cap">Two routes, and a way back out.</div></div>
+    <div style="flex:1;min-width:300px">
+      <div class="note key"><b>Two offers exist in production today</b>, both called from the library list you already have. The library screen is not new — <code>BrandOffersLibraryScreen</code> is already built.</div>
+      <div class="note info"><b>"It does not join your library."</b> A bespoke offer is stored on her row as <code>offer_type</code> + <code>offer_config_json</code>. A library offer is stored as <code>brand_offer_id</code>. Two columns, two meanings, no ambiguity about which you picked.</div>
+      <div class="note bad"><b>⚠️ An open question, on the board deliberately.</b> A per-creator offer has an <b>end</b> date in the database and <b>no start column</b>. Three options in <code>01-spec</code> §3. Recommended: <b>her offer starts when the set starts</b> — no migration, and it matches how every other date on a set behaves.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── ③ -->
+<div class="view" id="v3">
+  <div class="vh">What the offer applies to</div>
+  <div class="vids">P1 &middot; THE LIVE BUG</div>
+  <div class="vs"><b>This is the fix that matters most.</b></div>
+  <div class="row">
+    <div><div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Build an offer</div><div class="sub">FOR ASHA M.</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">Name</div><div class="inp">Festive 20</div></div>
+            <div class="dsec"><div class="dh">Kind</div>
+              <div class="chips"><div class="chip on">Discount</div><div class="chip">Volume</div><div class="chip">BOGO</div></div>
+              <div class="chips" style="margin-top:5px"><div class="chip">Bundle</div><div class="chip">Free gift</div></div>
+            </div>
+            <div class="dsec"><div class="dh">How much</div>
+              <div class="chips"><div class="chip on">% off</div><div class="chip">₹ off</div></div>
+              <div class="inp" style="margin-top:6px">20</div>
+            </div>
+            <div class="dsec"><div class="dh">Applies to</div>
+              <div class="chips"><div class="chip">Whole store</div><div class="chip on">A category</div><div class="chip">Chosen products</div></div>
+              <div class="inp" style="margin-top:6px">Women › Ethnic › Sarees &nbsp;›</div>
+            </div></div>
+        </div></div><div class="cap"><b>Five kinds</b>, and a real choice of what it covers.</div></div>
+    <div style="flex:1;min-width:300px">
+      <div class="note bad"><b>⚠️ Live today, on every offer built on a phone.</b> <code>buildDiscount</code> and <code>buildVolume</code> both hardcode <code>scope: 'store'</code>. Ask for "20% off sarees" and shoppers get <b>20% off everything.</b> Two places, both in <code>offerBuilders.js</code>.</div>
+      <div class="note info"><b>Production holds 2 offers. Both are whole-store.</b> There is no way to tell from the data whether that was intended or imposed on them.</div>
+      <div class="note good"><b>Free gift</b> is the fifth kind — on web, missing on the phone. Buy this, get that.</div>
+      <div class="note key"><b>Nothing new gets built for the pickers.</b> Products reuse <code>ProductPicker</code> — its <b>fifth</b> caller. Categories reuse <code>BrandCategoryPickerScreen</code>, already used by allocation.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── ④ -->
+<div class="view" id="v4">
+  <div class="vh">Where it can be used, and when</div>
+  <div class="vids">P3 &middot; P4</div>
+  <div class="vs">The founder's second ask: <b>a start and an end.</b></div>
+  <div class="row">
+    <div><div class="wrap">
+        <div class="ph">
+          <div class="nav"><div class="bk">&#8249;</div><div style="flex:1"><div class="ttl" style="font-size:15px">Build an offer</div><div class="sub">FOR ASHA M.</div></div></div>
+          <div class="body">
+            <div class="dsec"><div class="dh">Where a shopper can use it</div>
+              <div class="chips"><div class="chip on">Pay at the store</div><div class="chip on">Order online</div></div>
+              <div class="chips" style="margin-top:5px"><div class="chip">Pre-book</div><div class="chip">Enquiry</div></div>
+              <div class="wait y" style="margin-top:8px">This offer covers <b>one category</b>, so a pay-at-store bill cannot honour it — a paper bill cannot be scoped. It will apply to online orders only.</div>
+            </div>
+            <div class="dsec"><div class="dh">When it runs</div>
+              <div class="g2"><div class="inp">Starts &middot; 27 Aug &nbsp;📅</div><div class="inp">Ends &middot; 30 Sep &nbsp;📅</div></div>
+              <div class="cap" style="margin:6px 0 0">Leave either blank for no limit. A shopper is refused outside these dates.</div>
+            </div>
+            <div class="btn pri">Save the offer</div></div>
+        </div></div><div class="cap">Four places, two dates, and a warning that tells the truth.</div></div>
+    <div style="flex:1;min-width:300px">
+      <div class="note good"><b>The dates already work.</b> <code>store_starts_at</code> and <code>store_ends_at</code> exist, the API accepts them, and <b>checkout already refuses an offer outside them</b> — both ends, in <code>transaction.controller.js</code>. The shopper app already shows the end date. <b>Nothing sets them.</b> This adds the missing entry point, not the rule.</div>
+      <div class="note bad"><b>⚠️ Worth knowing: web does not have this either.</b> Its builder saves <code>{ name, offer_type, offer_config_json, availing_modes }</code> and no dates. So "match web" would still leave this missing — the founder asked for more than parity here, and he was right to.</div>
+      <div class="note info"><b>And a smaller gap this closes.</b> <code>POST /brands/me/offers</code> does not accept the dates at all — only <code>PATCH</code> does. So today a validity window could only be added by editing an offer after making it.</div>
+      <div class="note key"><b>Where a shopper can use it</b> is <code>availing_modes</code>. It exists, web sets it, <b>the phone never has</b> — so a phone-made offer silently falls back to the database default of pay-at-store <i>and</i> online. Both production offers show exactly that.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────────────────── ⑤ -->
+<div class="view" id="v5">
+  <div class="vh">Every gap, and where it stands</div>
+  <div class="vids">SCOPE</div>
+  <table class="tbl">
+    <tr><th>Thing</th><th>Web</th><th>Phone now</th><th>After this</th></tr>
+    <tr><td>Discount · Volume · BOGO · Bundle</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td><b>Free gift</b></td><td class="y">yes</td><td class="n">missing</td><td class="y">yes</td></tr>
+    <tr><td><b>What it applies to</b> (store / category / products)</td><td class="y">yes</td><td class="r">hardcoded to whole store</td><td class="y">yes</td></tr>
+    <tr><td><b>Where it redeems</b> (4 modes)</td><td class="y">yes</td><td class="n">never sent</td><td class="y">yes</td></tr>
+    <tr><td>The pay-at-store warning</td><td class="y">yes</td><td class="n">missing</td><td class="y">yes</td></tr>
+    <tr><td><b>Start and end dates</b></td><td class="n">missing too</td><td class="n">missing</td><td class="y">yes</td></tr>
+    <tr><td>Offer per creator</td><td class="n">no</td><td class="n">no</td><td class="y">yes</td></tr>
+    <tr><td>Offer optional</td><td class="y">yes</td><td class="y">done in Batch A</td><td class="y">yes</td></tr>
+  </table>
+
+  <div class="note bad" style="margin-top:14px"><b>⚠️ One of these is a live bug, not a missing feature.</b> Everything else is something the phone cannot do yet. The scope row is something it does <b>wrongly, silently, right now.</b></div>
+  <div class="note good"><b>How much of this is really new?</b> Less than it looks. The database has every column. The API accepts almost everything. Checkout already enforces the dates. What is missing is the way in — the same shape as Stage 4, where eight endpoints worked and had no screen.</div>
+  <div class="note key"><b>Not in this batch:</b> anything on web · publishing an offer to the store · the invitation-acceptance clock (<code>offer_expires_at</code>, a different thing that works) · the campaign screen's old six-stage strip.</div>
+</div>
+
+<style>
+.tbl{border-collapse:collapse;width:100%;max-width:980px;background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:12px}
+.tbl th{background:var(--ink);color:#fff;text-align:left;padding:9px 12px;font-size:10.5px;letter-spacing:.4px;text-transform:uppercase}
+.tbl td{padding:8px 12px;border-top:1px solid var(--lineSoft);font-weight:650}
+.tbl td.y{color:var(--green);font-weight:800}
+.tbl td.n{color:var(--mut)}
+.tbl td.r{color:var(--red);font-weight:800}
+</style>
+
+<script>
+document.querySelectorAll('.tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('on'); });
+    document.querySelectorAll('.view').forEach(function (x) { x.classList.remove('on'); });
+    t.classList.add('on');
+    document.getElementById(t.dataset.v).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

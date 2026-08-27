@@ -1,0 +1,67 @@
+{
+  "feature": "stage-2-offers-parity",
+  "spec_version": "1.0.0",
+  "status": "awaiting_mockup_lock",
+  "approved": true,
+  "approved_by": "founder 2026-08-27: \"we concentrate on offers, it should be very clear like what we have in web ... it should also have start and end date for that one where offer valid period should also taken into consideration. pls complete all pending things clearly\"",
+  "approved_at": "2026-08-27",
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_note": "features/stage-2-offers-parity/04-preview/mockups/offers.html — five boards, drawn in the already-agreed stylesheet. Awaiting the founder before any app code.",
+  "notes": "Batch B. Fix the whole-store defect, reach parity with web, add the validity window the founder asked for, and move the offer to the creator. NO migration — every column already exists.",
+
+  "surveyed_2026_08_27": {
+    "method": "Every line read from the file named, or run read-only against production.",
+    "live_defect": "buildDiscount AND buildVolume both hardcode scope:'store' in Packages/Mobile/src/utils/offerBuilders.js, lines 16 and 35. Every discount and volume offer built on a phone covers the whole store, whatever the brand intended. Production holds 2 offers in total, both discount, BOTH whole-store — including one named 'Yoy' at 3%.",
+    "missing_vs_web": "free_gift type, scope selection (store/category/products), availing_modes, and the pay-at-store applicability warning.",
+    "availing_modes_default": "createOffer deliberately omits the column when not supplied so the NOT NULL DEFAULT '{pay_at_store,online_order}' applies. So a phone-made offer silently becomes redeemable BOTH ways — which is exactly what both production offers show.",
+    "validity_already_enforced": "brand_offers.store_starts_at and store_ends_at are accepted by PATCH /brands/me/offers/:id (brandOffer.controller.js:268-272), ENFORCED at checkout at BOTH ends (transaction.controller.js:580-581), and surfaced to shoppers (follower.controller.js:1559). Set by NOTHING — no UI on web or on the phone. 0 of 2 offers carry a start or an end.",
+    "post_gap": "POST /brands/me/offers does not accept the dates at all — its body is { name, offer_type, offer_config_json, availing_modes }. So today a validity window could only be added by editing an offer after creating it.",
+    "web_lacks_it_too": "The web builder saves { name, offer_type, offer_config_json, availing_modes } and no dates. Matching web would STILL leave this missing — the founder asked for more than parity here, and he was right to.",
+    "per_creator_ready": "campaign_influencers already carries brand_offer_id, offer_type, offer_config_json and offer_valid_until, all nullable. ZERO of six rows use any of them. campaign_sets has no offer columns at all — the set-level offer the wizard used to demand was never stored on the set.",
+    "not_a_duplicate": "offer_valid_until and offer_expires_at look like duplicates and are not. The DB column comment documents them as the discount deadline and the invitation-acceptance clock respectively.",
+    "reusable_today": "ProductPicker (this would be its FIFTH caller, as ledger #86 predicted), BrandCategoryPickerScreen, DateField and BrandOffersLibraryScreen all already exist. Nothing needs building from scratch."
+  },
+
+  "open_question_for_founder": {
+    "question": "A per-creator offer has an END date in the database (offer_valid_until) and NO start column.",
+    "options": {
+      "A_recommended": "Her offer starts when the set starts. No migration, and it matches how every other date on a set already behaves.",
+      "B": "Add one nullable start column. Only worth it if a brand really needs an offer that begins AFTER the set does.",
+      "C": "No per-creator window at all — the library offer carries the dates and hers inherits them."
+    },
+    "blocks_this_stage": false,
+    "answered": null
+  },
+
+  "build_order": [
+    "1 — scope on discount and volume, with the two existing pickers (the live bug)",
+    "2 — free_gift, the fifth type",
+    "3 — availing_modes, sent explicitly, with the applicability warning",
+    "4 — the validity window, and POST accepting it",
+    "5 — the offer moves to the creator: pick from library, or build bespoke",
+    "6 — a check that reads BOTH builders and compares what they produce"
+  ],
+
+  "scope_excluded": [
+    "Web — reaching parity with it is the job; changing it is not",
+    "The shopper side — already reads and honours store_ends_at",
+    "offer_expires_at, the invitation-acceptance clock — a different thing, working",
+    "Publishing an offer to the store (published_to_store)",
+    "The campaign screen's old six-stage strip — its own stage"
+  ],
+
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (brand app OTA + backend/src). NO migration — every column already exists.",
+    "deploy_targets": [
+      "Render (backend/src)",
+      "OTA (brand app)"
+    ],
+    "outward_facing": "Indirect. Offers a brand builds AFTER this can be scoped and dated, which changes what shoppers are charged. Nothing already stored is reinterpreted.",
+    "device_walk_required": "YES. W1-W5, and W4 especially — a date that saves but never reaches checkout would look exactly like it worked."
+  }
+}
