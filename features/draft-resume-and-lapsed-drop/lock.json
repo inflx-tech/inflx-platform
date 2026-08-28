@@ -1,0 +1,60 @@
+{
+  "feature": "draft-resume-and-lapsed-drop",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28: \"yes do it whenever set is opened is correct one ......next if campaign not fully publish means...it is in draft state , when brand come and open this draft one it has to reach where step stops...make this one as well\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — both behaviours were specified by him in words; no new screen is introduced",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "No new screen. Two behaviour changes to existing ones: where a draft campaign opens, and a creator removing herself from a set when her agreement lapses.",
+  "notes": "Replaces two refusals with the app doing the obvious thing. Phone only — no server, no migration.",
+
+  "measured_first": {
+    "agreement_expiry_days": 90,
+    "request_ttl_days": 7,
+    "decline_cooldown_days": 30,
+    "read_from": "handshake_settings, production, 2026-08-28. Configurable, not hardcoded. 22 live agreements, lifetimes 9-90 days.",
+    "why_it_mattered": "I had defended the dead-agreement publish blocker with a pick-on-Monday-publish-on-Thursday story. At 90 days that story does not hold, and the founder was right that the case is close to theoretical. His screen showing 'expires in 3 days' meant the agreement was made 87 days ago, not that he was slow."
+  },
+
+  "open_question_for_founder": {
+    "question": "Creators pencilled into a set are held IN MEMORY ONLY — deliberately, per ledger #77, so abandoning the wizard cannot burn an agreement. So resume returns you to the right screen but does NOT restore ticks made in a previous app session.",
+    "options": {
+      "A": "Leave it. Resume gets you to the right place; you re-pick creators after an app restart.",
+      "B": "Persist the picks locally so a restart keeps them. Nothing is sent to the server either way, so no agreement is actually held — the original concern was about a brand THINKING someone is committed while the agreement is free to be used elsewhere."
+    },
+    "blocks_this_stage": false,
+    "answered": null
+  },
+
+  "verification": {
+    "checks": "18 in draftResume.test.js",
+    "mutation": "6 deliberate breakages, 6 caught — including removing the loaded-guard, dropping silently, and comparing ids by identity instead of as strings",
+    "one_real_fix_from_a_check": "resumeRouteFor threw on a null campaign. Fixed in the CODE rather than softened in the test — a list that has just refreshed can hand it an undefined row for a frame, and a crash there is a blank Campaigns tab.",
+    "regression": "44 suites / 492 tests",
+    "claim": "Certified no-regression. NEVER claimed green — the backend suite still cannot run."
+  },
+
+  "scope_excluded": [
+    "The publish gate's dead-agreement blockers — the backstop for anything already invited, which the drop never sees",
+    "The expiring-agreement warning",
+    "Persisting the picks — see open_question_for_founder"
+  ],
+
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (brand app OTA only).",
+    "deploy_targets": [
+      "OTA (brand app)"
+    ],
+    "outward_facing": "None.",
+    "device_walk_required": "YES. W3 especially — open a set with live creators several times and confirm NOBODY disappears. The drop runs against a list that arrives asynchronously, and a guard that fails would clear a brand's work in front of them.",
+    "diff_notes": "features/draft-resume-and-lapsed-drop/06-diff/notes.md"
+  }
+}

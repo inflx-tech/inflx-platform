@@ -54,6 +54,30 @@ const SORTS = [
   { key: 'name_asc',    label: 'Name A→Z' },
 ];
 
+/**
+ * Where a campaign opens.
+ *
+ * Founder, 2026-08-28: "if campaign not fully publish means it is in draft state, when brand
+ * come and open this draft one it has to reach where step stops."
+ *
+ * A DRAFT is not a thing to look at, it is a thing to finish. Sending a brand to a dashboard
+ * showing 0% progress and no deliverables tells them nothing they did not already know, and
+ * hides the one thing they came back for — the half-built set.
+ *
+ * So a draft opens the BUILDER, which lists its sets and what each still needs. Anything
+ * published opens the dashboard, unchanged.
+ *
+ * It deliberately does NOT jump straight into a particular set. With two half-built sets there
+ * is no way to know which one was meant, and guessing wrong costs more than one extra tap.
+ */
+export function resumeRouteFor(campaign) {
+  const draftish = campaign?.status === 'draft' || campaign?.status === 'pending_wallet';
+  const id = campaign?.id;
+  return draftish
+    ? { route: 'BrandCampaignBuilder', params: { campaignId: id, campaignName: campaign?.name } }
+    : { route: 'CampaignDetail', params: { campaignId: id } };
+}
+
 export default function BrandCampaignListScreen({ navigation }) {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -113,6 +137,12 @@ export default function BrandCampaignListScreen({ navigation }) {
   }, [campaigns, filter, search, sort]);
 
   // ── Bulk selection ─────────────────────────────────────────────────────────
+
+  // A draft resumes where it was left; anything published opens its dashboard.
+  function openCampaign(c) {
+    const { route, params } = resumeRouteFor(c);
+    navigation.navigate(route, params);
+  }
 
   function toggleSel(id) {
     setSelected(prev => {
@@ -319,7 +349,7 @@ export default function BrandCampaignListScreen({ navigation }) {
                 <TouchableOpacity
                   style={{ flex: 1 }}
                   activeOpacity={0.7}
-                  onPress={() => navigation.navigate('CampaignDetail', { campaignId: c.id })}
+                  onPress={() => openCampaign(c)}
                 >
                   <View style={styles.cardHeader}>
                     <Text style={styles.cardName} numberOfLines={2}>{c.name}</Text>

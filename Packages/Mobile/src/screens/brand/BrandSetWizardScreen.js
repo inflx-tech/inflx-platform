@@ -94,6 +94,10 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   const [derivedBudget, setDerivedBudget] = useState(null);
   // step 3
   const [agreements, setAgreements] = useState([]);
+  // Whether the live ready-to-brief list has actually arrived. The auto-drop below MUST NOT
+  // run against an empty list that has simply not loaded yet — that would clear every creator
+  // the brand had picked, on every entry, and look exactly like the app losing their work.
+  const [agreementsLoaded, setAgreementsLoaded] = useState(false);
   const [picked, setPicked] = useState([]);            // agreement rows, pencilled
   // step 4
   // stage-2-offers-parity — whose offer sheet is open. The offer belongs to a creator now:
@@ -112,7 +116,7 @@ export default function BrandSetWizardScreen({ route, navigation }) {
       // a request nobody read.
       const ag = await brandApi.listAgreements();
       if (!alive) return;
-      if (ag?.success) setAgreements(ag.data?.agreements || []);
+      if (ag?.success) { setAgreements(ag.data?.agreements || []); setAgreementsLoaded(true); }
 
       if (initialSetId) {
         const sres = await brandApi.getCampaignSets(campaignId);
@@ -137,6 +141,42 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     sync();
     return draft.subscribe(campaignId, sync);
   }, [campaignId, setId]));
+
+  // ── A lapsed agreement leaves the set on its own ───────────────────────────
+  //
+  // Founder, 2026-08-28: "if that is expired means auto deleted... even he adds set and came
+  // after somedays if that is expired means auto deleted."
+  //
+  // He is right, and it is better than what was here. An agreement that has lapsed CANNOT be
+  // briefed — the server refuses it, and there is no judgement for a brand to make. Refusing
+  // to publish and making them work out which creator to remove was the app handing over its
+  // own homework.
+  //
+  // Agreements run 90 days (handshake_settings.agreement_expiry_days), so this is rare. When
+  // it does happen it is on a set left open a long time, which is exactly when a brand has
+  // least idea what changed underneath them.
+  //
+  // NEVER SILENTLY. A creator who simply vanishes reads as a mis-tap, or worse goes unnoticed
+  // until the campaign is live without her.
+  useEffect(() => {
+    if (!setId || !agreementsLoaded) return;
+    const live = new Set(agreements.map(a => String(a.id)));
+    const sd = draft.getSetDraft(campaignId, setId);
+    const gone = sd.creators.filter(c => !live.has(String(c.agreement_id)));
+    if (!gone.length) return;
+
+    const kept = sd.creators.filter(c => live.has(String(c.agreement_id)));
+    draft.setSetDraft(campaignId, setId, { creators: kept });
+    setPicked(kept);
+
+    const names = gone.map(c => c.name).filter(Boolean);
+    Alert.alert(
+      names.length === 1 ? `${names[0]} was taken out` : `${names.length} creators were taken out`,
+      `${names.join(' and ')} ${names.length === 1 ? 'is' : 'are'} no longer available to brief — the ` +
+      `agreement has lapsed, or has been used in another set. Agree with ${names.length === 1 ? 'her' : 'them'} ` +
+      'again from the Creators tab to include ' + (names.length === 1 ? 'her.' : 'them.'),
+    );
+  }, [agreementsLoaded, agreements, campaignId, setId]);
 
   function hydrate(set) {
     setGoal(set.goal || null);
