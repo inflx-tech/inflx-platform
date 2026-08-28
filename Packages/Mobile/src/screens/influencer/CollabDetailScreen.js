@@ -65,6 +65,17 @@ export default function CollabDetailScreen({ route, navigation }) {
 
   const onRefresh = useCallback(async () => { setRefreshing(true); await load(); setRefreshing(false); }, [load]);
 
+  // ⚠️ THIS HOOK MUST STAY ABOVE THE EARLY RETURNS BELOW.
+  //
+  // It used to sit further down, after "if (loading) return" and "if (!data) return". The first
+  // render stopped at the spinner and never called it; the second render did. React counted 8
+  // hooks then 9, threw "Rendered more hooks than during the previous render", and the screen
+  // rendered NOTHING — the blank page the founder reported twice.
+  //
+  // It had nothing to do with her data. It fired on every stage, for every creator, every time.
+  // Contract: features/brief-straight-to-signing
+  const { data: stepData, failed: stepsFailed } = useCreatorSteps();
+
   if (loading) {
     return <View style={styles.center}><ActivityIndicator color={ig.text} /></View>;
   }
@@ -101,7 +112,8 @@ export default function CollabDetailScreen({ route, navigation }) {
   const hero = heroFor({ ...record, pendingDeliverable });
   const sections = sectionsFor(record);
   // Stage 3 — where this collaboration has actually got to, decided once on the server.
-  const { data: stepData, failed: stepsFailed } = useCreatorSteps();
+  // stepFor is a plain function, not a hook, so it is fine here; useCreatorSteps is not and
+  // now sits with the other hooks at the top.
   const mine = stepFor(stepData, ciId);
   const tone = IG_TONE[hero.tone] || IG_TONE.neutral;
 

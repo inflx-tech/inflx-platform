@@ -42,3 +42,64 @@ Set name is absent, per the founder.
 Not captured. The device walk is the founder's, and this needs a live brief on a clean agreement
 from his own phone — the exact walk that reported it. `04-preview/` holds the mockup the sign
 screen was built against.
+
+---
+
+# The blank page, part two — 2026-08-28, after the deploy
+
+**Reported:** *"it is landed correctly into sign tab, but when i am trying click review, again a
+blank screen."*
+
+The routing worked. The endpoint worked — its exact query, run against Asha M.'s live row,
+returned a complete contract. The blank page was **a second, unrelated crash on the same screen**,
+which the morning's fix had been sitting on top of without touching.
+
+## What it was
+
+`CollabDetailScreen` called a React hook **below two early returns**:
+
+```
+if (loading)        return <Spinner/>;      // first render stops here  — 8 hooks
+if (error || !data) return <Error/>;
+...
+const {...} = useCreatorSteps();            // second render runs it    — 9 hooks
+```
+
+React counts hooks and requires the same number every render. First render 8, second render 9 →
+*"Rendered more hooks than during the previous render"* → the component renders **nothing**.
+
+It had nothing to do with her data, her stage or her campaign. It fired on **every stage, for
+every creator, every time** — and had been there since Stage 3 introduced `useCreatorSteps`.
+
+## Why the morning's fix did not catch it
+
+The stage-vocabulary bug was real and the fix was right. But it was proved by testing the
+**helpers** — `heroFor`, `sectionsFor` — and never by mounting the **screen**. So the crash
+underneath survived, and the founder reported the same symptom twice.
+
+`collabDetailModel.test.js` says this about itself, concerning a function deleted in Stage 3 for
+the identical reason:
+
+> *"the strongest argument in this repo for testing what the screen actually does rather than what
+> a helper can do when fed ideal input."*
+
+Twice in one day. So there is now a mount test — `collabDetailRenders.test.js` — that renders the
+screen with the payload Asha's row actually produces, across all six stages.
+
+## And it was not the only one
+
+A repo-wide sweep (`src/__tests__/hooksBeforeReturns.test.js`) found three more:
+
+| Screen | Verdict |
+|---|---|
+| `BrandCampaignInfluencersListScreen` | **the same live crash** — three `useMemo` below `if (loading) return`. Blank every time it was opened. **Fixed.** |
+| `PayAtStoreScreen` | violation, but the condition comes from `route.params` and never changes for a mount, so React never throws. **Recorded, not fixed.** |
+| `PreBookScreen` | same. **Recorded, not fixed.** |
+
+The two follower screens sit in a named allowlist with a written reason, plus a check that fails
+if either is ever fixed — an allowlist that outlives its problem quietly permits the next one.
+
+## Verification
+
+Both the mount test and the sweep were re-broken by putting the hook back where it was; both
+failed, and named the exact file and line. Mobile suite **48 suites / 543 tests**.

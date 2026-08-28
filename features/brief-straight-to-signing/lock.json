@@ -23,9 +23,11 @@
   "verification": {
     "backend": "tests/brief-to-signing.test.js — 19 checks, 14 mutations, 14 caught",
     "mobile": "src/screens/influencer/__tests__/briefToSigning.test.js — 13 checks, 10 mutations, 10 caught",
-    "suite": "Mobile 45 suites / 520 tests. usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11.",
+    "suite": "Mobile 48 suites / 543 tests. Backend brief-to-signing 19/19, usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11.",
     "two_checks_passed_while_testing_nothing": "toContain('askDeclineReason') was satisfied by the IMPORT line, so renaming the call site stayed green. toContain('ci.alloc_category') was satisfied by the longer ci.alloc_category_node_id, so deleting the category column stayed green. Both found by mutation, not by reading — the third and fourth time this session a check has passed by matching something other than what it meant to. Both tightened and re-mutated.",
-    "claim": "Certified no-regression. NEVER claimed green."
+    "claim": "Certified no-regression. NEVER claimed green.",
+    "mount_tests": "collabDetailRenders.test.js (9) and contractScreenRenders.test.js (9) MOUNT the screens rather than reading them as text, using a fixture dumped straight from production. Both re-broken to confirm they bite.",
+    "the_lesson_twice": "Reading a screen as text proves the code was written. It cannot prove the code runs — it would pass on a file that throws on its first line. This repo has now been bitten by that distinction twice on the same journey, on the same screen, in one day."
   },
   "carried_not_fixed": "cancelInfluencer still writes status = 'cancelled' to contract_status, which has no such value. Confirmed live, out of scope here.",
   "scope_excluded": [
@@ -40,10 +42,13 @@
     "deploy_class": "production-impacting (backend/src + influencer OTA). Migration 163 already applied to production.",
     "deploy_targets": [
       "Render (backend/src)",
-      "OTA influencer"
+      "OTA influencer",
+      "OTA brand (BrandCampaignInfluencersListScreen crash fix)"
     ],
     "outward_facing": "Every creator briefed from now on takes the new route. Rows already at 'invited' are untouched.",
     "device_walk_required": "YES — brief a creator on a clean agreement from the founder's phone and walk To sign -> read -> sign, then a second creator -> decline with a note.",
     "diff_notes": "features/brief-straight-to-signing/06-diff/notes.md"
-  }
+  },
+  "the_blank_page_part_two": "After the deploy the founder hit the SAME blank page. It was a SECOND crash on the same screen: useCreatorSteps() — a React hook — was called below two early returns, so the first render counted 8 hooks and the second counted 9. React threw \"Rendered more hooks than during the previous render\" and the screen rendered nothing, on every stage, for every creator, since Stage 3. The morning fix corrected the stage vocabulary and was proved by testing the HELPERS, never by mounting the SCREEN — so the crash underneath survived it.",
+  "swept_the_whole_app": "src/__tests__/hooksBeforeReturns.test.js walks every screen and component. It found BrandCampaignInfluencersListScreen with the identical live crash (three useMemo below if(loading) return) — fixed. PayAtStoreScreen and PreBookScreen are real violations that cannot throw today because their condition comes from route.params and never changes per mount; they sit in a named allowlist with a rot check that fails if either is fixed."
 }

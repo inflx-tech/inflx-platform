@@ -104,29 +104,19 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
     );
   }
 
-  if (loading) {
-    return (
-      <View style={s.container}>
-        <ScreenHeader title="Influencers" back onBack={() => navigation.goBack()} />
-        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
-      </View>
-    );
-  }
-  if (!campaign) {
-    return (
-      <View style={s.container}>
-        <ScreenHeader title="Influencers" back onBack={() => navigation.goBack()} />
-        <View style={s.center}>
-          <Text style={s.errorText}>Campaign not found</Text>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.goBackBtn}>
-            <Text style={s.goBackBtnText}>← Back</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  const sets = campaign.sets || [];
+  // ⚠️ EVERY HOOK BELOW THIS LINE MUST STAY ABOVE THE EARLY RETURNS.
+  //
+  // These three useMemo calls sat BELOW "if (loading) return" and "if (!campaign) return".
+  // The first render stopped at the spinner and skipped them; the second render ran them.
+  // React counted N hooks then N+3, threw "Rendered more hooks than during the previous
+  // render", and this screen rendered NOTHING — blank, every time it was opened.
+  //
+  // Identical to the crash on the creator's CollabDetailScreen, found the same afternoon by
+  // a repo-wide sweep after the founder reported a blank page for the second time.
+  // Contract: features/brief-straight-to-signing
+  //
+  // campaign is null on the first render, so the derivations below are null-safe.
+  const sets = campaign?.sets || [];
   const allInfluencers = sets.flatMap(set => {
     const mode = set.influencer_mode || 'handpick';
     return (set.influencers || [])
@@ -172,6 +162,29 @@ export default function BrandCampaignInfluencersListScreen({ navigation, route }
     return arr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign, setFilter, statusFilter, search]);
+
+  if (loading) {
+    return (
+      <View style={s.container}>
+        <ScreenHeader title="Influencers" back onBack={() => navigation.goBack()} />
+        <View style={s.center}><ActivityIndicator color={P.ink} size="large" /></View>
+      </View>
+    );
+  }
+  if (!campaign) {
+    return (
+      <View style={s.container}>
+        <ScreenHeader title="Influencers" back onBack={() => navigation.goBack()} />
+        <View style={s.center}>
+          <Text style={s.errorText}>Campaign not found</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.goBackBtn}>
+            <Text style={s.goBackBtnText}>← Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
 
   return (
     <View style={s.container}>
