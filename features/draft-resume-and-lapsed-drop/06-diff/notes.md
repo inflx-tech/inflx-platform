@@ -125,3 +125,25 @@ campaign opens to. He reached it because of that change, and it was wrong. Split
 across two contracts would make both harder to read.
 
 **Verified:** 5 more checks (23 in the file), 4 deliberate breakages, 4 caught.
+
+---
+
+## 6 · The open question, answered
+
+> **Should creators you have ticked survive closing the app?**
+> **Founder, 2026-08-28: "Not surviving."**
+
+**Option A. No code change.** Ledger #77 stands: an agreement is consumed on publish, so
+abandoning the wizard must not burn one — and nothing held locally should imply a commitment
+the server has never been told about.
+
+**What a brand actually sees**, checked rather than assumed:
+
+The **set persists** on the server — its name, dates, aim and channels are all still there. Only
+the ticks were in memory. On reopening after a restart, `hydrate()` finds zero creators and
+lands him on **step 2 (Basics)** with everything he typed intact. He walks forward to Creators
+and picks again.
+
+Nothing on the screen claims to hold something it does not. And no explanatory message is
+possible: *"a saved set nobody was picked into"* and *"a saved set whose picks were lost"* are
+the same state, because they are the same thing.

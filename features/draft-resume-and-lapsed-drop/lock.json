@@ -26,7 +26,8 @@
       "B": "Persist the picks locally so a restart keeps them. Nothing is sent to the server either way, so no agreement is actually held — the original concern was about a brand THINKING someone is committed while the agreement is free to be used elsewhere."
     },
     "blocks_this_stage": false,
-    "answered": null
+    "answered": "OPTION A — \"Not surviving.\" Founder, 2026-08-28. Picks stay session-only. NO CODE CHANGE. Ledger #77 stands: an agreement is consumed on publish, so abandoning the wizard must not burn one, and nothing local should imply a commitment the server has never been told about.",
+    "what_a_brand_sees": "Verified rather than assumed. The SET persists on the server — name, dates, aim, channels. Only the ticks are in memory. On reopening after a restart, hydrate() reads zero creators and sends him to step 2 (Basics) with everything he typed intact; he walks forward to Creators and picks again. Nothing claims to be there that is not, and no message is possible or needed: a saved set with nobody in it is indistinguishable from a set he saved and never filled — because they are the same thing."
   },
   "verification": {
     "checks": "23 in draftResume.test.js",
