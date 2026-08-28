@@ -92,3 +92,36 @@ Certified **no-regression**. **Never claimed green.**
 ⚠️ **W3 is the one that matters.** Open a set with live creators several times and confirm
 **nobody disappears.** The drop runs against a list that arrives asynchronously; a guard that
 fails would clear your work in front of you.
+
+---
+
+## 5 · Adjacent fix — the builder's empty state
+
+**Founder, 2026-08-28:** *"this is wrong if that campaign has never created, never added
+sets... means ask to add your first set."*
+
+He created a campaign and landed on the screen this contract made the destination. **Three
+things were wrong on it, not one.**
+
+| | Before | After |
+|---|---|---|
+| The button | *"+ Add another set"* — on a campaign with none | *"Add your first set"* |
+| Its emphasis | An **outline** button, beneath a **black** "Review and publish" that was greyed out and unusable | Primary while the campaign is empty |
+| The note | *"A campaign can hold a sales set and a content set together"* — shown to someone with zero | Held back until there is one |
+
+⚠️ **The second was the worst of the three.** The one thing he could do looked secondary to the
+one thing he could not. A disabled black button outranked the live outline one directly above
+it.
+
+The note is not wrong, it is **early**. It answers a question nobody with an empty campaign has
+reached, and pushes the only action further down the screen.
+
+**Untouched:** the empty state itself already read correctly — *"No sets yet. A set is one aim,
+one group of creators, one offer. Add the first one."* The words were right; the button under
+them disagreed.
+
+**Why here rather than its own contract:** this contract made the builder the screen a draft
+campaign opens to. He reached it because of that change, and it was wrong. Splitting one screen
+across two contracts would make both harder to read.
+
+**Verified:** 5 more checks (23 in the file), 4 deliberate breakages, 4 caught.

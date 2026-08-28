@@ -140,3 +140,45 @@ describe('what this does NOT change', () => {
     expect(read('screens/brand/BrandCampaignReviewScreen.js')).toContain('AGREEMENT_EXPIRING');
   });
 });
+
+describe('the builder does not say "another" when there is not one yet', () => {
+  /**
+   * Founder, 2026-08-28: "this is wrong if that campaign has never created, never added sets...
+   * means ask to add your first set."
+   *
+   * He created a campaign and landed on a screen headed "No sets yet" whose only button read
+   * "+ Add another set" — in an outline style, beneath a black "Review and publish" that was
+   * greyed out and unusable. The one thing to do looked secondary to the thing he could not do.
+   */
+  const src = read('screens/brand/BrandCampaignBuilderScreen.js');
+
+  it('the label depends on whether a set exists', () => {
+    expect(src).toMatch(/sets\.length === 0 \? 'Add your first set' : '\+ Add another set'/);
+  });
+
+  it('and it is the primary action while the campaign is empty', () => {
+    // It is the only move on the screen. An outline button under a black disabled one inverts
+    // what the brand should reach for.
+    expect(src).toMatch(/sets\.length === 0 \? s\.btnPri : s\.btnSec/);
+    expect(src).toMatch(/sets\.length === 0 \? s\.btnPriT : s\.btnSecT/);
+  });
+
+  it('the two-sets note waits until there is a set', () => {
+    // Telling someone with none that they may have TWO answers a question they have not
+    // reached, and pushes the one thing to do further down.
+    const i = src.indexOf('A campaign can hold a sales set and a content set together');
+    expect(i).toBeGreaterThan(-1);
+    expect(src.slice(0, i)).toMatch(/\{sets\.length > 0 && \(\s*$/m);
+  });
+
+  it('Review and publish stays, and stays disabled while empty', () => {
+    // It says what comes next. Removing it would hide the shape of the job.
+    expect(src).toContain('Review and publish');
+    expect(src).toMatch(/disabled=\{sets\.length === 0\}/);
+  });
+
+  it('the empty state itself already read correctly, and is untouched', () => {
+    expect(src).toContain('No sets yet');
+    expect(src).toContain('A set is one aim, one group of creators, one offer. Add the first one.');
+  });
+});

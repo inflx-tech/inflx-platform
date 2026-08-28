@@ -151,12 +151,25 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
           );
         })}
 
+        {/* Founder, 2026-08-28: "this is wrong if that campaign has never created, never added
+            sets... means ask to add your first set."
+            "Another" is a lie on an empty campaign, and the outline style made the ONLY move on
+            the screen look secondary to a Review button that was greyed out and unusable. */}
         <View style={s.sec}>
-          <TouchableOpacity style={[s.btn, s.btnSec]} onPress={addSet} activeOpacity={0.85}>
-            <Text style={s.btnSecT}>+ Add another set</Text>
+          <TouchableOpacity
+            style={[s.btn, sets.length === 0 ? s.btnPri : s.btnSec]}
+            onPress={addSet}
+            activeOpacity={0.85}
+          >
+            <Text style={sets.length === 0 ? s.btnPriT : s.btnSecT}>
+              {sets.length === 0 ? 'Add your first set' : '+ Add another set'}
+            </Text>
           </TouchableOpacity>
         </View>
 
+        {/* Held back until there is one set. Telling someone with none that they may have TWO
+            answers a question they have not reached, and buries the one thing to do. */}
+        {sets.length > 0 && (
         <View style={s.sec}>
           <View style={s.noteN}>
             <Text style={s.noteT}>
@@ -166,7 +179,10 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
             </Text>
           </View>
         </View>
+        )}
 
+        {/* Kept while empty, and disabled — it says what comes next. But it is no longer the
+            most prominent thing on a screen where it cannot be pressed. */}
         <View style={s.sec}>
           <TouchableOpacity
             style={[s.btn, s.btnPri, sets.length === 0 && s.btnOff]}
