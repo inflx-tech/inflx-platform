@@ -1,0 +1,44 @@
+{
+  "feature": "commercial-usage-term",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28: \"for commercial rights in all types(commission,pay for content,pay for both) should be settled before detailed campaign...if brand requires commercial rights he mentioned that as negotiable thing in agreements itself....dont make it complex\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — specified in words; no screen is introduced by this piece",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "No screen. This is the agreement TERM only — the model the four surfaces will agree on. The screens that ask for it are the next piece.",
+  "notes": "Commercial usage becomes a negotiable optional term on the agreement, settled before any campaign exists.",
+  "the_design": "TWO RIGHTS, TWO PLACES. Showing her content on the brand and INFLX own social accounts is included by default and stated in the contract — negotiated by nobody, paid for by nobody. COMMERCIAL use is a different right, worth money, settled in the AGREEMENT before a campaign exists, while she can still say no or say yes for a price. Putting it in the contract would mean asking at the moment she is trying to start work.",
+  "kept_simple": "His words: \"dont make it complex.\" One flag and one number — { commercial: true, extra: 8000 }. Absent means social-only. commercial:false is how she refuses.",
+  "all_three_aims": "Unlike deliverables, which only exist where a fee does. A commission creator content is as reusable as a paid one.",
+  "verification": {
+    "checks": "20 in tests/usage-term.test.js",
+    "mutation": "7 deliberate breakages, 7 caught",
+    "my_fixture_was_wrong_three_times": "The first draft omitted mode (required on every collaboration), then used a posting window, then used post_by AND a window. Each failure pointed at the fixture, not the model — a collaboration has ONE date and the window belongs to the set. Recorded because three wrong fixtures in a row is a sign I was guessing at a model I had not read closely enough.",
+    "runner_gained_each": "test.each was missing from the no-database runner. Added to the runner rather than the test being rewritten around it — a runner that quietly lacks what tests use pushes people towards weaker tests.",
+    "regression": "stage4-parcel 25/25, offers-parity 12/12, coupon 11/11. Mobile 44 suites / 507 tests.",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "not_built_yet": "NO SCREEN ASKS FOR IT. A brand cannot yet state commercial usage from the app and she cannot yet see or counter it. Until the surfaces land this changes nothing a user can see.",
+  "scope_excluded": [
+    "The screens — request, counter, agreement summary, contract",
+    "The contract-at-briefing change",
+    "Anything about how commercial use is policed after the fact"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src only). No migration — terms live in terms_json.",
+    "deploy_targets": [
+      "Render (backend/src)"
+    ],
+    "outward_facing": "None yet — no surface offers the term.",
+    "device_walk_required": "NOT YET. Nothing to walk until the screens land.",
+    "diff_notes": "features/commercial-usage-term/06-diff/notes.md"
+  }
+}

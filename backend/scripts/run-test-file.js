@@ -92,7 +92,26 @@ global.describe = (name, fn) => { stack.push(name); fn(); stack.pop(); };
 global.beforeEach = fn => hooks.before.push(fn);
 global.afterEach  = fn => hooks.after.push(fn);
 global.test = (name, fn) => cases.push({ path: [...stack, name], fn });
+
+/**
+ * .each — jest's table form. Added when a suite needed it rather than the suite being
+ * rewritten around the shim: a runner that quietly lacks what the tests use pushes people
+ * towards weaker tests, which is the slow version of fake green.
+ *
+ * Supports the array-of-values and array-of-arrays forms, and %s / %d / %i substitution.
+ */
+const eachFor = (register) => (rows) => (name, fn) => {
+  (rows || []).forEach((row) => {
+    const args = Array.isArray(row) ? row : [row];
+    let i = 0;
+    const title = String(name).replace(/%[sdi]/g, () => String(args[i++]));
+    register(title, () => fn(...args));
+  });
+};
+global.test.each = eachFor(global.test);
 global.it = global.test;
+global.it.each = global.test.each;
+global.describe.each = eachFor((n, f) => global.describe(n, f));
 global.expect = makeExpect();
 
 require(path.resolve(file));

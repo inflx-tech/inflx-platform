@@ -72,7 +72,7 @@ const PRIMARY_TERMS = ['money', 'time'];
  * part of the deal rather than a nicety — required whenever a fee is involved, and always
  * negotiable. A commission buys nothing in advance, so there it is merely allowed.
  */
-const OPTIONAL_TERMS = ['scope'];
+const OPTIONAL_TERMS = ['scope', 'usage'];
 
 /** Only these may be changed by a counter — a requirement never can. */
 /**
@@ -155,6 +155,55 @@ function validateTime(aim, time) {
   if (time.window_start || time.window_end) {
     return fail('terms.time',
       'a collaboration has one date — the day she must have posted by. Use post_by, not a window');
+  }
+  return OK;
+}
+
+/**
+ * COMMERCIAL USAGE. Founder, 2026-08-28.
+ *
+ * "usage rights means two things — usage for commercial, and just publishing content in social
+ *  media accounts... if brand want to use commercially then we keep it in agreed terms only —
+ *  ask brand to tell 'I will use commercial purpose', for that if agree I will give some
+ *  extra... this thing should settle even before detailed campaign creation."
+ *
+ * TWO RIGHTS, TWO PLACES.
+ *   Showing her content on the brand's and INFLX's OWN social accounts is included by default
+ *   and stated in the contract. Nobody negotiates it and nobody pays extra for it.
+ *
+ *   COMMERCIAL use — paid advertising, print, packaging — is a different right, it is worth
+ *   money, and it belongs HERE: in the agreement, before a campaign exists, while she can still
+ *   say no or say yes for a price.
+ *
+ * Putting it in the contract instead would mean asking her at the moment she is trying to start
+ * work, which is the worst possible time to raise a price.
+ *
+ * DELIBERATELY SIMPLE — the founder's words: "dont make it complex." One flag and one number.
+ *   { commercial: true, extra: 8000 }   the brand asks, and offers ₹8,000 for it
+ *   { commercial: false }               explicitly no — what she counters with to refuse
+ *   absent                              nobody raised it; social-only usage applies
+ *
+ * It applies to ALL THREE aims. A commission-only creator's content is just as reusable as a
+ * paid one's, and the founder said so: "in all types (commission, pay for content, pay for
+ * both) should be settled before detailed campaign".
+ *
+ * Marked 'preference' it is counterable — she can answer "yes, for ₹15,000". Marked
+ * 'requirement' it is not, which is the honest shape for a brand that genuinely cannot run the
+ * campaign without it: she accepts or declines rather than countering something they cannot move.
+ */
+function validateUsage(usage) {
+  if (!usage || typeof usage !== 'object' || Array.isArray(usage)) {
+    return fail('terms.usage', 'usage must be an object like { commercial: true, extra: 8000 }');
+  }
+  if (typeof usage.commercial !== 'boolean') {
+    return fail('terms.usage.commercial', 'say whether commercial use is being asked for: true or false');
+  }
+  if (usage.commercial === true) {
+    const n = Number(usage.extra);
+    if (usage.extra == null || usage.extra === '' || !Number.isFinite(n) || n < 0) {
+      return fail('terms.usage.extra',
+        'say what is being offered for commercial rights. Zero is allowed — asking for them free is a real offer she can counter');
+    }
   }
   return OK;
 }
@@ -293,6 +342,7 @@ function validateTerms(terms) {
     }
 
     if (key === 'scope') { const r = validateScope(terms.scope); if (!r.ok) return r; }
+    if (key === 'usage') { const r = validateUsage(terms.usage); if (!r.ok) return r; }
     if (key === 'mode') {
       if (!MODES.includes(String(terms.mode).toLowerCase())) {
         return fail('terms.mode', `mode must be one of: ${MODES.join(', ')}`);
@@ -354,6 +404,22 @@ function counterableTerms(original) {
   return [...NEGOTIABLE_TERMS, ...(paid ? ['deliverables'] : []), ...optional];
 }
 
+/**
+ * What the usage term means, in words. ONE sentence, used by the request, the counter, the
+ * agreement summary and the contract — so the four places cannot describe the same deal
+ * differently, which is the fault this codebase has already cleaned up three times.
+ */
+function describeUsage(usage) {
+  if (!usage || usage.commercial !== true) {
+    return 'Your content stays yours. The brand and INFLX may repost it on their own social accounts, with credit — nothing more.';
+  }
+  const n = Number(usage.extra);
+  const paid = Number.isFinite(n) && n > 0
+    ? `₹${n.toLocaleString('en-IN')} on top of everything else`
+    : 'no extra payment';
+  return `Commercial use — paid ads, print, packaging — for ${paid}. You still own the content and may use it anywhere yourself.`;
+}
+
 /** Merge an accepted counter into the settled terms an agreement records. */
 function settle(original, counter) {
   if (!counter) return { ...original };
@@ -370,4 +436,6 @@ module.exports = {
   validateCounter,
   counterableTerms,
   settle,
+  validateUsage,
+  describeUsage,
 };
