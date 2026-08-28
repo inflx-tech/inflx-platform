@@ -1,0 +1,55 @@
+{
+  "feature": "publish-gate-offer-consistency",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28, from the Review screen: \"what is this....review it and tell me\", then \"Ok pls start do it and fix these\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — he supplied the screen itself as a screenshot and asked for two of its three blocks removed",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "No new screen is drawn. The board here IS his screenshot: the Review screen with three blocks and Publish greyed. 06-diff/notes.md records what each of the three became and why.",
+  "notes": "Corrects two defects the founder found on the Review screen, both introduced by me in Batch A and Batch B. Phone plus one server severity change. No migration.",
+
+  "what_was_wrong": {
+    "offer_blocked_publish": "Batch A made the wizard SAVE a set without an offer, on his instruction. I never touched the rule refusing to PUBLISH without one — so the app told him it was optional and then refused. Batch B then made it unsatisfiable: the check read the SET-level offer after the offer had moved to the creator, so an offer given on her own row cleared nothing at all.",
+    "empty_set_warning": "Creators are only sent to the server at Publish, so the server saw a set with nobody in it and said so — directly under a header reading 'Creators 1'. The screen filtered EMPTY_SET out of the server's BLOCKERS and let it straight through as a WARNING.",
+    "two_offer_controls": "Batch B added the per-creator control and left the set-level picker in place. Two things doing one job — the fault this programme has already cleaned up four times, introduced by me the day before he found it."
+  },
+
+  "what_stayed": "The expiring-agreement warning — the one of the three that was right. And all four real blockers: no allocation, empty allocation, missing agreement, dead agreement. This relaxes ONE rule.",
+
+  "preview_button": "'See what a shopper pays' lived inside the deleted section. Moved to her sheet, where it prices a real offer against a real creator's commission rather than guessing whose basket it was pricing at set level.",
+
+  "verification": {
+    "checks": "19 in publishGateConsistency.test.js",
+    "mutation": "7 deliberate breakages, 7 caught",
+    "two_missed_first_time": "The preview check matched its OWN COMMENT, which quotes the button's label — the same trap as Batch A's card check and Stage 4's shot-list check. Comments are now stripped. And one mutation regex did not apply at all, so it proved nothing until rewritten.",
+    "test_rewritten": "A Batch A assertion said the set-level picker and the preview live on the wizard. Both moved, so it now asserts they are on her sheet and that the wizard has exactly one way in. Rewritten, not deleted.",
+    "regression": "Full mobile suite 42 suites / 455 tests.",
+    "claim": "Certified no-regression. NEVER claimed green — the backend suite still cannot run."
+  },
+
+  "scope_excluded": [
+    "The expiring-agreement warning",
+    "The four real blockers",
+    "How offers are built — that was Batch B",
+    "Web"
+  ],
+
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src severity change + brand app OTA). No migration.",
+    "deploy_targets": [
+      "Render (backend/src)",
+      "OTA (brand app)"
+    ],
+    "outward_facing": "Indirect: campaigns that could not be published now can. Nothing already published is reinterpreted.",
+    "device_walk_required": "YES. W5 especially — leave a creator with nothing to sell and confirm Publish is STILL refused. Relaxing one rule next to four others is exactly how a fifth goes quiet.",
+    "diff_notes": "features/publish-gate-offer-consistency/06-diff/notes.md"
+  }
+}

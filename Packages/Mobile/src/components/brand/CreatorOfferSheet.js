@@ -35,7 +35,7 @@ import { buildWindow } from '../../utils/offerBuilders';
  * A set has one start for everybody. Creators do not all begin on it: one signs late, one is
  * asked to hold until a launch. So the window is hers.
  */
-export default function CreatorOfferSheet({ visible, creator, value, onSave, onClose }) {
+export default function CreatorOfferSheet({ visible, creator, value, onSave, onClose, onPreview }) {
   const [offers, setOffers] = useState(null);
   const [err, setErr] = useState(null);
   const [picked, setPicked] = useState(null);        // the chosen offer, either shape
@@ -152,6 +152,19 @@ export default function CreatorOfferSheet({ visible, creator, value, onSave, onC
               Hers alone — the set’s dates cover everybody, and creators do not all start on the
               same day. Leave either blank for no limit.
             </Text>
+
+            {/* "See what a shopper pays" moved here from the set. The founder asked for it kept,
+                and this is the better home anyway: at set level it could only guess whose basket
+                it was pricing. Here it is a real offer against a real creator's commission. */}
+            {!!picked && typeof onPreview === 'function' && (
+              <TouchableOpacity
+                style={[s.btnSec, { marginTop: 14 }]}
+                onPress={() => onPreview(creator, picked)}
+                activeOpacity={0.85}
+              >
+                <Text style={s.btnSecT}>See what a shopper pays</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
 
           <View style={{ gap: 8, marginTop: 12 }}>

@@ -200,13 +200,25 @@ describe('Batch A · A-8 A-9 A-10 N-4 N-6 · the offer stops blocking', () => {
     expect(src).toContain('must have something to sell');
   });
 
-  it('A-9 A-10 · both routes to an offer survive, and so does the preview', () => {
-    expect(src).toContain('onChooseOffer');
-    expect(src).toContain('Make a new one');
-    // N-6 — the founder asked for this to go, then withdrew it the same day once told the
-    // button is the only navigate() into BrandBasketPreview. Keeping it is the decision.
-    expect(src).toContain('See what a shopper pays');
+  it('A-9 A-10 · both routes to an offer survive — in ONE place, on her row', () => {
+    // REWRITTEN, not deleted. This asserted the set-level picker and the preview button live
+    // on the wizard. They have moved to the creator's own sheet, because leaving both was two
+    // controls doing one job — and the publish gate only ever read the set-level one, so an
+    // offer given on a creator's row could not satisfy it at all.
+    // Contract: features/publish-gate-offer-consistency
+    const sheet = read('components/brand/CreatorOfferSheet.js');
+    expect(sheet).toContain('From your library');
+    expect(sheet).toContain('Build a new offer');
+
+    // N-6 — the founder asked for the preview to go, then withdrew it the same day once told
+    // the button is the only route into BrandBasketPreview. It is kept, in its better home:
+    // at set level it could only guess whose basket it was pricing.
+    expect(sheet).toContain('See what a shopper pays');
     expect(src).toContain("navigate('BrandBasketPreview'");
+
+    // And exactly one way in from the wizard: her row.
+    expect(src).toContain('Give her an offer');
+    expect(src).not.toContain('onChooseOffer');
   });
 });
 

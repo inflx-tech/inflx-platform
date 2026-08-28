@@ -98,20 +98,36 @@ export default function BrandCampaignReviewScreen({ route, navigation }) {
         });
       }
     });
-    if (selling && !sd.offer) {
-      localBlockers.push({
+    // A WARNING, NOT A BLOCKER. Founder, 2026-08-27: "dont make this mandatory".
+    //
+    // It was a blocker, and the wizard was separately changed to save a set without an offer —
+    // so the app told a brand the offer was optional and then refused to publish without one.
+    //
+    // And it read `sd.offer`, the SET-level offer, after the offer had moved to the creator.
+    // A brand who gave one creator an offer on her own row could not clear it at all: the only
+    // way to satisfy it was through a control that should no longer exist.
+    const anyoneHasAnOffer = sd.creators.some(c => c.offer) || !!sd.offer;
+    if (selling && !anyoneHasAnOffer) {
+      localWarnings.push({
         code: 'NO_SHOPPER_OFFER',
-        message: `"${set.name}" has no shopper offer. Nothing gives a shopper a reason to buy through a creator rather than walk into your shop.`,
+        message: `Nobody in "${set.name}" has a shopper offer. Shoppers get no reason to buy through a creator rather than walk into your shop — but you can publish and add one later.`,
       });
     }
   });
 
-  // The server's own list. Right now it evaluates a campaign with no assignments yet, so
-  // most of it is quiet — but the wallet and any already-invited creator do show, and
-  // reading it here means the screen and the server cannot disagree.
-  const serverBlockers = (check?.blockers || []).filter(b => b.code !== 'EMPTY_SET');
+  // The server's own list — for the things only it can see: the wallet, and any creator
+  // already invited into this campaign.
+  //
+  // TWO OF ITS COMPLAINTS ARE DROPPED, because on an unpublished draft the phone is the one
+  // holding the truth. Creators are not sent until Publish is pressed, so the server looks at
+  // this campaign and sees a set with nobody in it and nobody holding an offer — and says so.
+  // Both were shown to the founder while his own screen read "Creators 1" directly above them.
+  // A screen that argues with its own header teaches a brand to stop reading it.
+  const IGNORE_UNTIL_PUBLISHED = ['EMPTY_SET', 'NO_SHOPPER_OFFER'];
+  const serverBlockers = (check?.blockers || []).filter(b => !IGNORE_UNTIL_PUBLISHED.includes(b.code));
+  const serverWarnings = (check?.warnings || []).filter(w => !IGNORE_UNTIL_PUBLISHED.includes(w.code));
   const blockers = [...localBlockers, ...serverBlockers];
-  const warnings = [...localWarnings, ...(check?.warnings || [])];
+  const warnings = [...localWarnings, ...serverWarnings];
 
   const hasSales = sets.some(x => x.goal === 'conversion');
   const canPublish = blockers.length === 0 && campaign?.status === 'draft';

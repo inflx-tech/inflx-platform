@@ -9,7 +9,6 @@ import { ig } from '../../theme/ig';
 import DateField from '../../components/DateField';
 import { brandApi } from '../../services/api';
 import CreatorAvatar from '../../components/CreatorAvatar';
-import OfferBuilderSheet from '../../components/brand/OfferBuilderSheet';
 import CreatorOfferSheet from '../../components/brand/CreatorOfferSheet';
 import * as draft from '../../utils/campaignDraft';
 import {
@@ -97,12 +96,9 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   const [agreements, setAgreements] = useState([]);
   const [picked, setPicked] = useState([]);            // agreement rows, pencilled
   // step 4
-  const [offers, setOffers] = useState([]);
-  const [chosenOffer, setChosenOffer] = useState(null);
   // stage-2-offers-parity — whose offer sheet is open. The offer belongs to a creator now:
   // campaign_influencers has always stored it, and campaign_sets has no offer columns at all.
   const [offerFor, setOfferFor] = useState(null);
-  const [builderOpen, setBuilderOpen] = useState(false);
 
   const selling = goal === 'conversion' || goal === 'hybrid';
   const buyingContent = goal === 'engagement' || goal === 'hybrid';
@@ -111,10 +107,12 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [ag, of] = await Promise.all([brandApi.listAgreements(), brandApi.getOffers()]);
+      // The offers list is no longer fetched here: CreatorOfferSheet loads it when it opens,
+      // which is the only place an offer is now chosen. Fetching it on every wizard entry was
+      // a request nobody read.
+      const ag = await brandApi.listAgreements();
       if (!alive) return;
       if (ag?.success) setAgreements(ag.data?.agreements || []);
-      if (of?.success) setOffers(of.data?.offers || []);
 
       if (initialSetId) {
         const sres = await brandApi.getCampaignSets(campaignId);
@@ -135,7 +133,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     const sync = () => {
       const sd = draft.getSetDraft(campaignId, setId);
       setPicked(sd.creators);
-      setChosenOffer(sd.offer);
     };
     sync();
     return draft.subscribe(campaignId, sync);
@@ -159,7 +156,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     }
     const sd = draft.getSetDraft(campaignId, set.id);
     setPicked(sd.creators);
-    setChosenOffer(sd.offer);
     setStep(sd.creators.length ? 3 : 2);
   }
 
@@ -249,7 +245,9 @@ export default function BrandSetWizardScreen({ route, navigation }) {
 
   function finishSet() {
     if (!setId) return;
-    draft.setSetDraft(campaignId, setId, { creators: picked, offer: chosenOffer });
+    // No set-level offer any more — it is written per creator, on `picked`. Older drafts may
+    // still carry one and invitePayload still honours it, so the field is not purged.
+    draft.setSetDraft(campaignId, setId, { creators: picked });
     navigation.goBack();
   }
 
@@ -311,23 +309,11 @@ export default function BrandSetWizardScreen({ route, navigation }) {
         {step === 3 && (
           <StepTerms
             selling={selling} buyingContent={buyingContent}
-            picked={picked} offers={offers} chosenOffer={chosenOffer}
+            picked={picked}
             derivedBudget={derivedBudget}
             onGiveOffer={setOfferFor}
             onSetAllocation={(c) => navigation.navigate('BrandAllocation', {
               campaignId, setId, agreementId: c.agreement_id, creatorName: c.name, current: c.alloc,
-            })}
-            onChooseOffer={(o) => {
-              const next = o ? { brand_offer_id: o.id, name: o.name, offer_type: o.offer_type } : null;
-              setChosenOffer(next);
-              if (setId) draft.setSetDraft(campaignId, setId, { offer: next });
-            }}
-            onBuildOffer={() => setBuilderOpen(true)}
-            onPreview={() => navigation.navigate('BrandBasketPreview', {
-              campaignId, setId,
-              offer: chosenOffer,
-              commissionPct: picked[0]?.terms?.money?.commission_pct ?? null,
-              creatorName: picked[0]?.name || null,
             })}
             onBack={() => setStep(2)}
             onDone={finishSet}
@@ -342,6 +328,13 @@ export default function BrandSetWizardScreen({ route, navigation }) {
         creator={offerFor}
         value={offerFor?.offer || null}
         onClose={() => setOfferFor(null)}
+        onPreview={(creator, offer) => navigation.navigate('BrandBasketPreview', {
+          campaignId,
+          setId,
+          offer,
+          commissionPct: creator?.terms?.money?.commission_pct ?? null,
+          creatorName: creator?.name || null,
+        })}
         onSave={(next) => {
           const id = offerFor?.agreement_id;
           setPicked(prev => prev.map(c => (c.agreement_id === id ? { ...c, offer: next } : c)));
@@ -349,19 +342,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
         }}
       />
 
-      <OfferBuilderSheet
-        visible={builderOpen}
-        activateByDefault
-        onClose={() => setBuilderOpen(false)}
-        onCreated={(offer) => {
-          setBuilderOpen(false);
-          if (!offer) return;
-          setOffers(prev => [offer, ...prev]);
-          const next = { brand_offer_id: offer.id, name: offer.name, offer_type: offer.offer_type };
-          setChosenOffer(next);
-          if (setId) draft.setSetDraft(campaignId, setId, { offer: next });
-        }}
-      />
     </View>
   );
 }
@@ -631,8 +611,8 @@ function offerLine(offer) {
 /* ── Step 4 · terms ────────────────────────────────────────────────────────── */
 function StepTerms(p) {
   const {
-    selling, buyingContent, picked, offers, chosenOffer, derivedBudget,
-    onSetAllocation, onGiveOffer, onChooseOffer, onBuildOffer, onPreview, onBack, onDone,
+    selling, buyingContent, picked, derivedBudget,
+    onSetAllocation, onGiveOffer, onBack, onDone,
   } = p;
 
   const everyoneAllocated = !selling || picked.every(c => c.alloc?.alloc_scope);
@@ -707,51 +687,19 @@ function StepTerms(p) {
 
       {selling ? (
         <View style={s.sec2}>
-          <Text style={s.dh}>② What their followers get · your decision</Text>
+          {/* The set-level offer picker used to live here.
+
+              It was removed once the offer moved to the creator, because leaving both would
+              have been two controls doing one job — the fault this programme has already had
+              to clean up four times, and the publish gate only ever read this one, so an offer
+              given on a creator's own row could not satisfy it at all.
+
+              Contract: features/publish-gate-offer-consistency */}
+          <Text style={s.dh}>② What their followers get</Text>
           <Text style={s.lead}>
-            A shopper needs a reason to buy through her rather than walk into your shop.{' '}
-            <Text style={s.leadB}>That reason is this offer.</Text>
+            An offer is given <Text style={s.leadB}>per creator</Text>, on her row above. Optional —
+            a creator with none simply sells at your normal prices, on her commission.
           </Text>
-
-          {offers.length === 0 && (
-            <Text style={[s.help, { marginTop: 10 }]}>
-              You have no saved offers yet. Build one — it goes live straight away and can be reused
-              in any later campaign.
-            </Text>
-          )}
-
-          {offers.map((o) => {
-            const on = chosenOffer?.brand_offer_id === o.id;
-            const expired = o.status === 'archived';
-            return (
-              <TouchableOpacity
-                key={o.id}
-                style={[s.offer, on && s.offerOn, expired && s.offerDim]}
-                activeOpacity={0.8}
-                onPress={() => onChooseOffer(on ? null : o)}
-              >
-                <View style={s.offerHd}>
-                  <Text style={s.offerT} numberOfLines={1}>{o.name}</Text>
-                  {on && <Text style={s.offerPick}>SELECTED</Text>}
-                </View>
-                <Text style={s.offerS}>
-                  {String(o.offer_type || 'discount').toUpperCase()}
-                  {o.status ? ` · ${String(o.status).toUpperCase()}` : ''}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          <TouchableOpacity style={[s.btn, s.btnSec, { marginTop: 10 }]} onPress={onBuildOffer} activeOpacity={0.85}>
-            <Text style={s.btnSecT}>Make a new one</Text>
-          </TouchableOpacity>
-
-          {!!chosenOffer && (
-            <TouchableOpacity style={[s.btn, s.btnSec, { marginTop: 8 }]} onPress={onPreview} activeOpacity={0.85}>
-              <Text style={s.btnSecT}>See what a shopper pays</Text>
-            </TouchableOpacity>
-          )}
-
           <View style={[s.noteN, { marginTop: 12 }]}>
             <Text style={s.noteT}>
               <Text style={s.noteB}>Only one offer applies per basket</Text> — the best one for that

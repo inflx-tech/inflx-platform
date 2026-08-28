@@ -6,7 +6,7 @@
  * Board: 04-preview/mockups/stage2-screens.html panel ⑨ · action ledger #63
  *
  * WHAT WAS THERE BEFORE
- * campaign.controller.publish enforced exactly ONE of the five blockers the board names —
+ * campaign.controller.publish enforced exactly ONE of the blockers the board names —
  * the wallet. Read line by line on 2026-08-25. Everything else published happily, and the
  * consequences are not cosmetic:
  *
@@ -128,18 +128,31 @@ async function evaluate(campaignId, brandId, conn = null) {
     }
   }
 
-  // ── 2 · A selling set with no shopper offer anywhere ───────────────────────
+  // ── 2 · A selling set where nobody has a shopper offer ─────────────────────
+  //
+  // A WARNING, NOT A BLOCKER. Founder, 2026-08-27: "dont make this mandatory... if brands
+  // want they give otherwise they dont."
+  //
+  // It was a blocker, and the wizard was then changed to SAVE a set without an offer — which
+  // left the app arguing with itself: it told a brand the offer was optional and then refused
+  // to publish without one. Saying the thing that is true and letting the brand decide is the
+  // whole difference between a warning and a refusal.
+  //
+  // Nothing underneath ever required it either: campaign_sets has no offer columns at all, and
+  // campaign_influencers.brand_offer_id / offer_type are nullable.
   for (const set of sellingSets) {
     const members = cis.filter(ci => ci.set_id === set.id);
-    if (!members.length) continue;                       // emptiness is caught below
+    if (!members.length) continue;                       // emptiness is its own warning below
+    // Per creator, which is where an offer actually lives. A brand who gives ONE creator an
+    // offer has answered the question for that set.
     const someoneHasOwn = members.some(ci => ci.offer_type || ci.brand_offer_id);
     if (!someoneHasOwn && liveGlobalOffers.length === 0) {
-      blockers.push(blocker(
-        'NO_SHOPPER_OFFER',
-        `"${set.name}" has no shopper offer. Nothing gives a shopper a reason to buy through a creator rather than walk into your shop.`,
-        'offer',
-        { set_id: set.id, set_name: set.name }
-      ));
+      warnings.push({
+        code: 'NO_SHOPPER_OFFER',
+        message: `Nobody in "${set.name}" has a shopper offer. Shoppers get no reason to buy through a creator rather than walk into your shop — but you can publish and add one later.`,
+        set_id: set.id,
+        set_name: set.name,
+      });
     }
   }
 
