@@ -70,3 +70,14 @@ One row. Three genuinely completed practice visits untouched.
 
 Not captured. The proof is the founder opening Asha's shoot on his own phone and finding a store
 visit with no time set yet — the exact screen that said it was done.
+
+---
+
+## One more door that was shut
+
+The **Logistics** card in her section list was gated on `physical_delivery` — which means *goods
+travel to her*. On a store visit nothing travels; **she** travels. So it was false, and the card
+was hidden on exactly the collaborations with the most to arrange.
+
+She could still reach the shoot through the big hero button, so it was not a dead end — but the
+list she scans for "where do I go" had no entry for it. Now the shoot always has a door.

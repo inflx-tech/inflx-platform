@@ -137,7 +137,11 @@ export function sectionsFor(d) {
 
   out.push({ key: 'terms', label: 'Terms & brief' });
   if (signedOn) out.push({ key: 'contract', label: 'Contract' });
-  if (post && d?.physical_delivery) out.push({ key: 'logistics', label: 'Logistics' });
+  // ⚠️ This was `physical_delivery` alone, which means GOODS TRAVEL TO HER. On a store visit
+  // nothing travels — she travels — so a creator with a visit to arrange had no Logistics card
+  // at all and could only reach the shoot through the hero button.
+  // If a shoot exists, it has a door. Contract: features/shoot-starts-where-the-agreement-left-it
+  if (post && (d?.physical_delivery || d?.hasShoot)) out.push({ key: 'logistics', label: 'Logistics' });
   if (post) out.push({ key: 'deliverables', label: 'Deliverables' });
   if (post) out.push({ key: 'tracking', label: 'Performance' });
   if (post) out.push({ key: 'earnings', label: 'Earnings' });

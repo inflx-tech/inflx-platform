@@ -157,9 +157,24 @@ describe('sectionsFor — stage gating', () => {
     expect(keys).toEqual(['terms', 'contract', 'deliverables', 'tracking', 'earnings']);
   });
 
-  it('logistics only when goods travel; products only when there are some', () => {
+  it('logistics only when there is something to arrange; products only when there are some', () => {
     const keys = sectionsFor({ stage: 'shoot', physical_delivery: false, products_total: 0 }).map(s => s.key);
     expect(keys).toEqual(['terms', 'contract', 'deliverables', 'tracking', 'earnings']);
+  });
+
+  it('⚠️ a STORE VISIT gets a logistics card even though nothing ships', () => {
+    // physical_delivery means goods travel to her. On a visit she travels to the goods, so it
+    // is false — and the card was hidden on exactly the collaborations that have the most to
+    // arrange. She could only reach the shoot through the hero button.
+    const keys = sectionsFor({ stage: 'shoot', physical_delivery: false, hasShoot: true, products_total: 0 })
+      .map(s => s.key);
+    expect(keys).toContain('logistics');
+  });
+
+  it('and a collaboration with no shoot at all still has no logistics card', () => {
+    const keys = sectionsFor({ stage: 'shoot', physical_delivery: false, hasShoot: false, products_total: 0 })
+      .map(s => s.key);
+    expect(keys).not.toContain('logistics');
   });
 
   it('done keeps her contract, deliverables, performance and earnings', () => {

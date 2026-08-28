@@ -21,7 +21,7 @@
   "verification": {
     "backend": "tests/shoot-plan.test.js — 29 checks, 13 mutations, 13 caught",
     "mobile": "stage4Shoot.test.js — 63 checks, 6 mutations, 6 caught. It LIFTS REQUIRES_BOTH and isShootComplete out of the server's own source and runs them against the phone's, so drift on either side fails; both directions mutated.",
-    "suite": "Mobile 48 suites / 558 tests. Backend brief-to-signing 19/19, deliverables 19/19, usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11.",
+    "suite": "Mobile 48 suites / 560 tests. Backend brief-to-signing 19/19, deliverables 19/19, usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11, shoot-plan 29/29.",
     "migration": "164 dry-run inside a ROLLED-BACK transaction before applying: rows 5->5, completed 4->4, half-marked 0, marked-early 0. Then applied, same numbers.",
     "data_repair": "Dry-run first. Exactly 1 row matched. ⚠️ Migration 164's backfill had already made the bugged row look legitimately finished, so timestamps could not distinguish it — the AUDIT LOG could, and the repair matches on actor_role='system' and nothing else. Asha's row: remote/completed -> visit/proposed. Three genuinely completed practice visits untouched.",
     "one_check_passed_while_testing_nothing": "toContain('isShootComplete') was satisfied by a logAction line two lines above the guard. Replacing the guard with if(false) — closing every shoot on one mark, the exact Stage 4 bug — left it green. Seventh time this session; every one found by mutation, none by reading.",
@@ -50,5 +50,6 @@
     "outward_facing": "Every shoot created from now on opens in the agreed mode and waits to be planned. A store visit needs both marks. One existing row was repaired.",
     "device_walk_required": "YES — open Asha's shoot on both phones, confirm it reads Store visit with no time set, propose a time from one side and accept from the other, then mark it done from each side in turn.",
     "diff_notes": "features/shoot-starts-where-the-agreement-left-it/06-diff/notes.md"
-  }
+  },
+  "one_more_door_that_was_shut": "The Logistics card in her section list was gated on physical_delivery, which means GOODS TRAVEL TO HER. On a store visit nothing travels — she travels — so it was false, and the card was hidden on exactly the collaborations with the most to arrange. Not a dead end (the hero button still opened the shoot) but the list she scans for \"where do I go\" had no entry for it, which is half of \"I am not able to see the shoot plan\". Now: if a shoot exists, it has a door. 2 mutations, 2 caught."
 }
