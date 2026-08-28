@@ -18,6 +18,9 @@ const parcel = require('./parcel.service');
 const events = require('./collabEvents.service');
 
 const VALID_MODES = ['visit', 'shipment', 'remote'];
+// Which shoot, and what state it starts in — one place, so no caller invents a third answer.
+// Contract: features/shoot-starts-where-the-agreement-left-it
+const { resolveProductionMode, initialStatusFor } = require('./productionMode.model');
 const VALID_STATUSES = ['proposed', 'confirmed', 'in_progress', 'completed', 'cancelled'];
 
 const RESCHEDULE_LIMIT_PER_SIDE = 2;
@@ -89,14 +92,41 @@ function isWithinRange(iso, range) {
   return d >= new Date(range.earliest).getTime() && d <= new Date(range.latest).getTime();
 }
 
+/**
+ * The working style the two of them settled at the handshake.
+ * Returns null for a campaign built without a prior agreement, which is normal.
+ * Contract: features/shoot-starts-where-the-agreement-left-it
+ */
+async function agreementModeFor(client, contractId) {
+  const q = (client && client.query) ? client : db;
+  const { rows } = await q.query(
+    `SELECT ag.terms_json->>'mode' AS mode
+       FROM contracts con
+       JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+       LEFT JOIN collab_agreements ag ON ag.id = ci.agreement_id
+      WHERE con.id = $1`,
+    [contractId]
+  );
+  return rows[0] ? rows[0].mode : null;
+}
+
 // ─── Auto-create at contract activation ─────────────────────────────────────
 //
 // Called from contract.controller.brandSign once the contract row goes to
 // 'active'. Picks the mode from contracts.production_mode and pre-fills
 // shipment address from the campaign_influencer's delivery_address (which
 // the influencer set during onboarding) if available.
-async function autoCreateForContract(client, contract) {
-  const mode = contract.production_mode || 'remote';
+async function autoCreateForContract(client, contract, agreementMode) {
+  // The mode the two of them ALREADY AGREED. contracts.production_mode is written in exactly
+  // one place — the brand's "Approve & Send" step — which briefing-straight-to-signing skips by
+  // design. So it is usually null, and `|| 'remote'` silently invented a remote shoot on a
+  // collaboration whose agreement plainly said 'visit'.
+  // Contract: features/shoot-starts-where-the-agreement-left-it
+  const resolved = resolveProductionMode({
+    contractMode:  contract.production_mode,
+    agreementMode: agreementMode !== undefined ? agreementMode : await agreementModeFor(client, contract.id),
+  });
+  const mode = resolved.mode;
   if (!VALID_MODES.includes(mode)) {
     throw new Error(`Invalid production_mode "${mode}" on contract ${contract.id}`);
   }
@@ -108,8 +138,11 @@ async function autoCreateForContract(client, contract) {
   );
   if (existing.rows[0]) return existing.rows[0];
 
-  // Remote mode shortcuts to completed — there's nothing to coordinate.
-  const initialStatus = mode === 'remote' ? 'completed' : 'proposed';
+  // NOTHING starts completed. This used to read `mode === 'remote' ? 'completed' : 'proposed'`
+  // on the reasoning that remote has "nothing to coordinate". There is nothing to COORDINATE —
+  // no slot, no parcel. There is still a shoot to DO, and a person says when it is done: both
+  // sides for a store visit, the creator for a remote shoot.
+  const initialStatus = initialStatusFor(mode);
 
   // Auto-fill shipping address from campaign_influencers.delivery_address.
   // Falls back to NULL — brand can override at the visit/shipment-details step.
@@ -356,14 +389,17 @@ async function confirmRemoteFlip(eventId, actor, notes) {
       `UPDATE contracts SET production_mode = 'remote' WHERE id = $1`,
       [event.contract_id]
     );
+    // Agreeing to switch to remote settles WHERE she shoots. It does not shoot it for her.
+    // This wrote status='completed' too — a SECOND place asserting that remote means finished,
+    // which is how one wrong idea survives being fixed in the other place.
     const { rows } = await client.query(
       `UPDATE production_events
           SET mode = 'remote',
-              status = 'completed',
+              status = $2,
               updated_at = NOW()
         WHERE id = $1
         RETURNING *`,
-      [eventId]
+      [eventId, initialStatusFor('remote')]
     );
     await client.query('COMMIT');
     await logAction(null, eventId, actor.user_id, actor.role, 'remote_flip_confirmed', notes || null, null);
@@ -570,16 +606,47 @@ async function completeShoot(eventId, notes, actor) {
     );
   }
 
-  const { rows } = await db.query(
+  // Idempotent: tapping twice is not an error, it just does not un-mark anything. Checked
+  // AFTER permission, so an unauthorised caller is told they may not, rather than being
+  // quietly handed the row.
+  const already = actor.role === 'brand' ? event.brand_completed_at : event.influencer_completed_at;
+  if (already) return event;
+
+  // Record THIS side's mark. On a store visit that is half the answer; on remote and
+  // shipment the creator's mark is the whole of it.
+  //
+  // This used to set status='completed' unconditionally, so whoever tapped first closed the
+  // shoot for both of them. Contract: features/shoot-starts-where-the-agreement-left-it
+  // Two literals chosen by a ternary — never a value off the request. Interpolated because a
+  // column name cannot be a bound parameter.
+  const col = actor.role === 'brand' ? 'brand_completed_at' : 'influencer_completed_at';
+  const { rows: marked } = await db.query(
     `UPDATE production_events
-     SET visit_completed_at = COALESCE(visit_completed_at, NOW()),
-         status = 'completed',
-         updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
+        SET ${col} = COALESCE(${col}, NOW()),
+            updated_at = NOW()
+      WHERE id = $1
+      RETURNING *`,
     [eventId]
   );
-  await logAction(null, eventId, actor.user_id, actor.role, 'completed', notes || null, null);
+  await logAction(null, eventId, actor.user_id, actor.role,
+    parcel.isShootComplete(event.mode, marked[0]) ? 'completed' : 'complete_marked',
+    notes || null, null);
+
+  if (!parcel.isShootComplete(event.mode, marked[0])) {
+    // Waiting on the other side. The caller reads who has marked off the row itself, so no
+    // second flag is invented to say the same thing twice.
+    return marked[0];
+  }
+
+  const { rows } = await db.query(
+    `UPDATE production_events
+        SET visit_completed_at = COALESCE(visit_completed_at, NOW()),
+            status = 'completed',
+            updated_at = NOW()
+      WHERE id = $1
+      RETURNING *`,
+    [eventId]
+  );
   return rows[0];
 }
 
@@ -642,6 +709,7 @@ module.exports = {
   VALID_STATUSES,
   RESCHEDULE_LIMIT_PER_SIDE,
   autoCreateForContract,
+  agreementModeFor,
   getByContractId,
   getById,
   // stage-4 — the parcel endpoints write to the SAME diary. B-8: every new action is

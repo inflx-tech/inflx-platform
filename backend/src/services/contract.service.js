@@ -8,6 +8,8 @@
  */
 
 const db = require('../config/db');
+// The three working styles an agreement can settle on.
+const { MODES } = require('./productionMode.model');
 const notificationService = require('./notification.service');
 
 /**
@@ -70,13 +72,19 @@ async function _autoCreateInner(campaignInfluencerId, opts = {}) {
        b.business_name                       AS brand_name,
        b.platform_fee_pct,
        u_inf.phone                           AS influencer_phone,
-       inf.instagram_handle                  AS influencer_handle
+       inf.instagram_handle                  AS influencer_handle,
+       -- Where she works, settled at the handshake. Written onto the contract here so the
+       -- shoot does not have to guess it later — it used to, and guessed 'remote' on a
+       -- collaboration whose agreement plainly said 'visit'.
+       -- Contract: features/shoot-starts-where-the-agreement-left-it
+       ag.terms_json->>'mode'                AS agreed_mode
      FROM campaign_influencers ci
      JOIN campaign_sets  cs  ON cs.id  = ci.set_id
      JOIN campaigns      c   ON c.id   = cs.campaign_id
      JOIN brands         b   ON b.id   = c.brand_id
      JOIN influencers    inf ON inf.id  = ci.influencer_id
      JOIN users          u_inf ON u_inf.id = inf.user_id
+     LEFT JOIN collab_agreements ag ON ag.id = ci.agreement_id
      WHERE ci.id = $1`,
     [campaignInfluencerId]
   );
@@ -114,8 +122,9 @@ async function _autoCreateInner(campaignInfluencerId, opts = {}) {
   const { rows: contractRows } = await db.query(
     `INSERT INTO contracts
        (campaign_influencer_id, influencer_fee, revision_limit, posting_date,
-        content_requirements, brand_name, influencer_name, campaign_name, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        content_requirements, brand_name, influencer_name, campaign_name, status,
+        production_mode)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      ON CONFLICT (campaign_influencer_id) DO NOTHING
      RETURNING *`,
     [
@@ -128,6 +137,13 @@ async function _autoCreateInner(campaignInfluencerId, opts = {}) {
       influencerName,
       ci.campaign_name,
       initialStatus,
+      // NULL when nothing was agreed — the brand still picks a mode at Approve & Send,
+      // exactly as before. resolveProductionMode is deliberately NOT used here: this column
+      // records what was AGREED, and storing an invented default would make a guess look
+      // like a decision. The guess belongs at read time, where it can be labelled as one.
+      MODES.includes(String(ci.agreed_mode || '').toLowerCase())
+        ? String(ci.agreed_mode).toLowerCase()
+        : null,
     ]
   );
 

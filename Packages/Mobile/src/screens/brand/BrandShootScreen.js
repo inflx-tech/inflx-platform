@@ -9,9 +9,7 @@ import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import DateField from '../../components/DateField';
 import { ProductPickerModal } from '../../components/brand/ProductPicker';
-import {
-  MODE_LABEL, MODE_LINE, turnOf, canComplete, countersLeft, WHY_NOT_YOURS, shortDate,
-} from '../../utils/shoot';
+import { MODE_LABEL, MODE_LINE, turnOf, canComplete, countersLeft, WHY_NOT_YOURS, shortDate, waitingOnOtherSide, WAITING_ON_OTHER } from '../../utils/shoot';
 import {
   WindowCard, SlotCard, AddressCard, ParcelItem, TurnLine, Btn, WhyNote, Delivered,
 } from '../../components/shoot/ShootParts';
@@ -321,10 +319,13 @@ export default function BrandShootScreen({ route, navigation }) {
             )}
 
             {/* ── Finishing ───────────────────────────────────────────────── */}
+            {/* Three states, not two. Contract: features/shoot-starts-where-the-agreement-left-it */}
             {['confirmed', 'in_progress'].includes(event.status) && (
-              canComplete(mode, 'brand')
-                ? <Btn label="Mark the shoot done" tone="pri" onPress={markDone} disabled={busy} />
-                : <WhyNote>{WHY_NOT_YOURS}</WhyNote>
+              waitingOnOtherSide(event, 'brand')
+                ? <WhyNote>{WAITING_ON_OTHER.brand}</WhyNote>
+                : canComplete(mode, 'brand')
+                  ? <Btn label="Mark the shoot done" tone="pri" onPress={markDone} disabled={busy} />
+                  : <WhyNote>{WHY_NOT_YOURS}</WhyNote>
             )}
 
             {event.status === 'completed' && (

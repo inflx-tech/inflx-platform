@@ -28,6 +28,47 @@ export const canComplete = (mode, role) =>
   (MAY_COMPLETE[mode] || ['influencer']).includes(role);
 
 /**
+ * Modes where the shoot is not finished until BOTH sides have said so.
+ *
+ * Founder, 2026-08-28: "if it is store visit then both will mark it as done...if it is remote
+ * then creator mark it as done".
+ *
+ * ⚠️ MAY_COMPLETE answers a DIFFERENT question — who is ALLOWED to mark it. Stage 4 read
+ * visit: ['brand','influencer'] as "either one closes it", so whoever tapped first closed the
+ * visit for both of them. Allowed-to-mark and enough-to-close are not the same thing.
+ * Mirrors backend parcel.service.REQUIRES_BOTH; shoot.rules.test.js pins them together.
+ * Contract: features/shoot-starts-where-the-agreement-left-it
+ */
+export const REQUIRES_BOTH = ['visit'];
+
+export const needsBothToComplete = (mode) =>
+  REQUIRES_BOTH.includes(String(mode || '').toLowerCase());
+
+/** Given who has marked it, is the shoot finished? Her mark is required in every mode. */
+export const isShootComplete = (mode, marks = {}) => {
+  const byInfluencer = !!(marks && marks.influencer_completed_at);
+  const byBrand      = !!(marks && marks.brand_completed_at);
+  return needsBothToComplete(mode) ? (byInfluencer && byBrand) : byInfluencer;
+};
+
+/**
+ * Has THIS side already marked it, and is it still waiting on the other?
+ * The third state neither screen had: after she taps, the button used to still read "Mark the
+ * shoot done", and tapping again does nothing — which reads as broken.
+ */
+export const waitingOnOtherSide = (event, role) => {
+  if (!event || event.status === 'completed') return false;
+  const mine = role === 'brand' ? event.brand_completed_at : event.influencer_completed_at;
+  return !!mine && !isShootComplete(event.mode, event);
+};
+
+/** Said to whichever side has marked it and is waiting. */
+export const WAITING_ON_OTHER = {
+  brand: 'You have marked the visit done. It closes once she marks it too — a visit is two people, so both of you say it happened.',
+  influencer: 'You have marked the visit done. It closes once the brand marks it too — a visit is two people, so both of you say it happened.',
+};
+
+/**
  * Why the brand cannot close a remote shoot. Shown instead of the button, because a missing
  * button with no explanation reads as a bug.
  */

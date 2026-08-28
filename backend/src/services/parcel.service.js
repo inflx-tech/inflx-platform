@@ -40,6 +40,38 @@ const MAY_COMPLETE = {
 
 const canComplete = (mode, role) => (MAY_COMPLETE[mode] || ['influencer']).includes(role);
 
+/**
+ * Modes where the shoot is not finished until BOTH sides have said so.
+ *
+ * Founder, 2026-08-28: "if it is store visit then both will mark it as done...if it is remote
+ * then creator mark it as done".
+ *
+ * ⚠️ MAY_COMPLETE above answers a DIFFERENT question — who is allowed to mark it. Stage 4 read
+ * `visit: ['brand','influencer']` as "either one closes it", so one side could close a visit
+ * the other says never happened. Allowed-to-mark and enough-to-close are not the same thing,
+ * and keeping them as two named constants is the only way they stay distinguishable.
+ *
+ * Remote and shipment stay one-sided on purpose: the brand cannot see whether she has shot
+ * anything, so they are not permitted to assert it at all.
+ * Contract: features/shoot-starts-where-the-agreement-left-it
+ */
+const REQUIRES_BOTH = ['visit'];
+
+const needsBothToComplete = (mode) => REQUIRES_BOTH.includes(String(mode || '').toLowerCase());
+
+/**
+ * Given who has marked it so far, is the shoot finished?
+ * @param {string} mode
+ * @param {{brand_completed_at?:*, influencer_completed_at?:*}} marks
+ */
+const isShootComplete = (mode, marks = {}) => {
+  const byInfluencer = !!marks.influencer_completed_at;
+  const byBrand      = !!marks.brand_completed_at;
+  // The creator's word is required in every mode. She is the one who does the shooting; a
+  // visit closed on the brand's mark alone would be the brand reporting her work for her.
+  return needsBothToComplete(mode) ? (byInfluencer && byBrand) : byInfluencer;
+};
+
 /** Everything in a parcel, newest parcel last, in the order the brand packed it. */
 async function listItems(eventId, conn) {
   const { rows } = await conn.query(
@@ -222,6 +254,10 @@ module.exports = {
   dropItem,
   summarise,
   canComplete,
+  MAY_COMPLETE,
+  REQUIRES_BOTH,
+  needsBothToComplete,
+  isShootComplete,
   MAY_COMPLETE,
   VERDICTS,
   SHORTFALL,

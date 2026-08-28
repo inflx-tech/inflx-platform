@@ -134,7 +134,11 @@ const getProduction = asyncHandler(async (req, res) => {
   await ensureParty(contract, req, 'either');
   let event = await productionService.getByContractId(contract.id);
 
-  if (!event && contract.production_mode && contract.production_mode !== 'remote') {
+  // The `!== 'remote'` that used to be here skipped the heal for remote contracts, because a
+  // remote event was auto-completed and therefore pointless. It is not auto-completed any
+  // more — she has to mark it done — so a remote contract needs its event like any other.
+  // Contract: features/shoot-starts-where-the-agreement-left-it
+  if (!event) {
     // Fetch the full contract row (production.service.autoCreateForContract
     // reads formats from it). getContractParties only returns a thin slice.
     const { rows: full } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
@@ -253,7 +257,8 @@ const proposeSlot = asyncHandler(async (req, res) => {
 
 // POST /v1/production-events/:id/flip-to-remote  (brand OR influencer)
 // Either party can request; the other confirms. On confirm, contracts.production_mode → 'remote'
-// and the event auto-completes (no shoot needed).
+// and the event moves to confirmed. It does NOT auto-complete: switching to remote settles
+// WHERE she shoots, not whether she has. She marks it done when she has shot it.
 const flipToRemote = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
@@ -269,7 +274,12 @@ const flipToRemote = asyncHandler(async (req, res) => {
   // Whether this call was the request or the confirmation is decided in the
   // service (auto-confirms if other side already requested). Notify the
   // appropriate party.
-  const isConfirmed = updated.mode === 'remote' && updated.status === 'completed';
+  // Was this call the request or the confirmation? The flip only writes mode='remote' on
+  // confirmation, so the mode alone answers it. This used to also require status='completed',
+  // which stopped being true the moment a remote shoot had to be marked done by a person —
+  // and would have silently sent the WRONG notification, saying someone had asked when they
+  // had in fact agreed. Contract: features/shoot-starts-where-the-agreement-left-it
+  const isConfirmed = updated.mode === 'remote';
   const target = req.user.sub === contract.brand_user_id
     ? { uid: contract.influencer_user_id, fcm: contract.influencer_fcm, phone: contract.influencer_phone }
     : { uid: contract.brand_user_id, fcm: contract.brand_fcm, phone: contract.brand_phone };
@@ -278,7 +288,7 @@ const flipToRemote = asyncHandler(async (req, res) => {
     isConfirmed ? 'production.remote_flip_confirmed' : 'production.remote_flip_requested',
     isConfirmed ? 'Switched to remote production' : 'Other side wants to switch to remote',
     isConfirmed
-      ? `Production mode for "${contract.campaign_name}" is now remote. Create content from the brief — no shoot needed.`
+      ? `Production mode for "${contract.campaign_name}" is now remote. Shoot it your own way, then mark the shoot done.`
       : `The other side asked to switch "${contract.campaign_name}" to remote (no shoot). Confirm to proceed.`,
     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
   );

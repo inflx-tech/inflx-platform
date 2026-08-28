@@ -122,14 +122,77 @@ describe('Stage 4 · the phone and the server agree on who may finish a shoot', 
       path.resolve(SRC, '../../../backend/src/services/parcel.service.js'), 'utf8');
     const decl = src.match(/const MAY_COMPLETE = \{[\s\S]*?\n\};/);
     const fn = src.match(/const canComplete = [^;]+;/);
-    if (!decl || !fn) {
-      throw new Error('parcel.service no longer declares MAY_COMPLETE/canComplete as expected');
+    // The second rule, added 2026-08-28: who is ALLOWED to mark it and who is ENOUGH to close
+    // it are different questions, and Stage 4 collapsed them.
+    // Contract: features/shoot-starts-where-the-agreement-left-it
+    const both = src.match(/const REQUIRES_BOTH = \[[^\]]*\];/);
+    const needs = src.match(/const needsBothToComplete = [^;]+;/);
+    const done = src.match(/const isShootComplete = \([\s\S]*?\n\};/);
+    if (!decl || !fn || !both || !needs || !done) {
+      throw new Error('parcel.service no longer declares the completion rules as expected');
     }
     // eslint-disable-next-line no-new-func
     return new Function(
-      `${decl[0]}\n${fn[0]}\nreturn { MAY_COMPLETE, canComplete };`
+      `${decl[0]}\n${fn[0]}\n${both[0]}\n${needs[0]}\n${done[0]}\n` +
+      `return { MAY_COMPLETE, canComplete, REQUIRES_BOTH, needsBothToComplete, isShootComplete };`
     )();
   })();
+
+  it('⚠️ REQUIRES_BOTH is identical on both sides', () => {
+    // The founder's rule: a store visit is two people, so both of them say it happened.
+    expect(shoot.REQUIRES_BOTH).toEqual(server.REQUIRES_BOTH);
+    expect(shoot.REQUIRES_BOTH).toEqual(['visit']);
+  });
+
+  it.each([
+    ['visit', { influencer_completed_at: 'x' }, false],
+    ['visit', { brand_completed_at: 'x' }, false],
+    ['visit', { brand_completed_at: 'x', influencer_completed_at: 'x' }, true],
+    ['remote', { influencer_completed_at: 'x' }, true],
+    ['remote', { brand_completed_at: 'x' }, false],
+    ['shipment', { influencer_completed_at: 'x' }, true],
+    ['shipment', {}, false],
+  ])('isShootComplete(%s, %o) is %s on both sides', (mode, marks, expected) => {
+    expect([mode, shoot.isShootComplete(mode, marks)]).toEqual([mode, expected]);
+    expect([mode, server.isShootComplete(mode, marks)]).toEqual([mode, expected]);
+  });
+
+  describe('the third state neither screen had', () => {
+    // After she taps, the button used to still read "Mark the shoot done" and tapping again
+    // did nothing — which reads as broken.
+    it('she has marked a visit and is waiting for the brand', () => {
+      const ev = { mode: 'visit', status: 'confirmed', influencer_completed_at: 'x' };
+      expect(shoot.waitingOnOtherSide(ev, 'influencer')).toBe(true);
+      expect(shoot.waitingOnOtherSide(ev, 'brand')).toBe(false);
+    });
+
+    it('the brand has marked it and is waiting for her', () => {
+      const ev = { mode: 'visit', status: 'confirmed', brand_completed_at: 'x' };
+      expect(shoot.waitingOnOtherSide(ev, 'brand')).toBe(true);
+      expect(shoot.waitingOnOtherSide(ev, 'influencer')).toBe(false);
+    });
+
+    it('nobody waits on a remote shoot — her mark finishes it', () => {
+      const ev = { mode: 'remote', status: 'confirmed', influencer_completed_at: 'x' };
+      expect(shoot.waitingOnOtherSide(ev, 'influencer')).toBe(false);
+    });
+
+    it('nobody waits before anyone has marked, or after it closed', () => {
+      expect(shoot.waitingOnOtherSide({ mode: 'visit', status: 'confirmed' }, 'brand')).toBe(false);
+      expect(shoot.waitingOnOtherSide({ mode: 'visit', status: 'completed',
+        brand_completed_at: 'x', influencer_completed_at: 'x' }, 'brand')).toBe(false);
+      expect(shoot.waitingOnOtherSide(null, 'brand')).toBe(false);
+    });
+
+    it('and BOTH screens render it — a rule nothing draws is not a rule', () => {
+      for (const p of ['../../influencer/ShootScreen.js', '../BrandShootScreen.js']) {
+        const src = fs.readFileSync(path.resolve(__dirname, p), 'utf8')
+          .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+        expect([p, src.includes('waitingOnOtherSide(event,')]).toEqual([p, true]);
+        expect([p, src.includes('WAITING_ON_OTHER.')]).toEqual([p, true]);
+      }
+    });
+  });
 
   it('MAY_COMPLETE is identical on both sides', () => {
     // The screen's copy exists ONLY so a button that would be refused is never drawn. If the

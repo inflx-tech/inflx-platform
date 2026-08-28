@@ -10,10 +10,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateField from '../../components/DateField';
 import { ig } from '../../theme/ig';
 import { influencerApi } from '../../services/api';
-import {
-  MODE_LABEL, STATUS_LABEL, turnOf, canComplete, countersLeft,
-  RESCHEDULE_LIMIT_PER_SIDE, shortDate,
-} from '../../utils/shoot';
+import { MODE_LABEL, STATUS_LABEL, turnOf, canComplete, countersLeft, RESCHEDULE_LIMIT_PER_SIDE, shortDate, waitingOnOtherSide, WAITING_ON_OTHER } from '../../utils/shoot';
 import {
   WindowCard, SlotCard, AddressCard, ParcelItem, ShortfallNote, TurnLine, Btn, WhyNote, Delivered,
 } from '../../components/shoot/ShootParts';
@@ -329,10 +326,15 @@ export default function ShootScreen({ route, navigation }) {
             )}
 
             {/* ── Finishing ───────────────────────────────────────────────── */}
+            {/* Three states, not two. She may have marked it and still be waiting for the
+                brand — on a store visit both of them say it happened.
+                Contract: features/shoot-starts-where-the-agreement-left-it */}
             {['confirmed', 'in_progress'].includes(event.status) && (
-              canComplete(mode, 'influencer')
-                ? <Btn label="Mark the shoot done" tone="pri" onPress={markDone} disabled={busy} />
-                : null
+              waitingOnOtherSide(event, 'influencer')
+                ? <WhyNote>{WAITING_ON_OTHER.influencer}</WhyNote>
+                : canComplete(mode, 'influencer')
+                  ? <Btn label="Mark the shoot done" tone="pri" onPress={markDone} disabled={busy} />
+                  : null
             )}
 
             {event.status === 'completed' && (
