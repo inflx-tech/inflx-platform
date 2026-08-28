@@ -1,0 +1,46 @@
+{
+  "feature": "deliverables-only-when-buying-content",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28, with a screenshot of the refused countersign: \"content related reels and all is come mandatory only in pay for content type of campaign...next pls check clearly and resolve this\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — stated the rule directly and asked for it resolved; the only UI change is one headline, drawn in 04-preview",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "04-preview/mockups/live-not-shoot.html — before/after of the one headline that changes. Her section cards are identical either side.",
+  "notes": "Deliverables are created only where the brand is buying content. A commission creator sells product, not content — nothing was bought, so nothing is owed.",
+  "the_bug": "The brand could not counter-sign a commission deal at all. brandSign threw 422 'campaign set has no deliverable formats' on a set the WIZARD had deliberately saved with an empty list, because BrandSetWizardScreen already had the founder's rule right: formats_json: buyingContent ? formats : []. The server was never told.",
+  "three_answers_to_one_question": "The wizard sent []. brandSign refused. getMyCampaignDetail invented [{type:'reel',count:1}] and would have shown her a pending reel she never agreed to deliver. Fifth time this codebase has paid for two things doing one job.",
+  "the_consequence_i_had_to_handle": "Letting a commission collab through with zero deliverables strands her: deriveStage leaves 'shoot' only on deliverable progress she will never have, so she would read 'The shoot — settle the time and shoot' for the whole campaign. She was never functionally blocked (link, tracking and earnings are all reachable from that screen) but the headline was a lie. heroFor now says 'You are live — share your link and earn on every sale it brings' for a commission collab with nothing to deliver AND no shoot arranged. No seventh stage invented; a commission collab that has a store visit or parcel still gets the shoot.",
+  "error_text_rewritten": "The old message named a JSON column at a brand who has never seen one. Now: 'This campaign pays for content, so the set has to say what content. Open the set and add at least one format — a reel, a post, a story — before signing.'",
+  "verification": {
+    "checks": "19 in tests/deliverables-when-buying-content.test.js",
+    "mutation": "10 deliberate breakages, 10 caught",
+    "against_production": "Every set in production run through the new rule: 10 sets, 9 pass, 1 correctly still refuses. Asha's exact row now passes and creates 0 deliverables.",
+    "suite": "Mobile 48 suites / 545 tests. Backend brief-to-signing 19/19, usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11.",
+    "found_in_my_own_work": "A zero count silently became one — Math.max(1, parseInt(count) || 1) turned a format the brand had explicitly set to zero into one deliverable, and made the 'everything is zero' branch unreachable. Caught by its own test failing, not by reading. And toContain('plannedDeliverables') was satisfied by the function merely being NAMED, so hardcoding the goal at the call site left it green while refusing every commission countersign exactly as before. Fifth and sixth time this session a check has passed by matching something other than what it meant to. Both tightened and re-mutated.",
+    "runner_gained_toThrow": "A check needed it; the runner did not have it. Added to the RUNNER, not worked around. Proved in both directions — three passing cases and four that must fail, including a non-function argument.",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "one_creator_still_blocked_correctly": "Ravi K. sits at pending_brand on the practice set 'Reels' — goal engagement, no formats. The brand is paying a fee and has not said what content, so the refusal stands. Recoverable: formats_json is editable on a live set.",
+  "scope_excluded": [
+    "Moving a commission collaboration to 'done' — still needs someone to complete it, exactly as before",
+    "Whether the brand app exposes editing formats on a live set (the API allows it)"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src + influencer OTA). No migration.",
+    "deploy_targets": [
+      "Render (backend/src)",
+      "OTA influencer"
+    ],
+    "outward_facing": "Every commission countersign from now on succeeds. No existing deliverable is created, deleted or changed.",
+    "device_walk_required": "YES — counter-sign Asha's contract from the founder's phone, then open her collab and confirm it reads 'You are live' with nothing owed.",
+    "diff_notes": "features/deliverables-only-when-buying-content/06-diff/notes.md"
+  }
+}

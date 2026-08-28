@@ -1486,17 +1486,18 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     try {
       // Fetch formats_json from the campaign set
       const { rows: setRows } = await db.query(
-        `SELECT cs.formats_json FROM campaign_sets cs
+        `SELECT cs.formats_json, cs.goal FROM campaign_sets cs
          JOIN campaign_influencers ci ON ci.set_id = cs.id
          WHERE ci.id = $1`,
         [ciId]
       );
-      let formats = [];
-      if (setRows[0]?.formats_json) {
-        const raw = setRows[0].formats_json;
-        formats = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
-      }
-      if (formats.length === 0) formats = [{ type: 'reel', count: 1 }];
+      // ⚠️ This used to fall back to [{ type: 'reel', count: 1 }] when the set had no formats,
+      // which INVENTED a deliverable on a commission collaboration and then showed it to her as
+      // pending work she had never agreed to. A commission creator sells product, not content.
+      // Same rule as the countersign, from the same function, so the two cannot disagree again.
+      // Contract: features/deliverables-only-when-buying-content
+      const { plannedDeliverables } = require('../services/deliverables.model');
+      const { formats } = plannedDeliverables(setRows[0]?.goal, setRows[0]?.formats_json);
 
       for (const fmt of formats) {
         const delType = fmt.type || 'reel';

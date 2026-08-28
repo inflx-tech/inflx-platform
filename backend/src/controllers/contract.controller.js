@@ -556,39 +556,21 @@ async function _signOneContractInTx(client, contract, signedByUserId) {
     );
   }
 
-  // 5. Auto-create deliverables from formats_json
-  const raw = contract.formats_json;
-  if (raw == null || raw === '') {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      'Cannot create contract: campaign set has no deliverable formats configured. ' +
-      'Edit the set in the campaign wizard and add at least one format (reel/post/story/...).',
-      422
-    );
-  }
-  let formats;
-  try {
-    formats = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  } catch (parseErr) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `Cannot create contract: campaign set's formats_json is malformed (${parseErr.message}).`,
-      422
-    );
-  }
-  if (!Array.isArray(formats) || formats.length === 0) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      'Cannot create contract: campaign set has no deliverable formats. ' +
-      'Add at least one format (reel/post/story/...) before signing.',
-      422
-    );
-  }
-  const normalised = formats.map(f => {
-    if (typeof f === 'string') return { type: toCanonicalFormatType(f), count: 1 };
-    const rawType = f.type || f.name || f.label || 'reel';
-    return { type: toCanonicalFormatType(rawType), count: Math.max(1, parseInt(f.count, 10) || 1) };
-  });
+  // 5. Auto-create deliverables — but ONLY where the brand is buying content.
+  //
+  // Founder, 2026-08-28: "content related reels and all is come mandatory only in pay for
+  // content type of campaign". His countersign was refused on a commission campaign with
+  // "campaign set has no deliverable formats" — a set the wizard had deliberately saved with an
+  // empty list, because a commission creator is not selling content.
+  //
+  // The rule now lives in ONE place. It was previously answered three different ways: the
+  // wizard sent [], this refused, and getMyCampaignDetail invented a reel.
+  // Contract: features/deliverables-only-when-buying-content
+  const { plannedDeliverables } = require('../services/deliverables.model');
+  const planned = plannedDeliverables(contract.goal, contract.formats_json, toCanonicalFormatType);
+  if (planned.error) throw new AppError('VALIDATION_ERROR', planned.error, 422);
+  const normalised = planned.formats;
+
   for (const fmt of normalised) {
     for (let i = 0; i < fmt.count; i++) {
       await client.query(

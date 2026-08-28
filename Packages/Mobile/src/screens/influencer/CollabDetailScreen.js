@@ -104,6 +104,12 @@ export default function CollabDetailScreen({ route, navigation }) {
     turn: whoseTurn({ status, deliverable_count: dCount, approved_count: dApproved }),
     physical_delivery: c.physical_delivery,
     products_total: data.products_total,
+    // A commission collaboration buys no content, so it has no deliverables — and deriveStage's
+    // only exit from 'shoot' is deliverable progress she will never have. Without these two the
+    // hero would tell her to "settle the time and shoot" for the rest of the campaign.
+    // Contract: features/deliverables-only-when-buying-content
+    sellsOnly: dCount === 0 && String(c.goal || '').toLowerCase() === 'conversion',
+    hasShoot: !!c.physical_delivery || !!data.production_event,
   };
   const pendingDeliverable = deliverables.some(
     d => d.status === 'pending' || d.status === 'revision_requested' || (d.status === 'approved' && !d.live_confirmed_at),

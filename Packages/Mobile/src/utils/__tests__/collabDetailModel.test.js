@@ -102,6 +102,25 @@ describe('heroFor — one correct action per stage', () => {
     expect(h.tone).toBe('you');
   });
 
+  it('a commission collab with nothing to deliver reads as selling, not shooting', () => {
+    // She sells product, not content, so she has no deliverables — and deriveStage's only exit
+    // from 'shoot' is deliverable progress she will never have. Without this she would be told
+    // to "settle the time and shoot" for the whole campaign.
+    const h = heroFor({ stage: 'shoot', status: 'active', turn: 'you', sellsOnly: true, hasShoot: false });
+    expect(h.label).toBe('You are live');
+    expect(h.sub).toMatch(/link/);
+    expect(h.actions).toEqual(['tracking']);
+  });
+
+  it('but a commission collab that DOES have a shoot still gets the shoot', () => {
+    // A store visit or a parcel is real work with a real screen. Selling does not replace it.
+    for (const d of [{ sellsOnly: true, hasShoot: true }, { sellsOnly: false, hasShoot: false }]) {
+      const h = heroFor({ stage: 'shoot', status: 'active', turn: 'you', ...d });
+      expect([JSON.stringify(d), h.label]).toEqual([JSON.stringify(d), 'The shoot']);
+      expect(h.actions).toEqual(['logistics']);
+    }
+  });
+
   it('content: deliver vs awaiting review', () => {
     expect(heroFor({ stage: 'content', status: 'active', pendingDeliverable: true }).actions).toEqual(['deliverables']);
     expect(heroFor({ stage: 'content', status: 'active', pendingDeliverable: true }).tone).toBe('you');

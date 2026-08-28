@@ -70,6 +70,26 @@ function makeExpect(negated = false) {
       toBeDefined: () => check(actual !== undefined, 'expected a value, got undefined'),
       toHaveLength: e => check(actual && actual.length === e,
         `expected length ${e}, got ${actual && actual.length}`),
+      // Added when a check needed it, rather than the check being rewritten around the gap.
+      // A runner that quietly lacks what tests want to say pushes people towards weaker tests.
+      // 'actual' must be a function here — expect(() => f()).toThrow(). Calling a non-function
+      // fails rather than silently reporting "did not throw".
+      toThrow: (e) => {
+        if (typeof actual !== 'function') {
+          return check(false, `toThrow needs a function, got ${show(actual)}`);
+        }
+        let threw = null;
+        try { actual(); } catch (err) { threw = err; }
+        if (!threw) return check(false, 'expected the function to throw, and it did not');
+        const msg = String(threw && threw.message);
+        // A real message on the pass branch too, so `.not.toThrow()` can say what was thrown
+        // instead of printing an empty "NOT".
+        if (e === undefined) return check(true, `the function threw ${show(msg)}`);
+        return check(
+          e instanceof RegExp ? e.test(msg) : msg.includes(String(e)),
+          // show() renders a RegExp as {} — String() is what a reader needs here.
+          `expected the thrown message ${show(msg)} to match ${e instanceof RegExp ? String(e) : show(e)}`);
+      },
     };
     // Anything not listed above must fail loudly, not pass by absence.
     return new Proxy(negated ? api : { ...api, not: makeExpect(true)(actual) }, {

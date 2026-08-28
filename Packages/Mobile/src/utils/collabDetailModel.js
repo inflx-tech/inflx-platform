@@ -81,6 +81,19 @@ export function heroFor(d) {
     case 'shoot':
       // Stage 4 gave the shoot its own screen. Before this fix the stage had no case at all and
       // fell through to "closed" — telling a creator with a parcel on the way that it was over.
+      //
+      // A COMMISSION collaboration has no deliverables at all — she sells product, not content,
+      // so nothing was bought and nothing is owed. deriveStage leaves her in 'shoot' because the
+      // only way out of it is deliverable progress she will never have. Telling her to "settle
+      // the time and shoot" for the rest of the campaign would be a lie about what she is doing.
+      //
+      // Nothing here invents a seventh stage. Her sections are unchanged and she can still reach
+      // her link, her tracking and her earnings — only the headline stops being wrong.
+      // Contract: features/deliverables-only-when-buying-content
+      if (d?.sellsOnly && !d?.hasShoot) {
+        return { tone: 'you', label: 'You are live',
+          sub: 'Share your link and earn on every sale it brings.', actions: ['tracking'] };
+      }
       return { tone: 'you', label: 'The shoot',
         sub: 'Settle the time, confirm what arrives, and shoot.', actions: ['logistics'] };
 
