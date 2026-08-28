@@ -62,6 +62,8 @@ function makeExpect(negated = false) {
         `expected ${show(actual)} to match ${e}`),
       toBeLessThan:    e => check(actual < e, `expected ${show(actual)} < ${show(e)}`),
       toBeGreaterThan: e => check(actual > e, `expected ${show(actual)} > ${show(e)}`),
+      toBeGreaterThanOrEqual: e => check(actual >= e, `expected ${show(actual)} >= ${show(e)}`),
+      toBeLessThanOrEqual:    e => check(actual <= e, `expected ${show(actual)} <= ${show(e)}`),
       toBeTruthy:  () => check(!!actual, `expected ${show(actual)} to be truthy`),
       toBeFalsy:   () => check(!actual, `expected ${show(actual)} to be falsy`),
       toBeNull:    () => check(actual === null, `expected ${show(actual)} to be null`),

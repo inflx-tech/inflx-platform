@@ -693,9 +693,11 @@ const createSet = asyncHandler(async (req, res) => {
   // Coupon prefix is optional for conversion/hybrid handpick sets (each invite
   // can carry its own coupon_code); open-group joiners have no per-influencer
   // code, so the prefix stays mandatory there. Engagement must not have one.
-  if ((goal === 'conversion' || goal === 'hybrid') && !coupon_prefix && (influencer_mode || 'handpick') === 'open_group') {
-    throw new AppError('VALIDATION_ERROR', 'coupon_prefix is required for open-group conversion and hybrid sets', 422, 'coupon_prefix');
-  }
+  // An open-group set used to REQUIRE a prefix, on the same false premise: that a joiner with
+  // no code could not be tracked. She is tracked the same way everyone else is — by
+  // campaign_influencer_id on the transaction. Removed with the per-creator refusal rather
+  // than left behind, because leaving one of two identical rules is how the app comes to
+  // contradict itself on the next screen along.
   if (goal === 'engagement' && coupon_prefix) {
     throw new AppError('VALIDATION_ERROR', 'coupon_prefix must not be set for engagement goals', 422, 'coupon_prefix');
   }
@@ -1188,11 +1190,27 @@ const invite = asyncHandler(async (req, res) => {
     } else if (set.coupon_prefix) {
       const firstName = inf.full_name || 'INF';
       finalCouponCode = await generateUniqueCouponCode(set.coupon_prefix, firstName);
-    } else {
-      // Conversion/hybrid sales attribute via coupon — an influencer without any
-      // code would be untrackable, so reject rather than insert a NULL code.
-      throw new AppError('VALIDATION_ERROR', 'Provide a coupon code for this influencer, or set a coupon prefix on the set', 422, 'coupon_code');
     }
+    // else: NO COUPON. Deliberately allowed, and the comment that used to sit here was wrong.
+    //
+    // It claimed "an influencer without any code would be untrackable". Checked against
+    // production on 2026-08-28: SIXTEEN follower_transactions are attributed to a creator and
+    // ZERO carry a coupon code. All six campaign_influencers have coupon_code NULL. Nothing
+    // anywhere resolves a sale BY coupon — every query that touches it either records it onto
+    // a transaction (`coupon_code_used`, with a `|| null` fallback) or checks it for
+    // uniqueness at creation.
+    //
+    // A sale is attributed by the LINK: campaign_id, set_id, offer_id and
+    // campaign_influencer_id all ride on follower_transactions, and the creator is already
+    // known before the coupon is ever read.
+    //
+    // The column is nullable and its unique index permits multiple NULLs, so the database has
+    // always been happy with this. Founder, 2026-08-28: "this coupon code should not be a
+    // mandatory."
+    //
+    // A coupon is still WELCOME — pass one, or set a prefix on the set, and it is generated
+    // and stored as before. It is a label a shop can read off a bill, not the thing that finds
+    // the creator. Contract: features/coupon-not-mandatory
   }
 
   // Submission deadline = post_date - 24h

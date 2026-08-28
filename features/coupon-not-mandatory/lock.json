@@ -1,0 +1,66 @@
+{
+  "feature": "coupon-not-mandatory",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28: \"it is asking coupon code for creator, but this should not be mandatory....because...whenever he get sale that is trackable which brand,which campaign,set,creator,post and product. this coupon code should not be a mandatory.\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — he supplied the failing dialog as a screenshot; no screen changes, a refusal is removed",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "No screen changes at all. The board is his screenshot of the 'Could not brief Sneha R.' dialog. Server-side only: two refusals removed.",
+  "notes": "A coupon is a label a shop reads off a bill, not the thing that finds the creator. Server only — no migration, no phone change.",
+
+  "measured_before_changing_anything": {
+    "date": "2026-08-28",
+    "coupon_code_column": "nullable, UNIQUE index (which permits many NULLs), no default",
+    "creators_with_a_coupon": "0 of 6",
+    "sales_attributed_to_a_creator": "16 of 16 follower_transactions",
+    "those_sales_carrying_a_coupon": 0,
+    "conclusion": "Sixteen real sales have already been attributed to a creator with no coupon anywhere in the system. The rule refused to create something the database holds happily and the money path already handles. The code comment claiming an influencer without a code 'would be untrackable' was simply false."
+  },
+
+  "why_the_coupon_was_never_the_mechanism": "Every read in the money path is `SELECT coupon_code FROM campaign_influencers WHERE id = $1` followed by `|| null` — keyed BY her id, so she is the input and not the output. follower_transactions carries campaign_id, set_id, offer_id, campaign_influencer_id and via_store_influencer_id; coupon_code_used sits beside them as a label. The only two queries in the whole backend filtering on coupon_code are uniqueness checks at creation.",
+
+  "removed": [
+    "The per-creator refusal at invite — the one he hit",
+    "The per-set refusal on an open group ('coupon_prefix is required for open-group conversion and hybrid sets')"
+  ],
+  "second_removal_was_not_reported": "It rests on the identical false premise. Leaving one of two identical rules is how the app comes to contradict itself on the next screen along — exactly the fault he found on the Review screen the day before. Removed deliberately and stated rather than done quietly.",
+
+  "kept": [
+    "A coupon passed for a creator is still used, and still checked for uniqueness",
+    "A prefix on the set still generates one code per creator (PREFIX_FIRSTNAME)",
+    "A content set is still refused a prefix — nothing is sold, so there is nothing to discount"
+  ],
+
+  "no_phone_change_needed": "Founder: 'in mobile new version dont have field of coupon code... but it should not be a mandatory.' The phone never sent one and now does not have to. Web keeps its field. A brand wanting per-creator codes sets a prefix on the set, which the phone already supports.",
+
+  "verification": {
+    "checks": "11 executing checks in tests/coupon-not-mandatory.test.js",
+    "mutation": "6 deliberate breakages, 6 caught — including both refusals returning and a prefix silently ceasing to generate",
+    "two_of_my_own_checks_were_wrong_first": "I asserted ONE query filters on coupon_code; there are TWO, the second inside generateUniqueCouponCode. I was wrong about the code, not the code about itself — corrected to assert both are uniqueness checks. And toBeGreaterThanOrEqual was missing from the no-database runner and THREW rather than passing; the matcher was added to the runner rather than the assertion bent around it.",
+    "regression": "The other two backend check files still pass: stage4-parcel 25/25, offers-parity-backend 12/12.",
+    "claim": "Certified no-regression. NEVER claimed green — the backend suite still cannot run."
+  },
+
+  "scope_excluded": [
+    "Adding a coupon field to the phone — he explicitly did not ask for one",
+    "Web",
+    "How a coupon is redeemed at a shop counter"
+  ],
+
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src only). No migration, no OTA.",
+    "deploy_targets": [
+      "Render (backend/src)"
+    ],
+    "outward_facing": "Indirect: campaigns that could not be published now can. Nothing already stored is reinterpreted.",
+    "device_walk_required": "YES, and W5 needs the FOLLOWER app: publish with no coupon anywhere, buy through the creator's link, and confirm the sale lands on her. Sixteen production sales already do this, but seeing it once is worth more than the count."
+  }
+}
