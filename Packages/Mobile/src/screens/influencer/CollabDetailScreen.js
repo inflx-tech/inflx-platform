@@ -16,6 +16,9 @@ import { heroFor, sectionsFor } from '../../utils/collabDetailModel';
 // Contract: features/stage-3-watch-the-work-happen
 import { useCreatorSteps, stepFor } from '../../utils/creatorSteps';
 import { STEP_LABELS_CREATOR, turnLabel, turnTone } from '../../components/brand/NeedsYou';
+// One decline, one set of reasons, one note — shared with ContractScreen, which can now decline
+// too. Contract: features/brief-straight-to-signing
+import DeclineSheet, { askDeclineReason } from '../../components/influencer/DeclineSheet';
 
 /* ════════════════════════════════════════════════════════════════════════
    CollabDetailScreen — features/collab-detail. The unified engagement hub
@@ -45,6 +48,10 @@ export default function CollabDetailScreen({ route, navigation }) {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Founder, 2026-08-28: sign or decline, "with clear remarks from creator". She is declining a
+  // deal she had already agreed, so WHY matters far more than which of five boxes she ticked —
+  // a brand who reads "the store visit is 40km from me" can fix it.
+  const [declining, setDeclining] = useState(null);   // the reason key, while she writes a note
 
   const load = useCallback(async () => {
     setError(null);
@@ -157,20 +164,17 @@ export default function CollabDetailScreen({ route, navigation }) {
   }
 
   function confirmPass() {
-    Alert.alert('Pass on this offer?', 'This declines the invite.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Not a fit', style: 'destructive', onPress: () => submitDecline('not_a_fit') },
-      {
-        text: pay.label === 'Commission' ? 'Commission too low' : 'Fee too low',
-        style: 'destructive',
-        onPress: () => submitDecline('fee_too_low'),
-      },
-    ]);
+    // ⚠️ 'not_a_fit' was sent here and the server has never accepted it — the button returned a
+    // 422 every single time anyone tapped it. The five valid keys now live in ONE place,
+    // DECLINE_REASONS, which is the only reason that cannot happen again.
+    askDeclineReason({ payLabel: pay.label, onPick: setDeclining });
   }
-  async function submitDecline(reason) {
+
+  async function submitDecline(reason, note) {
     setBusy(true);
-    const res = await influencerApi.declineOffer(ciId, { reason });
+    const res = await influencerApi.declineOffer(ciId, { reason, note: note || undefined });
     setBusy(false);
+    setDeclining(null);
     if (res.success) navigation.goBack();
     else Alert.alert('Could not pass', res.error?.message || 'Please try again.');
   }
@@ -299,6 +303,17 @@ export default function CollabDetailScreen({ route, navigation }) {
       </View>
 
       <View style={{ height: 32 }} />
+
+      {/* Sign or decline — and if she declines, in her own words. The sheet is shared with
+          ContractScreen so the two places she can say no say it identically.
+          Contract: features/brief-straight-to-signing */}
+      <DeclineSheet
+        reason={declining}
+        brandName={brandName}
+        busy={busy}
+        onCancel={() => setDeclining(null)}
+        onSubmit={submitDecline}
+      />
     </ScrollView>
   );
 }
@@ -355,4 +370,5 @@ const styles = StyleSheet.create({
   secRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: ig.line, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 13 },
   secIco: { width: 32, height: 32, borderRadius: 8, backgroundColor: ig.bgSoft, alignItems: 'center', justifyContent: 'center' },
   secLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: ig.text },
+
 });

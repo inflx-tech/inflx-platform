@@ -20,9 +20,9 @@ const notificationService = require('./notification.service');
  * @param {string} campaignInfluencerId
  * @returns {object|null} — created contract row, or null if already existed
  */
-async function autoCreate(campaignInfluencerId) {
+async function autoCreate(campaignInfluencerId, opts = {}) {
   try {
-    const result = await _autoCreateInner(campaignInfluencerId);
+    const result = await _autoCreateInner(campaignInfluencerId, opts);
     // Record success — clear any prior error
     await db.query(
       `UPDATE campaign_influencers
@@ -46,7 +46,7 @@ async function autoCreate(campaignInfluencerId) {
   }
 }
 
-async function _autoCreateInner(campaignInfluencerId) {
+async function _autoCreateInner(campaignInfluencerId, opts = {}) {
   // Fetch CI with all data needed for the contract
   // Brief can live at either the set level (campaign_sets.brief) or the
   // campaign level (campaigns.brief). Coalesce so content_requirements is
@@ -98,13 +98,24 @@ async function _autoCreateInner(campaignInfluencerId) {
   // Build influencer display name from phone (formatted) or handle
   const influencerName = ci.influencer_handle || ci.influencer_phone || 'Influencer';
 
+  // 'draft' — the brand reviews and presses Approve & Send before she can sign.
+  //
+  // 'pending_influencer' — READY TO SIGN, used when a creator is briefed from an agreement she
+  // has already accepted. Founder, 2026-08-28. Briefing her IS the approval: the brand chose
+  // her, set what she may sell, set her offer and pressed Publish. Asking them to approve a
+  // contract afterwards is a fourth confirmation of one decision, and it leaves her waiting on
+  // a step she cannot see.
+  //
+  // Only ever used where the terms did NOT move from the agreement — see campaign.controller.
+  const initialStatus = opts.ready ? 'pending_influencer' : 'draft';
+
   // Insert as 'draft' — brand has to review + Approve & Send before the
   // influencer can sign. ON CONFLICT handles re-runs gracefully.
   const { rows: contractRows } = await db.query(
     `INSERT INTO contracts
        (campaign_influencer_id, influencer_fee, revision_limit, posting_date,
         content_requirements, brand_name, influencer_name, campaign_name, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft')
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      ON CONFLICT (campaign_influencer_id) DO NOTHING
      RETURNING *`,
     [
@@ -116,6 +127,7 @@ async function _autoCreateInner(campaignInfluencerId) {
       ci.brand_name,
       influencerName,
       ci.campaign_name,
+      initialStatus,
     ]
   );
 

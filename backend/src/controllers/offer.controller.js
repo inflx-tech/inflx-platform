@@ -248,7 +248,15 @@ const decline = asyncHandler(async (req, res) => {
     );
   }
 
-  if (!['invited', 'negotiating'].includes(ci.status)) {
+  // 'accepted' joins the list. Since 2026-08-28 a creator briefed on terms she had already
+  // agreed goes STRAIGHT to signing — she is recorded as accepted and never passes through
+  // 'invited'. Without this she would have no way to say no at all: the only screen she reaches
+  // is the contract, and the only button on it would be Sign.
+  //
+  // The founder chose sign-or-decline over sign-or-renegotiate: the money is settled, so if
+  // something about the campaign does not work the honest answer is no, and the brand fixes it
+  // and briefs again.
+  if (!['invited', 'negotiating', 'accepted'].includes(ci.status)) {
     throw new AppError(
       'VALIDATION_ERROR',
       `Cannot decline offer in '${ci.status}' status`,
@@ -256,10 +264,37 @@ const decline = asyncHandler(async (req, res) => {
     );
   }
 
+  // Her own words, alongside the category. "with clear remarks from creator" — founder,
+  // 2026-08-28. A brand who reads "the store visit is 40km from me" can do something about it;
+  // "schedule_conflict" on its own tells them nothing they can act on.
+  const note = typeof req.body?.note === 'string' ? req.body.note.trim().slice(0, 1000) : null;
+
   await db.query(
-    `UPDATE campaign_influencers SET status = 'declined', declined_reason = $2 WHERE id = $1`,
-    [ci.id, reason]
+    `UPDATE campaign_influencers
+        SET status = 'declined', declined_reason = $2, declined_note = $3
+      WHERE id = $1`,
+    [ci.id, reason, note || null]
   );
+
+  // If a contract was already waiting for her — which it is on the sign-straight-through path —
+  // it must not be left sitting as though she might still sign it.
+  //
+  // DELETED, not marked cancelled. The contract_status enum is
+  // draft | pending_influencer | pending_brand | active | disputed — there IS no 'cancelled',
+  // and writing one would fail at request time. That is the exact bug already sitting unfixed
+  // in cancelInfluencer, which writes 'cancelled' to a campaign_influencer_status that does not
+  // accept it either. I nearly shipped a second copy of it here.
+  //
+  // Deleting is safe because the guard only ever removes a contract NOBODY HAS SIGNED. There is
+  // no evidence in an unsigned draft, and if the brand fixes what she objected to and briefs her
+  // again, autoCreate writes a fresh one.
+  await db.query(
+    `DELETE FROM contracts
+      WHERE campaign_influencer_id = $1
+        AND influencer_signed_at IS NULL
+        AND brand_signed_at IS NULL`,
+    [ci.id]
+  ).catch(err => console.error('[DECLINE] could not remove the waiting contract:', err.message));
 
   const { rows } = await db.query(
     `SELECT * FROM campaign_influencers WHERE id = $1`,

@@ -159,6 +159,17 @@ const getContract = asyncHandler(async (req, res) => {
        ci.coupon_code,
        ci.offer_type,
        ci.offer_config_json,
+       ci.brand_offer_id,
+       ci.offer_valid_from,
+       ci.offer_valid_until,
+       ci.commission_pct,
+       -- What she may SELL. Founder, 2026-08-28: the contract has to carry "all details of
+       -- campaign clearly". She was being asked to sign without being told which of the
+       -- brand's products she is allowed to sell — the one thing her earnings depend on.
+       ci.alloc_scope,
+       ci.alloc_category,
+       ci.alloc_category_node_id,
+       ci.alloc_product_ids,
        ci.posting_date    AS ci_posting_date,
        cs.campaign_id,
        cs.goal            AS set_goal,
@@ -172,6 +183,14 @@ const getContract = asyncHandler(async (req, res) => {
        -- agreement is normal and must still return a contract.
        -- Contract: features/collab-working-style-two-questions
        ag.terms_json->>'mode' AS agreed_mode,
+       -- COMMERCIAL USAGE, settled at the handshake and never surfaced anywhere since.
+       -- The contract is where she reads back what she permitted and what she was paid for it.
+       ag.terms_json->'usage'  AS agreed_usage,
+       ag.terms_json->'money'  AS agreed_money,
+       ag.expires_at           AS agreement_expires_at,
+       bo.name             AS brand_offer_name,
+       bo.offer_type       AS brand_offer_type,
+       bo.offer_config_json AS brand_offer_config,
        u_inf.id  AS influencer_user_id,
        u_br.id   AS brand_user_id
      FROM contracts con
@@ -183,6 +202,7 @@ const getContract = asyncHandler(async (req, res) => {
      JOIN users                u_inf ON u_inf.id = inf.user_id
      JOIN users                u_br  ON u_br.id  = b.user_id
      LEFT JOIN collab_agreements ag ON ag.id = ci.agreement_id
+     LEFT JOIN brand_offers      bo ON bo.id = ci.brand_offer_id
      WHERE con.campaign_influencer_id = $1`,
     [ciId]
   );
@@ -231,6 +251,15 @@ const getContract = asyncHandler(async (req, res) => {
     offer_config:    contract.offer_config_json,
   });
 
+  // The two things she was being asked to sign WITHOUT — what she may sell, and what happens to
+  // her content afterwards. Both described here, on the server, so every screen that shows them
+  // uses the same words. Contract: features/brief-straight-to-signing
+  const { describeAllocation } = require('../services/allocation.model');
+  const { describeUsage }      = require('../services/collabTerms.model');
+
+  const sell  = describeAllocation(contract);
+  const usage = describeUsage(contract.agreed_usage);
+
   // Strip internal join columns before returning
   const { influencer_user_id, brand_user_id, ...contractData } = contract;
 
@@ -239,6 +268,8 @@ const getContract = asyncHandler(async (req, res) => {
     deliverables,
     production_event,
     suggested_content_requirements,
+    sell,
+    usage_text: usage,
   });
 });
 

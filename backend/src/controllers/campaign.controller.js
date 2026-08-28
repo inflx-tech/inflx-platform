@@ -1307,14 +1307,55 @@ const invite = asyncHandler(async (req, res) => {
     }
   }
 
+  // ── Briefed on terms she already agreed → straight to signing ─────────────
+  //
+  // Founder, 2026-08-28: "when i send detailed campaign to one creator, it is sitting in collab
+  // tab instead going for signing tab... it should contain all details of campaign clearly
+  // which includes pre campaign agreement and campaign other details and ask for signing
+  // contract."
+  //
+  // He is right, and the old flow asked her twice. She agreed 18% weeks ago; briefing her put
+  // "accept, counter or pass" in front of her again, on the same 18%, and only THEN created a
+  // contract — as a draft the brand still had to Approve & Send before she could sign it.
+  // Five steps for a deal both sides had already closed.
+  //
+  // So: when the invite came FROM an agreement and NOTHING MOVED, the contract is created
+  // ready to sign and she is recorded as accepted — because she did accept, at the handshake.
+  //
+  // WHEN TERMS DID MOVE, none of this happens. She goes to Invitations exactly as before, and
+  // gets to accept, counter or pass on what actually changed. That is what the warning above
+  // has always promised — "They will have to agree again" — and until now nothing acted on it.
+  //
+  // A cold invite (no agreement) is untouched: there is nothing settled to sign.
+  let readyToSign = false;
+  if (agreement && agreement_warnings.length === 0) {
+    try {
+      const contractService = require('../services/contract.service');
+      await contractService.autoCreate(ci.id, { ready: true });
+      await db.query(
+        `UPDATE campaign_influencers SET status = 'accepted' WHERE id = $1`, [ci.id]
+      );
+      ci.status = 'accepted';
+      readyToSign = true;
+    } catch (err) {
+      // Never fail the invite over this. She still lands in Invitations and can accept the old
+      // way — a brand losing a briefing because a contract row would not write is far worse
+      // than a creator taking one extra tap.
+      console.error('[BRIEF] ready-to-sign contract failed, falling back to accept-first:', err.message);
+    }
+  }
+
   // Notify influencer
   await notificationService.send({
     userId: inf.user_id,
     type: 'offer.invited',
-    title: agreement ? 'Your agreed collaboration is ready' : 'New Campaign Invitation',
-    body: agreement
-      ? 'The brand has set up the campaign you agreed to. One tap to accept and generate your contract.'
-      : 'You have received a new campaign invitation. Check your offers inbox.',
+    title: readyToSign ? 'Your contract is ready to sign'
+      : agreement ? 'Your agreed collaboration is ready' : 'New Campaign Invitation',
+    body: readyToSign
+      ? 'The brand has set up the campaign you agreed to. Read it through and sign.'
+      : agreement
+        ? 'The brand has set up the campaign you agreed to, with a change to what you agreed. Have a look.'
+        : 'You have received a new campaign invitation. Check your offers inbox.',
     data: { screen: 'offer_inbox', campaign_influencer_id: ci.id },
     fcmToken: inf.fcm_token,
     sendSms: true,
@@ -1327,7 +1368,7 @@ const invite = asyncHandler(async (req, res) => {
   // invite. A set whose budget WAS typed is untouched.
   const campaign_derived = await campaignRollup.recompute(campaign.id);
 
-  return success(res, { campaign_influencer: ci, agreement_warnings, campaign_derived }, 201);
+  return success(res, { campaign_influencer: ci, agreement_warnings, campaign_derived, ready_to_sign: readyToSign }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -9,6 +9,10 @@ import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import DateTimeChipPicker from '../../components/DateTimeChipPicker';
 import StatusPill from '../../components/brand/StatusPill';
+// She can say no here too — this is the moment she is actually being asked to commit.
+// Same sheet, same five reasons, same note as the collab screen.
+// Contract: features/brief-straight-to-signing
+import DeclineSheet, { askDeclineReason } from '../../components/influencer/DeclineSheet';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -79,6 +83,11 @@ export default function ContractScreen({ navigation, route }) {
   const [deliverables, setDeliverables] = useState([]);
   const [formatsJson, setFormatsJson] = useState([]);
   const [productionEvent, setProductionEvent] = useState(null);
+  // Both described by the SERVER, so this screen and every other one say the same words about
+  // the same row. Contract: features/brief-straight-to-signing
+  const [sell, setSell] = useState(null);          // what she is allowed to sell
+  const [usageText, setUsageText] = useState('');  // what happens to her content afterwards
+  const [declining, setDeclining] = useState(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -103,6 +112,8 @@ export default function ContractScreen({ navigation, route }) {
       setContract(c);
       setDeliverables(data.deliverables || []);
       setProductionEvent(data.production_event || null);
+      setSell(data.sell || null);
+      setUsageText(data.usage_text || '');
       let fj = c.formats_json || c.set_formats_json || [];
       if (typeof fj === 'string') {
         try { fj = JSON.parse(fj); } catch { fj = []; }
@@ -149,6 +160,15 @@ export default function ContractScreen({ navigation, route }) {
         },
       ]
     );
+  }
+
+  async function submitDecline(reason, note) {
+    setSigning(true);
+    const res = await influencerApi.declineOffer(campaignInfluencerId, { reason, note: note || undefined });
+    setSigning(false);
+    setDeclining(null);
+    if (res.success) navigation.goBack();
+    else Alert.alert('Could not pass', res.error?.message || 'Please try again.');
   }
 
   if (loading) {
@@ -306,6 +326,30 @@ export default function ContractScreen({ navigation, route }) {
             </View>
           </View>
         </View>
+
+        {/* ── What she is allowed to sell ──────────────────────────────────
+            Founder, 2026-08-28: the contract must "contain all details of campaign clearly".
+
+            Her entire commission depends on WHICH products count, and no creator-facing screen
+            had ever shown it. The brand chose it in the set wizard, it was stored on her row, it
+            was read by the storefront and by the payout maths — and she was asked to sign
+            without being told. */}
+        {showCommissionCard && sell && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>What You Can Sell</Text>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>COUNTS TOWARDS COMMISSION</Text>
+                <Text style={styles.infoValue}>{sell.label}</Text>
+              </View>
+            </View>
+            {!!sell.detail && (
+              <View style={styles.briefBox}>
+                <Text style={styles.briefText}>{sell.detail}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Agreed Fee */}
         {fee > 0 && (
@@ -542,6 +586,30 @@ export default function ContractScreen({ navigation, route }) {
                   )}
                 </View>
               )}
+              {/* The offer her shoppers actually get, by name, and for how long it is live.
+                  Batch B gave every creator her own offer with its own valid period; the
+                  creator could see neither. A deal that expires before her post does is
+                  something she has to be able to read BEFORE she signs. */}
+              {(contract.brand_offer_name || contract.offer_valid_from || contract.offer_valid_until) && (
+                <View style={styles.infoGrid}>
+                  {!!contract.brand_offer_name && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>SHOPPER OFFER</Text>
+                      <Text style={styles.infoValue}>{contract.brand_offer_name}</Text>
+                    </View>
+                  )}
+                  {(contract.offer_valid_from || contract.offer_valid_until) && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>OFFER RUNS</Text>
+                      <Text style={styles.infoValue}>
+                        {contract.offer_valid_from ? formatDate(contract.offer_valid_from) : 'Now'}
+                        {' — '}
+                        {contract.offer_valid_until ? formatDate(contract.offer_valid_until) : 'no end date'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
               <View style={styles.tdsNote}>
                 <Text style={styles.tdsText}>
                   Commissions credit to your pending balance immediately and move to withdrawable balance after a 30-day return window. 10% TDS is deducted at withdrawal.
@@ -559,6 +627,24 @@ export default function ContractScreen({ navigation, route }) {
               <Text style={styles.briefText}>
                 {contract.content_requirements || contract.brief || contract.campaign_brief}
               </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ── What happens to her content ──────────────────────────────────
+            Founder, 2026-08-28: *"content produced by creator can be used by inflx platform and
+            related brand in their social media accounts but no exclusive rights on content but
+            just usage only."*
+
+            The sentence comes from describeUsage() on the server — the same one the agreement
+            and the counter use — so she cannot be shown one deal here and a different one
+            there. If the brand bought commercial rights at the handshake, this says so and
+            names the money. */}
+        {!!usageText && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Your Content</Text>
+            <View style={styles.briefBox}>
+              <Text style={styles.briefText}>{usageText}</Text>
             </View>
           </View>
         )}
@@ -625,6 +711,23 @@ export default function ContractScreen({ navigation, route }) {
                 <Text style={styles.signBtnText}>SIGN CONTRACT</Text>
               )}
             </TouchableOpacity>
+
+            {/* Sign OR decline. Under the old flow she accepted a brief first and the contract
+                arrived afterwards, so this screen only ever needed one button. Now the contract
+                IS the brief — this is the first and only place she is asked to commit, and a
+                screen that offers no way to say no is not asking, it is telling.
+                Contract: features/brief-straight-to-signing */}
+            <TouchableOpacity
+              style={styles.declineBtn}
+              onPress={() => askDeclineReason({
+                payLabel: commissionPct > 0 && fee === 0 ? 'Commission' : 'Fee',
+                title: 'Not going ahead?',
+                onPick: setDeclining,
+              })}
+              disabled={signing}
+            >
+              <Text style={styles.declineBtnText}>I can't do this collaboration</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -648,6 +751,14 @@ export default function ContractScreen({ navigation, route }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <DeclineSheet
+        reason={declining}
+        brandName={contract.brand_name}
+        busy={signing}
+        onCancel={() => setDeclining(null)}
+        onSubmit={submitDecline}
+      />
 
       {/* ── Sign Modal ──────────────────────────────────────────────────── */}
       <Modal
@@ -1177,6 +1288,8 @@ const ipStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  declineBtn:     { marginTop: 10, paddingVertical: 12, alignItems: 'center' },
+  declineBtnText: { fontSize: 12.5, fontWeight: '800', color: P.muted2, textDecorationLine: 'underline' },
   outer: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
   loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },

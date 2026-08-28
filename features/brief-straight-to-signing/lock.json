@@ -1,0 +1,49 @@
+{
+  "feature": "brief-straight-to-signing",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28: \"in creator app, when i send detailed campaign to one creator, it is sitting in collab tab instead going for signing tab....it should contain all details of campaign clearly which includes pre campaign agreement and campaign other details and ask for signing contract....when i click on it it is opening blank page\" + \"set information in creators app is not required, this is the brands one, just campaign name is enough\" + \"your recommendations is fine...with clear remarks from creator\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — approved in words before implementation: \"First tell me what your going to do in plain functional language with examples then we move to implementation\", then \"complete evrything clearly\"",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "04-preview/mockups/sign-screen.html marks the three new blocks. The screen already existed; this adds to it rather than replacing it.",
+  "notes": "Briefing a creator on a clean agreement creates her contract ready to sign, and the sign screen finally shows what she can sell, what her shoppers get and what happens to her content.",
+  "the_bug": "She was briefed, landed in Invitations instead of To sign, and the detail screen rendered a BLANK PAGE. heroFor and sectionsFor matched the stage names used before Stage 1 renamed them — the two lists overlapped in exactly ONE value and everything else fell to a default reading 'This collab is closed'. The test file passed because every case fed it the OLD names, and its own closing comment already described this fault about a neighbouring function deleted in Stage 3 for exactly it.",
+  "the_gate": "Only a CLEAN agreement goes straight to signing. agreement_warnings already said 'they will have to agree again' and nothing had ever acted on it. A drifted agreement still takes the old accept-first path, because a contract built on terms she never saw is not something she should be asked to sign.",
+  "three_things_she_was_signing_blind": "What she can sell (decides her entire commission, never shown on any creator screen), the shopper offer and its valid window (Batch B gave every creator her own; she could see neither), and what happens to her content afterwards. All described on the SERVER via describeAllocation and describeUsage so no two surfaces can disagree.",
+  "one_sheet_not_two": "DeclineSheet is shared by the contract screen and the collab screen. Copying it would have been a fourth duplicated vocabulary in a repo that has already deleted three.",
+  "live_bugs_fixed_on_the_way": [
+    "'not_a_fit' was sent as a decline reason and the server has NEVER accepted it — the collab screen's 'Not a fit' button returned 422 every single time anyone tapped it. The five valid keys now live in one exported list.",
+    "An invalid enum write was nearly shipped: UPDATE contracts SET status = 'cancelled' — contract_status has no such value. Replaced with a guarded DELETE of the unsigned contract."
+  ],
+  "verification": {
+    "backend": "tests/brief-to-signing.test.js — 19 checks, 14 mutations, 14 caught",
+    "mobile": "src/screens/influencer/__tests__/briefToSigning.test.js — 13 checks, 10 mutations, 10 caught",
+    "suite": "Mobile 45 suites / 520 tests. usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11.",
+    "two_checks_passed_while_testing_nothing": "toContain('askDeclineReason') was satisfied by the IMPORT line, so renaming the call site stayed green. toContain('ci.alloc_category') was satisfied by the longer ci.alloc_category_node_id, so deleting the category column stayed green. Both found by mutation, not by reading — the third and fourth time this session a check has passed by matching something other than what it meant to. Both tightened and re-mutated.",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "carried_not_fixed": "cancelInfluencer still writes status = 'cancelled' to contract_status, which has no such value. Confirmed live, out of scope here.",
+  "scope_excluded": [
+    "The screens that let a brand ASK FOR commercial usage — the term exists, no surface offers it",
+    "cancelInfluencer's invalid enum write",
+    "The campaign screen rebuild"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src + influencer OTA). Migration 163 already applied to production.",
+    "deploy_targets": [
+      "Render (backend/src)",
+      "OTA influencer"
+    ],
+    "outward_facing": "Every creator briefed from now on takes the new route. Rows already at 'invited' are untouched.",
+    "device_walk_required": "YES — brief a creator on a clean agreement from the founder's phone and walk To sign -> read -> sign, then a second creator -> decline with a note.",
+    "diff_notes": "features/brief-straight-to-signing/06-diff/notes.md"
+  }
+}
