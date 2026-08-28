@@ -1,0 +1,43 @@
+{
+  "feature": "creator-detail-stage-names",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-28: \"when i click on it it is opening blank page\" then \"pls go\"",
+  "approved_at": "2026-08-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-28 — he supplied the screen; no new screen is introduced, a broken one starts working",
+  "mockup_locked_at": "2026-08-28",
+  "mockup_note": "No new screen. Two pure functions stop matching on a stage vocabulary that was renamed by Stage 1.",
+  "notes": "The creator detail screen matched on stage names from before Stage 1. The two lists overlapped in exactly ONE value, so almost every collaboration rendered as closed with no actions.",
+  "root_cause": "heroFor and sectionsFor switched on invites/applied/negotiating/active/tracking/completed/archive. deriveStage returns invitations/pitches/to_sign/shoot/content/done. Overlap: to_sign only. Everything else hit a default returning \"Closed — This collab is closed\" with no actions.",
+  "wider_than_reported": "The founder reported a blank page on an invitation. shoot, content and done had the same fault, and sectionsFor did too — so a creator mid-shoot could not reach her contract, deliverables or earnings either.",
+  "the_sting": "collabDetailModel.js carries a comment explaining that spineFor was DELETED by Stage 3 for this exact fault. heroFor sat directly above that comment with the identical defect.",
+  "and_the_tests_passed": "collabDetailModel.test.js covered every branch by feeding heroFor the OLD names. Its own closing comment says exactly that about spineFor — written about the function two lines below, equally true of the one above. The file diagnosed itself and was not read.",
+  "my_own_wrong_diagnosis": "I first reported the endpoint returning no row for her assignment. That was MY query run with the wrong second parameter — it takes [ciId, influencerId] and I passed the id twice. Re-run correctly it returns the row fine. Recorded because a confident wrong diagnosis is worse than none.",
+  "verification": {
+    "checks": "24 in collabDetailModel.test.js, rewritten to the real six",
+    "mutation": "7 deliberate breakages, 7 caught — one only after I closed a gap in my own guard, which never tested the fallback itself",
+    "regression": "44 suites / 507 tests",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "scope_excluded": [
+    "Sending a briefed creator straight to signing — a different change, needs the contract created at briefing rather than on acceptance",
+    "The contract wording — Docs/CONTRACT_DRAFT.md",
+    "The brand side"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (creator app OTA only).",
+    "deploy_targets": [
+      "OTA (creator app)"
+    ],
+    "outward_facing": "None to shoppers. Large for creators — a screen that was unusable starts working.",
+    "device_walk_required": "YES. W3 especially — the sections restored past signing have not rendered since Stage 1, so the screens behind them may have drifted while nothing reached them.",
+    "diff_notes": "features/creator-detail-stage-names/06-diff/notes.md"
+  }
+}
