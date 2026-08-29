@@ -25,12 +25,32 @@ import { shortDate, shortDateTime, windowReason, RECEIPT_LABEL } from '../../uti
  */
 export function WindowCard({ range }) {
   if (!range) return null;
+
+  // ⚠️ THE WINDOW CAN BE EMPTY, AND IT IS ON REAL DATA. If the post is due in two days, a
+  // visit that must finish two days before it has nowhere to go. Drawing "pick any day
+  // between [blank] and [blank]" tells nobody that, and the fix is a human moving the posting
+  // date. Contract: features/shoot-plan-you-can-actually-see
+  if (range.impossible) {
+    return (
+      <View style={[s.card, s.cardBad]}>
+        <Text style={s.labelBad}>No day works</Text>
+        <Text style={s.why}>{range.reason}</Text>
+      </View>
+    );
+  }
+
+  const from = shortDate(range.earliest);
+  const to   = shortDate(range.latest);
+  // A date that will not parse is not a date. Better to say nothing than to draw an empty gap
+  // between the word 'and' — which is exactly how the unwrapping bug looked on screen.
+  if (!from || !to) return null;
+
   const why = windowReason(range);
   return (
     <View style={s.card}>
       <Text style={s.label}>Pick any day between</Text>
       <Text style={s.range}>
-        {shortDate(range.earliest)}  <Text style={s.rangeDash}>and</Text>  {shortDate(range.latest)}
+        {from}  <Text style={s.rangeDash}>and</Text>  {to}
       </Text>
       {!!why && <Text style={s.why}>{why}</Text>}
     </View>
@@ -212,6 +232,10 @@ export function Delivered({ at }) {
 const s = StyleSheet.create({
   card: { borderWidth: 1, borderColor: ig.lineSoft, borderRadius: 12, padding: 13, marginBottom: 10 },
   label: { fontSize: 9.5, fontWeight: '800', color: ig.mut, letterSpacing: 0.5, textTransform: 'uppercase' },
+  // An impossible window is a problem to fix, not a range to read. It gets the palette's
+  // warning tone so it does not look like an ordinary card that happens to be empty.
+  cardBad: { borderColor: ig.red, backgroundColor: ig.redBg },
+  labelBad: { fontSize: 9.5, fontWeight: '800', color: ig.red, letterSpacing: 0.5, textTransform: 'uppercase' },
   range: { fontSize: 15.5, fontWeight: '800', color: ig.text, marginTop: 6 },
   rangeDash: { fontSize: 11, fontWeight: '700', color: ig.mut },
   why: { fontSize: 11, color: ig.mut, fontWeight: '650', marginTop: 6, lineHeight: 16 },

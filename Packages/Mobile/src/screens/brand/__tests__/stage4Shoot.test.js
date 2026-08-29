@@ -138,6 +138,46 @@ describe('Stage 4 · the phone and the server agree on who may finish a shoot', 
     )();
   })();
 
+  it('⚠️ both shoot screens unwrap the date range properly', () => {
+    // The endpoint answers { range: { earliest, latest, basis } }. Both screens read
+    // dates.data — the WRAPPER — which is truthy, so the card drew with both dates undefined
+    // and neither phone could book a day. The identical mistake, twice.
+    // Contract: features/shoot-plan-you-can-actually-see
+    for (const p of ['../BrandShootScreen.js', '../../influencer/ShootScreen.js']) {
+      const src = fs.readFileSync(path.resolve(__dirname, p), 'utf8');
+      expect([p, src.includes('setRange(dates?.data?.range || null)')]).toEqual([p, true]);
+      expect([p, /setRange\(dates\?\.data \|\| null\)/.test(src)]).toEqual([p, false]);
+    }
+  });
+
+  it('⚠️ an impossible window explains itself instead of drawing two blanks', () => {
+    // Real data, 2026-08-29: post due 30 Aug, a visit must finish 2 days before it = 28 Aug,
+    // earliest bookable = tomorrow, 30 Aug. Latest lands BEFORE earliest and no day works.
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '../../../components/shoot/ShootParts.js'), 'utf8');
+    expect(src).toContain('range.impossible');
+    expect(src).toContain('No day works');
+    // And a range that will not parse draws nothing rather than an empty gap around 'and'.
+    expect(src).toContain('if (!from || !to) return null;');
+  });
+
+  it('⚠️ the server tells them when there is no day, and why', () => {
+    const src = fs.readFileSync(
+      path.resolve(SRC, '../../../backend/src/services/production.service.js'), 'utf8');
+    expect(src).toContain('const impossible = latest.getTime() < earliest.getTime();');
+    // The reason has to name the thing a person can change, not the rule they broke.
+    expect(src).toMatch(/Move the posting date back/);
+  });
+
+  it('⚠️ her collab payload carries whether a shoot exists', () => {
+    // hasShoot was ALWAYS false, because production_event was not in this payload — so a
+    // creator with a store visit to arrange was told "You are live" and shown no way there.
+    const src = fs.readFileSync(
+      path.resolve(SRC, '../../../backend/src/controllers/influencer.controller.js'), 'utf8');
+    expect(src).toContain('FROM production_events WHERE contract_id = $1');
+    expect(src).toMatch(/^\s*production_event,$/m);
+  });
+
   it('⚠️ REQUIRES_BOTH is identical on both sides', () => {
     // The founder's rule: a store visit is two people, so both of them say it happened.
     expect(shoot.REQUIRES_BOTH).toEqual(server.REQUIRES_BOTH);

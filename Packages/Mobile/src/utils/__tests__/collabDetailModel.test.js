@@ -244,6 +244,33 @@ describe('every action the hero can emit is actually wired', () => {
     }
   });
 
+  it('⚠️ and every one of them has WORDS on it', () => {
+    // 'logistics' was wired and had no label from the day Stage 4 shipped, so the one button
+    // that opens the shoot rendered as a blank grey rectangle. The check above passed the
+    // whole time, because being wired and being legible are different things and it only
+    // asked the first. Contract: features/shoot-plan-you-can-actually-see
+    const emitted = new Set();
+    for (const stage of COLLAB_STAGES) {
+      for (const status of ['invited', 'negotiating', 'agreed', 'accepted', 'pending_brand',
+        'contracted', 'active', 'completed', 'expired']) {
+        for (const turn of ['you', 'brand']) {
+          for (const extra of [{}, { sellsOnly: true, hasShoot: false }, { pendingDeliverable: true }]) {
+            heroFor({ stage, status, turn, ...extra }).actions.forEach(a => emitted.add(a));
+          }
+        }
+      }
+    }
+    expect(emitted.size).toBeGreaterThan(0);
+
+    // Read the label map out of the screen and check every emitted key is a key of it.
+    const block = screen.match(/const label = \{[\s\S]*?\}\[a\];/);
+    expect(block).toBeTruthy();
+    for (const action of emitted) {
+      const has = new RegExp(`(^|[\\s{,])${action}\\s*:`).test(block[0]);
+      expect([action, has]).toEqual([action, true]);
+    }
+  });
+
   it('and the buttons route through doAction, which covers accept and pass', () => {
     // go() alone would swallow both — they are not navigations, they are API calls.
     expect(screen).toContain('doAction');

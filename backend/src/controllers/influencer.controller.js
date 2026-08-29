@@ -1480,6 +1480,27 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     // Non-critical: contract may not exist yet
   }
 
+  // Does this collaboration have a shoot to arrange?
+  //
+  // Her collab screen decides between "The shoot" and "You are live" on this. Without it,
+  // `hasShoot` was always false and a creator with a store visit to plan was told she was
+  // live and shown no way to reach it.
+  // Contract: features/shoot-plan-you-can-actually-see
+  let production_event = null;
+  if (contract && contract.id) {
+    try {
+      const { rows: peRows } = await db.query(
+        `SELECT id, mode, status, visit_scheduled_at,
+                brand_completed_at, influencer_completed_at
+           FROM production_events WHERE contract_id = $1`,
+        [contract.id]
+      );
+      production_event = peRows[0] || null;
+    } catch (e) {
+      console.error('[getMyCampaignDetail] production_event lookup failed:', e.message);
+    }
+  }
+
   // Step 2b: Auto-create deliverables if contract is active but none exist
   // (handles contracts signed before deliverable-creation fix was deployed)
   if (deliverables.length === 0 && contract && (contract.status === 'active' || contract.status === 'completed')) {
@@ -1604,6 +1625,9 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     deliverables,
     contract,
     tranches,
+    // Whether there is a shoot to arrange. Her screen chooses between 'The shoot' and
+    // 'You are live' on this. Contract: features/shoot-plan-you-can-actually-see
+    production_event,
     products_total:     productsTotal,
     products_published: productsPublished,
   });

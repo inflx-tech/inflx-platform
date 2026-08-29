@@ -1,0 +1,103 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Four things hiding the shoot</title>
+<style>
+  body{margin:0;background:#EFEFEF;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
+  .row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+  .phone{width:330px;background:#fff;border:1px solid #DBDBDB;border-radius:14px;overflow:hidden}
+  .cap{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#8E8E8E;margin:0 0 8px 4px}
+  .hd{padding:14px 16px;border-bottom:1px solid #F0F0F0}
+  .kicker{font-size:10px;font-weight:900;letter-spacing:.08em;color:#8E8E8E}
+  h2{font-size:17px;margin:4px 0 0;letter-spacing:-.02em}
+  .body{padding:14px 16px}
+  .hero{border:1px solid #E36414;border-radius:12px;padding:14px;margin-bottom:12px}
+  .turn{font-size:10px;font-weight:900;letter-spacing:.07em;color:#E36414}
+  .hl{font-size:19px;font-weight:900;margin-top:6px;letter-spacing:-.02em}
+  .hs{font-size:13px;color:#666;margin-top:5px;line-height:1.5}
+  .btn{margin-top:12px;border:1px solid #DBDBDB;border-radius:9px;padding:14px;text-align:center;font-weight:900;font-size:12.5px;color:#BBB}
+  .btn.ok{background:#0A0A0A;color:#fff;border-color:#0A0A0A}
+  .sec{display:flex;justify-content:space-between;padding:13px 0;border-top:1px solid #F0F0F0;font-size:14px}
+  .win{border:1px solid #E6E6E6;border-radius:12px;padding:13px;margin-top:12px}
+  .win.bad{border-color:#C4321B;background:#FBEEEA}
+  .wl{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8E8E8E}
+  .wl.bad{color:#C4321B}
+  .wr{font-size:16px;font-weight:800;margin-top:6px}
+  .wr .blank{display:inline-block;width:66px;border-bottom:1px dashed #C4321B;height:1em}
+  .wy{font-size:11px;color:#777;margin-top:6px;line-height:1.5}
+  .note{max-width:1050px;margin:22px auto 0;font-size:12.5px;color:#555;line-height:1.65}
+  .note b{color:#111}
+</style>
+<div class="row">
+  <div>
+    <p class="cap">Before — her phone</p>
+    <div class="phone">
+      <div class="hd"><div class="kicker">LABEL FERN</div><h2>New test campaign 1234</h2></div>
+      <div class="body">
+        <div class="hero">
+          <div class="turn">● YOUR TURN</div>
+          <div class="hl">You are live</div>
+          <div class="hs">Share your link and earn on every sale it brings.</div>
+          <div class="btn">&nbsp;</div>
+        </div>
+        <div class="sec"><span>Contract</span><span>›</span></div>
+        <div class="sec"><span>Deliverables</span><span>›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="cap">After — her phone</p>
+    <div class="phone">
+      <div class="hd"><div class="kicker">LABEL FERN</div><h2>New test campaign 1234</h2></div>
+      <div class="body">
+        <div class="hero">
+          <div class="turn">● YOUR TURN</div>
+          <div class="hl">The shoot</div>
+          <div class="hs">Settle the time, confirm what arrives, and shoot.</div>
+          <div class="btn ok">PLAN THE SHOOT</div>
+        </div>
+        <div class="sec"><span>Contract</span><span>›</span></div>
+        <div class="sec"><span>Logistics</span><span>›</span></div>
+        <div class="sec"><span>Deliverables</span><span>›</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="cap">Before / after — the window</p>
+    <div class="phone">
+      <div class="hd"><div class="kicker">ASHA M. · STORE VISIT</div><h2>The shoot</h2></div>
+      <div class="body">
+        <div class="win">
+          <div class="wl">Pick any day between</div>
+          <div class="wr"><span class="blank"></span> and <span class="blank"></span></div>
+        </div>
+        <div class="win bad">
+          <div class="wl bad">No day works</div>
+          <div class="wy">The post is due too soon for a visit to fit before it. A visit has to
+            finish two days before the posting date. Move the posting date back and the days will
+            appear.</div>
+        </div>
+        <div class="win">
+          <div class="wl">Pick any day between</div>
+          <div class="wr">Sun, 30 Aug <span style="color:#999;font-weight:400">and</span> Thu, 10 Sep</div>
+          <div class="wy">Because she has to post by 12 Sep.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Yesterday's fix landed.</b> The brand screen already said STORE VISIT and "no time suggested
+  yet" — the planning state it was meant to open in. Four separate things were hiding it.
+  <br><br>
+  <b>The blank button is the oldest.</b> Stage 4 wired the shoot's hero action and never gave it a
+  label, so the one button that opens the shoot has rendered as an empty rectangle since the day it
+  shipped. A test has asserted every action is <i>wired</i> since Stage 3 — being wired and being
+  legible are different questions.
+  <br><br>
+  <b>The empty window is real, not a rendering fault.</b> Post due 30 Aug, a visit must finish two
+  days before it, and the earliest bookable day is tomorrow. No day satisfies both. The middle card
+  is what a rule that cannot be met should look like.
+</div>

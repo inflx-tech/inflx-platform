@@ -79,11 +79,35 @@ async function getVisitDateRange(contractId) {
   }
   latest.setUTCHours(23, 59, 59, 999);
 
-  // stage-4 — `basis` says WHICH of the four rules produced `latest`. The board is explicit
-  // that the window has to explain itself: "post-by minus two days" is a rule neither party
-  // set, and a range that looks arbitrary gets argued with. The screen turns this into a
-  // sentence; it must never do the arithmetic itself and guess. Additive to the response.
-  return { earliest: earliest.toISOString(), latest: latest.toISOString(), basis };
+  // ⚠️ THE WINDOW CAN BE EMPTY, AND IT IS ON REAL DATA.
+  //
+  // Founder's own row, 2026-08-29: she must post by 30 Aug, so a visit has to finish by the
+  // 28th — which is yesterday. The earliest bookable day is tomorrow, the 30th. Latest lands
+  // BEFORE earliest and no day satisfies both.
+  //
+  // This used to be returned as an ordinary range and the screens drew "pick any day between
+  // [blank] and [blank]". Nobody could book, and nothing said why. A rule that cannot be
+  // satisfied has to announce itself; the fix is a human moving the posting date, and only a
+  // person told about it can do that.
+  // Contract: features/shoot-plan-you-can-actually-see
+  const impossible = latest.getTime() < earliest.getTime();
+
+  return {
+    earliest: earliest.toISOString(),
+    latest:   latest.toISOString(),
+    basis,
+    impossible,
+    // Said in the words of the people involved, not of the rule.
+    reason: impossible
+      ? (basis === 'post_by'
+          ? 'There is no day that works. The post is due too soon for a visit to fit before it — '
+            + 'a visit has to finish two days before the posting date. Move the posting date back '
+            + 'and the days will appear.'
+          : 'There is no day that works. The campaign ends too soon for a visit to fit before it. '
+            + 'Extend the campaign and the days will appear.')
+      : null,
+  };
+
 }
 
 function isWithinRange(iso, range) {

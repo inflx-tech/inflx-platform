@@ -109,6 +109,9 @@ export default function CollabDetailScreen({ route, navigation }) {
     // hero would tell her to "settle the time and shoot" for the rest of the campaign.
     // Contract: features/deliverables-only-when-buying-content
     sellsOnly: dCount === 0 && String(c.goal || '').toLowerCase() === 'conversion',
+    // ⚠️ `data.production_event` was not in this payload at all, so hasShoot was ALWAYS false
+    // and a creator with a store visit to arrange was told "You are live" and shown no way to
+    // reach it. The server now returns it. Contract: features/shoot-plan-you-can-actually-see
     hasShoot: !!c.physical_delivery || !!data.production_event,
   };
   const pendingDeliverable = deliverables.some(
@@ -251,8 +254,20 @@ export default function CollabDetailScreen({ route, navigation }) {
               .map(a => {
               const primary = a === 'accept' || a === 'sign' || a === 'deliverables' || a === 'earnings' || (a === 'negotiate' && hero.tone === 'nego');
               const danger = a === 'pass';
+              // ⚠️ 'logistics' HAS NEVER BEEN IN THIS MAP.
+              //
+              // Stage 4 gave the shoot a hero action and wired it in go(). Nobody gave it a
+              // LABEL, so the one button that opens the shoot has rendered with no text on it
+              // since the day it shipped — a blank grey rectangle. That is a large part of
+              // "I am not able to see the shoot plan": the door was there and unmarked.
+              //
+              // The existing test asserted every emitted action is WIRED. Being wired and being
+              // legible are different things, and it only checked the first.
+              // Contract: features/shoot-plan-you-can-actually-see
               const label = { accept: 'Accept', negotiate: 'Negotiate', pass: 'Pass',
-                sign: 'Review & sign', deliverables: pendingDeliverable ? 'Upload content' : 'View deliverables', earnings: 'View earnings' }[a];
+                sign: 'Review & sign', logistics: 'Plan the shoot', tracking: 'See your link',
+                deliverables: pendingDeliverable ? 'Upload content' : 'View deliverables',
+                earnings: 'View earnings' }[a];
               return (
                 <TouchableOpacity key={a} disabled={busy}
                   style={[styles.hbtn, primary && styles.hbtnPrimary, danger && styles.hbtnDanger]}

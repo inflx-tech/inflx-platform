@@ -1,0 +1,52 @@
+{
+  "feature": "shoot-plan-you-can-actually-see",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-29, with two screenshots: \"Nothing i found what you said. i think still old one is showing in shoot area..pls find the screenshots.\"",
+  "approved_at": "2026-08-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-29 — reported against his own screens; the change is to make the existing ones legible, drawn in 04-preview",
+  "mockup_locked_at": "2026-08-29",
+  "mockup_note": "04-preview/mockups/four-things-hiding-it.html — his blank button and blank window, what they become, and what an impossible window looks like.",
+  "notes": "Yesterday's fix landed. Four other things were hiding it.",
+  "he_was_right_and_wrong_about_why": "The brand screenshot already said STORE VISIT and 'No time suggested yet' — exactly the planning state yesterday's change was meant to produce. Four separate faults were stacked on top of it.",
+  "fault_1_mine_from_yesterday": "The creator hero read hasShoot = physical_delivery || data.production_event, and production_event was NEVER in that payload. So hasShoot was always false and a creator with a store visit to attend was told 'You are live' and shown no way to reach it.",
+  "fault_2_oldest_and_worst": "'logistics' has never been in the hero's label map. Stage 4 gave the shoot an action and wired it in go(); nobody gave it words. Since the day Stage 4 shipped, the one button that opens the shoot has rendered as a BLANK GREY RECTANGLE — visible in his screenshot. A test has asserted every hero action is WIRED since Stage 3, and passed the whole time, because being wired and being legible are different questions.",
+  "fault_3_the_same_mistake_twice": "Both shoot screens ran setRange(dates?.data) where the endpoint answers { range: {...} } — one level too few. range came out as the wrapper, truthy, so the card drew with earliest and latest undefined. 'PICK ANY DAY BETWEEN [blank] and [blank]', identically on both phones.",
+  "fault_4_the_window_is_genuinely_empty": "Verified by running the real service against his contract: post due 30 Aug, a visit must finish 2 days before = 28 Aug, earliest bookable = tomorrow 30 Aug. Latest lands BEFORE earliest and no day satisfies both. It was returned as an ordinary range and nobody could book. Now: impossible=true plus a sentence naming the posting date as the thing to move — the fix is a human moving it, and only a person told about it can.",
+  "the_diary_is_not_a_bug": "His screenshot shows 'Mode set to remote / Remote mode auto-completed' still listed. That is history and it is correct. The event was repaired; the record of what happened to it is not rewritten. A diary that edits its own past is worth nothing.",
+  "verification": {
+    "checks": "collabDetailModel.test.js + stage4Shoot.test.js — 96 checks",
+    "mutation": "10 deliberate breakages, 10 caught",
+    "against_production": "getVisitDateRange run against his real contract returns impossible=true with the sentence naming the posting date.",
+    "suite": "Mobile 48 suites / 565 tests.",
+    "my_four_new_checks_passed_while_not_existing": "⚠️ The block was inserted through a helper whose newline argument was undefined, so the whole thing landed as ONE LINE. Everything after the first // was commented out. The file parsed, the suite went green, and the four cases never registered. Only the mutation run caught it — 9 mutations, 7 SURVIVED — because the test count looked normal and no assertion failed, there being no assertions. Re-inserted line by line, with the script asserting the lines landed as separate lines before it would write. Eighth time this session a check proved to be testing nothing, and the first time the check did not exist at all.",
+    "the_check_that_asked_the_wrong_thing": "collabDetailModel.test.js has asserted every hero action is WIRED since Stage 3. It now also asserts every emitted action HAS WORDS ON IT, read out of the screen's own label map.",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "carried_not_fixed": [
+    "The brand cannot move the posting date from the shoot screen — the message tells them what to change, they change it where posting dates live",
+    "cancelInfluencer still writes an invalid contract_status"
+  ],
+  "scope_excluded": [
+    "Changing the two-day buffer — a real rule; this makes it visible, not weaker",
+    "Rewriting the audit diary"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src + both OTAs). No migration.",
+    "deploy_targets": [
+      "Render (backend/src)",
+      "OTA influencer",
+      "OTA brand"
+    ],
+    "outward_facing": "Every shoot becomes reachable and every date window becomes readable. Nothing is written.",
+    "device_walk_required": "YES — her collab should say 'The shoot' with 'Plan the shoot' written on the button; the brand's window should say 'No day works' and name the posting date.",
+    "diff_notes": "features/shoot-plan-you-can-actually-see/06-diff/notes.md"
+  }
+}

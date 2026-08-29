@@ -65,7 +65,11 @@ export default function BrandShootScreen({ route, navigation }) {
       setEvent(ev);
       setMode(prod.data?.production_mode || ev?.mode || null);
       setLog(prod.data?.log || []);
-      setRange(dates?.data || null);
+      // ⚠️ The endpoint answers { range: { earliest, latest, basis } }. This read dates.data,
+      // which is the WRAPPER — truthy, so the card drew, with earliest and latest undefined.
+      // Both shoot screens showed "Pick any day between [blank] and [blank]" and nobody could
+      // book. Contract: features/shoot-plan-you-can-actually-see
+      setRange(dates?.data?.range || null);
       setCourier(ev?.shipment_courier || '');
       setAwb(ev?.shipment_awb || '');
 
