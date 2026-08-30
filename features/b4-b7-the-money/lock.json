@@ -12,7 +12,7 @@
   "tds_gets_a_sentence": "'TDS is a tax deduction, not a fee. You claim it back with Form 16A.' A creator watching 10% disappear needs telling once.",
   "her_profile_gains_one_thing": "A default shipping address, so the remote-shoot screen has something to offer instead of an empty form. NOT 'where you will work' — that is a per-deal answer and lives on the pitch.",
   "counts": {
-    "panels": 16,
+    "panels": 24,
     "new": 7,
     "change": 3,
     "keep": 7
@@ -50,5 +50,15 @@
     "Her withdraw screen — same story on her side.",
     "Her tranche timeline.",
     "Inside-escrow, so a locked total can be explained."
-  ]
+  ],
+  "three_paths_became_one": {
+    "founder": "\"we changed the complete ecommerce architecture to a mix of ecommerce and shoppable posts like instagram posts...each post designed by creator so whatever sale happens is through post...brand, campaign, creator, posts and products all are connected so no concept of creator attribution in this architecture...path A is if in future our inflx platform can create posts for brands...for now only path B...no meaning for path C that is window and attribution\"",
+    "why": "The three paths belonged to the OLD architecture — e-commerce with attribution, where a follower clicked a link, browsed and bought later, so you needed a window to decide whose sale it was. In the new architecture every sale happens INSIDE a shoppable post, and brand → campaign → creator → post → products is one chain. THE POST IS THE ATTRIBUTION.",
+    "path_a": "RESERVED, not deleted. When INFLX has enough organic traffic to make posts for brands itself, the rate is already there and already per-industry.",
+    "path_b": "THE ONLY LIVE PATH. A creator's post. Fashion 5%, restaurant 4%, salon 5%, and so on.",
+    "path_c": "RETIRED. It answered \"she got the click, someone else got the sale\" — a question this architecture cannot ask. The attribution_clicks lookup inside classifyPath becomes dead code for the fee.",
+    "note": "Channel-level link tracking (Stage 7, follower app) is a DIFFERENT thing and is not touched here."
+  },
+  "return_window_is_now_7_days": "Was 30. She sees a sale as pending, and 7 days later it moves into her wallet. Touches payment_config.return_window_days, categories.return_window_days on all 16 rows, and commission-confirm.job.js. NOT the same as tranche_3_release_after_days, which is the pay-for-content final payment and stays admin-set at 7/15/30.",
+  "open_question_with_money_attached": "Is 7 days the SHOPPER'S RETURN PERIOD, or just how long we hold her money? If a shopper can still return for 30 days but the creator is paid at 7, a return on day 12 claws back money she already has — commission_reversed and brand_net_reversed exist for exactly that, and taking money back out of a creator's wallet is the worst conversation this platform can have. If the two are the same 7 days, none of it arises. The columns suggest somebody once expected them to differ."
 }

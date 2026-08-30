@@ -104,7 +104,7 @@
   <b>Pay per sale</b> — <b>nothing is locked and nothing is owed.</b> A follower buys; the money
   arrives at us and splits three ways — <b>her commission</b>, <b>our fee</b>, and <b>what the
   brand keeps</b>. Hers goes to her pending balance, his to his sales balance, and both free up
-  after the 30-day return window.<br><br>
+  7 days after the sale.<br><br>
   <b>So a brand's wallet has two halves that must never be added together.</b> Campaign money is
   what he <b>put in</b> to pay creators. Sales money is what he <b>earned</b> and can withdraw.
 </div>
@@ -212,7 +212,7 @@
           <div class="tv"><b>₹18,600</b><span>EARNED IN ALL</span></div>
         </div>
         <div class="card pu"><div class="ct pu">On the way · why it is not here yet</div>
-          <div class="r"><div class="gr">Commission · in the return window<div class="sub">frees up over the next 30 days</div></div><b>₹2,604</b></div>
+          <div class="r"><div class="gr">Commission · in the 7-day window<div class="sub">frees up 7 days after each sale</div></div><b>₹2,604</b></div>
           <div class="r"><div class="gr">Yoy Clothing · when it goes live<div class="sub">4 Oct</div></div><b>₹3,000</b></div>
           <div class="r"><div class="gr">Yoy Clothing · 15 days after<div class="sub">19 Oct</div></div><b>₹6,000</b></div></div>
         <div class="btn pur">WITHDRAW</div>
@@ -261,11 +261,11 @@
       <div class="bd">
         <div class="tri">
           <div class="tv ok"><b>₹0</b><span>CONFIRMED</span></div>
-          <div class="tv wt"><b>₹2,604</b><span>PENDING (30D)</span></div>
+          <div class="tv wt"><b>₹2,604</b><span>PENDING (7D)</span></div>
         </div>
         <div class="fl">What sold</div>
-        <div class="r"><div class="gr">Black jacket · M<div class="sub">14 Sep · frees up 14 Oct</div></div><b>₹336</b></div>
-        <div class="r"><div class="gr">Beige jacket · S<div class="sub">15 Sep · frees up 15 Oct</div></div><b>₹308</b></div>
+        <div class="r"><div class="gr">Black jacket · M<div class="sub">14 Sep · frees up 21 Sep</div></div><b>₹336</b></div>
+        <div class="r"><div class="gr">Beige jacket · S<div class="sub">15 Sep · frees up 22 Sep</div></div><b>₹308</b></div>
         <div class="fl">Which post sold them</div>
         <div class="r"><div class="gr">Jacket, three ways<div class="sub">11 orders</div></div><b>₹1,960</b></div>
       </div>
@@ -314,23 +314,223 @@
 </div>
 
 <div class="rule" style="border-color:var(--adm)">
-  <b>The industry commission exists, and it is better than I described.</b> I was wrong about that
-  too.<br><br>
-  <code>categories</code> — <b>16 industries, each with three rates</b>, by how the sale arrived:
-  <b>Path A</b> a direct buy · <b>Path B</b> through a creator's link · <b>Path C</b> attributed
-  within 30 days.<br><br>
-  <table style="width:100%;font-size:11.5px;margin-top:6px;border-collapse:collapse">
+  <b>The per-industry commission exists. Three paths were built; only ONE is live.</b><br><br>
+  <b>Founder, 2026-08-30:</b> <i>"we changed the complete ecommerce architecture to a mix of
+  ecommerce and shoppable posts like instagram posts...each post designed by creator so whatever
+  sale happens is through post...brand, campaign, creator, posts and products all are connected
+  so no concept of creator attribution in this architecture."</i><br><br>
+  <b>The post IS the attribution.</b> Brand → campaign → creator → post → products is one chain,
+  so there is nothing left to work out after a sale.
+
+  <table style="width:100%;font-size:11.5px;margin-top:10px;border-collapse:collapse">
     <tr style="color:var(--mut);font-weight:800;font-size:9px;text-transform:uppercase">
-      <td>Industry</td><td>A · direct</td><td>B · via creator</td><td>C · attributed</td></tr>
-    <tr><td><b>Fashion</b></td><td>10%</td><td>5%</td><td>7%</td></tr>
-    <tr><td>Packaged food · Salon · Travel</td><td>9%</td><td>5%</td><td>7%</td></tr>
-    <tr><td>Restaurant · Jewellery · Furniture · Gym</td><td>8%</td><td>4%</td><td>6%</td></tr>
-    <tr><td>Florist · Function hall · Wedding</td><td>10%</td><td>5%</td><td>7%</td></tr>
+      <td style="padding-bottom:4px">Path</td><td>What it is</td><td>Fashion</td><td>Status</td></tr>
+    <tr style="opacity:.45"><td><b>A</b></td><td>INFLX makes the post itself</td><td>10%</td>
+      <td><b>reserved — future</b></td></tr>
+    <tr style="background:var(--okbg)"><td><b>B</b></td><td><b>A creator's post</b></td><td><b>5%</b></td>
+      <td><b style="color:var(--ok)">the only live path</b></td></tr>
+    <tr style="opacity:.45"><td><b>C</b></td><td>Attributed within a window</td><td>7%</td>
+      <td><b style="color:var(--bad)">retired — no meaning</b></td></tr>
   </table><br>
-  <b>Path B is always the lowest, and that is the whole idea</b> — when a creator brought the
-  customer she is already taking a cut, so we take less. A per-brand override
-  (<code>commerce_commission_override_pct</code>) beats the table for a strategic brand.
+
+  <b>Path A is not deleted, it is parked.</b> When INFLX has enough organic traffic to make posts
+  for brands directly, the rate is already there and already per-industry.<br><br>
+  <b>Path C goes.</b> It answered "she got the click, someone else got the sale" — a question this
+  architecture cannot ask. The <code>attribution_clicks</code> lookup inside
+  <code>classifyPath</code> becomes dead code for the fee.<br><br>
+  The 16 live rates stay as they are — <b>fashion 5%, restaurant 4%, salon 5%</b> and so on, per
+  industry, with a per-brand override on top.
 </div>
+
+<!-- ═══════════════════════════════════ 1 -->
+<div class="flow">1 · His wallet</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip c">CHANGE</span> Wallet</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Wallet</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0">Available balance</div>
+        <div class="big">₹ 42,600</div>
+        <div class="tri">
+          <div class="tv wt"><b>₹25,920</b><span>LOCKED IN ESCROW</span></div>
+          <div class="tv"><b>₹1,20,000</b><span>TOTAL DEPOSITED</span></div>
+        </div>
+        <div class="card"><div class="ct">What escrow is holding</div>
+          <div class="r"><div class="gr">Winter drop<div class="sub">Yoy · 2 creators · content</div></div><b>₹25,920</b></div>
+          <p class="note" style="margin:5px 0 0">Locked when you published. Released to them in
+            three parts, as they earn it.</p></div>
+        <div class="btn">TOP UP</div>
+        <div class="fl">Recent transactions</div>
+        <div class="r"><div class="gr">Top up<div class="sub">2 Sep · Razorpay</div></div><b style="color:var(--ok)">+ ₹50,000</b></div>
+        <div class="r"><div class="gr">Escrow locked · Winter drop<div class="sub">3 Sep</div></div><b>− ₹25,920</b></div>
+        <div class="r"><div class="gr">Released · Meera S. tranche 1<div class="sub">4 Sep</div></div><b>− ₹3,240</b></div>
+      </div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Creators</div>
+        <div class="tb"><i></i>Campaigns</div><div class="tb on"><i></i>Wallet</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> "Locked in Escrow" is a number today with nothing behind it.
+      It now <b>says which campaign is holding it</b> and why — the single most asked question
+      about a wallet.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip n">NEW</span> Inside escrow</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="nav"><span class="bk">‹ Wallet</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">WINTER DROP · YOY CLOTHING</div><h2>₹25,920 locked</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Meera S. · ₹12,960</div>
+          <div class="r"><div class="gr">1 · On signing<div class="sub">released 4 Sep</div></div><span class="tag ok">₹3,240 PAID</span></div>
+          <div class="r"><div class="gr">2 · When it goes live<div class="sub">due 4 Oct</div></div><span class="tag wt">₹3,240</span></div>
+          <div class="r"><div class="gr">3 · 15 days after<div class="sub">due 19 Oct</div></div><span class="tag">₹6,480</span></div></div>
+        <div class="card"><div class="ct">Asha M. · ₹12,960</div>
+          <div class="r"><div class="gr">1 · On signing<div class="sub">not signed yet</div></div><span class="tag">₹3,240</span></div>
+          <div class="r"><div class="gr">2 · When it goes live</div><span class="tag">₹3,240</span></div>
+          <div class="r"><div class="gr">3 · 15 days after</div><span class="tag">₹6,480</span></div></div>
+        <div class="note"><b>₹12,960 is ₹12,000 plus your 8% platform fee.</b> The fee is charged
+          on top; she is paid the full ₹12,000.</div>
+      </div>
+    </div>
+    <p class="note"><b>Every rupee, named and dated.</b> Today the wallet shows one locked total
+      and there is no way to find out what it is for.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip k">KEEP</span> Top up</p>
+    <div class="phone keep"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Add funds</h2></div>
+      <div class="bd">
+        <div class="fl">Amount</div><div class="fi ph">₹ 50,000</div>
+        <div class="seg"><div class="sg">₹10,000</div><div class="sg on">₹50,000</div><div class="sg">₹1,00,000</div></div>
+        <div class="note">Loading payment gateway…</div>
+        <div class="btn">PAY WITH RAZORPAY</div>
+        <div class="btn gh">CANCEL</div>
+      </div>
+    </div>
+    <p class="note">Built. Razorpay, and the balance updates on return.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip k">KEEP</span> Payout details</p>
+    <div class="phone keep"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Payout details</h2></div>
+      <div class="bd">
+        <div class="fl">Account holder name *</div><div class="fi ph">As on the bank account</div>
+        <div class="fl">Account number *</div><div class="fi ph">—</div>
+        <div class="fl">IFSC code *</div><div class="fi ph">—</div>
+        <div class="fl">Bank name</div><div class="fi ph">—</div>
+        <div class="fl">UPI ID</div><div class="fi ph">optional</div>
+        <div class="btn">SAVE PAYOUT DETAILS</div>
+      </div>
+    </div>
+    <p class="note">Built. Used for refunds of unspent escrow.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 2 -->
+<div class="flow p">2 · Her earnings</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip c">CHANGE</span> Earnings</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><h2>Earnings</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0">Ready to withdraw</div>
+        <div class="big">₹ 8,214</div>
+        <div class="tri">
+          <div class="tv wt"><b>₹4,806</b><span>ON THE WAY</span></div>
+          <div class="tv"><b>₹18,600</b><span>EARNED IN ALL</span></div>
+        </div>
+        <div class="card pu"><div class="ct pu">On the way · why it is not here yet</div>
+          <div class="r"><div class="gr">Commission · in the 7-day window<div class="sub">frees up 7 days after each sale</div></div><b>₹2,604</b></div>
+          <div class="r"><div class="gr">Yoy Clothing · when it goes live<div class="sub">4 Oct</div></div><b>₹3,000</b></div>
+          <div class="r"><div class="gr">Yoy Clothing · 15 days after<div class="sub">19 Oct</div></div><b>₹6,000</b></div></div>
+        <div class="btn pur">WITHDRAW</div>
+        <div class="note">Minimum ₹100. 10% TDS at withdrawal, not at earning.</div>
+        <div class="fl">By campaign</div>
+        <div class="r"><div class="gr">Diwali Saree Edit<div class="sub">Label Fern · commission</div></div><span class="tag">VIEW ›</span></div>
+        <div class="r"><div class="gr">Winter drop<div class="sub">Yoy · content · 1 of 3 paid</div></div><span class="tag">VIEW ›</span></div>
+      </div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Collabs</div>
+        <div class="tb"><i></i>Create</div><div class="tb on"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> today "PENDING" is one number. It is now <b>broken into why</b>
+      — a return window and two dated tranches are three different waits, and lumping them makes
+      her think she is owed money nobody plans to send.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip n">NEW</span> Withdraw</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="nav"><span class="bk">‹ Earnings</span><span class="sp"></span></div>
+      <div class="hd"><h2>Withdraw</h2></div>
+      <div class="bd">
+        <div class="fl">How much</div><div class="fi">₹ 8,214</div>
+        <div class="seg"><div class="sg on">All of it</div><div class="sg">Some</div></div>
+        <div class="card"><div class="ct">What you receive</div>
+          <div class="kv"><span>You asked for</span><b>₹ 8,214</b></div>
+          <div class="kv"><span>TDS at 10%</span><b>− ₹ 821</b></div>
+          <div class="kv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:7px"><span><b>In your account</b></span><b class="mid">₹ 7,393</b></div>
+          <p class="note" style="margin:5px 0 0">TDS is a tax deduction, not a fee. You claim it
+            back with Form 16A — the certificate is on your Earnings screen.</p></div>
+        <div class="fl">Send it to</div>
+        <div class="seg"><div class="sg on">UPI</div><div class="sg">Bank account</div></div>
+        <div class="fi ro">asha@okhdfc</div>
+        <div class="btn pur">WITHDRAW ₹8,214</div>
+        <div class="note">Usually within 24 hours.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>There is no withdraw screen today.</b> The endpoint exists, with the ₹100
+      minimum and the 10% TDS — <b>and no way to reach it from her phone.</b></p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip k">KEEP</span> One campaign's commission</p>
+    <div class="phone keep her"><div class="who cr">CREATOR</div>
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>₹2,604</h2></div>
+      <div class="bd">
+        <div class="tri">
+          <div class="tv ok"><b>₹0</b><span>CONFIRMED</span></div>
+          <div class="tv wt"><b>₹2,604</b><span>PENDING (7D)</span></div>
+        </div>
+        <div class="fl">What sold</div>
+        <div class="r"><div class="gr">Black jacket · M<div class="sub">14 Sep · frees up 21 Sep</div></div><b>₹336</b></div>
+        <div class="r"><div class="gr">Beige jacket · S<div class="sub">15 Sep · frees up 22 Sep</div></div><b>₹308</b></div>
+        <div class="fl">Which post sold them</div>
+        <div class="r"><div class="gr">Jacket, three ways<div class="sub">11 orders</div></div><b>₹1,960</b></div>
+      </div>
+    </div>
+    <p class="note">Built, and good. <b>Every sale dated with the day it frees up</b> — the return
+      window explained by example rather than by a policy sentence.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip n">NEW</span> One campaign's fee</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><div class="kick">WINTER DROP · YOY</div><h2>₹12,000</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Tranche timeline</div>
+          <div class="r"><div class="gr">1 · On signing<div class="sub">paid 4 Sep</div></div><span class="tag ok">₹3,000</span></div>
+          <div class="r"><div class="gr">2 · When it goes live<div class="sub">waiting on the brand to confirm</div></div><span class="tag wt">₹3,000</span></div>
+          <div class="r"><div class="gr">3 · 15 days after that<div class="sub">—</div></div><span class="tag">₹6,000</span></div></div>
+        <div class="card pu"><div class="ct pu">What unlocks the next one</div>
+          <p class="note" style="margin:0">Both your links are live and sent. <b>Yoy has confirmed
+            1 of 2.</b> The moment they confirm the second, ₹3,000 is yours.</p></div>
+        <div class="note">Your money is already locked on their side. It cannot be spent on
+          anything else.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>She cannot see her tranches today.</b> The word "Tranche Timeline" exists
+      on the commission screen, for commission — <b>which has no tranches</b>. The aim that does
+      has no screen.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 2b -->
+<div class="flow">2b · The money coming BACK — a sale</div>
 
 <div class="row">
   <div class="unit wide">
@@ -342,7 +542,7 @@
         <div class="kv"><span>Her offer took off 20%</span><span>already in that price</span></div>
         <div class="card" style="margin-top:10px">
           <div class="r"><div class="gr"><b>Her commission</b><div class="sub">18% · agreed in the set</div></div><b style="color:var(--pur)">₹ 2,700</b></div>
-          <div class="r"><div class="gr"><b>Our fee</b><div class="sub">Fashion · Path B · 5%</div></div><b style="color:var(--adm)">₹ 750</b></div>
+          <div class="r"><div class="gr"><b>Our fee</b><div class="sub">Fashion · a creator’s post · 5%</div></div><b style="color:var(--adm)">₹ 750</b></div>
           <div class="r"><div class="gr"><b>The brand keeps</b><div class="sub">what is left</div></div><b>₹ 11,550</b></div></div>
         <div class="card ok"><div class="ct ok">Why 5% and not 10%</div>
           <p class="note" style="margin:0">Fashion is <b>10% on a direct buy</b> and <b>5% through
@@ -367,7 +567,7 @@
         <div class="note" style="margin:0">Ready to withdraw</div>
         <div class="big">₹ 68,400</div>
         <div class="tri">
-          <div class="tv wt"><b>₹22,300</b><span>IN THE RETURN WINDOW</span></div>
+          <div class="tv wt"><b>₹22,300</b><span>IN THE 7-DAY WINDOW</span></div>
           <div class="tv"><b>₹1,65,800</b><span>SOLD IN ALL</span></div>
         </div>
         <div class="card"><div class="ct">Where it came from</div>
@@ -375,8 +575,8 @@
           <div class="kv"><span>Creators earned</span><b>− ₹29,958</b></div>
           <div class="kv"><span>Our fee</span><b>− ₹13,264</b></div>
           <div class="kv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:6px"><span><b>Yours</b></span><b>₹1,22,578</b></div>
-          <p class="note" style="margin:5px 0 0">₹22,300 of it is still inside the 30-day return
-            window and cannot be withdrawn yet.</p></div>
+          <p class="note" style="margin:5px 0 0">₹22,300 of it is from sales in the last 7 days and
+            cannot be withdrawn yet.</p></div>
         <div class="btn">WITHDRAW ₹68,400</div>
         <div class="btn gh">SEE EVERY SALE ›</div>
       </div>
@@ -418,8 +618,8 @@
       <div class="hd"><h2>Sales</h2>
         <div class="seg" style="margin-top:6px"><div class="sg on">All</div><div class="sg">Free</div><div class="sg">In window</div></div></div>
       <div class="bd">
-        <div class="r"><div class="gr">Black jacket · M<div class="sub">Asha M. · 14 Sep · free 14 Oct</div></div><div style="text-align:right"><b>₹1,860</b><div class="sub">of ₹2,400</div></div></div>
-        <div class="r"><div class="gr">Beige jacket · S<div class="sub">Asha M. · 15 Sep · free 15 Oct</div></div><div style="text-align:right"><b>₹1,705</b><div class="sub">of ₹2,200</div></div></div>
+        <div class="r"><div class="gr">Black jacket · M<div class="sub">Asha M. · 14 Sep · free 21 Sep</div></div><div style="text-align:right"><b>₹1,860</b><div class="sub">of ₹2,400</div></div></div>
+        <div class="r"><div class="gr">Beige jacket · S<div class="sub">Asha M. · 15 Sep · free 22 Sep</div></div><div style="text-align:right"><b>₹1,705</b><div class="sub">of ₹2,200</div></div></div>
         <div class="r"><div class="gr">Linen saree<div class="sub">Meera S. · 2 Sep · <b style="color:var(--ok)">free</b></div></div><div style="text-align:right"><b>₹2,945</b><div class="sub">of ₹3,800</div></div></div>
         <div class="r"><div class="gr">Cotton shirt<div class="sub">returned 8 Sep</div></div><div style="text-align:right"><b style="color:var(--bad)">− ₹890</b><div class="sub">reversed</div></div></div>
         <div class="note"><b>Every line shows what he keeps and what it sold for</b>, and which
@@ -503,6 +703,17 @@
     <p class="note"><b>Nothing in this flow touches them.</b> Read once to confirm they still open,
       and the four commerce screens are the follower app's, not this programme's.</p>
   </div>
+</div>
+
+<div class="warn">
+  <b>One thing the 7-day window leaves open, and it carries money.</b><br><br>
+  Is <b>7 days the shopper's return period</b>, or just <b>how long we hold her money</b>?<br><br>
+  If a shopper can still return for 30 days but the creator is paid at 7, then a return on day 12
+  claws back money she already has. <code>commission_reversed</code> and
+  <code>brand_net_reversed</code> exist for exactly that — <b>and taking money back out of a
+  creator's wallet is the worst conversation this platform can have.</b><br><br>
+  <b>If the two are the same 7 days, none of that arises.</b> Worth being explicit, because the
+  columns suggest somebody once expected them to differ.
 </div>
 
 <div class="why">
