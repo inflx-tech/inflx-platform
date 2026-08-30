@@ -31,7 +31,24 @@
     "what_it_is": "A sale sends money TO the platform, which splits three ways: her commission, our fee, and what the brand keeps. The brand then has to be able to withdraw his share. I had drawn only money going IN.",
     "two_wallets_one_screen": "A brand wallet has two halves that must NEVER be added together. CAMPAIGN MONEY is what he put in to pay creators (top-up, escrow, tranches out). SALES MONEY is what he earned and can take out. One number covering both would be meaningless."
   },
-  "the_serious_finding": "⚠️ ON EVERY REAL SALE, TWO OF THE THREE SHARES WERE NEVER WORKED OUT. 16 completed sales in production, ₹1,65,800 gross. influencer_commission computed on 16/16. marketplace_fee_amount on 0/16. brand_net on 0/16. A real row reads: gross 15,000 · creator 2,700 · platform NULL · brand NULL. All 16 sit at brand_settlement_status=pending against a null amount. The creator is paid; NOBODY HAS EVER WORKED OUT WHAT THE BRAND IS OWED. That is the missing piece — not a screen, a calculation.",
   "the_shape_was_designed": "follower_transactions already carries gross_amount, discount_amount, net_amount, influencer_commission, marketplace_fee_amount, brand_net, brand_settlement_status, brand_settled_at, commission_reversed and brand_net_reversed. brand_withdrawals exists as a table — status, failure_reason, razorpay_payout_id — with an admin approval path in admin.controller. 0 rows, no screen anywhere. The shape was designed; the arithmetic was never written and no surface was ever built.",
-  "correction_on_industry_commission": "⚠️ The founder said the industry-based commission already exists. It does NOT, in that form. What exists is payment_config.platform_fee_pct — ONE GLOBAL 8% — and escrow_fee_tiers, which are three tiers by AMOUNT (below ₹5L 3%, ₹5-25L 2%, above ₹25L 1%), not by industry. There is no industry or category commission table. Needs his decision: is the take rate global, by volume tier, or by industry?"
+  "correction_i_owed_him": {
+    "what_i_said": "That on 16 real sales two of the three shares were never computed — marketplace_fee_amount 0/16, brand_net 0/16 — and called it a live bug.",
+    "what_is_true": "Those 16 sales are SEEDED PRACTICE DATA. Zero of them carry a razorpay_payment_id, all belong to one practice brand, and the rows were written straight into the table rather than through the app. The seed did not fill those two columns; the live code was never involved. The arithmetic IS written and is called from three places in transaction.controller. The narrower true statement: the fee model has never run on a real payment. Untested, not broken.",
+    "the_hazard_that_remains": "The seeded nulls will make any screen built on this data render blanks, and anyone reading the table will reach the wrong conclusion — as I did. The seed should be corrected before these screens are built."
+  },
+  "the_industry_commission_exists": {
+    "correction": "I also said the industry-based commission does not exist. It does, and it is better than what I described. The founder pointed me at it.",
+    "the_table": "categories — 16 industries, each with THREE rates by how the sale arrived. Path A a direct buy, Path B through a creator link, Path C attributed within 30 days.",
+    "examples": "Fashion 10/5/7 · packaged food, salon, travel 9/5/7 · restaurant, jewellery, furniture, gym 8/4/6 · florist, function hall, wedding 10/5/7. All with a 30-day return window, all active.",
+    "the_idea": "PATH B IS ALWAYS THE LOWEST. When a creator brought the customer she is already taking a cut, so the platform takes less — a sale the platform wins itself earns double. There is also a per-brand override, commerce_commission_override_pct, which beats the table.",
+    "where_it_lives": "backend/src/services/pricing.service.js computeL3OnFollowerTxn, admin screen at Packages/brand-web/app/admin/pricing/categories, 60s cache."
+  },
+  "what_is_genuinely_missing": [
+    "The brand's SALES-MONEY view — his share of what sold. No screen.",
+    "The brand's WITHDRAWAL screen. brand_withdrawals exists as a table with an admin approval path in admin.controller, 0 rows, no surface anywhere.",
+    "Her withdraw screen — same story on her side.",
+    "Her tranche timeline.",
+    "Inside-escrow, so a locked total can be explained."
+  ]
 }

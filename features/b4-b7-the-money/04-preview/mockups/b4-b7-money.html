@@ -299,16 +299,37 @@
 <!-- ═══════════════════════════════════ 2b -->
 <div class="flow">2b · The money coming BACK — a sale</div>
 
-<div class="warn">
-  <b>On every real sale, two of the three shares were never worked out.</b><br><br>
-  16 completed sales in production, <b>₹1,65,800 gross</b>.
-  <code>influencer_commission</code> computed on <b>16 of 16</b>.
-  <code>marketplace_fee_amount</code> on <b>0 of 16</b>.
-  <code>brand_net</code> on <b>0 of 16</b>.<br><br>
-  A real row reads: <i>gross 15,000 · creator 2,700 · <b>platform null · brand null</b></i>.<br><br>
-  <b>The creator's cut is calculated and paid. Nobody has ever worked out what the brand is
-  owed.</b> All 16 sit at <code>brand_settlement_status = 'pending'</code> against a null amount.
-  <b>That is the missing piece</b> — not a screen, a calculation.
+<div class="rule" style="border-color:var(--ok);background:var(--okbg)">
+  <b>⚠️ CORRECTION — I said this was broken, and it is not.</b><br><br>
+  I reported that two of the three shares were never worked out on 16 real sales. <b>Those 16
+  sales are seeded practice data</b> — no Razorpay payment id on any of them, one practice brand,
+  rows written straight into the table rather than through the app. The seed did not fill
+  <code>marketplace_fee_amount</code> or <code>brand_net</code>; the live code was never
+  involved.<br><br>
+  <b>The arithmetic IS written</b> and is called from three places in
+  <code>transaction.controller</code>. What is true is narrower and less alarming:
+  <b>the fee model has never run on a real payment.</b> Untested, not broken.<br><br>
+  ⚠️ <b>But the seeded nulls are their own hazard.</b> Any screen built against this data will
+  render blanks, and anyone reading the table will reach the conclusion I did.
+</div>
+
+<div class="rule" style="border-color:var(--adm)">
+  <b>The industry commission exists, and it is better than I described.</b> I was wrong about that
+  too.<br><br>
+  <code>categories</code> — <b>16 industries, each with three rates</b>, by how the sale arrived:
+  <b>Path A</b> a direct buy · <b>Path B</b> through a creator's link · <b>Path C</b> attributed
+  within 30 days.<br><br>
+  <table style="width:100%;font-size:11.5px;margin-top:6px;border-collapse:collapse">
+    <tr style="color:var(--mut);font-weight:800;font-size:9px;text-transform:uppercase">
+      <td>Industry</td><td>A · direct</td><td>B · via creator</td><td>C · attributed</td></tr>
+    <tr><td><b>Fashion</b></td><td>10%</td><td>5%</td><td>7%</td></tr>
+    <tr><td>Packaged food · Salon · Travel</td><td>9%</td><td>5%</td><td>7%</td></tr>
+    <tr><td>Restaurant · Jewellery · Furniture · Gym</td><td>8%</td><td>4%</td><td>6%</td></tr>
+    <tr><td>Florist · Function hall · Wedding</td><td>10%</td><td>5%</td><td>7%</td></tr>
+  </table><br>
+  <b>Path B is always the lowest, and that is the whole idea</b> — when a creator brought the
+  customer she is already taking a cut, so we take less. A per-brand override
+  (<code>commerce_commission_override_pct</code>) beats the table for a strategic brand.
 </div>
 
 <div class="row">
@@ -321,17 +342,15 @@
         <div class="kv"><span>Her offer took off 20%</span><span>already in that price</span></div>
         <div class="card" style="margin-top:10px">
           <div class="r"><div class="gr"><b>Her commission</b><div class="sub">18% · agreed in the set</div></div><b style="color:var(--pur)">₹ 2,700</b></div>
-          <div class="r"><div class="gr"><b>Our fee</b><div class="sub">the rate you set</div></div><b style="color:var(--adm)">₹ 1,200</b></div>
-          <div class="r"><div class="gr"><b>The brand keeps</b><div class="sub">what is left</div></div><b>₹ 11,100</b></div></div>
-        <div class="card bad"><div class="ct bad">Today, on all 16 real sales</div>
-          <div class="r"><div class="gr">Her commission</div><b style="color:var(--ok)">computed ✓</b></div>
-          <div class="r"><div class="gr">Our fee</div><b style="color:var(--bad)">null</b></div>
-          <div class="r"><div class="gr">The brand's share</div><b style="color:var(--bad)">null</b></div></div>
-        <div class="note"><b>The columns exist and nothing fills them.</b>
-          <code>marketplace_fee_amount</code> and <code>brand_net</code> are on every row of
-          <code>follower_transactions</code>, alongside <code>brand_settlement_status</code> and
-          <code>brand_settled_at</code>. The shape was designed. The arithmetic was never
-          written.</p>
+          <div class="r"><div class="gr"><b>Our fee</b><div class="sub">Fashion · Path B · 5%</div></div><b style="color:var(--adm)">₹ 750</b></div>
+          <div class="r"><div class="gr"><b>The brand keeps</b><div class="sub">what is left</div></div><b>₹ 11,550</b></div></div>
+        <div class="card ok"><div class="ct ok">Why 5% and not 10%</div>
+          <p class="note" style="margin:0">Fashion is <b>10% on a direct buy</b> and <b>5% through
+            a creator</b>. She brought this customer and is taking ₹2,700, so we take half. A sale
+            we win ourselves earns us double.</p></div>
+        <div class="note"><b>All three shares are computed by code that already exists</b> —
+          <code>computeL3OnFollowerTxn</code>, called from three places. It has simply never run
+          on a real payment.</div>
       </div>
     </div>
     <p class="note"><b>Both aims meet here.</b> A pay-for-content creator is paid out of escrow AND
@@ -408,7 +427,9 @@
       </div>
     </div>
     <p class="note">The reversal columns exist too — <code>commission_reversed</code> and
-      <code>brand_net_reversed</code>. Also never used.</p>
+      <code>brand_net_reversed</code>. Also never used.<br><br>
+      ⚠️ <b>Before this screen can be built, the seeded sales need their fee and brand-share
+      filled in</b> — otherwise it renders sixteen blanks and looks broken.</p>
   </div>
 </div>
 
