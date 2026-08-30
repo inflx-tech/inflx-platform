@@ -8,7 +8,7 @@
   "preview_reviewed": false,
   "impact_reviewed": false,
   "mockup_locked": false,
-  "notes": "B1, third pass 2026-08-30. 32 panels. Founder found three more gaps: the location filter needed a state-then-place cascade, tapping a creator inside a set had no six-step screen drawn, and the creator screen where she sends her address for a remote shoot did not exist at all.",
+  "notes": "B1, fourth pass 2026-08-30. 35 panels. Going live is per CHANNEL, matched to what she agreed — not one Instagram box.",
   "scope": "Only the Campaigns tab of the brand app. The Creators tab is B2, the creator's side is B5, admin is B8.",
   "the_rule": "A set is one aim, one posting date, one shoot mode. Everything else is per creator. Posting date >= today + 7; invitations close 3 days before; a store visit finishes 1 day before.",
   "new_screens": [
@@ -44,12 +44,13 @@
   "deferral_flow_corrected": "The founder replaced my design. Mine: pick an existing matching set. His: she leaves the set, the brand chooses DISAGREE (it ends) or MOVE HER OUT (she waits in a deferred pool), and later a NEW SET IS BUILT FROM the deferred, grouped by date + mode. No matching set has to exist first. Building one opens the wizard at step 2 with the date, mode and creators pre-filled.",
   "data_warnings": [
     "influencers.language is EMPTY on all 25 rows — the filter will match nobody until creators can set it, which is a B7 profile change.",
-    "Engagement rate was deliberately REMOVED from creator search once, with a written reason. The founder wants it back; drawn as four coarse bands rather than a number box."
+    "Engagement rate was deliberately REMOVED from creator search once, with a written reason. The founder wants it back; drawn as four coarse bands rather than a number box.",
+    "⚠️ A LIVE LINK HAS NOWHERE TO LIVE ON A COMMISSION CAMPAIGN. live_url and live_confirmed_at sit on DELIVERABLES, and a commission creator has none — production holds 6 such creators with 0 deliverables between them. So \"going live\" is unrecordable for exactly the campaigns this platform is built around. Going live must hang off HER AGREED CHANNELS, not off deliverables. Schema work, lands in Stage 4."
   ],
   "offer_builder_already_exists": "Checked at the founder's instruction. CreatorOfferSheet + offerBuilders.js already ship five types on the phone — Discount, Volume, BOGO, Bundle, Free gift — with library-or-new-or-none, scope (store/category/products), a validity window and a shopper preview. No pre-book on mobile. Documented, not invented.",
   "counts": {
-    "panels": 32,
-    "new": 9,
+    "panels": 35,
+    "new": 12,
     "change": 18,
     "keep": 5
   },
@@ -60,5 +61,11 @@
   ],
   "location_cascade": "State -> places. Every state and UT listed with a creator count; a state with nobody is greyed and cannot be opened. Inside a state, the first row is \"Everywhere in <state>\" because that is usually the answer, then the actual places with counts. The places are the ones creators are IN — production holds 8 across 6 states — so no catalogue of Indian cities is needed or shipped.",
   "the_six_steps": "Terms agreed · Signing · The shoot · Shop posts · Going live · Complete. Already built, with STEP_LABELS for the brand and STEP_LABELS_CREATOR for her — one list, two vocabularies. Each step shows whose move it is: YOURS / HERS / BOTH / NOT YOURS / WAITING. CHANGE: step 1 used to mean the handshake; it now means she accepted the whole deal inside the set.",
-  "her_address_screen": "NEW, and a real gap in the live app: the brand side pre-fills her address from her profile and she is never asked. She cannot correct it, so a parcel can go to an old flat. It is the first move of a remote shoot and it belongs to her."
+  "her_address_screen": "NEW, and a real gap in the live app: the brand side pre-fills her address from her profile and she is never asked. She cannot correct it, so a parcel can go to an old flat. It is the first move of a remote shoot and it belongs to her.",
+  "round_4": {
+    "founder": "\"not go live on instagram.....its live on social media...next these should be matched with his agreed social media list...same thing brand can see for approve one by one ...that is it is live confirm ...he enters link then he checks\"",
+    "wording": "STEP_LABELS_CREATOR[5] \"Go live on Instagram\" -> \"Go live on social media\". The brand's \"Going live\" -> \"Live on social media\".",
+    "structure": "Step 5 expands into ONE ROW PER CHANNEL she agreed. She pastes a link per channel; the brand opens each and confirms it one by one. Nothing completes until every agreed channel is confirmed, and that is what releases her second 25%.",
+    "rejection": "\"Not live / wrong link\" sends it back with a reason and does NOT count against her revision rounds — a bad paste is not a bad post."
+  }
 }
