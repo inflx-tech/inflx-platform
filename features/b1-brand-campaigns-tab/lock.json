@@ -8,7 +8,7 @@
   "preview_reviewed": false,
   "impact_reviewed": false,
   "mockup_locked": false,
-  "notes": "B1, fourth pass 2026-08-30. 35 panels. Going live is per CHANNEL, matched to what she agreed — not one Instagram box.",
+  "notes": "B1, fifth pass 2026-08-30. 39 panels across 9 flows. Adds the basket preview drawn with a worked example.",
   "scope": "Only the Campaigns tab of the brand app. The Creators tab is B2, the creator's side is B5, admin is B8.",
   "the_rule": "A set is one aim, one posting date, one shoot mode. Everything else is per creator. Posting date >= today + 7; invitations close 3 days before; a store visit finishes 1 day before.",
   "new_screens": [
@@ -49,10 +49,11 @@
   ],
   "offer_builder_already_exists": "Checked at the founder's instruction. CreatorOfferSheet + offerBuilders.js already ship five types on the phone — Discount, Volume, BOGO, Bundle, Free gift — with library-or-new-or-none, scope (store/category/products), a validity window and a shopper preview. No pre-book on mobile. Documented, not invented.",
   "counts": {
-    "panels": 35,
+    "panels": 39,
+    "flows": 9,
     "new": 12,
-    "change": 18,
-    "keep": 5
+    "change": 19,
+    "keep": 8
   },
   "round_3_gaps_he_found": [
     "Location filter must cascade: STATE first, then the places inside that state. Was drawn as flat chips.",
@@ -67,5 +68,12 @@
     "wording": "STEP_LABELS_CREATOR[5] \"Go live on Instagram\" -> \"Go live on social media\". The brand's \"Going live\" -> \"Live on social media\".",
     "structure": "Step 5 expands into ONE ROW PER CHANNEL she agreed. She pastes a link per channel; the brand opens each and confirms it one by one. Nothing completes until every agreed channel is confirmed, and that is what releases her second 25%.",
     "rejection": "\"Not live / wrong link\" sends it back with a reason and does NOT count against her revision rounds — a bad paste is not a bad post."
+  },
+  "basket_preview": {
+    "what_it_is": "A rehearsal of a real sale, before publishing. Two of the brand's real products are seeded so it says something on open. Shows the basket, the subtotal, every offer that COULD apply with WINS or NOT APPLIED and a reason, what the shopper pays, and what the creator earns at her commission — on the DISCOUNTED total, which is the number that surprises brands.",
+    "why_it_is_trusted": "It holds no arithmetic. The basket goes to POST /campaigns/preview-basket and comes back through the shopping app's own resolver — the same code that runs at checkout. From the source: a preview that can disagree with the till is worse than no preview.",
+    "the_losers_matter": "It names the offers that did NOT apply and why — \"needs 3 items\", \"a bigger offer already applied\". That is what stops a brand assuming an offer fired when it did not.",
+    "the_empty_case": "Honest warning, not a blank panel: \"No offer reaches this basket, so a shopper pays full price. On a sales set that means nothing gives them a reason to buy through a creator.\"",
+    "change_in_b1": "The screen itself does not change. It gains a SECOND DOOR from Her Terms — so the maths is checked WHILE deciding rather than after — and carries her name and commission through, so the last line reads \"Asha earns at 14%\" instead of \"the creator earns\"."
   }
 }

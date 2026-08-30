@@ -96,6 +96,18 @@
   .why b{color:var(--ink)}
   .warn{max-width:960px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
   .warn b{color:var(--bad)}
+  .line{display:flex;justify-content:space-between;font-size:12px;padding:5px 0}
+  .line .k{color:#444;flex:1;min-width:0} .line .v{font-weight:700;white-space:nowrap}
+  .line.tot{border-top:1px solid var(--line);margin-top:4px;padding-top:7px}
+  .line.tot .k{font-weight:900;color:var(--ink)}
+  .big{font-size:19px;font-weight:900;letter-spacing:-.02em}
+  .cand{border:1px solid var(--line);border-radius:8px;padding:8px 9px;margin-top:6px}
+  .cand.win{border-color:#BFE0CF;background:var(--okbg)}
+  .cand.dim{opacity:.55;background:#FAFAFA}
+  .candh{display:flex;justify-content:space-between;align-items:center;font-size:8.5px;font-weight:900;letter-spacing:.06em}
+  .candh .src{color:var(--mut)}
+  .candh .w{color:var(--ok)} .candh .nw{color:var(--mut2)}
+  .cands{font-size:11px;color:#555;margin-top:4px}
 </style>
 
 <h1>B1 · Brand app — Campaigns tab</h1>
@@ -534,6 +546,115 @@
 </div>
 
 <!-- ═══════════════════════════════════ 5 -->
+<div class="flow">4b · "See what a shopper pays" — a rehearsal of a real sale</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> The worked example</p>
+    <div class="phone keep">
+      <div class="nav"><span class="bk">‹ Back to the set</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">ASHA M. · 14% · FESTIVE 20% OFF</div><h2>What a shopper pays</h2></div>
+      <div class="bd">
+        <div class="fl">A basket <span style="color:var(--mut2)">· two of your real products</span></div>
+        <div class="line"><span class="k">Black jacket · M</span><span class="v">₹ 2,400</span></div>
+        <div class="line"><span class="k">Beige jacket · S</span><span class="v">₹ 2,200</span></div>
+        <div class="line tot"><span class="k">Subtotal</span><span class="v">₹ 4,600</span></div>
+        <div class="btn sm gh">CHANGE THE BASKET</div>
+
+        <div class="fl" style="margin-top:12px">Offers that could apply</div>
+        <div class="cand win">
+          <div class="candh"><span class="src">PERCENTAGE · THIS SET</span><span class="w">WINS</span></div>
+          <div class="cands">Saves ₹920</div>
+        </div>
+        <div class="cand dim">
+          <div class="candh"><span class="src">BOGO · YOUR STORE</span><span class="nw">NOT APPLIED</span></div>
+          <div class="cands">Would save ₹0 · needs 3 items</div>
+        </div>
+
+        <div class="line tot" style="margin-top:12px"><span class="k">Shopper pays</span><span class="big">₹ 3,680</span></div>
+        <div class="line"><span class="k">Asha earns at 14%</span><span class="v" style="color:var(--ok)">₹ 515</span></div>
+      </div>
+    </div>
+    <p class="note"><b>Three questions, answered before you publish.</b> What a customer is
+      actually charged. Which offer wins when two could apply. And what she really earns — 14% of
+      the <b>discounted</b> ₹3,680, not of ₹4,600. That last one surprises brands.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> It shows the losers too</p>
+    <div class="phone keep">
+      <div class="hd"><div class="kick">WHY THIS MATTERS</div><h2>Offers that could apply</h2></div>
+      <div class="bd">
+        <div class="cand win">
+          <div class="candh"><span class="src">PERCENTAGE · THIS SET</span><span class="w">WINS</span></div>
+          <div class="cands">Saves ₹920</div>
+        </div>
+        <div class="cand dim">
+          <div class="candh"><span class="src">BOGO · YOUR STORE</span><span class="nw">NOT APPLIED</span></div>
+          <div class="cands">Would save ₹0 · needs 3 items</div>
+        </div>
+        <div class="cand dim">
+          <div class="candh"><span class="src">FLAT · YOUR STORE</span><span class="nw">NOT APPLIED</span></div>
+          <div class="cands">Would save ₹500 · a bigger offer already applied</div>
+        </div>
+        <div class="cand dim">
+          <div class="candh"><span class="src">BUNDLE · YOUR STORE</span><span class="nw">NOT APPLIED</span></div>
+          <div class="cands">Would save ₹0 · the bundle needs a shirt in the basket</div>
+        </div>
+        <div class="note" style="margin-top:10px"><b>Only one offer can win.</b> Naming the losers
+          and saying why is what stops a brand assuming an offer fired when it did not — and
+          "why did this sell for that price?" arriving a week later.</div>
+      </div>
+    </div>
+    <p class="note"><b>No arithmetic lives on this screen.</b> The basket goes to the server and
+      comes back through <b>the shopping app's own resolver</b> — the same code that runs at
+      checkout. A preview that can disagree with the till is worse than no preview.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Change the basket · and the honest empty</p>
+    <div class="phone keep">
+      <div class="nav"><span class="sp"></span><span class="bk">Done</span></div>
+      <div class="hd"><h2>Pick products</h2>
+        <div class="srch">⌕ &nbsp;Search your products</div></div>
+      <div class="bd">
+        <div class="r"><div class="av"></div><div class="gr">Black jacket · M<div class="sub">₹2,400 · Topwear</div></div><span class="tag ok">✓</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Beige jacket · S<div class="sub">₹2,200 · Topwear</div></div><span class="tag ok">✓</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Cotton shirt · L<div class="sub">₹1,150 · Topwear</div></div><span class="tag">ADD</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Linen saree<div class="sub">₹3,800 · Ethnic</div></div><span class="tag">ADD</span></div>
+
+        <div class="card bad" style="margin-top:12px"><div class="ct bad">When nothing applies</div>
+          <p class="note" style="margin:0">"No offer reaches this basket, so a shopper pays full
+            price. On a sales set that means nothing gives them a reason to buy through a
+            creator."</p></div>
+      </div>
+    </div>
+    <p class="note">The basket redraws as you tick. <b>The empty case is a warning, not a blank
+      panel</b> — a sales creator with no working offer has nothing to sell with.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Where it opens from</p>
+    <div class="phone">
+      <div class="hd"><h2>Two doors, one screen</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Today</div>
+          <div class="r"><div class="gr">The offer sheet<div class="sub">after you pick her offer</div></div><span class="tag">EXISTS</span></div>
+          <p class="note" style="margin:6px 0 0">You check the maths <b>after</b> deciding.</p></div>
+        <div class="card ok"><div class="ct ok">Added in B1</div>
+          <div class="r"><div class="gr">Her terms<div class="sub">beside her commission and her offer</div></div><span class="tag ok">NEW DOOR</span></div>
+          <p class="note" style="margin:6px 0 0">You check the maths <b>while</b> deciding — with
+            her commission already on screen, so the ₹515 means something.</p></div>
+        <div class="note" style="margin-top:10px"><b>The screen itself does not change.</b> It
+          gains a second way in and carries her name and her commission through, so the last line
+          reads "Asha earns at 14%" instead of "the creator earns".</div>
+      </div>
+    </div>
+    <p class="note">Already built as <code>BrandBasketPreviewScreen</code>, contract
+      <code>stage-2-build-a-campaign-from-the-phone</code>, action ledger #96.</p>
+  </div>
+</div>
+
 <div class="flow">5 · Publish, and what comes back</div>
 <div class="row">
 
