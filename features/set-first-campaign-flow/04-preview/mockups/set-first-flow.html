@@ -1,0 +1,297 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Set-first campaign flow — proposal</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--bad:#C4321B;--badbg:#FBEEEA;--okbg:#EEF7F2}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EFEFEF;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:28px;color:var(--ink)}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.03em}
+  .sub{color:#666;font-size:13.5px;margin:0 0 6px;line-height:1.6;max-width:900px}
+  .warn{max-width:900px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;
+        border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.6;margin:14px 0 26px}
+  .warn b{color:var(--bad)}
+  .stage{margin:34px 0 12px;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+  .row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .phone{width:310px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;flex:0 0 auto}
+  .cap{font-size:10.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:0 0 7px 3px}
+  .hd{padding:13px 15px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:9.5px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:17px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:13px 15px}
+  .fl{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:12px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:9px;padding:11px 12px;margin-top:5px;font-size:13.5px}
+  .fi.ph{color:var(--mut2)}
+  .fi.ro{background:#FAFAFA;color:#555}
+  .seg{display:flex;gap:6px;margin-top:5px}
+  .sg{flex:1;border:1px solid var(--line);border-radius:9px;padding:9px 4px;text-align:center;font-size:11.5px;font-weight:700;color:#666}
+  .sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn{margin-top:14px;background:var(--ink);color:#fff;text-align:center;padding:13px;border-radius:9px;font-weight:900;font-size:12.5px;letter-spacing:.05em}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .note{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.55}
+  .note b{color:var(--ink)}
+  .cr{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--soft)}
+  .av{width:32px;height:32px;border-radius:16px;background:#EEE;flex:0 0 auto}
+  .cn{flex:1;font-size:13.5px;font-weight:700}
+  .cm{font-size:11px;color:var(--mut);font-weight:400}
+  .tag{font-size:9px;font-weight:900;letter-spacing:.05em;padding:3px 7px;border-radius:5px;background:var(--soft);color:#555}
+  .tag.you{background:#FDF0E7;color:var(--acc)}
+  .tag.ok{background:var(--okbg);color:var(--ok)}
+  .card{border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:11px}
+  .card.bad{border-color:var(--bad);background:var(--badbg)}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .ct{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+  .ct.bad{color:var(--bad)} .ct.ok{color:var(--ok)}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:6px 0}
+  .kv span:first-child{color:var(--mut)}
+  .kv b{font-weight:800}
+  .q{display:inline-block;background:#FFF4CC;border:1px solid #E8C96B;color:#7A5B00;
+     font-size:10px;font-weight:900;padding:2px 6px;border-radius:5px;margin-left:6px;letter-spacing:.04em}
+  .lgd{max-width:900px;font-size:12.5px;color:#555;line-height:1.7;margin-top:12px}
+  .lgd b{color:var(--ink)}
+</style>
+
+<h1>Set-first campaign flow</h1>
+<p class="sub">
+  One flow instead of three. The <b>set</b> becomes the unit that carries everything fixed — aim,
+  posting date, shoot mode, channels — and the only thing that varies inside it is what each
+  creator is paid. No separate handshake, no second brief.
+</p>
+<div class="warn">
+  <b>PROPOSAL — nothing is built.</b> Boxes marked <span class="q">?</span> depend on answers I
+  still need. Every screen below is the existing one with fields moved, not a new design.
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── 1 -->
+<div class="stage">1 · The campaign is just a name</div>
+<div class="row">
+  <div>
+    <p class="cap">Before</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">NEW CAMPAIGN</div><h2>Start a campaign</h2></div>
+      <div class="bd">
+        <div class="fl">Campaign name</div>
+        <div class="fi ph">Diwali Saree Edit</div>
+        <div class="fl">Start date</div>
+        <div class="fi ro">29 Aug 2026</div>
+        <div class="btn">CREATE</div>
+        <p class="note">The start date sat here and nothing downstream used it.</p>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">After</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">NEW CAMPAIGN</div><h2>Start a campaign</h2></div>
+      <div class="bd">
+        <div class="fl">Campaign name</div>
+        <div class="fi ph">Diwali Saree Edit</div>
+        <div class="btn">CREATE</div>
+        <p class="note">One field. <b>Dates live on the set</b>, because that is where they decide
+          anything.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── 2 -->
+<div class="stage">2 · The set carries everything fixed</div>
+<div class="row">
+  <div>
+    <p class="cap">New — set setup</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>New set</h2></div>
+      <div class="bd">
+        <div class="fl">What is this set for</div>
+        <div class="seg">
+          <div class="sg on">Pay per sale</div><div class="sg">Pay for content</div><div class="sg">Both</div>
+        </div>
+        <div class="fl">Set name</div>
+        <div class="fi ph">Saree creators · Bengaluru</div>
+        <div class="fl">Everyone posts by <span class="q">? name</span></div>
+        <div class="fi">Sat, 12 Sep 2026</div>
+        <div class="note">Earliest you can pick is <b>19 Sep</b> — the set needs time to fill,
+          agree and shoot. <span class="q">? minimum</span></div>
+        <div class="fl">Where she works</div>
+        <div class="seg">
+          <div class="sg on">Store visit</div><div class="sg">We ship to her</div><div class="sg">Remote</div>
+        </div>
+        <div class="fl">Where the traffic comes from</div>
+        <div class="seg">
+          <div class="sg on">Instagram</div><div class="sg on">YouTube</div><div class="sg">Facebook</div>
+        </div>
+        <div class="btn">CREATE THE SET</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Why these four are set-level</p>
+    <div class="phone" style="width:340px">
+      <div class="hd"><h2>One set, one shape</h2></div>
+      <div class="bd">
+        <div class="kv"><span>Aim</span><b>Same for everyone</b></div>
+        <div class="kv"><span>Posting date</span><b>Same for everyone</b></div>
+        <div class="kv"><span>Shoot mode</span><b>Same for everyone</b></div>
+        <div class="kv"><span>Channels</span><b>Same for everyone</b></div>
+        <div class="kv" style="border-top:1px solid var(--soft);margin-top:6px;padding-top:10px">
+          <span>Commission / money</span><b style="color:var(--acc)">Per creator</b></div>
+        <div class="kv"><span>Deliverables <span class="q">?</span></span><b style="color:var(--acc)">Per creator</b></div>
+        <div class="kv"><span>Her shopper offer</span><b style="color:var(--acc)">Per creator</b></div>
+        <p class="note" style="margin-top:12px">A creator who will not accept the date or the mode
+          <b>does not stay in this set.</b> She moves to one that matches what she agreed.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── 3 -->
+<div class="stage">3 · Invite, and send the whole deal at once</div>
+<div class="row">
+  <div>
+    <p class="cap">Pick creators — unchanged</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">SAREE CREATORS · BENGALURU</div><h2>Add creators</h2></div>
+      <div class="bd">
+        <div class="seg"><div class="sg on">One by one</div><div class="sg">Open group</div><div class="sg">By filter</div></div>
+        <div class="cr"><div class="av"></div><div class="cn">Asha M.<div class="cm">42k · sarees</div></div><div class="tag">ADD</div></div>
+        <div class="cr"><div class="av"></div><div class="cn">Meera S.<div class="cm">18k · ethnic</div></div><div class="tag">ADD</div></div>
+        <div class="cr"><div class="av"></div><div class="cn">Nisha P.<div class="cm">96k · fashion</div></div><div class="tag">ADD</div></div>
+        <p class="note">Same three ways as today. Whoever you add belongs to <b>this set</b>.</p>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Her terms — one screen, everything</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">ASHA M.</div><h2>What she gets</h2></div>
+      <div class="bd">
+        <div class="card ok">
+          <div class="ct ok">✓ Fixed by the set</div>
+          <div class="kv"><span>Posts by</span><b>12 Sep 2026</b></div>
+          <div class="kv"><span>Where she works</span><b>Store visit</b></div>
+          <div class="kv"><span>Channels</span><b>Instagram · YouTube</b></div>
+        </div>
+        <div class="fl">Her commission</div>
+        <div class="fi">14 %</div>
+        <div class="fl">What she can sell</div>
+        <div class="fi">Men › Topwear › Jacket</div>
+        <div class="fl">Her shoppers get</div>
+        <div class="fi">Festive 20% off · 15 Sep – 30 Oct</div>
+        <div class="btn">SEND HER THE WHOLE DEAL</div>
+        <p class="note">The offer is <b>the only thing</b> the old second step added. So it goes in
+          the first and only step.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── 4 -->
+<div class="stage">4 · She disagrees — and moves set</div>
+<div class="row">
+  <div>
+    <p class="cap">Her side — counter</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">LABEL FERN</div><h2>Saree creators</h2></div>
+      <div class="bd">
+        <div class="kv"><span>Commission</span><b>14%</b></div>
+        <div class="kv"><span>Posts by</span><b>12 Sep</b></div>
+        <div class="kv"><span>Where</span><b>Store visit</b></div>
+        <div class="card">
+          <div class="ct">Your counter</div>
+          <div class="fl">Posts by</div><div class="fi">19 Sep</div>
+          <div class="fl">Where</div><div class="fi">Remote</div>
+          <div class="fl">Commission</div><div class="fi">18 %</div>
+        </div>
+        <div class="btn">SEND COUNTER</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Your side — the new decision</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">ASHA M. COUNTERED</div><h2>She wants a different day</h2></div>
+      <div class="bd">
+        <div class="card bad">
+          <div class="ct bad">This does not fit this set</div>
+          <div class="kv"><span>This set</span><b>12 Sep · Store visit</b></div>
+          <div class="kv"><span>She wants</span><b>19 Sep · Remote</b></div>
+        </div>
+        <p class="note">A set is one date and one way of working. If you accept hers, she
+          <b>moves to a set that matches</b>.</p>
+        <div class="fl">Move her to</div>
+        <div class="fi">Saree creators · 19 Sep · Remote <span class="cm">(3 creators)</span></div>
+        <div class="fi ph">+ Create a new set for 19 Sep · Remote</div>
+        <div class="btn">ACCEPT AND MOVE HER</div>
+        <div class="btn gh">KEEP THIS SET — DECLINE HER</div>
+        <p class="note">Her <b>18% stays with her</b> — commission is the one thing a set lets vary.
+          <span class="q">? confirm</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── 5 -->
+<div class="stage">5 · Sign, then the shoot — mode already locked</div>
+<div class="row">
+  <div>
+    <p class="cap">Store visit — you start it</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">ASHA M. · STORE VISIT</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0 0 10px"><b>Locked by the set.</b> No switching modes here.</div>
+        <div class="fl">Where</div><div class="fi ph">Store address</div>
+        <div class="fl">Who she asks for</div><div class="fi ph">Name and number</div>
+        <div class="fl">When</div><div class="fi">Tue, 8 Sep · 11:00</div>
+        <div class="note">Any day between <b>Sat 30 Aug</b> and <b>Wed 10 Sep</b>. Because she has
+          to post by 12 Sep.</div>
+        <div class="btn">SEND IT TO HER</div>
+        <p class="note">She accepts, or counters the time. Two changes each.</p>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Remote — she starts it</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">LABEL FERN · REMOTE</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0 0 10px">Nothing to schedule. Tell them where to send the
+          goods.</div>
+        <div class="fl">Send it to</div>
+        <div class="fi ph">Flat, street, area</div>
+        <div class="fl">Pincode</div><div class="fi ph">560001</div>
+        <div class="btn">SEND MY ADDRESS</div>
+        <p class="note">Then the brand dispatches, you confirm it arrived, and you shoot.</p>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Marking it done <span class="q">? who</span></p>
+    <div class="phone">
+      <div class="hd"><h2>Who says it happened</h2></div>
+      <div class="bd">
+        <div class="card bad">
+          <div class="ct bad">You have said three different things</div>
+          <div class="kv"><span>27 Aug</span><b>Visit: either side</b></div>
+          <div class="kv"><span>28 Aug</span><b>Visit: both sides</b></div>
+          <div class="kv"><span>Today</span><b>Visit: brand alone</b></div>
+        </div>
+        <div class="card">
+          <div class="ct">Live right now</div>
+          <div class="kv"><span>Store visit</span><b>Both must mark</b></div>
+          <div class="kv"><span>Remote / shipped</span><b>She marks</b></div>
+        </div>
+        <p class="note">I need one answer. My own recommendation is still
+          <b>she marks it in every mode</b>, with the brand able to confirm or dispute — the reasons
+          are in my last message.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="lgd">
+  <b>What is genuinely new here:</b> only two things. The <b>set becomes the negotiating unit</b>
+  with a fixed date and mode, and a creator who disagrees <b>moves set instead of being lost</b>.
+  Everything else on these screens exists today and is being moved, merged or deleted — which is
+  why this is a re-plumbing job, not a rebuild.
+</p>

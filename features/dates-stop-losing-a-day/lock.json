@@ -1,0 +1,55 @@
+{
+  "feature": "dates-stop-losing-a-day",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder 2026-08-30: \"3 · Do we fix the timezone day-loss first? ... ok pls fix this\" — plus \"yes fine your recommendation\" approving the visit buffer dropping from 2 days to 1",
+  "approved_at": "2026-08-30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder 2026-08-30 — no screen changes; the fix is server-side arithmetic behind screens already locked",
+  "mockup_locked_at": "2026-08-30",
+  "mockup_note": "NO SCREEN. The numbers behind the shoot window change; the window card itself was locked under features/shoot-plan-you-can-actually-see. 04-preview/workflow-prediction.md states what the numbers become.",
+  "notes": "Every visit window in the system was a day short, on every campaign, silently.",
+  "the_bug": "contracts.posting_date is a Postgres DATE — a calendar day. The pg driver hands it to Node as a Date built at LOCAL midnight, which in India is 6:30pm UTC the day before. UTC arithmetic on it then lands a day early: stored 30 Aug -> received 29 Aug 18:30Z -> minus 2 days in UTC -> 27 Aug, when 28 Aug was meant. Also toISOString().slice(0,10) returned the 29th for a value that is the 30th.",
+  "why_local_getters": "The driver builds the Date at midnight in the process timezone. On IST it is 29 Aug 18:30Z and .getDate() is 30; on UTC (Render) it is 30 Aug 00:00Z and .getDate() is 30. Local getters give the stored day on BOTH. The UTC getters agree only on one of them — and not the one the code was written on.",
+  "two_things_fixed_on_the_way": [
+    "THE DEAD BRANCH. The window's second rule read content_end_date, which nothing in either app has ever written. The wizard writes window_end. So the rule never fired and the window fell through to the campaign end or a year-out ceiling. The comment recording this had sat in campaignRollup.service.js since it was written, about a different consumer, and nobody carried it across.",
+    "THE BOUNDARY COMPARISON. A slot is an instant; the window is calendar days. Comparing in UTC refused a 9am visit on the last allowed day, because 9am IST is 3:30am UTC the NEXT day — the same off-by-one wearing different clothes."
+  ],
+  "rule_change_approved": "PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING 2 -> 1. With a 7-day minimum on a set and invitations closing 3 days before the post, a 2-day buffer left no day at all for the visit.",
+  "deliberately_not_done": "NO GLOBAL DRIVER CHANGE. Turning every DATE column into a string is the tidier fix and would have touched 30 columns across 16 tables — follower bookings, meal orders, subscriptions, payment config. The arithmetic bug is confined to ONE function, and that is what was fixed. The phone was already correct: DateField.parseISO builds a calendar day from its parts deliberately.",
+  "verification": {
+    "checks": "23 in tests/india-day.test.js",
+    "mutation": "12 deliberate breakages, 12 caught",
+    "against_production": "Run against all six live contracts. A post due 10 Sep now gives 31 Aug -> 9 Sep — exactly one day before the post, which is the rule. The sixth is correctly impossible: its post is due today.",
+    "regression": "shoot-plan 29/29, brief-to-signing 19/19, deliverables 19/19, usage-term 20/20, stage4-parcel 25/25, offers-parity 12/12, coupon 11/11. Mobile 48 suites / 565 tests.",
+    "my_own_fixture_was_wrong": "I wrote that 6pm UTC is already tomorrow in India and expected the 31st. Wrong — the turn is at 6:30pm, so 6pm UTC is 11:30pm the SAME day. The test caught my fixture, which is what a boundary test is for. Corrected, with the reason kept in the file.",
+    "a_check_pinned_the_arithmetic": "A check written yesterday asserted the literal expression latest.getTime() < earliest.getTime(), so it broke the moment that arithmetic correctly moved onto calendar days. It now asserts the flag and the reason exist, not how the comparison is spelled.",
+    "a_check_passed_while_testing_nothing": "toContain('r.window_end || r.content_end_date') was satisfied by EITHER of the two places the phrase appears, so breaking the branch condition alone stayed green. Both sites now asserted separately. Ninth time this session; every one found by mutation, none by reading.",
+    "claim": "Certified no-regression. NEVER claimed green."
+  },
+  "carried_not_fixed": [
+    "campaign_influencers.submission_deadline is written as posting_date minus 24h and read by NOTHING; deliverables.submission_deadline is written as the posting date with no offset. Two fields, one name, different values.",
+    "Four dead date columns: content_start_date, content_end_date, campaign_influencers.post_date, campaign_influencers.window_start/window_end",
+    "offer_expires_at means '48 hours' on one path and 'her posting date' on another"
+  ],
+  "scope_excluded": [
+    "A global pg date type-parser change",
+    "The other 29 DATE columns",
+    "Anything on the phone — it was already correct"
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "production-impacting (backend/src only). No migration, no OTA.",
+    "deploy_targets": [
+      "Render (backend/src)"
+    ],
+    "outward_facing": "Every visit window gains back the day it was losing, and loses one more from the buffer change. Nothing is written.",
+    "device_walk_required": "YES — open a shoot whose post is due 10 Sep; the window should read 31 Aug to 9 Sep, and 9 Sep should be selectable.",
+    "diff_notes": "features/dates-stop-losing-a-day/06-diff/notes.md"
+  }
+}

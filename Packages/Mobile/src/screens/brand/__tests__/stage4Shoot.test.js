@@ -164,7 +164,11 @@ describe('Stage 4 · the phone and the server agree on who may finish a shoot', 
   it('⚠️ the server tells them when there is no day, and why', () => {
     const src = fs.readFileSync(
       path.resolve(SRC, '../../../backend/src/services/production.service.js'), 'utf8');
-    expect(src).toContain('const impossible = latest.getTime() < earliest.getTime();');
+    // ⚠️ This pinned the ARITHMETIC — latest.getTime() < earliest.getTime() — and broke the day
+    // that arithmetic correctly moved onto calendar days. Assert the flag exists and the reason
+    // is written, not how the comparison is spelled.
+    expect(src).toMatch(/const impossible = /);
+    expect(src).toContain('impossible,');
     // The reason has to name the thing a person can change, not the rule they broke.
     expect(src).toMatch(/Move the posting date back/);
   });

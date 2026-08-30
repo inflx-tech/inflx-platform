@@ -21,19 +21,44 @@ const VALID_MODES = ['visit', 'shipment', 'remote'];
 // Which shoot, and what state it starts in — one place, so no caller invents a third answer.
 // Contract: features/shoot-starts-where-the-agreement-left-it
 const { resolveProductionMode, initialStatusFor } = require('./productionMode.model');
+// Calendar days, in India, without losing one. Contract: features/dates-stop-losing-a-day
+const { calendarDay, todayInIndia, addDays, daysBetween, startOfIndiaDay, endOfIndiaDay } =
+  require('../utils/indiaDay');
 const VALID_STATUSES = ['proposed', 'confirmed', 'in_progress', 'completed', 'cancelled'];
 
 const RESCHEDULE_LIMIT_PER_SIDE = 2;
-const PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING = 2;   // visit must end ≥ 2 days before posting_date
+// Founder, 2026-08-30, approving the drop from 2 days to 1: with a 7-day minimum on a set and
+// invitations closing 3 days before the post, a 2-day buffer left no day at all for the visit.
+const PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING = 1;   // the visit must finish a day before she posts
 const PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW  = 3;   // …or ≥ 3 days before content_end_date / campaign.end_date
 
-// Resolve the [earliest, latest] window the visit must fall inside for the
-// given contract. Used by both brand setVisitDetails and influencer
-// proposeSlot so they agree on the constraint. Returns ISO strings.
+/**
+ * The window a store visit must fall inside, as CALENDAR DAYS.
+ *
+ * Used by the brand's setVisitDetails and the creator's proposeSlot so the two cannot
+ * disagree about what is bookable.
+ *
+ * ⚠️ THIS USED TO LOSE A DAY, ON EVERY CAMPAIGN.
+ *
+ * posting_date is a DATE column — a calendar day. The driver hands it over as a Date built at
+ * local midnight, which in India is 6:30pm UTC the day before. The old code then subtracted
+ * days in UTC:
+ *
+ *     stored 30 Aug  →  received 29 Aug 18:30Z  →  minus 2 days in UTC  →  27 Aug
+ *                                                        intended:         28 Aug
+ *
+ * Every window in the system was a day short, silently. It is calendar arithmetic now, on
+ * calendar days, through utils/indiaDay — no instants, no timezone.
+ * Contract: features/dates-stop-losing-a-day
+ *
+ * @returns {{earliest: string, latest: string, basis: string, impossible: boolean, reason: string|null}}
+ *          earliest and latest are 'YYYY-MM-DD' — the days themselves, not moments in them.
+ */
 async function getVisitDateRange(contractId) {
   const { rows } = await db.query(
     `SELECT con.posting_date,
             cs.content_end_date,
+            cs.window_end,
             c.end_date AS campaign_end_date
        FROM contracts con
        JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
@@ -45,75 +70,72 @@ async function getVisitDateRange(contractId) {
   const r = rows[0];
   if (!r) throw new Error('Contract not found for visit date range');
 
-  // Minimum: tomorrow (gives the receiving side a day to prep / commute).
-  const earliest = new Date();
-  earliest.setUTCDate(earliest.getUTCDate() + 1);
-  earliest.setUTCHours(0, 0, 0, 0);
+  // Tomorrow, in India — not "tomorrow on the server", which on Render is UTC and rolls over
+  // five and a half hours late.
+  const earliest = addDays(todayInIndia(), 1);
 
-  // Latest: posting_date − 2d if set, else content_end_date − 3d, else
-  // campaign.end_date − 3d. Visit has to leave enough room for the
-  // influencer to shoot + edit + post.
-  let latest;
-  let basis;
+  // Latest: work back from whichever deadline this collaboration actually has.
+  let latest, basis;
   if (r.posting_date) {
     basis = 'post_by';
-    latest = new Date(r.posting_date);
-    latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING);
-  } else if (r.content_end_date) {
+    latest = addDays(calendarDay(r.posting_date), -PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING);
+  } else if (r.window_end || r.content_end_date) {
+    // window_end is what the wizard actually writes. content_end_date has never been written
+    // by either app, so reading it alone made this branch dead code — the window silently fell
+    // through to the campaign end or to the open-ended ceiling.
     basis = 'posting_window';
-    latest = new Date(r.content_end_date);
-    latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
+    latest = addDays(calendarDay(r.window_end || r.content_end_date), -PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
   } else if (r.campaign_end_date) {
     basis = 'campaign_end';
-    latest = new Date(r.campaign_end_date);
-    latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
+    latest = addDays(calendarDay(r.campaign_end_date), -PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
   } else {
-    // No posting date, no content window, and no campaign end date. Since
-    // collab-part5 that last one is a REAL state, not a defensive branch: a sales
-    // campaign runs open-ended by design, so it has no end_date to work back from.
-    // A year out is the deliberate ceiling for scheduling a visit against an
-    // open-ended collaboration — far enough not to obstruct, near enough to stay sane.
+    // No posting date, no window, no campaign end. Since collab-part5 that is a REAL state,
+    // not a defensive branch: a sales campaign runs open-ended by design. A year out is the
+    // deliberate ceiling — far enough not to obstruct, near enough to stay sane.
     basis = 'open_ended';
-    latest = new Date();
-    latest.setUTCFullYear(latest.getUTCFullYear() + 1);
+    latest = addDays(todayInIndia(), 365);
   }
-  latest.setUTCHours(23, 59, 59, 999);
 
-  // ⚠️ THE WINDOW CAN BE EMPTY, AND IT IS ON REAL DATA.
-  //
-  // Founder's own row, 2026-08-29: she must post by 30 Aug, so a visit has to finish by the
-  // 28th — which is yesterday. The earliest bookable day is tomorrow, the 30th. Latest lands
-  // BEFORE earliest and no day satisfies both.
-  //
-  // This used to be returned as an ordinary range and the screens drew "pick any day between
-  // [blank] and [blank]". Nobody could book, and nothing said why. A rule that cannot be
-  // satisfied has to announce itself; the fix is a human moving the posting date, and only a
-  // person told about it can do that.
+  // ⚠️ THE WINDOW CAN BE EMPTY, AND IT IS ON REAL DATA. If the post is due in two days, a
+  // visit that must finish before it has nowhere to go. Returned as an ordinary range, the
+  // screens drew "pick any day between [blank] and [blank]" and nobody could book. A rule that
+  // cannot be satisfied has to announce itself — the fix is a person moving the posting date.
   // Contract: features/shoot-plan-you-can-actually-see
-  const impossible = latest.getTime() < earliest.getTime();
+  const impossible = daysBetween(earliest, latest) < 0;
 
   return {
-    earliest: earliest.toISOString(),
-    latest:   latest.toISOString(),
+    earliest,
+    latest,
     basis,
     impossible,
     // Said in the words of the people involved, not of the rule.
     reason: impossible
       ? (basis === 'post_by'
           ? 'There is no day that works. The post is due too soon for a visit to fit before it — '
-            + 'a visit has to finish two days before the posting date. Move the posting date back '
-            + 'and the days will appear.'
+            + `a visit has to finish ${PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING} day` +
+            `${PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING === 1 ? '' : 's'} before the posting date. ` +
+            'Move the posting date back and the days will appear.'
           : 'There is no day that works. The campaign ends too soon for a visit to fit before it. '
             + 'Extend the campaign and the days will appear.')
       : null,
   };
-
 }
 
+/**
+ * Is this proposed instant inside the window?
+ *
+ * The window is calendar days; a slot is an instant. So the comparison runs against the first
+ * and last moments of those days IN INDIA — not UTC, or a visit booked for 9am on the last
+ * allowed day would be refused for being 3:30am UTC on the day after.
+ */
 function isWithinRange(iso, range) {
   if (!iso) return true;
-  const d = new Date(iso).getTime();
-  return d >= new Date(range.earliest).getTime() && d <= new Date(range.latest).getTime();
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return false;
+  const from = startOfIndiaDay(range.earliest);
+  const to   = endOfIndiaDay(range.latest);
+  if (!from || !to) return false;
+  return t >= from.getTime() && t <= to.getTime();
 }
 
 /**
