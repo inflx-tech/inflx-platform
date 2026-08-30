@@ -1,0 +1,378 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>B4 + B7 · The money — his wallet, her earnings</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--adm:#0F766E;--admbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDED;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:26px;color:var(--ink)}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em}
+  .lede{max-width:980px;font-size:13.5px;color:#555;line-height:1.65;margin:0 0 4px}
+  .rule{max-width:980px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:12.5px;line-height:1.65;margin:16px 0 8px}
+  .rule b{color:var(--ink)}
+  .flow{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--ink);font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .flow.p{border-bottom-color:var(--pur);color:var(--pur)}
+  .row{display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start}
+  .unit{width:292px} .unit.wide{width:600px}
+  .cap{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 6px 2px;display:flex;align-items:center;gap:5px;min-height:24px}
+  .pip{font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;letter-spacing:.04em;color:#fff}
+  .pip.n{background:var(--new)} .pip.c{background:var(--acc)} .pip.k{background:var(--mut2)}
+  .pip.b{background:var(--ink)} .pip.g{background:var(--pur)}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+  .phone.her{border:2px solid var(--pur)}
+  .phone.keep{opacity:.72}
+  .who{font-size:8px;font-weight:900;letter-spacing:.08em;padding:3px 0;text-align:center;color:#fff}
+  .who.br{background:var(--ink)} .who.cr{background:var(--pur)}
+  .nav{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--soft);font-size:11px;color:var(--mut)}
+  .nav .bk{font-weight:900;color:var(--ink)} .nav .sp{flex:1}
+  .hd{padding:10px 12px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:15px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:10px 12px}
+  .tabbar{display:flex;border-top:1px solid var(--line);background:#FCFCFC}
+  .tb{flex:1;text-align:center;padding:7px 0 6px;font-size:7.5px;font-weight:800;color:var(--mut2)}
+  .tb.on{color:var(--ink)}
+  .tb i{display:block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;margin:0 auto 3px}
+  .sticky{border-top:1px solid var(--line);padding:9px 12px;background:#fff}
+  .fl{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:9px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:8px;padding:8px 9px;margin-top:4px;font-size:12px}
+  .fi.ph{color:var(--mut2)} .fi.ro{background:#FAFAFA;color:#666}
+  .seg{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+  .sg{flex:1;min-width:52px;border:1px solid var(--line);border-radius:7px;padding:6px 3px;text-align:center;font-size:10px;font-weight:700;color:#666}
+  .sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn{margin-top:9px;background:var(--ink);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:.05em}
+  .btn.pur{background:var(--pur)}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .btn.dis{background:#E8E8E8;color:#AAA}
+  .btn.sm{padding:7px;font-size:10px;margin-top:6px}
+  .note{font-size:10px;color:var(--mut);margin-top:6px;line-height:1.5}
+  .note b{color:var(--ink)}
+  .empty{text-align:center;padding:18px 6px;color:var(--mut2)}
+  .empty .t{font-size:13px;font-weight:800;color:var(--mut);margin-bottom:4px}
+  .empty .s{font-size:10.5px;line-height:1.5}
+  .r{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--soft);font-size:12px}
+  .r:first-child{border-top:none}
+  .gr{flex:1;min-width:0} .sub{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .tag{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;background:var(--soft);color:#555;white-space:nowrap}
+  .tag.ok{background:var(--okbg);color:var(--ok)} .tag.wt{background:#EEF2FF;color:#1D4ED8}
+  .tag.bad{background:var(--badbg);color:var(--bad)} .tag.you{background:var(--purbg);color:var(--pur)}
+  .card{border:1px solid var(--line);border-radius:9px;padding:9px;margin-top:8px}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .card.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .card.pu{border-color:#DDD6FE;background:var(--purbg)}
+  .ct{font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+  .ct.ok{color:var(--ok)} .ct.bad{color:var(--bad)} .ct.pu{color:var(--pur)}
+  .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0}
+  .kv span:first-child{color:var(--mut)} .kv b{font-weight:800}
+  .big{font-size:26px;font-weight:900;letter-spacing:-.03em}
+  .mid{font-size:17px;font-weight:900}
+  .tri{display:flex;gap:6px;margin-top:8px}
+  .tv{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 4px;text-align:center}
+  .tv b{display:block;font-size:14px;font-weight:900} .tv span{font-size:7.5px;color:var(--mut);font-weight:800;letter-spacing:.03em}
+  .tv.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .tv.wt{border-color:#C7D2FE;background:#EEF2FF}
+  .why{max-width:980px;font-size:12.5px;color:#555;line-height:1.7;margin-top:18px;background:#fff;border-left:3px solid var(--ink);padding:11px 14px;border-radius:0 8px 8px 0}
+  .why b{color:var(--ink)}
+  .warn{max-width:980px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
+  .warn b{color:var(--bad)}
+</style>
+
+<h1>B4 + B7 · The money</h1>
+<p class="lede">
+  His wallet and her earnings are two ends of one payment. Drawn together, because drawing them
+  apart would mean drawing the same rupee twice.
+  <span class="pip b">BRAND</span> <span class="pip g">CREATOR</span>
+</p>
+
+<div class="warn">
+  <b>Everything on these screens has never run once.</b><br><br>
+  <code>escrow_entries</code> <b>0 rows</b> · <code>wallet_transactions</code> <b>0 rows</b> ·
+  <code>influencer_withdrawals</code> <b>0 rows</b> · every brand wallet <b>₹0</b> · all 25
+  creator wallets <b>₹0 withdrawable, ₹0 pending</b>.<br><br>
+  The code is there — three tranches, escrow fees, TDS, payouts. <b>Not one rupee has moved
+  through it.</b> These screens are drawn from the rules in the source, and the first real payment
+  will be the first test any of it has had.
+</div>
+
+<div class="rule">
+  <b>The two aims are paid completely differently, and the screens must not blur that.</b><br><br>
+  <b>Pay for content</b> — his money is <b>locked in escrow</b> when the campaign publishes, then
+  released in three tranches: <b>25% when the contract is signed</b>, <b>25% when the content goes
+  live</b>, <b>50% after the wait admin sets</b>. He pays whether or not anything sells.<br><br>
+  <b>Pay per sale</b> — <b>nothing is locked and nothing is owed.</b> A follower buys, commission
+  is credited to her <b>pending</b> balance, and it becomes withdrawable after the 30-day return
+  window. He pays out of a sale that already happened.
+</div>
+
+<!-- ═══════════════════════════════════ 1 -->
+<div class="flow">1 · His wallet</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip c">CHANGE</span> Wallet</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Wallet</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0">Available balance</div>
+        <div class="big">₹ 42,600</div>
+        <div class="tri">
+          <div class="tv wt"><b>₹25,920</b><span>LOCKED IN ESCROW</span></div>
+          <div class="tv"><b>₹1,20,000</b><span>TOTAL DEPOSITED</span></div>
+        </div>
+        <div class="card"><div class="ct">What escrow is holding</div>
+          <div class="r"><div class="gr">Winter drop<div class="sub">Yoy · 2 creators · content</div></div><b>₹25,920</b></div>
+          <p class="note" style="margin:5px 0 0">Locked when you published. Released to them in
+            three parts, as they earn it.</p></div>
+        <div class="btn">TOP UP</div>
+        <div class="fl">Recent transactions</div>
+        <div class="r"><div class="gr">Top up<div class="sub">2 Sep · Razorpay</div></div><b style="color:var(--ok)">+ ₹50,000</b></div>
+        <div class="r"><div class="gr">Escrow locked · Winter drop<div class="sub">3 Sep</div></div><b>− ₹25,920</b></div>
+        <div class="r"><div class="gr">Released · Meera S. tranche 1<div class="sub">4 Sep</div></div><b>− ₹3,240</b></div>
+      </div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Creators</div>
+        <div class="tb"><i></i>Campaigns</div><div class="tb on"><i></i>Wallet</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> "Locked in Escrow" is a number today with nothing behind it.
+      It now <b>says which campaign is holding it</b> and why — the single most asked question
+      about a wallet.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip n">NEW</span> Inside escrow</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="nav"><span class="bk">‹ Wallet</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">WINTER DROP · YOY CLOTHING</div><h2>₹25,920 locked</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Meera S. · ₹12,960</div>
+          <div class="r"><div class="gr">1 · On signing<div class="sub">released 4 Sep</div></div><span class="tag ok">₹3,240 PAID</span></div>
+          <div class="r"><div class="gr">2 · When it goes live<div class="sub">due 4 Oct</div></div><span class="tag wt">₹3,240</span></div>
+          <div class="r"><div class="gr">3 · 15 days after<div class="sub">due 19 Oct</div></div><span class="tag">₹6,480</span></div></div>
+        <div class="card"><div class="ct">Asha M. · ₹12,960</div>
+          <div class="r"><div class="gr">1 · On signing<div class="sub">not signed yet</div></div><span class="tag">₹3,240</span></div>
+          <div class="r"><div class="gr">2 · When it goes live</div><span class="tag">₹3,240</span></div>
+          <div class="r"><div class="gr">3 · 15 days after</div><span class="tag">₹6,480</span></div></div>
+        <div class="note"><b>₹12,960 is ₹12,000 plus your 8% platform fee.</b> The fee is charged
+          on top; she is paid the full ₹12,000.</div>
+      </div>
+    </div>
+    <p class="note"><b>Every rupee, named and dated.</b> Today the wallet shows one locked total
+      and there is no way to find out what it is for.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip k">KEEP</span> Top up</p>
+    <div class="phone keep"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Add funds</h2></div>
+      <div class="bd">
+        <div class="fl">Amount</div><div class="fi ph">₹ 50,000</div>
+        <div class="seg"><div class="sg">₹10,000</div><div class="sg on">₹50,000</div><div class="sg">₹1,00,000</div></div>
+        <div class="note">Loading payment gateway…</div>
+        <div class="btn">PAY WITH RAZORPAY</div>
+        <div class="btn gh">CANCEL</div>
+      </div>
+    </div>
+    <p class="note">Built. Razorpay, and the balance updates on return.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip k">KEEP</span> Payout details</p>
+    <div class="phone keep"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Payout details</h2></div>
+      <div class="bd">
+        <div class="fl">Account holder name *</div><div class="fi ph">As on the bank account</div>
+        <div class="fl">Account number *</div><div class="fi ph">—</div>
+        <div class="fl">IFSC code *</div><div class="fi ph">—</div>
+        <div class="fl">Bank name</div><div class="fi ph">—</div>
+        <div class="fl">UPI ID</div><div class="fi ph">optional</div>
+        <div class="btn">SAVE PAYOUT DETAILS</div>
+      </div>
+    </div>
+    <p class="note">Built. Used for refunds of unspent escrow.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 2 -->
+<div class="flow p">2 · Her earnings</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip c">CHANGE</span> Earnings</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><h2>Earnings</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0">Ready to withdraw</div>
+        <div class="big">₹ 8,214</div>
+        <div class="tri">
+          <div class="tv wt"><b>₹4,806</b><span>ON THE WAY</span></div>
+          <div class="tv"><b>₹18,600</b><span>EARNED IN ALL</span></div>
+        </div>
+        <div class="card pu"><div class="ct pu">On the way · why it is not here yet</div>
+          <div class="r"><div class="gr">Commission · in the return window<div class="sub">frees up over the next 30 days</div></div><b>₹2,604</b></div>
+          <div class="r"><div class="gr">Yoy Clothing · when it goes live<div class="sub">4 Oct</div></div><b>₹3,000</b></div>
+          <div class="r"><div class="gr">Yoy Clothing · 15 days after<div class="sub">19 Oct</div></div><b>₹6,000</b></div></div>
+        <div class="btn pur">WITHDRAW</div>
+        <div class="note">Minimum ₹100. 10% TDS at withdrawal, not at earning.</div>
+        <div class="fl">By campaign</div>
+        <div class="r"><div class="gr">Diwali Saree Edit<div class="sub">Label Fern · commission</div></div><span class="tag">VIEW ›</span></div>
+        <div class="r"><div class="gr">Winter drop<div class="sub">Yoy · content · 1 of 3 paid</div></div><span class="tag">VIEW ›</span></div>
+      </div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Collabs</div>
+        <div class="tb"><i></i>Create</div><div class="tb on"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> today "PENDING" is one number. It is now <b>broken into why</b>
+      — a return window and two dated tranches are three different waits, and lumping them makes
+      her think she is owed money nobody plans to send.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip n">NEW</span> Withdraw</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="nav"><span class="bk">‹ Earnings</span><span class="sp"></span></div>
+      <div class="hd"><h2>Withdraw</h2></div>
+      <div class="bd">
+        <div class="fl">How much</div><div class="fi">₹ 8,214</div>
+        <div class="seg"><div class="sg on">All of it</div><div class="sg">Some</div></div>
+        <div class="card"><div class="ct">What you receive</div>
+          <div class="kv"><span>You asked for</span><b>₹ 8,214</b></div>
+          <div class="kv"><span>TDS at 10%</span><b>− ₹ 821</b></div>
+          <div class="kv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:7px"><span><b>In your account</b></span><b class="mid">₹ 7,393</b></div>
+          <p class="note" style="margin:5px 0 0">TDS is a tax deduction, not a fee. You claim it
+            back with Form 16A — the certificate is on your Earnings screen.</p></div>
+        <div class="fl">Send it to</div>
+        <div class="seg"><div class="sg on">UPI</div><div class="sg">Bank account</div></div>
+        <div class="fi ro">asha@okhdfc</div>
+        <div class="btn pur">WITHDRAW ₹8,214</div>
+        <div class="note">Usually within 24 hours.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>There is no withdraw screen today.</b> The endpoint exists, with the ₹100
+      minimum and the 10% TDS — <b>and no way to reach it from her phone.</b></p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip k">KEEP</span> One campaign's commission</p>
+    <div class="phone keep her"><div class="who cr">CREATOR</div>
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>₹2,604</h2></div>
+      <div class="bd">
+        <div class="tri">
+          <div class="tv ok"><b>₹0</b><span>CONFIRMED</span></div>
+          <div class="tv wt"><b>₹2,604</b><span>PENDING (30D)</span></div>
+        </div>
+        <div class="fl">What sold</div>
+        <div class="r"><div class="gr">Black jacket · M<div class="sub">14 Sep · frees up 14 Oct</div></div><b>₹336</b></div>
+        <div class="r"><div class="gr">Beige jacket · S<div class="sub">15 Sep · frees up 15 Oct</div></div><b>₹308</b></div>
+        <div class="fl">Which post sold them</div>
+        <div class="r"><div class="gr">Jacket, three ways<div class="sub">11 orders</div></div><b>₹1,960</b></div>
+      </div>
+    </div>
+    <p class="note">Built, and good. <b>Every sale dated with the day it frees up</b> — the return
+      window explained by example rather than by a policy sentence.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip n">NEW</span> One campaign's fee</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><div class="kick">WINTER DROP · YOY</div><h2>₹12,000</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Tranche timeline</div>
+          <div class="r"><div class="gr">1 · On signing<div class="sub">paid 4 Sep</div></div><span class="tag ok">₹3,000</span></div>
+          <div class="r"><div class="gr">2 · When it goes live<div class="sub">waiting on the brand to confirm</div></div><span class="tag wt">₹3,000</span></div>
+          <div class="r"><div class="gr">3 · 15 days after that<div class="sub">—</div></div><span class="tag">₹6,000</span></div></div>
+        <div class="card pu"><div class="ct pu">What unlocks the next one</div>
+          <p class="note" style="margin:0">Both your links are live and sent. <b>Yoy has confirmed
+            1 of 2.</b> The moment they confirm the second, ₹3,000 is yours.</p></div>
+        <div class="note">Your money is already locked on their side. It cannot be spent on
+          anything else.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>She cannot see her tranches today.</b> The word "Tranche Timeline" exists
+      on the commission screen, for commission — <b>which has no tranches</b>. The aim that does
+      has no screen.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 3 -->
+<div class="flow p">3 · Tax, referrals, and the profiles</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip k">KEEP</span> Tax certificate</p>
+    <div class="phone keep her"><div class="who cr">CREATOR</div>
+      <div class="hd"><h2>Tax certificate</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Form 16A · current financial year</div>
+          <div class="kv"><span>Total earned</span><b>₹18,600</b></div>
+          <div class="kv"><span>TDS this FY</span><b>₹821</b></div></div>
+        <div class="btn">DOWNLOAD TDS CERTIFICATE</div>
+        <div class="note">You claim this back when you file. It is not money we kept.</div>
+      </div>
+    </div>
+    <p class="note">Built. <b>One sentence added</b> — a creator seeing 10% disappear needs to be
+      told once that it is not a platform fee.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip k">KEEP</span> Refer &amp; earn</p>
+    <div class="phone keep her"><div class="who cr">CREATOR</div>
+      <div class="hd"><h2>Refer &amp; earn</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0">Share your code — earn for 12 months</div>
+        <div class="fi ro" style="text-align:center;font-weight:900;letter-spacing:2px">ASHA42</div>
+        <div class="btn">SHARE</div>
+        <div class="kv"><span>Referred</span><b>3</b></div>
+        <div class="kv"><span>Earned from referrals</span><b>₹1,240</b></div>
+      </div>
+    </div>
+    <p class="note">Built. <b>Out of scope for these four stages</b> — swept to confirm it opens,
+      not redesigned.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> <span class="pip c">CHANGE</span> Her profile</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><h2>Profile</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr">Your details<div class="sub">name, handle, city, niche</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Instagram &amp; YouTube<div class="sub">connected accounts</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Where to send goods<div class="sub">your default address</div></div><span class="tag you">NEW ›</span></div>
+        <div class="r"><div class="gr">Bank &amp; UPI<div class="sub">where your money goes</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Your contracts<div class="sub">everything you signed</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">What you'll take<div class="sub">aims, minimums, who can ask you</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Legal<div class="sub">terms, privacy</div></div><span class="tag">›</span></div>
+      </div>
+    </div>
+    <p class="note"><b>One addition:</b> a default shipping address, so the remote-shoot screen has
+      something to offer her instead of an empty form. <b>Not "where you'll work"</b> — that is a
+      per-deal answer and lives on the pitch.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip k">SWEEP ×4</span> His profile</p>
+    <div class="phone keep"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Profile</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr">Business details</div><span class="tag">SWEEP</span></div>
+        <div class="r"><div class="gr">Settings hub<div class="sub">who can pitch you, notifications</div></div><span class="tag">SWEEP</span></div>
+        <div class="r"><div class="gr">Media gallery</div><span class="tag">SWEEP</span></div>
+        <div class="r"><div class="gr">Legal</div><span class="tag">SWEEP</span></div>
+        <div class="r" style="opacity:.5"><div class="gr">Store preview · Orders · Bookings · Enquiries<div class="sub">follower-side commerce</div></div><span class="tag">OUT</span></div>
+      </div>
+    </div>
+    <p class="note"><b>Nothing in this flow touches them.</b> Read once to confirm they still open,
+      and the four commerce screens are the follower app's, not this programme's.</p>
+  </div>
+</div>
+
+<div class="why">
+  <b>What B4 and B7 cost.</b> Three new screens, three changed, seven kept or swept.<br><br>
+  <b>The three new ones are all the same omission:</b> the money is built and <b>nobody can see
+  it or reach it</b>. Escrow shows a locked total with no way to find out what it is for; her
+  pending balance is one number covering three different waits; and there is <b>no withdraw
+  screen at all</b>, though the endpoint, the ₹100 minimum and the 10% TDS are written and
+  waiting.<br><br>
+  <b>The two aims must never be blurred.</b> His escrow pays a fee whether or not anything sells.
+  Her commission is paid out of a sale that already happened. Same screen, two entirely different
+  promises — and a creator who confuses them thinks she is owed money nobody plans to send.
+</div>

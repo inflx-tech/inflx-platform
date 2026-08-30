@@ -1,0 +1,24 @@
+{
+  "feature": "b4-b7-the-money",
+  "spec_version": "1.0.0",
+  "status": "awaiting-mockup-lock",
+  "approved": false,
+  "mockup_locked": false,
+  "notes": "B4 and B7 drawn together — his wallet and her earnings are two ends of one payment. Drawing them apart would mean drawing the same rupee twice.",
+  "the_headline_finding": "⚠️ EVERYTHING ON THESE SCREENS HAS NEVER RUN ONCE. escrow_entries 0 rows · wallet_transactions 0 rows · influencer_withdrawals 0 rows · every brand wallet ₹0 · all 25 creator wallets ₹0 withdrawable and ₹0 pending. The code is there — three tranches, escrow fees, TDS, payouts — and not one rupee has moved through it. The first real payment will be the first test any of it has had.",
+  "the_two_aims_are_paid_differently": "Pay for content: his money is LOCKED IN ESCROW at publish, released 25% on contract signed, 25% on content live, 50% after the admin-set wait (trigger_event: contract_signed / content_live / day_30_post_live). He pays whether or not anything sells. Pay per sale: NOTHING is locked and nothing is owed — a follower buys, commission credits her PENDING balance, and it becomes withdrawable after the 30-day return window. He pays out of a sale that already happened. The screens must never blur the two.",
+  "three_new_screens_one_omission": "All three are the same fault: the money is built and nobody can see it or reach it. (1) Inside escrow — the wallet shows a locked total with no way to find out what it is for. (2) Her tranche timeline — she cannot see hers; the words 'Tranche Timeline' exist on the COMMISSION screen, for an aim that has no tranches, while the aim that does has no screen. (3) WITHDRAW — there is no withdraw screen at all, though the endpoint, the ₹100 minimum and the 10% TDS are written and waiting.",
+  "her_pending_is_one_number_covering_three_waits": "A return window and two dated tranches are three different things. Lumped together they make her think she is owed money nobody plans to send. Broken out by why, each with its date.",
+  "tds_gets_a_sentence": "'TDS is a tax deduction, not a fee. You claim it back with Form 16A.' A creator watching 10% disappear needs telling once.",
+  "her_profile_gains_one_thing": "A default shipping address, so the remote-shoot screen has something to offer instead of an empty form. NOT 'where you will work' — that is a per-deal answer and lives on the pitch.",
+  "counts": { "panels": 12, "new": 3, "change": 3, "keep": 7 },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "deploy-inert — mockups and specification only, no code",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT YET"
+  }
+}
