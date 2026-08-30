@@ -1,0 +1,453 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>B1 · Brand Campaigns tab</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDED;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:26px;color:var(--ink)}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em}
+  .lede{max-width:940px;font-size:13.5px;color:#555;line-height:1.65;margin:0 0 4px}
+  .rule{max-width:940px;background:#fff;border:1px solid var(--line);border-radius:10px;
+        padding:12px 15px;font-size:12.5px;line-height:1.65;margin:16px 0 30px}
+  .rule b{color:var(--ink)}
+  .flow{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--ink);
+        font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .unit{width:300px}
+  .cap{font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);
+       margin:0 0 6px 2px;display:flex;align-items:center;gap:6px}
+  .pip{font-size:8.5px;font-weight:900;padding:2px 5px;border-radius:4px;letter-spacing:.05em;color:#fff}
+  .pip.n{background:var(--new)} .pip.c{background:var(--acc)} .pip.k{background:var(--mut2)}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+  .phone.keep{opacity:.68}
+  .hd{padding:11px 13px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:9px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:15.5px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:11px 13px}
+  .fl{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:10px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-top:4px;font-size:12.5px}
+  .fi.ph{color:var(--mut2)} .fi.ro{background:#FAFAFA;color:#666}
+  .fi.gone{background:var(--badbg);border-color:#E7BDB4;color:var(--bad);text-decoration:line-through}
+  .seg{display:flex;gap:5px;margin-top:4px}
+  .sg{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 3px;text-align:center;font-size:10.5px;font-weight:700;color:#666}
+  .sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn{margin-top:11px;background:var(--ink);color:#fff;text-align:center;padding:11px;border-radius:8px;font-weight:900;font-size:11.5px;letter-spacing:.05em}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .btn.sm{padding:8px;font-size:10.5px;margin-top:7px}
+  .note{font-size:10.5px;color:var(--mut);margin-top:7px;line-height:1.5}
+  .note b{color:var(--ink)}
+  .row2{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--soft);font-size:12.5px}
+  .av{width:26px;height:26px;border-radius:13px;background:#EEE;flex:0 0 auto}
+  .gr{flex:1} .sub{font-size:10px;color:var(--mut)}
+  .tag{font-size:8.5px;font-weight:900;padding:2px 6px;border-radius:4px;background:var(--soft);color:#555}
+  .tag.you{background:#FDF0E7;color:var(--acc)} .tag.ok{background:var(--okbg);color:var(--ok)}
+  .tag.bad{background:var(--badbg);color:var(--bad)}
+  .card{border:1px solid var(--line);border-radius:9px;padding:10px;margin-top:9px}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .card.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .ct{font-size:10.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+  .ct.ok{color:var(--ok)} .ct.bad{color:var(--bad)}
+  .kv{display:flex;justify-content:space-between;font-size:12px;padding:4px 0}
+  .kv span:first-child{color:var(--mut)}
+  .kv b{font-weight:800}
+  .steps{display:flex;gap:3px;margin-top:9px}
+  .st{flex:1;height:3px;background:var(--soft);border-radius:2px}
+  .st.on{background:var(--ink)} .st.done{background:var(--mut2)}
+  .stl{display:flex;gap:3px;margin-top:5px;font-size:8px;font-weight:800;letter-spacing:.03em;color:var(--mut2);text-transform:uppercase}
+  .stl span{flex:1;text-align:center} .stl span.on{color:var(--ink)}
+  .why{max-width:940px;font-size:12.5px;color:#555;line-height:1.7;margin-top:16px;
+       background:#fff;border-left:3px solid var(--ink);padding:11px 14px;border-radius:0 8px 8px 0}
+  .why b{color:var(--ink)}
+</style>
+
+<h1>B1 · Brand app, Campaigns tab</h1>
+<p class="lede">
+  All 22 screens in the tab. <span class="pip n">NEW</span> did not exist ·
+  <span class="pip c">CHANGE</span> exists and moves · <span class="pip k">KEEP</span> unchanged,
+  shown so nothing is left off.
+</p>
+<div class="rule">
+  <b>The rule every screen obeys:</b> a set is <b>one aim, one posting date, one shoot mode</b>.
+  Everything else is per creator. If she will not take the date or the mode, she moves to a set
+  that matches. If she will not take the money, that is settled inside the set.
+  <br><br>
+  <b>Posting date ≥ today + 7</b> · <b>invitations close 3 days before</b> ·
+  <b>a store visit finishes 1 day before</b>.
+</div>
+
+<!-- ══════════════════════════════════════════════ FLOW 1 -->
+<div class="flow">Flow 1 · Starting a campaign</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Campaign list</p>
+    <div class="phone">
+      <div class="hd"><h2>Campaigns</h2></div>
+      <div class="bd">
+        <div class="row2"><div class="gr">Diwali Saree Edit<div class="sub">2 sets · 12 creators</div></div><span class="tag ok">LIVE</span></div>
+        <div class="row2"><div class="gr">Monsoon Cottons<div class="sub">1 set · not sent yet</div></div><span class="tag you">DRAFT</span></div>
+        <div class="btn">+ NEW CAMPAIGN</div>
+        <p class="note"><b>Changes:</b> tapping a draft resumes at the step it stopped on.
+          A set now shows its date and mode in the sub-line.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> New campaign</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">NEW CAMPAIGN</div><h2>Start a campaign</h2></div>
+      <div class="bd">
+        <div class="fl">Campaign name</div>
+        <div class="fi ph">Diwali Saree Edit</div>
+        <div class="fl">Start date</div>
+        <div class="fi gone">30 Aug 2026</div>
+        <div class="btn">CREATE</div>
+        <p class="note"><b>Changes:</b> the start date is removed. A campaign is a folder;
+          dates belong to sets, because that is where they decide anything.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> The campaign — its sets</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>Your sets</h2></div>
+      <div class="bd">
+        <div class="row2"><div class="gr">Sarees · Bengaluru<div class="sub">12 Sep · Store visit · Pay per sale</div></div><span class="tag ok">5</span></div>
+        <div class="row2"><div class="gr">Sarees · remote<div class="sub">19 Sep · Remote · Pay per sale</div></div><span class="tag">3</span></div>
+        <div class="btn gh">+ ADD ANOTHER SET</div>
+        <div class="btn">REVIEW AND PUBLISH</div>
+        <p class="note"><b>Changes:</b> each set now states its <b>date and mode</b> — the two
+          things that make it a different set.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ FLOW 2 -->
+<div class="flow">Flow 2 · Building a set — the wizard, four steps</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Step 1 · The aim</p>
+    <div class="phone keep">
+      <div class="hd"><div class="kick">NEW SET</div><h2>What is this set for?</h2>
+        <div class="steps"><div class="st on"></div><div class="st"></div><div class="st"></div><div class="st"></div></div>
+        <div class="stl"><span class="on">Aim</span><span>Basics</span><span>Creators</span><span>Terms</span></div>
+      </div>
+      <div class="bd">
+        <div class="seg" style="flex-direction:column">
+          <div class="sg on">Pay per sale — she earns commission</div>
+          <div class="sg">Pay for content — you buy posts</div>
+          <div class="sg">Both</div>
+        </div>
+        <div class="btn">CONTINUE</div>
+        <p class="note">Unchanged.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Step 2 · Basics — the heaviest change</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">NEW SET · PAY PER SALE</div><h2>The basics</h2>
+        <div class="steps"><div class="st done"></div><div class="st on"></div><div class="st"></div><div class="st"></div></div>
+        <div class="stl"><span>Aim</span><span class="on">Basics</span><span>Creators</span><span>Terms</span></div>
+      </div>
+      <div class="bd">
+        <div class="fl">Set name</div>
+        <div class="fi ph">Sarees · Bengaluru</div>
+
+        <div class="fl">Everyone in this set posts on</div>
+        <div class="fi">Sat, 12 Sep 2026</div>
+        <div class="note">Earliest is <b>Sun 6 Sep</b> — seven days, so there is time to invite,
+          agree and shoot. Invitations close <b>9 Sep</b>.</div>
+
+        <div class="fl">Where she works <span style="color:var(--new)">· new</span></div>
+        <div class="seg"><div class="sg on">Store visit</div><div class="sg">Remote</div></div>
+        <div class="note">Fixed for this set. A creator who wants the other one moves to a set
+          that has it.</div>
+
+        <div class="fl">Posting window from / to</div>
+        <div class="fi gone">two date fields</div>
+        <div class="fl">Channels</div>
+        <div class="fi gone">Instagram · YouTube · Facebook</div>
+        <div class="fl">Deliverables</div>
+        <div class="fi gone">reels ▾ posts ▾ stories ▾</div>
+        <div class="note"><b>Three things leave this screen.</b> The window becomes one posting
+          date. Channels and deliverables move to <b>each creator</b> — not everyone has the same
+          accounts, and not everyone owes the same posts.</div>
+        <div class="btn">CONTINUE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Step 3 · Creators</p>
+    <div class="phone keep">
+      <div class="hd"><div class="kick">SAREES · BENGALURU</div><h2>Who is in this set?</h2>
+        <div class="steps"><div class="st done"></div><div class="st done"></div><div class="st on"></div><div class="st"></div></div>
+        <div class="stl"><span>Aim</span><span>Basics</span><span class="on">Creators</span><span>Terms</span></div>
+      </div>
+      <div class="bd">
+        <div class="seg"><div class="sg on">One by one</div><div class="sg">A group</div><div class="sg">By filter</div></div>
+        <div class="row2"><div class="av"></div><div class="gr">Asha M.<div class="sub">42k · sarees</div></div><span class="tag ok">✓</span></div>
+        <div class="row2"><div class="av"></div><div class="gr">Meera S.<div class="sub">18k · ethnic</div></div><span class="tag ok">✓</span></div>
+        <div class="row2"><div class="av"></div><div class="gr">Nisha P.<div class="sub">96k · fashion</div></div><span class="tag">ADD</span></div>
+        <div class="btn">CONTINUE</div>
+        <p class="note">Unchanged. <b>By filter</b> exists in the database and has never had a
+          screen — it stays out of B1 unless you want it now.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Step 4 · Terms</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">SAREES · BENGALURU</div><h2>What each of them gets</h2>
+        <div class="steps"><div class="st done"></div><div class="st done"></div><div class="st done"></div><div class="st on"></div></div>
+        <div class="stl"><span>Aim</span><span>Basics</span><span>Creators</span><span class="on">Terms</span></div>
+      </div>
+      <div class="bd">
+        <div class="row2"><div class="av"></div><div class="gr">Asha M.<div class="sub">14% · Jackets · Festive 20%</div></div><span class="tag ok">READY</span></div>
+        <div class="row2"><div class="av"></div><div class="gr">Meera S.<div class="sub">nothing set yet</div></div><span class="tag you">SET IT</span></div>
+        <div class="row2"><div class="av"></div><div class="gr">Nisha P.<div class="sub">18% · Whole store</div></div><span class="tag bad">NO OFFER</span></div>
+        <div class="btn">REVIEW AND PUBLISH</div>
+        <p class="note"><b>Changes:</b> each row opens <b>her terms</b> — one screen carrying
+          everything, instead of two separate ones for allocation and offer.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ FLOW 3 -->
+<div class="flow">Flow 3 · Her terms — one screen, everything <span style="color:var(--new)">NEW</span></div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> Her terms · pay per sale</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">ASHA M.</div><h2>What Asha gets</h2></div>
+      <div class="bd">
+        <div class="card ok">
+          <div class="ct ok">✓ Fixed by this set</div>
+          <div class="kv"><span>Posts on</span><b>12 Sep 2026</b></div>
+          <div class="kv"><span>Where she works</span><b>Store visit</b></div>
+        </div>
+        <div class="fl">Her commission</div>
+        <div class="fi">14 %</div>
+        <div class="fl">What she can sell</div>
+        <div class="fi">Men › Topwear › Jacket ›</div>
+        <div class="fl">Her shoppers get</div>
+        <div class="fi">Festive 20% off · 15 Sep – 30 Oct ›</div>
+        <div class="fl">Where she'll drive traffic from <span style="color:var(--mut2)">· optional</span></div>
+        <div class="seg"><div class="sg on">Instagram</div><div class="sg on">YouTube</div><div class="sg">Facebook</div></div>
+        <div class="btn gh">SEE WHAT A SHOPPER PAYS</div>
+        <div class="btn">SAVE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> Her terms · pay for content</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">MEERA S.</div><h2>What Meera gets</h2></div>
+      <div class="bd">
+        <div class="card ok">
+          <div class="ct ok">✓ Fixed by this set</div>
+          <div class="kv"><span>Posts on</span><b>12 Sep 2026</b></div>
+          <div class="kv"><span>Where she works</span><b>Store visit</b></div>
+        </div>
+        <div class="fl">Her fee</div>
+        <div class="fi">₹ 12,000</div>
+        <div class="fl">What she owes you <span style="color:var(--new)">· new, per creator</span></div>
+        <div class="fi">2 reels · 1 story ›</div>
+        <div class="fl">Where she'll post it <span style="color:var(--bad)">· required</span></div>
+        <div class="seg"><div class="sg on">Instagram</div><div class="sg">YouTube</div><div class="sg">Facebook</div></div>
+        <div class="note">She is paid for content, so where it goes is part of the deal — not a
+          preference.</div>
+        <div class="btn">SAVE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP ×4</span> The pickers behind it</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Unchanged, opened from her terms</h2></div>
+      <div class="bd">
+        <div class="row2"><div class="gr">Category picker<div class="sub">choose one branch of the tree</div></div><span class="tag">KEEP</span></div>
+        <div class="row2"><div class="gr">Product picker<div class="sub">tick individual products</div></div><span class="tag">KEEP</span></div>
+        <div class="row2"><div class="gr">Offers library<div class="sub">pick or build her offer</div></div><span class="tag">KEEP</span></div>
+        <div class="row2"><div class="gr">Basket preview<div class="sub">see what a shopper pays</div></div><span class="tag">KEEP</span></div>
+        <p class="note">All four already work. They stop being separate steps in the wizard and
+          become fields inside <b>her terms</b>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ FLOW 4 -->
+<div class="flow">Flow 4 · She countered <span style="color:var(--new)">NEW</span></div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Review and publish</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>Review</h2></div>
+      <div class="bd">
+        <div class="kv"><span>Sets</span><b>2</b></div>
+        <div class="kv"><span>Invitations going out</span><b>8</b></div>
+        <div class="kv"><span>Invitations close</span><b>9 Sep</b></div>
+        <div class="card"><div class="ct">What happens next</div>
+          <p class="note" style="margin:0">Each of the 8 gets her whole deal in one message. She
+            accepts, counters, or passes. You are told either way.</p></div>
+        <div class="btn">PUBLISH</div>
+        <p class="note"><b>Changes:</b> no more "agreed / not agreed" split — there is no pool of
+          agreements to draw from.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> She countered the money</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">ASHA M. COUNTERED</div><h2>She wants 18%</h2></div>
+      <div class="bd">
+        <div class="kv"><span>You offered</span><b>14 %</b></div>
+        <div class="kv"><span>She wants</span><b>18 %</b></div>
+        <div class="card ok"><div class="ct ok">She stays in this set</div>
+          <p class="note" style="margin:0">The date and the way she works are unchanged. Money is
+            what a set lets vary.</p></div>
+        <div class="btn">ACCEPT 18%</div>
+        <div class="btn gh">COUNTER BACK</div>
+        <div class="btn gh">DECLINE</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> She countered the date or the mode</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">NISHA P. COUNTERED</div><h2>She wants a different day</h2></div>
+      <div class="bd">
+        <div class="card bad">
+          <div class="ct bad">This does not fit this set</div>
+          <div class="kv"><span>This set</span><b>12 Sep · Store visit</b></div>
+          <div class="kv"><span>She wants</span><b>19 Sep · Remote</b></div>
+        </div>
+        <p class="note">A set is one date and one way of working. If you accept hers, she moves to
+          a set that matches — carrying her <b>18%</b> with her.</p>
+        <div class="fl">Move her to</div>
+        <div class="fi">Sarees · remote<div class="sub" style="margin-top:2px">19 Sep · Remote · 3 creators</div></div>
+        <div class="fi ph">+ Create a set for 19 Sep · Remote</div>
+        <div class="btn">ACCEPT AND MOVE HER</div>
+        <div class="btn gh">COUNTER BACK</div>
+        <div class="btn gh">DECLINE — KEEP THIS SET</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ FLOW 5 -->
+<div class="flow">Flow 5 · Watching it happen, and the shoot</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> The campaign, running</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>Live</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Needs you</div>
+          <div class="row2"><div class="gr">2 countered your terms</div><span class="tag you">→</span></div>
+          <div class="row2"><div class="gr">1 shoot to arrange</div><span class="tag you">→</span></div>
+          <div class="row2"><div class="gr">3 deliverables to review</div><span class="tag you">→</span></div>
+        </div>
+        <div class="kv"><span>Sets</span><b>2</b></div>
+        <div class="kv"><span>Creators</span><b>8</b></div>
+        <div class="kv"><span>Sales so far</span><b>₹ 18,600</b></div>
+        <p class="note"><b>Changes:</b> "countered your terms" is a new kind of work owed. The
+          six-step ladder shortens by one — there is no separate handshake step.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE ×3</span> Sets · creators · her steps</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>Sets</h2></div>
+      <div class="bd">
+        <div class="row2"><div class="gr">Sarees · Bengaluru<div class="sub">12 Sep · Store visit</div></div><span class="tag you">2</span></div>
+        <div class="row2"><div class="gr">Sarees · remote<div class="sub">19 Sep · Remote</div></div><span class="tag">0</span></div>
+        <div class="card"><div class="ct">Inside a set</div>
+          <div class="row2"><div class="av"></div><div class="gr">Asha M.<div class="sub">Step 3 of 6 · the shoot</div></div><span class="tag you">→</span></div>
+        </div>
+        <p class="note"><b>Changes on all three:</b> a set shows its date and mode; a creator's
+          ladder is six steps starting at the invitation, not a handshake.
+          ⚠️ The creators list also carried a crash fixed 28 Aug.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> The shoot</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">ASHA M. · STORE VISIT</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0 0 8px"><b>Locked by the set.</b> No mode to switch.</div>
+        <div class="fl">Where</div><div class="fi ph">Store address</div>
+        <div class="fl">Who she asks for</div><div class="fi ph">Name and number</div>
+        <div class="fl">When</div><div class="fi">Tue, 8 Sep · 11:00</div>
+        <div class="note">Any day between <b>Sun 31 Aug</b> and <b>Fri 11 Sep</b>.</div>
+        <div class="btn">SEND IT TO HER</div>
+        <div class="btn gh">MARK THE SHOOT DONE</div>
+        <p class="note"><b>Changes:</b> mode comes from the set · <b>you</b> mark a visit done ·
+          on remote you see <b>her address</b> and dispatch · switching to remote is deleted.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row" style="margin-top:16px">
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP ×3</span> Untouched in this tab</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Nothing changes</h2></div>
+      <div class="bd">
+        <div class="row2"><div class="gr">Shoots list<div class="sub">every shoot across campaigns</div></div><span class="tag">KEEP</span></div>
+        <div class="row2"><div class="gr">Contract<div class="sub">counter-signing, rebuilt 28 Aug</div></div><span class="tag">KEEP</span></div>
+        <div class="row2"><div class="gr">Conversions<div class="sub">Stage 10 — swept, not redesigned</div></div><span class="tag">KEEP</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Review queue — Stage 4</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>To review</h2></div>
+      <div class="bd">
+        <div class="row2"><div class="av"></div><div class="gr">Asha · reel<div class="sub">submitted 2 days ago</div></div><span class="tag you">→</span></div>
+        <div class="btn sm">APPROVE</div>
+        <div class="btn sm gh">ASK FOR A REVISION</div>
+        <div class="btn sm gh">CONFIRM IT WENT LIVE</div>
+        <p class="note"><b>Changes in Stage 4, not now.</b> Confirming live is what releases her
+          second 25%. Listed here so the tab is complete.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="why">
+  <b>What this tab really costs.</b> Three new screens, fifteen changed, four untouched. The
+  heaviest single screen is <b>step 2 of the set wizard</b> — it gains the shoot mode and one
+  posting date, and loses three things that move to each creator.
+  <br><br>
+  <b>The riskiest is "she countered the date or the mode".</b> It is the only screen here that
+  moves a row from one set to another, and nothing in the app has ever done that.
+  <br><br>
+  <b>Nothing is deleted.</b> The two-step brief and the mode switch vanish as flows, but no screen
+  file goes — the screens that carried them are reused.
+</div>

@@ -1,0 +1,33 @@
+{
+  "feature": "b1-brand-campaigns-tab",
+  "spec_version": "1.0.0",
+  "status": "awaiting-mockup-lock",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "notes": "B1 of the eight chunks. Brand app, Campaigns tab: 22 screens — 3 new, 15 changed, 4 untouched. Screens drawn and every button specified. NOTHING IS BUILT until the founder locks the mockups.",
+  "scope": "Only the Campaigns tab of the brand app. The Creators tab is B2, the creator's side is B5, admin is B8.",
+  "the_rule": "A set is one aim, one posting date, one shoot mode. Everything else is per creator. Posting date >= today + 7; invitations close 3 days before; a store visit finishes 1 day before.",
+  "new_screens": [
+    "Her terms — one screen carrying commission/money, deliverables, what she can sell, her offer and her channels. Replaces the entire second brief.",
+    "She countered the money — she stays in the set.",
+    "She countered the date or the mode — accept and move her to a matching set, or decline. THE RISKIEST SCREEN IN B1: nothing in the app has ever moved a row between sets."
+  ],
+  "heaviest_change": "Set wizard step 2 (Basics). Gains the shoot mode and one posting date; loses the two-field posting window, the channels and the deliverables — the last two move to each creator.",
+  "decisions_owed": [
+    "Does 'by filter' get a screen now? It exists in the database and has never had one, so only two of the three invite routes actually work.",
+    "When she is moved to a matching set, does she re-confirm? Recommendation: NO — she lands on the exact terms she asked for, so asking again would be the double-ask this architecture removes."
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "deploy-inert — mockups and specification only, no code",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT YET"
+  }
+}
