@@ -1,0 +1,25 @@
+{
+  "feature": "b2-brand-creators-tab",
+  "spec_version": "1.0.0",
+  "status": "awaiting-mockup-lock",
+  "approved": false,
+  "mockup_locked": false,
+  "notes": "B2 of eight chunks. Brand Creators tab — 12 screens — PLUS the negotiation walked end to end across both phones, per the founder's instruction not to work tab-by-tab in isolation.",
+  "the_headline": "This tab loses its main job. Its home screen's first list is 'Nobody has agreed terms yet' — a pool of agreements waiting to be spent on a campaign. That is exactly what set-first deletes. The tab keeps two jobs: finding people, and hearing from them.",
+  "the_biggest_find": "BrandRequestComposerScreen ALREADY ASKS EVERYTHING the new flow needs — commission %, fee, post-by, where she works, and requirement-vs-preference, all marked negotiable. Its contents move into 'Her terms' in the set wizard. The screen itself survives for approaches outside any campaign. Its mirror on her side is CollabRequestDetailScreen, which shows Commission, Fee, Post by, Where you'd work.",
+  "cross_app_journey": "Three steps drawn on both phones: (1) you publish and her whole deal arrives as ONE screen and ONE notification — today it is two screens on two days; (2) she counters the money and stays in the set; (3) she counters the date or mode, cannot stay, and you choose END IT or DEFER HER, with both endings said plainly to her.",
+  "she_is_warned_before_she_counters": "Her counter screen shows the set's date and mode as fixed, with a line saying that asking for a different day means the brand must move her or end it. Changing the day is not a small edit.",
+  "she_is_not_asked_twice": "When deferred she is told 'they kept your terms and are putting together a set for that week'. She does not re-confirm — they are the terms she asked for.",
+  "counts": { "panels": 22, "new": 0, "change": 6, "keep": 5, "sweep": 1 },
+  "decision_owed": "What happens when the brand ACCEPTS A PITCH? Today it makes an agreement and drops it in the pool; there is no pool now. Recommendation: accepting asks 'which set?' — pick an open set whose date and mode suit, or start one. If her pitch conflicts with every open set she goes straight into DEFERRED and a set is built for her like any other. One road in, whoever started the conversation.",
+  "hardest_work_is_invisible": "The negotiation screen looks almost identical and must be re-anchored underneath — from a standalone brand_collab_request to her row in a set. The `negotiations` table was built for exactly that shape (keyed on campaign_influencer_id) and has never been used, 0 rows.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "deploy-inert — mockups and specification only, no code",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT YET"
+  }
+}
