@@ -4,17 +4,17 @@
   "status": "awaiting-mockup-lock",
   "approved": false,
   "mockup_locked": false,
-  "notes": "B2, second pass 2026-08-30. 29 panels. The founder answered the pitch question, and his answer unified three separate features into one rule.",
+  "notes": "B2, third pass 2026-08-30. 36 panels. Six issues the founder found on review, all fixed. The biggest is that the post date is a DEADLINE, not a fixed day — which changes wording in both B1 and B2 and one downstream rule.",
   "the_headline": "This tab loses its main job. Its home screen's first list is 'Nobody has agreed terms yet' — a pool of agreements waiting to be spent on a campaign. That is exactly what set-first deletes. The tab keeps two jobs: finding people, and hearing from them.",
   "the_biggest_find": "BrandRequestComposerScreen ALREADY ASKS EVERYTHING the new flow needs — commission %, fee, post-by, where she works, and requirement-vs-preference, all marked negotiable. Its contents move into 'Her terms' in the set wizard. The screen itself survives for approaches outside any campaign. Its mirror on her side is CollabRequestDetailScreen, which shows Commission, Fee, Post by, Where you'd work.",
   "cross_app_journey": "Three steps drawn on both phones: (1) you publish and her whole deal arrives as ONE screen and ONE notification — today it is two screens on two days; (2) she counters the money and stays in the set; (3) she counters the date or mode, cannot stay, and you choose END IT or DEFER HER, with both endings said plainly to her.",
   "she_is_warned_before_she_counters": "Her counter screen shows the set's date and mode as fixed, with a line saying that asking for a different day means the brand must move her or end it. Changing the day is not a small edit.",
   "she_is_not_asked_twice": "When deferred she is told 'they kept your terms and are putting together a set for that week'. She does not re-confirm — they are the terms she asked for.",
   "counts": {
-    "panels": 29,
-    "new": 2,
-    "change": 6,
-    "keep": 5,
+    "panels": 36,
+    "new": 4,
+    "change": 9,
+    "keep": 3,
     "sweep": 1
   },
   "hardest_work_is_invisible": "The negotiation screen looks almost identical and must be re-anchored underneath — from a standalone brand_collab_request to her row in a set. The `negotiations` table was built for exactly that shape (keyed on campaign_influencer_id) and has never been used, 0 rows.",
@@ -39,5 +39,27 @@
   },
   "pitch_form_gap": "⚠️ A pitch carries goal, proposed_commission_pct, proposed_fee, proposed_deliverables and a posting WINDOW — and NO SHOOT MODE. Two of the three matching parameters exist; the third does not. Without it, accepting a pitch drops her into whatever set fits the dates, which could commit her to travelling to a store she never agreed to visit. The fix is one field on the pitch form: store visit / remote / EITHER. \"Either\" is probably the common answer and makes matching easy. Pitches already in flight get asked once, when placed.",
   "already_built_for_this": "influencer_proposals.resulting_campaign_influencer_id already exists — a column built for exactly \"which collaboration did this pitch become\". Never used, 0 rows.",
-  "matching_shows_its_working": "The where-she-lands screen lists the sets that do NOT fit, with the reason — \"12 Sep, outside his window\", \"pay for content, he pitched for sale\". Same discipline as the basket preview: a brand who cannot see why a set was excluded assumes the matching is broken."
+  "matching_shows_its_working": "The where-she-lands screen lists the sets that do NOT fit, with the reason — \"12 Sep, outside his window\", \"pay for content, he pitched for sale\". Same discipline as the basket preview: a brand who cannot see why a set was excluded assumes the matching is broken.",
+  "round_3_issues": [
+    "1 · The Creators tab opened with two buttons. It now opens with PEOPLE — creators near you, read from your own city — then groups, then pitches, then conversations. Search sits at the top where a search box belongs. Founder's order.",
+    "2 · Her profile had a flat stat strip. It now has an Instagram / YouTube toggle, Instagram by default, six stats each.",
+    "3 · What a pitch contains was never drawn. Now two panels: the list (every row carries her size and her ask, so you can triage without opening anything) and one pitch in full — her numbers, her terms, her words, her work, and how long you have.",
+    "4 · Inviting from her profile was a separate form. It is not: a set already carries aim, post-by and mode, and her terms carry the rest. Inviting now opens the SAME set picker as accepting a pitch, then the SAME Her-terms screen. The old composer is retired as a form. One road in.",
+    "5 · She had no visible pitch button. She CAN pitch today — Profile > Proposals Hub > pick a brand > send — three taps under the wrong tab. Pitching moves into Collabs beside the invitations she receives, with a sticky button. Same fault the original plan named about Sagar's request sitting unseen under Profile.",
+    "6 · THE POST DATE IS A DEADLINE. See below."
+  ],
+  "post_date_is_a_deadline": {
+    "founder": "\"say creator agreed on post date means he can post within that period...say one creator agreed on 15 Sep means I can post before that...say he didn't agree means he is busy in all days till 15 Sep\"",
+    "wording": "Seven phrasings corrected across B1 and B2. \"Everyone posts on\" -> \"Everyone posts by\". \"Post on 12 Sep\" -> \"Post by 12 Sep\". Her invitation now says explicitly: any day up to the 12th, post earlier if it suits you.",
+    "why_it_matters": "Without that sentence a creator declines a good deal because she is busy on one Tuesday. And a date counter stops looking like swapping a day and becomes what it is — she is telling you the whole window is impossible for her, which is why it is set-level.",
+    "three_downstream_rules": [
+      "The shoot: a store visit finishes 1 day before the DEADLINE, so she has room even if she posts on the last day.",
+      "⚠️ Her shop posts: NOT a fixed day before. Live BEFORE SHE POSTS, whenever that is — a dependency, not a date. This CHANGES what I drew in B1, where they were due a fixed day before.",
+      "Matching a pitch: her pitch carries a window; a set fits if its deadline falls inside that window."
+    ]
+  },
+  "data_notes": [
+    "Instagram data is complete: 25/25 on handle, followers, engagement, avg views, likes and comments.",
+    "⚠️ YouTube is empty: 1 handle, 0 subscribers, 0 views, 0 videos. The YouTube tab is right to build but reads \"not connected yet\" for 24 of 25 creators until YouTube scraping runs."
+  ]
 }

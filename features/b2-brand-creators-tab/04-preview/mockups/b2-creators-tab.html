@@ -86,6 +86,13 @@
   .why b{color:var(--ink)}
   .warn{max-width:980px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
   .warn b{color:var(--bad)}
+  .plat{display:flex;border-bottom:1px solid var(--line);margin-top:8px}
+  .pt{flex:1;text-align:center;padding:8px 0 7px;font-size:11.5px;font-weight:800;color:var(--mut2);border-bottom:2px solid transparent}
+  .pt.on{color:var(--ink);border-bottom-color:var(--ink)}
+  .stat{display:flex;gap:6px;margin-top:8px}
+  .stv{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 4px;text-align:center}
+  .stv b{display:block;font-size:14px;font-weight:900}
+  .stv span{font-size:8px;color:var(--mut);font-weight:700;letter-spacing:.03em}
 </style>
 
 <h1>B2 · Brand Creators tab — and the negotiation, both apps</h1>
@@ -132,26 +139,37 @@
     <p class="cap"><span class="pip c">CHANGE</span> Creators — after</p>
     <div class="phone">
       <div class="hd"><h2>Creators</h2>
-        <div class="srch">⌕ &nbsp;Search creators you know</div></div>
-      <div class="bd">
-        <div class="btn gh" style="margin-top:0">FIND CREATORS ›</div>
-        <div class="btn gh">YOUR GROUPS · 3 ›</div>
-        <div class="fl" style="margin-top:12px">Pitches to you · 2</div>
-        <div class="r"><div class="av"></div><div class="gr">Sagar J.<div class="sub">wants 18% · fashion · 62k</div></div><span class="tag you">NEW</span></div>
-        <div class="r"><div class="av"></div><div class="gr">Kavya N.<div class="sub">wants ₹8,000 · beauty · 24k</div></div><span class="tag">›</span></div>
-        <div class="fl">Conversations · 1</div>
+        <div class="srch">⌕ &nbsp;Search by name, handle or place</div></div>
+      <div class="bd" style="padding-bottom:4px">
+        <div class="fl" style="margin-top:0">Near you · Bengaluru</div>
+        <div class="r"><div class="av"></div><div class="gr">Asha M.<div class="sub">42k · 3.4% · fashion · Bengaluru</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Nisha P.<div class="sub">96k · 2.1% · fashion · Bengaluru</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Divya T.<div class="sub">61k · 2.8% · ethnic · Hyderabad</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Priya R.<div class="sub">33k · 5.1% · fashion · Bengaluru</div></div><span class="tag">›</span></div>
+        <div class="btn gh">SEE ALL · FILTER ›</div>
+
+        <div class="fl" style="margin-top:14px">Your groups · 3</div>
+        <div class="r"><div class="gr">South India · fashion<div class="sub">15 creators</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Bengaluru fashion<div class="sub">8 creators</div></div><span class="tag">›</span></div>
+        <div class="btn gh">+ NEW GROUP</div>
+
+        <div class="fl" style="margin-top:14px">Pitches to you · 2</div>
+        <div class="r"><div class="av"></div><div class="gr">Sagar J.<div class="sub">18% · sale · can post 15–30 Sep</div></div><span class="tag you">NEW</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Kavya N.<div class="sub">₹8,000 · content · 1–10 Oct</div></div><span class="tag">›</span></div>
+
+        <div class="fl" style="margin-top:14px">Conversations · 1</div>
         <div class="r"><div class="av"></div><div class="gr">Divya T.<div class="sub">you asked · she countered</div></div><span class="tag you">YOUR MOVE</span></div>
-        <div class="card"><div class="ct">Who can pitch you</div>
-          <div class="kv"><span>Open to pitches</span><b>Yes</b></div>
-          <div class="kv"><span>Minimum tier</span><b>Micro</b></div></div>
       </div>
       <div class="tabbar">
         <div class="tb"><i></i>Home</div><div class="tb on"><i></i>Creators<b>3</b></div>
         <div class="tb"><i></i>Campaigns<b>2</b></div><div class="tb"><i></i>Wallet</div><div class="tb"><i></i>Profile</div>
       </div>
     </div>
-    <p class="note"><b>The agreed-terms list goes.</b> Two doors to finding people, then the two
-      inbound lists. Badge = pitches + conversations needing you.</p>
+    <p class="note"><b>Founder's order:</b> creators first, then groups, then pitches.<br><br>
+      <b>It opens with people, not buttons.</b> Creators near you — read from your own city — so
+      the tab is useful before you type anything. Search is at the top where a search box belongs.
+      <b>The agreed-terms list is gone.</b><br><br>
+      Badge = pitches + conversations needing you.</p>
   </div>
 
   <div class="unit">
@@ -208,45 +226,97 @@
       <div class="hd"><div class="kick">INFLUENCER</div><h2>Asha M.</h2>
         <div class="note" style="margin-top:3px">@asha.styles · Bengaluru · fashion</div></div>
       <div class="bd">
-        <div class="seg"><div class="sg on">42k<div style="font-size:8px;font-weight:400">Followers</div></div>
-          <div class="sg">3.4%<div style="font-size:8px;font-weight:400">ER</div></div>
-          <div class="sg">18k<div style="font-size:8px;font-weight:400">Avg views</div></div></div>
+        <div class="plat"><div class="pt on">Instagram</div><div class="pt">YouTube</div></div>
+        <div class="stat">
+          <div class="stv"><b>42k</b><span>FOLLOWERS</span></div>
+          <div class="stv"><b>3.4%</b><span>ENGAGEMENT</span></div>
+          <div class="stv"><b>18k</b><span>AVG VIEWS</span></div>
+        </div>
+        <div class="stat">
+          <div class="stv"><b>1,420</b><span>AVG LIKES</span></div>
+          <div class="stv"><b>96</b><span>AVG COMMENTS</span></div>
+          <div class="stv"><b>310</b><span>POSTS</span></div>
+        </div>
+        <div class="note">@asha.styles · last checked 2 days ago</div>
         <div class="card"><div class="ct">What she accepts</div>
           <div class="kv"><span>Aims</span><b>Sale · Content</b></div>
           <div class="kv"><span>Minimum commission</span><b>12%</b></div>
           <div class="kv"><span>Minimum fee</span><b>₹10,000</b></div></div>
-        <div class="btn">INVITE INTO A SET</div>
-        <div class="note">Pick a campaign and a set. If none is open, you can start one here.</div>
-        <div class="btn gh">ASK HER SOMETHING — NO CAMPAIGN</div>
+        <div class="btn">INVITE HER INTO A SET</div>
         <div class="btn gh">ADD TO A GROUP</div>
       </div>
     </div>
-    <p class="note"><b>Changes:</b> "Invite to Campaign" becomes <b>Invite into a set</b> — a set,
-      not a campaign, because the set is what carries the date and the mode. The old
-      commission/fee fields on this screen go; they are asked in <b>Her terms</b> now.</p>
+    <p class="note"><b>Instagram by default, YouTube one tap away.</b> Instagram data is complete
+      on all 25 creators. ⚠️ <b>YouTube is empty</b> — 1 handle, 0 subscribers — so that tab reads
+      "not connected yet" for almost everyone until YouTube scraping runs.<br><br>
+      <b>The old commission and fee fields on this screen are gone.</b> Inviting is not a form any
+      more — see the next panel.</p>
   </div>
 
   <div class="unit">
-    <p class="cap"><span class="pip k">KEEP</span> Pitches to you</p>
-    <div class="phone keep">
+    <p class="cap"><span class="pip c">CHANGE</span> Pitches — the list</p>
+    <div class="phone">
       <div class="nav"><span class="bk">‹ Creators</span><span class="sp"></span><span class="bk">Filters</span></div>
-      <div class="hd"><h2>Proposals</h2></div>
+      <div class="hd"><h2>Pitches to you · 2</h2>
+        <div class="chips"><span class="ch on">New 2</span><span class="ch">Countered</span><span class="ch">Declined</span></div></div>
       <div class="bd">
-        <div class="r"><div class="av"></div><div class="gr">Sagar J.<div class="sub">fashion · 62k · 4.1%</div></div><span class="tag you">NEW</span></div>
-        <div class="card"><div class="ct">Proposed terms</div>
+        <div class="r"><div class="av"></div><div class="gr">Sagar J.<div class="sub">62k · fashion · 4.1%</div><div class="sub">18% · sale · can post 15–30 Sep</div></div><span class="tag you">NEW</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Kavya N.<div class="sub">24k · beauty · 6.2%</div><div class="sub">₹8,000 · content · 1–10 Oct</div></div><span class="tag you">NEW</span></div>
+        <div class="empty" style="padding:14px 4px"><div class="t">No pitches here</div>
+          <div class="s">Creators can only pitch you while you are open to pitches.</div></div>
+        <div class="card"><div class="ct">Who can pitch you</div>
+          <div class="kv"><span>Open to pitches</span><b>Yes</b></div>
+          <div class="kv"><span>Minimum tier</span><b>Micro</b></div>
+          <div class="kv"><span>Niches</span><b>Fashion · Beauty</b></div>
+          <div class="btn sm gh">CHANGE WHO CAN PITCH</div></div>
+      </div>
+      <div class="sticky"><div class="btn gh" style="margin:0">PAUSE PITCHES</div></div>
+    </div>
+    <p class="note">Every row carries <b>her size and her ask</b>, so you can triage without
+      opening anything. Filters: new · countered · declined.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Pitches — what one contains</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Pitches</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">SAGAR J. · 62K · FASHION</div><h2>His pitch</h2></div>
+      <div class="bd">
+        <div class="plat"><div class="pt on">Instagram</div><div class="pt">YouTube</div></div>
+        <div class="stat">
+          <div class="stv"><b>62k</b><span>FOLLOWERS</span></div>
+          <div class="stv"><b>4.1%</b><span>ENGAGEMENT</span></div>
+          <div class="stv"><b>26k</b><span>AVG VIEWS</span></div>
+        </div>
+
+        <div class="fl">What he is offering</div>
+        <div class="card"><div class="ct">His terms</div>
+          <div class="kv"><span>Aim</span><b>Pay per sale</b></div>
           <div class="kv"><span>Commission</span><b>18%</b></div>
-          <div class="kv"><span>Post by</span><b>20 Sep</b></div></div>
-        <div class="card"><div class="ct">Portfolio samples</div>
-          <p class="note" style="margin:0">3 posts attached</p></div>
-        <div class="btn">ACCEPT</div>
+          <div class="kv"><span>Can post between</span><b>15–30 Sep</b></div>
+          <div class="kv"><span>Where he works</span><b>Either</b></div>
+          <div class="kv"><span>What he'd make</span><b>2 reels · 1 story</b></div></div>
+
+        <div class="fl">Why him</div>
+        <div class="fi ro" style="font-size:11.5px">"I have run three saree collaborations this
+          year and my audience is 78% women in Karnataka. Happy to shoot at your store."</div>
+
+        <div class="fl">His work</div>
+        <div class="seg"><div class="sg">Post 1</div><div class="sg">Post 2</div><div class="sg">Post 3</div></div>
+        <div class="note">Tap to open on Instagram.</div>
+
+        <div class="card"><div class="ct">The clock</div>
+          <div class="kv"><span>Sent</span><b>28 Aug</b></div>
+          <div class="kv"><span>Runs out</span><b>11 Sep</b></div></div>
+      </div>
+      <div class="sticky">
+        <div class="btn" style="margin:0">ACCEPT · FIND HIM A SET</div>
         <div class="btn gh">COUNTER</div>
         <div class="btn dngr">DECLINE</div>
-        <div class="note">Counter fields: commission % · fee ₹ · optional message.</div>
       </div>
     </div>
-    <p class="note">⚠️ <b>One question.</b> Accepting a pitch today makes an agreement. With no
-      pool to hold it, <b>accept should put her straight into a set</b> — see the open question at
-      the bottom.</p>
+    <p class="note"><b>Everything in one screen:</b> his numbers, his terms, his words, his work,
+      and how long you have. Counter opens commission % · fee ₹ · a note — two rounds each.</p>
   </div>
 
   <div class="unit">
@@ -269,28 +339,29 @@
   </div>
 
   <div class="unit">
-    <p class="cap"><span class="pip c">CHANGE</span> Ask her something — no campaign</p>
+    <p class="cap"><span class="pip n">NEW</span> Inviting her IS picking a set</p>
     <div class="phone">
       <div class="nav"><span class="bk">‹ Cancel</span><span class="sp"></span></div>
-      <div class="hd"><div class="kick">ASHA M.</div><h2>Ask her something</h2></div>
+      <div class="hd"><div class="kick">ASHA M.</div><h2>Which set?</h2></div>
       <div class="bd">
-        <div class="card"><div class="ct">This is not a campaign</div>
-          <p class="note" style="margin:0">No date, no shoot, no offer. Just terms in principle. To
-            actually book her, put her in a set.</p></div>
-        <div class="fl">Commission % · negotiable</div><div class="fi ph">e.g. 12</div>
-        <div class="chips"><span class="ch req">Requirement</span><span class="ch pref">Preference</span><span class="ch on">Not stated</span></div>
-        <div class="fl">Fee ₹ · negotiable</div><div class="fi ph">e.g. 25000</div>
-        <div class="fl">Post by · negotiable</div><div class="fi ph">Pick a date</div>
-        <div class="fl">Where she'd work</div>
-        <div class="seg"><div class="sg on">Store visit</div><div class="sg">Remote</div></div>
-        <div class="note">They come to your store and shoot there.</div>
-        <div class="fl">Message</div><div class="fi ph">Why you want to work with them</div>
+        <div class="note" style="margin:0 0 8px">A set carries the <b>aim, the post-by date and
+          where she works</b>. Those three are what you are really choosing.</div>
+        <div class="card ok"><div class="ct ok">Your open sets</div>
+          <div class="r"><div class="gr">Sarees · Bengaluru<div class="sub">Pay per sale · by 12 Sep · Store visit</div></div><span class="tag">PICK</span></div>
+          <div class="r"><div class="gr">Sarees · remote<div class="sub">Pay per sale · by 19 Sep · Remote</div></div><span class="tag">PICK</span></div>
+          <div class="r"><div class="gr">Winter drop<div class="sub">Pay for content · by 4 Oct · Remote</div></div><span class="tag">PICK</span></div></div>
+        <div class="btn gh">+ START A NEW SET FOR HER</div>
+        <div class="note">Then you set <b>her</b> things — commission, what she can sell, her
+          offer, her channels. Exactly the screen the set wizard uses.</div>
       </div>
-      <div class="sticky"><div class="btn" style="margin:0">SEND</div></div>
     </div>
-    <p class="note">⚠️ <b>This screen already asks everything the new flow needs.</b> Commission,
-      fee, post-by, where she works, and requirement-vs-preference. <b>Its contents move into Her
-      terms</b>; the screen itself stays for approaches with no campaign behind them.</p>
+    <p class="note"><b>Founder:</b> <i>"if we want to keep it, main things are similar like set —
+      AIM, post date, mode of work — and creator individual things...nothing different from sets
+      creating campaign."</i><br><br>
+      <b>So there is no separate invite form.</b> The old composer asked commission, fee, post-by,
+      mode and requirement-vs-preference — which is a set plus her terms, written twice. Inviting
+      from her profile now opens the <b>same</b> set picker as accepting a pitch, then the
+      <b>same</b> Her-terms screen. <b>One road in.</b></p>
   </div>
 </div>
 
@@ -330,7 +401,7 @@
       <div class="hd"><div class="kick">LABEL FERN</div><h2>Diwali Saree Edit</h2></div>
       <div class="bd">
         <div class="card"><div class="ct">The set decides these</div>
-          <div class="kv"><span>Post on</span><b>12 Sep 2026</b></div>
+          <div class="kv"><span>Post by</span><b>12 Sep 2026</b></div>
           <div class="kv"><span>Where you work</span><b>Store visit</b></div></div>
         <div class="kv"><span>Your commission</span><b>14%</b></div>
         <div class="kv"><span>You can sell</span><b>Men › Topwear › Jacket</b></div>
@@ -365,7 +436,7 @@
       <div class="hd"><h2>Your counter</h2></div>
       <div class="bd">
         <div class="card"><div class="ct">Fixed by the set — you cannot change these here</div>
-          <div class="kv"><span>Post on</span><b>12 Sep</b></div>
+          <div class="kv"><span>Post by</span><b>12 Sep</b></div>
           <div class="kv"><span>Where you work</span><b>Store visit</b></div>
           <p class="note" style="margin:5px 0 0">Want a different day or a different way of
             working? Say so — the brand may move you to another set.</p></div>
@@ -431,7 +502,7 @@
     <div class="phone her"><div class="who cr">CREATOR</div>
       <div class="hd"><h2>Your counter</h2></div>
       <div class="bd">
-        <div class="fl">Post on</div><div class="fi">19 Sep 2026</div>
+        <div class="fl">Post by</div><div class="fi">19 Sep 2026</div>
         <div class="fl">Where you work</div>
         <div class="seg"><div class="sg">Store visit</div><div class="sg on">Remote</div></div>
         <div class="card bad"><div class="ct bad">This changes the set</div>
@@ -529,6 +600,92 @@
   </div>
 </div>
 
+<div class="flow">4b · The post date is a DEADLINE, not a day</div>
+
+<div class="rule" style="border-color:var(--acc)">
+  <b>Founder, 2026-08-30:</b> <i>"say creator agreed on post date means he can post within that
+  period...say one creator agreed on 15 Sep means I can post before that...say he didn't agree
+  means he is busy in all days till 15 Sep."</i><br><br>
+  <b>So the set's date is the last day, not the only day.</b> She may post any time up to it. If
+  she refuses it, she is refusing the whole window, not one square on a calendar.
+</div>
+
+<div class="row">
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> What it changes on your side</p>
+    <div class="phone">
+      <div class="hd"><h2>The wording, everywhere</h2></div>
+      <div class="bd">
+        <div class="card bad"><div class="ct bad">Before — wrong</div>
+          <div class="kv"><span>Set wizard</span><b>"Everyone posts on"</b></div>
+          <div class="kv"><span>Her terms</span><b>"Posts on 12 Sep"</b></div>
+          <div class="kv"><span>Her invitation</span><b>"Post on 12 Sep"</b></div>
+          <p class="note" style="margin:5px 0 0">Reads as one fixed square on a calendar.</p></div>
+        <div class="card ok"><div class="ct ok">After</div>
+          <div class="kv"><span>Set wizard</span><b>"Everyone posts by"</b></div>
+          <div class="kv"><span>Her terms</span><b>"Post by 12 Sep"</b></div>
+          <div class="kv"><span>Her invitation</span><b>"Post by 12 Sep"</b></div>
+          <p class="note" style="margin:5px 0 0">A deadline. She chooses her own day inside it.</p></div>
+        <div class="note"><b>Corrected in B1 and B2 already</b> — seven phrasings across the two
+          files.</div>
+      </div></div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip g">CREATOR</span> What she understands</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><div class="kick">LABEL FERN</div><h2>Diwali Saree Edit</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">The set decides these</div>
+          <div class="kv"><span>Post by</span><b>12 Sep 2026</b></div>
+          <div class="kv"><span>Where you work</span><b>Store visit</b></div>
+          <p class="note" style="margin:5px 0 0"><b>Any day up to the 12th.</b> Post earlier if it
+            suits you — the 12th is the last day, not the only one.</p></div>
+        <div class="btn pur">ACCEPT</div>
+        <div class="btn gh">COUNTER</div>
+      </div></div>
+    <p class="note"><b>One sentence removes the biggest misreading in the flow.</b> Without it a
+      creator declines a perfectly good deal because she is busy on one Tuesday.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> What a refusal now means</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">NISHA P. COUNTERED</div><h2>She wants a later deadline</h2></div>
+      <div class="bd">
+        <div class="card bad"><div class="ct bad">She cannot make the window</div>
+          <div class="kv"><span>This set</span><b>by 12 Sep</b></div>
+          <div class="kv"><span>She needs</span><b>by 19 Sep</b></div>
+          <p class="note" style="margin:5px 0 0">She is busy <b>every day</b> between now and the
+            12th — not just one of them.</p></div>
+        <div class="btn dngr">I DISAGREE — END IT</div>
+        <div class="btn">MOVE HER OUT — I STILL WANT HER</div>
+      </div></div>
+    <p class="note"><b>This is why a date counter is a set-level thing.</b> She is not asking to
+      swap a day; she is telling you the whole window is impossible for her.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Three rules that follow</p>
+    <div class="phone">
+      <div class="hd"><h2>What a deadline means downstream</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">1 · The shoot</div>
+          <p class="note" style="margin:0">A store visit must finish <b>1 day before the
+            deadline</b> — so she still has room if she posts on the last day.</p></div>
+        <div class="card"><div class="ct">2 · Her shop posts</div>
+          <p class="note" style="margin:0">Not "a day before the deadline". <b>Live before she
+            posts</b> — whenever that is. A dependency, not a date.</p></div>
+        <div class="card"><div class="ct">3 · Matching a pitch</div>
+          <p class="note" style="margin:0">Her pitch carries a <b>window</b>. A set fits if its
+            deadline <b>falls inside her window</b>.</p></div>
+        <div class="note" style="margin-top:10px">⚠️ Rule 2 is a change from what I drew in B1,
+          where the shop posts were due a fixed day before. With a deadline that no longer works —
+          she might post a week early.</div>
+      </div></div>
+  </div>
+</div>
+
 <div class="flow j">5 · One rule for where anybody lands</div>
 
 <div class="rule" style="border-color:var(--pur);background:var(--purbg)">
@@ -559,6 +716,43 @@
 </div>
 
 <div class="row" style="margin-top:16px">
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> Where she starts a pitch</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="hd"><h2>Collabs</h2>
+        <div class="chips"><span class="ch on">Invitations</span><span class="ch">Pitches 1</span><span class="ch">To sign</span><span class="ch">Shoot</span></div></div>
+      <div class="bd">
+        <div class="r"><div class="av"></div><div class="gr">Label Fern<div class="sub">you pitched · waiting</div></div><span class="tag">SENT</span></div>
+        <div class="empty" style="padding:14px 4px"><div class="t">Nothing here yet</div>
+          <div class="s">Pitch a brand you want to work with. They see your numbers, your terms
+            and your work.</div></div>
+      </div>
+      <div class="sticky"><div class="btn pur" style="margin:0">+ PITCH A BRAND</div></div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb on"><i></i>Collabs</div>
+        <div class="tb"><i></i>Create</div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div></div>
+    <p class="note">⚠️ <b>She can pitch today — it is just buried.</b> Profile → Proposals Hub →
+      pick a brand → send. Three taps under the wrong tab. <b>Pitching belongs in Collabs</b>,
+      beside the invitations she receives, with a sticky button.<br><br>
+      This is the same fault the original plan named: Sagar's request sat unseen under Profile
+      since 15 August.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Pick a brand</p>
+    <div class="phone her"><div class="who cr">CREATOR</div>
+      <div class="nav"><span class="bk">‹ Cancel</span><span class="sp"></span></div>
+      <div class="hd"><h2>Who do you want to work with?</h2>
+        <div class="srch">⌕ &nbsp;Search brands…</div></div>
+      <div class="bd">
+        <div class="r"><div class="av"></div><div class="gr">Label Fern<div class="sub">Fashion · Bengaluru</div></div><span class="tag ok">OPEN</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Yoy Clothing<div class="sub">Fashion · Hyderabad</div></div><span class="tag ok">OPEN</span></div>
+        <div class="r" style="opacity:.5"><div class="av"></div><div class="gr">Kanha Sarees<div class="sub">wants macro and above</div></div><span class="tag">CLOSED TO YOU</span></div>
+        <div class="empty" style="padding:12px 4px"><div class="t">No brands accepting proposals</div></div>
+      </div></div>
+    <p class="note">Already built. <b>Changes:</b> a brand you cannot pitch says <b>why</b> —
+      "wants macro and above" — instead of just being absent.</p>
+  </div>
 
   <div class="unit">
     <p class="cap"><span class="pip g">CREATOR</span> She pitches you</p>
@@ -656,7 +850,7 @@
       <div class="bd">
         <div class="card ok"><div class="ct ok">Label Fern said yes</div>
           <div class="kv"><span>Campaign</span><b>Diwali Saree Edit</b></div>
-          <div class="kv"><span>You post on</span><b>19 Sep</b></div>
+          <div class="kv"><span>You post by</span><b>19 Sep</b></div>
           <div class="kv"><span>Where you work</span><b>Remote</b></div>
           <div class="kv"><span>Your commission</span><b>18%</b></div></div>
         <div class="note">The day is one you said you could do, and the way of working is what you
