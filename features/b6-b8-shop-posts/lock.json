@@ -4,7 +4,7 @@
   "status": "awaiting-mockup-lock",
   "approved": false,
   "mockup_locked": false,
-  "notes": "B6 and B8 drawn together — her Create tab and the admin post queue are two halves of one flow, and neither makes sense alone.",
+  "notes": "B6 and B8 drawn together — her Create tab and the admin post queue. Second pass adds step 1 redrawn per the founder: products are resolved at CAMPAIGN level in every scope.",
   "the_rule": "Shop posts have NO DEADLINE. She builds them any time; they only have to be APPROVED BEFORE THE LAUNCH DAY, or a follower who taps her link arrives at an empty shelf. Admin approves them, not the brand — a founder lock that stays, because a brand reviewing her shop posts would be a brand editing her storefront. A minimum applies per collaboration, admin-set.",
   "the_one_blocking_change": "⚠️ A shop post is tied to a BRAND (creator_posts.scope, scoped_brand_ids) and has NO IDEA WHICH COLLABORATION it belongs to. So nothing can answer 'how many has she done for Label Fern's September set?' — the number the minimum, the launch gate, the reminder, the notification and the admin queue's sort order ALL depend on. Five features, one missing column. Fix: one NULLABLE column campaign_influencer_id on creator_posts. Nullable because a creator may build a post for her own store with no collaboration behind it, and that must stay possible.",
   "she_cannot_see_her_own_posts": "⚠️ There is no screen in her app listing her shop posts. One was REJECTED in production, with the reason stored and sent — and nothing shows it to her or lets her fix it. B6 adds 'Your posts' with live / waiting / sent-back, the reason read back word for word, and a Fix and resend button.",
@@ -16,7 +16,12 @@
   ],
   "both_settings_apply_forward_only": "Collaborations agreed from now on. Anyone already signed keeps what they were promised.",
   "the_launch_gate": "The minimum never blocks her from BUILDING, only from GOING LIVE — and it names exactly what is missing: '4 of 5 approved. One more has to be approved before you post.'",
-  "counts": { "panels": 10, "new": 5, "change": 3, "keep": 6 },
+  "counts": {
+    "panels": 13,
+    "new": 5,
+    "change": 5,
+    "keep": 6
+  },
   "release": {
     "qa_all_green": false,
     "released": false,
@@ -25,5 +30,15 @@
     "deploy_targets": [],
     "outward_facing": "None. Nothing is built.",
     "device_walk_required": "NOT YET"
-  }
+  },
+  "the_existing_five_steps": "Read from source, not remembered. 1 Where do products come from — Single brand / Multiple brands / Entire collaborations, over brands she has a LIVE CONTRACT with (status contracted/active/completed, campaign published/active/live, not ended). 2 Pick one concept — Concept (category themes / price / offers, category templates require a leaf) or Collection (curated looks). 3 What are you posting — Static 1 photo / Carousel up to 10 / Video LOCKED / Video carousel LOCKED. 4 Which products — the filtered universe, then tag which product is in which photo. 5 Finish — caption, price-tag style, send for review.",
+  "what_gates_the_product_list_today": "Three filters stack: (1) brands she is contracted with, (2) INTERSECT her allocated products via creatorAllocatedProductIds(her, scopedBrandIds), (3) INTERSECT the concept or collection rule. ⚠️ Allocation IS respected — but only at BRAND level. Two Label Fern campaigns, one for jackets and one for sarees, and the picker offers her BOTH.",
+  "founder_correction": {
+    "quote": "\"if it is single then we focus at campaign level..if it is multi or from entire basket of products from all collabrations is mix of products or basket he has...simply our backend should have clear match of list of products based on brand...campaign level products scope.....if multi brand selected also all campaign list should come....if all selected all products allocated should come into that particular scope\"",
+    "the_rule": "ONE RULE, THREE WIDTHS. Products are always resolved from CAMPAIGN-LEVEL allocations; the scope only decides how many campaigns are in play. Single — she picks one campaign. Multiple — every campaign of the brands she picked. All — every campaign she is in.",
+    "backend": "creatorAllocatedProductIds(her, brandIds) becomes allocatedProducts(her, campaignInfluencerIds). Same function, different key. The concept and live-in-store filters are unchanged.",
+    "multi_does_not_ask_her_to_pick_campaigns": "The point of multi-brand is a mixed basket; asking her to curate campaigns as well as brands would be two questions for one answer. She is SHOWN which campaigns are in play, not asked to choose."
+  },
+  "side_effect": "Choosing the campaign on a single-brand post means THE POST KNOWS ITS COLLABORATION — which is the missing column B6 needs for the count, the launch gate, the reminder, the notification and the admin queue sort. The fix and the feature are the same change.",
+  "open_question": "Does a MULTI-BRAND post count towards a set minimum? It spans several collaborations, so it belongs to none of them cleanly. Recommendation: only single-brand posts count — a post selling three brands is not really one of the five Label Fern needs. Not yet answered."
 }
