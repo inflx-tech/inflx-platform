@@ -1,0 +1,549 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>B5 · Creator Collabs tab — her whole app</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDED;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:26px;color:var(--ink)}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em}
+  .lede{max-width:980px;font-size:13.5px;color:#555;line-height:1.65;margin:0 0 4px}
+  .rule{max-width:980px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:12.5px;line-height:1.65;margin:16px 0 8px}
+  .rule b{color:var(--ink)}
+  .flow{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--pur);color:var(--pur);font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .row{display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start}
+  .unit{width:292px}
+  .cap{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 6px 2px;display:flex;align-items:center;gap:5px;min-height:24px}
+  .pip{font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;letter-spacing:.04em;color:#fff}
+  .pip.n{background:var(--new)} .pip.c{background:var(--acc)} .pip.k{background:var(--mut2)}
+  .phone{background:#fff;border:2px solid var(--pur);border-radius:13px;overflow:hidden}
+  .phone.keep{opacity:.72;border-color:var(--line);border-width:1px}
+  .nav{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--soft);font-size:11px;color:var(--mut)}
+  .nav .bk{font-weight:900;color:var(--ink)} .nav .sp{flex:1}
+  .ico{width:17px;height:17px;border:1.4px solid var(--mut);border-radius:50%;display:inline-block}
+  .hd{padding:10px 12px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:15px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:10px 12px}
+  .tabbar{display:flex;border-top:1px solid var(--line);background:#FCFCFC}
+  .tb{flex:1;text-align:center;padding:7px 0 6px;font-size:7.5px;font-weight:800;color:var(--mut2)}
+  .tb.on{color:var(--ink)}
+  .tb i{display:block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;margin:0 auto 3px}
+  .tb b{display:inline-block;background:var(--pur);color:#fff;border-radius:7px;font-size:7px;padding:0 4px;margin-left:2px}
+  .sticky{border-top:1px solid var(--line);padding:9px 12px;background:#fff}
+  .stg{display:flex;gap:3px;margin-top:7px;overflow:hidden}
+  .sx{flex:1;text-align:center;font-size:8px;font-weight:800;color:var(--mut2);padding:5px 1px;border-bottom:2px solid transparent;white-space:nowrap}
+  .sx.on{color:var(--ink);border-bottom-color:var(--ink)}
+  .sx b{display:block;font-size:10px}
+  .fl{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:9px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:8px;padding:8px 9px;margin-top:4px;font-size:12px}
+  .fi.ph{color:var(--mut2)} .fi.ro{background:#FAFAFA;color:#666}
+  .fi.go::after{content:'›';float:right;color:var(--mut2)}
+  .seg{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+  .sg{flex:1;min-width:56px;border:1px solid var(--line);border-radius:7px;padding:6px 3px;text-align:center;font-size:10px;font-weight:700;color:#666}
+  .sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+  .ch{border:1px solid var(--line);border-radius:20px;padding:4px 9px;font-size:10px;font-weight:700;color:#666}
+  .ch.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn{margin-top:9px;background:var(--pur);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:.05em}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .btn.dis{background:#E8E8E8;color:#AAA}
+  .btn.dngr{background:#fff;color:var(--bad);border:1px solid #E7BDB4}
+  .btn.dark{background:var(--ink)}
+  .btn.sm{padding:7px;font-size:10px;margin-top:6px}
+  .note{font-size:10px;color:var(--mut);margin-top:6px;line-height:1.5}
+  .note b{color:var(--ink)}
+  .empty{text-align:center;padding:18px 6px;color:var(--mut2)}
+  .empty .t{font-size:13px;font-weight:800;color:var(--mut);margin-bottom:4px}
+  .empty .s{font-size:10.5px;line-height:1.5}
+  .r{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--soft);font-size:12px}
+  .r:first-child{border-top:none}
+  .av{width:25px;height:25px;border-radius:13px;background:#EEE;flex:0 0 auto}
+  .gr{flex:1;min-width:0} .sub{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .tag{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;background:var(--soft);color:#555;white-space:nowrap}
+  .tag.you{background:var(--purbg);color:var(--pur)} .tag.ok{background:var(--okbg);color:var(--ok)}
+  .tag.bad{background:var(--badbg);color:var(--bad)} .tag.wt{background:#EEF2FF;color:#1D4ED8}
+  .card{border:1px solid var(--line);border-radius:9px;padding:9px;margin-top:8px}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .card.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .card.pu{border-color:#DDD6FE;background:var(--purbg)}
+  .ct{font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+  .ct.ok{color:var(--ok)} .ct.bad{color:var(--bad)} .ct.pu{color:var(--pur)}
+  .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0}
+  .kv span:first-child{color:var(--mut)} .kv b{font-weight:800}
+  .why{max-width:980px;font-size:12.5px;color:#555;line-height:1.7;margin-top:18px;background:#fff;border-left:3px solid var(--pur);padding:11px 14px;border-radius:0 8px 8px 0}
+  .why b{color:var(--ink)}
+  .warn{max-width:980px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
+  .warn b{color:var(--bad)}
+</style>
+
+<h1>B5 · Creator app — Collabs tab</h1>
+<p class="lede">
+  Her whole working life, in one tab. Everything drawn in B1 and B2 from her side, now as one
+  app. <span class="pip n">NEW</span> · <span class="pip c">CHANGE</span> ·
+  <span class="pip k">KEEP</span>
+</p>
+<div class="rule">
+  <b>Her six stages stay: Invitations · Pitches · To sign · Shoot · Content · Done.</b> They are
+  built, they work, and the new architecture does not change them — it changes what
+  <b>Invitations</b> means. It used to be "someone wants to agree terms". It now means
+  <b>a whole deal has arrived</b>.<br><br>
+  <b>She goes live on the set's day</b>, with everyone else in it. She does the work whenever
+  suits her.
+</div>
+
+<!-- ═══════════════════════════════════ 1 -->
+<div class="flow">1 · The tab · her six stages</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Collabs — the list</p>
+    <div class="phone">
+      <div class="hd"><h2>Collabs</h2>
+        <div class="note" style="margin-top:2px">3 active · 2 need you</div>
+        <div class="stg">
+          <div class="sx on"><b>2</b>Invites</div><div class="sx"><b>1</b>Pitches</div>
+          <div class="sx"><b>1</b>To sign</div><div class="sx"><b>1</b>Shoot</div>
+          <div class="sx">Content</div><div class="sx">Done</div>
+        </div></div>
+      <div class="bd" style="padding-bottom:4px">
+        <div class="r"><div class="av"></div><div class="gr">Label Fern<div class="sub">Diwali Saree Edit · 14% · live 12 Sep</div><div class="sub">Tap to accept, counter or pass</div></div><span class="tag you">2d LEFT</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Yoy Clothing<div class="sub">Winter drop · ₹12,000 · live 4 Oct</div><div class="sub">Tap to accept, counter or pass</div></div><span class="tag you">NEW</span></div>
+      </div>
+      <div class="sticky"><div class="btn" style="margin:0">+ PITCH A BRAND</div></div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb on"><i></i>Collabs<b>2</b></div>
+        <div class="tb"><i></i>Create</div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> a row now carries <b>the money and the go-live day</b>, so she
+      can triage without opening it. The sticky <b>Pitch a brand</b> button moves here from Profile
+      — see B2. Counts on every stage; pull to refresh.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> The empty states</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Collabs</h2>
+        <div class="stg"><div class="sx on">Invites</div><div class="sx">Pitches</div><div class="sx">To sign</div><div class="sx">Shoot</div><div class="sx">Content</div><div class="sx">Done</div></div></div>
+      <div class="bd">
+        <div class="empty"><div class="t">Nothing in Invitations</div>
+          <div class="s">When a brand sends you a collaboration it lands here, with everything in
+            it — the money, what you can sell, and what your followers get.</div></div>
+        <div class="card"><div class="ct">Each stage says something different</div>
+          <div class="kv"><span>Pitches</span><b>"Nothing sent yet"</b></div>
+          <div class="kv"><span>To sign</span><b>"Nothing to sign"</b></div>
+          <div class="kv"><span>Shoot</span><b>"No shoot to arrange"</b></div>
+          <div class="kv"><span>Content</span><b>"Nothing to deliver"</b></div>
+          <div class="kv"><span>Done</span><b>"Nothing finished yet"</b></div></div>
+      </div>
+    </div>
+    <p class="note">Six stages, six different sentences. <b>A stage that says "nothing here"
+      teaches her nothing</b> — the Invitations one explains what will arrive.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> One collab · the hub</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Collabs</span><span class="sp"></span><span class="ico"></span></div>
+      <div class="hd"><div class="kick">LABEL FERN</div><h2>Diwali Saree Edit</h2>
+        <div class="note" style="margin-top:2px">14% · Jackets · live 12 Sep</div></div>
+      <div class="bd">
+        <div class="card pu"><div class="ct pu">● Your turn</div>
+          <div style="font-size:17px;font-weight:900;margin-top:3px">The shoot</div>
+          <div class="note" style="margin-top:3px">Settle the time, confirm what arrives, and shoot.</div>
+          <div class="btn" style="margin-top:9px">PLAN THE SHOOT</div></div>
+        <div class="r"><div class="gr">Terms &amp; brief</div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Contract</div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Logistics</div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Deliverables</div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Performance</div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">Earnings</div><span class="tag">›</span></div>
+        <div class="r"><div class="gr">What you can sell</div><span class="tag">›</span></div>
+      </div>
+    </div>
+    <p class="note"><b>One clear action at the top</b>, then every door. ⚠️ This screen carried
+      <b>two separate crashes</b> last week — a dead stage vocabulary and a hook after an early
+      return. The button that opens the shoot had <b>no words on it</b> since Stage 4 shipped.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Her six steps</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><h2>Where this has got to</h2></div>
+      <div class="bd" style="padding-bottom:4px">
+        <div class="r"><div class="gr"><b>1 · Terms agreed</b><div class="sub">You accepted 2 Sep</div></div><span class="tag ok">DONE</span></div>
+        <div class="r"><div class="gr"><b>2 · Sign the contract</b><div class="sub">Both signed 3 Sep</div></div><span class="tag ok">DONE</span></div>
+        <div class="r" style="background:var(--purbg);margin:0 -12px;padding:8px 12px"><div class="gr"><b>3 · The shoot</b><div class="sub">Store visit · waiting for the brand</div></div><span class="tag wt">THEIRS</span></div>
+        <div class="r"><div class="gr"><b>4 · Your shop posts</b><div class="sub">0 of 5 · build them any time</div></div><span class="tag you">YOURS</span></div>
+        <div class="r"><div class="gr"><b>5 · Go live on social</b><div class="sub">12 Sep · Instagram · YouTube</div></div><span class="tag">LATER</span></div>
+        <div class="r"><div class="gr"><b>6 · Complete</b><div class="sub">—</div></div><span class="tag"></span></div>
+      </div>
+    </div>
+    <p class="note"><b>Same six numbers as the brand sees, her wording.</b> "We're stuck on step 3"
+      means the same thing on both phones. <b>Changes:</b> step 1 now means she accepted the whole
+      deal; step 4 says <b>build them any time</b>.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 2 -->
+<div class="flow">2 · A whole deal arrives</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> The whole deal · pay per sale</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Collabs</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">LABEL FERN · FASHION · BENGALURU</div><h2>Diwali Saree Edit</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">The set decides these</div>
+          <div class="kv"><span>You go live on</span><b>12 Sep 2026</b></div>
+          <div class="kv"><span>Where you work</span><b>Store visit</b></div>
+          <p class="note" style="margin:5px 0 0">Everyone in this set goes live that day. Do the
+            work whenever suits you and schedule for the 12th.</p></div>
+        <div class="kv"><span>Your commission</span><b>14%</b></div>
+        <div class="kv"><span>You can sell</span><b>Men › Topwear › Jacket</b></div>
+        <div class="kv"><span>Your shoppers get</span><b>20% off · 15 Sep–30 Oct</b></div>
+        <div class="kv"><span>Where you'd post</span><b>Instagram · YouTube</b></div>
+        <div class="btn gh">SEE THE 12 PRODUCTS ›</div>
+        <div class="btn gh">ABOUT LABEL FERN ›</div>
+      </div>
+      <div class="sticky">
+        <div class="btn" style="margin:0">ACCEPT</div>
+        <div class="btn gh">COUNTER</div>
+        <div class="btn dngr">NOT INTERESTED</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>Today this is two screens on two different days</b> — terms first, a brief
+      later. One arrival now, and one yes.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> The whole deal · pay for content</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Collabs</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">YOY CLOTHING</div><h2>Winter drop</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">The set decides these</div>
+          <div class="kv"><span>You go live on</span><b>4 Oct 2026</b></div>
+          <div class="kv"><span>Where you work</span><b>Remote</b></div></div>
+        <div class="kv"><span>Your fee</span><b>₹ 12,000</b></div>
+        <div class="card"><div class="ct">What you owe them</div>
+          <div class="r"><div class="gr">Instagram Reel</div><span class="tag">× 2</span></div>
+          <div class="r"><div class="gr">Instagram Story</div><span class="tag">× 1</span></div></div>
+        <div class="card ok"><div class="ct ok">How you get paid</div>
+          <div class="kv"><span>On signing</span><b>₹ 3,000</b></div>
+          <div class="kv"><span>When it goes live</span><b>₹ 3,000</b></div>
+          <div class="kv"><span>30 days after</span><b>₹ 6,000</b></div></div>
+        <div class="kv"><span>Where you'd post</span><b>Instagram</b></div>
+      </div>
+      <div class="sticky"><div class="btn" style="margin:0">ACCEPT</div><div class="btn gh">COUNTER</div></div>
+    </div>
+    <p class="note"><b>The money is broken down before she agrees</b>, not after. 25 / 25 / 50, in
+      rupees, with the wait named.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Her counter</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><h2>Your counter</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Fixed by the set</div>
+          <div class="kv"><span>Goes live</span><b>12 Sep</b></div>
+          <div class="kv"><span>Where you work</span><b>Store visit</b></div>
+          <p class="note" style="margin:5px 0 0">Need a different launch or a different way of
+            working? <b>Ask below</b> — the brand may move you to another set, or close this one.</p></div>
+        <div class="fl">Your commission</div><div class="fi">18 %</div>
+        <div class="fl">A different launch day <span style="color:var(--mut2)">· optional</span></div>
+        <div class="fi ph">Pick a date</div>
+        <div class="fl">A different way of working <span style="color:var(--mut2)">· optional</span></div>
+        <div class="seg"><div class="sg">Store visit</div><div class="sg">Remote</div></div>
+        <div class="fl">Why</div><div class="fi ph">A line for them</div>
+      </div>
+      <div class="sticky"><div class="btn" style="margin:0">SEND COUNTER</div></div>
+    </div>
+    <p class="note"><b>The money is the plain field; the set-level two are marked optional and
+      warned.</b> Two rounds each, then take it or leave it.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> The thread</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Negotiation</h2>
+        <div class="note" style="margin-top:2px">Offer Progress · Original → Latest</div></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Label Fern · 2 Sep</div><p class="note" style="margin:0">14%</p></div>
+        <div class="card pu"><div class="ct pu">You · 3 Sep</div><p class="note" style="margin:0">18% — "below what I take for jackets"</p></div>
+        <div class="card"><div class="ct">Label Fern · 3 Sep</div><p class="note" style="margin:0">16% · <b>final</b></p></div>
+        <div class="btn">ACCEPT 16%</div>
+        <div class="btn gh">SEND COUNTER OFFER</div>
+        <div class="btn dngr">WALK AWAY</div>
+        <div class="note">Waiting for Brand · Your Response</div>
+      </div>
+    </div>
+    <p class="note"><b>Every offer ever on the table stays visible to both.</b> ⚠️ <b>Changes
+      underneath:</b> it must hang off her row in a set, not a standalone request. Biggest single
+      piece of backend work in the programme.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 3 -->
+<div class="flow">3 · Signing, and the shoot</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Read and sign</p>
+    <div class="phone keep">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">DIWALI SAREE EDIT</div><h2>Contract</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Campaign details</div>
+          <div class="kv"><span>Brand</span><b>Label Fern</b></div>
+          <div class="kv"><span>Goes live</span><b>12 Sep 2026</b></div></div>
+        <div class="card"><div class="ct">What you can sell</div>
+          <p class="note" style="margin:0">Only Men › Topwear › Jacket counts towards your
+            commission. Sales of anything else do not.</p></div>
+        <div class="card"><div class="ct">Your content</div>
+          <p class="note" style="margin:0">Your content stays yours. The brand and INFLX may repost
+            it on their own social accounts, with credit — nothing more.</p></div>
+        <div class="btn dark">SIGN CONTRACT</div>
+        <div class="note" style="text-align:center;text-decoration:underline">I can't do this collaboration</div>
+      </div>
+    </div>
+    <p class="note"><b>Rebuilt 28 Aug.</b> Shows what she can sell, her offer window, her content
+      rights, and gives her a way to say no. Unchanged by B5.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> The shoot · store visit</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">LABEL FERN · STORE VISIT</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Where you go</div>
+          <p class="note" style="margin:0">14 Church Street, Bengaluru 560001<br>Ask for Ravi ·
+            98xxx xxx40</p>
+          <div class="btn sm gh" style="margin-top:7px">OPEN IN MAPS</div></div>
+        <div class="card pu"><div class="ct pu">They suggested</div>
+          <div style="font-size:15px;font-weight:900">Tue, 8 Sep · 11:00</div>
+          <div class="note" style="margin-top:2px">A guide for the store, not a deadline for you.</div></div>
+        <div class="btn">THAT WORKS</div>
+        <div class="btn gh">SUGGEST ANOTHER DAY · 2 LEFT</div>
+        <div class="note">Any day between <b>Sun 31 Aug</b> and <b>Fri 11 Sep</b>. Because you go
+          live on the 12th.</div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> mode comes from the set — no switch. <b>The brand marks a visit
+      done</b>, not her, so there is no button here for it.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> The shoot · remote · she starts it</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">YOY CLOTHING · REMOTE</div><h2>Where should they send it?</h2></div>
+      <div class="bd">
+        <div class="note" style="margin:0 0 8px">Nothing to schedule. Give them an address, they
+          post the goods, and you shoot when it arrives.</div>
+        <div class="card ok"><div class="ct ok">Use the address on your profile</div>
+          <p class="note" style="margin:0">Flat 4B, 12th Cross<br>Indiranagar, Bengaluru 560038</p>
+          <div class="btn sm" style="margin-top:7px">USE THIS</div></div>
+        <div class="fl">Or somewhere else</div>
+        <div class="fi ph">Flat, building, street</div><div class="fi ph">Area</div>
+        <div class="seg"><div class="sg">City</div><div class="sg">Pincode</div></div>
+        <div class="fl">Who will receive it</div>
+        <div class="fi ph">Name</div><div class="fi ph">Phone</div>
+        <div class="note">Only this brand sees it, and only for this collaboration.</div>
+      </div>
+      <div class="sticky"><div class="btn" style="margin:0">SEND MY ADDRESS</div></div>
+    </div>
+    <p class="note">⚠️ <b>Does not exist today.</b> The brand's side pre-fills her address from her
+      profile and she is never asked — so she cannot correct it and a parcel can go to an old flat.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> The parcel arrives</p>
+    <div class="phone keep">
+      <div class="hd"><div class="kick">YOY CLOTHING · REMOTE</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr"><b>Address sent</b><div class="sub">2 Sep</div></div><span class="tag ok">✓</span></div>
+        <div class="r"><div class="gr"><b>Dispatched</b><div class="sub">Delhivery · DL8829174C</div></div><span class="tag ok">✓</span></div>
+        <div class="card"><div class="ct">What is coming</div>
+          <div class="r"><div class="gr">Black jacket · M</div><div class="seg" style="margin:0"><span class="ch">Got it</span><span class="ch">Missing</span></div></div>
+          <div class="r"><div class="gr">Beige jacket · S</div><div class="seg" style="margin:0"><span class="ch on">Got it</span><span class="ch">Missing</span></div></div></div>
+        <div class="card bad"><div class="ct bad">1 item is missing</div>
+          <p class="note" style="margin:0"><b>You don't have to chase it.</b> We've told Yoy
+            already. Shoot what arrived — nothing about your fee, your posts or your deadline
+            changes.</p></div>
+        <div class="btn">MARK THE SHOOT DONE</div>
+      </div>
+    </div>
+    <p class="note"><b>She</b> marks a remote shoot done — the brand cannot see whether it
+      happened. The shortfall sentence shipped in Stage 4 and is the point of the whole screen.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 4 -->
+<div class="flow">4 · Content, going live, and the money</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Deliverables</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span><span class="bk">Refresh</span></div>
+      <div class="hd"><h2>Deliverables</h2>
+        <div class="note" style="margin-top:2px">Progress · 1 of 3 approved</div></div>
+      <div class="bd">
+        <div class="r"><div class="av"></div><div class="gr">Instagram Reel 1<div class="sub">approved 6 Sep</div></div><span class="tag ok">DONE</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Instagram Reel 2<div class="sub">with the brand · 1 revision left</div></div><span class="tag wt">WAITING</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Instagram Story<div class="sub">not submitted</div></div><span class="tag you">YOURS</span></div>
+        <div class="empty" style="padding:12px 4px"><div class="t">No deliverables</div>
+          <div class="s">You are paid on sales, so nothing specific was bought. Post what you
+            think works.</div></div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> the empty state now explains <b>why</b> a commission creator
+      has none. Today it just says "No Deliverables Yet", which reads like a fault.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Submitting one</p>
+    <div class="phone keep">
+      <div class="hd"><div class="kick">INSTAGRAM REEL 2</div><h2>Submit</h2></div>
+      <div class="bd">
+        <div class="seg"><div class="sg on">Record video</div><div class="sg">From gallery</div></div>
+        <div class="note">Camera · up to 5 min</div>
+        <div class="fl">Caption draft</div><div class="fi ph">What you'll write</div>
+        <div class="fl">A note to the brand</div><div class="fi ph">Optional</div>
+        <div class="card bad"><div class="ct bad">They asked for a change</div>
+          <p class="note" style="margin:0">"The jacket is in shadow from 0:12. Can you re-shoot
+            that section?" · 1 revision left</p></div>
+        <div class="btn">SUBMIT</div>
+      </div>
+    </div>
+    <p class="note">Built. Status timeline, live performance once it is up, max 2 revision rounds.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> Go live · one row per channel</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><div class="kick">LABEL FERN · 12 SEP</div><h2>Go live</h2></div>
+      <div class="bd">
+        <div class="card ok"><div class="ct ok">✓ Your shop posts are live</div>
+          <p class="note" style="margin:0">5 of 5 approved.</p></div>
+        <div class="note">You agreed <b>two channels</b>. Post on each today, then paste the link
+          so the brand can check it.</div>
+        <div class="fl">Instagram</div>
+        <div class="fi ro">instagram.com/p/C8xk92…</div>
+        <div class="note" style="color:var(--ok)"><b>Confirmed by the brand</b></div>
+        <div class="fl">YouTube</div>
+        <div class="fi ph">Paste the link to your post</div>
+        <div class="btn sm">SEND IT FOR CHECKING</div>
+        <div class="note" style="margin-top:10px">Nothing is finished until both are confirmed.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>A live link has nowhere to be stored on a commission campaign today</b> —
+      it sits on a deliverable, and she has none. Schema work, Stage 4.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Performance</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Performance</h2></div>
+      <div class="bd">
+        <div class="seg"><div class="sg on">On INFLX</div><div class="sg">On social media</div></div>
+        <div class="card"><div class="ct">On INFLX · ours, exact</div>
+          <div class="kv"><span>Sales</span><b>₹ 18,600</b></div>
+          <div class="kv"><span>Per post</span><b>₹ 3,720</b></div></div>
+        <div class="card"><div class="ct">On social · theirs, refreshed</div>
+          <div class="kv"><span>Post views</span><b>24,100</b></div>
+          <div class="kv"><span>Saves</span><b>612</b></div>
+          <div class="kv"><span>Avg ER</span><b>3.4%</b></div>
+          <div class="note" style="margin:4px 0 0">Last refreshed 2 days ago</div></div>
+        <div class="empty" style="padding:12px 4px"><div class="t">No live posts yet</div></div>
+      </div>
+    </div>
+    <p class="note">Stage 10 work. <b>Swept, not redesigned.</b> Our numbers and social numbers
+      are kept apart and stamped, which is the rule that matters.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 5 -->
+<div class="flow">5 · The rest of the tab</div>
+<div class="row">
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP ×5</span> Unchanged</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Nothing changes</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr">Diary<div class="sub">"What happened here" · every step, dated</div></div><span class="tag">KEEP</span></div>
+        <div class="r"><div class="gr">Contract PDF<div class="sub">the signed document</div></div><span class="tag">KEEP</span></div>
+        <div class="r"><div class="gr">What you can sell<div class="sub">the products, live-in-store flags</div></div><span class="tag">KEEP</span></div>
+        <div class="r"><div class="gr">Brand profile<div class="sub">who you are working with</div></div><span class="tag">KEEP</span></div>
+        <div class="r"><div class="gr">Your pitches<div class="sub">what you sent, and their answers</div></div><span class="tag">KEEP</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Preferences</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><h2>What you'll take</h2></div>
+      <div class="bd">
+        <div class="fl">Aims I take <span style="color:var(--mut2)">· none = all</span></div>
+        <div class="chips"><span class="ch on">Pay per sale</span><span class="ch on">Pay for content</span><span class="ch">Both</span></div>
+        <div class="fl">Minimum commission %</div><div class="fi">12</div>
+        <div class="fl">Minimum fee ₹</div><div class="fi">10,000</div>
+        <div class="fl">Where you'll work <span style="color:var(--new)">· new</span></div>
+        <div class="seg"><div class="sg">Store visit</div><div class="sg">Remote</div><div class="sg on">Either</div></div>
+        <div class="fl">Brands can ask me</div>
+        <div class="seg"><div class="sg on">Yes</div><div class="sg">No</div></div>
+        <div class="note">Include me in bulk outreach</div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> gains <b>where you'll work</b>, so a brand knows before asking
+      and matching has something to match on. Same field the pitch form needs.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Done</p>
+    <div class="phone">
+      <div class="hd"><h2>Done</h2></div>
+      <div class="bd">
+        <div class="r"><div class="av"></div><div class="gr">Label Fern<div class="sub">Diwali Saree Edit · earned ₹2,604</div></div><span class="tag ok">COMPLETE</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Kanha Sarees<div class="sub">you passed · 12 Aug</div></div><span class="tag">PASSED</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Yoy Clothing<div class="sub">they closed it · different launch day</div></div><span class="tag bad">CLOSED</span></div>
+        <div class="note"><b>Finished reads as an achievement</b>, closed reads as closed, and the
+          reason is there either way.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>A commission collab cannot reach Done today</b> — nothing computes it
+      without deliverables. Carried; it lands in Stage 4.</p>
+  </div>
+</div>
+
+<div class="warn">
+  <b>Three things in her app that are broken or missing today, all recorded.</b><br><br>
+  <b>1 · A live link has nowhere to live on a commission campaign.</b> It is stored on a
+  deliverable, and a commission creator has none — 6 such creators, 0 deliverables, in production.
+  So "going live" is unrecordable for exactly the campaigns this platform is built around.<br><br>
+  <b>2 · A commission collaboration cannot reach Done.</b> Nothing computes completion without
+  deliverables, so it sits at the shoot forever.<br><br>
+  <b>3 · She cannot say where she will work.</b> Not on her preferences, not on a pitch. Both need
+  the same field, and the matching rule from B2 depends on it.
+</div>
+
+<div class="why">
+  <b>What B5 costs.</b> Four new screens, eight changed, eight kept.<br><br>
+  <b>Her six stages do not change</b> — they were built right. What changes is what Invitations
+  MEANS: not "someone wants to agree terms" but <b>a whole deal has arrived</b>.<br><br>
+  <b>The hardest work is the same as B2's</b> — the negotiation must hang off her row in a set.
+  One piece of backend work serves both apps.<br><br>
+  ⚠️ <b>Her collab hub carried two separate crashes last week</b>, and the button that opens the
+  shoot had no words on it from the day Stage 4 shipped. This tab has the worst reliability record
+  in the programme, and it is the one she lives in.
+</div>

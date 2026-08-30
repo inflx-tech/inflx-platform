@@ -1,0 +1,34 @@
+{
+  "feature": "b5-creator-collabs-tab",
+  "spec_version": "1.0.0",
+  "status": "awaiting-mockup-lock",
+  "approved": false,
+  "mockup_locked": false,
+  "notes": "B5 of eight chunks. The creator's Collabs tab — her whole working life in one place. Everything drawn from her side in B1 and B2, now as one coherent app.",
+  "her_six_stages_do_not_change": "Invitations · Pitches · To sign · Shoot · Content · Done. They were built right and the new architecture does not touch them. What changes is what INVITATIONS MEANS: not 'someone wants to agree terms' but 'a whole deal has arrived'.",
+  "new_screens": [
+    "The whole deal — one screen carrying the set's go-live day and mode, her money, what she can sell, her offer and her channels. Today this is two screens on two different days.",
+    "Her counter — money as the plain field; a different launch day and a different way of working marked optional and warned, because those move her out of the set.",
+    "Remote shoot — she sends the address. Does not exist today: the brand's side pre-fills it from her profile and she is never asked.",
+    "Go live — one row per channel she agreed, with the brand confirming each."
+  ],
+  "the_money_is_shown_before_she_agrees": "A pay-for-content deal breaks the fee down 25/25/50 in rupees, with the wait named, on the invitation screen — not after signing.",
+  "empty_states_teach": "Six stages, six different sentences. The deliverables empty state now explains WHY a commission creator has none — today it says 'No Deliverables Yet', which reads like a fault.",
+  "three_things_broken_or_missing": [
+    "A live link has nowhere to live on a commission campaign. It is stored on a deliverable and she has none — 6 such creators, 0 deliverables, in production. 'Going live' is unrecordable for exactly the campaigns this platform is built around.",
+    "A commission collaboration cannot reach Done. Nothing computes completion without deliverables, so it sits at the shoot forever.",
+    "She cannot say where she will work — not in preferences, not on a pitch. Both need the same field, and B2's matching rule depends on it."
+  ],
+  "reliability_note": "⚠️ Her collab hub carried TWO separate crashes last week — a dead stage vocabulary and a React hook after an early return — and the button that opens the shoot had NO WORDS ON IT from the day Stage 4 shipped. This tab has the worst reliability record in the programme, and it is the one she lives in.",
+  "counts": { "panels": 19, "new": 4, "change": 8, "keep": 8 },
+  "shared_backend_with_b2": "The negotiation must hang off her row in a set rather than a standalone request. One piece of backend work serves both apps.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "deploy-inert — mockups and specification only, no code",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT YET"
+  }
+}
