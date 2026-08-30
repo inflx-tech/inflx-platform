@@ -212,11 +212,13 @@
           <div class="tv"><b>₹18,600</b><span>EARNED IN ALL</span></div>
         </div>
         <div class="card pu"><div class="ct pu">On the way · why it is not here yet</div>
-          <div class="r"><div class="gr">Commission · in the 7-day window<div class="sub">frees up 7 days after each sale</div></div><b>₹2,604</b></div>
+          <div class="r"><div class="gr">Commission · in the 7-day window<div class="sub">earned and yours — in your wallet 7 days after each sale</div></div><b>₹2,604</b></div>
           <div class="r"><div class="gr">Yoy Clothing · when it goes live<div class="sub">4 Oct</div></div><b>₹3,000</b></div>
           <div class="r"><div class="gr">Yoy Clothing · 15 days after<div class="sub">19 Oct</div></div><b>₹6,000</b></div></div>
         <div class="btn pur">WITHDRAW</div>
-        <div class="note">Minimum ₹100. 10% TDS at withdrawal, not at earning.</div>
+        <div class="note">Minimum ₹100. 10% TDS at withdrawal, not at earning.<br>
+          <b>Nothing is ever taken back.</b> A shopper has 7 days to return, and your commission
+          only reaches your wallet after that — so once it is here, it is yours.</div>
         <div class="fl">By campaign</div>
         <div class="r"><div class="gr">Diwali Saree Edit<div class="sub">Label Fern · commission</div></div><span class="tag">VIEW ›</span></div>
         <div class="r"><div class="gr">Winter drop<div class="sub">Yoy · content · 1 of 3 paid</div></div><span class="tag">VIEW ›</span></div>
@@ -705,15 +707,19 @@
   </div>
 </div>
 
-<div class="warn">
-  <b>One thing the 7-day window leaves open, and it carries money.</b><br><br>
-  Is <b>7 days the shopper's return period</b>, or just <b>how long we hold her money</b>?<br><br>
-  If a shopper can still return for 30 days but the creator is paid at 7, then a return on day 12
-  claws back money she already has. <code>commission_reversed</code> and
-  <code>brand_net_reversed</code> exist for exactly that — <b>and taking money back out of a
-  creator's wallet is the worst conversation this platform can have.</b><br><br>
-  <b>If the two are the same 7 days, none of that arises.</b> Worth being explicit, because the
-  columns suggest somebody once expected them to differ.
+<div class="rule" style="border-color:var(--ok);background:var(--okbg)">
+  <b>Settled — and it removes the only real risk in the money.</b><br><br>
+  <b>Founder, 2026-08-30:</b> <i>"yes shoppers return window...no 30 day...yes return window is 7
+  days...commission amount show to creator but not in wallet till return window completed."</i><br><br>
+  <b>One window, 7 days, for everybody.</b> A shopper may return for 7 days. The creator's
+  commission is <b>shown to her the moment the sale happens</b>, so she can see she earned it —
+  and it <b>enters her wallet only when those 7 days close</b>.<br><br>
+  <b>So money is never taken back out of her wallet.</b> A return inside the window reverses an
+  amount she could not have withdrawn. <code>commission_reversed</code> and
+  <code>brand_net_reversed</code> only ever touch pending money, never settled money. The brand's
+  share is held the same way, for the same 7 days.<br><br>
+  <b>That is exactly what <code>pending_balance</code> already is</b> — the model was built for
+  this and the screens just have to say it.
 </div>
 
 <div class="why">

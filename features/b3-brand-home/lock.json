@@ -1,0 +1,27 @@
+{
+  "feature": "b3-brand-home",
+  "spec_version": "1.0.0",
+  "status": "awaiting-mockup-lock",
+  "approved": false,
+  "mockup_locked": false,
+  "notes": "B3 — the brand's Home tab, and the last of the eight chunks. Drawn last on purpose: Home is a summary of everything else.",
+  "the_real_find_is_a_sentence": "⚠️ BrandHomeScreen still tells him to open a laptop. It carries a card reading 'Open web dashboard · Full campaign management + analytics', and its empty state — the FIRST thing a brand with no campaigns ever reads — says 'Create campaigns from the web dashboard'. Stage 2 brought campaign creation to the phone and this screen was never told. A screen nobody re-read after the feature it described was replaced.",
+  "home_must_stay_a_summary": "Home answers one question: what needs me. Everything else on it is a way into a tab that already exists. The moment Home holds work of its own, two screens begin disagreeing about the same count — the exact fault the six-step ladder was built to end.",
+  "changes": [
+    "Home: needs-you first and itemised; BOTH wallets (to spend, from sales); what is running; the laptop card deleted; the empty state starts a campaign instead of sending him away.",
+    "Needs-you: gains 'countered your terms', and a 'waiting on someone else' group so the badge only ever counts things he can act on while the rest stays visible.",
+    "Notifications: five new kinds — countered terms, wants a different day, address sent, shop post approved, money from a sale. Each opens the exact screen it is about, not the tab it lives in.",
+    "NEW: a first-run screen. Three things to do, and it says plainly that adding products is still web work — the honest answer rather than pretending everything is on the phone."
+  ],
+  "the_diary_is_kept_and_is_right": "BrandDiaryScreen is 18 lines and they are the right 18 — it renders the SAME component the creator reads, wired to the brand's calls. Building it twice is how two sides end up telling different stories about one negotiation.",
+  "counts": { "panels": 6, "new": 1, "change": 3, "keep": 1 },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "deploy-inert — mockups and specification only, no code",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT YET"
+  }
+}

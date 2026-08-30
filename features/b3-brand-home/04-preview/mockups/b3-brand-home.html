@@ -1,0 +1,247 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>B3 · Brand Home — the last four screens</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDED;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:26px;color:var(--ink)}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em}
+  .lede{max-width:980px;font-size:13.5px;color:#555;line-height:1.65;margin:0 0 4px}
+  .rule{max-width:980px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:12.5px;line-height:1.65;margin:16px 0 8px}
+  .rule b{color:var(--ink)}
+  .flow{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--ink);font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .row{display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start}
+  .unit{width:292px}
+  .cap{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 6px 2px;display:flex;align-items:center;gap:5px;min-height:24px}
+  .pip{font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;letter-spacing:.04em;color:#fff}
+  .pip.n{background:var(--new)} .pip.c{background:var(--acc)} .pip.k{background:var(--mut2)}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+  .phone.keep{opacity:.72}
+  .nav{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--soft);font-size:11px;color:var(--mut)}
+  .nav .bk{font-weight:900;color:var(--ink)} .nav .sp{flex:1}
+  .hd{padding:10px 12px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:15px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:10px 12px}
+  .tabbar{display:flex;border-top:1px solid var(--line);background:#FCFCFC}
+  .tb{flex:1;text-align:center;padding:7px 0 6px;font-size:7.5px;font-weight:800;color:var(--mut2)}
+  .tb.on{color:var(--ink)}
+  .tb i{display:block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;margin:0 auto 3px}
+  .tb b{display:inline-block;background:var(--acc);color:#fff;border-radius:7px;font-size:7px;padding:0 4px;margin-left:2px}
+  .sticky{border-top:1px solid var(--line);padding:9px 12px;background:#fff}
+  .fl{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:9px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:8px;padding:8px 9px;margin-top:4px;font-size:12px}
+  .fi.gone{background:var(--badbg);border-color:#E7BDB4;color:var(--bad);text-decoration:line-through}
+  .btn{margin-top:9px;background:var(--ink);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:.05em}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .btn.sm{padding:7px;font-size:10px;margin-top:6px}
+  .note{font-size:10px;color:var(--mut);margin-top:6px;line-height:1.5}
+  .note b{color:var(--ink)}
+  .empty{text-align:center;padding:18px 6px;color:var(--mut2)}
+  .empty .t{font-size:13px;font-weight:800;color:var(--mut);margin-bottom:4px}
+  .empty .s{font-size:10.5px;line-height:1.5}
+  .r{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--soft);font-size:12px}
+  .r:first-child{border-top:none}
+  .av{width:25px;height:25px;border-radius:13px;background:#EEE;flex:0 0 auto}
+  .gr{flex:1;min-width:0} .sub{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .tag{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;background:var(--soft);color:#555;white-space:nowrap}
+  .tag.you{background:#FDF0E7;color:var(--acc)} .tag.ok{background:var(--okbg);color:var(--ok)}
+  .tag.bad{background:var(--badbg);color:var(--bad)} .tag.pu{background:var(--purbg);color:var(--pur)}
+  .card{border:1px solid var(--line);border-radius:9px;padding:9px;margin-top:8px}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .card.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .card.pu{border-color:#DDD6FE;background:var(--purbg)}
+  .ct{font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+  .ct.ok{color:var(--ok)} .ct.bad{color:var(--bad)} .ct.pu{color:var(--pur)}
+  .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0}
+  .kv span:first-child{color:var(--mut)} .kv b{font-weight:800}
+  .big{font-size:24px;font-weight:900;letter-spacing:-.03em}
+  .tri{display:flex;gap:6px;margin-top:8px}
+  .tv{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 4px;text-align:center}
+  .tv b{display:block;font-size:14px;font-weight:900} .tv span{font-size:7.5px;color:var(--mut);font-weight:800}
+  .why{max-width:980px;font-size:12.5px;color:#555;line-height:1.7;margin-top:18px;background:#fff;border-left:3px solid var(--ink);padding:11px 14px;border-radius:0 8px 8px 0}
+  .why b{color:var(--ink)}
+  .warn{max-width:980px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
+  .warn b{color:var(--bad)}
+</style>
+
+<h1>B3 · Brand app — Home</h1>
+<p class="lede">
+  The last four screens. Home is a summary of everything already drawn, so it comes last on
+  purpose. <span class="pip n">NEW</span> · <span class="pip c">CHANGE</span> ·
+  <span class="pip k">KEEP</span>
+</p>
+
+<div class="warn">
+  <b>Home still tells him to open a laptop.</b><br><br>
+  <code>BrandHomeScreen</code> carries a card reading <b>"Open web dashboard · Full campaign
+  management + analytics"</b>, and its empty state says <b>"Create campaigns from the web
+  dashboard"</b>.<br><br>
+  <b>Stage 2 brought campaign creation to the phone.</b> The screen was never told. A brand
+  opening the app for the first time is pointed away from it.
+</div>
+
+<div class="rule">
+  <b>Home answers one question: what needs me?</b> Everything else on it is a way into a tab that
+  already exists. It should never become a second place to do work — the moment it does, two
+  screens disagree about the same number.
+</div>
+
+<!-- ═══════════════════════════════════ 1 -->
+<div class="flow">1 · Home</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Home — today</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Label Fern</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Action required</div>
+          <div class="r"><div class="gr">3 things need you</div><span class="tag you">SEE ALL →</span></div></div>
+        <div class="tri">
+          <div class="tv"><b>2</b><span>ACTIVE CAMPAIGNS</span></div>
+          <div class="tv"><b>6</b><span>TOTAL CAMPAIGNS</span></div>
+        </div>
+        <div class="kv"><span>Wallet balance</span><b>₹42,600</b></div>
+        <div class="note">Top up now →</div>
+        <div class="fl">Quick actions</div>
+        <div class="fi gone">🌐 Open web dashboard · Full campaign management + analytics</div>
+        <div class="empty" style="padding:12px 4px"><div class="t">No campaigns yet</div>
+          <div class="s" style="color:var(--bad)"><b>Create campaigns from the web dashboard</b></div></div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>Two sentences that are no longer true.</b> Campaign creation has been on
+      the phone since Stage 2, and the empty state — the first thing a new brand ever reads —
+      still sends him away.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Home — after</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">LABEL FERN</div><h2>Good morning</h2></div>
+      <div class="bd">
+        <div class="card pu"><div class="ct pu">● 6 things need you</div>
+          <div class="r"><div class="gr">2 countered your terms<div class="sub">Diwali Saree Edit</div></div><span class="tag you">›</span></div>
+          <div class="r"><div class="gr">1 shoot to arrange<div class="sub">Asha M. · store visit</div></div><span class="tag you">›</span></div>
+          <div class="r"><div class="gr">3 deliverables to review<div class="sub">Winter drop</div></div><span class="tag you">›</span></div>
+          <div class="btn sm">SEE ALL 6</div></div>
+
+        <div class="fl">Your money</div>
+        <div class="tri">
+          <div class="tv"><b>₹42,600</b><span>TO SPEND</span></div>
+          <div class="tv"><b>₹68,400</b><span>FROM SALES</span></div>
+        </div>
+        <div class="note">₹25,920 locked in escrow for creators.</div>
+
+        <div class="fl">Running now</div>
+        <div class="r"><div class="gr">Diwali Saree Edit<div class="sub">2 sets · 8 creators · live 12 Sep</div></div><span class="tag ok">₹18,600</span></div>
+        <div class="r"><div class="gr">Winter drop<div class="sub">1 set · 2 creators · live 4 Oct</div></div><span class="tag">—</span></div>
+
+        <div class="empty" style="padding:14px 4px"><div class="t">No campaigns yet</div>
+          <div class="s">Start one here. It takes a name, a set, and the creators you want.</div>
+          <div class="btn sm" style="margin-top:8px">+ START A CAMPAIGN</div></div>
+      </div>
+      <div class="tabbar"><div class="tb on"><i></i>Home<b>6</b></div><div class="tb"><i></i>Creators<b>3</b></div>
+        <div class="tb"><i></i>Campaigns<b>2</b></div><div class="tb"><i></i>Wallet</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Needs-you first, itemised.</b> Money second, and <b>both wallets</b> — what
+      he can spend and what he has earned. Then what is running. <b>The laptop card is gone</b> and
+      the empty state starts a campaign instead of sending him away.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Everything that needs him</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Home</span><span class="sp"></span></div>
+      <div class="hd"><h2>Needs you · 6</h2></div>
+      <div class="bd">
+        <div class="card pu"><div class="ct pu">Countered your terms · 2</div>
+          <div class="r"><div class="av"></div><div class="gr">Asha M.<div class="sub">wants 18% · same set</div></div><span class="tag you">REVIEW ›</span></div>
+          <div class="r"><div class="av"></div><div class="gr">Nisha P.<div class="sub">wants a different launch day</div></div><span class="tag bad">MOVES HER ›</span></div></div>
+        <div class="card"><div class="ct">Shoots to arrange · 1</div>
+          <div class="r"><div class="av"></div><div class="gr">Asha M.<div class="sub">store visit · no time yet</div></div><span class="tag you">›</span></div></div>
+        <div class="card"><div class="ct">To review · 3</div>
+          <div class="r"><div class="av"></div><div class="gr">Meera S. · reel<div class="sub">2 days waiting</div></div><span class="tag you">›</span></div></div>
+        <div class="card"><div class="ct">Waiting on someone else · 4</div>
+          <div class="r"><div class="gr">3 not answered yet<div class="sub">invitations close 9 Sep</div></div><span class="tag">—</span></div>
+          <div class="r"><div class="gr">1 with admin<div class="sub">shop post in review</div></div><span class="tag">—</span></div></div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> gains <b>countered your terms</b>, and a <b>"waiting on someone
+      else"</b> group — so the badge is only ever things he can act on, and the rest is still
+      visible instead of invisible.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Notifications</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Home</span><span class="sp"></span><span class="bk">Mark all read</span></div>
+      <div class="hd"><h2>Notifications</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr"><b>Asha countered your terms</b><div class="sub">wants 18% · 2h ago</div></div><span class="tag you">NEW</span></div>
+        <div class="r"><div class="gr"><b>Nisha wants a different launch day</b><div class="sub">19 Sep, remote · 4h ago</div></div><span class="tag you">NEW</span></div>
+        <div class="r"><div class="gr"><b>Nisha sent her address</b><div class="sub">remote shoot · yesterday</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr"><b>Meera's shop post was approved</b><div class="sub">4 of 5 done · yesterday</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr"><b>₹1,860 from a sale</b><div class="sub">Asha's post · in your wallet 21 Sep</div></div><span class="tag">›</span></div>
+        <div class="empty" style="padding:14px 4px"><div class="t">No notifications yet</div></div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> five new kinds — countered terms, wants a different day,
+      address sent, shop post approved, money from a sale. <b>Each one opens the exact screen it
+      is about</b>, not the tab it lives in.</p>
+  </div>
+</div>
+
+<div class="row" style="margin-top:15px">
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> The diary</p>
+    <div class="phone keep">
+      <div class="hd"><div class="kick">ASHA M. · LABEL FERN</div><h2>What happened here</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr">You sent the whole deal<div class="sub">2 Sep · 14%, jackets, festive 20%</div></div></div>
+        <div class="r"><div class="gr">She countered<div class="sub">3 Sep · 18% — "below what I take for jackets"</div></div></div>
+        <div class="r"><div class="gr">You agreed 18%<div class="sub">3 Sep</div></div></div>
+        <div class="r"><div class="gr">Both signed<div class="sub">4 Sep</div></div></div>
+        <div class="r"><div class="gr">Store visit settled<div class="sub">8 Sep · 11:00</div></div></div>
+        <div class="note"><b>Settled on 3 Sep</b> — every offer that was ever on the table, both
+          sides, one record.</div>
+      </div>
+    </div>
+    <p class="note"><b>18 lines of code, and it is the right 18.</b> The brand's diary is
+      <b>the same component the creator reads</b>, wired to the brand's calls. Building it twice is
+      how two sides end up telling different stories about one negotiation.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> The first thing a new brand sees</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">LABEL FERN</div><h2>Welcome</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Three things to do</div>
+          <div class="r"><div class="gr"><b>1 · Add your products</b><div class="sub">on the web — it is bulk work</div></div><span class="tag ok">DONE</span></div>
+          <div class="r"><div class="gr"><b>2 · Put money in</b><div class="sub">only needed if you pay for content</div></div><span class="tag you">›</span></div>
+          <div class="r"><div class="gr"><b>3 · Start a campaign</b><div class="sub">a name, a set, and who you want</div></div><span class="tag you">›</span></div></div>
+        <div class="btn">START A CAMPAIGN</div>
+        <div class="note">You can start one without money in the wallet if you are paying
+          creators on sales — nothing is locked for a commission campaign.</div>
+      </div>
+    </div>
+    <p class="note"><b>The one genuinely new screen in B3.</b> Today an empty Home says "no
+      campaigns" and points at a laptop. ⚠️ Adding products <b>is</b> still web work and this says
+      so — the honest answer, not a pretence that everything is on the phone.</p>
+  </div>
+</div>
+
+<div class="why">
+  <b>What B3 costs.</b> One new screen, three changed. The smallest chunk in the programme, and
+  it comes last because Home is a summary of everything else.<br><br>
+  <b>The real find is a sentence, not a screen.</b> "Create campaigns from the web dashboard" is
+  the first thing a brand with no campaigns reads, and it has been wrong since Stage 2 shipped. A
+  screen nobody re-read after the feature it described was replaced.<br><br>
+  <b>Home must stay a summary.</b> Every number on it belongs to a tab, and every tap goes there.
+  The moment Home starts holding work of its own, two screens begin disagreeing about the same
+  count — which is the fault the six-step ladder was built to end.
+</div>
