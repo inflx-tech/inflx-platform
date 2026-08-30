@@ -8,7 +8,7 @@
   "preview_reviewed": false,
   "impact_reviewed": false,
   "mockup_locked": false,
-  "notes": "B1 redrawn 2026-08-30 after founder review: 26 panels covering every control, not just the happy path. Search, filters, date picker, groups, offer builder, empty states, sticky buttons, status chips.",
+  "notes": "B1, third pass 2026-08-30. 32 panels. Founder found three more gaps: the location filter needed a state-then-place cascade, tapping a creator inside a set had no six-step screen drawn, and the creator screen where she sends her address for a remote shoot did not exist at all.",
   "scope": "Only the Campaigns tab of the brand app. The Creators tab is B2, the creator's side is B5, admin is B8.",
   "the_rule": "A set is one aim, one posting date, one shoot mode. Everything else is per creator. Posting date >= today + 7; invitations close 3 days before; a store visit finishes 1 day before.",
   "new_screens": [
@@ -48,9 +48,17 @@
   ],
   "offer_builder_already_exists": "Checked at the founder's instruction. CreatorOfferSheet + offerBuilders.js already ship five types on the phone — Discount, Volume, BOGO, Bundle, Free gift — with library-or-new-or-none, scope (store/category/products), a validity window and a shopper preview. No pre-book on mobile. Documented, not invented.",
   "counts": {
-    "panels": 26,
-    "new": 6,
-    "change": 16,
-    "keep": 4
-  }
+    "panels": 32,
+    "new": 9,
+    "change": 18,
+    "keep": 5
+  },
+  "round_3_gaps_he_found": [
+    "Location filter must cascade: STATE first, then the places inside that state. Was drawn as flat chips.",
+    "Tapping a creator in a set — her six steps from agreed to content were never drawn. The screen exists (BrandCreatorSpineScreen) and I had only shown a two-row snippet.",
+    "Remote shoot: HER screen for entering the address to send goods to. Does not exist anywhere in the app today."
+  ],
+  "location_cascade": "State -> places. Every state and UT listed with a creator count; a state with nobody is greyed and cannot be opened. Inside a state, the first row is \"Everywhere in <state>\" because that is usually the answer, then the actual places with counts. The places are the ones creators are IN — production holds 8 across 6 states — so no catalogue of Indian cities is needed or shipped.",
+  "the_six_steps": "Terms agreed · Signing · The shoot · Shop posts · Going live · Complete. Already built, with STEP_LABELS for the brand and STEP_LABELS_CREATOR for her — one list, two vocabularies. Each step shows whose move it is: YOURS / HERS / BOTH / NOT YOURS / WAITING. CHANGE: step 1 used to mean the handshake; it now means she accepted the whole deal inside the set.",
+  "her_address_screen": "NEW, and a real gap in the live app: the brand side pre-fills her address from her profile and she is never asked. She cannot correct it, so a parcel can go to an old flat. It is the first move of a remote shoot and it belongs to her."
 }
