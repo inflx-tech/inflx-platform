@@ -101,9 +101,12 @@
   <b>Pay for content</b> — his money is <b>locked in escrow</b> when the campaign publishes, then
   released in three tranches: <b>25% when the contract is signed</b>, <b>25% when the content goes
   live</b>, <b>50% after the wait admin sets</b>. He pays whether or not anything sells.<br><br>
-  <b>Pay per sale</b> — <b>nothing is locked and nothing is owed.</b> A follower buys, commission
-  is credited to her <b>pending</b> balance, and it becomes withdrawable after the 30-day return
-  window. He pays out of a sale that already happened.
+  <b>Pay per sale</b> — <b>nothing is locked and nothing is owed.</b> A follower buys; the money
+  arrives at us and splits three ways — <b>her commission</b>, <b>our fee</b>, and <b>what the
+  brand keeps</b>. Hers goes to her pending balance, his to his sales balance, and both free up
+  after the 30-day return window.<br><br>
+  <b>So a brand's wallet has two halves that must never be added together.</b> Campaign money is
+  what he <b>put in</b> to pay creators. Sales money is what he <b>earned</b> and can withdraw.
 </div>
 
 <!-- ═══════════════════════════════════ 1 -->
@@ -290,6 +293,122 @@
     <p class="note">⚠️ <b>She cannot see her tranches today.</b> The word "Tranche Timeline" exists
       on the commission screen, for commission — <b>which has no tranches</b>. The aim that does
       has no screen.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 2b -->
+<div class="flow">2b · The money coming BACK — a sale</div>
+
+<div class="warn">
+  <b>On every real sale, two of the three shares were never worked out.</b><br><br>
+  16 completed sales in production, <b>₹1,65,800 gross</b>.
+  <code>influencer_commission</code> computed on <b>16 of 16</b>.
+  <code>marketplace_fee_amount</code> on <b>0 of 16</b>.
+  <code>brand_net</code> on <b>0 of 16</b>.<br><br>
+  A real row reads: <i>gross 15,000 · creator 2,700 · <b>platform null · brand null</b></i>.<br><br>
+  <b>The creator's cut is calculated and paid. Nobody has ever worked out what the brand is
+  owed.</b> All 16 sit at <code>brand_settlement_status = 'pending'</code> against a null amount.
+  <b>That is the missing piece</b> — not a screen, a calculation.
+</div>
+
+<div class="row">
+  <div class="unit wide">
+    <p class="cap"><span class="pip n">NEW</span> Where a rupee goes</p>
+    <div class="phone">
+      <div class="hd"><h2>One sale, three shares</h2></div>
+      <div class="bd">
+        <div class="kv"><span>A follower pays</span><b class="mid">₹ 15,000</b></div>
+        <div class="kv"><span>Her offer took off 20%</span><span>already in that price</span></div>
+        <div class="card" style="margin-top:10px">
+          <div class="r"><div class="gr"><b>Her commission</b><div class="sub">18% · agreed in the set</div></div><b style="color:var(--pur)">₹ 2,700</b></div>
+          <div class="r"><div class="gr"><b>Our fee</b><div class="sub">the rate you set</div></div><b style="color:var(--adm)">₹ 1,200</b></div>
+          <div class="r"><div class="gr"><b>The brand keeps</b><div class="sub">what is left</div></div><b>₹ 11,100</b></div></div>
+        <div class="card bad"><div class="ct bad">Today, on all 16 real sales</div>
+          <div class="r"><div class="gr">Her commission</div><b style="color:var(--ok)">computed ✓</b></div>
+          <div class="r"><div class="gr">Our fee</div><b style="color:var(--bad)">null</b></div>
+          <div class="r"><div class="gr">The brand's share</div><b style="color:var(--bad)">null</b></div></div>
+        <div class="note"><b>The columns exist and nothing fills them.</b>
+          <code>marketplace_fee_amount</code> and <code>brand_net</code> are on every row of
+          <code>follower_transactions</code>, alongside <code>brand_settlement_status</code> and
+          <code>brand_settled_at</code>. The shape was designed. The arithmetic was never
+          written.</p>
+      </div>
+    </div>
+    <p class="note"><b>Both aims meet here.</b> A pay-for-content creator is paid out of escrow AND
+      earns commission if her post sells — the two are not exclusive. The brand's share is
+      whatever is left after both.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip n">NEW</span> His sales money</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="hd"><h2>Wallet</h2>
+        <div class="seg" style="margin-top:6px"><div class="sg on">Campaign money</div><div class="sg">Sales money</div></div></div>
+      <div class="bd">
+        <div class="note" style="margin:0">Ready to withdraw</div>
+        <div class="big">₹ 68,400</div>
+        <div class="tri">
+          <div class="tv wt"><b>₹22,300</b><span>IN THE RETURN WINDOW</span></div>
+          <div class="tv"><b>₹1,65,800</b><span>SOLD IN ALL</span></div>
+        </div>
+        <div class="card"><div class="ct">Where it came from</div>
+          <div class="kv"><span>Followers paid</span><b>₹1,65,800</b></div>
+          <div class="kv"><span>Creators earned</span><b>− ₹29,958</b></div>
+          <div class="kv"><span>Our fee</span><b>− ₹13,264</b></div>
+          <div class="kv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:6px"><span><b>Yours</b></span><b>₹1,22,578</b></div>
+          <p class="note" style="margin:5px 0 0">₹22,300 of it is still inside the 30-day return
+            window and cannot be withdrawn yet.</p></div>
+        <div class="btn">WITHDRAW ₹68,400</div>
+        <div class="btn gh">SEE EVERY SALE ›</div>
+      </div>
+    </div>
+    <p class="note"><b>Two wallets in one, and they must never be added together.</b> Campaign
+      money is what he <b>put in</b> to pay creators. Sales money is what he <b>earned</b> and can
+      take out. One number covering both would be meaningless.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip n">NEW</span> He withdraws</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="nav"><span class="bk">‹ Wallet</span><span class="sp"></span></div>
+      <div class="hd"><h2>Withdraw sales money</h2></div>
+      <div class="bd">
+        <div class="fl">How much</div><div class="fi">₹ 68,400</div>
+        <div class="seg"><div class="sg on">All of it</div><div class="sg">Some</div></div>
+        <div class="card"><div class="ct">What you receive</div>
+          <div class="kv"><span>You asked for</span><b>₹ 68,400</b></div>
+          <div class="kv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:6px"><span><b>In your account</b></span><b class="mid">₹ 68,400</b></div>
+          <p class="note" style="margin:5px 0 0"><b>No TDS.</b> This is your own sales revenue, not
+            income we paid you — our fee and the creator's commission came off before it reached
+            you.</p></div>
+        <div class="fl">Send it to</div>
+        <div class="fi ro">HDFC ····4821 · Label Fern</div>
+        <div class="btn">REQUEST WITHDRAWAL</div>
+        <div class="note">Admin approves, then it is paid. Usually within 2 working days.</div>
+      </div>
+    </div>
+    <p class="note">⚠️ <b>The table already exists</b> — <code>brand_withdrawals</code>, with
+      status, failure_reason, razorpay_payout_id, and an admin approval path in
+      <code>admin.controller</code>. <b>0 rows, and no screen anywhere.</b></p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip b">BRAND</span> <span class="pip n">NEW</span> Every sale</p>
+    <div class="phone"><div class="who br">BRAND</div>
+      <div class="nav"><span class="bk">‹ Wallet</span><span class="sp"></span></div>
+      <div class="hd"><h2>Sales</h2>
+        <div class="seg" style="margin-top:6px"><div class="sg on">All</div><div class="sg">Free</div><div class="sg">In window</div></div></div>
+      <div class="bd">
+        <div class="r"><div class="gr">Black jacket · M<div class="sub">Asha M. · 14 Sep · free 14 Oct</div></div><div style="text-align:right"><b>₹1,860</b><div class="sub">of ₹2,400</div></div></div>
+        <div class="r"><div class="gr">Beige jacket · S<div class="sub">Asha M. · 15 Sep · free 15 Oct</div></div><div style="text-align:right"><b>₹1,705</b><div class="sub">of ₹2,200</div></div></div>
+        <div class="r"><div class="gr">Linen saree<div class="sub">Meera S. · 2 Sep · <b style="color:var(--ok)">free</b></div></div><div style="text-align:right"><b>₹2,945</b><div class="sub">of ₹3,800</div></div></div>
+        <div class="r"><div class="gr">Cotton shirt<div class="sub">returned 8 Sep</div></div><div style="text-align:right"><b style="color:var(--bad)">− ₹890</b><div class="sub">reversed</div></div></div>
+        <div class="note"><b>Every line shows what he keeps and what it sold for</b>, and which
+          creator drove it. A return reverses both her commission and his share.</div>
+      </div>
+    </div>
+    <p class="note">The reversal columns exist too — <code>commission_reversed</code> and
+      <code>brand_net_reversed</code>. Also never used.</p>
   </div>
 </div>
 

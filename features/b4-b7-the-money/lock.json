@@ -4,14 +4,19 @@
   "status": "awaiting-mockup-lock",
   "approved": false,
   "mockup_locked": false,
-  "notes": "B4 and B7 drawn together — his wallet and her earnings are two ends of one payment. Drawing them apart would mean drawing the same rupee twice.",
+  "notes": "B4 and B7 — the money, both directions. Second pass adds the half I missed: the money coming BACK from a sale, the brand's share of it, and his withdrawal.",
   "the_headline_finding": "⚠️ EVERYTHING ON THESE SCREENS HAS NEVER RUN ONCE. escrow_entries 0 rows · wallet_transactions 0 rows · influencer_withdrawals 0 rows · every brand wallet ₹0 · all 25 creator wallets ₹0 withdrawable and ₹0 pending. The code is there — three tranches, escrow fees, TDS, payouts — and not one rupee has moved through it. The first real payment will be the first test any of it has had.",
   "the_two_aims_are_paid_differently": "Pay for content: his money is LOCKED IN ESCROW at publish, released 25% on contract signed, 25% on content live, 50% after the admin-set wait (trigger_event: contract_signed / content_live / day_30_post_live). He pays whether or not anything sells. Pay per sale: NOTHING is locked and nothing is owed — a follower buys, commission credits her PENDING balance, and it becomes withdrawable after the 30-day return window. He pays out of a sale that already happened. The screens must never blur the two.",
   "three_new_screens_one_omission": "All three are the same fault: the money is built and nobody can see it or reach it. (1) Inside escrow — the wallet shows a locked total with no way to find out what it is for. (2) Her tranche timeline — she cannot see hers; the words 'Tranche Timeline' exist on the COMMISSION screen, for an aim that has no tranches, while the aim that does has no screen. (3) WITHDRAW — there is no withdraw screen at all, though the endpoint, the ₹100 minimum and the 10% TDS are written and waiting.",
   "her_pending_is_one_number_covering_three_waits": "A return window and two dated tranches are three different things. Lumped together they make her think she is owed money nobody plans to send. Broken out by why, each with its date.",
   "tds_gets_a_sentence": "'TDS is a tax deduction, not a fee. You claim it back with Form 16A.' A creator watching 10% disappear needs telling once.",
   "her_profile_gains_one_thing": "A default shipping address, so the remote-shoot screen has something to offer instead of an empty form. NOT 'where you will work' — that is a per-deal answer and lives on the pitch.",
-  "counts": { "panels": 12, "new": 3, "change": 3, "keep": 7 },
+  "counts": {
+    "panels": 16,
+    "new": 7,
+    "change": 3,
+    "keep": 7
+  },
   "release": {
     "qa_all_green": false,
     "released": false,
@@ -20,5 +25,13 @@
     "deploy_targets": [],
     "outward_facing": "None. Nothing is built.",
     "device_walk_required": "NOT YET"
-  }
+  },
+  "the_half_i_missed": {
+    "founder": "\"you handled one side that is pay for content one, what about pay commission and sale one...this gives money to brand..after platform and creator commission and all...here admin decide commission based on industry (it already exists)...withdrawal request from brands need for the money available in wallet......this piece is missing\"",
+    "what_it_is": "A sale sends money TO the platform, which splits three ways: her commission, our fee, and what the brand keeps. The brand then has to be able to withdraw his share. I had drawn only money going IN.",
+    "two_wallets_one_screen": "A brand wallet has two halves that must NEVER be added together. CAMPAIGN MONEY is what he put in to pay creators (top-up, escrow, tranches out). SALES MONEY is what he earned and can take out. One number covering both would be meaningless."
+  },
+  "the_serious_finding": "⚠️ ON EVERY REAL SALE, TWO OF THE THREE SHARES WERE NEVER WORKED OUT. 16 completed sales in production, ₹1,65,800 gross. influencer_commission computed on 16/16. marketplace_fee_amount on 0/16. brand_net on 0/16. A real row reads: gross 15,000 · creator 2,700 · platform NULL · brand NULL. All 16 sit at brand_settlement_status=pending against a null amount. The creator is paid; NOBODY HAS EVER WORKED OUT WHAT THE BRAND IS OWED. That is the missing piece — not a screen, a calculation.",
+  "the_shape_was_designed": "follower_transactions already carries gross_amount, discount_amount, net_amount, influencer_commission, marketplace_fee_amount, brand_net, brand_settlement_status, brand_settled_at, commission_reversed and brand_net_reversed. brand_withdrawals exists as a table — status, failure_reason, razorpay_payout_id — with an admin approval path in admin.controller. 0 rows, no screen anywhere. The shape was designed; the arithmetic was never written and no surface was ever built.",
+  "correction_on_industry_commission": "⚠️ The founder said the industry-based commission already exists. It does NOT, in that form. What exists is payment_config.platform_fee_pct — ONE GLOBAL 8% — and escrow_fee_tiers, which are three tiers by AMOUNT (below ₹5L 3%, ₹5-25L 2%, above ₹25L 1%), not by industry. There is no industry or category commission table. Needs his decision: is the take rate global, by volume tier, or by industry?"
 }
