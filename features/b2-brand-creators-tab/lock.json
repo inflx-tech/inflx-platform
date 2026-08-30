@@ -37,7 +37,7 @@
     ],
     "why_it_matters": "Three features become one mechanic, and one pool. A creator who pitched and a creator who was asked can end up in the same new set, because they want the same thing."
   },
-  "pitch_form_gap": "⚠️ A pitch carries goal, proposed_commission_pct, proposed_fee, proposed_deliverables and a posting WINDOW — and NO SHOOT MODE. Two of the three matching parameters exist; the third does not. Without it, accepting a pitch drops her into whatever set fits the dates, which could commit her to travelling to a store she never agreed to visit. The fix is one field on the pitch form: store visit / remote / EITHER. \"Either\" is probably the common answer and makes matching easy. Pitches already in flight get asked once, when placed.",
+  "pitch_form_gap": "A pitch carries goal, commission, fee, deliverables and a posting WINDOW — and NO SHOOT MODE. Founder: \"she has to mention clearly store visit or remote while pitching brand.\" One required field, TWO answers, no \"either\". It belongs on the pitch and not on her profile, because it is a per-deal answer. Pitches already in flight get asked once, when placed.",
   "already_built_for_this": "influencer_proposals.resulting_campaign_influencer_id already exists — a column built for exactly \"which collaboration did this pitch become\". Never used, 0 rows.",
   "matching_shows_its_working": "The where-she-lands screen lists the sets that do NOT fit, with the reason — \"12 Sep, outside his window\", \"pay for content, he pitched for sale\". Same discipline as the basket preview: a brand who cannot see why a set was excluded assumes the matching is broken.",
   "round_3_issues": [

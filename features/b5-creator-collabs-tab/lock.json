@@ -20,7 +20,12 @@
     "She cannot say where she will work — not in preferences, not on a pitch. Both need the same field, and B2's matching rule depends on it."
   ],
   "reliability_note": "⚠️ Her collab hub carried TWO separate crashes last week — a dead stage vocabulary and a React hook after an early return — and the button that opens the shoot had NO WORDS ON IT from the day Stage 4 shipped. This tab has the worst reliability record in the programme, and it is the one she lives in.",
-  "counts": { "panels": 19, "new": 4, "change": 8, "keep": 8 },
+  "counts": {
+    "panels": 20,
+    "new": 5,
+    "change": 8,
+    "keep": 8
+  },
   "shared_backend_with_b2": "The negotiation must hang off her row in a set rather than a standalone request. One piece of backend work serves both apps.",
   "release": {
     "qa_all_green": false,
@@ -30,5 +35,11 @@
     "deploy_targets": [],
     "outward_facing": "None. Nothing is built.",
     "device_walk_required": "NOT YET"
-  }
+  },
+  "founder_answered_all_three": {
+    "live_links": "TWO RULES, by aim. Pay for content: one link per thing they bought, ALL required, each confirmed by the brand, and her second payment waits on them. Pay per sale: ONE link, for reference — \"just a reference to him..just he uploads atleast one for reference how he is promoting his business\" — gating nothing. Her money comes from her tracking link, not from this.",
+    "completion": "TWO ENDINGS. Pay per sale: done when her content is live on social. The campaign itself runs on and keeps paying her — \"no end for commission campaign but....till content submitted in socialmedia is completion of process\". Pay for content: done when the FINAL payment for deliverables lands, after the admin-set wait. Neither ending is \"when the deliverables run out\", which is why nothing could compute it before.",
+    "where_she_works": "On the PITCH, required, two answers — store visit or remote, no \"either\". \"she has to mention clearly store visit or remote while pitching brand.\" NOT a standing profile setting: I had proposed one and it is wrong, because it is a per-deal answer. She may visit a shop down the road and want remote for one three cities away."
+  },
+  "what_this_still_needs": "All three answers land on the same missing piece: a place to record a live post that is NOT a deliverable. One table, one row per live post, per collaboration — required and countable for content, optional and singular for commission. Stage 4."
 }
