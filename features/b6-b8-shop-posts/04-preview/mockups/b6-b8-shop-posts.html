@@ -1,0 +1,358 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>B6 + B8 · Shop posts — her Create tab and your admin desk</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--adm:#0F766E;--admbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDED;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:26px;color:var(--ink)}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em}
+  .lede{max-width:980px;font-size:13.5px;color:#555;line-height:1.65;margin:0 0 4px}
+  .rule{max-width:980px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:12.5px;line-height:1.65;margin:16px 0 8px}
+  .rule b{color:var(--ink)}
+  .flow{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--pur);color:var(--pur);font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .flow.a{border-bottom-color:var(--adm);color:var(--adm)}
+  .row{display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start}
+  .unit{width:292px}
+  .unit.wide{width:600px}
+  .cap{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 6px 2px;display:flex;align-items:center;gap:5px;min-height:24px}
+  .pip{font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;letter-spacing:.04em;color:#fff}
+  .pip.n{background:var(--new)} .pip.c{background:var(--acc)} .pip.k{background:var(--mut2)}
+  .pip.a{background:var(--adm)}
+  .phone{background:#fff;border:2px solid var(--pur);border-radius:13px;overflow:hidden}
+  .phone.keep{opacity:.72;border-color:var(--line);border-width:1px}
+  .desk{background:#fff;border:2px solid var(--adm);border-radius:10px;overflow:hidden}
+  .nav{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--soft);font-size:11px;color:var(--mut)}
+  .nav .bk{font-weight:900;color:var(--ink)} .nav .sp{flex:1}
+  .hd{padding:10px 12px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:15px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:10px 12px}
+  .tabbar{display:flex;border-top:1px solid var(--line);background:#FCFCFC}
+  .tb{flex:1;text-align:center;padding:7px 0 6px;font-size:7.5px;font-weight:800;color:var(--mut2)}
+  .tb.on{color:var(--ink)}
+  .tb i{display:block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;margin:0 auto 3px}
+  .tb b{display:inline-block;background:var(--pur);color:#fff;border-radius:7px;font-size:7px;padding:0 4px;margin-left:2px}
+  .sticky{border-top:1px solid var(--line);padding:9px 12px;background:#fff}
+  .fl{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:9px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:8px;padding:8px 9px;margin-top:4px;font-size:12px}
+  .fi.ph{color:var(--mut2)} .fi.ro{background:#FAFAFA;color:#666}
+  .fi.go::after{content:'›';float:right;color:var(--mut2)}
+  .seg{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+  .sg{flex:1;min-width:52px;border:1px solid var(--line);border-radius:7px;padding:6px 3px;text-align:center;font-size:10px;font-weight:700;color:#666}
+  .sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+  .ch{border:1px solid var(--line);border-radius:20px;padding:4px 9px;font-size:10px;font-weight:700;color:#666}
+  .ch.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn{margin-top:9px;background:var(--pur);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:.05em}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .btn.dis{background:#E8E8E8;color:#AAA}
+  .btn.dngr{background:#fff;color:var(--bad);border:1px solid #E7BDB4}
+  .btn.adm{background:var(--adm)}
+  .btn.sm{padding:7px;font-size:10px;margin-top:6px}
+  .note{font-size:10px;color:var(--mut);margin-top:6px;line-height:1.5}
+  .note b{color:var(--ink)}
+  .empty{text-align:center;padding:18px 6px;color:var(--mut2)}
+  .empty .t{font-size:13px;font-weight:800;color:var(--mut);margin-bottom:4px}
+  .empty .s{font-size:10.5px;line-height:1.5}
+  .r{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--soft);font-size:12px}
+  .r:first-child{border-top:none}
+  .av{width:25px;height:25px;border-radius:13px;background:#EEE;flex:0 0 auto}
+  .thm{width:34px;height:44px;border-radius:5px;background:#E9E9E9;flex:0 0 auto}
+  .gr{flex:1;min-width:0} .sub{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .tag{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;background:var(--soft);color:#555;white-space:nowrap}
+  .tag.you{background:var(--purbg);color:var(--pur)} .tag.ok{background:var(--okbg);color:var(--ok)}
+  .tag.bad{background:var(--badbg);color:var(--bad)} .tag.wt{background:#EEF2FF;color:#1D4ED8}
+  .card{border:1px solid var(--line);border-radius:9px;padding:9px;margin-top:8px}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .card.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .card.pu{border-color:#DDD6FE;background:var(--purbg)}
+  .card.ad{border-color:#99F6E4;background:var(--admbg)}
+  .ct{font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+  .ct.ok{color:var(--ok)} .ct.bad{color:var(--bad)} .ct.pu{color:var(--pur)} .ct.ad{color:var(--adm)}
+  .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0}
+  .kv span:first-child{color:var(--mut)} .kv b{font-weight:800}
+  .wz{display:flex;gap:3px;margin-top:8px}
+  .wc{flex:1;height:3px;background:var(--soft);border-radius:2px}
+  .wc.on{background:var(--ink)} .wc.done{background:var(--mut2)}
+  .wl{display:flex;gap:3px;margin-top:4px;font-size:7.5px;font-weight:800;color:var(--mut2);text-transform:uppercase}
+  .wl span{flex:1;text-align:center} .wl span.on{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}
+  .gi{aspect-ratio:3/4;background:#E9E9E9;border-radius:6px;position:relative}
+  .gi span{position:absolute;bottom:3px;left:3px;font-size:7px;font-weight:900;background:#fff;padding:1px 4px;border-radius:3px}
+  .why{max-width:980px;font-size:12.5px;color:#555;line-height:1.7;margin-top:18px;background:#fff;border-left:3px solid var(--pur);padding:11px 14px;border-radius:0 8px 8px 0}
+  .why b{color:var(--ink)}
+  .warn{max-width:980px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
+  .warn b{color:var(--bad)}
+</style>
+
+<h1>B6 + B8 · Shop posts — her Create tab, and your admin desk</h1>
+<p class="lede">
+  Two halves of one flow: she builds shoppable posts on INFLX, <b>you</b> approve them. Drawn
+  together because neither makes sense alone.
+  <span class="pip n">NEW</span> · <span class="pip c">CHANGE</span> ·
+  <span class="pip k">KEEP</span> · <span class="pip a">ADMIN</span>
+</p>
+<div class="rule">
+  <b>Shop posts have no deadline.</b> She builds them any time — before the shoot, after it,
+  whenever. They only have to be <b>approved before the launch day</b>, or a follower who taps her
+  link arrives at an empty shelf.<br><br>
+  <b>Admin approves them, not the brand.</b> That was a founder lock and it stays: a brand
+  reviewing a creator's shop posts would be a brand editing her storefront.<br><br>
+  <b>A minimum applies per collaboration</b> — you set it, say five — so nobody launches with one
+  product and a dead link.
+</div>
+
+<!-- ═══════════════════════════════════ 1 -->
+<div class="flow">1 · Her Create tab</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Create — the hub</p>
+    <div class="phone">
+      <div class="hd"><h2>Create</h2></div>
+      <div class="bd">
+        <div class="card pu"><div class="ct pu">● For Label Fern · live 12 Sep</div>
+          <div style="font-size:15px;font-weight:900;margin-top:2px">2 more shop posts</div>
+          <div class="note" style="margin-top:2px">You have 3 of the 5 they need. Build them any
+            time — they just have to be approved before the 12th.</div>
+          <div class="btn" style="margin-top:8px">MAKE ONE FOR THIS</div></div>
+        <div class="r"><div class="gr"><b>New post</b><div class="sub">Concept → photos → tag products</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr"><b>My store</b><div class="sub">Arrange what followers see first</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr"><b>Your posts</b><div class="sub">3 live · 1 waiting · 1 sent back</div></div><span class="tag you">1</span></div>
+      </div>
+      <div class="tabbar"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Collabs</div>
+        <div class="tb on"><i></i>Create<b>2</b></div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> the tab now opens with <b>what a live collaboration still needs
+      from her</b>. Today it is two neutral buttons and no idea that five posts are owed by the
+      12th.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> Your posts — the list she never had</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Create</span><span class="sp"></span></div>
+      <div class="hd"><h2>Your posts</h2>
+        <div class="chips"><span class="ch on">All 5</span><span class="ch">Live 3</span><span class="ch">Waiting 1</span><span class="ch">Sent back 1</span></div></div>
+      <div class="bd">
+        <div class="r"><div class="thm"></div><div class="gr">Jacket, three ways<div class="sub">Label Fern · 4 products</div></div><span class="tag ok">LIVE</span></div>
+        <div class="r"><div class="thm"></div><div class="gr">Layering for autumn<div class="sub">Label Fern · 3 products</div></div><span class="tag ok">LIVE</span></div>
+        <div class="r"><div class="thm"></div><div class="gr">Beige everything<div class="sub">Label Fern · 5 products</div></div><span class="tag wt">WAITING</span></div>
+        <div class="r"><div class="thm"></div><div class="gr">Street style<div class="sub">Label Fern · 2 products</div></div><span class="tag bad">SENT BACK</span></div>
+        <div class="card bad"><div class="ct bad">Sent back · blurry images</div>
+          <p class="note" style="margin:0">"Photos 2 and 4 are out of focus. Re-shoot those and
+            send it again."</p>
+          <div class="btn sm" style="margin-top:7px">FIX AND RESEND</div></div>
+      </div>
+      <div class="sticky"><div class="btn" style="margin:0">+ NEW POST</div></div>
+    </div>
+    <p class="note">⚠️ <b>She has no way to see her own posts today.</b> One was rejected in
+      production and there is no screen that tells her, or lets her fix it. <b>The reason is
+      already stored</b> — nothing reads it back to her.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> The composer · five steps</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Cancel</span><span class="sp"></span><span style="font-size:10px">1 of 5</span></div>
+      <div class="hd"><h2>Who is this for?</h2>
+        <div class="wz"><div class="wc on"></div><div class="wc"></div><div class="wc"></div><div class="wc"></div><div class="wc"></div></div>
+        <div class="wl"><span class="on">Brand</span><span>Concept</span><span>Photos</span><span>Products</span><span>Finish</span></div></div>
+      <div class="bd">
+        <div class="card pu"><div class="ct pu">Owed right now</div>
+          <div class="r"><div class="gr">Label Fern<div class="sub">Diwali Saree Edit · 2 more by 12 Sep</div></div><span class="tag you">PICK</span></div></div>
+        <div class="fl">Or any brand you work with</div>
+        <div class="srch" style="border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-top:4px;font-size:12px;color:var(--mut2)">⌕ &nbsp;Search your brands…</div>
+        <div class="r"><div class="av"></div><div class="gr">Yoy Clothing<div class="sub">no collaboration open</div></div><span class="tag">PICK</span></div>
+        <div class="empty" style="padding:12px 4px"><div class="t">No collaborations yet</div>
+          <div class="s">Accept a collaboration and the brand appears here.</div></div>
+      </div>
+      <div class="sticky"><div class="btn dis" style="margin:0">CONTINUE</div></div>
+    </div>
+    <p class="note">⚠️ <b>The one change that matters.</b> A post is tied to a <b>brand</b> today,
+      not to a collaboration — so nothing can count "5 of 5 for Label Fern's September set". Step 1
+      now offers the open collaborations first.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP ×4</span> Steps 2 to 5</p>
+    <div class="phone keep">
+      <div class="hd"><h2>The rest of the composer</h2>
+        <div class="wz"><div class="wc done"></div><div class="wc on"></div><div class="wc on"></div><div class="wc on"></div><div class="wc on"></div></div>
+        <div class="wl"><span>Brand</span><span class="on">Concept</span><span class="on">Photos</span><span class="on">Products</span><span class="on">Finish</span></div></div>
+      <div class="bd">
+        <div class="r"><div class="gr"><b>2 · Concept</b><div class="sub">Choose concept · pick a category</div></div><span class="tag">KEEP</span></div>
+        <div class="r"><div class="gr"><b>3 · Photos</b><div class="sub">Choose post type · upload</div></div><span class="tag">KEEP</span></div>
+        <div class="grid"><div class="gi"><span>1</span></div><div class="gi"><span>2</span></div><div class="gi"><span>3</span></div></div>
+        <div class="r" style="margin-top:8px"><div class="gr"><b>4 · Products</b><div class="sub">Select products · tag each photo</div></div><span class="tag">KEEP</span></div>
+        <div class="note">"Which of your selected products is this?" — one tap per photo.</div>
+        <div class="r"><div class="gr"><b>5 · Finish</b><div class="sub">Caption · price-tag style</div></div><span class="tag">KEEP</span></div>
+      </div>
+      <div class="sticky"><div class="btn" style="margin:0">SEND FOR REVIEW</div></div>
+    </div>
+    <p class="note"><b>All four already work.</b> Only step 1 changes, and the last button gains a
+      line: <b>"Admin checks it, usually within a day."</b></p>
+  </div>
+</div>
+
+<div class="row" style="margin-top:15px">
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> My store</p>
+    <div class="phone keep">
+      <div class="hd"><h2>My store</h2>
+        <div class="note" style="margin-top:2px">Arrange what followers see first</div></div>
+      <div class="bd">
+        <div class="fi ph">Section name</div>
+        <div class="fi ph">chip label</div>
+        <div class="note">Pick the photo that fronts this banner</div>
+        <div class="grid"><div class="gi"></div><div class="gi"></div><div class="gi"></div></div>
+        <div class="btn gh">PREVIEW — YOUR STORE'S TOP</div>
+        <div class="btn">SAVE — LIVE INSTANTLY</div>
+        <div class="empty" style="padding:12px 4px"><div class="t">No live posts yet</div>
+          <div class="s">Approved posts appear here to arrange.</div></div>
+      </div>
+    </div>
+    <p class="note">Unchanged. <b>"Save — live instantly"</b> is right: arranging is not
+      publishing, so it needs no review.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> What she is told when it is approved</p>
+    <div class="phone">
+      <div class="hd"><h2>Notifications</h2></div>
+      <div class="bd">
+        <div class="card ok"><div class="ct ok">Approved</div>
+          <p class="note" style="margin:0">"Beige everything is live on your store. <b>4 of 5 done
+            for Label Fern.</b>"</p></div>
+        <div class="card bad"><div class="ct bad">Sent back</div>
+          <p class="note" style="margin:0">"Street style needs a fix — blurry images. Photos 2 and
+            4 are out of focus."</p>
+          <div class="btn sm" style="margin-top:7px">OPEN IT</div></div>
+        <div class="card pu"><div class="ct pu">Reminder · 3 days to go</div>
+          <p class="note" style="margin:0">"Label Fern goes live on 12 Sep. You have 4 of 5 shop
+            posts approved."</p></div>
+      </div>
+    </div>
+    <p class="note"><b>The count travels with every message.</b> "4 of 5" is the only number she
+      needs and it appears everywhere — the tab, the composer, the notification.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> The launch gate</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">LABEL FERN · 12 SEP</div><h2>Go live</h2></div>
+      <div class="bd">
+        <div class="card bad"><div class="ct bad">Not yet</div>
+          <div class="kv"><span>Shop posts approved</span><b>4 of 5</b></div>
+          <p class="note" style="margin:5px 0 0">One more has to be approved before you post. A
+            follower who taps your link needs something to buy.</p>
+          <div class="btn sm" style="margin-top:7px">MAKE THE LAST ONE</div></div>
+        <div class="btn dis">PASTE YOUR LINK</div>
+        <div class="note">Unlocks when all five are approved.</div>
+      </div>
+    </div>
+    <p class="note"><b>The only place the minimum bites.</b> It never blocks her from building,
+      only from going live — and it tells her exactly what is missing.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ 2 -->
+<div class="flow a">2 · Your admin desk</div>
+<div class="row">
+
+  <div class="unit wide">
+    <p class="cap"><span class="pip a">ADMIN</span> <span class="pip c">CHANGE</span> The post queue</p>
+    <div class="desk">
+      <div class="hd" style="background:var(--admbg)"><div class="kick" style="color:var(--adm)">ADMIN · BRAND-WEB</div><h2>Post Queue</h2>
+        <div class="chips"><span class="ch on">Awaiting review 6</span><span class="ch">Approved 41</span><span class="ch">Rejected 3</span></div></div>
+      <div class="bd">
+        <div class="r"><div class="thm"></div>
+          <div class="gr">Beige everything<div class="sub">Asha M. · Label Fern · 5 products</div>
+            <div class="sub" style="color:var(--pur)"><b>Launches 12 Sep · 4 of 5 approved</b></div></div>
+          <div style="display:flex;gap:5px"><span class="tag ok">APPROVE</span><span class="tag bad">SEND BACK</span></div></div>
+        <div class="r"><div class="thm"></div>
+          <div class="gr">Street style<div class="sub">Asha M. · Label Fern · 2 products</div>
+            <div class="sub">no launch date</div></div>
+          <div style="display:flex;gap:5px"><span class="tag ok">APPROVE</span><span class="tag bad">SEND BACK</span></div></div>
+        <div class="r"><div class="thm"></div>
+          <div class="gr">Winter layers<div class="sub">Meera S. · Yoy Clothing · 3 products</div>
+            <div class="sub" style="color:var(--bad)"><b>Launches in 2 days · 1 of 3 approved</b></div></div>
+          <div style="display:flex;gap:5px"><span class="tag ok">APPROVE</span><span class="tag bad">SEND BACK</span></div></div>
+        <div class="empty" style="padding:14px 4px"><div class="t">Nothing awaiting review</div></div>
+      </div>
+    </div>
+    <p class="note"><b>Built and working.</b> Three tabs, counts, approve, and send back with a
+      reason — the placeholder already reads <i>"blurry images / wrong products tagged /
+      off-concept"</i>.<br><br>
+      <b>Two changes:</b> every row now shows <b>which collaboration it belongs to and when that
+      launches</b>, and the queue <b>sorts by launch date</b> — so the one that launches in two
+      days is at the top, not the one that arrived first. Today the queue has no idea a deadline
+      exists.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip a">ADMIN</span> <span class="pip k">KEEP</span> Sending one back</p>
+    <div class="desk">
+      <div class="hd"><h2>Send back</h2></div>
+      <div class="bd">
+        <div class="r"><div class="thm"></div><div class="gr">Street style<div class="sub">Asha M. · Label Fern</div></div></div>
+        <div class="fl">Reason</div>
+        <div class="fi ph">e.g. blurry images / wrong products tagged / off-concept</div>
+        <div class="note">She sees this word for word. Say what to fix, not what is wrong.</div>
+        <div class="btn adm">SEND IT BACK</div>
+        <div class="btn gh">CANCEL</div>
+      </div>
+    </div>
+    <p class="note"><b>Unchanged.</b> The reason is already stored and already sent — ⚠️ <b>her app
+      just has no screen that shows it.</b> That is B6's job, not this one's.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip a">ADMIN</span> <span class="pip n">NEW</span> Two settings</p>
+    <div class="desk">
+      <div class="hd" style="background:var(--admbg)"><div class="kick" style="color:var(--adm)">ADMIN · APP SETTINGS</div><h2>Collaborations</h2></div>
+      <div class="bd">
+        <div class="fl">Shop posts required per collaboration</div>
+        <div class="fi">5</div>
+        <div class="note">She cannot go live until this many are approved. Applies to every
+          collaboration, both aims.</div>
+
+        <div class="fl">Wait before the final payment</div>
+        <div class="seg"><div class="sg">7 days</div><div class="sg on">15 days</div><div class="sg">30 days</div></div>
+        <div class="note">Pay-for-content only. Her last 50% releases this long after the content
+          goes live. <b>Today this is hard-coded at 30.</b></div>
+
+        <div class="card ad"><div class="ct ad">What changing these does</div>
+          <p class="note" style="margin:0">Both apply to <b>collaborations agreed from now on</b>.
+            Anyone already signed keeps what they were promised.</p></div>
+        <div class="btn adm">SAVE</div>
+      </div>
+    </div>
+    <p class="note"><b>Both are new and both are small.</b> The minimum has never existed; the wait
+      is hard-coded at 30 days in the escrow service.</p>
+  </div>
+</div>
+
+<div class="warn">
+  <b>One thing has to change in the database before any of this works.</b><br><br>
+  A shop post is tied to a <b>brand</b> — <code>creator_posts.scope</code> and
+  <code>scoped_brand_ids</code>. It has <b>no idea which collaboration it belongs to</b>.<br><br>
+  So nothing can answer "how many has she done for Label Fern's September set?" — which is the
+  number the minimum, the launch gate, the reminder, the notification and the admin queue's sort
+  order all depend on. <b>Five features, one missing column.</b><br><br>
+  <b>The fix is one nullable column</b>, <code>campaign_influencer_id</code>, on
+  <code>creator_posts</code>. Nullable because a creator may build a post for her own store with
+  no collaboration behind it, and that must stay possible.
+</div>
+
+<div class="why">
+  <b>What B6 and B8 cost.</b> Four new screens on her side, one on admin, two settings. Six kept.<br><br>
+  <b>Almost all of it exists.</b> The five-step composer works. The admin queue works — three
+  tabs, counts, approve, send back with a reason. What is missing is the <b>thread between
+  them</b>: a post does not know its collaboration, so nobody can count, sort, remind or gate.<br><br>
+  ⚠️ <b>And she cannot see her own posts.</b> One was rejected in production, with a reason
+  stored, and there is no screen in her app that shows it to her or lets her fix it.
+</div>
