@@ -8,7 +8,7 @@
   "preview_reviewed": false,
   "impact_reviewed": false,
   "mockup_locked": false,
-  "notes": "B1 of the eight chunks. Brand app, Campaigns tab: 22 screens — 3 new, 15 changed, 4 untouched. Screens drawn and every button specified. NOTHING IS BUILT until the founder locks the mockups.",
+  "notes": "B1 redrawn 2026-08-30 after founder review: 26 panels covering every control, not just the happy path. Search, filters, date picker, groups, offer builder, empty states, sticky buttons, status chips.",
   "scope": "Only the Campaigns tab of the brand app. The Creators tab is B2, the creator's side is B5, admin is B8.",
   "the_rule": "A set is one aim, one posting date, one shoot mode. Everything else is per creator. Posting date >= today + 7; invitations close 3 days before; a store visit finishes 1 day before.",
   "new_screens": [
@@ -29,5 +29,28 @@
     "deploy_targets": [],
     "outward_facing": "None. Nothing is built.",
     "device_walk_required": "NOT YET"
+  },
+  "founder_caught_me_on": [
+    "campaign list with status",
+    "sticky bottom create button",
+    "add your FIRST set vs add ANOTHER set",
+    "search in the creators step",
+    "the groups picker",
+    "the filter picker and what is in it",
+    "the date picker itself",
+    "offer: pick existing vs build new, and what build-new contains"
+  ],
+  "the_filter": "Five, per the founder: State (India, state-wise, searchable chips) · Language · Niche · Follower tier (nano/micro/mid/macro/mega) · Engagement rate (four coarse bands). All five are backed by real columns on influencers.",
+  "deferral_flow_corrected": "The founder replaced my design. Mine: pick an existing matching set. His: she leaves the set, the brand chooses DISAGREE (it ends) or MOVE HER OUT (she waits in a deferred pool), and later a NEW SET IS BUILT FROM the deferred, grouped by date + mode. No matching set has to exist first. Building one opens the wizard at step 2 with the date, mode and creators pre-filled.",
+  "data_warnings": [
+    "influencers.language is EMPTY on all 25 rows — the filter will match nobody until creators can set it, which is a B7 profile change.",
+    "Engagement rate was deliberately REMOVED from creator search once, with a written reason. The founder wants it back; drawn as four coarse bands rather than a number box."
+  ],
+  "offer_builder_already_exists": "Checked at the founder's instruction. CreatorOfferSheet + offerBuilders.js already ship five types on the phone — Discount, Volume, BOGO, Bundle, Free gift — with library-or-new-or-none, scope (store/category/products), a validity window and a shopper preview. No pre-book on mobile. Documented, not invented.",
+  "counts": {
+    "panels": 26,
+    "new": 6,
+    "change": 16,
+    "keep": 4
   }
 }
