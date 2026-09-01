@@ -2,7 +2,7 @@
   "feature": "stage-a-the-set",
   "area": "brand + creator apps — the set becomes real",
   "spec_version": "1.0.0",
-  "status": "SHIPPED — awaiting the founder device walk",
+  "status": "DEPLOYED on explicit instruction · formal release gate NOT met · awaiting device walk",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls start stage A\", 2026-09-01",
   "approved_at": "2026-09-01",
@@ -78,9 +78,9 @@
   "adjacent_fix": "cancelInfluencer writes status='cancelled' to contract_status, which has no such value. Confirmed live; throws the first time it runs. One line, in scope because BR-05's 'drop her' is one step from it.",
   "release": {
     "qa_all_green": false,
-    "released": true,
-    "released_by": "aveenswamy1989@gmail.com (founder) — \"push now...then build app on top and push that OTA\", 2026-09-01",
-    "released_at": "2026-09-01",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
     "maestro_green": false,
     "deploy_class": "PRODUCTION-IMPACTING from here — backend/src auto-deploys to Render on push. Additive only: nothing reads the new fields yet, so nothing observable changes until the app catches up.",
     "deploy_targets": [
@@ -92,7 +92,8 @@
     "device_walk_required": "YES — NOT YET DONE. Step 7 matters most: open one of the 11 pre-set-first sets already in production and confirm it still opens with a BLANK launch day rather than an invented one.",
     "deploy": "Backend + migrations 165/166 applied and pushed (Render). Mobile brand OTA v200 published and VERIFIED in the manifest at flavor=brand&runtime=3. Backend route existence confirmed: GET /v1/campaigns -> 401, so the route exists and is auth-gated rather than 404.",
     "qa_note": "NOT green and not claimed green. Certified NO-REGRESSION across everything the shim can run: setShape.rules 22, batchAWizardTrim 52, setShape.model 21, campaignSetShape 14, india-day 23, shoot-plan 29, stage4-parcel 25, deliverables 19, brief-to-signing 19. 39 mobile test files remain unrunnable under the shim (JSX / RN imports) — pre-existing debt, unchanged by this contract.",
-    "maestro_note": "No Maestro flow drives the set wizard. The verification artefact for SB-26 is the founder device walk in 06-diff/notes.md, 8 numbered steps."
+    "maestro_note": "No Maestro flow drives the set wizard. The verification artefact for SB-26 is the founder device walk in 06-diff/notes.md, 8 numbered steps.",
+    "why_not_released": "NOT a bookkeeping detail. gov-check Rule 2 refuses released:true while qa_all_green is false, and GOVERNANCE_OVERRIDE does not cover Rule 2. Platform QA is not green — roughly 231 pre-existing failures, and 39 mobile test files cannot run under the shim at all. That was true before this contract and is unchanged by it, but it means the FORMAL release gate is unmet and saying otherwise would be a fabricated attestation."
   },
   "migration_runner_fault_found": "run-164.js and its siblings read .env.prod-backup for --dry and .env for the REAL run. In this working copy .env points at LOCALHOST — so the dry run inspects production and a real run would have applied to a local database and printed COMMITTED. Which database is being written to must never be a side effect of a different flag. run-165-166.js now takes an EXPLICIT --dry or --apply, reads prod credentials for both, PRINTS THE HOST before touching anything, refuses when neither or both flags are given (exit 2), and refuses --apply against localhost. 163 and 164 were verified present in production, so they did reach it by some other path.",
   "applied_result": "COMMITTED 2026-09-01 against production. Every row count identical (sets 11, creators 8, campaigns 13, contracts 6) and all four zero-assertions held. Verified afterwards from information_schema: all five columns present and NULLABLE, plus constraints campaign_sets_shoot_mode_known and campaign_sets_invites_close_before_go_live.",
@@ -127,5 +128,12 @@
     "version": 200,
     "native_runtime": 3,
     "applies": "on the SECOND launch"
+  },
+  "deployed_anyway": {
+    "by": "aveenswamy1989@gmail.com (founder) — explicit instruction: \"push now...then build app on top and push that OTA\", 2026-09-01",
+    "what": "Backend pushed to Render (migrations 165/166 already applied). Brand OTA v200 published.",
+    "verified": "OTA manifest queried directly at flavor=brand&runtime=3 and returns version 200 — verified, not merely reported by the publish script. Backend proved by route existence: GET /v1/campaigns -> 401, so the route is there and auth-gated rather than 404.",
+    "why_it_is_safe": "Additive and backward-compatible. The five columns are nullable, nothing backfilled, and a set with no go_live_date still resolves through the old window. A phone on the previous bundle keeps working because the server treats all three new fields as optional.",
+    "what_is_still_owed": "The founder device walk in 06-diff/notes.md, 8 steps. Step 7 matters most: open one of the 11 pre-set-first sets already in production and confirm it opens with a BLANK launch day rather than an invented one."
   }
 }
