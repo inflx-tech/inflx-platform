@@ -1,0 +1,436 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Action Book 2 · Committing</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--soft:#F5F5F5;--acc:#E36414;
+        --ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--br:#1D4ED8;--brbg:#EEF2FF;--cr:#0F766E;--crbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);padding:26px 24px 90px;max-width:960px;
+       font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+  h1{font-size:28px;margin:0 0 5px;letter-spacing:-.03em}
+  .lede{font-size:13.5px;color:#555;margin:0 0 18px}
+  .lede b{color:var(--ink)}
+  .key{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin:0 0 10px}
+  .act{border-top:2px solid var(--ink);padding-top:14px;margin:30px 0 0}
+  .ah{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .ah .c{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:900;letter-spacing:-.02em}
+  .ah .t{font-size:19px;font-weight:800;letter-spacing:-.025em}
+  .v{font-size:8px;font-weight:900;padding:2.5px 6px;border-radius:4px;color:#fff;letter-spacing:.05em}
+  .v.n{background:var(--new)} .v.c{background:var(--acc)} .v.k{background:#B0B0B0}
+  .two{background:var(--purbg);color:var(--pur);border:1px solid #DDD6FE;
+       font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;margin:9px 0 0;color:#444}
+  .meta .l{font-size:8.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+           color:var(--mut);display:block;margin-bottom:1px}
+  .sc a{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;font-weight:800;
+        padding:2px 5px;border-radius:4px;border:1px solid var(--line);text-decoration:none;
+        color:#444;margin-right:3px;display:inline-block}
+  .sc a.b{background:var(--brbg);border-color:#C7D2FE;color:var(--br)}
+  .sc a.c{background:var(--crbg);border-color:#A7D8CB;color:var(--cr)}
+  .lab{font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--mut);margin:18px 0 5px}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 0 30px;margin:0 0 9px;font-size:13.5px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;
+       border-radius:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:900;
+       display:flex;align-items:center;justify-content:center}
+  .fork{border-left:3px solid var(--acc);padding:2px 0 2px 11px;margin:7px 0;font-size:13px}
+  .fork .fk{font-weight:900;color:var(--acc);font-size:11px;letter-spacing:.03em}
+  .fork.o{border-color:var(--ok)} .fork.o .fk{color:var(--ok)}
+  .fork.b{border-color:var(--bad)} .fork.b .fk{color:var(--bad)}
+  table.both{border-collapse:collapse;width:100%;margin:6px 0 0;font-size:12.5px}
+  table.both th{width:50%;text-align:left;padding:6px 10px;font-size:9px;font-weight:900;
+       letter-spacing:.08em;text-transform:uppercase}
+  table.both th.b{background:var(--brbg);color:var(--br)}
+  table.both th.c{background:var(--crbg);color:var(--cr)}
+  table.both td{border:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  table.both td.moment{background:var(--soft);font-size:11px;font-weight:800;color:#555;
+       text-align:center;letter-spacing:.04em;text-transform:uppercase;border-left:none;border-right:none}
+  table.tr{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 0}
+  table.tr th{text-align:left;padding:6px 9px;font-size:9px;font-weight:900;letter-spacing:.07em;
+       text-transform:uppercase;color:var(--mut);border-bottom:1.5px solid var(--ink)}
+  table.tr td{border-bottom:1px solid var(--line);padding:7px 9px;vertical-align:top}
+  ul.tight{margin:0;padding-left:17px;font-size:13px}
+  ul.tight li{margin:0 0 4px}
+  .wrong{border:1px solid #E7BDB4;background:var(--badbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .wrong .w{font-weight:800;color:var(--bad)}
+  .fixed{border:1px solid #BFE0CF;background:var(--okbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .fixed .w{font-weight:800;color:var(--ok)}
+  .data{border:1px solid var(--line);background:#FAFAFA;border-radius:9px;padding:10px 13px;
+        font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .data b{font-family:-apple-system,Segoe UI,sans-serif}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--soft);
+       padding:1px 4px;border-radius:3px}
+  .rule{background:var(--purbg);border:1px solid #DDD6FE;border-radius:9px;padding:11px 14px;
+        font-size:13px;margin:10px 0}
+  .rule b{color:var(--pur)}
+</style>
+
+<h1>Action Book 2 · Committing</h1>
+<p class="lede">
+  Turning an agreement into a contract. <b>7 actions</b> — 5 the brand starts, 2 the creator.
+  Only one of them is new, and it is the one that replaces an entire screen the founder used to
+  fill in twice.<br>
+  Screens are referenced by address, never redrawn.
+</p>
+
+<div class="key">
+  <span class="v n">NEW</span> does not exist ·
+  <span class="v c">CHANGE</span> exists and changes ·
+  <span class="v k">KEEP</span> works as it is ·
+  <span class="two">BOTH</span> two people, so both phones are shown at the moment it matters
+</div>
+
+<div class="rule">
+  <b>Why this phase used to be two phases.</b> Before set-first there was an agreement, and then
+  a separate second brief that asked for commission, deliverables, allocation, offer and channels
+  all over again. <b>BR-10 is that entire second brief collapsed into one screen</b>, filled in
+  once, at the moment he already has her in a set. Everything else in this book is machinery that
+  already works.
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-10 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-10</span><span class="t">Set one creator's terms</span><span class="v n">NEW</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Step 4 of building a set</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-29</a><a class="b">SB-30</a><a class="b">SB-34</a><a class="b">SB-35</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><b>Defaults first, exceptions second.</b> <span class="sc"><a class="b">SB-29</a></span>
+      One card sets the terms for everyone in the set. Below it, every person, each marked
+      <b>SAME</b> or <b>CHANGED</b>.
+      <div class="rule" style="margin:7px 0"><b>Eight creators, one screen — not eight forms.</b>
+        This is the difference between a set being useful and being eight times the work.</div>
+    </li>
+    <li>Tapping anyone opens her own terms. <span class="sc"><a class="b">SB-30</a></span></li>
+    <li><b>What she earns.</b> A commission %, a fee, or both — decided by the set's aim, not asked
+      again. Her stated minimum shows as a hint: <i>"she has said she will not go below 12%"</i>.</li>
+    <li><b>What she can sell.</b> Three widths:
+      <div class="fork"><span class="fk">EVERYTHING</span> — the brand's whole catalogue.</div>
+      <div class="fork"><span class="fk">A CATEGORY</span> — <span class="sc"><a class="b">SB-34</a></span>
+        the live three-level tree. <b>The path is stored</b>, so products added later are included
+        automatically.</div>
+      <div class="fork"><span class="fk">SOME PRODUCTS</span> — <span class="sc"><a class="b">SB-35</a></span>
+        named individually. Out-of-stock ones are visible but not selectable.</div>
+    </li>
+    <li><b>Her offer to shoppers</b> → BR-11.</li>
+    <li><b>Where she posts.</b> Her agreed channels — and this list is what Book 4 checks her
+      against when she goes live.</li>
+    <li><b>What she makes.</b> Deliverables. <b>Optional for a sale set, required for a content
+      set.</b></li>
+    <li><b>How he may use it.</b> The usage line she is agreeing to, in plain words.</li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers</b> — <code>commission_pct</code> / fee,
+    <code>alloc_scope</code> + <code>alloc_category_node_id</code> / <code>alloc_product_ids</code>,
+    <code>brand_offer_id</code>, <code>channels[]</code>, <code>formats_json</code>.<br>
+    <b>agreements.terms_json → 'usage'</b> — the usage text.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The allocation must be readable as words, not as three columns.</span>
+    <code>alloc_scope</code>, <code>alloc_category</code> and <code>alloc_product_ids</code> mean
+    nothing on a contract screen. One function turns them into
+    <i>"Men › Topwear › Jacket"</i> — <code>describeAllocation()</code> — and both apps call it.<br><br>
+    <span class="w">Deliverables asked for on a sale-only set.</span> The wizard sends an empty
+    list and the server calls that an error. The answer is one function,
+    <code>buysContent(goal)</code>, consulted by both sides — not two places deciding separately.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-11 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-11</span><span class="t">Give a creator an offer</span><span class="v k">KEEP</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>From her terms</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-30</a><a class="b">SB-31</a><a class="b">SB-32</a><a class="b">SB-36</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-31</a></span> Three ways to answer:
+      <div class="fork o"><span class="fk">FROM THE LIBRARY</span> — <span class="sc"><a class="b">SB-36</a></span>
+        built once, reused. Editing one that five live creators use warns first.</div>
+      <div class="fork"><span class="fk">BUILD A NEW ONE</span> — <span class="sc"><a class="b">SB-32</a></span>
+        % off, ₹ off, or buy-X-get-Y, with a minimum cart and an end date.</div>
+      <div class="fork"><span class="fk">NO OFFER</span> — perfectly normal. She still earns her
+        share.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>An offer is what the shopper gets. Her commission is separate.</b> They are worked out in
+    that order — the discount first, her share of what is left second. The screen says so, because
+    reading them as one number is the obvious mistake.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>brand_offers</b> — the reusable definition.<br>
+    <b>campaign_influencers.brand_offer_id</b> + <code>offer_valid_from / until</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">An offer that expires before the go-live day.</span> Nothing checks it today.
+    An offer ending 10 Sep on a set going live 12 Sep is a discount nobody will ever get, and the
+    first person to notice will be a shopper.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-12 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-12</span><span class="t">Check what a shopper pays</span><span class="v k">KEEP</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>From an offer, or from her terms</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-33</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-33</a></span> A real basket, worked all the way down.</li>
+  </ol>
+
+  <table class="tr">
+    <tr><th>Line</th><th>Amount</th><th>Why it matters</th></tr>
+    <tr><td>Ticket price</td><td>₹2,400</td><td></td></tr>
+    <tr><td>Festive 20%</td><td>− ₹480</td><td>the shopper's discount comes off first</td></tr>
+    <tr><td><b>She pays</b></td><td><b>₹1,920</b></td><td>this is the number everything else uses</td></tr>
+    <tr><td>Asha · 14%</td><td>₹269</td><td><b>14% of ₹1,920, not of ₹2,400</b></td></tr>
+    <tr><td>INFLX fee</td><td>₹96</td><td>set by the brand's industry — SA-05</td></tr>
+    <tr><td>The brand keeps</td><td>₹1,555</td><td>and waits 7 days for it — Book 5</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">Nothing. It is arithmetic, shown before he commits rather than after the
+    first sale.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The one thing everyone gets wrong is which number the commission comes off.</span>
+    If he believes it is the ticket price he has mispriced every deal in the set by the size of
+    his own discount.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-13 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-13</span><span class="t">Publish a campaign</span><span class="v c">CHANGE</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Every set is built and every creator has terms</div>
+    <div><span class="l">Who</span>Brand → every creator in every set</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-24</a><a class="b">SB-37</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-37</a></span> Every set summarised, with the money each
+      one needs.</li>
+    <li><b>A sale set needs ₹0.</b> He only pays when they sell. It says so.</li>
+    <li><b>A content set needs the whole fee, up front.</b> The wallet has to hold it before
+      anyone is asked.
+      <div class="fork b"><span class="fk">FORK · not enough in the wallet</span>
+        The exact shortfall — <i>you have ₹42,600, you need ₹75,000, <b>short by ₹32,400</b></i> —
+        and two ways out: <b>ADD ₹32,400</b> (which opens BR-20 pre-filled), or publish the sale
+        set now and the content set later.</div>
+    </li>
+    <li>Send. Every person in every published set gets their invitation — BR-04, Book 1.</li>
+  </ol>
+
+  <div class="lab">Both phones · the moment he publishes</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-24</th><th class="c">Creator · SC-04</th></tr>
+    <tr>
+      <td>Campaign is <b>live</b>. Set 1 sent to 5, Set 2 sent to 3.<br>
+        <b>₹75,000 has left his spendable balance</b> and is locked in escrow. He cannot spend it
+        on anything else, and he has not paid anyone yet.</td>
+      <td>One line under <b>Needs you</b>: <i>Label Fern asked you into a set. Closes in 2 days.</i><br><br>
+        She has no idea a campaign was published, or that seven other people got the same message.
+        <b>She sees a collaboration, not a campaign.</b></td>
+    </tr>
+    <tr><td class="moment" colspan="2">One action on his side becomes eight separate conversations.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaigns.status</b> → <code>published</code>.<br>
+    <b>escrow_entries</b> — the content set's fees locked.<br>
+    <b>campaign_influencers</b> → <code>invited</code>, one per person, plus a notification each.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The wallet check exists but the message does not.</span> Today a short wallet
+    produces a generic failure with no amount and no way to fix it there. The number and the
+    button are the whole point of this screen.<br><br>
+    <span class="w">Publishing set by set.</span> Two sets with different aims have different
+    money needs, and he must be able to send one without the other. Publishing the campaign as one
+    indivisible thing forces him to fund a content set before he can start a sale set that needs
+    nothing.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-06 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-06</span><span class="t">Sign a contract</span><span class="v k">KEEP</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She accepted, or they settled a counter</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-08</a><a class="b">SB-45</a><a class="c">SC-40</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-08</a></span> Everything she agreed to, in the same words
+      she read on the invitation. <b>Nothing new appears at signing time.</b></li>
+    <li>She signs. It waits for him.</li>
+    <li>It is readable forever afterwards. <span class="sc"><a class="c">SC-40</a></span></li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>contracts</b> — <code>influencer_signed_at</code>.<br>
+    <b>campaign_influencers.status</b> → <code>contracted</code> once both have signed.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="fixed"><span class="w">Fixed 30 Aug — the blank screen.</span>
+    "Review &amp; sign" opened nothing. A React hook sat <b>after two early returns</b>, so on some
+    renders the hook count changed and React refused to render.<br><br>
+    It survived a first fix because I tested the <i>helpers</i> and never mounted the
+    <i>screen</i>. The second fix added mount tests and a repo-wide sweep — which found the same
+    fault in a brand screen (<span class="sc"><a class="b">SB-43</a></span>) and two follower
+    screens.</div>
+  <div class="wrong" style="margin-top:8px">
+    <span class="w">A contract that says something the invitation did not.</span> If BR-10's
+    screen and the contract screen render from different fields, she signs something she has not
+    read. They must render the same source.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-14 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-14</span><span class="t">Counter-sign a contract</span><span class="v k">KEEP</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She signed</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-45</a><a class="c">SC-08</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-45</a></span> The same contract, with <b>"She signed · 4
+      Sep"</b> on it.</li>
+    <li>He signs. <b>This is the moment everything else starts.</b></li>
+  </ol>
+
+  <div class="lab">Both phones · the second signature lands</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-44</th><th class="c">Creator · SC-09</th></tr>
+    <tr>
+      <td>Her six steps, 1 and 2 now <b>DONE</b>.<br>
+        Step 3 becomes his job if it is a store visit — <b>arrange the shoot</b> — or a wait if it
+        is remote.</td>
+      <td>Same six steps, same two done.<br>
+        Step 3 becomes <b>her</b> job if it is remote — <b>send your address</b> — or a wait if it
+        is a store visit.<br><br>
+        And if it is a fee: <b>25% is already hers.</b></td>
+    </tr>
+    <tr><td class="moment" colspan="2">One event, and it hands the next move to a different person depending on the mode.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>contracts.brand_signed_at</b> → <code>status='signed'</code>.<br>
+    <b>production_events</b> — a shoot is created, with the mode resolved from the contract, falling
+    back to the agreement.<br>
+    <b>escrow_entries</b> — <b>tranche 1 releases: 25%</b> on a fee contract.</div>
+
+  <table class="tr">
+    <tr><th>Tranche</th><th>Share</th><th>Released when</th></tr>
+    <tr><td>1</td><td>25%</td><td><b>both signed</b> — here</td></tr>
+    <tr><td>2</td><td>25%</td><td>the brand confirms it went live — Book 4</td></tr>
+    <tr><td>3</td><td>50%</td><td>an admin-set wait after that, today 30 days — Book 5</td></tr>
+  </table>
+
+  <div class="lab">Can go wrong</div>
+  <div class="fixed"><span class="w">Fixed 30 Aug — the reels error.</span>
+    Counter-signing a <b>sale-only</b> contract threw an error about reels. The deliverables check
+    ran for every aim, so a contract that never bought content was rejected for not specifying
+    any. It now runs only when content is actually being bought.<br><br>
+    The founder reported it in one sentence: <i>"content related reels and all is come mandatory
+    only in pay for content type of campaign"</i>. He was right, and it was the same
+    two-places-deciding fault as BR-02.</div>
+  <div class="wrong" style="margin-top:8px">
+    <span class="w">A remote shoot that says it is finished before it starts.</span> Creating the
+    shoot used to write <code>status='completed'</code> the moment the mode was remote. Fixed
+    30 Aug and six live shoots repaired — but <b>this action is where that row is written</b>, so
+    it is the place it would come back.<br><br>
+    <span class="w">Escrow has never actually run.</span> <code>escrow_entries</code>,
+    <code>wallet_transactions</code> and <code>influencer_withdrawals</code> are all at zero rows
+    in production. The first fee contract to be counter-signed will be the first time tranche 1
+    has ever executed.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-07 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-07</span><span class="t">Decline a contract</span><span class="v k">KEEP</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She changes her mind at the contract</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-08</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>A reason from five, or her own words:
+      <code>not_relevant · fee_too_low · schedule_conflict · already_partnered · other</code>.</li>
+    <li>It ends. She leaves the set; the set carries on with everyone else.</li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers.status</b> → <code>declined</code>, with the reason
+    and her note.<br>
+    <b>escrow_entries</b> — her locked fee is <b>released back</b> to spendable.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The list the app shows and the list the server accepts must be one list.</span>
+    Already shipped once as a bug: <code>'not_a_fit'</code> was offered and was never valid. Now
+    one shared constant, used by both apps.<br><br>
+    <span class="w">Her fee staying locked after she declines.</span> If escrow does not release,
+    his wallet quietly holds money for a contract that no longer exists — and he cannot publish
+    his next set. Nothing has ever exercised this path.<br><br>
+    <span class="w">And the one this book carries unfixed:</span>
+    <code>cancelInfluencer</code> writes <code>status='cancelled'</code> to
+    <code>contract_status</code>, <b>which has no such value</b>. Confirmed live. It will throw the
+    first time anyone cancels rather than declines.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ END -->
+<div class="act">
+  <div class="ah"><span class="t">What this book leaves for the next one</span></div>
+
+  <div class="lab">Every path out of Phase 2</div>
+  <ul class="tight">
+    <li><b>Both signed, store visit</b> — the brand's move. He arranges a time → <b>Book 3</b>.</li>
+    <li><b>Both signed, remote</b> — her move. She sends her address → <b>Book 3</b>.</li>
+    <li><b>Both signed, no shoot at all</b> — a sale set where she uses her own material. She goes
+      straight to building a shop post → <b>Book 4</b>.</li>
+    <li><b>She declined</b> — out of the set, fee released, reason recorded.</li>
+  </ul>
+
+  <div class="lab">What this book says must be true before Book 3 can work</div>
+  <ol class="steps">
+    <li><b>The shoot mode on the contract has to be right, and it has to be the set's.</b>
+      Everything in Book 3 forks on it, and the mode is resolved <i>here</i>, at counter-signing.</li>
+    <li><b>Escrow has to actually move.</b> Tranche 1 fires at BR-14 and has never fired. If it
+      silently does nothing, Book 5 has nothing to pay out and nobody finds out for a month.</li>
+    <li><b>The contract and the invitation must render from the same fields.</b> Otherwise she
+      signs something she did not read, and no test would catch it.</li>
+  </ol>
+
+  <div class="lab">The pattern this book is the fifth instance of</div>
+  <div class="rule">
+    <b>Two things doing one job.</b> The wizard and the server both deciding whether content is
+    bought (BR-02). The deliverables check and the aim both deciding whether reels are required
+    (BR-14). The app's decline list and the server's decline list (CR-07). Each one shipped as a
+    bug, and each one is fixed the same way — <b>one function, called by both sides</b>.
+  </div>
+</div>
