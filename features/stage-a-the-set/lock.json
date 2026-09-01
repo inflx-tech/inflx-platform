@@ -2,7 +2,7 @@
   "feature": "stage-a-the-set",
   "area": "brand + creator apps — the set becomes real",
   "spec_version": "1.0.0",
-  "status": "migrations applied · building the wizard",
+  "status": "server done · building the app",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls start stage A\", 2026-09-01",
   "approved_at": "2026-09-01",
@@ -82,7 +82,7 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy_class": "SPLIT — the migration FILES in the repo are deploy-inert (they do not run themselves; prod migrations are applied by hand via scripts/run-0XX.js). APPLYING 165+166 is production-impacting and needs an explicit go.",
+    "deploy_class": "PRODUCTION-IMPACTING from here — backend/src auto-deploys to Render on push. Additive only: nothing reads the new fields yet, so nothing observable changes until the app catches up.",
     "deploy_targets": [
       "render (backend)",
       "vercel (brand-web)",
@@ -92,5 +92,18 @@
     "device_walk_required": "YES — the 8-step walk in 03-expected-outputs.md, once the wizard is built."
   },
   "migration_runner_fault_found": "run-164.js and its siblings read .env.prod-backup for --dry and .env for the REAL run. In this working copy .env points at LOCALHOST — so the dry run inspects production and a real run would have applied to a local database and printed COMMITTED. Which database is being written to must never be a side effect of a different flag. run-165-166.js now takes an EXPLICIT --dry or --apply, reads prod credentials for both, PRINTS THE HOST before touching anything, refuses when neither or both flags are given (exit 2), and refuses --apply against localhost. 163 and 164 were verified present in production, so they did reach it by some other path.",
-  "applied_result": "COMMITTED 2026-09-01 against production. Every row count identical (sets 11, creators 8, campaigns 13, contracts 6) and all four zero-assertions held. Verified afterwards from information_schema: all five columns present and NULLABLE, plus constraints campaign_sets_shoot_mode_known and campaign_sets_invites_close_before_go_live."
+  "applied_result": "COMMITTED 2026-09-01 against production. Every row count identical (sets 11, creators 8, campaigns 13, contracts 6) and all four zero-assertions held. Verified afterwards from information_schema: all five columns present and NULLABLE, plus constraints campaign_sets_shoot_mode_known and campaign_sets_invites_close_before_go_live.",
+  "server_built": {
+    "at": "2026-09-01",
+    "model": "backend/src/services/setShape.model.js — SHOOT_MODES (three, what the column accepts), SHOOT_MODES_OFFERED (TWO, what the wizard offers), goLiveDayOf() with the pre-set-first fallback, validateSetShape() which never throws.",
+    "wired": "createSet, updateSet and duplicateSet in campaign.controller.js.",
+    "two_decisions_in_the_code": [
+      "updateSet validates the MERGED shape, not just the fields sent — posting invites_close_at alone is still checked against the STORED go_live_date.",
+      "An existing go-live day is NOT re-checked against the lead time. A set built last week may launch tomorrow; re-validating would make a set uneditable simply because time passed."
+    ],
+    "duplicate_set": "Carries the shape across. Without it a copied set silently loses its day and mode and reads as pre-set-first.",
+    "mutation_tested": "13 ways. Model 7: wizard offering remote; shipment needing both marks; the fallback reading window_end before go_live_date; lead time 5->4; the invites-close check inverted; a set with no day inventing today; validate throwing on rubbish. Controller 6: dropping a column from the INSERT; dropping a VALUE while keeping the column; not reading a field off req.body; calling validateSetShape and ignoring the answer; updateSet validating only what was sent; duplicate dropping the shape. All 13 caught.",
+    "the_tests_caught_themselves_first": "The controller test extracts the INSERT block by scanning for its closing bracket. The first version scanned for the next ] — which lands inside JSON.stringify(assets_json) : '[]', truncating the block three lines early and hiding the exact fields the file exists to check. Four tests failed, correctly, on the HELPER rather than the controller. A source-reading test that quietly reads the wrong source is the same fault in a different coat.",
+    "regression": "india-day 23, shoot-plan 29, stage4-parcel 25, deliverables-when-buying-content 19, brief-to-signing 19, usage-term 20, coupon-not-mandatory 11 — all pass. Plus 35 new. Certified no-regression in the neighbourhood; NOT claimed green across the full suite."
+  }
 }
