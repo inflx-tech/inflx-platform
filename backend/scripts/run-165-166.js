@@ -13,16 +13,46 @@
  * proves the thing that matters: every existing row is still there, and still
  * valid, after the constraints exist.
  *
- *   node scripts/run-165-166.js --dry
- *   node scripts/run-165-166.js
+ *   node scripts/run-165-166.js --dry     inspect against production, roll back
+ *   node scripts/run-165-166.js --apply   commit against production
  */
 
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-const DRY = process.argv.includes('--dry');
-require('dotenv').config({ path: path.join(__dirname, DRY ? '../.env.prod-backup' : '../.env') });
+// TARGET IS EXPLICIT, NEVER IMPLIED BY --dry.
+//
+// run-164.js and its siblings read .env.prod-backup for --dry and .env for the real
+// run. In this working copy .env points at LOCALHOST, so the dry run inspects
+// production and the real run would apply to a local database — and print
+// "COMMITTED". Nothing about which database is being written to should be a side
+// effect of a different flag.
+//
+//   --dry     production, rolled back
+//   --apply   production, committed
+//   neither   refuses
+const DRY   = process.argv.includes('--dry');
+const APPLY = process.argv.includes('--apply');
+
+if (DRY === APPLY) {
+  console.error('Pass exactly one of --dry (inspect, roll back) or --apply (commit).');
+  process.exit(2);
+}
+
+require('dotenv').config({ path: path.join(__dirname, '../.env.prod-backup') });
+
+const url = process.env.DATABASE_URL || '';
+const HOST = (url.match(/@([^:/?]+)/) || [])[1] || '(unknown)';
+
+if (!url) {
+  console.error('No DATABASE_URL in backend/.env.prod-backup.');
+  process.exit(2);
+}
+if (APPLY && /^(localhost|127\.0\.0\.1)$/.test(HOST)) {
+  console.error(`Refusing --apply against ${HOST}. This script applies to production only.`);
+  process.exit(2);
+}
 
 const FILES = [
   '165_set_carries_its_own_shape.sql',
@@ -62,7 +92,9 @@ const row = (label, got, want) => {
   const c = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
   await c.connect();
 
-  console.log(DRY ? '=== DRY RUN — will be rolled back\n' : '=== APPLYING FOR REAL\n');
+  console.log(DRY
+    ? `=== DRY RUN against ${HOST} — will be rolled back\n`
+    : `=== APPLYING FOR REAL against ${HOST}\n`);
 
   const before = await snapshot(c);
   console.log('BEFORE');
@@ -108,7 +140,7 @@ const row = (label, got, want) => {
 
   if (DRY) {
     await c.query('ROLLBACK');
-    console.log('\nROLLED BACK — nothing was changed. Re-run without --dry to apply.');
+    console.log('\nROLLED BACK — nothing was changed. Re-run with --apply to commit.');
   } else {
     await c.query('COMMIT');
     console.log('\nCOMMITTED.');

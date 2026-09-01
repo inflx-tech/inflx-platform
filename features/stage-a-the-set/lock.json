@@ -2,53 +2,69 @@
   "feature": "stage-a-the-set",
   "area": "brand + creator apps — the set becomes real",
   "spec_version": "1.0.0",
-  "status": "migrations-dry-run-clean · awaiting go to apply",
-
+  "status": "migrations applied · building the wizard",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls start stage A\", 2026-09-01",
   "approved_at": "2026-09-01",
-
   "preview_reviewed": true,
   "mockup_locked": true,
   "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — inherited from features/screen-atlas, locked 2026-09-01",
   "mockup_locked_at": "2026-09-01",
   "mockup_source": "features/screen-atlas — this stage draws NOTHING new. It builds SB-23 SB-24 SB-25 SB-26 SB-27 SB-28 SB-29 SB-30 SB-37 SC-05 exactly as locked.",
-
   "impact_reviewed": false,
   "impact_review_note": "05-impact.md authored at contract time; the founder has not read it. Not fabricated.",
-
-  "builds_screens": ["SB-23", "SB-24", "SB-25", "SB-26", "SB-27", "SB-28", "SB-29", "SB-30", "SB-37", "SC-05"],
-  "completes_actions": ["BR-01", "BR-02", "BR-03", "BR-04", "BR-10", "BR-11", "BR-13", "CR-01"],
+  "builds_screens": [
+    "SB-23",
+    "SB-24",
+    "SB-25",
+    "SB-26",
+    "SB-27",
+    "SB-28",
+    "SB-29",
+    "SB-30",
+    "SB-37",
+    "SC-05"
+  ],
+  "completes_actions": [
+    "BR-01",
+    "BR-02",
+    "BR-03",
+    "BR-04",
+    "BR-10",
+    "BR-11",
+    "BR-13",
+    "CR-01"
+  ],
   "explicitly_not_in_scope": "Countering. She accepts or declines; asking for something different is Stage B, because it needs the negotiation to hang off her set row (migration 168).",
-
   "founder_decisions": {
     "shoot_modes_on_the_wizard": "TWO, 2026-09-01. Store visit, and we-send-the-products. The second stores 'shipment', never 'remote'. The code has carried three since migration 024 and the atlas drew two under the name 'remote' — but everything Book 3 describes under that name (her address, tracking, everything-arrived) is shipment. The no-parcel 'remote' stays reachable only through the older brand-approve flow, which five live contracts still resolve through.",
     "practice_sales_rows": "EXCLUDE, 2026-09-01. Flag them and leave them out of every total rather than recomputing fees for transactions that never happened. Stage E, not this stage."
   },
-
   "what_reading_production_changed": {
     "the_aim_already_exists": "campaign_sets.goal is already the campaign_goal enum from migration 001 — engagement | conversion | hybrid — and buysContent() already reads it. No migration needed for the aim. The plan assumed one.",
     "migration_167_is_dropped": "The plan proposed backfilling go_live_date from window_end. Production has window_end on 2 of 11 sets, window_start on 8, content_end_date on 0, and production_mode on 1 of 6 contracts. Deriving a launch day for nine live sets from a null column would be inventing dates for real campaigns. So there is NO backfill: a set with go_live_date IS NULL is a pre-set-first set and the existing window fallback keeps serving it. Three migrations touching live rows across the programme becomes two, and neither is in this stage.",
     "her_terms_mostly_exists": "campaign_influencers already carries commission_pct, agreed_fee, all four alloc_* columns, brand_offer_id + offer_valid_from/until + offer_type + offer_config_json, and delivery_address. SB-30 is largely an ASSEMBLY over columns that exist. Only channels_json and formats_json are new, and both are moving DOWN from the set rather than being invented."
   },
-
   "migrations": [
     {
       "id": 165,
       "file": "165_set_carries_its_own_shape.sql",
       "adds": "campaign_sets.go_live_date, .shoot_mode, .invites_close_at + two CHECKs that permit NULL",
       "touches_live_rows": false,
-      "applied": false
+      "applied": true,
+      "applied_at": "2026-09-01",
+      "applied_to": "production (aws-1-ap-northeast-1.pooler.supabase.com)"
     },
     {
       "id": 166,
       "file": "166_terms_move_down_to_the_creator.sql",
       "adds": "campaign_influencers.channels_json, .formats_json — nullable, meaning INHERIT the set",
       "touches_live_rows": false,
-      "applied": false
+      "applied": true,
+      "applied_at": "2026-09-01",
+      "applied_to": "production (aws-1-ap-northeast-1.pooler.supabase.com)"
     }
   ],
-
   "dry_run": {
     "command": "node backend/scripts/run-165-166.js --dry",
     "result": "CLEAN. Every row count identical: sets 11, creators 8, campaigns 13, contracts 6, window_start 8, window_end 2, goal 11. And four zeros — no set given a go-live day, no set with an unknown mode, no creator given channels, no creator given formats.",
@@ -59,9 +75,7 @@
       "removed 'IS NULL OR' from the shoot-mode CHECK -> DID NOT FAIL, and that is correct, not a gap. A SQL CHECK passes unless it evaluates to FALSE, and NULL IN (...) is NULL. VERIFIED against the live database rather than assumed: NULL IN ('visit','shipment') returns NULL. The IS NULL OR documents intent; it adds no safety. Kept for the reader."
     ]
   },
-
   "adjacent_fix": "cancelInfluencer writes status='cancelled' to contract_status, which has no such value. Confirmed live; throws the first time it runs. One line, in scope because BR-05's 'drop her' is one step from it.",
-
   "release": {
     "qa_all_green": false,
     "released": false,
@@ -69,8 +83,14 @@
     "released_at": null,
     "maestro_green": false,
     "deploy_class": "SPLIT — the migration FILES in the repo are deploy-inert (they do not run themselves; prod migrations are applied by hand via scripts/run-0XX.js). APPLYING 165+166 is production-impacting and needs an explicit go.",
-    "deploy_targets": ["render (backend)", "vercel (brand-web)", "ota (mobile)"],
+    "deploy_targets": [
+      "render (backend)",
+      "vercel (brand-web)",
+      "ota (mobile)"
+    ],
     "outward_facing": "None yet. Nothing is built; only schema is prepared.",
     "device_walk_required": "YES — the 8-step walk in 03-expected-outputs.md, once the wizard is built."
-  }
+  },
+  "migration_runner_fault_found": "run-164.js and its siblings read .env.prod-backup for --dry and .env for the REAL run. In this working copy .env points at LOCALHOST — so the dry run inspects production and a real run would have applied to a local database and printed COMMITTED. Which database is being written to must never be a side effect of a different flag. run-165-166.js now takes an EXPLICIT --dry or --apply, reads prod credentials for both, PRINTS THE HOST before touching anything, refuses when neither or both flags are given (exit 2), and refuses --apply against localhost. 163 and 164 were verified present in production, so they did reach it by some other path.",
+  "applied_result": "COMMITTED 2026-09-01 against production. Every row count identical (sets 11, creators 8, campaigns 13, contracts 6) and all four zero-assertions held. Verified afterwards from information_schema: all five columns present and NULLABLE, plus constraints campaign_sets_shoot_mode_known and campaign_sets_invites_close_before_go_live."
 }
