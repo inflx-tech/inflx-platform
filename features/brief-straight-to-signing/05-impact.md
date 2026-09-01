@@ -33,5 +33,5 @@ path; only new briefs take the new one. Nothing is migrated, nothing is rewritte
 
 ## Carried, not fixed
 
-`cancelInfluencer` still writes `status = 'cancelled'` to `contract_status`, which has no such
+`cancelInfluencer` still writes `status = 'cancelled'` to `campaign_influencer_status`, which has no such
 value. Confirmed live. Out of scope here.

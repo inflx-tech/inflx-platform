@@ -75,7 +75,7 @@
       "removed 'IS NULL OR' from the shoot-mode CHECK -> DID NOT FAIL, and that is correct, not a gap. A SQL CHECK passes unless it evaluates to FALSE, and NULL IN (...) is NULL. VERIFIED against the live database rather than assumed: NULL IN ('visit','shipment') returns NULL. The IS NULL OR documents intent; it adds no safety. Kept for the reader."
     ]
   },
-  "adjacent_fix": "cancelInfluencer writes status='cancelled' to contract_status, which has no such value. Confirmed live; throws the first time it runs. One line, in scope because BR-05's 'drop her' is one step from it.",
+  "adjacent_fix": "cancelInfluencer writes status='cancelled' to campaign_influencer_status, which has no such value. Confirmed live; throws the first time it runs. One line, in scope because BR-05's 'drop her' is one step from it.",
   "release": {
     "qa_all_green": false,
     "released": false,
@@ -135,5 +135,6 @@
     "verified": "OTA manifest queried directly at flavor=brand&runtime=3 and returns version 200 — verified, not merely reported by the publish script. Backend proved by route existence: GET /v1/campaigns -> 401, so the route is there and auth-gated rather than 404.",
     "why_it_is_safe": "Additive and backward-compatible. The five columns are nullable, nothing backfilled, and a set with no go_live_date still resolves through the old window. A phone on the previous bundle keeps working because the server treats all three new fields as optional.",
     "what_is_still_owed": "The founder device walk in 06-diff/notes.md, 8 steps. Step 7 matters most: open one of the 11 pre-set-first sets already in production and confirm it opens with a BLANK launch day rather than an invented one."
-  }
+  },
+  "correction_2026_09_01": "RECORD CORRECTED. Every contract since brief-straight-to-signing has said cancelInfluencer writes an invalid CONTRACT_STATUS. It does not — campaign.controller.js:2276 writes `UPDATE campaign_influencers SET status = 'cancelled'`, so the enum is CAMPAIGN_INFLUENCER_STATUS. Verified against production: its values are invited, accepted, negotiating, contracted, active, completed, declined, expired, applied, rejected_by_brand, slots_filled — no 'cancelled'. THE BUG IS REAL AND STILL UNFIXED; only the table was named wrongly, and the error propagated through 9 records across 5 contracts because each one copied the last. Found when a second window read the code and its summary did not match the docs."
 }

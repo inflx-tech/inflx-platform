@@ -38,7 +38,7 @@ Each is recorded on the action that forced it, with what breaks without it.
 
 ## Carried, unfixed, and known
 
-- `cancelInfluencer` writes an invalid `contract_status`. Confirmed live; it will
+- `cancelInfluencer` writes an invalid `campaign_influencer_status`. Confirmed live; it will
   throw the first time it runs.
 - The three 30 Aug shoot fixes are live (OTA v192/v199) and **have not been
   walked on a handset**. That belongs in the end-to-end verification pass.

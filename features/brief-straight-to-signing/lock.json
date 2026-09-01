@@ -29,7 +29,7 @@
     "mount_tests": "collabDetailRenders.test.js (9) and contractScreenRenders.test.js (9) MOUNT the screens rather than reading them as text, using a fixture dumped straight from production. Both re-broken to confirm they bite.",
     "the_lesson_twice": "Reading a screen as text proves the code was written. It cannot prove the code runs — it would pass on a file that throws on its first line. This repo has now been bitten by that distinction twice on the same journey, on the same screen, in one day."
   },
-  "carried_not_fixed": "cancelInfluencer still writes status = 'cancelled' to contract_status, which has no such value. Confirmed live, out of scope here.",
+  "carried_not_fixed": "cancelInfluencer still writes status = 'cancelled' to campaign_influencer_status, which has no such value. Confirmed live, out of scope here.",
   "scope_excluded": [
     "The screens that let a brand ASK FOR commercial usage — the term exists, no surface offers it",
     "cancelInfluencer's invalid enum write",

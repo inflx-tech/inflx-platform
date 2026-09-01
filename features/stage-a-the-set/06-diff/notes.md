@@ -73,5 +73,5 @@ launch day for them.
 
 ## Known, and not fixed here
 
-`cancelInfluencer` writes an invalid `contract_status`. Confirmed live, will
+`cancelInfluencer` writes an invalid `campaign_influencer_status`. Confirmed live, will
 throw. Carried — nothing in this stage calls it.

@@ -106,6 +106,6 @@ in flight breaks.
 
 ## Adjacent fix, carried in quietly
 
-`cancelInfluencer` writes `status='cancelled'` to `contract_status`, which has no
+`cancelInfluencer` writes `status='cancelled'` to `campaign_influencer_status`, which has no
 such value. Confirmed live; it throws the first time it runs. One line, in scope
 because `BR-05`'s "drop her" is one step from it.

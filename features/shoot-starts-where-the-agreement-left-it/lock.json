@@ -28,7 +28,7 @@
     "claim": "Certified no-regression. NEVER claimed green."
   },
   "carried_not_fixed": [
-    "cancelInfluencer still writes an invalid contract_status",
+    "cancelInfluencer still writes an invalid campaign_influencer_status",
     "A commission collaboration still cannot reach 'done' on its own",
     "contracts.production_mode stays NULL on the four older practice contracts — they already have events, so nothing re-reads it"
   ],

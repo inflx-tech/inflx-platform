@@ -36,4 +36,4 @@ Nothing written. Every change is read-time.
 
 * The brand cannot move the posting date from the shoot screen. The message tells them what to
   change; they change it where posting dates live.
-* `cancelInfluencer` still writes an invalid `contract_status`.
+* `cancelInfluencer` still writes an invalid `campaign_influencer_status`.

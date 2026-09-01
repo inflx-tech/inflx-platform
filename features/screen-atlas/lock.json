@@ -45,7 +45,7 @@
   ],
   "blocked_before_any_money_screen": "The 16 sales rows in production are PRACTICE DATA — no razorpay_payment_id, one practice brand, and marketplace_fee_amount / brand_net were never computed. Any screen that sums them shows a wrong number. Repair or exclusion comes before SB-57, SC-32 and SC-30.",
   "carried_unfixed": [
-    "cancelInfluencer writes status='cancelled' to contract_status, which has no such value. Confirmed live; it will throw the first time it runs.",
+    "cancelInfluencer writes status='cancelled' to campaign_influencer_status, which has no such value. Confirmed live; it will throw the first time it runs.",
     "The three 30 Aug shoot fixes are live (OTA v192/v199) and have NOT been walked on a handset. Belongs in the end-to-end verification pass, not per-slice."
   ],
   "verification": {

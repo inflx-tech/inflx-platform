@@ -43,5 +43,5 @@ Three genuinely completed practice visits were left alone.
 
 ## Carried, not fixed
 
-* `cancelInfluencer` still writes an invalid `contract_status`. Confirmed live, unrelated.
+* `cancelInfluencer` still writes an invalid `campaign_influencer_status`. Confirmed live, unrelated.
 * A commission collaboration still cannot reach `done` on its own.
