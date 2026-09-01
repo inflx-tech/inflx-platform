@@ -1,7 +1,7 @@
 {
   "feature": "b5-creator-collabs-tab",
   "spec_version": "1.0.0",
-  "status": "awaiting-mockup-lock",
+  "status": "superseded",
   "approved": false,
   "mockup_locked": false,
   "notes": "B5 of eight chunks. The creator's Collabs tab — her whole working life in one place. Everything drawn from her side in B1 and B2, now as one coherent app.",
@@ -41,5 +41,8 @@
     "completion": "TWO ENDINGS. Pay per sale: done when her content is live on social. The campaign itself runs on and keeps paying her — \"no end for commission campaign but....till content submitted in socialmedia is completion of process\". Pay for content: done when the FINAL payment for deliverables lands, after the admin-set wait. Neither ending is \"when the deliverables run out\", which is why nothing could compute it before.",
     "where_she_works": "On the PITCH, required, two answers — store visit or remote, no \"either\". \"she has to mention clearly store visit or remote while pitching brand.\" NOT a standing profile setting: I had proposed one and it is wrong, because it is a per-deal answer. She may visit a shop down the road and want remote for one three cities away."
   },
-  "what_this_still_needs": "All three answers land on the same missing piece: a place to record a live post that is NOT a deliverable. One table, one row per live post, per collaboration — required and countable for content, optional and singular for commission. Stage 4."
+  "what_this_still_needs": "All three answers land on the same missing piece: a place to record a live post that is NOT a deliverable. One table, one row per live post, per collaboration — required and countable for content, optional and singular for commission. Stage 4.",
+  "superseded_by": "features/screen-atlas",
+  "superseded_at": "2026-09-01",
+  "superseded_why": "Organised by TAB — how the app is built, not how anyone uses it — so the same screen appears here and in other b-files with a different description each time. Replaced by the Screen Atlas, where each of the 109 screens is drawn ONCE at a permanent address (SB-/SC-/SA-) and the 47 actions point at it. Kept, not deleted: the notes below record the founder’s corrections round by round, and that history is not reproduced in the atlas. approved stays false, so this contract can never back a change."
 }

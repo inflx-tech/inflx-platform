@@ -8,18 +8,19 @@
  *   - a screen no action reaches AND is not tagged [nav] / [all] / [out]
  *   - an action with no screen     (nothing drawn for it)
  *
- * Run:  node Docs/ATLAS/build-index.js
+ * Run:  node features/screen-atlas/04-preview/build-index.js
  */
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', '..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const MAP = path.join(ROOT, 'Docs', 'ACTION_MAP.md');
+const MOCKUPS = path.join(__dirname, 'mockups');
 const ATLASES = [
-  ['brand',   path.join(__dirname, 'atlas-brand.html')],
-  ['creator', path.join(__dirname, 'atlas-creator.html')],
+  ['brand',   path.join(MOCKUPS, 'atlas-brand.html')],
+  ['creator', path.join(MOCKUPS, 'atlas-creator.html')],
 ];
-const OUT = path.join(__dirname, 'index.html');
+const OUT = path.join(MOCKUPS, 'index.html');
 
 const ACTION_RE = /\b(?:BR|CR|AD)-\d{2}\b/g;
 const SCREEN_RE = /\b(?:SB|SC|SA)-\d{2}\b/g;

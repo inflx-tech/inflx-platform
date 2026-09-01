@@ -1,7 +1,7 @@
 {
   "feature": "b2-brand-creators-tab",
   "spec_version": "1.0.0",
-  "status": "awaiting-mockup-lock",
+  "status": "superseded",
   "approved": false,
   "mockup_locked": false,
   "notes": "B2, third pass 2026-08-30. 36 panels. Six issues the founder found on review, all fixed. The biggest is that the post date is a DEADLINE, not a fixed day — which changes wording in both B1 and B2 and one downstream rule.",
@@ -68,5 +68,8 @@
     "what_a_refusal_means": "She is not busy that Tuesday. She cannot get shot, edited and scheduled by then. Which is why a date counter is set-level: she is asking for a different LAUNCH, and a set has one.",
     "shop_posts": "⚠️ NO DEADLINE OF THEIR OWN. Build them any time; they must be approved before the launch or a follower arrives at an empty shelf. Admin reviews them, and a queue nobody controls should never sit between her and a deadline — so building early is the sensible move rather than a risk.",
     "i_had_it_wrong_twice": "First drawn as a fixed day she is booked for. Then \"corrected\" to a deadline she could beat, which would have let one creator launch four days early and broken the joint launch. Neither. 13 phrasings corrected across both files."
-  }
+  },
+  "superseded_by": "features/screen-atlas",
+  "superseded_at": "2026-09-01",
+  "superseded_why": "Organised by TAB — how the app is built, not how anyone uses it — so the same screen appears here and in other b-files with a different description each time. Replaced by the Screen Atlas, where each of the 109 screens is drawn ONCE at a permanent address (SB-/SC-/SA-) and the 47 actions point at it. Kept, not deleted: the notes below record the founder’s corrections round by round, and that history is not reproduced in the atlas. approved stays false, so this contract can never back a change."
 }

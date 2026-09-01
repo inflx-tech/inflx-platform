@@ -1,7 +1,7 @@
 {
   "feature": "b7-creator-home",
   "spec_version": "1.0.0",
-  "status": "awaiting-mockup-lock",
+  "status": "superseded",
   "approved": false,
   "mockup_locked": false,
   "notes": "The last three screens in the programme — her Home, Notifications and Transaction feed. B7's Earnings and Profile were drawn with the money in b4-b7-the-money; this completes it.",
@@ -11,7 +11,12 @@
   "the_returned_sale_screen": "NEW, and the second card is the point: 'Nothing was taken from your wallet — commission only reaches your wallet 7 days after a sale, and this one came back on day 2.' A reversal she does not understand is the fastest way to lose a creator's trust, and under the 7-day rule it is genuinely harmless.",
   "counts_stay_on_the_server": "Home's badge, the Collabs tab badge and the brand's 'needs you' are one server answer read three times. Stated in the document so nobody later computes it on the phone.",
   "multi_brand_posts_answered": "Founder, 2026-09-01: no count for multi-brand posts. Only single-brand posts count towards a set's minimum, because only they belong to one collaboration.",
-  "counts": { "panels": 7, "new": 2, "change": 3, "keep": 1 },
+  "counts": {
+    "panels": 7,
+    "new": 2,
+    "change": 3,
+    "keep": 1
+  },
   "release": {
     "qa_all_green": false,
     "released": false,
@@ -20,5 +25,8 @@
     "deploy_targets": [],
     "outward_facing": "None. Nothing is built.",
     "device_walk_required": "NOT YET"
-  }
+  },
+  "superseded_by": "features/screen-atlas",
+  "superseded_at": "2026-09-01",
+  "superseded_why": "Organised by TAB — how the app is built, not how anyone uses it — so the same screen appears here and in other b-files with a different description each time. Replaced by the Screen Atlas, where each of the 109 screens is drawn ONCE at a permanent address (SB-/SC-/SA-) and the 47 actions point at it. Kept, not deleted: the notes below record the founder’s corrections round by round, and that history is not reproduced in the atlas. approved stays false, so this contract can never back a change."
 }

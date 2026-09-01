@@ -1,7 +1,7 @@
 {
   "feature": "b4-b7-the-money",
   "spec_version": "1.0.0",
-  "status": "awaiting-mockup-lock",
+  "status": "superseded",
   "approved": false,
   "mockup_locked": false,
   "notes": "B4 and B7 — the money, both directions. Second pass adds the half I missed: the money coming BACK from a sale, the brand's share of it, and his withdrawal.",
@@ -60,5 +60,8 @@
     "note": "Channel-level link tracking (Stage 7, follower app) is a DIFFERENT thing and is not touched here."
   },
   "return_window_is_now_7_days": "Was 30. She sees a sale as pending, and 7 days later it moves into her wallet. Touches payment_config.return_window_days, categories.return_window_days on all 16 rows, and commission-confirm.job.js. NOT the same as tranche_3_release_after_days, which is the pay-for-content final payment and stays admin-set at 7/15/30.",
-  "return_window_settled": "Founder, 2026-08-30: \"yes shoppers return window...no 30 day...yes return window is 7 days...commission amount show to creator but not in wallet till return window completed.\" ONE WINDOW, 7 DAYS, FOR EVERYBODY. Her commission is SHOWN the moment the sale happens and enters her wallet only when the 7 days close — so money is never taken back out of it. commission_reversed and brand_net_reversed only ever touch pending money. That is exactly what pending_balance already is."
+  "return_window_settled": "Founder, 2026-08-30: \"yes shoppers return window...no 30 day...yes return window is 7 days...commission amount show to creator but not in wallet till return window completed.\" ONE WINDOW, 7 DAYS, FOR EVERYBODY. Her commission is SHOWN the moment the sale happens and enters her wallet only when the 7 days close — so money is never taken back out of it. commission_reversed and brand_net_reversed only ever touch pending money. That is exactly what pending_balance already is.",
+  "superseded_by": "features/screen-atlas",
+  "superseded_at": "2026-09-01",
+  "superseded_why": "Organised by TAB — how the app is built, not how anyone uses it — so the same screen appears here and in other b-files with a different description each time. Replaced by the Screen Atlas, where each of the 109 screens is drawn ONCE at a permanent address (SB-/SC-/SA-) and the 47 actions point at it. Kept, not deleted: the notes below record the founder’s corrections round by round, and that history is not reproduced in the atlas. approved stays false, so this contract can never back a change."
 }

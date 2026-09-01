@@ -1,7 +1,7 @@
 {
   "feature": "b3-brand-home",
   "spec_version": "1.0.0",
-  "status": "awaiting-mockup-lock",
+  "status": "superseded",
   "approved": false,
   "mockup_locked": false,
   "notes": "B3 — the brand's Home tab, and the last of the eight chunks. Drawn last on purpose: Home is a summary of everything else.",
@@ -14,7 +14,12 @@
     "NEW: a first-run screen. Three things to do, and it says plainly that adding products is still web work — the honest answer rather than pretending everything is on the phone."
   ],
   "the_diary_is_kept_and_is_right": "BrandDiaryScreen is 18 lines and they are the right 18 — it renders the SAME component the creator reads, wired to the brand's calls. Building it twice is how two sides end up telling different stories about one negotiation.",
-  "counts": { "panels": 6, "new": 1, "change": 3, "keep": 1 },
+  "counts": {
+    "panels": 6,
+    "new": 1,
+    "change": 3,
+    "keep": 1
+  },
   "release": {
     "qa_all_green": false,
     "released": false,
@@ -23,5 +28,8 @@
     "deploy_targets": [],
     "outward_facing": "None. Nothing is built.",
     "device_walk_required": "NOT YET"
-  }
+  },
+  "superseded_by": "features/screen-atlas",
+  "superseded_at": "2026-09-01",
+  "superseded_why": "Organised by TAB — how the app is built, not how anyone uses it — so the same screen appears here and in other b-files with a different description each time. Replaced by the Screen Atlas, where each of the 109 screens is drawn ONCE at a permanent address (SB-/SC-/SA-) and the 47 actions point at it. Kept, not deleted: the notes below record the founder’s corrections round by round, and that history is not reproduced in the atlas. approved stays false, so this contract can never back a change."
 }

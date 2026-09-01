@@ -8,13 +8,13 @@
  *   - an action in the Action Map that no book covers
  *   - unbalanced <div> in a book (a malformed tag)
  *
- * Run:  node Docs/ATLAS/check-books.js
+ * Run:  node features/screen-atlas/04-preview/check-books.js
  */
 const fs = require('fs');
 const path = require('path');
 
-const DIR = __dirname;
-const MAP = path.join(DIR, '..', 'ACTION_MAP.md');
+const DIR = path.join(__dirname, 'mockups');
+const MAP = path.join(__dirname, '..', '..', '..', 'Docs', 'ACTION_MAP.md');
 const ATLASES = ['atlas-brand.html', 'atlas-creator.html'].map(f => path.join(DIR, f));
 
 // action -> screens, straight from the atlases

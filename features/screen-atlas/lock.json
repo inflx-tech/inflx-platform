@@ -1,0 +1,92 @@
+{
+  "feature": "screen-atlas",
+  "area": "design-of-record — brand + creator apps, stages 1-4",
+  "spec_version": "1.0.0",
+  "status": "mockup-locked",
+
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder)",
+  "approved_at": "2026-09-01",
+
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder)",
+  "mockup_locked_at": "2026-09-01",
+
+  "impact_reviewed": false,
+  "impact_review_note": "NOT fabricated. 05-impact.md was authored at lock time and the founder has not read it. The lock he gave was on the SCREENS. Set to true only when he confirms the impact document itself. Nothing is gated on this field.",
+
+  "ui_governed": false,
+  "ui_governed_reason": "This contract carries no runtime code — it is the design the implementation slices are built FROM. Rules 3+4 belong to those slices. The opt-out is only honoured when another contract in the changeset carries the UI gates, so a push of atlas + UI code with no implementation contract has the opt-out refused and is blocked. 06-diff/notes.md is provided anyway so that refused case still passes honestly.",
+
+  "what_is_locked": {
+    "actions": 47,
+    "screens": 109,
+    "brand_screens": "SB-01 to SB-62",
+    "creator_screens": "SC-01 to SC-42",
+    "admin_screens": "SA-01 to SA-05",
+    "books": 5,
+    "each_screen_drawn": "exactly once, with a permanent address"
+  },
+
+  "the_rule": "A set is one aim, one go-live day, one way of shooting. Money settles inside a set and changes nothing for anyone else. A day or a shoot mode cannot settle inside a set — other people already agreed to it — so disagreeing about either moves her OUT, into a deferred pool from which a later set is built. Every fork in the five books is a consequence of that sentence.",
+
+  "supersedes": [
+    "features/b1-brand-campaigns-tab",
+    "features/b2-brand-creators-tab",
+    "features/b3-brand-home",
+    "features/b4-b7-the-money",
+    "features/b5-creator-collabs-tab",
+    "features/b6-b8-shop-posts",
+    "features/b7-creator-home"
+  ],
+  "supersedes_note": "All seven stay approved:false and are marked status:superseded, so none can back a change. Their lock.json notes are KEPT — they record the founder's corrections round by round and that history is not reproduced in the atlas.",
+
+  "schema_decisions_committed": [
+    "A negotiation belongs to a SET ROW (campaign_influencers), not a floating agreement. Largest single backend piece; BR-05 BR-06 CR-02 CR-03 all wait on it.",
+    "A counter carries WHICH KIND it is — money (she stays in the set) vs structural (she moves out). Same shape in the data, opposite consequences.",
+    "creator_posts gains campaign_influencer_id. Five features blocked without it, including AD-03 which cannot be built at all.",
+    "Live links are a ROW PER CHANNEL, not a post_url column. One column makes the founder's per-channel rule unbuildable."
+  ],
+
+  "open_questions": [
+    "Nothing forces a brand to confirm she went live. Tranche 2 — a quarter of her fee — sits behind BR-19, which has no deadline. A brand who never presses the button withholds her money indefinitely without ever refusing. An automatic release after N days belongs on SA-04 and HAS NOT BEEN DESIGNED. Held open rather than guessed.",
+    "AD-03 minimum shop posts per collaboration — the number itself. The superseded B6-B8 panel showed 5. Not confirmed by the founder, and unbuildable until creator_posts.campaign_influencer_id exists."
+  ],
+
+  "blocked_before_any_money_screen": "The 16 sales rows in production are PRACTICE DATA — no razorpay_payment_id, one practice brand, and marketplace_fee_amount / brand_net were never computed. Any screen that sums them shows a wrong number. Repair or exclusion comes before SB-57, SC-32 and SC-30.",
+
+  "carried_unfixed": [
+    "cancelInfluencer writes status='cancelled' to contract_status, which has no such value. Confirmed live; it will throw the first time it runs.",
+    "The three 30 Aug shoot fixes are live (OTA v192/v199) and have NOT been walked on a handset. Belongs in the end-to-end verification pass, not per-slice."
+  ],
+
+  "verification": {
+    "how": "The check IS the artefact. Two generators, both mutation-tested, both must exit 0.",
+    "build_index": "node features/screen-atlas/04-preview/build-index.js  ->  actions 47 · screens 109 · outside the action model 9 · no problems",
+    "check_books": "node features/screen-atlas/04-preview/check-books.js  ->  5 books · 47 of 47 actions covered · no problems",
+    "what_they_catch": "a screen pointing at an action that does not exist; a screen no action reaches and not tagged [nav]/[all]/[out]; an action with no screen; a book whose screen list disagrees with the atlas in either direction; an action no book covers; unbalanced or malformed HTML.",
+    "mutation_tested": "Yes, both, and again after they were moved into this contract. Deliberately broken 7 ways across authoring; every break was caught and every restore returned to clean.",
+    "what_they_caught_during_authoring": [
+      "SC-18 pointed at BR-41 — there is no BR-41, actions stop at BR-24; it meant the screen SB-41",
+      "Her Performance screen was dropped entirely when the atlas was built from the tab files",
+      "AD-03 and AD-04 merged into one block, leaving AD-04 with no screen declaration",
+      "A malformed tag in book 2, caught seconds after it was written",
+      "THE ACTION MAP'S OWN FOOTER was wrong on nearly every number — 42 actions claimed against 47 actual, 15 new against 12 claimed, and 28 two-party actions against 19 claimed"
+    ]
+  },
+
+  "next_artefact": "ONE ordered migration list, collecting every schema change the five books ask for, written AGAINST this lock rather than inside it. Deliberately not started before the lock.",
+
+  "release": {
+    "qa_all_green": "n/a — design of record, never a release",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": "n/a — no mobile runtime change",
+    "deploy_class": "deploy-inert — documents only, no code, no migration, no runtime change",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT FOR THIS CONTRACT. Required for the implementation slices, and for the three 30 Aug shoot fixes already live."
+  }
+}
