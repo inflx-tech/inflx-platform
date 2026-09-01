@@ -1,0 +1,266 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>B7 · Creator Home — the last three screens</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF}
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEDED;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:26px;color:var(--ink)}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.03em}
+  .lede{max-width:980px;font-size:13.5px;color:#555;line-height:1.65;margin:0 0 4px}
+  .rule{max-width:980px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:12.5px;line-height:1.65;margin:16px 0 8px}
+  .rule b{color:var(--ink)}
+  .flow{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--pur);color:var(--pur);font-size:12px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .row{display:flex;gap:15px;flex-wrap:wrap;align-items:flex-start}
+  .unit{width:292px}
+  .cap{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 6px 2px;display:flex;align-items:center;gap:5px;min-height:24px}
+  .pip{font-size:8px;font-weight:900;padding:2px 5px;border-radius:4px;letter-spacing:.04em;color:#fff}
+  .pip.n{background:var(--new)} .pip.c{background:var(--acc)} .pip.k{background:var(--mut2)}
+  .phone{background:#fff;border:2px solid var(--pur);border-radius:13px;overflow:hidden}
+  .phone.keep{opacity:.72;border:1px solid var(--line)}
+  .nav{display:flex;align-items:center;gap:7px;padding:9px 12px;border-bottom:1px solid var(--soft);font-size:11px;color:var(--mut)}
+  .nav .bk{font-weight:900;color:var(--ink)} .nav .sp{flex:1}
+  .hd{padding:10px 12px;border-bottom:1px solid var(--soft)}
+  .kick{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  h2{font-size:15px;margin:3px 0 0;letter-spacing:-.02em}
+  .bd{padding:10px 12px}
+  .tabbar{display:flex;border-top:1px solid var(--line);background:#FCFCFC}
+  .tb{flex:1;text-align:center;padding:7px 0 6px;font-size:7.5px;font-weight:800;color:var(--mut2)}
+  .tb.on{color:var(--ink)}
+  .tb i{display:block;width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;margin:0 auto 3px}
+  .tb b{display:inline-block;background:var(--pur);color:#fff;border-radius:7px;font-size:7px;padding:0 4px;margin-left:2px}
+  .fl{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:9px}
+  .fl:first-child{margin-top:0}
+  .btn{margin-top:9px;background:var(--pur);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:.05em}
+  .btn.gh{background:#fff;color:#666;border:1px solid var(--line)}
+  .btn.sm{padding:7px;font-size:10px;margin-top:6px}
+  .note{font-size:10px;color:var(--mut);margin-top:6px;line-height:1.5}
+  .note b{color:var(--ink)}
+  .empty{text-align:center;padding:18px 6px;color:var(--mut2)}
+  .empty .t{font-size:13px;font-weight:800;color:var(--mut);margin-bottom:4px}
+  .empty .s{font-size:10.5px;line-height:1.5}
+  .r{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--soft);font-size:12px}
+  .r:first-child{border-top:none}
+  .av{width:25px;height:25px;border-radius:13px;background:#EEE;flex:0 0 auto}
+  .gr{flex:1;min-width:0} .sub{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .tag{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;background:var(--soft);color:#555;white-space:nowrap}
+  .tag.you{background:var(--purbg);color:var(--pur)} .tag.ok{background:var(--okbg);color:var(--ok)}
+  .tag.bad{background:var(--badbg);color:var(--bad)} .tag.wt{background:#EEF2FF;color:#1D4ED8}
+  .card{border:1px solid var(--line);border-radius:9px;padding:9px;margin-top:8px}
+  .card.ok{border-color:#BFE0CF;background:var(--okbg)}
+  .card.pu{border-color:#DDD6FE;background:var(--purbg)}
+  .card.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .ct{font-size:10px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px}
+  .ct.ok{color:var(--ok)} .ct.pu{color:var(--pur)} .ct.bad{color:var(--bad)}
+  .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0}
+  .kv span:first-child{color:var(--mut)} .kv b{font-weight:800}
+  .big{font-size:24px;font-weight:900;letter-spacing:-.03em}
+  .tri{display:flex;gap:6px;margin-top:8px}
+  .tv{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 4px;text-align:center}
+  .tv b{display:block;font-size:14px;font-weight:900} .tv span{font-size:7.5px;color:var(--mut);font-weight:800}
+  .why{max-width:980px;font-size:12.5px;color:#555;line-height:1.7;margin-top:18px;background:#fff;border-left:3px solid var(--pur);padding:11px 14px;border-radius:0 8px 8px 0}
+  .why b{color:var(--ink)}
+  .warn{max-width:980px;background:var(--badbg);border-left:3px solid var(--bad);padding:11px 14px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.65;margin:14px 0}
+  .warn b{color:var(--bad)}
+</style>
+
+<h1>B7 · Creator app — Home</h1>
+<p class="lede">
+  The last three screens in the programme. <span class="pip n">NEW</span> ·
+  <span class="pip c">CHANGE</span> · <span class="pip k">KEEP</span>
+</p>
+
+<div class="rule">
+  <b>Her Home answers the same question his does: what needs me?</b> Then, and only then, the
+  money.<br><br>
+  <b>It is already built to that shape</b> — "one Your turn (N) tile → Collabs, active glance,
+  recent activity, wallet", says its own comment. What changes is <b>what the numbers mean</b>
+  under the new architecture, and one thing it has never shown her.
+</div>
+
+<!-- ═══════════════════════════════════ 1 -->
+<div class="flow">1 · Home</div>
+<div class="row">
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Home — today</p>
+    <div class="phone keep">
+      <div class="hd"><h2>Good morning, Asha</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Your turn · 2</div>
+          <div class="r"><div class="gr">2 things need you</div><span class="tag you">›</span></div></div>
+        <div class="fl">Active collabs</div>
+        <div class="r"><div class="av"></div><div class="gr">Label Fern<div class="sub">Diwali Saree Edit</div></div><span class="tag">›</span></div>
+        <div class="fl">Recent activity</div>
+        <div class="r"><div class="gr">Contract signed<div class="sub">2h ago</div></div></div>
+        <div class="fl">Available to withdraw</div>
+        <div class="big">₹ 8,214</div>
+        <div class="btn sm">WITHDRAW</div>
+      </div>
+    </div>
+    <p class="note">The shape is right and was built deliberately. ⚠️ <b>The WITHDRAW button goes
+      nowhere</b> — there is no withdraw screen anywhere in the app.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Home — after</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">GOOD MORNING</div><h2>Asha</h2></div>
+      <div class="bd">
+        <div class="card pu"><div class="ct pu">● 2 things need you</div>
+          <div class="r"><div class="gr">A collaboration arrived<div class="sub">Label Fern · 14% · live 12 Sep</div></div><span class="tag you">›</span></div>
+          <div class="r"><div class="gr">2 more shop posts<div class="sub">before Label Fern goes live</div></div><span class="tag you">›</span></div>
+          <div class="btn sm">OPEN COLLABS</div></div>
+
+        <div class="fl">Where your work is</div>
+        <div class="r"><div class="av"></div><div class="gr">Label Fern<div class="sub">Step 3 of 6 · the shoot · waiting on them</div></div><span class="tag wt">›</span></div>
+        <div class="r"><div class="av"></div><div class="gr">Yoy Clothing<div class="sub">Step 2 of 6 · sign the contract</div></div><span class="tag you">›</span></div>
+
+        <div class="fl">Your money</div>
+        <div class="tri">
+          <div class="tv"><b>₹8,214</b><span>READY</span></div>
+          <div class="tv"><b>₹4,806</b><span>ON THE WAY</span></div>
+        </div>
+        <div class="btn">WITHDRAW ₹8,214</div>
+        <div class="note">₹2,604 of it clears over the next 7 days.</div>
+
+        <div class="fl">Lately</div>
+        <div class="r"><div class="gr">Your shop post was approved<div class="sub">4 of 5 for Label Fern · 2h</div></div></div>
+        <div class="r"><div class="gr">₹336 from a sale<div class="sub">Black jacket · yours 21 Sep</div></div></div>
+      </div>
+      <div class="tabbar"><div class="tb on"><i></i>Home<b>2</b></div><div class="tb"><i></i>Collabs<b>1</b></div>
+        <div class="tb"><i></i>Create<b>2</b></div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <p class="note"><b>Changes:</b> "your turn" is <b>itemised</b> rather than a count; active
+      collabs show <b>which of the six steps</b> and <b>whose move it is</b>; the money splits into
+      ready and on-the-way; and <b>WITHDRAW finally leads somewhere</b>.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> Her first day</p>
+    <div class="phone">
+      <div class="hd"><div class="kick">WELCOME</div><h2>Asha</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Two ways work arrives</div>
+          <div class="r"><div class="gr"><b>A brand sends you one</b><div class="sub">it lands in Collabs, with everything in it</div></div></div>
+          <div class="r"><div class="gr"><b>You pitch a brand</b><div class="sub">your numbers, your terms, your work</div></div><span class="tag you">›</span></div></div>
+        <div class="card"><div class="ct">Worth doing now</div>
+          <div class="r"><div class="gr">Connect Instagram<div class="sub">brands search on your numbers</div></div><span class="tag ok">DONE</span></div>
+          <div class="r"><div class="gr">Connect YouTube<div class="sub">optional</div></div><span class="tag you">›</span></div>
+          <div class="r"><div class="gr">Add your bank or UPI<div class="sub">so you can be paid</div></div><span class="tag you">›</span></div>
+          <div class="r"><div class="gr">Say what you'll take<div class="sub">minimum commission, minimum fee</div></div><span class="tag you">›</span></div></div>
+        <div class="btn">PITCH A BRAND</div>
+      </div>
+    </div>
+    <p class="note">Today an empty Home shows zeroes and nothing else. <b>The one thing she can do
+      on day one is pitch</b>, and nothing says so.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Notifications</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Home</span><span class="sp"></span><span class="bk">Mark all read</span></div>
+      <div class="hd"><h2>Notifications</h2></div>
+      <div class="bd">
+        <div class="r"><div class="gr"><b>Label Fern sent you a collaboration</b><div class="sub">14% · jackets · live 12 Sep · 2h</div></div><span class="tag you">NEW</span></div>
+        <div class="r"><div class="gr"><b>They agreed 18%</b><div class="sub">everything else unchanged · 4h</div></div><span class="tag you">NEW</span></div>
+        <div class="r"><div class="gr"><b>You were moved to another set</b><div class="sub">19 Sep, remote — the terms you asked for · 1d</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr"><b>Your shop post needs a fix</b><div class="sub">blurry images · 1d</div></div><span class="tag bad">›</span></div>
+        <div class="r"><div class="gr"><b>₹336 from a sale</b><div class="sub">Black jacket · in your wallet 21 Sep · 2d</div></div><span class="tag">›</span></div>
+        <div class="r"><div class="gr"><b>Yoy confirmed your Instagram post</b><div class="sub">1 of 2 · ₹3,000 releases when both are in · 3d</div></div><span class="tag">›</span></div>
+        <div class="empty" style="padding:14px 4px"><div class="t">No notifications yet</div>
+          <div class="s">When a brand sends you work, or your money moves, you will hear here.</div></div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> six new kinds — a whole deal arrived, terms agreed, you were
+      moved, a post needs a fix, money from a sale, a channel confirmed. <b>Every money line says
+      when it becomes hers</b>, not just that it happened.</p>
+  </div>
+</div>
+
+<div class="row" style="margin-top:15px">
+  <div class="unit">
+    <p class="cap"><span class="pip c">CHANGE</span> Her transactions</p>
+    <div class="phone">
+      <div class="nav"><span class="bk">‹ Back</span><span class="sp"></span></div>
+      <div class="hd"><h2>Your sales</h2>
+        <div class="tri" style="margin-top:6px">
+          <div class="tv"><b>₹18,600</b><span>TOTAL COMMISSION</span></div>
+          <div class="tv"><b>42</b><span>TOTAL ORDERS</span></div>
+        </div></div>
+      <div class="bd">
+        <div class="fl">Today</div>
+        <div class="r"><div class="gr">Black jacket · M<div class="sub">Label Fern · yours 8 Sep</div></div><div style="text-align:right"><b>₹336</b><div class="sub">14% of ₹2,400</div></div></div>
+        <div class="r"><div class="gr">Beige jacket · S<div class="sub">Label Fern · yours 8 Sep</div></div><div style="text-align:right"><b>₹308</b><div class="sub">14% of ₹2,200</div></div></div>
+        <div class="fl">Yesterday</div>
+        <div class="r"><div class="gr">Linen saree<div class="sub">Kanchi Silks · <b style="color:var(--ok)">in your wallet</b></div></div><div style="text-align:right"><b>₹532</b><div class="sub">14% of ₹3,800</div></div></div>
+        <div class="r"><div class="gr">Cotton shirt<div class="sub">returned 8 Sep</div></div><div style="text-align:right"><b style="color:var(--bad)">− ₹161</b><div class="sub">reversed</div></div></div>
+        <div class="empty" style="padding:14px 4px"><div class="t">No sales yet</div>
+          <div class="s">Once your posts are live, every sale they drive shows up here the moment
+            it happens.</div></div>
+      </div>
+    </div>
+    <p class="note"><b>Changes:</b> every line now says <b>the day it becomes hers</b> and
+      <b>what it is a percentage of</b>. Today it says "Commission from follower payments" and a
+      number — true, and it teaches her nothing.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip n">NEW</span> A returned sale</p>
+    <div class="phone">
+      <div class="hd"><h2>Cotton shirt · returned</h2></div>
+      <div class="bd">
+        <div class="card bad"><div class="ct bad">Reversed on 8 Sep</div>
+          <div class="kv"><span>Sold</span><b>6 Sep</b></div>
+          <div class="kv"><span>Returned</span><b>8 Sep · inside the 7 days</b></div>
+          <div class="kv"><span>Your commission</span><b>− ₹161</b></div></div>
+        <div class="card ok"><div class="ct ok">Nothing was taken from your wallet</div>
+          <p class="note" style="margin:0">This sale had not cleared yet. Commission only reaches
+            your wallet 7 days after a sale, and this one came back on day 2.</p></div>
+        <div class="note">Returns are the shopper's right and they are not counted against you.</div>
+      </div>
+    </div>
+    <p class="note"><b>The sentence that matters is the second card.</b> A reversal she does not
+      understand is the fastest way to lose a creator's trust — and here it is genuinely harmless,
+      so say so.</p>
+  </div>
+
+  <div class="unit">
+    <p class="cap"><span class="pip k">KEEP</span> Where the numbers come from</p>
+    <div class="phone keep">
+      <div class="hd"><h2>One count, everywhere</h2></div>
+      <div class="bd">
+        <div class="card"><div class="ct">Her Home badge</div>
+          <p class="note" style="margin:0">Same source as her Collabs tab, and as the brand's
+            "needs you". One server answer, three screens.</p></div>
+        <div class="kv"><span>Home · your turn</span><b>2</b></div>
+        <div class="kv"><span>Collabs tab badge</span><b>2</b></div>
+        <div class="kv"><span>What the brand sees</span><b>the same 2</b></div>
+        <div class="note" style="margin-top:8px"><b>Unchanged, and it is the point.</b> The
+          six-step ladder and the counts were built once on the server precisely so a creator and a
+          brand can never see different numbers for the same collaboration.</div>
+      </div>
+    </div>
+    <p class="note">Nothing to redraw. Worth stating so nobody "helpfully" computes the badge on
+      the phone later.</p>
+  </div>
+</div>
+
+<div class="warn">
+  <b>One button on her Home has never worked.</b><br><br>
+  <code>HomeScreen</code> shows <b>Available to withdraw</b> with a <b>WITHDRAW</b> button
+  underneath it. <b>There is no withdraw screen in the app.</b> The endpoint exists, the ₹100
+  minimum is enforced, the 10% TDS is calculated — and the button leads nowhere.<br><br>
+  It is the same gap B4/B7 found from the Earnings side. <b>Two entry points, one missing screen.</b>
+</div>
+
+<div class="why">
+  <b>What B7's Home costs.</b> Two new screens, three changed, one confirmed unchanged.<br><br>
+  <b>Her Home was built to the right shape</b> — one "your turn" tile, then the work, then the
+  money. It does not need rethinking, only filling in: the tile becomes items instead of a count,
+  the collabs show which step and whose move, and the money splits into what is hers and what is
+  coming.<br><br>
+  <b>And every money line now says when it becomes hers.</b> That single habit — a date beside
+  every rupee — is what stops a creator believing she is owed something nobody plans to send.
+</div>

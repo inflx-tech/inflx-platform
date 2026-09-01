@@ -1,0 +1,24 @@
+{
+  "feature": "b7-creator-home",
+  "spec_version": "1.0.0",
+  "status": "awaiting-mockup-lock",
+  "approved": false,
+  "mockup_locked": false,
+  "notes": "The last three screens in the programme — her Home, Notifications and Transaction feed. B7's Earnings and Profile were drawn with the money in b4-b7-the-money; this completes it.",
+  "her_home_was_built_right": "Its own comment says the shape: 'one Your turn (N) tile → Collabs, active glance, recent activity, wallet'. It does not need rethinking, only filling in — the tile becomes ITEMS instead of a count, active collabs show WHICH of the six steps and WHOSE MOVE it is, and the money splits into what is hers and what is coming.",
+  "one_button_has_never_worked": "⚠️ HomeScreen shows 'Available to withdraw' with a WITHDRAW button under it, and THERE IS NO WITHDRAW SCREEN IN THE APP. The endpoint exists, the ₹100 minimum is enforced, the 10% TDS is calculated — the button leads nowhere. Same gap b4-b7 found from the Earnings side: two entry points, one missing screen.",
+  "every_money_line_carries_a_date": "The habit applied throughout: a rupee is always shown with the day it becomes hers. That single convention is what stops a creator believing she is owed something nobody plans to send.",
+  "the_returned_sale_screen": "NEW, and the second card is the point: 'Nothing was taken from your wallet — commission only reaches your wallet 7 days after a sale, and this one came back on day 2.' A reversal she does not understand is the fastest way to lose a creator's trust, and under the 7-day rule it is genuinely harmless.",
+  "counts_stay_on_the_server": "Home's badge, the Collabs tab badge and the brand's 'needs you' are one server answer read three times. Stated in the document so nobody later computes it on the phone.",
+  "multi_brand_posts_answered": "Founder, 2026-09-01: no count for multi-brand posts. Only single-brand posts count towards a set's minimum, because only they belong to one collaboration.",
+  "counts": { "panels": 7, "new": 2, "change": 3, "keep": 1 },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "maestro_green": false,
+    "deploy_class": "deploy-inert — mockups and specification only, no code",
+    "deploy_targets": [],
+    "outward_facing": "None. Nothing is built.",
+    "device_walk_required": "NOT YET"
+  }
+}

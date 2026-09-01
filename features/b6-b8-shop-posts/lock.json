@@ -40,5 +40,5 @@
     "multi_does_not_ask_her_to_pick_campaigns": "The point of multi-brand is a mixed basket; asking her to curate campaigns as well as brands would be two questions for one answer. She is SHOWN which campaigns are in play, not asked to choose."
   },
   "side_effect": "Choosing the campaign on a single-brand post means THE POST KNOWS ITS COLLABORATION — which is the missing column B6 needs for the count, the launch gate, the reminder, the notification and the admin queue sort. The fix and the feature are the same change.",
-  "open_question": "Does a MULTI-BRAND post count towards a set minimum? It spans several collaborations, so it belongs to none of them cleanly. Recommendation: only single-brand posts count — a post selling three brands is not really one of the five Label Fern needs. Not yet answered."
+  "multi_brand_posts_answered": "Founder, 2026-09-01: \"for multi brand posts...NO, we dont need any specific count for those.\" Only SINGLE-BRAND posts count towards a set minimum, because only they belong to one collaboration. A multi-brand post is still perfectly valid work — it simply satisfies no minimum."
 }
