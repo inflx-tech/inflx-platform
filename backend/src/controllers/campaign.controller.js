@@ -3,6 +3,7 @@
 const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
 const campaignRollup = require('../services/campaignRollup.service');
+const setShape = require('../services/setShape.model');
 const pricingService      = require('../services/pricing.service');
 const entitlementsService = require('../services/entitlements.service');
 const {
@@ -660,6 +661,10 @@ const createSet = asyncHandler(async (req, res) => {
     open_group_filters,
     // stage-2 §5.3 — sales/hybrid guidance: which channels a creator here may use.
     channels_json,
+    // stage-a — the three things that DEFINE a set. See services/setShape.model.js.
+    go_live_date,
+    shoot_mode,
+    invites_close_at,
   } = req.body;
 
   if (!name || !name.trim()) {
@@ -690,6 +695,14 @@ const createSet = asyncHandler(async (req, res) => {
 
   assertValidChannels(goal, channels_json);
 
+  // One aim, one go-live day, one way of shooting. The wizard offers two shoot modes;
+  // the older brand-approve path may still set 'remote'. Same function answers both, so
+  // the app and the server cannot disagree about what a set may look like.
+  const shape = setShape.validateSetShape({ go_live_date, shoot_mode, invites_close_at });
+  if (!shape.ok) {
+    throw new AppError('VALIDATION_ERROR', shape.error, 422, shape.field);
+  }
+
   // Coupon prefix is optional for conversion/hybrid handpick sets (each invite
   // can carry its own coupon_code); open-group joiners have no per-influencer
   // code, so the prefix stays mandatory there. Engagement must not have one.
@@ -713,8 +726,10 @@ const createSet = asyncHandler(async (req, res) => {
     `INSERT INTO campaign_sets
        (campaign_id, name, goal, influencer_mode, set_budget, per_influencer_budget,
         max_cap, window_start, window_end, brief, coupon_prefix,
-        formats_json, assets_json, open_group_filters, channels_json)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        formats_json, assets_json, open_group_filters, channels_json,
+        go_live_date, shoot_mode, invites_close_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+             $16, $17, $18)
      RETURNING *`,
     [
       campaign.id,
@@ -734,6 +749,11 @@ const createSet = asyncHandler(async (req, res) => {
       // NULL, not '{}' — "this set never stated a channel expectation" is a different
       // thing from "it stated an empty one", and only NULL is true of every set today.
       channels_json ? JSON.stringify(channels_json) : null,
+      // The three that define the set. NULL means 'not stated yet' — the wizard fills
+      // them in a screen at a time, and a pre-set-first set has none of them.
+      go_live_date || null,
+      shoot_mode || null,
+      invites_close_at || null,
     ]
   );
 
@@ -750,11 +770,29 @@ const updateSet = asyncHandler(async (req, res) => {
     'name', 'goal', 'influencer_mode', 'set_budget', 'per_influencer_budget',
     'max_cap', 'window_start', 'window_end', 'brief', 'coupon_prefix',
     'formats_json', 'assets_json', 'open_group_filters', 'channels_json',
+    'go_live_date', 'shoot_mode', 'invites_close_at',
   ];
   if (req.body.formats_json !== undefined) assertValidFormats(req.body.formats_json);
   if (req.body.channels_json !== undefined) {
     // The goal being edited in the same call wins; otherwise the stored one applies.
     assertValidChannels(req.body.goal !== undefined ? req.body.goal : set.goal, req.body.channels_json);
+  }
+
+  // Validate the shape the set will HAVE, not just the fields in this request — sending
+  // invites_close_at alone must still be checked against the stored go_live_date.
+  //
+  // An EXISTING go-live day is not re-checked against the lead time: a set built last week
+  // is allowed to launch tomorrow, and re-validating it would make a set un-editable simply
+  // because time passed. Only a day being CHANGED now must clear the lead time.
+  if (['go_live_date', 'shoot_mode', 'invites_close_at'].some((f) => req.body[f] !== undefined)) {
+    const changingDay = req.body.go_live_date !== undefined;
+    const merged = {
+      go_live_date:     changingDay ? req.body.go_live_date : set.go_live_date,
+      shoot_mode:       req.body.shoot_mode       !== undefined ? req.body.shoot_mode       : set.shoot_mode,
+      invites_close_at: req.body.invites_close_at !== undefined ? req.body.invites_close_at : set.invites_close_at,
+    };
+    const shape = setShape.validateSetShape(merged, changingDay ? {} : { today: '1970-01-01' });
+    if (!shape.ok) throw new AppError('VALIDATION_ERROR', shape.error, 422, shape.field);
   }
 
   const updates = {};
@@ -827,10 +865,12 @@ const duplicateSet = asyncHandler(async (req, res) => {
     `INSERT INTO campaign_sets
        (campaign_id, name, goal, influencer_mode, set_budget, per_influencer_budget,
         max_cap, window_start, window_end, brief, coupon_prefix,
-        formats_json, assets_json, open_group_filters)
+        formats_json, assets_json, open_group_filters,
+        go_live_date, shoot_mode, invites_close_at)
      SELECT campaign_id, $2, goal, influencer_mode, set_budget, per_influencer_budget,
         max_cap, window_start, window_end, brief, coupon_prefix,
-        formats_json, assets_json, open_group_filters
+        formats_json, assets_json, open_group_filters,
+        go_live_date, shoot_mode, invites_close_at
      FROM campaign_sets WHERE id = $1
      RETURNING *`,
     [set.id, newName]
