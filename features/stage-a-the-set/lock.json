@@ -2,7 +2,7 @@
   "feature": "stage-a-the-set",
   "area": "brand + creator apps — the set becomes real",
   "spec_version": "1.0.0",
-  "status": "server done · building the app",
+  "status": "wizard built · ready for OTA",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls start stage A\", 2026-09-01",
   "approved_at": "2026-09-01",
@@ -105,5 +105,18 @@
     "mutation_tested": "13 ways. Model 7: wizard offering remote; shipment needing both marks; the fallback reading window_end before go_live_date; lead time 5->4; the invites-close check inverted; a set with no day inventing today; validate throwing on rubbish. Controller 6: dropping a column from the INSERT; dropping a VALUE while keeping the column; not reading a field off req.body; calling validateSetShape and ignoring the answer; updateSet validating only what was sent; duplicate dropping the shape. All 13 caught.",
     "the_tests_caught_themselves_first": "The controller test extracts the INSERT block by scanning for its closing bracket. The first version scanned for the next ] — which lands inside JSON.stringify(assets_json) : '[]', truncating the block three lines early and hiding the exact fields the file exists to check. Four tests failed, correctly, on the HELPER rather than the controller. A source-reading test that quietly reads the wrong source is the same fault in a different coat.",
     "regression": "india-day 23, shoot-plan 29, stage4-parcel 25, deliverables-when-buying-content 19, brief-to-signing 19, usage-term 20, coupon-not-mandatory 11 — all pass. Plus 35 new. Certified no-regression in the neighbourhood; NOT claimed green across the full suite."
+  },
+  "app_built": {
+    "at": "2026-09-01",
+    "mirror": "Packages/Mobile/src/utils/setShape.js — repeats the server model exactly, pinned by setShape.rules.test.js which READS BOTH FILES and compares. The server is the authority; this copy exists only so the picker never offers a day the server would refuse.",
+    "wizard": "BrandSetWizardScreen StepBasics: the two-box posting window became ONE go-live day for every aim, plus a two-option shoot mode and an invitations-close day that proposes itself three days before the launch.",
+    "bug_i_introduced_and_caught": "The save guard still demanded windowStart && windowEnd on a content set. Once the wizard stopped writing a window, that would have blocked every NEW content set from saving — while still letting an EDITED old one through, because hydrate() fills the window from the stored row. Found by grepping for dangling references after removing the field. Now pinned by a test.",
+    "a_test_that_did_not_bite": "The first version of that guard test asserted only that setShape.validateSetShape appears. A mutation deleting the  line PASSED — the call was still there, doing nothing. Strengthened to assert the code ACTS on both answers. A check whose result nobody reads is not a check, and that is the same fault in a third coat.",
+    "adjacent_fixes": [
+      "batchAWizardTrim.test.js \"parses\" used require() on a React Native screen, which cannot load outside Metro — so it failed on EVERY run for every file, whatever the code said. Verified pre-existing on the untouched file. Now uses @babel/parser, which is already a dependency. Mutation-tested: a deliberate syntax error is caught.",
+      "run-test-file.js was missing toBeUndefined, which failed 14 assertions in collabCounter.test.js — a pure util test with nothing to do with this contract. Added, with a readable failure message, and verified it both passes and fails correctly."
+    ],
+    "drift_not_regression": "Five assertions in batchAWizardTrim.test.js pinned the old posting window. That is business-rule drift — the locked design replaces it. REWRITTEN rather than deleted, with the founder quote and the reason, because what they guarded (that the date fields differ correctly by aim) still needs guarding: the new answer is that they do not differ at all.",
+    "regression": "setShape.rules 22, batchAWizardTrim 52, setShape.model 21, campaignSetShape 14, india-day 23, shoot-plan 29, stage4-parcel 25, deliverables 19, brief-to-signing 19 — all pass. 39 mobile test files remain unrunnable under the shim (JSX / RN imports); that is pre-existing shim debt, not this change."
   }
 }

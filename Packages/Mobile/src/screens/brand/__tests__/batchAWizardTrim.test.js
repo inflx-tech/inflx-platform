@@ -56,8 +56,18 @@ function branchAt(src, i, opener) {
 }
 
 describe('Batch A · the pieces still load', () => {
+  // require() cannot load a React Native screen outside Metro — it hits the first JSX tag
+  // and throws "Unexpected token '<'". So this pair failed on EVERY run, for every file,
+  // whatever the code said. A test that always fails is not a guard; it is noise that hides
+  // the real failures underneath it. (Verified: it failed identically on the untouched file
+  // before this contract changed anything.)
+  //
+  // @babel/parser is already a dependency of this package, so the file can be genuinely
+  // syntax-checked instead. Stage A found this while needing an actual parse check on a
+  // large JSX edit.
+  const parser = require('@babel/parser');
   it.each([WIZARD, CREATE])('%s parses', (rel) => {
-    expect(() => require(path.join(SRC, rel))).not.toThrow();
+    expect(() => parser.parse(read(rel), { sourceType: 'module', plugins: ['jsx'] })).not.toThrow();
   });
 });
 
@@ -134,22 +144,76 @@ describe('Batch A · A-5 N-2 · a pay-for-content set keeps everything', () => {
     expect(src).toContain('FORMATS.map');
   });
 
-  it('the posting window keeps BOTH halves on a content set', () => {
-    const both = src.slice(src.indexOf('{buyingContent ? ('), src.indexOf(') : ('));
-    expect(both).toContain('Posting window from');
-    expect(both).toContain('label="To"');
-    expect(both).toContain('windowEnd');
+  /**
+   * SUPERSEDED BY STAGE A — business-rule drift, not a regression.
+   *
+   * Batch A gave a CONTENT set two date boxes (a posting window) and a SALES set one start
+   * date. The locked set-first design replaces both with a single GO-LIVE DAY for every aim.
+   * The founder, 2026-08-29:
+   *
+   *   "post by date is one where all social posts of creators in that set go live on that
+   *    date.....so all commission,content and both go live in that date"
+   *
+   * It is not a deadline she can beat and not one she can miss. A window cannot express
+   * that, so the two boxes became one and the aim no longer changes the question.
+   *
+   * The cases below are REWRITTEN rather than deleted: what they were guarding — that the
+   * date fields differ correctly by aim — still needs guarding, and the new answer is that
+   * they DO NOT differ at all.
+   *
+   * Contract: features/stage-a-the-set. Design: features/screen-atlas SB-26.
+   */
+  it('every aim now gets ONE go-live day, not a window', () => {
+    expect(src).toContain('label="Everyone goes live on"');
+    expect(src).toContain('goLiveDate');
+    // the two-box window is gone from the wizard entirely
+    expect(src).not.toContain('Posting window from');
+    expect(src).not.toContain('label="Starts"');
   });
 
-  it('a sales set gets one date and no end', () => {
-    const after = src.slice(src.indexOf(') : ('), src.indexOf(') : (') + 400);
-    expect(after).toContain('label="Starts"');
-    expect(after).not.toContain('windowEnd');
+  it('the day is not asked differently by aim — that is the whole point', () => {
+    // it must NOT sit inside a buyingContent branch any more
+    const field = src.slice(src.indexOf('label="Everyone goes live on"') - 600,
+                            src.indexOf('label="Everyone goes live on"'));
+    expect(field).not.toContain('buyingContent ? (');
   });
 
-  it('windowEnd is still wired, so a content set can still set one', () => {
+  it('the picker cannot offer a day the server would refuse', () => {
+    // minDate comes from the shared rule, not a literal
+    expect(src).toContain('setShape.earliestGoLiveDay()');
+    expect(src).toMatch(/minDate=\{earliest\}/);
+  });
+
+  it('the save guard asks for what the set actually needs, not the retired window', () => {
+    // This guard used to demand windowStart && windowEnd on a content set. Once the wizard
+    // stopped writing a window it would have blocked every NEW content set from saving,
+    // while still letting an EDITED old one through — hydrate() fills the window from the
+    // stored row. Found by grepping for dangling references after the field was removed.
+    const save = src.slice(src.indexOf('async function saveSetAndContinue'), src.indexOf('const body = {'));
+    expect(save).not.toContain('windowStart');
+    expect(save).not.toContain('windowEnd');
+    expect(save).toContain('setShape.validateSetShape');
+    expect(save).toContain('setShape.basicsReady');
+    // ...and it must ACT on both answers. Asserting only that the call is present let a
+    // mutation that deleted the `if (!shape.ok)` line pass — the call was still there,
+    // doing nothing. That is the same "two things doing one job" fault wearing a third
+    // coat: a check whose result nobody reads is not a check.
+    expect(save).toMatch(/if \(!shape\.ok\)/);
+    expect(save).toMatch(/if \(!setShape\.basicsReady\(/);
+    // both must stop the save, not merely warn
+    expect((save.match(/return;/g) || []).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('the wizard no longer WRITES a window, but older drafts keep theirs', () => {
+    // state is retained so hydrating an old set does not silently drop what it had...
     expect(src).toContain('setWindowEnd');
-    expect(src).toContain('window_end');
+    // ...but the wizard stopped sending window_start / window_end when it saves. A set
+    // created before set-first still resolves its day through goLiveDayOf()'s fallback.
+    const body = src.slice(src.indexOf('const body = {'), src.indexOf('setSaving(true)'));
+    expect(body).not.toContain('window_end:');
+    expect(body).toContain('go_live_date:');
+    expect(body).toContain('shoot_mode:');
+    expect(body).toContain('invites_close_at:');
   });
 });
 
@@ -334,17 +398,20 @@ describe('Batch A · the THIRD deal type — "Both" — keeps everything either 
     expect(buyingContent(goal)).toBe(goal !== 'conversion');
   });
 
-  it.each(['engagement', 'hybrid'])('%s keeps BOTH halves of the posting window', (goal) => {
-    expect(buyingContent(goal)).toBe(true);
-    const both = src.slice(src.indexOf('{buyingContent ? ('), src.indexOf(') : ('));
-    expect(both).toContain('Posting window from');
-    expect(both).toContain('label="To"');
+  // SUPERSEDED BY STAGE A — see the note above. The three aims used to be asked for dates
+  // differently; they are now asked identically, because they all launch on the same day.
+  it.each(['engagement', 'hybrid', 'conversion'])('%s is asked for the same one day', (goal) => {
+    expect(['engagement', 'hybrid', 'conversion']).toContain(goal);
+    expect(src).toContain('label="Everyone goes live on"');
+    // exactly one launch-day field in the whole wizard, for every aim
+    expect(src.split('label="Everyone goes live on"').length - 1).toBe(1);
   });
 
-  it('conversion alone gets the single start date', () => {
-    expect(buyingContent('conversion')).toBe(false);
-    const salesHalf = src.slice(src.indexOf(') : ('), src.indexOf(') : (') + 400);
-    expect(salesHalf).toContain('label="Starts"');
+  it('and every aim is asked how they shoot', () => {
+    expect(src).toContain('How they shoot');
+    expect(src).toContain('setShape.SHOOT_MODES_OFFERED.map');
+    // two options offered, never the third
+    expect(src).not.toMatch(/SHOOT_MODES\.map/);
   });
 
   it.each(['engagement', 'hybrid'])('%s keeps "What you are buying"', (goal) => {

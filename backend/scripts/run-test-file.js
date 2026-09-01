@@ -68,6 +68,7 @@ function makeExpect(negated = false) {
       toBeFalsy:   () => check(!actual, `expected ${show(actual)} to be falsy`),
       toBeNull:    () => check(actual === null, `expected ${show(actual)} to be null`),
       toBeDefined: () => check(actual !== undefined, 'expected a value, got undefined'),
+      toBeUndefined: () => check(actual === undefined, `expected undefined, got ${show(actual)}`),
       toHaveLength: e => check(actual && actual.length === e,
         `expected length ${e}, got ${actual && actual.length}`),
       // Added when a check needed it, rather than the check being rewritten around the gap.

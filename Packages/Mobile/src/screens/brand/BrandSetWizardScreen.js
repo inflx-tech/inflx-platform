@@ -36,6 +36,8 @@ import {
  * because none was ever briefed.
  */
 
+import * as setShape from '../../utils/setShape';
+
 const STEPS = ['The aim', 'Basics', 'Creators', 'Terms'];
 
 const AIM_CARDS = [
@@ -89,6 +91,11 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   const [name, setName] = useState('');
   const [windowStart, setWindowStart] = useState('');
   const [windowEnd, setWindowEnd] = useState('');
+  // stage-a — a set is one aim, one go-live day, one way of shooting. The window above is
+  // kept only so an older draft being edited does not lose what it already had.
+  const [goLiveDate, setGoLiveDate] = useState('');
+  const [shootMode, setShootMode] = useState(null);
+  const [invitesClose, setInvitesClose] = useState('');
   const [channels, setChannels] = useState([]);
   const [formats, setFormats] = useState(FORMATS.map(f => ({ type: f.type, count: 0 })));
   const [derivedBudget, setDerivedBudget] = useState(null);
@@ -184,6 +191,12 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     setName(set.name || '');
     setWindowStart(set.window_start ? String(set.window_start).slice(0, 10) : '');
     setWindowEnd(set.window_end ? String(set.window_end).slice(0, 10) : '');
+    // stage-a — a set created before set-first has none of these. Leaving them blank is
+    // correct: goLiveDayOf() still reads its old window, and the brand is asked for the
+    // launch day the first time they edit it. Nothing is invented on their behalf.
+    setGoLiveDate(setShape.dayOf(set.go_live_date) || '');
+    setShootMode(set.shoot_mode || null);
+    setInvitesClose(setShape.dayOf(set.invites_close_at) || '');
     setDerivedBudget(set.set_budget != null ? Number(set.set_budget) : null);
     const cj = set.channels_json || null;
     setChannels(Array.isArray(cj?.allowed) ? cj.allowed : []);
@@ -245,8 +258,23 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   // ── Saving the set (steps 1–2) ─────────────────────────────────────────────
   async function saveSetAndContinue() {
     if (!name.trim()) { Alert.alert('Name the set', 'Creators see this name on their invite.'); return; }
-    if (buyingContent && (!windowStart || !windowEnd)) {
-      Alert.alert('Posting window', 'A content set needs a window — it is what the set end date is calculated from.');
+
+    // stage-a — this used to demand a posting window on a content set. The wizard no longer
+    // writes one, so the guard would have blocked every NEW content set from saving while
+    // still letting an edited old one through, because hydrate() fills the window from the
+    // stored row. It now asks for what the set actually needs, for every aim, from the same
+    // rule the server uses.
+    const shape = setShape.validateSetShape({
+      go_live_date: goLiveDate || null,
+      shoot_mode: shootMode || null,
+      invites_close_at: invitesClose || null,
+    });
+    if (!shape.ok) { Alert.alert('Check the dates', shape.error); return; }
+    if (!setShape.basicsReady({ name, go_live_date: goLiveDate, shoot_mode: shootMode })) {
+      Alert.alert(
+        'A set needs all three',
+        'A name, the day everyone goes live, and how they shoot. Everything else is per creator.'
+      );
       return;
     }
 
@@ -254,8 +282,12 @@ export default function BrandSetWizardScreen({ route, navigation }) {
       name: name.trim(),
       goal,
       influencer_mode: 'handpick',
-      window_start: windowStart || null,
-      window_end: buyingContent ? (windowEnd || null) : null,
+      // stage-a — ONE go-live day, not a window. Every creator in this set posts on it.
+      // The old window is no longer written by the wizard; existing sets keep theirs, and
+      // goLiveDayOf() falls back to it for anything created before set-first.
+      go_live_date: goLiveDate || null,
+      shoot_mode: shootMode || null,
+      invites_close_at: invitesClose || null,
       formats_json: buyingContent ? formats.filter(f => Number(f.count) > 0) : [],
       // Guidance only — it blocks nobody you have already agreed with.
       // Batch A — `minimum` is no longer sent: the brand can no longer choose one, and
@@ -325,8 +357,9 @@ export default function BrandSetWizardScreen({ route, navigation }) {
           <StepBasics
             goal={goal} selling={selling} buyingContent={buyingContent}
             name={name} setName={setName}
-            windowStart={windowStart} setWindowStart={setWindowStart}
-            windowEnd={windowEnd} setWindowEnd={setWindowEnd}
+            goLiveDate={goLiveDate} setGoLiveDate={setGoLiveDate}
+            shootMode={shootMode} setShootMode={setShootMode}
+            invitesClose={invitesClose} setInvitesClose={setInvitesClose}
             channels={channels} setChannels={setChannels}
             formats={formats} setFormats={setFormats}
             derivedBudget={derivedBudget}
@@ -436,10 +469,23 @@ function StepAim({ goal, locked, onPick, onContinue }) {
 /* ── Step 2 · basics ───────────────────────────────────────────────────────── */
 function StepBasics(p) {
   const {
-    goal, selling, buyingContent, name, setName, windowStart, setWindowStart,
-    windowEnd, setWindowEnd, channels, setChannels,
+    goal, selling, buyingContent, name, setName,
+    goLiveDate, setGoLiveDate, shootMode, setShootMode, invitesClose, setInvitesClose,
+    channels, setChannels,
     formats, setFormats, derivedBudget, saving, onBack, onContinue,
   } = p;
+
+  // The picker greys out anything sooner than the server would accept, so the brand can
+  // never choose a day and then be refused. Both numbers come from one place.
+  const earliest = setShape.earliestGoLiveDay();
+  const ready = setShape.basicsReady({ name, go_live_date: goLiveDate, shoot_mode: shootMode });
+
+  // Choosing a launch day proposes a sensible close for invitations — three days before,
+  // never in the past. The brand can change it; they should not have to think about it.
+  const pickGoLive = (d) => {
+    setGoLiveDate(d);
+    if (!invitesClose || invitesClose > d) setInvitesClose(setShape.suggestedInvitesClose(d) || '');
+  };
 
   const toggleChannel = (k) =>
     setChannels(channels.includes(k) ? channels.filter(c => c !== k) : [...channels, k]);
@@ -464,18 +510,68 @@ function StepBasics(p) {
             lesson is no longer worth a row on the screen.
 
             A CONTENT set keeps both halves — its window is real, not derived. */}
-        {buyingContent ? (
-          <View style={{ flexDirection: 'row', gap: 9, marginTop: 9 }}>
-            <View style={{ flex: 1 }}>
-              <DateField label="Posting window from" value={windowStart} onChange={setWindowStart} placeholder="Choose a date" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <DateField label="To" value={windowEnd} onChange={setWindowEnd} placeholder="Choose a date" minDate={windowStart || undefined} />
-            </View>
-          </View>
-        ) : (
-          <DateField label="Starts" value={windowStart} onChange={setWindowStart} placeholder="Choose a start date" style={{ marginTop: 9 }} />
+        {/* stage-a — ONE day, for every aim. The founder, 2026-08-29:
+              "post by date is one where all social posts of creators in that set go live on
+               that date.....so all commission,content and both go live in that date"
+            It is not a deadline she can beat and not one she can miss. A window cannot say
+            that, which is why the two date boxes became one. Shop posts on INFLX still have
+            no deadline of their own — they only have to be APPROVED by this day. */}
+        <DateField
+          label="Everyone goes live on"
+          value={goLiveDate}
+          onChange={pickGoLive}
+          placeholder="Choose the launch day"
+          minDate={earliest}
+          style={{ marginTop: 9 }}
+        />
+        <Text style={s.hint}>
+          Every creator in this set posts on social media that day. Shop posts on INFLX can go
+          up any time before it.
+        </Text>
+
+        {/* Two options, not three. The column accepts a third — 'remote', meaning nothing is
+            sent at all — but offering it here would let a brand pick a path where her address
+            screen never appears and no parcel is ever tracked. setShape.SHOOT_MODES_OFFERED
+            is the one list, mirrored from the server. */}
+        <Text style={[s.label, { marginTop: 14 }]}>How they shoot</Text>
+        <View style={{ flexDirection: 'row', gap: 9, marginTop: 6 }}>
+          {setShape.SHOOT_MODES_OFFERED.map((m) => {
+            const on = shootMode === m;
+            const copy = setShape.SHOOT_MODE_COPY[m];
+            return (
+              <TouchableOpacity
+                key={m}
+                style={[s.modeCard, on && s.modeCardOn]}
+                onPress={() => setShootMode(m)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: on }}
+              >
+                <Text style={[s.modeTitle, on && s.modeTitleOn]}>{copy.title}</Text>
+                <Text style={[s.modeSub, on && s.modeSubOn]}>{copy.sub}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {shootMode === 'visit' && (
+          <Text style={s.hint}>A store visit is marked done by both of you.</Text>
         )}
+        {shootMode === 'shipment' && (
+          <Text style={s.hint}>She sends her address, you ship, and she marks it done.</Text>
+        )}
+
+        <DateField
+          label="Invitations close"
+          value={invitesClose}
+          onChange={setInvitesClose}
+          placeholder="Choose a date"
+          minDate={setShape.today()}
+          maxDate={goLiveDate || undefined}
+          style={{ marginTop: 14 }}
+        />
+        <Text style={s.hint}>
+          After this day nobody else can be asked into this set. Leave enough time to sign and
+          shoot.
+        </Text>
 
         {buyingContent && (
           <Text style={s.help}>
@@ -546,7 +642,14 @@ function StepBasics(p) {
         <TouchableOpacity style={[s.btn, s.btnSec, { flex: 1 }]} onPress={onBack} activeOpacity={0.85}>
           <Text style={s.btnSecT}>Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[s.btn, s.btnPri, { flex: 1 }]} disabled={saving} onPress={onContinue} activeOpacity={0.85}>
+        {/* A set cannot continue without all three. The button is greyed rather than the
+            brand tapping it and reading a 422 — setShape.basicsReady is the one answer. */}
+        <TouchableOpacity
+          style={[s.btn, s.btnPri, { flex: 1 }, !ready && s.btnOff]}
+          disabled={saving || !ready}
+          onPress={onContinue}
+          activeOpacity={0.85}
+        >
           {saving ? <ActivityIndicator color={ig.bg} /> : <Text style={s.btnPriT}>Continue</Text>}
         </TouchableOpacity>
       </View>
@@ -853,6 +956,14 @@ const s = StyleSheet.create({
   inputCalc: { backgroundColor: ig.bgSoft, borderStyle: 'dashed', justifyContent: 'center' },
   calcT: { fontSize: 12.5, fontWeight: '700', color: ig.mut },
   help: { fontSize: 10.5, color: ig.mut, fontWeight: '650', marginTop: 8, lineHeight: 15 },
+  hint: { fontSize: 10.5, color: ig.mut, fontWeight: '650', marginTop: 6, lineHeight: 15 },
+  modeCard: { flex: 1, borderWidth: 1, borderColor: ig.line, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 10 },
+  modeCardOn: { borderColor: ig.text, backgroundColor: ig.text },
+  modeTitle: { fontSize: 12, fontWeight: '800', color: ig.text },
+  modeTitleOn: { color: ig.bg },
+  modeSub: { fontSize: 10, fontWeight: '650', color: ig.mut, marginTop: 3, lineHeight: 14 },
+  modeSubOn: { color: ig.bg, opacity: 0.85 },
+  btnOff: { opacity: 0.4 },
   helpB: { color: ig.text, fontWeight: '800' },
   lead: { fontSize: 11.5, color: ig.text2, fontWeight: '650', lineHeight: 17 },
   leadB: { fontWeight: '800', color: ig.text },
