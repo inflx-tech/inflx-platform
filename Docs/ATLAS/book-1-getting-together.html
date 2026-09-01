@@ -1,0 +1,736 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Action Book 1 · Getting together</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--soft:#F5F5F5;--acc:#E36414;
+        --ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--br:#1D4ED8;--brbg:#EEF2FF;--cr:#0F766E;--crbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);padding:26px 24px 90px;max-width:960px;
+       font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+  h1{font-size:28px;margin:0 0 5px;letter-spacing:-.03em}
+  .lede{font-size:13.5px;color:#555;margin:0 0 18px}
+  .lede b{color:var(--ink)}
+  .key{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin:0 0 10px}
+  .phase{margin:40px 0 4px;font-size:11px;font-weight:900;letter-spacing:.12em;
+         text-transform:uppercase;color:var(--pur)}
+  .act{border-top:2px solid var(--ink);padding-top:14px;margin:30px 0 0}
+  .ah{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .ah .c{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:900;letter-spacing:-.02em}
+  .ah .t{font-size:19px;font-weight:800;letter-spacing:-.025em}
+  .v{font-size:8px;font-weight:900;padding:2.5px 6px;border-radius:4px;color:#fff;letter-spacing:.05em}
+  .v.n{background:var(--new)} .v.c{background:var(--acc)} .v.k{background:#B0B0B0}
+  .two{background:var(--purbg);color:var(--pur);border:1px solid #DDD6FE;
+       font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;margin:9px 0 0;color:#444}
+  .meta .l{font-size:8.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+           color:var(--mut);display:block;margin-bottom:1px}
+  .sc a{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;font-weight:800;
+        padding:2px 5px;border-radius:4px;border:1px solid var(--line);text-decoration:none;
+        color:#444;margin-right:3px;display:inline-block}
+  .sc a.b{background:var(--brbg);border-color:#C7D2FE;color:var(--br)}
+  .sc a.c{background:var(--crbg);border-color:#A7D8CB;color:var(--cr)}
+  .lab{font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--mut);margin:18px 0 5px}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 0 30px;margin:0 0 9px;font-size:13.5px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;
+       border-radius:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:900;
+       display:flex;align-items:center;justify-content:center}
+  .fork{border-left:3px solid var(--acc);padding:2px 0 2px 11px;margin:7px 0 7px 0;font-size:13px}
+  .fork .fk{font-weight:900;color:var(--acc);font-size:11px;letter-spacing:.03em}
+  .fork.o{border-color:var(--ok)} .fork.o .fk{color:var(--ok)}
+  .fork.b{border-color:var(--bad)} .fork.b .fk{color:var(--bad)}
+  table.both{border-collapse:collapse;width:100%;margin:6px 0 0;font-size:12.5px}
+  table.both th{width:50%;text-align:left;padding:6px 10px;font-size:9px;font-weight:900;
+       letter-spacing:.08em;text-transform:uppercase}
+  table.both th.b{background:var(--brbg);color:var(--br)}
+  table.both th.c{background:var(--crbg);color:var(--cr)}
+  table.both td{border:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  table.both td.moment{background:var(--soft);font-size:11px;font-weight:800;color:#555;
+       text-align:center;letter-spacing:.04em;text-transform:uppercase;border-left:none;border-right:none}
+  ul.tight{margin:0;padding-left:17px;font-size:13px}
+  ul.tight li{margin:0 0 4px}
+  .wrong{border:1px solid #E7BDB4;background:var(--badbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .wrong .w{font-weight:800;color:var(--bad)}
+  .data{border:1px solid var(--line);background:#FAFAFA;border-radius:9px;padding:10px 13px;
+        font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .data b{font-family:-apple-system,Segoe UI,sans-serif}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--soft);
+       padding:1px 4px;border-radius:3px}
+  .rule{background:var(--purbg);border:1px solid #DDD6FE;border-radius:9px;padding:11px 14px;
+        font-size:13px;margin:10px 0}
+  .rule b{color:var(--pur)}
+</style>
+
+<h1>Action Book 1 · Getting together</h1>
+<p class="lede">
+  Finding each other, agreeing terms, and what happens when you do not.
+  <b>14 actions</b> — 9 the brand starts, 5 the creator starts. Six of them do not exist today.<br>
+  Screens are referenced by address, never redrawn — they live in
+  <code>atlas-brand.html</code> and <code>atlas-creator.html</code>.
+</p>
+
+<div class="key">
+  <span class="v n">NEW</span> does not exist ·
+  <span class="v c">CHANGE</span> exists and changes ·
+  <span class="v k">KEEP</span> works as it is ·
+  <span class="two">BOTH</span> two people, so both phones are shown at the moment it matters
+</div>
+
+<div class="rule">
+  <b>The one rule this whole phase turns on.</b> A set is <b>one aim, one go-live day, one way of
+  shooting</b>. Money is settled inside a set and changes nothing for anybody else. A day or a
+  shoot mode cannot be settled inside a set — other people already agreed to it — so disagreeing
+  about either one <b>moves her out</b>. Every fork below is a consequence of that single
+  sentence.
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-01 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-01</span><span class="t">Start a campaign</span><span class="v c">CHANGE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>He has a reason to work with creators</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-22</a><a class="b">SB-23</a><a class="b">SB-04</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>Campaigns tab → <b>+ NEW CAMPAIGN</b>. <span class="sc"><a class="b">SB-22</a></span></li>
+    <li>Two fields: a name, and an optional note to himself. Nothing else.
+      <span class="sc"><a class="b">SB-23</a></span></li>
+    <li>The screen explains what a set is before he meets one, because the next thing he does is
+      build one.</li>
+    <li><b>CREATE · ADD A SET</b> → straight into BR-02. A campaign with no set is a draft that
+      does nothing.</li>
+  </ol>
+
+  <div class="fork"><span class="fk">FORK · his first ever campaign</span><br>
+    He lands on <span class="sc"><a class="b">SB-04</a></span> instead — three things to do, and
+    an honest line saying products are still added on the web.</div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaigns</b> — one row, <code>status='draft'</code>, name and note only.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong"><span class="w">Today this screen asks for aim, dates and budget.</span>
+    All three now belong to a <i>set</i>, not the campaign — a campaign with two sets has two
+    aims and two dates. Those fields must be removed, not just ignored, or he will fill them in
+    and expect them to mean something.<br><br>
+    <span class="w">The empty state says "Create campaigns from the web dashboard".</span> Wrong
+    since Stage 2 shipped.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-02 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-02</span><span class="t">Build a set</span><span class="v c">CHANGE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>From BR-01, or <b>+ ANOTHER SET</b> on a campaign</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-24</a><a class="b">SB-25</a><a class="b">SB-26</a><a class="b">SB-27</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><b>1 of 4 — the aim.</b> <span class="sc"><a class="b">SB-25</a></span> This choice decides
+      what the next three steps ask for.
+      <div class="fork o"><span class="fk">PAY PER SALE</span> — she earns a share of what she
+        sells. <b>No money up front.</b> Needs products and an offer. Deliverables are optional.</div>
+      <div class="fork"><span class="fk">PAY FOR CONTENT</span> — a fee for reels or stories.
+        <b>Money is locked when he publishes.</b> Deliverables are required.</div>
+      <div class="fork"><span class="fk">BOTH</span> — a fee and a share. Requires everything.</div>
+    </li>
+    <li><b>2 of 4 — the basics.</b> <span class="sc"><a class="b">SB-26</a></span> The three things
+      that <i>define</i> the set are on one screen: the go-live day, the shoot mode, and when
+      invitations close.</li>
+    <li>The go-live day opens the date picker. <span class="sc"><a class="b">SB-27</a></span>
+      Days too soon to invite, sign and shoot are closed.</li>
+    <li><b>3 of 4 — who.</b> → BR-03.</li>
+    <li><b>4 of 4 — terms.</b> → BR-10 (Book 2).</li>
+    <li>Back to the campaign. <span class="sc"><a class="b">SB-24</a></span> The set sits there as
+      a card until he publishes.</li>
+  </ol>
+
+  <div class="rule">
+    <b>The go-live day is a day, not a deadline.</b> Everyone in the set posts on social media
+    <i>that day</i>. She cannot beat it and she cannot miss it. Shop posts on INFLX are different
+    — they can go up any time before it, and only have to be approved by then.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_sets</b> — aim, <code>go_live_date</code>,
+    <code>shoot_mode</code>, <code>invites_close_at</code>.<br>
+    Every one of these is <b>new on the row</b>. Sets exist today as
+    <code>handpick / open_group</code> and carry none of it.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The wizard sends an empty deliverables list for a sale-only set, and the
+    server calls that an error.</span> Two places decide whether content is being bought and they
+    disagree — the fifth time that same fault has cost a bug. One function answers it
+    (<code>buysContent(goal)</code>) and both sides call it.<br><br>
+    <span class="w">Changing the day or the mode after people have agreed.</span> Everyone who
+    agreed must be asked again. Easiest safe answer for now: once the first invitation is
+    answered, those two fields lock.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-03 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-03</span><span class="t">Find creators</span><span class="v c">CHANGE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Creators tab, or step 3 of a set</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-06</a><a class="b">SB-07</a><a class="b">SB-08</a><a class="b">SB-09</a><a class="b">SB-10</a><a class="b">SB-11</a><a class="b">SB-12</a><a class="b">SB-13</a><a class="b">SB-14</a><a class="b">SB-28</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>The Creators tab <b>opens with people</b>, nearest first.
+      <span class="sc"><a class="b">SB-06</a></span> Not a menu of buttons.</li>
+    <li>Three ways to find them, and they all end in the same list:
+      <div class="fork"><span class="fk">ONE BY ONE</span> — search by name or handle, open her
+        profile <span class="sc"><a class="b">SB-14</a></span>, add her.</div>
+      <div class="fork"><span class="fk">A SAVED GROUP</span> — <span class="sc"><a class="b">SB-12</a><a class="b">SB-13</a></span>
+        a list he saved before, added whole.</div>
+      <div class="fork"><span class="fk">BY FILTER</span> — <span class="sc"><a class="b">SB-08</a></span>
+        five filters: where, language, niche, follower tier, engagement rate.</div>
+    </li>
+    <li>Location is <b>two steps, not one</b>. States first
+      <span class="sc"><a class="b">SB-09</a></span>, each with a count and greyed if empty; then
+      the places inside <span class="sc"><a class="b">SB-10</a></span>, with
+      <i>"Everywhere in the state"</i> as the first row because it is usually the answer.</li>
+    <li>Results. <span class="sc"><a class="b">SB-11</a></span> Each filter is a chip with an ×.
+      He can select all, save the search as a group, or pick individually.</li>
+    <li>Her profile is the same screen wherever he arrives from.
+      <span class="sc"><a class="b">SB-14</a></span> <b>Instagram tab by default, YouTube one tap
+      away.</b></li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">Nothing, unless he saves a group → <b>creator_groups</b>.<br>
+    Searching is free and leaves no trace.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The language filter matches nobody.</span> <code>influencers.language</code>
+    is empty on all 25 live creators. The filter is correct; the data is absent. It fills up from
+    <span class="sc"><a class="c">SC-19</a></span> on her side, not from anything he does.<br><br>
+    <span class="w">The YouTube tab is empty for 24 of 25.</span> One handle, zero subscribers
+    platform-wide. That tab must say <i>"not connected yet"</i>, not show zeros as if they were
+    real numbers.<br><br>
+    <span class="w">Her profile currently carries commission and fee fields.</span> Terms are
+    per-set now. Those fields move to <span class="sc"><a class="b">SB-30</a></span> and inviting
+    from a profile opens <span class="sc"><a class="b">SB-41</a></span>, not a form.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-04 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-04</span><span class="t">Invite creators into a set</span><span class="v c">CHANGE</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>He publishes the campaign (BR-13, Book 2)</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-07</a><a class="b">SB-11</a><a class="b">SB-12</a><a class="b">SB-13</a><a class="b">SB-14</a><a class="b">SB-28</a><a class="c">SC-05</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>The set already holds a list of people from BR-03.
+      <span class="sc"><a class="b">SB-28</a></span></li>
+    <li>Terms are set once for everyone, with exceptions overridden individually — BR-10, Book 2.</li>
+    <li>On publish, <b>every person in the set gets the same thing</b>: the full terms, plus the
+      two things they cannot change.</li>
+  </ol>
+
+  <div class="lab">Both phones · the moment it lands</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-28</th><th class="c">Creator · SC-05</th></tr>
+    <tr>
+      <td>Set 1 · 5 creators · <b>invited</b><br>
+        Nobody has answered yet. Invitations close Tue 9 Sep.</td>
+      <td><b>They want you in.</b><br>
+        Everything in one card: 14%, jackets, Festive 20%, 1 reel, Instagram.<br><br>
+        Below it, separated: <b>two things you cannot change</b> — Sat 12 Sep, store visit — and a
+        line saying four other creators agreed to the same day.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">She reads exactly what he set. Nothing is summarised away.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers</b> — one row per person,
+    <code>status='invited'</code>, carrying her own terms.<br>
+    Plus a notification each, and the invitation clock.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The two immovable things must be separated before she counters, not after.</span>
+    If she only learns the day is fixed once she has asked to change it, the app has wasted her
+    time and his.<br><br>
+    <span class="w">Inviting from a profile must be identical to being in a set.</span> The
+    founder was explicit. There is no separate invitation form — a profile invite lands in
+    <span class="sc"><a class="b">SB-41</a></span> and joins a set.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-01 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-01</span><span class="t">Answer a collaboration</span><span class="v n">NEW</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>An invitation arrives</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-04</a><a class="c">SC-05</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>It appears under <b>Needs you</b> in Collabs. <span class="sc"><a class="c">SC-04</a></span></li>
+    <li>She reads the whole thing on one screen. <span class="sc"><a class="c">SC-05</a></span></li>
+    <li>Three answers:
+      <div class="fork o"><span class="fk">ACCEPT</span> — straight to the contract. → CR-06, Book 2.</div>
+      <div class="fork"><span class="fk">ASK FOR SOMETHING ELSE</span> — → CR-02 or CR-03, and
+        <b>which one she picks changes everything.</b></div>
+      <div class="fork b"><span class="fk">NOT INTERESTED</span> — a reason from five, or her own
+        words. It ends.</div>
+    </li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers.status</b> → <code>accepted</code> /
+    <code>negotiating</code> / <code>declined</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Offers and Campaigns are two tabs today.</span> She never had a reason to know
+    which of the two a thing was in — only whether it needs her. They become one.<br><br>
+    <span class="w">A decline reason the server will not accept.</span> Already shipped once:
+    <code>'not_a_fit'</code> was never valid. The five real ones are
+    <code>not_relevant, fee_too_low, schedule_conflict, already_partnered, other</code>. The list
+    the app shows and the list the server accepts must be one list.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-02 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-02</span><span class="t">Counter the money</span><span class="v c">CHANGE</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>From CR-01, "ask for something else"</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-06</a><a class="c">SC-07</a><a class="b">SB-38</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-06</a></span> The money field sits at the top, under a
+      heading that says plainly: <b>stays in this group</b>.</li>
+    <li>She types a number and, optionally, why. He will read the why.</li>
+    <li>Send. Nothing else in the set moves.</li>
+  </ol>
+
+  <div class="lab">Both phones · after she sends</div>
+  <table class="both">
+    <tr><th class="c">Creator · SC-07</th><th class="b">Brand · SB-38</th></tr>
+    <tr>
+      <td><b>Negotiation.</b><br>
+        Label Fern · 2 Sep · 14%<br>
+        You · 3 Sep · 18% — "below what I take for jackets"<br><br>
+        Waiting on them.</td>
+      <td><b>She wants 18%.</b><br>
+        A green card first: <b>she stays in this set.</b> The day and the shoot do not change, so
+        nobody else is affected.<br><br>
+        Then what agreeing actually costs — <b>on a real ₹1,920 basket</b>, ₹346 to her instead of
+        ₹269, and he keeps ₹1,478.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">One thread, read by both. Every offer ever on the table stays visible.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>negotiations</b> / <b>negotiation_turns</b> — one turn.<br>
+    <b>campaign_influencers.status</b> → <code>negotiating</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The negotiation must hang off her row in a set, not a standalone request.</span>
+    This is <b>the single largest piece of backend work in the programme.</b> Today a negotiation
+    belongs to an agreement that floats free of any campaign; it has to belong to
+    <code>campaign_influencers</code>.<br><br>
+    <span class="w">Showing the change as a percentage.</span> "18% instead of 14%" tells him
+    nothing. What it costs on one real basket tells him everything.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-03 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-03</span><span class="t">Counter the date or the shoot</span><span class="v n">NEW</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>From CR-01, "ask for something else"</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-06</a><a class="c">SC-07</a><a class="b">SB-39</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>Same screen as CR-02, <b>but a different half of it.</b>
+      <span class="sc"><a class="c">SC-06</a></span></li>
+    <li>Before either field, a red card she has to read past:
+      <div class="fork b"><span class="fk">READ THIS FIRST</span> If you ask for a different day
+        or a different way of shooting, <b>you leave this group.</b> They can still work with you
+        — on another day, with other people who wanted the same — but not in this one.</div>
+    </li>
+    <li>She changes the day, the mode, or both, and says why.</li>
+  </ol>
+
+  <div class="lab">Both phones · after she sends</div>
+  <table class="both">
+    <tr><th class="c">Creator · SC-07</th><th class="b">Brand · SB-39</th></tr>
+    <tr>
+      <td><b>Negotiation.</b><br>
+        You asked for 19 Sep, remote — "I'm travelling that week."<br><br>
+        She has already been told this takes her out of the group, so nothing here surprises her.</td>
+      <td><b>She wants a different day.</b><br>
+        A red card first: <b>this one cannot stay in the set.</b> Four other creators are on
+        12 Sep and a store visit.<br><br>
+        Then his two real choices, spelled out — and <b>no option to change the set's day</b>,
+        because four people already agreed to it.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">The mechanic the whole architecture turns on.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>negotiation_turns</b> — one turn, flagged as a
+    <code>structural</code> counter rather than a money one.<br>
+    <b>Nothing on the set changes.</b> The set's day and mode are never written by this action.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Treating this like a money counter.</span> They look identical in the data —
+    both are "she asked for something different" — and they have opposite consequences. The turn
+    must carry <i>which kind</i> it is, or the brand's screen cannot know whether to show the
+    green card or the red one.<br><br>
+    <span class="w">Letting the warning appear after she sends.</span> It has to be on the screen
+    where she decides.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-05 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-05</span><span class="t">Answer a counter — money</span><span class="v n">NEW</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>CR-02 lands</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-02</a><a class="b">SB-38</a><a class="b">SB-20</a><a class="b">SB-43</a><a class="c">SC-06</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>It appears in <b>Needs you</b> under "Countered your terms".
+      <span class="sc"><a class="b">SB-02</a></span></li>
+    <li><span class="sc"><a class="b">SB-38</a></span> Green card, her number, her reason, and the
+      cost on a real basket.</li>
+    <li>Three answers:
+      <div class="fork o"><span class="fk">AGREE</span> — her rate is written to her row. Contract
+        generated. → BR-14 / CR-06, Book 2.</div>
+      <div class="fork"><span class="fk">COUNTER AGAIN</span> — <span class="sc"><a class="b">SB-20</a></span>
+        the thread, with the input inline. Back to her.</div>
+      <div class="fork b"><span class="fk">DROP HER</span> — she is out of the set. It ends.</div>
+    </li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers</b> — <code>commission_pct</code> or fee updated
+    <b>on her row only</b>.<br>
+    <b>negotiation_turns</b> — his turn.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Writing the agreed rate to the set instead of to her row.</span> Money is per
+    person. Five people in a set can have five different rates and that is normal.<br><br>
+    <span class="w">Dropping her with an invalid status.</span> Confirmed live in a neighbouring
+    function: <code>UPDATE contracts SET status='cancelled'</code> — <code>contract_status</code>
+    has no such value, so it throws. <b>The same bug still sits unfixed in
+    <code>cancelInfluencer</code></b> and will fire the first time anyone uses it.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-06 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-06</span><span class="t">Answer a counter — date or shoot</span><span class="v n">NEW</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>CR-03 lands</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-02</a><a class="b">SB-39</a><a class="b">SB-20</a><a class="b">SB-43</a><a class="c">SC-06</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>In <b>Needs you</b>, tagged <b>MOVES HER</b> so it reads differently from a money counter
+      before he opens it. <span class="sc"><a class="b">SB-02</a></span></li>
+    <li><span class="sc"><a class="b">SB-39</a></span> Red card, the set's day against hers, her
+      reason.</li>
+    <li>Three answers, and only one of them keeps her:
+      <div class="fork o"><span class="fk">MOVE HER OUT · KEEP HER</span> — she leaves the set and
+        waits in the campaign's <b>deferred pool</b>. Nothing else moves. → BR-07.</div>
+      <div class="fork"><span class="fk">SUGGEST ANOTHER DAY</span> — a third day that suits
+        neither the set nor her original ask. If she accepts, she is still deferred, just to a
+        different day.</div>
+      <div class="fork b"><span class="fk">NO — END IT</span> — it ends here.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>He is never offered "change the set's day".</b> Four people already agreed to it. That
+    option does not appear on the screen, because the moment it does, one person's convenience
+    starts re-opening four signed agreements.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers</b> — <code>set_id</code> cleared,
+    <code>status='deferred'</code>, and <b>what she asked for is kept</b>:
+    <code>deferred_go_live_date</code>, <code>deferred_shoot_mode</code>.<br>
+    She stays attached to the <b>campaign</b>. Only the set lets go.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Losing what she asked for.</span> If the deferred row does not keep her day
+    and her mode, BR-07 has nothing to group by and the pool is just a list of people who said no.<br><br>
+    <span class="w">Treating "moved out" as "declined".</span> She has not refused the work. She
+    refused <i>this set</i>. Any screen that counts her as a decline will under-report a campaign
+    that is going fine.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-07 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-07</span><span class="t">Build a set from the deferred</span><span class="v n">NEW</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Enough people are waiting to be worth a second set</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-24</a><a class="b">SB-40</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>The pool sits <b>under the sets on the campaign</b>, not in a separate place, because it
+      is where a third set comes from. <span class="sc"><a class="b">SB-24</a></span></li>
+    <li><span class="sc"><a class="b">SB-40</a></span> Everyone waiting, <b>grouped by what they
+      asked for</b> — day and shoot mode together.</li>
+    <li>He picks a group and builds a set from it. The set's day and mode come pre-filled from the
+      group, because that is what those people already said yes to.</li>
+    <li>Then the normal path: terms (BR-10), publish (BR-13). <b>They are invited exactly like
+      anyone else.</b></li>
+  </ol>
+
+  <div class="rule">
+    <b>One pool, three sources.</b> People moved out of a set (BR-06), accepted pitches (BR-08),
+    and agreements made outside a campaign (BR-09) all land here and are grouped the same way. The
+    founder's rule: <i>if agreed terms match a set's parameters they join it; if not, a new set is
+    made.</i>
+  </div>
+
+  <div class="lab">Both phones · nothing yet</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-40</th><th class="c">Creator · her side</th></tr>
+    <tr>
+      <td><b>Moved out · 5 people.</b><br>
+        19 Sep · remote · 3 people — Nisha, Ravi, Kiran<br>
+        22 Sep · remote · 1 person<br>
+        Accepted pitches · 1 — his window covers 19 Sep, so he fits the group above.</td>
+      <td><b>Nothing.</b> She sees "waiting on them" and no more.<br><br>
+        Being pooled is <b>his</b> bookkeeping. She learns about it only when a real invitation
+        arrives — and then it looks like any other invitation.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">The only action in this book where the two sides are deliberately not symmetrical.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">A new <b>campaign_sets</b> row, and the deferred
+    <b>campaign_influencers</b> rows get a <code>set_id</code> again.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Grouping by day alone.</span> Two people who both want 19 Sep but one wants a
+    store visit and the other remote <b>cannot be in the same set.</b> The grouping key is day
+    <i>and</i> mode.<br><br>
+    <span class="w">Leaving people in the pool forever.</span> A deferred row with no set and no
+    end is a person quietly waiting. The pool needs an age, and eventually a way to close it.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-04 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-04</span><span class="t">Pitch a brand</span><span class="v c">CHANGE</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She approaches them</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-17</a><a class="c">SC-18</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-17</a></span> What she wants — a share of sales, or a fee
+      — and how much.</li>
+    <li><b>A window, not a day.</b> "I could go live between 15 and 30 September." She does not
+      know his sets exist, so she cannot name their day.</li>
+    <li><b>How she would shoot — required.</b> Store visit or remote. A store visit means
+      travelling to them, and the screen says so.</li>
+    <li>Why her, and three posts.</li>
+    <li>Send. It runs out in 14 days.</li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>pitches</b> — her ask, <b>her window</b>, and
+    <code>shoot_mode</code> — which does not exist on a pitch today.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">A pitch with no shoot mode cannot be matched to a set.</span> The founder was
+    explicit: <i>she has to mention clearly store visit or remote while pitching</i>. Without it
+    <span class="sc"><a class="b">SB-41</a></span> has nothing to match on and every set looks
+    like a fit.<br><br>
+    <span class="w">Asking her for a single day.</span> She would be guessing. A window is the
+    only honest thing she can offer, and it is what makes a pitch matchable.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-08 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-08</span><span class="t">Answer a pitch</span><span class="v c">CHANGE</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>CR-04 lands</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-06</a><a class="b">SB-15</a><a class="b">SB-16</a><a class="b">SB-41</a><a class="b">SB-20</a><a class="b">SB-14</a><a class="c">SC-17</a><a class="c">SC-18</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>Pitches sit in the Creators tab. <span class="sc"><a class="b">SB-15</a></span> Every row
+      carries <b>her size and her ask</b>, so he can triage without opening anything.</li>
+    <li><span class="sc"><a class="b">SB-16</a></span> Her numbers, her terms, her window, her
+      mode, her work, and the clock.</li>
+    <li>Three answers:
+      <div class="fork o"><span class="fk">ACCEPT</span> — and immediately,
+        <b>which set?</b> <span class="sc"><a class="b">SB-41</a></span></div>
+      <div class="fork"><span class="fk">COUNTER</span> — <span class="sc"><a class="b">SB-20</a></span>
+        the same thread as everything else.</div>
+      <div class="fork b"><span class="fk">DECLINE</span> — it ends.</div>
+    </li>
+    <li><span class="sc"><a class="b">SB-41</a></span> Sets are split into <b>fits</b> and
+      <b>does not fit</b>, and the ones that do not fit say why. A fourth option holds him for a
+      set built later — which drops him into the same pool as BR-07.</li>
+  </ol>
+
+  <div class="lab">Both phones · he accepts</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-41</th><th class="c">Creator · SC-18</th></tr>
+    <tr>
+      <td><b>Where does he go?</b><br>
+        Fits · 1 set — Diwali Set 2, 19 Sep, remote. His window is 15–30 Sep and he works remote.<br>
+        Does not fit · 2 sets, greyed, with the reason on each.</td>
+      <td><b>They said yes.</b><br>
+        And one thing is now fixed: <b>you gave a window, they picked a day inside it</b>, and now
+        it is the day for everyone in the group.<br><br>
+        19 Sep · remote · 18%.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">Where a window hardens into a date shared with other people.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">The pitch becomes a <b>campaign_influencers</b> row on a set — or a deferred
+    row if he holds.<br>
+    <b>A pitch and an invitation become the same object.</b></div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">She has to be told her window became a day.</span> Plainly, once. Otherwise
+    she has agreed to something she did not knowingly agree to.<br><br>
+    <span class="w">Accepting a pitch into nothing.</span> Today accepting creates a floating
+    agreement. It must land in a set or in the pool — never in a third place.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-09 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-09</span><span class="t">Approach a creator outside a campaign</span><span class="v c">CHANGE</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>He wants terms in principle, with no campaign yet</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-17</a><a class="b">SB-18</a><a class="b">SB-19</a><a class="b">SB-20</a><a class="b">SB-41</a><a class="b">SB-14</a><a class="b">SB-06</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-18</a></span> The screen says what it is <b>before</b> the
+      fields: <i>this is not a campaign. No date, no shoot, no offer. Terms in principle.</i></li>
+    <li>A commission or a fee, marked <b>requirement / preference / not stated</b>, and a message.</li>
+    <li>She answers — accept, counter, decline — through the same thread as everything else.
+      <span class="sc"><a class="b">SB-20</a></span></li>
+    <li>If she agrees, it becomes a <b>record</b>, not stock.
+      <span class="sc"><a class="b">SB-19</a></span> One action on it: <b>put her in a set</b> →
+      <span class="sc"><a class="b">SB-41</a></span>.</li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>agreements</b> — terms, agreed date, and an expiry.<br>
+    The <b>20 existing agreements stay readable.</b> Nothing is migrated.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">This is the old model, kept deliberately small.</span> Before set-first, an
+    agreement was the main event and campaigns were built by spending them. That is what produced
+    the Creators tab opening on <i>"Nobody has agreed terms yet"</i> — a pool of stock. It stays
+    only for genuine no-campaign approaches, and its terms fields move to
+    <span class="sc"><a class="b">SB-30</a></span>.<br><br>
+    <span class="w">An agreement that never becomes anything.</span> It needs an expiry and a
+    screen that says so, or he accumulates twenty promises he has forgotten.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-05 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-05</span><span class="t">Say what you'll take</span><span class="v k">KEEP</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Her first day, or any time from Profile</div>
+    <div><span class="l">Who</span>Creator, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-19</a><a class="c">SC-02</a><a class="c">SC-38</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-19</a></span> Kinds of work, her minimums, how she
+      shoots, where she posts, <b>the languages she posts in</b>, and who can ask her.</li>
+    <li>Her minimums are shown to a brand as a hint on
+      <span class="sc"><a class="b">SB-30</a></span> — <i>"she has said she will not go below
+      12%"</i> — not as a wall.</li>
+    <li>Channels come from <span class="sc"><a class="c">SC-38</a></span>, connected, not typed.</li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>influencers</b> — <code>min_commission_pct</code>, <code>min_fee</code>,
+    <code>shoot_modes[]</code>, <code>language[]</code>, <code>open_to_pitches</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">This screen is the reason the brand's filters work or do not.</span>
+    <code>language</code> is empty on all 25 live creators — which is this screen's absence showing
+    up as a broken filter two apps away. <b>Without step 2 of her first day
+    (<span class="sc"><a class="c">SC-02</a></span>) she is invisible to every filter</b>, and
+    nothing tells her that.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ END -->
+<div class="act">
+  <div class="ah"><span class="t">What this book leaves for the next one</span></div>
+
+  <div class="lab">Every path out of Phase 1</div>
+  <ul class="tight">
+    <li><b>She accepted</b> — or he agreed to her money counter → a contract exists → <b>Book 2</b>.</li>
+    <li><b>She is deferred</b> — waiting in the pool with a day and a mode → back into BR-07 → and
+      then into Book 2 by the normal path.</li>
+    <li><b>It ended</b> — she declined, or he did. A reason is recorded either way.</li>
+    <li><b>An agreement exists with no campaign</b> — sits as a record until he puts her in a set.</li>
+  </ul>
+
+  <div class="lab">The three things this book says must be built first</div>
+  <ol class="steps">
+    <li><b>A negotiation that belongs to a set row.</b> The largest single piece of backend work
+      here, and BR-05, BR-06, CR-02 and CR-03 all wait on it.</li>
+    <li><b>A counter that knows what kind it is.</b> Money and structural counters are the same
+      shape in the data and have opposite consequences.</li>
+    <li><b>A deferred row that keeps what she asked for.</b> Without it the pool cannot be
+      grouped, and BR-07 has nothing to build from.</li>
+  </ol>
+
+  <div class="lab">Carried into Book 2 unfixed</div>
+  <div class="wrong"><span class="w">cancelInfluencer writes an invalid contract status.</span>
+    Confirmed live. It will throw the first time it runs. Not fixed here because nothing in this
+    book calls it — but BR-05's "drop her" is one step away from it.</div>
+</div>
