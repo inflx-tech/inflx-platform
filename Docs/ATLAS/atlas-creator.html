@@ -1,0 +1,1199 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Screen Atlas · Creator</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--mut2:#B0B0B0;--line:#DBDBDB;--soft:#F0F0F0;
+        --acc:#E36414;--ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--adm:#0F766E;--admbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#E9E9E9;font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:24px;color:var(--ink)}
+  h1{font-size:28px;margin:0 0 4px;letter-spacing:-.03em}
+  .lede{max-width:1000px;font-size:13px;color:#555;line-height:1.6;margin:0 0 14px}
+  .rule{max-width:1000px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:12.5px;line-height:1.6;margin:0 0 8px}
+  .rule b{color:var(--ink)}
+  .area{margin:34px 0 12px;padding-bottom:7px;border-bottom:2px solid var(--ink);font-size:11.5px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .area.a{border-color:var(--adm);color:var(--adm)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .card{width:286px}
+  .id{display:flex;align-items:baseline;gap:6px;margin:0 0 5px 2px}
+  .id .a{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;font-weight:900;letter-spacing:-.02em}
+  .id .n{font-size:11.5px;font-weight:800;flex:1;min-width:0}
+  .v{font-size:7.5px;font-weight:900;padding:2px 5px;border-radius:4px;color:#fff;letter-spacing:.04em}
+  .v.n{background:var(--new)} .v.c{background:var(--acc)} .v.k{background:var(--mut2)} .v.s{background:#94A3B8}
+  .used{font-family:ui-monospace,Menlo,monospace;font-size:8.5px;color:var(--mut);margin:0 0 5px 2px;letter-spacing:-.01em}
+  .ph{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .ph.k{opacity:.72}
+  .ph.ad{border-color:#A7D8CB;border-width:1.5px}
+  .nav{display:flex;align-items:center;gap:6px;padding:8px 11px;border-bottom:1px solid var(--soft);font-size:10px;color:var(--mut)}
+  .nav .b{font-weight:900;color:var(--ink)} .nav .s{flex:1}
+  .hd{padding:9px 11px;border-bottom:1px solid var(--soft)}
+  .hd.ad{background:var(--admbg)}
+  .kk{font-size:8px;font-weight:900;letter-spacing:.08em;color:var(--mut)}
+  .kk.ad{color:var(--adm)}
+  h2{font-size:14px;margin:2px 0 0;letter-spacing:-.02em}
+  .bd{padding:9px 11px}
+  .tabs{display:flex;border-top:1px solid var(--line);background:#FCFCFC}
+  .tb{flex:1;text-align:center;padding:6px 0 5px;font-size:7px;font-weight:800;color:var(--mut2)}
+  .tb.on{color:var(--ink)}
+  .tb i{display:block;width:12px;height:12px;border:1.4px solid currentColor;border-radius:3px;margin:0 auto 2px}
+  .tb b{display:inline-block;background:var(--acc);color:#fff;border-radius:6px;font-size:6.5px;padding:0 3px;margin-left:2px}
+  .st{border-top:1px solid var(--line);padding:8px 11px;background:#fff}
+  .fl{font-size:8px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin-top:8px}
+  .fl:first-child{margin-top:0}
+  .fi{border:1px solid var(--line);border-radius:7px;padding:7px 8px;margin-top:3px;font-size:11.5px}
+  .fi.p{color:var(--mut2)} .fi.r{background:#FAFAFA;color:#666}
+  .fi.g::after{content:'›';float:right;color:var(--mut2)}
+  .sr{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;margin-top:3px;font-size:11.5px;color:var(--mut2)}
+  .sg{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap}
+  .s1{flex:1;min-width:48px;border:1px solid var(--line);border-radius:6px;padding:5px 2px;text-align:center;font-size:9.5px;font-weight:700;color:#666}
+  .s1.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ch{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px}
+  .c1{border:1px solid var(--line);border-radius:18px;padding:3px 8px;font-size:9.5px;font-weight:700;color:#666}
+  .c1.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .bt{margin-top:8px;background:var(--ink);color:#fff;text-align:center;padding:9px;border-radius:7px;font-weight:900;font-size:10.5px;letter-spacing:.04em}
+  .bt.g{background:#fff;color:#666;border:1px solid var(--line)}
+  .bt.d{background:#E8E8E8;color:#AAA}
+  .bt.x{background:#fff;color:var(--bad);border:1px solid #E7BDB4}
+  .bt.a{background:var(--adm)}
+  .bt.s{padding:6px;font-size:9.5px;margin-top:5px}
+  .nt{font-size:9.5px;color:var(--mut);margin-top:5px;line-height:1.45}
+  .nt b{color:var(--ink)}
+  .em{text-align:center;padding:15px 5px;color:var(--mut2)}
+  .em .t{font-size:12px;font-weight:800;color:var(--mut);margin-bottom:3px}
+  .em .s{font-size:10px;line-height:1.45}
+  .r1{display:flex;align-items:center;gap:7px;padding:7px 0;border-top:1px solid var(--soft);font-size:11.5px}
+  .r1:first-child{border-top:none}
+  .av{width:22px;height:22px;border-radius:11px;background:#EEE;flex:0 0 auto}
+  .th{width:30px;height:38px;border-radius:4px;background:#E9E9E9;flex:0 0 auto}
+  .gr{flex:1;min-width:0} .sb{font-size:9px;color:var(--mut);margin-top:1px}
+  .tg{font-size:7.5px;font-weight:900;padding:2px 5px;border-radius:4px;background:var(--soft);color:#555;white-space:nowrap}
+  .tg.y{background:#FDF0E7;color:var(--acc)} .tg.o{background:var(--okbg);color:var(--ok)}
+  .tg.b{background:var(--badbg);color:var(--bad)} .tg.p{background:var(--purbg);color:var(--pur)}
+  .tg.w{background:#EEF2FF;color:#1D4ED8}
+  .cd{border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:7px}
+  .cd.o{border-color:#BFE0CF;background:var(--okbg)}
+  .cd.b{border-color:#E7BDB4;background:var(--badbg)}
+  .cd.p{border-color:#DDD6FE;background:var(--purbg)}
+  .cd.a{border-color:#A7D8CB;background:var(--admbg)}
+  .ct{font-size:9px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .ct.o{color:var(--ok)} .ct.b{color:var(--bad)} .ct.p{color:var(--pur)} .ct.a{color:var(--adm)}
+  .kv{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+  .kv span:first-child{color:var(--mut)} .kv b{font-weight:800}
+  .bg{font-size:22px;font-weight:900;letter-spacing:-.03em}
+  .tri{display:flex;gap:5px;margin-top:7px}
+  .tv{flex:1;border:1px solid var(--line);border-radius:7px;padding:7px 3px;text-align:center}
+  .tv b{display:block;font-size:12.5px;font-weight:900} .tv span{font-size:7px;color:var(--mut);font-weight:800}
+  .wz{display:flex;gap:2px;margin-top:7px}
+  .wc{flex:1;height:3px;background:var(--soft);border-radius:2px}
+  .wc.on{background:var(--ink)} .wc.dn{background:var(--mut2)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:5px}
+  .gi{aspect-ratio:3/4;background:#E9E9E9;border-radius:5px}
+  .gi.on{outline:2px solid var(--ink);outline-offset:-2px}
+</style>
+
+<h1>Screen Atlas · Creator app <span style="font-size:15px;color:#8E8E8E;font-weight:500">and admin</span></h1>
+<p class="lede">
+  Every creator screen, <b>drawn once</b>, with a permanent address. <b>This supersedes B5, B6-B8,
+  B7 and the creator half of B4.</b> The brand half is <code>atlas-brand.html</code>.
+</p>
+<div class="rule">
+  <span class="v n">NEW</span> does not exist ·
+  <span class="v c">CHANGE</span> exists and changes ·
+  <span class="v k">KEEP</span> works as it is ·
+  <span class="v s">SWEEP</span> not in this flow — read once to confirm it still opens<br><br>
+  <b>Screens with a green edge are admin</b>, not the creator app. They live here because every
+  one of them acts on something a creator made.
+</div>
+
+<!-- ══════════════════════════════════════════ HOME -->
+<div class="area">Her home · SC-01 to SC-03</div>
+<div class="row">
+
+  <div class="card">
+    <div class="id"><span class="a">SC-01</span><span class="n">Home</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-18 · entry to everything</div>
+    <div class="ph">
+      <div class="hd"><div class="kk">ASHA M.</div><h2>Good morning, Asha</h2></div>
+      <div class="bd">
+        <div class="cd p"><div class="ct p">● 3 things need you</div>
+          <div class="r1"><div class="gr">Label Fern asked you into a set<div class="sb">closes in 2 days</div></div><span class="tg y">›</span></div>
+          <div class="r1"><div class="gr">A shoot time to accept<div class="sb">Mon 8 Sep, 11am</div></div><span class="tg y">›</span></div>
+          <div class="r1"><div class="gr">Go live today<div class="sb">Instagram · Diwali set</div></div><span class="tg y">›</span></div></div>
+        <div class="fl">Your money</div>
+        <div class="tri"><div class="tv"><b>₹12,000</b><span>EARNED</span></div>
+          <div class="tv"><b>₹2,604</b><span>READY</span></div></div>
+        <div class="nt"><b>₹1,240 still in the 7-day window.</b> A shopper can still return.</div>
+        <div class="bt s g">WITHDRAW ₹2,604</div>
+        <div class="fl">Running now · 2</div>
+        <div class="r1"><div class="gr">Diwali Saree Edit<div class="sb">Label Fern · live 12 Sep</div></div><span class="tg o">SIGNED</span></div>
+      </div>
+      <div class="tabs"><div class="tb on"><i></i>Home<b>3</b></div><div class="tb"><i></i>Collabs<b>3</b></div>
+        <div class="tb"><i></i>Create</div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <div class="nt">⚠️ <b>Today this screen shows "Available to withdraw" with a WITHDRAW button
+      under it — and there is no withdraw screen in the app.</b> The button goes nowhere. SC-34
+      is the missing destination.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-02</span><span class="n">Her first day</span><span class="v n">NEW</span></div>
+    <div class="used">CR-05 · a creator with nothing yet</div>
+    <div class="ph">
+      <div class="hd"><div class="kk">ASHA M.</div><h2>Welcome, Asha</h2></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">Three things to do</div>
+          <div class="r1"><div class="gr"><b>1 · Connect Instagram</b><div class="sb">brands search by your numbers</div></div><span class="tg y">›</span></div>
+          <div class="r1"><div class="gr"><b>2 · Say what you'll take</b><div class="sb">your minimum, and how you shoot</div></div><span class="tg y">›</span></div>
+          <div class="r1"><div class="gr"><b>3 · Add your bank</b><div class="sb">before your first payment</div></div><span class="tg">LATER</span></div></div>
+        <div class="bt">CONNECT INSTAGRAM</div>
+        <div class="bt g">BROWSE BRANDS INSTEAD</div>
+        <div class="nt">You can pitch a brand without waiting to be found.</div>
+      </div>
+    </div>
+    <div class="nt"><b>Without step 2 she is invisible to every filter.</b> ⚠️ Language is empty
+      on all 25 live creators, which is exactly this screen's absence showing up in the data.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-03</span><span class="n">Notifications</span><span class="v c">CHANGE</span></div>
+    <div class="used">every action the brand starts</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Home</span><span class="s"></span><span class="b">Mark all read</span></div>
+      <div class="hd"><h2>Notifications</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="gr"><b>Label Fern asked you into a set</b><div class="sb">18% · jackets · live 12 Sep · 2h</div></div><span class="tg y">NEW</span></div>
+        <div class="r1"><div class="gr"><b>They agreed to 18%</b><div class="sb">sign when you're ready · 5h</div></div><span class="tg y">NEW</span></div>
+        <div class="r1"><div class="gr"><b>A shoot time to accept</b><div class="sb">Mon 8 Sep 11am · 1d</div></div><span class="tg">›</span></div>
+        <div class="r1"><div class="gr"><b>Your shop post was sent back</b><div class="sb">the price does not match · 1d</div></div><span class="tg b">FIX IT</span></div>
+        <div class="r1"><div class="gr"><b>₹346 from a sale</b><div class="sb">yours on 8 Sep · 2d</div></div><span class="tg">›</span></div>
+      </div>
+    </div>
+    <div class="nt"><b>A sale notification names the day the money becomes hers</b>, not just the
+      amount — otherwise she sees ₹346 and then cannot find it.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ COLLABS -->
+<div class="area">Her collabs · SC-04 to SC-20</div>
+<div class="row">
+
+  <div class="card">
+    <div class="id"><span class="a">SC-04</span><span class="n">Collabs</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-18 CR-01</div>
+    <div class="ph">
+      <div class="hd"><h2>Collabs</h2>
+        <div class="ch"><span class="c1 on">Needs you 3</span><span class="c1">Running 2</span><span class="c1">Done 4</span></div></div>
+      <div class="bd">
+        <div class="r1"><div class="av"></div><div class="gr">Label Fern<div class="sb">asked you in · closes in 2 days</div></div><span class="tg y">ANSWER</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Kaya Studio<div class="sb">shoot time to accept</div></div><span class="tg y">ANSWER</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Label Fern<div class="sb">go live today · Instagram</div></div><span class="tg y">POST IT</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Winter drop<div class="sb">waiting on them to sign</div></div><span class="tg">WAITING</span></div>
+      </div>
+      <div class="tabs"><div class="tb"><i></i>Home</div><div class="tb on"><i></i>Collabs<b>3</b></div>
+        <div class="tb"><i></i>Create</div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <div class="nt"><b>Offers and Campaigns became one tab.</b> She never had a reason to know
+      which of the two a thing was in — only whether it needs her.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-05</span><span class="n">What they're offering</span><span class="v n">NEW</span></div>
+    <div class="used">CR-01 ⇄ BR-04 · what SB-30 produces</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Collabs</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">LABEL FERN · FASHION</div><h2>They want you in</h2></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">Everything, in one place</div>
+          <div class="kv"><span>You earn</span><b>14% of what you sell</b></div>
+          <div class="kv"><span>You can sell</span><b>Men › Topwear › Jacket</b></div>
+          <div class="kv"><span>Your shoppers get</span><b>Festive 20%</b></div>
+          <div class="kv"><span>You make</span><b>1 reel</b></div>
+          <div class="kv"><span>Where you post</span><b>Instagram</b></div></div>
+        <div class="cd p"><div class="ct p">Two things you cannot change</div>
+          <div class="kv"><span>Everyone goes live</span><b>Sat 12 Sep</b></div>
+          <div class="kv"><span>How you shoot</span><b>Store visit · Indiranagar</b></div>
+          <div class="nt" style="margin:4px 0 0">Four other creators agreed to the same day.
+            Asking for a different one takes you out of this group.</div></div>
+        <div class="fl">How they may use it</div>
+        <div class="fi r" style="font-size:11px">Repost on their own channels for 90 days.</div>
+        <div class="nt">Closes <b>Tue 9 September</b>.</div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">ACCEPT</div>
+        <div class="bt g">ASK FOR SOMETHING ELSE</div><div class="bt x">NOT INTERESTED</div></div>
+    </div>
+    <div class="nt"><b>She reads exactly what he set on SB-30.</b> Nothing is summarised away, and
+      the two immovable things are separated from the negotiable ones <b>before</b> she counters.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-06</span><span class="n">Her counter</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-02 CR-03 ⇄ BR-05 BR-06</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><h2>Ask for something else</h2></div>
+      <div class="bd">
+        <div class="fl">The money · stays in this group</div>
+        <div class="fi">18 %</div>
+        <div class="nt">They offered 14%.</div>
+        <div class="fl">The day or the shoot · takes you out</div>
+        <div class="cd b"><div class="ct b">Read this first</div>
+          <div class="nt" style="margin:0">If you ask for a different day or a different way of
+            shooting, <b>you leave this group.</b> They can still work with you — on another day,
+            with other people who wanted the same — but not in this one.</div></div>
+        <div class="fi g">Sat 12 Sep · keep it</div>
+        <div class="fi g">Store visit · keep it</div>
+        <div class="fl">Why · they will read this</div>
+        <div class="fi p">A line about your rate or your dates</div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SEND</div></div>
+    </div>
+    <div class="nt"><b>The warning is on the screen where she decides, not after.</b> Money and
+      dates are visually separated because they have completely different consequences.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-07</span><span class="n">Negotiation</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-02 CR-03 · SB-20 is the same thread</div>
+    <div class="ph">
+      <div class="hd"><h2>Negotiation</h2>
+        <div class="nt" style="margin-top:2px">Everything either of you offered.</div></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">Label Fern · 2 Sep</div><div class="nt" style="margin:0">14%</div></div>
+        <div class="cd p"><div class="ct p">You · 3 Sep</div>
+          <div class="nt" style="margin:0">18% — "below what I take for jackets"</div></div>
+        <div class="cd o"><div class="ct o">Label Fern · 3 Sep</div>
+          <div class="nt" style="margin:0">Agreed 18%</div></div>
+        <div class="bt">SIGN THE CONTRACT</div>
+      </div>
+    </div>
+    <div class="nt"><b>One thread, read by both.</b> ⚠️ Underneath it must hang off her row in a
+      set rather than a standalone request — the single largest piece of backend work.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-08</span><span class="n">The contract</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-06 CR-07 ⇄ BR-14</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">LABEL FERN</div><h2>Contract</h2></div>
+      <div class="bd">
+        <div class="kv"><span>You earn</span><b>18% of sales</b></div>
+        <div class="kv"><span>You can sell</span><b>Men › Topwear › Jacket</b></div>
+        <div class="kv"><span>Your shoppers get</span><b>Festive 20% · to 30 Sep</b></div>
+        <div class="kv"><span>You make</span><b>1 reel</b></div>
+        <div class="kv"><span>Goes live</span><b>12 Sep · Instagram</b></div>
+        <div class="kv"><span>Shoot</span><b>Store visit</b></div>
+        <div class="fl">How they may use it</div>
+        <div class="fi r" style="font-size:11px">Repost on their own channels for 90 days.</div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SIGN IT</div><div class="bt x">DECLINE</div></div>
+    </div>
+    <div class="nt">⚠️ <b>Fixed 30 Aug.</b> "Review &amp; sign" opened a blank screen because a
+      React hook sat after two early returns. A repo-wide sweep now catches that fault, and it
+      found the same one in a brand screen.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-09</span><span class="n">Where this has got to</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-18 · SB-44 is the brand's mirror</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Collabs</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">LABEL FERN · DIWALI</div><h2>Where this has got to</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="gr"><b>1 · Agreed</b><div class="sb">18% · 3 Sep</div></div><span class="tg o">DONE</span></div>
+        <div class="r1"><div class="gr"><b>2 · Signed</b><div class="sb">both of you · 4 Sep</div></div><span class="tg o">DONE</span></div>
+        <div class="r1"><div class="gr"><b>3 · Shoot</b><div class="sb">store visit · Mon 8 Sep 11am</div></div><span class="tg y">MARK IT DONE</span></div>
+        <div class="r1"><div class="gr"><b>4 · Shop post</b><div class="sb">with INFLX since 9 Sep</div></div><span class="tg w">IN REVIEW</span></div>
+        <div class="r1"><div class="gr"><b>5 · Go live</b><div class="sb">Instagram · Sat 12 Sep</div></div><span class="tg">NOT YET</span></div>
+        <div class="r1"><div class="gr"><b>6 · Paid</b><div class="sb">when you sell</div></div><span class="tg">NOT YET</span></div>
+        <div class="bt g">SEE HOW YOU GOT HERE</div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>Fixed 30 Aug.</b> The button that opens the shoot rendered <b>blank</b> —
+      "logistics" had never been in the label map since Stage 4 shipped.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-10</span><span class="n">Shoot · store visit</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-08 ⇄ BR-15 BR-17</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">STORE VISIT</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">They proposed</div>
+          <div class="kv"><span>When</span><b>Mon 8 Sep · 11:00</b></div>
+          <div class="kv"><span>Where</span><b>Indiranagar, 100ft Rd</b></div>
+          <div class="bt s">ACCEPT THIS TIME</div>
+          <div class="bt s g">SUGGEST ANOTHER</div>
+          <div class="nt" style="margin:5px 0 0">You can suggest twice.</div></div>
+        <div class="cd"><div class="ct">You can come between</div>
+          <div class="nt" style="margin:0"><b>5 – 11 September.</b> After you both signed, and at
+            least a day before you go live.</div></div>
+        <div class="cd o"><div class="ct o">After the shoot</div>
+          <div class="kv"><span>You marked done</span><b>8 Sep 1:40pm</b></div>
+          <div class="kv"><span>They marked done</span><b>Not yet</b></div>
+          <div class="nt" style="margin:4px 0 0"><b>A store visit needs both of you.</b> Nothing
+            moves until they confirm.</div></div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>Fixed 30 Aug.</b> The date window was unwrapped one level too few, so it
+      read as absent and <b>the picker would not open</b>. The founder reported it as "date picker
+      is not working".</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-11</span><span class="n">Shoot · remote</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-11 ⇄ BR-16</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">REMOTE</div><h2>The shoot</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">On its way</div>
+          <div class="kv"><span>Courier</span><b>Delhivery</b></div>
+          <div class="kv"><span>Tracking</span><b>8291xxxxxx</b></div>
+          <div class="bt s g">TRACK IT</div></div>
+        <div class="fl">What they sent</div>
+        <div class="r1"><div class="th"></div><div class="gr">Cotton Jacket × 1</div></div>
+        <div class="cd"><div class="ct">When it arrives</div>
+          <div class="bt s">EVERYTHING ARRIVED</div>
+          <div class="bt s g">SOMETHING IS MISSING</div>
+          <div class="bt s x">IT ARRIVED DAMAGED</div></div>
+        <div class="cd"><div class="ct">Then, when you have shot it</div>
+          <div class="bt s">I HAVE SHOT IT</div>
+          <div class="nt" style="margin:5px 0 0"><b>Remote is yours alone to close.</b> They are
+            not there, so they cannot confirm it.</div></div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>Fixed 30 Aug, six live shoots repaired.</b> Switching to remote wrote
+      "completed" the moment the shoot was created — the founder saw a shoot that said done before
+      it had begun.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-12</span><span class="n">Send your address</span><span class="v n">NEW</span></div>
+    <div class="used">CR-09 ⇄ BR-16</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><h2>Where should they send it?</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">Use your saved address</div>
+          <div class="nt" style="margin:0">Asha M. · 42 Jubilee Hills<br>Hyderabad 500033<br>98xxx
+            xxxx</div>
+          <div class="bt s">SEND THIS ONE</div></div>
+        <div class="bt g">USE A DIFFERENT ADDRESS</div>
+        <div class="cd"><div class="ct">Who sees it</div>
+          <div class="nt" style="margin:0">Only this brand, only for this shoot. It is not on your
+            public profile.</div></div>
+        <div class="cd b"><div class="ct b">They cannot send anything yet</div>
+          <div class="nt" style="margin:0">A remote shoot starts with your address.</div></div>
+      </div>
+    </div>
+    <div class="nt"><b>A remote shoot cannot begin without this and nothing asks for it today.</b>
+      The privacy line matters — she is giving a stranger her home address.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-13</span><span class="n">Something's wrong</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-10 ⇄ BR-16</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><h2>What went wrong?</h2></div>
+      <div class="bd">
+        <div class="fl">What happened</div>
+        <div class="sg"><div class="s1 on">Missing</div><div class="s1">Damaged</div><div class="s1">Wrong item</div></div>
+        <div class="fl">Which ones</div>
+        <div class="r1"><div class="th"></div><div class="gr">Cotton Jacket × 1</div><span class="tg b">✓</span></div>
+        <div class="fl">Tell them</div><div class="fi p">One line</div>
+        <div class="fl">A photo helps</div>
+        <div class="grid"><div class="gi"></div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SEND</div></div>
+    </div>
+    <div class="nt">The shoot pauses until the brand answers. Her go-live day does not move on its
+      own — <b>the brand has to move it, and moving it moves everyone.</b></div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-14</span><span class="n">Deliverables</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-14 ⇄ BR-18</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><h2>Deliverables</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="th"></div><div class="gr">1 reel<div class="sb">approved 10 Sep</div></div><span class="tg o">DONE</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">1 story<div class="sb">they asked for a change</div></div><span class="tg y">REDO</span></div>
+        <div class="cd"><div class="ct">What they asked for</div>
+          <div class="nt" style="margin:0">"Can we see the sleeve detail?"</div></div>
+        <div class="nt"><b>Revision 1 of 2.</b> After two they must approve it or end it.</div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SUBMIT AGAIN</div></div>
+    </div>
+    <div class="nt">This is <b>paid content</b> a brand bought. Only a pay-for-content set has
+      these at all.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-15</span><span class="n">Submit</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-14</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Cancel</span><span class="s"></span></div>
+      <div class="hd"><h2>Submit · 1 story</h2></div>
+      <div class="bd">
+        <div class="sg"><div class="s1 on">Record</div><div class="s1">From gallery</div></div>
+        <div class="grid"><div class="gi on"></div><div class="gi"></div><div class="gi"></div></div>
+        <div class="fl">A note · optional</div><div class="fi p">Anything they should know</div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SEND FOR REVIEW</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-16</span><span class="n">Go live</span><span class="v n">NEW</span></div>
+    <div class="used">CR-15 ⇄ BR-19</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">TODAY · SAT 12 SEP</div><h2>Go live</h2></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">Instagram · you agreed to this one</div>
+          <div class="fi p" style="font-size:10.5px">Paste your post link</div>
+          <div class="bt s">ADD IT</div></div>
+        <div class="cd o"><div class="ct o">YouTube · done</div>
+          <div class="fi r" style="font-size:10.5px">youtube.com/shorts/aH2…</div>
+          <div class="nt" style="margin:4px 0 0">Waiting for Label Fern to confirm.</div></div>
+        <div class="cd"><div class="ct">Why they need every one</div>
+          <div class="nt" style="margin:0">You agreed to two channels. <b>Both links release the
+            next quarter of your fee.</b></div></div>
+      </div>
+      <div class="st"><div class="bt d" style="margin:0">1 OF 2 CHANNELS</div></div>
+    </div>
+    <div class="nt"><b>One card per channel she agreed to</b> — the founder's correction: not
+      "live on Instagram" but live on social media, matched to her agreed list. For a
+      <b>sale</b> set one link is enough and it is only a reference; the money comes from the
+      shop post, not the link.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-17</span><span class="n">Pitch a brand</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-04 ⇄ BR-08</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Cancel</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">TO LABEL FERN</div><h2>Your pitch</h2></div>
+      <div class="bd">
+        <div class="fl">What you want</div>
+        <div class="sg"><div class="s1 on">A share of sales</div><div class="s1">A fee</div></div>
+        <div class="fl">How much</div><div class="fi">18 %</div>
+        <div class="fl">You could go live between</div>
+        <div class="fi g">15 – 30 September</div>
+        <div class="nt">A window, not a day. They will place you on one of these days.</div>
+        <div class="fl">How you would shoot · required</div>
+        <div class="sg"><div class="s1">Store visit</div><div class="s1 on">Remote</div></div>
+        <div class="nt">A store visit means travelling to them.</div>
+        <div class="fl">Why you</div><div class="fi p">A line or two</div>
+        <div class="fl">Show three posts</div>
+        <div class="grid"><div class="gi on"></div><div class="gi on"></div><div class="gi on"></div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SEND · RUNS OUT IN 14 DAYS</div></div>
+    </div>
+    <div class="nt">⚠️ <b>"How you would shoot" does not exist on a pitch today</b>, and the
+      founder was explicit: she has to say store visit or remote while pitching. Without it a
+      pitch cannot be matched to a set.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-18</span><span class="n">Pitch accepted</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-04 ⇄ BR-08 BR-41</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Collabs</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">LABEL FERN</div><h2>They said yes</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">You are in a group</div>
+          <div class="kv"><span>Everyone goes live</span><b>Sat 19 Sep</b></div>
+          <div class="kv"><span>How you shoot</span><b>Remote</b></div>
+          <div class="kv"><span>You earn</span><b>18%</b></div>
+          <div class="nt" style="margin:4px 0 0">19 Sep is inside the 15–30 Sep you offered.</div></div>
+        <div class="cd"><div class="ct">One thing is now fixed</div>
+          <div class="nt" style="margin:0">You gave a window. <b>They picked a day inside it</b>,
+            and now it is the day for everyone in the group.</div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SIGN THE CONTRACT</div></div>
+    </div>
+    <div class="nt"><b>Where a window becomes a day.</b> She needs to be told once, plainly, that
+      her flexible offer has hardened into a fixed date shared with other people.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-19</span><span class="n">What you'll take</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-05</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Profile</span><span class="s"></span></div>
+      <div class="hd"><h2>What you'll take</h2></div>
+      <div class="bd">
+        <div class="fl">Kinds of work</div>
+        <div class="ch"><span class="c1 on">Share of sales</span><span class="c1 on">A fee</span></div>
+        <div class="fl">Your minimums</div>
+        <div class="kv"><span>Commission</span><b>12%</b></div>
+        <div class="kv"><span>Fee</span><b>₹10,000</b></div>
+        <div class="fl">How you shoot</div>
+        <div class="ch"><span class="c1 on">Store visit</span><span class="c1 on">Remote</span></div>
+        <div class="fl">Where you post</div>
+        <div class="ch"><span class="c1 on">Instagram</span><span class="c1">YouTube</span></div>
+        <div class="fl">Languages you post in</div>
+        <div class="ch"><span class="c1 on">Kannada</span><span class="c1 on">English</span><span class="c1">+ add</span></div>
+        <div class="fl">Who can ask you</div>
+        <div class="fi g">Any brand</div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SAVE</div></div>
+    </div>
+    <div class="nt">⚠️ <b>Language is the field that is empty on all 25 live creators</b>, which is
+      why the brand's language filter would match nobody. It gets added here, not on the brand
+      side.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-20</span><span class="n">Finished</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-17 CR-18</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Collabs</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">LABEL FERN · DIWALI</div><h2>Done</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">Finished 14 Sep</div>
+          <div class="kv"><span>You earned</span><b>₹4,820</b></div>
+          <div class="kv"><span>From</span><b>14 sales</b></div>
+          <div class="kv"><span>In your wallet</span><b>₹4,820</b></div></div>
+        <div class="cd"><div class="ct">When a collab ends</div>
+          <div class="nt" style="margin:0"><b>Share of sales</b> — it ends when you go live. Sales
+            keep coming and so does the money.<br><br>
+            <b>A fee</b> — it ends when the last payment lands, 30 days after you went live.</div></div>
+        <div class="bt g">SEE THE POST</div>
+      </div>
+    </div>
+    <div class="nt">The founder's rule, written where she will look for it: <b>the two aims finish
+      at completely different moments</b>, and a commission collab that says "done" is still
+      earning.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ CREATE -->
+<div class="area">Create · shop posts · SC-21 to SC-28</div>
+<div class="row">
+
+  <div class="card">
+    <div class="id"><span class="a">SC-21</span><span class="n">Create</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-12</div>
+    <div class="ph">
+      <div class="hd"><h2>Create</h2></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">Needs a shop post · 2</div>
+          <div class="r1"><div class="av"></div><div class="gr">Label Fern · Diwali<div class="sb">before Sat 12 Sep</div></div><span class="tg y">START</span></div>
+          <div class="r1"><div class="av"></div><div class="gr">Kaya Studio<div class="sb">before Sat 19 Sep</div></div><span class="tg y">START</span></div></div>
+        <div class="bt">+ NEW POST</div>
+        <div class="fl">Your posts · 6</div>
+        <div class="r1"><div class="th"></div><div class="gr">Jacket edit<div class="sb">live · 12 sales</div></div><span class="tg o">LIVE</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Festive picks<div class="sb">with INFLX since 9 Sep</div></div><span class="tg w">IN REVIEW</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Autumn layers<div class="sb">the price does not match</div></div><span class="tg b">SENT BACK</span></div>
+      </div>
+      <div class="tabs"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Collabs</div>
+        <div class="tb on"><i></i>Create<b>2</b></div><div class="tb"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <div class="nt"><b>A shop post has no deadline of its own</b> — it only has to be approved
+      before the go-live day. The dates shown are the set's day, not a separate one.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-22</span><span class="n">Post · 1 of 3 · who for</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-12 · the founder's stepwise correction</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Cancel</span><span class="s">Step 1 of 3</span></div>
+      <div class="hd"><h2>Who is this post for?</h2>
+        <div class="wz"><div class="wc on"></div><div class="wc"></div><div class="wc"></div></div></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">✓ One brand</div>
+          <div class="nt" style="margin:0">Then you pick <b>which campaign</b>, and you can use
+            anything that campaign lets you sell.</div></div>
+        <div class="cd"><div class="ct">A few brands</div>
+          <div class="nt" style="margin:0">Every campaign you have with those brands, mixed into
+            one post.</div></div>
+        <div class="cd"><div class="ct">Everything you have</div>
+          <div class="nt" style="margin:0">Every product from every collab you are in.</div></div>
+        <div class="cd"><div class="ct">This choice decides one thing</div>
+          <div class="nt" style="margin:0"><b>Which products you are allowed to put in.</b>
+            Nothing else changes.</div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">NEXT</div></div>
+    </div>
+    <div class="nt"><b>Scope first, products second.</b> Today the composer asks for products
+      before establishing what she is allowed to use, so the list is either wrong or enormous.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-23</span><span class="n">Post · 2 of 3 · which</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-12</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s">Step 2 of 3</span></div>
+      <div class="hd"><h2>Which campaign?</h2>
+        <div class="wz"><div class="wc dn"></div><div class="wc on"></div><div class="wc"></div></div></div>
+      <div class="bd">
+        <div class="fl">Label Fern · your campaigns</div>
+        <div class="r1"><div class="gr">Diwali Saree Edit<div class="sb">jackets · 24 products</div></div><span class="tg o">✓</span></div>
+        <div class="r1"><div class="gr">Jacket Launch<div class="sb">everything · 210 products</div></div><span class="tg">SELECT</span></div>
+        <div class="cd"><div class="ct">What you can use</div>
+          <div class="kv"><span>From this campaign</span><b>24 products</b></div>
+          <div class="nt" style="margin:4px 0 0">Men › Topwear › Jacket — what they agreed you
+            could sell.</div></div>
+        <div class="cd b"><div class="ct b">If you picked a few brands</div>
+          <div class="nt" style="margin:0">Every campaign from all of them is listed here, and the
+            products pool together.</div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">NEXT · 24 PRODUCTS</div></div>
+    </div>
+    <div class="nt">The founder's rule: <b>the backend must resolve products from brand →
+      campaign → what she was allocated</b>, and it must give the same answer for all three
+      scopes.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-24</span><span class="n">Post · 3 of 3 · build it</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-12</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Back</span><span class="s">Step 3 of 3</span></div>
+      <div class="hd"><h2>Build the post</h2>
+        <div class="wz"><div class="wc dn"></div><div class="wc dn"></div><div class="wc on"></div></div></div>
+      <div class="bd">
+        <div class="fl">Your photos</div>
+        <div class="grid"><div class="gi on"></div><div class="gi on"></div><div class="gi"></div></div>
+        <div class="fl">Tag products · from your 24</div>
+        <div class="r1"><div class="th"></div><div class="gr">Cotton Jacket<div class="sb">₹2,400 · Festive 20%</div></div><span class="tg o">✓</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Denim Jacket<div class="sb">₹3,100</div></div><span class="tg">ADD</span></div>
+        <div class="fl">Caption</div><div class="fi p">Say something about it</div>
+        <div class="cd"><div class="ct">Before you send it</div>
+          <div class="kv"><span>Photos</span><b style="color:var(--ok)">2 ✓</b></div>
+          <div class="kv"><span>Products</span><b style="color:var(--ok)">1 ✓</b></div>
+          <div class="kv"><span>Caption</span><b style="color:var(--bad)">missing</b></div></div>
+      </div>
+      <div class="st"><div class="bt d" style="margin:0">SEND FOR REVIEW</div></div>
+    </div>
+    <div class="nt">⚠️ <b>Prices and offers come from the live product</b>, never typed. A post
+      sent back "because the price does not match" is what happens when they drift apart.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-25</span><span class="n">In review</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-12 ⇄ AD-01</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Create</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">FESTIVE PICKS</div><h2>With INFLX</h2></div>
+      <div class="bd">
+        <div class="cd w" style="border-color:#C7D2FE;background:#EEF2FF">
+          <div class="ct" style="color:#1D4ED8">In review since 9 Sep</div>
+          <div class="nt" style="margin:0">Usually within a day.</div></div>
+        <div class="grid"><div class="gi"></div><div class="gi"></div></div>
+        <div class="cd"><div class="ct">Who checks it</div>
+          <div class="nt" style="margin:0"><b>INFLX, not the brand.</b> They check the products
+            are yours to sell and the prices match.</div></div>
+        <div class="cd b"><div class="ct b">It has to be approved before</div>
+          <div class="nt" style="margin:0"><b>Sat 12 Sep</b> — your go-live day.</div></div>
+      </div>
+    </div>
+    <div class="nt"><b>She needs to know it is not the brand judging her work.</b> Two different
+      reviews exist in this app and they are easy to confuse.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-26</span><span class="n">Sent back</span><span class="v n">NEW</span></div>
+    <div class="used">CR-13 ⇄ AD-01</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Create</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">AUTUMN LAYERS</div><h2>Sent back</h2></div>
+      <div class="bd">
+        <div class="cd b"><div class="ct b">What INFLX said</div>
+          <div class="nt" style="margin:0">"The price on the Cotton Jacket does not match the
+            live price. It is ₹2,400, not ₹2,000."</div></div>
+        <div class="fl">What to fix</div>
+        <div class="r1"><div class="th"></div><div class="gr">Cotton Jacket<div class="sb">you wrote ₹2,000 · live is ₹2,400</div></div><span class="tg b">FIX</span></div>
+        <div class="bt">FIX AND SEND AGAIN</div>
+        <div class="bt g">START OVER</div>
+        <div class="cd"><div class="ct">Your day has not moved</div>
+          <div class="nt" style="margin:0">Still <b>Sat 12 Sep</b>. You have 3 days.</div></div>
+      </div>
+    </div>
+    <div class="nt"><b>There is no screen for this today.</b> A rejected post is a dead end — she
+      is told no and given nothing to act on. The days remaining is the part that matters.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-27</span><span class="n">Your posts</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-12 CR-17</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Create</span><span class="s"></span></div>
+      <div class="hd"><h2>Your posts</h2>
+        <div class="ch"><span class="c1 on">Live 4</span><span class="c1">In review 1</span><span class="c1">Sent back 1</span></div></div>
+      <div class="bd">
+        <div class="r1"><div class="th"></div><div class="gr">Jacket edit<div class="sb">12 sales · ₹3,420 to you</div></div><span class="tg o">LIVE</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Saree picks<div class="sb">3 sales · ₹840</div></div><span class="tg o">LIVE</span></div>
+        <div class="em"><div class="t">No posts yet</div>
+          <div class="s">Your first one comes from a collab.</div></div>
+      </div>
+    </div>
+    <div class="nt">Each row carries what it earned, because that is the only reason to look.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-28</span><span class="n">My store</span><span class="v s">SWEEP</span></div>
+    <div class="used">CR-12</div>
+    <div class="ph k">
+      <div class="hd"><h2>My store</h2></div>
+      <div class="bd">
+        <div class="nt" style="margin:0">Everything you can sell, in one place shoppers can browse.</div>
+        <div class="grid"><div class="gi"></div><div class="gi"></div><div class="gi"></div>
+          <div class="gi"></div><div class="gi"></div><div class="gi"></div></div>
+      </div>
+    </div>
+    <div class="nt">Read once to confirm it still opens. Not redesigned here.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ EARNINGS -->
+<div class="area">Her money · SC-29 to SC-36</div>
+<div class="row">
+
+  <div class="card">
+    <div class="id"><span class="a">SC-29</span><span class="n">Earnings</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-16 CR-17</div>
+    <div class="ph">
+      <div class="hd"><h2>Earnings</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">Ready to withdraw</div>
+          <div class="bg" style="color:var(--ok)">₹2,604</div>
+          <div class="bt s">WITHDRAW</div></div>
+        <div class="cd"><div class="ct">Earned, but not yours yet</div>
+          <div class="kv"><span>In the 7-day window</span><b>₹1,240</b></div>
+          <div class="kv"><span>Fee not released yet</span><b>₹12,500</b></div>
+          <div class="nt" style="margin:4px 0 0">A shopper can still return. Money moves into
+            your wallet when the window closes.</div></div>
+        <div class="fl">By collab</div>
+        <div class="r1"><div class="av"></div><div class="gr">Label Fern · Diwali<div class="sb">share of sales</div></div><span class="tg o">₹4,820</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Kaya Studio<div class="sb">a fee · 2 of 3 paid</div></div><span class="tg w">₹12,500</span></div>
+      </div>
+      <div class="tabs"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Collabs</div>
+        <div class="tb"><i></i>Create</div><div class="tb on"><i></i>Earnings</div><div class="tb"><i></i>Profile</div></div>
+    </div>
+    <div class="nt">The founder's rule, exactly: <b>the commission is shown to her but is not in
+      her wallet until the return window closes.</b> Two numbers, never one.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-30</span><span class="n">A collab's commission</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-17</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Earnings</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">LABEL FERN · DIWALI</div><h2>What you earned</h2></div>
+      <div class="bd">
+        <div class="tri"><div class="tv"><b>14</b><span>SALES</span></div>
+          <div class="tv"><b>₹4,820</b><span>YOURS</span></div>
+          <div class="tv"><b>18%</b><span>YOUR RATE</span></div></div>
+        <div class="fl">Every sale</div>
+        <div class="r1"><div class="th"></div><div class="gr">Cotton Jacket<div class="sb">1 Sep · shopper paid ₹1,920</div></div><span class="tg o">₹346</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Denim Jacket<div class="sb">30 Aug</div></div><span class="tg w">HELD TO 6 SEP</span></div>
+        <div class="cd"><div class="ct">One sale, opened</div>
+          <div class="kv"><span>Shopper paid</span><b>₹1,920</b></div>
+          <div class="kv"><span>You · 18%</span><b>₹346</b></div>
+          <div class="kv"><span>INFLX</span><b>₹96</b></div>
+          <div class="kv"><span>The brand</span><b>₹1,478</b></div></div>
+      </div>
+    </div>
+    <div class="nt"><b>Her cut comes off what the shopper actually paid</b> — ₹1,920, after the
+      20% offer, not the ₹2,400 ticket price. Worth showing on a real sale.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-31</span><span class="n">A collab's fee</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-17</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Earnings</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">KAYA STUDIO</div><h2>Your fee · ₹25,000</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="gr"><b>25% · ₹6,250</b><div class="sb">when you both signed · 4 Sep</div></div><span class="tg o">PAID</span></div>
+        <div class="r1"><div class="gr"><b>25% · ₹6,250</b><div class="sb">when you went live · 12 Sep</div></div><span class="tg o">PAID</span></div>
+        <div class="r1"><div class="gr"><b>50% · ₹12,500</b><div class="sb">30 days after · 12 Oct</div></div><span class="tg w">WAITING</span></div>
+        <div class="cd"><div class="ct">Where the money is</div>
+          <div class="nt" style="margin:0">The brand locked all ₹25,000 before asking you.
+            <b>It is already set aside.</b></div></div>
+        <div class="cd"><div class="ct">Tax</div>
+          <div class="kv"><span>TDS held so far</span><b>₹1,250</b></div>
+          <div class="nt" style="margin:4px 0 0">You claim it back when you file.</div></div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>No fee has ever been released.</b> Every escrow and wallet table in
+      production is empty — the first completed pay-for-content collab will be the first time any
+      of this runs.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-32</span><span class="n">Your sales</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-17</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Earnings</span><span class="s"></span></div>
+      <div class="hd"><h2>Your sales</h2>
+        <div class="ch"><span class="c1 on">All</span><span class="c1">In the window</span><span class="c1">Returned</span></div></div>
+      <div class="bd">
+        <div class="r1"><div class="th"></div><div class="gr">Cotton Jacket<div class="sb">1 Sep · Jacket edit</div></div><span class="tg o">₹346</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Denim Jacket<div class="sb">30 Aug · Jacket edit</div></div><span class="tg w">₹446 · 6 SEP</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Cotton shirt<div class="sb">returned 29 Aug</div></div><span class="tg b">TAKEN BACK</span></div>
+        <div class="cd"><div class="ct">The 7-day window</div>
+          <div class="nt" style="margin:0">A shopper has 7 days to return. Until then the money
+            is yours <b>on paper</b>, not in your wallet.</div></div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>The 16 sales in production are practice rows</b> — no payment id, one
+      practice brand, and <b>no fee or brand share computed</b>. They must be repaired or
+      excluded before this screen shows a number.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-33</span><span class="n">A returned sale</span><span class="v n">NEW</span></div>
+    <div class="used">CR-17</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Sales</span><span class="s"></span></div>
+      <div class="hd"><div class="kk">29 AUG</div><h2>Taken back</h2></div>
+      <div class="bd">
+        <div class="cd b"><div class="ct b">The shopper returned it</div>
+          <div class="kv"><span>Cotton shirt</span><b>₹1,600</b></div>
+          <div class="kv"><span>You had earned</span><b>₹288</b></div>
+          <div class="kv"><span>Now</span><b>₹0</b></div></div>
+        <div class="cd"><div class="ct">Nothing was taken from you</div>
+          <div class="nt" style="margin:0">It was still inside the 7 days, so it had <b>not
+            reached your wallet.</b> Your balance has not gone down — this sale simply never
+            completed.</div></div>
+        <div class="bt g">SEE THE POST</div>
+      </div>
+    </div>
+    <div class="nt"><b>The whole reason the window exists.</b> Without this screen a creator
+      watches a number drop and assumes she has been charged.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-34</span><span class="n">Withdraw</span><span class="v n">NEW</span></div>
+    <div class="used">CR-16 ⇄ AD-02</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Earnings</span><span class="s"></span></div>
+      <div class="hd"><h2>Withdraw</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">Ready</div>
+          <div class="bg" style="color:var(--ok)">₹2,604</div></div>
+        <div class="fl">How much</div><div class="fi">₹ 2,604</div>
+        <div class="fl">To</div>
+        <div class="sg"><div class="s1 on">UPI</div><div class="s1">Bank</div></div>
+        <div class="fi g">asha@okhdfcbank</div>
+        <div class="cd"><div class="ct">Not ready yet</div>
+          <div class="kv"><span>₹1,240 from 4 sales</span><b>frees up 6 Sep</b></div></div>
+        <div class="cd"><div class="ct">What happens</div>
+          <div class="nt" style="margin:0">INFLX approves it, then it reaches you in 1–2 working
+            days.</div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">REQUEST ₹2,604</div></div>
+    </div>
+    <div class="nt">⚠️ <b>This screen does not exist, and her Home already has a WITHDRAW button
+      pointing at it.</b> The endpoints and the rules are built; the destination is not.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-35</span><span class="n">Bank &amp; UPI</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-16</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Profile</span><span class="s"></span></div>
+      <div class="hd"><h2>Where your money goes</h2></div>
+      <div class="bd">
+        <div class="fl">UPI</div><div class="fi">asha@okhdfcbank</div>
+        <div class="fl">Or a bank account</div>
+        <div class="fi p">Account number</div>
+        <div class="fi p">IFSC</div>
+        <div class="fl">PAN · needed for tax</div><div class="fi">ABCDE1234F</div>
+        <div class="cd"><div class="ct">Verified</div>
+          <div class="nt" style="margin:0">Checked against your PAN name.</div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SAVE</div></div>
+    </div>
+    <div class="nt">Without PAN, TDS is held at a higher rate. Worth saying before her first
+      payment, not after.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-36</span><span class="n">Tax certificate</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-17</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Earnings</span><span class="s"></span></div>
+      <div class="hd"><h2>Tax certificate</h2></div>
+      <div class="bd">
+        <div class="cd"><div class="ct">Form 16A · this financial year</div>
+          <div class="kv"><span>Total earned</span><b>₹18,600</b></div>
+          <div class="kv"><span>TDS held</span><b>₹821</b></div></div>
+        <div class="bt">DOWNLOAD</div>
+        <div class="nt"><b>You claim this back when you file. It is not money we kept.</b></div>
+      </div>
+    </div>
+    <div class="nt">Built. <b>One sentence added</b> — a creator watching 10% disappear needs to
+      be told once that it is not a platform fee.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ PROFILE -->
+<div class="area">Her profile · SC-37 to SC-41</div>
+<div class="row">
+
+  <div class="card">
+    <div class="id"><span class="a">SC-37</span><span class="n">Profile</span><span class="v c">CHANGE</span></div>
+    <div class="used">entry to settings</div>
+    <div class="ph">
+      <div class="hd"><div class="kk">INFLUENCER</div><h2>Asha M.</h2>
+        <div class="nt" style="margin-top:2px">@asha.styles · Bengaluru · fashion</div></div>
+      <div class="bd">
+        <div class="fi g">Your details</div>
+        <div class="fi g">Instagram &amp; YouTube</div>
+        <div class="fi g">Where to send goods</div>
+        <div class="fi g">Bank &amp; UPI</div>
+        <div class="fi g">What you'll take</div>
+        <div class="fi g">Your contracts</div>
+        <div class="fi g">Refer &amp; earn</div>
+        <div class="fi g">Legal</div>
+        <div class="bt x">SIGN OUT</div>
+      </div>
+      <div class="tabs"><div class="tb"><i></i>Home</div><div class="tb"><i></i>Collabs</div>
+        <div class="tb"><i></i>Create</div><div class="tb"><i></i>Earnings</div><div class="tb on"><i></i>Profile</div></div>
+    </div>
+    <div class="nt">Gains <b>Where to send goods</b> — the saved address a remote shoot needs.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-38</span><span class="n">Instagram &amp; YouTube</span><span class="v c">CHANGE</span></div>
+    <div class="used">CR-05 · what SB-14 displays</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Profile</span><span class="s"></span></div>
+      <div class="hd"><h2>Your channels</h2></div>
+      <div class="bd">
+        <div class="cd o"><div class="ct o">Instagram · connected</div>
+          <div class="kv"><span>Followers</span><b>42,100</b></div>
+          <div class="kv"><span>Engagement</span><b>3.4%</b></div>
+          <div class="nt" style="margin:4px 0 0">Refreshed 31 Aug.</div></div>
+        <div class="cd b"><div class="ct b">YouTube · not connected</div>
+          <div class="nt" style="margin:0">Brands filtering for YouTube creators will not find
+            you.</div>
+          <div class="bt s">CONNECT YOUTUBE</div></div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>YouTube is empty across the whole platform</b> — one handle, zero
+      subscribers on 25 creators. The brand's YouTube tab has nothing to show until this screen
+      is used.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-39</span><span class="n">Where to send goods</span><span class="v n">NEW</span></div>
+    <div class="used">CR-09</div>
+    <div class="ph">
+      <div class="nav"><span class="b">‹ Profile</span><span class="s"></span></div>
+      <div class="hd"><h2>Where to send goods</h2></div>
+      <div class="bd">
+        <div class="fl">Name</div><div class="fi">Asha M.</div>
+        <div class="fl">Address</div><div class="fi">42 Jubilee Hills</div>
+        <div class="fl">City · PIN</div><div class="fi">Hyderabad 500033</div>
+        <div class="fl">Phone</div><div class="fi">98xxx xxxxx</div>
+        <div class="cd"><div class="ct">Who sees this</div>
+          <div class="nt" style="margin:0"><b>Only a brand you have signed with, and only for a
+            remote shoot.</b> It is never on your public profile.</div></div>
+      </div>
+      <div class="st"><div class="bt" style="margin:0">SAVE</div></div>
+    </div>
+    <div class="nt">Saved once, offered on every remote shoot from <b>SC-12</b>. She can still
+      send a different one for a single shoot.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-40</span><span class="n">Your contracts</span><span class="v k">KEEP</span></div>
+    <div class="used">CR-06 · history</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Profile</span><span class="s"></span></div>
+      <div class="hd"><h2>Your contracts</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="av"></div><div class="gr">Label Fern · Diwali<div class="sb">signed 4 Sep · 18%</div></div><span class="tg o">LIVE</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Kaya Studio<div class="sb">signed 28 Aug · ₹25,000</div></div><span class="tg o">LIVE</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Winter drop<div class="sb">ended 12 Aug</div></div><span class="tg">DONE</span></div>
+      </div>
+    </div>
+    <div class="nt">Everything she ever signed, readable after it ends.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-41</span><span class="n">Refer &amp; earn</span><span class="v s">SWEEP</span></div>
+    <div class="used">out of scope for stages 1-4</div>
+    <div class="ph k">
+      <div class="hd"><h2>Refer &amp; earn</h2></div>
+      <div class="bd">
+        <div class="nt" style="margin:0">Share your code — earn for 12 months</div>
+        <div class="fi" style="text-align:center;font-weight:900;letter-spacing:2px">ASHA42</div>
+        <div class="bt">SHARE</div>
+        <div class="kv"><span>Referred</span><b>3</b></div>
+        <div class="kv"><span>Earned</span><b>₹1,240</b></div>
+      </div>
+    </div>
+    <div class="nt">Built. Read once to confirm it opens; not redesigned here.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SC-42</span><span class="n">Performance</span><span class="v s">SWEEP</span></div>
+    <div class="used">Stage 10 · CR-17</div>
+    <div class="ph k">
+      <div class="nav"><span class="b">‹ Collabs</span><span class="s"></span></div>
+      <div class="hd"><h2>Performance</h2></div>
+      <div class="bd">
+        <div class="sg"><div class="s1 on">On INFLX</div><div class="s1">On social media</div></div>
+        <div class="cd"><div class="ct">On INFLX · ours, exact</div>
+          <div class="kv"><span>Sales</span><b>₹18,600</b></div>
+          <div class="kv"><span>Per post</span><b>₹3,720</b></div></div>
+        <div class="cd"><div class="ct">On social · theirs, refreshed</div>
+          <div class="kv"><span>Post views</span><b>24,100</b></div>
+          <div class="kv"><span>Saves</span><b>612</b></div>
+          <div class="kv"><span>Avg engagement</span><b>3.4%</b></div>
+          <div class="nt" style="margin:4px 0 0">Last refreshed 2 days ago.</div></div>
+        <div class="em"><div class="t">No live posts yet</div></div>
+      </div>
+    </div>
+    <div class="nt">Stage 10 work — swept, not redesigned. <b>The rule that matters is already
+      right:</b> our numbers and social numbers are kept apart and stamped with when they were
+      last pulled.</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ ADMIN -->
+<div class="area a">Admin · SA-01 to SA-05</div>
+<div class="row">
+
+  <div class="card">
+    <div class="id"><span class="a">SA-01</span><span class="n">Post queue</span><span class="v c">CHANGE</span></div>
+    <div class="used">AD-01 ⇄ CR-12</div>
+    <div class="ph ad">
+      <div class="hd ad"><div class="kk ad">ADMIN</div><h2>Shop posts · 7 waiting</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="th"></div><div class="gr">Asha M. · Festive picks<div class="sb">Label Fern · goes live 12 Sep</div></div><span class="tg y">2 DAYS</span></div>
+        <div class="r1"><div class="th"></div><div class="gr">Ravi K. · Layers<div class="sb">Kaya · goes live 19 Sep</div></div><span class="tg">9 DAYS</span></div>
+        <div class="cd a"><div class="ct a">Sorted by urgency</div>
+          <div class="nt" style="margin:0"><b>Nearest go-live day first.</b> A post approved after
+            its day is worthless.</div></div>
+      </div>
+    </div>
+    <div class="nt"><b>The queue must be ordered by the set's go-live day</b>, not by when it was
+      submitted — otherwise the urgent ones sink.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SA-02</span><span class="n">Review one post</span><span class="v c">CHANGE</span></div>
+    <div class="used">AD-01 ⇄ CR-13</div>
+    <div class="ph ad">
+      <div class="nav"><span class="b">‹ Queue</span><span class="s"></span></div>
+      <div class="hd ad"><div class="kk ad">ASHA M. · LABEL FERN</div><h2>Festive picks</h2></div>
+      <div class="bd">
+        <div class="grid"><div class="gi"></div><div class="gi"></div></div>
+        <div class="cd a"><div class="ct a">Checked automatically</div>
+          <div class="kv"><span>Products are hers to sell</span><b style="color:var(--ok)">✓</b></div>
+          <div class="kv"><span>Prices match the live product</span><b style="color:var(--bad)">✕</b></div>
+          <div class="kv"><span>Offer is still running</span><b style="color:var(--ok)">✓</b></div></div>
+        <div class="cd b"><div class="ct b">Cotton Jacket</div>
+          <div class="kv"><span>In the post</span><b>₹2,000</b></div>
+          <div class="kv"><span>Live price</span><b>₹2,400</b></div></div>
+        <div class="fl">Send back · she reads this</div>
+        <div class="fi p">Say what to change</div>
+      </div>
+      <div class="st"><div class="bt a" style="margin:0">APPROVE</div>
+        <div class="bt x">SEND IT BACK</div></div>
+    </div>
+    <div class="nt"><b>The machine checks what a machine can check.</b> A human should only be
+      judging the photos and the caption, not comparing prices by eye.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SA-03</span><span class="n">Withdrawals</span><span class="v c">CHANGE</span></div>
+    <div class="used">AD-02 ⇄ CR-16 BR-22</div>
+    <div class="ph ad">
+      <div class="hd ad"><div class="kk ad">ADMIN</div><h2>Withdrawals · 4</h2></div>
+      <div class="bd">
+        <div class="fl">Creators · 3</div>
+        <div class="r1"><div class="av"></div><div class="gr">Asha M. · ₹2,604<div class="sb">UPI · window closed</div></div><span class="tg o">PAY</span></div>
+        <div class="r1"><div class="av"></div><div class="gr">Ravi K. · ₹8,100<div class="sb">bank · PAN missing</div></div><span class="tg b">HOLD</span></div>
+        <div class="fl">Brands · 1</div>
+        <div class="r1"><div class="av"></div><div class="gr">Label Fern · ₹56,100<div class="sb">from sales · window closed</div></div><span class="tg o">PAY</span></div>
+        <div class="cd a"><div class="ct a">The rule is the same for both</div>
+          <div class="nt" style="margin:0">Nothing is payable until the <b>7-day return
+            window</b> has closed on every sale in it.</div></div>
+      </div>
+    </div>
+    <div class="nt">⚠️ <b>Creator withdrawals exist; brand withdrawals do not.</b> The
+      `brand_withdrawals` table is there with zero rows and no screen either side.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SA-04</span><span class="n">Platform rules</span><span class="v n">NEW</span></div>
+    <div class="used">AD-03 AD-04</div>
+    <div class="ph ad">
+      <div class="hd ad"><div class="kk ad">ADMIN</div><h2>Rules</h2></div>
+      <div class="bd">
+        <div class="fl">Shop posts per collab · minimum</div>
+        <div class="fi">5</div>
+        <div class="nt">How many she must have <b>approved</b> before she can go live. Applies to
+          every collab, both aims.</div>
+        <div class="fl">Return window</div>
+        <div class="sg"><div class="s1 on">7 days</div><div class="s1">15</div><div class="s1">30</div></div>
+        <div class="nt"><b>One window for everybody</b> — creator and brand, every industry.</div>
+        <div class="fl">Wait before the final payment</div>
+        <div class="sg"><div class="s1">7 days</div><div class="s1">15</div><div class="s1 on">30</div></div>
+        <div class="nt"><b>Pay-for-content only.</b> Her last 50% releases this long after the
+          content goes live. <b>Today it is hardcoded at 30.</b></div>
+        <div class="cd b"><div class="ct b">Changing these</div>
+          <div class="nt" style="margin:0">Applies to <b>new</b> collabs only. Anything already
+            signed keeps the rule it was signed under.</div></div>
+      </div>
+      <div class="st"><div class="bt a" style="margin:0">SAVE</div></div>
+    </div>
+    <div class="nt"><b>Three numbers that are hardcoded today.</b> The last card is the important
+      one — changing a rule under a signed contract would break the contract.</div>
+  </div>
+
+  <div class="card">
+    <div class="id"><span class="a">SA-05</span><span class="n">Commission by industry</span><span class="v k">KEEP</span></div>
+    <div class="used">AD-05</div>
+    <div class="ph ad k">
+      <div class="hd ad"><div class="kk ad">ADMIN · MARKETPLACE CATEGORIES</div><h2>Platform fee</h2></div>
+      <div class="bd">
+        <div class="r1"><div class="gr">Fashion<div class="sb">path B · creator's post</div></div><span class="tg">5.0%</span></div>
+        <div class="r1"><div class="gr">Beauty<div class="sb">path B</div></div><span class="tg">6.0%</span></div>
+        <div class="r1"><div class="gr">Food<div class="sb">path B</div></div><span class="tg">4.0%</span></div>
+        <div class="cd a"><div class="ct a">Only path B is live</div>
+          <div class="nt" style="margin:0"><b>Every sale comes from a creator's post</b>, so there
+            is one path. Path A is reserved for posts INFLX might make for brands one day. Path C
+            was retired — the post <b>is</b> the attribution.</div></div>
+      </div>
+    </div>
+    <div class="nt"><b>This already exists</b> — 16 industries with per-path rates. I said it
+      did not; the founder pointed me at Marketplace Categories and it was there.</div>
+  </div>
+</div>
+
+<div class="area">The creator app and admin, in numbers</div>
+<div class="rule" style="max-width:1000px">
+  <b>42 creator screens &nbsp;·&nbsp; 5 admin screens.</b><br>
+  <span class="v n">NEW</span> 9 &nbsp;·&nbsp;
+  <span class="v c">CHANGE</span> 26 &nbsp;·&nbsp;
+  <span class="v k">KEEP</span> 9 &nbsp;·&nbsp;
+  <span class="v s">SWEEP</span> 3<br><br>
+  <b>Across both apps:</b> 62 brand + 42 creator + 5 admin = <b>109 screens</b> with a permanent
+  address, each drawn once.<br><br>
+
+  <b>The creator app's new screens are not the same shape as the brand's.</b> His were dominated
+  by the set — a middle layer that does not exist. Hers are dominated by <b>money she can see but
+  cannot reach</b>: SC-33 explains a returned sale, SC-34 is the withdraw screen her Home already
+  links to, and SC-29 splits one number into "ready" and "not yours yet".<br><br>
+
+  Her second cluster is <b>being told what happened to her work</b> — SC-26 when a shop post is
+  sent back, SC-16 when she goes live per channel, SC-12 when a remote shoot cannot start without
+  her address.<br><br>
+
+  <b>Next:</b> the Index — action → screens and screen → actions — so nothing can be orphaned or
+  described twice without it showing. Then the five Action Books.
+</div>
