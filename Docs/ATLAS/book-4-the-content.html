@@ -1,0 +1,455 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Action Book 4 · The content</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--soft:#F5F5F5;--acc:#E36414;
+        --ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--br:#1D4ED8;--brbg:#EEF2FF;--cr:#0F766E;--crbg:#ECFDF5;
+        --adm:#0F766E;--admbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);padding:26px 24px 90px;max-width:960px;
+       font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+  h1{font-size:28px;margin:0 0 5px;letter-spacing:-.03em}
+  .lede{font-size:13.5px;color:#555;margin:0 0 18px}
+  .lede b{color:var(--ink)}
+  .key{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin:0 0 10px}
+  .act{border-top:2px solid var(--ink);padding-top:14px;margin:30px 0 0}
+  .ah{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .ah .c{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:900;letter-spacing:-.02em}
+  .ah .t{font-size:19px;font-weight:800;letter-spacing:-.025em}
+  .v{font-size:8px;font-weight:900;padding:2.5px 6px;border-radius:4px;color:#fff;letter-spacing:.05em}
+  .v.n{background:var(--new)} .v.c{background:var(--acc)} .v.k{background:#B0B0B0}
+  .two{background:var(--purbg);color:var(--pur);border:1px solid #DDD6FE;
+       font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em}
+  .kind{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em;color:#fff}
+  .kind.s{background:#7C3AED} .kind.p{background:#B45309} .kind.a{background:var(--adm)}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;margin:9px 0 0;color:#444}
+  .meta .l{font-size:8.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+           color:var(--mut);display:block;margin-bottom:1px}
+  .sc a{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;font-weight:800;
+        padding:2px 5px;border-radius:4px;border:1px solid var(--line);text-decoration:none;
+        color:#444;margin-right:3px;display:inline-block}
+  .sc a.b{background:var(--brbg);border-color:#C7D2FE;color:var(--br)}
+  .sc a.c{background:var(--crbg);border-color:#A7D8CB;color:var(--cr)}
+  .sc a.a{background:var(--admbg);border-color:#A7D8CB;color:var(--adm)}
+  .lab{font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--mut);margin:18px 0 5px}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 0 30px;margin:0 0 9px;font-size:13.5px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;
+       border-radius:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:900;
+       display:flex;align-items:center;justify-content:center}
+  .fork{border-left:3px solid var(--acc);padding:2px 0 2px 11px;margin:7px 0;font-size:13px}
+  .fork .fk{font-weight:900;color:var(--acc);font-size:11px;letter-spacing:.03em}
+  .fork.o{border-color:var(--ok)} .fork.o .fk{color:var(--ok)}
+  .fork.b{border-color:var(--bad)} .fork.b .fk{color:var(--bad)}
+  table.both{border-collapse:collapse;width:100%;margin:6px 0 0;font-size:12.5px}
+  table.both th{width:50%;text-align:left;padding:6px 10px;font-size:9px;font-weight:900;
+       letter-spacing:.08em;text-transform:uppercase}
+  table.both th.b{background:var(--brbg);color:var(--br)}
+  table.both th.c{background:var(--crbg);color:var(--cr)}
+  table.both th.a{background:var(--admbg);color:var(--adm)}
+  table.both td{border:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  table.both td.moment{background:var(--soft);font-size:11px;font-weight:800;color:#555;
+       text-align:center;letter-spacing:.04em;text-transform:uppercase;border-left:none;border-right:none}
+  table.tr{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 0}
+  table.tr th{text-align:left;padding:6px 9px;font-size:9px;font-weight:900;letter-spacing:.07em;
+       text-transform:uppercase;color:var(--mut);border-bottom:1.5px solid var(--ink)}
+  table.tr td{border-bottom:1px solid var(--line);padding:7px 9px;vertical-align:top}
+  ul.tight{margin:0;padding-left:17px;font-size:13px}
+  ul.tight li{margin:0 0 4px}
+  .wrong{border:1px solid #E7BDB4;background:var(--badbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .wrong .w{font-weight:800;color:var(--bad)}
+  .fixed{border:1px solid #BFE0CF;background:var(--okbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .fixed .w{font-weight:800;color:var(--ok)}
+  .data{border:1px solid var(--line);background:#FAFAFA;border-radius:9px;padding:10px 13px;
+        font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .data b{font-family:-apple-system,Segoe UI,sans-serif}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--soft);
+       padding:1px 4px;border-radius:3px}
+  .rule{background:var(--purbg);border:1px solid #DDD6FE;border-radius:9px;padding:11px 14px;
+        font-size:13px;margin:10px 0}
+  .rule b{color:var(--pur)}
+</style>
+
+<h1>Action Book 4 · The content</h1>
+<p class="lede">
+  Shop posts on INFLX, then everyone goes live together. <b>7 actions</b> — 4 the creator, 2 the
+  brand, 1 admin. Two are new, and both are places where somebody is currently told nothing.
+</p>
+
+<div class="key">
+  <span class="v n">NEW</span> · <span class="v c">CHANGE</span> · <span class="v k">KEEP</span> ·
+  <span class="two">BOTH</span> both phones shown ·
+  <span class="kind s">SHOP POST</span> on INFLX ·
+  <span class="kind p">PAID CONTENT</span> the brand bought ·
+  <span class="kind a">ADMIN</span>
+</div>
+
+<div class="rule">
+  <b>Two different things are called "content" and they are reviewed by different people.</b>
+  A <b>shop post</b> lives on INFLX, sells products, and is reviewed by <b>admin</b>. A
+  <b>deliverable</b> is a reel or story the brand paid for, and is reviewed by <b>the brand</b>.
+  They have different deadlines, different reviewers, and different consequences — and confusing
+  them is the easiest mistake in this phase.
+</div>
+
+<div class="lab">The two kinds, side by side</div>
+<table class="tr">
+  <tr><th></th><th>Shop post</th><th>Deliverable</th></tr>
+  <tr><td><b>Where it lives</b></td><td>on INFLX</td><td>on her social channels</td></tr>
+  <tr><td><b>Who reviews it</b></td><td><b>admin</b> — never the brand</td><td><b>the brand</b></td></tr>
+  <tr><td><b>What they check</b></td><td>products are hers to sell, prices match</td><td>whether they like it</td></tr>
+  <tr><td><b>Deadline</b></td><td><b>none of its own</b> — approved before the go-live day</td><td>before the go-live day</td></tr>
+  <tr><td><b>Which sets have it</b></td><td>any set that sells</td><td><b>only pay-for-content sets</b></td></tr>
+  <tr><td><b>If rejected</b></td><td>sent back with a reason — CR-13</td><td>a revision, 2 maximum</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════ CR-12 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-12</span><span class="t">Build a shop post</span><span class="v c">CHANGE</span><span class="kind s">SHOP POST</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She has material and a collab that sells</div>
+    <div><span class="l">Who</span>Creator, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-01</a><a class="c">SC-21</a><a class="c">SC-22</a><a class="c">SC-23</a><a class="c">SC-24</a><a class="c">SC-25</a><a class="c">SC-27</a><a class="c">SC-28</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-21</a></span> The Create tab lists the collabs that
+      <b>need a shop post</b>, each with its go-live day.</li>
+    <li><b>1 of 3 — who is it for.</b> <span class="sc"><a class="c">SC-22</a></span>
+      <b>Scope first, products second.</b>
+      <div class="fork o"><span class="fk">ONE BRAND</span> — then <b>which campaign</b>, and she
+        may use anything that campaign allows.</div>
+      <div class="fork"><span class="fk">A FEW BRANDS</span> — every campaign she has with those
+        brands, pooled into one post.</div>
+      <div class="fork"><span class="fk">EVERYTHING</span> — every product from every collab she
+        is in.</div>
+    </li>
+    <li><b>2 of 3 — which.</b> <span class="sc"><a class="c">SC-23</a></span> The campaigns, and
+      the count of products each one opens up.</li>
+    <li><b>3 of 3 — build it.</b> <span class="sc"><a class="c">SC-24</a></span> Photos, tag
+      products from her allowed list, caption. A readiness card names what is still missing.</li>
+    <li>Send for review. <span class="sc"><a class="c">SC-25</a></span> It goes to admin, not to
+      the brand — and the screen says so.</li>
+  </ol>
+
+  <div class="rule">
+    <b>The scope decides one thing only: which products she is allowed to put in.</b> Nothing else
+    about the post changes. The founder's rule, and it is what makes all three scopes the same
+    piece of code — the backend resolves <b>brand → campaign → what she was allocated</b>, and the
+    three scopes are three widths of the same query.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>creator_posts</b> — scope, the campaigns it draws from, tagged products,
+    photos, caption, <code>status='in_review'</code>.<br>
+    <b>Prices and offers are read from the live product, never typed.</b></div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Asking for products before establishing scope.</span> That is the current
+    order, and it makes the product list either wrong or enormous. Scope first is the whole
+    change.<br><br>
+    <span class="w"><code>creator_posts</code> has no <code>campaign_influencer_id</code>.</span>
+    A post cannot say which collaboration it belongs to. <b>This one missing column blocks five
+    features</b> — including counting shop posts per collab (AD-03) and attributing a sale back to
+    a contract.<br><br>
+    <span class="w">A price typed rather than read.</span> The most common reason a post is sent
+    back. If the composer ever stores a price instead of a product reference, they drift the moment
+    the brand changes the price.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ AD-01 -->
+<div class="act">
+  <div class="ah"><span class="c">AD-01</span><span class="t">Review a shop post</span><span class="v c">CHANGE</span><span class="two">BOTH</span><span class="kind a">ADMIN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>A post is submitted</div>
+    <div><span class="l">Who</span>Admin → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-01</a><a class="a">SA-02</a><a class="c">SC-25</a><a class="c">SC-26</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="a">SA-01</a></span> The queue, <b>ordered by the nearest
+      go-live day</b> — not by when it was submitted.</li>
+    <li><span class="sc"><a class="a">SA-02</a></span> Three things are checked <b>by the
+      machine</b>, and shown as ticks and crosses:
+      <ul class="tight" style="margin-top:5px">
+        <li>every product is hers to sell, under her allocation</li>
+        <li>every price matches the live product</li>
+        <li>the offer is still running on the go-live day</li>
+      </ul>
+    </li>
+    <li>A human judges only the photos and the caption.</li>
+    <li>Two answers:
+      <div class="fork o"><span class="fk">APPROVE</span> — it can go live.</div>
+      <div class="fork b"><span class="fk">SEND IT BACK</span> — with a reason <b>she will read
+        word for word</b>. → CR-13.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>The machine checks what a machine can check.</b> Nobody should be comparing a price in a
+    caption against a product page by eye, forty times a day. The founder's own example — <i>"the
+    price does not match"</i> — is exactly the check that should never have needed a person.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>creator_posts.status</b> → <code>approved</code> / <code>sent_back</code>,
+    with the reason and the failing product.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">A queue ordered by submission time.</span> A post approved after its go-live
+    day is worthless. Ordering by urgency is not a nicety — it is the difference between a
+    campaign working and not.<br><br>
+    <span class="w">A rejection reason written for admin, not for her.</span> She has to be able to
+    fix it from what it says. "Validation failed" is not a reason.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-13 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-13</span><span class="t">Fix a rejected shop post</span><span class="v n">NEW</span><span class="two">BOTH</span><span class="kind s">SHOP POST</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Admin sends it back</div>
+    <div><span class="l">Who</span>Creator → admin</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-02</a><a class="c">SC-26</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-26</a></span> What INFLX said, in their words.</li>
+    <li><b>Which item is wrong, and what is wrong with it</b> — <i>you wrote ₹2,000, live is
+      ₹2,400</i>. Not a general complaint about the post.</li>
+    <li>Two answers: <b>fix and send again</b>, or start over.</li>
+    <li>And the line that matters most: <b>your day has not moved. Still Sat 12 Sep. You have
+      3 days.</b></li>
+  </ol>
+
+  <div class="lab">Both phones · sent back</div>
+  <table class="both">
+    <tr><th class="a">Admin · SA-02</th><th class="c">Creator · SC-26</th></tr>
+    <tr>
+      <td>Cotton Jacket — in the post ₹2,000, live price ₹2,400.<br>
+        Sent back with that sentence attached.</td>
+      <td><b>Sent back.</b><br>
+        The exact sentence, the exact product, and the number to change.<br><br>
+        <b>Still Sat 12 Sep. 3 days left.</b></td>
+    </tr>
+    <tr><td class="moment" colspan="2">Today this is a dead end — she is told no and given nothing to act on.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>creator_posts</b> — a new revision, back to <code>in_review</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">No screen exists for this at all.</span> A rejected post currently stops dead.
+    She is told no, and there is nowhere to go — so she either abandons it or messages someone.<br><br>
+    <span class="w">Not showing the days remaining.</span> A rejection three days before go-live
+    and one three hours before are completely different situations, and only one of them is worth
+    dropping everything for.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-14 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-14</span><span class="t">Submit a deliverable</span><span class="v k">KEEP</span><span class="two">BOTH</span><span class="kind p">PAID CONTENT</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Only on a pay-for-content set</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-14</a><a class="c">SC-15</a><a class="b">SB-49</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-14</a></span> What she owes, from the contract — 1 reel,
+      1 story — each with its state.</li>
+    <li><span class="sc"><a class="c">SC-15</a></span> Record, or from the gallery, plus a note.</li>
+    <li>Send for review. → BR-18.</li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>deliverables</b> — the file, a revision number, <code>status='submitted'</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Inventing deliverables that were never agreed.</span> A backfill used to
+    default to <code>[{type:'reel',count:1}]</code> when the list was empty — so a sale-only
+    collab grew a reel nobody had asked for or agreed to pay for. Removed 30 Aug.<br><br>
+    <span class="w">Showing this section on a sale set.</span> It should not exist there. The same
+    <code>buysContent(goal)</code> that fixed BR-02 and BR-14 decides it.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-18 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-18</span><span class="t">Review a deliverable</span><span class="v k">KEEP</span><span class="two">BOTH</span><span class="kind p">PAID CONTENT</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She submits</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-02</a><a class="b">SB-49</a><a class="b">SB-61</a><a class="c">SC-14</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>It lands in <b>Needs you</b>, with how long it has been waiting.
+      <span class="sc"><a class="b">SB-02</a></span></li>
+    <li><span class="sc"><a class="b">SB-49</a></span> Two answers:
+      <div class="fork o"><span class="fk">APPROVE</span> — done.</div>
+      <div class="fork"><span class="fk">ASK FOR A CHANGE</span> — <b>2 revisions maximum.</b>
+        After that he must approve it or end the collaboration.</div>
+    </li>
+    <li>Approved content collects in the gallery. <span class="sc"><a class="b">SB-61</a></span></li>
+  </ol>
+
+  <div class="lab">Both phones · a revision asked for</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-49</th><th class="c">Creator · SC-14</th></tr>
+    <tr>
+      <td>Asha M. · story · <b>revision 1 of 2</b><br>
+        "Can we see the sleeve detail?"</td>
+      <td>1 story · <b>REDO</b><br>
+        What they asked for, in their words.<br><br>
+        <b>Revision 1 of 2.</b> After two they must approve it or end it.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">Both sides see the same count, so neither is surprised by the limit.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>deliverables.status</b> → <code>approved</code> / <code>revision_requested</code>,
+    with the revision count.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Reviewing a shop post here.</span> A brand must never gate a shop post. That
+    is admin's job, and mixing the two queues gives a brand veto over her INFLX storefront.<br><br>
+    <span class="w">A revision requested after the go-live day.</span> Nothing checks it. He can
+    ask for a change to something that was supposed to be published yesterday.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-15 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-15</span><span class="t">Go live and post your links</span><span class="v n">NEW</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>The go-live day arrives</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-16</a><a class="b">SB-50</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-16</a></span> <b>One card per channel she agreed to</b> —
+      matched to the list on her contract, not a single Instagram box.</li>
+    <li>She posts on her own channels, then pastes each link.</li>
+    <li>The two aims want completely different things here:
+      <div class="fork"><span class="fk">PAY FOR CONTENT</span> — <b>every agreed channel is
+        required.</b> Two channels means two links, and the button stays dark at 1 of 2.
+        Completing them releases the second quarter of her fee.</div>
+      <div class="fork o"><span class="fk">PAY PER SALE</span> — <b>one link is enough, and it is
+        only a reference.</b> The money comes from the shop post, not from the link.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>The founder's correction, and it changed the design.</b> Not "live on Instagram" — <i>live
+    on social media</i>, per channel, matched to her agreed list. A creator on Instagram and
+    YouTube has two lines to fill and the brand has two to confirm.
+  </div>
+
+  <div class="lab">Both phones · 1 of 2 channels done</div>
+  <table class="both">
+    <tr><th class="c">Creator · SC-16</th><th class="b">Brand · SB-50</th></tr>
+    <tr>
+      <td>Instagram — <b>paste your post link</b><br>
+        YouTube — done, waiting for Label Fern to confirm<br><br>
+        <b>1 OF 2 CHANNELS</b>, and the button is dark.</td>
+      <td>Instagram — no link yet<br>
+        YouTube — a link, with <b>OPEN IT</b>, then <b>yes it is live</b> or <b>not live / wrong
+        link</b><br><br>
+        <i>Confirming every agreed channel releases the second quarter of her fee.</i></td>
+    </tr>
+    <tr><td class="moment" colspan="2">Two lists that must be the same list — hers and his both come from the contract.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>campaign_influencers</b> — a live link per channel, each with its own
+    confirmed state.<br>
+    <b>Not one <code>post_url</code> column.</b> A row per channel, or the two-channel case cannot
+    be represented at all.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">One link column.</span> The obvious implementation, and it makes the founder's
+    correction impossible to build. This is a schema decision, not a screen decision.<br><br>
+    <span class="w">Treating a sale set like a content set.</span> Blocking a commission creator
+    until she has posted every link would hold up money she has already earned from a shop post
+    that is already selling.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-19 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-19</span><span class="t">Confirm a post went live</span><span class="v n">NEW</span><span class="two">BOTH</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She posts a link</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-50</a><a class="c">SC-16</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-50</a></span> One card per channel, each with the link and
+      an <b>OPEN IT</b> so he actually looks.</li>
+    <li>Per channel, two answers:
+      <div class="fork o"><span class="fk">YES — IT IS LIVE</span></div>
+      <div class="fork b"><span class="fk">NOT LIVE, OR WRONG LINK</span> — back to her, with which
+        channel and why.</div>
+    </li>
+    <li>When every agreed channel is confirmed, <b>tranche 2 releases — the second 25%.</b></li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">A confirmation per channel.<br>
+    <b>escrow_entries</b> — tranche 2 released, <b>only when all agreed channels are
+    confirmed.</b></div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Releasing money on the first confirmed channel.</span> Two channels agreed, one
+    confirmed, and half her obligation is unmet while a quarter of the fee has moved.<br><br>
+    <span class="w">A brand who never confirms.</span> Her money sits behind a button he has no
+    deadline to press. This needs an automatic release after a stated number of days, or it becomes
+    a way to withhold payment by doing nothing. <b>Not designed yet — flagged here because this is
+    where it bites.</b></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ END -->
+<div class="act">
+  <div class="ah"><span class="t">What this book leaves for the next one</span></div>
+
+  <div class="lab">Every path out of Phase 4</div>
+  <ul class="tight">
+    <li><b>Shop post approved and live</b> — it is selling. Every sale starts the 7-day clock →
+      <b>Book 5</b>.</li>
+    <li><b>Every channel confirmed on a content set</b> — tranche 2 released, tranche 3 waiting →
+      <b>Book 5</b>.</li>
+    <li><b>Sent back</b> — she fixes it, and the go-live day has not moved.</li>
+    <li><b>Two revisions used and still not right</b> — he approves it or ends the collaboration.</li>
+  </ul>
+
+  <div class="lab">The two schema decisions this book forces</div>
+  <ol class="steps">
+    <li><b><code>creator_posts</code> needs <code>campaign_influencer_id</code>.</b> Without it a
+      post cannot name its collaboration, and five features stay blocked — including counting posts
+      per collab and tracing a sale back to a contract.</li>
+    <li><b>Live links must be a row per channel, not a column.</b> One <code>post_url</code> makes
+      the founder's per-channel correction unbuildable.</li>
+  </ol>
+
+  <div class="lab">The unanswered question</div>
+  <div class="wrong"><span class="w">Nothing forces a brand to confirm she went live.</span>
+    Tranche 2 sits behind BR-19, and BR-19 has no deadline. A brand who simply never presses the
+    button withholds 25% of her fee indefinitely, without ever refusing. <b>An automatic release
+    after a set number of days is the obvious answer and it has not been designed.</b> It belongs
+    in the same admin settings screen as the other three waits — <span class="sc"><a class="a">SA-04</a></span>.</div>
+</div>

@@ -1,0 +1,536 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Action Book 5 · The money</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--soft:#F5F5F5;--acc:#E36414;
+        --ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--br:#1D4ED8;--brbg:#EEF2FF;--cr:#0F766E;--crbg:#ECFDF5;
+        --adm:#0F766E;--admbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);padding:26px 24px 90px;max-width:960px;
+       font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+  h1{font-size:28px;margin:0 0 5px;letter-spacing:-.03em}
+  .lede{font-size:13.5px;color:#555;margin:0 0 18px}
+  .lede b{color:var(--ink)}
+  .key{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin:0 0 10px}
+  .act{border-top:2px solid var(--ink);padding-top:14px;margin:30px 0 0}
+  .ah{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .ah .c{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:900;letter-spacing:-.02em}
+  .ah .t{font-size:19px;font-weight:800;letter-spacing:-.025em}
+  .v{font-size:8px;font-weight:900;padding:2.5px 6px;border-radius:4px;color:#fff;letter-spacing:.05em}
+  .v.n{background:var(--new)} .v.c{background:var(--acc)} .v.k{background:#B0B0B0}
+  .two{background:var(--purbg);color:var(--pur);border:1px solid #DDD6FE;
+       font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em}
+  .dir{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em;color:#fff}
+  .dir.i{background:#B45309} .dir.o{background:#15803D} .dir.a{background:var(--adm)}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;margin:9px 0 0;color:#444}
+  .meta .l{font-size:8.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+           color:var(--mut);display:block;margin-bottom:1px}
+  .sc a{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;font-weight:800;
+        padding:2px 5px;border-radius:4px;border:1px solid var(--line);text-decoration:none;
+        color:#444;margin-right:3px;display:inline-block}
+  .sc a.b{background:var(--brbg);border-color:#C7D2FE;color:var(--br)}
+  .sc a.c{background:var(--crbg);border-color:#A7D8CB;color:var(--cr)}
+  .sc a.a{background:var(--admbg);border-color:#A7D8CB;color:var(--adm)}
+  .lab{font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--mut);margin:18px 0 5px}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 0 30px;margin:0 0 9px;font-size:13.5px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;
+       border-radius:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:900;
+       display:flex;align-items:center;justify-content:center}
+  .fork{border-left:3px solid var(--acc);padding:2px 0 2px 11px;margin:7px 0;font-size:13px}
+  .fork .fk{font-weight:900;color:var(--acc);font-size:11px;letter-spacing:.03em}
+  .fork.o{border-color:var(--ok)} .fork.o .fk{color:var(--ok)}
+  .fork.b{border-color:var(--bad)} .fork.b .fk{color:var(--bad)}
+  table.both{border-collapse:collapse;width:100%;margin:6px 0 0;font-size:12.5px}
+  table.both th{width:50%;text-align:left;padding:6px 10px;font-size:9px;font-weight:900;
+       letter-spacing:.08em;text-transform:uppercase}
+  table.both th.b{background:var(--brbg);color:var(--br)}
+  table.both th.c{background:var(--crbg);color:var(--cr)}
+  table.both th.a{background:var(--admbg);color:var(--adm)}
+  table.both td{border:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  table.both td.moment{background:var(--soft);font-size:11px;font-weight:800;color:#555;
+       text-align:center;letter-spacing:.04em;text-transform:uppercase;border-left:none;border-right:none}
+  table.tr{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 0}
+  table.tr th{text-align:left;padding:6px 9px;font-size:9px;font-weight:900;letter-spacing:.07em;
+       text-transform:uppercase;color:var(--mut);border-bottom:1.5px solid var(--ink)}
+  table.tr td{border-bottom:1px solid var(--line);padding:7px 9px;vertical-align:top}
+  ul.tight{margin:0;padding-left:17px;font-size:13px}
+  ul.tight li{margin:0 0 4px}
+  .wrong{border:1px solid #E7BDB4;background:var(--badbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .wrong .w{font-weight:800;color:var(--bad)}
+  .fixed{border:1px solid #BFE0CF;background:var(--okbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .fixed .w{font-weight:800;color:var(--ok)}
+  .data{border:1px solid var(--line);background:#FAFAFA;border-radius:9px;padding:10px 13px;
+        font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .data b{font-family:-apple-system,Segoe UI,sans-serif}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--soft);
+       padding:1px 4px;border-radius:3px}
+  .rule{background:var(--purbg);border:1px solid #DDD6FE;border-radius:9px;padding:11px 14px;
+        font-size:13px;margin:10px 0}
+  .rule b{color:var(--pur)}
+  .never{background:#FFF8E7;border:1px solid #E8D9A8;border-radius:9px;padding:11px 14px;
+         font-size:13px;margin:10px 0}
+  .never b{color:#8A6D1F}
+</style>
+
+<h1>Action Book 5 · The money</h1>
+<p class="lede">
+  Two directions, and they must never be added together. <b>12 actions</b> — 5 the brand, 3 the
+  creator, 4 admin, plus the three watching actions that run through every phase.
+  <b>Five of them do not exist, and none of this has ever run.</b>
+</p>
+
+<div class="key">
+  <span class="v n">NEW</span> · <span class="v c">CHANGE</span> · <span class="v k">KEEP</span> ·
+  <span class="two">BOTH</span> both phones shown ·
+  <span class="dir i">MONEY IN</span> he puts it in to pay creators ·
+  <span class="dir o">MONEY BACK</span> a sale returns it ·
+  <span class="dir a">ADMIN</span>
+</div>
+
+<div class="never">
+  <b>Read this before anything else in this book.</b> Every table underneath these screens is at
+  <b>zero rows in production</b> — <code>escrow_entries</code>, <code>wallet_transactions</code>,
+  <code>influencer_withdrawals</code>, <code>brand_withdrawals</code>. Every wallet reads ₹0.
+  <b>The money system has never once run.</b> Everything in this book is either a screen that does
+  not exist, or machinery that exists and has never executed. That is not a criticism — nothing
+  has completed end to end yet — but it means <b>the first real campaign to finish will be the
+  first test of all of it at once.</b>
+</div>
+
+<div class="lab">The two directions</div>
+<table class="tr">
+  <tr><th></th><th>Money in</th><th>Money back</th></tr>
+  <tr><td><b>Where it comes from</b></td><td>he tops up from his bank</td><td>a shopper buys something</td></tr>
+  <tr><td><b>What it can do</b></td><td><b>only</b> pay creators</td><td><b>only</b> come out to his bank</td></tr>
+  <tr><td><b>Held by</b></td><td>escrow, per tranche</td><td>the 7-day return window</td></tr>
+  <tr><td><b>Who else it pays</b></td><td>nobody — it is all hers</td><td>her commission, our fee, then him</td></tr>
+</table>
+
+<div class="rule">
+  <b>They are never one number.</b> Top-up money can only pay creators; sales money can only be
+  withdrawn. Adding them gives a figure that is true of nothing, and the wallet screen says so in
+  its own card rather than leaving it to be inferred.
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-20 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-20</span><span class="t">Top up the wallet</span><span class="v k">KEEP</span><span class="dir i">MONEY IN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>A content set needs funding</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-37</a><a class="b">SB-52</a><a class="b">SB-54</a><a class="b">SB-58</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-54</a></span> An amount, or a quick preset.</li>
+    <li>Arriving from <span class="sc"><a class="b">SB-37</a></span> it is <b>pre-filled with the
+      exact shortfall</b>, and says what it unblocks.</li>
+    <li>Pay. It lands as spendable, and appears in history.
+      <span class="sc"><a class="b">SB-58</a></span></li>
+  </ol>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>wallet_transactions</b> — a credit.<br>
+    <b>brands.wallet_balance</b> — increased.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Nothing has ever been added.</span> <code>wallet_transactions</code> is empty
+    and every brand wallet reads ₹0, so the only state anyone has ever seen is the empty one.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-21 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-21</span><span class="t">See what escrow is holding</span><span class="v n">NEW</span><span class="dir i">MONEY IN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>He wonders where his money went</div>
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-52</a><a class="b">SB-53</a><a class="b">SB-58</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-52</a></span> The top card splits one number into three:
+      <b>total · locked · free to spend</b>.</li>
+    <li><span class="sc"><a class="b">SB-53</a></span> Locked money, <b>by creator</b>, with how
+      much of each fee has already been released.</li>
+    <li>And the rule that governs it, on the same screen:</li>
+  </ol>
+
+  <table class="tr">
+    <tr><th>Tranche</th><th>Share</th><th>Released when</th><th>Where</th></tr>
+    <tr><td>1</td><td>25%</td><td>both signed</td><td>BR-14 · Book 2</td></tr>
+    <tr><td>2</td><td>25%</td><td>every agreed channel confirmed live</td><td>BR-19 · Book 4</td></tr>
+    <tr><td>3</td><td>50%</td><td>an admin-set wait after that — today 30 days</td><td>AD-04</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">Nothing. It reads <b>escrow_entries</b>, which is the point — that table has
+    never been readable by the person whose money is in it.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The founder asked repeatedly where locked money goes, and nothing answered
+    him.</span> Locked money that cannot be inspected is indistinguishable from money that has
+    disappeared. This screen is the answer.<br><br>
+    <span class="w">Escrow not releasing on a declined contract.</span> If CR-07 does not free the
+    fee, his wallet quietly holds money for a contract that no longer exists — and he cannot fund
+    his next set. Never exercised.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-17 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-17</span><span class="t">See what a campaign earned</span><span class="v c">CHANGE</span><span class="dir o">MONEY BACK</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Any time after she goes live</div>
+    <div><span class="l">Who</span>Creator, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-20</a><a class="c">SC-27</a><a class="c">SC-29</a><a class="c">SC-30</a><a class="c">SC-31</a><a class="c">SC-32</a><a class="c">SC-33</a><a class="c">SC-36</a><a class="c">SC-42</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-29</a></span> <b>Two numbers, never one</b> — ready to
+      withdraw, and earned but not yours yet.</li>
+    <li>Two shapes, because the two aims pay differently:
+      <div class="fork"><span class="fk">A SHARE OF SALES</span> — <span class="sc"><a class="c">SC-30</a></span>
+        every sale, and one opened up: shopper paid ₹1,920, hers ₹346, INFLX ₹96, the brand
+        ₹1,478.</div>
+      <div class="fork"><span class="fk">A FEE</span> — <span class="sc"><a class="c">SC-31</a></span>
+        three tranches with their triggers and dates, and where the money is sitting meanwhile.</div>
+    </li>
+    <li>Every sale. <span class="sc"><a class="c">SC-32</a></span> And a returned one explained
+      properly. <span class="sc"><a class="c">SC-33</a></span></li>
+    <li>Tax. <span class="sc"><a class="c">SC-36</a></span> With one sentence added: <b>you claim
+      this back when you file. It is not money we kept.</b></li>
+  </ol>
+
+  <div class="rule">
+    <b>The founder's rule, exactly as he stated it.</b> Her commission is <b>shown to her</b> as
+    soon as a sale happens, <b>but is not in her wallet</b> until the return window closes. Two
+    numbers on the screen, always, because collapsing them into one is how she comes to believe
+    money was taken away from her.
+  </div>
+
+  <div class="lab">Why SC-33 exists at all</div>
+  <div class="rule">
+    A shopper returns something. Her number goes down. <b>Without a screen explaining it, she
+    concludes she has been charged.</b> SC-33 says the opposite in plain words: it was still inside
+    the 7 days, so it had never reached your wallet — your balance has not gone down, this sale
+    simply never completed.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data">Nothing. It reads <b>follower_transactions</b> and
+    <b>escrow_entries</b>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The 16 sales in production are practice rows.</span> No
+    <code>razorpay_payment_id</code>, one practice brand, written straight into the table — and
+    <b><code>marketplace_fee_amount</code> and <code>brand_net</code> were never computed on
+    them.</b> Any screen that sums them will show a wrong number. <b>They must be repaired or
+    excluded before this screen is built.</b><br><br>
+    <span class="w">Showing one number.</span> The single most damaging thing this screen could
+    do.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-16 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-16</span><span class="t">Withdraw</span><span class="v n">NEW</span><span class="two">BOTH</span><span class="dir o">MONEY BACK</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She has money past the window</div>
+    <div><span class="l">Who</span>Creator → admin</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-03</a><a class="c">SC-29</a><a class="c">SC-34</a><a class="c">SC-35</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-34</a></span> What is ready, and an amount.</li>
+    <li>Where to:
+      <div class="fork"><span class="fk">UPI</span> — the usual answer.</div>
+      <div class="fork"><span class="fk">BANK</span> — <span class="sc"><a class="c">SC-35</a></span>
+        account and IFSC. <b>PAN either way</b>, or TDS is held at a higher rate.</div>
+    </li>
+    <li>What is <b>not</b> ready, and the day it frees up.</li>
+    <li>Request. Admin approves, then 1–2 working days. → AD-02.</li>
+  </ol>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Her Home already has a WITHDRAW button, and there is no screen behind it.</span>
+    <span class="sc"><a class="c">SC-01</a></span> shows "Available to withdraw" with a button
+    under it, and <b>the destination does not exist in the app.</b> The endpoints and the rules are
+    built. The screen is not. Of everything in this book, this is the gap a real creator would hit
+    first.<br><br>
+    <span class="w">Minimum ₹100, TDS 10%.</span> Both must be said <i>before</i> she requests, not
+    discovered afterwards.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-22 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-22</span><span class="t">Withdraw sales money</span><span class="v n">NEW</span><span class="two">BOTH</span><span class="dir o">MONEY BACK</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Sales have cleared the window</div>
+    <div><span class="l">Who</span>Brand → admin</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-03</a><a class="b">SB-52</a><a class="b">SB-55</a><a class="b">SB-56</a><a class="b">SB-57</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-52</a></span> The <b>second</b> card — sales money, which
+      is a different thing from his top-up balance.</li>
+    <li><span class="sc"><a class="b">SB-55</a></span> Ready, and an amount. Bank details from
+      <span class="sc"><a class="b">SB-56</a></span>.</li>
+    <li>What is still held, and when it frees. Every sale is inspectable.
+      <span class="sc"><a class="b">SB-57</a></span></li>
+    <li>Request. → AD-02.</li>
+  </ol>
+
+  <div class="lab">Both phones · the same rule, both sides</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-55</th><th class="c">Creator · SC-34</th></tr>
+    <tr>
+      <td>Ready <b>₹56,100</b><br>
+        ₹12,300 from 9 sales frees up 8 Sep<br>
+        <i>A shopper has 7 days to return.</i></td>
+      <td>Ready <b>₹2,604</b><br>
+        ₹1,240 from 4 sales frees up 6 Sep<br>
+        <i>A shopper has 7 days to return.</i></td>
+    </tr>
+    <tr><td class="moment" colspan="2">One window for everybody — same rule, same wording, same 7 days.</td></tr>
+  </table>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">This whole path is missing on the brand side.</span>
+    <code>brand_withdrawals</code> exists as a table, has zero rows, and <b>has no screen at either
+    end</b> — the brand cannot ask, and admin cannot see it if he did.<br><br>
+    <span class="w">Adding the two wallet cards together.</span> ₹42,600 + ₹68,400 = a number that
+    means nothing. He can spend the first only on creators and take out only the second.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ AD-02 -->
+<div class="act">
+  <div class="ah"><span class="c">AD-02</span><span class="t">Approve a withdrawal</span><span class="v c">CHANGE</span><span class="two">BOTH</span><span class="dir a">ADMIN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>CR-16 or BR-22</div>
+    <div><span class="l">Who</span>Admin → whoever asked</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-03</a><a class="b">SB-55</a><a class="c">SC-34</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="a">SA-03</a></span> Both kinds in one queue, grouped —
+      <b>creators</b> and <b>brands</b>.</li>
+    <li>Each row carries why it is payable or not: <i>window closed</i>, <i>PAN missing</i>.</li>
+    <li>Two answers:
+      <div class="fork o"><span class="fk">PAY</span></div>
+      <div class="fork b"><span class="fk">REJECT</span> — with a reason they will read.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>The rule is identical for both.</b> Nothing is payable until the 7-day return window has
+    closed on every sale in it. One rule, one queue, one wording — a creator and a brand waiting
+    for the same money wait the same way.
+  </div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Only creators are in the queue today.</span> A brand withdrawal has no row to
+    appear as.<br><br>
+    <span class="w">A rejection with no reason.</span> Somebody is waiting on money. "Rejected" on
+    its own is the worst possible message.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ AD-03 / AD-04 -->
+<div class="act">
+  <div class="ah"><span class="c">AD-03</span><span class="t">Set the minimum shop posts</span><span class="v n">NEW</span><span class="dir a">ADMIN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Admin decides how much she must publish before going live</div>
+    <div><span class="l">Who</span>Admin, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-04</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="a">SA-04</a></span> A number — the source panel shows <b>5</b>.
+      Not a small toggle: it is how many shop posts must be <b>approved</b> before she may go live.</li>
+    <li>It applies to <b>every collab, both aims</b>.</li>
+  </ol>
+
+  <div class="wrong"><span class="w">This cannot be built yet.</span>
+    Counting posts per collaboration needs <code>creator_posts.campaign_influencer_id</code> —
+    Book 4's missing column. <b>AD-03 is blocked on a schema change, not on a screen.</b></div>
+
+  <div class="ah" style="margin-top:26px"><span class="c">AD-04</span><span class="t">Set the waits</span><span class="v n">NEW</span><span class="dir a">ADMIN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>A timing rule needs changing</div>
+    <div><span class="l">Who</span>Admin, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-04</a></div>
+  </div>
+
+  <div class="lab">The numbers that are hardcoded today</div>
+  <table class="tr">
+    <tr><th>Setting</th><th>Today</th><th>What it governs</th></tr>
+    <tr><td><b>Return window</b></td><td>7 days</td>
+        <td><b>one window for everybody</b> — creator and brand, every industry</td></tr>
+    <tr><td><b>Wait before the final payment</b></td><td>hardcoded 30</td>
+        <td><b>pay-for-content only</b> — when the last 50% releases</td></tr>
+  </table>
+
+  <div class="rule">
+    <b>Changing any of these applies to new collaborations only.</b> Anyone already signed keeps
+    what they were promised. A rule changed under a signed contract is a broken contract, and this
+    is the one thing on the screen that must be true no matter how it is built.
+  </div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">The minimum needs <code>creator_posts.campaign_influencer_id</code>.</span>
+    Book 4's missing column. Without it there is no way to count how many posts a collaboration
+    has, so <b>AD-03 cannot be built at all</b> until that column exists.<br><br>
+    <span class="w">Applying a new rule retroactively.</span> The obvious implementation — read the
+    setting at payout time — is the wrong one. The rule must be <b>stamped onto the contract when
+    it is signed.</b></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ AD-05 -->
+<div class="act">
+  <div class="ah"><span class="c">AD-05</span><span class="t">Set the per-industry commission</span><span class="v k">KEEP</span><span class="dir a">ADMIN</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>A platform fee needs changing</div>
+    <div><span class="l">Who</span>Admin, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="a">SA-05</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="a">SA-05</a></span> 16 industries, each with a rate per path.
+      The brand's industry (<span class="sc"><a class="b">SB-60</a></span>) picks the row.</li>
+  </ol>
+
+  <div class="rule">
+    <b>Only path B is live, and there is a reason.</b> Every sale comes from a creator's post, so
+    there is one path: brand → campaign → creator → post → product. <b>Path A</b> is reserved for
+    posts INFLX might one day make for brands. <b>Path C was retired</b> — it was a window-based
+    attribution, and in this architecture <i>the post is the attribution</i>. There is no separate
+    creator-attribution concept to have.
+  </div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="fixed"><span class="w">I said this did not exist. It does.</span>
+    The founder pointed me at <b>Marketplace Categories (L3)</b> and it was there — 16 industries
+    with per-path rates, already built. Recorded here so nobody re-derives it.</div>
+  <div class="wrong" style="margin-top:8px">
+    <span class="w">The industry on the brand is not cosmetic.</span> It selects the fee row. A
+    brand filed under the wrong industry is charged the wrong fee on every sale, silently.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-23 / BR-24 / CR-18 -->
+<div class="act">
+  <div class="ah"><span class="t">Running throughout · three watching actions</span></div>
+  <p class="lede" style="margin:8px 0 0">
+    These three do not belong to a phase. They are how each side finds out where everything is, at
+    any moment, and they are read far more often than anything else in the five books.
+  </p>
+
+  <div class="ah" style="margin-top:18px"><span class="c">BR-23</span><span class="t">Watch a campaign</span><span class="v c">CHANGE</span></div>
+  <div class="meta">
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-05</a><a class="b">SB-22</a><a class="b">SB-42</a><a class="b">SB-43</a><a class="b">SB-44</a><a class="b">SB-57</a></div>
+  </div>
+  <ol class="steps">
+    <li><b>Four levels, and the middle one is new.</b> Campaign
+      <span class="sc"><a class="b">SB-42</a></span> → <b>sets</b> → creators in a set
+      <span class="sc"><a class="b">SB-43</a></span> → her six steps
+      <span class="sc"><a class="b">SB-44</a></span>.</li>
+    <li>Any collaboration opens its diary. <span class="sc"><a class="b">SB-05</a></span></li>
+  </ol>
+  <div class="wrong"><span class="w">Today the campaign screen lists creators flat.</span> Eight
+    people on two different days, two aims and two shoot modes read as one undifferentiated list.
+    <b>Sets are the layer that makes it legible</b>, and they do not exist yet.</div>
+
+  <div class="ah" style="margin-top:22px"><span class="c">BR-24</span><span class="t">See everything that needs you</span><span class="v c">CHANGE</span></div>
+  <div class="meta">
+    <div><span class="l">Who</span>Brand, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-01</a><a class="b">SB-02</a></div>
+  </div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-02</a></span> Grouped by what he must do — counters,
+      shoots, reviews — <b>and a separate group for what he is waiting on.</b></li>
+    <li><b>The badge counts only what he can act on.</b> Waiting is visible but does not nag.</li>
+  </ol>
+
+  <div class="ah" style="margin-top:22px"><span class="c">CR-18</span><span class="t">See where your work is</span><span class="v c">CHANGE</span></div>
+  <div class="meta">
+    <div><span class="l">Who</span>Creator, alone</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-44</a><a class="c">SC-01</a><a class="c">SC-04</a><a class="c">SC-09</a><a class="c">SC-20</a></div>
+  </div>
+  <ol class="steps">
+    <li>Her six steps <span class="sc"><a class="c">SC-09</a></span> are <b>the same six the brand
+      sees</b> on <span class="sc"><a class="b">SB-44</a></span>, from the same source.</li>
+    <li>And when it finishes <span class="sc"><a class="c">SC-20</a></span>, the two aims end at
+      completely different moments:
+      <div class="fork"><span class="fk">A SHARE OF SALES</span> — ends when she goes live. Sales
+        keep coming, and so does the money. <b>A collab marked done is still earning.</b></div>
+      <div class="fork"><span class="fk">A FEE</span> — ends when the last payment lands, 30 days
+        after she went live.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>One count, three screens.</b> Her Home badge, her Collabs tab and his Needs you are one
+    server answer read three times. Not three counters that agree by accident.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ END -->
+<div class="act">
+  <div class="ah"><span class="t">The end of the five books</span></div>
+
+  <div class="lab">All 47 actions are now written</div>
+  <table class="tr">
+    <tr><th>Book</th><th>Actions</th><th>New</th></tr>
+    <tr><td>1 · Getting together</td><td>14</td><td>6</td></tr>
+    <tr><td>2 · Committing</td><td>7</td><td>1</td></tr>
+    <tr><td>3 · The shoot</td><td>7</td><td>1</td></tr>
+    <tr><td>4 · The content</td><td>7</td><td>2</td></tr>
+    <tr><td>5 · The money, and watching</td><td>12</td><td>5</td></tr>
+    <tr><td><b>Total</b></td><td><b>47</b></td><td><b>15</b></td></tr>
+  </table>
+
+  <div class="lab">The four schema decisions the books forced</div>
+  <ol class="steps">
+    <li><b>A negotiation must belong to a set row</b>, not a floating agreement. Book 1. The
+      largest single piece of backend work, and four actions wait on it.</li>
+    <li><b>A counter must carry which kind it is</b> — money or structural. Book 1. Same shape in
+      the data, opposite consequences.</li>
+    <li><b><code>creator_posts</code> needs <code>campaign_influencer_id</code>.</b> Book 4.
+      Five features blocked, including AD-03 which cannot be built without it.</li>
+    <li><b>Live links must be a row per channel, not a column.</b> Book 4. One
+      <code>post_url</code> makes the founder's per-channel rule unbuildable.</li>
+  </ol>
+
+  <div class="lab">The three things that must be repaired before a money screen is built</div>
+  <div class="wrong">
+    <span class="w">The 16 production sales are practice rows</span> with no fee and no brand
+    share computed. Repair or exclude them.<br><br>
+    <span class="w"><code>cancelInfluencer</code> writes an invalid contract status.</span>
+    Confirmed live, will throw. Carried through all five books unfixed.<br><br>
+    <span class="w">Nothing forces a brand to confirm she went live.</span> Tranche 2 sits behind a
+    button with no deadline. An automatic release belongs on
+    <span class="sc"><a class="a">SA-04</a></span> and has not been designed.</div>
+
+  <div class="lab">What is left</div>
+  <div class="rule">
+    <b>The screens are drawn, addressed, indexed and written up.</b> What has not happened: the
+    founder has not locked the mockups, and there is no implementation plan yet — <b>one ordered
+    migration list</b> collecting every schema change these five books ask for. That is the next
+    artefact, and it should not be written until the mockups are locked.
+  </div>
+</div>

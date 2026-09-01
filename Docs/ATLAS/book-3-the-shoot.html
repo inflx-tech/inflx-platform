@@ -1,0 +1,460 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Action Book 3 · The shoot</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--soft:#F5F5F5;--acc:#E36414;
+        --ok:#0F7B4F;--okbg:#EEF7F2;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;
+        --pur:#6D28D9;--purbg:#F5F3FF;--br:#1D4ED8;--brbg:#EEF2FF;--cr:#0F766E;--crbg:#ECFDF5}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);padding:26px 24px 90px;max-width:960px;
+       font-family:-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6}
+  h1{font-size:28px;margin:0 0 5px;letter-spacing:-.03em}
+  .lede{font-size:13.5px;color:#555;margin:0 0 18px}
+  .lede b{color:var(--ink)}
+  .key{border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;margin:0 0 10px}
+  .act{border-top:2px solid var(--ink);padding-top:14px;margin:30px 0 0}
+  .ah{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .ah .c{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:900;letter-spacing:-.02em}
+  .ah .t{font-size:19px;font-weight:800;letter-spacing:-.025em}
+  .v{font-size:8px;font-weight:900;padding:2.5px 6px;border-radius:4px;color:#fff;letter-spacing:.05em}
+  .v.n{background:var(--new)} .v.c{background:var(--acc)} .v.k{background:#B0B0B0}
+  .two{background:var(--purbg);color:var(--pur);border:1px solid #DDD6FE;
+       font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em}
+  .mode{font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px;letter-spacing:.05em;color:#fff}
+  .mode.v{background:#8B5A2B} .mode.r{background:#2563EB}
+  .meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12px;margin:9px 0 0;color:#444}
+  .meta .l{font-size:8.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
+           color:var(--mut);display:block;margin-bottom:1px}
+  .sc a{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;font-weight:800;
+        padding:2px 5px;border-radius:4px;border:1px solid var(--line);text-decoration:none;
+        color:#444;margin-right:3px;display:inline-block}
+  .sc a.b{background:var(--brbg);border-color:#C7D2FE;color:var(--br)}
+  .sc a.c{background:var(--crbg);border-color:#A7D8CB;color:var(--cr)}
+  .lab{font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--mut);margin:18px 0 5px}
+  ol.steps{margin:0;padding-left:0;list-style:none;counter-reset:s}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 0 30px;margin:0 0 9px;font-size:13.5px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;
+       border-radius:10px;background:var(--ink);color:#fff;font-size:10px;font-weight:900;
+       display:flex;align-items:center;justify-content:center}
+  .fork{border-left:3px solid var(--acc);padding:2px 0 2px 11px;margin:7px 0;font-size:13px}
+  .fork .fk{font-weight:900;color:var(--acc);font-size:11px;letter-spacing:.03em}
+  .fork.o{border-color:var(--ok)} .fork.o .fk{color:var(--ok)}
+  .fork.b{border-color:var(--bad)} .fork.b .fk{color:var(--bad)}
+  table.both{border-collapse:collapse;width:100%;margin:6px 0 0;font-size:12.5px}
+  table.both th{width:50%;text-align:left;padding:6px 10px;font-size:9px;font-weight:900;
+       letter-spacing:.08em;text-transform:uppercase}
+  table.both th.b{background:var(--brbg);color:var(--br)}
+  table.both th.c{background:var(--crbg);color:var(--cr)}
+  table.both td{border:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  table.both td.moment{background:var(--soft);font-size:11px;font-weight:800;color:#555;
+       text-align:center;letter-spacing:.04em;text-transform:uppercase;border-left:none;border-right:none}
+  table.tr{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 0}
+  table.tr th{text-align:left;padding:6px 9px;font-size:9px;font-weight:900;letter-spacing:.07em;
+       text-transform:uppercase;color:var(--mut);border-bottom:1.5px solid var(--ink)}
+  table.tr td{border-bottom:1px solid var(--line);padding:7px 9px;vertical-align:top}
+  ul.tight{margin:0;padding-left:17px;font-size:13px}
+  ul.tight li{margin:0 0 4px}
+  .wrong{border:1px solid #E7BDB4;background:var(--badbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .wrong .w{font-weight:800;color:var(--bad)}
+  .fixed{border:1px solid #BFE0CF;background:var(--okbg);border-radius:9px;padding:10px 13px;font-size:12.5px}
+  .fixed .w{font-weight:800;color:var(--ok)}
+  .data{border:1px solid var(--line);background:#FAFAFA;border-radius:9px;padding:10px 13px;
+        font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .data b{font-family:-apple-system,Segoe UI,sans-serif}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--soft);
+       padding:1px 4px;border-radius:3px}
+  .rule{background:var(--purbg);border:1px solid #DDD6FE;border-radius:9px;padding:11px 14px;
+        font-size:13px;margin:10px 0}
+  .rule b{color:var(--pur)}
+</style>
+
+<h1>Action Book 3 · The shoot</h1>
+<p class="lede">
+  Getting the goods and the creator into the same place. <b>7 actions</b> — 3 the brand starts,
+  4 the creator. Only one is new, but <b>every single one forks on the mode</b>, and the two modes
+  are not mirror images of each other.
+</p>
+
+<div class="key">
+  <span class="v n">NEW</span> does not exist ·
+  <span class="v c">CHANGE</span> exists and changes ·
+  <span class="v k">KEEP</span> works as it is ·
+  <span class="two">BOTH</span> both phones shown ·
+  <span class="mode v">STORE VISIT</span> <span class="mode r">REMOTE</span>
+</div>
+
+<div class="rule">
+  <b>The mode is fixed by the set and never switched.</b> It was agreed in Book 1, written onto the
+  contract in Book 2, and by the time anyone reaches this book it is settled. Nothing in this book
+  changes it — <b>a creator who needs the other mode was moved out of the set before she ever got
+  here.</b>
+</div>
+
+<div class="lab">The two modes, side by side</div>
+<table class="tr">
+  <tr><th></th><th>Store visit</th><th>Remote</th></tr>
+  <tr><td><b>Who starts it</b></td><td>the brand — proposes a time</td><td><b>the creator</b> — sends her address</td></tr>
+  <tr><td><b>What travels</b></td><td>she does</td><td>the goods do</td></tr>
+  <tr><td><b>Who marks it done</b></td><td><b>both</b> — either can be first</td><td><b>she alone</b></td></tr>
+  <tr><td><b>Why</b></td><td>they were both there</td><td>he was not there, so he cannot confirm it</td></tr>
+  <tr><td><b>Can go wrong</b></td><td>she cannot make the time</td><td>the parcel is late, short, or damaged</td></tr>
+</table>
+
+<div class="rule">
+  <b>They are not mirror images, and that is the single biggest source of bugs in this phase.</b>
+  Code that treats "mark it done" as one thing will close a store visit on one signature. Code
+  that treats "start the shoot" as one thing will wait forever for a brand to arrange a remote
+  shoot he was never meant to arrange.
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-15 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-15</span><span class="t">Arrange a store visit</span><span class="v c">CHANGE</span><span class="two">BOTH</span><span class="mode v">STORE VISIT</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Both signed, and the set's mode is a store visit</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-02</a><a class="b">SB-27</a><a class="b">SB-46</a><a class="b">SB-48</a><a class="c">SC-10</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>It appears in <b>Needs you</b> as a shoot to arrange.
+      <span class="sc"><a class="b">SB-02</a></span></li>
+    <li><span class="sc"><a class="b">SB-46</a></span> The screen opens with <b>the window she can
+      come in</b>, worked out for him — not a blank calendar.</li>
+    <li>He picks a time and gives the address. <span class="sc"><a class="b">SB-27</a></span></li>
+    <li>Send. → CR-08.
+      <div class="fork"><span class="fk">FORK · leave it to her</span> He can send the window
+        instead of a time and let her propose. Same screen, one fewer decision.</div>
+    </li>
+    <li>All his shoots in one place, <b>grouped by mode</b>.
+      <span class="sc"><a class="b">SB-48</a></span></li>
+  </ol>
+
+  <div class="lab">How the window is worked out</div>
+  <table class="tr">
+    <tr><th>Edge</th><th>Rule</th><th>Why</th></tr>
+    <tr><td><b>Earliest</b></td><td>the day both signed</td><td>no shoot before there is a contract</td></tr>
+    <tr><td><b>Latest</b></td><td><b>1 day before the go-live day</b></td><td>she needs a day to edit and submit</td></tr>
+    <tr><td><b>Impossible</b></td><td>latest is before earliest</td><td>says so plainly instead of showing an empty calendar</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>production_events</b> — <code>proposed_at</code>, <code>location</code>,
+    <code>status='proposed'</code>.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="fixed"><span class="w">Fixed 30 Aug — "the date picker is not working".</span>
+    Two separate faults in one screen.<br><br>
+    <b>One ·</b> the window came back from the server <b>one level too deeply wrapped</b>. The app
+    read <code>dates.range</code> where the value was at <code>dates.data.range</code>, got
+    nothing, concluded there was no window, and refused to open the picker.<br><br>
+    <b>Two ·</b> the window itself was <b>a day wrong</b>. A DATE column arrives as a Date at
+    <i>local</i> midnight; doing UTC arithmetic on it loses a day. On a tight schedule that closed
+    the only day that would have worked. Every date is now a <b>calendar day in India</b>
+    (<code>utils/indiaDay.js</code>).<br><br>
+    The buffer also went from 2 days to 1, at the founder's decision.</div>
+  <div class="wrong" style="margin-top:8px">
+    <span class="w">The screen read <code>content_end_date</code>, which is never written.</span>
+    A dead column silently produced no window at all. It now reads
+    <code>window_end || content_end_date</code>.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-08 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-08</span><span class="t">Accept or counter a visit time</span><span class="v k">KEEP</span><span class="two">BOTH</span><span class="mode v">STORE VISIT</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>BR-15 lands</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-10</a><a class="b">SB-46</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-10</a></span> His time, his address, and the same window
+      he saw.</li>
+    <li>Two answers:
+      <div class="fork o"><span class="fk">ACCEPT</span> — the time is fixed. Both diaries agree.</div>
+      <div class="fork"><span class="fk">SUGGEST ANOTHER</span> — <b>twice each, and then it
+        stops.</b> Four proposals between two people is enough; after that they should talk.</div>
+    </li>
+  </ol>
+
+  <div class="lab">Both phones · she counters</div>
+  <table class="both">
+    <tr><th class="c">Creator · SC-10</th><th class="b">Brand · SB-46</th></tr>
+    <tr>
+      <td>You suggested Tue 9 Sep, 3pm.<br>
+        <b>1 of 2 suggestions used.</b></td>
+      <td><b>She suggested Tue 9 Sep, 3pm.</b><br>
+        Accept, or suggest once more.<br><br>
+        Still inside the window — 5 to 11 Sep.</td>
+    </tr>
+    <tr><td class="moment" colspan="2">A counter here changes only a time. Nobody leaves the set.</td></tr>
+  </table>
+
+  <div class="rule">
+    <b>This is the one counter in the whole system that is harmless.</b> A shoot time is between
+    two people and touches nothing else — unlike a go-live day, which four other people already
+    agreed to.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>production_events</b> — <code>confirmed_at</code>, or a counter with a
+    running count of who has proposed how many times.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">A counter that lands outside the window.</span> Both sides must be checked
+    against the same window, computed the same way. If her app allows a day his app forbids, one
+    of them is wrong and the shoot is stuck.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-17 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-17</span><span class="t">Mark a store visit done</span><span class="v c">CHANGE</span><span class="two">BOTH</span><span class="mode v">STORE VISIT</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>The visit happened</div>
+    <div><span class="l">Who</span>Brand and creator — <b>both</b></div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-46</a><a class="b">SB-48</a><a class="c">SC-10</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>Either of them can be first. The order does not matter.</li>
+    <li>The one who marked it sees <b>"waiting on the other side"</b>, not "done".</li>
+    <li><b>Only when both marks are in does the shoot close</b> and step 3 turn green on both
+      phones.</li>
+  </ol>
+
+  <div class="lab">Both phones · she marked it, he has not</div>
+  <table class="both">
+    <tr><th class="c">Creator · SC-10</th><th class="b">Brand · SB-46</th></tr>
+    <tr>
+      <td>You marked done · 8 Sep 1:40pm<br>
+        They marked done · <b>Not yet</b><br><br>
+        <i>A store visit needs both of you. Nothing moves until they confirm.</i></td>
+      <td>You marked done · <b>Not yet</b><br>
+        She marked done · 8 Sep 1:40pm<br><br>
+        <b>MARK IT DONE</b></td>
+    </tr>
+    <tr><td class="moment" colspan="2">The same two facts on both phones, from the same two columns.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>production_events</b> — <code>brand_completed_at</code> and
+    <code>influencer_completed_at</code>.<br>
+    <b>Both were added by migration 164</b>, applied to production 30 Aug after a dry run inside a
+    rolled-back transaction.<br>
+    <code>status='completed'</code> only when <code>isShootComplete(mode, marks)</code> is
+    satisfied.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="fixed"><span class="w">Fixed 30 Aug — a store visit closed on one mark.</span>
+    The founder's report: <i>"without doing anything from both it is saying shoot plan is
+    done"</i>. There was one completion flag, so whoever pressed first closed it for everyone.<br><br>
+    Now one function answers who is required — <code>REQUIRES_BOTH = ['visit']</code> — and both
+    the server and the app call it. The app's copy mirrors it in <code>utils/shoot.js</code>,
+    including the "waiting on the other side" state, so the two cannot drift.</div>
+  <div class="wrong" style="margin-top:8px">
+    <span class="w">A shoot marked done that never happened.</span> Nothing prevents both sides
+    marking it done a week early. That is a trust question rather than a code one — but it means
+    <b>the shoot being complete is not evidence anything was shot.</b> Book 4's shop-post review
+    is what actually catches that.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-09 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-09</span><span class="t">Send your address</span><span class="v n">NEW</span><span class="two">BOTH</span><span class="mode r">REMOTE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Both signed, and the set's mode is remote</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-12</a><a class="c">SC-39</a><a class="b">SB-47</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="c">SC-12</a></span> Her saved address is offered first.
+      <div class="fork o"><span class="fk">USE THE SAVED ONE</span> — from
+        <span class="sc"><a class="c">SC-39</a></span>, one tap.</div>
+      <div class="fork"><span class="fk">A DIFFERENT ADDRESS</span> — for this shoot only. It does
+        not overwrite her default.</div>
+    </li>
+    <li>A line she needs to read, because she is giving a stranger her home address:
+      <b>only this brand, only for this shoot, never on her public profile.</b></li>
+    <li>Send. Until she does, a red card tells her plainly: <b>they cannot send anything yet.</b></li>
+  </ol>
+
+  <div class="rule">
+    <b>This is where a remote shoot begins, and nothing asks for it today.</b> That is why remote
+    shoots have no honest starting point in the current app — the brand is waiting for something
+    the creator was never prompted to send.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>production_events</b> — <code>ship_to_address</code>, or a reference to a
+    saved one.<br>
+    <b>influencers</b> — the default address, if she saved one.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">An address visible anywhere it should not be.</span> It must be readable by the
+    one brand on the one shoot, and by nobody else — not on her profile, not in a creator search,
+    not in a campaign export.<br><br>
+    <span class="w">No prompt, so no address.</span> If she is not asked at the moment the contract
+    is signed, she will not think to go looking for the screen, and the shoot simply never starts.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ BR-16 -->
+<div class="act">
+  <div class="ah"><span class="c">BR-16</span><span class="t">Ship goods for a remote shoot</span><span class="v c">CHANGE</span><span class="two">BOTH</span><span class="mode r">REMOTE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>Her address arrives</div>
+    <div><span class="l">Who</span>Brand → creator</div>
+    <div class="sc"><span class="l">Screens</span><a class="b">SB-47</a><a class="b">SB-48</a><a class="c">SC-11</a><a class="c">SC-12</a><a class="c">SC-13</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><span class="sc"><a class="b">SB-47</a></span> Her address at the top, then what he is
+      sending.</li>
+    <li>Courier and tracking number. <b>SENT IT.</b></li>
+    <li>Then he waits. Twice.
+      <div class="fork"><span class="fk">FIRST WAIT</span> — she confirms it arrived. → CR-10.</div>
+      <div class="fork"><span class="fk">SECOND WAIT</span> — she marks it shot. → CR-11.
+        <b>He cannot do this one.</b></div>
+    </li>
+  </ol>
+
+  <div class="lab">Both phones · in transit</div>
+  <table class="both">
+    <tr><th class="b">Brand · SB-47</th><th class="c">Creator · SC-11</th></tr>
+    <tr>
+      <td>Delhivery · 8291xxxxxx<br>
+        She got it · 9 Sep · everything arrived<br><br>
+        <b>Waiting on her.</b> <i>She marks a remote shoot done, not you.</i></td>
+      <td>On its way · TRACK IT<br>
+        What they sent · Cotton Jacket × 1<br><br>
+        When it arrives: <b>everything arrived</b> / something is missing / it arrived damaged<br>
+        Then, when shot: <b>I HAVE SHOT IT</b></td>
+    </tr>
+    <tr><td class="moment" colspan="2">His screen exists mainly to tell him the next move is not his.</td></tr>
+  </table>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>production_events</b> — <code>courier</code>, <code>tracking_no</code>,
+    <code>shipped_at</code>.<br>
+    <b>parcel</b> state, which is what <code>isShootComplete</code> reads.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="fixed"><span class="w">Fixed 30 Aug — a shoot that said done before it began.</span>
+    The founder's report: <i>"without doing anything from both it is saying shoot plan is
+    done"</i>. Flipping a shoot to remote wrote <code>status='completed'</code> <b>at the moment
+    the shoot was created</b>. Six live shoots were repaired by a script with a dry run.</div>
+  <div class="wrong" style="margin-top:8px">
+    <span class="w">Shipping to an address that has not arrived.</span> The screen must not let
+    him enter a tracking number before CR-09, or the parcel goes nowhere and nobody knows why.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-10 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-10</span><span class="t">Confirm what arrived</span><span class="v k">KEEP</span><span class="two">BOTH</span><span class="mode r">REMOTE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>The parcel reaches her</div>
+    <div><span class="l">Who</span>Creator → brand</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-13</a><a class="b">SB-47</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li>Three answers, and only one of them lets the shoot proceed:
+      <div class="fork o"><span class="fk">EVERYTHING ARRIVED</span> — she can shoot. → CR-11.</div>
+      <div class="fork b"><span class="fk">SOMETHING IS MISSING</span> — <span class="sc"><a class="c">SC-13</a></span>
+        which items, a line, and a photo. The shoot pauses.</div>
+      <div class="fork b"><span class="fk">IT ARRIVED DAMAGED</span> — same screen, same pause.</div>
+    </li>
+  </ol>
+
+  <div class="rule">
+    <b>Her go-live day does not move on its own.</b> A missing parcel pauses <i>her</i> shoot, but
+    the set's day belongs to everyone in it. Only the brand can move it, and moving it moves
+    everybody — which is usually the wrong answer for one late courier. The realistic outcomes are
+    a fast replacement, or she comes out of the set.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>parcel</b> — <code>received_at</code> and a condition, or a problem
+    report with photos.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">A paused shoot with no owner.</span> "Something is missing" has to land in the
+    brand's <b>Needs you</b>. If it only sits on the shoot screen, nobody looks at it until the
+    go-live day arrives and she has nothing to post.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ CR-11 -->
+<div class="act">
+  <div class="ah"><span class="c">CR-11</span><span class="t">Mark a remote shoot done</span><span class="v c">CHANGE</span><span class="two">BOTH</span><span class="mode r">REMOTE</span></div>
+  <div class="meta">
+    <div><span class="l">Starts</span>She has shot it</div>
+    <div><span class="l">Who</span>Creator, alone → the brand is told</div>
+    <div class="sc"><span class="l">Screens</span><a class="c">SC-11</a><a class="b">SB-47</a></div>
+  </div>
+
+  <div class="lab">Steps</div>
+  <ol class="steps">
+    <li><b>I HAVE SHOT IT.</b> One press, and the shoot is closed.</li>
+    <li>The screen says why it is hers alone: <i>they are not there, so they cannot confirm it.</i></li>
+  </ol>
+
+  <div class="rule">
+    <b>This is the asymmetry, stated once.</b> A store visit needs two marks because two people
+    were there. A remote shoot needs one because only one person was. Anything that treats
+    "complete the shoot" as a single rule gets one of the two wrong.
+  </div>
+
+  <div class="lab">Leaves behind</div>
+  <div class="data"><b>production_events.influencer_completed_at</b>, and
+    <code>status='completed'</code> immediately — because for remote,
+    <code>isShootComplete</code> needs only her.</div>
+
+  <div class="lab">Can go wrong</div>
+  <div class="wrong">
+    <span class="w">Waiting for a brand mark that will never come.</span> The exact opposite of the
+    store-visit bug, and just as easy to write. If <code>REQUIRES_BOTH</code> is ever applied to
+    remote, every remote shoot hangs forever with no error and no one to blame.</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ END -->
+<div class="act">
+  <div class="ah"><span class="t">What this book leaves for the next one</span></div>
+
+  <div class="lab">Every path out of Phase 3</div>
+  <ul class="tight">
+    <li><b>Store visit, both marked</b> — she has material. → <b>Book 4</b>.</li>
+    <li><b>Remote, she marked</b> — she has material and keeps the goods. → <b>Book 4</b>.</li>
+    <li><b>Parcel missing or damaged</b> — paused, in his Needs you, and someone has to decide
+      between a replacement and taking her out of the set.</li>
+    <li><b>No shoot at all</b> — a sale set using her own material went straight to Book 4 from
+      Book 2.</li>
+  </ul>
+
+  <div class="lab">The one thing to get right</div>
+  <div class="rule">
+    <b>One function answers "is this shoot finished", and it takes the mode as an argument.</b>
+    <code>isShootComplete(mode, marks)</code>, mirrored in the app so both sides agree. Three
+    separate bugs in this phase — closing on one mark, completing on creation, and the picker that
+    would not open — were all versions of the same thing: <b>two places deciding something that
+    only one place should decide.</b> That is now the sixth, seventh and eighth instances of the
+    pattern.
+  </div>
+
+  <div class="lab">Still unverified on a phone</div>
+  <div class="wrong"><span class="w">All three 30 Aug fixes are live and none has been walked.</span>
+    OTA v192 and v199 shipped on 30 Aug. The store-visit two-sided completion, the remote
+    completed-on-create repair, and the date picker have been proved by tests and by production
+    data — <b>but nobody has yet done a store visit and a remote shoot end to end on a handset.</b>
+    That walk belongs in the final verification pass, not per-slice.</div>
+</div>
