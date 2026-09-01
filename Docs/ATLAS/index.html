@@ -1,0 +1,290 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Atlas Index</title>
+<style>
+  :root{--ink:#0A0A0A;--mut:#8E8E8E;--line:#DBDBDB;--soft:#F4F4F4;--acc:#E36414;
+        --ok:#0F7B4F;--bad:#C4321B;--badbg:#FBEEEA;--new:#5B3DF5;--pur:#6D28D9;--purbg:#F5F3FF}
+  *{box-sizing:border-box}
+  body{margin:0;background:#fff;color:var(--ink);padding:26px 24px 80px;
+       font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:1080px}
+  h1{font-size:27px;margin:0 0 5px;letter-spacing:-.03em}
+  .lede{font-size:13px;color:#555;line-height:1.6;margin:0 0 16px}
+  .area{margin:34px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink);
+        font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+  .ph{margin:22px 0 8px;font-size:12.5px;font-weight:900;color:var(--pur);
+      letter-spacing:.02em;text-transform:uppercase}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  td,th{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+  th{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);
+     border-bottom:1.5px solid var(--ink)}
+  tr:target td{background:#FFF8E7}
+  td.c{white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-weight:900;font-size:11.5px}
+  td.n{font-weight:700;width:31%}
+  .v{font-size:7.5px;font-weight:900;padding:2px 5px;border-radius:4px;color:#fff;letter-spacing:.04em}
+  .v.new{background:var(--new)} .v.change{background:var(--acc)}
+  .v.keep{background:#B0B0B0} .v.sweep{background:#94A3B8}
+  .chip{display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:10px;
+        font-weight:800;padding:2px 5px;border-radius:4px;margin:1px 2px 1px 0;
+        text-decoration:none;border:1px solid var(--line);color:#444;background:#fff}
+  .chip.new{border-color:#C7BDFB;background:#F5F3FF;color:var(--new)}
+  .chip.change{border-color:#F3D3BC;background:#FDF4EE;color:var(--acc)}
+  .chip.sweep{opacity:.55}
+  .chip.bad{background:var(--badbg);border-color:#E7BDB4;color:var(--bad)}
+  .both{color:var(--pur);font-weight:900}
+  .box{border:1px solid var(--line);border-radius:9px;padding:12px 14px;margin:0 0 12px;
+       font-size:12.5px;line-height:1.6}
+  .box.ok{border-color:#BFE0CF;background:#EEF7F2}
+  .box.bad{border-color:#E7BDB4;background:var(--badbg)}
+  .box b{font-weight:800}
+  .box .t{font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+          margin-bottom:5px;color:var(--bad)}
+  .box.ok .t{color:var(--ok)}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:var(--soft);
+       padding:1px 4px;border-radius:3px}
+  .note{font-size:11px;color:var(--mut);line-height:1.5;margin:5px 0 0}
+</style>
+
+<h1>Atlas Index</h1>
+<p class="lede">
+  <b>Action → screens</b>, and <b>screen → actions</b>. Generated from
+  <code>Docs/ACTION_MAP.md</code> and the two atlas files by
+  <code>Docs/ATLAS/build-index.js</code> — never typed by hand, so it can catch a screen nothing
+  reaches or an action nothing draws.<br>
+  <b>47 actions · 109 screens.</b>
+  <span class="both">⇄</span> marks an action where two people are involved.
+</p>
+<div class="box ok"><div class="t">Clean</div>
+  Every screen is either reached by an action or deliberately tagged as outside the action model,
+  every action has at least one screen, and every cross-reference resolves.</div>
+<div class="box"><div class="t" style="color:#8E8E8E">Outside the action model — 9</div>
+  These are not orphans. Each is tagged in the atlas to say <b>why</b> no action reaches it, so a
+  screen that is genuinely forgotten still fails the check.<br><br>
+  <b>Reached by navigating, not by doing something</b><br>
+  &nbsp;&nbsp;<a class="chip change" href="#SB-59" title="Profile">SB-59</a> Profile<br>
+  &nbsp;&nbsp;<a class="chip keep" href="#SB-60" title="Brand details">SB-60</a> Brand details<br>
+  &nbsp;&nbsp;<a class="chip sweep" href="#SB-62" title="Legal">SB-62</a> Legal<br>
+  &nbsp;&nbsp;<a class="chip change" href="#SC-37" title="Profile">SC-37</a> Profile<br>
+  <br>
+  <b>Reached by every action of a kind</b><br>
+  &nbsp;&nbsp;<a class="chip change" href="#SB-03" title="Notifications">SB-03</a> Notifications<br>
+  &nbsp;&nbsp;<a class="chip change" href="#SC-03" title="Notifications">SC-03</a> Notifications<br>
+  <br>
+  <b>Out of scope for stages 1-4</b><br>
+  &nbsp;&nbsp;<a class="chip sweep" href="#SB-21" title="Her numbers">SB-21</a> Her numbers<br>
+  &nbsp;&nbsp;<a class="chip sweep" href="#SB-51" title="Conversions">SB-51</a> Conversions<br>
+  &nbsp;&nbsp;<a class="chip sweep" href="#SC-41" title="Refer &amp; earn">SC-41</a> Refer &amp; earn<br>
+  <br>
+</div>
+<div class="area">Action → screens</div>
+<div class="ph">Getting together</div>
+<table>
+  <tr><th>Action</th><th>What it is</th><th></th><th>Screens</th></tr>
+  <tr id="BR-01"><td class="c">BR-01</td><td class="n">Start a campaign</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#SB-04" title="First run">SB-04</a> <a class="chip change" href="#SB-22" title="Campaign list">SB-22</a> <a class="chip change" href="#SB-23" title="New campaign">SB-23</a></td></tr>
+  <tr id="BR-02"><td class="c">BR-02</td><td class="n">Build a set</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#SB-24" title="Campaign builder">SB-24</a> <a class="chip new" href="#SB-25" title="Set · 1 of 4 · the aim">SB-25</a> <a class="chip new" href="#SB-26" title="Set · 2 of 4 · the basics">SB-26</a> <a class="chip change" href="#SB-27" title="Date picker">SB-27</a></td></tr>
+  <tr id="BR-03"><td class="c">BR-03</td><td class="n">Find creators</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-06" title="Creators hub">SB-06</a> <a class="chip keep" href="#SB-07" title="Find creators">SB-07</a> <a class="chip new" href="#SB-08" title="Filter sheet">SB-08</a> <a class="chip new" href="#SB-09" title="Where · states">SB-09</a> <a class="chip new" href="#SB-10" title="Where · places">SB-10</a> <a class="chip new" href="#SB-11" title="Filter results">SB-11</a> <a class="chip keep" href="#SB-12" title="Groups">SB-12</a> <a class="chip keep" href="#SB-13" title="Group detail">SB-13</a> <a class="chip change" href="#SB-14" title="Her profile">SB-14</a> <a class="chip new" href="#SB-28" title="Set · 3 of 4 · who">SB-28</a></td></tr>
+  <tr id="BR-04"><td class="c">BR-04 <span class="both">⇄</span></td><td class="n">Invite creators into a set</td><td><span class="v change">CHANGE</span></td><td><a class="chip keep" href="#SB-07" title="Find creators">SB-07</a> <a class="chip new" href="#SB-11" title="Filter results">SB-11</a> <a class="chip keep" href="#SB-12" title="Groups">SB-12</a> <a class="chip keep" href="#SB-13" title="Group detail">SB-13</a> <a class="chip change" href="#SB-14" title="Her profile">SB-14</a> <a class="chip new" href="#SB-28" title="Set · 3 of 4 · who">SB-28</a> <a class="chip new" href="#SC-05" title="What they're offering">SC-05</a></td></tr>
+  <tr id="BR-05"><td class="c">BR-05 <span class="both">⇄</span></td><td class="n">Answer a counter — money</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SB-02" title="Needs you">SB-02</a> <a class="chip change" href="#SB-20" title="Negotiation thread">SB-20</a> <a class="chip new" href="#SB-38" title="She countered · money">SB-38</a> <a class="chip change" href="#SB-43" title="Creators in a set">SB-43</a> <a class="chip change" href="#SC-06" title="Her counter">SC-06</a></td></tr>
+  <tr id="BR-06"><td class="c">BR-06 <span class="both">⇄</span></td><td class="n">Answer a counter — date or mode</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SB-02" title="Needs you">SB-02</a> <a class="chip change" href="#SB-20" title="Negotiation thread">SB-20</a> <a class="chip new" href="#SB-39" title="She countered · date or shoot">SB-39</a> <a class="chip change" href="#SB-43" title="Creators in a set">SB-43</a> <a class="chip change" href="#SC-06" title="Her counter">SC-06</a></td></tr>
+  <tr id="BR-07"><td class="c">BR-07</td><td class="n">Build a set from the deferred</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SB-24" title="Campaign builder">SB-24</a> <a class="chip new" href="#SB-40" title="A set from the moved-out">SB-40</a></td></tr>
+  <tr id="BR-08"><td class="c">BR-08 <span class="both">⇄</span></td><td class="n">Answer a pitch</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-06" title="Creators hub">SB-06</a> <a class="chip change" href="#SB-14" title="Her profile">SB-14</a> <a class="chip change" href="#SB-15" title="Pitches">SB-15</a> <a class="chip change" href="#SB-16" title="One pitch">SB-16</a> <a class="chip change" href="#SB-20" title="Negotiation thread">SB-20</a> <a class="chip new" href="#SB-41" title="Which set?">SB-41</a> <a class="chip change" href="#SC-17" title="Pitch a brand">SC-17</a> <a class="chip change" href="#SC-18" title="Pitch accepted">SC-18</a></td></tr>
+  <tr id="BR-09"><td class="c">BR-09 <span class="both">⇄</span></td><td class="n">Approach a creator outside a campaign</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-06" title="Creators hub">SB-06</a> <a class="chip change" href="#SB-14" title="Her profile">SB-14</a> <a class="chip change" href="#SB-17" title="Conversations">SB-17</a> <a class="chip change" href="#SB-18" title="Ask her something">SB-18</a> <a class="chip change" href="#SB-19" title="An agreement">SB-19</a> <a class="chip change" href="#SB-20" title="Negotiation thread">SB-20</a> <a class="chip new" href="#SB-41" title="Which set?">SB-41</a></td></tr>
+  <tr id="CR-01"><td class="c">CR-01 <span class="both">⇄</span></td><td class="n">Answer a collaboration</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SC-04" title="Collabs">SC-04</a> <a class="chip new" href="#SC-05" title="What they're offering">SC-05</a></td></tr>
+  <tr id="CR-02"><td class="c">CR-02 <span class="both">⇄</span></td><td class="n">Counter the money</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#SB-38" title="She countered · money">SB-38</a> <a class="chip change" href="#SC-06" title="Her counter">SC-06</a> <a class="chip change" href="#SC-07" title="Negotiation">SC-07</a></td></tr>
+  <tr id="CR-03"><td class="c">CR-03 <span class="both">⇄</span></td><td class="n">Counter the date or mode</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SB-39" title="She countered · date or shoot">SB-39</a> <a class="chip change" href="#SC-06" title="Her counter">SC-06</a> <a class="chip change" href="#SC-07" title="Negotiation">SC-07</a></td></tr>
+  <tr id="CR-04"><td class="c">CR-04 <span class="both">⇄</span></td><td class="n">Pitch a brand</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SC-17" title="Pitch a brand">SC-17</a> <a class="chip change" href="#SC-18" title="Pitch accepted">SC-18</a></td></tr>
+  <tr id="CR-05"><td class="c">CR-05</td><td class="n">Say what you'll take</td><td><span class="v keep">KEEP</span></td><td><a class="chip new" href="#SC-02" title="Her first day">SC-02</a> <a class="chip change" href="#SC-19" title="What you'll take">SC-19</a> <a class="chip change" href="#SC-38" title="Instagram &amp; YouTube">SC-38</a></td></tr>
+</table>
+<div class="ph">Committing</div>
+<table>
+  <tr><th>Action</th><th>What it is</th><th></th><th>Screens</th></tr>
+  <tr id="BR-10"><td class="c">BR-10</td><td class="n">Set one creator's terms</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SB-29" title="Set · 4 of 4 · terms">SB-29</a> <a class="chip new" href="#SB-30" title="Her terms">SB-30</a> <a class="chip keep" href="#SB-34" title="Pick a category">SB-34</a> <a class="chip keep" href="#SB-35" title="Pick products">SB-35</a></td></tr>
+  <tr id="BR-11"><td class="c">BR-11</td><td class="n">Give a creator an offer</td><td><span class="v keep">KEEP</span></td><td><a class="chip new" href="#SB-30" title="Her terms">SB-30</a> <a class="chip keep" href="#SB-31" title="Choose an offer">SB-31</a> <a class="chip keep" href="#SB-32" title="Build an offer">SB-32</a> <a class="chip keep" href="#SB-36" title="Offers library">SB-36</a></td></tr>
+  <tr id="BR-12"><td class="c">BR-12</td><td class="n">Check what a shopper pays</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#SB-33" title="What a shopper pays">SB-33</a></td></tr>
+  <tr id="BR-13"><td class="c">BR-13 <span class="both">⇄</span></td><td class="n">Publish a campaign</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#SB-24" title="Campaign builder">SB-24</a> <a class="chip change" href="#SB-37" title="Review &amp; publish">SB-37</a></td></tr>
+  <tr id="BR-14"><td class="c">BR-14 <span class="both">⇄</span></td><td class="n">Counter-sign a contract</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#SB-45" title="The contract">SB-45</a> <a class="chip keep" href="#SC-08" title="The contract">SC-08</a></td></tr>
+  <tr id="CR-06"><td class="c">CR-06 <span class="both">⇄</span></td><td class="n">Sign a contract</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#SB-45" title="The contract">SB-45</a> <a class="chip keep" href="#SC-08" title="The contract">SC-08</a> <a class="chip keep" href="#SC-40" title="Your contracts">SC-40</a></td></tr>
+  <tr id="CR-07"><td class="c">CR-07 <span class="both">⇄</span></td><td class="n">Decline a contract</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#SC-08" title="The contract">SC-08</a></td></tr>
+</table>
+<div class="ph">The shoot</div>
+<table>
+  <tr><th>Action</th><th>What it is</th><th></th><th>Screens</th></tr>
+  <tr id="BR-15"><td class="c">BR-15 <span class="both">⇄</span></td><td class="n">Arrange a store visit</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-02" title="Needs you">SB-02</a> <a class="chip change" href="#SB-27" title="Date picker">SB-27</a> <a class="chip change" href="#SB-46" title="Shoot · store visit">SB-46</a> <a class="chip change" href="#SB-48" title="All shoots">SB-48</a> <a class="chip change" href="#SC-10" title="Shoot · store visit">SC-10</a></td></tr>
+  <tr id="BR-16"><td class="c">BR-16 <span class="both">⇄</span></td><td class="n">Ship goods for a remote shoot</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-47" title="Shoot · remote">SB-47</a> <a class="chip change" href="#SB-48" title="All shoots">SB-48</a> <a class="chip change" href="#SC-11" title="Shoot · remote">SC-11</a> <a class="chip new" href="#SC-12" title="Send your address">SC-12</a> <a class="chip keep" href="#SC-13" title="Something's wrong">SC-13</a></td></tr>
+  <tr id="BR-17"><td class="c">BR-17 <span class="both">⇄</span></td><td class="n">Mark a store visit done</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-46" title="Shoot · store visit">SB-46</a> <a class="chip change" href="#SB-48" title="All shoots">SB-48</a> <a class="chip change" href="#SC-10" title="Shoot · store visit">SC-10</a></td></tr>
+  <tr id="CR-08"><td class="c">CR-08 <span class="both">⇄</span></td><td class="n">Accept or counter a visit time</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#SB-46" title="Shoot · store visit">SB-46</a> <a class="chip change" href="#SC-10" title="Shoot · store visit">SC-10</a></td></tr>
+  <tr id="CR-09"><td class="c">CR-09 <span class="both">⇄</span></td><td class="n">Send your address</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SB-47" title="Shoot · remote">SB-47</a> <a class="chip new" href="#SC-12" title="Send your address">SC-12</a> <a class="chip new" href="#SC-39" title="Where to send goods">SC-39</a></td></tr>
+  <tr id="CR-10"><td class="c">CR-10 <span class="both">⇄</span></td><td class="n">Confirm what arrived</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#SB-47" title="Shoot · remote">SB-47</a> <a class="chip keep" href="#SC-13" title="Something's wrong">SC-13</a></td></tr>
+  <tr id="CR-11"><td class="c">CR-11 <span class="both">⇄</span></td><td class="n">Mark a remote shoot done</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-47" title="Shoot · remote">SB-47</a> <a class="chip change" href="#SC-11" title="Shoot · remote">SC-11</a></td></tr>
+</table>
+<div class="ph">The content</div>
+<table>
+  <tr><th>Action</th><th>What it is</th><th></th><th>Screens</th></tr>
+  <tr id="CR-12"><td class="c">CR-12</td><td class="n">Build a shop post</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SA-01" title="Post queue">SA-01</a> <a class="chip change" href="#SC-21" title="Create">SC-21</a> <a class="chip change" href="#SC-22" title="Post · 1 of 3 · who for">SC-22</a> <a class="chip change" href="#SC-23" title="Post · 2 of 3 · which">SC-23</a> <a class="chip change" href="#SC-24" title="Post · 3 of 3 · build it">SC-24</a> <a class="chip change" href="#SC-25" title="In review">SC-25</a> <a class="chip keep" href="#SC-27" title="Your posts">SC-27</a> <a class="chip sweep" href="#SC-28" title="My store">SC-28</a></td></tr>
+  <tr id="CR-13"><td class="c">CR-13</td><td class="n">Fix a rejected shop post</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SA-02" title="Review one post">SA-02</a> <a class="chip new" href="#SC-26" title="Sent back">SC-26</a></td></tr>
+  <tr id="CR-14"><td class="c">CR-14 <span class="both">⇄</span></td><td class="n">Submit a deliverable</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#SB-49" title="Review queue">SB-49</a> <a class="chip keep" href="#SC-14" title="Deliverables">SC-14</a> <a class="chip keep" href="#SC-15" title="Submit">SC-15</a></td></tr>
+  <tr id="CR-15"><td class="c">CR-15 <span class="both">⇄</span></td><td class="n">Go live and post your links</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SB-50" title="Confirm it went live">SB-50</a> <a class="chip new" href="#SC-16" title="Go live">SC-16</a></td></tr>
+  <tr id="BR-18"><td class="c">BR-18 <span class="both">⇄</span></td><td class="n">Review a deliverable</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#SB-02" title="Needs you">SB-02</a> <a class="chip keep" href="#SB-49" title="Review queue">SB-49</a> <a class="chip sweep" href="#SB-61" title="Media gallery">SB-61</a> <a class="chip keep" href="#SC-14" title="Deliverables">SC-14</a></td></tr>
+  <tr id="BR-19"><td class="c">BR-19 <span class="both">⇄</span></td><td class="n">Confirm a post went live</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SB-50" title="Confirm it went live">SB-50</a> <a class="chip new" href="#SC-16" title="Go live">SC-16</a></td></tr>
+  <tr id="AD-01"><td class="c">AD-01 <span class="both">⇄</span></td><td class="n">Review a shop post</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SA-01" title="Post queue">SA-01</a> <a class="chip change" href="#SA-02" title="Review one post">SA-02</a> <a class="chip change" href="#SC-25" title="In review">SC-25</a> <a class="chip new" href="#SC-26" title="Sent back">SC-26</a></td></tr>
+</table>
+<div class="ph">The money</div>
+<table>
+  <tr><th>Action</th><th>What it is</th><th></th><th>Screens</th></tr>
+  <tr id="BR-20"><td class="c">BR-20</td><td class="n">Top up the wallet</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#SB-37" title="Review &amp; publish">SB-37</a> <a class="chip change" href="#SB-52" title="Wallet">SB-52</a> <a class="chip keep" href="#SB-54" title="Add money">SB-54</a> <a class="chip keep" href="#SB-58" title="Wallet history">SB-58</a></td></tr>
+  <tr id="BR-21"><td class="c">BR-21</td><td class="n">See what escrow is holding</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SB-52" title="Wallet">SB-52</a> <a class="chip new" href="#SB-53" title="Inside escrow">SB-53</a> <a class="chip keep" href="#SB-58" title="Wallet history">SB-58</a></td></tr>
+  <tr id="BR-22"><td class="c">BR-22 <span class="both">⇄</span></td><td class="n">Withdraw sales money</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SA-03" title="Withdrawals">SA-03</a> <a class="chip change" href="#SB-52" title="Wallet">SB-52</a> <a class="chip new" href="#SB-55" title="Take out sales money">SB-55</a> <a class="chip keep" href="#SB-56" title="Payout details">SB-56</a> <a class="chip change" href="#SB-57" title="Every sale">SB-57</a></td></tr>
+  <tr id="CR-16"><td class="c">CR-16 <span class="both">⇄</span></td><td class="n">Withdraw</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#SA-03" title="Withdrawals">SA-03</a> <a class="chip change" href="#SC-29" title="Earnings">SC-29</a> <a class="chip new" href="#SC-34" title="Withdraw">SC-34</a> <a class="chip keep" href="#SC-35" title="Bank &amp; UPI">SC-35</a></td></tr>
+  <tr id="CR-17"><td class="c">CR-17</td><td class="n">See what a campaign earned</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SC-20" title="Finished">SC-20</a> <a class="chip keep" href="#SC-27" title="Your posts">SC-27</a> <a class="chip change" href="#SC-29" title="Earnings">SC-29</a> <a class="chip change" href="#SC-30" title="A collab's commission">SC-30</a> <a class="chip change" href="#SC-31" title="A collab's fee">SC-31</a> <a class="chip change" href="#SC-32" title="Your sales">SC-32</a> <a class="chip new" href="#SC-33" title="A returned sale">SC-33</a> <a class="chip keep" href="#SC-36" title="Tax certificate">SC-36</a> <a class="chip sweep" href="#SC-42" title="Performance">SC-42</a></td></tr>
+  <tr id="AD-02"><td class="c">AD-02 <span class="both">⇄</span></td><td class="n">Approve a withdrawal</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SA-03" title="Withdrawals">SA-03</a> <a class="chip new" href="#SB-55" title="Take out sales money">SB-55</a> <a class="chip new" href="#SC-34" title="Withdraw">SC-34</a></td></tr>
+  <tr id="AD-03"><td class="c">AD-03</td><td class="n">Set the minimum shop posts</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SA-04" title="Platform rules">SA-04</a></td></tr>
+  <tr id="AD-04"><td class="c">AD-04</td><td class="n">Set the final-payment wait</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#SA-04" title="Platform rules">SA-04</a></td></tr>
+  <tr id="AD-05"><td class="c">AD-05</td><td class="n">Set the per-industry commission</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#SA-05" title="Commission by industry">SA-05</a></td></tr>
+</table>
+<div class="ph">Throughout</div>
+<table>
+  <tr><th>Action</th><th>What it is</th><th></th><th>Screens</th></tr>
+  <tr id="BR-23"><td class="c">BR-23</td><td class="n">Watch a campaign — sets → creators → her six steps</td><td><span class="v change">CHANGE</span></td><td><a class="chip keep" href="#SB-05" title="Diary">SB-05</a> <a class="chip change" href="#SB-22" title="Campaign list">SB-22</a> <a class="chip change" href="#SB-42" title="Campaign · live">SB-42</a> <a class="chip change" href="#SB-43" title="Creators in a set">SB-43</a> <a class="chip change" href="#SB-44" title="Her six steps">SB-44</a> <a class="chip change" href="#SB-57" title="Every sale">SB-57</a></td></tr>
+  <tr id="BR-24"><td class="c">BR-24</td><td class="n">See everything that needs you</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-01" title="Home">SB-01</a> <a class="chip change" href="#SB-02" title="Needs you">SB-02</a></td></tr>
+  <tr id="CR-18"><td class="c">CR-18</td><td class="n">See where your work is</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#SB-44" title="Her six steps">SB-44</a> <a class="chip change" href="#SC-01" title="Home">SC-01</a> <a class="chip change" href="#SC-04" title="Collabs">SC-04</a> <a class="chip change" href="#SC-09" title="Where this has got to">SC-09</a> <a class="chip change" href="#SC-20" title="Finished">SC-20</a></td></tr>
+</table>
+<div class="area">Screen → actions</div>
+<div class="ph">Brand app · 62 screens</div>
+<table>
+  <tr><th>Screen</th><th>What it is</th><th></th><th>Used by</th></tr>
+  <tr id="SB-01"><td class="c">SB-01</td><td class="n">Home</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-24" title="See everything that needs you">BR-24</a><div class="note">entry to everything</div></td></tr>
+  <tr id="SB-02"><td class="c">SB-02</td><td class="n">Needs you</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#BR-05" title="Answer a counter — money">BR-05</a> <a class="chip new" href="#BR-06" title="Answer a counter — date or mode">BR-06</a> <a class="chip change" href="#BR-15" title="Arrange a store visit">BR-15</a> <a class="chip keep" href="#BR-18" title="Review a deliverable">BR-18</a> <a class="chip change" href="#BR-24" title="See everything that needs you">BR-24</a></td></tr>
+  <tr id="SB-03"><td class="c">SB-03</td><td class="n">Notifications</td><td><span class="v change">CHANGE</span></td><td><span class="chip bad">none</span><div class="note">every action that touches the other side</div></td></tr>
+  <tr id="SB-04"><td class="c">SB-04</td><td class="n">First run</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-01" title="Start a campaign">BR-01</a><div class="note">a brand with no campaigns</div></td></tr>
+  <tr id="SB-05"><td class="c">SB-05</td><td class="n">Diary</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#BR-23" title="Watch a campaign — sets → creators → her six steps">BR-23</a><div class="note">readable from any collaboration</div></td></tr>
+  <tr id="SB-06"><td class="c">SB-06</td><td class="n">Creators hub</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a> <a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a></td></tr>
+  <tr id="SB-07"><td class="c">SB-07</td><td class="n">Find creators</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a></td></tr>
+  <tr id="SB-08"><td class="c">SB-08</td><td class="n">Filter sheet</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a><div class="note">from SB-07 and SB-28</div></td></tr>
+  <tr id="SB-09"><td class="c">SB-09</td><td class="n">Where · states</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a><div class="note">from SB-08</div></td></tr>
+  <tr id="SB-10"><td class="c">SB-10</td><td class="n">Where · places</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a><div class="note">from SB-09</div></td></tr>
+  <tr id="SB-11"><td class="c">SB-11</td><td class="n">Filter results</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a></td></tr>
+  <tr id="SB-12"><td class="c">SB-12</td><td class="n">Groups</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a></td></tr>
+  <tr id="SB-13"><td class="c">SB-13</td><td class="n">Group detail</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a></td></tr>
+  <tr id="SB-14"><td class="c">SB-14</td><td class="n">Her profile</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a> <a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a> <a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a></td></tr>
+  <tr id="SB-15"><td class="c">SB-15</td><td class="n">Pitches</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a></td></tr>
+  <tr id="SB-16"><td class="c">SB-16</td><td class="n">One pitch</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a></td></tr>
+  <tr id="SB-17"><td class="c">SB-17</td><td class="n">Conversations</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a></td></tr>
+  <tr id="SB-18"><td class="c">SB-18</td><td class="n">Ask her something</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a><div class="note">no campaign behind it</div></td></tr>
+  <tr id="SB-19"><td class="c">SB-19</td><td class="n">An agreement</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a><div class="note">history</div></td></tr>
+  <tr id="SB-20"><td class="c">SB-20</td><td class="n">Negotiation thread</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#BR-05" title="Answer a counter — money">BR-05</a> <a class="chip new" href="#BR-06" title="Answer a counter — date or mode">BR-06</a> <a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a> <a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a></td></tr>
+  <tr id="SB-21"><td class="c">SB-21</td><td class="n">Her numbers</td><td><span class="v sweep">SWEEP</span></td><td><span class="chip bad">none</span><div class="note">Stage 10</div></td></tr>
+  <tr id="SB-22"><td class="c">SB-22</td><td class="n">Campaign list</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-01" title="Start a campaign">BR-01</a> <a class="chip change" href="#BR-23" title="Watch a campaign — sets → creators → her six steps">BR-23</a></td></tr>
+  <tr id="SB-23"><td class="c">SB-23</td><td class="n">New campaign</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-01" title="Start a campaign">BR-01</a></td></tr>
+  <tr id="SB-24"><td class="c">SB-24</td><td class="n">Campaign builder</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-02" title="Build a set">BR-02</a> <a class="chip new" href="#BR-07" title="Build a set from the deferred">BR-07</a> <a class="chip change" href="#BR-13" title="Publish a campaign">BR-13</a></td></tr>
+  <tr id="SB-25"><td class="c">SB-25</td><td class="n">Set · 1 of 4 · the aim</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-02" title="Build a set">BR-02</a></td></tr>
+  <tr id="SB-26"><td class="c">SB-26</td><td class="n">Set · 2 of 4 · the basics</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-02" title="Build a set">BR-02</a></td></tr>
+  <tr id="SB-27"><td class="c">SB-27</td><td class="n">Date picker</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-02" title="Build a set">BR-02</a> <a class="chip change" href="#BR-15" title="Arrange a store visit">BR-15</a><div class="note">everywhere a date is chosen</div></td></tr>
+  <tr id="SB-28"><td class="c">SB-28</td><td class="n">Set · 3 of 4 · who</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-03" title="Find creators">BR-03</a> <a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a></td></tr>
+  <tr id="SB-29"><td class="c">SB-29</td><td class="n">Set · 4 of 4 · terms</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-10" title="Set one creator's terms">BR-10</a></td></tr>
+  <tr id="SB-30"><td class="c">SB-30</td><td class="n">Her terms</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-10" title="Set one creator's terms">BR-10</a> <a class="chip keep" href="#BR-11" title="Give a creator an offer">BR-11</a><div class="note">the centre of the programme</div></td></tr>
+  <tr id="SB-31"><td class="c">SB-31</td><td class="n">Choose an offer</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-11" title="Give a creator an offer">BR-11</a></td></tr>
+  <tr id="SB-32"><td class="c">SB-32</td><td class="n">Build an offer</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-11" title="Give a creator an offer">BR-11</a></td></tr>
+  <tr id="SB-33"><td class="c">SB-33</td><td class="n">What a shopper pays</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-12" title="Check what a shopper pays">BR-12</a></td></tr>
+  <tr id="SB-34"><td class="c">SB-34</td><td class="n">Pick a category</td><td><span class="v keep">KEEP</span></td><td><a class="chip new" href="#BR-10" title="Set one creator's terms">BR-10</a></td></tr>
+  <tr id="SB-35"><td class="c">SB-35</td><td class="n">Pick products</td><td><span class="v keep">KEEP</span></td><td><a class="chip new" href="#BR-10" title="Set one creator's terms">BR-10</a></td></tr>
+  <tr id="SB-36"><td class="c">SB-36</td><td class="n">Offers library</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-11" title="Give a creator an offer">BR-11</a></td></tr>
+  <tr id="SB-37"><td class="c">SB-37</td><td class="n">Review &amp; publish</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-13" title="Publish a campaign">BR-13</a> <a class="chip keep" href="#BR-20" title="Top up the wallet">BR-20</a></td></tr>
+  <tr id="SB-38"><td class="c">SB-38</td><td class="n">She countered · money</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-05" title="Answer a counter — money">BR-05</a> <a class="chip change" href="#CR-02" title="Counter the money">CR-02</a></td></tr>
+  <tr id="SB-39"><td class="c">SB-39</td><td class="n">She countered · date or shoot</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-06" title="Answer a counter — date or mode">BR-06</a> <a class="chip new" href="#CR-03" title="Counter the date or mode">CR-03</a></td></tr>
+  <tr id="SB-40"><td class="c">SB-40</td><td class="n">A set from the moved-out</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-07" title="Build a set from the deferred">BR-07</a></td></tr>
+  <tr id="SB-41"><td class="c">SB-41</td><td class="n">Which set?</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a> <a class="chip change" href="#BR-09" title="Approach a creator outside a campaign">BR-09</a><div class="note">after accepting</div></td></tr>
+  <tr id="SB-42"><td class="c">SB-42</td><td class="n">Campaign · live</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-23" title="Watch a campaign — sets → creators → her six steps">BR-23</a></td></tr>
+  <tr id="SB-43"><td class="c">SB-43</td><td class="n">Creators in a set</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#BR-05" title="Answer a counter — money">BR-05</a> <a class="chip new" href="#BR-06" title="Answer a counter — date or mode">BR-06</a> <a class="chip change" href="#BR-23" title="Watch a campaign — sets → creators → her six steps">BR-23</a></td></tr>
+  <tr id="SB-44"><td class="c">SB-44</td><td class="n">Her six steps</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-23" title="Watch a campaign — sets → creators → her six steps">BR-23</a> <a class="chip change" href="#CR-18" title="See where your work is">CR-18</a><div class="note">the brand's mirror of</div></td></tr>
+  <tr id="SB-45"><td class="c">SB-45</td><td class="n">The contract</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-14" title="Counter-sign a contract">BR-14</a> <a class="chip keep" href="#CR-06" title="Sign a contract">CR-06</a></td></tr>
+  <tr id="SB-46"><td class="c">SB-46</td><td class="n">Shoot · store visit</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-15" title="Arrange a store visit">BR-15</a> <a class="chip change" href="#BR-17" title="Mark a store visit done">BR-17</a> <a class="chip keep" href="#CR-08" title="Accept or counter a visit time">CR-08</a></td></tr>
+  <tr id="SB-47"><td class="c">SB-47</td><td class="n">Shoot · remote</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-16" title="Ship goods for a remote shoot">BR-16</a> <a class="chip new" href="#CR-09" title="Send your address">CR-09</a> <a class="chip keep" href="#CR-10" title="Confirm what arrived">CR-10</a> <a class="chip change" href="#CR-11" title="Mark a remote shoot done">CR-11</a></td></tr>
+  <tr id="SB-48"><td class="c">SB-48</td><td class="n">All shoots</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-15" title="Arrange a store visit">BR-15</a> <a class="chip change" href="#BR-16" title="Ship goods for a remote shoot">BR-16</a> <a class="chip change" href="#BR-17" title="Mark a store visit done">BR-17</a></td></tr>
+  <tr id="SB-49"><td class="c">SB-49</td><td class="n">Review queue</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-18" title="Review a deliverable">BR-18</a> <a class="chip keep" href="#CR-14" title="Submit a deliverable">CR-14</a></td></tr>
+  <tr id="SB-50"><td class="c">SB-50</td><td class="n">Confirm it went live</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-19" title="Confirm a post went live">BR-19</a> <a class="chip new" href="#CR-15" title="Go live and post your links">CR-15</a></td></tr>
+  <tr id="SB-51"><td class="c">SB-51</td><td class="n">Conversions</td><td><span class="v sweep">SWEEP</span></td><td><span class="chip bad">none</span><div class="note">Stage 10</div></td></tr>
+  <tr id="SB-52"><td class="c">SB-52</td><td class="n">Wallet</td><td><span class="v change">CHANGE</span></td><td><a class="chip keep" href="#BR-20" title="Top up the wallet">BR-20</a> <a class="chip new" href="#BR-21" title="See what escrow is holding">BR-21</a> <a class="chip new" href="#BR-22" title="Withdraw sales money">BR-22</a></td></tr>
+  <tr id="SB-53"><td class="c">SB-53</td><td class="n">Inside escrow</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-21" title="See what escrow is holding">BR-21</a></td></tr>
+  <tr id="SB-54"><td class="c">SB-54</td><td class="n">Add money</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-20" title="Top up the wallet">BR-20</a></td></tr>
+  <tr id="SB-55"><td class="c">SB-55</td><td class="n">Take out sales money</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#AD-02" title="Approve a withdrawal">AD-02</a> <a class="chip new" href="#BR-22" title="Withdraw sales money">BR-22</a></td></tr>
+  <tr id="SB-56"><td class="c">SB-56</td><td class="n">Payout details</td><td><span class="v keep">KEEP</span></td><td><a class="chip new" href="#BR-22" title="Withdraw sales money">BR-22</a></td></tr>
+  <tr id="SB-57"><td class="c">SB-57</td><td class="n">Every sale</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#BR-22" title="Withdraw sales money">BR-22</a> <a class="chip change" href="#BR-23" title="Watch a campaign — sets → creators → her six steps">BR-23</a></td></tr>
+  <tr id="SB-58"><td class="c">SB-58</td><td class="n">Wallet history</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-20" title="Top up the wallet">BR-20</a> <a class="chip new" href="#BR-21" title="See what escrow is holding">BR-21</a></td></tr>
+  <tr id="SB-59"><td class="c">SB-59</td><td class="n">Profile</td><td><span class="v change">CHANGE</span></td><td><span class="chip bad">none</span><div class="note">entry to settings</div></td></tr>
+  <tr id="SB-60"><td class="c">SB-60</td><td class="n">Brand details</td><td><span class="v keep">KEEP</span></td><td><span class="chip bad">none</span><div class="note">setup</div></td></tr>
+  <tr id="SB-61"><td class="c">SB-61</td><td class="n">Media gallery</td><td><span class="v sweep">SWEEP</span></td><td><a class="chip keep" href="#BR-18" title="Review a deliverable">BR-18</a></td></tr>
+  <tr id="SB-62"><td class="c">SB-62</td><td class="n">Legal</td><td><span class="v sweep">SWEEP</span></td><td><span class="chip bad">none</span><div class="note">reached from the profile</div></td></tr>
+</table>
+<div class="ph">Creator app · 42 screens</div>
+<table>
+  <tr><th>Screen</th><th>What it is</th><th></th><th>Used by</th></tr>
+  <tr id="SC-01"><td class="c">SC-01</td><td class="n">Home</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-18" title="See where your work is">CR-18</a><div class="note">entry to everything</div></td></tr>
+  <tr id="SC-02"><td class="c">SC-02</td><td class="n">Her first day</td><td><span class="v new">NEW</span></td><td><a class="chip keep" href="#CR-05" title="Say what you'll take">CR-05</a><div class="note">a creator with nothing yet</div></td></tr>
+  <tr id="SC-03"><td class="c">SC-03</td><td class="n">Notifications</td><td><span class="v change">CHANGE</span></td><td><span class="chip bad">none</span><div class="note">every action the brand starts</div></td></tr>
+  <tr id="SC-04"><td class="c">SC-04</td><td class="n">Collabs</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#CR-01" title="Answer a collaboration">CR-01</a> <a class="chip change" href="#CR-18" title="See where your work is">CR-18</a></td></tr>
+  <tr id="SC-05"><td class="c">SC-05</td><td class="n">What they're offering</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-04" title="Invite creators into a set">BR-04</a> <a class="chip new" href="#CR-01" title="Answer a collaboration">CR-01</a><div class="note">what SB-30 produces</div></td></tr>
+  <tr id="SC-06"><td class="c">SC-06</td><td class="n">Her counter</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#BR-05" title="Answer a counter — money">BR-05</a> <a class="chip new" href="#BR-06" title="Answer a counter — date or mode">BR-06</a> <a class="chip change" href="#CR-02" title="Counter the money">CR-02</a> <a class="chip new" href="#CR-03" title="Counter the date or mode">CR-03</a></td></tr>
+  <tr id="SC-07"><td class="c">SC-07</td><td class="n">Negotiation</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-02" title="Counter the money">CR-02</a> <a class="chip new" href="#CR-03" title="Counter the date or mode">CR-03</a><div class="note">SB-20 is the same thread</div></td></tr>
+  <tr id="SC-08"><td class="c">SC-08</td><td class="n">The contract</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-14" title="Counter-sign a contract">BR-14</a> <a class="chip keep" href="#CR-06" title="Sign a contract">CR-06</a> <a class="chip keep" href="#CR-07" title="Decline a contract">CR-07</a></td></tr>
+  <tr id="SC-09"><td class="c">SC-09</td><td class="n">Where this has got to</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-18" title="See where your work is">CR-18</a><div class="note">SB-44 is the brand's mirror</div></td></tr>
+  <tr id="SC-10"><td class="c">SC-10</td><td class="n">Shoot · store visit</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-15" title="Arrange a store visit">BR-15</a> <a class="chip change" href="#BR-17" title="Mark a store visit done">BR-17</a> <a class="chip keep" href="#CR-08" title="Accept or counter a visit time">CR-08</a></td></tr>
+  <tr id="SC-11"><td class="c">SC-11</td><td class="n">Shoot · remote</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-16" title="Ship goods for a remote shoot">BR-16</a> <a class="chip change" href="#CR-11" title="Mark a remote shoot done">CR-11</a></td></tr>
+  <tr id="SC-12"><td class="c">SC-12</td><td class="n">Send your address</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#BR-16" title="Ship goods for a remote shoot">BR-16</a> <a class="chip new" href="#CR-09" title="Send your address">CR-09</a></td></tr>
+  <tr id="SC-13"><td class="c">SC-13</td><td class="n">Something's wrong</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#BR-16" title="Ship goods for a remote shoot">BR-16</a> <a class="chip keep" href="#CR-10" title="Confirm what arrived">CR-10</a></td></tr>
+  <tr id="SC-14"><td class="c">SC-14</td><td class="n">Deliverables</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#BR-18" title="Review a deliverable">BR-18</a> <a class="chip keep" href="#CR-14" title="Submit a deliverable">CR-14</a></td></tr>
+  <tr id="SC-15"><td class="c">SC-15</td><td class="n">Submit</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#CR-14" title="Submit a deliverable">CR-14</a></td></tr>
+  <tr id="SC-16"><td class="c">SC-16</td><td class="n">Go live</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#BR-19" title="Confirm a post went live">BR-19</a> <a class="chip new" href="#CR-15" title="Go live and post your links">CR-15</a></td></tr>
+  <tr id="SC-17"><td class="c">SC-17</td><td class="n">Pitch a brand</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a> <a class="chip change" href="#CR-04" title="Pitch a brand">CR-04</a></td></tr>
+  <tr id="SC-18"><td class="c">SC-18</td><td class="n">Pitch accepted</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#BR-08" title="Answer a pitch">BR-08</a> <a class="chip change" href="#CR-04" title="Pitch a brand">CR-04</a><div class="note">SB-41</div></td></tr>
+  <tr id="SC-19"><td class="c">SC-19</td><td class="n">What you'll take</td><td><span class="v change">CHANGE</span></td><td><a class="chip keep" href="#CR-05" title="Say what you'll take">CR-05</a></td></tr>
+  <tr id="SC-20"><td class="c">SC-20</td><td class="n">Finished</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a> <a class="chip change" href="#CR-18" title="See where your work is">CR-18</a></td></tr>
+  <tr id="SC-21"><td class="c">SC-21</td><td class="n">Create</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a></td></tr>
+  <tr id="SC-22"><td class="c">SC-22</td><td class="n">Post · 1 of 3 · who for</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a><div class="note">the founder's stepwise correction</div></td></tr>
+  <tr id="SC-23"><td class="c">SC-23</td><td class="n">Post · 2 of 3 · which</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a></td></tr>
+  <tr id="SC-24"><td class="c">SC-24</td><td class="n">Post · 3 of 3 · build it</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a></td></tr>
+  <tr id="SC-25"><td class="c">SC-25</td><td class="n">In review</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#AD-01" title="Review a shop post">AD-01</a> <a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a></td></tr>
+  <tr id="SC-26"><td class="c">SC-26</td><td class="n">Sent back</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#AD-01" title="Review a shop post">AD-01</a> <a class="chip new" href="#CR-13" title="Fix a rejected shop post">CR-13</a></td></tr>
+  <tr id="SC-27"><td class="c">SC-27</td><td class="n">Your posts</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a> <a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-28"><td class="c">SC-28</td><td class="n">My store</td><td><span class="v sweep">SWEEP</span></td><td><a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a></td></tr>
+  <tr id="SC-29"><td class="c">SC-29</td><td class="n">Earnings</td><td><span class="v change">CHANGE</span></td><td><a class="chip new" href="#CR-16" title="Withdraw">CR-16</a> <a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-30"><td class="c">SC-30</td><td class="n">A collab's commission</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-31"><td class="c">SC-31</td><td class="n">A collab's fee</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-32"><td class="c">SC-32</td><td class="n">Your sales</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-33"><td class="c">SC-33</td><td class="n">A returned sale</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-34"><td class="c">SC-34</td><td class="n">Withdraw</td><td><span class="v new">NEW</span></td><td><a class="chip change" href="#AD-02" title="Approve a withdrawal">AD-02</a> <a class="chip new" href="#CR-16" title="Withdraw">CR-16</a></td></tr>
+  <tr id="SC-35"><td class="c">SC-35</td><td class="n">Bank &amp; UPI</td><td><span class="v keep">KEEP</span></td><td><a class="chip new" href="#CR-16" title="Withdraw">CR-16</a></td></tr>
+  <tr id="SC-36"><td class="c">SC-36</td><td class="n">Tax certificate</td><td><span class="v keep">KEEP</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a></td></tr>
+  <tr id="SC-37"><td class="c">SC-37</td><td class="n">Profile</td><td><span class="v change">CHANGE</span></td><td><span class="chip bad">none</span><div class="note">entry to settings</div></td></tr>
+  <tr id="SC-38"><td class="c">SC-38</td><td class="n">Instagram &amp; YouTube</td><td><span class="v change">CHANGE</span></td><td><a class="chip keep" href="#CR-05" title="Say what you'll take">CR-05</a><div class="note">what SB-14 displays</div></td></tr>
+  <tr id="SC-39"><td class="c">SC-39</td><td class="n">Where to send goods</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#CR-09" title="Send your address">CR-09</a></td></tr>
+  <tr id="SC-40"><td class="c">SC-40</td><td class="n">Your contracts</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#CR-06" title="Sign a contract">CR-06</a><div class="note">history</div></td></tr>
+  <tr id="SC-41"><td class="c">SC-41</td><td class="n">Refer &amp; earn</td><td><span class="v sweep">SWEEP</span></td><td><span class="chip bad">none</span><div class="note">out of scope for stages 1-4</div></td></tr>
+  <tr id="SC-42"><td class="c">SC-42</td><td class="n">Performance</td><td><span class="v sweep">SWEEP</span></td><td><a class="chip change" href="#CR-17" title="See what a campaign earned">CR-17</a><div class="note">Stage 10</div></td></tr>
+</table>
+<div class="ph">Admin · 5 screens</div>
+<table>
+  <tr><th>Screen</th><th>What it is</th><th></th><th>Used by</th></tr>
+  <tr id="SA-01"><td class="c">SA-01</td><td class="n">Post queue</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#AD-01" title="Review a shop post">AD-01</a> <a class="chip change" href="#CR-12" title="Build a shop post">CR-12</a></td></tr>
+  <tr id="SA-02"><td class="c">SA-02</td><td class="n">Review one post</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#AD-01" title="Review a shop post">AD-01</a> <a class="chip new" href="#CR-13" title="Fix a rejected shop post">CR-13</a></td></tr>
+  <tr id="SA-03"><td class="c">SA-03</td><td class="n">Withdrawals</td><td><span class="v change">CHANGE</span></td><td><a class="chip change" href="#AD-02" title="Approve a withdrawal">AD-02</a> <a class="chip new" href="#BR-22" title="Withdraw sales money">BR-22</a> <a class="chip new" href="#CR-16" title="Withdraw">CR-16</a></td></tr>
+  <tr id="SA-04"><td class="c">SA-04</td><td class="n">Platform rules</td><td><span class="v new">NEW</span></td><td><a class="chip new" href="#AD-03" title="Set the minimum shop posts">AD-03</a> <a class="chip new" href="#AD-04" title="Set the final-payment wait">AD-04</a></td></tr>
+  <tr id="SA-05"><td class="c">SA-05</td><td class="n">Commission by industry</td><td><span class="v keep">KEEP</span></td><td><a class="chip keep" href="#AD-05" title="Set the per-industry commission">AD-05</a></td></tr>
+</table>
+<div class="area">Where a change would ripple</div>
+<div class="box">
+  <b>Screens reached by three or more actions.</b> These are the ones where changing something
+  quietly breaks a flow somewhere else, and the ones worth building first.<br><br>
+  <a class="chip change" href="#SB-02" title="Needs you">SB-02</a> <b>Needs you</b> — 5 actions<br>
+  <a class="chip change" href="#SB-14" title="Her profile">SB-14</a> <b>Her profile</b> — 4 actions<br>
+  <a class="chip change" href="#SB-20" title="Negotiation thread">SB-20</a> <b>Negotiation thread</b> — 4 actions<br>
+  <a class="chip change" href="#SB-47" title="Shoot · remote">SB-47</a> <b>Shoot · remote</b> — 4 actions<br>
+  <a class="chip change" href="#SC-06" title="Her counter">SC-06</a> <b>Her counter</b> — 4 actions<br>
+  <a class="chip change" href="#SB-06" title="Creators hub">SB-06</a> <b>Creators hub</b> — 3 actions<br>
+  <a class="chip new" href="#SB-24" title="Campaign builder">SB-24</a> <b>Campaign builder</b> — 3 actions<br>
+  <a class="chip change" href="#SB-43" title="Creators in a set">SB-43</a> <b>Creators in a set</b> — 3 actions<br>
+  <a class="chip change" href="#SB-46" title="Shoot · store visit">SB-46</a> <b>Shoot · store visit</b> — 3 actions<br>
+  <a class="chip change" href="#SB-48" title="All shoots">SB-48</a> <b>All shoots</b> — 3 actions<br>
+  <a class="chip change" href="#SB-52" title="Wallet">SB-52</a> <b>Wallet</b> — 3 actions<br>
+  <a class="chip keep" href="#SC-08" title="The contract">SC-08</a> <b>The contract</b> — 3 actions<br>
+  <a class="chip change" href="#SC-10" title="Shoot · store visit">SC-10</a> <b>Shoot · store visit</b> — 3 actions<br>
+  <a class="chip change" href="#SA-03" title="Withdrawals">SA-03</a> <b>Withdrawals</b> — 3 actions<br>
+</div>

@@ -143,31 +143,39 @@ server answer read three times. It stays that way.
 
 | | Brand | Creator | Admin | Total |
 |---|---|---|---|---|
-| 🆕 **new** | 5 | 5 | 2 | **12** |
-| ✎ **changes** | 12 | 5 | 2 | **19** |
-| ✓ **works as is** | 4 | 6 | 1 | **11** |
-| | **21** | **16** | **5** | **42** |
+| 🆕 **new** | 7 | 6 | 2 | **15** |
+| ✎ **changes** | 12 | 6 | 2 | **20** |
+| ✓ **works as it is** | 5 | 6 | 1 | **12** |
+| | **24** | **18** | **5** | **47** |
 
-**19 actions involve both people.** Those get both phones drawn side by side at the same moment,
+**28 of the 47 involve both people.** Those get both phones drawn side by side at the same moment,
 because that is where the two apps have always drifted apart.
 
-**12 actions do not exist at all.** They cluster in three places, and it is worth seeing where:
+**15 actions do not exist at all.** They cluster in three places, and it is worth seeing where:
 
 | Cluster | Actions |
 |---|---|
-| **The counter, and what follows it** | BR-05 · BR-06 · BR-07 · CR-01 · CR-03 |
-| **Going live and being paid** | CR-15 · BR-19 · CR-16 · BR-21 · BR-22 |
+| **The counter, and what follows it** | BR-05 · BR-06 · BR-07 · BR-10 · CR-01 · CR-03 |
+| **Going live, and being paid** | CR-15 · BR-19 · BR-21 · BR-22 · CR-16 · AD-03 · AD-04 |
 | **Her address, and fixing a post** | CR-09 · CR-13 |
 
 ---
 
 # What comes next
 
-**1 · The Screen Atlas** — every screen drawn once, with a permanent address. It supersedes the
-seven tab files.
+**1 · The Screen Atlas** ✅ — `Docs/ATLAS/atlas-brand.html` (62 screens, SB-01 to SB-62) and
+`Docs/ATLAS/atlas-creator.html` (42 creator, SC-01 to SC-42, plus admin SA-01 to SA-05). Every
+screen drawn once, with a permanent address. **It supersedes the seven tab files.**
 
-**2 · Five Action Books** — one per phase, each action written out with its steps, its forks, both
-phones where two people are involved, what it leaves in the data, and what can go wrong.
+**2 · The Index** ✅ — `Docs/ATLAS/index.html`. Action → screens and screen → actions,
+**generated** from this file and the two atlases by `Docs/ATLAS/build-index.js`, so it fails
+rather than lies when a screen points at an action that does not exist, when a screen is reached
+by nothing, or when an action has nothing drawn for it.
 
-**3 · The Index** — action → screens, screen → actions, so nothing can be orphaned or described
-twice without it showing.
+**3 · Five Action Books** — one per phase, each action written out with its steps, its forks, both
+phones where two people are involved, what it leaves behind in the data, and what can go wrong.
+
+---
+
+*The counts in this section come from `node Docs/ATLAS/build-index.js`. If you edit the tables
+above, run it — it will tell you what no longer lines up.*
