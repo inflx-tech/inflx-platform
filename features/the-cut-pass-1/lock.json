@@ -2,7 +2,7 @@
   "feature": "the-cut-pass-1",
   "area": "all three apps + the website — hiding everything the founder removed",
   "spec_version": "1.0.0",
-  "status": "IN PROGRESS — 4 of 7 cuts done (agency app, enquiries, shopper reward wallet, referrals). Not yet deployed; the remaining three are the large ones.",
+  "status": "COMPLETE — all 7 cuts done. Not yet deployed; awaiting founder go.",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls go ahead for pass1\", 2026-09-02, against the plan he authored in Docs/THE_CUT.md",
   "approved_at": "2026-09-02",
@@ -19,9 +19,9 @@
     "2. Enquiries — DONE (18148b9)",
     "3. The shopper reward wallet — DONE (42d975e)",
     "4. Referrals — DONE (4275892)",
-    "5. Food, restaurant, car-rental and salon screens — PENDING (the largest, and it takes bookings with it)",
-    "6. The pre-agreement pathway's remaining screens · open call · inviting non-users · the website's campaign builder — PENDING",
-    "7. Furniture — PENDING"
+    "5. Food, restaurant, car-rental, salon screens + bookings — DONE (c98e7ff)",
+    "6. The pre-agreement pathway — DONE (63d1627)",
+    "7. Furniture + the hardcoded business directory — DONE (4bb78ee)"
   ],
   "ordering_changed_from_the_plan_and_why": "Docs/THE_CUT.md listed bookings alongside enquiries, the reward wallet and referrals. Bookings was moved to travel WITH the food/car/salon cut instead, because every booking screen IS a restaurant or rental screen (RestaurantBooking, CarBooking, BookingConfirmed, PreBook). Removing them separately would have meant editing the same files twice and leaving half-dead screens in between. The founder's decisions are unchanged — only the order within the pass.",
   "cut_2_enquiries": {
@@ -59,10 +59,31 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deploy_class": "PRODUCTION-IMPACTING via OTA only for cut 1 — no backend or website file changed. The three surviving apps are rebuilt from source that no longer contains the agency screens; none of them referenced those screens, so their behaviour is unchanged.",
-    "deploy_targets": ["ota (brand, influencer, follower)"],
-    "outward_facing": "No. The only role affected has zero accounts.",
+    "deploy_class": "PRODUCTION-IMPACTING via OTA. No backend or website file changed in the whole pass — this is screens only.",
+    "deploy_targets": [
+      "ota (brand, influencer, follower)"
+    ],
+    "outward_facing": "YES, substantially. A shopper no longer sees restaurants, food ordering, car rental, salons, bookings, enquiries, the reward wallet or the 35-business directory. A brand no longer sees the pre-agreement pathway. Nobody LOSES anything they were using: every removed feature was verified to hold zero real data first.",
     "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false. Platform QA is not green (~231 pre-existing failures, unchanged by this contract).",
-    "device_walk_required": "Minimal for cut 1 — there is no agency account to sign in with. Worth confirming once after deploy that the three surviving apps still open, since App.js (which chooses the app) was edited."
-  }
+    "device_walk_required": "YES. Open each of the three surviving apps once after deploy and confirm it starts — App.js, both navigators and the shop/product screens were all edited. Then: shopper Profile has no Wallet row; creator Earnings has no Refer & Earn tile; brand Home has no Bookings or Enquiries tiles; the brand Creators tab shows only Find and Groups."
+  },
+  "cut_5_food_car_salon": {
+    "removed": "18 files: restaurant detail/booking/bill, booking confirmation, car detail/booking, pre-book, the AI meal chat, dish-group results, dining search, location entry, the dead worlds home, the dead saved-offers list, the brand bookings inbox, and 4 test files whose screens no longer exist. 5,525 lines.",
+    "three_crashes_caught_by_the_sweep": "All three were the class that builds cleanly and dies on launch. (1) BrandNavigator still imported and registered the deleted bookings inbox. (2) BrandStoreScreen still imported RestaurantDetailScreen and RENDERED it for any restaurant brand. (3) PayAtStoreScreen still imported RestaurantBillScreen — and the FULL TEST SUITE PASSED ANYWAY, because nothing mounts that screen in a test. That third one is the whole argument for checking by name rather than trusting a green run.",
+    "pay_at_shop_survives": "Founder kept pay-in-shop for physical fashion stores. It used to dispatch to the restaurant bill screen for restaurant brands; that branch is gone and it now always uses its own screen. Removing the branch also REMOVED a real hooks-before-return violation.",
+    "allowlist_rotted_and_was_caught": "hooksBeforeReturns.test.js keeps a list of files excused from a rule, and separately asserts every excuse is still a real file with a real violation — so the list cannot outlive what it excuses. Both entries rotted here: PreBookScreen was deleted, and PayAtStoreScreen was genuinely FIXED. The list is now empty, which is the good outcome. Its own comment predicted this exactly.",
+    "bleed_deliberately_untouched": "Restaurant-review lookups on every product card, veg flags on clothing, the six fixed restaurant booking slots, master-dish links. That is pass 2, done alone, because it is the part that can break fashion."
+  },
+  "cut_6_pre_agreement": {
+    "removed": "8 screens (brand collab-requests inbox, agreement detail, request composer + its two full-screen pickers, a dead second creator-search screen, the creator request detail and collab-preferences), the Creators tab Talking/Agreed sub-tabs and the whole conversation model behind them (462 lines -> 232), the pitch hub REQUESTS tab, and 17 orphaned API bindings — all verified to have zero callers first. 2,860 lines.",
+    "FIXES_THE_AUDITS_NUMBER_ONE_DEFECT": "BrandCampaignReviewScreen blocked Publish with \"her agreement is no longer live\" for every creator added by search, so a campaign built the ONLY supported way could never be published (Docs/AUDIT_2026-09-02.md, the five that break the spine). The fix is the removal itself — there is no longer a live-agreements list to compare against. No code was written to fix it.",
+    "creator_pitching_untouched": "Her own pitches stay, as the founder confirmed. Only the brand-initiated half went.",
+    "old_notifications_still_handled": "A pre-cut collab_request notification can still be sitting in someone list, so its case is kept and now opens her pitches hub rather than a screen that no longer exists.",
+    "four_test_files_rewritten_for_drift": "draftResume, publishGateConsistency, stage2CampaignWizard, stage3Ladder and brandOffers. Every one rewritten with the reasoning recorded, never weakened — including one that now asserts the BACKEND gate still stands, with a note naming pass 3 as where it changes."
+  },
+  "cut_7_furniture": {
+    "removed": "Furniture from the category grid fallback and the Find tab. Also the Find tab hardcoded directory of 7 worlds and 35 business types (Pest Control, Dental Clinics, Wedding Planners, Legal/CA, Co-working Spaces, car rental, salons, restaurants) — an audit MISLEADS_USER finding, and the one place every removed vertical was still listed. 72 lines -> 12.",
+    "offline_fallback": "The category grid fallback offered five worlds; it now offers the one that survives, so a failed API call cannot render a world the app can no longer serve."
+  },
+  "tests": "722 mobile tests pass, run serially. Down from 743 at the start of the pass: 4 test files were deleted with the screens they tested, and one behaviour-pinning block was rewritten. No regression — every drop is a removal."
 }

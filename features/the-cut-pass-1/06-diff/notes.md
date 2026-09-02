@@ -106,3 +106,64 @@ audit finding worse. It now reads as a sentence.
 
 All three still exist on the server, and the referral admin pages are untouched. That is
 pass 3.
+
+---
+
+## Cuts 5–7 — the businesses INFLX no longer serves
+
+### What was implemented
+
+| | Before | After |
+|---|---|---|
+| Shopper: restaurants | Restaurant pages, table booking, the bill screen, an AI meal chat | Gone |
+| Shopper: car rental | Vehicle pages with hardcoded 4.8 stars, date-range booking | Gone |
+| Shopper: Find tab | 7 worlds, 35 business types incl. Pest Control, Dental Clinics, Wedding Planners | **Fashion** |
+| Shopper: bookings | Tables, slots, vehicles — completing with a fake payment reference | Gone |
+| Brand: Creators tab | Talking · Agreed · Find · Groups | **Find · Groups** |
+| Brand: pre-agreement | Request composer, requests inbox, agreement detail, two pickers | Gone |
+| Creator: pitch hub | Discover · My pitches · **Requests** | Discover · My pitches |
+| Pay at shop | Dispatched to a restaurant bill screen for restaurant brands | **Kept**, and always its own screen |
+
+### Three crashes caught before commit
+
+All three were the class that builds cleanly and dies the moment the app opens:
+
+1. The brand navigator still imported and registered the deleted bookings inbox.
+2. The shop screen still imported the restaurant screen **and rendered it** for any
+   restaurant brand.
+3. Pay-at-shop still imported the restaurant bill screen — **and the whole test suite
+   passed anyway**, because nothing mounts that screen in a test.
+
+The third is the entire argument for sweeping by name rather than trusting a green run.
+
+### The audit's number-one defect is fixed by deletion
+
+Publishing was blocked with *"her agreement is no longer live"* for every creator added
+by search — so a campaign built the only supported way could never be published. The fix
+is the removal itself: there is no longer a list to compare against. No code was written.
+
+### Two tests caught rot, exactly as designed
+
+- The **offer-mode parity test** asserts the phone and website offer identical redemption
+  modes. Enquiry was removed from the phone only; it failed, and both were updated.
+- The **hooks allowlist** asserts every excused file is still real and still violating, so
+  the list cannot outlive what it excuses. Both entries rotted: one file was deleted, the
+  other was genuinely *fixed* by removing its restaurant dispatch. **The list is now
+  empty** — the good outcome, not a workaround.
+
+### What to check — the device walk
+
+1. **Open each of the three apps once.** They must start. `App.js`, both navigators and
+   the shop/product screens were all edited.
+2. **Shopper:** Profile has no Wallet row; Find shows fashion, not a directory of trades.
+3. **Creator:** Earnings has no Refer & Earn tile; the withdraw form still works.
+4. **Brand:** Home has no Bookings or Enquiries tiles; Creators shows only Find and Groups.
+5. **Buy something for delivery, and pay a bill in a shop.** Both survive the cut.
+
+### Known, and not fixed here
+
+Food code threaded *through* fashion is untouched — restaurant-review lookups on every
+product card, vegetarian flags on clothing, the six fixed restaurant time slots. That is
+**pass 2**, done alone, because it is the part that can break fashion.
+
+Everything removed here still exists on the server. That is **pass 3**.
