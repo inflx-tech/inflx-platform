@@ -334,6 +334,13 @@
     "tests": "668 mobile tests pass (was 666). 1 new (empty-group message), 2 rewritten for drift.",
     "device_walk_required": "YES. This is the one to re-walk first: open a set's Creators step and confirm the old agreement list is GONE, only the two buttons remain, and both actually reach their screens."
   },
+  "deployed_2026_09_02_picker_removal": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"ok push,commit,OTA\"",
+    "commit": "e10f18b (slice_10 — the old agreement picker removed from the set wizard, honest empty-group message)",
+    "backend": "Pushed to Render (deploy-inert — no backend/src files in this commit). gov-check passed: 5 governed changes, contract-backed. Route probe GET /v1/campaigns -> 401 (exists, auth-gated).",
+    "ota": { "brand": "version 206, native_runtime 3 — verified directly against the manifest. Influencer not republished; nothing in that bundle changed." },
+    "device_walk_required": "YES — and this is the specific one to do FIRST: open a set's Creators step and confirm the old agreement list is gone."
+  },
   "deployed_2026_09_02_signing_pipeline_fix": {
     "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",
     "commit": "9280d88 (the false 'agreement lapsed' purge fix — slice_9)",
