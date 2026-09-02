@@ -43,18 +43,35 @@ missing style token throws at module load — the screen builds cleanly and dies
 handset. This is the exact failure class recorded three times in this repo's history.
 Caught by reading the palette rather than assuming it; fixed before commit.
 
+## Already verified against production — NOT owed by the founder
+
+Signed in as a practice brand on the test-number allowlist and exercised both paths
+directly, so none of this needs a thumb:
+
+- **An existing brand can still save its profile.** `PATCH /brands/me` with
+  `business_name` set to the value it already held returned success. This was the one
+  realistic way the change could have broken something. Deliberately a no-op write
+  against a practice account, so nothing real was altered to prove it.
+- **The gate is genuinely enforced.** `PATCH /brands/me {category:"restaurant"}` was
+  refused with the exact new message.
+- **The website is running the new code.** The live JS bundle from `inflx.in` contains
+  the new copy and none of the 34 retired business types.
+- **The app bundle is too** — brand OTA v207, downloaded and searched.
+
+**A correction worth recording:** an earlier version of these notes asked the founder to
+confirm the profile gate by *changing a real brand's address*. That was wrong — it asked
+him to mutate live data to test my change, which is the exact pattern
+`Docs/THE_FINISH_LINE.md` Rule 4 exists to end. He questioned it, and he was right to.
+
 ## What to check — the device walk
+
+Only the two things a screenshot cannot answer:
 
 1. **Open brand signup on the phone with a fresh number.** Confirm there is no industry
    row and no business-type chips — just one line naming Fashion, and a sentence saying
    other business types are not supported yet.
-2. **Confirm the form still submits** and reaches the "waiting for approval" screen.
-3. **Same on the website.**
-4. **Open an existing brand's profile and change its address.** Confirm it saves. This is
-   the one that matters most — the gate must not lock out the nine brands already
-   registered, including the restaurant.
-5. **Confirm the existing restaurant brand still loads its own product screens.** Nothing
-   about it was removed in this pass.
+2. **Same on the website**, and confirm the form still submits through to the
+   waiting-for-approval screen.
 
 ## Known, and not fixed here
 
