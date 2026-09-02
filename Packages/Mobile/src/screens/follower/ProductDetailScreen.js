@@ -91,7 +91,9 @@ const MODE_LABELS = {
   pay_at_store:  { label: 'Pay at Venue', screen: 'PayAtStore',   emoji: '💸' },
   walkin_pay:    { label: 'Pay at Venue', screen: 'PayAtStore',   emoji: '💸' },
   prebook:       { label: 'Book Slot',   screen: 'PreBook',      emoji: '📅' },
-  enquiry:       { label: 'Enquire',     screen: 'Enquiry',      emoji: '✉️' },
+  // Docs/THE_CUT.md pass 1 — 'enquiry' removed. A product still configured for it
+  // now produces no button, rather than a button that navigates to a screen which
+  // no longer exists (the loop below skips any mode with no entry here).
 };
 
 // Category-aware overrides — drive the verbs from the user's mental model

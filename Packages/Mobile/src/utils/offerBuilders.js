@@ -172,7 +172,8 @@ export const AVAILING_MODES = [
   { key: 'pay_at_store', label: 'Pay at the store' },
   { key: 'online_order', label: 'Order online' },
   { key: 'prebook', label: 'Pre-book' },
-  { key: 'enquiry', label: 'Enquiry' },
+  // Docs/THE_CUT.md pass 1 — 'enquiry' removed, so a brand can no longer build an
+  // offer whose only way to act on it is a screen that no longer exists.
 ];
 
 /**

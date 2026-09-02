@@ -4,7 +4,7 @@ import { creatorVibe as C, spacing, radius, fmtMoney } from '../theme/tokens';
 
 // Flow 52.G — Creator Vibe recolor shim. OfferCard was on the legacy navy/teal/
 // orange `colors` palette; remap → creatorVibe. All mode CTAs collapse to the
-// terracotta action color (enquiry stays an outline). Visual only; discount/
+// terracotta action color. Visual only; discount/
 // price math + CTA dispatch unchanged.
 const colors = {
   white: C.card, border: C.line, border2: C.line,
@@ -26,7 +26,7 @@ const colors = {
  *   tracking    { campaign_id, set_id, offer_id, campaign_influencer_id }
  *   isSaved     boolean
  *   onSave      () => void
- *   onPressCTA  (mode) => void — 'pay_at_store' | 'prebook' | 'online_order' | 'enquiry'
+ *   onPressCTA  (mode) => void — 'pay_at_store' | 'prebook' | 'online_order'
  *   onPressInfluencer () => void
  *   onPressBrand      () => void
  *   onPressCard       () => void
@@ -171,7 +171,6 @@ function getCTALabel(mode) {
     case 'pay_at_store': return 'Pay at store →';
     case 'prebook': return 'Book now →';
     case 'online_order': return 'Buy online →';
-    case 'enquiry': return 'Enquire →';
     default: return 'View →';
   }
 }
@@ -181,13 +180,11 @@ function getCTAStyle(mode) {
     case 'pay_at_store': return { backgroundColor: colors.tealDeep };
     case 'prebook': return { backgroundColor: colors.navy };
     case 'online_order': return { backgroundColor: colors.orange };
-    case 'enquiry': return { backgroundColor: colors.redPale, borderWidth: 1.5, borderColor: 'rgba(232,64,26,0.25)' };
     default: return { backgroundColor: colors.orange };
   }
 }
 
 function getCTATextStyle(mode) {
-  if (mode === 'enquiry') return { color: colors.red };
   return { color: '#fff' };
 }
 

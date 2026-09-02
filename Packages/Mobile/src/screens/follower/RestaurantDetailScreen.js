@@ -177,10 +177,9 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
       setTab('menu');
       return;
     }
-    if (actionKey === 'enquiry') {
-      navigation.navigate('Enquiry', { brand, brandId: brand.id, tracking });
-      return;
-    }
+    // Docs/THE_CUT.md pass 1 — enquiries removed. (This whole screen goes in cut 3
+    // with the restaurant surfaces; the dangling route is cleared now so nothing
+    // points at a screen that no longer exists in the meantime.)
   }
 
   // ── Food 3C-2 — unified cart + customise / dish-detail sheets ──────────────
@@ -453,12 +452,9 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
               <Text style={styles.ctaPrimaryText}>Order Online →</Text>
             </Pressable>
           )}
-          {!showBookTable && !showPayAtStore && !showOnlineOrder && showEnquiry && (
-            <Pressable onPress={() => dispatchAction('enquiry')}
-              style={[styles.ctaBtn, styles.ctaBtnPrimary, { flex: 2 }]}>
-              <Text style={styles.ctaPrimaryText}>Send Enquiry →</Text>
-            </Pressable>
-          )}
+          {/* Docs/THE_CUT.md pass 1 — the "Send Enquiry" button is removed with the
+              feature. Leaving it would have been a button that does nothing, since
+              its action is now a no-op. This whole screen goes in cut 3. */}
         </View>
       </SafeAreaView>
       )}

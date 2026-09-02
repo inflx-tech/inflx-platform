@@ -17,7 +17,6 @@ import BrandCampaignSetsListScreen from '../screens/brand/BrandCampaignSetsListS
 import BrandCampaignReviewQueueScreen from '../screens/brand/BrandCampaignReviewQueueScreen';
 import BrandNegotiationScreen from '../screens/brand/BrandNegotiationScreen';
 import BrandContractScreen from '../screens/brand/BrandContractScreen';
-import BrandEnquiriesScreen from '../screens/brand/BrandEnquiriesScreen';
 import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
 import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfileScreen';
 // collab-part2 — the pre-campaign handshake, brand side.
@@ -79,7 +78,6 @@ function HomeStack() {
           build check, which is how a button ends up doing nothing on a handset. */}
       <Stack.Screen name="BrandShoot" component={BrandShootScreen} />
       <Stack.Screen name="BrandShootsList" component={BrandShootsListScreen} />
-      <Stack.Screen name="BrandEnquiries" component={BrandEnquiriesScreen} />
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       {/* collab-part2 — the pre-campaign handshake, brand side. */}

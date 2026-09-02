@@ -62,7 +62,6 @@ const QUICK_ACTIONS = [
   // answer one question. Contract: features/stage-4-the-shoot
   { label: 'Shoots',        icon: 'camera-outline',         target: 'BrandShootsList' },
   { label: 'Wallet',        icon: 'wallet-outline',         target: 'Wallet' },
-  { label: 'Enquiries',     icon: 'email-outline',          target: 'BrandEnquiries' },
   { label: 'Conversions',   icon: 'currency-inr',           target: 'BrandConversions' },
   // Was BrandInfluencerBrowse — the old creator search, now retired. The Creators tab
   // holds the current one, with the three filters, INFLX counts and photos.

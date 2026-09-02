@@ -99,7 +99,8 @@ export default function SavedScreen({ navigation }) {
     switch (mode) {
       case 'pay_at_store': navigation.navigate('PayAtStore', params); break;
       case 'prebook':      navigation.navigate('PreBook', params); break;
-      case 'enquiry':      navigation.navigate('Enquiry', params); break;
+      // Docs/THE_CUT.md pass 1 — 'enquiry' removed; it now falls to the product page,
+      // which is a real screen rather than a dead route.
       default:             navigation.navigate('ProductDetail', params);
     }
   }, [navigation]);

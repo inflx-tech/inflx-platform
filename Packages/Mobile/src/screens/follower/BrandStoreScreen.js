@@ -141,11 +141,15 @@ export default function BrandStoreScreen({ navigation, route }) {
         // dead/unregistered route. Items are added via the product detail page.
         navigation.navigate('Cart');
         break;
-      case 'enquiry':
-        navigation.navigate('Enquiry', { brand, brandId, tracking: ctx.tracking });
-        break;
+      // Docs/THE_CUT.md pass 1 — enquiries are removed. A shop configured with an
+      // enquiry action now falls through to the default below rather than opening a
+      // screen that no longer exists.
       default:
-        Alert.alert('Action not wired', action.action);
+        // Was Alert.alert('Action not wired', action.action) — a developer message
+        // showing a raw code word to a shopper. Removing enquiries makes this branch
+        // MORE reachable (a shop still configured for enquiries lands here), so it is
+        // fixed in the same commit rather than left worse than it was found.
+        Alert.alert('Not available', 'This shop is not taking that kind of request right now.');
     }
   }
 

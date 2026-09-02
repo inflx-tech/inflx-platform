@@ -304,9 +304,6 @@ export const brandApi = {
   rejectApplication:     (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/reject-application`),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
-  // Enquiry leads (follower-submitted enquiries, attributed to influencers)
-  getEnquiries: (params) => api.get(`/brands/me/enquiries${params ? '?' + new URLSearchParams(params) : ''}`),
-  updateEnquiry: (id, data) => api.patch(`/brands/me/enquiries/${id}`, data),
   // Conversions — all follower transactions across every campaign (paginated,
   // filterable by type / campaign_id / influencer_id / status).
   listTransactions: (params) => api.get(`/brands/me/transactions${params ? '?' + new URLSearchParams(params) : ''}`),
@@ -853,8 +850,6 @@ export const followerApi = {
   wishlistAssign: (collectionId, productId) => api.post(`/followers/wishlist/collections/${collectionId}/items`, { product_id: productId }),
   wishlistUnassign: (collectionId, productId) => api.delete(`/followers/wishlist/collections/${collectionId}/items/${productId}`),
 
-  // Enquiry
-  submitEnquiry: (data) => api.post('/follower/enquiry', data),
 
   // Wave 5 — Reviews + ratings
   getBrandReviews: (brandId, opts = {}) => {

@@ -24,7 +24,8 @@ const AVAILING_MODES = [
   { key: 'pay_at_store', label: '💸 Pay at store' },
   { key: 'online_order', label: '🛒 Online order' },
   { key: 'prebook',      label: '📅 Pre-book' },
-  { key: 'enquiry',      label: '✉ Enquiry' },
+  // Docs/THE_CUT.md pass 1 — 'enquiry' removed. Kept in step with the phone's own
+  // list, which offerParity.test.js compares against this one exactly.
 ];
 
 function emptyDraft() {
