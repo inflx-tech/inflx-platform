@@ -314,6 +314,13 @@
     "conclusion_for_the_founder": "The goal stated — a cold-invited creator can be reached, can negotiate or counter, can reach agreement, and a contract generates and can be signed — was ALREADY TRUE in the code before this slice, with one silent bug that would have broken it in practice on any second visit to the set wizard. That bug is now fixed. Nothing else in the chain needed building. The device walkthrough is the remaining honest verification step.",
     "device_walk_required": "YES — NOT YET DONE. This is now the one the founder is waiting to do: cold-invite a creator (search, filter, or group) into a set, publish, have her negotiate/counter, brand responds, she accepts, contract generates and both sides sign."
   },
+  "deployed_2026_09_02_signing_pipeline_fix": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",
+    "commit": "9280d88 (the false 'agreement lapsed' purge fix — slice_9)",
+    "backend": "Pushed to Render for consistency (deploy-inert — no backend/src files in this commit, verified by the 4 staged paths). gov-check passed: 3 governed changes, contract-backed. Route probed before publishing (not after a cold start this time): GET /v1/campaigns -> 401 on the first try.",
+    "ota": { "brand": "version 205, native_runtime 3 — verified directly against the manifest. Influencer not republished — nothing in that bundle changed." },
+    "device_walk_required": "YES — NOT YET DONE. Per the founder's own stated plan (2026-09-02), this is deliberately held until the full cold-invite -> negotiate -> sign chain can be walked as one complete flow, not per-slice."
+  },
   "deployed_2026_09_02_close_the_first_door": {
     "by": "aveenswamy1989@gmail.com (founder) — \"pls commit,push and OTA\"",
     "commit": "3326a79 (slice_7 cold-invite search + slice_8 closing the old ask pathway, together — slice_7 had been built but not yet committed when this instruction came)",
