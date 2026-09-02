@@ -73,7 +73,17 @@ describe('Stage 2 · every route the wizard navigates to is registered', () => {
     expect(targetsIn('screens/brand/BrandCampaignBuilderScreen.js')).toEqual(
       expect.arrayContaining(['BrandSetWizard', 'BrandCampaignReview']));
     expect(targetsIn('screens/brand/BrandSetWizardScreen.js')).toEqual(
-      expect.arrayContaining(['BrandAgreementDetail', 'BrandAllocation', 'BrandBasketPreview']));
+      expect.arrayContaining(['BrandAllocation', 'BrandBasketPreview']));
+  });
+
+  it('DRIFT, 2026-09-02: the wizard no longer opens an agreement — there is no picker to open one from', () => {
+    // Architecture change: "old agreements are coming, which we removed them as part of
+    // collaborations." The wizard's Creators step no longer offers a "Matching agreements"
+    // picker to tap into (see batchAWizardTrim.test.js N-3), so its only reason to navigate
+    // to BrandAgreementDetail is gone. The route itself is untouched and still reachable —
+    // BrandCreatorSpineScreen's "See what you agreed" still opens it, for viewing a
+    // pre-pivot agreement, not for starting a new one.
+    expect(targetsIn('screens/brand/BrandSetWizardScreen.js')).not.toContain('BrandAgreementDetail');
   });
 
   it('the wizard no longer walks you out to the Creators tab', () => {

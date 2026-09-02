@@ -249,12 +249,18 @@ describe('Batch A · A-6 A-7 N-3 · the creators step', () => {
     expect(src).not.toContain('agreed a different kind of deal');
   });
 
-  it('N-3 · the wrong-aim agreements are STILL filtered out', () => {
-    // Only the explanation went. If the filter went with it, a brand could put a
-    // pay-for-content agreement into a commission set, and the terms would not mean the same
-    // thing on either side.
-    expect(src).toContain('const matching = useMemo');
-    expect(src).toMatch(/aim !== goal/);
+  it('N-3 · DRIFT: the wrong-aim agreement picker is gone, not just its explanation', () => {
+    // Architecture change, founder 2026-09-02: "old agreements are coming, which we
+    // removed them as part of collaborations" — the "Matching agreements" picker this
+    // test used to guard (a pay-for-content agreement must not appear in a commission
+    // set's picker) no longer exists AT ALL. Search or a group is the only way into a
+    // set now, and neither offers an agreement to begin with, so there is nothing left
+    // to filter by aim. What this test protected (terms meaning the same thing on both
+    // sides) still holds — a cold invite states fresh terms on Terms (step 4) for
+    // exactly the set it was added to, so an aim mismatch cannot occur by construction.
+    expect(src).not.toContain('const matching = useMemo');
+    expect(src).not.toContain('Matching agreements');
+    expect(src).not.toContain('You cannot add someone who has not agreed');
   });
 
   it('"Go and ask someone new" is gone, and so is its handler', () => {

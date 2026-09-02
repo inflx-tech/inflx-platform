@@ -63,6 +63,18 @@ export default function BrandGroupsScreen({ navigation, route }) {
   // multi-select step the way search results need one. Confirmed first: a fat-finger tap
   // should not silently pencil in a dozen people.
   function addGroupToSet(group) {
+    // A group that has never had anyone added to it, and a group whose members are all
+    // already in this set, are different situations — the first needs "go add some
+    // creators", the second needs "you already have them". Confusing the two (found
+    // 2026-09-02, founder testing: "group is not working" — their one saved test group
+    // has zero members) reads as the whole feature being broken rather than an empty list.
+    if (!(group.members || []).length) {
+      Alert.alert(
+        'This group is empty',
+        `"${group.name}" has no creators yet. Add some to it from Find creators first.`,
+      );
+      return;
+    }
     const already = new Set(forSet?.excludeInfluencerIds || []);
     const members = (group.members || []).filter((m) => !already.has(m.influencer_id || m.id));
     if (!members.length) {

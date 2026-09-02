@@ -12,8 +12,7 @@ import CreatorAvatar from '../../components/CreatorAvatar';
 import CreatorOfferSheet from '../../components/brand/CreatorOfferSheet';
 import * as draft from '../../utils/campaignDraft';
 import {
-  settledLine, byExpiry, daysLeft, expiryLine, AIM_LABEL,
-  allocationFromTerms, allocationLabel, offerLine,
+  settledLine, allocationFromTerms, allocationLabel, offerLine,
 } from '../../utils/agreementSummary';
 
 /**
@@ -203,27 +202,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     setStep(sd.creators.length ? 3 : 2);
   }
 
-  // ── Step 3 pick-list: filtered by aim, minus anything already used elsewhere ──
-  const inUseElsewhere = useMemo(
-    () => draft.agreementIdsInUse(campaignId, setId),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [campaignId, setId, picked.length]
-  );
-
-  const matching = useMemo(() => {
-    const live = byExpiry(agreements).filter(a => !inUseElsewhere.has(a.id));
-    // Ledger #74 — a sales set cannot show a content agreement. The terms would not mean the
-    // same thing: one settled a commission, the other a fee for named deliverables.
-    //
-    // Batch A — the count of what this filters out used to be shown as a chip. Founder,
-    // 2026-08-27: not necessary. So the wrong-aim agreements are simply not listed, and the
-    // screen no longer says how many there were.
-    return live.filter((a) => {
-      const aim = (a.terms_json || {}).aim || null;
-      return !(goal && aim && aim !== goal);
-    });
-  }, [agreements, goal, inUseElsewhere]);
-
   const pickedIds = useMemo(() => new Set(picked.map(p => p.agreement_id)), [picked]);
 
   function togglePick(a) {
@@ -371,9 +349,8 @@ export default function BrandSetWizardScreen({ route, navigation }) {
 
         {step === 2 && (
           <StepCreators
-            matching={matching} pickedIds={pickedIds} picked={picked}
+            pickedIds={pickedIds} picked={picked}
             onToggle={togglePick}
-            onOpen={(a) => navigation.navigate('BrandAgreementDetail', { agreement: a })}
             // stage-a/b — BrandFindCreators is ALSO registered inside this screen's own
             // stack (BrandNavigator's CampaignsStack), not just the Creators tab's — a
             // cross-tab nested navigate would land it in the Creators tab's history, so
@@ -647,13 +624,13 @@ function StepBasics(p) {
 }
 
 /* ── Step 3 · the agreements pick-list ─────────────────────────────────────── */
-function StepCreators({ matching, pickedIds, picked, onToggle, onOpen, onFindNew, onFromGroup, onBack, onContinue }) {
+function StepCreators({ pickedIds, picked, onToggle, onFindNew, onFromGroup, onBack, onContinue }) {
   // stage-a — creators seeded from the deferred pool (SB-24 "Build a set from these")
-  // have no agreement to appear in `matching` at all; without this they would be in
-  // `picked` (and counted) but literally invisible on this step — ticked but unseen.
+  // are shown in their own section below, so they read as "already included" rather
+  // than lost among everyone else in `picked`.
   const seeded = (picked || []).filter((c) => String(c.agreement_id || '').startsWith('deferred:'));
-  // stage-a/b — same gap, same fix, for a creator found by search (addColdInvite):
-  // nothing pre-agreed, so she never appears in `matching` either.
+  // stage-a/b — same for a creator found by search or a group (addColdInvite):
+  // nothing pre-agreed, shown in its own "Found by search" section below.
   const coldInvited = (picked || []).filter((c) => String(c.agreement_id || '').startsWith('cold:'));
 
   return (
@@ -721,63 +698,17 @@ function StepCreators({ matching, pickedIds, picked, onToggle, onOpen, onFindNew
         </View>
       )}
 
-      <View style={s.sec2}>
-        <Text style={s.dh}>Who is in this set?</Text>
-        <Text style={s.lead}>
-          <Text style={s.leadB}>These people already agreed terms with you.</Text> Tick who belongs in this set.
-        </Text>
-        <View style={[s.chips, { marginTop: 10 }]}>
-          <View style={[s.chip, s.chipOn]}>
-            <Text style={[s.chipT, s.chipTOn]}>Matching agreements · {matching.length}</Text>
-          </View>
-        </View>
-      </View>
-
-      {matching.map((a) => {
-        const on = pickedIds.has(a.id);
-        const d = daysLeft(a.expires_at);
-        const soon = d != null && d <= 14;
-        return (
-          <View key={a.id} style={s.pickRow}>
-            <TouchableOpacity onPress={() => onToggle(a)} activeOpacity={0.7} style={[s.cbx, on && s.cbxOn]}>
-              {on && <Icon name="check" size={12} color={ig.bg} />}
-            </TouchableOpacity>
-            <TouchableOpacity style={s.pickMain} activeOpacity={0.7} onPress={() => onToggle(a)}>
-              <CreatorAvatar name={a.influencer_name || a.instagram_handle} avatarUrl={a.profile_image_url} size={38} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.pickName}>{a.influencer_name || a.instagram_handle || 'Creator'}</Text>
-                <Text style={s.pickTerms} numberOfLines={2}>{settledLine(a.terms_json)}</Text>
-                <Text style={[s.pickExp, { color: soon ? ig.red : ig.green }]}>
-                  {a.created_at ? `AGREED ${fmtShort(a.created_at)} · ` : ''}{expiryLine(a.expires_at)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => onOpen(a)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Icon name="chevron-right" size={20} color={ig.mut2} />
-            </TouchableOpacity>
-          </View>
-        );
-      })}
-
-      {matching.length === 0 && (
-        <View style={s.empty}>
-          <Icon name="handshake-outline" size={28} color={ig.mut2} />
-          <Text style={s.emptyT}>No agreements match this aim</Text>
-          <Text style={s.emptyS}>
-            An agreement settled for a different aim would not mean the same thing here. Agree terms
-            for this aim first, and brief afterwards.
-          </Text>
-        </View>
-      )}
-
-      <View style={s.sec}>
-        <View style={s.lock}>
-          <Icon name="lock-outline" size={15} color={ig.mut} />
-          <Text style={s.lockT}>
-            <Text style={s.lockB}>You cannot add someone who has not agreed.</Text> Agree first, brief after.
-          </Text>
-        </View>
-      </View>
+      {/* stage-a/b — architecture change, founder 2026-09-02: "old agreements are
+          coming, which we removed them as part of collaborations." The old
+          who's-already-agreed picker — and its lock note claiming nobody else can
+          be added, which was simply false once search/group existed — are removed
+          entirely (see batchAWizardTrim.test.js N-3 for the exact strings that
+          must never come back). Search or a group is the only way in now. A
+          pre-pivot real agreement can still exist on a set built before this
+          change (or from brand-web); it isn't lost — it still counts in
+          `picked`/`pickedIds` and still protects against genuinely lapsing (the
+          safety-net effect above, keyed off the same `agreements` fetch) — there
+          is just no picker UI offering to add MORE that way. */}
 
       <View style={[s.sec, { flexDirection: 'row', gap: 8 }]}>
         <TouchableOpacity style={[s.btn, s.btnSec, { flex: 1 }]} onPress={onBack} activeOpacity={0.85}>

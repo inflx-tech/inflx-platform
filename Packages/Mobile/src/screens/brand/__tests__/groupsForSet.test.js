@@ -77,6 +77,24 @@ test('members already in the set are excluded from the add', async () => {
   expect(sd.creators.map((c) => c.agreement_id)).toEqual(['cold:i2']);
 });
 
+test('⚠️ a group with no members yet gives an honest "empty" message, not "already added"', async () => {
+  // Bug found 2026-09-02, founder testing live: their one saved group had never had anyone
+  // added to it. Tapping it said "Everyone in ... is already pencilled in" — true for a
+  // DIFFERENT situation (a group whose members are all already in this set), false and
+  // confusing for a group that never had anyone. Read as "the whole feature is broken."
+  brandApi.listGroups.mockResolvedValueOnce({
+    success: true,
+    data: { groups: [{ id: 'g2', name: 'Empty list', members: [] }] },
+  });
+  const route = { params: { forSet: { campaignId: 'c4', setId: 's4' } } };
+  render(<BrandGroupsScreen navigation={nav} route={route} />);
+  fireEvent.press(await screen.findByText('Empty list'));
+
+  expect(Alert.alert).toHaveBeenCalledWith('This group is empty', expect.stringContaining('no creators yet'));
+  expect(Alert.alert).not.toHaveBeenCalledWith('Already in this set', expect.any(String));
+  expect(nav.goBack).not.toHaveBeenCalled();
+});
+
 test('a group whose members are all already in the set shows a message and does not navigate', async () => {
   const route = { params: { forSet: { campaignId: 'c3', setId: 's3', excludeInfluencerIds: ['i1', 'i2'] } } };
   render(<BrandGroupsScreen navigation={nav} route={route} />);
