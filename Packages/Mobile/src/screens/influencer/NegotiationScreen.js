@@ -39,7 +39,7 @@ function statusLabel(status) {
 }
 
 export default function NegotiationScreen({ navigation, route }) {
-  const { negotiation_id, campaign_influencer_id } = route.params || {};
+  const { negotiation_id, campaign_influencer_id, goal: routeGoal } = route.params || {};
 
   const [negotiation, setNegotiation] = useState(null);
   const [turns, setTurns] = useState([]);
@@ -88,12 +88,62 @@ export default function NegotiationScreen({ navigation, route }) {
   }, [negotiation_id, campaign_influencer_id]);
 
   // ── Goal-aware: only collect / show fields that apply to this campaign ────
-  const goal           = (negotiation?.goal || 'engagement').toLowerCase();
+  // Before a thread exists there is no negotiation to read the goal from, so the one
+  // CollabDetail handed over is used. Guessing would ask a commission-only creator
+  // for a fee, or a paid-content creator for a commission.
+  const goal           = String(negotiation?.goal || routeGoal || 'engagement').toLowerCase();
   const isConversion   = goal === 'conversion';
   const isHybrid       = goal === 'hybrid';
   const isEngagement   = goal === 'engagement';
   const showFee        = isEngagement || isHybrid;
   const showCommission = isConversion || isHybrid;
+
+  // ── Opening a negotiation ─────────────────────────────────────────────────
+  //
+  // THIS IS THE DOOR THAT WAS MISSING. influencerApi.negotiateOffer has existed and
+  // worked for months, and NOTHING in the app called it — so a creator who tapped
+  // "Negotiate" landed on this screen's empty state, which told her to tap
+  // "Negotiate". A closed loop, and the reason every offer was take-it-or-leave-it.
+  //
+  // The server owns every rule (whose turn, the 48-hour clock, the refusal when terms
+  // were already settled). This only opens the thread.
+  async function openNegotiation() {
+    const feeAmount        = showFee        ? parseFloat(proposedFee)        : null;
+    const commissionAmount = showCommission ? parseFloat(proposedCommission) : null;
+
+    if (showFee && (!feeAmount || feeAmount <= 0)) {
+      Alert.alert('Enter a fee', 'Tell the brand what you would want for this work.');
+      return;
+    }
+    if (showCommission && (!commissionAmount || commissionAmount <= 0 || commissionAmount > 100)) {
+      Alert.alert('Enter a commission', 'Give a commission between 0 and 100%.');
+      return;
+    }
+    if (!campaign_influencer_id) {
+      Alert.alert('Cannot start', 'This screen was opened without a collaboration to negotiate on.');
+      return;
+    }
+
+    setActionLoading(true);
+    const res = await influencerApi.negotiateOffer(campaign_influencer_id, {
+      ...(feeAmount        != null && { proposed_fee: feeAmount }),
+      ...(commissionAmount != null && { proposed_commission_pct: commissionAmount }),
+      note: note || undefined,
+    });
+    setActionLoading(false);
+
+    if (res.success) {
+      setProposedFee('');
+      setProposedCommission('');
+      setNote('');
+      loadNegotiation();
+    } else {
+      // The server refuses for real reasons — she already agreed these terms, the
+      // brand fixed them, or a thread already exists. Its message says which, and it
+      // is written for her, so it is shown rather than replaced.
+      Alert.alert('Could not start', res.error?.message || 'Please try again.');
+    }
+  }
 
   async function submitCounter() {
     const feeAmount        = showFee        ? parseFloat(proposedFee)        : null;
@@ -203,18 +253,94 @@ export default function NegotiationScreen({ navigation, route }) {
     );
   }
 
+  // ── No thread yet: this is where she OPENS one ─────────────────────────────
+  //
+  // This used to read "No negotiation yet — tap Negotiate on an offer to start a
+  // conversation", which was the button that brought her here. A closed loop, and the
+  // reason every offer on the platform was take-it-or-leave-it.
   if (!negotiation) {
+    if (!campaign_influencer_id) {
+      return (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>Nothing to negotiate</Text>
+          <Text style={styles.emptySubtext}>This conversation could not be found.</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.emptyIcon}>!</Text>
-        <Text style={styles.emptyText}>No negotiation yet</Text>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+        <Text style={styles.emptyText}>Ask for different terms</Text>
         <Text style={styles.emptySubtext}>
-          Tap "Negotiate" on an offer to start a conversation with the brand.
+          Say what you would want instead. The brand can accept it, come back with
+          another number, or step away — and you can still accept their original offer
+          at any point until then.
         </Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>Go Back</Text>
+
+        {/* Same controls as the counter form below, deliberately — she is doing the
+            same thing, just for the first time. */}
+        {showFee && (
+          <View style={styles.inputWrap}>
+            <Text style={styles.rupee}>{'₹'}</Text>
+            <TextInput
+              style={styles.feeInput}
+              value={proposedFee}
+              onChangeText={setProposedFee}
+              keyboardType="numeric"
+              placeholder="The fee you want"
+              placeholderTextColor={P.muted2}
+            />
+          </View>
+        )}
+
+        {showCommission && (
+          <View style={styles.inputWrap}>
+            <TextInput
+              style={[styles.feeInput, { paddingLeft: 14 }]}
+              value={proposedCommission}
+              onChangeText={setProposedCommission}
+              keyboardType="numeric"
+              placeholder="The commission you want"
+              placeholderTextColor={P.muted2}
+            />
+            <Text style={styles.rupee}>%</Text>
+          </View>
+        )}
+
+        <TextInput
+          style={styles.noteInput}
+          value={note}
+          onChangeText={setNote}
+          placeholder="A note, if it helps explain why (optional)"
+          placeholderTextColor={P.muted2}
+          multiline
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.acceptBtn,
+            (actionLoading
+              || (showFee && !proposedFee)
+              || (showCommission && !showFee && !proposedCommission)) && styles.disabledBtn,
+          ]}
+          onPress={openNegotiation}
+          disabled={
+            actionLoading
+            || (showFee && !proposedFee)
+            || (showCommission && !showFee && !proposedCommission)
+          }
+        >
+          <Text style={styles.acceptBtnText}>
+            {actionLoading ? 'Sending…' : 'Send to the brand'}
+          </Text>
         </TouchableOpacity>
-      </View>
+
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>Go back</Text>
+        </TouchableOpacity>
+      </ScrollView>
     );
   }
 

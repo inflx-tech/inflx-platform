@@ -159,7 +159,10 @@ export default function CollabDetailScreen({ route, navigation }) {
   // ── action dispatch ──────────────────────────────────────────────────────
   function go(key) {
     switch (key) {
-      case 'negotiate': navigation.navigate('Negotiation', { campaign_influencer_id: ciId }); break;
+      // The goal travels with her. Opening a negotiation happens BEFORE any thread
+      // exists, so the screen cannot read the goal off one — without this it would
+      // guess "engagement" and ask a commission-only creator for a fee.
+      case 'negotiate': navigation.navigate('Negotiation', { campaign_influencer_id: ciId, goal: c.goal }); break;
       case 'sign':      navigation.navigate('Contract', { campaignInfluencerId: ciId }); break;
       case 'contract':  navigation.navigate('Contract', { campaignInfluencerId: ciId }); break;
       // Stage 4 — this used to drop her on the contract page and leave her to scroll to a

@@ -38,7 +38,11 @@ function getNotificationIcon(type) {
     account_rejected:      { name: 'account-check-outline',  tone: 'danger' },
     general:               { name: 'bell-outline',           tone: 'neutral' },
   };
-  return map[type] || map.general;
+  // The server names types with dots (contract.ready); this map is keyed with
+  // underscores (contract_ready), so NOTHING matched and every notification showed the
+  // generic bell. Same root cause as the routing bug below — normalise and try again.
+  const t = String(type || '');
+  return map[t] || map[t.replace(/\./g, '_')] || map.general;
 }
 
 const TONE_BG = { neutral: P.bg2,   info: P.infoPale, conv: P.convPale, success: P.successPale, danger: P.dangerPale };
@@ -63,47 +67,85 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-// Cross-tab nested deep-link routing — all 18 type branches preserved verbatim.
+// ── Where a notification opens ──────────────────────────────────────────────
+//
+// THIS USED TO MATCH ON THE TYPE NAME, AND ALMOST NOTHING MATCHED.
+// The server names its notifications with dots (contract.ready, negotiation.turn,
+// deliverable.approved, tranche.released). This screen was matching underscores
+// (contract_ready, negotiation_update, content_approved, tranche_released). Of the
+// 19 types it handled, exactly ONE — campaign.ended — was a name the server actually
+// sends. Every other notification tap in the creator app did nothing at all.
+//
+// So it no longer routes on the type. Every notification the server sends already
+// carries data.screen — an explicit statement of where it belongs, written by the
+// same code that sent it. Routing on that is correct by construction, and cannot
+// drift the way two hand-kept lists of names did.
+//
+// The type is still used as a fallback for older rows already sitting in someone's
+// list, written before this was fixed.
+const SCREEN_ROUTES = {
+  // She has been invited, or the offer lapsed.
+  offer_inbox:        (d) => ci(d) && { screen: 'Collabs', params: { screen: 'CollabDetail', params: { campaignInfluencerId: ci(d) } } },
+  open_offers:        () => ({ screen: 'Collabs' }),
+  offers:             () => ({ screen: 'Collabs' }),
+  collabs:            () => ({ screen: 'Collabs' }),
+  // A contract to read or sign. ContractScreen opens by COLLABORATION id, which is
+  // exactly what the server puts in this notification.
+  contract_detail:    (d) => ci(d) && { screen: 'Collabs', params: { screen: 'Contract', params: { campaignInfluencerId: ci(d) } } },
+  contract_review:    (d) => ci(d) && { screen: 'Collabs', params: { screen: 'Contract', params: { campaignInfluencerId: ci(d) } } },
+  // The brand replied to her terms. NegotiationScreen reads negotiation_id.
+  negotiation:        (d) => d?.negotiation_id && { screen: 'Collabs', params: { screen: 'Negotiation', params: { negotiation_id: d.negotiation_id } } },
+  // Content she submitted.
+  deliverable_detail: (d) => d?.deliverable_id && { screen: 'Collabs', params: { screen: 'Deliverable', params: { deliverableId: d.deliverable_id } } },
+  // Money.
+  earnings:           () => ({ screen: 'Earnings' }),
+  withdrawals:        () => ({ screen: 'Earnings' }),
+  wallet:             () => ({ screen: 'Earnings' }),
+  // Her own pitches.
+  my_proposals:       () => ({ screen: 'Profile', params: { screen: 'ProposalsHub' } }),
+  // Whole-campaign news with no single screen of its own.
+  campaign_detail:    () => ({ screen: 'Collabs' }),
+  influencer_home:    () => ({ screen: 'Home' }),
+  home:               () => ({ screen: 'Home' }),
+};
+
+/** The collaboration id, under any of the names the server has used for it. */
+function ci(d) {
+  return d?.campaign_influencer_id || d?.offer_id || null;
+}
+
 function getNavTarget(type, dataJson) {
-  switch (type) {
-    // Collabs tab (features/collabs-list) absorbs the old Offers/Campaigns tabs.
-    case 'offer_received':
-    case 'offer_expired':
-      // Unified hub (features/collab-detail); offer_id === campaign_influencer_id.
-      return dataJson?.offer_id ? { screen: 'Collabs', params: { screen: 'CollabDetail', params: { campaignInfluencerId: dataJson.offer_id } } } : null;
-    case 'contract_ready':
-    case 'contract_signed':
-      return dataJson?.contract_id ? { screen: 'Collabs', params: { screen: 'Contract', params: { contractId: dataJson.contract_id } } } : null;
-    case 'content_approved':
-    case 'content_submitted':
-    case 'content_revision':
-    case 'content_live':
-      return dataJson?.deliverable_id ? { screen: 'Collabs', params: { screen: 'Deliverable', params: { deliverableId: dataJson.deliverable_id } } } : null;
-    case 'tranche_released':
-    case 'commission_earned':
-    case 'commission_confirmed':
-    case 'withdrawal_processed':
-    case 'withdrawal_failed':
-      return { screen: 'Earnings' };
-    case 'negotiation_update':
-      return dataJson?.negotiation_id ? { screen: 'Collabs', params: { screen: 'Negotiation', params: { negotiationId: dataJson.negotiation_id } } } : null;
-    // Docs/THE_CUT.md pass 1 — the pre-agreement pathway is gone. An OLD notification of
-    // this kind can still be sitting in someone's list, so it is still handled: it opens
-    // her pitches hub rather than a screen that no longer exists.
-    case 'collab_request.received':
-    case 'collab_request.countered':
-      return { screen: 'Profile', params: { screen: 'ProposalsHub' } };
-    // collab-part5 — a brand closed a collaboration. Their products came off the shopping
-    // app, so send them to Collabs where the campaign now reads Completed.
-    case 'campaign.ended':
-      return { screen: 'Collabs' };
-    case 'collab_request.agreed':
-    case 'proposal.accepted':
-      // Terms agreed — the campaign details arrive next; until then the hub shows it.
-      return { screen: 'Profile', params: { screen: 'ProposalsHub' } };
-    default:
-      return null;
+  const d = dataJson || {};
+
+  // 1 · what the server said, which is the answer for everything it sends today.
+  const byScreen = SCREEN_ROUTES[d.screen];
+  if (byScreen) {
+    const target = byScreen(d);
+    if (target) return target;
   }
+
+  // 2 · older rows already in someone's list, from before the server carried a screen.
+  //     Both naming conventions are accepted so nothing sitting there goes dead.
+  const t = String(type || '').replace(/\./g, '_');
+  if (t === 'offer_received' || t === 'offer_invited' || t === 'offer_expired' || t === 'offer_declined') {
+    return ci(d) ? { screen: 'Collabs', params: { screen: 'CollabDetail', params: { campaignInfluencerId: ci(d) } } } : { screen: 'Collabs' };
+  }
+  if (t.startsWith('contract_')) {
+    return ci(d) ? { screen: 'Collabs', params: { screen: 'Contract', params: { campaignInfluencerId: ci(d) } } } : { screen: 'Collabs' };
+  }
+  if (t.startsWith('negotiation_')) {
+    return d.negotiation_id ? { screen: 'Collabs', params: { screen: 'Negotiation', params: { negotiation_id: d.negotiation_id } } } : { screen: 'Collabs' };
+  }
+  if (t.startsWith('deliverable_') || t.startsWith('content_')) {
+    return d.deliverable_id ? { screen: 'Collabs', params: { screen: 'Deliverable', params: { deliverableId: d.deliverable_id } } } : { screen: 'Collabs' };
+  }
+  if (t.startsWith('tranche_') || t.startsWith('commission_') || t.startsWith('withdrawal_') || t.startsWith('sale_commission_')) {
+    return { screen: 'Earnings' };
+  }
+  if (t.startsWith('campaign_')) return { screen: 'Collabs' };
+  if (t.startsWith('proposal_')) return { screen: 'Profile', params: { screen: 'ProposalsHub' } };
+
+  return null;
 }
 
 function NotificationCard({ item, onPress }) {

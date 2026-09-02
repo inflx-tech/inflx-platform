@@ -1,0 +1,41 @@
+{
+  "feature": "negotiation-door",
+  "area": "creator app — the last blocking gap before a signed contract",
+  "spec_version": "1.0.0",
+  "status": "BUILT · 729 tests green · awaiting founder go for the deploy",
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder) — \"first push the pass 2 and then we do fix those three things\", 2026-09-02",
+  "approved_at": "2026-09-02",
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — the three defects were explained in plain language and he chose to fix them together",
+  "mockup_locked_at": "2026-09-02",
+  "mockup_source": "NONE. The opening form deliberately reuses the SAME controls as the counter form directly below it on the same screen — she is doing the same thing, for the first time. Inventing a second design for one action is how two implementations drift.",
+  "impact_reviewed": true,
+  "impact_review_note": "The founder was given the plain-language explanation of all three and chose to fix them as one journey.",
+  "the_three_defects": {
+    "1_no_way_to_start_a_negotiation": "influencerApi.negotiateOffer — the ONLY call that creates a thread — worked for months and was called by NOTHING. Tapping Negotiate reached a screen that fetched a thread, found none, and said 'tap Negotiate on an offer to start a conversation' — the button that brought her there. Every offer on the platform was therefore take-it-or-leave-it.",
+    "2_almost_every_notification_tap_was_dead": "The audit found two. The truth was worse: the server names types with DOTS (contract.ready, negotiation.turn, deliverable.approved, tranche.released) and the app matched UNDERSCORES. Of 19 handled types, exactly ONE (campaign.ended) was a name the server sends. Verified by extracting all 106 server types and comparing — one overlap.",
+    "3_every_notification_showed_a_generic_bell": "Same root cause, in the icon map."
+  },
+  "the_fix_is_not_18_patched_labels": "The server already tells the app where each notification belongs, in data.screen, written by the same code that sends it. The app now routes on that — correct by construction, and it cannot drift the way two hand-maintained lists of names did. Type matching stays only as a fallback for rows already sitting in someone's list, and accepts both conventions.",
+  "the_goal_had_to_travel": "Opening a negotiation happens BEFORE any thread exists, so the screen cannot read the collaboration's goal off one. It defaulted to 'engagement' — which would have asked a commission-only creator for a fee she is not being paid. CollabDetailScreen now hands the goal across. Covered by a test.",
+  "server_untouched": "Every rule — whose turn, the 48-hour clock, the refusal when terms were already settled — was already correct. No backend file changed. This adds a door to a room that was already built.",
+  "verification": {
+    "tests": "729 mobile tests pass (was 722). 7 new in negotiationOpen.test.js, all MOUNTING THE REAL SCREEN and pressing the real button: the dead-end sentence is gone, a paid-content collab asks for a fee, a commission collab asks for a commission and NOT a fee, sending actually calls the endpoint with the right id and amount, the button stays disabled until she enters a number, the server's own refusal wording is shown to her, and opening it without a collaboration says so instead of offering a broken form.",
+    "styles_verified_before_commit": "Every style name and palette token used by the new form was checked to exist. A first draft used styles.inputLabel and styles.input, NEITHER of which exists on that screen — a missing style token throws at module load, builds clean and dies on the handset, and it is the failure class this repo has shipped three times. Caught by checking rather than assuming, and the form was rewritten to reuse the counter form's real controls.",
+    "parses": "Every edited file parsed with @babel/parser including JSX after each edit, against a backup with automatic revert."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy_class": "PRODUCTION-IMPACTING via OTA only. No backend file changed. Creator app only.",
+    "deploy_targets": ["ota (influencer)"],
+    "outward_facing": "YES, and it is the point: a creator can counter an offer for the first time, and her notifications start opening the right screens.",
+    "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false. Platform QA is not green (~231 pre-existing failures, unchanged by this contract).",
+    "device_walk_required": "YES — and this is THE walk the founder has been waiting for: invite a creator, have her counter, reply, agree, sign. Six steps in 06-diff/notes.md. Step 2 is the one that was impossible before today."
+  }
+}
