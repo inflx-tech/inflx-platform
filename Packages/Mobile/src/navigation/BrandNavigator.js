@@ -20,14 +20,11 @@ import BrandContractScreen from '../screens/brand/BrandContractScreen';
 import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
 import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfileScreen';
 // collab-part2 — the pre-campaign handshake, brand side.
-import BrandRequestComposerScreen from '../screens/brand/BrandRequestComposerScreen';
-import BrandCollabRequestsScreen from '../screens/brand/BrandCollabRequestsScreen';
 import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScreen';
 import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 // Stage 1 — everything that happens before a campaign exists.
 import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
 import BrandFindCreatorsScreen from '../screens/brand/BrandFindCreatorsScreen';
-import BrandProductPickerScreen from '../screens/brand/BrandProductPickerScreen';
 // Stage 2 — building a campaign from the phone.
 // Contract: features/stage-2-build-a-campaign-from-the-phone
 import BrandCampaignCreateScreen from '../screens/brand/BrandCampaignCreateScreen';
@@ -37,13 +34,11 @@ import BrandAllocationScreen from '../screens/brand/BrandAllocationScreen';
 import CreatorTermsScreen from '../screens/brand/CreatorTermsScreen';
 import BrandBasketPreviewScreen from '../screens/brand/BrandBasketPreviewScreen';
 import BrandCampaignReviewScreen from '../screens/brand/BrandCampaignReviewScreen';
-import BrandAgreementDetailScreen from '../screens/brand/BrandAgreementDetailScreen';
 // Stage 3 — level 4 of the ladder: one creator, her six steps.
 import BrandCreatorSpineScreen from '../screens/brand/BrandCreatorSpineScreen';
 // Stage 3 — the needs-you tree the app has been fetching and discarding since Stage 0.
 // Contract: features/stage-3-watch-the-work-happen
 import { useNeedsYou } from '../utils/brandNeedsYou';
-import BrandCategoryPickerScreen from '../screens/brand/BrandCategoryPickerScreen';
 import BrandGroupsScreen from '../screens/brand/BrandGroupsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
 import BrandDiaryScreen from '../screens/brand/BrandDiaryScreen';
@@ -80,12 +75,8 @@ function HomeStack() {
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       {/* collab-part2 — the pre-campaign handshake, brand side. */}
-      <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
       {/* Pick the exact products a creator would promote — item 8. */}
-      <Stack.Screen name="BrandProductPicker" component={BrandProductPickerScreen} />
       {/* A real category from the listing tree, not typed — item 9. */}
-      <Stack.Screen name="BrandCategoryPicker" component={BrandCategoryPickerScreen} />
-      <Stack.Screen name="BrandCollabRequests" component={BrandCollabRequestsScreen} />
       <Stack.Screen name="BrandStorePreview"      component={BrandStorePreviewScreen} />
       <Stack.Screen name="ContractPdf"            component={ContractPdfScreen} />
       <Stack.Screen name="BrandOrders"            component={BrandOrdersScreen} />
@@ -115,8 +106,6 @@ function CreatorsStack() {
           heard of groups. Two creator searches is how they drift apart. */}
       <Stack.Screen name="BrandFindCreators" component={BrandFindCreatorsScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
-      <Stack.Screen name="BrandRequestComposer" component={BrandRequestComposerScreen} />
-      <Stack.Screen name="BrandCollabRequests" component={BrandCollabRequestsScreen} />
       <Stack.Screen name="ProposalInbox" component={BrandProposalInboxScreen} />
       <Stack.Screen name="BrandGroups" component={BrandGroupsScreen} />
       <Stack.Screen name="BrandGroupDetail" component={BrandGroupDetailScreen} />
@@ -140,7 +129,6 @@ function CampaignsStack() {
       <Stack.Screen name="CreatorTerms" component={CreatorTermsScreen} />
       <Stack.Screen name="BrandBasketPreview" component={BrandBasketPreviewScreen} />
       <Stack.Screen name="BrandCampaignReview" component={BrandCampaignReviewScreen} />
-      <Stack.Screen name="BrandAgreementDetail" component={BrandAgreementDetailScreen} />
       <Stack.Screen name="BrandCreatorSpine" component={BrandCreatorSpineScreen} />
       <Stack.Screen name="BrandDiary" component={BrandDiaryScreen} />
       <Stack.Screen name="BrandCampaignInfluencersList" component={BrandCampaignInfluencersListScreen} />

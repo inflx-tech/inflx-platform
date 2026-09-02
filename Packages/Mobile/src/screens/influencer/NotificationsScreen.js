@@ -87,13 +87,12 @@ function getNavTarget(type, dataJson) {
       return { screen: 'Earnings' };
     case 'negotiation_update':
       return dataJson?.negotiation_id ? { screen: 'Collabs', params: { screen: 'Negotiation', params: { negotiationId: dataJson.negotiation_id } } } : null;
-    // collab-part2 — the pre-campaign handshake. A brand asked for you, countered you,
-    // or agreed your terms. All live in the Profile stack next to your pitches.
+    // Docs/THE_CUT.md pass 1 — the pre-agreement pathway is gone. An OLD notification of
+    // this kind can still be sitting in someone's list, so it is still handled: it opens
+    // her pitches hub rather than a screen that no longer exists.
     case 'collab_request.received':
     case 'collab_request.countered':
-      return dataJson?.request_id
-        ? { screen: 'Profile', params: { screen: 'CollabRequestDetail', params: { requestId: dataJson.request_id } } }
-        : { screen: 'Profile', params: { screen: 'ProposalsHub' } };
+      return { screen: 'Profile', params: { screen: 'ProposalsHub' } };
     // collab-part5 — a brand closed a collaboration. Their products came off the shopping
     // app, so send them to Collabs where the campaign now reads Completed.
     case 'campaign.ended':

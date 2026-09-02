@@ -7,7 +7,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import * as draft from '../../utils/campaignDraft';
-import { daysLeft } from '../../utils/agreementSummary';
 
 /**
  * BrandCampaignReviewScreen — drift, blockers, publish.
@@ -36,21 +35,18 @@ export default function BrandCampaignReviewScreen({ route, navigation }) {
 
   const [campaign, setCampaign] = useState(null);
   const [sets, setSets] = useState([]);
-  const [live, setLive] = useState([]);          // agreements still ready to brief
   const [check, setCheck] = useState(null);      // server publish-check
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
 
   const load = useCallback(async () => {
-    const [c, sres, ag, pc] = await Promise.all([
+    const [c, sres, pc] = await Promise.all([
       brandApi.getCampaign(campaignId),
       brandApi.getCampaignSets(campaignId),
-      brandApi.listAgreements(),
       brandApi.getPublishCheck(campaignId),
     ]);
     if (c?.success) setCampaign(c.data?.campaign || c.data);
     if (sres?.success) setSets(sres.data?.sets || []);
-    if (ag?.success) setLive(ag.data?.agreements || []);
     if (pc?.success) setCheck(pc.data);
     setLoading(false);
   }, [campaignId]);
@@ -61,7 +57,6 @@ export default function BrandCampaignReviewScreen({ route, navigation }) {
     return <View style={[s.container, s.center]}><ActivityIndicator color={ig.text} /></View>;
   }
 
-  const liveIds = new Set(live.map(a => a.id));
   const summary = draft.summarise(campaignId, sets);
 
   // ── Local blockers: what this phone knows and the server cannot, because the picks
@@ -77,20 +72,16 @@ export default function BrandCampaignReviewScreen({ route, navigation }) {
       return;
     }
     sd.creators.forEach((c) => {
-      if (!liveIds.has(c.agreement_id)) {
-        localBlockers.push({
-          code: 'AGREEMENT_NOT_LIVE',
-          message: `${c.name}'s agreement is no longer live — it has lapsed or been briefed elsewhere. Remove her, or agree terms again from the Creators tab.`,
-        });
-      } else {
-        const d = daysLeft(c.expires_at);
-        if (d != null && d <= 14) {
-          localWarnings.push({
-            code: 'AGREEMENT_EXPIRING',
-            message: `${c.name}'s agreement expires in ${d} day${d === 1 ? '' : 's'}. If it lapses before you publish she drops out, and you would have to ask her again from the start.`,
-          });
-        }
-      }
+      // Docs/THE_CUT.md pass 1 — the two agreement checks (the not-live blocker and
+      // the expiring warning) are gone with the pre-agreement pathway. Their exact
+      // codes are deliberately not written here: publishGateConsistency.test.js
+      // asserts this file no longer mentions them at all.
+      //
+      // This ALSO fixes the audit's number-one defect (Docs/AUDIT_2026-09-02.md, "the
+      // five that break the spine"): the blocker compared every creator against the
+      // live-agreements list, and a creator added by search has no agreement to be in
+      // it — so a campaign built the ONLY supported way could never be published. The
+      // fix is the removal itself; there is nothing left to compare against.
       if (selling && !c.alloc?.alloc_scope) {
         localBlockers.push({
           code: 'NO_ALLOCATION',

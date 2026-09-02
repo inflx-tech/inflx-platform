@@ -75,7 +75,8 @@ export default function CollabsListScreen({ navigation }) {
   function openCollab(c) {
     // A conversation about terms is not yet a collaboration — there is no campaign
     // behind it, so the hub would have nothing to show. Both directions open a thread.
-    if (c.source === 'request') return navigation.navigate('CollabRequestDetail', { requestId: c.recordId });
+    // Docs/THE_CUT.md pass 1 — 'request' (a brand asking outside any campaign) is gone
+    // with the pre-agreement pathway. Her own pitches stay; the founder kept those.
     if (c.source === 'proposal') return navigation.navigate('CollabPitchDetail', { proposalId: c.recordId });
     // Unified hub (features/collab-detail) — one screen for every later stage.
     navigation.navigate('CollabDetail', { campaignInfluencerId: c.ciId });

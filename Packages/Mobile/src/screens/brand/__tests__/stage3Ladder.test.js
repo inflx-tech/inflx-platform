@@ -49,7 +49,7 @@ describe('Stage 3 · routes resolve', () => {
     for (const t of targets) expect(registered.has(t)).toBe(true);
     // And it must reach the four destinations that already exist, or the steps are decorative.
     expect(targets).toEqual(expect.arrayContaining([
-      'BrandAgreementDetail', 'BrandContract', 'BrandCampaignReviewQueue', 'BrandConversions',
+      'BrandContract', 'BrandCampaignReviewQueue', 'BrandConversions',
     ]));
   });
 

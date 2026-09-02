@@ -88,12 +88,7 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   const [invitesClose, setInvitesClose] = useState('');
   const [derivedBudget, setDerivedBudget] = useState(null);
   // step 3
-  const [agreements, setAgreements] = useState([]);
-  // Whether the live ready-to-brief list has actually arrived. The auto-drop below MUST NOT
-  // run against an empty list that has simply not loaded yet — that would clear every creator
-  // the brand had picked, on every entry, and look exactly like the app losing their work.
-  const [agreementsLoaded, setAgreementsLoaded] = useState(false);
-  const [picked, setPicked] = useState([]);            // agreement rows, pencilled
+  const [picked, setPicked] = useState([]);            // creators pencilled into this set
   // step 4
   // stage-2-offers-parity — whose offer sheet is open. The offer belongs to a creator now:
   // campaign_influencers has always stored it, and campaign_sets has no offer columns at all.
@@ -109,9 +104,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
       // The offers list is no longer fetched here: CreatorOfferSheet loads it when it opens,
       // which is the only place an offer is now chosen. Fetching it on every wizard entry was
       // a request nobody read.
-      const ag = await brandApi.listAgreements();
-      if (!alive) return;
-      if (ag?.success) { setAgreements(ag.data?.agreements || []); setAgreementsLoaded(true); }
 
       if (initialSetId) {
         const sres = await brandApi.getCampaignSets(campaignId);
@@ -137,45 +129,9 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     return draft.subscribe(campaignId, sync);
   }, [campaignId, setId]));
 
-  // ── A lapsed agreement leaves the set on its own ───────────────────────────
-  //
-  // Founder, 2026-08-28: "if that is expired means auto deleted... even he adds set and came
-  // after somedays if that is expired means auto deleted."
-  //
-  // He is right, and it is better than what was here. An agreement that has lapsed CANNOT be
-  // briefed — the server refuses it, and there is no judgement for a brand to make. Refusing
-  // to publish and making them work out which creator to remove was the app handing over its
-  // own homework.
-  //
-  // Agreements run 90 days (handshake_settings.agreement_expiry_days), so this is rare. When
-  // it does happen it is on a set left open a long time, which is exactly when a brand has
-  // least idea what changed underneath them.
-  //
-  // NEVER SILENTLY. A creator who simply vanishes reads as a mis-tap, or worse goes unnoticed
-  // until the campaign is live without her.
-  useEffect(() => {
-    if (!setId || !agreementsLoaded) return;
-    const live = new Set(agreements.map(a => String(a.id)));
-    const sd = draft.getSetDraft(campaignId, setId);
-    // stage-a/b — a cold invite (search/group) or a deferred-pool pick has no real
-    // agreement to begin with, so it will never appear in `live`. Without this check
-    // every one of them reads as "lapsed" the moment this effect runs and gets silently
-    // purged from the set before she's ever invited. Only a REAL agreement can lapse.
-    const gone = sd.creators.filter(c => draft.isRealAgreementId(c.agreement_id) && !live.has(String(c.agreement_id)));
-    if (!gone.length) return;
-
-    const kept = sd.creators.filter(c => !draft.isRealAgreementId(c.agreement_id) || live.has(String(c.agreement_id)));
-    draft.setSetDraft(campaignId, setId, { creators: kept });
-    setPicked(kept);
-
-    const names = gone.map(c => c.name).filter(Boolean);
-    Alert.alert(
-      names.length === 1 ? `${names[0]} was taken out` : `${names.length} creators were taken out`,
-      `${names.join(' and ')} ${names.length === 1 ? 'is' : 'are'} no longer available to brief — the ` +
-      `agreement has lapsed, or has been used in another set. Agree with ${names.length === 1 ? 'her' : 'them'} ` +
-      'again from the Creators tab to include ' + (names.length === 1 ? 'her.' : 'them.'),
-    );
-  }, [agreementsLoaded, agreements, campaignId, setId]);
+  // Docs/THE_CUT.md pass 1 — the "a lapsed agreement leaves the set on its own"
+  // safety net is gone with the pre-agreement pathway. There are no agreements left
+  // to lapse: every creator in a set is now reached directly, inside the set.
 
   function hydrate(set) {
     setGoal(set.goal || null);
@@ -456,8 +412,8 @@ function StepAim({ goal, locked, onPick, onContinue }) {
         <View style={s.noteN}>
           <Text style={s.noteT}>
             {locked
-              ? 'The aim is fixed once the set is saved — the agreements you brief into it were made against it.'
-              : 'You cannot change the aim after creators are added — their agreements were made against it.'}
+              ? 'The aim is fixed once the set is saved — what you offer each creator is stated against it.'
+              : 'You cannot change the aim after creators are added — what you offered them was stated against it.'}
           </Text>
         </View>
       </View>
@@ -623,7 +579,7 @@ function StepBasics(p) {
   );
 }
 
-/* ── Step 3 · the agreements pick-list ─────────────────────────────────────── */
+/* ── Step 3 · who is in this set ───────────────────────────────────────────── */
 function StepCreators({ pickedIds, picked, onToggle, onFindNew, onFromGroup, onBack, onContinue }) {
   // stage-a — creators seeded from the deferred pool (SB-24 "Build a set from these")
   // are shown in their own section below, so they read as "already included" rather

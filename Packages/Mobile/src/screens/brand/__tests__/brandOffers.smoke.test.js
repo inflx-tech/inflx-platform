@@ -22,10 +22,15 @@ describe('brand mobile offer builders', () => {
     expect(() => require('../../../components/brand/ProductPickerSheet')).toThrow();
   });
 
-  it('both previous callers still get their original contract', () => {
-    // The route wrapper hands back (ids, names); the offer builders get [{id, name, ...}].
-    expect(() => require('../BrandProductPickerScreen')).not.toThrow();
-    expect(typeof require('../BrandProductPickerScreen').default).toBe('function');
+  it('DRIFT: the full-screen picker is gone, and only the shared component remains', () => {
+    // Docs/THE_CUT.md pass 1 — BrandProductPickerScreen existed ONLY to serve the
+    // pre-agreement request composer, which is now removed, so the screen went with it.
+    // What this test was really guarding — that there is ONE picker implementation and
+    // not two drifting copies (the fault behind four of Stage 1's twenty-one bugs) — is
+    // now guaranteed more strongly than before: there is no second implementation left
+    // to drift. Asserted rather than deleted.
+    expect(() => require('../BrandProductPickerScreen')).toThrow();
+    expect(typeof require('../../../components/brand/ProductPicker').default).toBe('function');
   });
 
   it('mobile brandApi can list products (needed for every picker caller)', () => {

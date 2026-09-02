@@ -31,8 +31,6 @@ import InfluencerContractsScreen from '../screens/influencer/InfluencerContracts
 import ProposalsHubScreen from '../screens/influencer/ProposalsHubScreen';
 import SendProposalScreen from '../screens/influencer/SendProposalScreen';
 // collab-part2 — the pre-campaign handshake: incoming brand requests + preferences.
-import CollabRequestDetailScreen from '../screens/influencer/CollabRequestDetailScreen';
-import CollabPreferencesScreen from '../screens/influencer/CollabPreferencesScreen';
 // Stage 1 — her pitch thread, and the history both sides read.
 import CollabPitchDetailScreen from '../screens/influencer/CollabPitchDetailScreen';
 import CollabDiaryScreen from '../screens/influencer/CollabDiaryScreen';
@@ -111,10 +109,8 @@ function CollabsStackNav() {
       {/* Stage 1 — a brand's opening move now lives beside every other brand
           interaction. It was filed under Profile documents, which is why a real
           request sat unseen for a week. */}
-      <CollabsStack.Screen name="CollabRequestDetail" component={CollabRequestDetailScreen} />
       <CollabsStack.Screen name="CollabPitchDetail" component={CollabPitchDetailScreen} />
       <CollabsStack.Screen name="CollabDiary" component={CollabDiaryScreen} />
-      <CollabsStack.Screen name="CollabPreferences" component={CollabPreferencesScreen} />
       <CollabsStack.Screen name="SendProposal" component={SendProposalScreen} />
       <CollabsStack.Screen name="CollabDetail" component={CollabDetailScreen} />
       <CollabsStack.Screen name="CreatorDefer" component={CreatorDeferScreen} />

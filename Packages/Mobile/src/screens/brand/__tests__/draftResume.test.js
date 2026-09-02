@@ -73,83 +73,40 @@ describe('a draft opens where the work stopped', () => {
   });
 });
 
-describe('a lapsed creator leaves the set on her own', () => {
+describe('DRIFT: nothing can lapse any more, so the auto-drop is gone', () => {
+  /**
+   * This block used to guard a real safety net: an agreement settled before any campaign
+   * ran 90 days, and a set left open longer than that would silently hold a creator who
+   * could no longer be briefed. The net removed her and said so.
+   *
+   * Docs/THE_CUT.md pass 1 removed the pre-agreement pathway entirely, so there are no
+   * agreements left to lapse — every creator in a set is reached directly, inside the set.
+   * The net now has nothing to protect against, and keeping it would have meant keeping a
+   * fetch and a purge whose only possible effect was a false positive (which is exactly
+   * what it caused on 2026-09-02: cold invites were purged as 'lapsed').
+   *
+   * Rewritten rather than deleted, so the coverage states the new fact instead of quietly
+   * disappearing.
+   */
   const src = read(WIZARD);
 
-  it('the drop runs when the set is opened', () => {
-    expect(src).toContain('const gone = sd.creators.filter(c => draft.isRealAgreementId(c.agreement_id) && !live.has(String(c.agreement_id)))');
-    expect(src).toContain('draft.setSetDraft(campaignId, setId, { creators: kept })');
+  it('the wizard no longer fetches agreements at all', () => {
+    expect(src).not.toContain('brandApi.listAgreements');
+    expect(src).not.toContain('agreementsLoaded');
   });
 
-  it('⚠️ a cold invite or a deferred-pool pick is never mistaken for a lapsed agreement', () => {
-    // Bug found 2026-09-02: this effect used to filter EVERY picked creator against the live
-    // agreements list. A cold invite (`cold:<influencer_id>`, from search or a group — stage-a/b)
-    // and a deferred-pool pick (`deferred:<old row id>`) never appear in that list, because
-    // neither has ever had a real agreement — so both read as "lapsed" the instant this effect
-    // ran, and were silently purged from the set before she was ever invited, with the brand
-    // told a false "agreement has lapsed" reason. Only a REAL agreement id can lapse.
-    //
-    // Proven behaviourally against the real exported guard, not just pinned as source text:
-    // the same synthetic keys the invite payload already refuses to send as agreement_id
-    // (features/stage-a-the-set slice_7/slice_8) must also survive this purge unconditionally,
-    // regardless of what the live agreements list contains.
-    const live = new Set(); // nothing live — the strictest possible case
-    const picked = [
-      { agreement_id: 'cold:i9', name: 'Found by search' },
-      { agreement_id: 'deferred:77', name: 'From the deferred pool' },
-      { agreement_id: 'real-agreement-uuid', name: 'Pre-agreed, and it lapsed' },
-    ];
-    const gone = picked.filter((c) => isRealAgreementId(c.agreement_id) && !live.has(String(c.agreement_id)));
-    expect(gone.map((c) => c.name)).toEqual(['Pre-agreed, and it lapsed']);
-
-    const kept = picked.filter((c) => !isRealAgreementId(c.agreement_id) || live.has(String(c.agreement_id)));
-    expect(kept.map((c) => c.name)).toEqual(['Found by search', 'From the deferred pool']);
-  });
-
-  it('⚠️ it cannot run before the live list has loaded', () => {
-    // Without this guard the check would run against an empty list on every entry and clear
-    // every creator the brand had picked — indistinguishable, to them, from the app losing
-    // their work.
-    expect(src).toContain('agreementsLoaded');
-    expect(src).toMatch(/if \(!setId \|\| !agreementsLoaded\) return;/);
-    expect(src).toMatch(/setAgreements\(ag\.data\?\.agreements \|\| \[\]\); setAgreementsLoaded\(true\);/);
-  });
-
-  it('it never happens silently', () => {
-    // A creator who simply vanishes reads as a mis-tap, or goes unnoticed until the campaign
-    // is live without her.
-    const block = src.slice(src.indexOf('const gone ='), src.indexOf('const gone =') + 1400);
-    expect(block).toContain('Alert.alert');
-    expect(block).toContain('was taken out');
-    expect(block).toMatch(/agreement has lapsed/);
-    expect(block).toMatch(/Agree with/);
-  });
-
-  it('it keeps everyone who is still live', () => {
-    expect(src).toContain('const kept = sd.creators.filter(c => !draft.isRealAgreementId(c.agreement_id) || live.has(String(c.agreement_id)))');
-  });
-
-  it('the ids are compared as strings, not by identity', () => {
-    // agreement_id arrives as a uuid string from two different fetches. A === between a value
-    // from the draft store and one from a fresh response is the kind of thing that works in
-    // testing and drops everybody in production.
-    expect(src).toContain('new Set(agreements.map(a => String(a.id)))');
-  });
-
-  it('and the server list it compares against is genuinely only live agreements', () => {
-    // listReadyToBrief: status = 'ready' AND expires_at > now(). If that ever widened, this
-    // drop would start keeping creators who cannot be briefed.
-    const svc = fs.readFileSync(
-      path.resolve(SRC, '../../../backend/src/services/handshake.service.js'), 'utf8');
-    expect(svc).toMatch(/status = 'ready' AND a\.expires_at > now\(\)|a\.status = 'ready' AND a\.expires_at > now\(\)/);
+  it('and the purge that used to run on them is gone with it', () => {
+    expect(src).not.toContain('agreement has lapsed');
+    expect(src).not.toContain('was taken out');
   });
 });
 
 describe('what this does NOT change', () => {
-  it('the publish gate still refuses a dead agreement', () => {
-    // The auto-drop handles the set a brand is looking at. The gate is the backstop for
-    // anything already invited, which the drop never sees. Removing it would leave the
-    // narrow case with no cover at all.
+  it('the SERVER still refuses a dead agreement — pass 1 only removed screens', () => {
+    // Deliberately still asserted. Docs/THE_CUT.md pass 1 hides; it does not disconnect
+    // the server (pass 3) or erase data (pass 4). Until then the backend gate stays, and
+    // is the backstop for anything already invited before the cut. When pass 3 removes
+    // it, this assertion is the one that must be rewritten — not quietly dropped.
     const gate = fs.readFileSync(
       path.resolve(SRC, '../../../backend/src/services/publishGate.service.js'), 'utf8');
     for (const code of ['AGREEMENT_MISSING', 'AGREEMENT_NOT_LIVE']) {
@@ -160,10 +117,11 @@ describe('what this does NOT change', () => {
     }
   });
 
-  it('the expiring-agreement warning still warns before it happens', () => {
-    // 90 days is the window (handshake_settings.agreement_expiry_days), and this fires in the
-    // last 14. Being told before is better than being tidied up after.
-    expect(read('screens/brand/BrandCampaignReviewScreen.js')).toContain('AGREEMENT_EXPIRING');
+  it('DRIFT: the phone no longer warns about an expiring agreement', () => {
+    // It used to, and it was right to: 90 days was the window and this fired in the last
+    // 14, so a brand was told before rather than tidied up after. With the pathway gone
+    // there is nothing to expire, and the warning went with the blocker beside it.
+    expect(read('screens/brand/BrandCampaignReviewScreen.js')).not.toContain('AGREEMENT_EXPIRING');
   });
 });
 

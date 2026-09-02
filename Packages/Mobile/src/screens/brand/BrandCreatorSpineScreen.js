@@ -57,9 +57,10 @@ const OWNER_BADGE = {
 function destinationFor(step, ctx) {
   switch (step) {
     case 1:
-      return ctx.agreementId
-        ? { label: 'See what you agreed', go: () => ctx.nav.navigate('BrandAgreementDetail', { agreement: ctx.agreement }) }
-        : { note: 'This collaboration started as a direct invite, so there is no handshake to re-read.' };
+      // Docs/THE_CUT.md pass 1 — the pre-agreement pathway is removed, so there is no
+      // agreement screen to open. Every collaboration now starts as a direct invite
+      // inside a set, which is exactly what the second branch already said.
+      return { note: 'This collaboration started as a direct invite, so there is no handshake to re-read.' };
     case 2:
       return { label: 'Open the contract', go: () => ctx.nav.navigate('BrandContract', { campaignInfluencerId: ctx.ciId }) };
     case 3:

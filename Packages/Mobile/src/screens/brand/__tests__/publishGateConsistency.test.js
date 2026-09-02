@@ -92,9 +92,12 @@ describe('2 · the server is not asked about a draft it has not been sent', () =
     expect(src).not.toMatch(/const serverBlockers = \[\]/);
   });
 
-  it('the expiring-agreement warning is untouched — it was the one that was right', () => {
-    expect(src).toContain('AGREEMENT_EXPIRING');
-    expect(src).toContain('she drops out, and you would have to ask her again from the start');
+  it('DRIFT: the expiring-agreement warning is gone with the agreements themselves', () => {
+    // It WAS the right warning while agreements existed — telling a brand before the
+    // clock ran out beats tidying up after. Docs/THE_CUT.md pass 1 removed the
+    // pre-agreement pathway, so nothing expires and nothing can warn about it.
+    expect(src).not.toContain('AGREEMENT_EXPIRING');
+    expect(src).not.toContain('AGREEMENT_NOT_LIVE');
   });
 });
 

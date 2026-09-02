@@ -180,16 +180,8 @@ export const brandApi = {
   register: (data) => api.post('/brands/register', data),
   getMe: () => api.get('/brands/me'),
   updateMe: (data) => api.patch('/brands/me', data),
-
-  // collab-part2 — the pre-campaign handshake, brand side: request a creator before any
-  // campaign exists, answer counters, and see agreed creators (briefing is web-only).
-  sendCollabRequest:        (data) => api.post('/brands/me/collab-requests', data),
-  listSentCollabRequests:   (status) => api.get(`/brands/me/collab-requests${status ? `?status=${status}` : ''}`),
-  acceptCollabCounter:      (id) => api.post(`/brands/me/collab-requests/${id}/accept`),
-  counterCollabRequest:     (id, terms) => api.post(`/brands/me/collab-requests/${id}/counter`, { terms }),
-  declineCollabRequest:     (id, reason) => api.post(`/brands/me/collab-requests/${id}/decline`, { reason }),
-  withdrawCollabRequest:    (id) => api.post(`/brands/me/collab-requests/${id}/withdraw`),
-  listAgreements:           () => api.get('/brands/me/agreements'),
+  // Docs/THE_CUT.md pass 1 — the pre-campaign handshake bindings are removed with
+  // its screens. The server still answers these routes; disconnecting it is pass 3.
 
   /* ── Stage 1 — everything before a campaign exists ─────────────────────────
      All of this has been finished on the server for months and has never been
@@ -205,21 +197,6 @@ export const brandApi = {
   deleteGroup:   (id) => api.delete(`/brands/me/influencer-groups/${id}`),
   addToGroup:    (id, influencerIds) => api.post(`/brands/me/influencer-groups/${id}/members`, { influencer_ids: influencerIds }),
   removeFromGroup: (id, influencerId) => api.delete(`/brands/me/influencer-groups/${id}/members/${influencerId}`),
-
-  // Who a filtered send would actually reach — matched, reachable, capped, and the
-  // reason for every drop. Asking for 41 and silently reaching 30 reads as "eleven
-  // people ignored me".
-  previewBroadcast: (filters) => api.post('/brands/me/collab-requests/broadcast-preview', { filters }),
-
-  // The same composer, three ways in. sendCollabRequest already takes influencer_id;
-  // these two are the group and the filtered set.
-  askGroup: (groupId, terms, message, overrides) =>
-    api.post('/brands/me/collab-requests', { group_id: groupId, terms, message, overrides }),
-  // A hand-picked set. Find lets a brand tick several creators; until this existed the
-  // screen sent the FILTERS instead, so ticking two people asked everyone who matched.
-  // Contract: features/creators-tab-shape (item 7)
-  askSome:  (influencerIds, terms, message) =>
-    api.post('/brands/me/collab-requests', { influencer_ids: influencerIds, terms, message }),
   askMany:  (filters, terms, message) =>
     api.post('/brands/me/collab-requests', { filters, terms, message }),
 
@@ -478,7 +455,6 @@ export const influencerApi = {
 
   // collab-part2 — the pre-campaign handshake, creator side. Brands can now ask YOU;
   // these are the inbox, the responses, the mute/bar, and your agreements.
-  listCollabRequests:     () => api.get('/influencers/me/collab-requests'),
   // Stage 0 built this; Stage 1 is the first thing to read it. One count, computed on
   // the server, so her badge and the brand's can never disagree about the same work.
   getNeedsYou:            () => api.get('/influencers/me/needs-you'),
@@ -488,12 +464,6 @@ export const influencerApi = {
   // Stage 1 — her counter on her OWN pitch. The route shipped long ago and no client
   // has ever called it, so her only replies were accept or walk away.
   counterMyProposal:      (id, terms, message) => api.post(`/influencers/me/proposals/${id}/counter`, { counter_terms: terms, message }),
-  acceptCollabRequest:    (id) => api.post(`/influencers/me/collab-requests/${id}/accept`),
-  counterCollabRequest:   (id, terms) => api.post(`/influencers/me/collab-requests/${id}/counter`, { terms }),
-  declineCollabRequest:   (id, reason) => api.post(`/influencers/me/collab-requests/${id}/decline`, { reason }),
-  getCollabPreferences:   () => api.get('/influencers/me/collab-preferences'),
-  updateCollabPreferences:(data) => api.patch('/influencers/me/collab-preferences', data),
-  listMyAgreements:       () => api.get('/influencers/me/agreements'),
 
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),

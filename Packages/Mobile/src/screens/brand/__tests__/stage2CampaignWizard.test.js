@@ -28,7 +28,6 @@ const NEW_SCREENS = [
   'screens/brand/BrandAllocationScreen.js',
   'screens/brand/BrandBasketPreviewScreen.js',
   'screens/brand/BrandCampaignReviewScreen.js',
-  'screens/brand/BrandAgreementDetailScreen.js',
 ];
 
 describe('Stage 2 · the wizard loads', () => {
@@ -76,14 +75,17 @@ describe('Stage 2 · every route the wizard navigates to is registered', () => {
       expect.arrayContaining(['BrandAllocation', 'BrandBasketPreview']));
   });
 
-  it('DRIFT, 2026-09-02: the wizard no longer opens an agreement — there is no picker to open one from', () => {
-    // Architecture change: "old agreements are coming, which we removed them as part of
-    // collaborations." The wizard's Creators step no longer offers a "Matching agreements"
-    // picker to tap into (see batchAWizardTrim.test.js N-3), so its only reason to navigate
-    // to BrandAgreementDetail is gone. The route itself is untouched and still reachable —
-    // BrandCreatorSpineScreen's "See what you agreed" still opens it, for viewing a
-    // pre-pivot agreement, not for starting a new one.
+  it('DRIFT: the agreement screen is gone entirely — nothing anywhere opens one', () => {
+    // Two steps, recorded in order. First (2026-09-02, slice_10) the wizard's "Matching
+    // agreements" picker was removed, so the wizard stopped navigating here. Then
+    // Docs/THE_CUT.md pass 1 removed the SCREEN — the founder's decision was "remove this
+    // completely", not "keep it as read-only history".
+    //
+    // The assertion widened accordingly: it is no longer enough that the wizard does not
+    // open it. Nothing may, and the route may not be registered at all.
     expect(targetsIn('screens/brand/BrandSetWizardScreen.js')).not.toContain('BrandAgreementDetail');
+    expect(registered.has('BrandAgreementDetail')).toBe(false);
+    expect(fs.existsSync(path.join(SRC, 'screens/brand/BrandAgreementDetailScreen.js'))).toBe(false);
   });
 
   it('the wizard no longer walks you out to the Creators tab', () => {
@@ -116,7 +118,7 @@ describe('Stage 2 · every route the wizard navigates to is registered', () => {
     for (const name of [
       'BrandCampaignCreate', 'BrandCampaignBuilder', 'BrandSetWizard',
       'BrandAllocation', 'BrandBasketPreview', 'BrandCampaignReview',
-      'BrandAgreementDetail', 'BrandDiary',
+      'BrandDiary',
     ]) {
       expect(body).toContain(`name="${name}"`);
     }
