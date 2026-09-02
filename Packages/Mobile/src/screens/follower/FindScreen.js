@@ -13,79 +13,19 @@ const P = {
 import { followerApi } from '../../services/api';
 
 /**
- * FindScreen — 7 super-categories with sub-categories and store counts.
+ * FindScreen — the fashion catalogue, by category.
  * Tap super-category → CategoryListScreen.
  */
 
+// Docs/THE_CUT.md pass 1 — this was a hardcoded directory of 7 worlds and 35 business
+// types: Pest Control, Dental Clinics, Wedding Planners, Legal/CA, Co-working Spaces,
+// car rental, salons, restaurants. None of them is a business INFLX serves, and a
+// shopper tapping one reached nothing. Fashion is the platform, so fashion is the list.
 const SUPER_CATEGORIES = [
-  {
-    key: 'eat', icon: '🍽️', label: 'Eat',
-    subs: [
-      { key: 'restaurant', label: 'Restaurants & Cafes', icon: '🍽️' },
-      { key: 'bakery', label: 'Bakeries', icon: '🎂' },
-      { key: 'packaged_food', label: 'Packaged Food', icon: '📦' },
-      { key: 'grocery', label: 'Grocery & Supermarkets', icon: '🛒' },
-    ],
-  },
   {
     key: 'shop', icon: '🛍️', label: 'Shop',
     subs: [
       { key: 'fashion_walkin', label: 'Fashion & Apparel', icon: '👗' },
-      { key: 'electronics', label: 'Electronics & Gadgets', icon: '📱' },
-      { key: 'jewellery', label: 'Jewellery & Watches', icon: '💎' },
-      { key: 'footwear', label: 'Footwear', icon: '👟' },
-      { key: 'furniture', label: 'Home Decor & Furniture', icon: '🪴' },
-      { key: 'optical', label: 'Optical / Eyewear', icon: '👓' },
-      { key: 'pet_shop', label: 'Pet Shops', icon: '🐕' },
-      { key: 'flowers_gifting', label: 'Flowers & Gifting', icon: '🌹' },
-      { key: 'hardware', label: 'Hardware & Building', icon: '🔨' },
-    ],
-  },
-  {
-    key: 'groom', icon: '✨', label: 'Groom',
-    subs: [
-      { key: 'salon', label: 'Salons & Beauty', icon: '💇' },
-      { key: 'home_beauty', label: 'Home Beauty', icon: '💅' },
-      { key: 'pet_grooming', label: 'Pet Grooming', icon: '🐾' },
-    ],
-  },
-  {
-    key: 'fitness', icon: '💪', label: 'Stay Fit',
-    subs: [
-      { key: 'gym_fitness', label: 'Gyms & Fitness', icon: '💪' },
-      { key: 'clinic_doctor', label: 'Clinics & Doctors', icon: '🏥' },
-      { key: 'dental_clinic', label: 'Dental Clinics', icon: '🦷' },
-      { key: 'diagnostic_lab', label: 'Diagnostic Labs', icon: '🔬' },
-      { key: 'coaching_center', label: 'Coaching & Tutoring', icon: '📚' },
-    ],
-  },
-  {
-    key: 'travel', icon: '✈️', label: 'Travel',
-    subs: [
-      { key: 'car_rental', label: 'Car Rental', icon: '🚗' },
-      { key: 'bike_rental', label: 'Bike Rental', icon: '🏍️' },
-      { key: 'travel_packages', label: 'Travel Packages', icon: '✈️' },
-      { key: 'hotel_homestay', label: 'Hotels & Homestays', icon: '🏨' },
-    ],
-  },
-  {
-    key: 'home', icon: '🏠', label: 'Home',
-    subs: [
-      { key: 'home_services', label: 'Home Services', icon: '🔧' },
-      { key: 'pest_control', label: 'Pest Control', icon: '🐛' },
-      { key: 'laundry', label: 'Laundry & Dry Cleaning', icon: '👔' },
-      { key: 'interior_design', label: 'Interior Design', icon: '🎨' },
-      { key: 'coworking_space', label: 'Co-working Spaces', icon: '🏢' },
-    ],
-  },
-  {
-    key: 'events', icon: '🎉', label: 'Events',
-    subs: [
-      { key: 'function_hall', label: 'Event Venues', icon: '🏛️' },
-      { key: 'wedding_planner', label: 'Wedding Planners', icon: '💍' },
-      { key: 'photography', label: 'Photography Studios', icon: '📸' },
-      { key: 'florist', label: 'Florists', icon: '💐' },
-      { key: 'legal_ca', label: 'Legal / CA', icon: '⚖️' },
     ],
   },
 ];
@@ -155,10 +95,7 @@ export default function FindScreen({ navigation }) {
           <Text style={styles.browseTxt}>👗  Browse fashion by category</Text>
           <Text style={styles.browseArrow}>→</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.browseBtn} onPress={() => openCatalogueBrowser('furniture')}>
-          <Text style={styles.browseTxt}>🪴  Browse furniture by category</Text>
-          <Text style={styles.browseArrow}>→</Text>
-        </TouchableOpacity>
+        {/* Docs/THE_CUT.md pass 1 — furniture removed; fashion is the platform. */}
       </View>
 
       {/* Super-categories */}

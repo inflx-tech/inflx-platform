@@ -23,12 +23,12 @@ const P = {
 // Offline fallback ONLY — the real tiles come from /follower/categories (the
 // admin follower_categories table; contract 2.5a). Kept in sync with the 5 launch
 // tiles so a rare API-down render still matches reality.
+// Docs/THE_CUT.md pass 1 — INFLX is a fashion platform. Food, car rentals, beauty and
+// furniture are all removed, so the fallback offers the one that survives. (The live
+// list still comes from the admin tiles; this only decides what renders if that call
+// fails, and it must not offer a world the app can no longer serve.)
 const DEFAULT_CATEGORIES = [
   { key: 'fashion',    icon: '👗', label: 'Fashion' },
-  { key: 'furniture',  icon: '🛋️', label: 'Furniture' },
-  { key: 'food',       icon: '🍽️', label: 'Food' },
-  { key: 'beauty',     icon: '✨', label: 'Beauty' },
-  { key: 'car_rental', icon: '🚗', label: 'Car Rentals' },
 ];
 
 // Map super-category keys → the focus-vertical accent key (for the pale tint).
