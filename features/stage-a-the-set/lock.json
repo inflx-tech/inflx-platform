@@ -247,6 +247,13 @@
     "tests": "576 mobile tests pass (was 573). campaignBuilderDeferred.test.js rewritten for grouping: same-day-and-shoot clusters together, same-day-different-shoot stays separate, day-only and shoot-only asks still form real clusters, sort order, and each button carries only its own group's ids.",
     "device_walk_required": "Folded into the existing 06-diff walk for the deferred pool — same screen, same steps, now grouped."
   },
+  "deployed_2026_09_02_sb40": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"commit,push and OTA\"",
+    "commit": "cc10b8c (SB-40 grouping — brand-only, no backend/DB change)",
+    "backend": "Pushed to Render for consistency (deploy-inert for this commit specifically — no backend files changed). Route existence reconfirmed anyway: GET /v1/campaigns -> 401 twice.",
+    "ota": { "brand": "version 203, native_runtime 3 — verified directly against the manifest. Influencer not republished — nothing in that bundle changed." },
+    "device_walk_required": "Same as slice_6 above."
+  },
   "deployed_2026_09_02_deferred_pool": {
     "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",
     "commit": "4bca516 (the deferred pool — migration 167, offer.controller.defer, campaign.controller.getDeferred, CreatorDeferScreen, SB-24 Moved out)",
