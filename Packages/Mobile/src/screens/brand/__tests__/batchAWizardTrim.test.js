@@ -22,6 +22,9 @@ const read = (rel) => fs.readFileSync(path.join(SRC, rel), 'utf8');
 
 const WIZARD = 'screens/brand/BrandSetWizardScreen.js';
 const CREATE = 'screens/brand/BrandCampaignCreateScreen.js';
+// stage-a — CreatorTermsScreen (SB-30) is new; it gets the same M-10 token/style check as
+// the other two screens below, not a separate one.
+const TERMS = 'screens/brand/CreatorTermsScreen.js';
 
 /** The body of a `{cond && ( … )}` block, so a check can ask what is INSIDE the branch. */
 function branchOwning(src, opener, mustContain) {
@@ -66,7 +69,7 @@ describe('Batch A · the pieces still load', () => {
   // syntax-checked instead. Stage A found this while needing an actual parse check on a
   // large JSX edit.
   const parser = require('@babel/parser');
-  it.each([WIZARD, CREATE])('%s parses', (rel) => {
+  it.each([WIZARD, CREATE, TERMS])('%s parses', (rel) => {
     expect(() => parser.parse(read(rel), { sourceType: 'module', plugins: ['jsx'] })).not.toThrow();
   });
 });
@@ -119,7 +122,11 @@ describe('Batch A · A-2 A-3 A-4 · a sales set is short', () => {
   });
 
   it('A-4 · exactly Instagram and YouTube are offered', () => {
-    const list = src.slice(src.indexOf('const CHANNELS = ['), src.indexOf('const FORMATS'));
+    // SUPERSEDED BY STAGE A — CHANNELS moved from the wizard to CreatorTermsScreen.js
+    // (SB-30), per creator rather than per set. The policy this guards — Instagram and
+    // YouTube only — is unchanged; only where it lives moved.
+    const sb30 = read('screens/brand/CreatorTermsScreen.js');
+    const list = sb30.slice(sb30.indexOf('const CHANNELS = ['), sb30.indexOf('const FORMATS'));
     const keys = [...list.matchAll(/key: '(\w+)'/g)].map(m => m[1]);
     expect(keys).toEqual(['instagram', 'youtube']);
   });
@@ -139,9 +146,16 @@ describe('Batch A · A-5 N-2 · a pay-for-content set keeps everything', () => {
     expect(b).toContain('Your wallet must cover it');
   });
 
-  it('"What you are buying" survives', () => {
-    expect(src).toContain('What you are buying');
-    expect(src).toContain('FORMATS.map');
+  it('"What you are buying" moved to CreatorTermsScreen (SB-30), not deleted', () => {
+    // SUPERSEDED BY STAGE A — founder, 2026-09-01, choosing the harder of two options on
+    // purpose (asked directly, since it touches what the wallet must cover and what
+    // signing requires): formats move from a once-per-set ask to per creator, with no
+    // set-level default standing in for a creator nobody has asked yet. The wizard no
+    // longer asks this at all; CreatorTermsScreen does, one creator at a time.
+    expect(src).not.toContain('What you are buying');
+    const sb30 = read('screens/brand/CreatorTermsScreen.js');
+    expect(sb30).toContain('What she makes');
+    expect(sb30).toContain('FORMATS.map');
   });
 
   /**
@@ -245,7 +259,12 @@ describe('Batch A · A-8 A-9 A-10 N-4 N-6 · the offer stops blocking', () => {
   const src = read(WIZARD);
 
   it('A-8 · canFinish no longer requires an offer', () => {
-    expect(src).toMatch(/const canFinish = picked\.length > 0 && everyoneAllocated;/);
+    // SUPERSEDED BY STAGE A — canFinish gained a THIRD condition, everyoneHasFormats,
+    // 2026-09-01. Not a reopening of A-8: an offer is still never required. Formats is a
+    // different rule for the same reason allocation already gates this button — a
+    // buying-content creator with nothing to deliver cannot sign later, so better to ask
+    // now than to fail at signing.
+    expect(src).toMatch(/const canFinish = picked\.length > 0 && everyoneAllocated && everyoneHasFormats;/);
     // Narrow on purpose: chosenOffer is still used to RENDER the picked offer, which is
     // correct. What must be gone is the gate, and that is the line above.
     const line = (src.match(/const canFinish = .*/) || [''])[0];
@@ -290,11 +309,15 @@ describe('Batch A · N-1 · the server call keeps its shape', () => {
   const src = read(WIZARD);
 
   it('channels_json still carries allowed, and no longer invents a minimum', () => {
+    // SUPERSEDED BY STAGE A — this shape is sent from CreatorTermsScreen (SB-30) now, per
+    // creator, not from the wizard's set-level save body. The rule itself — allowed only,
+    // no invented minimum — is unchanged.
     // The brand can no longer choose a minimum, so sending one would be guidance we made up.
     // The server treats it as optional and describeChannels renders the list without it —
     // both checked in backend/src/services/campaignChannels.js before this was changed.
-    expect(src).toMatch(/channels_json: selling && channels\.length \? \{ allowed: channels \} : null/);
-    expect(src).not.toContain('minimum:');
+    const sb30 = read('screens/brand/CreatorTermsScreen.js');
+    expect(sb30).toMatch(/channels_json: selling && channels\.length \? \{ allowed: channels \} : null/);
+    expect(sb30).not.toContain('minimum:');
   });
 
   it('the server still accepts more channels than the phone now offers', () => {
@@ -308,7 +331,10 @@ describe('Batch A · N-1 · the server call keeps its shape', () => {
   });
 
   it('nothing else about the save changed', () => {
-    for (const field of ['window_start', 'window_end', 'formats_json', 'goal', 'name']) {
+    // formats_json dropped from this list — SUPERSEDED BY STAGE A, see the describe block
+    // above. It is no longer part of the set's save body at all; CreatorTermsScreen sends
+    // it per creator.
+    for (const field of ['window_start', 'window_end', 'goal', 'name']) {
       expect(src).toContain(field);
     }
   });
@@ -325,7 +351,7 @@ describe('Batch A · N-5 · the draft is still unpersisted', () => {
 describe('Batch A · M-10 · every token and helper still resolves', () => {
   const ig = require(path.join(SRC, 'theme/ig.js')).ig;
 
-  it.each([WIZARD, CREATE])('%s uses no ig.* token that is missing', (rel) => {
+  it.each([WIZARD, CREATE, TERMS])('%s uses no ig.* token that is missing', (rel) => {
     // Removing blocks can orphan a style; using one that no longer exists is `undefined` in a
     // StyleSheet — silent on some props, black-on-black on others.
     const used = [...read(rel).matchAll(/\big\.(\w+)/g)].map(m => m[1]);
@@ -335,7 +361,7 @@ describe('Batch A · M-10 · every token and helper still resolves', () => {
     }
   });
 
-  it.each([WIZARD, CREATE])('%s references no style key it does not define', (rel) => {
+  it.each([WIZARD, CREATE, TERMS])('%s references no style key it does not define', (rel) => {
     const src = read(rel);
     const defined = new Set(
       [...src.slice(src.lastIndexOf('StyleSheet.create')).matchAll(/^\s{2}(\w+):/gm)].map(m => m[1])
@@ -414,16 +440,21 @@ describe('Batch A · the THIRD deal type — "Both" — keeps everything either 
     expect(src).not.toMatch(/SHOOT_MODES\.map/);
   });
 
-  it.each(['engagement', 'hybrid'])('%s keeps "What you are buying"', (goal) => {
+  it.each(['engagement', 'hybrid'])('%s still ends up asked what she makes', (goal) => {
+    // SUPERSEDED BY STAGE A — the question moved from the wizard (once, per set) to
+    // CreatorTermsScreen (SB-30, per creator), and buyingContent now gates it there too.
     expect(buyingContent(goal)).toBe(true);
-    const formats = branchOwning(src, '{buyingContent && (', 'What you are buying');
+    const sb30 = read('screens/brand/CreatorTermsScreen.js');
+    const formats = branchOwning(sb30, '{buyingContent && (', 'What she makes');
     expect(formats).toContain('FORMATS.map');
   });
 
-  it.each(['conversion', 'hybrid'])('%s keeps the channels question', (goal) => {
-    // A hybrid set sells, so asking which channels drive traffic is still a real question.
+  it.each(['conversion', 'hybrid'])('%s still ends up asked the channels question', (goal) => {
+    // SUPERSEDED BY STAGE A — same move as above. A hybrid set sells, so asking which
+    // channels drive traffic is still a real question — just per creator now.
     expect(selling(goal)).toBe(true);
-    const ch = branchOwning(src, '{selling && (', 'How they will drive traffic');
+    const sb30 = read('screens/brand/CreatorTermsScreen.js');
+    const ch = branchOwning(sb30, '{selling && (', 'Where she posts');
     expect(ch).toContain('CHANNELS.map');
   });
 
@@ -470,7 +501,9 @@ describe('Batch A · the THIRD deal type — "Both" — keeps everything either 
     // exist — indexOf returned -1, the slice came back empty, and the assertion passed while
     // testing nothing. Caught by asking why a check I expected to FAIL was green.
     const from = src.indexOf('const AIM_CARDS');
-    const to = src.indexOf('const CHANNELS');
+    // SUPERSEDED BY STAGE A — CHANNELS moved out of this file entirely (CreatorTermsScreen,
+    // SB-30), so the slice's end boundary moved to the next thing after AIM_CARDS instead.
+    const to = src.indexOf('export default function BrandSetWizardScreen');
     expect(from).toBeGreaterThan(-1);
     expect(to).toBeGreaterThan(from);
     // Comments stripped: the note explaining WHY the phrase was removed quotes the phrase,

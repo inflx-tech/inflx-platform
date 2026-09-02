@@ -35,6 +35,7 @@ import BrandCampaignCreateScreen from '../screens/brand/BrandCampaignCreateScree
 import BrandCampaignBuilderScreen from '../screens/brand/BrandCampaignBuilderScreen';
 import BrandSetWizardScreen from '../screens/brand/BrandSetWizardScreen';
 import BrandAllocationScreen from '../screens/brand/BrandAllocationScreen';
+import CreatorTermsScreen from '../screens/brand/CreatorTermsScreen';
 import BrandBasketPreviewScreen from '../screens/brand/BrandBasketPreviewScreen';
 import BrandCampaignReviewScreen from '../screens/brand/BrandCampaignReviewScreen';
 import BrandAgreementDetailScreen from '../screens/brand/BrandAgreementDetailScreen';
@@ -140,6 +141,7 @@ function CampaignsStack() {
       <Stack.Screen name="BrandCampaignBuilder" component={BrandCampaignBuilderScreen} />
       <Stack.Screen name="BrandSetWizard" component={BrandSetWizardScreen} />
       <Stack.Screen name="BrandAllocation" component={BrandAllocationScreen} />
+      <Stack.Screen name="CreatorTerms" component={CreatorTermsScreen} />
       <Stack.Screen name="BrandBasketPreview" component={BrandBasketPreviewScreen} />
       <Stack.Screen name="BrandCampaignReview" component={BrandCampaignReviewScreen} />
       <Stack.Screen name="BrandAgreementDetail" component={BrandAgreementDetailScreen} />

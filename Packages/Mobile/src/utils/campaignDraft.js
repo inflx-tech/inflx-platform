@@ -95,6 +95,33 @@ export function setCreatorAllocation(campaignId, setId, agreementId, alloc) {
   });
 }
 
+/** Set one pencilled creator's own offer to her shoppers. */
+export function setCreatorOffer(campaignId, setId, agreementId, offer) {
+  const cur = getSetDraft(campaignId, setId);
+  setSetDraft(campaignId, setId, {
+    creators: cur.creators.map((c) => (c.agreement_id === agreementId ? { ...c, offer } : c)),
+  });
+}
+
+/**
+ * Which channels one pencilled creator drives traffic on, and what she posts.
+ * stage-a — moved down from the set (migration 166): every creator's own row now, not a
+ * set default. `channels` is `{ allowed: string[] }` or null; `formats` is
+ * `[{ type, count }]` (zero-count rows dropped) or null. Either can be set independently.
+ */
+export function setCreatorTerms(campaignId, setId, agreementId, { channels_json, formats_json } = {}) {
+  const cur = getSetDraft(campaignId, setId);
+  setSetDraft(campaignId, setId, {
+    creators: cur.creators.map((c) => (c.agreement_id === agreementId
+      ? {
+          ...c,
+          ...(channels_json !== undefined ? { channels_json } : null),
+          ...(formats_json !== undefined ? { formats_json } : null),
+        }
+      : c)),
+  });
+}
+
 /** Everything pencilled in, flattened — the Review screen's raw material. */
 export function summarise(campaignId, sets) {
   const d = draftFor(campaignId);
@@ -178,5 +205,23 @@ export function invitePayload(creator, set, offer) {
     if (eff?.valid_until) body.offer_valid_until = eff.valid_until;
   }
 
+  // stage-a — her own channels/formats (SB-30), moved down from the set. Omitted
+  // entirely when she has none: the server's own COALESCE-style rule then falls back to
+  // whatever the set was given, for a set built before this existed.
+  if (creator.channels_json) body.channels_json = creator.channels_json;
+  if (Array.isArray(creator.formats_json) && creator.formats_json.length) {
+    body.formats_json = creator.formats_json;
+  }
+
   return body;
+}
+
+/**
+ * Does this pencilled creator have what a buying-content set requires to sign later?
+ * A content/hybrid set cannot activate a contract with nothing to deliver (deliverables.model
+ * refuses it, hard) — better to ask now, one screen away, than to have a brand discover it at
+ * signing weeks later.
+ */
+export function hasFormats(creator) {
+  return Array.isArray(creator.formats_json) && creator.formats_json.some((f) => Number(f.count) > 0);
 }

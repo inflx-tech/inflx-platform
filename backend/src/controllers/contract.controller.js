@@ -84,6 +84,8 @@ async function getContractByIdOrThrow(contractId) {
        cs.campaign_id,
        cs.per_influencer_budget,
        cs.formats_json,
+       -- stage-a — her own formats, if she has one; formats_json above stays the fallback.
+       ci.formats_json    AS ci_formats_json,
        cs.goal,
        cs.brief           AS set_brief,
        c.brand_id,
@@ -118,6 +120,11 @@ async function getContractByIdOrThrow(contractId) {
     [contractId]
   );
   rows[0].production_event = peRows[0] || null;
+  // stage-a — resolve once, here, so every caller of getContractByIdOrThrow (signing,
+  // the PDF, the content-requirements starter text) reads one already-resolved
+  // `formats_json` and none of them has to know the inheritance rule exists.
+  const { resolveFormats } = require('../services/deliverables.model');
+  rows[0].formats_json = resolveFormats(rows[0].ci_formats_json, rows[0].formats_json);
   return rows[0];
 }
 
@@ -175,6 +182,7 @@ const getContract = asyncHandler(async (req, res) => {
        cs.goal            AS set_goal,
        cs.brief           AS set_brief,
        cs.formats_json    AS set_formats_json,
+       ci.formats_json    AS ci_formats_json,
        c.brand_id,
        c.brief            AS campaign_brief,
        -- The working style the two sides already agreed at handshake, so the contract
@@ -240,9 +248,12 @@ const getContract = asyncHandler(async (req, res) => {
 
   // Auto-compose the structured content-requirements starter text. If the
   // brand has already saved custom text, the client should prefer that.
+  const { resolveFormats } = require('../services/deliverables.model');
   const suggested_content_requirements = _buildSuggestedContentRequirements({
     deliverables,
-    formats_json:    contract.set_formats_json,
+    // stage-a — her own formats win; the set's is only the fallback for a
+    // creator invited before the per-creator ask existed.
+    formats_json:    resolveFormats(contract.ci_formats_json, contract.set_formats_json),
     set_brief:       contract.set_brief,
     campaign_brief:  contract.campaign_brief,
     posting_date:    contract.posting_date || contract.ci_posting_date,
@@ -1222,7 +1233,8 @@ const listBrandPending = asyncHandler(async (req, res) => {
         con.created_at,
         con.production_mode,
         con.campaign_influencer_id,
-        cs.formats_json,
+        cs.formats_json    AS set_formats_json,
+        ci.formats_json    AS ci_formats_json,
         cs.goal,
         c.id   AS campaign_id,
         c.name AS campaign_name,
@@ -1239,6 +1251,13 @@ const listBrandPending = asyncHandler(async (req, res) => {
      ORDER BY con.influencer_signed_at DESC NULLS LAST, con.created_at DESC`,
     [brand.id]
   );
+
+  const { resolveFormats } = require('../services/deliverables.model');
+  for (const r of rows) {
+    r.formats_json = resolveFormats(r.ci_formats_json, r.set_formats_json);
+    delete r.ci_formats_json;
+    delete r.set_formats_json;
+  }
 
   return success(res, { contracts: rows });
 });

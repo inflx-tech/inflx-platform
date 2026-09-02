@@ -111,4 +111,28 @@ function plannedDeliverables(goal, formatsJson, canonical) {
   return { formats, error: null };
 }
 
-module.exports = { buysContent, plannedDeliverables, CONTENT_BUYING_GOALS, VALID_TYPES };
+/**
+ * stage-a — formats_json moved down to the creator (migration 166). A brand no longer
+ * sets "what she posts" on the set at all; SB-30 asks it per creator. But six contracts
+ * already signed under the old set-level ask, so the read side still has to answer for
+ * them: her value, else the set's, else nothing. Written once so every reader — signing,
+ * the PDF, her own campaign screen, the auto-create-on-activate fallback — agrees.
+ *
+ * @param {*} herFormats  campaign_influencers.formats_json
+ * @param {*} setFormats  campaign_sets.formats_json
+ * @returns {*} whichever one is a non-empty array (or a JSON string of one), else null
+ */
+function resolveFormats(herFormats, setFormats) {
+  const nonEmpty = (v) => {
+    if (v == null) return false;
+    if (typeof v === 'string') {
+      try { const p = JSON.parse(v); return Array.isArray(p) && p.length > 0; } catch { return false; }
+    }
+    return Array.isArray(v) && v.length > 0;
+  };
+  if (nonEmpty(herFormats)) return herFormats;
+  if (nonEmpty(setFormats)) return setFormats;
+  return null;
+}
+
+module.exports = { buysContent, plannedDeliverables, resolveFormats, CONTENT_BUYING_GOALS, VALID_TYPES };

@@ -75,3 +75,71 @@ launch day for them.
 
 `cancelInfluencer` writes an invalid `campaign_influencer_status`. Confirmed live, will
 throw. Carried — nothing in this stage calls it.
+
+---
+
+# Before / after — Stage A, her terms
+
+**Mockup:** `features/screen-atlas/04-preview/mockups/atlas-brand.html` → **SB-29, SB-30**
+**Screens:** `BrandSetWizardScreen` step 4 of 4 (`StepTerms`) · new `CreatorTermsScreen.js`
+
+## Screenshots
+
+Not captured, for the same reason as SB-26 above — reachable only inside the wizard, on a
+real device. The device walk below is the artefact this half of the stage is gated on.
+
+## What was implemented
+
+| | Before | After |
+|---|---|---|
+| Where she posts / what she makes | Asked once, in Basics (step 2), for the whole set | Not asked in Basics at all. Asked per creator, in a new screen (SB-30) reached from her card in Terms (step 4) |
+| Her card in Terms | Money, allocation, offer | Same, plus a "Where she posts / What she makes" summary and a button into SB-30 |
+| Finish gate | Blocked only if unallocated (selling set) | Also blocked if any creator on a buying-content set has no format chosen |
+
+## What matches the locked mockup
+
+- SB-30 is one screen per creator, reachable from her row, showing money/allocation/offer
+  read-back plus the two new fields — nothing summarised away before she agrees to it
+- Channels stays guidance, never a gate; formats is compulsory exactly where the set is
+  buying content, never on a commission-only creator
+
+## What diverged from the mockup, and why
+
+**SB-29's "set the defaults once, list who's different" layout was not rebuilt.** The
+locked mockup shows one shared default plus per-creator exceptions. What shipped keeps the
+existing per-creator-card list (every creator's terms always visible) and adds the new
+fields + button onto it, so the working allocation and offer flows did not have to be
+touched to ship this. Functionally complete; visually not pixel-matched. If this matters
+enough to redo properly, say so and it's a follow-up slice, not a rewrite of this one.
+
+**Channels/formats moved out of Basics entirely, not just relocated.** Founder, 2026-09-01,
+asked directly because it touches the budget and what a content contract can sign without:
+chose per-creator-only over "ask once, override the exception" — the harder of the two, on
+purpose, so no set-level default stands in for a creator nobody has actually been asked.
+
+## What to check — the device walk
+
+1. **Open Basics (step 2) on a new set.** No channels, no formats question anywhere on it.
+2. **Pick creators, reach Terms (step 4).** Each creator's card shows "Where she posts" /
+   "What she makes" as **Not set / Not set yet**, in red on a content or hybrid set.
+3. **Tap into one creator's terms (SB-30).** Money and post-by read as already agreed.
+   "Change what she can sell" and "Change/Give her an offer" still work exactly as before.
+4. **Pick a channel, give her a format, Save.** Back on Terms, that creator's card updates
+   immediately — no need to leave and re-enter the step.
+5. **On a content or hybrid set, try to finish Terms with one creator's formats still
+   unset.** The button stays greyed, with a reason.
+6. **Pick an offer for a creator, then immediately open her SB-30 without saving the set.**
+   The offer must still be there when you come back — this is the one the offer-persistence
+   fix in this slice exists to prevent regressing.
+7. **Open an existing (pre-today) set that already had channels/formats at set level.**
+   It must still open without error — nothing here was meant to touch or clear that.
+
+## Known, and not fixed here
+
+Same `cancelInfluencer` bug as above, still carried.
+
+The backend half of this slice (the `invite`/`updateInfluencer`/`duplicateSet` wiring, and
+the read-side resolvers in `deliverables.model.js` / `campaignChannels.js`) could not be
+run against a live database in this session — verified by hand instead (see the contract's
+`lock.json → slice_2_terms.backend.not_run`). `pnpm qa:db` against production is the real
+check, still owed before this is called done on the server side.

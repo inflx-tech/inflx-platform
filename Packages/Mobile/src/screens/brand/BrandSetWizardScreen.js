@@ -13,7 +13,7 @@ import CreatorOfferSheet from '../../components/brand/CreatorOfferSheet';
 import * as draft from '../../utils/campaignDraft';
 import {
   settledLine, byExpiry, daysLeft, expiryLine, AIM_LABEL,
-  allocationFromTerms, allocationLabel,
+  allocationFromTerms, allocationLabel, offerLine,
 } from '../../utils/agreementSummary';
 
 /**
@@ -60,21 +60,9 @@ const AIM_CARDS = [
   },
 ];
 
-// Batch A — founder, 2026-08-27: Instagram and YouTube only. The server still ACCEPTS the
-// other five (campaignChannels.VALID_CHANNELS), and sets created before today keep whatever
-// they were given — this narrows what a brand may newly pick, not what the platform knows.
-// Contract: features/stage-2-walkthrough-fixes
-const CHANNELS = [
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'youtube', label: 'YouTube' },
-];
-
-const FORMATS = [
-  { type: 'reel', label: 'Instagram Reel' },
-  { type: 'story', label: 'Instagram Story' },
-  { type: 'post', label: 'Instagram Post' },
-  { type: 'youtube_short', label: 'YouTube Short' },
-];
+// stage-a — CHANNELS and FORMATS moved to CreatorTermsScreen.js (SB-30): both are now asked
+// per creator, not once for the set. See that file for the Batch A note on why it is
+// Instagram and YouTube only.
 
 export default function BrandSetWizardScreen({ route, navigation }) {
   const { campaignId, campaignName, setId: initialSetId } = route.params || {};
@@ -96,8 +84,6 @@ export default function BrandSetWizardScreen({ route, navigation }) {
   const [goLiveDate, setGoLiveDate] = useState('');
   const [shootMode, setShootMode] = useState(null);
   const [invitesClose, setInvitesClose] = useState('');
-  const [channels, setChannels] = useState([]);
-  const [formats, setFormats] = useState(FORMATS.map(f => ({ type: f.type, count: 0 })));
   const [derivedBudget, setDerivedBudget] = useState(null);
   // step 3
   const [agreements, setAgreements] = useState([]);
@@ -198,15 +184,13 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     setShootMode(set.shoot_mode || null);
     setInvitesClose(setShape.dayOf(set.invites_close_at) || '');
     setDerivedBudget(set.set_budget != null ? Number(set.set_budget) : null);
-    const cj = set.channels_json || null;
-    setChannels(Array.isArray(cj?.allowed) ? cj.allowed : []);
-    setMinChannels(cj?.minimum != null ? Number(cj.minimum) : 1);
-    if (Array.isArray(set.formats_json) && set.formats_json.length) {
-      setFormats(FORMATS.map(f => ({
-        type: f.type,
-        count: Number((set.formats_json.find(x => x.type === f.type) || {}).count || 0),
-      })));
-    }
+    // stage-a — channels_json/formats_json used to hydrate here from the set. They now
+    // live per creator (SB-30); a set built before today keeps whatever it was given, and
+    // the server still resolves it as every creator's fallback. Removing this also removes
+    // a dead setter call for a "minimum channels" state variable that was never declared
+    // with useState — so opening an existing set to edit it threw a ReferenceError every
+    // time. batchAWizardTrim.test.js has asserted that variable gone since Batch A and was
+    // failing until now.
     const sd = draft.getSetDraft(campaignId, set.id);
     setPicked(sd.creators);
     setStep(sd.creators.length ? 3 : 2);
@@ -288,13 +272,10 @@ export default function BrandSetWizardScreen({ route, navigation }) {
       go_live_date: goLiveDate || null,
       shoot_mode: shootMode || null,
       invites_close_at: invitesClose || null,
-      formats_json: buyingContent ? formats.filter(f => Number(f.count) > 0) : [],
-      // Guidance only — it blocks nobody you have already agreed with.
-      // Batch A — `minimum` is no longer sent: the brand can no longer choose one, and
-      // storing a number nobody picked would be guidance we invented. The server treats it as
-      // optional (campaignChannels.validateChannels) and describeChannels renders the list
-      // without it. Existing sets keep whatever they were given.
-      channels_json: selling && channels.length ? { allowed: channels } : null,
+      // stage-a — channels_json/formats_json are no longer sent here. Founder, 2026-09-01:
+      // both moved down to per creator (SB-30) — every creator's posts and channels are her
+      // own, not a set default. A set built before today keeps whatever it was given, and the
+      // server still honours it as a fallback for a creator with no override of her own.
       // set_budget is DELIBERATELY not sent for a paid set: the server derives it from the
       // sum of this set's agreed fees and keeps it in step with every later invite (§5.2).
     };
@@ -355,13 +336,11 @@ export default function BrandSetWizardScreen({ route, navigation }) {
 
         {step === 1 && (
           <StepBasics
-            goal={goal} selling={selling} buyingContent={buyingContent}
+            buyingContent={buyingContent}
             name={name} setName={setName}
             goLiveDate={goLiveDate} setGoLiveDate={setGoLiveDate}
             shootMode={shootMode} setShootMode={setShootMode}
             invitesClose={invitesClose} setInvitesClose={setInvitesClose}
-            channels={channels} setChannels={setChannels}
-            formats={formats} setFormats={setFormats}
             derivedBudget={derivedBudget}
             saving={saving}
             onBack={() => setStep(0)}
@@ -388,6 +367,10 @@ export default function BrandSetWizardScreen({ route, navigation }) {
             onSetAllocation={(c) => navigation.navigate('BrandAllocation', {
               campaignId, setId, agreementId: c.agreement_id, creatorName: c.name, current: c.alloc,
             })}
+            onSetTerms={(c) => navigation.navigate('CreatorTerms', {
+              campaignId, setId, agreementId: c.agreement_id, creatorName: c.name,
+              selling, buyingContent, current: c,
+            })}
             onBack={() => setStep(2)}
             onDone={finishSet}
           />
@@ -409,8 +392,12 @@ export default function BrandSetWizardScreen({ route, navigation }) {
           creatorName: creator?.name || null,
         })}
         onSave={(next) => {
-          const id = offerFor?.agreement_id;
-          setPicked(prev => prev.map(c => (c.agreement_id === id ? { ...c, offer: next } : c)));
+          // stage-a — written straight to the shared draft, same as allocation, not only to
+          // local state. CreatorTermsScreen (SB-30) reads and writes this same store from a
+          // separate route; if this stayed local-only, opening it right after choosing an
+          // offer would resync `picked` from the store and silently drop the offer nobody
+          // had persisted yet. The focus subscription below picks the change straight back up.
+          draft.setCreatorOffer(campaignId, setId, offerFor?.agreement_id, next);
           setOfferFor(null);
         }}
       />
@@ -469,10 +456,9 @@ function StepAim({ goal, locked, onPick, onContinue }) {
 /* ── Step 2 · basics ───────────────────────────────────────────────────────── */
 function StepBasics(p) {
   const {
-    goal, selling, buyingContent, name, setName,
+    buyingContent, name, setName,
     goLiveDate, setGoLiveDate, shootMode, setShootMode, invitesClose, setInvitesClose,
-    channels, setChannels,
-    formats, setFormats, derivedBudget, saving, onBack, onContinue,
+    derivedBudget, saving, onBack, onContinue,
   } = p;
 
   // The picker greys out anything sooner than the server would accept, so the brand can
@@ -486,12 +472,6 @@ function StepBasics(p) {
     setGoLiveDate(d);
     if (!invitesClose || invitesClose > d) setInvitesClose(setShape.suggestedInvitesClose(d) || '');
   };
-
-  const toggleChannel = (k) =>
-    setChannels(channels.includes(k) ? channels.filter(c => c !== k) : [...channels, k]);
-
-  const bump = (type, by) =>
-    setFormats(formats.map(f => (f.type === type ? { ...f, count: Math.max(0, Number(f.count) + by) } : f)));
 
   return (
     <>
@@ -601,42 +581,10 @@ function StepBasics(p) {
         </View>
       )}
 
-      {buyingContent && (
-        <View style={s.sec2}>
-          <Text style={s.dh}>What you are buying</Text>
-          {FORMATS.map((f) => {
-            const row = formats.find(x => x.type === f.type) || { count: 0 };
-            return (
-              <View key={f.type} style={s.stepRow}>
-                <Text style={s.stepRowK}>{f.label}</Text>
-                <View style={s.stepper}>
-                  <TouchableOpacity style={s.stepBtn} onPress={() => bump(f.type, -1)} activeOpacity={0.7}>
-                    <Icon name="minus" size={14} color={ig.text} />
-                  </TouchableOpacity>
-                  <Text style={[s.stepN, Number(row.count) === 0 && { color: ig.mut2 }]}>{row.count}</Text>
-                  <TouchableOpacity style={s.stepBtn} onPress={() => bump(f.type, 1)} activeOpacity={0.7}>
-                    <Icon name="plus" size={14} color={ig.text} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-
-      {selling && (
-        <View style={s.sec2}>
-          <Text style={s.dh}>How they will drive traffic</Text>
-          <View style={[s.chips, { marginTop: 6 }]}>
-            {CHANNELS.map(c => (
-              <TouchableOpacity key={c.key} style={[s.chip, channels.includes(c.key) && s.chipOn]} onPress={() => toggleChannel(c.key)} activeOpacity={0.8}>
-                <Text style={[s.chipT, channels.includes(c.key) && s.chipTOn]}>{c.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-
+      {/* stage-a — "what you are buying" (formats) and "how they drive traffic" (channels)
+          used to live here, once for the whole set. Founder, 2026-09-01: move both down to
+          per creator (SB-30) — every creator's posts and channels are her own, not a set
+          default. See StepTerms and CreatorTermsScreen. */}
 
       <View style={[s.sec, { flexDirection: 'row', gap: 8 }]}>
         <TouchableOpacity style={[s.btn, s.btnSec, { flex: 1 }]} onPress={onBack} activeOpacity={0.85}>
@@ -736,26 +684,11 @@ function StepCreators({ matching, pickedIds, onToggle, onOpen, onBack, onContinu
   );
 }
 
-/**
- * What her shoppers get, in one line. Named so the row reads as a sentence rather than as a
- * field: "Her shoppers get — 3% off, until 30 Sep".
- *
- * "None" is deliberate rather than blank. An offer is optional, and a blank space beside a
- * label reads as something that failed to load.
- */
-function offerLine(offer) {
-  if (!offer) return 'None';
-  const bits = [offer.name || String(offer.offer_type || 'Offer').replace('_', ' ')];
-  if (offer.valid_until) bits.push(`until ${fmtShort(offer.valid_until)}`);
-  else if (offer.valid_from) bits.push(`from ${fmtShort(offer.valid_from)}`);
-  return bits.join(' · ');
-}
-
 /* ── Step 4 · terms ────────────────────────────────────────────────────────── */
 function StepTerms(p) {
   const {
     selling, buyingContent, picked, derivedBudget,
-    onSetAllocation, onGiveOffer, onBack, onDone,
+    onSetAllocation, onGiveOffer, onSetTerms, onBack, onDone,
   } = p;
 
   const everyoneAllocated = !selling || picked.every(c => c.alloc?.alloc_scope);
@@ -764,7 +697,12 @@ function StepTerms(p) {
   // offer lives on campaign_influencers, per creator, nullable. The wizard invented the rule.
   // Allocation stays compulsory — a different rule, and a real one: a contracted creator with
   // no allocation is contracted and invisible in the shopping app.
-  const canFinish = picked.length > 0 && everyoneAllocated;
+  //
+  // stage-a — formats is the same shape of rule as allocation, for the same reason: a
+  // buying-content creator with nothing to deliver is contracted and unsignable, not merely
+  // unsold. Channels stays guidance-only, like the set-level ask it replaced.
+  const everyoneHasFormats = !buyingContent || picked.every(c => draft.hasFormats(c));
+  const canFinish = picked.length > 0 && everyoneAllocated && everyoneHasFormats;
 
   return (
     <>
@@ -811,6 +749,33 @@ function StepTerms(p) {
                     >
                       <Text style={s.miniSecT}>
                         {c.offer ? 'Change her offer' : 'Give her an offer'}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* stage-a — where she posts and what she makes, moved down from the set
+                    (SB-30). A commission-only creator sees neither: channels is guidance for
+                    a SELLING creator, formats is only asked when a fee is buying content. */}
+                {(selling || buyingContent) && (
+                  <>
+                    {buyingContent && (
+                      <KV
+                        k="What she makes"
+                        v={draft.hasFormats(c) ? c.formats_json.map(f => `${f.count} ${f.type}`).join(' · ') : 'Not set yet'}
+                        danger={!draft.hasFormats(c)}
+                      />
+                    )}
+                    {selling && (
+                      <KV k="Where she posts" v={c.channels_json?.allowed?.length ? c.channels_json.allowed.join(' · ') : 'Not set'} />
+                    )}
+                    <TouchableOpacity
+                      style={[s.mini, buyingContent && !draft.hasFormats(c) ? s.miniPri : s.miniSec]}
+                      onPress={() => onSetTerms(c)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={buyingContent && !draft.hasFormats(c) ? s.miniPriT : s.miniSecT}>
+                        {(c.channels_json || draft.hasFormats(c)) ? "Change her terms" : "Set what she posts"}
                       </Text>
                     </TouchableOpacity>
                   </>
@@ -902,7 +867,8 @@ function StepTerms(p) {
         <View style={s.sec}>
           <Text style={s.blockT}>
             {picked.length === 0 ? 'Pick at least one creator at step 3.'
-              : 'Every creator on a sales set must have something to sell.'}
+              : !everyoneAllocated ? 'Every creator on a sales set must have something to sell.'
+              : 'Every creator on a content set needs at least one format — set what she posts.'}
           </Text>
         </View>
       )}

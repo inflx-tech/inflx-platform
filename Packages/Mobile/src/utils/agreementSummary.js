@@ -132,4 +132,24 @@ export function allocationLabel(alloc) {
   return n ? `${n} selected product${n === 1 ? '' : 's'}` : 'Specific products — none chosen';
 }
 
+/**
+ * What her shoppers get, in one line. Named so the row reads as a sentence rather than as a
+ * field: "Her shoppers get — 3% off, until 30 Sep".
+ *
+ * "None" is deliberate rather than blank. An offer is optional, and a blank space beside a
+ * label reads as something that failed to load.
+ *
+ * stage-a — moved here from BrandSetWizardScreen so CreatorTermsScreen (SB-30) reads the
+ * same sentence rather than growing its own copy.
+ */
+export function offerLine(offer) {
+  if (!offer) return 'None';
+  const bits = [offer.name || String(offer.offer_type || 'Offer').replace('_', ' ')];
+  if (offer.valid_until) bits.push(`until ${fmtShort(offer.valid_until)}`);
+  else if (offer.valid_from) bits.push(`from ${fmtShort(offer.valid_from)}`);
+  return bits.join(' · ');
+}
+
+const fmtShort = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
 export { money as fmtAgreementMoney };

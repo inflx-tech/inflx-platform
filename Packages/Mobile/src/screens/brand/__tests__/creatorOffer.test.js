@@ -132,14 +132,25 @@ describe('P5 · the screens are wired, and reachable', () => {
   });
 
   it('C-4 · saving writes onto THAT creator and nobody else', () => {
-    // Keyed by agreement_id. A map that wrote to every row would give one creator's offer to
-    // the whole set — which is the exact thing this batch exists to stop.
-    expect(wizard).toMatch(/c\.agreement_id === id \? \{ \.\.\.c, offer: next \}/);
+    // SUPERSEDED BY STAGE A — the write moved from local `setPicked` inside the wizard to
+    // `draft.setCreatorOffer`, straight into the shared draft store, so CreatorTermsScreen
+    // (SB-30) — a separate route — sees the same offer without the wizard resyncing over
+    // it. Keyed by agreement_id either way. A map that wrote to every row would give one
+    // creator's offer to the whole set — which is the exact thing this batch exists to stop.
+    expect(wizard).toMatch(/draft\.setCreatorOffer\(campaignId, setId, offerFor\?\.agreement_id, next\)/);
+    const utilSrc = read('utils/campaignDraft.js');
+    expect(utilSrc).toMatch(/c\.agreement_id === agreementId \? \{ \.\.\.c, offer \} : c/);
   });
 
   it('the row says what she gives, without opening anything', () => {
+    // SUPERSEDED BY STAGE A — offerLine moved to agreementSummary.js so CreatorTermsScreen
+    // (SB-30) reads the same sentence instead of growing its own copy.
     expect(wizard).toContain('Her shoppers get');
-    expect(wizard).toContain('function offerLine');
+    expect(wizard).toContain('offerLine');
+    expect(wizard).toContain("from '../../utils/agreementSummary'");
+    expect(wizard).not.toContain('function offerLine');
+    const summarySrc = read('utils/agreementSummary.js');
+    expect(summarySrc).toContain('export function offerLine');
   });
 
   it('the sheet offers exactly the two routes the founder described', () => {

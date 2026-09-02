@@ -887,8 +887,8 @@ const duplicateSet = asyncHandler(async (req, res) => {
       `INSERT INTO campaign_influencers
          (set_id, influencer_id, status, agreed_fee, posting_date, offer_expires_at,
           offer_type, offer_config_json, commission_pct, physical_delivery,
-          delivery_address, influencer_budget, coupon_code)
-       VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL)`,
+          delivery_address, influencer_budget, coupon_code, channels_json, formats_json)
+       VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL, $12, $13)`,
       [
         newSet.id,
         inf.influencer_id,
@@ -901,6 +901,10 @@ const duplicateSet = asyncHandler(async (req, res) => {
         inf.physical_delivery,
         inf.delivery_address,
         inf.influencer_budget,
+        // stage-a — without this a duplicated set silently drops any per-creator
+        // channel/format override and reads as "inherits", which the brand never chose.
+        inf.channels_json,
+        inf.formats_json,
       ]
     );
   }
@@ -1085,11 +1089,18 @@ const invite = asyncHandler(async (req, res) => {
     // collab-part2 — briefing a handshake agreement into this set. Optional: a cold
     // invite (no prior agreement) is unchanged.
     agreement_id,
+    // stage-a — moved down from the set (migration 166). Absent means "inherits the set's
+    // value", which is what every creator invited before today already does.
+    channels_json,
+    formats_json,
   } = req.body;
 
   if (!influencer_id) {
     throw new AppError('VALIDATION_ERROR', 'influencer_id is required', 422, 'influencer_id');
   }
+
+  if (channels_json !== undefined) assertValidChannels(set.goal, channels_json);
+  if (formats_json !== undefined) assertValidFormats(formats_json);
 
   // collab-part2 — validate the agreement BEFORE any writes. It must be this brand's,
   // with this creator, still 'ready', and its agreed AIM must match the set's goal —
@@ -1282,9 +1293,11 @@ const invite = asyncHandler(async (req, res) => {
         offer_valid_until, offer_valid_from,
         -- collab-part2 — the agreement this assignment was briefed from. Presence is
         -- what tells the creator's acceptance flow the terms were already settled.
-        agreement_id)
+        agreement_id,
+        -- stage-a — her channels/formats, moved down from the set. NULL means inherit.
+        channels_json, formats_json)
      VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-             $17, $18, $19, $20::jsonb, $21, $23, $22)
+             $17, $18, $19, $20::jsonb, $21, $23, $22, $24::jsonb, $25::jsonb)
      RETURNING *`,
     [
       set.id,
@@ -1310,6 +1323,8 @@ const invite = asyncHandler(async (req, res) => {
       offer_valid_until || null,
       agreement ? agreement.id : null,
       offer_valid_from || null,
+      channels_json ? JSON.stringify(channels_json) : null,
+      formats_json ? JSON.stringify(formats_json) : null,
     ]
   );
 
@@ -1457,7 +1472,16 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     // called for unrelated edits too, and wiping an offer's start as a side effect of
     // changing a posting date is the kind of bug nobody traces back.
     offer_valid_from,
+    // stage-a — moved down from the set (migration 166). Omitted leaves whatever is
+    // already stored alone — same rule as alloc_scope below, for the same reason: this
+    // endpoint is also called to edit a fee or a date, and that must not silently wipe
+    // channels or formats nobody touched.
+    channels_json,
+    formats_json,
   } = req.body;
+
+  if (channels_json !== undefined) assertValidChannels(set.goal, channels_json);
+  if (formats_json !== undefined) assertValidFormats(formats_json);
 
   // An omitted alloc_scope leaves the existing allocation ALONE rather than
   // clearing it — this endpoint is also called for unrelated edits (posting date,
@@ -1517,7 +1541,11 @@ const updateInfluencer = asyncHandler(async (req, res) => {
        alloc_category         = CASE WHEN $14::text IS NULL THEN alloc_category         ELSE $16 END,
        alloc_product_ids      = CASE WHEN $14::text IS NULL THEN alloc_product_ids      ELSE $17::jsonb END,
        offer_valid_until      = CASE WHEN $18::text IS NULL THEN offer_valid_until      ELSE $18::timestamptz END,
-       offer_valid_from       = CASE WHEN $19::text IS NULL THEN offer_valid_from       ELSE $19::timestamptz END
+       offer_valid_from       = CASE WHEN $19::text IS NULL THEN offer_valid_from       ELSE $19::timestamptz END,
+       -- stage-a — $20/$21 undefined (sent as NULL) means "wasn't part of this request",
+       -- same COALESCE-style keep-what's-there as allocation above.
+       channels_json          = CASE WHEN $20::text IS NULL THEN channels_json ELSE $20::jsonb END,
+       formats_json           = CASE WHEN $21::text IS NULL THEN formats_json  ELSE $21::jsonb END
      WHERE id = $1
      RETURNING *`,
     [
@@ -1540,6 +1568,8 @@ const updateInfluencer = asyncHandler(async (req, res) => {
       alloc && alloc.product_ids ? JSON.stringify(alloc.product_ids) : null,
       offer_valid_until != null ? offer_valid_until : null,
       offer_valid_from != null ? offer_valid_from : null,
+      channels_json !== undefined ? JSON.stringify(channels_json) : null,
+      formats_json !== undefined ? JSON.stringify(formats_json) : null,
     ]
   );
 

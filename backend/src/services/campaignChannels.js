@@ -107,4 +107,19 @@ function describeChannels(channels) {
     : list;
 }
 
-module.exports = { VALID_CHANNELS, CHANNEL_LABELS, validateChannels, describeChannels };
+/**
+ * stage-a — channels_json moved down to the creator (migration 166), same reading rule as
+ * formats_json: her value, else the set's, else nothing. The set-level ask is what the old
+ * wizard wrote; nothing new writes it, but it must keep resolving for sets built before today.
+ *
+ * @param {*} herChannels  campaign_influencers.channels_json
+ * @param {*} setChannels  campaign_sets.channels_json
+ */
+function resolveChannels(herChannels, setChannels) {
+  const nonEmpty = (v) => v && typeof v === 'object' && !Array.isArray(v) && Array.isArray(v.allowed) && v.allowed.length > 0;
+  if (nonEmpty(herChannels)) return herChannels;
+  if (nonEmpty(setChannels)) return setChannels;
+  return null;
+}
+
+module.exports = { VALID_CHANNELS, CHANNEL_LABELS, validateChannels, describeChannels, resolveChannels };
