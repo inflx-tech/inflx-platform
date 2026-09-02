@@ -4,8 +4,11 @@
  *
  * White law: identity card (initial avatar · name · masked phone · Edit) →
  * grouped rows — Shopping (Orders / Wishlist / Addresses / Returns) and
- * Following (creators / saved posts) → red Log out. Wallet row is
- * DATA-GATED (renders only when a balance exists — never a dead row).
+ * Following (creators / saved posts) → red Log out.
+ *
+ * Docs/THE_CUT.md pass 1 — the Wallet row is gone with the shopper reward
+ * wallet. It was data-gated so it only appeared with a positive balance, and
+ * nothing in the platform could ever produce one.
  *
  * Guest-first law: guests get an honest card + black sign-in CTA + only the
  * rows that work logged-out (Wishlist + Addresses live on-device and follow
@@ -16,7 +19,6 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -45,27 +47,20 @@ function MeInner({ navigation }) {
   const { setRole } = useContext(AuthContext);
   const [authed, setAuthed] = useState(null);   // null = checking
   const [profile, setProfile] = useState(null);
-  const [wallet, setWallet] = useState(null);
 
   useFocusEffect(useCallback(() => {
     let alive = true;
     (async () => {
       const token = await AsyncStorage.getItem('inflx_token');
       if (!alive) return;
-      if (!token) { setAuthed(false); setProfile(null); setWallet(null); return; }
+      if (!token) { setAuthed(false); setProfile(null); return; }
       setAuthed(true);
       followerApi.getMe()
         .then((res) => { if (alive) { const d = res.data || res; setProfile(d.follower || d); } })
         .catch(() => {});
-      // Wallet row is data-gated: only a real positive balance earns the row.
-      followerApi.getWallet()
-        .then((r) => {
-          if (!alive) return;
-          const d = r.data || r;
-          const bal = Number(d.balance ?? d.wallet_balance ?? d.wallet?.balance);
-          setWallet(Number.isFinite(bal) && bal > 0 ? bal : null);
-        })
-        .catch(() => {});
+      // Docs/THE_CUT.md pass 1 — the shopper reward wallet is removed. It showed a
+      // balance that nothing could fill, nothing could spend and nothing could pay
+      // out: a promise on screen with no machinery behind it.
     })();
     return () => { alive = false; };
   }, []));
@@ -78,7 +73,7 @@ function MeInner({ navigation }) {
         onPress: async () => {
           await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
           setRole('');
-          setAuthed(false); setProfile(null); setWallet(null);
+          setAuthed(false); setProfile(null); 
         },
       },
     ]);
@@ -141,9 +136,6 @@ function MeInner({ navigation }) {
           <Row icon="heart-outline" label="Wishlist" sub="saved products & collections" onPress={() => navigation.navigate('Wishlist')} />
           <Row icon="map-marker-outline" label="Addresses" sub="delivery addresses" onPress={() => navigation.navigate('Address')} />
           <Row icon="keyboard-return" label="My Returns" onPress={() => navigation.navigate('MyReturns')} />
-          {wallet != null && (
-            <Row icon="wallet-outline" label="Wallet" sub={`${fmtRupees(wallet)} balance`} onPress={() => navigation.navigate('FollowerWallet')} />
-          )}
         </View>
 
         <View style={st.grp}>

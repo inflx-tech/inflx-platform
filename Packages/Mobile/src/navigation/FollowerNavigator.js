@@ -14,7 +14,6 @@ import CategoryListScreen from '../screens/follower/CategoryListScreen';
 // Wave 4 — dining redesign (replaces CategoryListScreen for eat)
 import DishGroupResultScreen from '../screens/follower/DishGroupResultScreen';
 import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
-import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
 import DiningSearchScreen from '../screens/follower/DiningSearchScreen';
 
 // Existing screens
@@ -109,7 +108,6 @@ const SHARED_SCREENS = (Stack) => (
     {/* Food World 3C-1 — dish-group craving → nearby restaurants result */}
     <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
-    <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
     <Stack.Screen name="DiningSearch" component={DiningSearchScreen} />
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
@@ -177,7 +175,6 @@ function ProfileStack() {
       <Stack.Screen name="Address" component={AddressScreen} />
       <Stack.Screen name="FollowedInfluencers" component={FollowedInfluencersScreen} />
       <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
-      <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
       <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
       {/* Returns row on MeScreen targets this; ProfileStack does not spread
           SHARED_SCREENS, so register it explicitly (no duplicate name here). */}
