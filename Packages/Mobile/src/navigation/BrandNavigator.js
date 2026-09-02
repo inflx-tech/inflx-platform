@@ -160,6 +160,11 @@ function CampaignsStack() {
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
+      {/* stage-a/b — registered here too (already lives in CreatorsStack), same reason
+          as the comment above: BrandSetWizard's "find someone new" (StepCreators) needs
+          it in ITS OWN stack so goBack() returns to the wizard, not to the Creators tab. */}
+      <Stack.Screen name="BrandFindCreators" component={BrandFindCreatorsScreen} />
+      <Stack.Screen name="BrandGroups" component={BrandGroupsScreen} />
     </Stack.Navigator>
   );
 }

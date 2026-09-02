@@ -7,10 +7,21 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import CreatorAvatar from '../../components/CreatorAvatar';
+import * as draft from '../../utils/campaignDraft';
 
 /**
  * BrandFindCreatorsScreen — searching for creators.
- * Contract: features/stage-1-find-each-other-and-agree
+ * Contract: features/stage-1-find-each-other-and-agree (search itself) ·
+ *           features/stage-a-the-set ("Add to this set" mode)
+ *
+ * ARCHITECTURE CHANGE, founder 2026-09-02: "no more pre-agreed and adding into sets...
+ * campaign, sets, and reach to creator" is the only path in now. This screen already had
+ * everything a set-builder needs — search, filters, multi-select — it just only ever
+ * ended in a collab request. `route.params.forSet` is a third mode alongside the
+ * existing `addToGroupId`, following that mode's own pattern exactly: same list, same
+ * selection, a different action at the bottom. Picks write straight to the shared draft
+ * (campaignDraft.addColdInvite) and the screen goes back — the wizard's own focus-resync
+ * picks them up the same way it already does for allocation, offers and deferred seeding.
  *
  * THREE filters, never more. The founder asked for the best filter UI without loading it
  * with everything, and the agreed board says the same: four rows at most, each opening a
@@ -44,6 +55,13 @@ const fmtCompact = (n) => {
 
 export default function BrandFindCreatorsScreen({ navigation, route, embedded }) {
   const addToGroupId = route?.params?.addToGroupId;
+  // { campaignId, setId, excludeInfluencerIds? } — opened from the set wizard's "who's
+  // in it" step. excludeInfluencerIds are people already pencilled into THIS set, shown
+  // greyed rather than silently vanishing (a search result that disappears reads as a
+  // bug, not as "already handled").
+  const forSet = route?.params?.forSet;
+  const alreadyInSet = new Set(forSet?.excludeInfluencerIds || []);
+  const [addingToSet, setAddingToSet] = useState(false);
 
   const [q, setQ] = useState('');
   const [cities, setCities] = useState([]);
@@ -56,7 +74,13 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
   // Contract: features/creators-tab-shape (items 3-5)
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Nothing applies until confirmed, so a combination can be explored and backed out of.
-  const [draft, setDraft] = useState(null);
+  // Named filterDraft/setFilterDraft, not draft/setDraft — this file also imports the
+  // campaignDraft module AS `draft` (stage-a/b, forSet mode below), and a local state
+  // variable of the same name would silently shadow it inside this component's scope.
+  // Found exactly that way: a render test called addColdInvite and got
+  // "Cannot read properties of null" — draft.addColdInvite was resolving to this
+  // variable, permanently null, not the imported module.
+  const [filterDraft, setFilterDraft] = useState(null);
   const [places, setPlaces] = useState([]);
   // Saving a set as a group only means anything once something is ticked, so it lives
   // on the bar rather than in the header. Contract: features/creators-tab-shape (item 7)
@@ -114,11 +138,11 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
   }, []);
 
   const openFilters = () => {
-    setDraft({ cities: [...cities], niches: [...niches], size });
+    setFilterDraft({ cities: [...cities], niches: [...niches], size });
     setFiltersOpen(true);
   };
   const applyFilters = () => {
-    if (draft) { setCities(draft.cities); setNiches(draft.niches); setSize(draft.size); }
+    if (filterDraft) { setCities(filterDraft.cities); setNiches(filterDraft.niches); setSize(filterDraft.size); }
     setFiltersOpen(false);
   };
 
@@ -177,6 +201,26 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
     navigation.goBack();
   }
 
+  // stage-a/b — writes straight to the shared draft, no server round trip: nothing is
+  // invited until the set is actually published, same rule as every other way a creator
+  // reaches `picked` today.
+  function addPickedToSet() {
+    if (addingToSet) return;
+    setAddingToSet(true);
+    for (const item of results) {
+      const id = item.linked_influencer_id || item.row_id || item.id;
+      if (!picked.has(id) || alreadyInSet.has(id)) continue;
+      draft.addColdInvite(forSet.campaignId, forSet.setId, {
+        influencer_id: id,
+        name: item.full_name || item.ig_handle || 'Creator',
+        handle: item.ig_handle || null,
+        avatar: item.profile_image_url || null,
+      });
+    }
+    setAddingToSet(false);
+    navigation.goBack();
+  }
+
   const FilterRow = ({ icon, label, value, onPress }) => (
     <TouchableOpacity style={s.frow} activeOpacity={0.7} onPress={onPress}>
       <Icon name={icon} size={17} color={ig.mut} style={{ width: 22 }} />
@@ -196,7 +240,7 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
             <Icon name="chevron-left" size={24} color={ig.text} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={s.navTitle}>{addToGroupId ? 'Add to group' : 'Find creators'}</Text>
+            <Text style={s.navTitle}>{addToGroupId ? 'Add to group' : forSet ? 'Add to this set' : 'Find creators'}</Text>
             <Text style={s.navSub}>{loading ? 'SEARCHING…' : `${results.length} MATCH`}</Text>
           </View>
         </View>
@@ -239,7 +283,7 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
           {loading ? 'Searching…' : `${results.length} creator${results.length === 1 ? '' : 's'}`}
           {activeCount > 0 ? ` · ${activeCount} filter${activeCount === 1 ? '' : 's'}` : ''}
         </Text>
-        {!addToGroupId && results.length > 0 && (
+        {!addToGroupId && !forSet && results.length > 0 && (
           <TouchableOpacity onPress={() => { setSelecting(v => !v); setPicked(new Set()); }} activeOpacity={0.7}>
             <Text style={s.clear}>{selecting ? 'Done' : 'Select'}</Text>
           </TouchableOpacity>
@@ -254,21 +298,23 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
           keyExtractor={(r) => String(r.row_id || r.id)}
           renderItem={({ item }) => {
             const id = item.linked_influencer_id || item.row_id || item.id;
+            const already = forSet && alreadyInSet.has(id);
             // Muted creators are shown greyed, never hidden — hiding them looks like
             // they do not exist, and a brand would keep searching for someone who is
-            // simply not taking requests.
-            const muted = item.accepts_brand_requests === false;
+            // simply not taking requests, or wonder why someone already added vanished.
+            const muted = item.accepts_brand_requests === false || already;
             const on = picked.has(id);
             return (
               <TouchableOpacity
                 style={[s.row, muted && s.rowMuted]}
                 activeOpacity={0.7}
+                disabled={already}
                 onPress={() => {
-                  if (selecting || addToGroupId) return togglePick(id);
+                  if (selecting || addToGroupId || forSet) return togglePick(id);
                   navigation.navigate('BrandInfluencerProfile', { influencerId: id });
                 }}
               >
-                {(selecting || addToGroupId) && (
+                {(selecting || addToGroupId || forSet) && !already && (
                   <View style={[s.box, on && s.boxOn]}><Text style={s.boxT}>{on ? '✓' : ''}</Text></View>
                 )}
                 <CreatorAvatar name={item.full_name || item.ig_handle} avatarUrl={item.profile_image_url} size={42} />
@@ -283,9 +329,10 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
                     {fmtCompact(item.inflx_followers || 0)} on INFLX
                     {item.followers_count ? ` · ${fmtCompact(item.followers_count)} Instagram` : ''}
                   </Text>
-                  {muted && <Text style={s.muted}>NOT TAKING BRAND REQUESTS</Text>}
+                  {already ? <Text style={s.muted}>ALREADY IN THIS SET</Text>
+                    : muted ? <Text style={s.muted}>NOT TAKING BRAND REQUESTS</Text> : null}
                 </View>
-                {!selecting && !addToGroupId && <Icon name="chevron-right" size={18} color={ig.mut2} />}
+                {!selecting && !addToGroupId && !forSet && <Icon name="chevron-right" size={18} color={ig.mut2} />}
               </TouchableOpacity>
             );
           }}
@@ -311,30 +358,28 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
           It used to read "Ask all N" with N ticked and then send the FILTERS, so ticking
           two people wrote to everyone who matched.
           Contract: features/creators-tab-shape (items 6-7) */}
-      {!loading && (picked.size > 0 || (!addToGroupId && results.length > 0)) && (
+      {!loading && (picked.size > 0 || (!addToGroupId && !forSet && results.length > 0)) && (
         <View style={s.actionBar}>
           {picked.size > 0 ? (
             <>
               <Text style={s.actionN}>{picked.size} selected</Text>
-              {addToGroupId ? (
+              {forSet ? (
+                <TouchableOpacity style={s.actionBtn} onPress={addPickedToSet} activeOpacity={0.85} disabled={addingToSet}>
+                  <Text style={s.actionT}>Add {picked.size} to this set</Text>
+                </TouchableOpacity>
+              ) : addToGroupId ? (
                 <TouchableOpacity style={s.actionBtn} onPress={addPickedToGroup} activeOpacity={0.85}>
                   <Text style={s.actionT}>Add to group</Text>
                 </TouchableOpacity>
               ) : (
-                <>
-                  <TouchableOpacity style={s.actionGhost} activeOpacity={0.85} onPress={saveAsGroup}>
-                    <Text style={s.actionGhostT}>Save as group</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={s.actionBtn}
-                    activeOpacity={0.85}
-                    onPress={() => navigation.navigate('BrandRequestComposer', {
-                      influencerIds: [...picked],
-                    })}
-                  >
-                    <Text style={s.actionT}>Ask {picked.size}</Text>
-                  </TouchableOpacity>
-                </>
+                // stage-a/b — architecture change, founder 2026-09-02: "only through
+                // campaign and sets we ask for collaboration." Standalone browsing (not
+                // opened from a set) no longer starts a conversation from here — saving a
+                // list for later is still useful, and now feeds "From a group" in the set
+                // wizard instead of a request composer.
+                <TouchableOpacity style={s.actionBtn} activeOpacity={0.85} onPress={saveAsGroup}>
+                  <Text style={s.actionT}>Save as group</Text>
+                </TouchableOpacity>
               )}
             </>
           ) : (
@@ -345,19 +390,6 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
               <TouchableOpacity style={s.actionGhost} activeOpacity={0.85}
                 onPress={() => { setSelecting(true); setPicked(new Set()); }}>
                 <Text style={s.actionGhostT}>Select</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.actionBtn}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate('BrandRequestComposer', {
-                  filters: {
-                    ...(cities.length ? { cities } : {}),
-                    ...(niches.length ? { niches } : {}),
-                    ...(band.min != null ? { min_followers: band.min } : {}),
-                  },
-                })}
-              >
-                <Text style={s.actionT}>Ask all {results.length}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -409,10 +441,10 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
                 {places.flatMap(st => (st.cities || []).map(city => {
                   const name = city.city || city.name || city;
                   const n = city.count ?? city.creators ?? null;
-                  const on = (draft?.cities || []).includes(name);
+                  const on = (filterDraft?.cities || []).includes(name);
                   return (
                     <TouchableOpacity key={`${st.state}-${name}`} style={[s.chip, on && s.chipOn]} activeOpacity={0.7}
-                      onPress={() => setDraft(d => ({
+                      onPress={() => setFilterDraft(d => ({
                         ...d,
                         cities: on ? d.cities.filter(x => x !== name) : [...d.cities, name],
                       }))}>
@@ -428,10 +460,10 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
                 {availableNiches.map(n => {
                   const label = n.niche || n.name || n;
                   const count = n.count ?? null;
-                  const on = (draft?.niches || []).includes(label);
+                  const on = (filterDraft?.niches || []).includes(label);
                   return (
                     <TouchableOpacity key={label} style={[s.chip, on && s.chipOn]} activeOpacity={0.7}
-                      onPress={() => setDraft(d => ({
+                      onPress={() => setFilterDraft(d => ({
                         ...d,
                         niches: on ? d.niches.filter(x => x !== label) : [...d.niches, label],
                       }))}>
@@ -445,10 +477,10 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
               <Text style={s.sheetL}>Size · followers on Instagram</Text>
               <View style={s.sheetChips}>
                 {SIZE_BANDS.map(b => {
-                  const on = (draft?.size || "") === b.key;
+                  const on = (filterDraft?.size || "") === b.key;
                   return (
                     <TouchableOpacity key={b.key || "any"} style={[s.chip, on && s.chipOn]} activeOpacity={0.7}
-                      onPress={() => setDraft(d => ({ ...d, size: on ? "" : b.key }))}>
+                      onPress={() => setFilterDraft(d => ({ ...d, size: on ? "" : b.key }))}>
                       <Text style={on ? s.chipTxtOn : s.chipTxt}>{b.label}</Text>
                     </TouchableOpacity>
                   );
@@ -457,7 +489,7 @@ export default function BrandFindCreatorsScreen({ navigation, route, embedded })
             </ScrollView>
 
             <View style={s.sheetBar}>
-              <TouchableOpacity onPress={() => setDraft({ cities: [], niches: [], size: "" })}>
+              <TouchableOpacity onPress={() => setFilterDraft({ cities: [], niches: [], size: "" })}>
                 <Text style={s.sheetClear}>Clear all</Text>
               </TouchableOpacity>
               <TouchableOpacity style={s.sheetApply} onPress={applyFilters} activeOpacity={0.85}>

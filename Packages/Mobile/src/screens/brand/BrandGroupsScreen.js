@@ -7,19 +7,28 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
+import * as draft from '../../utils/campaignDraft';
 
 /**
  * BrandGroupsScreen — saved lists of creators.
- * Contract: features/stage-1-find-each-other-and-agree
+ * Contract: features/stage-1-find-each-other-and-agree (the list itself) ·
+ *           features/stage-a-the-set ("From a group" mode)
  *
  * The list has existed on the server for months, complete with add, rename, delete and
  * bulk membership — and has never had a screen on the phone. This is its first one.
  *
- * A group is a list you KEEP. Asking it sends one message to each member and then you
- * negotiate with each separately — it never merges the deals. That sentence is on the
- * screen because "group" otherwise implies one shared conversation, which it is not.
+ * ARCHITECTURE CHANGE, founder 2026-09-02: "only through campaign and sets we ask for
+ * collaboration... search for creators means reaching them — individual, through group,
+ * through list of filtered results." A group used to exist only to be ASKED (a
+ * collab-request sent to every member, outside any campaign). That door is closed —
+ * `route.params.forSet` is the third and last of the three ways SB-28 draws into a set,
+ * alongside individual search and filtered results (both already on BrandFindCreators).
+ * Tapping a group in this mode adds its whole membership straight into the set, the same
+ * cold-invite shape a searched individual gets — nothing pre-agreed, terms stated later.
  */
-export default function BrandGroupsScreen({ navigation }) {
+export default function BrandGroupsScreen({ navigation, route }) {
+  const forSet = route?.params?.forSet;
+
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,6 +58,40 @@ export default function BrandGroupsScreen({ navigation }) {
     await load();
   }
 
+  // stage-a/b — "From a group": one tap adds the whole membership, cold, straight into
+  // the set's draft — a group is already a defined, named unit, so there is no
+  // multi-select step the way search results need one. Confirmed first: a fat-finger tap
+  // should not silently pencil in a dozen people.
+  function addGroupToSet(group) {
+    const already = new Set(forSet?.excludeInfluencerIds || []);
+    const members = (group.members || []).filter((m) => !already.has(m.influencer_id || m.id));
+    if (!members.length) {
+      Alert.alert('Already in this set', `Everyone in "${group.name}" is already pencilled in.`);
+      return;
+    }
+    Alert.alert(
+      `Add ${members.length} from "${group.name}"?`,
+      'Nothing is pre-agreed for any of them — you’ll state terms on the next step, same as anyone found by search.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: `Add ${members.length}`,
+          onPress: () => {
+            for (const m of members) {
+              draft.addColdInvite(forSet.campaignId, forSet.setId, {
+                influencer_id: m.influencer_id || m.id,
+                name: m.full_name || m.instagram_handle || 'Creator',
+                handle: m.instagram_handle || null,
+                avatar: m.profile_image_url || null,
+              });
+            }
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <View style={s.container}>
       <View style={s.nav}>
@@ -56,7 +99,7 @@ export default function BrandGroupsScreen({ navigation }) {
           <Icon name="chevron-left" size={24} color={ig.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.navTitle}>Groups</Text>
+          <Text style={s.navTitle}>{forSet ? 'Add from a group' : 'Groups'}</Text>
           <Text style={s.navSub}>{groups.length} SAVED LIST{groups.length === 1 ? '' : 'S'}</Text>
         </View>
       </View>
@@ -74,7 +117,7 @@ export default function BrandGroupsScreen({ navigation }) {
               <TouchableOpacity
                 style={s.row}
                 activeOpacity={0.7}
-                onPress={() => navigation.navigate('BrandGroupDetail', { groupId: item.id, groupName: item.name })}
+                onPress={() => (forSet ? addGroupToSet(item) : navigation.navigate('BrandGroupDetail', { groupId: item.id, groupName: item.name }))}
               >
                 <View style={s.avatar}>
                   <Text style={s.avatarT}>{String(item.name || 'G').slice(0, 2).toUpperCase()}</Text>
@@ -97,8 +140,8 @@ export default function BrandGroupsScreen({ navigation }) {
               <View style={s.explain}>
                 <Text style={s.explainH}>What a group is</Text>
                 <Text style={s.explainT}>
-                  A list you keep. Asking a group sends one message to each member — then you
-                  negotiate with each one separately. It never merges the deals.
+                  A list you keep. Add it to a set in one tap when you're building one — each
+                  member is invited and negotiated with separately, it never merges the deals.
                 </Text>
               </View>
             </View>

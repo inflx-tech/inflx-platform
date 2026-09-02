@@ -104,6 +104,53 @@ export function setCreatorOffer(campaignId, setId, agreementId, offer) {
 }
 
 /**
+ * True for a creator picked by searching for her directly (BrandFindCreatorsScreen, in
+ * "add to this set" mode) rather than from an already-settled agreement. She has no
+ * commission/fee yet — the brand is about to state one, as an OPENING offer, not a
+ * settled one; she can still negotiate it afterwards (the negotiate/respond flow that
+ * already exists for a cold invite handles that, unchanged).
+ */
+export function isColdInvite(creator) {
+  return String(creator?.agreement_id || '').startsWith('cold:');
+}
+
+/**
+ * Pencil in a creator found by search, with nothing pre-agreed. Architecture change,
+ * founder 2026-09-02: "no more pre-agreed and adding into sets" — every creator reaches
+ * a campaign THROUGH a set from now on, this is that path. Idempotent: picking the same
+ * person twice (e.g. a double-tap) does not duplicate her.
+ */
+export function addColdInvite(campaignId, setId, influencer) {
+  const cur = getSetDraft(campaignId, setId);
+  const key = `cold:${influencer.influencer_id}`;
+  if (cur.creators.some((c) => c.agreement_id === key)) return;
+  setSetDraft(campaignId, setId, {
+    creators: [...cur.creators, {
+      agreement_id: key,
+      influencer_id: influencer.influencer_id,
+      name: influencer.name,
+      handle: influencer.handle || null,
+      avatar: influencer.avatar || null,
+      // No settled money to read back — StepTerms shows this creator an EDITABLE
+      // opening-offer field instead of the usual read-only "already agreed" line.
+      terms: {},
+      alloc: null,
+    }],
+  });
+}
+
+/** The opening offer the brand is stating for a cold-invited creator — money follows the
+ * aim, same rule invitePayload already enforces server-side. */
+export function setCreatorMoney(campaignId, setId, agreementId, money) {
+  const cur = getSetDraft(campaignId, setId);
+  setSetDraft(campaignId, setId, {
+    creators: cur.creators.map((c) => (c.agreement_id === agreementId
+      ? { ...c, terms: { ...(c.terms || {}), money } }
+      : c)),
+  });
+}
+
+/**
  * Which channels one pencilled creator drives traffic on, and what she posts.
  * stage-a — moved down from the set (migration 166): every creator's own row now, not a
  * set default. `channels` is `{ allowed: string[] }` or null; `formats` is
@@ -200,15 +247,15 @@ export function clearDraft(campaignId) {
 }
 
 /**
- * stage-a — a creator seeded from the deferred pool (see seedFromDeferred below) has no
- * live agreement to brief from; her old one was already consumed by her ORIGINAL invite.
- * She still needs a unique key so campaignDraft's per-creator functions (all matched by
- * agreement_id) do not collide when more than one deferred creator is seeded at once —
- * so she gets a synthetic one, `deferred:<her old campaign_influencer id>`. This function
- * is the one place that distinguishes a synthetic key from a real agreement id; nothing
- * else needs to know the difference.
+ * stage-a/b — two kinds of creator have no live agreement to brief from, and both need a
+ * synthetic key so campaignDraft's per-creator functions (all matched by agreement_id) do
+ * not collide when more than one is pencilled in at once:
+ *   deferred:<old campaign_influencer id>   seeded from the deferred pool (seedFromDeferred)
+ *   cold:<influencer_id>                    found by search, nothing pre-agreed (addColdInvite)
+ * This function is the one place that tells a synthetic key from a real agreement id;
+ * nothing else needs to know the difference.
  */
-const isRealAgreementId = (id) => !!id && !String(id).startsWith('deferred:');
+const isRealAgreementId = (id) => !!id && !String(id).startsWith('deferred:') && !String(id).startsWith('cold:');
 
 /**
  * The invite payload for one pencilled creator, in the shape POST

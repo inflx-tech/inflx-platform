@@ -182,25 +182,13 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
       </ScrollView>
 
       <View style={s.footerBar}>
-        {/* collab-part2 — agree terms FIRST, build the campaign after. The request needs
-            no campaign to exist; the campaign invite below stays for direct invites. */}
-        <TouchableOpacity
-          style={[s.inviteBtn, { backgroundColor: P.ink, marginBottom: 8 }]}
-          onPress={() => navigation.navigate('BrandRequestComposer', {
-            influencerId,
-            influencerName: inf?.full_name || inf?.name,
-            influencerHandle: inf?.instagram_handle ? `@${inf.instagram_handle}` : '',
-          })}
-          activeOpacity={0.85}>
-          {/* The ask always names WHO. "Request Collaboration" could be about anyone;
-              "Ask Priya" is about the person on the screen.
-              Contract: features/creators-tab-shape (item 6) */}
-          <Text style={[s.inviteBtnText, { color: P.white }]}>
-            Ask {(inf?.full_name || inf?.name || inf?.instagram_handle || 'this creator').split(' ')[0]}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.inviteBtn} onPress={() => setInviteOpen(true)} activeOpacity={0.85}>
-          <Text style={s.inviteBtnText}>Invite to Campaign</Text>
+        {/* stage-a/b — architecture change, founder 2026-09-02: "only through campaign
+            and sets we ask for collaboration." "Ask {name}" (agree terms first, place her
+            in a campaign afterwards) is retired — BrandRequestComposer is unreachable from
+            anywhere in the app now. "Invite to Campaign" below was always the direct path
+            and is untouched; it is now the only one. */}
+        <TouchableOpacity style={[s.inviteBtn, { backgroundColor: P.ink }]} onPress={() => setInviteOpen(true)} activeOpacity={0.85}>
+          <Text style={[s.inviteBtnText, { color: P.white }]}>Invite to Campaign</Text>
         </TouchableOpacity>
       </View>
 

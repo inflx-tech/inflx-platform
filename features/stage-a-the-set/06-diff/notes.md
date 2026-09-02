@@ -250,3 +250,69 @@ Migration 167 was dry-run AND applied against production this session (the one p
 backend verification that didn't need to be done by hand) — see the contract for the
 before/after row counts. The two new endpoints' request/response handling was still only
 checked by hand, no live database, same limitation as every slice before this one.
+
+# Before / after — closing the first door, and "from a group"
+
+**Mockup:** `features/screen-atlas/04-preview/mockups/atlas-brand.html` → **SB-28**
+("Set · 3 of 4 · who") — "Three ways in, one list out."
+**Screens:** `BrandFindCreatorsScreen` · `BrandGroupsScreen` (new mode) ·
+`BrandGroupDetailScreen` · `BrandInfluencerProfileScreen` · `BrandSetWizardScreen` (StepCreators)
+
+Founder, 2026-09-02: *"close the first door, only through campaign and sets we ask for
+collabration. search for creators means reaching them we use three parts one is
+individual, through group and through list of people in search or filtered results."*
+See `lock.json → slice_8_close_the_first_door` for the full reasoning.
+
+## What was implemented
+
+| | Before | After |
+|---|---|---|
+| Browsing creators, some picked | "Ask N" button — starts a pre-agreed conversation with no campaign | "Save as group" only |
+| Browsing creators, none picked | "Ask all N" | "Select" toggle only, no ask action |
+| A saved group's detail page | "Ask {group} · N" button | An explanatory note: reach this list from a set's Creators step instead |
+| A creator's profile page | Two buttons: "Ask {name}" and "Invite to Campaign" | One button: "Invite to Campaign" |
+| Set wizard, Creators step | One button, "Find someone new" (search/filter only) | Two buttons: "Search or filter" and "From a group" |
+| Reaching a saved group | Not possible from a set | Tap the group → confirm the count → every member added as a cold invite, same as an individual search result |
+
+## What matches the locked mockup
+
+- Three distinct ways into a set: search by name/handle, filter results, and a saved
+  group — SB-28's "three ways in, one list out."
+- A group added as a group can be opened and thinned (existing "Add more creators" /
+  remove-member actions on `BrandGroupDetailScreen`, untouched) — the mockup's own note.
+
+## What diverged from the mockup, and why
+
+Nothing diverged — this slice ports SB-28's design as drawn. The divergence already on
+record (SB-29's per-creator-card layout, `slice_2`) is unrelated and unchanged.
+
+## What to check — the device walk
+
+1. **Open "Find creators" outside any set (from the Creators tab).** Pick a few — confirm
+   only "Save as group" appears, no "Ask" action anywhere, picked or not.
+2. **Open an existing saved group's detail page.** Confirm there's no "Ask" button — just
+   the note pointing at the set wizard, plus "Add more creators" and "Delete group" still
+   working as before.
+3. **Open any creator's profile page.** Confirm only "Invite to Campaign" appears in the
+   footer. Tap it — confirm the existing campaign→set→fee flow (InviteModal) still works
+   exactly as before; this slice did not touch its logic.
+4. **Start a new set (or open one being built). On the Creators step, confirm two buttons**
+   — "Search or filter" and "From a group" — side by side.
+5. **Tap "From a group."** Confirm it opens your saved groups, tap one — confirm a
+   confirmation prompt names the group and count, then everyone lands in the set's
+   creator list as a fresh (cold) invite, same as someone found by search.
+6. **Tap a group where everyone is already in the set.** Confirm it says so and does not
+   navigate anywhere.
+7. **Finish the set as normal** (Terms → state each cold-invited person's opening
+   offer → publish) — confirms the group path feeds the same downstream gates
+   (`everyoneHasMoney` etc.) slice_7's individual-search path already proved.
+
+## Known, and not fixed here
+
+The creator-side mirror of the old pathway — `ProposalsHubScreen` → `SendProposalScreen`,
+where a creator pitches a brand with no campaign involved — still works exactly as before.
+The founder's instruction named the brand's three reach mechanisms (SB-28); closing the
+creator-initiated side is a separate surface, flagged back rather than silently decided.
+
+No backend or database change in this slice — verified by grep, not by running the
+backend test suite (same no-live-database limitation as every slice this session).

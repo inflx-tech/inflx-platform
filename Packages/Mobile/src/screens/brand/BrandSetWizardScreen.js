@@ -370,6 +370,26 @@ export default function BrandSetWizardScreen({ route, navigation }) {
             matching={matching} pickedIds={pickedIds} picked={picked}
             onToggle={togglePick}
             onOpen={(a) => navigation.navigate('BrandAgreementDetail', { agreement: a })}
+            // stage-a/b — BrandFindCreators is ALSO registered inside this screen's own
+            // stack (BrandNavigator's CampaignsStack), not just the Creators tab's — a
+            // cross-tab nested navigate would land it in the Creators tab's history, so
+            // "goBack" after adding creators would return to the Creators tab's home
+            // screen instead of here. Registering it locally keeps goBack correct.
+            onFindNew={() => navigation.navigate('BrandFindCreators', {
+              forSet: {
+                campaignId, setId,
+                excludeInfluencerIds: picked.map((c) => c.influencer_id).filter(Boolean),
+              },
+            })}
+            // stage-a/b — SB-28's third way in. Same excludeInfluencerIds guard as
+            // "find someone new" — BrandGroupsScreen filters a group's own membership
+            // against it before offering to add anyone already pencilled in.
+            onFromGroup={() => navigation.navigate('BrandGroups', {
+              forSet: {
+                campaignId, setId,
+                excludeInfluencerIds: picked.map((c) => c.influencer_id).filter(Boolean),
+              },
+            })}
             onBack={() => setStep(1)}
             onContinue={() => setStep(3)}
           />
@@ -623,11 +643,14 @@ function StepBasics(p) {
 }
 
 /* ── Step 3 · the agreements pick-list ─────────────────────────────────────── */
-function StepCreators({ matching, pickedIds, picked, onToggle, onOpen, onBack, onContinue }) {
+function StepCreators({ matching, pickedIds, picked, onToggle, onOpen, onFindNew, onFromGroup, onBack, onContinue }) {
   // stage-a — creators seeded from the deferred pool (SB-24 "Build a set from these")
   // have no agreement to appear in `matching` at all; without this they would be in
   // `picked` (and counted) but literally invisible on this step — ticked but unseen.
   const seeded = (picked || []).filter((c) => String(c.agreement_id || '').startsWith('deferred:'));
+  // stage-a/b — same gap, same fix, for a creator found by search (addColdInvite):
+  // nothing pre-agreed, so she never appears in `matching` either.
+  const coldInvited = (picked || []).filter((c) => String(c.agreement_id || '').startsWith('cold:'));
 
   return (
     <>
@@ -643,6 +666,48 @@ function StepCreators({ matching, pickedIds, picked, onToggle, onOpen, onBack, o
                 {c.deferred_from?.note ? (
                   <Text style={s.pickTerms} numberOfLines={2}>&quot;{c.deferred_from.note}&quot;</Text>
                 ) : null}
+              </View>
+              <TouchableOpacity onPress={() => onToggle({ id: c.agreement_id })} activeOpacity={0.7}>
+                <Text style={s.removeSeeded}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* stage-a/b — architecture change, founder 2026-09-02: "campaign, sets, and reach
+          to creator" is the only path in now. This is that path: search, pick, she is
+          pencilled in with nothing pre-agreed. Her terms are stated on step 4, not read
+          back from an agreement. */}
+      <View style={s.sec2}>
+        <Text style={s.dh}>Find and invite someone</Text>
+        <Text style={s.lead}>
+          Search the whole platform, or reach for a list you already keep. Nothing needs to be
+          agreed beforehand.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+          {/* stage-a/b — SB-28 draws "search by name" and "find by filter" as two
+              separate rows; one screen already does both (a search bar plus the same
+              filter sheet BrandCreatorsScreen uses), so one button opens it. */}
+          <TouchableOpacity style={[s.mini, s.miniSec, { flex: 1, marginTop: 0 }]} onPress={onFindNew} activeOpacity={0.85}>
+            <Text style={s.miniSecT}>Search or filter</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.mini, s.miniSec, { flex: 1, marginTop: 0 }]} onPress={onFromGroup} activeOpacity={0.85}>
+            <Text style={s.miniSecT}>From a group</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {coldInvited.length > 0 && (
+        <View style={s.sec2}>
+          <Text style={s.dh}>Found by search · {coldInvited.length}</Text>
+          <Text style={s.lead}>Nothing agreed yet — say what you&apos;re offering each of them on the next step.</Text>
+          {coldInvited.map((c) => (
+            <View key={c.agreement_id} style={s.pickRow}>
+              <CreatorAvatar name={c.name} avatarUrl={c.avatar} size={38} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.pickName}>{c.name}</Text>
+                {c.handle ? <Text style={s.pickTerms}>@{c.handle}</Text> : null}
               </View>
               <TouchableOpacity onPress={() => onToggle({ id: c.agreement_id })} activeOpacity={0.7}>
                 <Text style={s.removeSeeded}>Remove</Text>
@@ -745,12 +810,25 @@ function StepTerms(p) {
   // buying-content creator with nothing to deliver is contracted and unsignable, not merely
   // unsold. Channels stays guidance-only, like the set-level ask it replaced.
   const everyoneHasFormats = !buyingContent || picked.every(c => draft.hasFormats(c));
-  const canFinish = picked.length > 0 && everyoneAllocated && everyoneHasFormats;
+  // stage-a/b — a cold-invited creator has no settled money to fall back on; without
+  // this she would publish with agreed_fee/commission_pct null, which is exactly what
+  // produced "FEE ₹0" on four creator screens the last time this rule was skipped.
+  // Agreement-sourced and deferred-seeded creators already have real numbers, so this
+  // is a no-op for them.
+  const everyoneHasMoney = picked.every((c) => {
+    if (!draft.isColdInvite(c)) return true;
+    const m = c.terms?.money || {};
+    return (!selling || m.commission_pct != null) && (!buyingContent || m.fee != null);
+  });
+  const canFinish = picked.length > 0 && everyoneAllocated && everyoneHasFormats && everyoneHasMoney;
 
   return (
     <>
       <View style={s.sec2}>
-        <Text style={s.dh}>① What each creator gets · already agreed</Text>
+        {/* stage-a/b — "already agreed" stopped being true for everyone the moment a
+            cold-invited creator could be in this same list; the per-card label below
+            (KV) still says exactly which of the two applies to her. */}
+        <Text style={s.dh}>① What each creator gets</Text>
         {picked.map((c) => {
           const t = c.terms || {};
           return (
@@ -763,8 +841,18 @@ function StepTerms(p) {
                 </Text>
               </View>
               <View style={s.cardBd}>
-                <KV k="Post by" v={t.time?.post_by ? fmtShort(t.time.post_by) : (t.time?.window_end ? fmtShort(t.time.window_end) : '—')} />
-                <KV k="What was settled" v={settledLine(t) || '—'} />
+                {draft.isColdInvite(c) ? (
+                  <KV
+                    k="Opening offer"
+                    v={settledLine(t) || 'Not stated yet'}
+                    danger={!settledLine(t)}
+                  />
+                ) : (
+                  <>
+                    <KV k="Post by" v={t.time?.post_by ? fmtShort(t.time.post_by) : (t.time?.window_end ? fmtShort(t.time.window_end) : '—')} />
+                    <KV k="What was settled" v={settledLine(t) || '—'} />
+                  </>
+                )}
                 {selling && (
                   <>
                     <KV
@@ -911,6 +999,7 @@ function StepTerms(p) {
           <Text style={s.blockT}>
             {picked.length === 0 ? 'Pick at least one creator at step 3.'
               : !everyoneAllocated ? 'Every creator on a sales set must have something to sell.'
+              : !everyoneHasMoney ? 'State an opening offer for every creator found by search.'
               : 'Every creator on a content set needs at least one format — set what she posts.'}
           </Text>
         </View>

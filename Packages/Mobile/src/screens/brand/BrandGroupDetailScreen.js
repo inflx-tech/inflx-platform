@@ -90,20 +90,17 @@ export default function BrandGroupDetailScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View style={s.sec}>
-          {members.length > 0 ? (
-            <TouchableOpacity
-              style={s.pri}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('BrandRequestComposer', { groupId, groupName: group?.name })}
-            >
-              {/* Names the group and the number, so a brand about to write to six people
-                  sees six before the form. Contract: features/creators-tab-shape (item 6) */}
-              <Text style={s.priT}>Ask {group?.name || "this group"} · {members.length}</Text>
-            </TouchableOpacity>
-          ) : (
-            /* An empty group cannot be asked. Saying so beats a button that fails. */
-            <View style={s.off}><Text style={s.offT}>Add creators before you can ask this group</Text></View>
-          )}
+          {/* stage-a/b — architecture change, founder 2026-09-02: "only through campaign
+              and sets we ask for collaboration." This group is no longer asked from here —
+              it's reached for from a set's "who's in it" step ("From a group"), which
+              pencils the whole membership in cold. Nothing to do on this screen for that;
+              it just explains where the action moved. */}
+          <View style={s.off}>
+            <Text style={s.offT}>
+              To reach this list, open a set you&apos;re building and choose &quot;From a
+              group&quot; on the who&apos;s-in-it step.
+            </Text>
+          </View>
           <TouchableOpacity
             style={s.sec2}
             activeOpacity={0.85}
@@ -168,8 +165,6 @@ const s = StyleSheet.create({
   sec: { paddingHorizontal: 16, paddingVertical: 14 },
   sectionH: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.5, color: ig.mut, textTransform: 'uppercase', paddingHorizontal: 16, paddingBottom: 6 },
 
-  pri: { backgroundColor: ig.text, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  priT: { color: ig.bg, fontSize: 13.5, fontWeight: '800' },
   sec2: { borderWidth: 1, borderColor: ig.line, borderRadius: 10, paddingVertical: 13, alignItems: 'center', marginTop: 9 },
   sec2T: { color: ig.text, fontSize: 13, fontWeight: '800' },
   off: { backgroundColor: ig.bgSoft, borderWidth: 1, borderColor: ig.lineSoft, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },

@@ -247,12 +247,54 @@
     "tests": "576 mobile tests pass (was 573). campaignBuilderDeferred.test.js rewritten for grouping: same-day-and-shoot clusters together, same-day-different-shoot stays separate, day-only and shoot-only asks still form real clusters, sort order, and each button carries only its own group's ids.",
     "device_walk_required": "Folded into the existing 06-diff walk for the deferred pool — same screen, same steps, now grouped."
   },
+  "slice_7_cold_invite_search": {
+    "at": "2026-09-02",
+    "architecture_decision": "Founder, 2026-09-02: \"we don't have pre-agreed and adding into sets type of concept now... only way campaign, sets, and reach to creator and negotiations start.\" Retires the pre-campaign handshake (brand_collab_requests / influencer_proposals / collab_agreements) as the way NEW collaborations begin. Nothing was torn out — this session confirmed via a full research pass that the old tables/screens/endpoints are additive and safe to simply stop feeding; existing rows and their read-only dependents (contract.service.js, production.service.js, influencer.controller.js's settled-terms display, publishGate.service.js) are untouched. Production data on the old pathway was confirmed by the founder to be disposable test data — no migration-away plan needed.",
+    "the_actual_gap_closed": "The set-building wizard's 'who's in it' step could ONLY add creators from a pre-existing agreement. There was no way to search for and invite someone fresh — the one piece of real, new work this slice does. The equivalent already existed and was proven live on the brand-web dashboard; this ports that exact pattern to the phone, reusing mobile API bindings (searchInfluencers/inviteInfluencer) that already existed in api.js but were never wired to anything.",
+    "no_backend_or_db_change": "GET /influencers/search and POST /campaigns/:id/sets/:sid/invite already existed and already supported everything needed (search returns onboarded creators only for a brand caller; invite already accepts a cold creator with agreement_id omitted). This slice is 100% mobile app code.",
+    "app": {
+      "campaignDraft.addColdInvite / isColdInvite / setCreatorMoney": "a creator found by search is keyed `cold:<influencer_id>` (same synthetic-key pattern as the deferred pool's `deferred:` prefix) since she has no real agreement to key by. isRealAgreementId (the guard that keeps synthetic keys out of the server payload) extended to recognise both prefixes.",
+      "BrandFindCreatorsScreen.js": "gained a third mode (forSet) alongside its existing addToGroupId mode — same search/filter/multi-select UI, already proven, a different action at the bottom ('Add N to this set' instead of 'Ask N'/'Add to group'). Someone already in the set is shown greyed, not hidden.",
+      "BrandSetWizardScreen.js — StepCreators": "gained '+ Find someone new' and a 'Found by search' list (same fix class as the deferred pool: without a visible list, a search-added creator would be counted in `picked` but invisible on this step).",
+      "CreatorTermsScreen.js (SB-30)": "for a cold-invited creator, 'Already agreed' becomes 'Your opening offer' — an EDITABLE commission/fee field instead of a read-back, since nothing is settled. She can still negotiate it afterwards through the negotiate/respond system that already exists for exactly this case (a cold invite inside a real set) — confirmed working, unmodified, before writing any of this.",
+      "canFinish gained everyoneHasMoney": "a cold-invited creator with no stated commission/fee would otherwise publish with agreed_fee/commission_pct null — the exact 'FEE ₹0' bug this codebase has already paid for once. Agreement-sourced and deferred-seeded creators are unaffected (they already have real numbers)."
+    },
+    "bug_caught_by_mounting_the_screen": "BrandFindCreatorsScreen already had local filter-sheet state named `draft`/`setDraft` (pre-existing, unrelated to campaignDraft). Adding `import * as draft from campaignDraft` collided with it silently — no parse error, no lint warning, just `draft.addColdInvite` resolving to the local state variable (always null) instead of the module. The render test calling the real 'Add to set' button caught it immediately with 'Cannot read properties of null'; a source-shape check would have passed clean. Fixed by renaming the local state to filterDraft/setFilterDraft.",
+    "tests": "591 mobile tests pass (was 582). 3 new files (findCreatorsForSet.test.js, creatorTermsMoney.test.js, plus additions to creatorTermsDraft.test.js), all exercising real behaviour — not source text — per the standing lesson from this slice's own shadowing bug and the earlier 'storys' pluralisation bug.",
+    "what_was_deliberately_not_done_this_pass": "Closing the old front doors (BrandFindCreatorsScreen's original 'Ask N' request-sending action, the creator's own pitch-browsing screen) — founder asked specifically to build the missing capability first. The old pathway still works exactly as before; this slice adds a second way in, it does not yet remove the first.",
+    "device_walk_required": "YES — NOT YET DONE, same as every prior slice, now covering the whole cold-invite-from-search flow end to end."
+  },
   "deployed_2026_09_02_sb40": {
     "by": "aveenswamy1989@gmail.com (founder) — \"commit,push and OTA\"",
     "commit": "cc10b8c (SB-40 grouping — brand-only, no backend/DB change)",
     "backend": "Pushed to Render for consistency (deploy-inert for this commit specifically — no backend files changed). Route existence reconfirmed anyway: GET /v1/campaigns -> 401 twice.",
     "ota": { "brand": "version 203, native_runtime 3 — verified directly against the manifest. Influencer not republished — nothing in that bundle changed." },
     "device_walk_required": "Same as slice_6 above."
+  },
+  "slice_8_close_the_first_door": {
+    "at": "2026-09-02",
+    "founder_instruction": "\"close the first door, only through campaign and sets we ask for collabration. search for creators means reaching them we use three parts one is individual,through group and through list of people in search or filtered results...check the mockups given and make it happen.\"",
+    "what": "Two things. (1) Removed every remaining BRAND-side entry point into the old pre-agreed pathway (BrandRequestComposer) — slice_7 built the new door but had deliberately left the old one open; this closes it. (2) Built the third of SB-28's three reach mechanisms — 'from a group' — so a saved list can be added to a set the same way an individual search result can, completing the mockup's 'three ways in, one list out.'",
+    "sb28_three_ways_in_now_complete": {
+      "individual_search": "BrandFindCreatorsScreen, forSet mode — already built in slice_7.",
+      "filtered_results": "same screen, same mode — its existing filter sheet was always part of this mechanism, just not framed as one of the three until now.",
+      "from_a_group": "NEW this slice — BrandGroupsScreen gains a forSet mode. Tapping a saved list adds every member as a cold invite in one action (a group is already a named, deliberate unit, so no per-person tick step the way search results need one)."
+    },
+    "old_doors_closed": {
+      "BrandFindCreatorsScreen.js": "standalone mode's 'Ask N' (some selected) and 'Ask all N' (none selected) buttons removed. Only 'Save as group' and a plain 'Select' toggle remain — browsing/saving a list is still useful on its own, asking from here is not.",
+      "BrandGroupDetailScreen.js": "'Ask {group} · N' button removed, replaced with a note pointing at the new location ('open a set you're building, choose From a group'). 'Add more creators' and 'Delete group' (list management, not asking) left untouched.",
+      "BrandInfluencerProfileScreen.js": "'Ask {name}' button removed from the footer. 'Invite to Campaign' (InviteModal — pick an existing published campaign, pick a set, state fee/commission, invite) is untouched: read in full this slice and confirmed to be a genuinely separate, already-correct direct-invite mechanism — campaign+set first, same as everything else now — not a second copy of the retired pathway.",
+      "verified_by_grep": "BrandRequestComposer now appears in exactly 3 files: its own screen file, the navigator's route registration (kept — an orphaned route is inert, not a door), and one explanatory comment in BrandInfluencerProfileScreen.js. Zero remaining navigation.navigate('BrandRequestComposer', ...) call sites anywhere in the app."
+    },
+    "no_backend_or_db_change": "Every field and endpoint this slice needed already existed from slice_7 (addColdInvite/GET listGroups). Pure client-side: two buttons removed, one screen given a new mode, one navigator route reused across two stacks.",
+    "app": {
+      "BrandGroupsScreen.js": "gained route.params.forSet — same shape as BrandFindCreatorsScreen's. addGroupToSet() filters out members already in the set (excludeInfluencerIds), confirms the count with the brand before adding (a fat-finger tap on a 14-person list should not silently pencil in 14 people), then writes each remaining member via the same campaignDraft.addColdInvite() a search result uses — identical cold-invite shape, terms stated on the next step either way.",
+      "BrandSetWizardScreen.js — StepCreators": "the single 'Find someone new' button became two side-by-side buttons, 'Search or filter' and 'From a group', both opening a screen already registered in CampaignsStack (BrandGroups joins BrandFindCreators there, for the same goBack()-returns-to-the-wizard reason).",
+      "adjacent_fix": "BrandGroupsScreen's static explainer text still described the retired behaviour ('Asking a group sends one message to each member'). Updated to describe where the action actually lives now."
+    },
+    "tests": "665 mobile tests pass (was 591 at the end of slice_7). 4 new (groupsForSet.test.js, real @testing-library render — mounts the actual screen, presses the actual row, reads the actual draft store back out, same discipline as every prior slice since the 'storys' bug).",
+    "what_was_deliberately_not_touched_this_pass": "The creator-side mirror of the old pathway (ProposalsHubScreen -> SendProposalScreen, an outbound pitch a creator sends a brand with no campaign involved) was found but NOT closed — the founder's instruction named the brand's three reach mechanisms specifically (SB-28 is a brand screen); closing the creator-initiated side is a second, separate surface not yet confirmed in scope. Flagged back to the founder rather than silently decided, per this session's standing practice.",
+    "device_walk_required": "YES — NOT YET DONE, now covering all three SB-28 reach mechanisms end to end plus the removed old-pathway buttons."
   },
   "deployed_2026_09_02_deferred_pool": {
     "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",

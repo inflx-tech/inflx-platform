@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -50,6 +50,19 @@ export default function CreatorTermsScreen({ route, navigation }) {
   );
   const [offerSheetOpen, setOfferSheetOpen] = useState(false);
 
+  // stage-a/b — architecture change, founder 2026-09-02: a creator found by search
+  // (campaignDraft.addColdInvite) has nothing settled to read back. Money becomes an
+  // OPENING OFFER the brand states here instead of a fact displayed read-only — she can
+  // still negotiate it afterwards through the negotiate/respond flow that already exists
+  // for exactly this case (a cold invite inside a real set).
+  const isCold = draft.isColdInvite(creator);
+  const [commissionPct, setCommissionPct] = useState(
+    creator?.terms?.money?.commission_pct != null ? String(creator.terms.money.commission_pct) : ''
+  );
+  const [fee, setFee] = useState(
+    creator?.terms?.money?.fee != null ? String(creator.terms.money.fee) : ''
+  );
+
   // Allocation is edited on its own screen (BrandAllocationScreen) and, like the offer below,
   // is written straight to the shared draft — so coming back here has to re-read it, the same
   // way the wizard itself re-syncs on focus.
@@ -68,13 +81,28 @@ export default function CreatorTermsScreen({ route, navigation }) {
   const formatsChosen = formats.filter((f) => Number(f.count) > 0);
   // A content/hybrid creator must have at least one format to sign later; a commission-only
   // creator is never asked (deliverables.model.buysContent governs the same rule server-side).
-  const canSave = !buyingContent || formatsChosen.length > 0;
+  const needsFormats = buyingContent && formatsChosen.length > 0;
+  // stage-a/b — a cold invite needs a real opening number for every aim it is being paid
+  // on, same rule invitePayload/collabTerms.model already enforce server-side: money
+  // follows the aim. Not required for an agreement-sourced or deferred-seeded creator —
+  // theirs is already settled.
+  const needsMoney = !isCold || (
+    (!selling || (commissionPct !== '' && Number(commissionPct) > 0))
+    && (!buyingContent || (fee !== '' && Number(fee) > 0))
+  );
+  const canSave = (!buyingContent || needsFormats) && needsMoney;
 
   function save() {
     draft.setCreatorTerms(campaignId, setId, agreementId, {
       channels_json: selling && channels.length ? { allowed: channels } : null,
       formats_json: formatsChosen,
     });
+    if (isCold) {
+      draft.setCreatorMoney(campaignId, setId, agreementId, {
+        commission_pct: selling && commissionPct !== '' ? Number(commissionPct) : null,
+        fee: buyingContent && fee !== '' ? Number(fee) : null,
+      });
+    }
     navigation.goBack();
   }
 
@@ -94,8 +122,49 @@ export default function CreatorTermsScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={s.sec2}>
-          <Text style={s.dh}>Already agreed</Text>
-          <KV k={selling ? 'She earns' : 'Her fee'} v={settledLine(t) || '—'} />
+          <Text style={s.dh}>{isCold ? 'Your opening offer' : 'Already agreed'}</Text>
+          {isCold ? (
+            <>
+              {selling && (
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={s.label}>Her commission</Text>
+                  <View style={s.moneyRow}>
+                    <TextInput
+                      style={s.moneyInput}
+                      value={commissionPct}
+                      onChangeText={setCommissionPct}
+                      keyboardType="decimal-pad"
+                      placeholder="e.g. 14"
+                      placeholderTextColor={ig.mut2}
+                    />
+                    <Text style={s.moneySuffix}>%</Text>
+                  </View>
+                </View>
+              )}
+              {buyingContent && (
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={s.label}>Her fee</Text>
+                  <View style={s.moneyRow}>
+                    <Text style={s.moneyPrefix}>₹</Text>
+                    <TextInput
+                      style={s.moneyInput}
+                      value={fee}
+                      onChangeText={setFee}
+                      keyboardType="decimal-pad"
+                      placeholder="e.g. 5000"
+                      placeholderTextColor={ig.mut2}
+                    />
+                  </View>
+                </View>
+              )}
+              <Text style={s.help}>
+                What you&apos;re offering, not settled yet — she can accept it or negotiate,
+                the same as any creator invited without a prior agreement.
+              </Text>
+            </>
+          ) : (
+            <KV k={selling ? 'She earns' : 'Her fee'} v={settledLine(t) || '—'} />
+          )}
           {selling && (
             <>
               <KV k="What she can sell" v={allocationLabel(creator?.alloc)} danger={!creator?.alloc?.alloc_scope} />
@@ -163,10 +232,17 @@ export default function CreatorTermsScreen({ route, navigation }) {
                   </View>
                 );
               })}
-              {!canSave && (
+              {buyingContent && !needsFormats && (
                 <Text style={s.err}>This campaign pays for content — give her at least one format.</Text>
               )}
             </>
+          )}
+          {!needsMoney && (
+            <Text style={s.err}>
+              {selling && buyingContent ? 'State both her commission and her fee before saving.'
+                : selling ? 'State her commission before saving.'
+                : 'State her fee before saving.'}
+            </Text>
           )}
         </View>
 
@@ -234,6 +310,10 @@ const s = StyleSheet.create({
   label: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.5, color: ig.mut, textTransform: 'uppercase', marginBottom: 6 },
   help: { fontSize: 10.5, color: ig.mut, fontWeight: '650', marginTop: 7, lineHeight: 15 },
   err: { fontSize: 10.5, color: ig.red, fontWeight: '700', marginTop: 8 },
+  moneyRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: ig.line, borderRadius: 9, paddingHorizontal: 11 },
+  moneyPrefix: { fontSize: 13, fontWeight: '800', color: ig.mut, marginRight: 4 },
+  moneySuffix: { fontSize: 13, fontWeight: '800', color: ig.mut, marginLeft: 4 },
+  moneyInput: { flex: 1, paddingVertical: 10, fontSize: 13, fontWeight: '700', color: ig.text },
 
   kv: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7 },
   kvK: { fontSize: 12, color: ig.mut, fontWeight: '650' },

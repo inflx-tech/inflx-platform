@@ -267,12 +267,13 @@ describe('Batch A · A-8 A-9 A-10 N-4 N-6 · the offer stops blocking', () => {
   const src = read(WIZARD);
 
   it('A-8 · canFinish no longer requires an offer', () => {
-    // SUPERSEDED BY STAGE A — canFinish gained a THIRD condition, everyoneHasFormats,
-    // 2026-09-01. Not a reopening of A-8: an offer is still never required. Formats is a
-    // different rule for the same reason allocation already gates this button — a
-    // buying-content creator with nothing to deliver cannot sign later, so better to ask
-    // now than to fail at signing.
-    expect(src).toMatch(/const canFinish = picked\.length > 0 && everyoneAllocated && everyoneHasFormats;/);
+    // SUPERSEDED BY STAGE A, then again by stage A/B — canFinish gained everyoneHasFormats
+    // (2026-09-01) and then everyoneHasMoney (2026-09-02, when a cold-invited creator
+    // found by search became possible and needs a stated opening offer). Not a reopening
+    // of A-8: an OFFER (what her shoppers get) is still never required — MONEY (what she
+    // is paid) always was, for an agreement-sourced creator via the agreement itself and
+    // now via this gate for one found by search.
+    expect(src).toMatch(/const canFinish = picked\.length > 0 && everyoneAllocated && everyoneHasFormats && everyoneHasMoney;/);
     // Narrow on purpose: chosenOffer is still used to RENDER the picked offer, which is
     // correct. What must be gone is the gate, and that is the line above.
     const line = (src.match(/const canFinish = .*/) || [''])[0];

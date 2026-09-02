@@ -1,6 +1,6 @@
 const {
   getSetDraft, setSetDraft, setCreatorTerms, setCreatorOffer, hasFormats, invitePayload,
-  seedFromDeferred,
+  seedFromDeferred, addColdInvite, isColdInvite, setCreatorMoney,
 } = require('../campaignDraft');
 
 /**
@@ -175,5 +175,68 @@ describe('seedFromDeferred — carries settled terms across, keys them uniquely'
   it('a real agreement_id still reaches the server unchanged', () => {
     const real = { agreement_id: 'a1', influencer_id: 'i1', terms: {} };
     expect(invitePayload(real, SELLING_SET, null).agreement_id).toBe('a1');
+  });
+});
+
+/**
+ * addColdInvite / isColdInvite / setCreatorMoney — architecture change, founder
+ * 2026-09-02: "no more pre-agreed and adding into sets... campaign, sets, and reach to
+ * creator" is now the only path in. A creator found by search has nothing settled; she
+ * gets an opening offer stated in the wizard instead of a read-back of an agreement.
+ */
+describe('addColdInvite — a creator with nothing pre-agreed', () => {
+  const INF = { influencer_id: 'i9', name: 'Nisha P.', handle: 'nisha.p', avatar: null };
+
+  it('lands in the draft keyed by influencer, not by any agreement', () => {
+    const cid = 'camp-8';
+    addColdInvite(cid, 's1', INF);
+    const sd = getSetDraft(cid, 's1');
+    expect(sd.creators).toHaveLength(1);
+    expect(sd.creators[0].agreement_id).toBe('cold:i9');
+    expect(sd.creators[0].influencer_id).toBe('i9');
+    expect(sd.creators[0].terms).toEqual({});
+    expect(sd.creators[0].alloc).toBeNull();
+  });
+
+  it('is idempotent — adding the same person twice does not duplicate her', () => {
+    const cid = 'camp-9';
+    addColdInvite(cid, 's1', INF);
+    addColdInvite(cid, 's1', INF);
+    expect(getSetDraft(cid, 's1').creators).toHaveLength(1);
+  });
+
+  it('isColdInvite tells her apart from an agreement-sourced or deferred-seeded creator', () => {
+    expect(isColdInvite({ agreement_id: 'cold:i9' })).toBe(true);
+    expect(isColdInvite({ agreement_id: 'deferred:ci-1' })).toBe(false);
+    expect(isColdInvite({ agreement_id: 'a1' })).toBe(false);
+    expect(isColdInvite({ agreement_id: null })).toBe(false);
+  });
+
+  it('never reaches the server as agreement_id — there is no agreement to look up', () => {
+    const cid = 'camp-10';
+    addColdInvite(cid, 's1', INF);
+    const creator = getSetDraft(cid, 's1').creators[0];
+    const body = invitePayload(creator, SELLING_SET, null);
+    expect(body.agreement_id).toBeUndefined();
+    expect(body.influencer_id).toBe('i9');
+  });
+
+  it('setCreatorMoney writes her opening offer, onto her row only', () => {
+    const cid = 'camp-11';
+    addColdInvite(cid, 's1', INF);
+    addColdInvite(cid, 's1', { influencer_id: 'i10', name: 'Other' });
+    setCreatorMoney(cid, 's1', 'cold:i9', { commission_pct: 15 });
+
+    const sd = getSetDraft(cid, 's1');
+    expect(sd.creators.find((c) => c.agreement_id === 'cold:i9').terms.money).toEqual({ commission_pct: 15 });
+    expect(sd.creators.find((c) => c.agreement_id === 'cold:i10').terms.money).toBeUndefined();
+  });
+
+  it('her opening offer reaches invitePayload as commission_pct/agreed_fee, same as any other creator', () => {
+    const cid = 'camp-12';
+    addColdInvite(cid, 's1', INF);
+    setCreatorMoney(cid, 's1', 'cold:i9', { commission_pct: 12 });
+    const creator = getSetDraft(cid, 's1').creators[0];
+    expect(invitePayload(creator, SELLING_SET, null).commission_pct).toBe(12);
   });
 });
