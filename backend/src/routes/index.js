@@ -5,8 +5,6 @@ const { Router } = require('express');
 const authRoutes        = require('./auth.routes');
 const brandRoutes       = require('./brand.routes');
 const influencerRoutes  = require('./influencer.routes');
-const agencyRoutes      = require('./agency.routes');
-const referralRoutes    = require('./referral.routes');
 const adminRoutes       = require('./admin.routes');
 const adminSectionsRoutes = require('./adminSections.routes');
 const adminWorldRulesRoutes = require('./adminWorldRules.routes');
@@ -25,7 +23,6 @@ const deliverableRoutes = require('./deliverable.routes');
 // Phase 4
 const followerRoutes    = require('./follower.routes');
 const transactionRoutes = require('./transaction.routes');
-const enquiryRoutes     = require('./enquiry.routes');
 const commissionRoutes  = require('./commission.routes');
 
 // Phase 5
@@ -47,7 +44,6 @@ const productionRoutes = require('./production.routes');
 const proposalRoutes = require('./proposal.routes');
 // collab-part2 — the other half of the handshake: brand -> creator requests, the
 // creator's inbox and preferences, and the admin-editable limits.
-const handshakeRoutes = require('./handshake.routes');
 
 // Media uploads
 const uploadRoutes = require('./upload.routes');
@@ -63,7 +59,6 @@ const ingestRoutes = require('./ingest.routes');
 
 // Marketing Engine admin API (admin-only, JWT-authenticated)
 const marketingAdminRoutes = require('./marketingAdmin.routes');
-const referralAdminRoutes  = require('./referralAdmin.routes');
 
 // Fashion-1 — product variants (brand-side SKU CRUD) + returns workflow
 const productVariantsRoutes = require('./productVariants.routes');
@@ -82,10 +77,8 @@ const influencerGroupRoutes = require('./influencerGroup.routes');
 const collabDiaryRoutes = require('./collabDiary.routes');
 
 // Fashion-2 — creator-curated lookbooks (outfit collections)
-const lookbooksRoutes       = require('./lookbooks.routes');
 
 // INFLX Meals — planned-meal marketplace (P1 vertical slice)
-const mealsRoutes           = require('./meals.routes');
 
 // Listing Engine — drill-down taxonomy (fashion/furniture): tree + facets + batch-add
 const listingRoutes         = require('./listing.routes');
@@ -114,7 +107,6 @@ router.use('/internal/ingest', ingestRoutes);
 router.use('/admin/marketing', marketingAdminRoutes);
 
 // ── Referral admin API (JWT-authenticated, admin only) ───────────────────────
-router.use('/admin/referrals', referralAdminRoutes);
 
 // ── Section Manager admin API (Creator Vibe Phase B — admin only) ────────────
 router.use('/admin/sections', adminSectionsRoutes);
@@ -145,8 +137,6 @@ router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);
-router.use('/agencies',      agencyRoutes);
-router.use('/referrals',     referralRoutes);
 router.use('/influencers',   influencerRoutes);
 router.use('/admin',         adminRoutes);
 router.use('/campaigns',     campaignRoutes);
@@ -156,7 +146,6 @@ router.use('/contracts',     contractRoutes);
 router.use('/deliverables',  deliverableRoutes);
 router.use('/',              productionRoutes);   // /contracts/:id/production + /production-events/:id/*
 router.use('/',              proposalRoutes);     // /influencers/me/* + /brands/me/proposals* + /admin/proposals
-router.use('/',              handshakeRoutes);    // /brands/me/collab-requests* + /influencers/me/collab-* + /admin/handshake-settings
 router.use('/uploads',       uploadRoutes);
 router.use('/ota',           otaRoutes);
 
@@ -169,8 +158,6 @@ router.use('/follower',  followerRoutes);
 // ── Phase 4 — Transactions (pay-at-store, prebook, orders) ───────────────────
 router.use('/follower', transactionRoutes);
 
-// ── Phase 4 — Enquiry (follower submits) ─────────────────────────────────────
-router.use('/follower', enquiryRoutes);
 
 // ── Phase 4 — Commission tracker (influencer) ────────────────────────────────
 router.use('/influencers', commissionRoutes);
@@ -189,8 +176,6 @@ router.use('/campaign-influencers', dateChangeRoutes.ciRouter);      // /campaig
 // ── Phase 6 — Notifications (any authenticated user) ─────────────────────────
 router.use('/notifications', notificationRoutes);
 
-// ── INFLX Meals — planned-meal marketplace (P1) ──────────────────────────────
-router.use('/meals', mealsRoutes);
 
 // ── Listing Engine — drill-down taxonomy tree + facets (public read) + batch-add ──
 router.use('/listing',   listingRoutes.publicRouter);
@@ -242,7 +227,5 @@ router.use('/follower',  returnsRoutes.followerRouter);
 router.use('/admin',     returnsRoutes.adminRouter);
 
 // ── Fashion-2 — creator lookbooks (creator authoring + public viewing) ───────
-router.use('/',           lookbooksRoutes.publicRouter);    // /store/:handle/lookbooks
-router.use('/influencer', lookbooksRoutes.creatorRouter);   // /influencer/lookbooks*
 
 module.exports = router;

@@ -9,7 +9,6 @@ const subCtrl = require('../controllers/subscription.controller');
 
 const walletRoutes = require('./wallet.routes');
 const { getBrandEscrow, getCampaignEscrow } = require('../controllers/escrow.controller');
-const enquiryCtrl = require('../controllers/enquiry.controller');
 const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
 const inboxCtrl = require('../controllers/brandInbox.controller');
@@ -53,8 +52,6 @@ router.get('/me/shoots', authenticate, requireRole('brand'), productionCtrl.list
 router.get('/me/campaigns/:campaign_id/escrow', authenticate, requireRole('brand'), getCampaignEscrow);
 
 // Phase 4 — Enquiry leads
-router.get('/me/enquiries',         authenticate, requireRole('brand'), enquiryCtrl.listEnquiries);
-router.patch('/me/enquiries/:id',   authenticate, requireRole('brand'), enquiryCtrl.updateEnquiry);
 
 // Wave 2 — BookingsInbox: incoming follower_bookings with creator attribution.
 // Brand confirms/rejects; rejecting also flips the underlying booking_status

@@ -549,17 +549,6 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
   });
 }
 
-// ─── INFLX Meals (customer side) ────────────────────────────────────────────
-export const mealsApi = {
-  // C0 — in-store Offers tab (public)
-  getStore: (brandId) => api.get(`/meals/store/${brandId}`),
-  // C1–C3 — chat → clarify → offers + AI recommendation
-  chat: (body) => api.post('/meals/chat', body),
-  // C4 — lock + pay before cutoff
-  pay: (mealOfferId) => api.post('/meals/orders', { meal_offer_id: mealOfferId }),
-  // C5 — track
-  getOrder: (id) => api.get(`/meals/orders/${id}`),
-};
 
 export const followerApi = {
   // Profile
@@ -718,20 +707,9 @@ export const followerApi = {
 
   // Food World 3C-1 — dish-group discovery. Rail tiles + tap → nearby restaurants
   // serving any dish in the group (mig 115; lat/lng optional → distance ranking).
-  getDishGroups: () => api.get('/follower/dish-groups'),
-  getDishGroupRestaurants: (id, loc = {}) => {
-    const qs = [];
-    if (loc.lat != null && loc.lng != null) qs.push(`lat=${loc.lat}`, `lng=${loc.lng}`);
-    return api.get(`/follower/dish-groups/${id}/restaurants${qs.length ? `?${qs.join('&')}` : ''}`);
-  },
   // Cleanup 2026-06-22 — craving rail driven by Home-Builder category tiles.
   // Restaurants serving a category tile (by name; reuses a same-named dish_group
   // for precise matching server-side, else keyword match).
-  getCategoryRestaurants: (name, loc = {}) => {
-    const qs = [`name=${encodeURIComponent(name)}`];
-    if (loc.lat != null && loc.lng != null) qs.push(`lat=${loc.lat}`, `lng=${loc.lng}`);
-    return api.get(`/follower/category-restaurants?${qs.join('&')}`);
-  },
   // Phase Salon-2 — accepts an optional viaInfluencerId so the response
   // embeds a `creator` object the BrandStoreScreen sticky header renders.
   getBrandStore: (brandId, viaInfluencerId = null) => {
@@ -770,9 +748,6 @@ export const followerApi = {
   listMyReturns: () => api.get('/follower/returns'),
   getMyReturn: (id) => api.get(`/follower/returns/${id}`),
 
-  // Fashion-2 — Creator lookbooks (public viewing on follower side)
-  getCreatorLookbooks: (handle) => api.get(`/store/${handle}/lookbooks`),
-  getLookbook: (handle, id) => api.get(`/store/${handle}/lookbooks/${id}`),
 
   // Transactions
   payAtStore: (data) => api.post('/follower/pay-at-store', data),

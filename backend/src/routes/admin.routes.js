@@ -58,9 +58,6 @@ router.get('/stats', authenticate, requireAnyAdminRole, ctrl.getStats);
 // INFLX Meals — platform settings (radius + tolerance + lead time).
 // Any admin can read; any admin can update (founder's daily account
 // is not always superadmin per the admin-role-gate memory).
-const mealsCtrl = require('../controllers/meals.controller');
-router.get('/meals/settings',  authenticate, requireCapability('settings'), mealsCtrl.adminGetSettings);
-router.put('/meals/settings',  authenticate, requireCapability('settings'), mealsCtrl.adminPutSettings);
 
 // Escrow management — 'escrow'
 router.get('/escrow',          authenticate, requireCapability('escrow'), ctrl.getEscrowOverview);
