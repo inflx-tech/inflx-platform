@@ -418,7 +418,7 @@ function mapBrowseProduct(r) {
     id: r.id, name: r.name, price, discount_value, offer_price,
     // resolve the cover from image_url OR the variant/facet images the edit form
     // reads, so browse never shows blank while edit shows a photo (product-image-resolution)
-    image_url: resolveProductImage(r), section: r.section, veg_flag: r.veg_flag, description: r.description,
+    image_url: resolveProductImage(r), section: r.section, description: r.description,
     badge: r.badge || null, has_addons: r.has_addons === true,
     rating: r.rating != null ? Number(r.rating) : null,
     review_count: r.review_count != null ? Number(r.review_count) : 0,
@@ -528,7 +528,7 @@ const getNodeProducts = asyncHandler(async (req, res) => {
   const offIdx = ++p; params.push((page - 1) * pageSize);
 
   const pageSql = `${subtree}
-    SELECT bp.id, bp.name, bp.price, ${OFFER_BEST_PCT} AS offer_pct, bp.image_url, bp.section, bp.veg_flag, bp.description,
+    SELECT bp.id, bp.name, bp.price, ${OFFER_BEST_PCT} AS offer_pct, bp.image_url, bp.section, bp.description,
            bp.created_at, bp.badge, bp.variants_json,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category, u_b.city AS brand_city,
            rev.rating, rev.review_count,

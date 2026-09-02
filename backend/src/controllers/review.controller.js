@@ -178,7 +178,10 @@ const getReviewable = asyncHandler(async (req, res) => {
        JOIN brands b ON b.id = ft.brand_id
       WHERE ft.follower_id = $1
         AND ft.status = 'completed'
-        AND b.category = 'restaurant'
+        // Docs/THE_CUT.md pass 2 — was scoped to restaurants only. Reviews SURVIVE the
+        // cut (founder kept them); restaurants do not. Left as it was, this list could
+        // only ever return nothing. Widened to any completed purchase, which is what a
+        // fashion shopper needs.
         AND NOT EXISTS (
           SELECT 1 FROM restaurant_reviews rr WHERE rr.transaction_id = ft.id
         )

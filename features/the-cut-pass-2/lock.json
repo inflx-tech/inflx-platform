@@ -1,0 +1,47 @@
+{
+  "feature": "the-cut-pass-2",
+  "area": "the fashion read path — untangling food logic woven through it",
+  "spec_version": "1.0.0",
+  "status": "BUILT · tests green · awaiting founder go for the production deploy",
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls start pass 2\", 2026-09-02, against the plan he authored in Docs/THE_CUT.md",
+  "approved_at": "2026-09-02",
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — scope locked in Docs/THE_CUT.md",
+  "mockup_locked_at": "2026-09-02",
+  "mockup_source": "NONE. This pass draws nothing and is intended to change nothing a shopper can see. The design of record is Docs/THE_CUT.md.",
+  "impact_reviewed": true,
+  "impact_review_note": "The founder authored the cleaning plan this executes, including naming this pass as the one that can break fashion and must be done alone.",
+  "the_three_cuts": {
+    "1_veg_flag_off_the_fashion_grid": "Every product in every category browse carried veg_flag. Removed from the SELECT and from the response shape in listing.controller.js.",
+    "2_review_list_unscoped": "The 'places you haven't reviewed yet' list was hard-filtered to b.category = 'restaurant'. Reviews SURVIVE the cut (founder kept them); restaurants do not — so that list could only ever return nothing. Widened to any completed purchase, which is what a fashion shopper needs.",
+    "3_food_ui_out_of_the_category_browser": "The craving rail, the three food chips (Veg · ₹99 & under · delivery under 30 mins), the restaurant result card, the dining store card with its '₹X for two', and all their state, effects, handlers and styles. 267 lines; the file goes 750 -> 483."
+  },
+  "the_honest_finding": "LESS was actively wrong than the audit implied, and the reason matters: pass 1 already made most of it unreachable. All of the food UI sat behind one flag (isDining) that can no longer be true, so it was dead code rather than misbehaving code. Still worth removing — food logic inside a fashion screen is how the next reader gets confused — but this was not the dangerous operation it was billed as, and saying so is more useful than claiming a bigger win.",
+  "what_was_NOT_cut_and_why_that_matters": "restaurant_reviews LOOKS like bleed and is not. It is the reviews feature the founder explicitly kept — named after the era it was built in, now serving every shop type, and joined on every product card deliberately to show a brand's rating. Deleting it would have removed a KEPT feature while believing I was removing a retired one. Catching that before cutting is the entire reason this pass was done slowly and alone.",
+  "two_mistakes_and_what_caught_them": {
+    "cut_a_value_the_renderer_used": "foodFilteredSections looked food-only but was being passed to the section renderer. The file failed to parse, an automatic revert restored it, and the fix was to repoint that single use at the unfiltered list rather than delete it.",
+    "a_greedy_regex": "A pattern meant for food styles deleted a style's opening line and left its body orphaned. Same failure class, same parse-check catch — except the backup was skipped that time, so it was repaired by hand instead of reverted.",
+    "the_lesson_is_the_process": "Every destructive scripted edit re-parses afterwards, and runs against a backup with automatic revert. That guard fired twice in this pass and saved the file both times."
+  },
+  "verification": {
+    "parses": "Both backend files checked with node --check; the screen parsed with @babel/parser including JSX after every single edit.",
+    "tests": "722 mobile tests pass, run serially — the SAME count as before the pass, which is the point: nothing that survives changed behaviour.",
+    "no_orphaned_food_imports": "Confirmed the screen no longer imports anything from components/food or components/restaurant.",
+    "backend_not_run": "The backend suite needs a live database this session did not have. Both edits are removals — one field from a SELECT, one filter from a WHERE — with no new query, no migration and no schema change."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy_class": "PRODUCTION-IMPACTING. backend/src changed (Render) and mobile changed (OTA). No migration, no schema change, no data touched.",
+    "deploy_targets": ["render (backend)", "ota (follower)"],
+    "outward_facing": "Almost nothing. No shopper sees a difference on any reachable surface. One kept feature — the 'not yet reviewed' list — starts being able to return something, where before it could not.",
+    "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false. Platform QA is not green (~231 pre-existing failures, unchanged by this contract).",
+    "device_walk_required": "YES — one step, and it is small: open a fashion category and browse through to a product page. That is the only journey this pass could have broken."
+  },
+  "next_passes": "Pass 3 disconnects the server abilities nothing asks for any more. Pass 4 erases the data, last and alone. RECOMMENDED, and flagged to the founder as a change from the original order: hold passes 3 and 4 until AFTER the founder has walked the flow — they are the irreversible ones, nothing visible depends on them, and if the walk turns up something that must come back, undeleted data is a gift."
+}

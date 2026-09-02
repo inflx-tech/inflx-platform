@@ -25,15 +25,7 @@ import SectionRenderer, { hasEngineContent } from '../../components/SectionRende
 import { CategoryCircle } from '../../components/vibe';
 import { useAppLocation } from '../../contexts/LocationContext';
 import LocationSheet from '../../components/LocationSheet';
-import CravingRail from '../../components/food/CravingRail';
-import RestaurantResultCard from '../../components/food/RestaurantResultCard';
 
-// Food World 3C-1 — home filter chips (client-side over the food shelves).
-const FOOD_CHIPS = [
-  { key: 'veg',     label: 'Veg' },
-  { key: 'under99', label: '₹99 & under' },
-  { key: 'fast',    label: 'delivery under 30 mins' },
-];
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -102,7 +94,6 @@ export default function CategoryListScreen({ route, navigation }) {
   const { latitude, longitude } = location;
   const [locOpen, setLocOpen] = useState(false);
   // 'food' is the launch-tile key (contract 2.5a); 'eat'/'dining' are legacy keys.
-  const isDining = superCategory === 'food' || superCategory === 'dining' || superCategory === 'eat';
 
   // Section engine (Phase C2): when on, render the category from
   // GET /v1/follower/section/category/:key via <SectionRenderer>. Inert + falls
@@ -189,75 +180,9 @@ export default function CategoryListScreen({ route, navigation }) {
       });
   }, [sections, activeSubCat]);
 
-  // Food World 3C-1 — home filter chips. Client-side prune of the food shelves
-  // (Type A product shelves + Type B nested dishes). Unknown ETA never drops a
-  // card (only a known eta_max > 30 does).
-  const [foodFilters, setFoodFilters] = useState({});
-  const activeFoodKeys = Object.keys(foodFilters).filter((k) => foodFilters[k]);
 
-  // Craving filter IN-PAGE (Swiggy-style; no new screen). Cleanup 2026-06-22:
-  // the rail tiles come from the WORLD's Home-Builder categories
-  // (follower_vertical_categories — same as the main home), and a tap filters
-  // this page to restaurants serving that category. Tap again clears.
-  const [cravingTiles, setCravingTiles] = useState([]);
-  const [craving, setCraving] = useState(null);          // { key, name } or null
-  const [cravingResults, setCravingResults] = useState([]);
-  const [cravingLoading, setCravingLoading] = useState(false);
 
-  // Load this world's category tiles (only for the dining/food world).
-  useEffect(() => {
-    if (!isDining) return;
-    let alive = true;
-    followerApi.getVerticals?.()
-      .then((r) => {
-        const verts = (r?.data || r)?.verticals || [];
-        const world = verts.find((v) => v.key === superCategory) || null;
-        if (alive) setCravingTiles(world?.categories || []);
-      })
-      .catch(() => { if (alive) setCravingTiles([]); });
-    return () => { alive = false; };
-  }, [isDining, superCategory]);
 
-  const onCraving = useCallback(async (tile) => {
-    if (craving?.key === tile.key) { setCraving(null); setCravingResults([]); return; }
-    setCraving({ key: tile.key, name: tile.name });
-    setCravingLoading(true);
-    try {
-      const r = await followerApi.getCategoryRestaurants(tile.name, { lat: latitude, lng: longitude });
-      setCravingResults((r?.data || r)?.restaurants || []);
-    } catch { setCravingResults([]); }
-    finally { setCravingLoading(false); }
-  }, [craving?.key, latitude, longitude]);
-
-  // NOTE: the food page defaults to the FULL section feed (Food under 400,
-  // Trending, restaurants…). The craving rail filters IN-PAGE only when the
-  // user taps a tile here — we deliberately do NOT auto-select a craving on
-  // entry, otherwise the section feed would be hidden behind a filter.
-
-  const dishPasses = useCallback((p) => {
-    if (foodFilters.veg && !(p.veg_flag === 'Veg' || p.veg_flag === 'veg' || p.veg_flag === true)) return false;
-    if (foodFilters.under99 && !(Number(p.price) <= 99)) return false;
-    if (foodFilters.fast && p.eta_max != null && Number(p.eta_max) > 30) return false;
-    return true;
-  }, [foodFilters]);
-
-  const foodFilteredSections = useMemo(() => {
-    if (!isDining || !activeFoodKeys.length || !Array.isArray(filteredSections)) return filteredSections;
-    return filteredSections
-      .map((sec) => {
-        if (sec.type === 'products' && sec.items?.[0]?.brand?.category === 'restaurant') {
-          return { ...sec, items: (sec.items || []).filter(dishPasses) };
-        }
-        if (sec.type === 'restaurant_list') {
-          const items = (sec.items || [])
-            .map((r) => ({ ...r, products: (r.products || []).filter(dishPasses) }))
-            .filter((r) => r.products.length);
-          return { ...sec, items };
-        }
-        return sec;
-      })
-      .filter((sec) => !['products', 'restaurant_list'].includes(sec.type) || (Array.isArray(sec.items) && sec.items.length));
-  }, [filteredSections, isDining, foodFilters, dishPasses, activeFoodKeys.length]);
 
   // Header "N places" — in section-engine mode the businesses come from the
   // sections, not `stores`, so stores.length showed 0 (walkthrough P8). Count
@@ -275,97 +200,9 @@ export default function CategoryListScreen({ route, navigation }) {
 
   // ── Render helpers ──────────────────────────────────────────────────────
 
-  function renderDiningCard(store, sIdx) {
-    const accent = getBusinessAccentLight(store.category).accent;
-    const accentDim = getBusinessAccentLight(store.category).pale;
-    const bestOffer = store.offers?.[0];
-    const otherCreators = (store.offers || []).slice(1);
-    const cuisines = store.cuisines || store.listing_data?.cuisines || [];
-    const cuisineLine = Array.isArray(cuisines) ? cuisines.slice(0, 3).join(' · ') : '';
-    const locality = store.locality_or_neighborhood || store.city || 'Vijayawada';
-    const costForTwo = store.cost_for_two != null ? `₹${store.cost_for_two} for two` : null;
-
-    return (
-      <TouchableOpacity
-        key={store.id || sIdx}
-        style={s.diningCard}
-        activeOpacity={0.85}
-        onPress={() => navigation.navigate('BrandStore', {
-          brandId: store.id,
-          brandName: store.business_name,
-          tracking: buildTrackingFromOffer(bestOffer),
-        })}
-      >
-        {/* Photo / logo */}
-        <View style={[s.diningHero, { backgroundColor: accentDim }]}>
-          {store.cover_image_url ? (
-            <Image source={{ uri: store.cover_image_url }} style={s.diningHeroImg} resizeMode="cover" />
-          ) : (
-            <Text style={s.diningHeroEmoji}>{CATEGORY_EMOJI[store.category] || icon}</Text>
-          )}
-
-          {/* Deal badge */}
-          {bestOffer?.discount_value ? (
-            <View style={[s.diningBadge, { backgroundColor: accent }]}>
-              <Text style={s.diningBadgeText}>{bestOffer.discount_value}% OFF</Text>
-            </View>
-          ) : null}
-
-          {/* Phase 1 — open/closed pill on hero (top-left when present) */}
-          {store.open_status && (
-            <View style={[
-              s.openHeroPill,
-              { backgroundColor: store.open_status.is_open ? 'rgba(34,197,94,0.95)' : 'rgba(0,0,0,0.6)' },
-            ]}>
-              <Text style={s.openHeroPillText} numberOfLines={1}>
-                {store.open_status.is_open ? '● Open' : '● Closed'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Body */}
-        <View style={s.diningBody}>
-          <Text style={s.diningName} numberOfLines={1}>{store.business_name}</Text>
-          {cuisineLine ? <Text style={s.diningCuisine} numberOfLines={1}>{cuisineLine}</Text> : null}
-          <Text style={s.diningMeta} numberOfLines={1}>
-            {locality}
-            {store.distance_text ? ` · ${store.distance_text}` : ''}
-            {costForTwo ? ` · ${costForTwo}` : ''}
-          </Text>
-
-          {/* Deal aggregation row — Dineout-style "Flat X% off · +N more offers" */}
-          {bestOffer?.discount_value ? (
-            <View style={s.dealBar}>
-              <Text style={[s.dealBarText, { color: accent }]} numberOfLines={1}>
-                🔥 Flat {bestOffer.discount_value}% off
-              </Text>
-              {(store.deal_count || 0) > 1 && (
-                <Text style={[s.dealBarMore, { color: accent }]}>+{(store.deal_count || 1) - 1} more</Text>
-              )}
-            </View>
-          ) : null}
-
-          {/* Creator endorsement chip(s) */}
-          {bestOffer?.influencer_name && (
-            <View style={s.creatorRow}>
-              <View style={[s.creatorChip, { backgroundColor: accentDim, borderColor: accent + '40' }]}>
-                <View style={[s.creatorAvatar, { backgroundColor: accent }]}>
-                  <Text style={s.creatorInitial}>{bestOffer.influencer_name[0]}</Text>
-                </View>
-                <Text style={[s.creatorChipText, { color: accent }]} numberOfLines={1}>
-                  @{bestOffer.instagram_handle || bestOffer.influencer_name} recommends
-                </Text>
-              </View>
-              {otherCreators.length > 0 && (
-                <Text style={s.moreCreators}>+ {otherCreators.length} more</Text>
-              )}
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  }
+  // Docs/THE_CUT.md pass 2 — renderDiningCard removed. It drew a restaurant result:
+  // cuisines, a rating, "₹X for two". Restaurants are gone, and its only caller sat
+  // behind the food-world flag, so it could never be reached.
 
   function renderInlineProductStore(store, sIdx) {
     const accent = getBusinessAccentLight(store.category).accent;
@@ -502,59 +339,9 @@ export default function CategoryListScreen({ route, navigation }) {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
 
-        {/* Food World 3C-1 — dish-group "craving" rail + filter chips (food home only) */}
-        {isDining && (
-          <>
-            <CravingRail tiles={cravingTiles} onPressTile={onCraving} selectedKey={craving?.key || null} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.foodChips}>
-              {FOOD_CHIPS.map((c) => {
-                const on = !!foodFilters[c.key];
-                return (
-                  <TouchableOpacity
-                    key={c.key}
-                    style={[s.foodChip, on && s.foodChipOn]}
-                    onPress={() => setFoodFilters((f) => ({ ...f, [c.key]: !f[c.key] }))}
-                  >
-                    <Text style={[s.foodChipTxt, on && s.foodChipTxtOn]}>{c.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </>
-        )}
 
-        {/* Craving selected → in-page results (replaces the normal feed) */}
-        {isDining && craving ? (
-          <>
-            <View style={s.cravingBar}>
-              <Text style={s.cravingTitle} numberOfLines={1}>
-                {craving.name}
-                {!cravingLoading ? <Text style={s.cravingCount}>  · {cravingResults.length} place{cravingResults.length !== 1 ? 's' : ''}</Text> : null}
-              </Text>
-              <TouchableOpacity onPress={() => onCraving(craving)} hitSlop={8}>
-                <Text style={s.cravingClear}>✕ Clear</Text>
-              </TouchableOpacity>
-            </View>
-            {cravingLoading ? (
-              <ActivityIndicator color={P.yellowText} style={{ marginTop: 30 }} />
-            ) : cravingResults.length === 0 ? (
-              <View style={s.empty}>
-                <Text style={s.emptyIcon}>🍱</Text>
-                <Text style={s.emptyTitle}>No one nearby serves this yet</Text>
-                <Text style={s.emptyText}>Try a wider area or another craving.</Text>
-              </View>
-            ) : (
-              cravingResults.map((r) => (
-                <RestaurantResultCard
-                  key={r.brand_id}
-                  restaurant={r}
-                  onOpen={(rest) => navigation.navigate('BrandStore', { brandId: rest.brand_id, brandName: rest.business_name })}
-                />
-              ))
-            )}
-          </>
-        ) : sectionsActive ? (
-          <SectionRenderer sections={foodFilteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
+        {sectionsActive ? (
+          <SectionRenderer sections={filteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
         ) : !loading ? (
           <View style={s.empty}>
             <Text style={s.emptyIcon}>🗂️</Text>
@@ -614,27 +401,6 @@ const s = StyleSheet.create({
   pillText: { fontSize: 11, fontWeight: '600', color: P.muted },
   pillTextActive: { color: P.success },
 
-  // Dining card (Swiggy Dineout-style — restaurant first, menu hidden)
-  diningCard: {
-    marginHorizontal: 20, marginBottom: 14,
-    backgroundColor: P.white,
-    borderRadius: 16,
-    borderWidth: 1, borderColor: P.border,
-    overflow: 'hidden',
-  },
-  diningHero: {
-    height: 150,
-    alignItems: 'center', justifyContent: 'center',
-    position: 'relative',
-  },
-  diningHeroImg: { width: '100%', height: '100%' },
-  diningHeroEmoji: { fontSize: 56 },
-  diningBadge: {
-    position: 'absolute', top: 12, right: 12,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 12,
-  },
-  diningBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
   openHeroPill: {
     position: 'absolute', top: 12, left: 12,
     paddingHorizontal: 8, paddingVertical: 4,
@@ -651,10 +417,6 @@ const s = StyleSheet.create({
   },
   dealBarText: { fontSize: 12, fontWeight: '700', flex: 1 },
   dealBarMore: { fontSize: 11, fontWeight: '600' },
-  diningBody: { padding: 14 },
-  diningName: { fontSize: 16, fontWeight: '800', color: P.ink },
-  diningCuisine: { fontSize: 11, color: P.muted, marginTop: 4 },
-  diningMeta: { fontSize: 10, color: P.muted2, marginTop: 4 },
   creatorRow: {
     flexDirection: 'row', alignItems: 'center',
     marginTop: 10, gap: 8,
@@ -711,18 +473,7 @@ const s = StyleSheet.create({
     marginHorizontal: 20, marginVertical: 12,
   },
 
-  // Food World 3C-1 — craving in-page result bar
-  cravingBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2 },
-  cravingTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: C.ink, letterSpacing: -0.3 },
-  cravingCount: { fontSize: 12, fontWeight: '600', color: P.muted },
-  cravingClear: { fontSize: 12, fontWeight: '800', color: P.yellowText },
 
-  // Food World 3C-1 — home filter chips
-  foodChips: { gap: 9, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
-  foodChip: { borderWidth: 1, borderColor: P.border, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#fff' },
-  foodChipOn: { borderColor: C.ink, backgroundColor: C.ink },
-  foodChipTxt: { fontSize: 12, fontWeight: '700', color: C.ink },
-  foodChipTxtOn: { color: '#fff' },
 
   // Empty state
   empty: { alignItems: 'center', paddingVertical: 40 },
