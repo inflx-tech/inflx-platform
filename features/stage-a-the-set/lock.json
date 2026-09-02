@@ -235,5 +235,16 @@
     "why_it_is_safe": "All ten Stage A screens are additive/backward-compatible: nullable columns, resolvers that fall back to the pre-Stage-A shape (set-level channels/formats, window-based go-live day) for anything built before today, and every new UI block is conditionally rendered — absent for an old set or a cold invite, not blank or broken.",
     "release_gate": "STILL NOT MET, unchanged from slice_1. qa_all_green is false (the ~231 pre-existing failures, unrelated to this work, and this session's inability to run backend tests against a live database). released stays false; gov-check Rule 2 would refuse true regardless, and no override was used or needed since released was never set.",
     "device_walk_required": "YES — NOT YET DONE, for all four slices now live in production. The walk in 06-diff/notes.md (two sections, 6+7 steps) is the honest next step before calling any of this finished."
+  },
+  "deployed_2026_09_02_deferred_pool": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",
+    "commit": "4bca516 (the deferred pool — migration 167, offer.controller.defer, campaign.controller.getDeferred, CreatorDeferScreen, SB-24 Moved out)",
+    "migration": "167 dry-run then applied against production BEFORE this push, in the same session — see slice_5_deferred_pool.migration above for the row-count verification.",
+    "backend": "Pushed to Render. gov-check passed (17 governed changes, contract-backed). Verified by route existence: GET /v1/campaigns/x/deferred and POST /v1/offers/x/defer both -> 401 (not 404). The FIRST probe on the deferred route returned 404 — Render had not finished rolling out yet; a second probe 20s later returned 401. Not treated as broken on the first read, per the standing rule to probe twice before concluding a cold-start deploy failed.",
+    "ota": {
+      "brand": "version 202, native_runtime 3 — verified directly against the manifest.",
+      "influencer": "version 194, native_runtime 3 — verified directly against the manifest."
+    },
+    "device_walk_required": "YES — NOT YET DONE, now for five slices total."
   }
 }
