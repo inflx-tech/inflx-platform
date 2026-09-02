@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { resumeRouteFor } = require('../BrandCampaignListScreen');
+const { isRealAgreementId } = require('../../../utils/campaignDraft');
 
 /**
  * A draft resumes; a lapsed creator leaves on her own.
@@ -76,8 +77,33 @@ describe('a lapsed creator leaves the set on her own', () => {
   const src = read(WIZARD);
 
   it('the drop runs when the set is opened', () => {
-    expect(src).toContain('const gone = sd.creators.filter(c => !live.has(String(c.agreement_id)))');
+    expect(src).toContain('const gone = sd.creators.filter(c => draft.isRealAgreementId(c.agreement_id) && !live.has(String(c.agreement_id)))');
     expect(src).toContain('draft.setSetDraft(campaignId, setId, { creators: kept })');
+  });
+
+  it('⚠️ a cold invite or a deferred-pool pick is never mistaken for a lapsed agreement', () => {
+    // Bug found 2026-09-02: this effect used to filter EVERY picked creator against the live
+    // agreements list. A cold invite (`cold:<influencer_id>`, from search or a group — stage-a/b)
+    // and a deferred-pool pick (`deferred:<old row id>`) never appear in that list, because
+    // neither has ever had a real agreement — so both read as "lapsed" the instant this effect
+    // ran, and were silently purged from the set before she was ever invited, with the brand
+    // told a false "agreement has lapsed" reason. Only a REAL agreement id can lapse.
+    //
+    // Proven behaviourally against the real exported guard, not just pinned as source text:
+    // the same synthetic keys the invite payload already refuses to send as agreement_id
+    // (features/stage-a-the-set slice_7/slice_8) must also survive this purge unconditionally,
+    // regardless of what the live agreements list contains.
+    const live = new Set(); // nothing live — the strictest possible case
+    const picked = [
+      { agreement_id: 'cold:i9', name: 'Found by search' },
+      { agreement_id: 'deferred:77', name: 'From the deferred pool' },
+      { agreement_id: 'real-agreement-uuid', name: 'Pre-agreed, and it lapsed' },
+    ];
+    const gone = picked.filter((c) => isRealAgreementId(c.agreement_id) && !live.has(String(c.agreement_id)));
+    expect(gone.map((c) => c.name)).toEqual(['Pre-agreed, and it lapsed']);
+
+    const kept = picked.filter((c) => !isRealAgreementId(c.agreement_id) || live.has(String(c.agreement_id)));
+    expect(kept.map((c) => c.name)).toEqual(['Found by search', 'From the deferred pool']);
   });
 
   it('⚠️ it cannot run before the live list has loaded', () => {
@@ -100,7 +126,7 @@ describe('a lapsed creator leaves the set on her own', () => {
   });
 
   it('it keeps everyone who is still live', () => {
-    expect(src).toContain('const kept = sd.creators.filter(c => live.has(String(c.agreement_id)))');
+    expect(src).toContain('const kept = sd.creators.filter(c => !draft.isRealAgreementId(c.agreement_id) || live.has(String(c.agreement_id)))');
   });
 
   it('the ids are compared as strings, not by identity', () => {

@@ -253,9 +253,14 @@ export function clearDraft(campaignId) {
  *   deferred:<old campaign_influencer id>   seeded from the deferred pool (seedFromDeferred)
  *   cold:<influencer_id>                    found by search, nothing pre-agreed (addColdInvite)
  * This function is the one place that tells a synthetic key from a real agreement id;
- * nothing else needs to know the difference.
+ * nothing else needs to know the difference. Exported — anything that filters creators
+ * against a list of REAL agreements (e.g. the wizard's lapsed-agreement purge) must use
+ * this, or every cold/deferred pick looks like a lapsed agreement and gets silently
+ * dropped from the set.
  */
-const isRealAgreementId = (id) => !!id && !String(id).startsWith('deferred:') && !String(id).startsWith('cold:');
+export function isRealAgreementId(id) {
+  return !!id && !String(id).startsWith('deferred:') && !String(id).startsWith('cold:');
+}
 
 /**
  * The invite payload for one pencilled creator, in the shape POST

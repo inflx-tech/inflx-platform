@@ -158,10 +158,14 @@ export default function BrandSetWizardScreen({ route, navigation }) {
     if (!setId || !agreementsLoaded) return;
     const live = new Set(agreements.map(a => String(a.id)));
     const sd = draft.getSetDraft(campaignId, setId);
-    const gone = sd.creators.filter(c => !live.has(String(c.agreement_id)));
+    // stage-a/b — a cold invite (search/group) or a deferred-pool pick has no real
+    // agreement to begin with, so it will never appear in `live`. Without this check
+    // every one of them reads as "lapsed" the moment this effect runs and gets silently
+    // purged from the set before she's ever invited. Only a REAL agreement can lapse.
+    const gone = sd.creators.filter(c => draft.isRealAgreementId(c.agreement_id) && !live.has(String(c.agreement_id)));
     if (!gone.length) return;
 
-    const kept = sd.creators.filter(c => live.has(String(c.agreement_id)));
+    const kept = sd.creators.filter(c => !draft.isRealAgreementId(c.agreement_id) || live.has(String(c.agreement_id)));
     draft.setSetDraft(campaignId, setId, { creators: kept });
     setPicked(kept);
 
