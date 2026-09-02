@@ -390,15 +390,9 @@ export const brandApi = {
   getInfluencerAnalytics: (params) => api.get(`/influencers/analytics${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
-// Agency app (Contract 3b) — drives the Contract 3a backend.
-export const agencyApi = {
-  register: (data) => api.post('/agencies/register', data),
-  getMe: () => api.get('/agencies/me'),
-  updateMe: (data) => api.patch('/agencies/me', data),
-  withdraw: (data) => api.post('/agencies/me/withdraw', data),
-  getWithdrawals: () => api.get('/agencies/me/withdrawals'),
-  redeemReferral: (code) => api.post('/referrals/redeem', { code }),
-};
+// Docs/THE_CUT.md pass 1 — agencyApi removed with the agency app. The server side
+// (/agencies/*) is untouched and still answers; disconnecting it is pass 3, once
+// nothing has been asking for a while. Production held zero agency accounts.
 
 export const influencerApi = {
   register: (data) => api.post('/influencers/register', data),

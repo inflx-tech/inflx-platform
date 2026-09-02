@@ -1,0 +1,51 @@
+{
+  "feature": "the-cut-pass-1",
+  "area": "all three apps + the website — hiding everything the founder removed",
+  "spec_version": "1.0.0",
+  "status": "IN PROGRESS — cut 1 of 7 done (the agency app). Cuts 2-7 pending.",
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls go ahead for pass1\", 2026-09-02, against the plan he authored in Docs/THE_CUT.md",
+  "approved_at": "2026-09-02",
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — scope locked in Docs/THE_CUT.md, authored decision by decision on 2026-09-02",
+  "mockup_locked_at": "2026-09-02",
+  "mockup_source": "NONE, deliberately. This contract draws nothing. It REMOVES surfaces the founder listed. The design of record is Docs/THE_CUT.md — his own keep/remove decisions — not a drawing.",
+  "impact_reviewed": true,
+  "impact_review_note": "The founder authored the cleaning plan this executes, including the order of the cuts within this pass.",
+  "what_this_pass_is": "Hide, do not delete. Screens and pages go; the server keeps answering; no data is touched. Nothing here is irreversible. Disconnecting the server is pass 3, erasing data is pass 4.",
+  "the_seven_cuts": [
+    "1. The agency app — DONE",
+    "2. Bookings · Enquiries · the shopper reward wallet · Referrals — pending",
+    "3. Food, restaurant, car-rental and salon screens across all apps and the website — pending",
+    "4. The pre-agreement pathway's remaining screens — pending",
+    "5. Open call, and inviting creators not on INFLX — pending",
+    "6. The website's campaign builder — pending",
+    "7. Furniture — pending"
+  ],
+  "cut_1_agency_app": {
+    "at": "2026-09-02",
+    "removed": "AgencyNavigator · AgencyHomeScreen · AgencyProfileScreen · AgencyWalletScreen · AgencyRegisterScreen · the agencyApi bindings · the agency Android build flavor (and its entry in debuggableVariants) · the agency OTA flavor · APKs/INFLX-Agency.apk.",
+    "why_it_was_the_cleanest_first_cut": "A whole app with its own build flavor and its own navigator — almost nothing shares code with the three that survive. The only shared files touched were App.js (which chooses the app), AuthNavigator, the two sign-in screens and the API bindings.",
+    "zero_users_verified": "Production holds ZERO agency accounts, zero agency payouts and zero agency withdrawals — checked directly against the live database, not assumed. This is why the cut carries no user risk.",
+    "installed_copies_not_broken": "No agency bundle will be published. An installed agency APK keeps the last bundle it downloaded; it stops receiving updates rather than being handed JS with no screens for it. 'agency' was removed from the OTA publisher so `publish all` can no longer target it by accident.",
+    "verified": {
+      "no_dangling_imports": "Searched the whole mobile package for every deleted name. Nothing references them — the only remaining occurrences are two explanatory comments. This is the failure class that builds clean and kills the app at launch, so it was checked explicitly rather than trusted to the tests.",
+      "parses": "App.js, AuthNavigator.js, OTPScreen.js, PhoneScreen.js, api.js all parsed with JSX; publish-ota.js checked with node --check.",
+      "tests": "743 mobile tests pass — the SAME count as before the cut, which is the point: a hiding pass must not change behaviour for anything that survives."
+    },
+    "discipline_slip_caught": "Staging used a broad `git add -A` across several paths and picked up pre-existing changes to the APK binaries plus an untracked superseded-APKs folder, none of which belong to this cut. Unstaged before committing. Recorded because one-cut-per-commit is the rule that makes this pass traceable, and a commit carrying unrelated binaries would have broken it."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy_class": "PRODUCTION-IMPACTING via OTA only for cut 1 — no backend or website file changed. The three surviving apps are rebuilt from source that no longer contains the agency screens; none of them referenced those screens, so their behaviour is unchanged.",
+    "deploy_targets": ["ota (brand, influencer, follower)"],
+    "outward_facing": "No. The only role affected has zero accounts.",
+    "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false. Platform QA is not green (~231 pre-existing failures, unchanged by this contract).",
+    "device_walk_required": "Minimal for cut 1 — there is no agency account to sign in with. Worth confirming once after deploy that the three surviving apps still open, since App.js (which chooses the app) was edited."
+  }
+}

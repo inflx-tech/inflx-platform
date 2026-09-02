@@ -2,7 +2,7 @@ import React, { useState, useRef, useContext, useEffect, useCallback } from 'rea
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, AppState } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi, influencerApi, brandApi, agencyApi } from '../../services/api';
+import { authApi, influencerApi, brandApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import APP_ROLE from '../../config/appRole';
 
@@ -136,11 +136,10 @@ export default function OTPScreen({ navigation, route }) {
     const { access_token, refresh_token, user } = res.data;
 
     // Role guard (preserved)
-    if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer' || APP_ROLE === 'agency') && user.role !== APP_ROLE) {
-      const appLabel   = APP_ROLE === 'brand' ? 'Brand' : APP_ROLE === 'agency' ? 'Agency' : 'Influencer';
+    if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer') && user.role !== APP_ROLE) {
+      const appLabel   = APP_ROLE === 'brand' ? 'Brand' : 'Influencer';
       const otherLabel = user.role === 'brand' ? 'Brand'
                        : user.role === 'influencer' ? 'Influencer'
-                       : user.role === 'agency' ? 'Agency'
                        : user.role === 'follower' ? 'Follower'
                        : user.role === 'admin' ? 'Admin (use the web dashboard)'
                        : String(user.role || 'another role');
@@ -176,20 +175,13 @@ export default function OTPScreen({ navigation, route }) {
         else if (status === 'approved') setAppRole('influencer');
         else                             navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
       }
-    } else if (user.role === 'agency') {
-      const agRes = await agencyApi.getMe();
-      if (!agRes.success) {
-        navigation.navigate('AgencyRegister');
-      } else {
-        const status = agRes.data?.agency?.user_status;
-        if (status === 'rejected')      navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
-        else if (status === 'approved') setAppRole('agency');
-        else                             navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
-      }
     } else if (user.role === 'follower') {
       setAppRole('follower');
     } else {
-      setError('This app is for brands, influencers, agencies, and followers. Admins use the web dashboard.');
+      // Docs/THE_CUT.md pass 1 — the agency role is retired. Production held zero
+      // agency accounts, so nobody is stranded by this; an 'agency' role arriving
+      // here now falls through to the message below rather than into a dead app.
+      setError('This app is for brands, influencers and followers. Admins use the web dashboard.');
     }
   }
 

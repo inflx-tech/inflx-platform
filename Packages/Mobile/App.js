@@ -13,7 +13,6 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import InfluencerNavigator from './src/navigation/InfluencerNavigator';
 import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
-import AgencyNavigator from './src/navigation/AgencyNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
 import { LocationProvider } from './src/contexts/LocationContext';
@@ -106,7 +105,7 @@ export default function App() {
         // clear the session and return to auth. Follower APKs accept any
         // logged-in follower; follower flavor also serves unauthenticated
         // browsing, so only guard brand + influencer flavors here.
-        if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer' || APP_ROLE === 'agency') && storedRole !== APP_ROLE) {
+        if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer') && storedRole !== APP_ROLE) {
           await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
           setRole('');
           return;
@@ -125,7 +124,7 @@ export default function App() {
         // routes a profile-less account to the registration form. Network
         // errors and 401s are deliberately ignored here: the API client owns
         // session expiry, and a blip must never sign anyone out.
-        const PROFILE_PATH = { brand: '/brands/me', influencer: '/influencers/me', agency: '/agencies/me' };
+        const PROFILE_PATH = { brand: '/brands/me', influencer: '/influencers/me' };
         if (PROFILE_PATH[storedRole]) {
           const { api } = require('./src/services/api');
           api.get(PROFILE_PATH[storedRole]).then(async (res) => {
@@ -171,7 +170,6 @@ export default function App() {
               <NavigationContainer ref={navigationRef}>
                 {role === 'brand' ? <BrandNavigator /> :
                  role === 'influencer' ? <InfluencerNavigator /> :
-                 role === 'agency' ? <AgencyNavigator /> :
                  role === 'follower' ? <FollowerNavigator /> :
                  isFollowerApp ? <FollowerNavigator /> :
                  <AuthNavigator />}
