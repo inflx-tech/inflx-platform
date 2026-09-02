@@ -296,6 +296,13 @@
     "what_was_deliberately_not_touched_this_pass": "The creator-side mirror of the old pathway (ProposalsHubScreen -> SendProposalScreen, an outbound pitch a creator sends a brand with no campaign involved) was found but NOT closed — the founder's instruction named the brand's three reach mechanisms specifically (SB-28 is a brand screen); closing the creator-initiated side is a second, separate surface not yet confirmed in scope. Flagged back to the founder rather than silently decided, per this session's standing practice.",
     "device_walk_required": "YES — NOT YET DONE, now covering all three SB-28 reach mechanisms end to end plus the removed old-pathway buttons."
   },
+  "deployed_2026_09_02_close_the_first_door": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"pls commit,push and OTA\"",
+    "commit": "3326a79 (slice_7 cold-invite search + slice_8 closing the old ask pathway, together — slice_7 had been built but not yet committed when this instruction came)",
+    "backend": "Pushed to Render for consistency (deploy-inert for this commit — no backend/src files changed, verified by the diff staged: 15 files, all Packages/Mobile or features/). gov-check passed on push: 13 governed changes, contract-backed, mockup_locked + 06-diff/notes.md present. The FIRST OTA publish attempt hit a Cloudflare 502 (Render mid-restart from the push) — not treated as broken on the first read, per the standing rule to probe twice before concluding a cold-start deploy failed. Probed GET /v1/campaigns twice 20s apart, both -> 401, then the OTA publish was retried and succeeded.",
+    "ota": { "brand": "version 204, native_runtime 3 — verified directly against the manifest (flavor=brand&runtime=3), not the publish script's own report. Influencer not republished — nothing in that bundle changed (campaignDraft.js and every touched screen are brand-only)." },
+    "device_walk_required": "YES — NOT YET DONE, now for six slices total (Basics/shoot, her terms, campaign+publish+her invite, deferred pool grouped, cold-invite search, and this door-closing slice)."
+  },
   "deployed_2026_09_02_deferred_pool": {
     "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",
     "commit": "4bca516 (the deferred pool — migration 167, offer.controller.defer, campaign.controller.getDeferred, CreatorDeferScreen, SB-24 Moved out)",
