@@ -2,7 +2,7 @@
   "feature": "the-cut-pass-1",
   "area": "all three apps + the website — hiding everything the founder removed",
   "spec_version": "1.0.0",
-  "status": "IN PROGRESS — cut 1 of 7 done (the agency app). Cuts 2-7 pending.",
+  "status": "IN PROGRESS — 4 of 7 cuts done (agency app, enquiries, shopper reward wallet, referrals). Not yet deployed; the remaining three are the large ones.",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls go ahead for pass1\", 2026-09-02, against the plan he authored in Docs/THE_CUT.md",
   "approved_at": "2026-09-02",
@@ -15,14 +15,31 @@
   "impact_review_note": "The founder authored the cleaning plan this executes, including the order of the cuts within this pass.",
   "what_this_pass_is": "Hide, do not delete. Screens and pages go; the server keeps answering; no data is touched. Nothing here is irreversible. Disconnecting the server is pass 3, erasing data is pass 4.",
   "the_seven_cuts": [
-    "1. The agency app — DONE",
-    "2. Bookings · Enquiries · the shopper reward wallet · Referrals — pending",
-    "3. Food, restaurant, car-rental and salon screens across all apps and the website — pending",
-    "4. The pre-agreement pathway's remaining screens — pending",
-    "5. Open call, and inviting creators not on INFLX — pending",
-    "6. The website's campaign builder — pending",
-    "7. Furniture — pending"
+    "1. The agency app — DONE (b254b8b)",
+    "2. Enquiries — DONE (18148b9)",
+    "3. The shopper reward wallet — DONE (42d975e)",
+    "4. Referrals — DONE (4275892)",
+    "5. Food, restaurant, car-rental and salon screens — PENDING (the largest, and it takes bookings with it)",
+    "6. The pre-agreement pathway's remaining screens · open call · inviting non-users · the website's campaign builder — PENDING",
+    "7. Furniture — PENDING"
   ],
+  "ordering_changed_from_the_plan_and_why": "Docs/THE_CUT.md listed bookings alongside enquiries, the reward wallet and referrals. Bookings was moved to travel WITH the food/car/salon cut instead, because every booking screen IS a restaurant or rental screen (RestaurantBooking, CarBooking, BookingConfirmed, PreBook). Removing them separately would have meant editing the same files twice and leaving half-dead screens in between. The founder's decisions are unchanged — only the order within the pass.",
+  "cut_2_enquiries": {
+    "removed": "The shopper's enquiry form and the brand's enquiry inbox, both routes, the brand home tile, three API bindings, and 'enquiry' as an offer redemption mode on BOTH the phone and the website.",
+    "dangling_routes_closed": "Three call sites still navigated to the removed screen — a shop's configured action, the saved-items list, and the product page's mode map. The product page skips any mode with no entry, so a product still configured for enquiries now renders no button rather than a broken one (verified: getModeConfig returns null and the build loop `continue`s).",
+    "adjacent_fix_caused_by_this_change": "The shop screen's fallback showed shoppers a developer message with a raw code word — Alert('Action not wired', action.action). Removing enquiries makes that branch MORE reachable, so leaving it would have made a known audit finding worse. Replaced with a sentence a shopper can read.",
+    "a_test_caught_a_real_miss": "offerParity.test.js asserts the phone's and the website's offer-mode lists are IDENTICAL. I had removed 'enquiry' from the phone only. The test failed, correctly, and both were updated. This is the parity guard doing exactly what it exists for."
+  },
+  "cut_3_shopper_reward_wallet": {
+    "removed": "The wallet screen, BOTH its route registrations, the profile row and the fetch behind it, two API bindings, the now-unused fmtRupees import, and the screen's own test file.",
+    "why_the_test_went_too": "It tested a screen that no longer exists. Keeping it would have been a test asserting the behaviour of nothing. Test count therefore drops 743 -> 741, which is a removal, not a regression.",
+    "why_this_one_mattered": "It displayed a 3%-back balance to shoppers that nothing could fill, nothing could spend and nothing could pay out — a promise on screen with no machinery behind it."
+  },
+  "cut_4_referrals": {
+    "removed": "The Refer & Earn screen, its route, the earnings-page tile, its five now-dead styles, and the API binding.",
+    "zero_users_verified": "Production held zero referral codes, zero referral links, zero referral earnings and zero referrer applications. No creator loses money they were owed.",
+    "also_removes_a_defect_surface": "A referral rate could be set above 100%, which would have paid out more than came in. The create path had no upper bound while the update and settings paths both enforced 0-100 — provably an oversight, now unreachable from the app."
+  },
   "cut_1_agency_app": {
     "at": "2026-09-02",
     "removed": "AgencyNavigator · AgencyHomeScreen · AgencyProfileScreen · AgencyWalletScreen · AgencyRegisterScreen · the agencyApi bindings · the agency Android build flavor (and its entry in debuggableVariants) · the agency OTA flavor · APKs/INFLX-Agency.apk.",
