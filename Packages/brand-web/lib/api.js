@@ -142,7 +142,6 @@ export const sectionApi = {
   deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
   // Section image presign — own endpoint under the 'sections' capability (was
   // borrowing the food master-dishes presign → silent 403 for sections-admins).
-  stockUploadUrl: (meta) => api.post('/admin/sections/stock-upload-url', meta),
   // Category-images (P2) — set/clear a category node's image (meta.image_url).
   setCategoryNodeImage: (node_id, image_url) => api.patch('/admin/sections/category-node-image', { node_id, image_url }),
   categoryTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
@@ -337,24 +336,6 @@ export const mealsAdminApi = {
   putSettings: (data) => request('PUT', '/admin/meals/settings', data),
 };
 
-// ─── INFLX Meals (restaurant side) ──────────────────────────────────────────
-export const mealsApi = {
-  getConfig: () => api.get('/meals/config'),
-  saveConfig: (data) => api.post('/meals/config', data) /* PUT */,
-  putConfig: (data) => request('PUT', '/meals/config', data),
-  listSlots: () => api.get('/meals/slots'),
-  createSlot: (data) => api.post('/meals/slots', data),
-  listOfferRules: (params) => api.get(`/meals/offer-rules${params ? '?' + new URLSearchParams(params) : ''}`),
-  createOfferRule: (data) => api.post('/meals/offer-rules', data),
-  suggestOffers: () => api.post('/meals/offer-rules/suggest'),
-  restaurantChat: (body) => api.post('/meals/restaurant-chat', body),
-  modifyOfferChat: (id, message) => api.post(`/meals/offer-rules/${id}/modify-chat`, { message }),
-  updateOfferRule: (id, data) => api.patch(`/meals/offer-rules/${id}`, data),
-  getMenuCosts: () => api.get('/meals/menu-costs'),
-  upsertMenuCost: (data) => request('PUT', '/meals/menu-costs', data),
-  getDashboard: (params) => api.get(`/meals/dashboard${params ? '?' + new URLSearchParams(params) : ''}`),
-  deliverOrder: (id) => api.post(`/meals/orders/${id}/deliver`),
-};
 
 export const walletApi = {
   getBalance: () => api.get('/brands/me/wallet'),
@@ -711,21 +692,9 @@ export const adminApi = {
   // Wave 4 — monthly tax summary (GST / TCS / TDS) for filing
   getTaxSummary: (month) => api.get(`/admin/tax-summary${month ? `?month=${encodeURIComponent(month)}` : ''}`),
   // Master dishes — admin CRUD for the restaurant dish catalogue
-  listMasterDishes: (cuisine, section, search, page) =>
-    api.get(`/admin/master-dishes?cuisine=${encodeURIComponent(cuisine || '')}&section=${encodeURIComponent(section || '')}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
-  listCuisines:       () => api.get('/admin/master-dishes/cuisines'),
-  createMasterDish:   (data) => api.post('/admin/master-dishes', data),
-  updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
-  deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
-  stockUploadUrl:     (meta) => api.post('/admin/master-dishes/stock-upload-url', meta),
 
   // Dish groups — food discovery tiles (Biryani, Paratha, Pizza...)
-  listDishGroups:     () => api.get('/admin/dish-groups'),
-  createDishGroup:    (data) => api.post('/admin/dish-groups', data),
-  updateDishGroup:    (id, data) => api.patch(`/admin/dish-groups/${id}`, data),
-  deleteDishGroup:    (id) => api.delete(`/admin/dish-groups/${id}`),
   getDishGroupMembers:(id) => api.get(`/admin/dish-groups/${id}/members`),
-  setDishGroupMembers:(id, master_dish_ids) => api.put(`/admin/dish-groups/${id}/members`, { master_dish_ids }),
   suggestDishGroupMembers: (q) => api.get(`/admin/dish-groups/suggest?q=${encodeURIComponent(q || '')}`),
 
   // Creator Experience Engine (System B) wrappers REMOVED — Concept P0
@@ -769,8 +738,6 @@ export const adminApi = {
   removeHomeCategory:  (id) => api.delete(`/admin/home-vertical-categories/${id}`),
 
   // Dish Review Queue (flywheel) — custom names sellers typed
-  listDishQueue:      () => api.get('/admin/master-dishes/queue'),
-  resolveDishQueue:   (id, data) => api.patch(`/admin/master-dishes/queue/${id}`, data),
 
   // ─── Tag vocabulary (merch-engine Phase 1a) ────────────────────────────────
   // Fixed tags brands pick from while listing; admin Collections rule on these.
@@ -900,45 +867,6 @@ export const marketingApi = {
   backfillProfilePics: (payload = {}) => api.post('/admin/marketing/backfill-profile-pics', payload),
 };
 
-// Referral admin API (/admin/referrals/* + /admin/agencies) — Referrals section
-export const referralApi = {
-  getSettings:    () => api.get('/admin/referrals/settings'),
-  updateSettings: (data) => api.patch('/admin/referrals/settings', data),
-  listEdges: (params = {}) => {
-    const q = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
-    return api.get(`/admin/referrals/edges?${q.toString()}`);
-  },
-  createEdge: (data) => api.post('/admin/referrals/edges', data),
-  updateEdge: (id, data) => api.patch(`/admin/referrals/edges/${id}`, data),
-  listLedger: (params = {}) => {
-    const q = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
-    return api.get(`/admin/referrals/ledger?${q.toString()}`);
-  },
-  getSummary: () => api.get('/admin/referrals/summary'),
-  listAgencies: (params = {}) => {
-    const q = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
-    return api.get(`/admin/agencies?${q.toString()}`);
-  },
-  updateAgencyStatus: (id, data) => api.patch(`/admin/agencies/${id}/status`, data),
-
-  // ── Referral intake (D-2/D-3) ─────────────────────────────────────────────
-  // apply-to-become-referrer: influencer-side call (future mobile screen; the
-  // backend already accepts it). { note? }.
-  applyReferral: (data = {}) => api.post('/referrals/apply', data),
-  // admin: list apply-to-become-referrer applications.
-  adminListReferralApplications: (params = {}) => {
-    const q = new URLSearchParams();
-    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
-    return api.get(`/admin/referrals/applications?${q.toString()}`);
-  },
-  // admin: approve|reject an application. { action, note? }.
-  adminDecideReferralApplication: (id, data) => api.post(`/admin/referrals/applications/${id}/decision`, data),
-  // admin: generate/allocate a code for an influencer/agency. { referrer_type, referrer_id }.
-  adminGenerateReferralCode: (data) => api.post('/admin/referrals/codes', data),
-};
 
 // (getStoredUser is already exported near the top of this file — duplicate
 //  removed here to avoid the webpack "redefined" error.)

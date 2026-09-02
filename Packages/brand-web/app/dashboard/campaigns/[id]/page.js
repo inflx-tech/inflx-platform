@@ -621,7 +621,7 @@ export default function CampaignCommandCenterPage() {
         <div>
           {sets.length === 0 && (
             <div className="bg-white border border-[#E4E4E7] rounded-[14px] p-10 text-center text-[#71717A] text-sm">
-              No sets yet — <Link href={`/dashboard/campaigns/new?id=${id}`} className="font-bold text-[#0A0A0A]">create the first set</Link>.
+              No sets yet — add the first one in the INFLX brand app on your phone.
             </div>
           )}
           {sets.map(set => {

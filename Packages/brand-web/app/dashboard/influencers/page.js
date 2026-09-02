@@ -1,9 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { influencerApi, brandApi, creatorInvitationApi, proposalApi, influencerGroupApi, handshakeApi, fmtNum, fmtRupees } from '../../../lib/api';
-// collab-part2 — the pre-campaign handshake (requests, ready-to-brief, composer).
-import { RequestComposer, RequestsTab, ReadyToBriefTab, HANDSHAKE_CSS } from './handshake';
+import { influencerApi, brandApi, creatorInvitationApi, proposalApi, influencerGroupApi, fmtNum, fmtRupees } from '../../../lib/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -356,7 +354,7 @@ function FilterSlider({ label, value, onChange, min = 0, max = 100, step = 1, fo
   );
 }
 
-function CreatorRow({ c, onInvite, onShortlist, onRequest, router }) {
+function CreatorRow({ c, onInvite, onShortlist, router }) {
   const tier = TIER_CFG[c.tier];
   const tierClass = TIER_CFG[c.tier] ? c.tier : 'nano';
   const isUnclaimed = c.source === 'scraped' && !c.is_inflx_verified;
@@ -368,12 +366,11 @@ function CreatorRow({ c, onInvite, onShortlist, onRequest, router }) {
   };
   const onClickAction = (e) => {
     e.stopPropagation();
-    // collab-part2 — a claimed creator gets a collaboration REQUEST: agree money and
-    // time first, build the campaign after. (It used to dump the brand at the
-    // campaigns list — the campaign-first flow this contract inverts.) Unclaimed
-    // scraped creators keep the join-the-platform invite; they cannot negotiate.
+    // Docs/THE_CUT.md pass 1 — the pre-agreement request is gone. A claimed creator
+    // is now reached by adding her to a campaign set, which happens in the brand app
+    // on the phone. Unclaimed scraped creators keep the join-the-platform invite.
     if (isUnclaimed) onInvite(c);
-    else onRequest(c);
+    else alert('Add her to a campaign set in the INFLX brand app on your phone.');
   };
 
   const collabBit = c.total_brand_collaborations > 0 ? `${c.total_brand_collaborations} brand collab${c.total_brand_collaborations === 1 ? '' : 's'}` : null;
@@ -544,9 +541,8 @@ export default function InfluencersPage() {
   // Sub-tabs: Discover (creator search) + Proposals (folded inbox, E-2) +
   // Groups (F-5 server-persisted influencer groups).
   const [subTab, setSubTab] = useState('discover'); // 'discover' | 'proposals' | 'groups' | 'requests' | 'brief'
-  const [requestTarget, setRequestTarget] = useState(null); // collab-part2 composer
-  const [requestCount, setRequestCount] = useState(0);
-  const [briefCount, setBriefCount] = useState(0);
+  // Docs/THE_CUT.md pass 1 — the composer target and the Requests / Ready-to-brief
+  // badge counts are gone with the pre-agreement pathway.
   const [proposalCount, setProposalCount] = useState(0);
   const [groupCount, setGroupCount] = useState(0);
 
@@ -565,16 +561,8 @@ export default function InfluencersPage() {
     }).catch(() => {});
   }, []);
 
-  // collab-part2 — badge counts for Requests (countered = needs the brand's answer)
-  // and Ready to brief (agreed, waiting for a campaign).
-  useEffect(() => {
-    handshakeApi.list().then(res => {
-      if (res.success) setRequestCount((res.data?.requests || []).filter(r => r.status === 'countered').length);
-    }).catch(() => {});
-    handshakeApi.agreements().then(res => {
-      if (res.success) setBriefCount((res.data?.agreements || []).length);
-    }).catch(() => {});
-  }, []);
+  // Docs/THE_CUT.md pass 1 — the Requests and Ready-to-brief badge counts are gone
+  // with the pre-agreement pathway.
 
   // Pending-proposal count for the sub-tab badge (independent of approval gate).
   useEffect(() => {
@@ -692,7 +680,7 @@ export default function InfluencersPage() {
   if (brandStatus === null) {
     return (
       <div className="inf">
-        <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
         <div className="spinner" />
       </div>
     );
@@ -710,40 +698,19 @@ export default function InfluencersPage() {
         Groups{groupCount > 0 && <span className="subtab-ct">{groupCount}</span>}
       </button>
       {/* collab-part2 — the handshake lives here, where the brand already searches. */}
-      <button className={`subtab${subTab === 'requests' ? ' act' : ''}`} onClick={() => setSubTab('requests')}>
-        Requests{requestCount > 0 && <span className="subtab-ct">{requestCount}</span>}
-      </button>
-      <button className={`subtab${subTab === 'brief' ? ' act' : ''}`} onClick={() => setSubTab('brief')}>
-        Ready to brief{briefCount > 0 && <span className="subtab-ct">{briefCount}</span>}
-      </button>
     </div>
   );
 
   // collab-part2 — sent requests + agreements waiting for a campaign.
-  if (subTab === 'requests') {
-    return (
-      <div className="inf">
-        <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
-        {subTabBar}
-        <RequestsTab />
-      </div>
-    );
-  }
-  if (subTab === 'brief') {
-    return (
-      <div className="inf">
-        <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
-        {subTabBar}
-        <ReadyToBriefTab router={router} />
-      </div>
-    );
-  }
+  // Docs/THE_CUT.md pass 1 — the "requests" and "brief" sub-tabs are gone with the
+  // pre-agreement pathway. A brand reaches a creator inside a campaign set now, so
+  // this tab is search, her pitches, and saved groups.
 
   // Groups sub-tab — server-persisted influencer groups (not behind approval gate).
   if (subTab === 'groups') {
     return (
       <div className="inf">
-        <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
         {subTabBar}
         <GroupsManager onCountChange={setGroupCount} />
       </div>
@@ -754,7 +721,7 @@ export default function InfluencersPage() {
   if (subTab === 'proposals') {
     return (
       <div className="inf">
-        <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
         {subTabBar}
         <ProposalsInbox />
       </div>
@@ -765,7 +732,7 @@ export default function InfluencersPage() {
   if (brandStatus !== 'approved') {
     return (
       <div className="inf">
-        <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
         {subTabBar}
         <div className="gated">
           <div className="icx">{brandStatus === 'unknown' ? '⚠️' : '⏳'}</div>
@@ -786,7 +753,7 @@ export default function InfluencersPage() {
 
   return (
     <div className="inf">
-      <style dangerouslySetInnerHTML={{ __html: CSS + HANDSHAKE_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {subTabBar}
 
@@ -933,7 +900,6 @@ export default function InfluencersPage() {
         <div>
           {results.map(c => (
             <CreatorRow key={c.row_id} c={c} onInvite={setInviteTarget} onShortlist={setShortlistTarget}
-              onRequest={(cr) => setRequestTarget({ influencer: { id: cr.linked_influencer_id || cr.row_id, instagram_handle: cr.ig_handle, full_name: cr.full_name } })}
               router={router} />
           ))}
         </div>
@@ -950,17 +916,8 @@ export default function InfluencersPage() {
         }}
       />
 
-      {/* collab-part2 — Request-collaboration composer */}
-      {requestTarget && (
-        <RequestComposer
-          target={requestTarget}
-          onClose={() => setRequestTarget(null)}
-          onSent={(data) => {
-            setToast({ kind: 'ok', text: `✓ Request sent to ${data.sent_count} creator${data.sent_count === 1 ? '' : 's'} — track it in Requests` });
-            setTimeout(() => setToast(null), 4000);
-          }}
-        />
-      )}
+      {/* Docs/THE_CUT.md pass 1 — the request composer is gone with the
+          pre-agreement pathway. */}
 
       {/* Shortlist Modal (features/brand-discovery-shortlist) */}
       {shortlistTarget && (

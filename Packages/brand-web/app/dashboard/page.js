@@ -331,7 +331,7 @@ export default function BrandDashboardHome() {
           Quick actions
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <a href="/dashboard/campaigns/new"
+          <a href="/dashboard/campaigns"
             className="bg-[#FFC107] text-[#0A0A0A] rounded-[14px] py-3.5 px-4 font-display font-bold text-[13px] flex items-center justify-between hover:-translate-y-0.5 transition-transform relative overflow-hidden">
             <span className="z-10 relative">Create campaign</span>
             <span className="font-mono z-10 relative">→</span>
@@ -391,7 +391,7 @@ export default function BrandDashboardHome() {
               <div className="w-12 h-12 rounded-full bg-[#F4F4F5] inline-flex items-center justify-center mb-3 text-xl">·</div>
               <div>No campaigns yet.</div>
               <div className="text-[11.5px] mt-1">
-                <a href="/dashboard/campaigns/new" className="text-[#0A0A0A] font-semibold border-b border-dotted border-[#A1A1AA]">Create your first campaign</a>
+                <span className="text-[#71717A]">Create your first campaign in the INFLX brand app on your phone</span>
               </div>
             </div>
           ) : (

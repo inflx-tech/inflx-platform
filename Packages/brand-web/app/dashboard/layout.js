@@ -21,8 +21,9 @@ const NAV = [
   { href: '/dashboard/campaigns',   label: 'Campaigns',   icon: '⊟' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '★' },
   { href: '/dashboard/products',    label: 'Listings',    icon: '▤' },
-  { href: '/dashboard/meals',       label: 'Meals',       icon: '◉', feature: 'meals' },
-  { href: '/dashboard/bookings',    label: 'Bookings',    icon: '▦', feature: 'booking' },
+  // Docs/THE_CUT.md pass 1 — Meals and Bookings removed with the restaurant, salon
+  // and rental businesses. They were feature-gated so most brands never saw them;
+  // a restaurant brand did, and it led to a product INFLX no longer serves.
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '▢' },
   { href: '/dashboard/fulfillment', label: 'Fulfillment', icon: '📦' },
   { href: '/dashboard/returns',     label: 'Returns',     icon: '↩' },

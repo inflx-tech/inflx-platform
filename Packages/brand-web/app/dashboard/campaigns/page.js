@@ -112,8 +112,10 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
   const budget = campaign.total_budget || 0;
 
   const goToDetail = () => {
-    if (isDraft) router.push(`/dashboard/campaigns/new?id=${campaign.id}`);
-    else router.push(`/dashboard/campaigns/${campaign.id}`);
+    // Campaigns are built in the INFLX brand app on your phone — see Docs/THE_CUT.md pass 1.
+    // A draft used to reopen the web builder; it now opens the same hub as any
+    // other campaign, which is where the web still has a job to do.
+    router.push(`/dashboard/campaigns/${campaign.id}`);
   };
 
   return (
@@ -448,31 +450,22 @@ export default function CampaignsPage() {
   // upgrade popup fires BEFORE the brand fills out the campaign form.
   const { quota, show: showQuota, close: closeQuota } = useQuotaWall();
   const [preflighting, setPreflighting] = useState(false);
-  async function goCreate() {
-    if (preflighting) return;
-    setPreflighting(true);
-    try {
-      const pf = await brandApi.quotaPreflight('createCampaign');
-      if (pf?.success !== false && pf?.data?.would_block) {
-        showQuota({
-          action:       pf.data.action,
-          used:         pf.data.used,
-          limit:        pf.data.limit,
-          current_tier: pf.data.current_tier,
-          upgrade_to:   pf.data.upgrade_to || [],
-          message:      `You've used ${pf.data.used} of ${pf.data.limit} active campaigns on the ${pf.data.current_tier?.toUpperCase()} plan. Upgrade to create more.`,
-        });
-        return;
-      }
-      router.push('/dashboard/campaigns/new');
-    } catch (e) {
-      // On any preflight error, fail-open: navigate to the form so the
-      // brand isn't blocked by transient API hiccups; the form submit
-      // will still hit the real gate.
-      router.push('/dashboard/campaigns/new');
-    } finally {
-      setPreflighting(false);
-    }
+
+  // Docs/THE_CUT.md pass 1 — campaigns are built in the brand app on the phone.
+  //
+  // The web builder and the phone builder asked for DIFFERENT things and saved
+  // DIFFERENT things: the web wanted a posting window and a set-level brief, the phone
+  // wants one go-live day and a shoot method. A campaign made in one read half-empty in
+  // the other. One had to go, and the founder chose to keep the phone.
+  //
+  // The quota preflight went with it — it existed to stop a brand filling in a web form
+  // they could not submit. The phone runs the same gate at the same moment.
+  function goCreate() {
+    alert(
+      'Campaigns are built in the INFLX brand app on your phone.\n\n'
+      + 'Open the app, tap Campaigns, and start there. Everything else about a '
+      + 'campaign — reviewing content, signing contracts, the money — stays here.'
+    );
   }
 
   // Fetch campaigns

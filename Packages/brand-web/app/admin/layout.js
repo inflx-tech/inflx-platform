@@ -38,11 +38,10 @@ const NAV = [
   { href: '/admin/marketing/inbox',         label: 'Inbox',         icon: '📥', cap: 'marketing' },
   { href: '/admin/marketing/funnel',        label: 'Funnel',        icon: '📊', cap: 'marketing' },
   { href: '/admin/marketing/settings',      label: 'Settings',      icon: '🛠️', cap: 'marketing' },
-  { section: 'REFERRALS' },
-  { href: '/admin/referrals/settings',      label: 'Settings',      icon: '🛠️', cap: 'referrals' },
-  { href: '/admin/referrals/relationships', label: 'Relationships', icon: '🤝', cap: 'referrals' },
-  { href: '/admin/referrals/earnings',      label: 'Earnings',      icon: '💰', cap: 'referrals' },
-  { href: '/admin/referrals/agencies',      label: 'Agencies',      icon: '🏛️', cap: 'referrals' },
+  // Docs/THE_CUT.md pass 1 — the whole REFERRALS section goes with the referral
+  // programme and agency accounts, both removed. Production held zero referral codes,
+  // zero earnings and zero agencies, so no staff member loses a queue that had
+  // anything in it.
   { section: 'FINANCE' },
   { href: '/admin/escrow', label: 'Escrow', icon: '🔒', cap: 'escrow' },
   { href: '/admin/payouts', label: 'Payouts', icon: '💸', cap: 'payouts' },

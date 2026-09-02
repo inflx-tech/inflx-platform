@@ -236,7 +236,7 @@ export function done({ step, publishResult, template, scoreData }) {
   // The yellow card is the recommended path (campaign first); the other
   // two are equal-weight secondary CTAs.
   const NEXT_ACTIONS = [
-    { icon: '🏷️', title: 'Create your first campaign',  desc: 'Attract creators with a discount + commission offer.',  href: '/dashboard/campaigns/new',  accent: 'yellow' },
+    { icon: '🏷️', title: 'Create your first campaign',  desc: 'Attract creators with a discount + commission offer.',  href: '/dashboard/campaigns',  accent: 'yellow' },
     { icon: '🤝', title: 'Invite specific creators',    desc: 'Browse and invite local influencers.',                  href: '/dashboard/influencers',    accent: 'paper' },
     { icon: '📥', title: 'Back to dashboard',           desc: 'Track activity, edit menu, top up wallet.',             href: '/dashboard',                accent: 'paper' },
   ];

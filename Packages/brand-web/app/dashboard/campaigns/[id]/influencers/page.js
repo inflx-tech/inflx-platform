@@ -1231,7 +1231,7 @@ export default function CampaignInfluencersListPage() {
             Export CSV
           </button>
           <Link
-            href={`/dashboard/campaigns/new?id=${id}`}
+            href={`/dashboard/campaigns/${id}`}
             className="px-3 py-2 bg-[#FFC107] text-[#0A0A0A] rounded-[10px] text-[11.5px] font-bold hover:bg-[#E0A800] transition-colors no-underline"
           >
             + Invite more
