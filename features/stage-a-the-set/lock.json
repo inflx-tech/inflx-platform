@@ -236,6 +236,17 @@
     "release_gate": "STILL NOT MET, unchanged from slice_1. qa_all_green is false (the ~231 pre-existing failures, unrelated to this work, and this session's inability to run backend tests against a live database). released stays false; gov-check Rule 2 would refuse true regardless, and no override was used or needed since released was never set.",
     "device_walk_required": "YES — NOT YET DONE, for all four slices now live in production. The walk in 06-diff/notes.md (two sections, 6+7 steps) is the honest next step before calling any of this finished."
   },
+  "slice_6_sb40_grouping": {
+    "at": "2026-09-02",
+    "what": "SB-24's 'Moved out' list is grouped, not flat — SB-40. Everyone who asked for the same day AND the same shoot clusters together under one 'Build a set from these' button; a different day or a different shoot is its own cluster, so a set built from one group can never quietly re-import the disagreement everyone was moved out for.",
+    "no_backend_or_db_change": "Every field the grouping needs (deferred_go_live_date, deferred_shoot_mode) already exists from migration 167. Pure client-side grouping over data already returned by GET /campaigns/:id/deferred. Nothing to migrate, nothing new to fetch.",
+    "app": {
+      "groupDeferred()": "new, BrandCampaignBuilderScreen.js. Groups by the exact (day, shoot) pair as given — a day-only or shoot-only ask groups with others who gave exactly that same partial answer, never folded into an 'any shoot' bucket that would invent agreement nobody stated. Sorted soonest-day-first; no-day groups sort last.",
+      "buildSetFromGroup(ids)": "replaces the old buildSetFromDeferred() — takes one group's ids, not everyone's. A brand with three different asks in the pool now gets three buttons, each seeding only its own cluster."
+    },
+    "tests": "576 mobile tests pass (was 573). campaignBuilderDeferred.test.js rewritten for grouping: same-day-and-shoot clusters together, same-day-different-shoot stays separate, day-only and shoot-only asks still form real clusters, sort order, and each button carries only its own group's ids.",
+    "device_walk_required": "Folded into the existing 06-diff walk for the deferred pool — same screen, same steps, now grouped."
+  },
   "deployed_2026_09_02_deferred_pool": {
     "by": "aveenswamy1989@gmail.com (founder) — \"commit,push OTA\"",
     "commit": "4bca516 (the deferred pool — migration 167, offer.controller.defer, campaign.controller.getDeferred, CreatorDeferScreen, SB-24 Moved out)",

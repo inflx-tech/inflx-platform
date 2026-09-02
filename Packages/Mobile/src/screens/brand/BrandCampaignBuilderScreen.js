@@ -87,10 +87,14 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
   // actually asked for), then seeds Creators straight from the deferred pool instead of
   // the usual agreement picker — passed by id, not by value, so the wizard reads the
   // list fresh rather than trusting a snapshot that might be stale by the time it opens.
-  function buildSetFromDeferred() {
+  // stage-a — SB-40: grouped by what was actually asked for, so a brand building a set
+  // from three people who all want the same day does not have to first work that out by
+  // reading a flat list. One button per group — a set built from mismatched days/shoots
+  // would just recreate the exact disagreement everyone was moved out for.
+  function buildSetFromGroup(ids) {
     navigation.navigate('BrandSetWizard', {
       campaignId, campaignName: campaign?.name || campaignName, setId: null,
-      seedDeferredIds: deferred.map((d) => d.id),
+      seedDeferredIds: ids,
     });
   }
 
@@ -187,24 +191,36 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
           );
         })}
 
-        {/* stage-a — the deferred pool (SB-24 "Moved out"). Only shown when it holds
-            someone; an empty section would just be a card explaining nothing happened. */}
+        {/* stage-a/SB-40 — the deferred pool, grouped by what was actually asked for.
+            Only shown when it holds someone; an empty section would just be a card
+            explaining nothing happened. */}
         {deferred.length > 0 && (
           <View style={[s.card, s.cardMoved]}>
             <View style={[s.cardHd, s.cardHdMoved]}>
               <Text style={[s.cardT, s.cardTMoved]}>Moved out · {deferred.length}</Text>
             </View>
             <View style={s.cardBd}>
-              {deferred.map((d) => (
-                <Text key={d.id} style={s.movedLine} numberOfLines={1}>
-                  {d.influencer_name}
-                  {d.deferred_go_live_date ? ` wanted ${fmtDate(d.deferred_go_live_date)}` : ''}
-                  {d.deferred_shoot_mode ? ` · ${SHOOT_MODE_COPY[d.deferred_shoot_mode]?.title || d.deferred_shoot_mode}` : ''}
-                </Text>
-              ))}
-              <TouchableOpacity style={s.movedBtn} onPress={buildSetFromDeferred} activeOpacity={0.8}>
-                <Text style={s.movedBtnT}>Build a set from these</Text>
-              </TouchableOpacity>
+              {groupDeferred(deferred).map((g, i) => {
+                const label = [
+                  g.go_live_date ? fmtDate(g.go_live_date) : null,
+                  g.shoot_mode ? (SHOOT_MODE_COPY[g.shoot_mode]?.title || g.shoot_mode) : null,
+                ].filter(Boolean).join(' · ') || 'No preference stated';
+                return (
+                  <View key={i} style={s.movedGroup}>
+                    <Text style={s.movedGroupHd}>{label} · {g.rows.length}</Text>
+                    {g.rows.map((d) => (
+                      <Text key={d.id} style={s.movedLine} numberOfLines={1}>{d.influencer_name}</Text>
+                    ))}
+                    <TouchableOpacity
+                      style={s.movedBtn}
+                      onPress={() => buildSetFromGroup(g.rows.map((d) => d.id))}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={s.movedBtnT}>Build a set from these</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -263,6 +279,36 @@ function Row({ k, v, dim }) {
       <Text style={[s.rowV, dim && { color: ig.mut2 }]} numberOfLines={2}>{v}</Text>
     </View>
   );
+}
+
+/**
+ * SB-40 — the deferred pool, grouped by what was actually asked for. Two people who both
+ * said "19 Sept, remote" belong in one cluster; two who agree on the day but not the
+ * shoot do not — building one set from a day-only match would just move the shoot
+ * disagreement into the new set instead of resolving it.
+ *
+ * A person who gave only a day (no shoot preference) or only a shoot (no day) groups with
+ * others who gave exactly the same partial answer — not folded into a "day, any shoot"
+ * bucket, which would be inventing agreement nobody actually stated.
+ *
+ * Sorted soonest-day-first; no-day groups (shoot-only asks) sort last, since there is no
+ * date to sort them by.
+ */
+function groupDeferred(rows) {
+  const groups = new Map();
+  for (const d of rows) {
+    const key = `${d.deferred_go_live_date || ''}|${d.deferred_shoot_mode || ''}`;
+    if (!groups.has(key)) {
+      groups.set(key, { go_live_date: d.deferred_go_live_date || null, shoot_mode: d.deferred_shoot_mode || null, rows: [] });
+    }
+    groups.get(key).rows.push(d);
+  }
+  return [...groups.values()].sort((a, b) => {
+    if (!a.go_live_date && !b.go_live_date) return 0;
+    if (!a.go_live_date) return 1;
+    if (!b.go_live_date) return -1;
+    return a.go_live_date < b.go_live_date ? -1 : a.go_live_date > b.go_live_date ? 1 : 0;
+  });
 }
 
 function allocSummary(sd) {
@@ -338,8 +384,11 @@ const s = StyleSheet.create({
   cardMoved: { borderStyle: 'dashed', borderColor: ig.line },
   cardHdMoved: { backgroundColor: 'transparent' },
   cardTMoved: { color: ig.mut },
-  movedLine: { fontSize: 11.5, color: ig.text2, fontWeight: '650', paddingVertical: 3 },
-  movedBtn: { alignSelf: 'flex-start', borderWidth: 1, borderColor: ig.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  // stage-a/SB-40 — one cluster per distinct (day, shoot) ask.
+  movedGroup: { marginBottom: 12 },
+  movedGroupHd: { fontSize: 10.5, fontWeight: '800', color: ig.text, marginBottom: 3, textTransform: 'uppercase', letterSpacing: 0.3 },
+  movedLine: { fontSize: 11.5, color: ig.text2, fontWeight: '650', paddingVertical: 3, paddingLeft: 4 },
+  movedBtn: { alignSelf: 'flex-start', borderWidth: 1, borderColor: ig.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginTop: 6 },
   movedBtnT: { fontSize: 11.5, fontWeight: '800', color: ig.text },
   aim: { borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 },
   aimT: { fontSize: 9, fontWeight: '800', letterSpacing: 0.2 },
