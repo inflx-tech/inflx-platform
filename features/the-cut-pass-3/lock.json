@@ -1,0 +1,48 @@
+{
+  "feature": "the-cut-pass-3",
+  "area": "the server — disconnecting what nothing asks for any more",
+  "spec_version": "1.0.0",
+  "status": "DEPLOYED 2026-09-02 on founder instruction. Formal release gate still unmet (qa_all_green false).",
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder) — \"first i want to clean up all things what we agreed... so as per that we complete 3 and 4 passes\", 2026-09-02",
+  "approved_at": "2026-09-02",
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — scope locked in Docs/THE_CUT.md",
+  "mockup_locked_at": "2026-09-02",
+  "mockup_source": "NONE. This pass has no user interface at all — it removes server code that nothing calls.",
+  "impact_reviewed": true,
+  "impact_review_note": "The founder authored the cleaning plan and explicitly asked for passes 3 and 4 to be completed.",
+  "what_this_pass_is": "Delete the server code for everything removed in pass 1, now that nothing asks for it. The DATA is deliberately untouched — that is pass 4, kept separate because it is the only irreversible step.",
+  "removed": "Seven route files and seven controllers, plus their mounts and two stragglers wired directly into admin and brand routes: agencies, referrals (public and admin), enquiries, meals, the pre-agreement handshake, and creator lookbooks. 2,224 lines. The clients' last doors went with them — mealsApi and the handshake bindings on both phone and website, plus the orphaned dish-group and lookbook calls.",
+  "the_ordering_was_the_whole_point": "Every endpoint was re-checked for callers in BOTH the phone apps AND the website before removal — a check that only became meaningful once the website was cleaned. An hour before this commit the website still called 19 meals endpoints, 16 referral endpoints and 7 handshake endpoints. This exact change would have broken the live site. That is the outside-in rule (screens, then engine, then memory) doing its job, after I had nearly broken it myself by leaving the website out of pass 1.",
+  "verification": {
+    "the_server_loads": "Not a parse check. `require('./src/app.js')` resolves the ENTIRE application — every route file, every controller, and every service they pull in. If any of the 14 deleted files were still referenced anywhere, that throws. It does not.",
+    "tests": "729 mobile tests pass.",
+    "endpoints_confirmed_gone_in_production": "GET /v1/agencies/me, /v1/meals/settings and /v1/referrals/settings all return 404 after the deploy, where they previously answered.",
+    "honest_limit_on_two_of_them": "/v1/brands/me/collab-requests and /v1/follower/enquiry still answer 401, and that is NOT evidence they survive. Those prefixes apply authentication at the router level, before route matching — a path that has never existed (/v1/brands/me/this-never-existed) returns 401 too. The probe cannot distinguish there. The real evidence is that the source contains no such route and the whole app loads without the files.",
+    "a_mid_rollout_false_alarm": "The first probe showed /v1/agencies/me still answering 401 while /v1/meals/settings already returned 404 — Render was mid-rollout. Re-probed rather than concluding the removal had failed, per the standing rule to probe twice."
+  },
+  "deployed_2026_09_02": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"deploy 1 and 3, then go to 4\"",
+    "commits": ["60ca1d9 (website half of pass 1)", "61db077 (pass 3)", "76e3f82 (the negotiation door, riding along)"],
+    "gov_check": "Passed: 44 governed changes, contract-backed.",
+    "render": "Redeployed. Removed endpoints now 404.",
+    "vercel": "Redeployed — CDN cache reset to Age: 0.",
+    "ota": { "influencer": 196, "brand": 208, "follower": 228 },
+    "note": "The influencer bundle carries the negotiation door as well as this pass. Flagged to the founder before publishing rather than shipped quietly."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy_class": "PRODUCTION-IMPACTING. backend/src changed; endpoints that previously answered now return 404.",
+    "deploy_targets": ["render (backend)", "vercel (brand-web)", "ota (influencer)"],
+    "outward_facing": "Only to anything still calling the removed endpoints — which, after the website cleanup, is nothing. A phone that has not opened since before pass 1 still holds old JavaScript that would call them; it picks up the new bundle on next launch, and every removed feature held zero real data.",
+    "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false.",
+    "device_walk_required": "Light. Open each app once and confirm it still works; the removed features have no screens left to visit."
+  },
+  "next": "Pass 4 — erase the data. The only irreversible pass. Everything holding real rows is exported to a file BEFORE it is dropped, so a reversed decision stays recoverable even though the code is gone."
+}

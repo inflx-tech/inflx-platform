@@ -100,5 +100,12 @@
     "agency_installs_not_broken_confirmed": "The agency manifest still serves version 66 — its last bundle from BEFORE the cut. Exactly as designed: agency was removed from the OTA publisher, so no bundle built from the new source can reach an installed agency APK. Verified against the live manifest rather than assumed.",
     "two_transient_upload_failures": "Brand and follower each failed once with \"fetch failed\" mid-upload. Backend probed both times (GET /v1/campaigns -> 401, manifest -> 200) before retrying, per the standing rule not to treat a first failure as broken. Both succeeded on the retry. Influencer published first time.",
     "backend_and_website_untouched": "No backend/src or brand-web file changed in the whole pass, so Render and Vercel carry no behaviour change from it."
+  },
+  "deployed_website_2026_09_02": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"deploy 1 and 3, then go to 4\"",
+    "commit": "60ca1d9",
+    "what": "The website half of pass 1, which I had missed. Brand Meals/Bookings/Enquiries, admin Meals/Master-Dishes/Dish-Groups/Referrals, the pre-agreement handshake, and the web campaign builder.",
+    "verified": "The whole site was built locally before commit (next build, exit 0, every page compiled) and Vercel redeployed from the same commit — confirmed by the CDN cache resetting to Age: 0.",
+    "honest_limit": "Page-level removal cannot be proved from outside: every dashboard and admin path redirects to login (307) whether it exists or not. The build is the evidence."
   }
 }
