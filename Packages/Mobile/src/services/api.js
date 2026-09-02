@@ -403,7 +403,6 @@ export const influencerApi = {
   // Contract: features/creator-photo-and-reach
   getProfileImageUploadUrl: (body) => api.post('/influencers/me/profile-image/upload-url', body),
   getEarnings: () => api.get('/influencers/me/earnings'),
-  getReferralInfo: () => api.get('/influencers/me/referral'),
   // Creator posts (Post/Concept P2) — the Post Composer + My Posts
   getListingTree: (vertical = 'fashion') => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
   getPostScope: () => api.get('/influencers/me/post-scope'),

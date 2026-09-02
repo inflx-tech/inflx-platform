@@ -14,7 +14,6 @@ import CollabTrackingScreen from '../screens/influencer/CollabTrackingScreen';
 import CreateScreen from '../screens/influencer/CreateScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
 import CommissionDetailScreen from '../screens/influencer/CommissionDetailScreen';
-import ReferAndEarnScreen from '../screens/influencer/ReferAndEarnScreen';
 import ProfileScreen from '../screens/influencer/ProfileScreen';
 import NegotiationScreen from '../screens/influencer/NegotiationScreen';
 import ContractScreen from '../screens/influencer/ContractScreen';
@@ -140,7 +139,6 @@ function EarningsStackNav() {
     <EarningsStack.Navigator screenOptions={{ headerShown: false }}>
       <EarningsStack.Screen name="EarningsMain" component={EarningsScreen} />
       <EarningsStack.Screen name="CommissionDetail" component={CommissionDetailScreen} />
-      <EarningsStack.Screen name="ReferAndEarn" component={ReferAndEarnScreen} />
     </EarningsStack.Navigator>
   );
 }
