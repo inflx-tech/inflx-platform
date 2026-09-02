@@ -150,6 +150,43 @@
     "tests": "532 mobile tests pass (up from 520 before this slice): 9 new (creatorTermsDraft.test.js — the only tests here that actually RUN campaignDraft.js's logic rather than checking source text, since it has no React Native imports), plus batchAWizardTrim.test.js and creatorOffer.test.js rewritten — never silently weakened — where Stage A's per-creator move superseded what they were guarding. One of those rewrites (hasFormats' zero-count case) was mutation-tested by hand: breaking it to accept zero-count formats as valid was caught immediately.",
     "device_walk_required": "YES — NOT YET DONE. Nothing in this slice has been pushed or OTA'd."
   },
+  "slice_3_campaign_and_builder": {
+    "at": "2026-09-02",
+    "builds": ["SB-23 (new campaign — trimmed to two fields)", "SB-24 (campaign builder — cards read back go-live day + shoot mode)"],
+    "backend": {
+      "campaign.controller.js create()": "start_date is no longer required to create a campaign. The column stays — nullable, always was at the DB level — for a client that still sends one. Nothing downstream needed a migration: follower.service.js's discovery query already treated a NULL start_date as 'no lower bound', and a draft campaign never reaches that clause anyway (filtered out by status first)."
+    },
+    "app": {
+      "BrandCampaignCreateScreen.js (SB-23)": "the 'Starts' date field is gone. Asks for a name and an optional note (sent to the server's existing `brief` column) plus the 'what a set is' explainer card the locked mockup shows.",
+      "BrandCampaignBuilderScreen.js (SB-24)": "every set card now shows Go live and Shoot, read through the same setShape.goLiveDayOf()/SHOOT_MODE_COPY the wizard uses — not re-derived. The header's stale 'STARTS <date>' line is gone, replaced with the campaign's real status.",
+      "adjacent_fix": "formatsSummary() on this same card was still reading set.formats_json for the 'Deliverables' line. That field is never written for a new set any more (slice_2 moved formats to per-creator) — every content set built since would have silently shown 'not chosen' regardless of what was actually set on each creator. Now reads from the picked creators, same as the allocation summary beside it already did."
+    },
+    "not_built": "SB-24's 'Moved out' deferred-pool section. Needs migration 170 (deferred_at, deferred_go_live_date, deferred_shoot_mode) — Stage B, not built yet. Documented in the screen's own header comment and in the test that checks it, so it reads as blocked rather than forgotten.",
+    "tests": "12 new (sb23sb24.test.js) + 2 rewritten in batchAWizardTrim.test.js where the date field's removal superseded what they guarded. 544 mobile tests pass (was 532).",
+    "backend_verification": "Same limitation as slice_2 — no live DB this session. Verified by requiring the controller file cleanly and reading the one changed check by hand.",
+    "device_walk_required": "YES — NOT YET DONE."
+  },
+  "slice_4_publish_and_her_side": {
+    "at": "2026-09-02",
+    "builds": ["SB-37 (review & publish — the wallet shortfall named, with a fix)", "SC-05 (her invite screen gains the four fields SB-30 produces)"],
+    "sb37": {
+      "found": "The screen already existed (stage-2), with real blocker/warning logic already working. The locked mockup names exactly one gap: the wallet check existed but the message was generic, no amount. The backend had ALREADY computed balance/required/short (publishCheck) — this was a display gap only, no backend logic change needed for the numbers themselves.",
+      "app": "The single 'Wallet needed' row became a full card: You have / You need / Short by, and an Add ₹<amount> button that hands the shortfall to the Wallet tab (SB-54, unchanged, marked KEEP in the mockup) pre-filled.",
+      "adjacent_fix": "SB-54 (BrandWalletScreen) had no route-param support at all. Added — a useEffect, not a useState initialiser, because it is a bottom-tab screen that stays mounted across visits; a second campaign's shortfall must overwrite what's already typed, not be silently ignored.",
+      "disclosed_divergence": "The mockup's own copy offers 'publish set 1 now, set 2 later'. Checked against the actual publish() function: publish is campaign-wide — one short set blocks every set alongside it, there is no per-set send. Said so instead of copying a promise this screen cannot keep: go back, remove the short set, publish the rest, bring it back once funded.",
+      "starts_ends_removed": "The top summary's 'Starts'/'Ends' rows read campaign.start_date/end_date, which SB-23 (slice 3) stopped asking for. Removed rather than left showing '—' on every campaign from here on."
+    },
+    "sc05": {
+      "backend": "getMyCampaignDetail (influencer.controller.js) gains four resolved fields: go_live_date (via setShape.model.goLiveDayOf, the SAME function the brand's builder card uses), formats_json (via deliverables.model.resolveFormats — her row, else the set's), channels_summary (via campaignChannels.resolveChannels + describeChannels), usage_text (via collabTerms.model.describeUsage, always a real sentence, never null). All four computed once, server-side, from functions other screens already use — none re-derived in the app.",
+      "adjacent_fix": "The Step-2b fallback in the same file (auto-creates deliverables for a contract signed before the deliverable-creation fix shipped) was still reading cs.formats_json alone. Fixed to resolve her row first too — same money-adjacent correctness bug as the three sites fixed in slice_2, just in a file slice_2 hadn't touched.",
+      "app": "CollabDetailScreen's terms card gains 'You make' (formats), 'Where you post' (channels_summary), a distinctly-styled 'Two things you cannot change' block (go-live day + shoot mode), and 'How they may use it' (usage_text, always shown).",
+      "bug_caught_by_mounting_the_screen": "formatsLine's first draft pluralised 'story' as 'storys'. The render test (@testing-library/react-native, already set up in this file for a different bug) actually mounted the screen and read the wrong word off it. Fixed with a proper singular/plural map, and the identical bug — copied from the same place — fixed in BrandCampaignBuilderScreen's twin function at the same time.",
+      "not_touched": "Negotiation ('ASK FOR SOMETHING ELSE' / heroFor's 'negotiate' action) is untouched — genuinely Stage B (migration 168), and the existing pre-Stage-A negotiate path for cold invites was left exactly as it was."
+    },
+    "tests": "9 new (sb37PublishReview.test.js) + 4 new (collabDetailRenders.test.js, real @testing-library render assertions — the strongest evidence in this slice, since they mount the actual screen rather than checking source text). 558 mobile tests pass (was 545 at the end of slice_3).",
+    "backend_verification": "No live DB this session, same as every prior slice. All four resolver/describer functions chain-verified by hand with representative inputs (pre-set-first fallback, his-empty-falls-to-set, describeUsage with and without commercial terms) — see the session record. Both edited controller files load cleanly.",
+    "device_walk_required": "YES — NOT YET DONE, for all of slices 2, 3 and 4."
+  },
   "deployed_anyway": {
     "by": "aveenswamy1989@gmail.com (founder) — explicit instruction: \"push now...then build app on top and push that OTA\", 2026-09-01",
     "what": "Backend pushed to Render (migrations 165/166 already applied). Brand OTA v200 published.",

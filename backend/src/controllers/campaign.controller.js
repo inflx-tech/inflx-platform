@@ -349,9 +349,14 @@ const create = asyncHandler(async (req, res) => {
   if (!name || !name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   }
-  if (!start_date) {
-    throw new AppError('VALIDATION_ERROR', 'start_date is required', 422, 'start_date');
-  }
+  // stage-a — SB-23 stopped asking for a start date: BR-01 is now "a campaign is two
+  // fields", and the day that matters lives on each SET (go_live_date) rather than once
+  // on the campaign. start_date IS NULLABLE at the database level and was only ever
+  // required by this check, not by a constraint — an older client (or the web wizard,
+  // still unconverted) that keeps sending one is unaffected. follower.service.js's
+  // discovery query already treats a NULL start_date as "no lower bound", and a draft
+  // campaign is filtered out by status long before that clause runs, so nothing downstream
+  // needed a migration for this.
   // collab-part5 — the end date is no longer asked for. It is derived from the sets by
   // campaignRollup: NULL when any set is conversion (a sales collaboration has no end),
   // otherwise the latest paid posting-window end. A caller that still sends one is not
@@ -369,7 +374,7 @@ const create = asyncHandler(async (req, res) => {
       brand.id,
       name.trim(),
       null,                 // total_budget — derived from paid sets (collab-part5)
-      start_date,
+      start_date || null,   // stage-a — no longer asked for; NULL until a client sends one
       null,                 // end_date     — derived from paid posting windows (collab-part5)
       brief || null,
       allow_negotiation === false ? false : true,

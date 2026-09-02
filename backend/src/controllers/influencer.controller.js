@@ -1395,6 +1395,14 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
          cs.content_start_date,
          cs.content_end_date,
          cs.formats_json,
+         -- stage-a — SC-05's "two things you cannot change": the day and the shoot. Read
+         -- through the window fallback (goLiveDayOf) below, same as the brand's own builder
+         -- card, so a set built before set-first still shows her a real day, not a blank.
+         cs.go_live_date, cs.window_end, cs.window_start, cs.shoot_mode,
+         -- her channels/formats, else the set's (resolveChannels/resolveFormats below)
+         cs.channels_json   AS set_channels_json,
+         ci.channels_json   AS ci_channels_json,
+         ci.formats_json    AS ci_formats_json,
          b.id AS brand_id,
          b.business_name AS brand_name,
          b.logo_url AS brand_logo_url,
@@ -1416,6 +1424,20 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     // test can assert the PAYLOAD rather than the query.
     campaign.settled_terms = summariseSettledTerms(campaign);
     campaign.allocation_summary = summariseAllocation(campaign);
+
+    // stage-a — SC-05: the two things she cannot change, and what SB-30 gave her. All four
+    // resolved once, here, from the same functions the brand's own screens use — never a
+    // second derivation that could disagree with theirs.
+    const { goLiveDayOf } = require('../services/setShape.model');
+    const { resolveChannels, describeChannels } = require('../services/campaignChannels');
+    const { resolveFormats } = require('../services/deliverables.model');
+    const { describeUsage } = require('../services/collabTerms.model');
+
+    campaign.go_live_date = goLiveDayOf(campaign);
+    campaign.formats_json = resolveFormats(campaign.ci_formats_json, campaign.formats_json);
+    const resolvedChannels = resolveChannels(campaign.ci_channels_json, campaign.set_channels_json);
+    campaign.channels_summary = describeChannels(resolvedChannels);
+    campaign.usage_text = describeUsage(campaign.agreed_terms_json?.usage);
   } catch (e) {
     if (e instanceof AppError) throw e;
     console.error('[getMyCampaignDetail] Step 1 (main query) failed:', e.message);
@@ -1505,9 +1527,10 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
   // (handles contracts signed before deliverable-creation fix was deployed)
   if (deliverables.length === 0 && contract && (contract.status === 'active' || contract.status === 'completed')) {
     try {
-      // Fetch formats_json from the campaign set
+      // Fetch formats_json — her own row first, else the set's (stage-a, migration 166)
       const { rows: setRows } = await db.query(
-        `SELECT cs.formats_json, cs.goal FROM campaign_sets cs
+        `SELECT cs.formats_json AS set_formats_json, ci.formats_json AS ci_formats_json, cs.goal
+         FROM campaign_sets cs
          JOIN campaign_influencers ci ON ci.set_id = cs.id
          WHERE ci.id = $1`,
         [ciId]
@@ -1517,8 +1540,9 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
       // pending work she had never agreed to. A commission creator sells product, not content.
       // Same rule as the countersign, from the same function, so the two cannot disagree again.
       // Contract: features/deliverables-only-when-buying-content
-      const { plannedDeliverables } = require('../services/deliverables.model');
-      const { formats } = plannedDeliverables(setRows[0]?.goal, setRows[0]?.formats_json);
+      const { plannedDeliverables, resolveFormats } = require('../services/deliverables.model');
+      const resolvedSetFormats = resolveFormats(setRows[0]?.ci_formats_json, setRows[0]?.set_formats_json);
+      const { formats } = plannedDeliverables(setRows[0]?.goal, resolvedSetFormats);
 
       for (const fmt of formats) {
         const delType = fmt.type || 'reel';

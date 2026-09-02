@@ -36,6 +36,28 @@ function prettyGoal(g) {
   return String(g).replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
 }
 
+// stage-a — SB-30's SHOOT_MODES_OFFERED are 'visit'/'shipment'; 'remote' stays reachable
+// only through the older brand-approve flow, so it is included here too rather than
+// falling through to the raw column value on a handful of legacy contracts.
+const SHOOT_LABEL = { visit: 'Store visit', shipment: 'They ship it to you', remote: 'No shoot — from their images' };
+
+/** "1 reel + 2 stories" — the same words the brand's own SB-30 screen shows her. */
+// singular, plural — 'story' does not take a bare 's'. Found by the render test actually
+// mounting this screen and reading "1 reel + 2 storys" off it.
+const FORMAT_WORD = {
+  reel: ['reel', 'reels'], post: ['post', 'posts'], story: ['story', 'stories'],
+  youtube_video: ['YouTube video', 'YouTube videos'], youtube_short: ['YouTube Short', 'YouTube Shorts'],
+};
+function formatsLine(formats) {
+  if (!Array.isArray(formats)) return null;
+  const list = formats.filter((f) => Number(f.count) > 0);
+  if (!list.length) return null;
+  return list.map((f) => {
+    const [one, many] = FORMAT_WORD[f.type] || [f.type, `${f.type}s`];
+    return `${f.count} ${Number(f.count) > 1 ? many : one}`;
+  }).join(' + ');
+}
+
 function fmtDate(s) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -317,11 +339,50 @@ export default function CollabDetailScreen({ route, navigation }) {
                     <Text style={styles.tv}>{c.allocation_summary.label}</Text>
                   </View>
                 ) : null}
+                {/* stage-a — SC-05: what SB-30 gave her. formats_json/channels_summary are
+                    already resolved server-side (her row, else the set's) — nothing here
+                    re-derives the fallback. */}
+                {formatsLine(c.formats_json) ? (
+                  <View style={styles.termsRow}><Text style={styles.tl}>You make</Text><Text style={styles.tv}>{formatsLine(c.formats_json)}</Text></View>
+                ) : null}
+                {c.channels_summary ? (
+                  <View style={styles.termsRow}><Text style={styles.tl}>Where you post</Text><Text style={styles.tv}>{c.channels_summary}</Text></View>
+                ) : null}
                 {c.coupon_code ? <View style={styles.termsRow}><Text style={styles.tl}>Your code</Text><Text style={styles.tv}>{c.coupon_code}</Text></View> : null}
                 {prettyGoal(c.goal) ? <View style={styles.termsRow}><Text style={styles.tl}>Goal</Text><Text style={styles.tv}>{prettyGoal(c.goal)}</Text></View> : null}
                 {dCount > 0 ? <View style={styles.termsRow}><Text style={styles.tl}>Deliverables</Text><Text style={styles.tv}>{dApproved}/{dCount} done</Text></View> : null}
                 {c.posting_date ? <View style={styles.termsRow}><Text style={styles.tl}>Posting date</Text><Text style={styles.tv}>{fmtDate(c.posting_date)}</Text></View> : null}
                 {c.brief ? <Text style={styles.brief} numberOfLines={4}>{c.brief}</Text> : null}
+
+                {/* stage-a — SC-05's "two things you cannot change". Separated from
+                    everything above on purpose: those are agreed or set by the brand and
+                    could in principle be discussed again; the day and the shoot were fixed
+                    the moment other creators in this set agreed to them too. */}
+                {(c.go_live_date || c.shoot_mode) && (
+                  <View style={styles.fixedCard}>
+                    <Text style={styles.fixedTitle}>Two things you cannot change</Text>
+                    {c.go_live_date ? (
+                      <View style={styles.termsRow}><Text style={styles.tl}>Everyone goes live</Text><Text style={styles.tv}>{fmtDate(c.go_live_date)}</Text></View>
+                    ) : null}
+                    {c.shoot_mode ? (
+                      <View style={styles.termsRow}><Text style={styles.tl}>How you shoot</Text><Text style={styles.tv}>{SHOOT_LABEL[c.shoot_mode] || c.shoot_mode}</Text></View>
+                    ) : null}
+                    <Text style={styles.fixedNote}>
+                      Every creator in this set agreed to the same day. Asking for a different
+                      one moves you out of it.
+                    </Text>
+                  </View>
+                )}
+
+                {/* stage-a — SC-05's usage line. Always present: describeUsage returns a
+                    real default sentence rather than null when nothing commercial was
+                    agreed, so a creator is never left wondering whether it was forgotten. */}
+                {c.usage_text ? (
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={styles.tl}>How they may use it</Text>
+                    <Text style={styles.brief}>{c.usage_text}</Text>
+                  </View>
+                ) : null}
               </View>
             );
           }
@@ -357,6 +418,12 @@ const styles = StyleSheet.create({
   agreedCard: { backgroundColor: '#F7FEF9', borderWidth: 1, borderColor: '#A7F3D0', borderRadius: 10, padding: 11, marginBottom: 12 },
   agreedTitle: { fontSize: 11, fontWeight: '800', color: '#047857', letterSpacing: 0.3, marginBottom: 6 },
   agreedNote: { fontSize: 10.5, color: '#047857', marginTop: 6, lineHeight: 15 },
+  // stage-a — SC-05's "two things you cannot change". A distinct tone from agreedCard on
+  // purpose: that one is what she settled with the brand; this one was fixed the moment
+  // other creators in the same set agreed to it too, and never was hers to negotiate.
+  fixedCard: { backgroundColor: '#FFF8F0', borderWidth: 1, borderColor: '#F4D9B0', borderRadius: 10, padding: 11, marginTop: 10 },
+  fixedTitle: { fontSize: 11, fontWeight: '800', color: '#92600A', letterSpacing: 0.3, marginBottom: 6 },
+  fixedNote: { fontSize: 10.5, color: '#92600A', marginTop: 6, lineHeight: 15 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg, padding: 30 },
   errTitle: { fontSize: 14, fontWeight: '700', color: ig.text, marginTop: 12 },
   errBtn: { marginTop: 14, backgroundColor: ig.text, borderRadius: 9, paddingHorizontal: 20, paddingVertical: 10 },

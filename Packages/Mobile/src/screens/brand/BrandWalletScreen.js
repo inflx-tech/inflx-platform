@@ -109,12 +109,21 @@ function buildRazorpayCheckoutHTML({ orderId, amountPaise, keyId }) {
 </html>`;
 }
 
-export default function BrandWalletScreen({ navigation }) {
+export default function BrandWalletScreen({ navigation, route }) {
   const [wallet, setWallet]             = useState(null);
   const [transactions, setTxns]         = useState([]);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
   const [topupAmt, setTopupAmt]         = useState('');
+  // stage-a — SB-37's "ADD ₹X" button on the publish-review screen lands here with the
+  // exact shortfall (SB-54's own note: "arrives pre-filled"). A useEffect, not the useState
+  // initialiser above, because this tab stays mounted across visits — re-navigating here
+  // with a new amount from a second campaign must overwrite whatever was typed before, not
+  // be ignored because the screen already existed.
+  useEffect(() => {
+    const amt = route?.params?.prefillAmount;
+    if (amt != null && Number(amt) > 0) setTopupAmt(String(Math.ceil(Number(amt))));
+  }, [route?.params?.prefillAmount]);
   const [toppingUp, setToppingUp]       = useState(false);
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [razorpayHTML, setRazorpayHTML]  = useState('');

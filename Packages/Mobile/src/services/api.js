@@ -246,6 +246,8 @@ export const brandApi = {
   // end a campaign but had no way to CREATE one, so the Campaigns tab ended in a link
   // that opened the web dashboard. These are the five thin methods that were missing.
   //
+  // stage-a — createCampaign takes a name and an optional note (brief) now; start_date is
+  // no longer asked for on this screen. The server still accepts one from an older client.
   // createCampaign takes a name and a start date and NOTHING else. The server ignores any
   // budget or end date sent to it and derives both from the sets (Part 5), so sending
   // them would be a lie the screen tells itself.

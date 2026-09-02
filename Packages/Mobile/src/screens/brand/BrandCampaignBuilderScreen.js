@@ -8,14 +8,15 @@ import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
 import * as draft from '../../utils/campaignDraft';
 import { AIM_SHORT } from '../../utils/agreementSummary';
+import { goLiveDayOf, SHOOT_MODE_COPY } from '../../utils/setShape';
 
 /**
- * BrandCampaignBuilderScreen — "Your sets".
- * Contract: features/stage-2-build-a-campaign-from-the-phone
- * Board: 04-preview/mockups/stage2-screens.html panel ③ · action ledger #61 · #62
+ * BrandCampaignBuilderScreen — SB-24, "Campaign builder".
+ * Contract: features/stage-a-the-set (cards updated) · features/stage-2-build-a-campaign-from-the-phone (screen itself)
+ * Board: features/screen-atlas/04-preview/mockups/atlas-brand.html → SB-24
  *
- * A campaign holds sets. A set is the unit of work: one aim, one group of creators, one
- * scope of products, one offer. Two sets in a campaign are two independent arrangements
+ * A campaign holds sets. A set is the unit of work: one aim, one go-live day, one way of
+ * shooting, one group of creators. Two sets in a campaign are two independent arrangements
  * that happen to share a name — which is why a sales set and a content set can sit here
  * together and each behaves by its own rules.
  *
@@ -24,6 +25,12 @@ import { AIM_SHORT } from '../../utils/agreementSummary';
  * NOT — they live in utils/campaignDraft until Publish, so abandoning the wizard cannot
  * burn an agreement (ledger #77). This screen reads both and says so honestly: a set that
  * exists on the server with nobody in it yet reads "nobody yet", not "0 creators".
+ *
+ * WHAT THE LOCKED MOCKUP SHOWS THAT THIS SCREEN DOES NOT — YET
+ * SB-24 also draws a "Moved out" section — creators who asked for a different day or shoot
+ * and were taken out of a set. That is the deferred pool, and it needs columns
+ * (deferred_at, deferred_go_live_date, deferred_shoot_mode) that do not exist until
+ * migration 170 — Stage B. Genuinely blocked, not skipped; nothing here pretends otherwise.
  */
 export default function BrandCampaignBuilderScreen({ route, navigation }) {
   const { campaignId, campaignName } = route.params || {};
@@ -75,7 +82,6 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
     return <View style={[s.container, s.center]}><ActivityIndicator color={ig.text} /></View>;
   }
 
-  const startsOn = campaign?.start_date ? fmtDate(campaign.start_date) : '—';
   const hasSales = sets.some(x => x.goal === 'conversion');
 
   return (
@@ -85,9 +91,12 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
           <Icon name="chevron-left" size={24} color={ig.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
+          {/* stage-a — SB-24's "DRAFT" chip, but reading the real status rather than a
+              literal, since a brand can come back to this screen after publishing too. */}
+          <Text style={s.kk}>{String(campaign?.status || 'draft').toUpperCase()}</Text>
           <Text style={s.title} numberOfLines={1}>{campaign?.name || campaignName}</Text>
           <Text style={s.sub}>
-            STARTS {String(startsOn).toUpperCase()} · {sets.length} SET{sets.length === 1 ? '' : 'S'}
+            {sets.length} SET{sets.length === 1 ? '' : 'S'}
           </Text>
         </View>
       </View>
@@ -111,6 +120,7 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
           const aim = AIM_SHORT[set.goal] || 'Not set';
           const selling = set.goal === 'conversion' || set.goal === 'hybrid';
           const ready = sd.creators.length > 0 && (!selling || (sd.offer && sd.creators.every(c => c.alloc?.alloc_scope)));
+          const goLive = goLiveDayOf(set);
           return (
             <View key={set.id} style={s.card}>
               <View style={s.cardHd}>
@@ -122,6 +132,16 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
                 </View>
               </View>
               <View style={s.cardBd}>
+                {/* stage-a — the two things every set is defined by (SB-26), read back here
+                    so a brand can tell two sets apart without opening either. A set built
+                    before set-first has go_live_date null; goLiveDayOf falls back to its old
+                    window rather than showing a blank where a real answer exists. */}
+                <Row k="Go live" v={goLive ? fmtDate(goLive) : 'Not set'} dim={!goLive} />
+                <Row
+                  k="Shoot"
+                  v={set.shoot_mode ? (SHOOT_MODE_COPY[set.shoot_mode]?.title || set.shoot_mode) : 'Not set'}
+                  dim={!set.shoot_mode}
+                />
                 <Row k="Creators" v={sd.creators.length ? `${sd.creators.length} agreed` : 'nobody yet'} dim={!sd.creators.length} />
                 {selling ? (
                   <>
@@ -130,7 +150,7 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
                   </>
                 ) : (
                   <>
-                    <Row k="Deliverables" v={formatsSummary(set.formats_json)} dim={!(set.formats_json || []).length} />
+                    <Row k="Deliverables" v={formatsSummary(sd)} dim={!sd.creators.some((c) => draft.hasFormats(c))} />
                     <Row
                       k="Budget"
                       v={set.set_budget != null ? `₹${Number(set.set_budget).toLocaleString('en-IN')} · calculated` : 'calculated at step 3'}
@@ -215,11 +235,34 @@ function allocSummary(sd) {
   return 'set per creator';
 }
 
-function formatsSummary(formats) {
-  const list = Array.isArray(formats) ? formats.filter(f => Number(f.count) > 0) : [];
-  if (!list.length) return 'not chosen';
-  const W = { reel: 'reel', post: 'post', story: 'story', youtube_video: 'YouTube video', youtube_short: 'YouTube Short' };
-  return list.map(f => `${f.count} ${W[f.type] || f.type}${Number(f.count) > 1 ? 's' : ''}`).join(' + ');
+// singular, plural — 'story' does not take a bare 's'. Caught while adding the same map's
+// twin on CollabDetailScreen (SC-05): the render test there actually mounted the screen and
+// read "1 reel + 2 storys" off it.
+const FORMAT_WORD = {
+  reel: ['reel', 'reels'], post: ['post', 'posts'], story: ['story', 'stories'],
+  youtube_video: ['YouTube video', 'YouTube videos'], youtube_short: ['YouTube Short', 'YouTube Shorts'],
+};
+
+/**
+ * stage-a — formats_json moved off the set and onto each creator (SB-30), same as
+ * allocSummary above already reads per-creator scope rather than a set-level field. This
+ * used to read set.formats_json directly, which after the move is never written for a new
+ * set and would have silently shown "not chosen" for every creator who genuinely has
+ * something set on her own row.
+ */
+function formatsSummary(sd) {
+  if (!sd.creators.length) return 'nobody yet';
+  const withFormats = sd.creators.filter((c) => draft.hasFormats(c));
+  if (!withFormats.length) return 'not chosen';
+  if (withFormats.length < sd.creators.length) return 'set for some, not all';
+  if (withFormats.length === 1) {
+    const list = withFormats[0].formats_json.filter((f) => Number(f.count) > 0);
+    return list.map((f) => {
+      const [one, many] = FORMAT_WORD[f.type] || [f.type, `${f.type}s`];
+      return `${f.count} ${Number(f.count) > 1 ? many : one}`;
+    }).join(' + ');
+  }
+  return 'set per creator';
 }
 
 function fmtDate(d) {
@@ -243,6 +286,7 @@ const s = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   nav: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingTop: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: ig.lineSoft },
   back: { padding: 4 },
+  kk: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.5, color: ig.mut },
   title: { fontSize: 16, fontWeight: '800', color: ig.text },
   sub: { fontSize: 10.5, fontWeight: '700', color: ig.mut, marginTop: 1, letterSpacing: 0.4 },
 

@@ -143,3 +143,61 @@ the read-side resolvers in `deliverables.model.js` / `campaignChannels.js`) coul
 run against a live database in this session — verified by hand instead (see the contract's
 `lock.json → slice_2_terms.backend.not_run`). `pnpm qa:db` against production is the real
 check, still owed before this is called done on the server side.
+
+---
+
+# Before / after — Stage A, the campaign shell + publish + her invite
+
+**Screens:** `BrandCampaignCreateScreen` (SB-23) · `BrandCampaignBuilderScreen` (SB-24) ·
+`BrandCampaignReviewScreen` (SB-37) · `CollabDetailScreen` (SC-05)
+
+## What was implemented
+
+| | Before | After |
+|---|---|---|
+| New campaign | Name + a start date | Name + an optional note. No date — see below |
+| Builder cards | Aim, creators, allocation/offer or deliverables/budget | Same, plus **Go live** and **Shoot** on every card |
+| Publish screen | "Wallet needed: ₹X", refused with no breakdown | You have / You need / Short by, + **Add ₹X** button pre-filling the wallet screen |
+| Her invite (SC-05) | Money, allocation, coupon, goal, deliverable count, brief | Same, plus **what she makes**, **where she posts**, a separated **"two things you cannot change"** block (launch day + shoot), and **how they may use it** |
+
+## What matches the locked mockup
+
+- SB-23 is genuinely two fields, plus the "what a set is" explainer card
+- SB-24's cards read back the two things every set is defined by, not just creator counts
+- SB-37 names the exact shortfall and offers a one-tap fix
+- SC-05 separates what she agreed from what was fixed for the whole set, exactly as SB-30 produced it
+
+## What diverged from the mockup, and why
+
+**SB-37's "publish set 1 now, set 2 later" is not offered.** Checked against the actual
+`publish()` function: it is campaign-wide — one short set blocks every set alongside it,
+there is no per-set send. Written instead: go back, remove the short set, publish the rest,
+bring it back once funded. A true sentence, not the locked one.
+
+**SB-24's "Moved out" deferred-pool section was not built.** It needs migration 170
+(`deferred_at`, `deferred_go_live_date`, `deferred_shoot_mode`) — Stage B, not built yet.
+Documented in the screen's own header comment, not silently dropped.
+
+## What to check — the device walk
+
+1. **Start a new campaign.** Only a name field and an optional note. No date anywhere.
+2. **Open the builder for a campaign with two sets on different days/shoot modes.** Each
+   card shows its own Go live day and Shoot mode, correctly, not the other set's.
+3. **Build a content set short on wallet funds, reach Review.** The shortfall card names
+   the exact amount and an "Add ₹X" button appears.
+4. **Tap that button.** Land on the Wallet tab with the amount already typed into the
+   custom-amount field.
+5. **From a creator's Collabs tab, open a fresh invitation** (one you built with SB-30 terms
+   set — channels and at least one format). Confirm "Where you post", "You make", "Two
+   things you cannot change" (launch day + shoot), and "How they may use it" all show, with
+   real values, not placeholders.
+6. **Open an invitation from BEFORE this work shipped** (an old cold invite, or one built
+   without SB-30 terms). The four new blocks must simply not appear — no crash, no blanks.
+
+## Known, and not fixed here
+
+Same `cancelInfluencer` bug, still carried across every slice of this stage.
+
+Same backend-verification limitation as the previous section: no live database this
+session. The four resolver/describer functions this slice adds to `getMyCampaignDetail`
+were chain-verified by hand with representative inputs. `pnpm qa:db` is still owed.

@@ -5,22 +5,22 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ig } from '../../theme/ig';
 import { brandApi } from '../../services/api';
-import DateField from '../../components/DateField';
 
 /**
- * BrandCampaignCreateScreen — the shell. Two fields, then the sets do the work.
- * Contract: features/stage-2-build-a-campaign-from-the-phone
- * Board: 04-preview/mockups/stage2-screens.html panel ③ · action ledger #60
+ * BrandCampaignCreateScreen — SB-23, "New campaign". Two fields, then the sets do the work.
+ * Contract: features/stage-a-the-set
+ * Board: features/screen-atlas/04-preview/mockups/atlas-brand.html → SB-23
  *
  * WHY IT ASKS SO LITTLE
- * Everything that used to sit at campaign level — budget, end date, who posts — either
- * belongs to a set or was already settled at the handshake. What is left is a name and a
- * start date.
+ * Everything that used to sit at campaign level — budget, end date, who posts, and now the
+ * date itself — either belongs to a set or was already settled at the handshake. What is
+ * left is a name and an optional note to yourself.
  *
- * The server has agreed with this since Part 5: POST /campaigns takes a name and a start
- * date and IGNORES any budget or end date sent to it, writing NULL for both and deriving
- * them from the sets. This is the first screen built to match that rule rather than to
- * work around it.
+ * stage-a — the start date is GONE too, not just budget/end date. Founder, 2026-09-01: a
+ * set is "one aim, one go-live day, one way of shooting" — the day that matters lives on
+ * the set now (SB-26), not once on the campaign above it. The server no longer requires
+ * start_date to create a campaign; the column stays, nullable, for a client that still
+ * sends one.
  *
  * The lock note is not decoration. A brand who has used the web wizard will look for the
  * budget field; telling them where it went teaches the model, and a silent absence just
@@ -28,15 +28,15 @@ import DateField from '../../components/DateField';
  */
 export default function BrandCampaignCreateScreen({ navigation }) {
   const [name, setName] = useState('');
-  const [start, setStart] = useState(todayISO());
+  const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const canGo = name.trim().length > 0 && isISODate(start);
+  const canGo = name.trim().length > 0;
 
   async function createIt() {
     if (!canGo || saving) return;
     setSaving(true);
-    const res = await brandApi.createCampaign({ name: name.trim(), start_date: start });
+    const res = await brandApi.createCampaign({ name: name.trim(), brief: note.trim() || null });
     setSaving(false);
     if (!res?.success) {
       Alert.alert('Could not start the campaign', res?.error?.message || 'Please try again.');
@@ -62,12 +62,12 @@ export default function BrandCampaignCreateScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={s.sec}>
-          <Text style={s.label}>Campaign name</Text>
+          <Text style={s.label}>Name it</Text>
           <TextInput
             style={s.input}
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Festive Season 2026"
+            placeholder="e.g. Diwali Saree Edit"
             placeholderTextColor={ig.mut2}
             autoFocus
           />
@@ -75,20 +75,25 @@ export default function BrandCampaignCreateScreen({ navigation }) {
         </View>
 
         <View style={s.sec}>
-          {/* Batch A — was a text box expecting YYYY-MM-DD. On a phone that is four ways to
-              fail: wrong format, wrong month, a date already past, or a typo nobody catches
-              until a deadline is missed. DateField is pure JS on purpose — an over-the-air
-              bundle cannot add a native module. The value in and out is the same string the
-              text box produced, so nothing behind this screen changes.
-              Contract: features/stage-2-walkthrough-fixes */}
-          <DateField
-            label="Starts"
-            value={start}
-            onChange={setStart}
-            placeholder="Choose a start date"
+          <Text style={s.label}>What is it for · optional</Text>
+          <TextInput
+            style={s.input}
+            value={note}
+            onChangeText={setNote}
+            placeholder="A note to yourself"
+            placeholderTextColor={ig.mut2}
           />
         </View>
 
+        <View style={s.sec}>
+          <View style={s.lock}>
+            <Icon name="information-outline" size={15} color={ig.mut} />
+            <Text style={s.lockT}>
+              <Text style={s.lockB}>What a set is —</Text> one aim, one go-live day, one way
+              of shooting. A different day or a different shoot is a second set.
+            </Text>
+          </View>
+        </View>
 
         <View style={s.sec}>
           <TouchableOpacity
@@ -99,21 +104,12 @@ export default function BrandCampaignCreateScreen({ navigation }) {
           >
             {saving
               ? <ActivityIndicator color={ig.bg} />
-              : <Text style={s.btnPriT}>Add the first set</Text>}
+              : <Text style={s.btnPriT}>Create · add a set</Text>}
           </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
   );
-}
-
-function todayISO() {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-function isISODate(v) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) && !Number.isNaN(new Date(v).getTime());
 }
 
 const s = StyleSheet.create({

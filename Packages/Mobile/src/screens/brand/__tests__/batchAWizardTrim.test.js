@@ -81,17 +81,25 @@ describe('Batch A · A-1 · the campaign-create screen', () => {
     expect(src).not.toContain('No end date and no budget here');
   });
 
-  it('the start date is a calendar, not a text box', () => {
-    expect(src).toContain("from '../../components/DateField'");
-    expect(src).toContain('<DateField');
+  it('SUPERSEDED BY STAGE A · there is no date on this screen at all any more', () => {
+    // Batch A put a calendar here (DateField, replacing a YYYY-MM-DD text box). Stage A,
+    // 2026-09-01, removed the question entirely — a set is "one aim, one go-live day, one
+    // way of shooting", and that day now lives on the SET (SB-26), not once on the campaign
+    // above it. SB-23 is genuinely two fields: a name, and an optional note.
+    expect(src).not.toContain("from '../../components/DateField'");
+    expect(src).not.toContain('<DateField');
     expect(src).not.toContain('placeholder="YYYY-MM-DD"');
   });
 
-  it('the date is still validated before the button unlocks', () => {
-    // DateField emits 'YYYY-MM-DD', the same string the text box produced, so the existing
-    // guard still holds. Removing the field must not have removed the check with it.
-    expect(src).toContain('isISODate(start)');
-    expect(src).toMatch(/const canGo = [^;]*isISODate\(start\)/);
+  it('canGo needs only the name — no date left to validate', () => {
+    // SUPERSEDED BY STAGE A — isISODate(start) guarded a field that no longer exists.
+    expect(src).not.toContain('isISODate');
+    expect(src).toMatch(/const canGo = name\.trim\(\)\.length > 0;/);
+  });
+
+  it('the optional note reaches the server as `brief`, the column that already existed', () => {
+    expect(src).toContain("brief: note.trim() || null");
+    expect(src).toContain('What is it for');
   });
 });
 

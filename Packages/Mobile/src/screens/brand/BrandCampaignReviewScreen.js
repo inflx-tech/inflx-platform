@@ -129,7 +129,6 @@ export default function BrandCampaignReviewScreen({ route, navigation }) {
   const blockers = [...localBlockers, ...serverBlockers];
   const warnings = [...localWarnings, ...serverWarnings];
 
-  const hasSales = sets.some(x => x.goal === 'conversion');
   const canPublish = blockers.length === 0 && campaign?.status === 'draft';
 
   async function publish() {
@@ -203,18 +202,44 @@ export default function BrandCampaignReviewScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 44 }}>
         <View style={s.sec2}>
-          <KV k="Starts" v={campaign?.start_date ? fmtLong(campaign.start_date) : '—'} />
-          <KV k="Ends" v={hasSales ? 'Ongoing · one set is sales' : (campaign?.end_date ? fmtLong(campaign.end_date) : '—')} dim={hasSales} />
+          {/* stage-a — "Starts"/"Ends" read the campaign's own start_date/end_date, and
+              SB-23 stopped asking for either: a campaign is a name and an optional note now,
+              and each set carries its own go-live day. Both rows would show '—' on every
+              new campaign from here on, so they are dropped rather than left dead. */}
           <KV k="Sets" v={String(sets.length)} />
           <KV k="Creators" v={String(summary.creators)} />
-          {check?.wallet && (
-            <KV
-              k="Wallet needed"
-              v={`₹${Number(check.wallet.required || 0).toLocaleString('en-IN')}`}
-              danger={check.wallet.short > 0}
-            />
-          )}
         </View>
+
+        {/* stage-a — SB-37's own named gap: "the check exists but the message is a generic
+            failure with no amount." The backend already computed balance/required/short
+            (publishCheck) — this was purely a display gap. Shown only once the wallet is
+            actually short; a sales-only campaign or a fully-funded one gets nothing here. */}
+        {check?.wallet && check.wallet.short > 0 && (
+          <View style={s.sec2}>
+            <View style={s.noteR}>
+              <Text style={s.shortT}>Not enough in the wallet</Text>
+              <KV k="You have" v={`₹${check.wallet.balance.toLocaleString('en-IN')}`} />
+              <KV k="You need" v={`₹${check.wallet.required.toLocaleString('en-IN')}`} />
+              <KV k="Short by" v={`₹${check.wallet.short.toLocaleString('en-IN')}`} danger />
+              <TouchableOpacity
+                style={[s.mini, s.miniPri]}
+                onPress={() => navigation.navigate('Wallet', { prefillAmount: check.wallet.short })}
+                activeOpacity={0.85}
+              >
+                <Text style={s.miniPriT}>Add ₹{check.wallet.short.toLocaleString('en-IN')}</Text>
+              </TouchableOpacity>
+              {/* stage-a — the locked mockup's own line here offers to send the FUNDED set
+                  right away and the short one afterwards. Not true of this screen: publish
+                  is campaign-wide, one short set blocks every set alongside it, and there is
+                  no per-set send. What follows is the capability that is actually real: go
+                  back, remove the set that needs money, publish the rest, and bring that one
+                  back later once the wallet covers it. */}
+              <Text style={s.shortHelp}>
+                Or go back and remove this set — the rest of the campaign can publish without it.
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={s.sec2}>
           <Text style={s.dh}>Before you publish</Text>
@@ -278,8 +303,6 @@ function KV({ k, v, dim, danger, ok }) {
   );
 }
 
-const fmtLong = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: ig.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -300,6 +323,11 @@ const s = StyleSheet.create({
   noteGT: { fontSize: 11.5, color: ig.green, fontWeight: '700', lineHeight: 17 },
   noteR: { backgroundColor: ig.redBg, borderRadius: 11, padding: 12, marginBottom: 8 },
   noteRT: { fontSize: 11.5, color: ig.red, fontWeight: '700', lineHeight: 17 },
+  shortT: { fontSize: 12.5, fontWeight: '800', color: ig.red, marginBottom: 6 },
+  shortHelp: { fontSize: 10.5, color: ig.mut, fontWeight: '650', marginTop: 8, lineHeight: 15 },
+  mini: { borderRadius: 8, paddingVertical: 10, alignItems: 'center', marginTop: 6 },
+  miniPri: { backgroundColor: ig.text },
+  miniPriT: { fontSize: 12, fontWeight: '800', color: ig.bg },
   noteY: { backgroundColor: ig.yBg, borderRadius: 11, padding: 12, marginBottom: 8 },
   noteYT: { fontSize: 11.5, color: ig.yInk, fontWeight: '700', lineHeight: 17 },
   noteN: { backgroundColor: ig.bgSoft, borderRadius: 11, padding: 12 },

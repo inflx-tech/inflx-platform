@@ -129,3 +129,52 @@ describe('every stage renders, not just the one that was reported', () => {
     expect(await screen.findByText('New test campaign 1234')).toBeTruthy();
   });
 });
+
+/**
+ * SC-05 — "What they're offering". The four fields that reach here already resolved
+ * server-side (her value else the set's), so this test proves they REACH THE SCREEN, not
+ * that the resolution itself works — that is covered where the resolvers live.
+ * Contract: features/stage-a-the-set
+ */
+describe('SC-05 · what SB-30 gave her, and the two things she cannot change', () => {
+  const WITH_TERMS = {
+    ...PAYLOAD,
+    campaign: {
+      ...PAYLOAD.campaign,
+      influencer_status: 'invited',
+      go_live_date: '2026-09-12',
+      shoot_mode: 'visit',
+      channels_summary: 'Instagram — at least 1',
+      formats_json: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }],
+      usage_text: 'Your content stays yours. The brand and INFLX may repost it on their own social accounts, with credit — nothing more.',
+    },
+  };
+
+  test('the two things she cannot change render together, labelled as such', async () => {
+    influencerApi.getMyCampaignDetail.mockResolvedValue({ success: true, data: WITH_TERMS });
+    render(<CollabDetailScreen navigation={nav} route={route} />);
+    expect(await screen.findByText('Two things you cannot change')).toBeTruthy();
+    expect(screen.getByText('Store visit')).toBeTruthy();
+  });
+
+  test('where she posts and what she makes render as their own rows', async () => {
+    influencerApi.getMyCampaignDetail.mockResolvedValue({ success: true, data: WITH_TERMS });
+    render(<CollabDetailScreen navigation={nav} route={route} />);
+    expect(await screen.findByText('Instagram — at least 1')).toBeTruthy();
+    expect(screen.getByText('1 reel + 2 stories')).toBeTruthy();
+  });
+
+  test('the usage sentence renders even when nothing commercial was agreed', async () => {
+    influencerApi.getMyCampaignDetail.mockResolvedValue({ success: true, data: WITH_TERMS });
+    render(<CollabDetailScreen navigation={nav} route={route} />);
+    expect(await screen.findByText(/Your content stays yours/)).toBeTruthy();
+  });
+
+  test('none of the four blocks appear when the server sends none of them', async () => {
+    // The ordinary case for a set built before Stage A, or a cold invite with nothing set
+    // yet — must not crash, and must not show an empty "Two things you cannot change" card.
+    render(<CollabDetailScreen navigation={nav} route={route} />);
+    expect(await screen.findByText('New test campaign 1234')).toBeTruthy();
+    expect(screen.queryByText('Two things you cannot change')).toBeNull();
+  });
+});
