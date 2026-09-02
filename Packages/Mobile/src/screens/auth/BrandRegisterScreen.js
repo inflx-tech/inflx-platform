@@ -24,64 +24,15 @@ const P = {
 
 const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
 
-// Founder-locked industry regroup (walkthrough W1, 2026-06-11): Education,
-// Consultation Services and Events are their own industries. Category VALUES
-// are unchanged — they map 1:1 to category schemas / listing engines.
-const INDUSTRY_HIERARCHY = [
-  { group: 'Food & Dining', categories: [
-    { value: 'restaurant', label: 'Restaurant & Cafe' },
-    { value: 'bakery', label: 'Bakery' },
-    { value: 'packaged_food', label: 'Packaged Food' },
-    { value: 'grocery', label: 'Grocery & Supermarket' },
-  ]},
-  { group: 'Shopping & Retail', categories: [
-    { value: 'fashion', label: 'Fashion & Apparel' },
-    { value: 'electronics', label: 'Electronics & Gadgets' },
-    { value: 'jewellery', label: 'Jewellery & Watches' },
-    { value: 'footwear', label: 'Footwear' },
-    { value: 'furniture', label: 'Home Decor & Furniture' },
-    { value: 'optical', label: 'Optical / Eyewear' },
-    { value: 'pet_shop', label: 'Pet Shops' },
-    { value: 'flowers_gifting', label: 'Flowers & Gifting' },
-    { value: 'hardware', label: 'Hardware & Building Materials' },
-  ]},
-  { group: 'Beauty & Grooming', categories: [
-    { value: 'salon', label: 'Salon & Beauty Parlour' },
-    { value: 'home_beauty', label: 'Home Beauty / At-home Salon' },
-    { value: 'pet_grooming', label: 'Pet Grooming' },
-  ]},
-  { group: 'Health & Fitness', categories: [
-    { value: 'gym_fitness', label: 'Gym & Fitness Studio' },
-    { value: 'clinic_doctor', label: 'Clinic & Doctor' },
-    { value: 'dental_clinic', label: 'Dental Clinic' },
-    { value: 'diagnostic_lab', label: 'Diagnostic Lab' },
-  ]},
-  { group: 'Education', categories: [
-    { value: 'coaching_center', label: 'Coaching & Tutoring Center' },
-  ]},
-  { group: 'Travel & Rentals', categories: [
-    { value: 'car_rental', label: 'Car Rental' },
-    { value: 'bike_rental', label: 'Bike Rental' },
-    { value: 'travel_packages', label: 'Travel Packages & Tours' },
-    { value: 'hotel_homestay', label: 'Hotel & Homestay' },
-  ]},
-  { group: 'Home Services', categories: [
-    { value: 'home_services', label: 'Home Services (Plumbing, Electrician, AC)' },
-    { value: 'pest_control', label: 'Pest Control' },
-    { value: 'laundry', label: 'Laundry & Dry Cleaning' },
-  ]},
-  { group: 'Consultation Services', categories: [
-    { value: 'legal_ca', label: 'Legal / CA Consultation' },
-    { value: 'interior_design', label: 'Interior Design Consultation' },
-    { value: 'coworking_space', label: 'Co-working Space' },
-  ]},
-  { group: 'Events', categories: [
-    { value: 'function_hall', label: 'Event Venue & Banquet Hall' },
-    { value: 'wedding_planner', label: 'Wedding Planner' },
-    { value: 'photography', label: 'Photography Studio' },
-    { value: 'florist', label: 'Florist' },
-  ]},
-];
+// Docs/THE_CUT.md pass 0, founder 2026-09-02: "INFLX is a fashion platform."
+//
+// This screen used to offer 30 business types across 9 industries. There is now
+// exactly one, so the industry -> type chip picker is gone with it: two rows of
+// chips offering one choice each is worse than a plain statement. The server is
+// the real gate (backend/src/services/businessCategory.model.js); this constant
+// only decides what the form SAYS.
+const CATEGORY = 'fashion';
+const CATEGORY_LABEL = 'Fashion — clothing, footwear, jewellery & accessories';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -104,8 +55,8 @@ const INDIAN_STATES = [
 export default function BrandRegisterScreen({ navigation }) {
   const [fullName, setFullName]         = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [industry, setIndustry]         = useState('');
-  const [category, setCategory]         = useState('');
+  // Docs/THE_CUT.md pass 0 — no longer chosen, so it is a constant rather than state.
+  const category = CATEGORY;
   const [addressLine, setAddressLine]   = useState('');
   const [city, setCity]                 = useState('');
   const [stateField, setStateField]     = useState('');
@@ -121,7 +72,6 @@ export default function BrandRegisterScreen({ navigation }) {
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
 
-  const categories = INDUSTRY_HIERARCHY.find(g => g.group === industry)?.categories || [];
 
   function onQueryChange(t) {
     setQuery(t);
@@ -154,7 +104,6 @@ export default function BrandRegisterScreen({ navigation }) {
     setError('');
     if (!fullName.trim())      { setError('Please enter your name'); return; }
     if (!businessName.trim())  { setError('Please enter your business name'); return; }
-    if (!category)             { setError('Please select your business type'); return; }
     if (!addressLine.trim())   { setError('Please enter your business address'); return; }
     if (!city.trim())          { setError('Please enter your city'); return; }
     if (!stateField)           { setError('Please select your state'); return; }
@@ -197,31 +146,18 @@ export default function BrandRegisterScreen({ navigation }) {
 
         <Text style={styles.label}>Business name <Text style={styles.req}>*</Text></Text>
         <TextInput style={styles.input} value={businessName} onChangeText={setBusinessName}
-          placeholder="e.g. Spice Garden Restaurant" placeholderTextColor={P.muted3} autoCorrect={false} />
+          placeholder="e.g. Label Fern" placeholderTextColor={P.muted3} autoCorrect={false} />
 
-        <Text style={styles.label}>Industry <Text style={styles.req}>*</Text></Text>
-        <View style={styles.chipWrap}>
-          {INDUSTRY_HIERARCHY.map(g => (
-            <TouchableOpacity key={g.group} style={[styles.chip, industry === g.group && styles.chipOn]}
-              onPress={() => { setIndustry(g.group); setCategory(''); }}>
-              <Text style={[styles.chipTxt, industry === g.group && styles.chipTxtOn]}>{g.group}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Docs/THE_CUT.md pass 0 — one business type, so it is stated rather than
+            chosen. Said plainly so an owner of a different kind of business finds out
+            here, on the form, and not after building a catalogue nobody can reach. */}
+        <Text style={styles.label}>Business type</Text>
+        <View style={styles.fixedType}>
+          <Text style={styles.fixedTypeT}>{CATEGORY_LABEL}</Text>
+          <Text style={styles.fixedTypeS}>
+            INFLX is a fashion platform. Other kinds of business are not supported yet.
+          </Text>
         </View>
-
-        {!!industry && (
-          <>
-            <Text style={styles.label}>Business type <Text style={styles.req}>*</Text></Text>
-            <View style={styles.chipWrap}>
-              {categories.map(c => (
-                <TouchableOpacity key={c.value} style={[styles.chip, category === c.value && styles.chipOn]}
-                  onPress={() => setCategory(c.value)}>
-                  <Text style={[styles.chipTxt, category === c.value && styles.chipTxtOn]}>{c.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
-        )}
 
         <View style={styles.divider} />
         <Text style={styles.section}>LOCATION</Text>
@@ -313,6 +249,10 @@ const styles = StyleSheet.create({
   opt:        { color: P.muted3, textTransform: 'none', fontWeight: '500' },
   input:      { backgroundColor: P.surface, borderWidth: 1, borderColor: P.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: P.ink2, justifyContent: 'center' },
   chipWrap:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  // Docs/THE_CUT.md pass 0 — the stated (not chosen) business type.
+  fixedType:  { borderWidth: 1, borderColor: P.border, backgroundColor: P.surface2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11 },
+  fixedTypeT: { fontSize: 13.5, fontWeight: '800', color: P.ink },
+  fixedTypeS: { fontSize: 11.5, color: P.muted, marginTop: 3, lineHeight: 16 },
   chip:       { backgroundColor: P.surface, borderWidth: 1, borderColor: P.border2, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, marginBottom: 8 },
   chipOn:     { backgroundColor: P.yellowPale, borderColor: P.yellow },
   chipTxt:    { fontSize: 12.5, color: P.muted, fontWeight: '600' },

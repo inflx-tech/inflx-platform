@@ -13,6 +13,7 @@ const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveProductImage } = require('../utils/productImage');
 const referralService = require('../services/referral.service');
+const businessCategory = require('../services/businessCategory.model');
 
 // Category-aware validation using schema
 function validateProductFields(schema, body) {
@@ -96,6 +97,12 @@ const register = asyncHandler(async (req, res) => {
   }
   if (!category || !category.trim()) {
     throw new AppError('VALIDATION_ERROR', 'category is required', 422, 'category');
+  }
+  // Docs/THE_CUT.md pass 0 — the two signup forms are a suggestion; this is the gate.
+  // Without it, a direct request registers a pest-control business and the whole
+  // cleaning effort refills behind us.
+  if (!businessCategory.isAcceptedCategory(category)) {
+    throw new AppError('VALIDATION_ERROR', businessCategory.rejectionMessage(), 422, 'category');
   }
   if (!name || !name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
@@ -238,6 +245,15 @@ const updateMe = asyncHandler(async (req, res) => {
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
+
+  // Docs/THE_CUT.md pass 0 — closing signup alone would not have held. A brand could
+  // register as fashion and then switch itself to restaurant from the profile edit,
+  // which is the same door in a different wall. Checked only when the field is actually
+  // being written, so the nine existing brands (one of them a restaurant) can still
+  // edit their address, logo and everything else without being forced to re-categorise.
+  if (updates.category !== undefined && !businessCategory.isAcceptedCategory(updates.category)) {
+    throw new AppError('VALIDATION_ERROR', businessCategory.rejectionMessage(), 422, 'category');
+  }
 
   // Wave 2 (Dining) — mirror cover_image_url from nested listing_data into
   // the typed brands.cover_image_url column so discovery queries can SELECT

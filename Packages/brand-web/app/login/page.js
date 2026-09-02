@@ -8,58 +8,22 @@ import Logo from '../../../shared/components/Logo';
 // register, and only ever read when a session token already exists.
 const DRAFT_KEY = 'inflx_brand_signup_draft';
 
-const INDUSTRY_HIERARCHY = [
-  { group: 'Food & Dining', categories: [
-    { value: 'restaurant', label: 'Restaurant & Cafe' },
-    { value: 'bakery', label: 'Bakery' },
-    { value: 'packaged_food', label: 'Packaged Food' },
-    { value: 'grocery', label: 'Grocery & Supermarket' },
-  ]},
-  // Shopping & Retail is deliberately collapsed to a single fashion business
-  // type. The `fashion` schema already carries Footwear, Jewellery, Accessories
-  // and Bags as sections (backend/public/schemas/fashion.json), so one category
-  // covers everything the founder is onboarding today — no multi-select, no new
-  // column, and `category` stays the single key that resolves a schema.
-  // The other retail types (electronics, furniture, optical, pet_shop,
-  // flowers_gifting, hardware) and the standalone footwear/jewellery schemas
-  // are intentionally not offered yet; existing brands on those values are
-  // untouched and still resolve their own schemas.
-  { group: 'Shopping & Retail', categories: [
-    { value: 'fashion', label: 'Fashion — Clothing, Footwear, Jewellery & Accessories' },
-  ]},
-  { group: 'Beauty & Grooming', categories: [
-    { value: 'salon', label: 'Salon & Beauty Parlour' },
-    { value: 'home_beauty', label: 'Home Beauty / At-home Salon' },
-    { value: 'pet_grooming', label: 'Pet Grooming' },
-  ]},
-  { group: 'Health & Fitness', categories: [
-    { value: 'gym_fitness', label: 'Gym & Fitness Studio' },
-    { value: 'clinic_doctor', label: 'Clinic & Doctor' },
-    { value: 'dental_clinic', label: 'Dental Clinic' },
-    { value: 'diagnostic_lab', label: 'Diagnostic Lab' },
-    { value: 'coaching_center', label: 'Coaching & Tutoring Center' },
-  ]},
-  { group: 'Travel & Rentals', categories: [
-    { value: 'car_rental', label: 'Car Rental' },
-    { value: 'bike_rental', label: 'Bike Rental' },
-    { value: 'travel_packages', label: 'Travel Packages & Tours' },
-    { value: 'hotel_homestay', label: 'Hotel & Homestay' },
-  ]},
-  { group: 'Home Services', categories: [
-    { value: 'home_services', label: 'Home Services (Plumbing, Electrician, AC)' },
-    { value: 'pest_control', label: 'Pest Control' },
-    { value: 'laundry', label: 'Laundry & Dry Cleaning' },
-    { value: 'interior_design', label: 'Interior Design Consultation' },
-    { value: 'coworking_space', label: 'Co-working Space' },
-  ]},
-  { group: 'Events & Professional', categories: [
-    { value: 'function_hall', label: 'Event Venue & Banquet Hall' },
-    { value: 'wedding_planner', label: 'Wedding Planner' },
-    { value: 'photography', label: 'Photography Studio' },
-    { value: 'florist', label: 'Florist' },
-    { value: 'legal_ca', label: 'Legal / CA Consultation' },
-  ]},
-];
+// Docs/THE_CUT.md pass 0, founder 2026-09-02: "INFLX is a fashion platform."
+//
+// This list used to offer 30 business types across 7 industries — restaurants,
+// car rental, salons, pest control, wedding planners. A business could sign up as
+// any of them, list its products, and have nowhere for a shopper to see them.
+//
+// There is now exactly one, so the two-dropdown industry -> type picker is gone
+// with it: two selects offering one choice each is worse than a plain statement.
+// The server is the actual gate (backend/src/services/businessCategory.model.js);
+// this constant only decides what the form SAYS, and re-opening a vertical means
+// editing the server list, not this file.
+//
+// The `fashion` schema already carries Footwear, Jewellery, Accessories and Bags
+// as sections, so one category covers everything being onboarded today.
+const CATEGORY = 'fashion';
+const CATEGORY_LABEL = 'Fashion — clothing, footwear, jewellery & accessories';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -80,8 +44,9 @@ export default function LoginPage() {
   const [otp, setOtp]                 = useState('');
   const [name, setName]               = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [industry, setIndustry]       = useState('');
-  const [category, setCategory]       = useState('');
+  // Docs/THE_CUT.md pass 0 — no longer chosen. Held as a constant so the register
+  // payload keeps its shape and the server keeps validating the field.
+  const category = CATEGORY;
   const [addressLine, setAddressLine] = useState('');
   const [city, setCity]               = useState('');
   const [state, setStateField]        = useState('');
@@ -127,8 +92,9 @@ export default function LoginPage() {
       setPhone(d.phone || '');
       setName(d.name || '');
       setBusinessName(d.businessName || '');
-      setIndustry(d.industry || '');
-      setCategory(d.category || '');
+      // A draft saved before the cut can carry an old category (restaurant, salon).
+      // Deliberately NOT restored: the server would refuse it, and restoring it would
+      // resurrect a choice that no longer exists.
       setAddressLine(d.addressLine || '');
       setCity(d.city || '');
       setStateField(d.state || '');
@@ -150,12 +116,12 @@ export default function LoginPage() {
     if (typeof window === 'undefined' || step !== 'register') return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        phone, name, businessName, industry, category, addressLine, city,
+        phone, name, businessName, addressLine, city,
         state, pincode, referralCode, locMode, mapsUrl, coords,
         locLocality, locFormatted,
       }));
     } catch { /* quota or private mode — persistence is best-effort */ }
-  }, [step, phone, name, businessName, industry, category, addressLine, city,
+  }, [step, phone, name, businessName, addressLine, city,
       state, pincode, referralCode, locMode, mapsUrl, coords, locLocality, locFormatted]);
 
   const fmt = phone.startsWith('+91') ? phone : `+91${phone}`;
@@ -297,7 +263,6 @@ export default function LoginPage() {
     setError('');
     if (!name.trim()) { setError('Please enter your name'); return; }
     if (!businessName.trim()) { setError('Please enter your business name'); return; }
-    if (!category) { setError('Please select a category'); return; }
     if (!addressLine.trim()) { setError('Please enter your business address'); return; }
     if (!city.trim()) { setError('Please enter your city'); return; }
     if (!state.trim()) { setError('Please select your state'); return; }
@@ -548,29 +513,20 @@ export default function LoginPage() {
               <div className="mb-3.5">
                 <label className={labelClass}>Business name{reqAst}</label>
                 <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)}
-                  placeholder="e.g. Spice Garden Restaurant" className={inputClass} required />
+                  placeholder="e.g. Label Fern" className={inputClass} required />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-3.5">
-                <div>
-                  <label className={labelClass}>Industry{reqAst}</label>
-                  <select value={industry} onChange={e => { setIndustry(e.target.value); setCategory(''); }}
-                    className={selectClass} required>
-                    <option value="">Select…</option>
-                    {INDUSTRY_HIERARCHY.map(g => (
-                      <option key={g.group} value={g.group}>{g.group}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Business type{reqAst}</label>
-                  <select value={category} onChange={e => setCategory(e.target.value)}
-                    className={selectClass} required disabled={!industry}>
-                    <option value="">{industry ? 'Select…' : 'Pick industry first'}</option>
-                    {INDUSTRY_HIERARCHY.find(g => g.group === industry)?.categories.map(c => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
-                  </select>
+              {/* Docs/THE_CUT.md pass 0 — one business type, so it is stated rather
+                  than chosen. Said plainly here so an owner of a different kind of
+                  business finds out now, on the form, and not after building a
+                  catalogue no shopper can reach. */}
+              <div className="mb-3.5">
+                <label className={labelClass}>Business type</label>
+                <div className="rounded-md border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2.5">
+                  <div className="text-[13px] font-semibold text-[#18181B]">{CATEGORY_LABEL}</div>
+                  <div className="mt-0.5 text-[11px] text-[#71717A]">
+                    INFLX is a fashion platform. Other kinds of business are not supported yet.
+                  </div>
                 </div>
               </div>
 
@@ -698,7 +654,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading || !name.trim() || !businessName.trim() || !category || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
+                disabled={loading || !name.trim() || !businessName.trim() || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
                 className={btnPrimary}
               >
                 {loading ? 'Registering…' : 'Complete registration'}

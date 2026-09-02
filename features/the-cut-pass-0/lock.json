@@ -1,0 +1,51 @@
+{
+  "feature": "the-cut-pass-0",
+  "area": "brand signup — website, phone, and the server behind both",
+  "spec_version": "1.0.0",
+  "status": "BUILT · tests green · awaiting founder go for the production deploy",
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls start pass 0\", 2026-09-02, against the plan he authored in Docs/THE_CUT.md",
+  "approved_at": "2026-09-02",
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — scope locked in Docs/THE_CUT.md, which he authored decision by decision on 2026-09-02",
+  "mockup_locked_at": "2026-09-02",
+  "mockup_source": "NONE, deliberately. This contract draws no new screen. It REMOVES a two-step picker from two existing forms and replaces it with a stated line. The design of record is Docs/THE_CUT.md — the founder's own keep/remove decisions — not a drawing.",
+  "impact_reviewed": true,
+  "impact_review_note": "The founder authored the cleaning plan this executes, including its ordering and its rationale ('close the front door first'). The impact is the plan.",
+  "what_this_is": "Pass 0 of five in Docs/THE_CUT.md. It DELETES NOTHING. It stops new wrong data entering while the removal passes run.",
+  "founder_decision": "2026-09-02: 'INFLX is a fashion platform.' 34 of 35 business types removed from the product, along with food, rentals and salons entirely.",
+  "the_fault_this_fixes": {
+    "three_lists_no_gate": "The business-type list was written out THREE times — the brand website's signup form (30 types), the brand app's signup screen (30 types), and NOWHERE on the server, which accepted any non-empty string. Both forms were a suggestion, not a gate.",
+    "the_second_door": "Closing signup alone would not have held. `category` sits in the profile-edit allowed-fields list, so a brand could register as fashion and then change itself to restaurant afterwards — the same door in a different wall. Found by checking every write path rather than only the obvious one.",
+    "why_it_matters_now": "A business can sign up today as a restaurant or a pest-control service, build a catalogue, and have nowhere for a shopper to see it. Until that stops, every later cleaning pass is cleaning something that is still growing."
+  },
+  "built": {
+    "at": "2026-09-02",
+    "server": "backend/src/services/businessCategory.model.js — ONE list (`ACCEPTED_CATEGORIES = ['fashion']`), an acceptance check, and a rejection message written for a business owner rather than a log. Wired into brand.controller.js at BOTH write paths: register(), and updateMe() where the check fires only when the field is actually sent.",
+    "web": "Packages/brand-web/app/login/page.js — INDUSTRY_HIERARCHY (7 groups, 30 types) removed entirely; the two dropdowns replaced by one stated line; the industry state, the category state, the 'select a category' guard and the submit-button condition all removed with it; the device-local draft no longer restores a saved category.",
+    "mobile": "Packages/Mobile/src/screens/auth/BrandRegisterScreen.js — the same treatment: INDUSTRY_HIERARCHY (9 groups, 30 types) removed, two chip rows replaced by one stated line, category held as a constant.",
+    "adjacent_fix": "Both forms' business-name placeholder read 'e.g. Spice Garden Restaurant'. Changed to a fashion example. Small, but it is the first thing a new brand reads and it named a business type the platform no longer takes."
+  },
+  "existing_brands_unaffected": "VERIFIED, not assumed. Nine brands are registered, one of them a restaurant. The gate fires only when `category` is written. The web profile page builds its update from CHANGED fields only and renders category read-only, and the mobile profile screen renders it read-only too — so an existing brand editing its address, logo or GST never sends the field and is never refused.",
+  "bug_caught_before_shipping": "The new panel on the phone was written against a palette token `P.bgSoft`, which does not exist in that screen's palette (it is `P.surface2`). A missing style token throws at module load: the app builds cleanly and dies on the handset — the exact failure class recorded three times in this repo's history. Caught by reading the palette instead of assuming it.",
+  "tests": "743 mobile tests pass, up from 668. 75 new in brandRegisterFashionOnly.test.js: the server list is exactly ['fashion'], BOTH server write paths are gated, the profile gate is conditional so existing brands are not locked out, neither form contains any of the 34 retired category values, the two-step picker is gone from both rather than hidden, and a stale draft cannot resurrect an old category. A first version of the test failed on its own path arithmetic and was fixed — the assertions were never weakened to make it pass.",
+  "verification": {
+    "server_model": "Exercised directly: fashion accepted, restaurant refused, uppercase FASHION accepted (trimmed and lowercased), empty refused, and the rejection message reads correctly.",
+    "parses": "brand.controller.js checked with node --check; both form files parsed with @babel/parser including JSX.",
+    "not_run": "The backend test suite needs a live database this session did not have. No migration and no schema change in this contract, so there is nothing to dry-run."
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy_class": "PRODUCTION-IMPACTING. backend/src auto-deploys to Render on push, and brand-web to Vercel. Behaviour changes for anyone registering a brand from the moment it lands.",
+    "deploy_targets": ["render (backend)", "vercel (brand-web)", "ota (brand mobile)"],
+    "outward_facing": "YES — this is the first change in the programme that alters what a NEW customer can sign up as. Existing customers see nothing change.",
+    "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false. Platform QA is not green (~231 pre-existing failures, unchanged by this contract). Saying otherwise would be a fabricated attestation.",
+    "device_walk_required": "YES — NOT YET DONE. Five steps in 06-diff/notes.md. Step 4 matters most: confirm an EXISTING brand can still edit its address, so the gate has not locked out the nine already registered."
+  },
+  "next_passes": "Pass 1 hides everything on the REMOVE list. Pass 2 untangles food code threaded through fashion. Pass 3 disconnects orphaned server abilities. Pass 4 erases the data, last and alone. Order and rationale in Docs/THE_CUT.md."
+}
