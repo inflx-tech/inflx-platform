@@ -15,7 +15,6 @@ import { followerApi } from '../../services/api';
 import { shareTarget } from '../../utils/shareUrl';
 import ProductCard from '../../components/cards/ProductCard';
 import BrandActionRow from '../../components/BrandActionRow';
-import RestaurantDetailScreen from './RestaurantDetailScreen';
 import { SectionItem } from '../../components/SectionRenderer';
 
 export default function BrandStoreScreen({ navigation, route }) {
@@ -100,14 +99,10 @@ export default function BrandStoreScreen({ navigation, route }) {
   const accent = { accent: C.brown, pale: C.soft, icon: getBusinessAccentLight(brand?.category).icon };
   const icon = accent.icon;
 
-  // Wave 4 PR 4.2 — dispatch the entire screen to the redesigned dining
-  // detail when this brand is a restaurant. RestaurantDetailScreen owns
-  // its own scroll, sticky CTA bar and sub-tabs; we just pass the already
-  // loaded store + tracking through. Non-restaurant brands continue on
-  // the legacy layout below.
-  if (brand?.category === 'restaurant') {
-    return <RestaurantDetailScreen store={store} navigation={navigation} tracking={tracking} />;
-  }
+  // Docs/THE_CUT.md pass 1 — this screen used to hand the whole render to
+  // RestaurantDetailScreen when the brand was a restaurant. That screen is gone with
+  // the food business, so the branch goes too: a restaurant brand now renders the
+  // ordinary store layout below, like every other shop.
 
   // Schema-driven brand_config — surfaced when the store endpoint includes
   // the template (PR-B step 3.5+). Defensive lookup: if the backend doesn't
@@ -128,14 +123,9 @@ export default function BrandStoreScreen({ navigation, route }) {
       case 'pay_at_store':
         navigation.navigate('PayAtStore', { brand, brandId, tracking: ctx.tracking });
         break;
-      case 'book_slot':
-        navigation.navigate('PreBook', { brand, brandId, tracking: ctx.tracking, action });
-        break;
-      case 'book_daterange':
-        // Date-range bookings (car/bike) need a specific vehicle — jump to the
-        // fleet so the follower picks one; each vehicle card opens CarBooking.
-        setTab('products');
-        break;
+      // Docs/THE_CUT.md pass 1 — bookings are removed with the restaurant, salon and
+      // rental businesses. 'book_slot' and 'book_daterange' fall through to the
+      // default below rather than opening screens that no longer exist.
       case 'online_order':
         // The live cart is the unified CartScreen ('Cart'); 'OrderCart' was a
         // dead/unregistered route. Items are added via the product detail page.
@@ -515,17 +505,9 @@ export default function BrandStoreScreen({ navigation, route }) {
                         // creator (sticky-header creator), otherwise pick the
                         // influencer who owns bestOffer. Without either, we
                         // can't fetch product context — skip silently.
-                        const isCarRental = brand?.category === 'car_rental' || brand?.category === 'bike_rental';
-                        if (isCarRental) {
-                          const specs = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {});
-                          navigation.navigate('CarDetail', {
-                            vehicle: { name: product.name, specs: specs.specs || {}, location: brand?.city, distance: '1.2 km' },
-                            pricing: { day_rate: product.price, ...specs },
-                            discount: bestOffer ? { value: bestOffer.discount_value, influencer_name: creator?.name } : null,
-                            tracking,
-                          });
-                          return;
-                        }
+                        // Docs/THE_CUT.md pass 1 — the car-rental branch is removed.
+                        // A vehicle product now opens the ordinary product page like
+                        // anything else, rather than a screen that no longer exists.
                         // Find the influencer who owns bestOffer for tracking
                         const owningInfluencer = creator
                           || influencers.find(inf => (inf.offers || []).some(o => o.offer_id === bestOffer?.offer_id))

@@ -7,33 +7,24 @@ import { creatorVibe as C, fonts } from '../theme/tokens';
 
 // V2 screens (products-first)
 // Follower v2 — main home (world switcher)
-import HomeScreen from '../screens/follower/HomeScreen';
 import FindScreen from '../screens/follower/FindScreen';
 import CategoryListScreen from '../screens/follower/CategoryListScreen';
 
 // Wave 4 — dining redesign (replaces CategoryListScreen for eat)
-import DishGroupResultScreen from '../screens/follower/DishGroupResultScreen';
-import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
-import DiningSearchScreen from '../screens/follower/DiningSearchScreen';
 
 // Existing screens
-import SavedScreen from '../screens/follower/SavedScreen';
 import MeScreen from '../screens/follower/MeScreen';
 import InfluencerStoreScreen from '../screens/follower/InfluencerStoreScreen';
 import BrandStoreScreen from '../screens/follower/BrandStoreScreen';
 import FollowedInfluencersScreen from '../screens/follower/FollowedInfluencersScreen';
-import MealsChatScreen from '../screens/follower/MealsChatScreen';
 
 // Car rental specific screens
-import CarDetailScreen from '../screens/follower/CarDetailScreen';
-import CarBookingScreen from '../screens/follower/CarBookingScreen';
 
 // Auth gate for payments
 import FollowerLoginScreen from '../screens/follower/FollowerLoginScreen';
 
 // Existing transaction flow screens
 import PayAtStoreScreen from '../screens/follower/PayAtStoreScreen';
-import PreBookScreen from '../screens/follower/PreBookScreen';
 import OnlineOrderScreen from '../screens/follower/OnlineOrderScreen';
 import OrderConfirmationScreen from '../screens/follower/OrderConfirmationScreen';
 import CartScreen from '../screens/follower/CartScreen';
@@ -43,7 +34,6 @@ import OrderHistoryScreen from '../screens/follower/OrderHistoryScreen';
 import AddressScreen from '../screens/follower/AddressScreen';
 import LocationSearchScreen from '../screens/follower/LocationSearchScreen';
 // Follower v2 (L1) — white/yellow location entry gateway
-import LocationEntryScreen from '../screens/follower/LocationEntryScreen';
 // Follower v2 (Wave B) — map pin picker (native, APK-gated; OTA-safe fallback)
 import MapPinScreen from '../screens/follower/MapPinScreen';
 // Follower v2 — address-details form (after the map pin)
@@ -84,17 +74,14 @@ const SHARED_SCREENS = (Stack) => (
   <>
     <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
     <Stack.Screen name="BrandStore" component={BrandStoreScreen} />
-    <Stack.Screen name="MealsChat" component={MealsChatScreen} />
     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
     <Stack.Screen name="PayAtStore" component={PayAtStoreScreen} />
-    <Stack.Screen name="PreBook" component={PreBookScreen} />
     <Stack.Screen name="OnlineOrder" component={OnlineOrderScreen} />
     <Stack.Screen name="Cart" component={CartScreen} />
     <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     <Stack.Screen name="Address" component={AddressScreen} />
     <Stack.Screen name="LocationSearch" component={LocationSearchScreen} />
-    <Stack.Screen name="LocationEntry" component={LocationEntryScreen} />
     <Stack.Screen name="MapPinPicker" component={MapPinScreen} />
     <Stack.Screen name="AddressDetails" component={AddressDetailsScreen} />
     <Stack.Screen name="Find" component={FindScreen} />
@@ -106,11 +93,6 @@ const SHARED_SCREENS = (Stack) => (
     {/* App Builder E — an admin-created GLOBAL custom page (tap-destination ③) */}
     <Stack.Screen name="FollowerPage" component={FollowerPageScreen} />
     {/* Food World 3C-1 — dish-group craving → nearby restaurants result */}
-    <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
-    <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
-    <Stack.Screen name="DiningSearch" component={DiningSearchScreen} />
-    <Stack.Screen name="CarDetail" component={CarDetailScreen} />
-    <Stack.Screen name="CarBooking" component={CarBookingScreen} />
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
     {/* Fashion-1b */}
     <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
@@ -126,14 +108,6 @@ const SHARED_SCREENS = (Stack) => (
   </>
 );
 
-function HomeStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={HomeScreen} />
-      {SHARED_SCREENS(Stack)}
-    </Stack.Navigator>
-  );
-}
 
 // Post/Concept Stage A — Posts pillar stack (feed → viewer → shared commerce).
 function PostsStack() {
@@ -169,7 +143,6 @@ function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileHome" component={MeScreen} />
-      <Stack.Screen name="SavedList" component={SavedScreen} />
       <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Address" component={AddressScreen} />

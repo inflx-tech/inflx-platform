@@ -54,7 +54,6 @@ const STATUS_LABEL = {
 const QUICK_ACTIONS = [
   // IG-clean: MCI vector icons replace the mixed emoji/glyph set.
   { label: 'Orders',        icon: 'receipt-text-outline',   target: 'BrandOrders' },
-  { label: 'Bookings',      icon: 'calendar-outline',       target: 'BrandBookings' },
   { label: 'Offers',        icon: 'tag-outline',            target: 'BrandOffersLibrary' },
   { label: 'Campaigns',     icon: 'bullhorn-outline',       target: 'Campaigns' },
   // Stage 4 — one list across every campaign. The shoots waiting on a brand are spread over

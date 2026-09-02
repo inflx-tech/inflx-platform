@@ -90,10 +90,16 @@ function offendersIn(src) {
  * screen is not something to do in the same change as a creator-signing fix. Listing them keeps
  * the guard honest about the rule while leaving the debt visible instead of silently allowed.
  */
-const KNOWN_STABLE = [
-  'screens/follower/PayAtStoreScreen.js',   // restaurant dispatch from route.params
-  'screens/follower/PreBookScreen.js',      // restaurant dispatch from route.params
-];
+// Docs/THE_CUT.md pass 1 — this list is now EMPTY, and that is the good outcome.
+// It held two entries, both excused for the same reason: an early return that handed
+// the whole render to a restaurant screen, above the hooks.
+//   · PreBookScreen — deleted with bookings.
+//   · PayAtStoreScreen — SURVIVES the cut, and removing its restaurant dispatch
+//     removed the violation itself. The screen is now genuinely clean, not excused.
+// The check below caught both the moment they rotted, exactly as its own comment
+// predicted. Leave the list empty rather than deleting the machinery — the next
+// violation should have to be added here deliberately.
+const KNOWN_STABLE = [];
 
 describe('⚠️ hook order cannot change between renders', () => {
   const files = walk(SRC).filter(f => /[\\/](screens|components)[\\/]/.test(f));

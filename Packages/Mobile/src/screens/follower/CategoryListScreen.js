@@ -416,7 +416,6 @@ export default function CategoryListScreen({ route, navigation }) {
         {store.products && store.products.length > 0 ? (
           <View style={s.productGrid}>
             {store.products.slice(0, 4).map((product, pIdx) => {
-              const isCarRental = store.category === 'car_rental' || store.category === 'bike_rental';
               return (
                 <View key={pIdx} style={s.productGridItem}>
                   <ProductCard
@@ -425,15 +424,10 @@ export default function CategoryListScreen({ route, navigation }) {
                     discount={bestOffer ? { type: 'percentage', value: bestOffer.discount_value } : null}
                     influencer={bestOffer ? { name: bestOffer.influencer_name, avatar_initial: bestOffer.influencer_name?.[0] } : null}
                     onPress={() => {
-                      if (isCarRental) {
-                        const specs = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {});
-                        navigation.navigate('CarDetail', {
-                          vehicle: { name: product.name, specs: specs.specs || {}, location: store.city, distance: '1.2 km', rating: '4.5', trips: 42 },
-                          pricing: { day_rate: product.price, ...specs },
-                          discount: bestOffer ? { value: bestOffer.discount_value, influencer_name: bestOffer.influencer_name } : null,
-                          tracking: buildTrackingFromOffer(bestOffer),
-                        });
-                      } else {
+                      {
+                        // Docs/THE_CUT.md pass 1 — the car-rental branch is removed
+                        // (it also hardcoded a 4.5 rating and 42 trips onto every
+                        // vehicle). Every product now opens the ordinary product page.
                         navigation.navigate('ProductDetail', {
                           offer: bestOffer ? {
                             id: bestOffer.offer_id || bestOffer.id,

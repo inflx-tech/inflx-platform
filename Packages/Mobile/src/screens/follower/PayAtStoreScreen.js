@@ -17,9 +17,6 @@ const P = {
 };
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
-// Wave 4 PR 4.3 — restaurant bill payments dispatch to the redesigned
-// RestaurantBillScreen below.
-import RestaurantBillScreen from './RestaurantBillScreen';
 
 /**
  * PayAtStoreScreen — unified payment screen for two flows:
@@ -49,12 +46,9 @@ export default function PayAtStoreScreen({ navigation, route }) {
     storeOffer,
   } = route.params || {};
 
-  // Wave 4 PR 4.3 dispatch — restaurants get the new design; other
-  // categories continue on the legacy flow below.
-  const category = brand?.category || store?.brand_category || null;
-  if (category === 'restaurant') {
-    return <RestaurantBillScreen route={route} navigation={navigation} />;
-  }
+  // Docs/THE_CUT.md pass 1 — restaurants are removed, so the dispatch to
+  // RestaurantBillScreen goes with them. Paying a bill in a shop SURVIVES the
+  // cut (fashion stores with a physical shop), and now always uses this screen.
 
   const storeName = store?.brand_name || brand?.name || 'Store';
   const infName = influencer?.name || store?.instagram_handle || '';
