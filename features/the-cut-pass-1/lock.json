@@ -2,7 +2,7 @@
   "feature": "the-cut-pass-1",
   "area": "all three apps + the website — hiding everything the founder removed",
   "spec_version": "1.0.0",
-  "status": "COMPLETE — all 7 cuts done. Not yet deployed; awaiting founder go.",
+  "status": "DEPLOYED 2026-09-02 on founder instruction. Formal release gate still unmet (qa_all_green false).",
   "approved": true,
   "approved_by": "aveenswamy1989@gmail.com (founder) — \"pls go ahead for pass1\", 2026-09-02, against the plan he authored in Docs/THE_CUT.md",
   "approved_at": "2026-09-02",
@@ -85,5 +85,20 @@
     "removed": "Furniture from the category grid fallback and the Find tab. Also the Find tab hardcoded directory of 7 worlds and 35 business types (Pest Control, Dental Clinics, Wedding Planners, Legal/CA, Co-working Spaces, car rental, salons, restaurants) — an audit MISLEADS_USER finding, and the one place every removed vertical was still listed. 72 lines -> 12.",
     "offline_fallback": "The category grid fallback offered five worlds; it now offers the one that survives, so a failed API call cannot render a world the app can no longer serve."
   },
-  "tests": "722 mobile tests pass, run serially. Down from 743 at the start of the pass: 4 test files were deleted with the screens they tested, and one behaviour-pinning block was rewritten. No regression — every drop is a removal."
+  "tests": "722 mobile tests pass, run serially. Down from 743 at the start of the pass: 4 test files were deleted with the screens they tested, and one behaviour-pinning block was rewritten. No regression — every drop is a removal.",
+  "deployed_2026_09_02": {
+    "by": "aveenswamy1989@gmail.com (founder) — \"push and publish\"",
+    "commits": "b254b8b, 18148b9, 42d975e, 4275892, c98e7ff, 63d1627, 4bb78ee + two record commits. 76 files, 616 insertions, 10,232 deletions.",
+    "gov_check": "Passed: 68 governed changes, all contract-backed.",
+    "ota": {
+      "brand": 208,
+      "influencer": 195,
+      "follower": 227
+    },
+    "bundle_shrank": "3,583 KB -> 3,212 KB. The apps are measurably smaller, which is the point.",
+    "verified_by_content_not_by_report": "Downloaded the LIVE follower bundle from the signed manifest URL — the actual code the phones will run — and searched it. Pest Control, Wedding Planner, Send Enquiry, Browse furniture, Refer & Earn and Book Table are all absent. Stronger than trusting the publish scripts own success line.",
+    "agency_installs_not_broken_confirmed": "The agency manifest still serves version 66 — its last bundle from BEFORE the cut. Exactly as designed: agency was removed from the OTA publisher, so no bundle built from the new source can reach an installed agency APK. Verified against the live manifest rather than assumed.",
+    "two_transient_upload_failures": "Brand and follower each failed once with \"fetch failed\" mid-upload. Backend probed both times (GET /v1/campaigns -> 401, manifest -> 200) before retrying, per the standing rule not to treat a first failure as broken. Both succeeded on the retry. Influencer published first time.",
+    "backend_and_website_untouched": "No backend/src or brand-web file changed in the whole pass, so Render and Vercel carry no behaviour change from it."
+  }
 }
