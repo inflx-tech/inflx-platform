@@ -122,6 +122,56 @@ export function setCreatorTerms(campaignId, setId, agreementId, { channels_json,
   });
 }
 
+/**
+ * SB-24's "Build a set from these" — bring deferred creators into a freshly created set,
+ * carrying their already-settled money/allocation/offer/channels/formats across
+ * unchanged. Only the day and the shoot are being redecided; everything else about the
+ * deal was already agreed and is not reopened here.
+ *
+ * Idempotent by design: re-running with the same rows (e.g. the wizard's own focus
+ * re-sync firing twice) does not duplicate anyone already seeded.
+ *
+ * @param {*} deferredRows  rows from GET /campaigns/:id/deferred
+ */
+export function seedFromDeferred(campaignId, setId, deferredRows) {
+  const cur = getSetDraft(campaignId, setId);
+  const already = new Set(cur.creators.map((c) => c.agreement_id));
+  const seeded = (deferredRows || [])
+    .filter((row) => !already.has(`deferred:${row.id}`))
+    .map((row) => ({
+      agreement_id: `deferred:${row.id}`,
+      influencer_id: row.influencer_id,
+      name: row.influencer_name,
+      handle: row.instagram_handle,
+      terms: {
+        money: {
+          commission_pct: row.commission_pct != null ? Number(row.commission_pct) : null,
+          fee: row.agreed_fee != null ? Number(row.agreed_fee) : null,
+        },
+      },
+      alloc: row.alloc_scope ? {
+        alloc_scope: row.alloc_scope,
+        alloc_category: row.alloc_category,
+        alloc_category_node_id: row.alloc_category_node_id,
+        alloc_product_ids: row.alloc_product_ids,
+      } : null,
+      offer: (row.brand_offer_id || row.offer_type) ? {
+        brand_offer_id: row.brand_offer_id,
+        offer_type: row.offer_type,
+        offer_config_json: row.offer_config_json,
+        valid_from: row.offer_valid_from,
+        valid_until: row.offer_valid_until,
+      } : null,
+      channels_json: row.channels_json || null,
+      formats_json: row.formats_json || null,
+      // kept for display only — what she originally asked for, so the terms screen can
+      // show it back rather than the brand having to remember why she's here
+      deferred_from: { note: row.deferred_note, go_live_date: row.deferred_go_live_date, shoot_mode: row.deferred_shoot_mode, original_set_name: row.original_set_name },
+    }));
+  if (!seeded.length) return;
+  setSetDraft(campaignId, setId, { creators: [...cur.creators, ...seeded] });
+}
+
 /** Everything pencilled in, flattened — the Review screen's raw material. */
 export function summarise(campaignId, sets) {
   const d = draftFor(campaignId);
@@ -150,6 +200,17 @@ export function clearDraft(campaignId) {
 }
 
 /**
+ * stage-a — a creator seeded from the deferred pool (see seedFromDeferred below) has no
+ * live agreement to brief from; her old one was already consumed by her ORIGINAL invite.
+ * She still needs a unique key so campaignDraft's per-creator functions (all matched by
+ * agreement_id) do not collide when more than one deferred creator is seeded at once —
+ * so she gets a synthetic one, `deferred:<her old campaign_influencer id>`. This function
+ * is the one place that distinguishes a synthetic key from a real agreement id; nothing
+ * else needs to know the difference.
+ */
+const isRealAgreementId = (id) => !!id && !String(id).startsWith('deferred:');
+
+/**
  * The invite payload for one pencilled creator, in the shape POST
  * /campaigns/:id/sets/:sid/invite takes. Built here rather than in the Review screen so
  * that the field names live in one place — the server's contract is the thing that must
@@ -162,7 +223,9 @@ export function invitePayload(creator, set, offer) {
 
   const body = {
     influencer_id: creator.influencer_id,
-    agreement_id: creator.agreement_id,
+    // A synthetic deferred key is a LOCAL matching key only — sending it as a real
+    // agreement_id would have the server look it up in collab_agreements and 404.
+    agreement_id: isRealAgreementId(creator.agreement_id) ? creator.agreement_id : undefined,
     posting_date: t.time?.post_by || t.time?.window_end || null,
   };
 

@@ -37,7 +37,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
   influencerApi: {
@@ -168,6 +168,26 @@ describe('SC-05 · what SB-30 gave her, and the two things she cannot change', (
     influencerApi.getMyCampaignDetail.mockResolvedValue({ success: true, data: WITH_TERMS });
     render(<CollabDetailScreen navigation={nav} route={route} />);
     expect(await screen.findByText(/Your content stays yours/)).toBeTruthy();
+  });
+
+  test('the single reservation button shows before she has settled in, and navigates with what it needs', async () => {
+    influencerApi.getMyCampaignDetail.mockResolvedValue({ success: true, data: WITH_TERMS });
+    render(<CollabDetailScreen navigation={nav} route={route} />);
+    const btn = await screen.findByText('I have a different day or way of shooting in mind');
+    fireEvent.press(btn);
+    expect(nav.navigate).toHaveBeenCalledWith('CreatorDefer', {
+      campaignInfluencerId: CI, brandName: 'Label Fern (practice)', campaignName: 'New test campaign 1234',
+    });
+  });
+
+  test('the reservation button is gone once she has already settled in', async () => {
+    influencerApi.getMyCampaignDetail.mockResolvedValue({
+      success: true,
+      data: { ...WITH_TERMS, campaign: { ...WITH_TERMS.campaign, agreement_id: 'ag1', settled_terms: { agreement_id: 'ag1', items: [{ key: 'commission', label: 'Commission', value: '14%' }] } } },
+    });
+    render(<CollabDetailScreen navigation={nav} route={route} />);
+    expect(await screen.findByText('Two things you cannot change')).toBeTruthy();
+    expect(screen.queryByText('I have a different day or way of shooting in mind')).toBeNull();
   });
 
   test('none of the four blocks appear when the server sends none of them', async () => {

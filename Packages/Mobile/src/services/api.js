@@ -315,6 +315,8 @@ export const brandApi = {
   getInfluencer:     (id) => api.get(`/influencers/${id}`),
   inviteInfluencer:  (campaignId, setId, data) => api.post(`/campaigns/${campaignId}/sets/${setId}/invite`, data),
   getCampaignSets:   (campaignId) => api.get(`/campaigns/${campaignId}/sets`),
+  // stage-a — the deferred pool (SB-24 "Moved out"). Migration 167.
+  getDeferredCreators: (campaignId) => api.get(`/campaigns/${campaignId}/deferred`),
 
   // Production Coordination (Phase P) — brand side
   getProduction:               (contractId) => api.get(`/contracts/${contractId}/production`),
@@ -422,6 +424,8 @@ export const influencerApi = {
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),
   declineOffer: (id, data) => api.post(`/offers/${id}/decline`, data),
+  // stage-a — a reservation about the set's fixed day/shoot, not a decline. Migration 167.
+  deferOffer: (id, data) => api.post(`/offers/${id}/defer`, data),
   negotiateOffer: (id, data) => api.post(`/offers/${id}/negotiate`, data),
   getNegotiation: (id) => api.get(`/negotiations/${id}`),
   getNegotiationByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),

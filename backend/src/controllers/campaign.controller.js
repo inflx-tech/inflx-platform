@@ -614,6 +614,35 @@ const getSets = asyncHandler(async (req, res) => {
   return success(res, { sets });
 });
 
+/**
+ * GET /campaigns/:id/deferred — SB-24's "Moved out".
+ * Contract: features/stage-a-the-set. Migration 167.
+ *
+ * Every creator who raised a reservation about a set's day or shoot mode (offer.defer)
+ * anywhere in this campaign, across all of its sets. Her row still carries set_id — she
+ * is just no longer counted as one of that set's active creators (status = 'deferred').
+ * Returned with the terms already settled (money, allocation, offer, channels/formats),
+ * which is exactly what "build a set from these" carries forward unchanged.
+ */
+const getDeferred = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  await getCampaignOrThrow(req.params.id, brand.id);
+
+  const { rows } = await db.query(
+    `SELECT ci.*, inf.instagram_handle, u.name AS influencer_name, u.phone AS influencer_phone,
+            cs.id AS original_set_id, cs.name AS original_set_name
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN influencers inf ON inf.id = ci.influencer_id
+       JOIN users u ON u.id = inf.user_id
+      WHERE cs.campaign_id = $1 AND ci.status = 'deferred'
+      ORDER BY ci.deferred_at DESC`,
+    [req.params.id]
+  );
+
+  return success(res, { deferred: rows });
+});
+
 // Must match the deliverable_type enum — deliverables are auto-created from
 // formats_json at brand-sign, so an invalid type here would otherwise surface
 // as a deferred 500 at signing (contract:
@@ -3078,6 +3107,7 @@ module.exports = {
   approveApplication,
   rejectApplication,
   getSets,
+  getDeferred,
   createSet,
   updateSet,
   deleteSet,

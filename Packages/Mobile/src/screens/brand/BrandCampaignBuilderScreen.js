@@ -26,27 +26,31 @@ import { goLiveDayOf, SHOOT_MODE_COPY } from '../../utils/setShape';
  * burn an agreement (ledger #77). This screen reads both and says so honestly: a set that
  * exists on the server with nobody in it yet reads "nobody yet", not "0 creators".
  *
- * WHAT THE LOCKED MOCKUP SHOWS THAT THIS SCREEN DOES NOT — YET
- * SB-24 also draws a "Moved out" section — creators who asked for a different day or shoot
- * and were taken out of a set. That is the deferred pool, and it needs columns
- * (deferred_at, deferred_go_live_date, deferred_shoot_mode) that do not exist until
- * migration 170 — Stage B. Genuinely blocked, not skipped; nothing here pretends otherwise.
+ * THE "MOVED OUT" SECTION
+ * A creator who raised a reservation about a set's day or shoot (CreatorDeferScreen, off
+ * SC-05) lands here — migration 167, founder 2026-09-02. Her settled money, allocation and
+ * offer are not reopened; only the day and shoot are up for a new set to redecide, and
+ * "Build a set from these" carries the rest across exactly as they were (campaignDraft.
+ * seedFromDeferred).
  */
 export default function BrandCampaignBuilderScreen({ route, navigation }) {
   const { campaignId, campaignName } = route.params || {};
   const [campaign, setCampaign] = useState(null);
   const [sets, setSets] = useState([]);
+  const [deferred, setDeferred] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [, force] = useState(0);
 
   const load = useCallback(async () => {
-    const [c, sres] = await Promise.all([
+    const [c, sres, dres] = await Promise.all([
       brandApi.getCampaign(campaignId),
       brandApi.getCampaignSets(campaignId),
+      brandApi.getDeferredCreators(campaignId),
     ]);
     if (c?.success) setCampaign(c.data?.campaign || c.data);
     if (sres?.success) setSets(sres.data?.sets || []);
+    if (dres?.success) setDeferred(dres.data?.deferred || []);
     setLoading(false);
     setRefreshing(false);
   }, [campaignId]);
@@ -76,6 +80,18 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
 
   function editSet(set) {
     navigation.navigate('BrandSetWizard', { campaignId, campaignName: campaign?.name || campaignName, setId: set.id });
+  }
+
+  // stage-a — "Build a set from these". The wizard runs its normal Aim + Basics steps
+  // (still a real decision: what this NEW set is for, and the day/shoot these creators
+  // actually asked for), then seeds Creators straight from the deferred pool instead of
+  // the usual agreement picker — passed by id, not by value, so the wizard reads the
+  // list fresh rather than trusting a snapshot that might be stale by the time it opens.
+  function buildSetFromDeferred() {
+    navigation.navigate('BrandSetWizard', {
+      campaignId, campaignName: campaign?.name || campaignName, setId: null,
+      seedDeferredIds: deferred.map((d) => d.id),
+    });
   }
 
   if (loading) {
@@ -170,6 +186,28 @@ export default function BrandCampaignBuilderScreen({ route, navigation }) {
             </View>
           );
         })}
+
+        {/* stage-a — the deferred pool (SB-24 "Moved out"). Only shown when it holds
+            someone; an empty section would just be a card explaining nothing happened. */}
+        {deferred.length > 0 && (
+          <View style={[s.card, s.cardMoved]}>
+            <View style={[s.cardHd, s.cardHdMoved]}>
+              <Text style={[s.cardT, s.cardTMoved]}>Moved out · {deferred.length}</Text>
+            </View>
+            <View style={s.cardBd}>
+              {deferred.map((d) => (
+                <Text key={d.id} style={s.movedLine} numberOfLines={1}>
+                  {d.influencer_name}
+                  {d.deferred_go_live_date ? ` wanted ${fmtDate(d.deferred_go_live_date)}` : ''}
+                  {d.deferred_shoot_mode ? ` · ${SHOOT_MODE_COPY[d.deferred_shoot_mode]?.title || d.deferred_shoot_mode}` : ''}
+                </Text>
+              ))}
+              <TouchableOpacity style={s.movedBtn} onPress={buildSetFromDeferred} activeOpacity={0.8}>
+                <Text style={s.movedBtnT}>Build a set from these</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Founder, 2026-08-28: "this is wrong if that campaign has never created, never added
             sets... means ask to add your first set."
@@ -295,6 +333,14 @@ const s = StyleSheet.create({
   card: { marginHorizontal: 14, marginBottom: 10, borderWidth: 1, borderColor: ig.line, borderRadius: 12, overflow: 'hidden' },
   cardHd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: ig.bgSoft, borderBottomWidth: 1, borderBottomColor: ig.lineSoft },
   cardT: { flex: 1, fontSize: 13, fontWeight: '800', color: ig.text },
+  // stage-a — the deferred pool's card, deliberately muted rather than alarmed: nobody
+  // did anything wrong, a creator just could not make this particular day or shoot.
+  cardMoved: { borderStyle: 'dashed', borderColor: ig.line },
+  cardHdMoved: { backgroundColor: 'transparent' },
+  cardTMoved: { color: ig.mut },
+  movedLine: { fontSize: 11.5, color: ig.text2, fontWeight: '650', paddingVertical: 3 },
+  movedBtn: { alignSelf: 'flex-start', borderWidth: 1, borderColor: ig.line, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  movedBtnT: { fontSize: 11.5, fontWeight: '800', color: ig.text },
   aim: { borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2 },
   aimT: { fontSize: 9, fontWeight: '800', letterSpacing: 0.2 },
   cardBd: { paddingHorizontal: 12, paddingVertical: 8 },

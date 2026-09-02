@@ -201,3 +201,52 @@ Same `cancelInfluencer` bug, still carried across every slice of this stage.
 Same backend-verification limitation as the previous section: no live database this
 session. The four resolver/describer functions this slice adds to `getMyCampaignDetail`
 were chain-verified by hand with representative inputs. `pnpm qa:db` is still owed.
+
+---
+
+# Before / after — the deferred pool
+
+**Screens:** new `CreatorDeferScreen.js` (off SC-05) · `CollabDetailScreen` (the button) ·
+`BrandCampaignBuilderScreen` (SB-24, "Moved out")
+
+Founder-scoped slice of what the atlas calls Stage B — not the whole of it. See the
+contract's `lock.json → slice_5_deferred_pool` for the full reasoning, including why this
+uses a new migration (167) rather than the one `Docs/IMPLEMENTATION_PLAN.md` originally
+sketched (170 would have made a creator's row point at no set at all — checked and
+rejected as unsafe against the actual codebase).
+
+## What was implemented
+
+| | Before | After |
+|---|---|---|
+| Her invite, the fixed day/shoot | Read-only, nothing to do about it | A button: "I have a different day or way of shooting in mind" → picks a preferred day and/or mode, optional note |
+| What happens to her | — | Status moves to "deferred"; she keeps her row (and her settled money/allocation/offer), just no longer counted as active in that set |
+| Campaign builder (SB-24) | Sets only | A "Moved out" section listing everyone deferred, with what they asked for, and "Build a set from these" |
+| Building that new set | — | The wizard's Aim + Basics run normally; Creators is pre-filled with the deferred people (a new "Already included" list, separate from the usual agreement picker) |
+
+## What to check — the device walk
+
+1. **From an invited (not yet accepted) collab, tap the reservation button.** Pick only a
+   shoot mode, no day — must still be allowed to send.
+2. **Confirm she can no longer act on that invite** — it should read as settled/gone from
+   her active list, not still sitting there asking her to accept.
+3. **As the brand, open that campaign's builder.** "Moved out · 1" appears, with her name
+   and what she asked for.
+4. **Tap "Build a set from these."** Pick an aim and basics for the new set as normal.
+5. **On the Creators step, confirm she's already there** under "Already included" —
+   without opening the usual agreement picker at all.
+6. **Reach Terms.** Her commission/allocation/offer should already be filled in, exactly
+   as they were on her original invite — nothing to re-decide except what brought her here
+   (which the new set's own day/mode already answers).
+7. **Publish that set.** Confirm a fresh invite reaches her for the new set, and her
+   original (deferred) row is untouched — this is the thing that proves her history
+   wasn't overwritten, only added to.
+
+## Known, and not fixed here
+
+`cancelInfluencer`, still carried.
+
+Migration 167 was dry-run AND applied against production this session (the one piece of
+backend verification that didn't need to be done by hand) — see the contract for the
+before/after row counts. The two new endpoints' request/response handling was still only
+checked by hand, no live database, same limitation as every slice before this one.

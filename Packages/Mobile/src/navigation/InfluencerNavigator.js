@@ -9,6 +9,7 @@ import { ig } from '../theme/ig';
 import HomeScreen from '../screens/influencer/HomeScreen';
 import CollabsListScreen from '../screens/influencer/CollabsListScreen';
 import CollabDetailScreen from '../screens/influencer/CollabDetailScreen';
+import CreatorDeferScreen from '../screens/influencer/CreatorDeferScreen';
 import CollabTrackingScreen from '../screens/influencer/CollabTrackingScreen';
 import CreateScreen from '../screens/influencer/CreateScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
@@ -117,6 +118,7 @@ function CollabsStackNav() {
       <CollabsStack.Screen name="CollabPreferences" component={CollabPreferencesScreen} />
       <CollabsStack.Screen name="SendProposal" component={SendProposalScreen} />
       <CollabsStack.Screen name="CollabDetail" component={CollabDetailScreen} />
+      <CollabsStack.Screen name="CreatorDefer" component={CreatorDeferScreen} />
       <CollabsStack.Screen name="CollabTracking" component={CollabTrackingScreen} />
       <CollabsStack.Screen name="Negotiation" component={NegotiationScreen} />
       <CollabsStack.Screen name="Contract" component={ContractScreen} />

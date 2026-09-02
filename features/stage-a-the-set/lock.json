@@ -195,6 +195,35 @@
     "what_is_still_owed": "The founder device walk in 06-diff/notes.md, 8 steps. Step 7 matters most: open one of the 11 pre-set-first sets already in production and confirm it opens with a BLANK launch day rather than an invented one."
   },
   "correction_2026_09_01": "RECORD CORRECTED. Every contract since brief-straight-to-signing has said cancelInfluencer writes an invalid CONTRACT_STATUS. It does not — campaign.controller.js:2276 writes `UPDATE campaign_influencers SET status = 'cancelled'`, so the enum is CAMPAIGN_INFLUENCER_STATUS. Verified against production: its values are invited, accepted, negotiating, contracted, active, completed, declined, expired, applied, rejected_by_brand, slots_filled — no 'cancelled'. THE BUG IS REAL AND STILL UNFIXED; only the table was named wrongly, and the error propagated through 9 records across 5 contracts because each one copied the last. Found when a second window read the code and its summary did not match the docs.",
+  "slice_5_deferred_pool": {
+    "at": "2026-09-02",
+    "what": "A founder-scoped slice of what the atlas calls Stage B, pulled forward on direct request — not the whole of it. She can raise a reservation about a set's fixed day or shoot (a new button on SC-05, opening a small screen where she picks a preferred day and/or mode); the brand sees everyone who has, on SB-24, and can build a new set from them in one tap, with their settled money/allocation/offer carried over unchanged.",
+    "founder_request_2026_09_02": "\"we have something that we creator cant change date and mode of work but we add one button... she [picks] date and mode of work... reaches brand... brand wants he create another set for those deferred or reservations candidates... in screen SB 24, we have this clearly a button and info to build set with deferred creators.\"",
+    "why_not_the_planned_migration_170": "Docs/IMPLEMENTATION_PLAN.md's Stage B sketch would have made campaign_influencers.set_id NULLABLE for a deferred creator. Checked against the actual codebase before writing anything: set_id is the ONLY path from her row back to her campaign — every contract, deliverable, offer and PDF query joins through it. Nulling it would make her silently vanish from dozens of existing queries with no reason to expect that. Migration 167 does something safer: a new status ('deferred') on the SAME row, plus four columns for what she asked for. Nothing that already reads campaign_influencers by set_id needed to change.",
+    "explicitly_smaller_than_full_stage_b": "No negotiation thread — she states a preference once, the brand acts on it later, there is no reply. Migrations 168/169 (negotiations.campaign_influencer_id, negotiation_turns.kind) are NOT part of this slice and were not touched.",
+    "migration": {
+      "id": 167, "file": "167_deferred_creators.sql",
+      "adds": "campaign_influencer_status enum gains 'deferred'; campaign_influencers gains deferred_at, deferred_go_live_date, deferred_shoot_mode, deferred_note — all nullable, no defaults",
+      "touches_live_rows": false,
+      "dry_run": "node backend/scripts/run-167.js --dry — clean, 8 rows before and after, zero rows picked up any of the four new columns or the new status",
+      "applied": true, "applied_at": "2026-09-02", "applied_to": "production (aws-1-ap-northeast-1.pooler.supabase.com)",
+      "verified": "information_schema confirms all four columns present and nullable; enum_range confirms 'deferred' is now a valid campaign_influencer_status value"
+    },
+    "backend": {
+      "offer.controller.defer": "POST /offers/:id/defer. Same guard stage as decline (invited/negotiating only — once she's accepted, the fixed day/mode were part of what she just agreed to). Requires at least one of go_live_date/shoot_mode. Validates her proposed day through setShape.model.validateSetShape — the SAME lead-time rule a brand's own set is held to — so she cannot propose a day the server would refuse a brand for building a set around.",
+      "campaign.controller.getDeferred": "GET /campaigns/:id/deferred. Everyone with status='deferred' across every set in the campaign, with her settled terms attached — exactly what 'build a set from these' needs to carry forward."
+    },
+    "app": {
+      "CreatorDeferScreen.js": "new. A day picker (setShape.earliestGoLiveDay, same rule as the brand's own wizard) and a shoot-mode picker (setShape.SHOOT_MODES_OFFERED, same two options), both optional independently, plus a note.",
+      "CollabDetailScreen.js (SC-05)": "gains the single button, inside the 'two things you cannot change' card, shown only before she has settled in.",
+      "campaignDraft.seedFromDeferred": "new. Carries a deferred creator's settled terms into a freshly created set's draft. Keyed by a synthetic `deferred:<old row id>` — she has no live agreement to key by (her original one was already consumed by her first invite) — with invitePayload taught to recognise that prefix and never send it to the server as a real agreement_id.",
+      "BrandSetWizardScreen.js": "accepts seedDeferredIds; the moment a brand-new set is created (not on an edit of an existing one), fetches the deferred pool fresh and seeds only the requested ids. StepCreators (\"who's in it\") gained an 'Already included' section — without it, seeded creators were correctly counted toward Continue but completely invisible on that step, ticked but unseen.",
+      "BrandCampaignBuilderScreen.js (SB-24)": "the 'Moved out' section — muted/dashed styling on purpose, since nobody did anything wrong. 'Build a set from these' brings ALL currently-deferred creators into the new set; no per-person selection in this slice, matching the founder's own 'single button' framing throughout."
+    },
+    "tests": "573 mobile tests pass (was 563 at the end of slice_4). 21 new across four files — including two that mount real screens with @testing-library/react-native rather than checking source text (CreatorDeferScreen, the 'Moved out' section), following slice_4's own lesson that a source-shape check would not have caught the 'storys' bug.",
+    "backend_verification": "Migration dry-run and apply both against live production (see above) — the one piece of backend verification this session for once WAS possible against a real database. The two new endpoints themselves were verified by hand: setShape.validateSetShape and SHOOT_MODES chain-checked with representative inputs; both edited files load cleanly.",
+    "device_walk_required": "YES — NOT YET DONE, same as every slice before it."
+  },
   "deployed_2026_09_02": {
     "by": "aveenswamy1989@gmail.com (founder) — explicit instruction: \"pls commit and push and OTA\"",
     "commits": ["305eee3 (SB-29/SB-30)", "80a77a3 (SB-23/24/37, SC-05)"],

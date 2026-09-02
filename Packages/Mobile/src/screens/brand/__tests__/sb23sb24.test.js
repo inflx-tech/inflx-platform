@@ -92,13 +92,28 @@ describe('SB-24 · every set card shows the two things it is defined by', () => 
     expect(src).toContain('draft.hasFormats(c)');
   });
 
-  it('the deferred pool is documented as blocked, not silently missing', () => {
-    // Genuinely needs migration 170 (Stage B) columns that do not exist yet. This test
-    // exists so a later reader does not mistake the omission for an oversight, and does
-    // not itself quote the mockup's section name — same trap as matching a comment that
-    // documents its own change.
-    expect(src).toContain('migration 170');
-    // No actual UI for it: no card built from a deferred-creators list.
-    expect(src).not.toContain('BUILD A SET FROM THESE');
+  it('SUPERSEDED · the deferred pool is built, on migration 167 not 170', () => {
+    // Founder, 2026-09-02, describing SC-05's single reservation button and this screen's
+    // "Moved out" section in the same breath: "brand wants he create another set for
+    // those deferred or reservations candidates... in screen SB 24, we have this clearly
+    // a button". Docs/IMPLEMENTATION_PLAN.md's migration 170 would have made a creator's
+    // row point at NO set at all when deferred — checked against the codebase first and
+    // rejected: set_id is the only path every other query uses to find her campaign.
+    // Migration 167 does something safer instead: a new status ('deferred') on the SAME
+    // row, plus what she'd prefer. See its own file header for the full reasoning.
+    expect(src).toContain('migration 167');
+    expect(src).toContain('Build a set from these');
+    expect(src).toContain('getDeferredCreators');
+  });
+
+  it('deferred rows carry across through campaignDraft, not a fresh negotiation', () => {
+    // The button lives on the builder screen; the actual seeding happens once the new
+    // set exists, in the wizard (BrandSetWizardScreen), which is where campaignId/setId
+    // both become known together.
+    const utilSrc = read('utils/campaignDraft.js');
+    const wizardSrc = read('screens/brand/BrandSetWizardScreen.js');
+    expect(utilSrc).toContain('export function seedFromDeferred');
+    expect(wizardSrc).toContain('draft.seedFromDeferred');
+    expect(src).toContain('seedDeferredIds');
   });
 });

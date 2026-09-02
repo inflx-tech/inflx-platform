@@ -371,6 +371,21 @@ export default function CollabDetailScreen({ route, navigation }) {
                       Every creator in this set agreed to the same day. Asking for a different
                       one moves you out of it.
                     </Text>
+                    {/* stage-a — the single button, founder 2026-09-02. Only offered before
+                        she has settled in: once accepted, the fixed day/mode were part of
+                        what she just agreed to, and the server refuses it past that point
+                        anyway (offer.controller.defer). */}
+                    {!c.settled_terms && ['invited', 'negotiating'].includes(status) && (
+                      <TouchableOpacity
+                        style={styles.fixedBtn}
+                        onPress={() => navigation.navigate('CreatorDefer', {
+                          campaignInfluencerId: ciId, brandName, campaignName,
+                        })}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.fixedBtnT}>I have a different day or way of shooting in mind</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
 
@@ -424,6 +439,8 @@ const styles = StyleSheet.create({
   fixedCard: { backgroundColor: '#FFF8F0', borderWidth: 1, borderColor: '#F4D9B0', borderRadius: 10, padding: 11, marginTop: 10 },
   fixedTitle: { fontSize: 11, fontWeight: '800', color: '#92600A', letterSpacing: 0.3, marginBottom: 6 },
   fixedNote: { fontSize: 10.5, color: '#92600A', marginTop: 6, lineHeight: 15 },
+  fixedBtn: { borderWidth: 1, borderColor: '#F4D9B0', borderRadius: 8, paddingVertical: 9, alignItems: 'center', marginTop: 9 },
+  fixedBtnT: { fontSize: 11.5, fontWeight: '800', color: '#92600A' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: ig.bg, padding: 30 },
   errTitle: { fontSize: 14, fontWeight: '700', color: ig.text, marginTop: 12 },
   errBtn: { marginTop: 14, backgroundColor: ig.text, borderRadius: 9, paddingHorizontal: 20, paddingVertical: 10 },

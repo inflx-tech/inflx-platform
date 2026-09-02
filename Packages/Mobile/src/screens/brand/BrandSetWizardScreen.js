@@ -65,7 +65,10 @@ const AIM_CARDS = [
 // Instagram and YouTube only.
 
 export default function BrandSetWizardScreen({ route, navigation }) {
-  const { campaignId, campaignName, setId: initialSetId } = route.params || {};
+  // stage-a — "Build a set from these" (SB-24) hands over WHO by id, not by value, so
+  // this screen reads the deferred pool fresh rather than trusting a snapshot that could
+  // be stale by the time a brand actually opens the wizard.
+  const { campaignId, campaignName, setId: initialSetId, seedDeferredIds } = route.params || {};
 
   const [setId, setSetId] = useState(initialSetId || null);
   const [step, setStep] = useState(0);
@@ -291,7 +294,21 @@ export default function BrandSetWizardScreen({ route, navigation }) {
       return;
     }
     const saved = res.data?.set;
-    if (saved?.id && !setId) setSetId(saved.id);
+    // stage-a — the moment this set is genuinely new (never had a setId before), seed it
+    // from the deferred pool if that's why the brand is here. Written to the draft store
+    // directly, synchronously, before setSetId — the wizard's own focus-resync (keyed on
+    // setId) picks up what is already there rather than racing it.
+    if (saved?.id && !setId) {
+      if (Array.isArray(seedDeferredIds) && seedDeferredIds.length) {
+        const dres = await brandApi.getDeferredCreators(campaignId);
+        if (dres?.success) {
+          const wanted = new Set(seedDeferredIds);
+          const rows = (dres.data?.deferred || []).filter((d) => wanted.has(d.id));
+          draft.seedFromDeferred(campaignId, saved.id, rows);
+        }
+      }
+      setSetId(saved.id);
+    }
     setAimLocked(true);
     setStep(2);
   }
@@ -350,7 +367,7 @@ export default function BrandSetWizardScreen({ route, navigation }) {
 
         {step === 2 && (
           <StepCreators
-            matching={matching} pickedIds={pickedIds}
+            matching={matching} pickedIds={pickedIds} picked={picked}
             onToggle={togglePick}
             onOpen={(a) => navigation.navigate('BrandAgreementDetail', { agreement: a })}
             onBack={() => setStep(1)}
@@ -606,9 +623,35 @@ function StepBasics(p) {
 }
 
 /* ── Step 3 · the agreements pick-list ─────────────────────────────────────── */
-function StepCreators({ matching, pickedIds, onToggle, onOpen, onBack, onContinue }) {
+function StepCreators({ matching, pickedIds, picked, onToggle, onOpen, onBack, onContinue }) {
+  // stage-a — creators seeded from the deferred pool (SB-24 "Build a set from these")
+  // have no agreement to appear in `matching` at all; without this they would be in
+  // `picked` (and counted) but literally invisible on this step — ticked but unseen.
+  const seeded = (picked || []).filter((c) => String(c.agreement_id || '').startsWith('deferred:'));
+
   return (
     <>
+      {seeded.length > 0 && (
+        <View style={s.sec2}>
+          <Text style={s.dh}>Already included · {seeded.length}</Text>
+          <Text style={s.lead}>Brought in from the deferred pool. Their terms carried over unchanged.</Text>
+          {seeded.map((c) => (
+            <View key={c.agreement_id} style={s.pickRow}>
+              <CreatorAvatar name={c.name} avatarUrl={c.avatar} size={38} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.pickName}>{c.name}</Text>
+                {c.deferred_from?.note ? (
+                  <Text style={s.pickTerms} numberOfLines={2}>&quot;{c.deferred_from.note}&quot;</Text>
+                ) : null}
+              </View>
+              <TouchableOpacity onPress={() => onToggle({ id: c.agreement_id })} activeOpacity={0.7}>
+                <Text style={s.removeSeeded}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
+
       <View style={s.sec2}>
         <Text style={s.dh}>Who is in this set?</Text>
         <Text style={s.lead}>
@@ -965,6 +1008,7 @@ const s = StyleSheet.create({
   cbxOn: { backgroundColor: ig.text, borderColor: ig.text },
   pickName: { fontSize: 13, fontWeight: '800', color: ig.text },
   pickTerms: { fontSize: 10.5, color: ig.text2, fontWeight: '650', marginTop: 2, lineHeight: 15 },
+  removeSeeded: { fontSize: 11, fontWeight: '800', color: ig.red },
   pickExp: { fontSize: 9.5, fontWeight: '800', marginTop: 4, letterSpacing: 0.2 },
 
   card: { borderWidth: 1, borderColor: ig.line, borderRadius: 12, overflow: 'hidden', marginBottom: 9 },

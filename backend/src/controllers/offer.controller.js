@@ -326,6 +326,91 @@ const decline = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// stage-a — the deferred pool. Founder, 2026-09-02: "we need to make in single
+// button... she [picks] date and mode of work... reaches brand... brand wants he
+// create another set for those deferred or reservations candidates."
+//
+// NOT a negotiation. She is not proposing a number to a person who replies; she is
+// saying the set's fixed day or shoot does not work for her, with what would. The
+// brand acts on it later, in bulk, from the campaign builder (SB-24) — there is no
+// back-and-forth here to thread. Migration 167.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * POST /offers/:id/defer
+ * Take herself out of the set, with what she'd actually prefer.
+ */
+const defer = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerOrThrow(req.user.sub);
+  const ci = await getCampaignInfluencer(req.params.id);
+
+  if (!ci) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+  if (ci.influencer_id !== influencer.id) {
+    throw new AppError('FORBIDDEN', 'This offer does not belong to you', 403);
+  }
+
+  // Same stage as decline: before she has settled in. Once accepted, the fixed
+  // day/mode were part of what she just agreed to — raising a reservation on them
+  // then is a different conversation, not this button.
+  if (!['invited', 'negotiating'].includes(ci.status)) {
+    throw new AppError('VALIDATION_ERROR', `Cannot raise a reservation on an offer in '${ci.status}' status`, 422);
+  }
+
+  const { go_live_date, shoot_mode, note } = req.body;
+
+  if (!go_live_date && !shoot_mode) {
+    throw new AppError('VALIDATION_ERROR', 'Say what you would prefer instead — a day, a shoot mode, or both.', 422, 'go_live_date');
+  }
+
+  // Same picker rule the brand's own set-basics step is held to — she cannot
+  // propose a day the server would refuse a brand for building a set around either.
+  const setShape = require('../services/setShape.model');
+  if (go_live_date) {
+    const shape = setShape.validateSetShape({ go_live_date }, { offeredOnly: false });
+    if (!shape.ok) throw new AppError('VALIDATION_ERROR', shape.error, 422, 'go_live_date');
+  }
+  if (shoot_mode && !setShape.SHOOT_MODES.includes(shoot_mode)) {
+    throw new AppError('VALIDATION_ERROR', `shoot_mode must be one of: ${setShape.SHOOT_MODES.join(', ')}`, 422, 'shoot_mode');
+  }
+
+  const trimmedNote = typeof note === 'string' ? note.trim().slice(0, 1000) : null;
+
+  const { rows } = await db.query(
+    `UPDATE campaign_influencers
+        SET status = 'deferred',
+            deferred_at = now(),
+            deferred_go_live_date = $2,
+            deferred_shoot_mode = $3,
+            deferred_note = $4
+      WHERE id = $1
+      RETURNING *`,
+    [ci.id, go_live_date || null, shoot_mode || null, trimmedNote]
+  );
+
+  const { rows: brandUserRows } = await db.query(
+    `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name
+     FROM campaigns c
+     JOIN brands b ON b.id = c.brand_id
+     JOIN users u ON u.id = b.user_id
+     WHERE c.id = $1`,
+    [ci.campaign_id]
+  );
+  if (brandUserRows[0]) {
+    await notificationService.send({
+      userId: brandUserRows[0].user_id,
+      type:   'offer.deferred',
+      title:  'A creator has a reservation',
+      body:   `A creator in "${brandUserRows[0].campaign_name}" can't make the set's day or shoot — she's told you what would work.`,
+      data:   { screen: 'campaign_builder', campaign_id: ci.campaign_id },
+      fcmToken: brandUserRows[0].fcm_token,
+      sendSms:  false,
+    }).catch(err => console.error('[NOTIFICATION] offer.deferred send failed:', err.message));
+  }
+
+  return success(res, { campaign_influencer: rows[0] });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Block C — POST /offers/:id/negotiate
 // Only influencer can initiate. Offer must be in 'invited' status.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1015,6 +1100,7 @@ module.exports = {
   getOfferDetail,
   accept,
   decline,
+  defer,
   negotiate,
   respond,
   getNegotiation,

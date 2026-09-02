@@ -15,6 +15,7 @@ router.get('/:id', authenticate, requireRole('influencer'), ctrl.getOfferDetail)
 // Influencer-only offer actions
 router.post('/:id/accept',    authenticate, requireRole('influencer'), ctrl.accept);
 router.post('/:id/decline',   authenticate, requireRole('influencer'), ctrl.decline);
+router.post('/:id/defer',     authenticate, requireRole('influencer'), ctrl.defer);
 router.post('/:id/negotiate', authenticate, requireRole('influencer'), ctrl.negotiate);
 
 module.exports = router;

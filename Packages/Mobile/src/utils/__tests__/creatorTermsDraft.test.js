@@ -1,5 +1,6 @@
 const {
   getSetDraft, setSetDraft, setCreatorTerms, setCreatorOffer, hasFormats, invitePayload,
+  seedFromDeferred,
 } = require('../campaignDraft');
 
 /**
@@ -114,5 +115,65 @@ describe('setCreatorOffer — writes onto that creator and nobody else', () => {
     const sd = getSetDraft(cid, 's1');
     expect(sd.creators.find((c) => c.agreement_id === 'a1').offer).toEqual({ brand_offer_id: 'o9' });
     expect(sd.creators.find((c) => c.agreement_id === 'a2').offer).toBeUndefined();
+  });
+});
+
+/**
+ * seedFromDeferred — SB-24's "Build a set from these". Founder, 2026-09-02: she picks
+ * what she'd prefer, it reaches the brand, the brand builds a new set from everyone who
+ * said so — carrying over what was already settled, not re-asking for it.
+ */
+describe('seedFromDeferred — carries settled terms across, keys them uniquely', () => {
+  const DEFERRED_ROWS = [
+    {
+      id: 'ci-old-1', influencer_id: 'i1', influencer_name: 'Asha M.', instagram_handle: 'asha.m',
+      commission_pct: '14.00', agreed_fee: null,
+      alloc_scope: 'store', alloc_category: null, alloc_category_node_id: null, alloc_product_ids: null,
+      brand_offer_id: 'o9', offer_type: null, offer_config_json: null, offer_valid_from: null, offer_valid_until: null,
+      channels_json: { allowed: ['instagram'] }, formats_json: null,
+      deferred_note: 'Only weekends work', deferred_go_live_date: '2026-09-20', deferred_shoot_mode: 'visit',
+      original_set_name: 'Set 1',
+    },
+    {
+      id: 'ci-old-2', influencer_id: 'i2', influencer_name: 'Divya T.', instagram_handle: 'divya.t',
+      commission_pct: '18.00', agreed_fee: null,
+      alloc_scope: 'store', alloc_category: null, alloc_category_node_id: null, alloc_product_ids: null,
+      brand_offer_id: null, offer_type: null, offer_config_json: null, offer_valid_from: null, offer_valid_until: null,
+      channels_json: null, formats_json: null,
+      deferred_note: null, deferred_go_live_date: '2026-09-20', deferred_shoot_mode: null,
+      original_set_name: 'Set 1',
+    },
+  ];
+
+  it('both creators land in the new set with distinct keys and their real commission', () => {
+    const cid = 'camp-5';
+    seedFromDeferred(cid, 'new-set-1', DEFERRED_ROWS);
+    const sd = getSetDraft(cid, 'new-set-1');
+    expect(sd.creators).toHaveLength(2);
+    expect(sd.creators.map((c) => c.agreement_id)).toEqual(['deferred:ci-old-1', 'deferred:ci-old-2']);
+    expect(sd.creators[0].terms.money.commission_pct).toBe(14);
+    expect(sd.creators[1].terms.money.commission_pct).toBe(18);
+    expect(sd.creators[0].alloc).toEqual({ alloc_scope: 'store', alloc_category: null, alloc_category_node_id: null, alloc_product_ids: null });
+  });
+
+  it('running it twice does not duplicate anyone already seeded', () => {
+    const cid = 'camp-6';
+    seedFromDeferred(cid, 'new-set-1', DEFERRED_ROWS);
+    seedFromDeferred(cid, 'new-set-1', DEFERRED_ROWS);
+    expect(getSetDraft(cid, 'new-set-1').creators).toHaveLength(2);
+  });
+
+  it('a deferred key never reaches the server as agreement_id — the id is not a real agreement', () => {
+    const cid = 'camp-7';
+    seedFromDeferred(cid, 'new-set-1', DEFERRED_ROWS);
+    const creator = getSetDraft(cid, 'new-set-1').creators[0];
+    const body = invitePayload(creator, SELLING_SET, null);
+    expect(body.agreement_id).toBeUndefined();
+    expect(body.influencer_id).toBe('i1');
+  });
+
+  it('a real agreement_id still reaches the server unchanged', () => {
+    const real = { agreement_id: 'a1', influencer_id: 'i1', terms: {} };
+    expect(invitePayload(real, SELLING_SET, null).agreement_id).toBe('a1');
   });
 });

@@ -37,6 +37,7 @@ router.post('/:id/influencers/:ciid/reject-application',  ...brandAuth, ctrl.rej
 
 // ── Campaign Sets CRUD ───────────────────────────────────────────────────────
 router.get('/:id/sets',                     ...brandAuth, ctrl.getSets);
+router.get('/:id/deferred',                 ...brandAuth, ctrl.getDeferred);
 router.post('/:id/sets',                    ...brandAuth, checkQuota('createSet'), ctrl.createSet);
 router.patch('/:id/sets/:sid',              ...brandAuth, ctrl.updateSet);
 router.delete('/:id/sets/:sid',             ...brandAuth, ctrl.deleteSet);
