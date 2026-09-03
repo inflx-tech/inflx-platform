@@ -1,0 +1,1001 @@
+[
+  {
+    "id": "722c6011-9d47-4029-a23e-d916b7f1c0f3",
+    "world_key": "fashion",
+    "key": "street_style",
+    "name": "Street Style",
+    "subtitle": "Urban looks curated for everyday confidence.",
+    "icon": "👟",
+    "description": "Urban casual looks curated by creators.",
+    "purpose": "lifestyle",
+    "audience": "unisex",
+    "preset_key": "urban_fashion",
+    "supported_categories": [
+      "Jeans",
+      "Cargo",
+      "Sneakers",
+      "T-shirts",
+      "Jackets",
+      "Caps"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle",
+      "bogo",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Street Style",
+    "default_subtitle": "Urban looks curated for everyday confidence.",
+    "default_cta": "Explore collection",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "b55f1fae-ce95-4aa3-8667-ecb174c1ee43",
+    "world_key": "fashion",
+    "key": "minimal",
+    "name": "Minimal",
+    "subtitle": "Clean fits, timeless style.",
+    "icon": "🤍",
+    "description": "Minimal, understated everyday fashion.",
+    "purpose": "lifestyle",
+    "audience": "unisex",
+    "preset_key": "minimal_fashion",
+    "supported_categories": [
+      "Shirts",
+      "Trousers",
+      "Sneakers",
+      "Knitwear"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Minimal",
+    "default_subtitle": "Clean fits, timeless style.",
+    "default_cta": "Shop the edit",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "e0aebd01-2720-434a-b267-fc39497c1140",
+    "world_key": "fashion",
+    "key": "old_money",
+    "name": "Old Money",
+    "subtitle": "Quiet luxury, understated elegance.",
+    "icon": "🎩",
+    "description": "Refined heritage-inspired fashion.",
+    "purpose": "lifestyle",
+    "audience": "unisex",
+    "preset_key": "luxury_editorial",
+    "supported_categories": [
+      "Blazers",
+      "Loafers",
+      "Knitwear",
+      "Trousers",
+      "Watches"
+    ],
+    "min_products": 4,
+    "max_products": 18,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "bundle",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Old Money",
+    "default_subtitle": "Quiet luxury, understated elegance.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "d023d3cb-7efb-499b-a811-c10c880b11d1",
+    "world_key": "fashion",
+    "key": "boho",
+    "name": "Boho",
+    "subtitle": "Free-spirited, layered and easy.",
+    "icon": "🌿",
+    "description": "Bohemian, relaxed layered looks.",
+    "purpose": "lifestyle",
+    "audience": "women",
+    "preset_key": "travel_lifestyle",
+    "supported_categories": [
+      "Dresses",
+      "Skirts",
+      "Accessories",
+      "Sandals"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bogo"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Boho",
+    "default_subtitle": "Free-spirited, layered and easy.",
+    "default_cta": "Explore collection",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "790e926c-882f-45da-97c7-3b5f24d67531",
+    "world_key": "fashion",
+    "key": "wedding",
+    "name": "Wedding Collection",
+    "subtitle": "Occasion looks for the big day.",
+    "icon": "💍",
+    "description": "Wedding and celebration wear.",
+    "purpose": "occasion",
+    "audience": "women",
+    "preset_key": "luxury_editorial",
+    "supported_categories": [
+      "Sarees",
+      "Lehenga",
+      "Sherwani",
+      "Juttis",
+      "Jewellery"
+    ],
+    "min_products": 6,
+    "max_products": 24,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "free_gift",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Wedding Collection",
+    "default_subtitle": "Occasion looks for the big day.",
+    "default_cta": "Shop the collection",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "ea2eefd6-4846-4140-9504-b8f4410d5d5f",
+    "world_key": "fashion",
+    "key": "office",
+    "name": "Office Essentials",
+    "subtitle": "Sharp looks for the workday.",
+    "icon": "💼",
+    "description": "Workwear and office essentials.",
+    "purpose": "occasion",
+    "audience": "unisex",
+    "preset_key": "minimal_fashion",
+    "supported_categories": [
+      "Shirts",
+      "Trousers",
+      "Blazers",
+      "Formal shoes"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Office Essentials",
+    "default_subtitle": "Sharp looks for the workday.",
+    "default_cta": "Shop workwear",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "c86afae4-86c0-43cc-b67f-673f8639d72d",
+    "world_key": "fashion",
+    "key": "date_night",
+    "name": "Date Night",
+    "subtitle": "Looks that turn heads after dark.",
+    "icon": "🌙",
+    "description": "Evening and date-night outfits.",
+    "purpose": "occasion",
+    "audience": "unisex",
+    "preset_key": "festive_collection",
+    "supported_categories": [
+      "Dresses",
+      "Heels",
+      "Shirts",
+      "Accessories"
+    ],
+    "min_products": 4,
+    "max_products": 16,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Date Night",
+    "default_subtitle": "Looks that turn heads after dark.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "35d2c50f-2b95-4d5f-981d-eafb96e6bb1f",
+    "world_key": "fashion",
+    "key": "festival",
+    "name": "Festival Collection",
+    "subtitle": "Celebrate in colour.",
+    "icon": "🎉",
+    "description": "Festive ethnic and fusion wear.",
+    "purpose": "occasion",
+    "audience": "unisex",
+    "preset_key": "festive_collection",
+    "supported_categories": [
+      "Kurtas",
+      "Sarees",
+      "Sherwani",
+      "Juttis",
+      "Accessories"
+    ],
+    "min_products": 4,
+    "max_products": 24,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Festival Collection",
+    "default_subtitle": "Celebrate in colour.",
+    "default_cta": "Shop festive",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "5af1b52a-1a91-4491-b2ae-0002afc85714",
+    "world_key": "fashion",
+    "key": "airport_looks",
+    "name": "Airport Looks",
+    "subtitle": "Travel-ready fashion for every journey.",
+    "icon": "✈️",
+    "description": "Comfortable, put-together travel looks.",
+    "purpose": "travel",
+    "audience": "unisex",
+    "preset_key": "travel_lifestyle",
+    "supported_categories": [
+      "Travel bags",
+      "Sneakers",
+      "Joggers",
+      "Hoodies",
+      "Luggage"
+    ],
+    "min_products": 4,
+    "max_products": 15,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Airport Looks",
+    "default_subtitle": "Travel-ready fashion for every journey.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "b1593ab5-5099-44c5-8ac6-4b2d31c90048",
+    "world_key": "fashion",
+    "key": "vacation",
+    "name": "Vacation Edit",
+    "subtitle": "Sun, sand and effortless style.",
+    "icon": "🏖️",
+    "description": "Holiday and resort wear.",
+    "purpose": "travel",
+    "audience": "unisex",
+    "preset_key": "summer_collection",
+    "supported_categories": [
+      "Shorts",
+      "Shirts",
+      "Swimwear",
+      "Sandals",
+      "Sunglasses"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bogo"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Vacation Edit",
+    "default_subtitle": "Sun, sand and effortless style.",
+    "default_cta": "Shop the edit",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "496b8be8-419c-40ec-a2f4-6a3672b9b3ce",
+    "world_key": "fashion",
+    "key": "weekend_trip",
+    "name": "Weekend Trip",
+    "subtitle": "Pack light, look sharp.",
+    "icon": "🎒",
+    "description": "Casual weekend-getaway outfits.",
+    "purpose": "travel",
+    "audience": "unisex",
+    "preset_key": "travel_lifestyle",
+    "supported_categories": [
+      "T-shirts",
+      "Denim",
+      "Sneakers",
+      "Backpacks"
+    ],
+    "min_products": 4,
+    "max_products": 16,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Weekend Trip",
+    "default_subtitle": "Pack light, look sharp.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "8cc464c5-8a18-4ceb-a920-449743eea4c3",
+    "world_key": "fashion",
+    "key": "under_499",
+    "name": "Under ₹499",
+    "subtitle": "Great style, tiny price.",
+    "icon": "🏷️",
+    "description": "Budget picks under ₹499.",
+    "purpose": "budget",
+    "audience": "unisex",
+    "preset_key": "urban_fashion",
+    "supported_categories": [
+      "T-shirts",
+      "Accessories",
+      "Caps",
+      "Socks"
+    ],
+    "min_products": 3,
+    "max_products": 30,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Under ₹499",
+    "default_subtitle": "Great style, tiny price.",
+    "default_cta": "Shop under ₹499",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "296c7aa0-9324-4cb3-97c6-85c3224b7824",
+    "world_key": "fashion",
+    "key": "under_999",
+    "name": "Under ₹999",
+    "subtitle": "Style that fits every budget.",
+    "icon": "🏷️",
+    "description": "Budget picks under ₹999.",
+    "purpose": "budget",
+    "audience": "unisex",
+    "preset_key": "urban_fashion",
+    "supported_categories": [
+      "Jeans",
+      "T-shirts",
+      "Sneakers",
+      "Shirts"
+    ],
+    "min_products": 3,
+    "max_products": 30,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bogo"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Under ₹999",
+    "default_subtitle": "Style that fits every budget.",
+    "default_cta": "Shop under ₹999",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "7769f2b3-932f-4eb3-81b4-830910fef456",
+    "world_key": "fashion",
+    "key": "premium_picks",
+    "name": "Premium Picks",
+    "subtitle": "Elevated pieces worth the splurge.",
+    "icon": "💎",
+    "description": "Premium and boutique selections.",
+    "purpose": "budget",
+    "audience": "unisex",
+    "preset_key": "premium_boutique",
+    "supported_categories": [
+      "Blazers",
+      "Leather",
+      "Watches",
+      "Loafers"
+    ],
+    "min_products": 4,
+    "max_products": 18,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "bundle",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Premium Picks",
+    "default_subtitle": "Elevated pieces worth the splurge.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "d78f5b18-ea88-4a88-9b9c-21a7ef5a4372",
+    "world_key": "fashion",
+    "key": "sneakers",
+    "name": "Sneaker Collection",
+    "subtitle": "The freshest kicks, curated.",
+    "icon": "👟",
+    "description": "Sneakers and streetwear footwear.",
+    "purpose": "category",
+    "audience": "unisex",
+    "preset_key": "sports_active",
+    "supported_categories": [
+      "Sneakers",
+      "Socks",
+      "Caps"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bogo"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Sneaker Collection",
+    "default_subtitle": "The freshest kicks, curated.",
+    "default_cta": "Shop sneakers",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "de11834f-6692-4f8b-8ee6-3318961fe282",
+    "world_key": "fashion",
+    "key": "shirts",
+    "name": "Shirts",
+    "subtitle": "Everyday shirts, done right.",
+    "icon": "👔",
+    "description": "Shirts across fits and occasions.",
+    "purpose": "category",
+    "audience": "men",
+    "preset_key": "minimal_fashion",
+    "supported_categories": [
+      "Shirts",
+      "T-shirts"
+    ],
+    "min_products": 4,
+    "max_products": 24,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Shirts",
+    "default_subtitle": "Everyday shirts, done right.",
+    "default_cta": "Shop shirts",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "fd2d9123-beea-4747-be20-06d4704b6811",
+    "world_key": "fashion",
+    "key": "jewellery",
+    "name": "Jewellery Picks",
+    "subtitle": "Finishing touches that shine.",
+    "icon": "💍",
+    "description": "Jewellery and fine accessories.",
+    "purpose": "category",
+    "audience": "women",
+    "preset_key": "luxury_editorial",
+    "supported_categories": [
+      "Earrings",
+      "Necklaces",
+      "Rings",
+      "Bracelets"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "free_gift",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Jewellery Picks",
+    "default_subtitle": "Finishing touches that shine.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "7bc23968-7b6a-4095-8918-d6ce5a3c1682",
+    "world_key": "fashion",
+    "key": "ethnic_wear",
+    "name": "Ethnic Wear",
+    "subtitle": "Tradition, reimagined.",
+    "icon": "🪔",
+    "description": "Ethnic and fusion wear.",
+    "purpose": "category",
+    "audience": "unisex",
+    "preset_key": "festive_collection",
+    "supported_categories": [
+      "Kurtas",
+      "Sarees",
+      "Lehenga",
+      "Sherwani"
+    ],
+    "min_products": 4,
+    "max_products": 24,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Ethnic Wear",
+    "default_subtitle": "Tradition, reimagined.",
+    "default_cta": "Shop ethnic",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "2ea25c92-11ee-4dc6-9350-d64e93e1b0fb",
+    "world_key": "fashion",
+    "key": "new_drops",
+    "name": "New Drops",
+    "subtitle": "Fresh in, straight from creators.",
+    "icon": "🔥",
+    "description": "The newest arrivals and drops.",
+    "purpose": "trend",
+    "audience": "unisex",
+    "preset_key": "sports_active",
+    "supported_categories": [
+      "Sneakers",
+      "T-shirts",
+      "Jackets",
+      "Accessories"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "New Drops",
+    "default_subtitle": "Fresh in, straight from creators.",
+    "default_cta": "Explore new",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "58a6b8ca-2ad0-4c7b-8ca8-2097462ea010",
+    "world_key": "fashion",
+    "key": "summer_state",
+    "name": "Summer State of Mind",
+    "subtitle": "Warm-weather style, sorted.",
+    "icon": "☀️",
+    "description": "Summer seasonal edit.",
+    "purpose": "trend",
+    "audience": "unisex",
+    "preset_key": "summer_collection",
+    "supported_categories": [
+      "Shorts",
+      "T-shirts",
+      "Sandals",
+      "Sunglasses"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bogo"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Summer State of Mind",
+    "default_subtitle": "Warm-weather style, sorted.",
+    "default_cta": "Shop summer",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "eae8832a-22c7-42b4-bf36-3a5dcba3aa4c",
+    "world_key": "fashion",
+    "key": "monsoon_ready",
+    "name": "Monsoon Ready",
+    "subtitle": "Rain-proof and runway-ready.",
+    "icon": "🌧️",
+    "description": "Monsoon-appropriate style.",
+    "purpose": "trend",
+    "audience": "unisex",
+    "preset_key": "travel_lifestyle",
+    "supported_categories": [
+      "Jackets",
+      "Boots",
+      "Umbrellas",
+      "Quick-dry"
+    ],
+    "min_products": 4,
+    "max_products": 16,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Monsoon Ready",
+    "default_subtitle": "Rain-proof and runway-ready.",
+    "default_cta": "Explore",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": true,
+    "blueprint_source_key": null,
+    "status": "draft",
+    "created_at": "2026-07-10T11:55:31.916Z",
+    "updated_at": "2026-07-10T11:55:31.916Z"
+  },
+  {
+    "id": "3ee40d3e-51c6-4bf0-9093-96ec29733156",
+    "world_key": "fashion",
+    "key": "street_style",
+    "name": "Street Style",
+    "subtitle": "Urban looks curated for everyday confidence.",
+    "icon": "👟",
+    "description": "Urban casual looks curated by creators.",
+    "purpose": "lifestyle",
+    "audience": "unisex",
+    "preset_key": "urban_fashion",
+    "supported_categories": [
+      "Jeans",
+      "Cargo",
+      "Sneakers",
+      "T-shirts",
+      "Jackets",
+      "Caps"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle",
+      "bogo",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Street Style",
+    "default_subtitle": "Urban looks curated for everyday confidence.",
+    "default_cta": "Explore collection",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": false,
+    "blueprint_source_key": "street_style",
+    "status": "draft",
+    "created_at": "2026-07-13T09:50:39.801Z",
+    "updated_at": "2026-07-13T09:50:39.801Z"
+  },
+  {
+    "id": "eb9575f0-3dff-4405-9b3f-37bc28701525",
+    "world_key": "fashion",
+    "key": "street_style_2",
+    "name": "Street Style",
+    "subtitle": "Urban looks curated for everyday confidence.",
+    "icon": "👟",
+    "description": "Urban casual looks curated by creators.",
+    "purpose": "lifestyle",
+    "audience": "unisex",
+    "preset_key": "urban_fashion",
+    "supported_categories": [
+      "Jeans",
+      "Cargo",
+      "Sneakers",
+      "T-shirts",
+      "Jackets",
+      "Caps"
+    ],
+    "min_products": 4,
+    "max_products": 20,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "discount",
+      "bundle",
+      "bogo",
+      "free_gift"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Street Style",
+    "default_subtitle": "Urban looks curated for everyday confidence.",
+    "default_cta": "Explore collection",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": false,
+    "blueprint_source_key": "street_style",
+    "status": "published",
+    "created_at": "2026-07-13T09:52:58.080Z",
+    "updated_at": "2026-07-13T09:54:23.889Z"
+  },
+  {
+    "id": "64059b3f-5330-4d10-be78-d45aa2090aa9",
+    "world_key": "fashion",
+    "key": "wedding",
+    "name": "Wedding Collection",
+    "subtitle": "Occasion looks for the big day.",
+    "icon": "💍",
+    "description": "Wedding and celebration wear.",
+    "purpose": "occasion",
+    "audience": "women",
+    "preset_key": "luxury_editorial",
+    "supported_categories": [
+      "Sarees",
+      "Lehenga",
+      "Sherwani",
+      "Juttis",
+      "Jewellery"
+    ],
+    "min_products": 6,
+    "max_products": 24,
+    "media_rules_json": {
+      "video": "optional",
+      "featured": "required",
+      "orientation": "portrait"
+    },
+    "supported_offer_types": [
+      "free_gift",
+      "bundle"
+    ],
+    "suggested_product_ids": [],
+    "default_title": "Wedding Collection",
+    "default_subtitle": "Occasion looks for the big day.",
+    "default_cta": "Shop the collection",
+    "applicable_worlds": [
+      "fashion"
+    ],
+    "is_blueprint": false,
+    "blueprint_source_key": "wedding",
+    "status": "published",
+    "created_at": "2026-07-13T09:54:53.111Z",
+    "updated_at": "2026-07-13T09:55:06.764Z"
+  }
+]

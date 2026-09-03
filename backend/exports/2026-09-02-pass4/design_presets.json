@@ -1,0 +1,178 @@
+[
+  {
+    "id": "11060b60-9575-4aab-a552-2bc997221745",
+    "key": "urban_fashion",
+    "label": "Urban Fashion",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "urban",
+      "radius": "soft",
+      "shadow": "soft",
+      "palette": "urban_dark",
+      "background": "urban_concrete",
+      "typography": "bold_fashion"
+    },
+    "positions_json": {
+      "cta": "bottom-left",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "41a20a7f-20ba-4707-9560-c100e8d691a6",
+    "key": "luxury_editorial",
+    "label": "Luxury Editorial",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "luxury",
+      "radius": "soft",
+      "shadow": "elevated",
+      "palette": "luxury_mono",
+      "background": "luxury_marble",
+      "typography": "luxury_serif"
+    },
+    "positions_json": {
+      "cta": "bottom-right",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "d9910f70-01cb-4618-9aac-d505fe6fce37",
+    "key": "summer_collection",
+    "label": "Summer Collection",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "bright",
+      "radius": "round",
+      "shadow": "soft",
+      "palette": "summer_warm",
+      "background": "yellow_gradient",
+      "typography": "modern"
+    },
+    "positions_json": {
+      "cta": "bottom-left",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "f2fb52d6-6176-40a1-a9cc-55ad8e389caa",
+    "key": "travel_lifestyle",
+    "label": "Travel Lifestyle",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "nature",
+      "radius": "soft",
+      "shadow": "soft",
+      "palette": "earthy",
+      "background": "travel_sky",
+      "typography": "editorial"
+    },
+    "positions_json": {
+      "cta": "bottom-left",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "af3aa1d7-d8e5-4284-97c9-b6ed2740709c",
+    "key": "minimal_fashion",
+    "label": "Minimal Fashion",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "minimal",
+      "radius": "sharp",
+      "shadow": "none",
+      "palette": "minimal_white",
+      "background": "minimal_paper",
+      "typography": "minimal_sans"
+    },
+    "positions_json": {
+      "cta": "bottom-left",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "52f62937-b9af-4545-bd86-c253f00508aa",
+    "key": "sports_active",
+    "label": "Sports Active",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "sports",
+      "radius": "soft",
+      "shadow": "soft",
+      "palette": "urban_dark",
+      "background": "studio_wall",
+      "typography": "sporty"
+    },
+    "positions_json": {
+      "cta": "bottom-left",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "f6911596-8cc9-4c7b-8c27-d00b2b0a4cff",
+    "key": "festive_collection",
+    "label": "Festive Collection",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "festival",
+      "radius": "round",
+      "shadow": "elevated",
+      "palette": "night",
+      "background": "festival_lights",
+      "typography": "bold_fashion"
+    },
+    "positions_json": {
+      "cta": "bottom-left",
+      "avatar": "top-left",
+      "featured": "center"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "893b249a-22d2-4276-a2a2-847554fbfda7",
+    "key": "premium_boutique",
+    "label": "Premium Boutique",
+    "world_key": "fashion",
+    "tokens_json": {
+      "mood": "luxury",
+      "radius": "soft",
+      "shadow": "elevated",
+      "palette": "luxury_mono",
+      "background": "fabric",
+      "typography": "luxury_serif"
+    },
+    "positions_json": {
+      "cta": "bottom-right",
+      "avatar": "top-left",
+      "featured": "right"
+    },
+    "status": "active",
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  }
+]

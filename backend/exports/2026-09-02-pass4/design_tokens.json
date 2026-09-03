@@ -1,0 +1,692 @@
+[
+  {
+    "id": "2cc9907d-e36b-4c92-9ad2-b13d3d6a0237",
+    "kind": "mood",
+    "key": "urban",
+    "label": "Urban",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "street, bold",
+      "default_palette": "urban_dark",
+      "default_typography": "bold_fashion"
+    },
+    "status": "active",
+    "sort_order": 1,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "afd2aad5-13c2-4d57-8dbf-63cbbd8103e1",
+    "kind": "mood",
+    "key": "luxury",
+    "label": "Luxury",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "premium, refined",
+      "default_palette": "luxury_mono",
+      "default_typography": "luxury_serif"
+    },
+    "status": "active",
+    "sort_order": 2,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "61f2a988-a10d-4bee-8d87-5c9a1e8229f8",
+    "kind": "mood",
+    "key": "minimal",
+    "label": "Minimal",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "clean, editorial",
+      "default_palette": "minimal_white",
+      "default_typography": "minimal_sans"
+    },
+    "status": "active",
+    "sort_order": 3,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "9251c7d9-b3ab-462c-92c4-cf66f9f31f2b",
+    "kind": "mood",
+    "key": "bright",
+    "label": "Bright",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "playful, vivid",
+      "default_palette": "summer_warm",
+      "default_typography": "modern"
+    },
+    "status": "active",
+    "sort_order": 4,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "c8d09d83-1fad-4d96-a75d-7faaa6d7b26f",
+    "kind": "mood",
+    "key": "vintage",
+    "label": "Vintage",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "retro, warm",
+      "default_palette": "earthy",
+      "default_typography": "editorial"
+    },
+    "status": "active",
+    "sort_order": 5,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "b80e20ea-8228-45e2-8eb0-a46bb325b899",
+    "kind": "mood",
+    "key": "festival",
+    "label": "Festival",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "celebratory",
+      "default_palette": "night",
+      "default_typography": "bold_fashion"
+    },
+    "status": "active",
+    "sort_order": 6,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "07731db8-e32f-4b5c-bbb5-10b74f92ddfc",
+    "kind": "mood",
+    "key": "nature",
+    "label": "Nature",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "organic, calm",
+      "default_palette": "earthy",
+      "default_typography": "editorial"
+    },
+    "status": "active",
+    "sort_order": 7,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "6f58b022-bc56-4a55-ac39-852618a6748f",
+    "kind": "mood",
+    "key": "sports",
+    "label": "Sports",
+    "world_key": null,
+    "config_json": {
+      "descriptor": "active, energetic",
+      "default_palette": "urban_dark",
+      "default_typography": "sporty"
+    },
+    "status": "active",
+    "sort_order": 8,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "6cb6ec28-7ebf-40d4-ac30-11c811439267",
+    "kind": "palette",
+    "key": "urban_dark",
+    "label": "Urban Dark",
+    "world_key": null,
+    "config_json": {
+      "bg": "#1C1C1E",
+      "text": "#FFFFFF",
+      "accent": "#FFC400",
+      "primary": "#26262A",
+      "secondary": "#5F5E5A"
+    },
+    "status": "active",
+    "sort_order": 1,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "2109957a-7b7b-4631-9897-17dbadab7607",
+    "kind": "palette",
+    "key": "minimal_white",
+    "label": "Minimal White",
+    "world_key": null,
+    "config_json": {
+      "bg": "#FFFFFF",
+      "text": "#1A1A1A",
+      "accent": "#1A1A1A",
+      "primary": "#FFFFFF",
+      "secondary": "#F1EFE8"
+    },
+    "status": "active",
+    "sort_order": 2,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "ceb8ced9-2ec2-4333-afbe-61e76251d333",
+    "kind": "palette",
+    "key": "summer_warm",
+    "label": "Summer Warm",
+    "world_key": null,
+    "config_json": {
+      "bg": "#FAECE7",
+      "text": "#4A1B0C",
+      "accent": "#378ADD",
+      "primary": "#D85A30",
+      "secondary": "#F0997B"
+    },
+    "status": "active",
+    "sort_order": 3,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "d7b8a52b-438d-4d64-b6fe-9922d6b4d8ab",
+    "kind": "palette",
+    "key": "luxury_mono",
+    "label": "Luxury Mono",
+    "world_key": null,
+    "config_json": {
+      "bg": "#F1EFE8",
+      "text": "#1A1A1A",
+      "accent": "#C9A24B",
+      "primary": "#1A1A1A",
+      "secondary": "#888780"
+    },
+    "status": "active",
+    "sort_order": 4,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "0b3add18-3071-4683-a530-05d201e17bc2",
+    "kind": "palette",
+    "key": "earthy",
+    "label": "Earthy",
+    "world_key": null,
+    "config_json": {
+      "bg": "#E1F5EE",
+      "text": "#04342C",
+      "accent": "#1D9E75",
+      "primary": "#5F5E5A",
+      "secondary": "#9FE1CB"
+    },
+    "status": "active",
+    "sort_order": 5,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "44c93f50-0dbf-4ea2-8ac5-8eb844305840",
+    "kind": "palette",
+    "key": "night",
+    "label": "Night",
+    "world_key": null,
+    "config_json": {
+      "bg": "#1C1C24",
+      "text": "#EEEDFE",
+      "accent": "#AFA9EC",
+      "primary": "#26215C",
+      "secondary": "#534AB7"
+    },
+    "status": "active",
+    "sort_order": 6,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "a264d7b2-ff1c-466b-8ce4-e7c3e4c281d6",
+    "kind": "typography",
+    "key": "bold_fashion",
+    "label": "Bold Fashion",
+    "world_key": null,
+    "config_json": {
+      "family": "Inter",
+      "weight": 800,
+      "spacing": "-0.02em"
+    },
+    "status": "active",
+    "sort_order": 1,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "a9a3cbf1-ed2f-4580-b558-048562539023",
+    "kind": "typography",
+    "key": "luxury_serif",
+    "label": "Luxury Serif",
+    "world_key": null,
+    "config_json": {
+      "family": "serif",
+      "weight": 600,
+      "spacing": "0"
+    },
+    "status": "active",
+    "sort_order": 2,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "d8995619-6127-4dc8-8453-ce2fd77d5f18",
+    "kind": "typography",
+    "key": "minimal_sans",
+    "label": "Minimal Sans",
+    "world_key": null,
+    "config_json": {
+      "family": "Inter",
+      "weight": 500,
+      "spacing": "0"
+    },
+    "status": "active",
+    "sort_order": 3,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "a2e79c09-e356-4f79-a5b8-e99fefad079a",
+    "kind": "typography",
+    "key": "editorial",
+    "label": "Editorial",
+    "world_key": null,
+    "config_json": {
+      "scale": "large",
+      "family": "Inter",
+      "weight": 700,
+      "spacing": "-0.01em"
+    },
+    "status": "active",
+    "sort_order": 4,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "fcce4938-f26c-4090-befd-6e8531f7c5fa",
+    "kind": "typography",
+    "key": "modern",
+    "label": "Modern",
+    "world_key": null,
+    "config_json": {
+      "family": "Inter",
+      "weight": 600,
+      "spacing": "0.01em"
+    },
+    "status": "active",
+    "sort_order": 5,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "8171cfc1-f997-4082-a303-50cf6e6f1c27",
+    "kind": "typography",
+    "key": "sporty",
+    "label": "Sporty",
+    "world_key": null,
+    "config_json": {
+      "family": "Inter",
+      "weight": 800,
+      "spacing": "0.02em",
+      "transform": "uppercase"
+    },
+    "status": "active",
+    "sort_order": 6,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "7c7ab6ef-3511-4d89-ad78-aa1e17f00028",
+    "kind": "background",
+    "key": "urban_concrete",
+    "label": "Urban Concrete",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#3a3a3d",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 1,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "2461d9ef-95ff-4fe1-849f-ead2220b6cff",
+    "kind": "background",
+    "key": "studio_wall",
+    "label": "Studio Wall",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#d8d5cd",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 2,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "682b1196-4636-42d7-b384-2b9b47d8a0de",
+    "kind": "background",
+    "key": "soft_blur",
+    "label": "Soft Blur",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#c9c9cf",
+      "asset_r2_key": null,
+      "text_safe_zone": "center"
+    },
+    "status": "active",
+    "sort_order": 3,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "7375d842-df15-4e77-a4e9-904462062911",
+    "kind": "background",
+    "key": "flat_gradient",
+    "label": "Flat Gradient",
+    "world_key": null,
+    "config_json": {
+      "type": "gradient",
+      "avg_color": "#4a4a55",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 4,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "c6cae5e4-57e7-4a0a-9a17-7e39d886cfbb",
+    "kind": "background",
+    "key": "cafe",
+    "label": "Cafe",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#6b5642",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 5,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "cdb015ef-1da5-4c3a-aeab-c79dccca422e",
+    "kind": "background",
+    "key": "minimal_paper",
+    "label": "Minimal Paper",
+    "world_key": null,
+    "config_json": {
+      "type": "flat",
+      "avg_color": "#eae7df",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 6,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "cf1e075c-d25d-49ee-b2db-9f0cff318884",
+    "kind": "background",
+    "key": "street_wall",
+    "label": "Street Wall",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#4d4a45",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 7,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "ccd9b3d2-88dd-4966-ba80-baa790852f34",
+    "kind": "background",
+    "key": "outdoor",
+    "label": "Outdoor",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#7d8a6f",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 8,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "d33b3c6d-4202-4c38-84d6-9027714186c8",
+    "kind": "background",
+    "key": "luxury_marble",
+    "label": "Luxury Marble",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#c9a24b",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 9,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "3d9b2d17-42eb-47ae-9d09-fc66c067bcbc",
+    "kind": "background",
+    "key": "yellow_gradient",
+    "label": "Yellow Gradient",
+    "world_key": null,
+    "config_json": {
+      "type": "gradient",
+      "avg_color": "#F5C518",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 10,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "7e255618-3cc1-4317-b743-087cc85bc7d3",
+    "kind": "background",
+    "key": "green_nature",
+    "label": "Green Nature",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#1d9e75",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 11,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "e0aed2ff-7db1-4954-a692-73b4c1caedf6",
+    "kind": "background",
+    "key": "festival_lights",
+    "label": "Festival Lights",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#26215c",
+      "asset_r2_key": null,
+      "text_safe_zone": "center"
+    },
+    "status": "active",
+    "sort_order": 12,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "dd1aea8c-37e9-4c0e-807e-4a457bdbc224",
+    "kind": "background",
+    "key": "travel_sky",
+    "label": "Travel Sky",
+    "world_key": null,
+    "config_json": {
+      "type": "gradient",
+      "avg_color": "#85b7eb",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 13,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "aa711eaa-aa3f-4379-b0fa-d678eb92b404",
+    "kind": "background",
+    "key": "beach",
+    "label": "Beach",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#e6d3a8",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 14,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "1f730b8c-011c-47a3-857c-a428800ec6f7",
+    "kind": "background",
+    "key": "fabric",
+    "label": "Fabric",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#8a8078",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 15,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "c8673c12-2fb3-47d0-a050-28cfd3e9afb2",
+    "kind": "background",
+    "key": "denim",
+    "label": "Denim",
+    "world_key": null,
+    "config_json": {
+      "type": "texture",
+      "avg_color": "#3f5a78",
+      "asset_r2_key": null,
+      "text_safe_zone": "bottom-left"
+    },
+    "status": "active",
+    "sort_order": 16,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "c612bc52-4754-43b4-8ce0-a237e17f8764",
+    "kind": "radius",
+    "key": "sharp",
+    "label": "Sharp",
+    "world_key": null,
+    "config_json": {
+      "px": 4
+    },
+    "status": "active",
+    "sort_order": 1,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "7eaf0ae5-e548-4c31-977f-0673166d92eb",
+    "kind": "radius",
+    "key": "soft",
+    "label": "Soft",
+    "world_key": null,
+    "config_json": {
+      "px": 12
+    },
+    "status": "active",
+    "sort_order": 2,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "86d1d788-f800-4824-938e-0ed4596abc92",
+    "kind": "radius",
+    "key": "round",
+    "label": "Round",
+    "world_key": null,
+    "config_json": {
+      "px": 20
+    },
+    "status": "active",
+    "sort_order": 3,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "371af106-11a6-47fc-bd02-db73f9451d2f",
+    "kind": "shadow",
+    "key": "none",
+    "label": "None",
+    "world_key": null,
+    "config_json": {
+      "level": "none"
+    },
+    "status": "active",
+    "sort_order": 1,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "8a991eb2-ff4f-4d5f-a79c-ab8299d3151f",
+    "kind": "shadow",
+    "key": "soft",
+    "label": "Soft",
+    "world_key": null,
+    "config_json": {
+      "level": "soft"
+    },
+    "status": "active",
+    "sort_order": 2,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  },
+  {
+    "id": "ea643196-c61c-44df-8dce-9792979bb3a1",
+    "kind": "shadow",
+    "key": "elevated",
+    "label": "Elevated",
+    "world_key": null,
+    "config_json": {
+      "level": "elevated"
+    },
+    "status": "active",
+    "sort_order": 3,
+    "created_at": "2026-07-10T10:58:19.601Z",
+    "updated_at": "2026-07-10T10:58:19.601Z"
+  }
+]

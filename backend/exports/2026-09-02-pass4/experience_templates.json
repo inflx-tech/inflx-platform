@@ -1,0 +1,31 @@
+[
+  {
+    "id": "dd7ab7e7-b122-4692-99ec-c5a7e8454e34",
+    "world_key": "fashion",
+    "key": "street_style_hero_demo",
+    "name": "Street Style Hero (demo)",
+    "template_type": "creator",
+    "theme_key": "street_style",
+    "design_layout_key": "hero_banner",
+    "section_style": "hero",
+    "placement_json": {
+      "screens": [
+        "home"
+      ],
+      "audiences": [
+        "all"
+      ]
+    },
+    "store_rule": "if_products",
+    "creator_store_rule": "if_creator_has_experience",
+    "location_priority": [
+      "city",
+      "state",
+      "country",
+      "global"
+    ],
+    "status": "placed",
+    "created_at": "2026-07-13T09:36:01.882Z",
+    "updated_at": "2026-07-13T09:36:03.101Z"
+  }
+]
