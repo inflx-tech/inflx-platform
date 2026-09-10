@@ -35,6 +35,19 @@
     "deploy_targets": ["ota (brand, influencer, follower)"],
     "outward_facing": "YES, total. Every user of the three phone apps sees only their profile after the second launch. Backend, data and the brand website are untouched.",
     "why_not_released": "Maestro (Rule 5) not run; same convention as the-cut-pass-1: deployed on founder instruction with released:false and the gap recorded.",
-    "device_walk_required": "YES — see 06-diff/notes.md."
+    "device_walk_required": "YES — see 06-diff/notes.md.",
+    "deploy": {
+      "by": "aveenswamy1989@gmail.com (founder) — answered 'Also ship to phones', 2026-09-10",
+      "commit": "5e04e1c",
+      "ota_brand": 209,
+      "ota_influencer": 197,
+      "ota_follower": 229,
+      "previous": { "brand": 208, "influencer": 196, "follower": 228 },
+      "published_at": "2026-09-10T07:08:54Z .. 07:09:10Z",
+      "native_runtime": "3 (unchanged; matches the fielded APKs)",
+      "bundle_kb": 1619,
+      "verified_by_content": "Downloaded the LIVE follower bundle from the signed manifest URL and searched it: 'Sign in to see your profile', 'Legal & policies', 'Browsing as guest' present; 'My Orders', 'Creators I follow', 'Place Order', 'CollabsList', 'BrandCampaignBuilder', 'Find brands to pitch', 'Media Gallery' absent. One bundle serves all three flavours.",
+      "order": "OTA published BEFORE the push, so the Render restart the push triggers could not reset the upload."
+    }
   }
 }
