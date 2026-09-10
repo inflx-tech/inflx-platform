@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { brandApi } from '../../services/api';
 
@@ -31,9 +31,12 @@ export default function RejectedScreen({ navigation, route }) {
 
   async function resubmit() {
     setSubmitting(true);
-    await brandApi.resubmit({ notes: 'Resubmitting application' });
+    // The result was previously ignored, so a refusal still showed "Resubmitted" —
+    // telling someone their application is back in the queue when it is not.
+    const res = await brandApi.resubmit({ notes: 'Resubmitting application' });
     setSubmitting(false);
-    setSubmitted(true);
+    if (res?.success) setSubmitted(true);
+    else Alert.alert('Not sent', res?.error?.message || 'Could not resubmit. Please try again.');
   }
 
   async function logout() {

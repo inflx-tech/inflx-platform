@@ -570,34 +570,8 @@ export default function ProfileScreen({ navigation }) {
         </Text>
       </View>
 
-      {/* ── Brand Outreach (Documents + Proposals) ── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Brand Outreach</Text>
-        <TouchableOpacity
-          style={styles.docRow}
-          onPress={() => navigation.navigate('ProposalsHub')}>
-          <View style={styles.docIco}>
-            <Icon name="email-outline" size={18} color={P.ink} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.docLabel}>Find brands to pitch</Text>
-            <Text style={styles.docHint}>BROWSE BRANDS OPEN TO CREATORS</Text>
-          </View>
-          <Icon name="chevron-right" size={16} color={P.muted3} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.docRow, { borderTopWidth: 1, borderTopColor: P.borderSoft, marginTop: 4 }]}
-          onPress={() => navigation.navigate('MyContracts')}>
-          <View style={styles.docIco}>
-            <Icon name="file-document-outline" size={18} color={P.ink} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.docLabel}>My Contracts</Text>
-            <Text style={styles.docHint}>SIGNED CONTRACT PDFS</Text>
-          </View>
-          <Icon name="chevron-right" size={16} color={P.muted3} />
-        </TouchableOpacity>
-      </View>
+      {/* Brand Outreach card (Find brands to pitch · My Contracts) removed with its
+          screens — features/profile-only-apps. */}
 
       {/* ── Legal ──
           Creators get the creator document set: the six everyone gets, plus

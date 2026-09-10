@@ -180,6 +180,11 @@ export const brandApi = {
   register: (data) => api.post('/brands/register', data),
   getMe: () => api.get('/brands/me'),
   updateMe: (data) => api.patch('/brands/me', data),
+  // A rejected brand asking to be looked at again. RejectedScreen has always called
+  // this and it has never existed here, so its one button threw before any request
+  // left the phone and the spinner never stopped. The server route has been live all
+  // along (POST /brands/resubmit) — only this line was missing.
+  resubmit: (data) => api.post('/brands/resubmit', data),
   // Docs/THE_CUT.md pass 1 — the pre-campaign handshake bindings are removed with
   // its screens. The server still answers these routes; disconnecting it is pass 3.
 

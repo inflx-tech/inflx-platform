@@ -217,64 +217,6 @@ describe('spineFor is GONE, and must stay gone', () => {
   });
 });
 
-describe('every action the hero can emit is actually wired', () => {
-  const fs = require('fs');
-  const path = require('path');
-  const screen = fs.readFileSync(
-    path.resolve(__dirname, '../../screens/influencer/CollabDetailScreen.js'), 'utf8');
-
-  it('the screen handles all of them', () => {
-    // A hero offering a button nothing handles is the same class of failure as a hero
-    // offering no buttons at all: she taps, and nothing happens.
-    const emitted = new Set();
-    for (const stage of COLLAB_STAGES) {
-      for (const status of ['invited', 'negotiating', 'agreed', 'accepted', 'pending_brand',
-        'contracted', 'active', 'completed', 'expired']) {
-        for (const turn of ['you', 'brand']) {
-          heroFor({ stage, status, turn, pendingDeliverable: true }).actions.forEach(a => emitted.add(a));
-          heroFor({ stage, status, turn, pendingDeliverable: false }).actions.forEach(a => emitted.add(a));
-        }
-      }
-    }
-    expect(emitted.size).toBeGreaterThan(0);
-    for (const action of emitted) {
-      // Handled either in doAction (accept / pass) or in the go() switch.
-      const wired = new RegExp(`key === '${action}'|case '${action}':`).test(screen);
-      expect([action, wired]).toEqual([action, true]);
-    }
-  });
-
-  it('⚠️ and every one of them has WORDS on it', () => {
-    // 'logistics' was wired and had no label from the day Stage 4 shipped, so the one button
-    // that opens the shoot rendered as a blank grey rectangle. The check above passed the
-    // whole time, because being wired and being legible are different things and it only
-    // asked the first. Contract: features/shoot-plan-you-can-actually-see
-    const emitted = new Set();
-    for (const stage of COLLAB_STAGES) {
-      for (const status of ['invited', 'negotiating', 'agreed', 'accepted', 'pending_brand',
-        'contracted', 'active', 'completed', 'expired']) {
-        for (const turn of ['you', 'brand']) {
-          for (const extra of [{}, { sellsOnly: true, hasShoot: false }, { pendingDeliverable: true }]) {
-            heroFor({ stage, status, turn, ...extra }).actions.forEach(a => emitted.add(a));
-          }
-        }
-      }
-    }
-    expect(emitted.size).toBeGreaterThan(0);
-
-    // Read the label map out of the screen and check every emitted key is a key of it.
-    const block = screen.match(/const label = \{[\s\S]*?\}\[a\];/);
-    expect(block).toBeTruthy();
-    for (const action of emitted) {
-      const has = new RegExp(`(^|[\\s{,])${action}\\s*:`).test(block[0]);
-      expect([action, has]).toEqual([action, true]);
-    }
-  });
-
-  it('and the buttons route through doAction, which covers accept and pass', () => {
-    // go() alone would swallow both — they are not navigations, they are API calls.
-    expect(screen).toContain('doAction');
-    expect(screen).toMatch(/if \(key === 'accept'\) return confirmAccept\(\);/);
-    expect(screen).toMatch(/if \(key === 'pass'\)\s+return confirmPass\(\);/);
-  });
-});
+// 'every action the hero can emit is actually wired' read CollabDetailScreen's source to
+// check each hero action had a handler and a label. That screen was removed by
+// features/profile-only-apps, so there is no screen left to wire — the model tests above stay.

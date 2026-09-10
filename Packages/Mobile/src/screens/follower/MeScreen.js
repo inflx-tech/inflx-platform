@@ -3,16 +3,17 @@
  * white-sweep.html frames 2+3).
  *
  * White law: identity card (initial avatar · name · masked phone · Edit) →
- * grouped rows — Shopping (Orders / Wishlist / Addresses / Returns) and
- * Following (creators / saved posts) → red Log out.
+ * Legal → red Log out.
+ *
+ * features/profile-only-apps (2026-09-10) — the Shopping and Following rows went
+ * with their screens; this and Edit Profile are the whole shopper app now.
  *
  * Docs/THE_CUT.md pass 1 — the Wallet row is gone with the shopper reward
  * wallet. It was data-gated so it only appeared with a positive balance, and
  * nothing in the platform could ever produce one.
  *
- * Guest-first law: guests get an honest card + black sign-in CTA + only the
- * rows that work logged-out (Wishlist + Addresses live on-device and follow
- * them into the account at first login). No dead rows, no "session expired".
+ * Guest-first law: guests get an honest card + black sign-in CTA + Legal.
+ * No dead rows, no "session expired".
  */
 import React, { useState, useCallback, useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
@@ -40,6 +41,23 @@ function Row({ icon, label, sub, onPress }) {
       </View>
       <Icon name="chevron-right" size={18} color="#BBB" />
     </TouchableOpacity>
+  );
+}
+
+// Legal — shoppers see only the documents that apply to buying: the six everyone
+// gets, plus refunds and how ranking works. Shown to guests too: the privacy policy
+// must be reachable inside the app whether or not anyone has signed in.
+function LegalGroup({ navigation }) {
+  return (
+    <View style={st.grp}>
+      <Text style={st.grpT}>About</Text>
+      <Row
+        icon="shield-check-outline"
+        label="Legal & policies"
+        sub="terms · privacy · refunds · complaints"
+        onPress={() => navigation.navigate('LegalList')}
+      />
+    </View>
   );
 }
 
@@ -93,18 +111,13 @@ function MeInner({ navigation }) {
             <View style={[st.pav, { backgroundColor: '#F5F2EC' }]}><Text style={[st.pavTxt, { color: '#111' }]}>?</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={st.pname}>Browsing as guest</Text>
-              <Text style={st.psub}>Your bag, wishlist & addresses are saved on this phone</Text>
+              <Text style={st.psub}>Sign in to see your profile</Text>
             </View>
           </View>
           <TouchableOpacity style={st.signin} activeOpacity={0.85} onPress={() => navigation.navigate('FollowerLogin')}>
             <Text style={st.signinTxt}>Sign in with phone number</Text>
           </TouchableOpacity>
-          <Text style={st.guestNote}>Everything you've saved as a guest follows you into your account — nothing is lost.</Text>
-          <View style={st.grp}>
-            <Text style={st.grpT}>Works without signing in</Text>
-            <Row icon="heart-outline" label="Wishlist" sub="saved products & collections" onPress={() => navigation.navigate('Wishlist')} />
-            <Row icon="map-marker-outline" label="Addresses" sub="delivery addresses" onPress={() => navigation.navigate('Address')} />
-          </View>
+          <LegalGroup navigation={navigation} />
         </ScrollView>
       </SafeAreaView>
     );
@@ -130,33 +143,10 @@ function MeInner({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <View style={st.grp}>
-          <Text style={st.grpT}>Shopping</Text>
-          <Row icon="package-variant-closed" label="My Orders" sub="track · cancel · return" onPress={() => navigation.navigate('OrderHistory')} />
-          <Row icon="heart-outline" label="Wishlist" sub="saved products & collections" onPress={() => navigation.navigate('Wishlist')} />
-          <Row icon="map-marker-outline" label="Addresses" sub="delivery addresses" onPress={() => navigation.navigate('Address')} />
-          <Row icon="keyboard-return" label="My Returns" onPress={() => navigation.navigate('MyReturns')} />
-        </View>
-
-        <View style={st.grp}>
-          <Text style={st.grpT}>Following</Text>
-          <Row icon="account-group-outline" label="Creators I follow" onPress={() => navigation.navigate('FollowedInfluencers')} />
-          {/* Slice 1 — this pointed at SavedList, the legacy saved-OFFERS
-              screen, so a saved POST was unreachable. Now reads post_saves. */}
-          <Row icon="bookmark-outline" label="Saved posts" onPress={() => navigation.navigate('SavedPosts')} />
-        </View>
-
-        {/* Legal — shoppers see only the documents that apply to buying:
-            the six everyone gets, plus refunds and how ranking works. */}
-        <View style={st.grp}>
-          <Text style={st.grpT}>About</Text>
-          <Row
-            icon="shield-check-outline"
-            label="Legal & policies"
-            sub="terms · privacy · refunds · complaints"
-            onPress={() => navigation.navigate('LegalList')}
-          />
-        </View>
+        {/* Shopping (Orders / Wishlist / Addresses / Returns) and Following
+            (Creators I follow / Saved posts) removed with their screens —
+            features/profile-only-apps. */}
+        <LegalGroup navigation={navigation} />
 
         <TouchableOpacity style={st.logout} onPress={handleLogout} hitSlop={8}>
           <Text style={st.logoutTxt}>Log out</Text>
@@ -189,5 +179,4 @@ const st = StyleSheet.create({
   logoutTxt: { fontSize: 13, fontWeight: '800', color: '#D64545' },
   signin: { marginHorizontal: 16, marginTop: 12, backgroundColor: '#111', borderRadius: 999, alignItems: 'center', paddingVertical: 13 },
   signinTxt: { color: '#FFF', fontSize: 13, fontWeight: '800' },
-  guestNote: { marginHorizontal: 30, marginTop: 10, textAlign: 'center', fontSize: 11, color: '#9A9A9A', lineHeight: 17 },
 });

@@ -1,0 +1,40 @@
+{
+  "feature": "profile-only-apps",
+  "area": "all three phone apps — every screen removed except each app's profile",
+  "spec_version": "1.0.0",
+  "status": "IMPLEMENTED 2026-09-10. Shipping by OTA on founder instruction. Formal release gate unmet (maestro not run); see release.",
+  "approved": true,
+  "approved_by": "aveenswamy1989@gmail.com (founder) — instruction 2026-09-10, scope fixed by four answers: three phone apps only · keep login · shopper keeps Me + Edit Profile only · ship to phones",
+  "approved_at": "2026-09-10",
+  "preview_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveenswamy1989@gmail.com (founder) — removal-only contract; the design of record is the founder's instruction + answers in 01-spec.md (precedent: the-cut-pass-1)",
+  "mockup_locked_at": "2026-09-10",
+  "mockup_source": "NONE, deliberately. Nothing is drawn; screens are removed. The profile screens that remain are unchanged apart from losing rows whose destinations are gone.",
+  "impact_reviewed": true,
+  "judgement_calls": {
+    "legal_kept": "Legal list + document kept in all three apps: the Play Store requires the privacy policy to be reachable in-app. Not in either app folder; reached from each profile.",
+    "no_tab_bar": "One screen left per app, so the bottom tab bar was removed rather than showing a single tab.",
+    "shopper_sign_in_kept": "FollowerLoginScreen lives in screens/follower but is the shopper's login; the founder kept login.",
+    "adjacent_fix": "RejectedScreen + brandApi.resubmit (uncommitted since 2026-09-03, login path, server route verified live) committed with this change because the OTA ships the working tree either way."
+  },
+  "verification": {
+    "baseline_tests": "54 suites / 729 tests green before any change (jest --runInBand)",
+    "after_tests": "26 suites / 355 tests green. Removed: 28 suites that tested deleted screens, campaignPrime R-1, collabDetailModel 'every hero action is wired' (read CollabDetailScreen source).",
+    "bundle": "react-native bundle --platform android --dev false: built clean, 1.66 MB (was ~3.2 MB). Any import of a deleted file would fail here.",
+    "lint": "eslint no-undef + react/jsx-no-undef on all edited files: 0 undefined names. 2 pre-existing exhaustive-deps errors in influencer ProfileScreen (lines 72/98) untouched.",
+    "duplicate_routes": "Each stack registers each name once (native-stack duplicate-name crash class)."
+  },
+  "release": {
+    "qa_all_green": "NOT GREEN as a platform — scoped verdict: mobile jest 355/355 green, production bundle builds clean. pnpm qa (web/API) not run: no backend or web file changed. Maestro not run.",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy_class": "PRODUCTION-IMPACTING via OTA (brand, influencer, follower). No backend/src, migration or website file changed.",
+    "deploy_targets": ["ota (brand, influencer, follower)"],
+    "outward_facing": "YES, total. Every user of the three phone apps sees only their profile after the second launch. Backend, data and the brand website are untouched.",
+    "why_not_released": "Maestro (Rule 5) not run; same convention as the-cut-pass-1: deployed on founder instruction with released:false and the gap recorded.",
+    "device_walk_required": "YES — see 06-diff/notes.md."
+  }
+}

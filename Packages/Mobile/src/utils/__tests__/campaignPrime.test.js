@@ -94,11 +94,9 @@ describe('R-2 R-3 R-4 · the competing six is gone, not hidden', () => {
     expect(m.StageRail).toBeUndefined();
   });
 
-  it('R-1 · the campaign screen draws no six-stage strip', () => {
-    const code = strip(read('screens/brand/BrandCampaignDetailScreen.js'));
-    expect(code).not.toContain('StageRail');
-    expect(code).not.toContain('stageKey');
-  });
+  // R-1 (the campaign screen draws no six-stage strip) retired with the screen itself —
+  // features/profile-only-apps removed BrandCampaignDetailScreen. R-9 below still walks
+  // every surviving file for the old names.
 
   it('R-9 · nothing anywhere still imports the old names', () => {
     const walk = (dir, out = []) => {
