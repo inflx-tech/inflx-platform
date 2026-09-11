@@ -15,5 +15,11 @@ export function createInfluencerApi(client) {
     getWithdrawals: () => client.get('/influencers/me/withdrawals'),
     retryWithdrawal: (id) => client.post(`/influencers/me/withdrawals/${id}/retry`),
     getById: (id) => client.get(`/influencers/${id}`),
+    // Item 2 — invitation settings + blocked brands (rules v1.10 §8A)
+    getInvitationSettings: () => client.get('/influencers/me/invitation-settings'),
+    putInvitationSettings: (data) => client.put('/influencers/me/invitation-settings', data),
+    listBlockedBrands: () => client.get('/influencers/me/blocked-brands'),
+    blockBrand: (brandId) => client.post('/influencers/me/blocked-brands', { brandId }),
+    unblockBrand: (brandId) => client.delete(`/influencers/me/blocked-brands/${brandId}`),
   };
 }

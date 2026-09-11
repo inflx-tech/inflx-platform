@@ -9,9 +9,17 @@ import { brandPalette as P, fonts, fmtNum } from '../../theme/tokens';
 import { influencerApi, clearSession, uploadFile } from '../../services/api';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { AuthContext } from '../../../App';
+// Item 2 — the "Invitation settings" entry row (C1), and languages + ONE required niche
+// read from the server's reference lists instead of arrays typed here (founder Q4).
+// Contract: features/item2-pitch-invitation-settings
+import { referenceApi } from '../../services/api';
+import { StatusChip } from '../../components/settings/primitives';
+import { aimsPhrase, modesPhrase } from '../../components/settings/copy';
+import { useFocusEffect } from '@react-navigation/native';
 
-const LANGUAGE_OPTIONS = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi'];
-const NICHE_OPTIONS = ['food', 'fashion', 'beauty', 'travel', 'fitness', 'tech', 'home_decor', 'parenting', 'finance', 'education'];
+// Fallbacks only, used until the reference lists load (they are the same values the
+// server seeds, so the chips never show something the server would refuse).
+const LANGUAGE_FALLBACK = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Bengali', 'Gujarati', 'Punjabi'].map(l => ({ code: l, label: l }));
 
 function SectionHeader({ title }) {
   return (
@@ -19,6 +27,14 @@ function SectionHeader({ title }) {
       <Text style={styles.sectionHeaderText}>{title}</Text>
     </View>
   );
+}
+
+/** The stored niche code as its label; anything not on the list reads "Not set" (founder Q4). */
+function nicheLabel(niche, options) {
+  const code = Array.isArray(niche) ? niche[0] : niche;
+  if (!code) return 'Not set';
+  const hit = (options || []).find(o => o.code === code);
+  return hit ? hit.label : (options && options.length ? 'Not set' : String(code).replace(/_/g, ' '));
 }
 
 function ReadOnlyRow({ label, value, valueStyle }) {
@@ -59,7 +75,19 @@ export default function ProfileScreen({ navigation }) {
 
   // Content fields
   const [languages, setLanguages] = useState([]);
-  const [niches, setNiches] = useState([]);
+  const [niches, setNiches] = useState([]);          // exactly one code since item 2
+  const [languageOptions, setLanguageOptions] = useState(LANGUAGE_FALLBACK);
+  const [nicheOptions, setNicheOptions] = useState([]);
+  const [inviteSummary, setInviteSummary] = useState(null);
+  useEffect(() => {
+    referenceApi.languages().then(r => { if (r.success && r.data.items?.length) setLanguageOptions(r.data.items); }).catch(() => {});
+    referenceApi.creatorNiches().then(r => { if (r.success) setNicheOptions(r.data.items || []); }).catch(() => {});
+  }, []);
+  useFocusEffect(useCallback(() => {
+    let alive = true;
+    influencerApi.getInvitationSettings().then(r => { if (alive && r.success) setInviteSummary(r.data.summary || null); }).catch(() => {});
+    return () => { alive = false; };
+  }, []));
   const [youtubeHandle, setYoutubeHandle] = useState('');
   const [contentStyle, setContentStyle] = useState('');
 
@@ -139,6 +167,8 @@ export default function ProfileScreen({ navigation }) {
   }
 
   async function saveContent() {
+    // Item 2 (check 16): the profile does not save without exactly one niche.
+    if (niches.length !== 1) { Alert.alert('Choose a niche', 'Pick one content niche to save your profile.'); return; }
     const payload = { language: languages, niche: niches };
     if (youtubeHandle.trim()) payload.youtube_handle = youtubeHandle.trim();
     if (contentStyle.trim()) payload.content_style = contentStyle.trim();
@@ -196,8 +226,9 @@ export default function ProfileScreen({ navigation }) {
     setLanguages(prev => prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]);
   }
 
+  // One niche, not many (founder Q4): tapping a chip selects it and clears the previous one.
   function toggleNiche(n) {
-    setNiches(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n]);
+    setNiches(prev => (prev.includes(n) ? [] : [n]));
   }
 
   async function logout() {
@@ -407,31 +438,33 @@ export default function ProfileScreen({ navigation }) {
           <>
             <Text style={styles.fieldLabel}>LANGUAGES</Text>
             <View style={styles.chipWrap}>
-              {LANGUAGE_OPTIONS.map(lang => (
+              {languageOptions.map(opt => (
                 <TouchableOpacity
-                  key={lang}
-                  style={[styles.chip, languages.includes(lang) && styles.chipActive]}
-                  onPress={() => toggleLanguage(lang)}
+                  key={opt.code}
+                  style={[styles.chip, languages.includes(opt.code) && styles.chipActive]}
+                  onPress={() => toggleLanguage(opt.code)}
                 >
-                  <Text style={[styles.chipText, languages.includes(lang) && styles.chipTextActive]}>{lang}</Text>
+                  <Text style={[styles.chipText, languages.includes(opt.code) && styles.chipTextActive]}>{opt.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>CONTENT NICHES</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>CONTENT NICHE · PICK ONE</Text>
             <View style={styles.chipWrap}>
-              {NICHE_OPTIONS.map(n => (
+              {nicheOptions.map(opt => (
                 <TouchableOpacity
-                  key={n}
-                  style={[styles.chip, niches.includes(n) && styles.chipActive]}
-                  onPress={() => toggleNiche(n)}
+                  key={opt.code}
+                  testID={`niche-${opt.code}`}
+                  style={[styles.chip, niches.includes(opt.code) && styles.chipActive]}
+                  onPress={() => toggleNiche(opt.code)}
                 >
-                  <Text style={[styles.chipText, niches.includes(n) && styles.chipTextActive]}>
-                    {n.replace(/_/g, ' ')}
+                  <Text style={[styles.chipText, niches.includes(opt.code) && styles.chipTextActive]}>
+                    {opt.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+            {niches.length !== 1 ? <Text style={styles.nicheWarn}>Choose one niche to save your profile.</Text> : null}
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>YOUTUBE HANDLE</Text>
             <TextInput style={styles.input} value={youtubeHandle} onChangeText={setYoutubeHandle} placeholder="@yourhandle" placeholderTextColor={P.muted3} autoCapitalize="none" />
@@ -449,12 +482,37 @@ export default function ProfileScreen({ navigation }) {
         ) : (
           <>
             <ReadOnlyRow label="Languages" value={languages.length > 0 ? languages.join(', ') : 'Not set'} />
-            <ReadOnlyRow label="Niches" value={(profile?.niche || []).length > 0 ? profile.niche.map(n => n.replace(/_/g, ' ')).join(', ') : 'Not set'} />
+            <ReadOnlyRow label="Niche" value={nicheLabel(profile?.niche, nicheOptions)} />
             {profile?.content_style && (
               <ReadOnlyRow label="Content Style" value={profile.content_style} />
             )}
           </>
         )}
+      </View>
+
+      {/* ── Item 2 — C1: Invitation settings entry row + a temporary door to a brand overview ── */}
+      <SectionHeader title="Brands" />
+      <View style={styles.card}>
+        <TouchableOpacity style={styles.docRow} onPress={() => navigation.navigate('InvitationSettings')} testID="row-invitation-settings">
+          <View style={styles.docIco}><Icon name="handshake-outline" size={18} color={P.ink} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.docLabel}>Invitation settings</Text>
+            <Text style={styles.docHint}>
+              {inviteSummary
+                ? `${inviteSummary.labelState === 'paused' ? 'Paused' : 'Open'} · ${aimsPhrase(inviteSummary.aims)} · ${modesPhrase(inviteSummary.modes)}`
+                : 'Which brands can invite you'}
+            </Text>
+          </View>
+          {inviteSummary ? <StatusChip on={inviteSummary.labelState !== 'paused'} /> : null}
+        </TouchableOpacity>
+        {/* Until item 3 builds Find brands, this is the only way to open a brand overview (X1). */}
+        <TouchableOpacity style={styles.docRow} onPress={() => navigation.navigate('FindParty', { mode: 'brands' })} testID="row-find-brands">
+          <View style={styles.docIco}><Icon name="magnify" size={18} color={P.ink} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.docLabel}>Find a brand</Text>
+            <Text style={styles.docHint}>See what a brand accepts, or block it</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* ── Bank & Payment Details Section ── */}
@@ -701,6 +759,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: P.ink, borderColor: P.ink },
   chipText: { fontSize: 10, color: P.muted, fontWeight: '700', textTransform: 'capitalize', fontFamily: fonts.monoMedium },
   chipTextActive: { color: P.white, fontWeight: '900', fontFamily: fonts.monoBold },
+  nicheWarn: { fontSize: 11, color: P.dangerText, marginTop: 8, fontFamily: fonts.sansMedium },
 
   // Save button — ink + white Outfit-Black UPPERCASE
   saveBtn: {

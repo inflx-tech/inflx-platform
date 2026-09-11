@@ -14,6 +14,28 @@ const asyncHandler = require('../utils/asyncHandler');
 const { resolveProductImage } = require('../utils/productImage');
 const referralService = require('../services/referral.service');
 const businessCategory = require('../services/businessCategory.model');
+// Item 2 — the eight fashion sub-categories + the pitch summary a creator sees.
+// Contract: features/item2-pitch-invitation-settings
+const referenceLists = require('../services/referenceLists.service');
+const eligibility = require('../services/collabEligibility.service');
+
+/**
+ * Item 2 (founder Q5b, rules v1.10 §8A): a brand picks Fashion, then one or more of the
+ * eight sub-categories. Required at registration and in Business details. Codes come from
+ * ref_brand_categories, so the list can only be changed in one place.
+ * Returns the cleaned array or throws the 422 the form shows.
+ */
+async function validateSubCategories(value, { required }) {
+  if (value === undefined) {
+    if (required) throw new AppError('VALIDATION_ERROR', 'Pick at least one category your brand sells.', 422, 'sub_categories');
+    return undefined;
+  }
+  const arr = Array.isArray(value) ? [...new Set(value.map(v => String(v).trim().toUpperCase()).filter(Boolean))] : [];
+  if (!arr.length) throw new AppError('VALIDATION_ERROR', 'Pick at least one category your brand sells.', 422, 'sub_categories');
+  const bad = referenceLists.unknownCodes(arr, await referenceLists.brandCategories());
+  if (bad.length) throw new AppError('VALIDATION_ERROR', `Unknown category: ${bad.join(', ')}`, 422, 'sub_categories');
+  return arr;
+}
 
 // Category-aware validation using schema
 function validateProductFields(schema, body) {
@@ -77,6 +99,7 @@ const register = asyncHandler(async (req, res) => {
     name,           // brand contact's real name; verify-otp wrote "Brand User" as a placeholder
     business_name,
     category,
+    sub_categories, // Item 2 — one or more of the eight fashion sub-categories (required)
     gstin,
     address_line,
     pincode,
@@ -104,6 +127,8 @@ const register = asyncHandler(async (req, res) => {
   if (!businessCategory.isAcceptedCategory(category)) {
     throw new AppError('VALIDATION_ERROR', businessCategory.rejectionMessage(), 422, 'category');
   }
+  // Item 2 — check 15: a new brand cannot finish registration without a sub-category.
+  const subCategories = await validateSubCategories(sub_categories, { required: true });
   if (!name || !name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   }
@@ -160,11 +185,11 @@ const register = asyncHandler(async (req, res) => {
   // are legacy — kept in sync exactly as updateMe does.
   const { rows } = await db.query(
     `INSERT INTO brands (user_id, business_name, category, gstin, address_line, pincode,
-                         lat, lng, latitude, longitude, locality, formatted_address)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, $9, $10)
+                         lat, lng, latitude, longitude, locality, formatted_address, sub_categories)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, $9, $10, $11)
      RETURNING *`,
     [userId, business_name.trim(), category.trim(), gstin || null, address_line.trim(), String(pincode).trim(),
-     lat, lng, loc, fmtAddr]
+     lat, lng, loc, fmtAddr, subCategories]
   );
 
   const brand = rows[0];
@@ -245,6 +270,11 @@ const updateMe = asyncHandler(async (req, res) => {
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
+  // Item 2 — Business details can set the sub-categories (existing brands have none yet).
+  // Validated against ref_brand_categories; at least one when the field is written.
+  if (req.body.sub_categories !== undefined) {
+    updates.sub_categories = await validateSubCategories(req.body.sub_categories, { required: true });
+  }
 
   // Docs/THE_CUT.md pass 0 — closing signup alone would not have held. A brand could
   // register as fashion and then switch itself to restaurant from the profile edit,
@@ -964,17 +994,26 @@ const listAllTransactions = asyncHandler(async (req, res) => {
 
 const getPublicProfile = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
-    `SELECT b.id, b.business_name, b.category, b.logo_url, b.address_line,
-            b.created_at,
+    `SELECT b.id, b.business_name, b.category, b.sub_categories, b.logo_url, b.address_line,
+            b.created_at, u.city,
             (SELECT COUNT(*) FROM campaigns c
              WHERE c.brand_id = b.id AND c.status IN ('active', 'live', 'published'))::int AS active_campaigns_count
-     FROM brands b
+     FROM brands b JOIN users u ON u.id = b.user_id
      WHERE b.id = $1`,
     [req.params.id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
 
-  return success(res, { brand: rows[0] });
+  // Item 2 (A5, screens X1/X2) — what THIS creator may know about the brand's pitch
+  // settings: accepting or paused, the Aims and modes it accepts, and whether she may
+  // pitch, as a coarse reason. Blocked looks exactly like paused. Nothing else leaves.
+  let pitchSummary = null;
+  if (req.user.role === 'influencer') {
+    const { rows: me } = await db.query(`SELECT id FROM influencers WHERE user_id = $1`, [req.user.sub]);
+    pitchSummary = await eligibility.pitchSummaryFor(rows[0].id, me[0] ? me[0].id : null);
+  }
+
+  return success(res, { brand: rows[0], pitchSummary });
 });
 
 // ── GET /brands/me/store-preview — brand sees their store as followers see it ─

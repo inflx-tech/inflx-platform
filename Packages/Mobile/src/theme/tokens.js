@@ -498,3 +498,27 @@ export const fonts = {
     default: 'serif',
   }),
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 2 — Pitch & Invitation settings (rules v1.10 §8A; prompt §6 "Look and feel")
+// ─────────────────────────────────────────────────────────────────────────────
+// The locked token set for the settings screens, the public "Accepts / Open to"
+// summaries and the Block action. Screens reference these names, never raw hex.
+// Mono rule: yellow is only ever the ONE main button on a screen; Aim and mode tags
+// are neutral outlines; colour otherwise means action or status only.
+export const settingsTokens = {
+  bg: '#FFFFFF', surface: '#F6F6F3', border: '#E5E4DE',
+  ink: '#1A1A17', ink2: '#5B5A53', ink3: '#77766E',
+  primary: '#FFC700', primaryPressed: '#F0B400', primarySoft: '#FFF3C4', onPrimary: '#1A1A17',
+  disabledBg: '#EFEFEA', disabledText: '#A3A29B',
+  danger: '#C42B2B', dangerSoft: '#FDE8E8',
+  state: {
+    yourMove:  { fg: '#B04600', bg: '#FFEBDD' },
+    waiting:   { fg: '#1D5FBF', bg: '#E6EFFC' },
+    active:    { fg: '#1A7A3D', bg: '#E4F5EA' },
+    completed: { fg: '#6A3FC6', bg: '#EFE8FC' },
+    declined:  { fg: '#C42B2B', bg: '#FDE8E8' },
+    disputed:  { fg: '#FFFFFF', bg: '#A51D2D' },
+    ended:     { fg: '#55544D', bg: '#EFEFEA' },
+  },
+};

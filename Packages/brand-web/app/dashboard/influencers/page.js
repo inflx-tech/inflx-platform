@@ -1168,19 +1168,13 @@ function ProposalsInbox() {
   const [tab, setTab] = useState('');
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [settings, setSettings]   = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [activeProposal, setActiveProposal] = useState(null);
 
   async function load() {
     setLoading(true);
-    const [pRes, sRes] = await Promise.all([
-      proposalApi.list(tab || null),
-      proposalApi.getSettings(),
-    ]);
+    const pRes = await proposalApi.list(tab || null);
     setLoading(false);
     if (pRes.success) setProposals(pRes.data?.proposals || []);
-    if (sRes.success) setSettings(sRes.data);
   }
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tab]);
@@ -1208,29 +1202,15 @@ function ProposalsInbox() {
           <span className="cnt-chip">{loading ? '…' : `${proposals.length} ${tab ? tab : 'pending'}`}</span>
           <h1>Influencer Proposals</h1>
           <div className="rule" />
-          <div className="sub">Pitches sent to you by influencers. Toggle settings to control who can pitch you.</div>
-        </div>
-        <div>
-          <button className="btn-ghost" onClick={() => setShowSettings(s => !s)}>
-            {showSettings ? '✕ Hide settings' : '⚙ Settings'}
-          </button>
+          <div className="sub">Pitches sent to you by creators.</div>
         </div>
       </div>
 
-      {showSettings && settings && (
-        <PrpSettingsCard
-          settings={settings}
-          onSaved={() => { setShowSettings(false); load(); }}
-        />
-      )}
-
-      {settings && !settings.accepts_proposals && !showSettings && (
-        <div className="warn">
-          <div className="ic">!</div>
-          <div className="t"><b>You&apos;re not accepting proposals yet.</b> Influencers can&apos;t pitch you until you turn this on.</div>
-          <button className="cta" onClick={() => setShowSettings(true)}>Open settings →</button>
-        </div>
-      )}
+      {/* Item 2 — who may pitch this brand is set in the Brand app (Profile → Pitch settings). */}
+      <div className="warn">
+        <div className="ic">i</div>
+        <div className="t"><b>Pitch settings are managed in the INFLX Brand app.</b> Open Profile → Pitch settings on your phone to choose who can pitch you.</div>
+      </div>
 
       <div className="tabs">
         {PRP_STATUS_TABS.map(t => {
@@ -1326,119 +1306,9 @@ function ProposalsInbox() {
   );
 }
 
-function PrpSettingsCard({ settings, onSaved }) {
-  const [acceptsProposals, setAcceptsProposals] = useState(!!settings.accepts_proposals);
-  const filters = settings.proposal_filters || {};
-  const [minTier, setMinTier]                 = useState(filters.min_tier || '');
-  const [allowedNiches, setAllowedNiches]     = useState(new Set(filters.allowed_niches || []));
-  const [cityMatch, setCityMatch]             = useState(!!filters.city_match_required);
-  const [minER, setMinER]                     = useState(filters.min_engagement_rate ?? '');
-  const [onlyPastCollabs, setOnlyPastCollabs] = useState(!!filters.only_past_collabs);
-  const [saving, setSaving] = useState(false);
-
-  function toggleNiche(n) {
-    setAllowedNiches(prev => {
-      const next = new Set(prev);
-      next.has(n) ? next.delete(n) : next.add(n);
-      return next;
-    });
-  }
-
-  async function save() {
-    setSaving(true);
-    const res = await proposalApi.updateSettings({
-      accepts_proposals: acceptsProposals,
-      proposal_filters: {
-        min_tier: minTier || null,
-        allowed_niches: Array.from(allowedNiches),
-        city_match_required: cityMatch,
-        min_engagement_rate: minER === '' ? null : Number(minER),
-        only_past_collabs: onlyPastCollabs,
-      },
-    });
-    setSaving(false);
-    if (res.success) onSaved();
-  }
-
-  return (
-    <div className="set-panel">
-      <h3>Proposal settings</h3>
-
-      <label className="set-switch">
-        <input type="checkbox" checked={acceptsProposals} onChange={e => setAcceptsProposals(e.target.checked)} />
-        <div>
-          <div className="set-switch-t">Accept proposals from influencers</div>
-          <div className="set-switch-s">When on, influencers matching your filters can pitch you. Turn off to pause new inbound proposals entirely.</div>
-        </div>
-      </label>
-
-      {acceptsProposals && (
-        <>
-          <div className="set-row">
-            <div className="set-lbl">Minimum tier</div>
-            <div className="chip-row">
-              <button
-                type="button"
-                className={`chip ${minTier === '' ? 'act' : ''}`}
-                onClick={() => setMinTier('')}
-              >Any</button>
-              {PRP_TIER_OPTIONS.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  className={`chip ${minTier === t ? 'act' : ''}`}
-                  onClick={() => setMinTier(t)}
-                >{prpTierLabel(t)}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="set-row">
-            <div className="set-lbl">Allowed niches <span className="opt">empty = any</span></div>
-            <div className="chip-row">
-              {PRP_NICHE_OPTIONS.map(n => (
-                <button
-                  key={n}
-                  type="button"
-                  className={`chip ${allowedNiches.has(n) ? 'act' : ''}`}
-                  onClick={() => toggleNiche(n)}
-                >{n}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="set-row">
-            <div className="set-lbl">Additional filters</div>
-            <div className="set-2col">
-              <label className="set-check">
-                <input type="checkbox" checked={cityMatch} onChange={e => setCityMatch(e.target.checked)} />
-                City match required
-              </label>
-              <label className="set-check">
-                <input type="checkbox" checked={onlyPastCollabs} onChange={e => setOnlyPastCollabs(e.target.checked)} />
-                Only influencers I&apos;ve worked with before
-              </label>
-              <label className="set-er-input">
-                Min engagement %
-                <input
-                  type="number"
-                  step="0.1"
-                  value={minER}
-                  onChange={e => setMinER(e.target.value)}
-                  placeholder="0"
-                />
-              </label>
-            </div>
-          </div>
-        </>
-      )}
-
-      <button className="btn-prim" onClick={save} disabled={saving} style={{ marginTop: 4 }}>
-        {saving ? 'Saving…' : 'Save settings'}
-      </button>
-    </div>
-  );
-}
+// Item 2 — the old "who can pitch us" panel (tier / niches / same city / engagement /
+// past-collaborators) was retired on 2026-09-11. Pitch settings are managed in the INFLX
+// Brand app against rules v1.10 §8A; the website mirror comes with the brand-web rebuild.
 
 function PrpProposalDetailModal({ proposal, onClose, onChanged }) {
   const [busy, setBusy] = useState(false);

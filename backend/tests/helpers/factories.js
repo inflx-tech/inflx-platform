@@ -118,6 +118,8 @@ async function registerBrand(token, overrides = {}) {
       name: registerOverrides.name || 'Test Brand Owner',
       business_name: registerOverrides.business_name || 'Test Restaurant Pvt Ltd',
       category: registerOverrides.category || 'restaurant',
+      // Item 2 — registration now requires at least one fashion sub-category.
+      sub_categories: registerOverrides.sub_categories || ['WOMEN'],
       address_line: registerOverrides.address_line || '123 MG Road',
       city: registerOverrides.city || 'Vijayawada',
       state: registerOverrides.state || 'Andhra Pradesh',

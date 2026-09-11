@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { brandApi } from '../../../../lib/api';
+import { api, brandApi } from '../../../../lib/api';
 import useEntitlements from '../../../../lib/useEntitlements';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -205,6 +205,18 @@ export default function ProfilePage() {
   const [form, setForm] = useState({
     business_name: '', category: '', gstin: '', logo_url: '',
   });
+  // Item 2 (rules v1.10 §8A) — the eight fashion sub-categories, editable here so brands
+  // registered before item 2 can set theirs. At least one is required to save a change.
+  const [subCategories, setSubCategories] = useState([]);
+  const [subCategoryOptions, setSubCategoryOptions] = useState([]);
+  useEffect(() => {
+    api.get('/reference/brand-categories').then(r => {
+      if (r?.success && Array.isArray(r.data?.items)) setSubCategoryOptions(r.data.items);
+    }).catch(() => {});
+  }, []);
+  function toggleSubCategory(code) {
+    setSubCategories(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+  }
 
   // Contact person
   const [contactName, setContactName] = useState('');
@@ -230,6 +242,7 @@ export default function ProfilePage() {
           gstin:         b.gstin || '',
           logo_url:      b.logo_url || '',
         });
+        setSubCategories(Array.isArray(b.sub_categories) ? b.sub_categories : []);
         const ld = b.listing_data || {};
         setContactName(ld.contact_person_name || b.name || '');
 
@@ -294,6 +307,13 @@ export default function ProfilePage() {
     const mainPin  = mainBranch.pincode.trim();
     if (mainAddr !== (brand?.address_line || '')) payload.address_line = mainAddr;
     if (mainPin !== (brand?.pincode || ''))       payload.pincode = mainPin;
+
+    // Item 2 — sub-categories; sent only when changed, and never as an empty list.
+    const existingSubs = Array.isArray(brand?.sub_categories) ? brand.sub_categories : [];
+    if (JSON.stringify([...subCategories].sort()) !== JSON.stringify([...existingSubs].sort())) {
+      if (subCategories.length === 0) { showToast('Pick at least one category you sell', 'err'); setSaving(false); return; }
+      payload.sub_categories = subCategories;
+    }
 
     // listing_data
     const existingLd = brand?.listing_data || {};
@@ -457,6 +477,31 @@ export default function ProfilePage() {
               <label className="field-l">Category <span className="lock">🔒 locked</span></label>
               <input type="text" value={form.category} readOnly />
               <div className="field-help">Cannot be changed after registration</div>
+            </div>
+          </div>
+
+          {/* Item 2 — what the brand sells. Creators filter the brands that may invite them by these. */}
+          <div className="field">
+            <label className="field-l">What you sell</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {subCategoryOptions.map(opt => {
+                const on = subCategories.includes(opt.code);
+                return (
+                  <button type="button" key={opt.code} onClick={() => toggleSubCategory(opt.code)}
+                    style={{
+                      borderRadius: 999, padding: '6px 12px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                      border: on ? '1px solid #0A0A0A' : '1px solid #D4D4D8',
+                      background: on ? '#0A0A0A' : '#FFFFFF', color: on ? '#FFFFFF' : '#52525B',
+                    }}>
+                    {on ? '✓ ' : ''}{opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="field-help">
+              {subCategories.length === 0
+                ? 'Not set yet — pick at least one. Until you do, creators who filter by category will not see you as a match.'
+                : 'Pick every category you sell.'}
             </div>
           </div>
 

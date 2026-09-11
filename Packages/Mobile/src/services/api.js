@@ -180,6 +180,15 @@ export const brandApi = {
   register: (data) => api.post('/brands/register', data),
   getMe: () => api.get('/brands/me'),
   updateMe: (data) => api.patch('/brands/me', data),
+
+  // Item 2 — Pitch settings (rules v1.10 §8A). Contract: features/item2-pitch-invitation-settings
+  getPitchSettings:     () => api.get('/brands/me/pitch-settings'),
+  putPitchSettings:     (data) => api.put('/brands/me/pitch-settings', data),
+  listBlockedCreators:  () => api.get('/brands/me/blocked-creators'),
+  blockCreator:         (influencerId) => api.post('/brands/me/blocked-creators', { influencerId }),
+  unblockCreator:       (influencerId) => api.delete(`/brands/me/blocked-creators/${influencerId}`),
+  // X4 — a creator's profile as a brand sees it (carries inviteSummary).
+  getCreatorProfile:    (influencerId) => api.get(`/influencers/${influencerId}`),
   // A rejected brand asking to be looked at again. RejectedScreen has always called
   // this and it has never existed here, so its one button threw before any request
   // left the phone and the spinner never stopped. The server route has been live all
@@ -375,6 +384,15 @@ export const brandApi = {
 
 export const influencerApi = {
   register: (data) => api.post('/influencers/register', data),
+
+  // Item 2 — Invitation settings (rules v1.10 §8A). Contract: features/item2-pitch-invitation-settings
+  getInvitationSettings: () => api.get('/influencers/me/invitation-settings'),
+  putInvitationSettings: (data) => api.put('/influencers/me/invitation-settings', data),
+  listBlockedBrands:     () => api.get('/influencers/me/blocked-brands'),
+  blockBrand:            (brandId) => api.post('/influencers/me/blocked-brands', { brandId }),
+  unblockBrand:          (brandId) => api.delete(`/influencers/me/blocked-brands/${brandId}`),
+  // X1/X2 — a brand's overview as a creator sees it (carries pitchSummary).
+  getBrandOverview:      (brandId) => api.get(`/brands/${brandId}/public`),
   // B4 — My Store arranger
   getDiscoverLayout: () => api.get('/influencers/me/discover-layout'),
   putDiscoverLayout: (rows) => api.put('/influencers/me/discover-layout', { rows_json: rows }),
@@ -554,6 +572,14 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
   });
 }
 
+
+// Item 2 — reference lists every picker reads (any signed-in role).
+export const referenceApi = {
+  creatorNiches:   () => api.get('/reference/creator-niches'),
+  languages:       () => api.get('/reference/languages'),
+  brandCategories: () => api.get('/reference/brand-categories'),
+  states:          () => api.get('/reference/states'),
+};
 
 export const followerApi = {
   // Profile

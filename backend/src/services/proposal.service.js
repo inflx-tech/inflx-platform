@@ -50,9 +50,8 @@ async function checkEligibility(influencerId, brandId) {
   );
   const brand = brandRows[0];
   if (!brand) return { eligible: false, reason: 'Brand not found' };
-  if (!brand.accepts_proposals) {
-    return { eligible: false, reason: 'This brand is not accepting proposals right now.' };
-  }
+  // Item 2: whether the brand is accepting pitches is decided by brand_pitch_settings via
+  // collabEligibility.service, not by the deprecated brands.accepts_proposals column.
 
   const { rows: infRows } = await db.query(
     `SELECT inf.id, inf.followers_count, inf.engagement_rate, inf.niche,
@@ -89,48 +88,12 @@ async function checkEligibility(influencerId, brandId) {
     };
   }
 
-  // Brand-side filters
-  const filters = brand.proposal_filters || {};
-
-  if (filters.min_tier) {
-    const myTier = tierFromFollowers(Number(inf.followers_count || 0));
-    if ((TIER_RANK[myTier] || 0) < (TIER_RANK[filters.min_tier] || 0)) {
-      return { eligible: false, reason: `This brand only accepts proposals from ${filters.min_tier} tier and above.` };
-    }
-  }
-  if (Array.isArray(filters.allowed_niches) && filters.allowed_niches.length > 0) {
-    const myNiches = Array.isArray(inf.niche) ? inf.niche.map(n => String(n).toLowerCase()) : [];
-    const allowed = filters.allowed_niches.map(n => String(n).toLowerCase());
-    const overlap = myNiches.some(n => allowed.includes(n));
-    if (!overlap) {
-      return { eligible: false, reason: `This brand only accepts proposals from these niches: ${filters.allowed_niches.join(', ')}.` };
-    }
-  }
-  if (filters.city_match_required) {
-    if (!inf.influencer_city || !brand.brand_city ||
-        String(inf.influencer_city).toLowerCase() !== String(brand.brand_city).toLowerCase()) {
-      return { eligible: false, reason: 'This brand only accepts proposals from influencers in the same city.' };
-    }
-  }
-  if (filters.min_engagement_rate != null) {
-    if (Number(inf.engagement_rate || 0) < Number(filters.min_engagement_rate)) {
-      return { eligible: false, reason: `This brand requires a minimum engagement rate of ${filters.min_engagement_rate}%.` };
-    }
-  }
-  if (filters.only_past_collabs) {
-    const { rows: priorRows } = await db.query(
-      `SELECT 1 FROM campaign_influencers ci
-       JOIN   campaign_sets cs ON cs.id = ci.set_id
-       JOIN   campaigns c ON c.id = cs.campaign_id
-       WHERE  ci.influencer_id = $1 AND c.brand_id = $2
-              AND ci.status IN ('active', 'completed')
-       LIMIT  1`,
-      [influencerId, brandId]
-    );
-    if (!priorRows[0]) {
-      return { eligible: false, reason: 'This brand only accepts proposals from influencers they have worked with before.' };
-    }
-  }
+  // Item 2 — the brand's own filters (accepting/paused, blocked, aims, modes, niches,
+  // followers, engagement, languages, cities, past creators) now live in
+  // collabEligibility.service and are checked by the controller with the aim and mode of
+  // THIS pitch. The old proposal_filters block that stood here revealed thresholds in its
+  // messages ("requires a minimum engagement rate of 2%") and is gone. What remains
+  // below is admin-level: bans, cooldowns and rate limits (rules §8, §25).
 
   // Rate limits
   const { rows: countsRows } = await db.query(
@@ -238,13 +201,20 @@ async function discoverEligibleBrands(influencerId, { search, category, city, li
   // whenever no filter was applied. That is its default state, so "Find brands to pitch"
   // has never worked for anyone. Found 2026-08-23 while verifying the brands being opened
   // to creator pitches — opening them is worthless if the screen listing them errors.
-  const params = [];
-  let q = `SELECT b.id, b.business_name, b.logo_url, b.category, b.proposal_filters,
+  // Item 2 — "open to pitches" is brand_pitch_settings.accepting (missing row = open), and a
+  // brand that has blocked THIS creator is hidden exactly as a paused one is. The old
+  // proposal_filters column is no longer selected: thresholds never leave the server.
+  const params = [influencerId];
+  let q = `SELECT b.id, b.business_name, b.logo_url, b.category, b.sub_categories,
                   u.city AS brand_city
            FROM   brands b
            JOIN   users u ON u.id = b.user_id
-           WHERE  b.accepts_proposals = TRUE
-             AND  u.status = 'approved'`;
+           LEFT JOIN brand_pitch_settings bps ON bps.brand_id = b.id
+           WHERE  COALESCE(bps.accepting, TRUE) = TRUE
+             AND  u.status = 'approved'
+             AND  NOT EXISTS (SELECT 1 FROM collab_blocks cb
+                               WHERE cb.blocker_type = 'brand' AND cb.blocker_id = b.id
+                                 AND cb.blocked_type = 'creator' AND cb.blocked_id = $1)`;
   if (search) {
     params.push(`%${search}%`);
     q += ` AND b.business_name ILIKE $${params.length}`;
@@ -298,8 +268,8 @@ async function create(influencerId, brandId, payload) {
         proposed_fee, proposed_commission_pct, proposed_deliverables,
         proposed_posting_window_start, proposed_posting_window_end,
         portfolio_links, expires_at,
-        scope_level, scope_ref_json, theme_key, proposed_product_ids)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16::jsonb)
+        scope_level, scope_ref_json, theme_key, proposed_product_ids, shoot_mode)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16::jsonb,$17)
      RETURNING *`,
     [
       influencerId, brandId,
@@ -318,6 +288,9 @@ async function create(influencerId, brandId, payload) {
       payload.scope_ref_json ? JSON.stringify(payload.scope_ref_json) : null,
       payload.theme_key || null,
       Array.isArray(payload.proposed_product_ids) ? JSON.stringify(payload.proposed_product_ids) : null,
+      // Item 2 — the mode of work this pitch proposes (visit | shipment). Optional until
+      // item 8 makes it mandatory; the brand's accepted modes are enforced when present.
+      ['visit', 'shipment'].includes(payload.shoot_mode) ? payload.shoot_mode : null,
     ]
   );
   return rows[0];
@@ -484,9 +457,12 @@ async function flag(proposalId, reason) {
 // Phase 8 — a creator browses a brand's products to scope a proposal. Gated:
 // only brands that opted into proposals are browsable (mirrors discover-brands).
 async function browseBrandProducts(brandId, { search, limit = 40 } = {}) {
-  const brand = (await db.query(`SELECT accepts_proposals FROM brands WHERE id = $1`, [brandId])).rows[0];
+  const brand = (await db.query(
+    `SELECT b.id, COALESCE(bps.accepting, TRUE) AS accepting
+       FROM brands b LEFT JOIN brand_pitch_settings bps ON bps.brand_id = b.id
+      WHERE b.id = $1`, [brandId])).rows[0];
   if (!brand) { const e = new Error('Brand not found'); e.code = 'NOT_FOUND'; throw e; }
-  if (!brand.accepts_proposals) { const e = new Error('This brand is not accepting proposals right now.'); e.code = 'FORBIDDEN'; throw e; }
+  if (!brand.accepting) { const e = new Error("This brand isn't accepting pitches right now."); e.code = 'FORBIDDEN'; throw e; }
   const params = [brandId];
   let where = 'brand_id = $1';
   if (search && String(search).trim()) { params.push(`%${String(search).trim()}%`); where += ` AND name ILIKE $${params.length}`; }

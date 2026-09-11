@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Pitch & Invitation Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+</style>
+</head>
+<body>
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">INFLX rebuild · Item 2 of 21 · Stage 3: locked · rules doc v1.9</div>
+  <h1>Pitch & invitation settings</h1>
+  <p class="lede">The brand decides who can pitch it; the creator decides who can invite them. These screens cover both settings pages, every state, and how each setting shows up on the other side. Rules: section 8A of the rules doc v1.9. Names and numbers are example data.</p>
+  <span class="pill" style="background:var(--done-bg);color:var(--done-fg)">Locked 11 Sep 2026 · next: Claude Code gap check (stage 4)</span>
+</header>
+
+<!-- ================= BRAND ================= -->
+<section>
+  <header><div class="eyebrow">Brand app · Profile tab</div><h2>Brand: who can pitch us</h2></header>
+  <div class="flow">
+
+    <!-- B1 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><h3>Profile</h3></div>
+          <div class="row"><span class="avatar" style="background:#FFE7A3">UT</span><div><b style="font-size:15px">Urban Threads</b><div class="xs mut">Women · Hyderabad · 3 branches</div></div></div>
+          <div>
+            <div class="listrow"><div class="t"><b>Business details</b><span class="xs mut">Name, contact, GSTIN, logo</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Branches</b><span class="xs mut">3 locations</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Pitch settings</b><span class="xs mut">Accepting · all Aims · Store Visit and Remote</span></div><span class="chip s-active">On</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Brand overview</b><span class="xs mut">What creators see</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Legal & policies</b></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          </div>
+          <div style="flex:1"></div>
+          <button class="btn b-txt" type="button" style="justify-self:start">Log out</button>
+        </div>
+        <nav class="tabbar" aria-label="Brand tabs"><span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-layers"/></svg></span>Campaigns</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-users"/></svg></span>Creators</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab on"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span></nav>
+      </div>
+      <div class="cap"><i>B1</i><b>Profile: entry point</b><span>The row shows a one-line summary and an On / Paused chip, so the brand sees its status without opening it.</span></div>
+    </div>
+
+    <!-- B2 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch settings</h3></div>
+          <div class="row between"><div><div class="lbl">Accepting pitches</div><div class="hint">Creators can send you pitches</div></div><span class="sw on"></span></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Aims you accept</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Sale</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Content</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Hybrid</span></div><div class="hint">Creators see these on your brand overview.</div></div>
+          <div class="grp"><div class="lbl">Mode of work</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Store Visit</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Remote</span></div></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Who can pitch</div><div class="hint">Only you see these. Creators who don't match are told they don't meet your criteria.</div></div>
+          <div class="anyrow"><span>Creator niches</span><b>Any <svg class="ico chev" style="vertical-align:middle"><use href="#i-chev"/></svg></b></div>
+          <div class="grp"><div class="lbl" style="font-size:12.5px">Minimum followers</div><div class="two"><div class="field ph">Instagram</div><div class="field ph">YouTube</div></div><div class="hint">Either platform is enough.</div></div>
+          <div class="grp"><div class="lbl" style="font-size:12.5px">Minimum engagement rate</div><div class="field ph">No minimum<span class="unit">%</span></div></div>
+          <div class="anyrow"><span>Languages</span><b>Any <svg class="ico chev" style="vertical-align:middle"><use href="#i-chev"/></svg></b></div>
+          <div class="anyrow"><span>Cities</span><b>Any <svg class="ico chev" style="vertical-align:middle"><use href="#i-chev"/></svg></b></div>
+          <div class="row between"><div><div class="lbl">Always allow past creators</div><div class="hint">Creators you've signed with can pitch even if they don't match. Not if you've paused or blocked them.</div></div><span class="sw on"></span></div>
+          <div class="listrow" style="border-bottom:0"><div class="t"><b>Blocked creators</b><span class="xs mut">None</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="savebar"><button class="btn block b-dis" type="button" disabled>Save changes</button></div>
+      </div>
+      <div class="cap"><i>B2</i><b>Pitch settings: new brand</b><span>Everything open by default. Save stays grey until something changes. Public choices first, private filters below.</span></div>
+    </div>
+
+    <!-- B3 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch settings</h3></div>
+          <div class="row between"><div><div class="lbl">Accepting pitches</div><div class="hint">Creators can send you pitches</div></div><span class="sw on"></span></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Aims you accept</div><div class="chips"><span class="opt bad">Pay for Sale</span><span class="opt bad">Pay for Content</span><span class="opt bad">Hybrid</span></div><div class="err">Pick at least one Aim. To stop all pitches, turn off Accepting pitches instead.</div></div>
+          <div class="grp"><div class="lbl">Mode of work</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Store Visit</span><span class="opt">Remote</span></div></div>
+          <div class="divider"></div>
+          <div class="anyrow"><span>Creator niches</span><b>3 selected <svg class="ico chev" style="vertical-align:middle"><use href="#i-chev"/></svg></b></div>
+          <div class="grp"><div class="lbl" style="font-size:12.5px">Minimum followers</div><div class="two"><div class="field">10,000</div><div class="field ph">YouTube</div></div><div class="hint">Either platform is enough.</div></div>
+          <div class="grp"><div class="lbl" style="font-size:12.5px">Minimum engagement rate</div><div class="field error focus">140<span class="unit">%</span></div><div class="err">Enter a rate between 0 and 100.</div></div>
+          <div class="anyrow"><span>Cities</span><b>2 cities in 2 states <svg class="ico chev" style="vertical-align:middle"><use href="#i-chev"/></svg></b></div>
+        </div>
+        <div class="savebar"><div class="xs mut" style="text-align:center">Fix 2 things above to save</div><button class="btn block b-dis" type="button" disabled>Save changes</button></div>
+      </div>
+      <div class="cap"><i>B3</i><b>Editing with errors</b><span>Errors sit under the field that caused them and say how to fix it. Save stays disabled and counts what's left.</span></div>
+    </div>
+
+    <!-- B4 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch settings</h3></div>
+          <div class="anyrow"><span>Creator niches</span><b>Any</b></div>
+          <div class="field ph">Instagram</div>
+        </div>
+        <div class="dim"><div class="sheet">
+          <span class="grab"></span>
+          <div class="row between"><b style="font-size:15px">Creator niches</b><button class="btn b-txt sm2" type="button">Clear</button></div>
+          <div class="field ph"><svg class="ico"><use href="#i-search"/></svg>Search niches</div>
+          <div class="hint">From the niches creators choose when they sign up.</div>
+          <div>
+            <div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Ethnic wear</b></div></div>
+            <div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Western wear</b></div></div>
+            <div class="listrow"><span class="check"></span><div class="t"><b>Streetwear</b></div></div>
+            <div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Budget fashion</b></div></div>
+            <div class="listrow"><span class="check"></span><div class="t"><b>Men's fashion</b></div></div>
+            <div class="listrow"><span class="check"></span><div class="t"><b>Lifestyle</b></div></div>
+          </div>
+          <button class="btn block b-pri" type="button">Apply · 3 niches</button>
+        </div></div>
+      </div>
+      <div class="cap"><i>B4</i><b>Picker sheet (niches, languages)</b><span>One pattern for "Any or pick" lists. Clear returns to Any. Cities use the state-then-city picker shown in C4.</span></div>
+    </div>
+
+    <!-- B5 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch settings</h3></div>
+          <div class="row between"><div class="lbl">Accepting pitches</div><span class="sw"></span></div>
+        </div>
+        <div class="dim"><div class="sheet">
+          <span class="grab"></span>
+          <b style="font-size:16px">Pause pitches?</b>
+          <p class="sm mut">Creators will see <b style="color:var(--ink)">"Not accepting pitches right now"</b> on your brand overview and can't send new pitches.</p>
+          <div class="toast t-info"><svg class="ico"><use href="#i-info"/></svg><span>Pitches you've already received stay open. You still have 30 days to answer each one.</span></div>
+          <button class="btn block b-pri" type="button">Pause pitches</button>
+          <button class="btn block b-sec" type="button">Keep accepting</button>
+        </div></div>
+      </div>
+      <div class="cap"><i>B5</i><b>Pausing asks first</b><span>Turning the switch off opens this sheet. Nothing changes until the brand confirms.</span></div>
+    </div>
+
+    <!-- B6 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch settings</h3></div>
+          <div class="toast t-ok"><svg class="ico"><use href="#i-check"/></svg><span>Pitch settings saved.</span></div>
+          <div class="banner"><b>Pitches paused</b><span>Creators see "Not accepting pitches right now". 2 open pitches still need your answer.</span></div>
+          <div class="row between"><div><div class="lbl">Accepting pitches</div><div class="hint">Paused since 11 Sep</div></div><span class="sw"></span></div>
+          <div class="divider"></div>
+          <div class="grp" style="opacity:.55"><div class="lbl">Aims you accept</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Sale</span><span class="opt">Pay for Content</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Hybrid</span></div><div class="hint">Kept for when you turn pitches back on.</div></div>
+          <div class="grp" style="opacity:.55"><div class="lbl">Mode of work</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Store Visit</span><span class="opt">Remote</span></div></div>
+          <div class="listrow"><div class="t"><b>Open pitches</b><span class="xs mut">2 waiting in Creators → Pitches</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="savebar"><button class="btn block b-dis" type="button" disabled>Save changes</button></div>
+      </div>
+      <div class="cap"><i>B6</i><b>Saved, and paused</b><span>Success toast, then a grey banner while paused. The other choices stay saved but dimmed, ready for switching back on.</span></div>
+    </div>
+
+    <!-- B7 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Blocked creators</h3></div>
+          <p class="hint">Blocked creators see you as not accepting pitches. They aren't told they're blocked.</p>
+          <div>
+            <div class="listrow"><span class="avatar av-s" style="background:#DDE9FB">RK</span><div class="t"><b>Rahul K.</b><span class="xs mut">Blocked 2 Sep</span></div><button class="btn b-sec sm2" type="button">Unblock</button></div>
+            <div class="listrow"><span class="avatar av-s" style="background:#E6F4EA">SM</span><div class="t"><b>Sneha M.</b><span class="xs mut">Blocked 28 Aug</span></div><button class="btn b-sec sm2" type="button">Unblock</button></div>
+          </div>
+          <div class="hint">To block someone, open their profile and tap ⋯ → Block.</div>
+          <div class="divider"></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">EMPTY STATE</div>
+          <div class="empty"><span class="c"><svg class="ico"><use href="#i-ban"/></svg></span><b>No blocked creators</b><span class="sm mut">Block a creator from their profile if you never want pitches from them.</span></div>
+        </div>
+      </div>
+      <div class="cap"><i>B7</i><b>Blocked creators: list and empty</b><span>Unblock takes effect straight away with a toast: "Rahul K. unblocked."</span></div>
+    </div>
+
+    <!-- B8 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pitch settings</h3></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">LOADING</div>
+          <div class="row between"><span class="skel" style="height:14px;width:55%"></span><span class="skel" style="height:24px;width:40px;border-radius:999px"></span></div>
+          <span class="skel" style="height:12px;width:40%"></span>
+          <div class="row"><span class="skel" style="height:30px;width:90px;border-radius:999px"></span><span class="skel" style="height:30px;width:110px;border-radius:999px"></span></div>
+          <span class="skel" style="height:42px;width:100%"></span>
+          <span class="skel" style="height:42px;width:100%"></span>
+          <div class="divider"></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">COULDN'T LOAD</div>
+          <div class="empty"><span class="c" style="background:var(--no-bg);color:var(--no-fg)"><svg class="ico"><use href="#i-alert"/></svg></span><b>Couldn't load your settings</b><span class="sm mut">Check your connection and try again.</span><button class="btn b-sec sm2" type="button">Try again</button></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">SAVING / SAVE FAILED</div>
+          <button class="btn block b-pri" type="button"><span class="spinner"></span>Saving</button>
+          <div class="toast t-err"><svg class="ico"><use href="#i-alert"/></svg><span>Couldn't save. Your changes are still here, so try again.</span></div>
+        </div>
+      </div>
+      <div class="cap"><i>B8</i><b>Loading, load error, saving, save failed</b><span>Same four states on the creator's Invitation settings. Leaving with unsaved changes asks "Discard changes?".</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= CREATOR ================= -->
+<section>
+  <header><div class="eyebrow">Creator app · Profile tab</div><h2>Creator: who can invite me</h2></header>
+  <div class="flow">
+
+    <!-- C1 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><h3>My Profile</h3></div>
+          <div class="row"><span class="avatar" style="background:#FFE7A3">PS</span><div><b style="font-size:15px">Priya Sharma</b><div class="xs mut">48K Instagram · Ethnic wear · Hyderabad</div></div></div>
+          <div>
+            <div class="listrow"><div class="t"><b>Profile info</b><span class="xs mut">Name, bio, city, social accounts</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Content niche & preferences</b><span class="xs mut">Ethnic wear · Telugu, English</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Invitation settings</b><span class="xs mut">Open · all Aims · Store Visit and Remote</span></div><span class="chip s-active">On</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Notifications</b></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Legal & policies</b></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          </div>
+          <div style="flex:1"></div>
+          <button class="btn b-txt" type="button" style="justify-self:start">Log out</button>
+        </div>
+        <nav class="tabbar" aria-label="Creator tabs"><span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-send"/></svg></span>Collabs</span><span class="tab"><span class="plus"><svg class="ico"><use href="#i-plus"/></svg></span></span><span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab on"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span></nav>
+      </div>
+      <div class="cap"><i>C1</i><b>My Profile: entry point</b><span>Same pattern as the brand: summary line plus On / Paused chip. Payout and tax details now live in Wallet.</span></div>
+    </div>
+
+    <!-- C2 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invitation settings</h3></div>
+          <div class="row between"><div><div class="lbl">Open to invitations</div><div class="hint">Brands can invite you to their sets</div></div><span class="sw on"></span></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Aims you accept</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Sale</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Content</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Hybrid</span></div><div class="hint">Brands see these on your profile.</div></div>
+          <div class="grp"><div class="lbl">Mode of work</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Store Visit</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Remote</span></div></div>
+          <div class="anyrow"><span>Cities you can visit</span><b>Hyderabad <svg class="ico chev" style="vertical-align:middle"><use href="#i-chev"/></svg></b></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Brand categories</div><div class="chips"><span class="opt">Men</span><span class="opt">Women</span><span class="opt">Kids</span><span class="opt">Plus Size</span><span class="opt">Watches</span><span class="opt">Imitation Jewellery</span><span class="opt">Footwear</span><span class="opt">Bags & Accessories</span></div><div class="hint">None picked means any category. Only you see this.</div></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Your minimums, by Aim</div><div class="hint">Only you see these. Brands can still invite below them, with a warning.</div></div>
+          <div class="card">
+            <div class="row between"><b>Pay for Content</b><span class="xs mut">fixed fee</span></div>
+            <div class="field ph">₹ No minimum</div>
+          </div>
+          <div class="card">
+            <div class="row between"><b>Pay for Sale</b><span class="xs mut">commission by industry</span></div>
+            <div class="row between" style="gap:10px"><span class="sm" style="flex:1">All industries</span><div class="field ph" style="width:96px;height:36px">No min.<span class="unit">%</span></div></div>
+            <div class="hint">Pick brand categories above to set a rate per industry.</div>
+          </div>
+          <div class="card">
+            <div class="row between"><b>Hybrid</b><span class="xs mut">fixed fee + commission</span></div>
+            <div class="field ph">₹ No minimum fixed fee</div>
+            <div class="row between" style="gap:10px"><span class="sm" style="flex:1">All industries</span><div class="field ph" style="width:96px;height:36px">No min.<span class="unit">%</span></div></div>
+          </div>
+          <div class="listrow" style="border-bottom:0"><div class="t"><b>Blocked brands</b><span class="xs mut">None</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="savebar"><button class="btn block b-dis" type="button" disabled>Save changes</button></div>
+      </div>
+      <div class="cap"><i>C2</i><b>Invitation settings: new creator</b><span>Minimums appear as one card per selected Aim. Pay for Content asks a fee, Pay for Sale a commission per industry, Hybrid both. With no categories picked there's a single "All industries" rate.</span></div>
+    </div>
+
+    <!-- C3 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invitation settings</h3></div>
+          <div class="grp"><div class="lbl">Aims you accept</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Sale</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Pay for Content</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Hybrid</span></div></div>
+          <div class="grp"><div class="lbl">Brand categories</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Women</span><span class="opt">Men</span><span class="opt">Kids</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Imitation Jewellery</span><span class="opt">Watches</span><span class="opt">Footwear</span></div></div>
+          <div class="divider"></div>
+          <div class="grp"><div class="lbl">Your minimums, by Aim</div></div>
+          <div class="card">
+            <div class="row between"><b>Pay for Content</b><span class="xs mut">fixed fee</span></div>
+            <div class="field">₹ 8,000</div>
+          </div>
+          <div class="card">
+            <div class="row between"><b>Pay for Sale</b><span class="xs mut">commission by industry</span></div>
+            <div class="row between" style="gap:10px"><span class="sm" style="flex:1">Women</span><div class="field" style="width:96px;height:36px">12<span class="unit">%</span></div></div>
+            <div class="row between" style="gap:10px"><span class="sm" style="flex:1">Imitation Jewellery</span><div class="field error focus" style="width:96px;height:36px">150<span class="unit">%</span></div></div>
+            <div class="err">Commission must be between 1 and 100%.</div>
+          </div>
+          <div class="card">
+            <div class="row between"><b>Hybrid</b><span class="xs mut">fixed fee + commission</span></div>
+            <div class="field">₹ 5,000</div>
+            <div class="row between" style="gap:10px"><span class="sm" style="flex:1">Women</span><div class="field" style="width:96px;height:36px">10<span class="unit">%</span></div></div>
+            <div class="row between" style="gap:10px"><span class="sm" style="flex:1">Imitation Jewellery</span><div class="field ph" style="width:96px;height:36px">No min.<span class="unit">%</span></div></div>
+          </div>
+          <div class="toast t-info"><svg class="ico"><use href="#i-info"/></svg><span>Turning an Aim off hides its card. The numbers are kept if you turn it back on.</span></div>
+        </div>
+        <div class="savebar"><div class="xs mut" style="text-align:center">Fix 1 thing above to save</div><button class="btn block b-dis" type="button" disabled>Save changes</button></div>
+      </div>
+      <div class="cap"><i>C3</i><b>Minimums filled in, with an error</b><span>Picking categories adds one commission row per industry, in both Pay for Sale and Hybrid. Empty means no minimum for that industry.</span></div>
+    </div>
+
+    <!-- C4 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invitation settings</h3></div>
+          <div class="anyrow"><span>Cities you can visit</span><b>Hyderabad</b></div>
+        </div>
+        <div class="dim"><div class="sheet">
+          <span class="grab"></span>
+          <div class="row between"><b style="font-size:15px">Cities you can visit</b><button class="btn b-txt sm2" type="button">Clear</button></div>
+          <div class="field ph"><svg class="ico"><use href="#i-search"/></svg>Search a city or state</div>
+          <div class="chips"><span class="opt sel">Hyderabad <svg class="ico"><use href="#i-x"/></svg></span></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">1 · CHOOSE A STATE</div>
+          <div>
+            <div class="listrow"><div class="t"><b>Andhra Pradesh</b></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Karnataka</b></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Tamil Nadu</b></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="listrow"><div class="t"><b>Telangana</b></div><span class="chip s-active">1 selected</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          </div>
+          <button class="btn block b-pri" type="button">Apply · 1 city</button>
+        </div></div>
+      </div>
+      <div class="cap"><i>C4</i><b>Location picker, step 1: state</b><span>States first, with a count of cities already chosen in each. Picked cities show as removable chips on top.</span></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invitation settings</h3></div>
+        </div>
+        <div class="dim"><div class="sheet">
+          <span class="grab"></span>
+          <div class="row" style="gap:6px"><span class="ib" style="width:28px;height:28px"><svg class="ico"><use href="#i-back"/></svg></span><b style="font-size:15px;flex:1">Andhra Pradesh</b><button class="btn b-txt sm2" type="button">Select all</button></div>
+          <div class="field ph"><svg class="ico"><use href="#i-search"/></svg>Search cities in Andhra Pradesh</div>
+          <div class="chips"><span class="opt sel">Hyderabad <svg class="ico"><use href="#i-x"/></svg></span><span class="opt sel">Vijayawada <svg class="ico"><use href="#i-x"/></svg></span><span class="opt sel">Guntur <svg class="ico"><use href="#i-x"/></svg></span></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">2 · CHOOSE CITIES</div>
+          <div>
+            <div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Guntur</b></div></div>
+            <div class="listrow"><span class="check"></span><div class="t"><b>Nellore</b></div></div>
+            <div class="listrow"><span class="check"></span><div class="t"><b>Tirupati</b></div></div>
+            <div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Vijayawada</b></div></div>
+            <div class="listrow"><span class="check"></span><div class="t"><b>Visakhapatnam</b></div></div>
+          </div>
+          <button class="btn block b-pri" type="button">Apply · 3 cities</button>
+        </div></div>
+      </div>
+      <div class="cap"><i>C4b</i><b>Location picker, step 2: cities in that state</b><span>Back returns to states and keeps choices. Searching from step 1 shows results as "Vijayawada · Andhra Pradesh". The brand's Cities filter uses this same picker.</span></div>
+    </div>
+
+    <!-- C5 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invitation settings</h3></div>
+          <div class="row between"><div class="lbl">Open to invitations</div><span class="sw"></span></div>
+        </div>
+        <div class="dim"><div class="sheet">
+          <span class="grab"></span>
+          <b style="font-size:16px">Stop taking invitations?</b>
+          <p class="sm mut">Brands will see <b style="color:var(--ink)">"Not taking invitations right now"</b> on your profile and can't invite you.</p>
+          <div class="toast t-info"><svg class="ico"><use href="#i-info"/></svg><span>Invitations you already have stay open until their set's cutoff. Your active collaborations carry on.</span></div>
+          <button class="btn block b-pri" type="button">Stop invitations</button>
+          <button class="btn block b-sec" type="button">Stay open</button>
+        </div></div>
+      </div>
+      <div class="cap"><i>C5</i><b>Pausing asks first</b><span>Mirrors B5, with the invitation cutoff instead of the 30-day pitch window.</span></div>
+    </div>
+
+    <!-- C6 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invitation settings</h3></div>
+          <div class="toast t-ok"><svg class="ico"><use href="#i-check"/></svg><span>Invitation settings saved.</span></div>
+          <div class="row between"><div><div class="lbl">Open to invitations</div><div class="hint">Brands can invite you to their sets</div></div><span class="sw on"></span></div>
+          <div class="card tint">
+            <div class="lbl">Brands see on your profile</div>
+            <div class="chips"><span class="tag">Pay for Sale</span><span class="tag">Pay for Content</span><span class="tag">Hybrid</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span></div>
+            <div class="hint">Your categories, cities, minimum fee and commission stay private.</div>
+          </div>
+          <div class="listrow"><div class="t"><b>Brand categories</b><span class="xs mut">Women, Imitation Jewellery</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="listrow"><div class="t"><b>Your minimums</b><span class="xs mut">Content ₹8,000 · Sale 12% · Hybrid ₹5,000 + 10%</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="listrow"><div class="t"><b>Blocked brands</b><span class="xs mut">None</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="divider"></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">BLOCKED BRANDS · EMPTY</div>
+          <div class="empty"><span class="c"><svg class="ico"><use href="#i-ban"/></svg></span><b>No blocked brands</b><span class="sm mut">Block a brand from its brand overview if you never want invitations from it.</span></div>
+        </div>
+      </div>
+      <div class="cap"><i>C6</i><b>Saved, with a public preview</b><span>After saving, the creator sees exactly what brands see, and what stays private.</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= OTHER SIDE ================= -->
+<section>
+  <header><div class="eyebrow">How it shows up on the other side</div><h2>What each setting does to the other app</h2><p class="prose">The full pitch flow is item 8 and inviting is item 5. These screens fix only what the settings change there: labels, blocked buttons and the Block action.</p></header>
+  <div class="flow">
+
+    <!-- X1 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Brand overview</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row"><span class="avatar" style="background:#FFE7A3">UT</span><div><b style="font-size:15px">Urban Threads</b><div class="xs mut">Women · Hyderabad</div></div></div>
+          <div class="card tint">
+            <div class="lbl">Accepts pitches for</div>
+            <div class="chips"><span class="tag">Pay for Sale</span><span class="tag">Hybrid</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span></div>
+          </div>
+          <button class="btn block b-pri" type="button">Pitch this brand</button>
+          <div class="row between"><b>Products</b><span class="xs mut">86</span></div>
+          <div class="two"><div class="skel" style="height:110px;animation:none;background:#F1EFE8"></div><div class="skel" style="height:110px;animation:none;background:#EDEAE2"></div></div>
+          <div class="row between"><b>Posts by creators</b><span class="xs mut">Brand Store</span></div>
+          <div class="two"><div class="skel" style="height:80px;animation:none;background:#EDEAE2"></div><div class="skel" style="height:80px;animation:none;background:#F1EFE8"></div></div>
+        </div>
+      </div>
+      <div class="cap"><i>X1</i><b>Creator app · brand overview, can pitch</b><span>Shows the brand's accepted Aims and modes. The pitch flow (item 8) only offers these Aims.</span></div>
+    </div>
+
+    <!-- X2 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Brand overview</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row"><span class="avatar" style="background:#FFE7A3">UT</span><div><b style="font-size:15px">Urban Threads</b><div class="xs mut">Women · Hyderabad</div></div></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">PAUSED, OR YOU'RE BLOCKED</div>
+          <div class="banner"><b>Not accepting pitches right now</b><span>You can still view products and posts.</span></div>
+          <button class="btn block b-dis" type="button" disabled>Pitch this brand</button>
+          <div class="divider"></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">YOU DON'T MATCH</div>
+          <div class="card tint">
+            <div class="lbl">Accepts pitches for</div>
+            <div class="chips"><span class="tag">Pay for Sale</span><span class="tag">Hybrid</span></div>
+          </div>
+          <div class="banner"><b>You don't match this brand's pitch criteria</b><span>Brands can set things like audience size or city. Growing your profile may change this.</span></div>
+          <button class="btn block b-dis" type="button" disabled>Pitch this brand</button>
+        </div>
+      </div>
+      <div class="cap"><i>X2</i><b>Creator app · can't pitch</b><span>Paused and blocked look identical. A failed filter never reveals the brand's number or list.</span></div>
+    </div>
+
+    <!-- X3 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr" style="opacity:.35">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Brand overview</h3></div>
+          <div class="row"><span class="avatar" style="background:#FFE7A3">UT</span><b>Urban Threads</b></div>
+        </div>
+        <div class="dim"><div class="sheet">
+          <span class="grab"></span>
+          <div class="listrow"><div class="t"><b>Share brand</b></div></div>
+          <div class="listrow"><div class="t"><b style="color:var(--no-fg)">Block Urban Threads</b></div></div>
+          <div class="divider"></div>
+          <b style="font-size:16px">Block Urban Threads?</b>
+          <p class="sm mut">They won't be able to invite you. They won't be told. Collaborations you've already signed carry on.</p>
+          <button class="btn block b-dan" type="button">Block brand</button>
+          <button class="btn block b-sec" type="button">Cancel</button>
+        </div></div>
+      </div>
+      <div class="cap"><i>X3</i><b>Creator app · block a brand</b><span>⋯ menu, then a confirm step in the same sheet. Toast after: "Urban Threads blocked. Undo".</span></div>
+    </div>
+
+    <!-- X4 -->
+    <div class="shot">
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+        <div class="scr">
+          <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Creator</h3><span class="ib"><svg class="ico"><use href="#i-more"/></svg></span></div>
+          <div class="row"><span class="avatar" style="background:#FFE7A3">PS</span><div><b style="font-size:15px">Priya Sharma</b><div class="xs mut">48K Instagram · 4.2% engagement · Hyderabad</div></div></div>
+          <div class="chips"><span class="tag">Ethnic wear</span><span class="tag">Telugu</span><span class="tag">English</span></div>
+          <div class="card tint">
+            <div class="lbl">Open to invitations for</div>
+            <div class="chips"><span class="tag">Pay for Content</span><span class="tag">Hybrid</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span></div>
+          </div>
+          <button class="btn block b-pri" type="button">Invite to a set</button>
+          <div class="divider"></div>
+          <div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">PAUSED, OR YOU'RE BLOCKED</div>
+          <div class="banner"><b>Not taking invitations right now</b><span>You can still view Priya's posts.</span></div>
+          <button class="btn block b-dis" type="button" disabled>Invite to a set</button>
+          <div class="hint">Soft warnings (below her minimum fee or commission) and "Not open to this set" appear when choosing creators for a set, in item 5.</div>
+        </div>
+      </div>
+      <div class="cap"><i>X4</i><b>Brand app · creator profile</b><span>Mirror of X1–X2. The ⋯ menu has "Block Priya Sharma" with the same confirm step as X3.</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= SPEC ================= -->
+<section>
+  <header><div class="eyebrow">For stage 3 (lock) and stage 4 (gap prompt)</div><h2>What these screens need</h2></header>
+  <div class="tscroll"><table>
+    <thead><tr><th>Setting</th><th>App</th><th>Control</th><th>Default</th><th>Rule on save</th><th>Other side sees</th><th>Blocks or warns</th></tr></thead>
+    <tbody>
+      <tr><td>Accepting pitches / Open to invitations</td><td>Both</td><td>Switch; off asks to confirm</td><td>On</td><td>—</td><td>"Not accepting pitches right now" / "Not taking invitations right now"</td><td>Blocks</td></tr>
+      <tr><td>Aims accepted</td><td>Both</td><td>Chips, multi</td><td>All three</td><td>At least one</td><td>Yes, as labels</td><td>Blocks</td></tr>
+      <tr><td>Mode of work</td><td>Both</td><td>Chips, multi</td><td>Both</td><td>At least one</td><td>Yes, as labels</td><td>Blocks</td></tr>
+      <tr><td>Creator niches</td><td>Brand</td><td>Any / picker</td><td>Any</td><td>From sign-up niche list</td><td>No</td><td>Blocks</td></tr>
+      <tr><td>Minimum followers</td><td>Brand</td><td>Instagram and YouTube numbers</td><td>Empty</td><td>Whole number ≥ 0; either platform qualifies</td><td>No</td><td>Blocks</td></tr>
+      <tr><td>Minimum engagement rate</td><td>Brand</td><td>Number, %</td><td>Empty</td><td>0–100, one decimal</td><td>No</td><td>Blocks</td></tr>
+      <tr><td>Languages</td><td>Brand</td><td>Any / picker</td><td>Any</td><td>—</td><td>No</td><td>Blocks</td></tr><tr><td>Cities</td><td>Brand</td><td>Any / state, then city</td><td>Any</td><td>From the branch state and city list</td><td>No</td><td>Blocks</td></tr>
+      <tr><td>Always allow past creators</td><td>Brand</td><td>Switch</td><td>On</td><td>Never overrides Paused or Blocked</td><td>No</td><td>—</td></tr>
+      <tr><td>Cities you can visit</td><td>Creator</td><td>State, then city; shown only with Store Visit</td><td>Creator's own city</td><td>At least one if Store Visit is on</td><td>No</td><td>Blocks Store Visit sets elsewhere</td></tr>
+      <tr><td>Brand categories</td><td>Creator</td><td>8 chips, multi</td><td>None = any</td><td>From the 8 major categories</td><td>No</td><td>Blocks</td></tr>
+      <tr><td>Minimum fee, per Aim</td><td>Creator</td><td>₹ whole number: one for Pay for Content, one for Hybrid's fixed fee</td><td>Empty</td><td>≥ 0; only for selected Aims</td><td>No</td><td>Warns only, against the fee for that Aim</td></tr>
+      <tr><td>Minimum commission, per Aim and industry</td><td>Creator</td><td>% rows for Pay for Sale and for Hybrid: one per selected brand category, or one "All industries" row</td><td>Empty</td><td>1–100; only for selected Aims</td><td>No</td><td>Warns only, against the brand's industry</td></tr>
+      <tr><td>Blocked list</td><td>Both</td><td>List with Unblock; Block from ⋯ on profile / overview</td><td>Empty</td><td>—</td><td>Looks the same as paused; not notified</td><td>Blocks</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="twocol">
+    <div class="checks"><ul>
+      <li><span class="box"></span><span><b>Screen states:</b> loading, couldn't load, default, unsaved changes, errors, saving, saved, save failed, paused, discard-changes prompt.</span></li>
+      <li><span class="box"></span><span><b>Existing items keep going:</b> pausing or blocking never withdraws pitches or invitations already sent, or signed collaborations.</span></li>
+      <li><span class="box"></span><span><b>Checked twice:</b> when the other side chooses (buttons disabled) and again by the server when a pitch or invitation is sent.</span></li>
+      <li><span class="box"></span><span><b>Privacy:</b> only paused status, Aims and modes are public. No threshold, list or block is ever revealed.</span></li>
+    </ul></div>
+    <div class="checks"><ul>
+      <li><span class="box"></span><span><b>Data the gap prompt will look for:</b> brand pitch settings, creator invitation settings, a block list for both directions.</span></li>
+      <li><span class="box"></span><span><b>Lists:</b> creator niches from sign-up, 8 major fashion categories (also the "industries" for commission and the brand's category), shared state → city list, languages.</span></li>
+      <li><span class="box"></span><span><b>Read by other screens:</b> a public "accepts / open to" summary on the brand overview and creator profile, and an eligibility check the pitch (item 8) and invite (item 5) flows call.</span></li>
+      <li><span class="box"></span><span><b>Audit note:</b> the only pitch settings found in the backend are admin-level, so these are expected to be new.</span></li>
+    </ul></div>
+  </div>
+</section>
+
+<footer>INFLX rebuild · item 2 · rules doc v1.8 section 8A · colors and components from the INFLX Color System page. Example names, numbers and niche lists are placeholders.</footer>
+</div>
+
+</body>
+</html>

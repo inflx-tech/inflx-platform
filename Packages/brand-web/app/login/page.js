@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, brandApi, geoApi, setSessionCookie } from '../../lib/api';
+import { api, authApi, brandApi, geoApi, setSessionCookie } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
 
 // Device-local draft of the registration step. Cleared on successful
@@ -24,6 +24,15 @@ const DRAFT_KEY = 'inflx_brand_signup_draft';
 // as sections, so one category covers everything being onboarded today.
 const CATEGORY = 'fashion';
 const CATEGORY_LABEL = 'Fashion — clothing, footwear, jewellery & accessories';
+// Item 2 (rules v1.10 §8A, founder Q5b): after Fashion, a brand picks one or more of the
+// eight sub-categories. Required. The server list (ref_brand_categories) is the gate; this
+// mirror only decides what the form shows if the list cannot be fetched.
+const SUB_CATEGORIES_FALLBACK = [
+  { code: 'MEN', label: 'Men' }, { code: 'WOMEN', label: 'Women' }, { code: 'KIDS', label: 'Kids' },
+  { code: 'PLUS_SIZE', label: 'Plus Size' }, { code: 'WATCHES', label: 'Watches' },
+  { code: 'IMITATION_JEWELLERY', label: 'Imitation Jewellery' }, { code: 'FOOTWEAR', label: 'Footwear' },
+  { code: 'BAGS_ACCESSORIES', label: 'Bags & Accessories' },
+];
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -47,6 +56,18 @@ export default function LoginPage() {
   // Docs/THE_CUT.md pass 0 — no longer chosen. Held as a constant so the register
   // payload keeps its shape and the server keeps validating the field.
   const category = CATEGORY;
+  // Item 2 — the eight sub-categories (multi-select, at least one).
+  const [subCategories, setSubCategories] = useState([]);
+  const [subCategoryOptions, setSubCategoryOptions] = useState(SUB_CATEGORIES_FALLBACK);
+  useEffect(() => {
+    if (step !== 'register') return;
+    api.get('/reference/brand-categories').then(r => {
+      if (r?.success && Array.isArray(r.data?.items) && r.data.items.length) setSubCategoryOptions(r.data.items);
+    }).catch(() => {});
+  }, [step]);
+  function toggleSubCategory(code) {
+    setSubCategories(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+  }
   const [addressLine, setAddressLine] = useState('');
   const [city, setCity]               = useState('');
   const [state, setStateField]        = useState('');
@@ -263,6 +284,7 @@ export default function LoginPage() {
     setError('');
     if (!name.trim()) { setError('Please enter your name'); return; }
     if (!businessName.trim()) { setError('Please enter your business name'); return; }
+    if (subCategories.length === 0) { setError('Pick at least one category your brand sells'); return; }
     if (!addressLine.trim()) { setError('Please enter your business address'); return; }
     if (!city.trim()) { setError('Please enter your city'); return; }
     if (!state.trim()) { setError('Please select your state'); return; }
@@ -274,6 +296,7 @@ export default function LoginPage() {
       name:          name.trim(),
       business_name: businessName.trim(),
       category,
+      sub_categories: subCategories,
       address_line:  addressLine.trim(),
       city:          city.trim(),
       state:         state.trim(),
@@ -530,6 +553,26 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* Item 2 — what the brand sells, from the eight fashion sub-categories. Required:
+                  creators filter the brands that may invite them by these. */}
+              <div className="mb-3.5">
+                <label className={labelClass}>What you sell <span className="text-[#E8401A]">*</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {subCategoryOptions.map(opt => {
+                    const on = subCategories.includes(opt.code);
+                    return (
+                      <button type="button" key={opt.code} onClick={() => toggleSubCategory(opt.code)}
+                        className={on
+                          ? 'rounded-full border border-[#0A0A0A] bg-[#0A0A0A] text-white text-[12.5px] font-semibold px-3 py-1.5'
+                          : 'rounded-full border border-[#D4D4D8] bg-white text-[#52525B] text-[12.5px] font-semibold px-3 py-1.5'}>
+                        {on ? '✓ ' : ''}{opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-1.5 text-[11px] text-[#71717A]">Pick every category you sell. You can change this later in Business details.</div>
+              </div>
+
               {/* Section 2 — Location */}
               <div className="border-t border-[#E4E4E7] mt-5 pt-5">
                 <div className="flex items-center gap-2 text-[11px] font-bold text-[#18181B] uppercase tracking-[0.6px] mb-3">
@@ -654,7 +697,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading || !name.trim() || !businessName.trim() || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
+                disabled={loading || !name.trim() || !businessName.trim() || subCategories.length === 0 || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
                 className={btnPrimary}
               >
                 {loading ? 'Registering…' : 'Complete registration'}

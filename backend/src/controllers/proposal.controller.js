@@ -24,6 +24,8 @@ const handshake = require('../services/handshake.service');
 // collab-phase0 — the diary, and the admin-set round limits shared with the handshake.
 const events = require('../services/collabEvents.service');
 const settings = require('../services/handshakeSettings.service');
+// Item 2 — the brand's pitch settings (rules v1.10 §8A). Contract: features/item2-pitch-invitation-settings
+const eligibility = require('../services/collabEligibility.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -90,17 +92,21 @@ const discoverBrandProducts = asyncHandler(async (req, res) => {
   return success(res, { products });
 });
 
-// GET /v1/brands/:id/proposal-criteria — public-ish: returns filter snapshot
+// GET /v1/brands/:id/proposal-criteria — what a creator may know about a brand's pitch
+// settings: paused or accepting, the Aims and modes it accepts, and a coarse reason. This
+// used to return the raw proposal_filters — every threshold, to any signed-in user. Item 2
+// (rules §8A "thresholds are private"): only the public summary leaves the server.
 const getProposalCriteria = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
-    `SELECT b.id, b.business_name, b.logo_url, b.category, b.accepts_proposals,
-            b.proposal_filters, u.city
+    `SELECT b.id, b.business_name, b.logo_url, b.category, b.sub_categories, u.city
      FROM   brands b JOIN users u ON u.id = b.user_id
      WHERE  b.id = $1`,
     [req.params.id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
-  return success(res, { brand: rows[0] });
+  const viewer = req.user.role === 'influencer' ? await getInfluencerByUserId(req.user.sub) : null;
+  const pitchSummary = await eligibility.pitchSummaryFor(rows[0].id, viewer ? viewer.id : null);
+  return success(res, { brand: rows[0], pitchSummary });
 });
 
 // POST /v1/influencers/me/proposals
@@ -113,6 +119,7 @@ const createProposal = asyncHandler(async (req, res) => {
     proposed_fee, proposed_commission_pct, proposed_deliverables,
     proposed_posting_window_start, proposed_posting_window_end,
     portfolio_links,
+    shoot_mode,   // Item 2 — visit | shipment; optional until item 8
   } = req.body || {};
 
   if (!brand_id) throw new AppError('VALIDATION_ERROR', 'brand_id is required', 422, 'brand_id');
@@ -123,16 +130,34 @@ const createProposal = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'pitch_message is required', 422, 'pitch_message');
   }
 
+  if (goal != null && !eligibility.AIMS.includes(String(goal))) {
+    throw new AppError('VALIDATION_ERROR', 'goal must be conversion, engagement or hybrid', 422, 'goal');
+  }
+  if (shoot_mode != null && !eligibility.MODES.includes(String(shoot_mode))) {
+    throw new AppError('VALIDATION_ERROR', 'shoot_mode must be visit or shipment', 422, 'shoot_mode');
+  }
+
+  // Admin-level limits first (bans, cooldown, rate limits — rules §8, §25).
   const elig = await proposalService.checkEligibility(inf.id, brand_id);
   if (!elig.eligible) {
     throw new AppError('FORBIDDEN', elig.reason, 403);
+  }
+
+  // Item 2 — the brand's own pitch settings (rules v1.10 §8A), checked again on send with
+  // the aim and mode of THIS pitch. Only a coarse code leaves: NOT_ACCEPTING covers both
+  // paused and blocked, NOT_MATCHING never says which filter failed.
+  const gate = await eligibility.canCreatorPitchBrand({
+    influencerId: inf.id, brandId: brand_id, aim: goal, mode: shoot_mode,
+  });
+  if (!gate.ok) {
+    throw new AppError(gate.reason, eligibility.MESSAGE.pitch[gate.reason], 403, 'brand_id');
   }
 
   const proposal = await proposalService.create(inf.id, brand_id, {
     pitch_title, pitch_message, goal,
     proposed_fee, proposed_commission_pct, proposed_deliverables,
     proposed_posting_window_start, proposed_posting_window_end,
-    portfolio_links,
+    portfolio_links, shoot_mode,
   });
 
   // Notify brand

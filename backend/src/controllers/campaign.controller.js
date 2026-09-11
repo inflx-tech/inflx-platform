@@ -24,6 +24,8 @@ const { SELLING_GOALS } = require('../services/collabOwedItems.service');
 const offerResolution = require('../services/offerResolution.service');
 // stage-2 ledger #69 — the one place the channel vocabulary is written down.
 const campaignChannels = require('../services/campaignChannels');
+// Item 2 — the creator's invitation settings (rules v1.10 §8A). Contract: features/item2-pitch-invitation-settings
+const eligibility = require('../services/collabEligibility.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase A12.2 — discover_filter entitlement helper.
@@ -1136,6 +1138,33 @@ const invite = asyncHandler(async (req, res) => {
   if (channels_json !== undefined) assertValidChannels(set.goal, channels_json);
   if (formats_json !== undefined) assertValidFormats(formats_json);
 
+  // Item 2 — may this brand invite this creator into THIS set? Checked here, before any
+  // write, against her invitation settings: open/paused, blocked, the set's Aim and mode,
+  // her brand categories, and (for Store Visit) whether any of our branch cities is one she
+  // travels to. A hard failure answers with a coarse code only — NOT_ACCEPTING covers both
+  // paused and blocked; NOT_MATCHING never says which rule failed. Her minimum fee and
+  // commission only WARN (rules §8A soft conditions); the warnings ride back on the
+  // response as `eligibility_warnings`.
+  //
+  // Briefing an agreement from the retired handshake skips the hard checks: those terms
+  // were agreed before the settings existed and settings are never retroactive (founder Q10).
+  let eligibility_warnings = [];
+  if (!agreement_id) {
+    const gate = await eligibility.canBrandInviteCreator({
+      brandId: brand.id,
+      influencerId: influencer_id,
+      set,
+      proposedTerms: {
+        fee: agreed_fee != null ? agreed_fee : influencer_budget,
+        commissionPct: commission_pct,
+      },
+    });
+    if (!gate.ok) {
+      throw new AppError(gate.reason, eligibility.MESSAGE.invite[gate.reason], 403, 'influencer_id');
+    }
+    eligibility_warnings = gate.warnings;
+  }
+
   // collab-part2 — validate the agreement BEFORE any writes. It must be this brand's,
   // with this creator, still 'ready', and its agreed AIM must match the set's goal —
   // a creator who agreed commission-only terms cannot be quietly briefed into a
@@ -1457,7 +1486,7 @@ const invite = asyncHandler(async (req, res) => {
   // invite. A set whose budget WAS typed is untouched.
   const campaign_derived = await campaignRollup.recompute(campaign.id);
 
-  return success(res, { campaign_influencer: ci, agreement_warnings, campaign_derived, ready_to_sign: readyToSign }, 201);
+  return success(res, { campaign_influencer: ci, agreement_warnings, eligibility_warnings, campaign_derived, ready_to_sign: readyToSign }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

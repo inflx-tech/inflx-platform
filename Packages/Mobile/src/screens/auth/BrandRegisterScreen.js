@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
-import { brandApi, followerApi } from '../../services/api';
+import { brandApi, followerApi, referenceApi } from '../../services/api';
 
 const P = {
   bg:          '#FAFAFA',
@@ -33,6 +33,14 @@ const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
 // only decides what the form SAYS.
 const CATEGORY = 'fashion';
 const CATEGORY_LABEL = 'Fashion — clothing, footwear, jewellery & accessories';
+// Item 2 (rules v1.10 §8A, founder Q5b): after Fashion, one or more of the eight
+// sub-categories. Required. The server list is the gate; this is the offline fallback.
+const SUB_CATEGORIES_FALLBACK = [
+  { code: 'MEN', label: 'Men' }, { code: 'WOMEN', label: 'Women' }, { code: 'KIDS', label: 'Kids' },
+  { code: 'PLUS_SIZE', label: 'Plus Size' }, { code: 'WATCHES', label: 'Watches' },
+  { code: 'IMITATION_JEWELLERY', label: 'Imitation Jewellery' }, { code: 'FOOTWEAR', label: 'Footwear' },
+  { code: 'BAGS_ACCESSORIES', label: 'Bags & Accessories' },
+];
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -57,6 +65,14 @@ export default function BrandRegisterScreen({ navigation }) {
   const [businessName, setBusinessName] = useState('');
   // Docs/THE_CUT.md pass 0 — no longer chosen, so it is a constant rather than state.
   const category = CATEGORY;
+  const [subCategories, setSubCategories] = useState([]);
+  const [subCategoryOptions, setSubCategoryOptions] = useState(SUB_CATEGORIES_FALLBACK);
+  React.useEffect(() => {
+    referenceApi.brandCategories().then(r => { if (r.success && r.data.items?.length) setSubCategoryOptions(r.data.items); }).catch(() => {});
+  }, []);
+  function toggleSubCategory(code) {
+    setSubCategories(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+  }
   const [addressLine, setAddressLine]   = useState('');
   const [city, setCity]                 = useState('');
   const [stateField, setStateField]     = useState('');
@@ -104,6 +120,7 @@ export default function BrandRegisterScreen({ navigation }) {
     setError('');
     if (!fullName.trim())      { setError('Please enter your name'); return; }
     if (!businessName.trim())  { setError('Please enter your business name'); return; }
+    if (subCategories.length === 0) { setError('Pick at least one category your brand sells'); return; }
     if (!addressLine.trim())   { setError('Please enter your business address'); return; }
     if (!city.trim())          { setError('Please enter your city'); return; }
     if (!stateField)           { setError('Please select your state'); return; }
@@ -114,6 +131,7 @@ export default function BrandRegisterScreen({ navigation }) {
       name:          fullName.trim(),
       business_name: businessName.trim(),
       category,
+      sub_categories: subCategories,
       address_line:  addressLine.trim(),
       city:          city.trim(),
       state:         stateField,
@@ -131,7 +149,7 @@ export default function BrandRegisterScreen({ navigation }) {
     navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
   }
 
-  const canSubmit = fullName.trim() && businessName.trim() && category &&
+  const canSubmit = fullName.trim() && businessName.trim() && category && subCategories.length > 0 &&
     addressLine.trim() && city.trim() && stateField && pincode.length === 6 && !loading;
 
   return (
@@ -158,6 +176,21 @@ export default function BrandRegisterScreen({ navigation }) {
             INFLX is a fashion platform. Other kinds of business are not supported yet.
           </Text>
         </View>
+
+        {/* Item 2 — what the brand sells, from the eight fashion sub-categories. Required:
+            creators filter the brands that may invite them by these. */}
+        <Text style={styles.label}>What you sell <Text style={styles.req}>*</Text></Text>
+        <View style={styles.chipWrap}>
+          {subCategoryOptions.map(opt => {
+            const on = subCategories.includes(opt.code);
+            return (
+              <TouchableOpacity key={opt.code} testID={`sub-${opt.code}`} style={[styles.chip, on && styles.chipOnInk]} onPress={() => toggleSubCategory(opt.code)}>
+                <Text style={[styles.chipTxt, on && styles.chipTxtOnInk]}>{on ? '✓ ' : ''}{opt.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={styles.footnoteLeft}>Pick every category you sell. You can change this later in Business details.</Text>
 
         <View style={styles.divider} />
         <Text style={styles.section}>LOCATION</Text>
@@ -257,6 +290,9 @@ const styles = StyleSheet.create({
   chipOn:     { backgroundColor: P.yellowPale, borderColor: P.yellow },
   chipTxt:    { fontSize: 12.5, color: P.muted, fontWeight: '600' },
   chipTxtOn:  { color: P.yellowText },
+  chipOnInk:  { backgroundColor: P.ink, borderColor: P.ink },
+  chipTxtOnInk: { color: '#FFFFFF' },
+  footnoteLeft: { fontSize: 11.5, color: P.muted2, marginTop: 2 },
   divider:    { height: 1, backgroundColor: P.border, marginTop: 22, marginBottom: 14 },
   section:    { fontSize: 11, fontWeight: '800', color: P.ink2, letterSpacing: 0.6 },
   spinner:    { position: 'absolute', right: 14, top: 14 },

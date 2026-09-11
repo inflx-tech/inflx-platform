@@ -134,6 +134,13 @@ router.get('/media/post/:id', creatorPostsController.servePostMedia);   // publi
 // ── Creator imagery: brand approval + display source (Phase 7a, mig 136-137) ──
 router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator-images + /products/:id/image-source
 
+// ── Item 2 — pitch & invitation settings, blocks, reference lists ──────────
+// Mounted BEFORE brandRoutes / influencerRoutes so /brands/me/pitch-settings and
+// /influencers/me/invitation-settings can never be shadowed by a parameterised route.
+// Contract: features/item2-pitch-invitation-settings
+const collabSettingsRoutes = require('./collabSettings.routes');
+router.use('/', collabSettingsRoutes);
+
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);

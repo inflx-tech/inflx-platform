@@ -1,0 +1,21 @@
+{
+  "feature": "item2-pitch-invitation-settings",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item2_Approval_Message.md)",
+  "approved_at": "2026-09-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item2_Settings_Mockups.html — 'Stage 3: locked · 11 Sep 2026')",
+  "mockup_locked_at": "2026-09-11T00:00:00+05:30",
+  "notes": "Rules doc v1.10 §8A. Gap report Docs/ITEM2_SETTINGS_GAP_REPORT.md approved with 17 answers in APPROVAL.md. Phases 2-4 built 2026-09-11; production-impacting (migrations 168+169, backend, brand-web, OTA brand+influencer) — explicit go required before push.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

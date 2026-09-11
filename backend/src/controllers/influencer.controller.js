@@ -13,6 +13,10 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveAvatars } = require('../utils/avatarResolver');
+// Item 2 — one required content niche from the reference list, and the invitation summary
+// a brand sees. Contract: features/item2-pitch-invitation-settings
+const referenceLists = require('../services/referenceLists.service');
+const eligibility = require('../services/collabEligibility.service');
 const storageService = require('../services/storage.service');
 const referralService = require('../services/referral.service');
 // Stage 0 — one step number and one needs-you count, both apps reading the same source.
@@ -477,7 +481,21 @@ const updateMe = asyncHandler(async (req, res) => {
 
   if (language !== undefined) updates.language = language;
   if (content_style !== undefined) updates.content_style = content_style;
-  if (niche !== undefined) updates.niche = niche;
+  // Item 2 (founder Q4, rules v1.10 §8A): a creator chooses EXACTLY ONE niche from the
+  // reference list and the profile does not save without one. The column stays an array
+  // (every reader takes niche[]); it now holds one code. Check 16.
+  if (niche !== undefined) {
+    const arr = Array.isArray(niche) ? niche : (niche == null || niche === '' ? [] : [niche]);
+    const codes = [...new Set(arr.map(v => String(v).trim()).filter(Boolean))];
+    if (codes.length !== 1) {
+      throw new AppError('VALIDATION_ERROR', 'Choose one content niche.', 422, 'niche');
+    }
+    const bad = referenceLists.unknownCodes(codes, await referenceLists.creatorNiches());
+    if (bad.length) {
+      throw new AppError('VALIDATION_ERROR', 'Choose a niche from the list.', 422, 'niche');
+    }
+    updates.niche = codes;
+  }
   if (youtube_handle !== undefined) updates.youtube_handle = youtube_handle;
   if (bank_ifsc !== undefined) updates.bank_ifsc = bank_ifsc;
   if (bio !== undefined) updates.bio = bio;
@@ -856,7 +874,15 @@ const getPublicById = asyncHandler(async (req, res) => {
     legacy[0].youtube_url = youtubeService.channelUrl(legacy[0].youtube_handle);
     legacy[0].instagram_url = legacy[0].instagram_handle
       ? `https://instagram.com/${legacy[0].instagram_handle}` : null;
-    return success(res, { influencer: legacy[0] });
+    // Item 2 (A6, screen X4) — what THIS brand may know about her invitation settings:
+    // open or paused, the Aims and modes she accepts, and whether it may invite her, as a
+    // coarse reason. Blocked looks exactly like paused. Admins get no verdict.
+    let inviteSummary = null;
+    if (req.user.role === 'brand') {
+      const { rows: me } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
+      inviteSummary = await eligibility.inviteSummaryFor(legacy[0].id, me[0] ? me[0].id : null);
+    }
+    return success(res, { influencer: legacy[0], inviteSummary });
   }
 
   // 2. Scraped creator profile (new table) — shape into the legacy response

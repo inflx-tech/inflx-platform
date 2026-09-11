@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -8,6 +8,12 @@ import { brandApi, clearSession } from '../../services/api';
 import { AuthContext } from '../../../App';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 import StatusPill from '../../components/brand/StatusPill';
+// Item 2 — the "Pitch settings" entry row (B1) and the eight sub-categories (founder Q5b).
+// Contract: features/item2-pitch-invitation-settings
+import { referenceApi } from '../../services/api';
+import { Chip, StatusChip } from '../../components/settings/primitives';
+import { aimsPhrase, modesPhrase } from '../../components/settings/copy';
+import { useFocusEffect } from '@react-navigation/native';
 
 /**
  * BrandProfileScreen — brand profile editor (business info, main branch,
@@ -40,7 +46,25 @@ export default function BrandProfileScreen({ navigation }) {
   });
   const [branches, setBranches] = useState([]);
 
+  // Item 2 — sub-categories (what the brand sells) + the pitch-settings summary line.
+  const [subCategories, setSubCategories] = useState([]);
+  const [subCategoryOptions, setSubCategoryOptions] = useState([]);
+  const [pitchSummary, setPitchSummary] = useState(null);
+
   useEffect(() => { loadProfile(); }, []);
+  useEffect(() => {
+    referenceApi.brandCategories().then(r => { if (r.success) setSubCategoryOptions(r.data.items || []); }).catch(() => {});
+  }, []);
+  // Re-read the one-line summary whenever this screen comes back into view, so a save on
+  // Pitch settings is reflected on the row immediately.
+  useFocusEffect(useCallback(() => {
+    let alive = true;
+    brandApi.getPitchSettings().then(r => { if (alive && r.success) setPitchSummary(r.data.summary || null); }).catch(() => {});
+    return () => { alive = false; };
+  }, []));
+  function toggleSubCategory(code) {
+    setSubCategories(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
+  }
 
   async function loadProfile() {
     setLoading(true);
@@ -57,6 +81,7 @@ export default function BrandProfileScreen({ navigation }) {
     setLoadError(null);
     const b = res.data?.brand || res.data;
     setBrand(b);
+    setSubCategories(Array.isArray(b.sub_categories) ? b.sub_categories : []);
     setBusinessName(b.business_name || '');
     setGstin(b.gstin || '');
     setLogoUrl(b.logo_url || '');
@@ -105,6 +130,13 @@ export default function BrandProfileScreen({ navigation }) {
     const mainPin  = mainBranch.pincode.trim();
     if (mainAddr !== (brand?.address_line || '')) payload.address_line = mainAddr;
     if (mainPin  !== (brand?.pincode || ''))      payload.pincode      = mainPin;
+
+    // Item 2 — sub-categories; only when changed, never as an empty list (server refuses it too).
+    const existingSubs = Array.isArray(brand?.sub_categories) ? brand.sub_categories : [];
+    if (JSON.stringify([...subCategories].sort()) !== JSON.stringify([...existingSubs].sort())) {
+      if (subCategories.length === 0) { Alert.alert('Missing info', 'Pick at least one category you sell.'); return; }
+      payload.sub_categories = subCategories;
+    }
 
     const existingLd = brand?.listing_data || {};
     const mainBranchEntry = {
@@ -232,6 +264,16 @@ export default function BrandProfileScreen({ navigation }) {
 
           <Field label="Category" hint="Locked after registration.">
             <TextInput style={[s.input, s.inputReadOnly]} value={brand.category || ''} editable={false} />
+          </Field>
+          {/* Item 2 — what the brand sells. Creators filter the brands that may invite them by these. */}
+          <Field label="What you sell" hint={subCategories.length === 0
+            ? 'Not set yet — pick at least one. Until you do, creators who filter by category will not see you as a match.'
+            : 'Pick every category you sell.'}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+              {subCategoryOptions.map(opt => (
+                <Chip key={opt.code} testID={`sub-${opt.code}`} label={opt.label} selected={subCategories.includes(opt.code)} onPress={() => toggleSubCategory(opt.code)} />
+              ))}
+            </View>
           </Field>
 
           <Field label="GSTIN">
@@ -369,6 +411,30 @@ export default function BrandProfileScreen({ navigation }) {
           {saving ? <ActivityIndicator color={P.white} /> : <Text style={s.saveBtnText}>Save Changes</Text>}
         </TouchableOpacity>
 
+        {/* Item 2 — B1: the Pitch settings entry row with its one-line summary and On/Paused chip. */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Creators</Text>
+          <TouchableOpacity style={s.linkRow} onPress={() => navigation.navigate('BrandPitchSettings')} testID="row-pitch-settings">
+            <Text style={s.linkIcon}>[P]</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.linkLabel}>Pitch settings</Text>
+              <Text style={s.hintSubtle2}>
+                {pitchSummary
+                  ? `${pitchSummary.labelState === 'paused' ? 'Paused' : 'Accepting'} · ${aimsPhrase(pitchSummary.aims)} · ${modesPhrase(pitchSummary.modes)}`
+                  : 'Who can send you pitches'}
+              </Text>
+            </View>
+            {pitchSummary ? <StatusChip on={pitchSummary.labelState !== 'paused'} /> : null}
+            <Text style={[s.linkArrow, { marginLeft: 8 }]}>›</Text>
+          </TouchableOpacity>
+          {/* Temporary door to a creator's profile (X4) until item 3 builds Find creators. */}
+          <TouchableOpacity style={[s.linkRow, s.linkRowLast]} onPress={() => navigation.navigate('FindParty', { mode: 'creators' })} testID="row-find-creators">
+            <Text style={s.linkIcon}>[F]</Text>
+            <Text style={s.linkLabel}>Find a creator</Text>
+            <Text style={s.linkArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={s.card}>
           <Text style={s.cardTitle}>Other</Text>
           <TouchableOpacity style={s.linkRow} onPress={() => openWebDashboard('/dashboard')}>
@@ -460,6 +526,7 @@ const s = StyleSheet.create({
   linkLabel: { flex: 1, fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.ink },
   linkArrow: { fontFamily: fonts.monoBold, fontSize: 16, color: P.muted3, fontWeight: '800' },
   hintSubtle: { fontFamily: fonts.sansMedium, fontSize: 9.5, color: P.muted2, marginTop: 3, marginLeft: 34, marginBottom: 4 },
+  hintSubtle2: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted2, marginTop: 2 },
 
   logoutBtn: { margin: 14, borderWidth: 1.5, borderColor: P.dangerPale, borderRadius: 14, paddingVertical: 13, alignItems: 'center', backgroundColor: P.white },
   logoutText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.dangerText },
