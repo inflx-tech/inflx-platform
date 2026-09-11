@@ -61,21 +61,16 @@ describe('GET /v1/influencers/search', () => {
     expect(res.body.meta.total).toBe(2);
   });
 
-  it('includes pending influencers but tags only admin-verified as is_verified', async () => {
-    // Product decision 2026-05-19: search shows BOTH registered+admin-
-    // verified and pending/scraped creators (supply for the brand<>
-    // influencer chicken-and-egg). The brand-facing `is_verified` tag
-    // distinguishes them. (Resolves carve
-    // backend-defect-search-includes-pending-influencers as
-    // working-as-intended; verified-flag truth fixed in migration 055.)
+  it('lists approved creators only; a pending creator is not shown to brands (item 3, founder Q14)', async () => {
+    // Product decision 2026-05-19 showed pending creators too. Superseded 2026-09-11 by the
+    // item 3 approval (rules v1.11, founder Q14): every creator list a brand sees is
+    // approved-only, and the verified tag reflects the real status.
+    // Contract: features/item3-discovery-profiles-groups
     const { token: brandToken, user: brandUser } = await createBrandUser();
     await approveUser(brandUser.id);
 
-    // Admin-verified (approved) influencer → is_verified true
     await createApprovedInfluencer('priya_sharma');
 
-    // Pending influencer — registered, NOT admin-approved → still shown,
-    // but is_verified false
     const { token: pendingToken } = await createInfluencerUser();
     await registerInfluencer(pendingToken, { instagram_handle: 'arun_kumar', name: 'Arun' });
 
@@ -84,16 +79,13 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    // BOTH appear (pending is NOT excluded)
-    expect(res.body.data.creators.length).toBe(2);
+    expect(res.body.data.creators.length).toBe(1);
     const byHandle = Object.fromEntries(
       res.body.data.creators.map(c => [c.ig_handle, c])
     );
     expect(byHandle.priya_sharma).toBeDefined();
-    expect(byHandle.arun_kumar).toBeDefined();
-    // Explicit verification tag: approved → true, pending → false
+    expect(byHandle.arun_kumar).toBeUndefined();
     expect(byHandle.priya_sharma.is_verified).toBe(true);
-    expect(byHandle.arun_kumar.is_verified).toBe(false);
   });
 
   it('filters by niche', async () => {

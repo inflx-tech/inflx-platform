@@ -170,6 +170,14 @@ describe('GET /v1/influencers/:id', () => {
     await query(`UPDATE users SET status = 'approved' WHERE id = $1`, [brandUser.user.id]);
     await registerBrand(brandUser.token, { business_name: 'Kanchi Silks', category: 'Fashion' });
 
+    // Item 3 (founder Q14): a brand cannot open a creator who is not yet approved.
+    // Contract: features/item3-discovery-profiles-groups
+    const pending = await request(app)
+      .get(`/v1/influencers/${inf.id}`)
+      .set('Authorization', `Bearer ${brandUser.token}`);
+    expect(pending.status).toBe(404);
+    await query(`UPDATE users SET status = 'approved' WHERE id = (SELECT user_id FROM influencers WHERE id = $1)`, [inf.id]);
+
     const res = await request(app)
       .get(`/v1/influencers/${inf.id}`)
       .set('Authorization', `Bearer ${brandUser.token}`);

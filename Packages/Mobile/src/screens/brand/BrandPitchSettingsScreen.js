@@ -183,7 +183,7 @@ export default function BrandPitchSettingsScreen({ navigation }) {
         <Section>
           <SettingRow testID="row-blocked" label={C.blockedRow} value={meta.blockedCount ? String(meta.blockedCount) : COPY.picker.none} onPress={() => navigation.navigate('BrandBlockedCreators')} />
           {savedPaused ? (
-            <SettingRow testID="row-open-pitches" label={C.openPitchesRow} value={C.openPitchesValue(meta.openPitches)} onPress={() => navigation.navigate('BrandPitchesPlaceholder')} />
+            <SettingRow testID="row-open-pitches" label={C.openPitchesRow} value={C.openPitchesValue(meta.openPitches)} onPress={() => navigation.navigate('CreatorsTab', { screen: 'BrandCreators', params: { segment: 'Pitches' } })} />
           ) : null}
         </Section>
         <View style={{ height: 120 }} />

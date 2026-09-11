@@ -179,6 +179,8 @@ const reject = asyncHandler(async (req, res) => {
       );
       if (infRows[0]) {
         await db.query(`UPDATE users SET status = 'rejected' WHERE id = $1`, [infRows[0].user_id]);
+        // Item 3 (rules v1.11 §5A, founder Q11): a rejected creator leaves every brand's group.
+        await db.query(`DELETE FROM influencer_group_members WHERE influencer_id = $1`, [target[0].linked_influencer_id]);
       }
     }
 

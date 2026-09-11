@@ -218,4 +218,44 @@ async function getAvatarUrl(key, { expiresIn = 21600 } = {}) {
   }
 }
 
-module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, putBuffer, getUploadDir, getAvatarUrl };
+/**
+ * Item 3 — what was actually stored under a key: { size, contentType } or null when absent.
+ * The presigned PUT cannot cap a file, so the server checks the object AFTER the upload,
+ * when the key is saved (brand logo, creator photo: JPG/PNG <= 5 MB).
+ */
+async function headObject(key) {
+  if (!key) return null;
+  if (env.R2_MOCK) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const st = fs.statSync(path.join(getUploadDir(), key));
+      const ext = String(key).split('.').pop().toLowerCase();
+      const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+      return { size: st.size, contentType: type };
+    } catch { return null; }
+  }
+  try {
+    const { HeadObjectCommand } = require('@aws-sdk/client-s3');
+    const out = await _getR2Client().send(new HeadObjectCommand({ Bucket: env.R2_BUCKET, Key: key }));
+    return { size: Number(out.ContentLength || 0), contentType: out.ContentType || null };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function deleteObject(key) {
+  if (!key) return;
+  if (env.R2_MOCK) {
+    try { require('fs').unlinkSync(require('path').join(getUploadDir(), key)); } catch { /* absent is fine */ }
+    return;
+  }
+  try {
+    const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+    await _getR2Client().send(new DeleteObjectCommand({ Bucket: env.R2_BUCKET, Key: key }));
+  } catch (e) {
+    console.warn('[storage] delete failed:', e.message);
+  }
+}
+
+module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, putBuffer, getUploadDir, getAvatarUrl, headObject, deleteObject };

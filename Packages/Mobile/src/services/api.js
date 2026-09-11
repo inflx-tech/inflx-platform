@@ -187,8 +187,32 @@ export const brandApi = {
   listBlockedCreators:  () => api.get('/brands/me/blocked-creators'),
   blockCreator:         (influencerId) => api.post('/brands/me/blocked-creators', { influencerId }),
   unblockCreator:       (influencerId) => api.delete(`/brands/me/blocked-creators/${influencerId}`),
-  // X4 — a creator's profile as a brand sees it (carries inviteSummary).
+  // X4 / P1–P4 — a creator's profile as a brand sees it (carries inviteSummary + item-3 extras).
   getCreatorProfile:    (influencerId) => api.get(`/influencers/${influencerId}`),
+
+  // Item 3 — Discover, Worked with, groups, branches, logo. Contract: features/item3-discovery-profiles-groups
+  discoverCreators:     (params) => api.get(`/brands/me/discover-creators${q(params)}`),
+  workedWith:           (params) => api.get(`/brands/me/worked-with${q(params)}`),
+  listGroups:           () => api.get('/brands/me/influencer-groups'),
+  getGroup:             (id, params) => api.get(`/brands/me/influencer-groups/${id}${q(params)}`),
+  createGroup:          (name, influencerIds) => api.post('/brands/me/influencer-groups', influencerIds ? { name, influencer_ids: influencerIds } : { name }),
+  renameGroup:          (id, name) => api.patch(`/brands/me/influencer-groups/${id}`, { name }),
+  deleteGroup:          (id) => api.delete(`/brands/me/influencer-groups/${id}`),
+  addGroupMembers:      (id, influencerIds) => api.post(`/brands/me/influencer-groups/${id}/members`, { influencer_ids: influencerIds }),
+  removeGroupMember:    (id, influencerId) => api.delete(`/brands/me/influencer-groups/${id}/members/${influencerId}`),
+  groupsForCreator:     (influencerId) => api.get(`/brands/me/influencer-groups/for-creator/${influencerId}`),
+  setGroupsForCreator:  (influencerId, groupIds) => api.put(`/brands/me/influencer-groups/for-creator/${influencerId}`, { groupIds }),
+  listBranches:         () => api.get('/brands/me/branches'),
+  createBranch:         (data) => api.post('/brands/me/branches', data),
+  updateBranch:         (id, data) => api.put(`/brands/me/branches/${id}`, data),
+  makeMainBranch:       (id) => api.post(`/brands/me/branches/${id}/make-main`),
+  removeBranch:         (id) => api.delete(`/brands/me/branches/${id}`),
+  // Logo: media-asset upload (tag 'logo'), then save the asset id on the profile.
+  getLogoUploadUrl:     (file_name, file_type, file_size_bytes) => api.post('/brands/me/media-assets/upload-url', { file_name, file_type, file_size_bytes }),
+  createLogoAsset:      (data) => api.post('/brands/me/media-assets', data),
+  getBrandProducts:     (brandId, params) => api.get(`/brands/${brandId}/products${q(params)}`),
+  getBrandProduct:      (brandId, productId) => api.get(`/brands/${brandId}/products/${productId}`),
+  getOwnOverview:       (brandId) => api.get(`/brands/${brandId}/public`),
   // A rejected brand asking to be looked at again. RejectedScreen has always called
   // this and it has never existed here, so its one button threw before any request
   // left the phone and the spinner never stopped. The server route has been live all
@@ -391,8 +415,12 @@ export const influencerApi = {
   listBlockedBrands:     () => api.get('/influencers/me/blocked-brands'),
   blockBrand:            (brandId) => api.post('/influencers/me/blocked-brands', { brandId }),
   unblockBrand:          (brandId) => api.delete(`/influencers/me/blocked-brands/${brandId}`),
-  // X1/X2 — a brand's overview as a creator sees it (carries pitchSummary).
+  // X1/X2 / O1–O3 — a brand's overview as a creator sees it (carries pitchSummary + products).
   getBrandOverview:      (brandId) => api.get(`/brands/${brandId}/public`),
+  // Item 3 — Find brands, brand products. Contract: features/item3-discovery-profiles-groups
+  findBrands:            (params) => api.get(`/influencers/me/find-brands${q(params)}`),
+  getBrandProducts:      (brandId, params) => api.get(`/brands/${brandId}/products${q(params)}`),
+  getBrandProduct:       (brandId, productId) => api.get(`/brands/${brandId}/products/${productId}`),
   // B4 — My Store arranger
   getDiscoverLayout: () => api.get('/influencers/me/discover-layout'),
   putDiscoverLayout: (rows) => api.put('/influencers/me/discover-layout', { rows_json: rows }),
@@ -574,7 +602,13 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
 
 
 // Item 2 — reference lists every picker reads (any signed-in role).
+const q = (params = {}) => { const p = Object.entries(params).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0)).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(Array.isArray(v) ? v.join(',') : v)}`); return p.length ? `?${p.join('&')}` : ''; };
+
 export const referenceApi = {
+  // Item 3 — Google address search (server proxy) and place → canonical city (adds it when new)
+  placesAutocomplete: (input, session) => api.get(`/follower/places/autocomplete${q({ q: input, session })}`),
+  resolvePlace:       (place_id, session) => api.post('/places/resolve', { place_id, session }),
+  citiesByIds:        (ids) => api.get(`/reference/cities${q({ ids })}`),
   creatorNiches:   () => api.get('/reference/creator-niches'),
   languages:       () => api.get('/reference/languages'),
   brandCategories: () => api.get('/reference/brand-categories'),

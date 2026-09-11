@@ -1,34 +1,68 @@
 import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import ProfileScreen from '../screens/influencer/ProfileScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
 import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
-// Item 2 — invitation settings, blocked brands, the brand overview (X1–X3) and a minimal finder.
-// Contract: features/item2-pitch-invitation-settings
+// Item 2 — invitation settings, blocked brands. Contract: features/item2-pitch-invitation-settings
 import InvitationSettingsScreen from '../screens/influencer/InvitationSettingsScreen';
 import BlockedBrandsScreen from '../screens/influencer/BlockedBrandsScreen';
 import BrandOverviewScreen from '../screens/influencer/BrandOverviewScreen';
-import FindPartyScreen from '../screens/shared/FindPartyScreen';
+// Item 3 — the five-tab shell, Collabs, Find brands, the profile screens and Payment & tax.
+// Contract: features/item3-discovery-profiles-groups
+import ComingSoonScreen from '../components/shell/ComingSoonScreen';
+import CollabsScreen from '../screens/influencer/CollabsScreen';
+import FindBrandsScreen from '../screens/influencer/FindBrandsScreen';
+import ProfileInfoScreen from '../screens/influencer/ProfileInfoScreen';
+import NicheLanguagesScreen from '../screens/influencer/NicheLanguagesScreen';
+import PaymentTaxScreen from '../screens/influencer/PaymentTaxScreen';
+import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
+import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
+import { tabScreenOptions } from './BrandNavigator';
 
-// features/profile-only-apps — every creator screen except Profile was removed on the
-// founder's instruction (2026-09-10). One screen left, so no tab bar: the app opens
-// straight on the profile. Legal stays because the stores require the privacy policy
-// to be reachable inside the app. Backend and database untouched.
-const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+const CollabsStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator();
+const noHeader = { headerShown: false };
+
+function CollabsStackScreen() {
+  return (
+    <CollabsStack.Navigator screenOptions={noHeader}>
+      <CollabsStack.Screen name="Collabs" component={CollabsScreen} />
+      <CollabsStack.Screen name="FindBrands" component={FindBrandsScreen} />
+      <CollabsStack.Screen name="BrandOverview" component={BrandOverviewScreen} />
+      <CollabsStack.Screen name="BrandProducts" component={BrandProductsScreen} />
+      <CollabsStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+    </CollabsStack.Navigator>
+  );
+}
+
+function ProfileStackScreen() {
+  return (
+    <ProfileStack.Navigator screenOptions={noHeader}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
+      <ProfileStack.Screen name="NicheLanguages" component={NicheLanguagesScreen} />
+      <ProfileStack.Screen name="PaymentTax" component={PaymentTaxScreen} />
+      {/* Item 2 */}
+      <ProfileStack.Screen name="InvitationSettings" component={InvitationSettingsScreen} />
+      <ProfileStack.Screen name="BlockedBrands" component={BlockedBrandsScreen} />
+      {/* Legal — creators get the creator document set. */}
+      <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
+      <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
+    </ProfileStack.Navigator>
+  );
+}
 
 export default function InfluencerNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-      {/* Item 2 */}
-      <Stack.Screen name="InvitationSettings" component={InvitationSettingsScreen} />
-      <Stack.Screen name="BlockedBrands" component={BlockedBrandsScreen} />
-      <Stack.Screen name="BrandOverview" component={BrandOverviewScreen} />
-      <Stack.Screen name="FindParty" component={FindPartyScreen} initialParams={{ mode: 'brands' }} />
-      {/* Legal — creators get the creator document set. */}
-      <Stack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
-      <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} />
-    </Stack.Navigator>
+    <Tab.Navigator initialRouteName="CollabsTab" screenOptions={tabScreenOptions}>
+      <Tab.Screen name="HomeTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
+      <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} />
+      <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} />
+      <Tab.Screen name="WalletTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorWallet', tabTitle: 'Wallet' }} options={{ title: 'Wallet' }} />
+      <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
+    </Tab.Navigator>
   );
 }

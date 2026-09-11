@@ -534,6 +534,18 @@ async function getBrandRatings(brandIds) {
   return map;
 }
 
+/** The listing_data keys a shopper may see. Branches, phones, addresses and bank details never. */
+function publicListingData(ld) {
+  const src = ld && typeof ld === 'object' ? ld : {};
+  const out = {};
+  for (const k of ['cover_image_url', 'cost_for_two', 'locality_or_neighborhood', 'cuisines', 'free_delivery',
+    'delivery_eta_min_mins', 'delivery_eta_max_mins', 'hours_json', 'accepts_table_booking', 'pay_at_store_supported',
+    'online_order_supported', 'enquiry_enabled', 'vibes', 'sections', 'store_type', 'tagline']) {
+    if (src[k] !== undefined) out[k] = src[k];
+  }
+  return out;
+}
+
 async function resolveBusinessStore(brandId, viaInfluencerId = null) {
   // Visibility guard (paired with build-while-pending): a brand that has not
   // been admin-approved must NOT be reachable by followers, even though it may
@@ -739,10 +751,11 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
       delivery_eta_min_mins:     listingData.delivery_eta_min_mins != null ? Number(listingData.delivery_eta_min_mins) : null,
       delivery_eta_max_mins:     listingData.delivery_eta_max_mins != null ? Number(listingData.delivery_eta_max_mins) : null,
       open_status:               openStatus,
-      // Pass through full listing_data so BrandActionRow's visible_if
-      // expressions (e.g. "brand_data.accepts_table_booking == true") can
-      // evaluate. brand_data on mobile reads from this.
-      listing_data:              listingData,
+      // Item 3 (privacy): only the keys the shopper app reads. The whole object used to
+      // pass through — branches[] with every branch phone and address included, to
+      // anyone. Founder decision (item 3 approval, 2026-09-11): never branches, phones
+      // or addresses here.
+      listing_data:              publicListingData(listingData),
     },
     products: products.map(p => ({
       id: p.id,

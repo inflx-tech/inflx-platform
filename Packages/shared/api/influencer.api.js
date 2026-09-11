@@ -21,5 +21,9 @@ export function createInfluencerApi(client) {
     listBlockedBrands: () => client.get('/influencers/me/blocked-brands'),
     blockBrand: (brandId) => client.post('/influencers/me/blocked-brands', { brandId }),
     unblockBrand: (brandId) => client.delete(`/influencers/me/blocked-brands/${brandId}`),
+    // Item 3 — find brands, brand products
+    findBrands: (qs) => client.get(`/influencers/me/find-brands${qs ? '?' + qs : ''}`),
+    getBrandProducts: (brandId, qs) => client.get(`/brands/${brandId}/products${qs ? '?' + qs : ''}`),
+    getBrandProduct: (brandId, productId) => client.get(`/brands/${brandId}/products/${productId}`),
   };
 }

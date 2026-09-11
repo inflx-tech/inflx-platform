@@ -191,10 +191,11 @@ describe('A8 — reference lists', () => {
     expect(n.body.data.items).toHaveLength(20);
     expect(l.body.data.items).toHaveLength(10);
     expect(k.body.data.items.map(x => x.code)).toEqual(['MEN', 'WOMEN', 'KIDS', 'PLUS_SIZE', 'WATCHES', 'IMITATION_JEWELLERY', 'FOOTWEAR', 'BAGS_ACCESSORIES']);
-    expect(s.body.data.items).toHaveLength(17);
+    // Item 3 (founder Q9): all 36 states and union territories, 92 seeded cities.
+    expect(s.body.data.items).toHaveLength(36);
     const tg = s.body.data.items.find(x => x.name === 'Telangana');
     expect(tg.cities.map(x => x.name)).toContain('Hyderabad');
-    expect(s.body.data.items.reduce((a, x) => a + x.cities.length, 0)).toBe(63);
+    expect(s.body.data.items.reduce((a, x) => a + x.cities.length, 0)).toBe(92);
   });
 });
 

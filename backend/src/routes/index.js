@@ -141,6 +141,12 @@ router.use('/brands/me', brandCreatorImagesRoutes);        // /brands/me/creator
 const collabSettingsRoutes = require('./collabSettings.routes');
 router.use('/', collabSettingsRoutes);
 
+// ── Item 3 — Discover creators, Worked with, Find brands, branches, brand products,
+// place resolution, reference cities. Same reason for mounting here: fixed paths first.
+// Contract: features/item3-discovery-profiles-groups
+const discoveryRoutes = require('./discovery.routes');
+router.use('/', discoveryRoutes);
+
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);

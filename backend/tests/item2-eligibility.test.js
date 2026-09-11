@@ -199,10 +199,16 @@ describe('§3.2 brand → creator', () => {
     expect((await invite(b, c, remoteSet, {})).reason).toBe('OK');
     await setCreator(c.influencerId, { visitCityIds: [await cityId('Chennai'), await cityId('Hyderabad')] });
     expect((await invite(b, c, visitSet, {})).reason).toBe('OK');
-    // a branch typed into listing_data counts too
-    const b2 = await brand({ city: 'Mumbai' });
+    // Item 3: branch cities come from brand_branches (registration seeds the main branch; more
+    // branches are added on the phone). A branch typed into listing_data no longer counts once
+    // the brand has branch rows. Contract: features/item3-discovery-profiles-groups
+    const b2 = await brand({ city: 'Mumbai', state: 'Maharashtra' });
     await query(`UPDATE brands SET listing_data = '{"branches":[{"name":"Main Branch","city":"Mumbai"},{"name":"T Nagar","city":"Chennai"}]}'::jsonb WHERE id=$1`, [b2.brandId]);
     await setCreator(c.influencerId, { visitCityIds: [await cityId('Chennai')] });
+    expect((await invite(b2, c, visitSet, {})).reason).toBe('NOT_MATCHING');
+    await query(
+      `INSERT INTO brand_branches (brand_id, name, city_id, state_id, is_main)
+       SELECT $1, 'T Nagar', rc.id, rc.state_id, false FROM ref_cities rc WHERE rc.id = $2`, [b2.brandId, await cityId('Chennai')]);
     expect((await invite(b2, c, visitSet, {})).reason).toBe('OK');
   });
 

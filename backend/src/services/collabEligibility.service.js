@@ -236,7 +236,10 @@ async function brandFacts(brandId) {
   const branches = Array.isArray(r.listing_data?.branches) ? r.listing_data.branches : [];
   const names = branches.map(b => b && b.city).filter(Boolean);
   if (r.user_city) names.push(r.user_city);
-  const branchCityIds = await ref.cityIdsForNames(names);
+  // Item 3: the branch table is the truth; the typed names remain a fallback for a brand
+  // whose rows have not been written yet.
+  const { rows: tbl } = await db.query(`SELECT DISTINCT city_id FROM brand_branches WHERE brand_id = $1 AND city_id IS NOT NULL`, [brandId]);
+  const branchCityIds = tbl.length ? tbl.map(r => Number(r.city_id)) : await ref.cityIdsForNames(names);
   return {
     subCategories: Array.isArray(r.sub_categories) ? r.sub_categories : [],
     branchCityIds,

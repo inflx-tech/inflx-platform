@@ -17,7 +17,34 @@ const { resolveAvatars } = require('../utils/avatarResolver');
 // a brand sees. Contract: features/item2-pitch-invitation-settings
 const referenceLists = require('../services/referenceLists.service');
 const eligibility = require('../services/collabEligibility.service');
+// Item 3 — Google city, measured-at, what a brand sees on P1/P2, photo size check.
+// Contract: features/item3-discovery-profiles-groups
+const collabState = require('../services/collabState');
 const storageService = require('../services/storage.service');
+const PHOTO_MSG = 'Upload a JPG or PNG under 5 MB.';
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+function fieldError(field, code, message) {
+  return new AppError('VALIDATION_ERROR', message, 422, field, { fields: [{ field, code, message }] });
+}
+/** A YouTube handle from '@name', 'youtube.com/@name', '/c/name' or '/channel/UC…'. */
+function normaliseYoutube(value) {
+  if (value == null) return null;
+  let v = String(value).trim();
+  if (!v) return null;
+  v = v.replace(/^https?:\/\/(www\.|m\.)?youtube\.com\//i, '').replace(/^https?:\/\/youtu\.be\//i, '');
+  v = v.replace(/^(c\/|user\/|channel\/)/i, '').replace(/[?#].*$/, '').replace(/\/.*$/, '');
+  return v.replace(/^@+/, '').toLowerCase() || null;
+}
+/** Item 3 extras for the creator's own profile: canonical city names and measured-at. */
+async function ownProfileExtras(influencer) {
+  const { rows } = await db.query(
+    `SELECT i.city_id, rc.name AS city_name, rs.name AS state_name,
+            GREATEST(i.scrape_last_run, i.youtube_scrape_last_run) AS measured_at
+       FROM influencers i LEFT JOIN ref_cities rc ON rc.id = i.city_id LEFT JOIN ref_states rs ON rs.id = rc.state_id
+      WHERE i.id = $1`, [influencer.id]);
+  const r = rows[0] || {};
+  return { city_id: r.city_id == null ? null : Number(r.city_id), city_name: r.city_name || null, state_name: r.state_name || null, measured_at: r.measured_at || null };
+}
 const referralService = require('../services/referral.service');
 // Stage 0 — one step number and one needs-you count, both apps reading the same source.
 const collabCounts = require('../services/collabCounts.service');
@@ -408,6 +435,8 @@ const getMe = asyncHandler(async (req, res) => {
   const sanitised = sanitiseInfluencer(influencer);
   // Include phone as read-only for profile display
   sanitised.phone = influencer.phone;
+  Object.assign(sanitised, await ownProfileExtras(influencer));
+  sanitised.needsNiche = !(Array.isArray(influencer.niche) && influencer.niche.length === 1);
 
   return success(res, {
     influencer: sanitised,
@@ -429,7 +458,7 @@ const getMe = asyncHandler(async (req, res) => {
  * The key is derived from HER id, so one creator can never overwrite another's
  * photo by choosing a filename, and re-uploading replaces her own.
  */
-const IMAGE_MIMES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+const IMAGE_MIMES = new Set(['image/jpeg', 'image/jpg', 'image/png']);   // Item 3: JPG or PNG, ≤ 5 MB
 
 const getProfileImageUploadUrl = asyncHandler(async (req, res) => {
   const influencer = await getInfluencerByUserId(req.user.sub);
@@ -438,7 +467,7 @@ const getProfileImageUploadUrl = asyncHandler(async (req, res) => {
   const ct = String(req.body?.content_type || '').toLowerCase();
   if (!IMAGE_MIMES.has(ct)) {
     throw new AppError('VALIDATION_ERROR',
-      'Choose a JPEG, PNG or WebP photo.', 422, 'content_type');
+      PHOTO_MSG, 422, 'content_type');
   }
 
   const ext = ct === 'image/png' ? 'png' : ct === 'image/webp' ? 'webp' : 'jpg';
@@ -475,6 +504,9 @@ const updateMe = asyncHandler(async (req, res) => {
     // Instagram picture is never written here — founder instruction 2026-08-22.
     // Contract: features/creator-photo-and-reach
     profile_image_key,
+    // Item 3 — her city comes from a Google place id, resolved and stored as city_id.
+    place_id,
+    session,
   } = req.body;
 
   const updates = {};
@@ -496,15 +528,52 @@ const updateMe = asyncHandler(async (req, res) => {
     }
     updates.niche = codes;
   }
-  if (youtube_handle !== undefined) updates.youtube_handle = youtube_handle;
+  if (youtube_handle !== undefined) updates.youtube_handle = normaliseYoutube(youtube_handle);   // Item 3: handle or URL, normalised like register
   if (bank_ifsc !== undefined) updates.bank_ifsc = bank_ifsc;
-  if (bio !== undefined) updates.bio = bio;
+  if (bio !== undefined) {
+    const v = bio == null ? null : String(bio).trim();
+    if (v && v.length > 150) throw fieldError('bio', 'BIO_TOO_LONG', 'Keep it under 150 characters.');
+    updates.bio = v || null;
+  }
   if (city !== undefined) updates.city = city;
-  if (full_name !== undefined) updates.full_name = full_name;
+  if (full_name !== undefined) {
+    if (!String(full_name || '').trim()) throw fieldError('full_name', 'NAME_REQUIRED', 'Enter your full name.');
+    updates.full_name = String(full_name).trim();
+  }
+  // Item 3 (A8): city through Google. Resolves to a canonical city (adding it when new) and
+  // keeps the typed columns in step so every older reader still sees a name.
+  let placeResolved = null;
+  if (place_id !== undefined) {
+    if (!place_id) throw fieldError('place_id', 'CITY_REQUIRED', 'Search and pick your city.');
+    try {
+      placeResolved = await referenceLists.resolvePlace(place_id, { session, userId: req.user.sub });
+    } catch (e) {
+      if (e.code === referenceLists.STATE_UNKNOWN) throw new AppError(referenceLists.STATE_UNKNOWN, e.message, 422, 'place_id');
+      if (e.code === referenceLists.PLACE_NOT_FOUND) throw fieldError('place_id', 'CITY_REQUIRED', 'Search and pick your city.');
+      if (e.code === 'RATE_LIMITED') throw new AppError('RATE_LIMITED', e.message, 429);
+      throw e;
+    }
+    if (!placeResolved.city) throw fieldError('place_id', 'CITY_REQUIRED', 'Search and pick your city.');
+    updates.city_id = placeResolved.city.id;
+    updates.city = placeResolved.city.name;
+    updates.state = placeResolved.state.name;
+  }
   // '' clears the photo back to initials — a creator must be able to remove a
   // picture of herself, so an empty string is a deliberate value, not a no-op.
   if (profile_image_key !== undefined) {
-    updates.profile_image_r2_key = profile_image_key === '' ? null : profile_image_key;
+    if (profile_image_key === '' || profile_image_key == null) {
+      updates.profile_image_r2_key = null;
+    } else {
+      // Item 3 (founder Q16): the presigned PUT cannot cap a file, so check what landed.
+      if (!String(profile_image_key).startsWith(`creator-photos/${influencer.id}/`)) throw fieldError('profile_image_key', 'PHOTO_TYPE_SIZE', PHOTO_MSG);
+      const head = await storageService.headObject(profile_image_key);
+      const type = String((head && head.contentType) || '').toLowerCase();
+      const size = Number((head && head.size) || 0);
+      const extOk = /\.(jpe?g|png)$/i.test(String(profile_image_key));
+      if (head && (!/^image\/(jpe?g|png)$/.test(type) || size > PHOTO_MAX_BYTES)) throw fieldError('profile_image_key', 'PHOTO_TYPE_SIZE', PHOTO_MSG);
+      if (!head && !extOk) throw fieldError('profile_image_key', 'PHOTO_TYPE_SIZE', PHOTO_MSG);
+      updates.profile_image_r2_key = profile_image_key;
+    }
   }
 
   // Encrypt sensitive fields before storing
@@ -532,11 +601,17 @@ const updateMe = asyncHandler(async (req, res) => {
   if (nameUpdate !== undefined) {
     await db.query(`UPDATE users SET name = $1 WHERE id = $2`, [nameUpdate, req.user.sub]);
   }
+  if (placeResolved) {
+    await db.query(`UPDATE users SET city = $1, state = $2 WHERE id = $3`, [placeResolved.city.name, placeResolved.state.name, req.user.sub]);
+  }
 
 
   const updated = await getInfluencerById(influencer.id);
   await withOwnPhoto(updated);
-  return success(res, { influencer: sanitiseInfluencer(updated) });
+  const out = sanitiseInfluencer(updated);
+  Object.assign(out, await ownProfileExtras(updated));
+  out.needsNiche = !(Array.isArray(updated.niche) && updated.niche.length === 1);
+  return success(res, { influencer: out, cityAdded: !!(placeResolved && placeResolved.city && placeResolved.city.added) });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -603,6 +678,9 @@ const search = asyncHandler(async (req, res) => {
   // it and who has since joined.
   const isAdmin = req.user?.role === 'admin';
   if (!isAdmin) conditions.push(`source = 'onboarded'`);
+  // Item 3 (rules: only approved creators appear to brands). The view admits pending rows
+  // for the admin pipeline; is_inflx_verified is (u.status = 'approved') since mig 055.
+  if (!isAdmin) conditions.push(`is_inflx_verified = TRUE`);
 
   if (q) {
     params.push(`%${String(q).trim()}%`);
@@ -838,14 +916,20 @@ const getPublicById = asyncHandler(async (req, res) => {
          AS inflx_followers,
        u.name, u.id AS user_id, u.status AS user_status,
        'onboarded'::text AS source,
-       TRUE AS is_inflx_verified,
-       'verified'::text AS verification_status
+       (u.status = 'approved') AS is_inflx_verified,
+       u.status::text AS verification_status,
+       i.city_id,
+       GREATEST(i.scrape_last_run, i.youtube_scrape_last_run) AS measured_at
      FROM influencers i
      JOIN users u ON u.id = i.user_id
      WHERE i.id = $1`,
     [id]
   );
   if (legacy[0]) {
+    // Item 3 (D11): a brand sees approved creators only. Admin keeps the full view.
+    if (req.user.role === 'brand' && legacy[0].user_status !== 'approved') {
+      throw new AppError('NOT_FOUND', 'Creator not found', 404);
+    }
     // Admin-only detail. Kept out of the shared select on purpose — this endpoint also
     // serves BRANDS, and a creator's personal number and earnings are not theirs to see.
     // Contract: features/admin-account-review
@@ -878,11 +962,49 @@ const getPublicById = asyncHandler(async (req, res) => {
     // open or paused, the Aims and modes she accepts, and whether it may invite her, as a
     // coarse reason. Blocked looks exactly like paused. Admins get no verdict.
     let inviteSummary = null;
+    // Item 3 (A6, screens P1–P4): city names, measured-at, the signed count across INFLX,
+    // this brand's own signed collaborations with her, her place in this brand's groups,
+    // and whether this brand has blocked her. Nothing private: no email, no phone, no
+    // settings, no other brand's business.
+    const extras = {};
+    if (legacy[0].city_id) {
+      const { rows: c } = await db.query(
+        `SELECT rc.name AS city_name, rs.name AS state_name FROM ref_cities rc JOIN ref_states rs ON rs.id = rc.state_id WHERE rc.id = $1`, [legacy[0].city_id]);
+      extras.cityName = c[0] ? c[0].city_name : null; extras.stateName = c[0] ? c[0].state_name : null;
+    } else { extras.cityName = legacy[0].city || null; extras.stateName = legacy[0].state || null; }
+    extras.measuredAt = legacy[0].measured_at || null;
+    const { rows: signedAll } = await db.query(
+      `SELECT count(*)::int AS n FROM contracts con JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+        WHERE ci.influencer_id = $1 AND ${collabState.SIGNED_CONTRACT_SQL}`, [legacy[0].id]);
+    extras.signedCollaborations = signedAll[0].n;
+    extras.signedCollaborationsLabel = signedAll[0].n > 0 ? collabState.P1_COUNT_LABEL(signedAll[0].n) : null;
     if (req.user.role === 'brand') {
       const { rows: me } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
-      inviteSummary = await eligibility.inviteSummaryFor(legacy[0].id, me[0] ? me[0].id : null);
+      const myBrandId = me[0] ? me[0].id : null;
+      inviteSummary = await eligibility.inviteSummaryFor(legacy[0].id, myBrandId);
+      if (myBrandId) {
+        const { rows: collabs } = await db.query(
+          `SELECT ci.id, ci.status::text AS status, c.name AS campaign_name, cs.name AS set_name, cs.goal::text AS aim,
+                  GREATEST(con.influencer_signed_at, con.brand_signed_at) AS signed_at
+             FROM contracts con
+             JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+             JOIN campaign_sets cs ON cs.id = ci.set_id
+             JOIN campaigns c ON c.id = cs.campaign_id
+            WHERE ci.influencer_id = $1 AND c.brand_id = $2 AND ${collabState.SIGNED_CONTRACT_SQL}
+            ORDER BY signed_at DESC`, [legacy[0].id, myBrandId]);
+        extras.collaborationsWithYou = collabs.map(r => ({
+          id: r.id, campaignName: r.campaign_name, setName: r.set_name, aim: r.aim, signedAt: r.signed_at,
+          status: r.status, stateFamily: collabState.familyOf(r.status), stateLabel: collabState.FAMILY_LABEL[collabState.familyOf(r.status)],
+        }));
+        const { rows: groups } = await db.query(
+          `SELECT g.id, g.name FROM influencer_group_members m JOIN influencer_groups g ON g.id = m.group_id
+            WHERE g.brand_id = $1 AND m.influencer_id = $2 ORDER BY g.name`, [myBrandId, legacy[0].id]);
+        extras.groups = groups;
+        extras.blockedByYou = await eligibility.isBlocked('brand', myBrandId, 'creator', legacy[0].id);
+      }
     }
-    return success(res, { influencer: legacy[0], inviteSummary });
+    delete legacy[0].measured_at;
+    return success(res, { influencer: legacy[0], inviteSummary, ...extras });
   }
 
   // 2. Scraped creator profile (new table) — shape into the legacy response

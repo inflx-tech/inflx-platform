@@ -24,6 +24,10 @@ router.use(requireRole('brand'));
 
 router.get(   '/influencer-groups',                        ctrl.listGroups);
 router.post(  '/influencer-groups',                        ctrl.createGroup);
+// Item 3 (rules v1.11 §5A) — static paths before '/:id' so "for-creator" is never read as a group id.
+router.get(   '/influencer-groups/for-creator/:influencerId', ctrl.groupsForCreator);
+router.put(   '/influencer-groups/for-creator/:influencerId', ctrl.setGroupsForCreator);
+router.get(   '/influencer-groups/:id',                    ctrl.getGroup);
 router.patch( '/influencer-groups/:id',                    ctrl.renameGroup);
 router.delete('/influencer-groups/:id',                    ctrl.deleteGroup);
 router.post(  '/influencer-groups/:id/members',            ctrl.addMembers);

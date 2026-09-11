@@ -246,6 +246,9 @@ const updateInfluencerStatus = asyncHandler(async (req, res) => {
       `UPDATE influencers SET rejection_reason = $2, approved_at = NULL, approved_by = NULL WHERE id = $1`,
       [influencer.id, reason || null]
     );
+    // Item 3 (rules v1.11 §5A, founder Q11): a rejected creator leaves every brand's group.
+    // A SUSPENDED creator keeps her rows and is only hidden; she reappears when reinstated.
+    await require('./influencerGroup.controller').dropFromAllGroups(influencer.id);
   } else {
     // Suspended — preserve the original approval provenance (see the brand
     // handler above for the rationale).

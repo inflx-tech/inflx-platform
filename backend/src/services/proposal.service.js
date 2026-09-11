@@ -245,11 +245,14 @@ async function discoverEligibleBrands(influencerId, { search, category, city, li
  * offer a filter that returns nothing.
  */
 async function discoveryFacets() {
+  // Item 3: the same "open" test as the list itself (brand_pitch_settings.accepting, missing
+  // row = open) — the retired brands.accepts_proposals column is no longer read anywhere.
   const { rows } = await db.query(
     `SELECT b.category, u.city
        FROM brands b
        JOIN users u ON u.id = b.user_id
-      WHERE b.accepts_proposals = TRUE
+       LEFT JOIN brand_pitch_settings bps ON bps.brand_id = b.id
+      WHERE COALESCE(bps.accepting, TRUE) = TRUE
         AND u.status = 'approved'`
   );
   const categories = [...new Set(rows.map(r => r.category).filter(Boolean))].sort();

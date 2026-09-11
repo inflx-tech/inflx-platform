@@ -1,0 +1,15 @@
+{
+  "feature": "item3-discovery-profiles-groups",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item3_Approval_Message.md)",
+  "approved_at": "2026-09-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item3_Discovery_Mockups.html — 'Stage 3: locked 11 Sep 2026')",
+  "mockup_locked_at": "2026-09-11T00:00:00+05:30",
+  "notes": "Rules doc v1.11 §5A/§8A. Gap report Docs/ITEM3_DISCOVERY_GAP_REPORT.md approved with 19 answers + decisions in APPROVAL.md. Phone apps only; website untouched (side effects listed in 06-diff/notes.md). Production-impacting (migrations 170–174, backend, OTA brand+influencer) — explicit go required before push. Phases 2–4 built 2026-09-11: 8 backend suites / 62 tests, 3 mobile suites / 22 tests, release bundle builds; prod dry run of 170–174 clean (36 states, 92 cities, 25/25 creators matched). Baselines: 474 → 229 failures after the factory fix (6ff5a14); end-of-item run recorded in 06-diff/notes.md. qa_all_green stays false (pre-existing failures); maestro not run — founder phone walk of checks 1–31 is the gate.",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}

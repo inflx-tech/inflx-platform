@@ -17,6 +17,7 @@
  */
 
 const db = require('../config/db');
+const places = require('./places.service');
 
 const CACHE_MS = 60_000;
 const cache = new Map();   // key -> { at, value }
@@ -136,12 +137,117 @@ function unknownCodes(codes, list) {
   return (codes || []).filter(c => !known.has(c));
 }
 
+/** Cities by id with their state, for label lookups (reference/cities?ids=). */
+async function citiesByIds(ids) {
+  const { byId } = await cityIndex();
+  const out = [];
+  for (const id of ids || []) {
+    const c = byId.get(Number(id));
+    if (c) out.push({ id: c.id, name: c.name, stateId: c.state_id, stateName: c.state_name });
+  }
+  return out;
+}
+
+// ── Item 3: Google place → canonical state + city, adding the CITY when new ──
+//
+// States are never added (founder Q9). A state is found by exact name, then through
+// ref_state_aliases (Google spellings such as "NCT of Delhi"). A city is found by its
+// normalised name inside that state; when absent it is INSERTED with source='google'
+// under UNIQUE (state_id, name_norm), so two users adding the same city at the same
+// moment end with one row and only the first is told "new on INFLX".
+
+const STATE_UNKNOWN = 'STATE_UNKNOWN';
+const PLACE_NOT_FOUND = 'PLACE_NOT_FOUND';
+const resolveCache = new Map();          // place_id -> { at, value }   (10 minutes, founder decision 7)
+const RESOLVE_CACHE_MS = 10 * 60_000;
+const rateBuckets = new Map();           // userId -> [timestamps]     (60 per minute per user)
+
+function rateLimited(userId) {
+  if (!userId) return false;
+  const now = Date.now();
+  const arr = (rateBuckets.get(userId) || []).filter(t => now - t < 60_000);
+  arr.push(now);
+  rateBuckets.set(userId, arr);
+  return arr.length > 60;
+}
+
+async function findStateId(rawState) {
+  const n = norm(rawState);
+  if (!n) return null;
+  const { rows } = await db.query(`SELECT id FROM ref_states WHERE lower(name) = $1`, [n]);
+  if (rows[0]) return rows[0].id;
+  const { rows: al } = await db.query(`SELECT state_id FROM ref_state_aliases WHERE alias_norm = $1`, [n]);
+  return al[0] ? al[0].state_id : null;
+}
+
+/** Find-or-add a city in a state. Returns { id, name, added }. */
+async function findOrAddCity(stateId, rawCity) {
+  const n = norm(rawCity);
+  if (!n) return null;
+  const { rows } = await db.query(`SELECT id, name FROM ref_cities WHERE state_id = $1 AND name_norm = $2`, [stateId, n]);
+  if (rows[0]) return { id: rows[0].id, name: rows[0].name, added: false };
+  const display = String(rawCity).trim();
+  const { rows: ins } = await db.query(
+    `INSERT INTO ref_cities (state_id, name, name_norm, sort, source)
+     VALUES ($1, $2, $3, 999, 'google')
+     ON CONFLICT (state_id, name_norm) DO NOTHING
+     RETURNING id, name`,
+    [stateId, display, n]
+  );
+  invalidate();
+  if (ins[0]) return { id: ins[0].id, name: ins[0].name, added: true };
+  const { rows: again } = await db.query(`SELECT id, name FROM ref_cities WHERE state_id = $1 AND name_norm = $2`, [stateId, n]);
+  return again[0] ? { id: again[0].id, name: again[0].name, added: false } : null;
+}
+
+/**
+ * Resolve a Google place id into an address the platform can store.
+ * @returns {{ placeId, formattedAddress, pincode, lat, lng, state:{id,name}, city:{id,name,added} }}
+ * @throws Error with .code = PLACE_NOT_FOUND | STATE_UNKNOWN | RATE_LIMITED
+ */
+async function resolvePlace(placeId, { session, userId } = {}) {
+  if (!placeId) { const e = new Error('place_id is required'); e.code = PLACE_NOT_FOUND; throw e; }
+  if (rateLimited(userId)) { const e = new Error('Too many address lookups. Try again in a minute.'); e.code = 'RATE_LIMITED'; throw e; }
+  const hit = resolveCache.get(placeId);
+  let d = hit && Date.now() - hit.at < RESOLVE_CACHE_MS ? hit.value : null;
+  if (!d) {
+    d = await places.details(placeId, { sessiontoken: session });
+    if (!d) { const e = new Error('place not found'); e.code = PLACE_NOT_FOUND; throw e; }
+    resolveCache.set(placeId, { at: Date.now(), value: d });
+  }
+  const stateId = await findStateId(d.state);
+  if (!stateId) {
+    await db.query(`INSERT INTO ref_unknown_states (raw_state, raw_city, place_id, user_id) VALUES ($1,$2,$3,$4)`,
+      [d.state || null, d.city || null, placeId, userId || null]).catch(() => {});
+    console.warn('[places] STATE_UNKNOWN', JSON.stringify({ state: d.state, city: d.city, placeId }));
+    const e = new Error("We couldn't match this address to a state. Try a nearby address."); e.code = STATE_UNKNOWN; throw e;
+  }
+  const { rows: st } = await db.query(`SELECT id, name FROM ref_states WHERE id = $1`, [stateId]);
+  // Google's locality is the city; when absent fall back to the area name so a village
+  // address still lands somewhere sensible (the founder can review source=google rows).
+  const city = await findOrAddCity(stateId, d.city || d.area_name);
+  return {
+    placeId,
+    formattedAddress: d.formatted_address || null,
+    pincode: d.pincode || null,
+    lat: d.lat == null ? null : d.lat,
+    lng: d.lng == null ? null : d.lng,
+    state: { id: st[0].id, name: st[0].name },
+    city: city ? { id: city.id, name: city.name, added: city.added } : null,
+  };
+}
+
+/** Test seam: forget cached place details and rate buckets. */
+function resetResolveState() { resolveCache.clear(); rateBuckets.clear(); }
+
 async function unknownCityIds(ids) {
   const { byId } = await cityIndex();
   return (ids || []).filter(id => !byId.has(Number(id)));
 }
 
 module.exports = {
+  STATE_UNKNOWN, PLACE_NOT_FOUND,
+  resolvePlace, findOrAddCity, findStateId, citiesByIds, resetResolveState,
   creatorNiches,
   languages,
   brandCategories,

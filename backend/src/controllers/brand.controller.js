@@ -18,6 +18,21 @@ const businessCategory = require('../services/businessCategory.model');
 // Contract: features/item2-pitch-invitation-settings
 const referenceLists = require('../services/referenceLists.service');
 const eligibility = require('../services/collabEligibility.service');
+// Item 3 — branches, published products, storage checks for the logo.
+// Contract: features/item3-discovery-profiles-groups
+const branchesService = require('../services/brandBranches.service');
+const brandProducts = require('../services/brandProducts.service');
+const storageService = require('../services/storage.service');
+
+const LOGO_MSG = 'Upload a JPG or PNG under 5 MB.';
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+function stableAssetUrl(id) {
+  const base = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3001}`;
+  return `${base}/v1/media/assets/${id}`;
+}
+function fieldError(field, code, message) {
+  return new AppError('VALIDATION_ERROR', message, 422, field, { fields: [{ field, code, message }] });
+}
 
 /**
  * Item 2 (founder Q5b, rules v1.10 §8A): a brand picks Fashion, then one or more of the
@@ -55,7 +70,7 @@ function validateProductFields(schema, body) {
 
 async function getBrandByUserId(userId) {
   const { rows } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.fcm_token,
+    `SELECT b.*, u.status AS user_status, u.phone, u.phone AS login_phone, b.phone AS business_phone, u.name, u.fcm_token,
             -- A brand's city and state live on the USER row — there is no brands.city
             -- column. The admin page asked for brand.city and so always printed a dash.
             -- Contract: features/admin-account-review
@@ -70,7 +85,7 @@ async function getBrandByUserId(userId) {
 
 async function getBrandById(brandId) {
   const { rows } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.name, u.fcm_token,
+    `SELECT b.*, u.status AS user_status, u.phone, u.phone AS login_phone, b.phone AS business_phone, u.name, u.fcm_token,
             -- Same reason as above: the admin brand page asked for brand.city, which does
             -- not exist on brands. Contract: features/admin-account-review
             u.city, u.state, u.created_at AS user_created_at
@@ -203,6 +218,10 @@ const register = asyncHandler(async (req, res) => {
     referredId: brand.id,
   });
 
+  // Item 3 (A4): the typed registration address becomes the brand's Main Branch so its city
+  // shows to creators from day one. Never blocks registration.
+  await branchesService.ensureMainFromBrandRow(brand.id).catch((e) => console.error('[branches] seeding the main branch failed:', e.message));
+
   // Fetch with user status joined
   const full = await getBrandById(brand.id);
 
@@ -222,7 +241,14 @@ const getMe = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  return success(res, { brand: sanitiseBrand(brand), user_status: brand.user_status });
+  // Item 3 (A1 header): branches and the main city, plus the sub-category reminder flag.
+  const [branches, mainCity] = await Promise.all([branchesService.list(brand.id), branchesService.mainCity(brand.id)]);
+  return success(res, {
+    brand: sanitiseBrand(brand), user_status: brand.user_status,
+    branches, mainCity,
+    needsSubCategories: !Array.isArray(brand.sub_categories) || brand.sub_categories.length === 0,
+    needsMainCity: !mainCity,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -274,6 +300,50 @@ const updateMe = asyncHandler(async (req, res) => {
   // Validated against ref_brand_categories; at least one when the field is written.
   if (req.body.sub_categories !== undefined) {
     updates.sub_categories = await validateSubCategories(req.body.sub_categories, { required: true });
+  }
+
+  // Item 3 (A2 Business details) — the same rules and words the app shows (prompt §7).
+  if (req.body.business_name !== undefined && !String(req.body.business_name || '').trim()) {
+    throw fieldError('business_name', 'NAME_REQUIRED', 'Enter your brand name.');
+  }
+  if (req.body.contact_person !== undefined) {
+    const v = String(req.body.contact_person || '').trim();
+    if (!v) throw fieldError('contact_person', 'CONTACT_REQUIRED', 'Enter a contact person.');
+    updates.contact_person = v;
+  }
+  if (req.body.about !== undefined) {
+    const v = req.body.about == null ? null : String(req.body.about).trim();
+    if (v && v.length > 200) throw fieldError('about', 'ABOUT_TOO_LONG', 'Keep it under 200 characters.');
+    updates.about = v || null;
+  }
+  if (req.body.website_url !== undefined) {
+    const v = req.body.website_url == null ? null : String(req.body.website_url).trim();
+    updates.website_url = v || null;
+  }
+  if (req.body.instagram_handle !== undefined) {
+    const v = req.body.instagram_handle == null ? null : String(req.body.instagram_handle).trim().replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/.*$/, '').toLowerCase();
+    updates.instagram_handle = v || null;
+  }
+  // Logo: the app uploads through /brands/me/media-assets (tag 'logo') and then saves the
+  // asset id here. The server re-checks what was actually stored: JPG or PNG, ≤ 5 MB
+  // (founder Q16). logo_url: null removes it.
+  if (req.body.logo_asset_id !== undefined) {
+    if (req.body.logo_asset_id === null || req.body.logo_asset_id === '') {
+      updates.logo_url = null;
+    } else {
+      const { rows: a } = await db.query(
+        `SELECT id, file_r2_key, file_type, file_size_bytes FROM brand_media_assets WHERE id = $1 AND brand_id = $2`,
+        [req.body.logo_asset_id, brand.id]
+      );
+      if (!a[0]) throw fieldError('logo_asset_id', 'LOGO_TYPE_SIZE', LOGO_MSG);
+      const head = await storageService.headObject(a[0].file_r2_key);
+      const type = String((head && head.contentType) || a[0].file_type || '').toLowerCase();
+      const size = Number((head && head.size) || a[0].file_size_bytes || 0);
+      if (!/^image\/(jpe?g|png)$/.test(type) || size > LOGO_MAX_BYTES) {
+        throw fieldError('logo_asset_id', 'LOGO_TYPE_SIZE', LOGO_MSG);
+      }
+      updates.logo_url = stableAssetUrl(a[0].id);
+    }
   }
 
   // Docs/THE_CUT.md pass 0 — closing signup alone would not have held. A brand could
@@ -993,27 +1063,63 @@ const listAllTransactions = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getPublicProfile = asyncHandler(async (req, res) => {
+  // Item 3 (A10, screens O1–O4). What a creator may know about a brand: name, logo,
+  // category and sub-categories, about, main city, branch cities and count, links, and
+  // its published products at list price. NEVER the street address (the item-2 report
+  // found it leaking here), phone, email, GSTIN, contact person or offers.
   const { rows } = await db.query(
-    `SELECT b.id, b.business_name, b.category, b.sub_categories, b.logo_url, b.address_line,
-            b.created_at, u.city,
-            (SELECT COUNT(*) FROM campaigns c
-             WHERE c.brand_id = b.id AND c.status IN ('active', 'live', 'published'))::int AS active_campaigns_count
-     FROM brands b JOIN users u ON u.id = b.user_id
-     WHERE b.id = $1`,
+    `SELECT b.id, b.business_name, b.category, b.sub_categories, b.logo_url, b.about, b.website_url,
+            b.instagram_handle, b.created_at, u.status AS user_status, b.user_id
+       FROM brands b JOIN users u ON u.id = b.user_id
+      WHERE b.id = $1`,
     [req.params.id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
+  const b = rows[0];
+  const isOwner = req.user.role === 'brand' && b.user_id === req.user.sub;
+  if (b.user_status !== 'approved' && !isOwner && req.user.role !== 'admin') {
+    throw new AppError('NOT_FOUND', 'Brand not found', 404);
+  }
 
-  // Item 2 (A5, screens X1/X2) — what THIS creator may know about the brand's pitch
-  // settings: accepting or paused, the Aims and modes it accepts, and whether she may
-  // pitch, as a coarse reason. Blocked looks exactly like paused. Nothing else leaves.
+  const [mainCity, branchCities, branchCount, products] = await Promise.all([
+    branchesService.mainCity(b.id),
+    branchesService.cityNames(b.id),
+    branchesService.count(b.id),
+    brandProducts.list(b.id, { page: 1, limit: 4 }),
+  ]);
+
   let pitchSummary = null;
   if (req.user.role === 'influencer') {
     const { rows: me } = await db.query(`SELECT id FROM influencers WHERE user_id = $1`, [req.user.sub]);
-    pitchSummary = await eligibility.pitchSummaryFor(rows[0].id, me[0] ? me[0].id : null);
+    pitchSummary = await eligibility.pitchSummaryFor(b.id, me[0] ? me[0].id : null);
   }
 
-  return success(res, { brand: rows[0], pitchSummary });
+  return success(res, {
+    brand: {
+      id: b.id,
+      business_name: b.business_name,
+      name: b.business_name,
+      category: b.category,
+      sub_categories: Array.isArray(b.sub_categories) ? b.sub_categories : [],
+      subCategories: Array.isArray(b.sub_categories) ? b.sub_categories : [],
+      logo_url: b.logo_url || null,
+      logoUrl: b.logo_url || null,
+      about: b.about || null,
+      city: mainCity ? mainCity.name : null,
+      mainCity: mainCity ? mainCity.name : null,
+      branchCount,
+      branchCities: branchCities.map(c => c.name),
+      websiteUrl: b.website_url || null,
+      instagramHandle: b.instagram_handle || null,
+      productCount: products.total,
+      created_at: b.created_at,
+    },
+    products: { total: products.total, rows: products.rows },
+    // Item 13 fills this from creator_posts; the grid exists now, empty.
+    posts: { total: 0, rows: [] },
+    pitchSummary,
+    isOwner,
+  });
 });
 
 // ── GET /brands/me/store-preview — brand sees their store as followers see it ─

@@ -1,12 +1,8 @@
 /**
- * BrandOverviewScreen — X1 · X2 · X3: a brand's overview as a creator sees it.
- * Contract: features/item2-pitch-invitation-settings · prompt §5.2 X1–X3
- *
- * OK            → "Accepts pitches for" card + Pitch this brand (item 8 wires it)
- * NOT_ACCEPTING → "Not accepting pitches right now" banner, button off. Paused and
- *                 blocked look identical — the server never says which.
- * NOT_MATCHING  → "You don't match this brand's pitch criteria" banner, button off.
- * ⋯ → Block {Brand} → confirm → toast with Undo.
+ * BrandOverviewScreen — O1 · O2: a brand's overview as a creator sees it (item 2's X1–X3
+ * grown up): header, about, "Accepts pitches for" or the grey banner, Pitch this brand
+ * (coming soon), products, posts by creators, branch cities, links. ⋯ → Block.
+ * Contract: features/item3-discovery-profiles-groups · prompt §6.7
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -17,16 +13,16 @@ import { ActionSheet, ConfirmSheet } from '../../components/settings/sheets';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import { AIMS, MODES, aimLabel, modeLabel, COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
-import { Avatar } from '../brand/BrandBlockedCreatorsScreen';
 import { hx } from '../brand/BrandCreatorProfileScreen';
+import BrandOverviewBody from '../../components/discovery/BrandOverviewBody';
+import { C3 } from '../../components/discovery/copy3';
 
 const C = COPY.creator;
 
 export default function BrandOverviewScreen({ navigation, route }) {
   const brandId = route?.params?.brandId;
   const [status, setStatus] = useState('loading');
-  const [brand, setBrand] = useState(null);
-  const [summary, setSummary] = useState(null);
+  const [data, setData] = useState(null);
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const { toast, show } = useToast();
@@ -35,13 +31,12 @@ export default function BrandOverviewScreen({ navigation, route }) {
     setStatus('loading');
     const r = await influencerApi.getBrandOverview(brandId);
     if (!r.success) { setStatus('error'); return; }
-    setBrand(r.data.brand);
-    setSummary(r.data.pitchSummary || null);
+    setData(r.data);
     setStatus('ready');
   }, [brandId]);
   useEffect(() => { load(); }, [load]);
 
-  const name = brand ? brand.business_name : '';
+  const name = data?.brand?.business_name || data?.brand?.name || '';
 
   async function block() {
     setConfirm(false);
@@ -59,54 +54,33 @@ export default function BrandOverviewScreen({ navigation, route }) {
   if (status === 'loading') return <View style={base.screen}><Header title="Brand overview" onBack={() => navigation.goBack()} /><Skeleton /></View>;
   if (status === 'error') return <View style={base.screen}><Header title="Brand overview" onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
 
+  const summary = data.pitchSummary;
   const reason = summary ? summary.reason : 'NOT_ACCEPTING';
-  const tags = summary ? [
-    ...AIMS.filter(a => summary.aims.includes(a)).map(aimLabel),
-    ...MODES.filter(m => summary.modes.includes(m)).map(modeLabel),
-  ] : [];
-  const subCats = Array.isArray(brand.sub_categories) ? brand.sub_categories.map(c => c.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase())) : [];
-  const line = [subCats.join(', ') || brand.category, brand.city].filter(Boolean).join(' · ');
+  const tags = summary ? [...AIMS.filter(a => summary.aims.includes(a)).map(aimLabel), ...MODES.filter(m => summary.modes.includes(m)).map(modeLabel)] : [];
+  const accepts = (
+    <View>
+      {reason === 'NOT_ACCEPTING' ? (
+        <Banner testID="not-accepting-banner" title={C.notAcceptingTitle} body={C.notAcceptingBody} />
+      ) : (
+        <View style={hx.card} testID="accepts-card"><Text style={hx.cardTitle}>{C3.overview.accepts}</Text><TagRow items={tags} /></View>
+      )}
+      {reason === 'NOT_MATCHING' ? <Banner testID="not-matching-banner" title={C.notMatchingTitle} body={C.notMatchingBody} /> : null}
+      <PrimaryButton label={C3.overview.pitch} onPress={() => show(C3.toasts.pitchSoon)} disabled={reason !== 'OK'} testID="pitch-button" />
+    </View>
+  );
 
   return (
-    <View style={base.screen}>
+    <View style={base.screen} testID="brand-overview">
       <Header title="Brand overview" onBack={() => navigation.goBack()} right={right} />
       <ScrollView contentContainerStyle={base.body}>
-        <View style={hx.hero}>
-          <Avatar name={name} url={brand.logo_url} size={64} />
-          <View style={{ flex: 1, marginLeft: 14 }}>
-            <Text style={hx.name}>{name}</Text>
-            {line ? <Text style={hx.sub}>{line}</Text> : null}
-          </View>
-        </View>
-        <View style={{ height: 16 }} />
-
-        {reason === 'NOT_ACCEPTING' ? (
-          <Banner testID="not-accepting-banner" title={C.notAcceptingTitle} body={C.notAcceptingBody} />
-        ) : (
-          <View style={hx.card} testID="accepts-card">
-            <Text style={hx.cardTitle}>{C.acceptsTitle}</Text>
-            <TagRow items={tags} />
-          </View>
-        )}
-        {reason === 'NOT_MATCHING' ? (
-          <Banner testID="not-matching-banner" title={C.notMatchingTitle} body={C.notMatchingBody} />
-        ) : null}
-
-        {/* Enabled only when she may pitch. Non-functional in item 2 — item 8 builds the flow. */}
-        <PrimaryButton label={C.pitchBtn} onPress={() => {}} disabled={reason !== 'OK'} testID="pitch-button" />
+        <BrandOverviewBody brand={data.brand} products={data.products} viewer="creator" navigation={navigation} acceptsNode={accepts} />
         <View style={{ height: 40 }} />
       </ScrollView>
       {toast}
-
       <ActionSheet visible={menu} onClose={() => setMenu(false)} actions={[
         { label: C.blockMenu(name), destructive: true, onPress: () => setConfirm(true) },
       ]} />
-      <ConfirmSheet
-        visible={confirm} danger
-        title={C.blockTitle(name)} body={C.blockBody}
-        confirmLabel={C.blockConfirm} cancelLabel="Cancel"
-        onConfirm={block} onCancel={() => setConfirm(false)}
-      />
+      <ConfirmSheet visible={confirm} danger title={C.blockTitle(name)} body={C.blockBody} confirmLabel={C.blockConfirm} cancelLabel="Cancel" onConfirm={block} onCancel={() => setConfirm(false)} />
     </View>
   );
 }
