@@ -26,6 +26,9 @@ const TABS = [
   { key: 'invited', label: 'Invited' },
   { key: 'pending', label: 'Pending Verification' },
   { key: 'live',    label: 'Live' },
+  // Item 3b — changed handles waiting for the ownership check + measurement flags.
+  // Contract: features/item3b-social-numbers
+  { key: 'handles', label: 'Handle checks' },
 ];
 
 // ─── shared bits ────────────────────────────────────────────────────────────
@@ -1128,6 +1131,84 @@ function LiveTab() {
   );
 }
 
+// ─── HANDLE CHECKS tab (item 3b) ──────────────────────────────────────────────
+// A changed or newly added Instagram/YouTube handle after approval waits here until an
+// admin confirms it belongs to the creator; only then is it measured. Below it, the
+// measurement flags (3 failures in a row, monthly budget reached, 500-item ceiling hit),
+// each with Measure now. Contract: features/item3b-social-numbers
+
+function HandleChecksTab() {
+  const [checks, setChecks] = useState(null);
+  const [flags, setFlags] = useState([]);
+  const [costs, setCosts] = useState(null);
+  const [busy, setBusy] = useState('');
+  const [msg, setMsg] = useState('');
+  const load = useCallback(async () => {
+    const [c, f, k] = await Promise.all([adminApi.socialHandleChecks(), adminApi.socialFlags(), adminApi.socialCosts()]);
+    setChecks(c.success ? c.data.checks : []);
+    setFlags(f.success ? f.data.flags : []);
+    setCosts(k.success ? k.data : null);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  async function act(kind, id) {
+    setBusy(id + kind);
+    const r = kind === 'confirm' ? await adminApi.socialConfirmHandle(id)
+      : kind === 'reject' ? await adminApi.socialRejectHandle(id, 'Not the creator\'s account')
+      : kind === 'measure' ? await adminApi.socialMeasureNow(id)
+      : await adminApi.socialResolveFlag(id);
+    setBusy('');
+    setMsg(r.success ? 'Done' : (r.error?.message || 'Failed'));
+    setTimeout(() => setMsg(''), 2500);
+    load();
+  }
+  const openUrl = (u) => u ? <a href={u} target="_blank" rel="noopener noreferrer" className="text-navy hover:underline">{u.replace(/^https?:\/\/(www\.)?/, '')} ↗</a> : <span className="text-t3">—</span>;
+  if (checks === null) return <div className="p-8 text-center text-t3 text-sm">Loading…</div>;
+  return (
+    <div>
+      {msg && <div className="mb-3 text-xs font-semibold text-teal-deep">{msg}</div>}
+      <div className="bg-white rounded-2xl border border-border p-5 mb-4">
+        <h3 className="font-display text-sm font-bold text-t1 mb-2">Pending handle checks <span className="text-t3 font-normal">({checks.length})</span></h3>
+        {checks.length === 0 && <div className="text-xs text-t3 italic">Nothing waiting.</div>}
+        {checks.map(c => (
+          <div key={c.id} className="border-t border-border py-3 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 text-xs">
+            <div>
+              <div className="font-bold text-t1">{c.creator_name} <span className="text-t3 font-normal capitalize">· {c.platform}</span></div>
+              <div className="text-t2 mt-1">Old: {openUrl(c.old_url)}</div>
+              <div className="text-t2">New: {openUrl(c.channel_url)} <span className="text-t3">(@{c.handle_norm})</span></div>
+              <div className="text-t3 mt-1">Asked {new Date(c.created_at).toLocaleString('en-IN')}</div>
+            </div>
+            <div className="flex gap-2 items-start">
+              <button onClick={() => act('confirm', c.id)} disabled={!!busy} className="px-3 py-1.5 bg-teal-pale text-teal-deep font-bold rounded-lg">Confirm</button>
+              <button onClick={() => act('reject', c.id)} disabled={!!busy} className="px-3 py-1.5 bg-red-pale text-red font-bold rounded-lg">Reject</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-2xl border border-border p-5 mb-4">
+        <h3 className="font-display text-sm font-bold text-t1 mb-2">Measurement flags <span className="text-t3 font-normal">({flags.length})</span></h3>
+        {flags.length === 0 && <div className="text-xs text-t3 italic">No open flags.</div>}
+        {flags.map(f => (
+          <div key={f.id} className="border-t border-border py-3 flex items-start justify-between gap-2 text-xs">
+            <div>
+              <div className="font-bold text-t1">{f.kind === 'failing_3' ? '3 failures in a row' : f.kind === 'budget' ? 'Monthly Apify budget reached' : 'Safety ceiling hit'}{f.creator_name ? ` · ${f.creator_name} (${f.platform} @${f.handle_norm})` : ''}</div>
+              <div className="text-t3 mt-1">{new Date(f.created_at).toLocaleString('en-IN')} · {JSON.stringify(f.detail)}</div>
+            </div>
+            <div className="flex gap-2">
+              {f.account_id && <button onClick={() => act('measure', f.account_id)} disabled={!!busy} className="px-3 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 font-bold rounded-lg">↻ Measure now</button>}
+              <button onClick={() => act('resolve', f.id)} disabled={!!busy} className="px-3 py-1.5 bg-surface2 text-t2 font-bold rounded-lg">Resolve</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {costs && (
+        <div className="text-xs text-t2">Apify this month ({costs.month}): <b>${Number(costs.accountMonthUsd ?? costs.socialRunsUsd ?? 0).toFixed(2)}</b> of ${costs.budgetUsd} budget
+          {costs.byPlatform && costs.byPlatform.length > 0 && <span className="text-t3"> — social runs: {costs.byPlatform.map(p => `${p.platform} $${p.usd.toFixed(2)} (${p.runs} runs)`).join(', ')}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── page shell ─────────────────────────────────────────────────────────────
 
 function InfluencersPageInner() {
@@ -1165,6 +1246,7 @@ function InfluencersPageInner() {
       {tabKey === 'invited' && <InvitedTab />}
       {tabKey === 'pending' && <PendingVerificationTab />}
       {tabKey === 'live' && <LiveTab />}
+      {tabKey === 'handles' && <HandleChecksTab />}
     </div>
   );
 }

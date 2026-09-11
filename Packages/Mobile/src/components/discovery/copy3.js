@@ -142,12 +142,12 @@ export const C3 = {
   },
 };
 
-/** 48.2K / 1.2M / 980; null → "—" */
+/** Under 1,000 in full (612); thousands as 48.2K and millions as 2.3M, always one decimal (item 3b §3.6); null → "—" */
 export function fmtCompact(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';
   const v = Number(n);
-  if (v >= 1e6) return `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1).replace(/\.0$/, '')}M`;
-  if (v >= 1e3) return `${(v / 1e3).toFixed(v >= 1e5 ? 0 : 1).replace(/\.0$/, '')}K`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
   return String(Math.round(v));
 }
 export function fmtPct(n) {
@@ -165,6 +165,20 @@ export function whenLabel(value, shortDate) {
   const now = new Date();
   if (d.toDateString() === now.toDateString()) return 'today';
   return shortDate(value);
+}
+/** Item 3b: "9 Sep", with the year when it isn't the current one ("9 Sep 2025"). */
+export function fmtDate(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const base = `${d.getDate()} ${months[d.getMonth()]}`;
+  return d.getFullYear() === new Date().getFullYear() ? base : `${base} ${d.getFullYear()}`;
+}
+/** Item 3b: "12 Jun – 9 Sep". */
+export function windowLabel(start, end) {
+  if (!start || !end) return '';
+  return `${fmtDate(start)} – ${fmtDate(end)}`;
 }
 export function firstName(name) { return String(name || '').trim().split(/\s+/)[0] || 'They'; }
 export function maskPhone(p) {

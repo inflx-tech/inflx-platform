@@ -19,6 +19,10 @@ import NicheLanguagesScreen from '../screens/influencer/NicheLanguagesScreen';
 import PaymentTaxScreen from '../screens/influencer/PaymentTaxScreen';
 import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
 import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
+// Item 3b — Your numbers (R4/R5) and the platform detail (S2/S3 with the R4 banner).
+// Contract: features/item3b-social-numbers
+import YourNumbersScreen from '../screens/influencer/YourNumbersScreen';
+import SocialDetailScreen from '../screens/shared/SocialDetailScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -45,6 +49,8 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
       <ProfileStack.Screen name="NicheLanguages" component={NicheLanguagesScreen} />
       <ProfileStack.Screen name="PaymentTax" component={PaymentTaxScreen} />
+      <ProfileStack.Screen name="YourNumbers" component={YourNumbersScreen} />
+      <ProfileStack.Screen name="SocialDetail" component={SocialDetailScreen} />
       {/* Item 2 */}
       <ProfileStack.Screen name="InvitationSettings" component={InvitationSettingsScreen} />
       <ProfileStack.Screen name="BlockedBrands" component={BlockedBrandsScreen} />

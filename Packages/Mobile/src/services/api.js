@@ -189,6 +189,8 @@ export const brandApi = {
   unblockCreator:       (influencerId) => api.delete(`/brands/me/blocked-creators/${influencerId}`),
   // X4 / P1–P4 — a creator's profile as a brand sees it (carries inviteSummary + item-3 extras).
   getCreatorProfile:    (influencerId) => api.get(`/influencers/${influencerId}`),
+  // Item 3b — S2/S3: every number for one platform. Contract: features/item3b-social-numbers
+  getCreatorSocial:     (influencerId, platform) => api.get(`/influencers/${influencerId}/social/${platform}`),
 
   // Item 3 — Discover, Worked with, groups, branches, logo. Contract: features/item3-discovery-profiles-groups
   discoverCreators:     (params) => api.get(`/brands/me/discover-creators${q(params)}`),
@@ -412,6 +414,10 @@ export const influencerApi = {
   // Item 2 — Invitation settings (rules v1.10 §8A). Contract: features/item2-pitch-invitation-settings
   getInvitationSettings: () => api.get('/influencers/me/invitation-settings'),
   putInvitationSettings: (data) => api.put('/influencers/me/invitation-settings', data),
+  // Item 3b — Your numbers (R3/R4/R5). Contract: features/item3b-social-numbers
+  getMySocial:           () => api.get('/influencers/me/social'),
+  getMySocialDetail:     (platform) => api.get(`/influencers/me/social/${platform}`),
+  checkSocialAgain:      (platform) => api.post(`/influencers/me/social/${platform}/check-again`),
   listBlockedBrands:     () => api.get('/influencers/me/blocked-brands'),
   blockBrand:            (brandId) => api.post('/influencers/me/blocked-brands', { brandId }),
   unblockBrand:          (brandId) => api.delete(`/influencers/me/blocked-brands/${brandId}`),

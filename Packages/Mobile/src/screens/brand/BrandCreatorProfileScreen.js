@@ -19,9 +19,12 @@ import { useToast, Skeleton, LoadError } from '../../components/settings/feedbac
 import { AIMS, MODES, aimLabel, modeLabel, COPY, shortDate } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { Avatar } from './BrandBlockedCreatorsScreen';
-import { StatTriple, HandleTag, PostGrid } from '../../components/discovery/bits';
+import { StatTriple, PostGrid } from '../../components/discovery/bits';
 import { AddToGroupSheet } from '../../components/discovery/GroupSheets';
 import { C3, firstName } from '../../components/discovery/copy3';
+// Item 3b — S1: one platform card per added platform replaces the handle tags.
+// Contract: features/item3b-social-numbers
+import PlatformCard from '../../components/social/PlatformCard';
 
 const C = COPY.brand;
 const P = C3.profile;
@@ -94,15 +97,17 @@ export default function BrandCreatorProfileScreen({ navigation, route }) {
               {data.blockedByYou ? <View style={hx.blocked} testID="blocked-chip"><Text style={hx.blockedText}>{C3.discover.chips.blocked}</Text></View> : null}
             </View>
             {meta ? <Text style={hx.sub}>{meta}</Text> : null}
-            <View style={{ flexDirection: 'row', marginTop: 6 }}>
-              <HandleTag kind="ig" handle={inf.instagram_handle} />
-              <HandleTag kind="yt" handle={inf.youtube_handle} />
-            </View>
           </View>
         </View>
 
         <StatTriple instagram={inf.followers_count} youtube={inf.youtube_subscribers} engagement={inf.engagement_rate} />
         <Text style={hx.measured} testID="measured-line">{measured}</Text>
+        <View style={{ marginTop: 12 }}>
+          {['instagram', 'youtube'].map(p => (data.social && data.social[p] ? (
+            <PlatformCard key={p} platform={p} data={data.social[p]} mode="brand"
+              onPress={() => navigation.navigate('SocialDetail', { platform: p, viewer: 'brand', influencerId, creatorName: name })} />
+          ) : null))}
+        </View>
         {data.signedCollaborationsLabel ? <Text style={hx.signed} testID="signed-line">{data.signedCollaborationsLabel}</Text> : null}
         {groups.length ? <Text style={hx.groups} testID="groups-line">{C3.groups.inYourGroups(groups.map(g => g.name).join(', '))}</Text> : null}
 

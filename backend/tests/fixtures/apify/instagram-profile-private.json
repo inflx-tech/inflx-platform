@@ -1,0 +1,15 @@
+[
+  {
+    "username": "private_test_account",
+    "fullName": "Private Test",
+    "id": "1",
+    "followersCount": 1200,
+    "followsCount": 300,
+    "postsCount": 40,
+    "verified": false,
+    "private": true,
+    "isBusinessAccount": false,
+    "businessCategoryName": null,
+    "url": "https://www.instagram.com/private_test_account"
+  }
+]

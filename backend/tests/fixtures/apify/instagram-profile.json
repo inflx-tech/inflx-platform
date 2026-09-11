@@ -1,0 +1,21 @@
+[
+  {
+    "username": "_akshayareddyyy",
+    "fullName": "Akshaya Reddy🌙",
+    "id": "66535455808",
+    "followersCount": 192011,
+    "followsCount": 327,
+    "postsCount": 238,
+    "verified": true,
+    "private": false,
+    "isBusinessAccount": false,
+    "businessCategoryName": "Digital creator",
+    "url": "https://www.instagram.com/_akshayareddyyy"
+  },
+  {
+    "username": "thisusernamedoesnotexist_xyz123",
+    "url": "https://www.instagram.com/thisusernamedoesnotexist_xyz123",
+    "error": "not_found",
+    "errorDescription": "Post does not exist"
+  }
+]

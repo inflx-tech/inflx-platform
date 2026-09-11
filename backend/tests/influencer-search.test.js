@@ -34,6 +34,16 @@ async function createApprovedInfluencer(instagramHandle, overrides = {}) {
   const { token, user } = await createInfluencerUser();
   const influencer = await registerInfluencer(token, { instagram_handle: instagramHandle, ...overrides });
   await approveUser(user.id);
+  // Item 3b (rules v1.12 §2A): registration measures nothing any more — the pipeline writes
+  // followers / engagement / niche after admin approval. These tests need measured creators,
+  // so write the same numbers the old mock fixture used to supply, as the pipeline would.
+  // Contract: features/item3b-social-numbers
+  const fx = require('../mocks/apify_instagram.json');
+  const raw = fx[instagramHandle] || fx._default;
+  await query(
+    `UPDATE influencers SET followers_count = $2, engagement_rate = $3, niche = $4, scrape_last_run = now() WHERE id = $1`,
+    [influencer.id, raw.followersCount || raw.followers_count || 0, raw.engagementRate || raw.engagement_rate || 0, raw.niche || []]
+  );
   return { token, user, influencer };
 }
 

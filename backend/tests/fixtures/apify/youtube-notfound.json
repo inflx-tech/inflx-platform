@@ -1,0 +1,7 @@
+[
+  {
+    "url": "https://www.youtube.com/@thischanneldoesnotexist_xyz987/about",
+    "input": "https://www.youtube.com/@thischanneldoesnotexist_xyz987",
+    "error": "CHANNEL_DOES_NOT_EXIST"
+  }
+]

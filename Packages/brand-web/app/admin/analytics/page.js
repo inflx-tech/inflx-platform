@@ -197,6 +197,20 @@ function PeriodSelector({ days, onChange }) {
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
+/** Item 3b — one line: what INFLX has spent on Apify this month against the budget. Contract: features/item3b-social-numbers */
+function ApifyCostLine() {
+  const [c, setC] = useState(null);
+  useEffect(() => { adminApi.socialCosts().then(r => { if (r.success) setC(r.data); }).catch(() => {}); }, []);
+  if (!c) return null;
+  const spent = Number(c.accountMonthUsd ?? c.socialRunsUsd ?? 0);
+  return (
+    <div className="mb-4 text-xs text-t2 bg-white border border-border rounded-xl px-3 py-2">
+      Apify this month ({c.month}): <b>${spent.toFixed(2)}</b> of ${c.budgetUsd} budget
+      {Array.isArray(c.byPlatform) && c.byPlatform.length > 0 && <span className="text-t3"> — social runs: {c.byPlatform.map(p => `${p.platform} $${Number(p.usd).toFixed(2)} (${p.runs} runs)`).join(', ')}</span>}
+    </div>
+  );
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -250,6 +264,7 @@ export default function AnalyticsPage() {
         </div>
         <PeriodSelector days={days} onChange={setDays} />
       </div>
+      <ApifyCostLine />
 
       {/* Overview cards */}
       <div className="grid grid-cols-4 gap-3 mb-4">

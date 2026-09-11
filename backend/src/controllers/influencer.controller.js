@@ -1,12 +1,10 @@
 'use strict';
 
 const db = require('../config/db');
-const apifyService = require('../services/apify.service');
-// The YouTube half of a creator's reach. Asked for at signup, never measured until now.
+// The YouTube half of a creator's reach — channelUrl for the "Open" link.
 // Contract: features/admin-creator-review-completeness
 const youtubeService = require('../services/youtube.service');
 const notificationService = require('../services/notification.service');
-const marketingAutomation = require('../services/marketingAutomation.service');
 const pdfService = require('../services/pdf.service');
 const { encrypt } = require('../utils/encrypt');
 const { success } = require('../utils/response');
@@ -21,6 +19,11 @@ const eligibility = require('../services/collabEligibility.service');
 // Contract: features/item3-discovery-profiles-groups
 const collabState = require('../services/collabState');
 const storageService = require('../services/storage.service');
+// Item 3b — social accounts (Instagram/YouTube), measured only after admin approval.
+// Contract: features/item3b-social-numbers
+const socialAccounts = require('../services/socialAccounts.service');
+const socialMeasure = require('../services/socialMeasure.service');
+const { MSG: SOCIAL_MSG } = require('../services/socialCopy');
 const PHOTO_MSG = 'Upload a JPG or PNG under 5 MB.';
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 function fieldError(field, code, message) {
@@ -113,44 +116,8 @@ function normaliseHandle(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/**
- * Fetch this creator's YouTube channel figures and store them.
- *
- * Only writes on a real answer. A channel that could not be found, or a key that is not
- * configured, leaves the columns exactly as they were — including
- * youtube_scrape_last_run, so the admin screen keeps saying "never checked" rather than
- * claiming a fresh measurement of nothing. Contract: features/admin-creator-review-completeness
- *
- * @returns the youtube.service result, so a caller that wants to report it can.
- */
-async function refreshYouTubeStats(influencerId, youtubeHandle) {
-  const yt = await youtubeService.fetchChannel(youtubeHandle);
-  if (!yt.configured || !yt.found) return yt;
-
-  await db.query(
-    `UPDATE influencers
-        SET youtube_channel_id      = $1,
-            youtube_title           = $2,
-            youtube_subscribers     = $3,
-            youtube_views           = $4,
-            youtube_videos          = $5,
-            youtube_thumbnail_url   = $6,
-            youtube_scrape_data     = $7,
-            youtube_scrape_last_run = now()
-      WHERE id = $8`,
-    [
-      yt.channel_id,
-      yt.title,
-      yt.subscribers,
-      yt.views,
-      yt.videos,
-      yt.thumbnail_url,
-      JSON.stringify(yt.raw || {}),
-      influencerId,
-    ]
-  );
-  return yt;
-}
+// Item 3b: refreshYouTubeStats (the old direct writer of the youtube_* columns) was removed —
+// the measurement pipeline (socialAccounts.writeThrough) is the only writer now.
 
 /**
  * Try to claim (or create-and-claim) a creator_profiles row for this user.
@@ -168,9 +135,12 @@ async function refreshYouTubeStats(influencerId, youtubeHandle) {
  * Returns { match_count, conflict, claimed_profile_ids, scrape_fired }.
  */
 async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, youtubeHandle }) {
+  // Item 3b (founder Q3, §3): the claim step is Instagram-first; a YouTube-only sign-up
+  // matches on youtube_handle only and otherwise gets a minimal 'claimed' row with no
+  // ig_handle, so the admin queue can approve her. Nothing is scraped from here any more.
   const { rows: matches } = await db.query(
     `SELECT id FROM creator_profiles
-      WHERE ig_handle = $1
+      WHERE ($1::text IS NOT NULL AND ig_handle = $1)
          OR ($2::text IS NOT NULL AND youtube_handle = $2)`,
     [instagramHandle, youtubeHandle]
   );
@@ -230,7 +200,7 @@ async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, y
 
   if (inserted[0]) {
     stubRow = inserted[0];
-  } else {
+  } else if (instagramHandle) {
     // Race: a row appeared. Re-fetch and treat it as a 1-match claim.
     const { rows: existing } = await db.query(
       `SELECT id FROM creator_profiles WHERE ig_handle = $1`,
@@ -250,37 +220,35 @@ async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, y
     }
   }
 
-  // Fire-and-forget scrape — don't await, don't fail register if n8n is down.
-  // The marketingAutomation service logs errors internally.
-  marketingAutomation.triggerScrape({
-    handle: instagramHandle,
-    target_type: 'influencer',
-    scrape_mode: 'deep',
-    source: 'signup',
-    signup_user_id: userId,
-    signup_influencer_id: influencerId,
-  }).catch(e => {
-    console.error('[register] signup scrape trigger failed:', e.message);
-  });
-
+  // Item 3b (founder §3): the n8n "A2 profile scraper" webhook is no longer fired at
+  // registration. Nothing may be scraped before admin approval; the n8n workflow and the
+  // creator_profiles table themselves are untouched.
   return {
     match_count: 0, conflict: false,
     claimed_profile_ids: stubRow ? [stubRow.id] : [],
-    scrape_fired: true,
+    scrape_fired: false,
   };
 }
 
 const register = asyncHandler(async (req, res) => {
   const userId = req.user.sub;
 
-  const instagramHandle = normaliseHandle(req.body.instagram_handle);
-  const youtubeHandle   = normaliseHandle(req.body.youtube_handle);
+  // Item 3b (rules v1.12 §2A, founder Q3): at least ONE of Instagram / YouTube, each checked
+  // for format with the exact §6 message, saved normalised. Nothing is measured and nothing
+  // is scraped at registration — the first measurement starts when admin approves.
+  // Contract: features/item3b-social-numbers
+  const rawIg = req.body.instagram_handle, rawYt = req.body.youtube_handle;
+  const hasIg = rawIg != null && String(rawIg).trim() !== '';
+  const hasYt = rawYt != null && String(rawYt).trim() !== '';
+  if (!hasIg && !hasYt) throw new AppError('VALIDATION_ERROR', SOCIAL_MSG.AT_LEAST_ONE, 422, 'instagram_handle');
+  let igNorm = null, ytNorm = null;
+  try { if (hasIg) igNorm = socialAccounts.normalise('instagram', rawIg); if (hasYt) ytNorm = socialAccounts.normalise('youtube', rawYt); }
+  catch (e) { throw new AppError('VALIDATION_ERROR', e.message, 422, e.field); }
+  const instagramHandle = igNorm ? igNorm.handle_norm : null;
+  const youtubeHandle   = ytNorm ? socialAccounts.legacyHandle('youtube', ytNorm) : null;
   const fullName        = (req.body.name || '').trim();
   const city            = (req.body.city || '').trim();
 
-  if (!instagramHandle) {
-    throw new AppError('VALIDATION_ERROR', 'instagram_handle is required', 422, 'instagram_handle');
-  }
   if (!fullName) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   }
@@ -299,9 +267,9 @@ const register = asyncHandler(async (req, res) => {
     [fullName, city, userId]
   );
 
-  // Run Apify scrape (mocked in dev). Kept as a fallback so brand-new
-  // creators not yet in creator_profiles still get baseline metrics.
-  const scraped = await apifyService.scrapeProfile(instagramHandle);
+  // Item 3b: no Apify call here any more (it used to run apifyService.scrapeProfile before
+  // approval). The number columns start NULL and are written only by the measurement
+  // pipeline after admin approval.
 
   // full_name and city are written HERE as well as on users, not only on users.
   // They used to live only on the users row, so influencers.city was NULL for every
@@ -313,41 +281,16 @@ const register = asyncHandler(async (req, res) => {
   // Contract: features/admin-creator-review-completeness
   const { rows } = await db.query(
     `INSERT INTO influencers
-       (user_id, instagram_handle, youtube_handle, full_name, city,
-        followers_count, engagement_rate,
-        niche, scrape_data, scrape_last_run)
-     VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, $7, $8, $9, now())
+       (user_id, instagram_handle, youtube_handle, full_name, city)
+     VALUES ($1, $2, $3, $4, NULLIF($5, ''))
      RETURNING *`,
-    [
-      userId,
-      instagramHandle,
-      youtubeHandle,
-      fullName,
-      city,
-      scraped.followers_count,
-      scraped.engagement_rate,
-      scraped.niche,
-      JSON.stringify(scraped.scrape_data),
-    ]
+    [userId, instagramHandle, youtubeHandle, fullName, city]
   );
 
-  // Her YouTube figures, if she gave us a channel.
-  //
-  // Awaited, not fired-and-forgotten. A detached write that lands after the response has
-  // gone is a race — against the test suite's teardown, and against an admin opening her
-  // record a second later and seeing figures appear under them. One channels.list call is
-  // cheaper than the Apify scrape this function already waits for, so awaiting costs
-  // nothing anyone will notice. The try/catch is what keeps it safe: a slow, missing or
-  // unconfigured YouTube lookup must never be the thing that fails a signup.
-  if (youtubeHandle) {
-    try {
-      await refreshYouTubeStats(rows[0].id, youtubeHandle);
-    } catch (e) {
-      console.error('[register] youtube fetch failed:', e.message);
-    }
-  }
-
   const influencer = rows[0];
+
+  // Item 3b: her accounts, waiting for admin approval. Not measured until then.
+  await socialAccounts.ensureForRegistration(influencer.id, { instagram: hasIg ? rawIg : null, youtube: hasYt ? rawYt : null });
 
   // D-1 intake — optional referral code attaches a referral edge at signup.
   // Best-effort: a bad/missing/duplicate code is soft-noted, never aborts
@@ -492,6 +435,7 @@ const updateMe = asyncHandler(async (req, res) => {
     content_style,
     niche,
     youtube_handle,
+    instagram_handle,   // Item 3b: editable again, with the admin ownership re-check (founder Q17)
     upi_id,
     bank_account_no,
     bank_ifsc,
@@ -528,7 +472,20 @@ const updateMe = asyncHandler(async (req, res) => {
     }
     updates.niche = codes;
   }
-  if (youtube_handle !== undefined) updates.youtube_handle = normaliseYoutube(youtube_handle);   // Item 3: handle or URL, normalised like register
+  // Item 3b (A5): a handle change, add or remove goes through the social-account rules —
+  // after approval the old numbers are cleared and the new handle waits for admin's
+  // ownership check; before approval it just saves. The service writes the handle column.
+  const socialChanges = [];
+  for (const [platform, raw] of [['instagram', instagram_handle], ['youtube', youtube_handle]]) {
+    if (raw === undefined) continue;
+    try {
+      const r = await socialAccounts.setHandle(influencer.id, platform, raw, { approved: influencer.user_status === 'approved' });
+      if (r.action !== 'none') socialChanges.push({ platform, action: r.action });
+    } catch (e) {
+      if (e.code && e.status) throw new AppError(e.code, e.message, e.status, e.field);
+      throw e;
+    }
+  }
   if (bank_ifsc !== undefined) updates.bank_ifsc = bank_ifsc;
   if (bio !== undefined) {
     const v = bio == null ? null : String(bio).trim();
@@ -584,7 +541,7 @@ const updateMe = asyncHandler(async (req, res) => {
   // Update name on users table if provided
   const nameUpdate = userName !== undefined ? userName : full_name;
 
-  if (Object.keys(updates).length === 0 && nameUpdate === undefined) {
+  if (Object.keys(updates).length === 0 && nameUpdate === undefined && instagram_handle === undefined && youtube_handle === undefined) {
     throw new AppError('VALIDATION_ERROR', 'No valid fields provided to update', 422);
   }
 
@@ -611,7 +568,7 @@ const updateMe = asyncHandler(async (req, res) => {
   const out = sanitiseInfluencer(updated);
   Object.assign(out, await ownProfileExtras(updated));
   out.needsNiche = !(Array.isArray(updated.niche) && updated.niche.length === 1);
-  return success(res, { influencer: out, cityAdded: !!(placeResolved && placeResolved.city && placeResolved.city.added) });
+  return success(res, { influencer: out, cityAdded: !!(placeResolved && placeResolved.city && placeResolved.city.added), social: { changed: socialChanges } });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1004,6 +961,8 @@ const getPublicById = asyncHandler(async (req, res) => {
       }
     }
     delete legacy[0].measured_at;
+    // Item 3b (A1): the platform cards — brand-facing state only, never the internal reason.
+    extras.social = await socialAccounts.brandView(legacy[0].id);
     return success(res, { influencer: legacy[0], inviteSummary, ...extras });
   }
 
@@ -1302,47 +1261,27 @@ const rescrape = asyncHandler(async (req, res) => {
   const influencer = await getInfluencerById(req.params.id);
   if (!influencer) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
 
-  const scraped = await apifyService.scrapeProfile(influencer.instagram_handle);
-
-  await db.query(
-    `UPDATE influencers
-     SET followers_count = $1, engagement_rate = $2, niche = $3,
-         scrape_data = $4, scrape_last_run = now()
-     WHERE id = $5`,
-    [
-      scraped.followers_count,
-      scraped.engagement_rate,
-      scraped.niche,
-      JSON.stringify(scraped.scrape_data),
-      influencer.id,
-    ]
-  );
-
-  // The button says "refresh her figures", and a creator's figures are not only
-  // Instagram's. If she gave us a channel, this checks it in the same click. A YouTube
-  // failure is reported, never thrown: the Instagram refresh already succeeded and
-  // losing it to a bad channel name would be the worse outcome.
-  // Contract: features/admin-creator-review-completeness
-  let youtube = null;
-  if (influencer.youtube_handle) {
-    try {
-      youtube = await refreshYouTubeStats(influencer.id, influencer.youtube_handle);
-    } catch (e) {
-      console.error('[rescrape] youtube fetch failed:', e.message);
-      youtube = { configured: true, found: false, reason: e.message };
+  // Item 3b: "Rescrape" is now "Measure now" through the measurement pipeline — nothing
+  // writes the number columns directly any more. Every confirmed account of an approved
+  // creator gets a full run; the response reports what was started.
+  // Contract: features/item3b-social-numbers
+  if (influencer.user_status !== 'approved') throw new AppError('CONFLICT', 'Only an approved creator can be measured', 409);
+  const accounts = await socialAccounts.currentAll(influencer.id);
+  const started = [];
+  for (const platform of socialAccounts.PLATFORMS) {
+    const a = accounts[platform];
+    if (a && a.ownership === 'confirmed') {
+      if (req.query.wait === '1') await socialMeasure.runAccount(a.id, 'full', 'measure_now');
+      else socialMeasure.kick(a.id, 'full', 'measure_now');
+      started.push(platform);
     }
   }
-
   const updated = await getInfluencerById(influencer.id);
   return success(res, {
     influencer: sanitiseInfluencer(updated),
     scraped_at: new Date().toISOString(),
-    youtube: youtube && {
-      attempted:  true,
-      configured: youtube.configured,
-      found:      youtube.found,
-      ...(youtube.reason ? { reason: youtube.reason } : {}),
-    },
+    measure_now: { started },
+    social: await socialAccounts.mine(influencer.id),
   });
 });
 

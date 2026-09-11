@@ -18,9 +18,30 @@ import { s as base } from '../brand/BrandPitchSettingsScreen';
 import { Avatar } from '../brand/BrandBlockedCreatorsScreen';
 import { ProfileRow } from '../brand/BrandProfileScreen';
 import useRouteToast from '../../hooks/useRouteToast';
-import { C3 } from '../../components/discovery/copy3';
+import { C3, fmtCompact } from '../../components/discovery/copy3';
+// Item 3b — the "Your numbers" row between Profile info and Niche (R3). Contract: features/item3b-social-numbers
+import { C3B } from '../../components/social/copy3b';
 
 const R = C3.creatorProfile;
+
+/** R3 chip: red for Fix …, blue for Waiting / Measuring. */
+export function SocialChip({ chip }) {
+  if (!chip) return null;
+  const tone = chip.startsWith('fix') ? T.state.declined : T.state.waiting;
+  return (
+    <View style={{ backgroundColor: tone.bg, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 }} testID={`social-chip-${chip}`}>
+      <Text style={{ fontFamily: fonts.sansSemiBold, fontSize: 11, color: tone.fg }}>{C3B.r3.chips[chip]}</Text>
+    </View>
+  );
+}
+/** "Instagram 48.2K · YouTube 12.1K" — added platforms only, "—" where there is no number yet. */
+export function socialSubtitle(social) {
+  if (!social) return '';
+  const parts = [];
+  if (social.instagram) parts.push(`Instagram ${fmtCompact(social.instagram.followers)}`);
+  if (social.youtube) parts.push(`YouTube ${fmtCompact(social.youtube.subscribers)}`);
+  return C3B.r3.sub(parts);
+}
 const STATUS_LABEL = { approved: 'Approved', pending: 'Pending review', rejected: 'Rejected', suspended: 'Suspended' };
 
 export default function ProfileScreen({ navigation, route }) {
@@ -28,14 +49,16 @@ export default function ProfileScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [me, setMe] = useState(null);
   const [invite, setInvite] = useState(null);
+  const [social, setSocial] = useState(null);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
-    const [r, i] = await Promise.all([influencerApi.getMe(), influencerApi.getInvitationSettings()]);
+    const [r, i, so] = await Promise.all([influencerApi.getMe(), influencerApi.getInvitationSettings(), influencerApi.getMySocial ? influencerApi.getMySocial() : Promise.resolve({ success: false })]);
     if (!r.success) { setStatus('error'); return; }
     setMe(r.data?.influencer || r.data);
     setInvite(i.success ? i.data.summary || null : null);
+    setSocial(so && so.success ? so.data : null);
     setStatus('ready');
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -77,6 +100,7 @@ export default function ProfileScreen({ navigation, route }) {
         </View>
         <View style={{ paddingHorizontal: 18 }}>
           <ProfileRow label={R.rows.info[0]} sub={R.rows.info[1]} onPress={() => navigation.navigate('ProfileInfo')} testID="row-profile-info" />
+          <ProfileRow label={C3B.r3.row} sub={socialSubtitle(social)} right={<SocialChip chip={social && social.chip} />} onPress={() => navigation.navigate('YourNumbers')} testID="row-your-numbers" />
           <ProfileRow label={R.rows.niche} warn={needsNiche ? R.niche.warning : ''} onPress={() => navigation.navigate('NicheLanguages')} testID="row-niche" />
           <ProfileRow label={R.rows.invitation} value={inviteValue} right={invite ? <StatusChip on={invite.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('InvitationSettings')} testID="row-invitation-settings" />
           <ProfileRow label={R.rows.payment} onPress={() => navigation.navigate('PaymentTax')} testID="row-payment-tax" />

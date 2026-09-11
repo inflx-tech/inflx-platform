@@ -52,6 +52,22 @@ module.exports = {
   // Contract: features/admin-creator-review-completeness
   APIFY_YOUTUBE_ACTOR: process.env.APIFY_YOUTUBE_ACTOR || 'streamers~youtube-scraper',
 
+  // Item 3b — social numbers pipeline (rules v1.12 §2A). Contract: features/item3b-social-numbers
+  // Actors confirmed by the Step-0 probe on 2026-09-11; ~ not / in the ids.
+  APIFY_IG_PROFILE_ACTOR: process.env.APIFY_IG_PROFILE_ACTOR || 'apify~instagram-profile-scraper',
+  APIFY_IG_POSTS_ACTOR: process.env.APIFY_IG_POSTS_ACTOR || 'apify~instagram-post-scraper',
+  // Free plan = US$5 of usage a month; the guard counts ALL INFLX runs (founder Q6).
+  APIFY_MONTHLY_BUDGET_USD: parseFloat(process.env.APIFY_MONTHLY_BUDGET_USD || '5'),
+  SOCIAL_PROFILE_EVERY_DAYS: parseInt(process.env.SOCIAL_PROFILE_EVERY_DAYS || '7', 10),
+  SOCIAL_POSTS_EVERY_DAYS: parseInt(process.env.SOCIAL_POSTS_EVERY_DAYS || '15', 10),
+  SOCIAL_WINDOW_DAYS: 90,
+  SOCIAL_CEILING: parseInt(process.env.SOCIAL_CEILING || '500', 10),
+  SOCIAL_BATCH_SIZE: parseInt(process.env.SOCIAL_BATCH_SIZE || '10', 10),
+  SOCIAL_CONCURRENCY: parseInt(process.env.SOCIAL_CONCURRENCY || '3', 10),
+  SOCIAL_RUN_TIMEOUT_SECS: parseInt(process.env.SOCIAL_RUN_TIMEOUT_SECS || '600', 10),
+  SOCIAL_BACKFILL_DAYS: parseInt(process.env.SOCIAL_BACKFILL_DAYS || '3', 10),
+  SOCIAL_CHECK_AGAIN_HOURS: 24,
+
   FCM_MOCK: process.env.FCM_MOCK !== 'false',
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || '',
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || '',

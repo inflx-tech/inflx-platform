@@ -122,10 +122,13 @@ describe('GET /v1/influencers/:id', () => {
     expect(i.youtube_handle).toBe('anushasomepalli');
     expect(i.youtube_url).toBe('https://www.youtube.com/@anushasomepalli');
     expect(i.instagram_url).toContain('instagram.com/');
-    // Registration measured the channel via the mock, so both arrive together.
-    expect(i.youtube_scrape_last_run).not.toBeNull();
-    expect(typeof i.youtube_subscribers === 'number' || typeof i.youtube_subscribers === 'string')
-      .toBe(true);
+    // Item 3b (rules v1.12 §2A): registration measures NOTHING — the channel is measured by the
+    // pipeline after admin approval, so before approval both YouTube numbers are empty and the
+    // account waits. Contract: features/item3b-social-numbers
+    expect(i.youtube_scrape_last_run).toBeNull();
+    expect(i.youtube_subscribers).toBeNull();
+    const { rows: accs } = await query(`SELECT platform, state FROM creator_social_accounts WHERE influencer_id = $1 ORDER BY platform`, [inf.id]);
+    expect(accs).toEqual([{ platform: 'instagram', state: 'waiting_approval' }, { platform: 'youtube', state: 'waiting_approval' }]);
   });
 
   // The distinction the whole contract turns on: no channel is not an unmeasured

@@ -17,6 +17,63 @@ import { adminApi } from '../../../../lib/api';
  * and 8k followers are not 16k people.
  */
 
+/**
+ * Item 3b — Social numbers panel: each platform's state, the last runs, Confirm / Reject for a
+ * changed handle waiting for the ownership check, and Measure now (the pipeline replaces the
+ * old direct Rescrape). Contract: features/item3b-social-numbers
+ */
+const STATE_LABEL = { waiting_approval: 'Waiting for approval', waiting_check: 'Waiting for INFLX check', rejected: 'Rejected', measuring: 'Measuring', ok: 'OK', not_found: 'Not found', private: 'Private', failing: 'Failing (last good numbers kept)' };
+function SocialPanel({ influencerId, onToast }) {
+  const [data, setData] = useState(null);
+  const [busy, setBusy] = useState('');
+  const load = async () => { const r = await adminApi.getInfluencerSocial(influencerId); if (r.success) setData(r.data); };
+  useEffect(() => { load(); }, [influencerId]); // eslint-disable-line
+  if (!data) return null;
+  const current = (data.accounts || []).filter(a => !a.replaced_at);
+  async function act(kind, id) {
+    setBusy(id + kind);
+    const r = kind === 'confirm' ? await adminApi.socialConfirmHandle(id) : kind === 'reject' ? await adminApi.socialRejectHandle(id, 'Not the creator\'s account') : await adminApi.socialMeasureNow(id);
+    setBusy('');
+    onToast(r.success ? (kind === 'measure' ? 'Measurement started' : `Handle ${kind}ed`) : (r.error?.message || 'Failed'));
+    load();
+  }
+  return (
+    <div className="bg-white rounded-2xl border border-border p-5 mb-4">
+      <h3 className="font-display text-sm font-bold text-t1 mb-2">Social numbers</h3>
+      {current.length === 0 && <div className="text-xs text-t3 italic">No accounts.</div>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {current.map(a => (
+          <div key={a.id} className="bg-surface2 border border-border rounded-xl p-3 text-xs">
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-bold text-t1 capitalize">{a.platform} · @{a.handle_norm}</div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white border border-border text-t2">{STATE_LABEL[a.state] || a.state}</span>
+            </div>
+            <div className="text-t3">Profile {a.last_profile_at ? new Date(a.last_profile_at).toLocaleString('en-IN') : 'never'} · posts {a.last_posts_at ? new Date(a.last_posts_at).toLocaleString('en-IN') : 'never'} · failures {a.failure_count}</div>
+            {a.last_error && <div className="text-red mt-1 truncate" title={a.last_error}>{a.last_error}</div>}
+            <div className="flex gap-2 mt-2">
+              {a.state === 'waiting_check' && (<>
+                <button onClick={() => act('confirm', a.id)} disabled={!!busy} className="px-2.5 py-1.5 bg-teal-pale text-teal-deep font-bold rounded-lg">Confirm</button>
+                <button onClick={() => act('reject', a.id)} disabled={!!busy} className="px-2.5 py-1.5 bg-red-pale text-red font-bold rounded-lg">Reject</button>
+              </>)}
+              {a.ownership === 'confirmed' && <button onClick={() => act('measure', a.id)} disabled={!!busy} className="px-2.5 py-1.5 bg-orange-50 border border-orange-200 text-orange-700 font-bold rounded-lg">↻ Measure now</button>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {(data.runs || []).length > 0 && (
+        <div className="mt-3">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-1">Last runs</div>
+          <table className="w-full text-[11px]"><tbody>
+            {data.runs.slice(0, 8).map(r => (
+              <tr key={r.id} className="border-t border-border"><td className="py-1 pr-2 text-t3">{new Date(r.started_at).toLocaleString('en-IN')}</td><td className="py-1 pr-2">{r.run_type}</td><td className="py-1 pr-2">{r.trigger}</td><td className={`py-1 pr-2 font-bold ${r.result === 'success' ? 'text-teal-deep' : r.result === 'running' ? 'text-t3' : 'text-red'}`}>{r.result}</td><td className="py-1 pr-2 tabular-nums">${Number(r.usage_usd || 0).toFixed(4)}</td><td className="py-1 text-t3 truncate max-w-[200px]" title={r.error || ''}>{r.error || ''}</td></tr>
+            ))}
+          </tbody></table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Field({ label, value, missing = '—', href, mono }) {
   const has = value != null && value !== '';
   return (
@@ -105,13 +162,10 @@ export default function InfluencerProfilePage() {
     // the moment an admin pressed Rescrape.
     if (res.success) await reload();
     setRescraping(false);
-    if (!res.success) { showToast(res.error?.message || 'Rescrape failed'); return; }
-
-    const yt = res.data?.youtube;
-    if (!yt)                     showToast('Instagram figures refreshed');
-    else if (!yt.configured)     showToast('Instagram refreshed. YouTube not checked — no Apify token on the server.');
-    else if (!yt.found)          showToast(`Instagram refreshed. YouTube: ${yt.reason || 'channel not found'}`);
-    else                         showToast('Instagram and YouTube figures refreshed');
+    if (!res.success) { showToast(res.error?.message || 'Measure now failed'); return; }
+    // Item 3b: measurement runs through the pipeline; numbers land when the run finishes.
+    const started = res.data?.measure_now?.started || [];
+    showToast(started.length ? `Measuring ${started.join(' and ')} — numbers update when the run finishes` : 'No confirmed account to measure');
   }
 
   useEffect(() => {
@@ -249,7 +303,7 @@ export default function InfluencerProfilePage() {
             )}
             <button onClick={rescrape} disabled={rescraping}
               className="px-3.5 py-2 bg-orange-50 border border-orange-200 text-orange-700 font-bold text-xs rounded-xl hover:bg-orange-100 disabled:opacity-50 transition-colors whitespace-nowrap">
-              {rescraping ? 'Checking…' : influencer.youtube_handle ? '↻ Refresh both' : '↻ Refresh'}
+              {rescraping ? 'Starting…' : '↻ Measure now'}
             </button>
           </div>
         </div>
@@ -263,6 +317,8 @@ export default function InfluencerProfilePage() {
             </div>
           ))}
         </div>
+
+        <SocialPanel influencerId={id} onToast={showToast} />
 
         {/* What she gave us at signup — the five facts, in the order she was asked for
             them, so a review reads as a review. */}

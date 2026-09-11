@@ -27,6 +27,8 @@ const subscriptionRenewalJob = require('./subscription-renewal.job');
 const settlementRetryJob     = require('./settlement-retry.job');
 const commerceSettlementJob  = require('./commerce-settlement.job');
 const postEligibilityJob     = require('./post-eligibility.job');
+// Item 3b — creator social numbers (Instagram/YouTube through Apify). Contract: features/item3b-social-numbers
+const socialMeasureJob       = require('./social-measure.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -97,6 +99,10 @@ function startAllJobs() {
   // the approved-post eligibility cache + fires post.dark on transitions.
   cron.schedule('13,43 * * * *', postEligibilityJob.run, { timezone: tz });
 
+  // social-measure (item 3b) — hourly at :25; picks due accounts with row locking, honours
+  // the monthly Apify budget, retries failures the next day.
+  cron.schedule('25 * * * *', socialMeasureJob.run, { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -116,4 +122,5 @@ module.exports = {
   settlementRetryJob,
   commerceSettlementJob,
   postEligibilityJob,
+  socialMeasureJob,
 };

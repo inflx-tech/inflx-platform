@@ -1,0 +1,32 @@
+[
+  {
+    "id": "h1",
+    "shortCode": "h1",
+    "type": "Video",
+    "productType": "clips",
+    "timestamp": "2026-09-06T15:56:23.730Z",
+    "likesCount": -1,
+    "commentsCount": 40,
+    "videoViewCount": 9000,
+    "videoPlayCount": 12000,
+    "videoDuration": 30,
+    "url": "https://www.instagram.com/p/h1/",
+    "isPinned": false,
+    "isCommentsDisabled": false,
+    "ownerUsername": "hidden_likes_creator"
+  },
+  {
+    "id": "h2",
+    "shortCode": "h2",
+    "type": "Image",
+    "productType": "feed",
+    "timestamp": "2026-08-30T15:56:23.733Z",
+    "likesCount": -1,
+    "commentsCount": 8,
+    "videoViewCount": null,
+    "url": "https://www.instagram.com/p/h2/",
+    "isPinned": false,
+    "isCommentsDisabled": false,
+    "ownerUsername": "hidden_likes_creator"
+  }
+]

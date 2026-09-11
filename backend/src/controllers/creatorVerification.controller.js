@@ -130,6 +130,17 @@ const verify = asyncHandler(async (req, res) => {
     }
 
     await db.query('COMMIT');
+
+    // Item 3b (rules v1.12 §2A): approval is the moment measuring starts. Every handle she
+    // registered with is now hers (ownership confirmed) and a full run is due at once.
+    // Contract: features/item3b-social-numbers
+    if (target[0].linked_influencer_id) {
+      const socialAccounts = require('../services/socialAccounts.service');
+      const socialMeasure = require('../services/socialMeasure.service');
+      const env = require('../config/env');
+      const started = await socialAccounts.onCreatorApproved(target[0].linked_influencer_id, adminId);
+      if (process.env.NODE_ENV !== 'test') for (const a of started) socialMeasure.kick(a.id, 'full', 'approval');
+    }
     return success(res, { verified: verifiedRows[0] });
   } catch (e) {
     await db.query('ROLLBACK');

@@ -737,16 +737,14 @@ const bulkUploadInfluencers = [
         const { rows: infRows } = await db.query(
           `INSERT INTO influencers (
              user_id, instagram_handle, full_name, tier,
-             followers_count, engagement_rate, niche, secondary_niche,
+             niche, secondary_niche,
              city, state, gender, platform,
              avg_views, avg_likes, avg_comments, verified, language
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
            ON CONFLICT (user_id) DO UPDATE SET
              instagram_handle  = EXCLUDED.instagram_handle,
              full_name         = EXCLUDED.full_name,
              tier              = EXCLUDED.tier,
-             followers_count   = EXCLUDED.followers_count,
-             engagement_rate   = EXCLUDED.engagement_rate,
              niche             = EXCLUDED.niche,
              secondary_niche   = EXCLUDED.secondary_niche,
              city              = EXCLUDED.city,
@@ -759,9 +757,11 @@ const bulkUploadInfluencers = [
              verified          = EXCLUDED.verified,
              language          = EXCLUDED.language
            RETURNING xmax`,
+          // Item 3b (founder Q9): the import creates creators but no longer writes followers
+          // or engagement — the measurement pipeline sets them after approval.
           [
             user.id, handle, full_name, tier,
-            followers_count, engagement_rate, niche, secondary_niche,
+            niche, secondary_niche,
             (row.city || '').trim() || null, (row.state || '').trim() || null,
             gender || null, platform,
             avg_views, avg_likes, avg_comments, verified, language,

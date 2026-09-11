@@ -1,0 +1,15 @@
+{
+  "feature": "item3b-social-numbers",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item3b_Approval_Message.md)",
+  "approved_at": "2026-09-11T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item3b_Social_Numbers_Mockups.html — 'Stage 3: locked 11 Sep 2026')",
+  "mockup_locked_at": "2026-09-11T00:00:00+05:30",
+  "notes": "Rules doc v1.12 §2A. Gap report Docs/ITEM3B_SOCIAL_NUMBERS_GAP_REPORT.md approved with 17 answers + changes in APPROVAL.md. Step 0 probe run 2026-09-11 with the founder's token (9 runs, US$0.30): every field confirmed, YouTube tabs label items, streams excludable, onlyPostsNewerThan/oldestPostDate work, not-found recognisable. Phone apps + minimal admin pages; migrations 175–178; production-impacting — explicit go required before push/migrate/OTA.",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}

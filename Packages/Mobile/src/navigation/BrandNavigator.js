@@ -25,6 +25,8 @@ import BrandLinksScreen from '../screens/brand/BrandLinksScreen';
 import BrandOwnOverviewScreen from '../screens/brand/BrandOwnOverviewScreen';
 import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
 import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
+// Item 3b — S2/S3 platform detail. Contract: features/item3b-social-numbers
+import SocialDetailScreen from '../screens/shared/SocialDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
@@ -38,6 +40,7 @@ function CreatorsStackScreen() {
       <CreatorsStack.Screen name="BrandCreatorProfile" component={BrandCreatorProfileScreen} />
       <CreatorsStack.Screen name="BrandGroupDetail" component={BrandGroupDetailScreen} />
       <CreatorsStack.Screen name="BrandGroupAddCreators" component={BrandGroupAddCreatorsScreen} />
+      <CreatorsStack.Screen name="SocialDetail" component={SocialDetailScreen} />
     </CreatorsStack.Navigator>
   );
 }

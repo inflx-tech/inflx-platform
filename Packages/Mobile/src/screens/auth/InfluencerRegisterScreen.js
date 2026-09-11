@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { influencerApi } from '../../services/api';
+import { C3B, MSG3B, validInstagram, validYoutube } from '../../components/social/copy3b';
 
 const P = {
   bg:          '#FAFAFA',
@@ -25,125 +26,142 @@ const P = {
 const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
 
 /**
- * Influencer registration. Backend tries to match the IG handle against an
- * existing scraped creator_profile; matched/conflict/no-match → 3 Waiting
- * variants. Payload + handler + navigation.reset preserved exactly.
+ * Influencer registration — two steps since item 3b (rules v1.12 §2A, founder Q16):
+ *   1. details (name, city)
+ *   2. "Your social accounts" (R1): Instagram username and/or YouTube handle or channel link,
+ *      at least one, format checked on the device with the exact §6 messages.
+ * Nothing is measured here: the creator lands on the existing "approval pending" screen and
+ * the first measurement runs when admin approves. Payload + navigation.reset preserved.
+ * Contract: features/item3b-social-numbers
  */
 export default function InfluencerRegisterScreen({ navigation }) {
+  const [step,        setStep]        = useState(1);
   const [fullName,    setFullName]    = useState('');
   const [city,        setCity]        = useState('');
   const [igHandle,    setIgHandle]    = useState('');
   const [ytHandle,    setYtHandle]    = useState('');
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
+  const [fieldErr,    setFieldErr]    = useState({});
 
-  const cleanHandle = (raw) => raw.trim().replace(/^@+/, '').replace(/\s/g, '').toLowerCase();
+  function next() {
+    setError('');
+    if (!fullName.trim()) { setError('Please enter your full name'); return; }
+    setStep(2);
+  }
 
   async function handleRegister() {
-    setError('');
-    const nm = fullName.trim();
-    const ct = city.trim();
-    const ig = cleanHandle(igHandle);
-    const yt = cleanHandle(ytHandle);
-    if (!nm) { setError('Please enter your full name'); return; }
-    if (!ig) { setError('Instagram handle is required'); return; }
+    setError(''); setFieldErr({});
+    const igRaw = igHandle.trim(), ytRaw = ytHandle.trim();
+    const errs = {};
+    if (!igRaw && !ytRaw) { setError(MSG3B.AT_LEAST_ONE); return; }
+    if (igRaw && !validInstagram(igRaw)) errs.ig = MSG3B.INSTAGRAM_INVALID;
+    if (ytRaw && !validYoutube(ytRaw)) errs.yt = MSG3B.YOUTUBE_INVALID;
+    if (Object.keys(errs).length) { setFieldErr(errs); return; }
 
     setLoading(true);
-    const body = { name: nm, instagram_handle: ig };
-    if (ct) body.city = ct;
-    if (yt) body.youtube_handle = yt;
+    const body = { name: fullName.trim() };
+    if (city.trim()) body.city = city.trim();
+    if (igRaw) body.instagram_handle = igRaw;
+    if (ytRaw) body.youtube_handle = ytRaw;
     const res = await influencerApi.register(body);
     setLoading(false);
 
-    if (!res.success) { setError(res.error?.message || 'Registration failed'); return; }
+    if (!res.success) {
+      const f = res.error?.field;
+      if (f === 'instagram_handle') setFieldErr({ ig: res.error.message });
+      else if (f === 'youtube_handle') setFieldErr({ yt: res.error.message });
+      else setError(res.error?.message || 'Registration failed');
+      return;
+    }
 
     const claim = res.data?.claim || {};
     const params = {
       claimMatched:    !!claim.claimed,
       claimConflict:   !!claim.conflict,
       claimMatchCount: claim.match_count || 0,
-      handle:          ig,
+      handle:          validInstagram(igRaw) || validYoutube(ytRaw) || '',
     };
-
     navigation.reset({ index: 0, routes: [{ name: 'Waiting', params }] });
   }
 
-  const canSubmit = fullName.trim().length > 0 && igHandle.trim().length > 0 && !loading;
+  const canContinue1 = fullName.trim().length > 0;
+  const canSubmit = (igHandle.trim().length > 0 || ytHandle.trim().length > 0) && !loading;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: P.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Set up your profile</Text>
-        <Text style={styles.lede}>A few quick details so we can verify your account and match you with brands.</Text>
+        <View style={styles.stepper} testID="stepper"><View style={[styles.stepBar, styles.stepOn]} /><View style={[styles.stepBar, step === 2 && styles.stepOn]} /></View>
 
-        <Text style={styles.label}>Full name <Text style={styles.req}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          value={fullName}
-          onChangeText={setFullName}
-          placeholder="Your full name"
-          placeholderTextColor={P.muted3}
-          autoCorrect={false}
-        />
+        {step === 1 ? (
+          <>
+            <Text style={styles.title}>{C3B.r1.step1Title}</Text>
+            <Text style={styles.lede}>{C3B.r1.step1Lede}</Text>
 
-        <Text style={styles.label}>City</Text>
-        <TextInput
-          style={styles.input}
-          value={city}
-          onChangeText={setCity}
-          placeholder="Hyderabad / Nellore / …"
-          placeholderTextColor={P.muted3}
-          autoCorrect={false}
-        />
+            <Text style={styles.label}>Full name <Text style={styles.req}>*</Text></Text>
+            <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={P.muted3} autoCorrect={false} testID="reg-name" />
 
-        <Text style={styles.label}>Instagram handle <Text style={styles.req}>*</Text></Text>
-        <View style={styles.handleRow}>
-          <Text style={styles.atSign}>@</Text>
-          <TextInput
-            style={styles.handleInput}
-            value={igHandle}
-            onChangeText={t => setIgHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
-            placeholder="yourhandle"
-            placeholderTextColor={P.muted3}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+            <Text style={styles.label}>City</Text>
+            <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="Hyderabad / Nellore / …" placeholderTextColor={P.muted3} autoCorrect={false} testID="reg-city" />
+          </>
+        ) : (
+          <>
+            <TouchableOpacity onPress={() => setStep(1)} style={styles.back} testID="reg-back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <Text style={styles.title}>{C3B.r1.title}</Text>
+            <Text style={styles.lede}>{C3B.r1.intro}</Text>
 
-        <Text style={styles.label}>YouTube channel <Text style={styles.opt}>(optional)</Text></Text>
-        <View style={styles.handleRow}>
-          <Text style={styles.atSign}>@</Text>
-          <TextInput
-            style={styles.handleInput}
-            value={ytHandle}
-            onChangeText={t => setYtHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
-            placeholder="yourchannel"
-            placeholderTextColor={P.muted3}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+            <Text style={styles.label}>{C3B.r1.ig}</Text>
+            <View style={[styles.handleRow, fieldErr.ig && styles.rowError]}>
+              <Text style={styles.atSign}>@</Text>
+              <TextInput
+                style={styles.handleInput}
+                value={igHandle}
+                onChangeText={t => { setIgHandle(t.replace(/\s/g, '').replace(/^@+/, '')); setFieldErr(e => ({ ...e, ig: '' })); }}
+                placeholder="yourhandle"
+                placeholderTextColor={P.muted3}
+                autoCapitalize="none"
+                autoCorrect={false}
+                testID="reg-instagram"
+              />
+            </View>
+            {fieldErr.ig ? <Text style={styles.fieldError} testID="err-instagram">{fieldErr.ig}</Text> : null}
 
-        <View style={styles.info}>
-          <View style={styles.infoBadge}><Text style={styles.infoBadgeText}>i</Text></View>
-          <Text style={styles.infoText}>We'll match your handle to our creator database. If we already have you, you skip ahead.</Text>
-        </View>
+            <Text style={styles.label}>{C3B.r1.yt}</Text>
+            <View style={[styles.handleRow, fieldErr.yt && styles.rowError]}>
+              <TextInput
+                style={styles.handleInput}
+                value={ytHandle}
+                onChangeText={t => { setYtHandle(t.replace(/\s/g, '')); setFieldErr(e => ({ ...e, yt: '' })); }}
+                placeholder="@yourchannel or youtube.com/@yourchannel"
+                placeholderTextColor={P.muted3}
+                autoCapitalize="none"
+                autoCorrect={false}
+                testID="reg-youtube"
+              />
+            </View>
+            {fieldErr.yt ? <Text style={styles.fieldError} testID="err-youtube">{fieldErr.yt}</Text> : null}
+
+            <Text style={styles.hint}>{C3B.r1.hint}</Text>
+          </>
+        )}
 
         {error ? (
-          <View style={styles.errorBox}>
+          <View style={styles.errorBox} testID="reg-error">
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
       </ScrollView>
 
       <View style={styles.ctaBar}>
-        <TouchableOpacity
-          style={[styles.btn, !canSubmit && styles.btnDisabled]}
-          onPress={handleRegister}
-          disabled={!canSubmit}
-        >
-          <Text style={styles.btnText}>{loading ? 'Registering…' : 'Complete registration'}</Text>
-        </TouchableOpacity>
+        {step === 1 ? (
+          <TouchableOpacity style={[styles.btn, !canContinue1 && styles.btnDisabled]} onPress={next} disabled={!canContinue1} testID="reg-continue-1">
+            <Text style={styles.btnText}>{C3B.r1.continue}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={[styles.btn, !canSubmit && styles.btnDisabled]} onPress={handleRegister} disabled={!canSubmit} testID="reg-continue-2">
+            <Text style={styles.btnText}>{loading ? 'Registering…' : C3B.r1.continue}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -151,23 +169,25 @@ export default function InfluencerRegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   scroll:        { flexGrow: 1, paddingHorizontal: 22, paddingTop: 40, paddingBottom: 24 },
+  stepper:       { flexDirection: 'row', marginBottom: 18 },
+  stepBar:       { flex: 1, height: 4, borderRadius: 9, backgroundColor: P.border, marginRight: 4 },
+  stepOn:        { backgroundColor: P.ink },
+  back:          { marginBottom: 8 },
+  backText:      { fontSize: 13, color: P.muted, fontWeight: '600' },
   title:         { fontSize: 22, fontWeight: '700', color: P.ink, marginBottom: 6, letterSpacing: -0.4 },
   lede:          { fontSize: 13, color: P.muted, marginBottom: 22, lineHeight: 19 },
 
   label:         { fontSize: 11.5, fontWeight: '600', color: P.ink2, marginBottom: 8, marginTop: 6 },
   req:           { color: P.danger, fontWeight: '700' },
-  opt:           { fontSize: 11, fontWeight: '500', color: P.muted2 },
+  hint:          { fontSize: 12, color: P.muted, lineHeight: 17, marginTop: 4 },
 
   input:         { backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: P.ink, marginBottom: 14 },
 
-  handleRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, marginBottom: 14 },
+  handleRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, marginBottom: 6 },
+  rowError:      { borderColor: P.danger },
   atSign:        { fontSize: 16, color: P.yellowHover, fontWeight: '700', marginRight: 4, fontFamily: MONO },
   handleInput:   { flex: 1, paddingVertical: 13, fontSize: 14.5, color: P.ink, fontFamily: MONO },
-
-  info:          { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: P.yellowPale, borderRadius: 10, borderLeftWidth: 3, borderLeftColor: P.yellow, paddingHorizontal: 12, paddingVertical: 11, marginTop: 4 },
-  infoBadge:     { width: 20, height: 20, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
-  infoBadgeText: { color: P.yellow, fontSize: 12, fontWeight: '800' },
-  infoText:      { flex: 1, fontSize: 12, color: P.ink2, lineHeight: 17 },
+  fieldError:    { fontSize: 12, color: P.dangerDeep, fontWeight: '600', marginBottom: 8 },
 
   errorBox:      { backgroundColor: P.dangerPale, borderLeftWidth: 3, borderLeftColor: P.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
   errorText:     { fontSize: 12, color: P.dangerDeep, fontWeight: '500' },

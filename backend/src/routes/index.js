@@ -146,6 +146,11 @@ router.use('/', collabSettingsRoutes);
 // Contract: features/item3-discovery-profiles-groups
 const discoveryRoutes = require('./discovery.routes');
 router.use('/', discoveryRoutes);
+// Item 3b — social numbers (Instagram/YouTube through Apify). Fixed paths under
+// /influencers/me/social and /admin/social; mounted before influencer.routes' /:id.
+// Contract: features/item3b-social-numbers
+const socialRoutes = require('./social.routes');
+router.use('/', socialRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

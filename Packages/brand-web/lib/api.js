@@ -658,6 +658,15 @@ export const adminApi = {
   setInfluencerTaxControls: (influencerId, tdsOverridePct, tdsExempt) =>
     api.patch(`/admin/influencers/${influencerId}/tax-controls`, { tds_override_pct: tdsOverridePct, tds_exempt: tdsExempt }),
   rescrapeInfluencer: (id) => api.post(`/influencers/${id}/rescrape`),
+  // Item 3b — social numbers admin (handle checks, flags, measure now, costs). Contract: features/item3b-social-numbers
+  socialHandleChecks:   ()           => api.get('/admin/social/handle-checks'),
+  socialConfirmHandle:  (accountId)  => api.post(`/admin/social/accounts/${accountId}/confirm`),
+  socialRejectHandle:   (accountId, reason) => api.post(`/admin/social/accounts/${accountId}/reject`, { reason }),
+  socialMeasureNow:     (accountId)  => api.post(`/admin/social/accounts/${accountId}/measure-now`),
+  socialFlags:          ()           => api.get('/admin/social/flags'),
+  socialResolveFlag:    (flagId)     => api.post(`/admin/social/flags/${flagId}/resolve`),
+  socialCosts:          (month)      => api.get(`/admin/social/costs${month ? `?month=${month}` : ''}`),
+  getInfluencerSocial:  (id)         => api.get(`/admin/influencers/${id}/social`),
   getAnalytics: (days = 30) => api.get(`/admin/analytics?days=${days}`),
   getProductionQueue: () => api.get('/admin/production/queue'),
   getWithdrawals: (status, search, page) => api.get(`/admin/withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
