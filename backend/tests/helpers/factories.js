@@ -117,7 +117,9 @@ async function registerBrand(token, overrides = {}) {
       // name/city/state — the cascade B2b revealed.
       name: registerOverrides.name || 'Test Brand Owner',
       business_name: registerOverrides.business_name || 'Test Restaurant Pvt Ltd',
-      category: registerOverrides.category || 'restaurant',
+      // Item 3 (founder, 2026-09-11): INFLX is fashion-only since 2 Sep; 'restaurant' was refused by the
+      // server gate and failed 474 tests. Registration also needs at least one sub-category.
+      category: registerOverrides.category || 'fashion',
       // Item 2 — registration now requires at least one fashion sub-category.
       sub_categories: registerOverrides.sub_categories || ['WOMEN'],
       address_line: registerOverrides.address_line || '123 MG Road',
