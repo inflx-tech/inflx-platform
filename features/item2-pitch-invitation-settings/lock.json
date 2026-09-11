@@ -10,12 +10,26 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder (INFLX_Item2_Settings_Mockups.html — 'Stage 3: locked · 11 Sep 2026')",
   "mockup_locked_at": "2026-09-11T00:00:00+05:30",
-  "notes": "Rules doc v1.10 §8A. Gap report Docs/ITEM2_SETTINGS_GAP_REPORT.md approved with 17 answers in APPROVAL.md. Phases 2-4 built 2026-09-11; production-impacting (migrations 168+169, backend, brand-web, OTA brand+influencer) — explicit go required before push.",
+  "notes": "Rules doc v1.10 §8A. Gap report Docs/ITEM2_SETTINGS_GAP_REPORT.md approved with 17 answers in APPROVAL.md. Phases 2-4 built 2026-09-11; production-impacting (migrations 168+169, backend, brand-web, OTA brand+influencer) — deployed 2026-09-11 on the founder's go: migrations applied, commit 4cccea2 pushed (Render+Vercel), OTA brand 210 / influencer 198. qa_all_green stays false: the suite carries 474 pre-existing failures (test factory registers brands as restaurant); maestro not run — founder device walk is the gate.",
   "release": {
     "qa_all_green": false,
     "released": false,
     "released_by": null,
     "released_at": null,
-    "maestro_green": false
+    "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-11T12:20:00+05:30",
+      "by": "founder go (\"pls push,commit,migrate and cmplete OTA\")",
+      "commit": "4cccea2",
+      "migrations": "168+169 applied to production 2026-09-11 (run-168-169.js --apply: 9 brands, 25 creators, 0 pitches untouched)",
+      "render": "GET /v1/reference/brand-categories -> 401 (route live); fake sibling -> 404",
+      "ota": {
+        "brand": 210,
+        "influencer": 198
+      },
+      "backend_tests": "474 failed / 562 passed (0 new failures vs baseline 474/521)",
+      "mobile_tests": "388 passed",
+      "note": "released stays false on purpose: GOVERNANCE.md §5 ties the release record to qa_all_green, and the backend suite carries 474 pre-existing failures (test factory registers brands as restaurant). The item itself is live everywhere; the founder device walk of checks 1-17 is the functional gate."
+    }
   }
 }

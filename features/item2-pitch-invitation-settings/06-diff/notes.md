@@ -46,3 +46,8 @@ New failures introduced by this item: **0** (compared test by test; the 41 extra
 The pre-existing failures are dominated by the test factory registering brands as `restaurant`, which the
 fashion-only gate has rejected since 2026-09-02 (832 occurrences of that message in the baseline log). That is
 test debt outside this item and was deliberately left alone so the comparison stays like-for-like.
+
+## Deploy record (2026-09-11, founder go)
+1. Migrations 168 + 169 applied to production first (`run-168-169.js --apply`; all 13 checks OK, 9 brands / 25 creators / 0 pitches untouched).
+2. Commit `4cccea2` pushed to `main` → Render (new route `/v1/reference/brand-categories` answers 401, a fake sibling 404) and Vercel.
+3. OTA published: **brand 210**, **influencer 198** (native runtime 3). First brand upload hit a Cloudflare 502 while Render was restarting; the retry succeeded.
