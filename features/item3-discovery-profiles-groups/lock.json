@@ -11,5 +11,22 @@
   "mockup_locked_by": "founder (INFLX_Item3_Discovery_Mockups.html — 'Stage 3: locked 11 Sep 2026')",
   "mockup_locked_at": "2026-09-11T00:00:00+05:30",
   "notes": "Rules doc v1.11 §5A/§8A. Gap report Docs/ITEM3_DISCOVERY_GAP_REPORT.md approved with 19 answers + decisions in APPROVAL.md. Phone apps only; website untouched (side effects listed in 06-diff/notes.md). Production-impacting (migrations 170–174, backend, OTA brand+influencer) — explicit go required before push. Phases 2–4 built 2026-09-11: 8 backend suites / 62 tests, 3 mobile suites / 22 tests, release bundle builds; prod dry run of 170–174 clean (36 states, 92 cities, 25/25 creators matched). Baselines: 474 → 229 failures after the factory fix (6ff5a14); end-of-item run recorded in 06-diff/notes.md. qa_all_green stays false (pre-existing failures); maestro not run — founder phone walk of checks 1–31 is the gate.",
-  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-11T18:05:00+05:30",
+      "by": "founder go (\"apply migration,push,publish and OTA\")",
+      "commit": "97dff06",
+      "migrations": "170-174 applied to production 2026-09-11 (run-170-174.js --apply: 9 brands, 25 creators, 7 groups / 28 members untouched; 36 states, 92 cities, one main branch per brand, 25/25 creators matched)",
+      "render": "POST /v1/places/resolve -> 401 and GET /v1/reference/cities -> 401 (routes live); fake siblings -> 404",
+      "ota": { "brand": 211, "influencer": 199 },
+      "backend_tests": "229 failed / 869 passed / 1098 (0 new failures vs after-fix baseline 229/807/1036; before the factory fix 474/521/1036)",
+      "mobile_tests": "22 new + 36 item 2 pass; release bundle builds",
+      "note": "released stays false on purpose: GOVERNANCE.md §5 ties the release record to qa_all_green and the suite carries 229 pre-existing failures. The item is live everywhere; the founder phone walk of checks 1-31 is the functional gate."
+    }
+  }
 }
