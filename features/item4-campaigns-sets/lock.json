@@ -16,6 +16,20 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "maestro_green": false
+    "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-12T11:45:00+05:30",
+      "by": "founder go (\"ok migrate,push,OTA\")",
+      "commit": "5e5cfe0",
+      "migration": "180 applied to production 2026-09-12 (run-180.js --apply: 10 campaigns, 9 sets, 0 visit sets; all columns, the validated CHECK and three indexes present; row counts unchanged)",
+      "render": "item 4 code live 51 s after push: GET /v1/campaigns/summary answered 200 for the founder brand (tabs live 0 / draft 2 / past 0)",
+      "ota": {
+        "brand": 214
+      },
+      "websites": "the two switch-offs ride the same push (Vercel)",
+      "backend_tests": "229 failed / 914 passed / 1143 (0 new failures vs 229/901/1130; 13 new)",
+      "mobile_tests": "441 pass (12 new)",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). The founder phone walk of checks 1-26 is the functional gate. Creator app untouched."
+    }
   }
 }
