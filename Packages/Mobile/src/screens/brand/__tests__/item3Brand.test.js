@@ -160,7 +160,7 @@ describe('P1 · P2 · P3 — creator profile', () => {
     getByText('Open to invitations for');
     expect(getByTestId('invite-button').props.accessibilityState.disabled).toBe(false);
     fireEvent.press(getByTestId('invite-button'));
-    await waitFor(() => getByText('Inviting creators comes with campaigns. Coming soon.'));
+    await waitFor(() => getByText('Inviting creators is coming soon.'));
   });
 
   it('P2: the signed line, the groups line and this brand\'s collaborations with their state', async () => {
@@ -190,9 +190,9 @@ describe('P1 · P2 · P3 — creator profile', () => {
 describe('A6 — coming soon', () => {
   it('uses the prompt copy and the button jumps to Creators', () => {
     const n = nav();
-    const { getByText, getByTestId } = render(<ComingSoonScreen navigation={n} route={{ params: { kind: 'brandCampaigns', tabTitle: 'Campaigns' } }} />);
-    getByText('Campaigns are coming soon');
-    getByText("You'll create campaigns and sets here. Meanwhile, explore creators and set up your profile.");
+    const { getByText, getByTestId } = render(<ComingSoonScreen navigation={n} route={{ params: { kind: 'brandHome', tabTitle: 'Home' } }} />);
+    getByText('Home is coming soon');
+    getByText('Your to-dos across campaigns and creators will show here.');
     fireEvent.press(getByTestId('coming-soon-button'));
     expect(n.navigate).toHaveBeenCalledWith('CreatorsTab');
   });

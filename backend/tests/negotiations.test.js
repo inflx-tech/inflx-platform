@@ -1,5 +1,6 @@
 'use strict';
 
+const ITEM4_DAY = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); // item 4: sets need a posting date ≥ 7 days out
 /**
  * Phase 2 — Blocks B, C, D
  * B: Offer inbox, accept, decline, 48h expiry cron
@@ -71,7 +72,7 @@ async function setupFullInvite({ agreed_fee = 5000 } = {}) {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Test Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: [{ type: 'reel', count: 1 }] });
+    .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Test Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: [{ type: 'reel', count: 1 }] });
   const sid = setRes.body.data.set.id;
 
   // Invite
@@ -541,7 +542,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment',
         name: 'Open Group Set',
         goal: 'engagement',
         // createSet persists `influencer_mode` (campaign.controller.js:428,
@@ -587,7 +588,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Handpick Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: [{ type: 'reel', count: 1 }] });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Handpick Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: [{ type: 'reel', count: 1 }] });
     const sid = setRes.body.data.set.id;
 
     const res = await request(app)

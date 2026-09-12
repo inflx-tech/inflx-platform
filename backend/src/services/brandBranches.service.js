@@ -154,6 +154,10 @@ async function remove(brandId, id) {
   const current = await get(brandId, id);
   if (!current) return null;
   if (current.isMain) { const e = new Error(MSG.MAIN_BRANCH); e.code = 'MAIN_BRANCH'; e.field = 'id'; throw e; }
+  // Item 4 — a Store Visit set names this branch (campaign_sets.branch_id, ON DELETE RESTRICT).
+  // Refuse with words rather than let the foreign key answer with a database error.
+  const { rows: used } = await db.query(`SELECT 1 FROM campaign_sets WHERE branch_id = $1 LIMIT 1`, [id]);
+  if (used.length) { const e = new Error(require('./campaignCopy').MSG.BRANCH_IN_USE); e.code = 'BRANCH_IN_USE'; e.field = 'id'; throw e; }
   await db.query(`DELETE FROM brand_branches WHERE brand_id = $1 AND id = $2`, [brandId, id]);
   return current;
 }

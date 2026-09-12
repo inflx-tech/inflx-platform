@@ -12,6 +12,12 @@ const brandApproved = [authenticate, requireRole('brand'), requireApproved];
 // ── Campaign CRUD ────────────────────────────────────────────────────────────
 router.post('/',       ...brandApproved, checkQuota('createCampaign'), ctrl.create);
 router.get('/',        ...brandAuth, ctrl.list);
+// ── Item 4 — the Campaigns tab reads (A1, A5, A10). New endpoints: another brand's campaign
+// answers 404 (APPROVAL.md Q7 keeps the older routes at 403). Contract: features/item4-campaigns-sets
+const setsCtrl = require('../controllers/campaignSets.controller');
+router.get('/summary',               ...brandAuth, setsCtrl.listSummary);
+router.get('/:id/summary',           ...brandAuth, setsCtrl.campaignSummary);
+router.get('/:id/sets/:sid/summary', ...brandAuth, setsCtrl.setSummary);
 router.get('/:id',     ...brandAuth, ctrl.getById);
 router.patch('/:id',   ...brandApproved, ctrl.update);
 router.delete('/:id',  ...brandApproved, ctrl.remove);

@@ -29,6 +29,8 @@ const commerceSettlementJob  = require('./commerce-settlement.job');
 const postEligibilityJob     = require('./post-eligibility.job');
 // Item 3b — creator social numbers (Instagram/YouTube through Apify). Contract: features/item3b-social-numbers
 const socialMeasureJob       = require('./social-measure.job');
+// Item 4 — a set whose cutoff passed with nobody signed expires. Contract: features/item4-campaigns-sets
+const setExpiryJob           = require('./set-expiry.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -103,6 +105,10 @@ function startAllJobs() {
   // the monthly Apify budget, retries failures the next day.
   cron.schedule('25 * * * *', socialMeasureJob.run, { timezone: tz });
 
+  // set-expiry (item 4) — hourly at :40, India time. One transaction per set, row-locked;
+  // expired_at is the guard that makes a second run a no-op.
+  cron.schedule('40 * * * *', () => setExpiryJob.run(), { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -123,4 +129,5 @@ module.exports = {
   commerceSettlementJob,
   postEligibilityJob,
   socialMeasureJob,
+  setExpiryJob,
 };

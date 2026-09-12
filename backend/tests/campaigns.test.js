@@ -1,5 +1,6 @@
 'use strict';
 
+const ITEM4_DAY = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); // item 4: sets need a posting date ≥ 7 days out
 /**
  * Phase 2 — Campaign, Set, Invite, Offer, Wallet, Publish tests
  * Blocks A2 through A6 (and later extended for B/C/D in separate files)
@@ -268,7 +269,9 @@ describe('PATCH /v1/campaigns/:id', () => {
     expect(res.status).toBe(403);
   });
 
-  it('returns 422 when trying to update a published campaign', async () => {
+  // Item 4 (rules v1.14 §5B, mockup C11): a campaign can be renamed and its description edited
+  // at any time; only the older money-adjacent fields stay draft-only.
+  it('renames a published campaign; the legacy fields stay draft-only (item 4)', async () => {
     const { token } = await createApprovedBrand();
     const createRes = await createCampaign(token, { total_budget: 10000 });
     const cid = createRes.body.data.campaign.id;
@@ -276,11 +279,17 @@ describe('PATCH /v1/campaigns/:id', () => {
     // Force campaign to published status directly
     await query(`UPDATE campaigns SET status = 'published' WHERE id = $1`, [cid]);
 
-    const res = await request(app)
+    let res = await request(app)
       .patch(`/v1/campaigns/${cid}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Cannot Update' });
+      .send({ name: 'Renamed while live' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.campaign.name).toBe('Renamed while live');
 
+    res = await request(app)
+      .patch(`/v1/campaigns/${cid}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ allow_negotiation: false });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
@@ -353,7 +362,7 @@ describe('POST /v1/campaigns/:id/sets', () => {
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment',
         name: 'Hyderabad Food Influencers',
         goal: 'engagement',
         assignment_mode: 'handpick',
@@ -374,7 +383,7 @@ describe('POST /v1/campaigns/:id/sets', () => {
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ goal: 'engagement' });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', goal: 'engagement' });
 
     expect(res.status).toBe(422);
     expect(res.body.error.field).toBe('name');
@@ -390,7 +399,7 @@ describe('POST /v1/campaigns/:id/sets', () => {
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token2}`)
-      .send({ name: 'Hijack Set', goal: 'engagement' });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Hijack Set', goal: 'engagement' });
 
     expect(res.status).toBe(403);
   });
@@ -405,7 +414,7 @@ describe('PATCH /v1/campaigns/:cid/sets/:sid', () => {
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment',
         name: overrides.name || 'Test Set',
         goal: overrides.goal || 'engagement',
         assignment_mode: overrides.assignment_mode || 'handpick',
@@ -459,7 +468,7 @@ describe('DELETE /v1/campaigns/:cid/sets/:sid', () => {
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Delete Me', goal: 'engagement', set_budget: 10000, ...overrides });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Delete Me', goal: 'engagement', set_budget: 10000, ...overrides });
     return res.body.data.set;
   }
 
@@ -516,7 +525,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/invite', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Invite Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Invite Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
     const sid = setRes.body.data.set.id;
 
     return { brandToken, inf, cid, sid };
@@ -602,7 +611,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/offers', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Offer Set', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN' });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Offer Set', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN' });
     const sid = setRes.body.data.set.id;
 
     return { brandToken, cid, sid };
@@ -860,7 +869,7 @@ describe('POST /v1/campaigns/:id/publish', () => {
     await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: budget });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: budget });
 
     return { token, cid, brandId: brand.id };
   }
@@ -897,7 +906,7 @@ describe('POST /v1/campaigns/:id/publish', () => {
     await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: 50000 });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: 50000 });
 
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/publish`)
@@ -924,7 +933,7 @@ describe('POST /v1/campaigns/:id/publish', () => {
     await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: 5000 });
+      .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: 5000 });
 
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/publish`)

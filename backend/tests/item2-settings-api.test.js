@@ -283,7 +283,10 @@ describe('A7 — enforced on send', () => {
     const camp = await request(app).post('/v1/campaigns').set(auth(b.token)).send({ name: 'Festive', total_budget: 50000, start_date: '2026-10-01', end_date: '2026-10-31' });
     expect(camp.status).toBe(201);
     const cid = camp.body.data.campaign.id;
-    const set = await request(app).post(`/v1/campaigns/${cid}/sets`).set(auth(b.token)).send({ name: 'Set A', goal, assignment_mode: 'handpick', set_budget: 20000, shoot_mode });
+    // Item 4: a set needs a posting date ≥ 7 days out, and a Store Visit set names one of the brand's branches.
+    const branch = shoot_mode === 'visit' ? (await query(`SELECT id FROM brand_branches WHERE brand_id = $1 AND is_main`, [b.brandId])).rows[0] : null;
+    const go_live_date = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const set = await request(app).post(`/v1/campaigns/${cid}/sets`).set(auth(b.token)).send({ name: 'Set A', goal, assignment_mode: 'handpick', set_budget: 20000, shoot_mode, go_live_date, branch_id: branch ? branch.id : undefined });
     expect(set.status).toBe(201);
     return { cid, sid: set.body.data.set.id };
   }

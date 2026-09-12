@@ -1,0 +1,21 @@
+{
+  "feature": "item4-campaigns-sets",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item4_Approval_Message.md — 'The item 4 gap report is approved. Start building.')",
+  "approved_at": "2026-09-12T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item4_Campaigns_Mockups_1.html — 'Stage 3: locked 12 Sep 2026 · counting clarified after the gap report')",
+  "mockup_locked_at": "2026-09-12T00:00:00+05:30",
+  "notes": "Rules doc v1.14 §5B/§5. Gap report Docs/ITEM4_CAMPAIGNS_GAP_REPORT.md approved with nine answers (7 days; derived states; calculated cutoff; Completed stand-in; duplicate settings-only; cross-set fix; 404 on new endpoints only; set-delete guard; invited counts everyone + declined line) and three decisions (updated mockups; website invite switch-off; website branch editor switch-off). Migration 180; brand app OTA; production-impacting — explicit go required before migrate/push/OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

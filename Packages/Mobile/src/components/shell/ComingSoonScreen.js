@@ -10,7 +10,7 @@ import { PrimaryButton } from '../settings/primitives';
 import { C3 } from '../discovery/copy3';
 
 const TARGETS = {
-  brandCampaigns: { tab: 'CreatorsTab' }, brandHome: { tab: 'CreatorsTab' }, brandWallet: { tab: 'CreatorsTab' },
+  brandHome: { tab: 'CreatorsTab' }, brandWallet: { tab: 'CreatorsTab' },
   creatorHome: { tab: 'CollabsTab', screen: 'FindBrands' }, creatorCreate: { tab: 'CollabsTab', screen: 'FindBrands' },
   creatorWallet: { tab: 'ProfileTab', screen: 'PaymentTax' },
 };

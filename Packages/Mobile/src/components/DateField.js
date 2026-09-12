@@ -1,30 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
-import { ig } from '../theme/ig';
+import { settingsTokens as T, fonts } from '../theme/tokens';
 
 /**
- * DateField — a date, chosen from a calendar rather than typed.
- * Contract: features/collab-terms-by-aim (item 2)
+ * DateField — a date, chosen from a calendar rather than typed. Pure JavaScript: no native
+ * module, so it ships over the air.
  *
- * The founder, 2026-08-24: "while creating invitation, start date entry is better if we
- * keep date picker instead typing."
+ * Contract: features/collab-terms-by-aim (item 2); item 4 moved it onto the item 2 palette,
+ * added the confirm step ("Use this date") and a footer the caller renders for the pending day
+ * (the C5 mockup shows "Dates before X are greyed out…" and "Invitations would close Y.").
  *
- * Every date in the collaboration flow was a text box with a placeholder reading
- * "2026-09-15". On a phone that is four separate ways to fail: the wrong format, the
- * wrong month, a date already past, or a typo nobody notices until a deadline is missed.
- *
- * WHY THIS IS WRITTEN IN JAVASCRIPT RATHER THAN USING THE NATIVE PICKER:
- * @react-native-community/datetimepicker is in package.json, but NOTHING in the app
- * imports it — so there is no evidence it is compiled into the installed APK. Mobile
- * changes ship over the air, and an over-the-air bundle cannot add a native module: it
- * would crash on launch, uncatchably, on the founder's handset. A pure-JS calendar is
- * slightly more code and carries none of that risk.
- *
- * The value in and out is always 'YYYY-MM-DD' — the exact string the text box produced,
- * so nothing behind this screen changes.
+ * The value in and out is always 'YYYY-MM-DD' — a calendar day, never an instant.
  */
 
-const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -46,7 +35,8 @@ const midnight = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return 
 export function prettyDate(v) {
   const d = parseISO(v);
   if (!d) return null;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const short = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getDate()} ${short[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export default function DateField({
@@ -55,15 +45,18 @@ export default function DateField({
   onChange,
   placeholder = 'Choose a date',
   hint,
+  error,
   minDate,                 // 'YYYY-MM-DD' | Date | undefined — defaults to today
   maxDate,
+  confirmLabel,            // when set, tapping a day only selects it; this button confirms (C5)
+  renderFooter,            // (pendingISO | null) => node, rendered under the grid (C5 hints)
   style,
+  testID,
 }) {
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(value || null);
 
   const min = useMemo(() => {
-    // A posting deadline in the past is never a real answer, so today is the floor
-    // unless a caller deliberately widens it.
     const d = minDate ? (typeof minDate === 'string' ? parseISO(minDate) : new Date(minDate)) : new Date();
     return midnight(d || new Date());
   }, [minDate]);
@@ -74,25 +67,26 @@ export default function DateField({
     return d ? midnight(d) : null;
   }, [maxDate]);
 
-  const selected = parseISO(value);
+  const selected = parseISO(pending);
   const [cursor, setCursor] = useState(() => {
-    const base = selected || min;
+    const base = parseISO(value) || min;
     return new Date(base.getFullYear(), base.getMonth(), 1);
   });
+  useEffect(() => { if (open) { setPending(value || null); const base = parseISO(value) || min; setCursor(new Date(base.getFullYear(), base.getMonth(), 1)); } }, [open]); // eslint-disable-line
 
+  // Monday-first grid, as the mockups draw it.
   const grid = useMemo(() => {
     const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
     const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+    const lead = (first.getDay() + 6) % 7;
     const cells = [];
-    for (let i = 0; i < first.getDay(); i++) cells.push(null);
+    for (let i = 0; i < lead; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(cursor.getFullYear(), cursor.getMonth(), d));
     return cells;
   }, [cursor]);
 
   const blocked = (d) => (min && d < min) || (max && d > max);
 
-  // A month with nothing selectable in it is a dead end, so the arrow is disabled
-  // rather than leaving her to discover a wall of greyed-out numbers.
   const prevBlocked = useMemo(() => {
     const last = new Date(cursor.getFullYear(), cursor.getMonth(), 0);
     return min && last < min;
@@ -104,7 +98,14 @@ export default function DateField({
 
   function pick(d) {
     if (blocked(d)) return;
-    onChange(toISO(d));
+    const iso = toISO(d);
+    if (confirmLabel) { setPending(iso); return; }
+    onChange(iso);
+    setOpen(false);
+  }
+  function confirm() {
+    if (!pending) return;
+    onChange(pending);
     setOpen(false);
   }
 
@@ -112,28 +113,24 @@ export default function DateField({
 
   return (
     <View style={[{ marginBottom: 10 }, style]}>
-      {!!label && <Text style={s.label}>{String(label).toUpperCase()}</Text>}
-      <TouchableOpacity style={s.field} activeOpacity={0.7} onPress={() => setOpen(true)}>
+      {!!label && <Text style={s.label}>{label}</Text>}
+      <TouchableOpacity style={[s.field, error && s.fieldError]} activeOpacity={0.7} onPress={() => setOpen(true)} testID={testID || 'date-field'} accessibilityRole="button">
         <Text style={[s.value, !shown && s.placeholder]}>{shown || placeholder}</Text>
         <Text style={s.caret}>▾</Text>
       </TouchableOpacity>
       {!!hint && <Text style={s.hint}>{hint}</Text>}
+      {!!error && <Text style={s.error} accessibilityRole="alert">{error}</Text>}
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setOpen(false)}>
-          <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}}>
+          <TouchableOpacity style={s.sheet} activeOpacity={1} onPress={() => {}} testID="date-sheet">
+            <View style={s.grab} />
             <View style={s.head}>
-              <TouchableOpacity
-                onPress={() => !prevBlocked && setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
+              <TouchableOpacity onPress={() => !prevBlocked && setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} testID="date-prev">
                 <Text style={[s.arrow, prevBlocked && s.arrowOff]}>‹</Text>
               </TouchableOpacity>
               <Text style={s.month}>{MONTHS[cursor.getMonth()]} {cursor.getFullYear()}</Text>
-              <TouchableOpacity
-                onPress={() => !nextBlocked && setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
+              <TouchableOpacity onPress={() => !nextBlocked && setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} testID="date-next">
                 <Text style={[s.arrow, nextBlocked && s.arrowOff]}>›</Text>
               </TouchableOpacity>
             </View>
@@ -148,21 +145,25 @@ export default function DateField({
                 const off = blocked(d);
                 const on = selected && toISO(d) === toISO(selected);
                 return (
-                  <TouchableOpacity
-                    key={toISO(d)}
-                    style={[s.cell, on && s.cellOn]}
-                    activeOpacity={off ? 1 : 0.6}
-                    onPress={() => pick(d)}
-                  >
+                  <TouchableOpacity key={toISO(d)} style={[s.cell, on && s.cellOn]} activeOpacity={off ? 1 : 0.6} onPress={() => pick(d)}
+                    disabled={off} accessibilityState={{ disabled: off, selected: !!on }} testID={`day-${toISO(d)}`}>
                     <Text style={[s.day, off && s.dayOff, on && s.dayOn]}>{d.getDate()}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <TouchableOpacity style={s.close} onPress={() => setOpen(false)}>
-              <Text style={s.closeT}>Cancel</Text>
-            </TouchableOpacity>
+            {renderFooter ? renderFooter(pending) : null}
+
+            {confirmLabel ? (
+              <TouchableOpacity style={[s.confirm, !pending && s.confirmOff]} onPress={confirm} disabled={!pending} testID="date-confirm" accessibilityRole="button">
+                <Text style={s.confirmT}>{confirmLabel}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={s.close} onPress={() => setOpen(false)}>
+                <Text style={s.closeT}>Cancel</Text>
+              </TouchableOpacity>
+            )}
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -171,31 +172,37 @@ export default function DateField({
 }
 
 const s = StyleSheet.create({
-  label: { fontSize: 9, fontWeight: '800', color: ig.mut, letterSpacing: 0.4, marginBottom: 5 },
+  label: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginBottom: 6 },
   field: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: ig.bg, borderWidth: 1, borderColor: ig.line,
-    borderRadius: 9, paddingHorizontal: 11, paddingVertical: 11,
+    backgroundColor: T.bg, borderWidth: 1.5, borderColor: T.border,
+    borderRadius: 12, paddingHorizontal: 12, height: 44,
   },
-  value: { fontSize: 13, color: ig.text, fontWeight: '600' },
-  placeholder: { color: ig.mut2, fontWeight: '400' },
-  caret: { fontSize: 13, color: ig.mut },
-  hint: { fontSize: 10.5, color: ig.mut2, lineHeight: 15, marginTop: 6 },
+  fieldError: { borderColor: T.danger },
+  value: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: T.ink },
+  placeholder: { color: T.ink3, fontFamily: fonts.sansRegular },
+  caret: { fontSize: 13, color: T.ink3 },
+  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginTop: 6 },
+  error: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.danger, marginTop: 6 },
 
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', paddingHorizontal: 24 },
-  sheet: { backgroundColor: ig.bg, borderRadius: 16, padding: 16 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(26,26,23,0.45)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: T.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 24 },
+  grab: { width: 36, height: 4, borderRadius: 4, backgroundColor: T.border, alignSelf: 'center', marginBottom: 10 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  month: { fontSize: 15, fontWeight: '800', color: ig.text },
-  arrow: { fontSize: 26, color: ig.text, paddingHorizontal: 10, lineHeight: 30 },
-  arrowOff: { color: ig.mut2 },
+  month: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink },
+  arrow: { fontSize: 26, color: T.ink, paddingHorizontal: 10, lineHeight: 30 },
+  arrowOff: { color: T.ink3 },
   week: { flexDirection: 'row' },
-  weekD: { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '800', color: ig.mut2, marginBottom: 6 },
+  weekD: { flex: 1, textAlign: 'center', fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, marginBottom: 6 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: `${100 / 7}%`, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 9 },
-  cellOn: { backgroundColor: ig.text },
-  day: { fontSize: 13.5, color: ig.text, fontWeight: '600' },
-  dayOff: { color: ig.mut2, fontWeight: '400' },
-  dayOn: { color: ig.bg, fontWeight: '800' },
+  cell: { width: `${100 / 7}%`, aspectRatio: 1.15, alignItems: 'center', justifyContent: 'center', borderRadius: 9 },
+  cellOn: { backgroundColor: T.ink },
+  day: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink },
+  dayOff: { color: '#C9C8C0', fontFamily: fonts.sansRegular },
+  dayOn: { color: T.bg, fontFamily: fonts.sansBold },
+  confirm: { marginTop: 12, height: 42, borderRadius: 12, backgroundColor: T.primary, alignItems: 'center', justifyContent: 'center' },
+  confirmOff: { opacity: 0.5 },
+  confirmT: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink },
   close: { marginTop: 10, paddingVertical: 11, alignItems: 'center' },
-  closeT: { fontSize: 12.5, fontWeight: '800', color: ig.mut },
+  closeT: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink2 },
 });

@@ -37,6 +37,7 @@ async function influencerIdOf(userId) {
 function rethrow(e) {
   if (e && e.code === 'VALIDATION_ERROR') throw new AppError('VALIDATION_ERROR', e.message, 422, e.field || null, e.details || null);
   if (e && e.code === 'MAIN_BRANCH') throw new AppError('MAIN_BRANCH', e.message, 422, 'id');
+  if (e && e.code === 'BRANCH_IN_USE') throw new AppError('BRANCH_IN_USE', e.message, 422, 'id');
   if (e && e.code === ref.STATE_UNKNOWN) throw new AppError(ref.STATE_UNKNOWN, e.message, 422, 'place_id');
   if (e && e.code === ref.PLACE_NOT_FOUND) throw new AppError('PLACE_NOT_FOUND', 'place not found', 404, 'place_id');
   if (e && e.code === 'RATE_LIMITED') throw new AppError('RATE_LIMITED', e.message, 429);

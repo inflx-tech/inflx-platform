@@ -114,9 +114,10 @@ describe('what the wizard will and will not accept', () => {
   });
 
   test('the earliest day is on the boundary, and the day before is not', () => {
-    expect(shape.earliestGoLiveDay(FROM)).toBe('2026-09-06');
-    expect(shape.validateSetShape({ go_live_date: '2026-09-06' }, { from: FROM }).ok).toBe(true);
-    expect(shape.validateSetShape({ go_live_date: '2026-09-05' }, { from: FROM }).ok).toBe(false);
+    // Item 4 (rules v1.14 §5B): seven days, was five.
+    expect(shape.earliestGoLiveDay(FROM)).toBe('2026-09-08');
+    expect(shape.validateSetShape({ go_live_date: '2026-09-08' }, { from: FROM }).ok).toBe(true);
+    expect(shape.validateSetShape({ go_live_date: '2026-09-07' }, { from: FROM }).ok).toBe(false);
   });
 
   test('invitations cannot close after the launch, but may close on it', () => {

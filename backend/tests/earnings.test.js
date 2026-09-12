@@ -1,5 +1,6 @@
 'use strict';
 
+const ITEM4_DAY = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); // item 4: sets need a posting date ≥ 7 days out
 /**
  * Phase 3 — Block E:
  *   GET /v1/brands/me/escrow         — brand escrow overview
@@ -68,7 +69,7 @@ async function setupActiveContract({ agreed_fee = 10000 } = {}) {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: [{ type: 'reel', count: 1 }] });
+    .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: [{ type: 'reel', count: 1 }] });
   const sid = setRes.body.data.set.id;
 
   // Invite

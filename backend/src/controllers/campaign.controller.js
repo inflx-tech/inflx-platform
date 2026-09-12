@@ -4,6 +4,9 @@ const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
 const campaignRollup = require('../services/campaignRollup.service');
 const setShape = require('../services/setShape.model');
+// Item 4 — states, counts, cutoff, locks and the delete rules, written once. Contract: features/item4-campaigns-sets
+const campaignState = require('../services/campaignState.service');
+const { MSG: CMSG } = require('../services/campaignCopy');
 const pricingService      = require('../services/pricing.service');
 const entitlementsService = require('../services/entitlements.service');
 const {
@@ -223,13 +226,15 @@ async function materialiseOpenGroupInvites(tx, campaign, sets) {
     if (set.influencer_mode !== 'open_group') continue;
 
     const { conditions, params, nextIdx } = buildOpenGroupMatchClauses(set.open_group_filters || {}, 1);
-    // Exclude anyone already on another set in this campaign.
+    // Exclude anyone LIVE on another set in this campaign. Item 4 (founder Q6): a dead or
+    // deferred row does not exclude her, same as the invite path.
     conditions.push(
       `NOT EXISTS (SELECT 1 FROM campaign_influencers ci2 JOIN campaign_sets cs2 ON cs2.id = ci2.set_id
-                    WHERE cs2.campaign_id = $${nextIdx} AND ci2.influencer_id = i.id)`
+                    WHERE cs2.campaign_id = ${nextIdx} AND ci2.influencer_id = i.id
+                      AND NOT (ci2.status = ANY(${nextIdx + 1}::campaign_influencer_status[])))`
     );
-    params.push(campaign.id);
-    let nextParamIdx = nextIdx + 1;
+    params.push(campaign.id, campaignState.NON_BLOCKING_STATUSES);
+    let nextParamIdx = nextIdx + 2;
 
     // A12.5 — area_scope filter (city/state) injected with proper placeholder.
     if (scopeColumn && scopeValue != null) {
@@ -346,10 +351,18 @@ async function generateUniqueCouponCode(prefix, firstName) {
 
 const create = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
-  const { name, total_budget, start_date, end_date, brief, allow_negotiation } = req.body;
+  const { name, total_budget, start_date, end_date, brief, allow_negotiation, started_from_group_id } = req.body;
 
-  if (!name || !name.trim()) {
-    throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
+  // Item 4 — name required (≤ 60) and description ≤ 200, with the exact §7 messages.
+  const v4 = campaignState.validateCampaignInput({ name, brief });
+  if (!v4.ok) throw new AppError('VALIDATION_ERROR', v4.message, 422, v4.field);
+  // Item 4 / G10 — a campaign started from one of this brand's creator groups remembers it, so
+  // item 5's picker can start from the members. Never shown to creators.
+  let groupId = null;
+  if (started_from_group_id) {
+    const { rows: g } = await db.query(`SELECT id FROM influencer_groups WHERE id = $1 AND brand_id = $2`, [started_from_group_id, brand.id]);
+    if (!g[0]) throw new AppError('NOT_FOUND', 'Group not found', 404, 'started_from_group_id');
+    groupId = g[0].id;
   }
   // stage-a — SB-23 stopped asking for a start date: BR-01 is now "a campaign is two
   // fields", and the day that matters lives on each SET (go_live_date) rather than once
@@ -369,8 +382,8 @@ const create = asyncHandler(async (req, res) => {
   }
 
   const { rows } = await db.query(
-    `INSERT INTO campaigns (brand_id, name, total_budget, start_date, end_date, brief, allow_negotiation)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO campaigns (brand_id, name, total_budget, start_date, end_date, brief, allow_negotiation, started_from_group_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       brand.id,
@@ -380,10 +393,12 @@ const create = asyncHandler(async (req, res) => {
       null,                 // end_date     — derived from paid posting windows (collab-part5)
       brief || null,
       allow_negotiation === false ? false : true,
+      groupId,
     ]
   );
 
-  return success(res, { campaign: rows[0] }, 201);
+  // dateRules ride along so the new-set screen that opens next never guesses a date (A12).
+  return success(res, { campaign: rows[0], dateRules: campaignState.dateRules() }, 201);
 });
 
 const list = asyncHandler(async (req, res) => {
@@ -545,9 +560,14 @@ const update = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   const campaign = await getCampaignOrThrow(req.params.id, brand.id);
 
-  if (campaign.status !== 'draft') {
+  // Item 4 — the name and description can be changed at any time (C11: Rename campaign, Edit
+  // description, offered on a live campaign). The older money-adjacent fields stay draft-only.
+  const touchesLegacy = ['start_date', 'allow_negotiation'].some(f => req.body[f] !== undefined);
+  if (touchesLegacy && campaign.status !== 'draft') {
     throw new AppError('VALIDATION_ERROR', `Only draft campaigns can be edited. Current status: ${campaign.status}`, 422);
   }
+  const v4 = campaignState.validateCampaignInput(req.body, { requireName: false });
+  if (!v4.ok) throw new AppError('VALIDATION_ERROR', v4.message, 422, v4.field);
 
   // collab-part5 — total_budget and end_date are derived from the sets and are no longer
   // accepted here. They are dropped rather than rejected so a stale client mid-deploy does
@@ -580,8 +600,14 @@ const remove = asyncHandler(async (req, res) => {
   if (campaign.status !== 'draft') {
     throw new AppError('VALIDATION_ERROR', `Only draft campaigns can be deleted. Current status: ${campaign.status}`, 422);
   }
-
-  await db.query(`DELETE FROM campaigns WHERE id = $1`, [campaign.id]);
+  // Item 4 — a campaign can be deleted only while every set is a draft with nothing sent.
+  await campaignState.assertCampaignDeletable(campaign.id);
+  try {
+    await db.query(`DELETE FROM campaigns WHERE id = $1`, [campaign.id]);
+  } catch (e) {
+    if (e && e.code === '23503') throw new AppError('CONFLICT', CMSG.DELETE_CAMPAIGN_IN_USE, 409);
+    throw e;
+  }
   return success(res, { message: 'Campaign deleted successfully' });
 });
 
@@ -700,17 +726,17 @@ const createSet = asyncHandler(async (req, res) => {
     // stage-a — the three things that DEFINE a set. See services/setShape.model.js.
     go_live_date,
     shoot_mode,
-    invites_close_at,
+    // Item 4 — the branch a Store Visit set names (rules v1.14 §5B).
+    branch_id,
   } = req.body;
 
-  if (!name || !name.trim()) {
-    throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
-  }
-
-  const VALID_GOALS = ['conversion', 'engagement', 'hybrid'];
-  if (goal && !VALID_GOALS.includes(goal)) {
-    throw new AppError('VALIDATION_ERROR', `goal must be one of: ${VALID_GOALS.join(', ')}`, 422, 'goal');
-  }
+  // Item 4 — name (≤ 60), Aim, mode of work, branch (Store Visit), posting date at least 7
+  // days ahead: the exact §7 messages, checked on the server for every caller. The invitation
+  // cutoff is always calculated from the posting date (founder Q3); a client value is ignored.
+  const v4 = await campaignState.validateSetInput({ name, goal, shoot_mode, branch_id, go_live_date }, { brandId: brand.id });
+  if (!v4.ok) throw new AppError('VALIDATION_ERROR', v4.message, 422, v4.field);
+  const branchId = shoot_mode === 'visit' ? branch_id : null;
+  const invites_close_at = campaignState.cutoffFor(go_live_date);
 
   // stage-2 §5.2 — a paid HANDPICK set may omit set_budget, in which case campaignRollup
   // derives it from the sum of that set's agreed fees, and keeps it in step with every
@@ -763,9 +789,9 @@ const createSet = asyncHandler(async (req, res) => {
        (campaign_id, name, goal, influencer_mode, set_budget, per_influencer_budget,
         max_cap, window_start, window_end, brief, coupon_prefix,
         formats_json, assets_json, open_group_filters, channels_json,
-        go_live_date, shoot_mode, invites_close_at)
+        go_live_date, shoot_mode, invites_close_at, branch_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-             $16, $17, $18)
+             $16, $17, $18, $19)
      RETURNING *`,
     [
       campaign.id,
@@ -790,11 +816,12 @@ const createSet = asyncHandler(async (req, res) => {
       go_live_date || null,
       shoot_mode || null,
       invites_close_at || null,
+      branchId,
     ]
   );
 
   const derived = await campaignRollup.recompute(campaign.id);
-  return success(res, { set: rows[0], campaign_derived: derived }, 201);
+  return success(res, { set: rows[0], campaign_derived: derived, cutoff: invites_close_at, dateRules: campaignState.dateRules() }, 201);
 });
 
 const updateSet = asyncHandler(async (req, res) => {
@@ -802,11 +829,24 @@ const updateSet = asyncHandler(async (req, res) => {
   await getCampaignOrThrow(req.params.id, brand.id);
   const set = await getSetOrThrow(req.params.sid, req.params.id);
 
+  // Item 4 — THE LOCK. Once an invitation has gone out, Aim, posting date, mode and branch
+  // never change; the name still can. Enforced here, the one place every caller goes through,
+  // with the exact §7 message. Nothing was locked before item 4.
+  await campaignState.assertSetEditable(set, req.body);
+  const v4 = await campaignState.validateSetInput(req.body, { brandId: brand.id, existing: set, requireAll: false });
+  if (!v4.ok) throw new AppError('VALIDATION_ERROR', v4.message, 422, v4.field);
+  // The cutoff is derived from the posting date; a client value is never trusted.
+  if (req.body.go_live_date !== undefined) req.body.invites_close_at = campaignState.cutoffFor(req.body.go_live_date);
+  else if (req.body.invites_close_at !== undefined) req.body.invites_close_at = campaignState.cutoffFor(set.go_live_date);
+  // A Remote set names no branch.
+  const modeAfter = req.body.shoot_mode !== undefined ? req.body.shoot_mode : set.shoot_mode;
+  if (modeAfter === 'shipment') req.body.branch_id = null;
+
   const allowed = [
     'name', 'goal', 'influencer_mode', 'set_budget', 'per_influencer_budget',
     'max_cap', 'window_start', 'window_end', 'brief', 'coupon_prefix',
     'formats_json', 'assets_json', 'open_group_filters', 'channels_json',
-    'go_live_date', 'shoot_mode', 'invites_close_at',
+    'go_live_date', 'shoot_mode', 'invites_close_at', 'branch_id',
   ];
   if (req.body.formats_json !== undefined) assertValidFormats(req.body.formats_json);
   if (req.body.channels_json !== undefined) {
@@ -864,16 +904,17 @@ const deleteSet = asyncHandler(async (req, res) => {
   const campaign = await getCampaignOrThrow(req.params.id, brand.id);
   const set = await getSetOrThrow(req.params.sid, req.params.id);
 
-  // Minimum 1 set must remain
-  const { rows: countRows } = await db.query(
-    `SELECT COUNT(*) AS cnt FROM campaign_sets WHERE campaign_id = $1`,
-    [campaign.id]
-  );
-  if (parseInt(countRows[0].cnt) <= 1) {
-    throw new AppError('VALIDATION_ERROR', 'A campaign must have at least one set', 422);
+  // Item 4 — a set with ANY invitation can never be deleted, so a signed contract can never be
+  // destroyed through the cascade (APPROVAL.md Q8). Where a foreign key would still refuse
+  // (offers, sales), answer readably instead of a 500. The old "at least one set must remain"
+  // rule is gone: a campaign is only a container and may sit empty as a draft.
+  await campaignState.assertSetDeletable(set);
+  try {
+    await db.query(`DELETE FROM campaign_sets WHERE id = $1`, [set.id]);
+  } catch (e) {
+    if (e && e.code === '23503') throw new AppError('CONFLICT', CMSG.DELETE_SET_IN_USE, 409);
+    throw e;
   }
-
-  await db.query(`DELETE FROM campaign_sets WHERE id = $1`, [set.id]);
   // Deleting the last conversion set makes the campaign all-paid, which gives it a
   // derived end date; deleting a paid set can move that date earlier.
   const derived = await campaignRollup.recompute(campaign.id);
@@ -881,71 +922,52 @@ const deleteSet = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /campaigns/:id/sets/:sid/duplicate
- * Deep copy a set including its influencer assignments. Coupon codes are reset.
+ * POST /campaigns/:id/sets/:sid/duplicate   { name?, go_live_date }
+ *
+ * Item 4 (rules v1.14 §5B, C10, APPROVAL.md Q5): copies the SETTINGS — Aim, mode of work,
+ * branch, channels, formats, brief, coupon prefix, budgets, open-group filters — into a new
+ * draft set in the same campaign with a new posting date. Never creators, invitations or
+ * agreements. Before item 4 this copied every creator row as a fresh invitation, which is the
+ * exact state the invite path refuses.
  */
 const duplicateSet = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   const campaign = await getCampaignOrThrow(req.params.id, brand.id);
   const set = await getSetOrThrow(req.params.sid, req.params.id);
+  const body = req.body || {};
 
-  // Count existing sets to auto-name the duplicate
-  const { rows: countRows } = await db.query(
-    `SELECT COUNT(*) AS cnt FROM campaign_sets WHERE campaign_id = $1`,
-    [campaign.id]
-  );
-  const setLetter = String.fromCharCode(65 + parseInt(countRows[0].cnt)); // A, B, C…
-  const newName = `Set ${setLetter}`;
+  const { rows: nameRows } = await db.query(`SELECT name FROM campaign_sets WHERE campaign_id = $1`, [campaign.id]);
+  const names = nameRows.map(r => r.name);
+  // The brand types a name (pre-filled "<name> (copy)"); without one the copy is made unique
+  // by suffix, never by a count that can collide after a delete.
+  const newName = body.name != null && String(body.name).trim() ? String(body.name).trim() : campaignState.uniqueCopyName(set.name, names);
+  if (newName.length > 60) throw new AppError('VALIDATION_ERROR', CMSG.SET_NAME, 422, 'name');
+  if (names.some(n => String(n).trim().toLowerCase() === newName.toLowerCase())) {
+    throw new AppError('CONFLICT', 'A set with this name already exists in this campaign.', 409, 'name');
+  }
+  // A new posting date is required and must clear the seven days; the cutoff follows from it.
+  if (!body.go_live_date) throw new AppError('VALIDATION_ERROR', CMSG.DATE, 422, 'go_live_date');
+  const v4 = await campaignState.validateSetInput({ go_live_date: body.go_live_date }, { brandId: brand.id, requireAll: false, existing: { ...set, go_live_date: null } });
+  if (!v4.ok) throw new AppError('VALIDATION_ERROR', v4.message, 422, v4.field);
+  const cutoff = campaignState.cutoffFor(body.go_live_date);
 
   const { rows: newSetRows } = await db.query(
     `INSERT INTO campaign_sets
        (campaign_id, name, goal, influencer_mode, set_budget, per_influencer_budget,
-        max_cap, window_start, window_end, brief, coupon_prefix,
-        formats_json, assets_json, open_group_filters,
-        go_live_date, shoot_mode, invites_close_at)
+        max_cap, brief, coupon_prefix, formats_json, assets_json, open_group_filters,
+        channels_json, shoot_mode, branch_id, go_live_date, invites_close_at)
      SELECT campaign_id, $2, goal, influencer_mode, set_budget, per_influencer_budget,
-        max_cap, window_start, window_end, brief, coupon_prefix,
-        formats_json, assets_json, open_group_filters,
-        go_live_date, shoot_mode, invites_close_at
+        max_cap, brief, coupon_prefix, formats_json, assets_json, open_group_filters,
+        channels_json, shoot_mode, branch_id, $3, $4
      FROM campaign_sets WHERE id = $1
      RETURNING *`,
-    [set.id, newName]
+    [set.id, newName, body.go_live_date, cutoff]
   );
   const newSet = newSetRows[0];
 
-  // Copy influencer assignments — reset coupon codes
-  const { rows: influencers } = await db.query(
-    `SELECT * FROM campaign_influencers WHERE set_id = $1`,
-    [set.id]
-  );
-  for (const inf of influencers) {
-    await db.query(
-      `INSERT INTO campaign_influencers
-         (set_id, influencer_id, status, agreed_fee, posting_date, offer_expires_at,
-          offer_type, offer_config_json, commission_pct, physical_delivery,
-          delivery_address, influencer_budget, coupon_code, channels_json, formats_json)
-       VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL, $12, $13)`,
-      [
-        newSet.id,
-        inf.influencer_id,
-        inf.agreed_fee,
-        inf.posting_date,
-        inf.offer_expires_at,
-        inf.offer_type,
-        inf.offer_config_json,
-        inf.commission_pct,
-        inf.physical_delivery,
-        inf.delivery_address,
-        inf.influencer_budget,
-        // stage-a — without this a duplicated set silently drops any per-creator
-        // channel/format override and reads as "inherits", which the brand never chose.
-        inf.channels_json,
-        inf.formats_json,
-      ]
-    );
-  }
-
-  return success(res, { set: newSet }, 201);
+  // Like create/update/delete: the campaign's derived totals follow the new set.
+  const derived = await campaignRollup.recompute(campaign.id);
+  return success(res, { set: newSet, campaign_derived: derived, cutoff }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1135,6 +1157,14 @@ const invite = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'influencer_id is required', 422, 'influencer_id');
   }
 
+  // Item 4 — a draft whose posting date has passed, an expired set, or a set past its cutoff
+  // takes no invitations (exact §7 messages). A set with no date yet (built before item 4) is
+  // not blocked here.
+  if (set.go_live_date || set.expired_at) {
+    const counts4 = (await campaignState.countsForSets([set.id])).get(set.id) || campaignState.EMPTY_COUNTS;
+    campaignState.assertCanInvite(set, counts4);
+  }
+
   if (channels_json !== undefined) assertValidChannels(set.goal, channels_json);
   if (formats_json !== undefined) assertValidFormats(formats_json);
 
@@ -1265,12 +1295,16 @@ const invite = asyncHandler(async (req, res) => {
   if (!infRows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
   const inf = infRows[0];
 
-  // Prevent same influencer in multiple sets of the same campaign
+  // Prevent the same influencer being LIVE in two sets of the same campaign. Item 4 (founder
+  // Q6): a row that is declined, expired, rejected, closed by a full cap or deferred no longer
+  // blocks — a creator who asked for a different day can now be put in a second set, which is
+  // the reason 'deferred' exists.
   const { rows: crossSet } = await db.query(
     `SELECT ci.id FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
-     WHERE cs.campaign_id = $1 AND ci.influencer_id = $2`,
-    [campaign.id, influencer_id]
+     WHERE cs.campaign_id = $1 AND ci.influencer_id = $2
+       AND NOT (ci.status = ANY($3::campaign_influencer_status[]))`,
+    [campaign.id, influencer_id, campaignState.NON_BLOCKING_STATUSES]
   );
   if (crossSet[0]) {
     throw new AppError('CONFLICT', 'This influencer is already assigned to another set in this campaign', 409);

@@ -1,5 +1,6 @@
 'use strict';
 
+const ITEM4_DAY = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); // item 4: sets need a posting date ≥ 7 days out
 /**
  * QA — offer-engine-campaign-attach (Sub-contract C, backend).
  * Asserts features/offer-engine-campaign-attach/02-workflow.md against a real DB:
@@ -66,9 +67,9 @@ async function setup() {
   const cid = camp.body.data.campaign.id;
 
   const convSet = await request(app).post(`/v1/campaigns/${cid}/sets`).set('Authorization', `Bearer ${token}`)
-    .send({ name: 'Conv Set', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'SAVE' });
+    .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Conv Set', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'SAVE' });
   const engSet = await request(app).post(`/v1/campaigns/${cid}/sets`).set('Authorization', `Bearer ${token}`)
-    .send({ name: 'Eng Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 20000 });
+    .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Eng Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 20000 });
 
   const offerId = await createOffer(token);
   return { token, brandId: brand.id, cid, convSid: convSet.body.data.set.id, engSid: engSet.body.data.set.id, offerId };

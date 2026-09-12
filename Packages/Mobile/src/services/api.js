@@ -253,6 +253,13 @@ export const brandApi = {
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
   verifyTopup: (data) => api.post('/brands/me/wallet/topup/verify', data),
   getWalletTransactions: () => api.get('/brands/me/wallet/transactions'),
+  // ── Item 4 · the Campaigns tab (campaigns and sets) ────────────────────────
+  // Contract: features/item4-campaigns-sets. Read endpoints are new (another brand's campaign
+  // is 404); create/update/delete/duplicate are the existing routes with the item 4 rules.
+  campaignsSummary: (params) => api.get(`/campaigns/summary${q(params || {})}`),
+  campaignSummary: (id) => api.get(`/campaigns/${id}/summary`),
+  setSummary: (cid, sid) => api.get(`/campaigns/${cid}/sets/${sid}/summary`),
+  duplicateSet: (cid, sid, data) => api.post(`/campaigns/${cid}/sets/${sid}/duplicate`, data),
   getCampaigns: () => api.get('/campaigns'),
   getCampaign: (id) => api.get(`/campaigns/${id}`),
   getCampaignLive: (id) => api.get(`/campaigns/${id}/live`),

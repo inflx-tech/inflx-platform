@@ -373,7 +373,10 @@ export default function InfluencerProfilePage() {
           </div>
         </div>
         <div className="prof-cta">
-          <button className="btn-yel" onClick={() => setShowInvite(true)}>+ Invite to Campaign</button>
+          {/* Item 4 (APPROVAL.md §2.2): inviting into a set is done from the Brand app, where the set's
+              Aim, date, mode and branch are visible and the invite locks them knowingly. The modal
+              below is disabled, not deleted; item 5 rebuilds inviting on the phone. */}
+          <span className="btn-ghost" style={{ background: 'rgba(255,255,255,.06)', borderColor: 'rgba(255,255,255,.12)', color: '#FFFFFF', textAlign: 'center', cursor: 'default' }}>Invitations are sent from the INFLX Brand app</span>
           {profileWebsite && (
             <a href={profileWebsite} target="_blank" rel="noreferrer" className="btn-ghost" style={{ background: 'rgba(255,255,255,.06)', borderColor: 'rgba(255,255,255,.12)', color: '#FFFFFF', textAlign: 'center' }}>View on Instagram ↗</a>
           )}
@@ -538,15 +541,14 @@ export default function InfluencerProfilePage() {
 
       {/* STICKY BOTTOM CTA */}
       <div className="sticky-cta">
-        <div className="sticky-cta-l">Ready to collaborate? <b>{inf.full_name || inf.name || `@${inf.instagram_handle}`}</b> will see your invite in their offer inbox.</div>
+        <div className="sticky-cta-l"><b>Invitations are sent from the INFLX Brand app.</b> Open Campaigns on your phone to invite <b>{inf.full_name || inf.name || `@${inf.instagram_handle}`}</b> into a set.</div>
         <div className="sticky-cta-r">
           <button className="btn-ghost" onClick={() => router.push('/dashboard/influencers')}>← Back to search</button>
-          <button className="btn-ink" onClick={() => setShowInvite(true)}>+ Invite to Campaign</button>
         </div>
       </div>
 
-      {/* Invite Modal — preserved placeholder (no backend mutation today) */}
-      {showInvite && (
+      {/* Item 4: InviteToCampaignModal is switched off (APPROVAL.md §2.2) — kept in the file, never rendered. */}
+      {false && showInvite && (
         <InviteToCampaignModal
           influencerId={inf.id || id}
           handle={inf.instagram_handle}

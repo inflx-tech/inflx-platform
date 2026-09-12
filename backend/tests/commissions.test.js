@@ -1,5 +1,6 @@
 'use strict';
 
+const ITEM4_DAY = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10); // item 4: sets need a posting date ≥ 7 days out
 /**
  * Phase 4 — Block G: Commission tracking + brand conversion analytics
  */
@@ -66,7 +67,7 @@ async function setupCommissionScenario() {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Creators', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN', formats_json: [{ type: 'reel', count: 1 }] });
+    .send({ go_live_date: ITEM4_DAY, shoot_mode: 'shipment', name: 'Creators', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN', formats_json: [{ type: 'reel', count: 1 }] });
   const sid = setRes.body.data.set.id;
 
   const offerRes = await request(app)

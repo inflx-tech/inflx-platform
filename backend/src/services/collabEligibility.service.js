@@ -367,6 +367,13 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     if (!overlaps(brand.subCategories, picked)) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
 
+  // Item 4 — a set names ONE branch. Store Visit is checked against that branch's city, not
+  // every branch the brand owns. A set without a branch (built before item 4) keeps the
+  // brand-wide check below.
+  if (mode === 'visit' && set && set.branch_id) {
+    const { rows: br } = await db.query(`SELECT city_id FROM brand_branches WHERE id = $1`, [set.branch_id]);
+    brand.branchCityIds = br[0] && br[0].city_id != null ? [Number(br[0].city_id)] : [];
+  }
   // 4. Store Visit: at least one branch city must be somewhere she can travel (founder Q1).
   if (mode === 'visit') {
     const visit = (settings.visit_city_ids || []).map(Number);

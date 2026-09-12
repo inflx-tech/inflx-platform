@@ -67,7 +67,9 @@ const shootNeedsBothMarks = (mode) => String(mode || '').toLowerCase() === 'visi
  * Days between a set opening and its go-live day, at the very least: she has to be
  * invited, sign, and shoot. The wizard closes anything sooner.
  */
-const MIN_DAYS_TO_GO_LIVE = 5;
+// Item 4 (rules v1.14 §5B, founder Q1): seven calendar days — three for the invitation cutoff
+// and time to invite, negotiate and sign. Was 5.
+const MIN_DAYS_TO_GO_LIVE = 7;
 
 /**
  * Which day does this set launch on?

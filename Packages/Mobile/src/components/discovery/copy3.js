@@ -25,7 +25,6 @@ export const MSG3 = {
 
 export const C3 = {
   comingSoon: {
-    brandCampaigns: { title: 'Campaigns are coming soon', body: "You'll create campaigns and sets here. Meanwhile, explore creators and set up your profile.", button: 'Explore creators' },
     brandHome:      { title: 'Home is coming soon', body: 'Your to-dos across campaigns and creators will show here.', button: 'Explore creators' },
     brandWallet:    { title: 'Wallet is coming soon', body: 'Funds, payments and sales settlements will show here.', button: 'Explore creators' },
     creatorHome:    { title: 'Home is coming soon', body: 'Your to-dos and new invitations will show here.', button: 'Find brands' },
@@ -33,9 +32,9 @@ export const C3 = {
     creatorWallet:  { title: 'Wallet is coming soon', body: 'Your earnings and payouts will show here. Payment & tax details are in Profile for now.', button: 'Open Payment & tax' },
   },
   toasts: {
-    inviteSoon: 'Inviting creators comes with campaigns. Coming soon.',
-    inviteGroupSoon: 'Inviting a group to a set comes with campaigns. Coming soon.',
-    campaignSoon: 'Starting a campaign from a group comes with campaigns. Coming soon.',
+    // Item 4 built campaigns; choosing and inviting creators is item 5.
+    inviteSoon: 'Inviting creators is coming soon.',
+    inviteGroupSoon: 'Inviting a group to a set is coming soon.',
     pitchSoon: 'Pitching brands is coming soon.',
     cityAdded: (city) => `${city} is new on INFLX. We've added it to the city list.`,
   },

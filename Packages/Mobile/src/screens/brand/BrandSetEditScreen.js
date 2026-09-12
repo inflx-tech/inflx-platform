@@ -1,0 +1,170 @@
+/**
+ * BrandSetEditScreen — C4 (new set: name, Aim, mode, branch, every field error) and C5 (the
+ * posting-date picker with the cutoff). Also edits a draft set, renames a live one, and is the
+ * "Choose a new date" screen for a draft whose date passed.
+ * Contract: features/item4-campaigns-sets · prompt §6.3
+ *
+ * route.params: { campaignId, campaignName, set?, dateRules?, suggestedName?, first? }
+ *   set      the summary shape when editing (locked/lockedFields decide what is disabled)
+ */
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { settingsTokens as T, fonts } from '../../theme/tokens';
+import { brandApi } from '../../services/api';
+import { Chip, PrimaryButton, FieldError } from '../../components/settings/primitives';
+import { useToast } from '../../components/settings/feedback';
+import { COPY } from '../../components/settings/copy';
+import { Header, s as base } from './BrandPitchSettingsScreen';
+import DateField from '../../components/DateField';
+import { TextField4 } from '../../components/campaigns/bits4';
+import { BranchSheet4 } from '../../components/campaigns/sheets4';
+import { C4, MSG4, AIMS4, MODES4 } from '../../components/campaigns/copy4';
+import { addDays, earliestGoLiveDay } from '../../utils/setShape';
+
+const S = C4.set;
+/** Posting date − 3 days, the same rule the server applies (campaignState.cutoffFor). */
+export const cutoffFor = (day) => (day ? addDays(day, -3) : null);
+
+export default function BrandSetEditScreen({ navigation, route }) {
+  const { campaignId, campaignName, set: existing, suggestedName } = route?.params || {};
+  const editing = !!existing;
+  const locked = !!(existing && existing.locked);
+  const lockedFields = new Set((existing && existing.lockedFields) || []);
+  const [rules, setRules] = useState(route?.params?.dateRules || null);
+  const [branches, setBranches] = useState(null);
+  const [name, setName] = useState(existing ? existing.name : (suggestedName || ''));
+  const [goal, setGoal] = useState(existing ? existing.goal : null);
+  const [mode, setMode] = useState(existing ? existing.shootMode : null);
+  const [branchId, setBranchId] = useState(existing && existing.branch ? existing.branch.id : null);
+  const [day, setDay] = useState(existing ? existing.postingDate : null);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [pickBranch, setPickBranch] = useState(false);
+  const { toast, show } = useToast();
+
+  // The server owns the earliest date (A12); until it answers, the same rule computed here.
+  const earliest = (rules && rules.earliestPostingDate) || earliestGoLiveDay();
+
+  const loadRules = useCallback(async () => {
+    if (rules) return;
+    const r = await brandApi.campaignSummary(campaignId);
+    if (r.success) setRules(r.data.dateRules);
+  }, [campaignId, rules]);
+  const loadBranches = useCallback(async () => {
+    if (branches) return;
+    const r = await brandApi.listBranches();
+    setBranches(r.success ? (r.data.branches || []) : []);
+  }, [branches]);
+  useEffect(() => { loadRules(); }, [loadRules]);
+  useEffect(() => { if (mode === 'visit') loadBranches(); }, [mode, loadBranches]);
+
+  const branch = useMemo(() => (branches || []).find(b => b.id === branchId) || (existing && existing.branch) || null, [branches, branchId, existing]);
+  const canEdit = (f) => !(locked && lockedFields.has(f));
+  const clear = (f) => setErrors(x => ({ ...x, [f]: undefined }));
+
+  async function save() {
+    const e = {};
+    if (!name.trim() || name.trim().length > S.nameMax) e.name = MSG4.SET_NAME;
+    if (!goal) e.goal = MSG4.AIM;
+    if (!mode) e.shoot_mode = MSG4.MODE;
+    if (mode === 'visit' && !branchId) e.branch_id = MSG4.BRANCH;
+    if (!day) e.go_live_date = MSG4.DATE;
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    setSaving(true);
+    const body = { name: name.trim(), goal, shoot_mode: mode, branch_id: mode === 'visit' ? branchId : null, go_live_date: day };
+    const r = editing ? await brandApi.updateCampaignSet(campaignId, existing.id, body) : await brandApi.createCampaignSet(campaignId, body);
+    setSaving(false);
+    if (!r.success) {
+      if (r.error?.field) setErrors({ [r.error.field]: r.error.message });
+      else show(r.error?.message || COPY.saveFailed);
+      return;
+    }
+    if (editing) navigation.navigate('BrandSetDetail', { campaignId, setId: existing.id, toast: S.saved });
+    else navigation.replace('BrandCampaignDetail', { campaignId, name: campaignName, toast: S.saved });
+  }
+
+  return (
+    <View style={base.screen} testID="set-edit">
+      <Header title={editing ? S.editTitle : S.newTitle} onBack={() => navigation.goBack()} />
+      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
+        {campaignName ? <Text style={s.stepnote}>{String(campaignName).toUpperCase()}</Text> : null}
+
+        <TextField4 label={S.nameLabel} required value={name} onChangeText={(v) => { setName(v); clear('name'); }} max={S.nameMax} hint={S.nameHint} error={errors.name} testID="set-name" />
+
+        <Text style={s.label}>{S.aimLabel} <Text style={{ color: T.danger }}>*</Text></Text>
+        {AIMS4.map(a => {
+          const on = goal === a.code;
+          return (
+            <TouchableOpacity key={a.code} style={[s.aim, on && s.aimOn, !canEdit('goal') && s.dim]} onPress={() => { if (canEdit('goal')) { setGoal(a.code); clear('goal'); } }} disabled={!canEdit('goal')}
+              accessibilityRole="radio" accessibilityState={{ selected: on, disabled: !canEdit('goal') }} testID={`aim-${a.code}`}>
+              <Text style={s.aimT}>{a.label}</Text>
+              <Text style={s.aimS}>{a.sub}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        <FieldError text={errors.goal} />
+        <Text style={s.hint}>{S.aimHint}</Text>
+
+        <Text style={[s.label, { marginTop: 16 }]}>{S.modeLabel} <Text style={{ color: T.danger }}>*</Text></Text>
+        <View style={s.chips}>
+          {MODES4.map(m => <Chip key={m.code} label={m.label} selected={mode === m.code} disabled={!canEdit('shoot_mode')} onPress={() => { setMode(m.code); clear('shoot_mode'); }} testID={`mode-${m.code}`} />)}
+        </View>
+        <FieldError text={errors.shoot_mode} />
+        <Text style={s.hint}>{S.modeHint}</Text>
+
+        {mode === 'visit' ? (
+          <View style={{ marginTop: 16 }} testID="branch-row">
+            <Text style={s.label}>{S.branchLabel} <Text style={{ color: T.danger }}>*</Text></Text>
+            <TouchableOpacity style={[s.field, errors.branch_id && s.fieldError, !canEdit('branch_id') && s.dim]} onPress={() => canEdit('branch_id') && setPickBranch(true)} disabled={!canEdit('branch_id')} testID="branch-field" accessibilityRole="button">
+              <Text style={[s.fieldT, !branch && s.placeholder]} numberOfLines={1}>{branch ? [branch.name, branch.cityName].filter(Boolean).join(', ') : S.branchPlaceholder}</Text>
+              <Text style={s.caret}>›</Text>
+            </TouchableOpacity>
+            <FieldError text={errors.branch_id} />
+            <Text style={s.hint}>{S.branchHint}</Text>
+          </View>
+        ) : null}
+
+        <View style={{ marginTop: 16 }}>
+          <DateField label={`${S.dateLabel} *`} value={day} onChange={(d) => { setDay(d); clear('go_live_date'); }} placeholder={S.datePlaceholder} minDate={earliest}
+            confirmLabel={S.useDate} error={errors.go_live_date} testID="posting-date"
+            renderFooter={(pending) => (
+              <View>
+                <Text style={s.hint}>{S.pickerHint(earliest)}</Text>
+                {pending ? <View style={s.cut} testID="picker-cutoff"><Text style={s.cutText}>{S.pickerCutoff(cutoffFor(pending))}</Text></View> : null}
+              </View>
+            )} />
+          {day ? <View style={s.cut} testID="cutoff-line"><Text style={s.cutText}>{S.cutoffLine(cutoffFor(day))}</Text></View> : null}
+          <Text style={s.hint}>{S.dateHint}</Text>
+          {locked ? <Text style={s.lock} testID="lock-note">🔒 {C4.setDetail.lockLive}</Text> : null}
+        </View>
+      </ScrollView>
+      <View style={s.bar}>
+        <PrimaryButton label={S.save} onPress={save} busy={saving} testID="save-set" />
+      </View>
+      <BranchSheet4 visible={pickBranch} branches={branches || []} value={branchId} onPick={(b) => { setBranchId(b.id); clear('branch_id'); setPickBranch(false); }} onClose={() => setPickBranch(false)} />
+      {toast}
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  stepnote: { fontFamily: fonts.monoMedium, fontSize: 11, color: T.ink3, letterSpacing: 0.6, marginBottom: 12 },
+  label: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginBottom: 8 },
+  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginTop: 6 },
+  aim: { borderWidth: 1.5, borderColor: T.border, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 11, marginBottom: 8 },
+  aimOn: { borderColor: T.ink, backgroundColor: T.surface },
+  aimT: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
+  aimS: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink2, marginTop: 1 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  field: { height: 44, borderWidth: 1.5, borderColor: T.border, borderRadius: 12, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  fieldError: { borderColor: T.danger },
+  fieldT: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: T.ink, flex: 1 },
+  placeholder: { color: T.ink3, fontFamily: fonts.sansRegular },
+  caret: { fontSize: 18, color: T.ink3, marginLeft: 8 },
+  cut: { marginTop: 8, borderRadius: 12, padding: 10, backgroundColor: T.state.waiting.bg },
+  cutText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.waiting.fg },
+  lock: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink3, marginTop: 10 },
+  dim: { opacity: 0.5 },
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
+});

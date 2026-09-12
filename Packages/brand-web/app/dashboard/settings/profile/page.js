@@ -327,10 +327,12 @@ export default function ProfilePage() {
       google_maps_url: mainBranch.google_maps_url.trim(),
     };
     const additionalBranches = branches.filter(b => b.name.trim() || b.address.trim());
+    // Item 4: branches are no longer written from the website (APPROVAL.md §2.3). Whatever the
+    // column holds is left exactly as it is.
+    void mainBranchEntry; void additionalBranches;
     const newLd = {
       ...existingLd,
       contact_person_name: contactName.trim(),
-      branches: [mainBranchEntry, ...additionalBranches],
     };
     const ldChanged = JSON.stringify(newLd) !== JSON.stringify(existingLd);
     if (ldChanged) payload.listing_data = newLd;
@@ -523,196 +525,20 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* BRANCHES CARD */}
+        {/* BRANCHES — Item 4 (APPROVAL.md §2.3): this editor wrote branches into brands.listing_data,
+            which item 3 stopped reading (migration 172). A branch added here never reached the app and
+            could not be used for a Store Visit set, so the editor is switched off. Nothing is migrated
+            or deleted; the phone owns branches now, exactly as pitch settings. */}
         <div className="prf-card">
           <div className="prf-card-h">
             <div className="prf-card-t"><span className="em">📍</span>Branches &amp; Outlets</div>
-            {canAddBranch ? (
-              <button type="button" className="btn-yel-ghost" onClick={addBranch}>+ Add Branch</button>
-            ) : (
-              <a
-                href="/dashboard/settings/subscription"
-                title="Multi-branch is on Pro and Enterprise plans"
-                style={{
-                  fontSize: 12,
-                  color: '#52525B',
-                  textDecoration: 'none',
-                  border: '1px solid #E4E4E7',
-                  borderRadius: 8,
-                  padding: '6px 12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                🔒 Multi-branch is on Pro / Enterprise · View plans →
-              </a>
-            )}
           </div>
-
-          {/* MAIN BRANCH */}
-          <div className="br-card main">
-            <div className="br-head">
-              <div>
-                <span className="br-tag">Main Branch</span>
-                <span className="br-pill">Primary</span>
-              </div>
-            </div>
-
-            <div className="field">
-              <label className="field-l">Country <span className="lock">🔒 locked</span></label>
-              <input type="text" value="India" readOnly />
-            </div>
-
-            <div className="field-row">
-              <div className="field">
-                <label className="field-l">State</label>
-                <select value={mainBranch.state} onChange={(e) => handleMainBranchChange('state', e.target.value)}>
-                  <option value="">Select state</option>
-                  {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-              <div className="field">
-                <label className="field-l">City / District</label>
-                <input
-                  type="text"
-                  value={mainBranch.city}
-                  onChange={(e) => handleMainBranchChange('city', e.target.value)}
-                  placeholder="e.g. Bangalore"
-                />
-              </div>
-            </div>
-
-            <div className="field">
-              <label className="field-l">Pincode</label>
-              <input
-                type="text"
-                value={mainBranch.pincode}
-                onChange={(e) => handleMainBranchChange('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                inputMode="numeric"
-                className="mono"
-                placeholder="560001"
-              />
-            </div>
-
-            <div className="field">
-              <label className="field-l">Full Address</label>
-              <textarea
-                value={mainBranch.address}
-                onChange={(e) => handleMainBranchChange('address', e.target.value)}
-                rows={3}
-                placeholder="Detailed street address, landmark, etc."
-              />
-            </div>
-
-            <div className="field">
-              <label className="field-l">Google Maps URL</label>
-              <input
-                type="url"
-                value={mainBranch.google_maps_url}
-                onChange={(e) => handleMainBranchChange('google_maps_url', e.target.value)}
-                placeholder="📍 Paste Google Maps link"
-              />
-            </div>
-
-            <div className="field">
-              <label className="field-l">Phone <span className="lock">🔒 inherited from profile</span></label>
-              <input type="text" value={brand.phone || ''} readOnly className="mono" />
-            </div>
+          <div style={{ fontSize: 13.5, color: '#3F3F46', lineHeight: 1.55 }}>
+            <b>Branches are managed in the INFLX Brand app.</b> Open Profile → Branches on your phone to add a branch,
+            change an address or choose the main branch. A Store Visit set names one of those branches.
           </div>
-
-          {/* ADDITIONAL BRANCHES */}
-          {branches.length === 0 && (
-            <p className="br-empty">
-              {canAddBranch
-                ? 'No additional branches · click "+ Add Branch" to add one'
-                : 'Multi-branch support is on Pro and Enterprise plans'}
-            </p>
-          )}
-          {branches.map((branch, idx) => (
-            <div key={idx} className="br-card">
-              <div className="br-head">
-                <span className="br-tag">Branch {idx + 1}</span>
-                <button type="button" className="br-remove" onClick={() => removeBranch(idx)}>Remove</button>
-              </div>
-
-              <div className="field">
-                <label className="field-l">Branch Name</label>
-                <input
-                  type="text"
-                  value={branch.name}
-                  onChange={(e) => updateBranch(idx, 'name', e.target.value)}
-                  placeholder="e.g. Indiranagar Branch"
-                />
-              </div>
-
-              <div className="field-row">
-                <div className="field">
-                  <label className="field-l">State</label>
-                  <select value={branch.state || ''} onChange={(e) => updateBranch(idx, 'state', e.target.value)}>
-                    <option value="">Select state</option>
-                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="field-l">City / District</label>
-                  <input
-                    type="text"
-                    value={branch.city || ''}
-                    onChange={(e) => updateBranch(idx, 'city', e.target.value)}
-                    placeholder="e.g. Bangalore"
-                  />
-                </div>
-              </div>
-
-              <div className="field">
-                <label className="field-l">Pincode</label>
-                <input
-                  type="text"
-                  value={branch.pincode || ''}
-                  onChange={(e) => updateBranch(idx, 'pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6}
-                  inputMode="numeric"
-                  className="mono"
-                  placeholder="560001"
-                />
-              </div>
-
-              <div className="field">
-                <label className="field-l">Address</label>
-                <textarea
-                  value={branch.address || ''}
-                  onChange={(e) => updateBranch(idx, 'address', e.target.value)}
-                  rows={2}
-                  placeholder="Full address"
-                />
-              </div>
-
-              <div className="field-row">
-                <div className="field">
-                  <label className="field-l">Phone</label>
-                  <input
-                    type="text"
-                    value={branch.phone || ''}
-                    onChange={(e) => updateBranch(idx, 'phone', e.target.value)}
-                    className="mono"
-                    placeholder="+91 9876543210"
-                  />
-                </div>
-                <div className="field">
-                  <label className="field-l">Google Maps URL</label>
-                  <input
-                    type="url"
-                    value={branch.google_maps_url || ''}
-                    onChange={(e) => updateBranch(idx, 'google_maps_url', e.target.value)}
-                    placeholder="📍 Paste Google Maps link"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
+
       </form>
 
       {/* ACCOUNT DETAILS CARD */}

@@ -27,11 +27,30 @@ import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
 import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
 // Item 3b — S2/S3 platform detail. Contract: features/item3b-social-numbers
 import SocialDetailScreen from '../screens/shared/SocialDetailScreen';
+// Item 4 — the Campaigns tab. Contract: features/item4-campaigns-sets
+import BrandCampaignsScreen from '../screens/brand/BrandCampaignsScreen';
+import BrandCampaignNewScreen from '../screens/brand/BrandCampaignNewScreen';
+import BrandSetEditScreen from '../screens/brand/BrandSetEditScreen';
+import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScreen';
+import BrandSetDetailScreen from '../screens/brand/BrandSetDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const CampaignsStack = createNativeStackNavigator();
 const noHeader = { headerShown: false };
+
+function CampaignsStackScreen() {
+  return (
+    <CampaignsStack.Navigator screenOptions={noHeader}>
+      <CampaignsStack.Screen name="BrandCampaigns" component={BrandCampaignsScreen} />
+      <CampaignsStack.Screen name="BrandCampaignNew" component={BrandCampaignNewScreen} />
+      <CampaignsStack.Screen name="BrandSetEdit" component={BrandSetEditScreen} />
+      <CampaignsStack.Screen name="BrandCampaignDetail" component={BrandCampaignDetailScreen} />
+      <CampaignsStack.Screen name="BrandSetDetail" component={BrandSetDetailScreen} />
+    </CampaignsStack.Navigator>
+  );
+}
 
 function CreatorsStackScreen() {
   return (
@@ -86,7 +105,7 @@ export default function BrandNavigator() {
   return (
     <Tab.Navigator initialRouteName="CreatorsTab" screenOptions={tabScreenOptions}>
       <Tab.Screen name="HomeTab" component={ComingSoonScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-      <Tab.Screen name="CampaignsTab" component={ComingSoonScreen} initialParams={{ kind: 'brandCampaigns', tabTitle: 'Campaigns' }} options={{ title: 'Campaigns' }} />
+      <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} />
       <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} />
       <Tab.Screen name="WalletTab" component={ComingSoonScreen} initialParams={{ kind: 'brandWallet', tabTitle: 'Wallet' }} options={{ title: 'Wallet' }} />
       <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />

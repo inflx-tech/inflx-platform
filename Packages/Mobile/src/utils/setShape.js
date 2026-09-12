@@ -42,7 +42,7 @@ export const shootNeedsBothMarks = (mode) => String(mode || '').toLowerCase() ==
  * Days between today and the earliest go-live day. She has to be invited, sign, and shoot.
  * Must equal MIN_DAYS_TO_GO_LIVE on the server, or the picker offers a day that is refused.
  */
-export const MIN_DAYS_TO_GO_LIVE = 5;
+export const MIN_DAYS_TO_GO_LIVE = 7;
 
 /* ───────────────────────────────────────────────────────── calendar days */
 
