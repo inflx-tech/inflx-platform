@@ -49,7 +49,20 @@
       ],
       "effect": "Test creator Instagram engagement 86.0% -> 5.1%. YouTube unchanged (long 1.5%, shorts 2.5%). Apify cost unchanged.",
       "mockup_impact": "Tile label \"Posts in 90 days\" -> \"Recent posts\", \"Uploads in 90 days\" -> \"Recent uploads\", detail heading \"LAST 90 DAYS\" -> \"RECENT POSTS\"/\"RECENT UPLOADS\", and the Instagram formula line now states the views basis and how many posts of how many were used.",
-      "deployed": false
+      "deployed": true,
+      "deployed_to_production": {
+        "at": "2026-09-12T08:15:00+05:30",
+        "by": "founder go (\"pls deploy pending 3b\")",
+        "commit": "003f7d0",
+        "migration": "179 applied to production 2026-09-12 (run-179.js --apply: basis + posts_seen columns added; 1 metrics row and 1 legacy engagement_rate cleared)",
+        "render": "new code live 40 s after push (detail payload gained engagementBasis); Measure now on the test creator Instagram -> success in ~90 s, US$0.28",
+        "ota": {
+          "brand": 213,
+          "influencer": 201
+        },
+        "result": "Instagram engagement 5.1% on views, 30 of 105 posts, 27 Aug - 9 Sep; followers 193,221; legacy engagement_rate 5.10. YouTube untouched (1.5% / 2.5%).",
+        "note": "First creator-app publish failed at the bundling step because both bundlers ran concurrently; rerun alone succeeded. Run OTA publishes one at a time."
+      }
     }
   ]
 }
