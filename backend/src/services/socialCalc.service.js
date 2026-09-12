@@ -12,6 +12,11 @@
 const WINDOW_DAYS = 90;
 const WEEKS_IN_WINDOW = WINDOW_DAYS / 7;
 const SHORT_MAX_SECS = 180;
+// How many of the newest posts the numbers are computed from. A fixed count gives every creator
+// the same statistical weight (a daily poster and a weekly poster are judged on the same number
+// of posts) and it is what the market's audit tools do. The 90-day window still caps freshness,
+// so a dormant account is measured on whatever little it has, and it caps the scrape cost.
+const MAX_POSTS = 30;
 
 const round1 = (n) => (n == null || !Number.isFinite(n) ? null : Math.round(n * 10) / 10);
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
@@ -141,6 +146,24 @@ function youtubeChannel(items) {
 
 // ── The numbers ───────────────────────────────────────────────────────────────────
 
+/**
+ * The posts the numbers are computed from: inside the window, de-duplicated, newest first,
+ * capped at `max`. `capped` says the creator posted more than we measured.
+ */
+function measuredSet(rows, windowStart, windowEnd, max = MAX_POSTS) {
+  const all = inWindow(rows, windowStart, windowEnd)
+    .slice().sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
+  return { posts: all.slice(0, max), capped: all.length > max, seen: all.length };
+}
+
+/** Posts per week over the span the measured posts cover (a span under a week counts as a week). */
+function perWeek(posts) {
+  if (!posts.length) return 0;
+  const ts = posts.map(x => new Date(x.published_at).getTime());
+  const spanDays = (Math.max(...ts) - Math.min(...ts)) / 86400000;
+  return posts.length / (Math.max(spanDays, 7) / 7);
+}
+
 function inWindow(rows, windowStart, windowEnd) {
   const s = windowStart.getTime(), e = windowEnd.getTime();
   const seen = new Set();
@@ -154,31 +177,54 @@ function inWindow(rows, windowStart, windowEnd) {
   });
 }
 
-/** Instagram numbers for the window (prompt §3.6). */
-function instagramMetrics({ posts, followers, windowStart, windowEnd }) {
-  const p = inWindow(posts || [], windowStart, windowEnd);
+/** Instagram numbers for the measured set (rules v1.12 §2A as amended 2026-09-12). */
+function instagramMetrics({ posts, followers, windowStart, windowEnd, max = MAX_POSTS }) {
+  const set = measuredSet(posts || [], windowStart, windowEnd, max);
+  const p = set.posts;
   const reels = p.filter(x => x.kind === 'reel'), photos = p.filter(x => x.kind === 'photo'), carousels = p.filter(x => x.kind === 'carousel');
   const visibleLikes = p.filter(x => x.likes != null).map(x => Number(x.likes));
   const comments = p.filter(x => x.comments != null).map(x => Number(x.comments));
   const reelViews = reels.filter(x => x.views != null).map(x => Number(x.views));
   const avgLikes = mean(visibleLikes), avgComments = mean(comments);
   const f = num(followers);
-  const engagement = p.length === 0 || !f || avgLikes == null ? null : round1(((avgLikes + (avgComments || 0)) / f) * 100);
-  const last = p.length ? new Date(Math.max(...p.map(x => new Date(x.published_at).getTime()))) : null;
+
+  // Engagement is measured against the audience that actually saw the post, the same way the
+  // YouTube half of this feature already does it. Instagram pushes reels far beyond a creator's
+  // own followers, so dividing likes by followers reports absurd numbers for anyone whose reels
+  // travel (the first live creator read 86%). Reels are the only Instagram format the scraper
+  // returns view counts for; when a creator posted no reels there is nothing to divide by, so we
+  // fall back to followers and record which basis was used so the screens can say so.
+  const engReels = reels.filter(x => x.likes != null && x.views != null && Number(x.views) > 0);
+  const sumViews = engReels.reduce((a, x) => a + Number(x.views), 0);
+  let engagement = null, engagement_basis = null;
+  if (engReels.length && sumViews > 0) {
+    const inter = engReels.reduce((a, x) => a + Number(x.likes) + (x.comments == null ? 0 : Number(x.comments)), 0);
+    engagement = round1((inter / sumViews) * 100);
+    engagement_basis = 'views';
+  } else if (p.length && f && avgLikes != null) {
+    engagement = round1(((avgLikes + (avgComments || 0)) / f) * 100);
+    engagement_basis = 'followers';
+  }
+
+  const times = p.map(x => new Date(x.published_at).getTime());
+  const last = p.length ? new Date(Math.max(...times)) : null;
+  const first = p.length ? new Date(Math.min(...times)) : null;
   return {
-    posts_90d: p.length, posts_per_week: round1(p.length / WEEKS_IN_WINDOW),
+    posts_90d: p.length, posts_per_week: round1(perWeek(p)),
+    posts_seen: set.seen, capped: set.capped, measured_from: first, measured_to: last,
     reels: reels.length, photos: photos.length, carousels: carousels.length,
     last_post_at: last,
     avg_likes: round1(avgLikes), hidden_likes_count: p.length - visibleLikes.length,
     avg_comments: round1(avgComments), avg_reel_views: round1(mean(reelViews)),
-    engagement, followers_used: f,
-    counts: { likes_used: visibleLikes.length, comments_used: comments.length, reel_views_used: reelViews.length },
+    engagement, engagement_basis, followers_used: f,
+    counts: { likes_used: visibleLikes.length, comments_used: comments.length, reel_views_used: reelViews.length, engagement_reels_used: engReels.length },
   };
 }
 
 /** YouTube numbers for the window, long videos and shorts separately (prompt §3.6). */
-function youtubeMetrics({ uploads, windowStart, windowEnd }) {
-  const u = inWindow((uploads || []).filter(x => x.kind === 'long' || x.kind === 'short'), windowStart, windowEnd);
+function youtubeMetrics({ uploads, windowStart, windowEnd, max = MAX_POSTS }) {
+  const set = measuredSet((uploads || []).filter(x => x.kind === 'long' || x.kind === 'short'), windowStart, windowEnd, max);
+  const u = set.posts;
   const perType = (kind) => {
     const xs = u.filter(x => x.kind === kind);
     const views = xs.filter(x => x.views != null).map(x => Number(x.views));
@@ -192,12 +238,15 @@ function youtubeMetrics({ uploads, windowStart, windowEnd }) {
     return { count: xs.length, avg_views: round1(mean(views)), avg_likes: round1(mean(likes)), avg_comments: round1(mean(comments)), engagement,
       counts: { views_used: views.length, likes_used: likes.length, comments_used: comments.length, engagement_used: eng.length } };
   };
-  const last = u.length ? new Date(Math.max(...u.map(x => new Date(x.published_at).getTime()))) : null;
-  return { uploads_90d: u.length, uploads_per_week: round1(u.length / WEEKS_IN_WINDOW), last_upload_at: last, long: perType('long'), short: perType('short') };
+  const times = u.map(x => new Date(x.published_at).getTime());
+  const last = u.length ? new Date(Math.max(...times)) : null;
+  const first = u.length ? new Date(Math.min(...times)) : null;
+  return { uploads_90d: u.length, uploads_per_week: round1(perWeek(u)), uploads_seen: set.seen, capped: set.capped,
+    measured_from: first, measured_to: last, last_upload_at: last, long: perType('long'), short: perType('short') };
 }
 
 module.exports = {
-  WINDOW_DAYS, SHORT_MAX_SECS, round1,
+  WINDOW_DAYS, MAX_POSTS, SHORT_MAX_SECS, round1, measuredSet,
   normaliseInstagramHandle, normaliseYoutubeRef,
   instagramItemToPost, youtubeItemToUpload, parseDurationSecs, instagramProfile, youtubeChannel,
   instagramMetrics, youtubeMetrics, inWindow,

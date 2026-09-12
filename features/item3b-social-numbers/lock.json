@@ -24,11 +24,32 @@
       "migrations": "175-178 applied to production 2026-09-11 (run-175-178.js --apply: 25 creators, 26 social accounts measuring, five number columns NULLed, at-least-one-handle check validated)",
       "backfill": "run-social-backfill.js --apply: 26 accounts spread over 3 days (11 Sep 16:47Z → 14 Sep 14:00Z)",
       "render": "GET /v1/admin/social/costs with a production admin token -> 200 (route live); first scheduled run executed by the hourly job at 16:55Z (ravi_practice -> not_found in 32 s)",
-      "ota": { "brand": 212, "influencer": 200 },
+      "ota": {
+        "brand": 212,
+        "influencer": 200
+      },
       "backend_tests": "229 failed / 899 passed / 1128 (0 new failures vs item 3 baseline 229/869/1098; 30 new tests)",
       "mobile_tests": "74 pass (21 new)",
       "apify_spend": "probe US$0.30 + e2e US$0.73 = US$1.03; account month total US$1.17 at deploy",
       "note": "released stays false on purpose: GOVERNANCE.md §5 ties the release record to qa_all_green and the suite carries 229 pre-existing failures. The item is live everywhere; the founder's phone walk with the test creator (register → approve → numbers) is the functional gate."
     }
-  }
+  },
+  "amendments": [
+    {
+      "at": "2026-09-12",
+      "by": "founder (chat: \"generally what people calculate in real world? is that views or followers....guide me and make change accordigly\")",
+      "trigger": "The first live production creator read 86% engagement.",
+      "findings": "165,074 was already an average, not a total (17,002,632 likes over 103 visible-like posts; a total would print 8,860%). A 30-day window only moves it to 84.6%. Her own non-collab posts alone give 60.3%, photos and carousels alone 75.0%. The cause is the divisor: 192,222 followers against 3,383,916 average reel views, about 17x her audience.",
+      "changes": [
+        "Instagram engagement = (likes + comments) / views across the measured reels, matching the YouTube half of this feature. Falls back to followers when a creator posted no reels, recording the basis.",
+        "The numbers are computed from the newest 30 posts inside the 90-day window (SOCIAL_MAX_POSTS), not every post in it. Equal weight per creator.",
+        "window_start/window_end now record the span the measured posts cover, so the detail screen prints the real range.",
+        "Migration 179 adds ig_engagement_basis and posts_seen, and retires every engagement figure computed under the old rule.",
+        "Measured 2026-09-12: asking the Instagram actor for exactly N posts does NOT return the newest N (30 requested overlapped the true newest 30 by 28; 5 requested skipped four of the five newest). So the fetch still covers the whole window and the cap is applied in socialCalc, where sorting by published_at makes it exact. No Apify saving from the cap."
+      ],
+      "effect": "Test creator Instagram engagement 86.0% -> 5.1%. YouTube unchanged (long 1.5%, shorts 2.5%). Apify cost unchanged.",
+      "mockup_impact": "Tile label \"Posts in 90 days\" -> \"Recent posts\", \"Uploads in 90 days\" -> \"Recent uploads\", detail heading \"LAST 90 DAYS\" -> \"RECENT POSTS\"/\"RECENT UPLOADS\", and the Instagram formula line now states the views basis and how many posts of how many were used.",
+      "deployed": false
+    }
+  ]
 }

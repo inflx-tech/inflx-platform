@@ -46,6 +46,8 @@ async function budgetAllows(trigger) {
 
 function windowFor(now) { return { start: new Date(now.getTime() - env.SOCIAL_WINDOW_DAYS * 86400000), end: now }; }
 
+// NOTE: we deliberately fetch the whole window and cap to SOCIAL_MAX_POSTS in socialCalc. Asking
+// the actor for exactly N posts was measured on 2026-09-12 and does not return the newest N.
 async function instagramRun(acc, runType, ctx) {
   const out = { snapshot: null, posts: [], profileError: null, ceiling: false };
   if (runType !== 'posts') {
@@ -132,11 +134,13 @@ async function recomputeMetrics(tx, acc, runId, now) {
   await tx.query(`UPDATE creator_social_metrics SET is_current = false WHERE account_id = $1 AND is_current`, [acc.id]);
   if (acc.platform === 'instagram') {
     const m = calc.instagramMetrics({ posts, followers: snap ? snap.followers : null, windowStart: start, windowEnd: end });
+    // window_start/window_end record the span the measured posts actually cover, which is what the
+    // screens print ("27 Aug - 9 Sep"). For a prolific creator that is far shorter than 90 days.
     await tx.query(
       `INSERT INTO creator_social_metrics (account_id, run_id, computed_at, window_start, window_end, is_current, followers_used,
-         ig_posts_90d, ig_posts_per_week, ig_reels, ig_photos, ig_carousels, ig_last_post_at, ig_avg_likes, ig_hidden_likes_count, ig_avg_comments, ig_avg_reel_views, ig_engagement, counts)
-       VALUES ($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
-      [acc.id, runId, now, start, end, m.followers_used, m.posts_90d, m.posts_per_week, m.reels, m.photos, m.carousels, m.last_post_at, m.avg_likes, m.hidden_likes_count, m.avg_comments, m.avg_reel_views, m.engagement, JSON.stringify(m.counts)]);
+         ig_posts_90d, ig_posts_per_week, ig_reels, ig_photos, ig_carousels, ig_last_post_at, ig_avg_likes, ig_hidden_likes_count, ig_avg_comments, ig_avg_reel_views, ig_engagement, ig_engagement_basis, posts_seen, counts)
+       VALUES ($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+      [acc.id, runId, now, m.measured_from || start, m.measured_to || end, m.followers_used, m.posts_90d, m.posts_per_week, m.reels, m.photos, m.carousels, m.last_post_at, m.avg_likes, m.hidden_likes_count, m.avg_comments, m.avg_reel_views, m.engagement, m.engagement_basis, m.posts_seen, JSON.stringify(m.counts)]);
     return m;
   }
   const m = calc.youtubeMetrics({ uploads: posts, windowStart: start, windowEnd: end });
@@ -144,11 +148,11 @@ async function recomputeMetrics(tx, acc, runId, now) {
     `INSERT INTO creator_social_metrics (account_id, run_id, computed_at, window_start, window_end, is_current,
        yt_uploads_90d, yt_uploads_per_week, yt_last_upload_at,
        yt_long_count, yt_long_avg_views, yt_long_avg_likes, yt_long_avg_comments, yt_long_engagement,
-       yt_short_count, yt_short_avg_views, yt_short_avg_likes, yt_short_avg_comments, yt_short_engagement, counts)
-     VALUES ($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
-    [acc.id, runId, now, start, end, m.uploads_90d, m.uploads_per_week, m.last_upload_at,
+       yt_short_count, yt_short_avg_views, yt_short_avg_likes, yt_short_avg_comments, yt_short_engagement, posts_seen, counts)
+     VALUES ($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+    [acc.id, runId, now, m.measured_from || start, m.measured_to || end, m.uploads_90d, m.uploads_per_week, m.last_upload_at,
      m.long.count, m.long.avg_views, m.long.avg_likes, m.long.avg_comments, m.long.engagement,
-     m.short.count, m.short.avg_views, m.short.avg_likes, m.short.avg_comments, m.short.engagement, JSON.stringify({ long: m.long.counts, short: m.short.counts })]);
+     m.short.count, m.short.avg_views, m.short.avg_likes, m.short.avg_comments, m.short.engagement, m.uploads_seen, JSON.stringify({ long: m.long.counts, short: m.short.counts })]);
   return m;
 }
 

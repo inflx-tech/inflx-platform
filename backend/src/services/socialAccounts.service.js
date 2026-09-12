@@ -292,7 +292,7 @@ async function detail(influencerId, platform, { forBrand }) {
     followers: n1(snap && snap.followers), following: n1(snap && snap.following), totalPosts: n1(snap && snap.total_posts),
     posts90d: n1(met && met.ig_posts_90d), postsPerWeek: n1(met && met.ig_posts_per_week), reels: n1(met && met.ig_reels), photos: n1(met && met.ig_photos), carousels: n1(met && met.ig_carousels),
     lastPostAt: met ? met.ig_last_post_at : null, avgLikes: n1(met && met.ig_avg_likes), avgComments: n1(met && met.ig_avg_comments), avgReelViews: n1(met && met.ig_avg_reel_views),
-    engagement: n1(met && met.ig_engagement), hiddenLikesCount: n1(met && met.ig_hidden_likes_count), followersUsed: n1(met && met.followers_used),
+    engagement: n1(met && met.ig_engagement), engagementBasis: (met && met.ig_engagement_basis) || null, postsSeen: n1(met && met.posts_seen), hiddenLikesCount: n1(met && met.ig_hidden_likes_count), followersUsed: n1(met && met.followers_used),
   } : {
     subscribers: n1(snap && snap.subscribers), totalVideos: n1(snap && snap.total_videos), totalViews: n1(snap && snap.total_channel_views),
     uploads90d: n1(met && met.yt_uploads_90d), uploadsPerWeek: n1(met && met.yt_uploads_per_week), lastUploadAt: met ? met.yt_last_upload_at : null,

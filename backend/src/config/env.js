@@ -62,6 +62,9 @@ module.exports = {
   SOCIAL_POSTS_EVERY_DAYS: parseInt(process.env.SOCIAL_POSTS_EVERY_DAYS || '15', 10),
   SOCIAL_WINDOW_DAYS: 90,
   SOCIAL_CEILING: parseInt(process.env.SOCIAL_CEILING || '500', 10),
+  // The newest N posts the numbers are computed from, inside SOCIAL_WINDOW_DAYS. Also the number
+  // of posts we ask Apify for, so it is the main lever on scrape cost.
+  SOCIAL_MAX_POSTS: parseInt(process.env.SOCIAL_MAX_POSTS || '30', 10),
   SOCIAL_BATCH_SIZE: parseInt(process.env.SOCIAL_BATCH_SIZE || '10', 10),
   SOCIAL_CONCURRENCY: parseInt(process.env.SOCIAL_CONCURRENCY || '3', 10),
   SOCIAL_RUN_TIMEOUT_SECS: parseInt(process.env.SOCIAL_RUN_TIMEOUT_SECS || '600', 10),

@@ -35,6 +35,41 @@ the render tests pin every state's copy and the live run pins every number (belo
 
 **Cost of the end-to-end run:** 8 pipeline runs, US$0.58 recorded in the run log (the two profile runs show US$0 because Apify had not yet posted their usage when the run finished — the budget guard reads the account total from Apify, not the run log). Apify account usage moved from US$0.41 (after the probe) to **US$1.14** for the month. **Total spent by me today: probe US$0.30 + e2e US$0.73 ≈ US$1.03** (cap US$3). Prior spend on the account before today: US$0.11.
 
+## Amendment, 2026-09-12 — engagement on views, newest 30 posts
+
+The first live production creator read **86% engagement**, which sent the founder back to the rule. What
+the check found, against her stored posts:
+
+| Question asked | Answer |
+|---|---|
+| Is 165,074 a total mistaken for an average? | No. It is the mean of 103 visible-like posts totalling 17,002,632 likes. A total would have printed 8,860%. |
+| Does a 30-day window fix it? | No. 90 days gives 86.0%, 30 days gives 84.6%. |
+| Is it the collaborations? | No. Her 39 own-owned posts alone give 60.3%. |
+| Is it the reels? | No. Photos and carousels alone give 75.0%. |
+| What is it then? | The denominator. She has 192,222 followers and her average reel takes 3,383,916 views, about 17x her audience. |
+
+Changed: Instagram engagement is now (likes + comments) ÷ views across the measured reels, matching
+YouTube; the measured set is the newest 30 posts inside the 90-day window; `window_start`/`window_end`
+now record the span those posts actually cover, so the detail screen prints "27 Aug – 9 Sep" rather than
+the full quarter. Migration 179 adds `ig_engagement_basis` and `posts_seen` and retires every
+engagement figure computed under the old rule (each account recomputes on its next run). The detail
+screen says "Worked out from her 30 most recent posts" and never quotes a 90-day total, because once we
+stop fetching beyond 30 we no longer know what that total is.
+
+Her numbers under the new rule, recomputed from the posts already stored in production:
+
+| | Old rule | New rule |
+|---|---|---|
+| Instagram engagement | 86.0% | **5.1%** |
+| Measured from | all 105 posts, 20 Jun – 9 Sep | newest 30 posts, 27 Aug – 9 Sep |
+| Avg likes / comments | 165,074 / 278 | 144,019 / 144 |
+| Avg reel views | 3,383,916 | 3,037,122 |
+| YouTube | long 1.5%, shorts 2.5% | unchanged (already on views) |
+
+Cost is unchanged. Asking the Instagram actor for exactly 30 posts was measured against the true
+newest 30 and returned only 28 of them (a 5-post request skipped four of the five newest), so the fetch
+still covers the whole window and the cap is applied in code, where sorting by date makes it exact.
+
 ## Test results
 - Item 3b: backend 2 suites / 30 tests pass; mobile 2 new suites / 21 tests pass; all 74 mobile tests pass (items 2, 3, 3b).
 - Backend whole suite, first run after the 3b backend changes: 233 failed / 895 passed / 1128 — 30 new tests all passing; **4 old tests newly failing, all rule drift** (registration used to measure via the mock fixture: `influencer-search` filters ×3 relied on fixture followers/niche; `admin-creator-review` asserted YouTube numbers at registration). Updated to the new rule: the search tests now write the numbers as the pipeline would after approval; the review test asserts nothing is measured before approval and the accounts wait.

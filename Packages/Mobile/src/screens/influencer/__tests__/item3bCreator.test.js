@@ -58,7 +58,7 @@ describe('R4 · R5 — Your numbers', () => {
     const { getByText, getByTestId } = render(<YourNumbersScreen navigation={nav()} />);
     await waitFor(() => getByTestId('platform-card-instagram'));
     getByText('Brands see these numbers on your profile. Followers update every week; posts every 15 days.');
-    getByText('Followers'); getByText('48.2K'); getByText('Posts in 90 days'); getByText('Subscribers'); getByText('Avg video views'); getByText('Avg shorts views');
+    getByText('Followers'); getByText('48.2K'); getByText('Recent posts'); getByText('Subscribers'); getByText('Avg video views'); getByText('Avg shorts views');
     expect(getByTestId('platform-card-instagram-dates').props.children).toBe('Followers 9 Sep · posts 1 Sep · next posts update 16 Sep');
     expect(getByTestId('platform-card-youtube-dates').props.children).toBe('Subscribers 9 Sep · uploads 1 Sep · next uploads update 16 Sep');
     getByText("Numbers are read from your public accounts and can't be typed in. To change an account, edit Profile info.");

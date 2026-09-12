@@ -40,7 +40,7 @@ describe('Instagram (§3.6)', () => {
     expect(reel.views).toBeGreaterThan(0);
   });
 
-  it('hand case: averages, hidden-likes count and engagement on latest followers', () => {
+  it('hand case: averages, hidden-likes count, engagement on reel views, per-week over the measured span', () => {
     const posts = [
       { platform_post_id: 'a', kind: 'reel', published_at: d(3), likes: 100, comments: 10, views: 1000 },
       { platform_post_id: 'b', kind: 'photo', published_at: d(10), likes: 200, comments: 30, views: null },
@@ -49,10 +49,42 @@ describe('Instagram (§3.6)', () => {
     ];
     const m = calc.instagramMetrics({ posts, followers: 10000, windowStart: start, windowEnd: now });
     expect(m.posts_90d).toBe(3);
-    expect(m.posts_per_week).toBe(0.2);
+    expect(m.posts_per_week).toBe(1.2);                                     // 3 posts over a 17-day span
     expect(m).toMatchObject({ reels: 1, photos: 1, carousels: 1, avg_likes: 150, hidden_likes_count: 1, avg_comments: 20, avg_reel_views: 1000 });
-    expect(m.engagement).toBe(1.7);                                         // (150 + 20) / 10000 × 100
+    expect(m.engagement).toBe(11);                                          // (100 + 10) / 1000 × 100, the one reel
+    expect(m.engagement_basis).toBe('views');
     expect(m.last_post_at.getTime()).toBe(d(3).getTime());
+    expect(m.measured_from.getTime()).toBe(d(20).getTime());
+    expect(m.measured_to.getTime()).toBe(d(3).getTime());
+    expect(m.capped).toBe(false); expect(m.posts_seen).toBe(3);
+  });
+
+  it('no reels in the measured set → engagement falls back to followers and says so', () => {
+    const posts = [
+      { platform_post_id: 'b', kind: 'photo', published_at: d(10), likes: 200, comments: 30, views: null },
+      { platform_post_id: 'c', kind: 'carousel', published_at: d(20), likes: null, comments: 20, views: null },
+    ];
+    const m = calc.instagramMetrics({ posts, followers: 10000, windowStart: start, windowEnd: now });
+    expect(m.engagement).toBe(2.3);                                         // (200 + 25) / 10000 × 100
+    expect(m.engagement_basis).toBe('followers');
+  });
+
+  it('only the newest 30 posts are measured; the rest are reported as seen but not counted', () => {
+    // 40 reels, newest first has the biggest view count. The 10 oldest must not reach the numbers.
+    const posts = Array.from({ length: 40 }, (_, i) => ({
+      platform_post_id: `p${i}`, kind: 'reel', published_at: d(i + 1),
+      likes: i < 30 ? 100 : 100000, comments: 0, views: 1000,
+    }));
+    const m = calc.instagramMetrics({ posts, followers: 10000, windowStart: start, windowEnd: now });
+    expect(m.posts_90d).toBe(30);
+    expect(m.posts_seen).toBe(40);
+    expect(m.capped).toBe(true);
+    expect(m.avg_likes).toBe(100);                                          // the 100000-like tail is excluded
+    expect(m.engagement).toBe(10);                                          // 30 × 100 / (30 × 1000) × 100
+    expect(m.measured_from.getTime()).toBe(d(30).getTime());
+    expect(m.measured_to.getTime()).toBe(d(1).getTime());
+    // The cap is a maximum, not a target: a creator with fewer posts is measured on all of them.
+    expect(calc.instagramMetrics({ posts: posts.slice(0, 5), followers: 10000, windowStart: start, windowEnd: now }).capped).toBe(false);
   });
 
   it('every post hides likes → engagement "—" (null), not a comments-only rate (founder Q14)', () => {
@@ -105,7 +137,7 @@ describe('YouTube (§3.6)', () => {
     ];
     const m = calc.youtubeMetrics({ uploads, windowStart: start, windowEnd: now });
     expect(m.uploads_90d).toBe(3);
-    expect(m.uploads_per_week).toBe(0.2);
+    expect(m.uploads_per_week).toBe(3);                  // 3 uploads inside a 2-day span, floored at a week
     expect(m.long.count).toBe(3);
     expect(m.long.avg_views).toBe(1000);                 // (2000 + 1000 + 0) / 3
     expect(m.long.avg_likes).toBe(53.3);

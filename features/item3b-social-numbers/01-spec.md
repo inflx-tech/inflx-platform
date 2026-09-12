@@ -41,9 +41,20 @@ Phase 1 survey `Docs/ITEM3B_SOCIAL_NUMBERS_GAP_REPORT.md`.
   Apify runs through an async runner with the run id and the cost recorded; retries the next day and an
   admin flag after 3 failures; a monthly budget guard (US$5, all INFLX runs, from Apify's own usage);
   Apify credit refusals recorded as `budget`, never as the creator's failure; a 500-item ceiling flagged.
-- Instagram numbers: posts in 90 days and per week, mix, last post, averages (hidden likes out),
-  engagement = (avg likes + avg comments) ÷ latest followers. YouTube: long videos and shorts split by
-  the channel tab, each with count, averages and engagement on views; streams never counted.
+- Instagram numbers: posts measured and per week, mix, last post, averages (hidden likes out),
+  engagement = (likes + comments) ÷ views across the measured reels. YouTube: long videos and shorts
+  split by the channel tab, each with count, averages and engagement on views; streams never counted.
+
+**Amendment, 2026-09-12 (founder decision, after the first live creator read 86%).** Two rules changed:
+1. **Engagement divides by views, not followers.** Instagram pushes reels far past a creator's own
+   followers, so likes ÷ followers reports a number that is arithmetically right and commercially
+   meaningless (192K followers, 3.4M average reel views, 86%). Reels are the only Instagram format the
+   scraper returns views for; a creator who posted no reels falls back to followers and the screen says
+   so. This is what the YouTube half of this feature already did, so both platforms now agree.
+2. **The numbers come from the newest 30 posts inside the 90-day window**, not every post in it. A fixed
+   count gives every creator the same statistical weight and is what the market's audit tools do. The window still bounds freshness, so a dormant creator is measured on whatever little she has.
+   The cap is a statistics rule, not a fetch rule: asking the actor for exactly 30 posts was measured
+   on 2026-09-12 and does not return the newest 30, so we still fetch the window and cap in code.
 - The five legacy number columns are written only by the pipeline after a real run and cleared on
   change / add / remove / not found / private / rejected — and on release for every existing creator
   (today's numbers were never measurements).

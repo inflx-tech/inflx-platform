@@ -3,6 +3,27 @@
 Built to rules v1.12 §2A, the locked mockups, the item 3b prompt and your approval message. **Nothing is
 deployed.** Deploying = apply migrations 175–178, push, run the backfill script, publish two OTA bundles.
 
+## 0. Amendment, 12 September 2026 — engagement now divides by views, and we measure the newest 30 posts
+
+The first live creator read **86% engagement**. Checked against her stored posts: 165,074 was already an
+average, not a total, and a 30-day window would only have moved it to 84.6%. The cause was the divisor.
+She has 192,222 followers and her average reel takes 3,383,916 views, roughly 17 times her audience, so
+likes ÷ followers cannot produce a sane number.
+
+Two rules changed:
+1. **Instagram engagement = (likes + comments) ÷ views**, across the reels measured, exactly as the
+   YouTube half of this feature already worked. A creator with no reels falls back to followers and the
+   detail screen says which basis was used.
+2. **The numbers come from the newest 30 posts** inside the 90-day window, instead of every post in it.
+   Equal statistical weight for every creator. Apify cost is unchanged: asking the actor for exactly 30
+   posts returned only 28 of the true newest 30 when measured, so we still fetch the whole window and
+   apply the cap in our own code, where sorting by date makes it exact.
+
+Her numbers move from 86.0% to **5.1%**. YouTube is unchanged at 1.5% for long videos and 2.5% for
+shorts. Migration 179 adds the two new columns and retires every engagement figure computed under the old
+rule, so each creator shows "—" for engagement until her next run. Details in
+`features/item3b-social-numbers/06-diff/notes.md`.
+
 ## 1. Step 0 — token, past runs, `APIFY_INGEST_MODE`
 - **Token:** valid, plan **FREE** (US$5 of usage a month). Read from `backend/.env` only; never printed; both env files are git-ignored (`backend/.gitignore` lines 2 and 4); nothing tracked. The new runner sends it in the Authorization header, never in a URL.
 - **Past runs (10, all `apify/instagram-scraper`, US$0.13):** four at 06:00 UTC (29 Jul, 31 Jul, 5 Aug, 6 Aug) = the **deliverables job** (`apify-engagement.job`, scheduled `0 6 * * *` without a timezone, so 06:00 UTC; it only runs when live deliverables exist and returns early otherwise, so no fix was needed); three on 25–26 Aug via the API = the **registration scrape** of the three creators whose `scrape_last_run` is 24–25 Aug; three on 7 Sep started from the **Apify web console** by a person (that is the US$0.11 you saw). n8n never ran (`N8N_BASE_URL` unset).

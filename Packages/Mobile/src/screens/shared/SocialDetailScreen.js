@@ -70,7 +70,7 @@ export default function SocialDetailScreen({ navigation, route }) {
           <>
             <Text style={s.shead}>{D.profile}</Text>
             <View style={s.grid}><MetricTile value={fmtCompact(n.followers)} label={D.followers} /><MetricTile value={fmtCompact(n.following)} label={D.following} /><MetricTile value={fmtCompact(n.totalPosts)} label={D.totalPosts} /></View>
-            <View style={s.sheadRow}><Text style={s.shead}>{D.last90}</Text><Text style={s.sheadSub}>{a.window ? windowLabel(a.window.start, a.window.end) : ''}</Text></View>
+            <View style={s.sheadRow}><Text style={s.shead}>{ig ? D.last90 : D.last90yt}</Text><Text style={s.sheadSub}>{a.window ? windowLabel(a.window.start, a.window.end) : ''}</Text></View>
             <View style={s.grid}><MetricTile value={fmtPct(n.engagement)} label={D.engagement} hero /><MetricTile value={String(n.posts90d ?? '—')} label={D.postsTile(n.postsPerWeek ?? '—')} /></View>
             {n.posts90d > 0 ? (
               <View>
@@ -86,14 +86,14 @@ export default function SocialDetailScreen({ navigation, route }) {
               </View>
             ) : null}
             <View style={s.grid}><MetricTile value={fmtCompact(n.avgLikes)} label={D.avgLikes} /><MetricTile value={fmtCompact(n.avgComments)} label={D.avgComments} /><MetricTile value={fmtCompact(n.avgReelViews)} label={D.avgReelViews} /></View>
-            <View style={s.formula} testID="formula"><Text style={s.formulaText}>{D.igFormula}{n.hiddenLikesCount > 0 ? ` ${D.hidden(n.hiddenLikesCount)}` : ''}</Text></View>
+            <View style={s.formula} testID="formula"><Text style={s.formulaText}>{n.engagementBasis === 'followers' ? D.igFormulaFollowers : D.igFormula}{n.posts90d > 0 ? ` ${D.measuredOf(n.posts90d)}` : ''}{n.hiddenLikesCount > 0 ? ` ${D.hidden(n.hiddenLikesCount)}` : ''}</Text></View>
             <Text style={s.foot} testID="footer">{D.igFooter(fmtDate(a.profileMeasuredAt), fmtDate(a.postsMeasuredAt))}</Text>
           </>
         ) : (
           <>
             <Text style={s.shead}>{D.channel}</Text>
             <View style={s.grid}><MetricTile value={fmtCompact(n.subscribers)} label={D.subscribers} /><MetricTile value={fmtCompact(n.totalVideos)} label={D.totalVideos} /><MetricTile value={fmtCompact(n.totalViews)} label={D.totalViews} /></View>
-            <View style={s.sheadRow}><Text style={s.shead}>{D.last90}</Text><Text style={s.sheadSub}>{a.window ? windowLabel(a.window.start, a.window.end) : ''}</Text></View>
+            <View style={s.sheadRow}><Text style={s.shead}>{ig ? D.last90 : D.last90yt}</Text><Text style={s.sheadSub}>{a.window ? windowLabel(a.window.start, a.window.end) : ''}</Text></View>
             <View style={s.legend}><Text style={s.legendItem}>{D.uploadsLine(n.uploads90d ?? 0, n.uploadsPerWeek ?? '—')}</Text>{n.lastUploadAt ? <Text style={s.legendItem}>{D.lastUpload(fmtDate(n.lastUploadAt))}</Text> : null}</View>
             {[['long', D.long], ['short', D.shorts]].map(([k, title]) => (
               <View key={k} testID={`yt-${k}`}>
