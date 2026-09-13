@@ -212,7 +212,11 @@ describe('offer attachments (where it is used)', () => {
 });
 
 describe('updateInfluencer attach', () => {
-  it('8: PATCH a draft CI with brand_offer_id → snapshot + allocation', async () => {
+  it('8: PATCH a sent CI is refused — sent terms are never edited (item 5, APPROVAL §3.2); the row keeps what was sent', async () => {
+    // Before item 5 this endpoint attached a library offer to an existing row. There is no
+    // such thing as an unsent row any more (the multi-creator draft lives in the app), and
+    // terms that have been sent are never edited: withdraw and invite again instead.
+    const { MSG } = require('../src/services/invitationCopy');
     const { token, cid, engSid, offerId } = await setup();
     const inv = await invite(token, cid, engSid, { influencer_id: await makeInfluencer() });
     const ciId = inv.body.data.campaign_influencer.id;
@@ -220,11 +224,10 @@ describe('updateInfluencer attach', () => {
       .patch(`/v1/campaigns/${cid}/sets/${engSid}/influencers/${ciId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ brand_offer_id: offerId });
-    expect(res.status).toBe(200);
-    const ci = res.body.data.campaign_influencer;
-    expect(ci.brand_offer_id).toBe(offerId);
-    expect(ci.allocation).toBe('promotional');
-    expect(ci.offer_type).toBe('discount');
-    expect(ci.offer_config_json.value).toBe(20);
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('LOCKED');
+    expect(res.body.error.message).toBe(MSG.SENT_LOCKED);
+    const { rows } = await query(`SELECT brand_offer_id FROM campaign_influencers WHERE id = $1`, [ciId]);
+    expect(rows[0].brand_offer_id).toBeNull();
   });
 });

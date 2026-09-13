@@ -216,7 +216,8 @@ describe('§3.2 brand → creator', () => {
     const b = await brand(); const c = await creator();
     await setCreator(c.influencerId, { minFeeEng: 8000, minFeeHyb: 5000 });
     const r = await invite(b, c, { goal: 'engagement', shoot_mode: 'shipment' }, { fee: 6000 });
-    expect(r).toEqual({ ok: true, reason: 'OK', warnings: ['BELOW_MIN_FEE'] });
+    // Item 5 added `minimums` (her numbers, for the brand's terms screen) to the same result.
+    expect(r).toMatchObject({ ok: true, reason: 'OK', warnings: ['BELOW_MIN_FEE'], minimums: { fee: 8000 } });
     expect((await invite(b, c, { goal: 'engagement', shoot_mode: 'shipment' }, { fee: 8000 })).warnings).toEqual([]);
     expect((await invite(b, c, { goal: 'hybrid', shoot_mode: 'shipment' }, { fee: 4999, commissionPct: 20 })).warnings).toEqual(['BELOW_MIN_FEE']);
     expect((await invite(b, c, { goal: 'conversion', shoot_mode: 'shipment' }, { fee: 1 })).warnings).toEqual([]);

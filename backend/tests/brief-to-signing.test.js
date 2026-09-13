@@ -121,7 +121,9 @@ describe('the contract endpoint carries what she needs to decide', () => {
 });
 
 describe('briefing creates a contract she can sign immediately', () => {
-  const camp = () => code('../src/controllers/campaign.controller.js');
+  // Item 5 moved the brief door into services/invitationSend.service.js (one service for every
+  // invitation row); the rules below are unchanged and now read from there.
+  const camp = () => code('../src/services/invitationSend.service.js');
 
   test('the brief creates the contract ready, not as a draft', () => {
     // The whole bug: she was briefed, landed in Invitations, and had nothing to open.
@@ -135,7 +137,7 @@ describe('briefing creates a contract she can sign immediately', () => {
   test('but ONLY when the agreement is clean — a drifted one still asks her first', () => {
     // agreement_warnings already said "they will have to agree again". Skipping straight to a
     // contract on a drifted agreement would make her sign terms she never saw.
-    expect(camp()).toContain('agreement && agreement_warnings.length === 0');
+    expect(camp()).toContain('if (!plan.agreement || plan.agreement_warnings.length) return false;');
   });
 
   test('and a failure falls back instead of losing the brief', () => {
@@ -146,7 +148,9 @@ describe('briefing creates a contract she can sign immediately', () => {
 });
 
 describe('declining after briefing', () => {
-  const off = () => code('../src/controllers/offer.controller.js');
+  // Item 5: accept and decline live in services/invitationAnswer.service.js, shared by the legacy
+  // /offers door and /influencers/me/invitations.
+  const off = () => code('../src/services/invitationAnswer.service.js');
 
   test('she may decline from accepted, which is where briefing now puts her', () => {
     expect(off()).toContain("'accepted'");

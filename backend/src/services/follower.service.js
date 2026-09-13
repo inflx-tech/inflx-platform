@@ -92,6 +92,7 @@ const ACTIVE_CI_QUERY = `
     ci.alloc_category,
     ci.alloc_product_ids,
     ci.offer_valid_until,
+    ci.offer_valid_from,
     cs.id                 AS set_id,
     cs.campaign_id,
     c.brand_id,
@@ -149,6 +150,7 @@ const FEED_QUERY = `
     ci.alloc_category,
     ci.alloc_product_ids,
     ci.offer_valid_until,
+    ci.offer_valid_from,
     cs.id                 AS set_id,
     cs.campaign_id,
     c.brand_id,
@@ -281,7 +283,10 @@ function allocatedProductIds(ciCfg, setProductsJson) {
  * clock driven by offer-expiry.job.
  */
 function offerExpired(r, now = Date.now()) {
-  return !!r?.offer_valid_until && new Date(r.offer_valid_until).getTime() < now;
+  // Item 5 Gap B: an offer whose start date has not arrived is not advertised either — the
+  // resolver will not apply it, so the storefront must not promise it.
+  const notYet = !!r?.offer_valid_from && new Date(r.offer_valid_from).getTime() > now;
+  return notYet || (!!r?.offer_valid_until && new Date(r.offer_valid_until).getTime() < now);
 }
 
 /** Offer-level display fields, blanked once the offer's own deadline has passed. */

@@ -1,0 +1,22 @@
+{
+  "feature": "item5-invitations",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item5_Approval_Message.md — 'The item 5 gap report is approved, with the answers and changes below. Proceed in order: Phase 2 … Phase 3 … Phase 4.')",
+  "approved_at": "2026-09-12T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item5_Invitations_Mockups_1.html — 'Stage 3: locked 12 Sep 2026', I9 and I15 updated after the gap report)",
+  "mockup_locked_at": "2026-09-12T00:00:00+05:30",
+  "notes": "Rules doc v1.16 §7A. Gap report Docs/ITEM5_INVITATIONS_GAP_REPORT.md approved with twelve answers (withdrawn/removed statuses; all-or-nothing send; five decline reasons; shoppable-posts constant; deferred is its own group and never expired; pitch brief through the same validator with its eligibility skip; legacy leaks stripped; commission ≤ 100 with a 50% confirm in the app; copy-to-everyone never a special offer; withdraw = invited only, remove = any pre-signed; item 7 handover fields stored now; seeded contracts ignored) and five decisions (backfill invited_at/source; updateInfluencer refuses every row; open-group broadcast left alone if unreachable; Counter hidden not refused; no paging on the creators block). Migration 181; brand and creator OTA; production-impacting — explicit go required before migrate/push/OTA. Nothing tested end to end until after item 7.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null
+  }
+}

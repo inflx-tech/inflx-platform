@@ -115,7 +115,7 @@ function stepForCollaboration(ci, x = {}) {
   const s = String(ci.status || '').toLowerCase();
   const isContent = x.track === 'content';
 
-  if (['declined', 'expired', 'cancelled', 'walked_away'].includes(s)) {
+  if (['declined', 'expired', 'cancelled', 'walked_away', 'withdrawn', 'removed'].includes(s)) {
     return { step: STEP.SIGN, turn: TURN.NOBODY, state: s, closed: true };
   }
 

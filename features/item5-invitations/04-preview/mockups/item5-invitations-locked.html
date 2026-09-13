@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Invitations & Terms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+</svg>
+</head><body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">INFLX rebuild · Item 5 of 21 · Stage 3: locked 12 Sep 2026 · amended after the gap report</div>
+  <h1>Choosing creators, terms and invitations</h1>
+  <p class="lede">The brand picks creators into a set, agrees what each one gets, and sends the invitations. The creator receives one invitation, with the brand's fixed terms and their own personal terms kept apart, and accepts, counters or declines. Based on rules doc v1.16 (§7A, plus §5, §5A, §5B, §7, §8A, §15.1, §21, §25). Negotiation is item 6 and the agreement is item 7. Names, numbers and dates are example data.</p>
+  <span class="pill">Locked · build to these screens · rules doc v1.16 §7A</span>
+</header>
+<section><header><div class="eyebrow">Brand app · Choosing creators</div><h2>Who goes into the set</h2><p class="prose">Picking runs the item 2 rules against this set, so a creator who has ruled the brand, the Aim or the mode out never appears as available.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Add creators</h3><span class="ib"><svg class="ico" ><use href="#i-x"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div><div class="segc"><span class="on">All creators</span><span>Worked with</span><span>Groups</span></div><div class="search"><svg class="ico" ><use href="#i-search"/></svg>Search by name or @handle</div><div class="frow2"><span class="fchip"><svg class="ico" ><use href="#i-filter"/></svg>Filters</span><span class="fchip on">Fashion<svg class="ico" ><use href="#i-x"/></svg></span><span class="fchip">City<svg class="ico" ><use href="#i-down"/></svg></span></div><div><div class="mrow2"><span class="check on"><svg class="ico" ><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Fashion · Hyderabad · 48.2K IG</span></div></div><div class="mrow2"><span class="check on"><svg class="ico" ><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Fashion · Hyderabad · 18.4K IG</span></div></div><div class="mrow2"><span class="check on"><svg class="ico" ><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">Fashion · Hyderabad · 64.1K IG</span></div></div><div class="mrow2"><span class="check dis"></span><span class="avatar av-s" style="background:#DDE9FB">KD</span><div class="t"><b>Kavya D.</b><span class="xs mut">Not open to this set</span></div><span class="chip s-no">Can't invite</span></div><div class="mrow2"><span class="check dis"><svg class="ico" ><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#DDE9FB">AK</span><div class="t"><b>Arjun Kumar</b><span class="xs mut">Already in this set</span></div><span class="chip s-wait">Invited</span></div></div><div class="hint">Creators whose own settings rule this set out can't be picked, and the reason is never shown to them.</div></div><div class="savebar"><button class="btn block b-pri" type="button">Next: terms for 3 creators</button></div></div><div class="cap"><i>I1</i><b>Add creators to a set</b><span>The item 3 Discover list in select mode, plus Worked with and Groups. Store Visit sets only offer creators who can visit that branch's city.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Invite a group</h3></div><div class="crumbs">SET A · ETHNIC WEAR</div><div class="card tint"><b>9 of 12 can be invited</b><span class="xs mut">Diwali shortlist · Pay for Sale · Store Visit · posts 20 Oct</span></div><div class="sechd2">Will be invited · 9</div><div class="row between"><span class="row" style="gap:0"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#FFE7A3">TS</span><span class="avatar av-s" style="background:#DDE9FB">DR</span></span><span class="xs mut">+5 more</span></div><div class="sechd2">Can't be invited · 3</div><div><div class="mrow2"><span class="avatar av-s" style="background:#E7E3FB">RV</span><div class="t"><b>Ritu V.</b><span class="xs mut">Not taking invitations</span></div></div><div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">KD</span><div class="t"><b>Kavya D.</b><span class="xs mut">Not open to this set</span></div></div><div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">AK</span><div class="t"><b>Arjun Kumar</b><span class="xs mut">Already in this set</span></div></div></div><div class="hint">Each creator still gets their own invitation and their own terms. The group is never shown to them.</div></div><div class="savebar"><button class="btn block b-pri" type="button">Next: terms for 9 creators</button></div></div><div class="cap"><i>I2</i><b>Inviting a whole group</b><span>The check we designed in item 3 (G9), now real. It runs the item 2 rules against this set for every member.</span></div></div></div></section>
+<section><header><div class="eyebrow">Brand app · Terms, creator by creator</div><h2>What each creator is offered</h2><p class="prose">The set fixes the Aim, date, mode and branch. Everything with money in it is agreed one creator at a time, with the creator's own minimums shown as a warning that never blocks.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div><div class="steps"><i class="on"></i><i class=""></i><i class=""></i><span>Creator 1 of 3</span></div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Sale</b></div><div class="tline"><span>Posts on</span><b>20 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Store Visit · Banjara Hills</b></div></div><div class="grp"><div class="lbl">Commission <span class="req">*</span></div><div class="money"><div class="field focus">10<span class="unit">%</span></div></div><div class="hint">Priya's minimum for Women's fashion is 12%.</div><div class="warn"><svg class="ico" ><use href="#i-alert"/></svg><span>Below Priya's minimum of 12%. You can still invite her, and she can counter.</span></div></div><div class="grp"><div class="lbl">What she can sell</div><div class="chips"><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>Whole store</span><span class="opt">Some categories</span><span class="opt">Chosen products</span></div></div><div class="anyrow"><span>Follower offer</span><b>None <svg class="ico" style="vertical-align:middle;color:var(--ink3)"><use href="#i-chev"/></svg></b></div><div class="tline"><span>Shoppable posts</span><b><svg class="ico" ><use href="#i-lock"/></svg>1 post · set by INFLX</b></div><div class="row between"><div><div class="lbl">Use these terms for everyone</div><div class="hint">You can still change any creator before sending.</div></div><span class="sw on"></span></div></div><div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div></div><div class="cap"><i>I3</i><b>Terms · Pay for Sale</b><span>The set terms sit locked at the top so the brand always sees what everyone shares. Below them, only this creator's deal. The minimum warning never blocks.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div><div class="steps"><i class="on"></i><i class=""></i><i class=""></i><span>Creator 1 of 3</span></div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>24 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div><div class="grp"><div class="lbl">Fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>8,000</div></div><div class="hint">Priya's minimum fee is ₹8,000. Paid 25% on signing, 25% when the content is live, 50% after it stays live.</div></div><div class="grp"><div class="lbl">What she delivers <span class="req">*</span></div><div class="delrow"><div class="field">Instagram reel</div><div class="field qty">1</div><span class="ib"><svg class="ico" ><use href="#i-x"/></svg></span></div><div class="delrow"><div class="field">Instagram story</div><div class="field qty">2</div><span class="ib"><svg class="ico" ><use href="#i-x"/></svg></span></div><button class="btn b-sec sm2" type="button" style="justify-self:start"><svg class="ico" ><use href="#i-plus"/></svg>Add another</button><div class="hint">Reels, posts, stories, YouTube videos and shorts.</div></div><div class="grp"><div class="lbl">Anything else she should know</div><div class="textarea" style="color:var(--ink3)">Optional note for this creator</div></div><div class="row between"><div><div class="lbl">Brand can reuse the content</div><div class="hint">Usage rights. Off unless you need it.</div></div><span class="sw on"></span></div><div class="grp"><div class="chips"><span class="opt">30 days</span><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>60 days</span><span class="opt">90 days</span><span class="opt">Forever</span></div><div class="chips"><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>Brand's social</span><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>Ads</span><span class="opt">Website</span></div></div></div><div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div></div><div class="cap"><i>I4</i><b>Terms · Pay for Content</b><span>Deliverables are rows of type and count, so they can be countered and written into the agreement. Usage rights are off by default.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div><div class="steps"><i class="on"></i><i class=""></i><i class=""></i><span>Creator 1 of 3</span></div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> Set terms, same for everyone</div><div class="tline"><span>Aim</span><b>Hybrid</b></div><div class="tline"><span>Posts on</span><b>20 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div></div><div class="grp"><div class="lbl">Fixed fee <span class="req">*</span></div><div class="money"><div class="field"><span class="pre">₹</span>5,000</div></div><div class="hint">Paid whatever the sales are, in the same three parts. Can't be ₹0.</div></div><div class="grp"><div class="lbl">Commission <span class="req">*</span></div><div class="money"><div class="field">10<span class="unit">%</span></div></div><div class="hint">Priya's minimum for Women's fashion is 10%.</div></div><div class="grp"><div class="lbl">What she can sell</div><div class="chips"><span class="opt">Whole store</span><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>Some categories</span><span class="opt">Chosen products</span></div><div class="chips"><span class="tag">Sarees</span><span class="tag">Kurtas</span><span class="opt">Change</span></div></div><div class="anyrow"><span>Follower offer</span><b>Festive 15% <svg class="ico" style="vertical-align:middle;color:var(--ink3)"><use href="#i-chev"/></svg></b></div><div class="tline"><span>Shoppable posts</span><b><svg class="ico" ><use href="#i-lock"/></svg>1 post · set by INFLX</b></div></div><div class="savebar"><button class="btn block b-pri" type="button">Next creator</button></div></div><div class="cap"><i>I5</i><b>Terms · Hybrid</b><span>Hybrid is Pay for Sale plus a fixed fee. No content package, because the shoppable post is the deliverable.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Terms · Priya Sharma</h3></div><div class="crumbs">FOLLOWER OFFER</div><div style="height:120px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Follower offer for Priya</b><div class="optlist"><div class="optbox"><span class="radio"></span><div class="t"><b>No offer</b><span>Shoppers pay the normal price</span></div></div><div class="optbox sel"><span class="radio on"></span><div class="t"><b>Use a saved offer</b><span>From the offers you built on the website</span></div></div><div class="optbox"><span class="radio"></span><div class="t"><b>Create a special offer</b><span>Only for Priya, on this collaboration</span></div></div></div><div><div class="listrow"><span class="radio on"></span><div class="t"><b>Festive 15% off Sarees</b><span class="xs mut">15% off · Sarees</span></div></div><div class="listrow"><span class="radio"></span><div class="t"><b>Flat ₹500 off</b><span class="xs mut">₹500 off · whole store</span></div></div></div><div class="prev"><b>A ₹1,299 kurta costs ₹1,104</b><span>Priya earns ₹110 at 10% on what shoppers actually pay.</span></div><button class="btn block b-pri" type="button">Use this offer</button></div></div></div><div class="cap"><i>I6</i><b>Follower offer for one creator</b><span>Three choices. A saved offer is copied onto her invitation, so later edits to the saved one never change her deal. A special offer belongs to her alone.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Special offer</h3></div><div class="crumbs">FOR PRIYA SHARMA ONLY</div><div style="height:560px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Special offer for Priya</b><div class="chips"><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>Money off</span><span class="opt">Buy more, save more</span><span class="opt">Buy one, get one</span></div><div class="two"><div class="grp"><div class="lbl">Type</div><div class="chips"><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>%</span><span class="opt">₹</span></div></div><div class="grp"><div class="lbl">Amount</div><div class="field">12<span class="unit">%</span></div></div></div><div class="grp"><div class="lbl">Applies to</div><div class="chips"><span class="opt">Whole store</span><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>A category</span><span class="opt">Chosen products</span></div><div class="field">Sarees <svg class="ico" style="margin-left:auto;color:var(--ink3)"><use href="#i-chev"/></svg></div></div><div class="two"><div class="grp"><div class="lbl">From</div><div class="field"><svg class="ico" ><use href="#i-cal2"/></svg>20 Oct</div></div><div class="grp"><div class="lbl">Until</div><div class="field ph"><svg class="ico" ><use href="#i-cal2"/></svg>No end</div></div></div><div class="row between"><div class="lbl">Also save to my offers</div><span class="sw"></span></div><div class="prev"><b>A ₹2,400 saree costs ₹2,112</b><span>Priya earns ₹211 at 10%.</span></div><button class="btn block b-pri" type="button">Use this offer</button></div></div></div><div class="cap"><i>I7</i><b>Creating a special offer</b><span>Three kinds only: money off, buy more save more, and buy one get one. Bundles and free gifts stay on the website, where products are easier to pick.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Review and send</h3></div><div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><span>All 3 creators</span></div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> Set A · Ethnic wear</div><div class="tline"><span>Aim</span><b>Pay for Sale</b></div><div class="tline"><span>Posts on</span><b>20 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Store Visit · Banjara Hills</b></div><div class="tline"><span>Replies close</span><b>17 Oct 2026</b></div></div><div class="warn"><svg class="ico" ><use href="#i-alert"/></svg><span>2 creators are below their own minimum. They can still be invited and can counter.</span></div><div><div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">10% · whole store · Festive 15%</span></div><span class="chip s-move">Below min</span></div><div class="mrow2"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">12% · whole store · no offer</span></div><span class="chip s-active">OK</span></div><div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">10% · Sarees, Kurtas · special offer</span></div><span class="chip s-move">Below min</span></div></div><div class="hint">Each creator gets their own invitation. They can accept, counter or decline until 17 Oct.</div></div><div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-send"/></svg>Send 3 invitations</button></div></div><div class="cap"><i>I8</i><b>Review and send</b><span>The last look before anything leaves. Tapping a row goes back to that creator's terms. Sending is what makes the set live and locks its Aim, date, mode and branch.</span></div></div></div></section>
+<section><header><div class="eyebrow">Brand app · After sending</div><h2>Watching the set fill up</h2><p class="prose">Nothing about a sent invitation can be edited. The brand can withdraw it, remove the creator, or wait.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Set A · Ethnic wear</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="row between"><span class="xs mut">Diwali Edit 2026</span><span class="chip s-active">Live</span></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>Invitations close in 4 days · 17 Oct</span></div><div class="bar2"><i style="width:37%;background:var(--active-fg)"></i><i style="width:25%;background:var(--wait-fg)"></i></div><div class="xs mut">8 invited · 3 signed · 2 waiting · 3 declined</div><div class="sechd2">Waiting to answer · 2</div><div><div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">10% · sent 12 Sep</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div><div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">TS</span><div class="t"><b>Tanvi S.</b><span class="xs mut">12% · sent 12 Sep</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-more"/></svg></div></div><div class="sechd2">Accepted, waiting for the agreement · 1</div><div><div class="mrow2"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Accepted 13 Sep</span></div><span class="chip s-active">Send agreement</span></div></div><div class="sechd2">Asked for another date · 1</div><div><div class="mrow2"><span class="avatar av-s" style="background:#E7E3FB">RV</span><div class="t"><b>Ritu V.</b><span class="xs mut">Wants 27 Oct · 13 Sep</span></div><span class="chip s-move">Another set</span></div></div><div class="sechd2">Declined · 3</div><div><div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">Fee too low · 13 Sep</span></div></div></div><button class="btn block b-sec" type="button"><svg class="ico" ><use href="#i-uadd"/></svg>Add creators</button></div></div><div class="cap"><i>I9</i><b>The set after invitations go out</b><span>Creators are grouped by what is happening. "Send agreement" is the brand's next move and belongs to item 7. A creator who asked for a different date sits in her own group: she is not waiting, and the set expiring never closes her.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Priya Sharma</h3></div><div class="crumbs">SET A · ETHNIC WEAR</div><div style="height:180px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">CREATOR ⋯</div><div class="listrow"><div class="t"><b>View terms sent</b></div></div><div class="listrow"><div class="t"><b>Open profile</b></div></div><div class="listrow"><div class="t"><b style="color:var(--no-fg)">Withdraw invitation</b><span class="xs mut">Only while she hasn't answered</span></div></div><div class="listrow"><div class="t"><b style="color:var(--no-fg)">Remove from set</b><span class="xs mut">Until the agreement is signed</span></div></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">WITHDRAW CONFIRM</div><div class="card"><b>Withdraw Priya's invitation?</b><span class="sm mut">She sees it as withdrawn. You can invite her again with new terms while there is still time.</span><div class="btnrow"><button class="btn b-sec sm2" type="button">Keep</button><button class="btn b-dan sm2" type="button">Withdraw</button></div></div><div class="hint">Terms can't be edited once sent. Withdraw and invite again instead.</div></div></div></div><div class="cap"><i>I10</i><b>One creator: what was offered, and the two ways out</b><span>Withdrawing pulls back an unanswered invitation. Removing takes a creator out of the set, and is possible until they sign.</span></div></div></div></section>
+<section><header><div class="eyebrow">Creator app · Receiving the invitation</div><h2>What the creator sees and decides</h2><p class="prose">One invitation per creator, with the brand's fixed terms and their own personal terms kept apart. Accept, counter or decline, until the set's cutoff.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><h3>Collabs</h3></div><div class="segc"><span class="on">Invites</span><span>Active</span><span>Pitches</span><span>Done</span></div><div class="invcard"><div class="top"><span class="newdot"></span><span class="logo" style="background:#FFE7A3">UT</span><div style="flex:1;min-width:0"><b style="font-size:14px">Urban Threads</b><div class="xs mut">Diwali Edit 2026 · Set A · Ethnic wear</div></div></div><div class="chips"><span class="tag">Pay for Sale</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span><span class="tag">Posts 20 Oct</span></div><div class="tline"><span>You earn</span><b>10% commission</b></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>Reply by 17 Oct · 4 days left</span></div></div><div class="invcard"><div class="top"><span class="logo" style="background:#DDE9FB">SK</span><div style="flex:1;min-width:0"><b style="font-size:14px">Stride Kicks</b><div class="xs mut">Winter Run · Set B</div></div></div><div class="chips"><span class="tag">Pay for Content</span><span class="tag">Remote</span><span class="tag">Posts 28 Oct</span></div><div class="tline"><span>You earn</span><b>₹8,000</b></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>Reply by 25 Oct · 12 days left</span></div></div></div><nav class="tabbar" aria-label="Creator tabs"><span class="tab"><span class="p"><svg class="ico" ><use href="#i-home"/></svg></span>Home</span><span class="tab on"><span class="p"><svg class="ico" ><use href="#i-send"/></svg></span>Collabs</span><span class="tab"><span class="plus"><svg class="ico" ><use href="#i-plus"/></svg></span></span><span class="tab"><span class="p"><svg class="ico" ><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab"><span class="p"><svg class="ico" ><use href="#i-user"/></svg></span>Profile</span></nav></div><div class="cap"><i>I11</i><b>Creator · Invites</b><span>Everything that matters is on the card: who, which set, the Aim, the mode, the date, the money and the deadline.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Invitation</h3></div><div class="row"><span class="logo" style="background:#FFE7A3">UT</span><div><b style="font-size:15px">Urban Threads</b><div class="xs mut">Diwali Edit 2026 · Set A · Ethnic wear</div></div></div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> Set by the brand, same for everyone</div><div class="tline"><span>Aim</span><b>Pay for Sale</b></div><div class="tline"><span>Posts on</span><b>20 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Store Visit · Hyderabad</b></div><div class="tline"><span>Reply by</span><b>17 Oct 2026</b></div></div><div class="tcard"><div class="sechd2">Your terms</div><div class="tline"><span>Commission</span><b>10% on what you sell</b></div><div class="tline"><span>You can sell</span><b>Anything in the store</b></div><div class="tline"><span>Shopper offer</span><b>Festive 15% off Sarees</b></div><div class="tline"><span>Shoppable posts</span><b>At least 1</b></div></div><p class="sm mut">"Loved your Diwali reels last year — would be great to have you at the Banjara Hills store."</p><div class="hint">Nothing is final until you both sign the agreement.</div><button class="btn block b-pri" type="button">Accept</button><div class="btnrow"><button class="btn b-sec sm2" type="button"><svg class="ico" ><use href="#i-undo"/></svg>Counter</button><button class="btn b-dan sm2" type="button">Decline</button></div></div></div><div class="cap"><i>I12</i><b>Creator · the invitation</b><span>Two blocks, always in this order: what the brand fixed, then what is personal to this creator. Countering opens the negotiation in item 6.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Invitation</h3></div><div class="row"><span class="logo" style="background:#DDE9FB">SK</span><div><b style="font-size:15px">Stride Kicks</b><div class="xs mut">Winter Run · Set B</div></div></div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> Set by the brand</div><div class="tline"><span>Aim</span><b>Pay for Content</b></div><div class="tline"><span>Posts on</span><b>28 Oct 2026</b></div><div class="tline"><span>Mode</span><b>Remote</b></div><div class="tline"><span>Reply by</span><b>25 Oct 2026</b></div></div><div class="tcard"><div class="sechd2">Your terms</div><div class="tline"><span>Fee</span><b>₹8,000</b></div><div class="tline"><span>You post</span><b>1 Instagram reel, 2 stories</b></div><div class="tline"><span>Brand can reuse</span><b>60 days · social and ads</b></div></div><div class="card tint"><div class="sechd2">How the fee is paid</div><div class="xs mut">₹2,000 when you both sign · ₹2,000 when the brand confirms your content is live · ₹4,000 after it stays live</div></div><button class="btn block b-pri" type="button">Accept</button><div class="btnrow"><button class="btn b-sec sm2" type="button"><svg class="ico" ><use href="#i-undo"/></svg>Counter</button><button class="btn b-dan sm2" type="button">Decline</button></div></div></div><div class="cap"><i>I13</i><b>Creator · a Pay for Content invitation</b><span>The same shape, with the deliverables and the payment split spelled out so nobody has to ask.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Invitation</h3></div><div class="xs mut">Urban Threads · Set A</div><div style="height:200px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">ACCEPT</div><div class="card"><b>Accept these terms?</b><span class="sm mut">Urban Threads will send the agreement next. Nothing is final until you both sign it.</span><div class="btnrow"><button class="btn b-sec sm2" type="button">Not yet</button><button class="btn b-pri sm2" type="button">Accept</button></div></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">DECLINE</div><div class="grp"><div class="lbl">Why are you saying no?</div><div class="chips"><span class="opt sel"><svg class="ico" ><use href="#i-check"/></svg>Fee too low</span><span class="opt">Dates don't suit</span><span class="opt">Not my kind of brand</span><span class="opt">Too much work</span><span class="opt">Other</span></div><div class="field ph">Anything else (optional)</div><div class="hint">The brand sees this. It helps them come back with something better.</div></div><button class="btn block b-dan" type="button">Decline invitation</button></div></div></div><div class="cap"><i>I14</i><b>Accepting and declining</b><span>Accepting doesn't commit the creator to anything until the agreement is signed. Declining asks a short reason, which the brand sees.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><h3>Collabs</h3></div><div class="segc"><span class="on">Invites</span><span>Active</span><span>Pitches</span><span>Done</span></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">ACCEPTED, WAITING</div><div class="invcard"><div class="top"><span class="logo" style="background:#FFE7A3">UT</span><div style="flex:1"><b style="font-size:14px">Urban Threads</b><div class="xs mut">Set A · Ethnic wear</div></div><span class="chip s-active">Accepted</span></div><div class="statebox wait" style="background:var(--wait-bg);color:var(--wait-fg);border-radius:12px;padding:9px 11px;font-size:12.5px">Waiting for the agreement from Urban Threads.</div></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">EXPIRED</div><div class="invcard"><div class="top"><span class="logo" style="background:#E6F4EA">TW</span><div style="flex:1"><b style="font-size:14px">Tick Watches</b><div class="xs mut">Festive · Set C</div></div><span class="chip s-ended">Expired</span></div><div class="xs mut">You didn't reply by 11 Sep, so this invitation closed.</div></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">WITHDRAWN</div><div class="invcard"><div class="top"><span class="logo" style="background:#FDE2E2">LB</span><div style="flex:1"><b style="font-size:14px">Loom &amp; Bead</b><div class="xs mut">Jewellery · Set A</div></div><span class="chip s-ended">Withdrawn</span></div><div class="xs mut">Loom &amp; Bead withdrew this invitation on 10 Sep.</div></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">REMOVED</div><div class="invcard"><div class="top"><span class="logo" style="background:#E7E3FB">NV</span><div style="flex:1"><b style="font-size:14px">Nava Kids</b><div class="xs mut">Festive · Set B</div></div><span class="chip s-ended">Closed</span></div><div class="xs mut">Nava Kids is no longer going ahead with this collaboration.</div></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">EMPTY</div><div class="empty"><span class="c"><svg class="ico" ><use href="#i-send"/></svg></span><b>No invitations yet</b><span class="sm mut">When a brand invites you to a set, it shows up here.</span></div></div><nav class="tabbar" aria-label="Creator tabs"><span class="tab"><span class="p"><svg class="ico" ><use href="#i-home"/></svg></span>Home</span><span class="tab on"><span class="p"><svg class="ico" ><use href="#i-send"/></svg></span>Collabs</span><span class="tab"><span class="plus"><svg class="ico" ><use href="#i-plus"/></svg></span></span><span class="tab"><span class="p"><svg class="ico" ><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab"><span class="p"><svg class="ico" ><use href="#i-user"/></svg></span>Profile</span></nav></div><div class="cap"><i>I15</i><b>Creator · every other state</b><span>Expired, withdrawn and closed invitations stay visible with a plain sentence, then move to Done after seven days. No reason is ever given for a brand pulling out.</span></div></div></div></section>
+
+<section>
+  <header><div class="eyebrow">For lock and the gap prompt</div><h2>Rules behind these screens</h2></header>
+  <div class="tscroll"><table>
+    <thead><tr><th>Topic</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>Who can be picked</td><td>Approved creators who pass the item 2 checks for <em>this set</em>: not paused, not blocking the brand, brand category matches, the set's Aim and mode are ones they accept, and for Store Visit the branch city is one they can visit. Creators already in the set are shown as invited and can't be picked again. A creator can be in more than one set of a campaign.</td></tr>
+      <tr><td>Groups</td><td>Inviting a group runs the same check per member and lists who can't be invited, with a short label. The group is never shown to creators.</td></tr>
+      <tr><td>Cutoff</td><td>Nothing can be sent after the set's cutoff (posting date − 3 days). The screens show the cutoff throughout.</td></tr>
+      <tr><td>Terms: Pay for Sale</td><td>Commission % (required), what she can sell (whole store, categories or chosen products), follower offer (optional), minimum shoppable posts shown read-only from the admin setting.</td></tr>
+      <tr><td>Terms: Pay for Content</td><td>Fee in whole rupees (required), deliverables as rows of type and count (at least one), optional note, usage rights off by default (duration 30/60/90 days or forever, and where). Payment split 25/25/50 shown as a fact.</td></tr>
+      <tr><td>Terms: Hybrid</td><td>Fixed fee (required, never ₹0) plus everything from Pay for Sale. No content package.</td></tr>
+      <tr><td>Minimums</td><td>A fee or commission below the creator's own minimum shows a warning on the terms screen and on Review, and never blocks sending (item 2, soft condition). The creator is never told the brand saw a warning.</td></tr>
+      <tr><td>Many creators at once</td><td>"Use these terms for everyone" copies the current creator's terms to the rest; each creator can then be changed before sending. Every creator still gets an individual invitation and an individual agreement.</td></tr>
+      <tr><td>Follower offer</td><td>Three choices: none, a saved offer from the brand's library, or a special offer for this creator only. A saved offer is copied onto the invitation, so later edits to the library never change a live deal. Special offers cover money off, buy more save more, and buy one get one; the "applies to" choice is hidden for buy one get one. Optional "also save to my offers". Dates default to the posting date with no end.</td></tr>
+      <tr><td>Offer preview</td><td>Before sending, the brand can see what a shopper pays and what the creator earns on an example product.</td></tr>
+      <tr><td>Sending</td><td>Sending makes the set live and locks its Aim, posting date, mode and branch (item 4). Each creator gets one invitation with the set terms and their own terms.</td></tr>
+      <tr><td>Creator's answer</td><td>Accept, counter or decline, until the cutoff. No reply by then → Expired. Accepting moves to "waiting for the agreement" (item 7). Countering opens the negotiation (item 6). Declining asks an optional short reason, which the brand sees.</td></tr>
+      <tr><td>After sending</td><td>Terms can never be edited. The brand can withdraw an unanswered invitation, or remove a creator until the agreement is signed. A withdrawn or removed creator is told plainly, with no reason.</td></tr>
+      <tr><td>Grouping in the set</td><td>Waiting to answer · Negotiating (item 6) · Accepted, waiting for the agreement · Signed · Asked for another date · Declined · Expired · Withdrawn and closed.</td></tr>
+      <tr><td>Asked for another date</td><td>A creator who asked for a different date has answered: she is not waiting, she is never expired with the set, and she sits in her own group until the brand puts her in another set. New invitations no longer offer this answer &mdash; a date that doesn't suit is a counter (item 6) or a decline.</td></tr>
+      <tr><td>Withdrawn and closed</td><td>Withdrawing pulls back an unanswered invitation; removing takes a creator out until both signatures exist. The creator is told plainly, with no reason: &ldquo;{Brand} withdrew this invitation&rdquo; or &ldquo;{Brand} is no longer going ahead with this collaboration.&rdquo; Neither ever destroys a signed agreement or moves money.</td></tr>
+      <tr><td>Decline reasons</td><td>Fee too low &middot; Dates don't suit &middot; Not my kind of brand &middot; Too much work &middot; Other. One is required; the note is optional and capped at 200 characters. The brand sees both, in the list and in the notification.</td></tr>
+      <tr><td>Shoppable posts</td><td>One, set by INFLX, shown read-only on Pay for Sale and Hybrid. It becomes an admin setting in the admin-parameters item.</td></tr>
+      <tr><td>Commission</td><td>More than 0 and at most 100, to one decimal. Above 50% the brand is asked to confirm once, because it is more than half of every sale.</td></tr>
+      <tr><td>Sending</td><td>One action, all or nothing. If any creator fails, nothing is sent and the brand is told which ones, so she can fix or drop them and send again.</td></tr>
+      <tr><td>Never shown</td><td>Creators never see the campaign description, the group they came from, other creators' terms, or the brand's warnings. Brands never see why a creator failed a check.</td></tr>
+      <tr><td>Small server fixes riding along</td><td>Record which offer produced each sale, and respect a creator offer's start date.</td></tr>
+      <tr><td>States on lists</td><td>Loading, empty and couldn't load, as in items 2–4.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<footer>INFLX rebuild · item 5 · uses the item 3 Discover list and groups, the item 4 set, and the item 2 eligibility rules. Item 6 adds countering; item 7 adds the agreement.</footer></div>
+</body></html>

@@ -81,6 +81,11 @@ function listRow(r) {
     price: r.price == null ? null : Number(r.price),
     imageUrl: resolveProductImage(r),
     outOfStock: outOfStock(r),
+    // Item 5: the terms screen's "Some categories" / "Chosen products" pickers are built from
+    // the brand's own published products, grouped by category node. Null when uncategorised.
+    categoryNodeId: r.category_node_id || null,
+    categoryName: r.category_name || null,
+    categoryPath: r.category_path || null,
   };
 }
 
@@ -96,8 +101,11 @@ async function list(brandId, { page = 1, limit = PAGE } = {}) {
   const lim = Math.min(Math.max(1, parseInt(limit, 10) || PAGE), 50);
   const total = await countPublished(brandId);
   const { rows } = await db.query(
-    `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.variants_json, bp.facets, bp.stock
+    `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.variants_json, bp.facets, bp.stock,
+            bp.category_node_id, cn.name AS category_name,
+            NULLIF(concat_ws(' › ', cn.segment, cn.category, cn.name), '') AS category_path
        FROM brand_products bp JOIN brands b ON b.id = bp.brand_id JOIN users u ON u.id = b.user_id
+       LEFT JOIN category_nodes cn ON cn.id = bp.category_node_id
       WHERE bp.brand_id = $1 AND ${PUBLISHED}
       ORDER BY bp.is_featured DESC, bp.featured_sort ASC, bp.created_at DESC
       LIMIT $2 OFFSET $3`, [brandId, lim, (pg - 1) * lim]);

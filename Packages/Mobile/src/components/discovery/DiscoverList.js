@@ -68,6 +68,9 @@ export function MemberRow({ c, right, onOpen, sub }) {
 export default function DiscoverList({
   fetcher, countFetcher, lists, mode = 'browse', defaultOpenOnly = true,
   selectedIds, disabledIds, disabledLabel, capacityLeft, onToggleSelect, onOpen, onAddToGroup, header, testID = 'discover-list',
+  // Item 5 — a per-row pick state for the set picker: (item) → { state: 'ok' | 'invited' | 'ineligible', label, chip }.
+  // 'invited' is ticked and locked; 'ineligible' is locked and unticked; both show the label under the name.
+  pickState,
 }) {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ ...CREATOR_DEFAULTS, openOnly: defaultOpenOnly });
@@ -109,6 +112,17 @@ export default function DiscoverList({
   function clearAll() { setFilters({ ...defaults }); setSearch(''); }
 
   const renderItem = ({ item }) => {
+    if (mode === 'select' && pickState) {
+      const ps = pickState(item) || { state: 'ok' };
+      const locked = ps.state !== 'ok';
+      const checked = ps.state === 'invited' || (selectedIds && selectedIds.has(item.id));
+      return (
+        <CheckboxRow checked={checked} disabled={locked} onPress={() => onToggleSelect && onToggleSelect(item)} testID={`select-${item.id}`}>
+          <MemberRow c={locked ? { ...item, status: null } : item} sub={locked ? ps.label : undefined}
+            right={ps.chip ? <View style={[s.pickChip, { backgroundColor: ps.state === 'invited' ? T.state.waiting.bg : T.state.ended.bg }]}><Text style={[s.pickChipText, { color: ps.state === 'invited' ? T.state.waiting.fg : T.state.ended.fg }]}>{ps.chip}</Text></View> : null} />
+        </CheckboxRow>
+      );
+    }
     if (mode === 'select') {
       const disabled = disabledIds && disabledIds.has(item.id);
       const checked = disabled || (selectedIds && selectedIds.has(item.id));
@@ -214,4 +228,6 @@ export const s = StyleSheet.create({
   plus: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: T.border, alignItems: 'center', justifyContent: 'center' },
   plusText: { fontFamily: fonts.sansBold, fontSize: 20, color: T.ink, marginTop: -2 },
   member: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  pickChip: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 999, marginLeft: 8 },
+  pickChipText: { fontFamily: fonts.sansBold, fontSize: 11 },
 });

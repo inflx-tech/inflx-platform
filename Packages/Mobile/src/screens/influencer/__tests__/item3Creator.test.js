@@ -8,7 +8,9 @@ import { Switch, Alert } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
-  influencerApi: { getMe: jest.fn(), updateMe: jest.fn(), getInvitationSettings: jest.fn(), findBrands: jest.fn(), getBrandOverview: jest.fn(), blockBrand: jest.fn(), unblockBrand: jest.fn() },
+  influencerApi: { getMe: jest.fn(), updateMe: jest.fn(), getInvitationSettings: jest.fn(), findBrands: jest.fn(), getBrandOverview: jest.fn(), blockBrand: jest.fn(), unblockBrand: jest.fn(),
+    // Item 5 — the Invites tab is real now; F1's empty state is what an empty list shows.
+    myInvitations: jest.fn().mockResolvedValue({ success: true, data: { rows: [] } }) },
   brandApi: {},
   referenceApi: {
     brandCategories: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'WOMEN', label: 'Women' }] } }),
@@ -63,11 +65,13 @@ describe('A7 — profile rows', () => {
 });
 
 describe('F1 — Collabs', () => {
-  it('shows the four segments, the Pitch a brand card and the empty state', () => {
+  it('shows the four segments, the empty state, and the Pitch a brand card on Pitches (item 5 moved it there)', async () => {
     const n = nav();
     const { getByText, getByTestId } = render(<CollabsScreen navigation={n} route={{ params: {} }} />);
     ['Invites', 'Active', 'Pitches', 'Done'].forEach(s => getByTestId(`segment-${s}`));
-    getByText('No invitations yet');
+    await waitFor(() => getByText('No invitations yet'));
+    fireEvent.press(getByTestId('segment-Pitches'));
+    await waitFor(() => getByTestId('find-brands'));
     fireEvent.press(getByTestId('find-brands'));
     expect(n.navigate).toHaveBeenCalledWith('FindBrands');
   });

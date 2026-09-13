@@ -139,9 +139,14 @@ const setSummary = asyncHandler(async (req, res) => {
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Set not found', 404);
   const counts = (await state.countsForSets([rows[0].id])).get(rows[0].id) || state.EMPTY_COUNTS;
   const set = shapeSet(rows[0], counts, null);
+  // Item 5 (A9) — the set's creators grouped in the I9 order, at most 50 per group with the
+  // real count (APPROVAL.md §3.5). Contract: features/item5-invitations
+  const invitationRows = require('../services/invitationRows.service');
+  const creators = await invitationRows.creatorsForSet(rows[0].id, rows[0].goal);
   return success(res, {
     set: { ...set, canDelete: !set.locked },
     campaign: { id: c.id, name: c.name },
+    creators,
     dateRules: state.dateRules(),
   });
 });

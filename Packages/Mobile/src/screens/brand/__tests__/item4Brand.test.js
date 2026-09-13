@@ -197,14 +197,15 @@ describe('C6 · C11 — Campaign detail and menus', () => {
 });
 
 describe('C7 · C8 · C9 · C10 — Set detail', () => {
-  it('draft: rows, the draft lock line, Add creators says Coming soon, Edit/Duplicate, the empty box; the ⋯ has Edit, Duplicate, Delete', async () => {
+  it('draft: rows, the draft lock line, Add creators opens the picker (item 5), Edit/Duplicate, the empty box; the ⋯ has Edit, Duplicate, Delete', async () => {
     brandApi.setSummary.mockResolvedValue(ok({ set: SET_B, campaign: { id: 'c1', name: 'Diwali Edit 2026' }, dateRules: RULES }));
-    const { getByText, getAllByText, getByTestId } = render(<BrandSetDetailScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sB' } }} />);
+    const n = nav();
+    const { getByText, getAllByText, getByTestId } = render(<BrandSetDetailScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sB' } }} />);
     await waitFor(() => getByTestId('set-detail-draft'));
     getByText('Pay for Content'); getByText('Remote'); getByText(`24 Oct ${yr}`); getByText(`21 Oct ${yr}`);
     getByText('🔒 Aim, posting date, mode and branch lock when you send the first invitation.');
     fireEvent.press(getByTestId('add-creators'));
-    await waitFor(() => getByText('Coming soon'));
+    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', { campaignId: 'c1', setId: 'sB' });
     getByText('No creators yet'); getByText('Add creators, agree their terms and send invitations.');
     fireEvent.press(getByTestId('set-menu'));
     expect(getAllByText('Edit set').length).toBe(2); getByText('Duplicate set'); getByText('Delete set');

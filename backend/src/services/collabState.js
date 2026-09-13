@@ -33,7 +33,9 @@ function familyOf(status) {
     case 'declined':
     case 'rejected_by_brand':
     case 'slots_filled':       return FAMILY.DECLINED;
-    case 'expired':            return FAMILY.ENDED;
+    case 'expired':
+    case 'withdrawn':          // item 5: the brand pulled the invitation back
+    case 'removed':            return FAMILY.ENDED;   // item 5: the brand took her out before signing
     default:                   return FAMILY.WAITING;
   }
 }

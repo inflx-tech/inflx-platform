@@ -48,7 +48,10 @@ describe('the refusals are gone', () => {
 describe('a coupon is still honoured when one is actually wanted', () => {
   // This is not a removal of the feature. A brand who wants codes on their bills still gets
   // them — the change is that not wanting them is now allowed.
-  const block = CAMP.slice(CAMP.indexOf('// Coupon code handling'), CAMP.indexOf('// Coupon code handling') + 2200);
+  // Item 5 moved the coupon step, with every other invitation gate, into
+  // services/invitationSend.service.js. Same code, one home.
+  const SEND = read('src/services/invitationSend.service.js');
+  const block = SEND.slice(SEND.indexOf('// Coupon code handling'), SEND.indexOf('// Coupon code handling') + 2200);
 
   test('a code passed for this creator is used', () => {
     expect(block).toContain('finalCouponCode = customCouponCode;');
@@ -96,12 +99,17 @@ describe('why this is safe — the coupon never found the creator', () => {
     // wrong about the code, not the other way round. What matters is not how many there are
     // but what they ARE: both select a literal `1` to see whether a code is already taken.
     // Neither returns a creator.
-    const uniquenessChecks = [...CAMP.matchAll(/SELECT 1 FROM campaign_influencers WHERE coupon_code = \$1/g)];
+    // Item 5: the two live in services/invitationSend (the send) and services/invitationInputs
+    // (the generator); the controller no longer carries either.
+    const SEND = read('src/services/invitationSend.service.js');
+    const INPUTS = read('src/services/invitationInputs.service.js');
+    const uniquenessChecks = [...(SEND + INPUTS).matchAll(/SELECT 1 FROM campaign_influencers WHERE coupon_code = \$1/g)];
     expect(uniquenessChecks).toHaveLength(2);
+    expect([...CAMP.matchAll(/SELECT 1 FROM campaign_influencers WHERE coupon_code = \$1/g)]).toHaveLength(0);
 
     // And every query touching coupon_code is one of those two — no query anywhere selects a
     // creator's columns by her coupon.
-    const allTouches = [...CAMP.matchAll(/WHERE coupon_code/g)];
+    const allTouches = [...(CAMP + SEND + INPUTS).matchAll(/WHERE coupon_code/g)];
     expect(allTouches).toHaveLength(2);
   });
 

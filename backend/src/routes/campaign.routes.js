@@ -4,6 +4,7 @@ const { Router } = require('express');
 const { authenticate, requireRole, requireApproved } = require('../middleware/auth');
 const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/campaign.controller');
+const invCtrl = require('../controllers/invitations.controller');
 
 const router = Router();
 const brandAuth = [authenticate, requireRole('brand')];
@@ -51,6 +52,16 @@ router.post('/:id/sets/:sid/duplicate',     ...brandAuth, ctrl.duplicateSet);
 
 // ── Invite influencer to set (handpick) ─────────────────────────────────────
 router.post('/:id/sets/:sid/invite', ...brandAuth, checkQuota('inviteInfluencer'), ctrl.invite);
+
+// ── Item 5 — choosing creators, terms and invitations (A1–A4, A8, A10–A12) ───
+// Contract: features/item5-invitations. New endpoints: another brand's campaign or set is 404.
+router.get ('/:id/sets/:sid/pickable',                        ...brandAuth, invCtrl.pickable);
+router.get ('/:id/sets/:sid/group-check/:groupId',            ...brandAuth, invCtrl.groupCheck);
+router.post('/:id/sets/:sid/eligibility',                     ...brandAuth, invCtrl.checkEligibility);
+router.post('/:id/sets/:sid/invitations',                     ...brandAuth, checkQuota('inviteInfluencer'), invCtrl.sendInvitations);
+router.get ('/:id/sets/:sid/invitations/:ciId',               ...brandAuth, invCtrl.invitationDetail);
+router.post('/:id/sets/:sid/invitations/:ciId/withdraw',      ...brandAuth, invCtrl.withdraw);
+router.post('/:id/sets/:sid/invitations/:ciId/remove',        ...brandAuth, invCtrl.remove);
 
 // ── Update existing influencer assignment (draft editing) ───────────────────
 router.patch('/:id/sets/:sid/influencers/:ciId', ...brandAuth, ctrl.updateInfluencer);

@@ -12,6 +12,8 @@ const paymentConfigSvc    = require('../services/paymentConfig.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+// Item 5 — accept and decline are shared with the new invitation endpoints.
+const invitationAnswer = require('../services/invitationAnswer.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private helpers
@@ -64,14 +66,9 @@ async function getCampaignInfluencer(id) {
   return rows[0] || null;
 }
 
-// Valid decline reasons from spec
-const VALID_DECLINE_REASONS = [
-  'not_relevant',
-  'fee_too_low',
-  'schedule_conflict',
-  'already_partnered',
-  'other',
-];
+// Decline reasons: item 5's five (invitationCopy.DECLINE_REASONS) plus the legacy
+// 'already_partnered', which this legacy door still accepts. Kept for readers of this file.
+const VALID_DECLINE_REASONS = [...invitationAnswer.REASON_CODES, ...invitationAnswer.LEGACY_REASON_CODES];
 
 // Valid negotiation respond actions
 const VALID_ACTIONS = ['counter', 'accept', 'walkaway'];
@@ -100,12 +97,13 @@ const getMyOffers = asyncHandler(async (req, res) => {
     }
   }
 
+  // Item 5 (APPROVAL.md Q7): the set's and campaign's budgets never reach a creator. Also gone
+  // from the row: the brand's picker group and who sent it (privacy, prompt D14).
   const { rows } = await db.query(
     `SELECT ci.*,
+            NULL::uuid AS source_group_id, NULL::uuid AS invited_by,
             cs.name AS set_name,
             cs.goal,
-            cs.budget AS set_budget,
-            cs.per_influencer_budget,
             cs.formats_json,
             cs.influencer_mode,
             cs.max_cap,
@@ -136,86 +134,15 @@ const accept = asyncHandler(async (req, res) => {
   if (ci.influencer_id !== influencer.id) {
     throw new AppError('FORBIDDEN', 'This offer does not belong to you', 403);
   }
-  if (ci.status !== 'invited') {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `Cannot accept offer in '${ci.status}' status. Must be in 'invited' status.`,
-      422
-    );
-  }
 
-  // Two flows diverge here:
-  //
-  // 1) handpick — invited → accepted → draft contract → pending_influencer
-  //    → pending_brand → active. Brand picked the influencer up front, so
-  //    accept commits them straight into the contract pipeline.
-  //
-  // 2) open_group — invited → applied → (brand reviews) → accepted →
-  //    contract pipeline as above. Influencer is expressing interest, not
-  //    committing. Brand approves up to max_cap applications; the rest
-  //    get auto-closed to 'slots_filled'.
-  const isOpenGroup = ci.influencer_mode === 'open_group';
-  const nextStatus  = isOpenGroup ? 'applied' : 'accepted';
-
-  await db.query(
-    `UPDATE campaign_influencers
-     SET status = $2,
-         agreed_fee = COALESCE(agreed_fee, influencer_budget)
-     WHERE id = $1`,
-    [ci.id, nextStatus]
-  );
-
-  const { rows } = await db.query(
-    `SELECT * FROM campaign_influencers WHERE id = $1`,
-    [ci.id]
-  );
-
-  // Notify brand. Copy differs by flow so it's clear what's expected next.
-  try {
-    const { rows: brandNotifRows } = await db.query(
-      `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name,
-              inf.instagram_handle
-       FROM campaigns c
-       JOIN brands b ON b.id = c.brand_id
-       JOIN users u ON u.id = b.user_id
-       JOIN influencers inf ON inf.id = $2
-       WHERE c.id = $1`,
-      [ci.campaign_id, ci.influencer_id]
-    );
-    if (brandNotifRows[0]) {
-      const handle = brandNotifRows[0].instagram_handle || 'An influencer';
-      await notificationService.send({
-        userId:   brandNotifRows[0].user_id,
-        type:     isOpenGroup ? 'application.received' : 'offer.accepted',
-        title:    isOpenGroup ? 'New application' : 'Offer Accepted!',
-        body:     isOpenGroup
-          ? `@${handle} applied to your campaign "${brandNotifRows[0].campaign_name}"`
-          : `@${handle} accepted your offer for ${brandNotifRows[0].campaign_name}`,
-        data:     { screen: 'campaign_detail', campaign_id: ci.campaign_id },
-        fcmToken: brandNotifRows[0].fcm_token,
-        sendSms:  false,
-      });
-    }
-  } catch (notifErr) {
-    console.error('[NOTIFICATION] accept/apply send failed:', notifErr.message);
-  }
-
-  // Auto-create the draft contract ONLY for handpick. Open-group applications
-  // wait for brand approval before a contract is drafted — otherwise we'd be
-  // creating contract rows for every applicant and tearing most of them down.
-  let contractError = null;
-  if (!isOpenGroup) {
-    try {
-      const contractService = require('../services/contract.service');
-      await contractService.autoCreate(ci.id);
-    } catch (contractErr) {
-      console.error('[CONTRACT] Auto-create failed on accept:', contractErr.message);
-      contractError = contractErr.message;
-    }
-  }
+  // Item 5 — the answer itself lives in invitationAnswer.service (shared with
+  // /influencers/me/invitations/:id/accept): handpick → accepted + draft contract, open group →
+  // applied; answered_at written; refused after the set's cutoff and on a second answer.
+  const row = await invitationAnswer.loadForCreator(ci.id, influencer.id);
+  const { ci: updated, contractError } = await invitationAnswer.accept(row);
 
   return success(res, {
-    campaign_influencer: rows[0],
+    campaign_influencer: updated,
     contract_pending: !!contractError,
     contract_error:   contractError,
   });
@@ -234,95 +161,14 @@ const decline = asyncHandler(async (req, res) => {
     throw new AppError('FORBIDDEN', 'This offer does not belong to you', 403);
   }
 
-  const { reason } = req.body;
+  // Item 5 — the five reasons on the mockup (the legacy code 'already_partnered' stays readable
+  // and, on this legacy door, still accepted), the note capped at 200, an unsigned contract
+  // deleted, answered_at written, and the brand told the reason AND the note (founder Q3).
+  // Shared with /influencers/me/invitations/:id/decline through invitationAnswer.service.
+  const row = await invitationAnswer.loadForCreator(ci.id, influencer.id);
+  const { ci: updated } = await invitationAnswer.decline(row, { reason: req.body?.reason, note: req.body?.note, legacyCodes: true });
 
-  if (!reason) {
-    throw new AppError('VALIDATION_ERROR', 'reason is required', 422, 'reason');
-  }
-  if (!VALID_DECLINE_REASONS.includes(reason)) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `reason must be one of: ${VALID_DECLINE_REASONS.join(', ')}`,
-      422,
-      'reason'
-    );
-  }
-
-  // 'accepted' joins the list. Since 2026-08-28 a creator briefed on terms she had already
-  // agreed goes STRAIGHT to signing — she is recorded as accepted and never passes through
-  // 'invited'. Without this she would have no way to say no at all: the only screen she reaches
-  // is the contract, and the only button on it would be Sign.
-  //
-  // The founder chose sign-or-decline over sign-or-renegotiate: the money is settled, so if
-  // something about the campaign does not work the honest answer is no, and the brand fixes it
-  // and briefs again.
-  if (!['invited', 'negotiating', 'accepted'].includes(ci.status)) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `Cannot decline offer in '${ci.status}' status`,
-      422
-    );
-  }
-
-  // Her own words, alongside the category. "with clear remarks from creator" — founder,
-  // 2026-08-28. A brand who reads "the store visit is 40km from me" can do something about it;
-  // "schedule_conflict" on its own tells them nothing they can act on.
-  const note = typeof req.body?.note === 'string' ? req.body.note.trim().slice(0, 1000) : null;
-
-  await db.query(
-    `UPDATE campaign_influencers
-        SET status = 'declined', declined_reason = $2, declined_note = $3
-      WHERE id = $1`,
-    [ci.id, reason, note || null]
-  );
-
-  // If a contract was already waiting for her — which it is on the sign-straight-through path —
-  // it must not be left sitting as though she might still sign it.
-  //
-  // DELETED, not marked cancelled. The contract_status enum is
-  // draft | pending_influencer | pending_brand | active | disputed — there IS no 'cancelled',
-  // and writing one would fail at request time. That is the exact bug already sitting unfixed
-  // in cancelInfluencer, which writes 'cancelled' to a campaign_influencer_status that does not
-  // accept it either. I nearly shipped a second copy of it here.
-  //
-  // Deleting is safe because the guard only ever removes a contract NOBODY HAS SIGNED. There is
-  // no evidence in an unsigned draft, and if the brand fixes what she objected to and briefs her
-  // again, autoCreate writes a fresh one.
-  await db.query(
-    `DELETE FROM contracts
-      WHERE campaign_influencer_id = $1
-        AND influencer_signed_at IS NULL
-        AND brand_signed_at IS NULL`,
-    [ci.id]
-  ).catch(err => console.error('[DECLINE] could not remove the waiting contract:', err.message));
-
-  const { rows } = await db.query(
-    `SELECT * FROM campaign_influencers WHERE id = $1`,
-    [ci.id]
-  );
-
-  // Notify brand that influencer declined
-  const { rows: brandUserRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name
-     FROM campaigns c
-     JOIN brands b ON b.id = c.brand_id
-     JOIN users u ON u.id = b.user_id
-     WHERE c.id = $1`,
-    [ci.campaign_id]
-  );
-  if (brandUserRows[0]) {
-    await notificationService.send({
-      userId: brandUserRows[0].user_id,
-      type:   'offer.declined',
-      title:  'Offer Declined',
-      body:   `An influencer declined your offer for campaign "${brandUserRows[0].campaign_name}".`,
-      data:   { screen: 'campaign_detail', campaign_id: ci.campaign_id },
-      fcmToken: brandUserRows[0].fcm_token,
-      sendSms:  false,
-    }).catch(err => console.error('[NOTIFICATION] offer.declined send failed:', err.message));
-  }
-
-  return success(res, { campaign_influencer: rows[0] });
+  return success(res, { campaign_influencer: updated });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1025,13 +871,14 @@ const publishOpenGroup = asyncHandler(async (req, res) => {
 const getOfferDetail = asyncHandler(async (req, res) => {
   const influencer = await getInfluencerOrThrow(req.user.sub);
 
+  // Item 5 (APPROVAL.md Q7): the campaign description, the budgets and the coupon prefix are
+  // the brand's business, never the creator's (rules §7A "Creators never see…"). Stripped here
+  // and never selected by the new /influencers/me/invitations endpoints.
   const { rows } = await db.query(
     `SELECT ci.*,
+            NULL::uuid AS source_group_id, NULL::uuid AS invited_by,
             cs.name           AS set_name,
             cs.goal,
-            cs.set_budget,
-            cs.per_influencer_budget,
-            cs.coupon_prefix,
             cs.formats_json,
             cs.influencer_mode,
             cs.max_cap,
@@ -1039,8 +886,6 @@ const getOfferDetail = asyncHandler(async (req, res) => {
             cs.content_end_date,
             c.allow_negotiation,
             c.name            AS campaign_name,
-            c.brief           AS campaign_brief,
-            c.total_budget,
             c.start_date      AS campaign_start_date,
             c.end_date        AS campaign_end_date,
             c.status          AS campaign_status,

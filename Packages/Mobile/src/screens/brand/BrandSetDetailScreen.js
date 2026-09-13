@@ -1,7 +1,9 @@
 /**
  * BrandSetDetailScreen — C7 (draft), C8 (live and locked), C9 (date passed, expired, completed),
- * C10 (duplicate) and the set ⋯ menu from C11.
- * Contract: features/item4-campaigns-sets · prompt §6.5–§6.8
+ * C10 (duplicate) and the set ⋯ menu from C11. Item 5 adds I9 (the creators grouped by what is
+ * happening, "Add creators" opening the picker and hidden once the cutoff has passed) and I10
+ * (one creator's ⋯: view terms sent, open profile, withdraw, remove).
+ * Contract: features/item4-campaigns-sets · features/item5-invitations · prompt §6.5–§6.8
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
@@ -19,8 +21,12 @@ import { StateChip4, ProgressBar4, CountsLine4 } from '../../components/campaign
 import { TextSheet4, DuplicateSheet4 } from '../../components/campaigns/sheets4';
 import { C4, MSG4, aimLabel4, modeLabel4, longDate4 } from '../../components/campaigns/copy4';
 import { cutoffFor } from './BrandSetEditScreen';
+import { GroupHeader5, SetCreatorRow5 } from '../../components/invitations/bits5';
+import { TermsSentSheet5 } from '../../components/invitations/sheets5';
+import { C5, first } from '../../components/invitations/copy5';
 
 const SD = C4.setDetail;
+const S5 = C5.set;
 
 export default function BrandSetDetailScreen({ navigation, route }) {
   const { campaignId, setId } = route?.params || {};
@@ -30,6 +36,10 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   const [renaming, setRenaming] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dup, setDup] = useState(null);
+  // Item 5 — one creator's menu and its two confirms, and "View terms sent".
+  const [creatorMenu, setCreatorMenu] = useState(null);
+  const [confirm, setConfirm] = useState(null);       // { kind: 'withdraw' | 'remove', row }
+  const [termsSent, setTermsSent] = useState(null);   // the invitation detail
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
@@ -44,6 +54,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   const set = data && data.set;
   const title = set ? set.name : (route?.params?.name || '');
   const edit = () => navigation.navigate('BrandSetEdit', { campaignId, campaignName: data.campaign.name, set, dateRules: data.dateRules });
+  const addCreators = () => navigation.navigate('BrandSetPickCreators', { campaignId, setId });
 
   async function rename(v) {
     const r = await brandApi.updateCampaignSet(campaignId, setId, { name: v });
@@ -62,6 +73,31 @@ export default function BrandSetDetailScreen({ navigation, route }) {
     setDup(null); navigation.push('BrandSetDetail', { campaignId, setId: r.data.set.id, toast: C4.duplicate.created }); return null;
   }
 
+  // Item 5 — I10
+  async function viewTerms(row) {
+    const r = await brandApi.invitationDetail(campaignId, setId, row.id);
+    if (!r.success) { show(r.error?.message || COPY.loadErrorTitle); return; }
+    setTermsSent(r.data.invitation);
+  }
+  const openProfile = (row) => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: row.influencerId } });
+  async function doConfirm() {
+    const { kind, row } = confirm;
+    setConfirm(null);
+    const r = kind === 'withdraw' ? await brandApi.withdrawInvitation(campaignId, setId, row.id) : await brandApi.removeInvitation(campaignId, setId, row.id);
+    if (!r.success) { show(r.error?.message || COPY.saveFailed); return; }
+    show(kind === 'withdraw' ? S5.withdrawn : S5.removed);
+    load();
+  }
+  function creatorActions(row) {
+    const a = [
+      { label: S5.menu.viewTerms, onPress: () => viewTerms(row) },
+      { label: S5.menu.profile, onPress: () => openProfile(row) },
+    ];
+    if (row.actions && row.actions.withdraw) a.push({ label: S5.menu.withdraw, destructive: true, onPress: () => setConfirm({ kind: 'withdraw', row }) });
+    if (row.actions && row.actions.remove) a.push({ label: S5.menu.remove, destructive: true, onPress: () => setConfirm({ kind: 'remove', row }) });
+    return a;
+  }
+
   const right = set ? (
     <TouchableOpacity onPress={() => setMenu(true)} accessibilityRole="button" accessibilityLabel="More" style={hx.more} testID="set-menu"><Text style={hx.moreText}>⋯</Text></TouchableOpacity>
   ) : null;
@@ -69,6 +105,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   if (status === 'error') return <View style={base.screen}><Header title={title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
 
   const draft = set.state === 'draft', live = set.state === 'live', past = set.isPast;
+  const canAdd = !!(set.canInvite && set.canInvite.ok);
   const lock = set.locked ? '🔒 ' : '';
   const actions = draft
     ? [{ label: SD.menuEdit, onPress: edit }, { label: SD.menuDuplicate, onPress: () => setDup(set) }, { label: SD.menuDelete, destructive: true, onPress: () => setConfirmDelete(true) }]
@@ -82,6 +119,8 @@ export default function BrandSetDetailScreen({ navigation, route }) {
     [SD.rows.date, longDate4(set.postingDate)],
     [SD.rows.close, longDate4(set.cutoff)],
   ];
+  const creators = data.creators || { order: [], groups: {} };
+  const groups = (creators.order || []).map(k => creators.groups[k]).filter(g => g && g.count > 0);
 
   return (
     <View style={base.screen} testID={`set-detail-${set.state}${set.datePassed ? '-datepassed' : ''}`}>
@@ -101,7 +140,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
         {!past ? <Text style={s.lockline} testID="lock-line">🔒 {set.locked ? SD.lockLive : SD.lockDraft}</Text> : null}
 
         {draft && set.datePassed ? <SecondaryButton label={SD.chooseNewDate} onPress={edit} testID="choose-new-date" /> : null}
-        {draft && !set.datePassed ? <PrimaryButton label={SD.addCreators} onPress={() => show(SD.comingSoon)} testID="add-creators" /> : null}
+        {draft && canAdd ? <PrimaryButton label={SD.addCreators} onPress={addCreators} testID="add-creators" /> : null}
         {draft ? (
           <View style={s.btnrow}>
             <View style={{ flex: 1 }}><SecondaryButton label={SD.edit} onPress={edit} testID="edit-set" /></View>
@@ -113,16 +152,29 @@ export default function BrandSetDetailScreen({ navigation, route }) {
           <View style={s.empty} testID="no-creators"><Text style={s.emptyTitle}>{SD.emptyTitle}</Text><Text style={s.emptyBody}>{SD.emptyBody}</Text></View>
         ) : null}
 
-        {live ? (
+        {live || (past && groups.length) ? (
           <View style={{ marginTop: 14 }} testID="creators-block">
             <View style={s.row}><Text style={s.secth}>{SD.creatorsTitle}</Text><Text style={s.secn}>{set.counts.invited}</Text></View>
             <ProgressBar4 counts={set.counts} />
             <CountsLine4 counts={set.counts} detail />
-            <View style={s.btnrow}>
-              <View style={{ flex: 1 }}><SecondaryButton label={SD.addCreators} onPress={() => show(SD.comingSoon)} testID="add-creators" /></View>
-              <View style={{ width: 8 }} />
-              <View style={{ flex: 1 }}><SecondaryButton label={SD.duplicate} onPress={() => setDup(set)} testID="duplicate-set" /></View>
-            </View>
+            {groups.map(g => (
+              <View key={g.key} testID={`group-${g.key}`}>
+                <GroupHeader5 title={S5.groups[g.key] || g.title} count={g.count} />
+                {g.rows.map(row => (
+                  <SetCreatorRow5 key={row.id} row={row}
+                    onPress={() => (row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
+                    onMore={() => setCreatorMenu(row)}
+                    onChip={row.group === 'accepted' ? () => show(SD.comingSoon) : undefined} />
+                ))}
+                {g.more ? <Text style={s.more}>{S5.more(g.more)}</Text> : null}
+              </View>
+            ))}
+            {live ? (
+              <View style={s.btnrow}>
+                {canAdd ? <><View style={{ flex: 1 }}><SecondaryButton label={SD.addCreators} onPress={addCreators} testID="add-creators" /></View><View style={{ width: 8 }} /></> : null}
+                <View style={{ flex: 1 }}><SecondaryButton label={SD.duplicate} onPress={() => setDup(set)} testID="duplicate-set" /></View>
+              </View>
+            ) : null}
           </View>
         ) : null}
         {set.state === 'expired' ? <View style={{ marginTop: 12 }}><SecondaryButton label={SD.duplicateNewDate} onPress={() => setDup(set)} testID="duplicate-new-date" /></View> : null}
@@ -130,8 +182,12 @@ export default function BrandSetDetailScreen({ navigation, route }) {
       </ScrollView>
       {toast}
       <ActionSheet visible={menu} onClose={() => setMenu(false)} actions={actions} />
+      <ActionSheet visible={!!creatorMenu} onClose={() => setCreatorMenu(null)} actions={creatorMenu ? creatorActions(creatorMenu) : []} />
       <TextSheet4 visible={renaming} title={SD.renameTitle} label={C4.set.nameLabel} initial={set.name} max={60} emptyMessage={MSG4.SET_NAME} onSubmit={rename} onClose={() => setRenaming(false)} testID="rename-set" />
       <ConfirmSheet visible={confirmDelete} danger title={SD.deleteTitle(set.name)} body={SD.deleteBody} confirmLabel={SD.del} cancelLabel={SD.keep} onConfirm={remove} onCancel={() => setConfirmDelete(false)} />
+      <ConfirmSheet visible={!!confirm && confirm.kind === 'withdraw'} danger title={confirm ? S5.withdrawTitle(first(confirm.row.name)) : ''} body={S5.withdrawBody} info={S5.termsHint} confirmLabel={S5.withdraw} cancelLabel={S5.keep} onConfirm={doConfirm} onCancel={() => setConfirm(null)} />
+      <ConfirmSheet visible={!!confirm && confirm.kind === 'remove'} danger title={confirm ? S5.removeTitle(first(confirm.row.name)) : ''} body={S5.removeBody} confirmLabel={S5.remove} cancelLabel={S5.keep} onConfirm={doConfirm} onCancel={() => setConfirm(null)} />
+      <TermsSentSheet5 visible={!!termsSent} invitation={termsSent} onClose={() => setTermsSent(null)} />
       <DuplicateSheet4 set={dup} earliest={data.dateRules.earliestPostingDate} cutoffFor={cutoffFor} onCreate={duplicate} onClose={() => setDup(null)} />
     </View>
   );
@@ -155,4 +211,5 @@ const s = StyleSheet.create({
   emptyBody: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, textAlign: 'center', marginTop: 6, lineHeight: 18 },
   secth: { fontFamily: fonts.sansBold, fontSize: 14, color: T.ink },
   secn: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.ink2 },
+  more: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.ink2, marginTop: 6 },
 });

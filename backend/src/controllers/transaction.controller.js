@@ -1459,8 +1459,11 @@ async function priceOrderForGroup(follower, group) {
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: commissionPct,
     offer_type: record.ci_offer_type || null,
-    brand_offer_id: record.brand_offer_id || null,
-    offer_source: record.brand_offer_id ? 'store' : 'influencer',
+    // Item 5 Gap A — the sale records WHICH offer produced it: the resolver's winner (a
+    // library id for a snapshotted creator offer or a published global offer; null for a
+    // bespoke special offer, which has no library row), falling back to the store-direct id.
+    brand_offer_id: (offerResult && offerResult.offer_id) || record.brand_offer_id || null,
+    offer_source: isOrganic && record.brand_offer_id ? 'store' : 'influencer',
     discount_reason: offerResult.reason,
     adjustments: offerResult.adjustments || null,
     // L3 (Phase A5) classification — stashed for verifyOrder attribution write

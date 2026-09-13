@@ -395,12 +395,38 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     warnings.push(WARNING.BELOW_MIN_FEE);
   }
 
-  if ((aim === 'conversion' || aim === 'hybrid') && commission != null) {
-    const min = minCommissionFor(settings, aim, brand.subCategories);
-    if (min != null && Number(commission) < min) warnings.push(WARNING.BELOW_MIN_COMMISSION);
-  }
+  const minCommission = (aim === 'conversion' || aim === 'hybrid') ? minCommissionFor(settings, aim, brand.subCategories) : null;
+  if (minCommission != null && commission != null && Number(commission) < minCommission) warnings.push(WARNING.BELOW_MIN_COMMISSION);
 
-  return { ok: true, reason: REASON.OK, warnings };
+  // Item 5 (A4): her minimums for THIS Aim and THIS brand, so the terms screen can print
+  // "Below Priya's minimum of 12%". Handed to the BRAND only — a creator endpoint never
+  // forwards this object (rules §8A: thresholds are private to the other side, but the
+  // creator's own minimum shown to the brand proposing terms is what the warning IS).
+  const minFee = aim === 'engagement' ? settings.min_fee_engagement : aim === 'hybrid' ? settings.min_fee_hybrid : null;
+  const minimums = { fee: minFee != null ? Number(minFee) : null, commissionPct: minCommission != null ? Number(minCommission) : null };
+
+  return { ok: true, reason: REASON.OK, warnings, minimums };
+}
+
+/**
+ * Item 5 (A4) — the same check for a list of creators against one set. One result per
+ * creator, in input order; a creator that does not exist reads as NOT_MATCHING.
+ * @param {{brandId:string, set:object, creators:Array<{influencerId:string, fee?:number, commissionPct?:number}>}} p
+ * @returns {Promise<Array<{influencerId:string, ok:boolean, reason:string, warnings:string[], minimums:object|null}>>}
+ */
+async function canBrandInviteMany({ brandId, set, creators }) {
+  const out = [];
+  for (const c of creators || []) {
+    const influencerId = c.influencerId || c.influencer_id;
+    if (!influencerId) continue;
+    try {
+      const r = await canBrandInviteCreator({ brandId, influencerId, set, proposedTerms: { fee: c.fee, commissionPct: c.commissionPct } });
+      out.push({ influencerId, ok: r.ok, reason: r.reason, warnings: r.warnings || [], minimums: r.minimums || null });
+    } catch (e) {
+      out.push({ influencerId, ok: false, reason: REASON.NOT_MATCHING, warnings: [], minimums: null });
+    }
+  }
+  return out;
 }
 
 /**
@@ -494,6 +520,7 @@ module.exports = {
   brandFacts,
   canCreatorPitchBrand,
   canBrandInviteCreator,
+  canBrandInviteMany,
   minCommissionFor,
   normaliseMode,
   pitchSummaryFor,

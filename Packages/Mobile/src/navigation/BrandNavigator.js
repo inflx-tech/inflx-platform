@@ -33,6 +33,11 @@ import BrandCampaignNewScreen from '../screens/brand/BrandCampaignNewScreen';
 import BrandSetEditScreen from '../screens/brand/BrandSetEditScreen';
 import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScreen';
 import BrandSetDetailScreen from '../screens/brand/BrandSetDetailScreen';
+// Item 5 — the set's creator picker, the group check, terms per creator, review and send.
+import BrandSetPickCreatorsScreen from '../screens/brand/BrandSetPickCreatorsScreen';
+import BrandGroupInviteCheckScreen from '../screens/brand/BrandGroupInviteCheckScreen';
+import BrandCreatorTermsScreen from '../screens/brand/BrandCreatorTermsScreen';
+import BrandReviewSendScreen from '../screens/brand/BrandReviewSendScreen';
 
 const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
@@ -48,6 +53,11 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandSetEdit" component={BrandSetEditScreen} />
       <CampaignsStack.Screen name="BrandCampaignDetail" component={BrandCampaignDetailScreen} />
       <CampaignsStack.Screen name="BrandSetDetail" component={BrandSetDetailScreen} />
+      {/* Item 5 — choosing creators, terms and invitations. Contract: features/item5-invitations */}
+      <CampaignsStack.Screen name="BrandSetPickCreators" component={BrandSetPickCreatorsScreen} />
+      <CampaignsStack.Screen name="BrandGroupInviteCheck" component={BrandGroupInviteCheckScreen} />
+      <CampaignsStack.Screen name="BrandCreatorTerms" component={BrandCreatorTermsScreen} />
+      <CampaignsStack.Screen name="BrandReviewSend" component={BrandReviewSendScreen} />
     </CampaignsStack.Navigator>
   );
 }

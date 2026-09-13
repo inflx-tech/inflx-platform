@@ -31,7 +31,9 @@ const SELLING_GOALS = ['conversion', 'hybrid'];
 const PAID_GOALS = ['engagement', 'hybrid'];
 
 /** A creator row that is out of the running owes nothing and is owed nothing. */
-const DEAD_STATUSES = ['declined', 'expired', 'rejected_by_brand', 'slots_filled'];
+// Item 5 adds the brand's two exits: withdrawn (pulled back unanswered) and removed (taken out
+// before both signatures). Contract: features/item5-invitations, APPROVAL.md Q1.
+const DEAD_STATUSES = ['declined', 'expired', 'rejected_by_brand', 'slots_filled', 'withdrawn', 'removed'];
 
 /**
  * A sales campaign that has been running a while and sold nothing is worth surfacing —

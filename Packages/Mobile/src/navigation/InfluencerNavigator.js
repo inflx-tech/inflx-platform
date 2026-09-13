@@ -23,6 +23,9 @@ import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
 // Contract: features/item3b-social-numbers
 import YourNumbersScreen from '../screens/influencer/YourNumbersScreen';
 import SocialDetailScreen from '../screens/shared/SocialDetailScreen';
+// Item 5 — invitations. Contract: features/item5-invitations
+import InvitationScreen from '../screens/influencer/InvitationScreen';
+import CounterSoonScreen from '../screens/influencer/CounterSoonScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -38,6 +41,9 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="BrandOverview" component={BrandOverviewScreen} />
       <CollabsStack.Screen name="BrandProducts" component={BrandProductsScreen} />
       <CollabsStack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      {/* Item 5 — the invitation and the item 6 placeholder behind Counter. Contract: features/item5-invitations */}
+      <CollabsStack.Screen name="Invitation" component={InvitationScreen} />
+      <CollabsStack.Screen name="CounterSoon" component={CounterSoonScreen} />
     </CollabsStack.Navigator>
   );
 }

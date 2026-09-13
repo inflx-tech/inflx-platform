@@ -151,6 +151,10 @@ router.use('/', discoveryRoutes);
 // Contract: features/item3b-social-numbers
 const socialRoutes = require('./social.routes');
 router.use('/', socialRoutes);
+// Item 5 — the creator's invitations under /influencers/me/invitations; mounted before
+// influencer.routes' /:id for the same reason. Contract: features/item5-invitations
+const invitationRoutes = require('./invitation.routes');
+router.use('/', invitationRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

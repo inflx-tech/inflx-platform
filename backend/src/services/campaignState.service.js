@@ -46,27 +46,34 @@ function dateRules(today = null) {
 
 /* ───────────────────────────────────────────────────────────── statuses */
 
-/** Waiting to answer, or answered but not yet signed by both sides. */
-const WAITING_STATUSES = ['invited', 'applied', 'accepted', 'negotiating', 'deferred'];
+/**
+ * Waiting to answer, or answered but not yet signed by both sides. Item 5 (founder Q5): a
+ * creator who asked for another date has ANSWERED — 'deferred' is no longer waiting, is never
+ * closed by the set expiring, and sits under its own heading on the set.
+ */
+const WAITING_STATUSES = ['invited', 'applied', 'accepted', 'negotiating'];
+/** "Asked for another date" — item 4's moved-out pool, shown in its own group (I9). */
+const DEFERRED_STATUSES = ['deferred'];
 /** Shown as "declined" on the cards: she said no, or never answered (APPROVAL.md Q9). */
 const DECLINED_STATUSES = ['declined', 'expired'];
-/** A row that is out of the running for good. */
+/** A row that is out of the running for good (DEAD includes item 5's withdrawn and removed). */
 const TERMINAL_STATUSES = ['completed', ...DEAD_STATUSES];
 /**
  * Rows that must NOT block a second invitation of the same creator elsewhere in the campaign
- * (APPROVAL.md Q6): the dead ones, plus 'deferred' — migration 167 exists precisely so a
- * creator who asked for a different day can be put in another set.
+ * (APPROVAL.md Q6): the dead ones (item 5: withdrawn and removed included), plus 'deferred' —
+ * migration 167 exists precisely so a creator who asked for a different day can be put in
+ * another set.
  */
 const NON_BLOCKING_STATUSES = [...DEAD_STATUSES, 'deferred'];
 
-/** The statuses the expiry job closes when a set expires. */
+/** The statuses the expiry job closes when a set expires — never 'deferred' (item 5, Q5). */
 const OPEN_STATUSES = WAITING_STATUSES;
 
 const isTerminal = (status) => TERMINAL_STATUSES.includes(String(status || ''));
 
 /* ────────────────────────────────────────────────────────────── counts */
 
-const EMPTY_COUNTS = Object.freeze({ invited: 0, signed: 0, waiting: 0, declined: 0, terminal: 0 });
+const EMPTY_COUNTS = Object.freeze({ invited: 0, signed: 0, waiting: 0, declined: 0, terminal: 0, finished: 0 });
 
 /**
  * One grouped query for many sets, never per row (D3). Invited counts everyone ever sent an
@@ -84,19 +91,20 @@ async function countsForSets(setIds, client = null) {
             count(*) FILTER (WHERE ci.status = ANY($2::campaign_influencer_status[])
                                AND NOT (${SIGNED_CONTRACT_SQL}))::int               AS waiting,
             count(*) FILTER (WHERE ci.status = ANY($3::campaign_influencer_status[]))::int AS declined,
-            count(*) FILTER (WHERE ci.status = ANY($4::campaign_influencer_status[]))::int AS terminal
+            count(*) FILTER (WHERE ci.status = ANY($4::campaign_influencer_status[]))::int AS terminal,
+            count(*) FILTER (WHERE ci.status = 'completed')::int                            AS finished
        FROM campaign_influencers ci
        LEFT JOIN contracts con ON con.campaign_influencer_id = ci.id
       WHERE ci.set_id = ANY($1::uuid[])
       GROUP BY ci.set_id`,
     [setIds, WAITING_STATUSES, DECLINED_STATUSES, TERMINAL_STATUSES]
   );
-  for (const r of rows) out.set(r.set_id, { invited: r.invited, signed: r.signed, waiting: r.waiting, declined: r.declined, terminal: r.terminal });
+  for (const r of rows) out.set(r.set_id, { invited: r.invited, signed: r.signed, waiting: r.waiting, declined: r.declined, terminal: r.terminal, finished: r.finished });
   return out;
 }
 
 const sumCounts = (list) => list.reduce((a, c) => ({
-  invited: a.invited + c.invited, signed: a.signed + c.signed, waiting: a.waiting + c.waiting, declined: a.declined + c.declined, terminal: a.terminal + c.terminal,
+  invited: a.invited + c.invited, signed: a.signed + c.signed, waiting: a.waiting + c.waiting, declined: a.declined + c.declined, terminal: a.terminal + c.terminal, finished: a.finished + (c.finished || 0),
 }), { ...EMPTY_COUNTS });
 
 /* ─────────────────────────────────────────────────────────────── states */
@@ -110,6 +118,10 @@ const sumCounts = (list) => list.reduce((a, c) => ({
 function completedRule(set, counts) {
   if (set.expired_at) return false;
   if (!counts || counts.invited === 0) return false;
+  // Item 5: at least one collaboration must actually have finished. Without this, a set whose
+  // only invitation was withdrawn or declined read as "completed" and refused a fresh
+  // invitation — the brand could never invite again after withdrawing (check 22).
+  if (!(counts.finished > 0)) return false;
   return counts.terminal === counts.invited;
 }
 
@@ -296,7 +308,7 @@ function uniqueCopyName(base, existingNames) {
 
 module.exports = {
   INVITE_CUTOFF_DAYS, cutoffFor, dateRules,
-  WAITING_STATUSES, DECLINED_STATUSES, TERMINAL_STATUSES, NON_BLOCKING_STATUSES, OPEN_STATUSES, isTerminal,
+  WAITING_STATUSES, DEFERRED_STATUSES, DECLINED_STATUSES, TERMINAL_STATUSES, NON_BLOCKING_STATUSES, OPEN_STATUSES, isTerminal,
   EMPTY_COUNTS, countsForSets, sumCounts,
   completedRule, describeSet, campaignStateFrom,
   LOCKED_FIELDS, hasAnyInvitation, campaignHasAnyInvitation,

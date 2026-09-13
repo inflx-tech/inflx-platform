@@ -103,13 +103,21 @@ function creatorOfferExpired(ci, now = new Date()) {
 }
 
 /**
+ * Item 5 Gap B — an offer never applies BEFORE its start date. offer_valid_from was written by
+ * every invite path since migration 148 and read by nothing until now.
+ */
+function creatorOfferNotYetLive(ci, now = new Date()) {
+  return !!ci?.offer_valid_from && new Date(ci.offer_valid_from) > now;
+}
+
+/**
  * Build the candidate list. Creator-specific first — it is the tie-break winner.
  */
 async function buildCandidates({ ci, brandId, now, conn }) {
   const candidates = [];
 
   const type = ci?.offer_type ?? ci?.ci_offer_type ?? null;
-  if (type && !creatorOfferExpired(ci, now)) {
+  if (type && !creatorOfferExpired(ci, now) && !creatorOfferNotYetLive(ci, now)) {
     candidates.push({
       source: 'creator',
       offer_id: ci.brand_offer_id || null,
@@ -216,5 +224,6 @@ module.exports = {
   scoreAllCandidates,
   fetchLiveGlobalOffers,
   creatorOfferExpired,
+  creatorOfferNotYetLive,
   MAX_GLOBAL_CANDIDATES,
 };

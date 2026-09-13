@@ -82,24 +82,28 @@ describe('C-5 · a creator carries her own offer window', () => {
     expect(undeclared).toEqual([]);
   });
 
+  // Item 5: every invitation row is written by services/invitationSend.service.js (the legacy
+  // invite handler calls it), so the window is asserted there.
+  const SEND = read('src/services/invitationSend.service.js');
+
   test('the invite path writes it', () => {
-    const invite = handler(CAMP, 'const invite = asyncHandler');
-    expect(invite).toMatch(/offer_valid_until, offer_valid_from,/);
-    expect(invite).toMatch(/offer_valid_from \|\| null/);
+    expect(SEND).toMatch(/offer_valid_until, offer_valid_from,/);
+    expect(SEND).toMatch(/offer_valid_from \|\| null/);
   });
 
-  test('the update path leaves it alone when omitted', () => {
-    // This endpoint is called for unrelated edits — a posting date, a budget. Clearing an
-    // offer's start as a side effect of one of those is the kind of bug nobody traces back.
-    expect(CAMP).toMatch(/offer_valid_from\s+= CASE WHEN \$19::text IS NULL THEN offer_valid_from\s+ELSE \$19::timestamptz END/);
+  test('the update path can no longer clear it — sent terms are never edited (item 5, APPROVAL §3.2)', () => {
+    // This endpoint used to be called for unrelated edits and NULLed nine fields as a side
+    // effect. It now refuses every row with the §7 message, so nothing can clear a window.
+    const update = handler(CAMP, 'const updateInfluencer = asyncHandler');
+    expect(update).toMatch(/MSG5\.SENT_LOCKED/);
+    expect(update).not.toMatch(/UPDATE campaign_influencers/);
   });
 
   test('offer_expires_at is untouched — it is a different clock', () => {
     // The invitation-acceptance deadline. It shares a table and half a name with the offer
     // window and means something else entirely; the column comment says so.
-    const invite = handler(CAMP, 'const invite = asyncHandler');
-    expect(invite).toMatch(/offer_expires_at/);          // still there
-    expect(invite).not.toMatch(/offer_expires_at\s*=\s*offer_valid/);
+    expect(SEND).toMatch(/offer_expires_at/);          // still there
+    expect(SEND).not.toMatch(/offer_expires_at\s*=\s*offer_valid/);
   });
 });
 

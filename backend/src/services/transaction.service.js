@@ -148,6 +148,9 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
        ci.id, ci.status AS ci_status, ci.commission_pct, ci.coupon_code,
        ci.influencer_id, ci.offer_type AS ci_offer_type, ci.offer_config_json,
        ci.alloc_scope, ci.offer_valid_until,
+       -- Item 5 Gap A / Gap B: the library offer this creator carries (so the sale can record
+       -- which offer produced it) and the start of her offer window (respected by the resolver).
+       ci.brand_offer_id, ci.offer_valid_from,
        cs.id AS set_id, cs.campaign_id,
        c.brand_id, c.status AS campaign_status, c.end_date,
        co.id AS offer_id,

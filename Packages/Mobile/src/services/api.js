@@ -223,22 +223,21 @@ export const brandApi = {
   // Docs/THE_CUT.md pass 1 — the pre-campaign handshake bindings are removed with
   // its screens. The server still answers these routes; disconnecting it is pass 3.
 
-  /* ── Stage 1 — everything before a campaign exists ─────────────────────────
-     All of this has been finished on the server for months and has never been
-     reachable from any surface: saved groups, asking a whole group, asking everyone
-     matching a filter, and the reach preview that says honestly who you did NOT
-     reach and why. It is the single largest block of finished-but-invisible work in
-     the system, and this is the first screen to call it.                        */
-
-  // Saved lists of creators.
-  listGroups:    () => api.get('/brands/me/influencer-groups'),
-  createGroup:   (name, influencerIds) => api.post('/brands/me/influencer-groups', { name, influencer_ids: influencerIds }),
-  renameGroup:   (id, name) => api.patch(`/brands/me/influencer-groups/${id}`, { name }),
-  deleteGroup:   (id) => api.delete(`/brands/me/influencer-groups/${id}`),
-  addToGroup:    (id, influencerIds) => api.post(`/brands/me/influencer-groups/${id}/members`, { influencer_ids: influencerIds }),
-  removeFromGroup: (id, influencerId) => api.delete(`/brands/me/influencer-groups/${id}/members/${influencerId}`),
+  /* ── Stage 1 — the retired handshake's "ask everyone matching a filter". The group
+     methods that used to be duplicated here are the item 3 ones above (item 5 cleanup:
+     the later copies silently won and dropped createGroup's no-members form). */
   askMany:  (filters, terms, message) =>
     api.post('/brands/me/collab-requests', { filters, terms, message }),
+
+  // ── Item 5 · choosing creators, terms and invitations ────────────────────
+  // Contract: features/item5-invitations. All new endpoints; another brand's set is 404.
+  pickable:          (campaignId, setId, params) => api.get(`/campaigns/${campaignId}/sets/${setId}/pickable${q(params || {})}`),
+  groupCheck:        (campaignId, setId, groupId) => api.get(`/campaigns/${campaignId}/sets/${setId}/group-check/${groupId}`),
+  checkEligibility:  (campaignId, setId, creators) => api.post(`/campaigns/${campaignId}/sets/${setId}/eligibility`, { creators }),
+  sendInvitations:   (campaignId, setId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations`, body),
+  invitationDetail:  (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}`),
+  withdrawInvitation: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/withdraw`),
+  removeInvitation:  (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/remove`),
 
   // Places to search in — state, then city, each with a real count of creators who
   // are actually there. Only ever offers somewhere someone is.
@@ -451,6 +450,11 @@ export const influencerApi = {
   getPostUploadUrl: (data) => api.post('/influencers/me/posts/upload-url', data),
   createPost: (data) => api.post('/influencers/me/posts', data),
   getMyPosts: (status) => api.get(`/influencers/me/posts${status ? `?status=${status}` : ''}`),
+  // ── Item 5 · my invitations (I11–I15). Contract: features/item5-invitations ──
+  myInvitations:     (tab) => api.get(`/influencers/me/invitations${tab ? `?tab=${encodeURIComponent(tab)}` : ''}`),
+  myInvitation:      (id) => api.get(`/influencers/me/invitations/${id}`),
+  acceptInvitation:  (id) => api.post(`/influencers/me/invitations/${id}/accept`),
+  declineInvitation: (id, body) => api.post(`/influencers/me/invitations/${id}/decline`, body),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),
