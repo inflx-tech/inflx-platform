@@ -17,6 +17,17 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null
+    "deployed_to_production": {
+      "at": "2026-09-13T09:00:00+05:30",
+      "by": "founder go (\"migrate,commit,push and publish, OTA\")",
+      "commit": "56e96a8",
+      "migration": "181 applied to production 2026-09-13 (run-181.js --apply: enum values withdrawn/removed, eleven columns, uq_ci_live_per_set, idx_ci_set_created; backfill 8 rows invited_at, 8 source=pitch, 0 legacy; all checks OK)",
+      "render": "item 5 code live after push: GET /v1/influencers/me/invitations answers 401 (route exists) while a made-up path answers 404",
+      "ota": { "brand": 215, "influencer": 202 },
+      "websites": "no website change in this item; the push redeploys Vercel unchanged",
+      "backend_tests": "229 failed / 940 passed / 1169 (0 new failures vs 229/914/1143; 28 new)",
+      "mobile_tests": "459 pass (17 new)",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). Nothing is tested end to end until after item 7 (PROMPT §12); the founder's phone walk of checks 1-42 is the functional gate."
+    }
   }
 }
