@@ -127,8 +127,14 @@ async function decline(row, { reason, note, legacyCodes = false, today = null } 
       [row.id, reason, text || null]
     );
     if (!rows[0]) throw new AppError('VALIDATION_ERROR', MSG.ANSWERED_TWICE, 422, 'status');
-    // A contract nobody has signed must not sit there as though she might still sign it.
-    await tx.query(`DELETE FROM contracts WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`, [row.id]);
+    // Item 7 (approval Q8): an agreement that once existed is a record, so it
+    // is MARKED, never deleted. P15 has to be able to name its ending months
+    // later, and a deleted row cannot say anything at all.
+    await tx.query(
+      `UPDATE contracts SET status = 'declined', declined_at = now(), decline_reason = $2, decline_note = $3
+         WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`,
+      [row.id, reason, text || null]
+    );
     // Item 6: a decline mid-negotiation ends the thread as declined by her; the thread stays readable.
     await tx.query(
       `INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, decline_reason, decline_note)

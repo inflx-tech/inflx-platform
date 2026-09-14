@@ -33,4 +33,36 @@ function fromPaise(paise) {
   return Math.round(p) / 100;
 }
 
-module.exports = { toPaise, fromPaise };
+/**
+ * Split a total into parts by percentage so that the parts sum EXACTLY to the
+ * total, with no paise lost or invented. Item 7, decision 4.4.
+ *
+ * Every part but the last is rounded; the last takes the remainder. A whole-
+ * rupee total splits into whole rupees (₹9,999 → 2500 / 2500 / 4999), because
+ * that is what the agreement prints and what the screens show; a total that
+ * carries paise splits at the paise.
+ *
+ * This is the ONE splitter. The escrow writer and every screen must call it,
+ * or the document says one thing and the money does another.
+ *
+ * @param   {number|string} total  the amount to split, in rupees
+ * @param   {Array<number|string>} pcts  percentages, summing to 100
+ * @returns {number[]} parts in rupees, summing exactly to `total`
+ */
+function splitAmount(total, pcts) {
+  const totalPaise = Math.round((parseFloat(total) || 0) * 100);
+  if (!Array.isArray(pcts) || pcts.length === 0) return [];
+  // A whole-rupee total keeps whole-rupee parts; anything else splits at the paise.
+  const unit = totalPaise % 100 === 0 ? 100 : 1;
+  const out = [];
+  let used = 0;
+  for (let i = 0; i < pcts.length - 1; i++) {
+    const part = Math.round((totalPaise * (parseFloat(pcts[i]) || 0)) / 100 / unit) * unit;
+    out.push(part);
+    used += part;
+  }
+  out.push(totalPaise - used);
+  return out.map((p) => p / 100);
+}
+
+module.exports = { toPaise, fromPaise, splitAmount };

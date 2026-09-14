@@ -505,7 +505,13 @@ async function remove({ brand, campaign, set, ciId, actorUserId }) {
       `UPDATE campaign_influencers SET status = 'removed', removed_at = now(), removed_by = $2 WHERE id = $1 RETURNING *`,
       [row.id, actorUserId || null]
     );
-    await tx.query(`DELETE FROM contracts WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`, [row.id]);
+    // Item 7 (approval Q8): marked, never deleted. Removing her from the set
+    // withdraws an agreement she never signed; the row keeps its ending.
+    await tx.query(
+      `UPDATE contracts SET status = 'withdrawn', withdrawn_at = now(), withdrawn_by = $2
+         WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`,
+      [row.id, actorUserId || null]
+    );
     return rows[0];
   });
   const brandName = await brandNameOf(brand.id);

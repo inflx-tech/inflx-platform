@@ -90,8 +90,11 @@ async function _autoCreateInner(campaignInfluencerId, opts = {}) {
   );
 
   if (!rows[0]) {
+    // Item 7 (approval 4.3): "the invitation is not there" and "a contract is
+    // already there" used to return the same null, so a silent failure looked
+    // exactly like success. They are distinguishable now.
     console.error(`[CONTRACT] autoCreate: CI not found: ${campaignInfluencerId}`);
-    return null;
+    return { contract: null, created: false, reason: 'invitation_not_found' };
   }
 
   const ci = rows[0];
@@ -179,11 +182,14 @@ async function _autoCreateInner(campaignInfluencerId, opts = {}) {
       console.error('[NOTIFICATION] contract.draft_ready send failed:', notifErr.message);
     }
 
-    return contractRows[0];
+    return { contract: contractRows[0], created: true, reason: null };
   }
 
-  // Already existed (ON CONFLICT skipped insert)
-  return null;
+  // Already existed — ON CONFLICT skipped the insert. Not a failure.
+  const { rows: existing } = await db.query(
+    `SELECT * FROM contracts WHERE campaign_influencer_id = $1`, [campaignInfluencerId]
+  );
+  return { contract: existing[0] || null, created: false, reason: 'already_exists' };
 }
 
 module.exports = { autoCreate };

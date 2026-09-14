@@ -29,6 +29,8 @@ import InvitationScreen from '../screens/influencer/InvitationScreen';
 import CounterScreen from '../screens/influencer/CounterScreen';
 import MoveRequestScreen from '../screens/influencer/MoveRequestScreen';
 import ThreadScreen from '../screens/influencer/ThreadScreen';
+// Item 7 — reading and signing the agreement. Contract: features/item7-agreement
+import AgreementScreen from '../screens/influencer/AgreementScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -50,6 +52,7 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="Counter" component={CounterScreen} />
       <CollabsStack.Screen name="MoveRequest" component={MoveRequestScreen} />
       <CollabsStack.Screen name="Thread" component={ThreadScreen} />
+      <CollabsStack.Screen name="Agreement" component={AgreementScreen} />
     </CollabsStack.Navigator>
   );
 }

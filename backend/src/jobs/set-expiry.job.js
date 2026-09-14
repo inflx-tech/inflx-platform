@@ -20,6 +20,9 @@ const { calendarDay } = require('../utils/indiaDay');
 // Item 6 — open negotiations end with the set's invitations. Contract: features/item6-negotiation
 const negotiation = require('../services/negotiation.service');
 const { ENDING, NOTIFY } = require('../services/negotiationCopy');
+// Item 7 — an agreement still out at the cutoff expires unsigned, and both
+// sides are told. Contract: features/item7-agreement
+const agreement = require('../services/agreement.service');
 
 /**
  * @param {object} opts
@@ -29,8 +32,9 @@ const { ENDING, NOTIFY } = require('../services/negotiationCopy');
 async function run({ today = null } = {}) {
   const t = today || todayInIndia();
   console.log(`[CRON set-expiry] Running for ${t}...`);
-  const out = { checked: 0, expired: 0, invitationsClosed: 0, kept: 0, negotiationsEnded: 0 };
+  const out = { checked: 0, expired: 0, invitationsClosed: 0, kept: 0, negotiationsEnded: 0, agreementsExpired: 0 };
   const endedThreads = [];
+  const lapsedAgreements = [];
   try {
     // Candidates: dated, not yet expired, cutoff day already over, at least one invitation.
     const { rows: due } = await db.query(
@@ -57,11 +61,18 @@ async function run({ today = null } = {}) {
         );
         // Item 6: an open negotiation ends with its invitation, as 'expired'; the thread stays readable.
         const ended = await negotiation.endForExpiredSet(id, tx);
+        // Item 7: an agreement still out at the cutoff expires unsigned. Nothing
+        // was locked — the money only moves at the brand's signature, which by
+        // definition never came — and both sides are told, naming the
+        // half-signed case to her because she did her part (rules v1.20 §9).
+        const lapsed = await agreement.expireForSet(id, tx);
         await tx.query(`UPDATE campaign_sets SET expired_at = now() WHERE id = $1`, [id]);
         out.expired += 1;
         out.invitationsClosed += rowCount;
         out.negotiationsEnded = (out.negotiationsEnded || 0) + ended.length;
+        out.agreementsExpired = (out.agreementsExpired || 0) + lapsed.length;
         endedThreads.push(...ended);
+        lapsedAgreements.push(...lapsed);
         console.log(`[CRON set-expiry] Set "${locked[0].name}" (${id}) expired: nobody signed by the cutoff; ${rowCount} open invitation(s) closed; ${ended.length} negotiation(s) ended.`);
       });
     }
@@ -74,7 +85,9 @@ async function run({ today = null } = {}) {
       await negotiation.notify(ctx, 'brand', NOTIFY.EXPIRED, body, { negotiation_id: e.id });
       await negotiation.notify(ctx, 'influencer', NOTIFY.EXPIRED, body, { negotiation_id: e.id });
     }
-    console.log(`[CRON set-expiry] Checked ${out.checked}, expired ${out.expired}, kept ${out.kept}, invitations closed ${out.invitationsClosed}, negotiations ended ${out.negotiationsEnded || 0}.`);
+    // Item 7: one sentence to each side for every agreement that lapsed.
+    await agreement.notifyExpired(lapsedAgreements).catch(e => console.error('[CRON set-expiry] agreement notices failed:', e.message));
+    console.log(`[CRON set-expiry] Checked ${out.checked}, expired ${out.expired}, kept ${out.kept}, invitations closed ${out.invitationsClosed}, negotiations ended ${out.negotiationsEnded || 0}, agreements expired ${out.agreementsExpired || 0}.`);
     return out;
   } catch (e) {
     console.error('[CRON set-expiry] Failed:', e.message);

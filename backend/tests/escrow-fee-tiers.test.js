@@ -275,8 +275,14 @@ describe('Admin endpoints — escrow fee tiers CRUD', () => {
   });
 });
 
-describe('escrow.service uses locked rate from campaign', () => {
-  test('createEscrowEntries reads campaigns.escrow_fee_pct_locked, ignoring caller fallback', async () => {
+// Item 7 (rules v1.20 §3 and §9, approval Q2): a fee tranche carries NO
+// platform charge. The creator receives the agreed amount in full, and INFLX's
+// take on that money is the campaign fee, charged once to the brand when the
+// funds lock. These two tests used to assert the tier fee was deducted from a
+// tranche; they now assert the opposite, because the rule changed. The tier
+// table itself is untouched and still prices the commerce protection fee.
+describe('escrow.service takes no tier fee from a fee tranche', () => {
+  test('a locked campaign rate is ignored: the creator keeps the whole tranche', async () => {
     const escrowService = require('../src/services/escrow.service');
     const { token, user } = await createBrandUser();
     await registerBrand(token);
@@ -308,20 +314,22 @@ describe('escrow.service uses locked rate from campaign', () => {
       { query: query },
       ci.id,
       100000,
-      99,   // caller fallback — should be IGNORED because locked rate exists
+      99,   // caller fallback — irrelevant now; no tier fee touches a fee tranche
     );
 
-    // Total fee should be 100000 * 2% = 2000, not 99% of anything
-    const total = entries.reduce((s, e) => s + parseFloat(e.escrow_fee_amount), 0);
-    expect(Math.round(total)).toBe(2000);
-
-    // Wave 2 commit 3 — GST on the Protection Fee is persisted per tranche,
-    // EXCLUSIVE at the configured gst_pct (default 18%): 2000 * 18% = 360.
+    // No platform charge of any kind comes out of a fee tranche.
+    const totalFee = entries.reduce((s, e) => s + parseFloat(e.escrow_fee_amount), 0);
+    expect(totalFee).toBe(0);
     const totalGst = entries.reduce((s, e) => s + parseFloat(e.fee_gst_amount), 0);
-    expect(Math.round(totalGst)).toBe(360);
+    expect(totalGst).toBe(0);
+
+    // She receives every rupee, and the three parts sum exactly to the fee.
+    for (const e of entries) expect(parseFloat(e.net_to_influencer)).toBe(parseFloat(e.amount));
+    const totalNet = entries.reduce((s, e) => s + parseFloat(e.net_to_influencer), 0);
+    expect(totalNet).toBe(100000);
   });
 
-  test('legacy campaigns (no locked rate) fall back to caller-supplied pct', async () => {
+  test('a campaign with no locked rate behaves the same way', async () => {
     const escrowService = require('../src/services/escrow.service');
     const { token, user } = await createBrandUser();
     await registerBrand(token);
@@ -352,10 +360,12 @@ describe('escrow.service uses locked rate from campaign', () => {
       { query: query },
       ci.id,
       50000,
-      8,    // legacy 8% — should be USED because locked rate is null
+      8,    // legacy 8% — no longer applied to a fee tranche
     );
 
     const total = entries.reduce((s, e) => s + parseFloat(e.escrow_fee_amount), 0);
-    expect(Math.round(total)).toBe(4000);  // 50000 * 8%
+    expect(total).toBe(0);
+    const totalNet = entries.reduce((s, e) => s + parseFloat(e.net_to_influencer), 0);
+    expect(totalNet).toBe(50000);
   });
 });

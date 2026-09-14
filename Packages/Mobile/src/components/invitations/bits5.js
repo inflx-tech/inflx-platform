@@ -13,6 +13,7 @@ import { NumberField } from '../../screens/brand/BrandPitchSettingsScreen';
 import { C5, GROUP_TONE, DELIVERABLE_TYPES, aimLabel5, modeLabel5, longDate5, shortDate5, rupees5, fmtPct5 } from './copy5';
 // Item 6 — the negotiation lines on a set row (N20). Contract: features/item6-negotiation
 import { C6 } from '../negotiation/copy6';
+import { C7 } from '../agreement/copy7';
 
 /** "Creator 1 of 3" / "All 3 creators" */
 export function Stepper5({ text, testID }) {
@@ -91,10 +92,20 @@ export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
     // Item 6 (N20): the brand's own move rises to the top — a counter waiting on her, or a
     // request to move nobody has answered.
     case 'yourMove':
-      meta = row.moveRequest && !row.moveRequest.answer
-        ? (row.moveRequest.goLiveDate ? C6.set.askedFor(row.moveRequest.goLiveDate, day(row.moveRequest.requestedAt)) : C6.set.askedForMode(row.moveRequest.shootMode, day(row.moveRequest.requestedAt)))
-        : C6.set.countered(neg && neg.lastCounter ? neg.lastCounter.line : row.termsLine, day(neg && neg.lastCounter ? neg.lastCounter.at : row.sentAt));
-      chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+      // Item 7 (P1): two different "your move"s sit in this one group — one
+      // creator needs an agreement sent, another has signed and is waiting.
+      if (row.actions && row.actions.signAgreement) {
+        meta = C5.set.signedWaiting(row.agreement && row.agreement.creatorSignedAt);
+        chip = { label: C5.set.signChip, tone: 'active' };
+      } else if (row.actions && row.actions.sendAgreement) {
+        meta = C5.set.accepted(row.answeredAt || row.sentAt);
+        chip = { label: C5.set.sendAgreement, tone: 'active' };
+      } else {
+        meta = row.moveRequest && !row.moveRequest.answer
+          ? (row.moveRequest.goLiveDate ? C6.set.askedFor(row.moveRequest.goLiveDate, day(row.moveRequest.requestedAt)) : C6.set.askedForMode(row.moveRequest.shootMode, day(row.moveRequest.requestedAt)))
+          : C6.set.countered(neg && neg.lastCounter ? neg.lastCounter.line : row.termsLine, day(neg && neg.lastCounter ? neg.lastCounter.at : row.sentAt));
+        chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+      }
       break;
     case 'negotiating':
       meta = neg && neg.lastCounter
@@ -102,9 +113,15 @@ export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
         : row.termsLine;
       chip = { label: C6.set.waitingChip, tone: 'waiting' };
       break;
-    case 'waiting': meta = [row.termsLine, C5.set.sent(row.sentAt)].filter(Boolean).join(' · '); break;
-    case 'accepted': meta = C5.set.accepted(row.answeredAt || row.sentAt); chip = row.actions && row.actions.sendAgreement ? { label: C5.set.sendAgreement, tone: 'active' } : null; break;
-    case 'signed': meta = C5.set.signed(row.signedAt); break;
+    case 'waiting':
+      // Item 7: an agreement out and unsigned reads as what it is, not as an
+      // unanswered invitation.
+      meta = row.agreement && row.agreement.sentAt
+        ? C5.set.agreementSent(row.agreement.sentAt)
+        : [row.termsLine, C5.set.sent(row.sentAt)].filter(Boolean).join(' · ');
+      break;
+    case 'accepted': meta = C5.set.accepted(row.answeredAt || row.sentAt); break;
+    case 'signed': meta = C5.set.signedByBoth(row.signedAt); break;
     case 'deferred': meta = [row.deferredGoLiveDate ? C5.set.wants(row.deferredGoLiveDate) : null, row.deferredAt ? shortDate5(new Date(row.deferredAt).toISOString().slice(0, 10)) : null].filter(Boolean).join(' · '); chip = { label: C5.set.anotherSet, tone: 'waiting' }; break;
     case 'declined': meta = [row.declineReasonLabel, row.answeredAt ? shortDate5(new Date(row.answeredAt).toISOString().slice(0, 10)) : null].filter(Boolean).join(' · '); break;
     case 'expired': meta = C5.set.expiredMeta; break;
@@ -143,6 +160,16 @@ export function InvitationCard5({ card, onPress, testID }) {
   else if (card.group === 'yourMove') sentence = card.negotiation && card.negotiation.lastCounter ? `${card.brand.name} countered ${card.negotiation.lastCounter.line}.` : C6.thread.yourMoveMe;
   else if (card.group === 'negotiating') sentence = C5.creator.negotiatingBody;
   else if (card.moveRequest && card.moveRequest.answer === 'kept') sentence = C6.creatorMove.keptBody(card.brand.name, card.postingDate, card.cutoff);
+  // Item 7 (P4, P7, P16) — the agreement, in her words. The signature is what
+  // moves a collaboration out of Invites, so an Active card says what she has
+  // been paid and what happens next.
+  if (card.group === 'signed') {
+    sentence = card.agreement && card.agreement.bothSignedAt
+      ? C7.creator.inWallet(rupees5(card.firstPayment != null ? card.firstPayment : 0), card.agreement.bothSignedAt)
+      : null;
+  } else if (card.agreement && card.agreement.line) {
+    sentence = card.agreement.line;
+  }
   return (
     <TouchableOpacity style={b.card} onPress={onPress} activeOpacity={0.8} testID={testID || `invitation-card-${card.id}`}>
       <View style={b.cardTop}>

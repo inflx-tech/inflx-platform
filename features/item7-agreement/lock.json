@@ -1,0 +1,29 @@
+{
+  "feature": "item7-agreement",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item7_Implementation_Prompt.md — 'The item 7 gap report is approved. Start building.')",
+  "approved_at": "2026-09-14T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item7_Agreement_Mockups_1.html, P1-P22 'Stage 3: locked 14 Sep 2026 · amended after the gap report' — only the campaign-fee arithmetic changed, now consistent at 8%)",
+  "mockup_locked_at": "2026-09-14T00:00:00+05:30",
+  "notes": "Rules doc v1.20 §9 and §3. Gap report Docs/ITEM7_AGREEMENT_GAP_REPORT.md approved with twelve answers (campaign_fee_pct as an admin percentage on Pay for Content only at 8%; no tier fee out of a fee tranche so the creator receives the agreed amount in full; keep the destructive lock but write the missing escrow_release; fix the signing idempotency FIRST; return_window_days to 7 unless 30 was deliberate; a fourth admin number remote_return_days at 7; native views plus a five-minute link for the document; nothing ever deletes a contract row; brand-web's Approve & Send switched off; the brand's signer is a named person; the signature timestamps are the only definition of signed; the PDF only at completion) and five decisions (close the production bypass; stamp the admin numbers at generation; autoCreate transactional and unambiguous; one shared split helper; the draft stays and Send fills it in). Migration 183 (additive, no backfill). Brand and creator OTA plus one new admin page. Production-impacting AND money-moving - explicit go required before migrate/push/OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-14T00:00:00+05:30",
+      "migration_dry_run": "183 dry run against production 2026-09-14: 6 contracts (1 both-signed, 5 with neither signature, 4 of them status active), 1 with a PDF, 0 escrow rows, 0 wallet transactions, 8 invitations; no duplicate (invitation, tranche) escrow pair so the unique index will build; none of the 21 columns, 3 statuses, 1 table or 6 indexes present. Nothing to backfill. Nothing written.",
+      "backend_tests": "229 failed / 1024 passed / 1253 (0 new failures vs the item 6 baseline of 229/982/1211; 42 new tests, all passing)",
+      "mobile_tests": "493 pass (14 new; baseline 479)",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). This is the first item that moves money; the founder's walk runs with the end-to-end pack across items 2-7, which is the next piece of work."
+    }
+  }
+}

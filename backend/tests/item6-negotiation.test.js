@@ -644,11 +644,14 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     return createAdminUser('superadmin');
   }
 
-  it('the three settings read with their ranges; a change is audited; out of range is refused (check 29)', async () => {
+  it('the settings read with their ranges; a change is audited; out of range is refused (check 29)', async () => {
     const a = await admin();
     let r = await api.get('/admin/platform-settings', a.token);
     expect(r.status).toBe(200);
-    expect(r.body.data.settings.map(x => x.key)).toEqual(['negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts']);
+    // Item 7 added two more numbers to the same screen (rules v1.20 §9).
+    expect(r.body.data.settings.map(x => x.key)).toEqual(
+      ['negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts', 'campaign_fee_pct', 'remote_return_days']
+    );
     expect(r.body.data.settings[0]).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });
     expect(r.body.data.settings[0].description).toContain('never affects one already running');
     expect(r.body.data.lastChange).toBeNull();

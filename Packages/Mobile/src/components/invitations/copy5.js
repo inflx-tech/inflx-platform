@@ -136,6 +136,11 @@ export const C5 = {
     },
     sent: (d) => `sent ${stampDate4(d)}`, accepted: (d) => `Accepted ${stampDate4(d)}`, signed: (d) => `Signed ${stampDate4(d)}`,
     wants: (d) => `Wants ${shortDate4(d)}`, anotherSet: 'Another set', sendAgreement: 'Send agreement',
+    // Item 7 (P1). Contract: features/item7-agreement
+    signChip: 'Sign',
+    signedWaiting: (d) => `Signed ${stampDate4(d)} · waiting for you`,
+    agreementSent: (d) => `Agreement sent ${stampDate4(d)}`,
+    signedByBoth: (d) => `Signed by both ${stampDate4(d)}`,
     withdrawnMeta: (d) => `Withdrawn ${stampDate4(d)}`, removedMeta: (d) => `Removed ${stampDate4(d)}`, expiredMeta: 'Expired',
     more: (n) => `+${n} more`,
     menu: { viewTerms: 'View terms sent', profile: 'Open profile', withdraw: 'Withdraw invitation', withdrawHint: "Only while she hasn't answered", remove: 'Remove from set', removeHint: 'Until the agreement is signed' },
@@ -153,7 +158,9 @@ export const C5 = {
     replyBy: (d, n) => `Reply by ${shortDate4(d)} · ${n == null ? '' : n === 0 ? 'today' : plural(n, 'day', 'days') + ' left'}`.replace(/ · $/, ''),
     posts: (d) => `Posts ${shortDate4(d)}`,
     // Item 6 (N12, N20): 'pooled' is the agreed move; 'yourMove' is a counter waiting on her.
-    chips: { accepted: 'Accepted', expired: 'Expired', withdrawn: 'Withdrawn', closed: 'Closed', declined: 'Declined', negotiating: 'Waiting', yourMove: 'Your move', pooled: 'Agreed', deferred: 'Another date asked' },
+    chips: { accepted: 'Accepted', expired: 'Expired', withdrawn: 'Withdrawn', closed: 'Closed', declined: 'Declined', negotiating: 'Waiting', yourMove: 'Your move', pooled: 'Agreed', deferred: 'Another date asked',
+      // Item 7 (P4, P7, P16). Contract: features/item7-agreement
+      toSign: 'Your move', signedWaiting: 'Waiting', signed: 'Active' },
     waitingFor: (b) => `Waiting for the agreement from ${b}.`,
     expiredBody: (d) => `You didn't reply by ${shortDate4(d)}, so this invitation closed.`,
     withdrawnBody: (b, d) => `${b} withdrew this invitation on ${stampDate4(d)}.`,
@@ -188,6 +195,8 @@ export const C5 = {
 /** Chip tone per group, on the item 2 palette (prompt §8). */
 export const GROUP_TONE = {
   waiting: 'waiting', invited: 'waiting', negotiating: 'waiting', yourMove: 'yourMove', accepted: 'active', signed: 'completed',
+  // Item 7: the agreement is hers to sign (amber), or she has signed and waits (blue).
+  toSign: 'yourMove', signedWaiting: 'waiting',
   pooled: 'active', deferred: 'waiting',
   declined: 'declined', expired: 'ended', withdrawn: 'ended', closed: 'ended', ok: 'active', below: 'yourMove',
 };

@@ -332,11 +332,13 @@ describe('after sending (checks 21–24, 36, 39)', () => {
     expect(r.status).toBe(422); expect(r.body.error.message).toBe(MSG.WITHDRAW_ANSWERED('Priya Sharma'));
     const summary = await api.get(`${w.url}/summary`, w.b.token);
     const g = summary.body.data.creators.groups;
-    expect(g.withdrawn.count).toBe(1); expect(g.accepted.count).toBe(1);
+    // Item 7 (P1): the accepted creator now sits under "Your move", because
+    // the brand owes her an agreement.
+    expect(g.withdrawn.count).toBe(1); expect(g.yourMove.count).toBe(1); expect(g.accepted.count).toBe(0);
     expect(summary.body.data.set.counts).toMatchObject({ invited: 2, waiting: 1 });
   });
 
-  it('remove works until both signatures and never after; an unsigned contract is deleted, a signed one never (check 23)', async () => {
+  it('remove works until both signatures and never after; an unsigned contract is withdrawn, a signed one untouched (check 23)', async () => {
     const w = await world('conversion');
     const p = await creator({ name: 'Priya Sharma' }), q2 = await creator({ name: 'Tanvi S.' });
     const s1 = await send(w, [one(p), one(q2)]);
@@ -345,7 +347,12 @@ describe('after sending (checks 21–24, 36, 39)', () => {
     expect((await query(`SELECT count(*)::int n FROM contracts WHERE campaign_influencer_id = $1`, [ciP])).rows[0].n).toBe(1);
     let r = await api.post(`${w.url}/invitations/${ciP}/remove`, w.b.token);
     expect(r.status).toBe(200); expect(r.body.data.status).toBe('removed');
-    expect((await query(`SELECT count(*)::int n FROM contracts WHERE campaign_influencer_id = $1`, [ciP])).rows[0].n).toBe(0);
+    // Item 7 (approval Q8): nothing deletes a contract row. The unsigned
+    // agreement is marked withdrawn so its ending can still be named.
+    const gone = await query(`SELECT status, withdrawn_at FROM contracts WHERE campaign_influencer_id = $1`, [ciP]);
+    expect(gone.rows.length).toBe(1);
+    expect(gone.rows[0].status).toBe('withdrawn');
+    expect(gone.rows[0].withdrawn_at).not.toBeNull();
     const n = await notifs(p.userId);
     expect(n[n.length - 1]).toMatchObject({ type: 'invitation.removed', body: `${w.b.name} is no longer going ahead with this collaboration.` });
     const mine = await api.get(`/influencers/me/invitations/${ciP}`, p.token);
@@ -389,7 +396,9 @@ describe('after sending (checks 21–24, 36, 39)', () => {
     let g = summary.body.data.creators.groups;
     // Item 6 (N20) put "Your move" and "Negotiating" first; "Asked for another date" became "Moved to your pool".
     expect(summary.body.data.creators.order).toEqual(['yourMove', 'negotiating', 'accepted', 'signed', 'waiting', 'deferred', 'declined', 'expired', 'withdrawn']);
-    expect(g.waiting.count).toBe(2); expect(g.accepted.count).toBe(1); expect(g.signed.count).toBe(1); expect(g.deferred.count).toBe(1); expect(g.declined.count).toBe(1);
+    // Item 7 (P1): the accepted creator is the brand's move — an agreement is owed.
+    expect(g.waiting.count).toBe(2); expect(g.yourMove.count).toBe(1); expect(g.accepted.count).toBe(0);
+    expect(g.signed.count).toBe(1); expect(g.deferred.count).toBe(1); expect(g.declined.count).toBe(1);
     expect(g.deferred.rows[0]).toMatchObject({ name: 'Ritu', deferredGoLiveDate: day(17), actions: { withdraw: false, remove: true } });
     expect(g.declined.rows[0]).toMatchObject({ declineReason: 'fee_too_low', declineReasonLabel: 'Fee too low' });
     expect(g.waiting.rows[0].termsLine).toBe('10% · whole store · no offer');
@@ -496,7 +505,9 @@ describe('the creator (checks 25–33, 37, 42)', () => {
     r = await api.post(`/influencers/me/invitations/${ciId}/accept`, p.token);
     expect(r.status).toBe(422); expect(r.body.error.message).toBe(MSG.ANSWERED_TWICE);
     const summary = await api.get(`${w.url}/summary`, w.b.token);
-    expect(summary.body.data.creators.groups.accepted.rows[0]).toMatchObject({ name: 'Priya Sharma', actions: { sendAgreement: true } });
+    // Item 7 (P1): an accepted creator with a draft agreement is the BRAND's
+    // move — "Your move" holds both "Send agreement" and "Sign".
+    expect(summary.body.data.creators.groups.yourMove.rows[0]).toMatchObject({ name: 'Priya Sharma', actions: { sendAgreement: true } });
   });
 
   it('decline needs one of the five reasons, keeps the note (≤ 200), tells the brand both (check 29)', async () => {

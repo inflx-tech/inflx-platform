@@ -182,7 +182,16 @@ async function notify(ctx, side, { type, title }, body, extra = {}) {
   }).catch(err => console.error(`[NOTIFICATION] ${type} failed:`, err.message));
 }
 
-const deleteUnsignedContract = (tx, ciId) => tx.query(`DELETE FROM contracts WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`, [ciId]);
+// Item 7 (approval Q8): NOTHING deletes a contract row. An unsigned agreement
+// ended by a decline or a move is MARKED, so its ending can still be named.
+const endUnsignedContract = (tx, ciId, status, actorUserId) => tx.query(
+  `UPDATE contracts
+      SET status = $2::contract_status,
+          declined_at  = CASE WHEN $2 = 'declined'  THEN now() ELSE declined_at  END,
+          withdrawn_at = CASE WHEN $2 = 'withdrawn' THEN now() ELSE withdrawn_at END,
+          withdrawn_by = CASE WHEN $2 = 'withdrawn' THEN $3::uuid ELSE withdrawn_by END
+    WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`,
+  [ciId, status, actorUserId || null]);
 const endThread = (tx, negId, outcome, actorUserId) => negId && tx.query(
   `UPDATE negotiations SET outcome = $2, status = CASE WHEN $2 = 'agreed' THEN 'agreed'::negotiation_status ELSE 'walked_away'::negotiation_status END,
           ended_at = now(), ended_by = $3, current_turn = NULL, expires_at = NULL WHERE id = $1 AND outcome IS NULL`,
@@ -313,7 +322,7 @@ async function decline({ ctx, by, reason, note, actorUserId }) {
     } else {
       await tx.query(`UPDATE campaign_influencers SET status = 'rejected_by_brand', declined_note = $2 WHERE id = $1`, [ctx.id, text || null]);
     }
-    await deleteUnsignedContract(tx, ctx.id);
+    await endUnsignedContract(tx, ctx.id, by === 'influencer' ? 'declined' : 'withdrawn', actorUserId);
     await endThread(tx, ctx.neg_id, outcome, actorUserId);
   });
 
@@ -375,13 +384,13 @@ async function moveAnswer({ ctx, answer, actorUserId }) {
         fromCampaignId: ctx.campaign_id, fromSetId: ctx.set_id, fromCiId: ctx.id,
       }, tx);
       await tx.query(`UPDATE campaign_influencers SET status = 'deferred', deferred_at = now(), move_answer = 'agreed', move_answered_at = now() WHERE id = $1`, [ctx.id]);
-      await deleteUnsignedContract(tx, ctx.id);
+      await endUnsignedContract(tx, ctx.id, 'withdrawn', actorUserId);
       await endThread(tx, ctx.neg_id, 'moved', actorUserId);
     } else if (answer === 'kept') {
       await tx.query(`UPDATE campaign_influencers SET move_answer = 'kept', move_answered_at = now() WHERE id = $1`, [ctx.id]);
     } else {
       await tx.query(`UPDATE campaign_influencers SET status = 'rejected_by_brand', move_answer = 'declined', move_answered_at = now() WHERE id = $1`, [ctx.id]);
-      await deleteUnsignedContract(tx, ctx.id);
+      await endUnsignedContract(tx, ctx.id, 'withdrawn', actorUserId);
       await endThread(tx, ctx.neg_id, 'declined_by_brand', actorUserId);
     }
   });

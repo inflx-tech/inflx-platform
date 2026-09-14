@@ -82,6 +82,8 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   const openProfile = (row) => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: row.influencerId } });
   // Item 6 (N7, N10) — the conversation: her counter, or her request to move.
   const openThread = (row) => navigation.navigate('BrandThread', { campaignId, setId, ciId: row.id });
+  // Item 7 — the preview before it is sent, the agreement itself afterwards.
+  const openAgreement = (row, preview) => navigation.navigate('BrandAgreement', { campaignId, setId, ciId: row.id, preview: !!preview });
   async function doConfirm() {
     const { kind, row } = confirm;
     setConfirm(null);
@@ -169,7 +171,14 @@ export default function BrandSetDetailScreen({ navigation, route }) {
                     // conversation; the rest open the ⋯ menu.
                     onPress={() => (row.actions && row.actions.thread ? openThread(row) : row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
                     onMore={() => setCreatorMenu(row)}
-                    onChip={row.group === 'accepted' ? () => show(SD.comingSoon) : (row.actions && row.actions.thread ? () => openThread(row) : undefined)} />
+                    // Item 7: the chip is the brand's actual next move on that row —
+                    // send the agreement, or sign the one she has already signed.
+                    onChip={
+                      row.actions && row.actions.sendAgreement ? () => openAgreement(row, true)
+                        : row.actions && row.actions.signAgreement ? () => openAgreement(row, false)
+                        : row.actions && row.actions.thread ? () => openThread(row)
+                        : undefined
+                    } />
                 ))}
                 {g.more ? <Text style={s.more}>{S5.more(g.more)}</Text> : null}
               </View>

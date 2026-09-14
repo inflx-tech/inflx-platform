@@ -1061,18 +1061,13 @@ export default function CampaignInfluencersListPage() {
     }
   }
 
-  async function handleApproveContract(payload) {
-    if (!contractModal?.contract) return;
-    setContractLoading(true);
-    const res = await contractApi.approve(contractModal.contract.id, payload);
-    setContractLoading(false);
-    if (res.success) {
-      showToast(res.data?.re_approved ? 'Updated terms sent — influencer notified.' : 'Contract sent to influencer for signing.');
-      setContractModal(null);
-      loadCampaign();
-    } else {
-      showToast(res.error?.message || 'Failed');
-    }
+  // Item 7 (approval Q9): Approve & Send is switched off here. Agreements are
+  // sent from the Brand app, where they are generated from the agreed terms
+  // and can never be edited. Two doors with different rules is how a deal ends
+  // up with a bonus and custom clauses nobody agreed to. Signing stays on the
+  // web, because the server does the real money maths.
+  async function handleApproveContract() {
+    showToast('Agreements are sent from the Brand app.');
   }
 
   async function handleBrandSign() {

@@ -20,6 +20,9 @@ const DEFAULTS = Object.freeze({
   negotiation_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Negotiation rounds' },
   pool_lifetime_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pool entry lifetime' },
   min_shoppable_posts: { value: 1, min: 1, max: 10, unit: 'post', label: 'Minimum shoppable posts' },
+  // Item 7 (rules v1.20 §3, §9) — both stamped onto the agreement at generation.
+  campaign_fee_pct: { value: 8, min: 0, max: 30, unit: 'percent', label: 'INFLX campaign fee' },
+  remote_return_days: { value: 7, min: 1, max: 60, unit: 'days', label: 'Remote return window' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
 
@@ -28,6 +31,8 @@ const DESCRIPTION = Object.freeze({
   negotiation_rounds: 'How many counters a single negotiation may hold. After the last one, the side receiving it can only accept or decline. Between 1 and 5. A negotiation keeps the number it started with, so changing this never affects one already running.',
   pool_lifetime_days: "How long a creator stays in a brand's pool after agreeing terms but asking for a different date or mode. When it runs out the entry closes and the creator is told. Between 7 and 90 days.",
   min_shoppable_posts: 'The least number of shoppable posts a creator must make in a Pay for Sale or Hybrid collaboration. Shown to both sides on the terms and never negotiated. Between 1 and 10. Stamped on each invitation when it is sent.',
+  campaign_fee_pct: "What INFLX charges the brand on a Pay for Content collaboration, as a percentage of the fee. Charged once, to the brand, when the funds lock at the brand's signature. It is never deducted from a creator payment, and no campaign fee is charged on a Hybrid fixed amount. Between 0 and 30. Stamped on each agreement when it is generated.",
+  remote_return_days: 'How long a creator has to send back anything she does not keep after a Remote shoot, counted from posting. The brand pays the return shipping. Between 1 and 60 days. Printed in every Remote agreement and stamped on it when it is generated.',
 });
 
 const RANGE_MESSAGE = (min, max) => `Enter a number between ${min} and ${max}.`;

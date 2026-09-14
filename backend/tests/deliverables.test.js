@@ -482,7 +482,9 @@ describe('POST /v1/deliverables/:id/confirm-live', () => {
       [inf.id]
     );
     const balanceAfter = parseFloat(afterRows[0].wallet_balance);
-    expect(balanceAfter - balanceBefore).toBeCloseTo(2300, 1);
+    // Item 7 (rules v1.20 §3, §9): the tranche reaches her in full — 25% of
+    // 10000 = 2500, with no platform charge deducted.
+    expect(balanceAfter - balanceBefore).toBeCloseTo(2500, 1);
   });
 
   it('T2 escrow_entry is released', async () => {

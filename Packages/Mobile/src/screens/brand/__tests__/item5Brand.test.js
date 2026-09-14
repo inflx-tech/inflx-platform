@@ -42,13 +42,15 @@ const SET = { id: 'sA', campaignId: 'c1', name: 'Set A · Ethnic wear', state: '
   counts: { invited: 8, signed: 3, waiting: 2, declined: 3 }, canInvite: { ok: true }, isPast: false };
 const row = (o) => ({ id: o.id, influencerId: `i-${o.id}`, name: o.name, avatarUrl: null, status: o.status || 'invited', group: o.group || 'waiting', termsLine: o.termsLine || '10% · whole store · no offer',
   sentAt: `${yr}-09-12T10:00:00Z`, answeredAt: o.answeredAt || null, signedAt: null, declineReasonLabel: o.declineReasonLabel || null, deferredGoLiveDate: o.deferredGoLiveDate || null,
-  actions: { withdraw: (o.status || 'invited') === 'invited', remove: !['withdrawn', 'removed', 'declined', 'expired'].includes(o.status || 'invited'), viewTerms: true, sendAgreement: o.group === 'accepted' }, ...o });
+  actions: { withdraw: (o.status || 'invited') === 'invited', remove: !['withdrawn', 'removed', 'declined', 'expired'].includes(o.status || 'invited'), viewTerms: true, sendAgreement: o.group === 'yourMove' && (o.status || 'invited') === 'accepted' }, ...o });
 const GROUPS = {
-  order: ['waiting', 'negotiating', 'accepted', 'signed', 'deferred', 'declined', 'expired', 'withdrawn'],
+  // Item 7 (P1): an accepted creator with a draft agreement is the brand's move.
+  order: ['yourMove', 'waiting', 'negotiating', 'accepted', 'signed', 'deferred', 'declined', 'expired', 'withdrawn'],
   groups: {
     waiting: { key: 'waiting', count: 2, more: 0, rows: [row({ id: 'r1', name: 'Priya Sharma' }), row({ id: 'r2', name: 'Tanvi S.', termsLine: '12% · whole store · no offer' })] },
     negotiating: { key: 'negotiating', count: 0, more: 0, rows: [] },
-    accepted: { key: 'accepted', count: 1, more: 0, rows: [row({ id: 'r3', name: 'Sneha N.', status: 'accepted', group: 'accepted', answeredAt: `${yr}-09-13T10:00:00Z` })] },
+    yourMove: { key: 'yourMove', title: 'Your move', count: 1, more: 0, rows: [row({ id: 'r3', name: 'Sneha N.', status: 'accepted', group: 'yourMove', answeredAt: `${yr}-09-13T10:00:00Z` })] },
+    accepted: { key: 'accepted', count: 0, more: 0, rows: [] },
     signed: { key: 'signed', count: 0, more: 0, rows: [] },
     deferred: { key: 'deferred', count: 1, more: 0, rows: [row({ id: 'r4', name: 'Ritu V.', status: 'deferred', group: 'deferred', deferredGoLiveDate: `${yr}-10-27` })] },
     declined: { key: 'declined', count: 1, more: 0, rows: [row({ id: 'r5', name: 'Divya R.', status: 'declined', group: 'declined', declineReasonLabel: 'Fee too low' })] },
@@ -81,7 +83,8 @@ describe('I9 · I10 — the set after invitations go out', () => {
     const { getByText, getByTestId, queryByTestId, getAllByTestId } = render(<BrandSetDetailScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
     await waitFor(() => getByTestId('creators-block'));
     getByText('8 invited · 3 signed · 2 waiting to answer · 3 declined');
-    getByText('Waiting to answer'); getByText('Accepted, waiting for the agreement'); getByText('Asked for another date'); getByText('Declined');
+    // Item 7 (P1): the accepted creator moved to "Your move" — the brand owes her an agreement.
+    getByText('Waiting to answer'); getByText('Your move'); getByText('Asked for another date'); getByText('Declined');
     expect(queryByTestId('group-negotiating')).toBeNull(); expect(queryByTestId('group-signed')).toBeNull();
     getByText('10% · whole store · no offer · sent 12 Sep'); getByText('Accepted 13 Sep'); getByText('Fee too low');
     getByText('Wants 27 Oct'); getByText('Another set'); getByText('Send agreement');

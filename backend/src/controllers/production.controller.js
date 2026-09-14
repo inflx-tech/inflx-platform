@@ -65,6 +65,27 @@ async function ensureParty(contract, req, expected) {
   }
 }
 
+/**
+ * Item 7 (approval 4.1) — the shoot plan opens on BOTH SIGNATURES, nothing less.
+ *
+ * These two endpoints checked party membership and no status at all, so a
+ * brand could force a shoot plan into existence on an unsigned agreement —
+ * which made the whole of item 7 optional. The signature test is the canonical
+ * one (`collabState.SIGNED_CONTRACT_SQL`), not `contracts.status`, because the
+ * four seeded rows are 'active' with no signatures at all.
+ */
+async function assertBothSignatures(contractId) {
+  const { rows } = await db.query(
+    `SELECT influencer_signed_at, brand_signed_at FROM contracts WHERE id = $1`, [contractId]
+  );
+  const c = rows[0];
+  if (!c) throw new AppError('NOT_FOUND', 'Contract not found', 404);
+  if (!c.influencer_signed_at || !c.brand_signed_at) {
+    throw new AppError('VALIDATION_ERROR',
+      'The shoot plan opens once the agreement is signed by both of you.', 422, 'status');
+  }
+}
+
 function actorFromReq(req) {
   return { user_id: req.user.sub, role: req.user.role };
 }
@@ -101,6 +122,7 @@ function notify(targetUser, fcmToken, phone, type, title, body, data) {
 const initialiseProduction = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'brand');
+  await assertBothSignatures(contract.id);
 
   const { mode } = req.body || {};
   if (!productionService.VALID_MODES.includes(mode)) {
@@ -132,6 +154,7 @@ const initialiseProduction = asyncHandler(async (req, res) => {
 const getProduction = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'either');
+  await assertBothSignatures(contract.id);
   let event = await productionService.getByContractId(contract.id);
 
   // The `!== 'remote'` that used to be here skipped the heal for remote contracts, because a

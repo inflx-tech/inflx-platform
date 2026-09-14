@@ -16,6 +16,7 @@ const taxService        = require('./tax.service');
 // brand's active referrer on a released escrow tranche's protection fee.
 const referralService   = require('./referral.service');
 const ledgerService     = require('./ledger.service');
+const { splitAmount }   = require('../utils/money');
 
 // Tranche schedule — percents loaded from payment_config table at runtime
 function buildTranches(cfg) {
@@ -63,26 +64,33 @@ async function _resolveFeeRate(client, campaignInfluencerId, callerPct, cfg) {
 async function createEscrowEntries(client, campaignInfluencerId, influencerFee, platformFeePct) {
   const fee    = parseFloat(influencerFee) || 0;
   const cfg    = await paymentConfigSvc.getConfig();
-  const feePct = await _resolveFeeRate(client, campaignInfluencerId, platformFeePct, cfg);
   const TRANCHES = buildTranches(cfg);
 
+  // Item 7, §9 of rules v1.20 and approval Q2: the creator receives the agreed
+  // amount IN FULL. No platform charge of any kind is deducted from a fee
+  // tranche on Pay for Content or Hybrid — INFLX's take on that money is the
+  // campaign fee, charged once to the brand when the funds lock. These three
+  // rows are only ever fee tranches, so the tier fee is zero on all of them.
+  //
+  // `escrow_fee_tiers` and `_resolveFeeRate` are deliberately left in place:
+  // they still price the commerce protection fee elsewhere (pricing.service).
+  //
+  // The split comes from the ONE shared helper so the escrow rows and every
+  // screen agree to the paise (approval 4.4).
+  const parts = splitAmount(fee, TRANCHES.map((t) => t.pct * 100));
+
   const entries = [];
-  for (const t of TRANCHES) {
-    const amount            = fee * t.pct;
-    const escrowFeeAmount   = parseFloat((amount * feePct).toFixed(2));
-    const netToInfluencer   = parseFloat((amount - escrowFeeAmount).toFixed(2));
-    // Wave 2 commit 3 — GST on the Protection Fee, EXCLUSIVE (recorded +
-    // surfaced to the brand; does not alter net_to_influencer or the brand
-    // charge). Reuses the centralized tax helper (payment_config.gst_pct).
-    const feeGstAmount      = await taxService.gstOn(escrowFeeAmount);
+  for (let i = 0; i < TRANCHES.length; i++) {
+    const t = TRANCHES[i];
+    const amount = parts[i];
 
     const { rows } = await client.query(
       `INSERT INTO escrow_entries
          (campaign_influencer_id, tranche_number, amount, escrow_fee_amount,
           fee_gst_amount, net_to_influencer, status, trigger_event)
-       VALUES ($1, $2, $3, $4, $5, $6, 'locked', $7)
+       VALUES ($1, $2, $3, 0, 0, $4, 'locked', $5)
        RETURNING *`,
-      [campaignInfluencerId, t.tranche_number, amount, escrowFeeAmount, feeGstAmount, netToInfluencer, t.trigger_event]
+      [campaignInfluencerId, t.tranche_number, amount, amount, t.trigger_event]
     );
     entries.push(rows[0]);
   }
@@ -112,6 +120,13 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
   if (!entryRows[0]) throw new Error(`Escrow entry not found: ${escrowEntryId}`);
   const entry = entryRows[0];
 
+  // Item 7, Phase 2a — the release is idempotent in ITSELF, not only in its
+  // callers. The row is already locked FOR UPDATE above, so a second caller
+  // that got this far sees 'released' and leaves without paying twice.
+  if (entry.status === 'released') {
+    return { payoutId: entry.razorpay_payout_id, netAmount: parseFloat(entry.net_to_influencer), alreadyReleased: true };
+  }
+
   // NOTE: Tranche release is a WALLET CREDIT, not a Razorpay payout. The
   // actual money movement to the influencer's bank/UPI happens later, when
   // they request a withdrawal — see withdrawal.service.js, which uses the
@@ -134,12 +149,17 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
   }
 
   // Mark escrow entry as released
-  await client.query(
+  const marked = await client.query(
     `UPDATE escrow_entries
      SET status = 'released', released_at = now(), triggered_at = now(), razorpay_payout_id = $2
-     WHERE id = $1`,
+     WHERE id = $1 AND status <> 'released'`,
     [escrowEntryId, payoutId]
   );
+  // Belt and braces: the guard above should have caught this, but a compare-
+  // and-swap that changed nothing must never fall through to a wallet credit.
+  if (marked.rowCount === 0) {
+    return { payoutId: entry.razorpay_payout_id, netAmount: parseFloat(entry.net_to_influencer), alreadyReleased: true };
+  }
 
   // Credit influencer wallet
   const { rows: infRows } = await client.query(
@@ -178,6 +198,30 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
     [brandId]
   );
   const brandBalance = parseFloat(brandRows[0].wallet_balance);
+
+  // Item 7, Phase 2a — TWO audit rows, because they answer two questions and
+  // only one of them was ever written.
+  //
+  //   escrow_release (credit) un-reserves the tranche. wallet.controller reads
+  //     reserved = escrow_lock debits − escrow_release credits, and nothing in
+  //     the codebase had ever written the credit side, so a brand's "reserved"
+  //     figure only ever grew, for the life of the account.
+  //   payout (debit) is the settled figure, as before.
+  //
+  // Neither moves money: `balance_after` is the brand's unchanged balance,
+  // because escrow_lock already took it at signing.
+  await client.query(
+    `INSERT INTO wallet_transactions
+       (brand_id, type, amount, direction, balance_after, campaign_id, notes)
+     VALUES ($1, 'escrow_release', $2, 'credit', $3, $4, $5)`,
+    [
+      brandId,
+      parseFloat(entry.amount),
+      brandBalance,
+      campaignId,
+      `Tranche ${entry.tranche_number} un-reserved — ref ${payoutId}`,
+    ]
+  );
 
   await client.query(
     `INSERT INTO wallet_transactions

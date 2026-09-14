@@ -160,12 +160,19 @@ describe('declining after briefing', () => {
     expect(off()).toContain('declined_note');
   });
 
-  test('⚠️ the unsigned contract is DELETED, never written to an invalid status', () => {
-    // contract_status is draft|pending_influencer|pending_brand|active|disputed. There is no
-    // 'cancelled'. Writing one throws at the database and leaves her declined with a live
-    // contract attached. This same bug still exists in cancelInfluencer and is carried.
+  test('the unsigned contract is MARKED declined, never deleted and never given an invalid status', () => {
+    // Item 7 (approval Q8) changed the answer here. It used to be deleted, so
+    // that a declined invitation could not sit next to a contract that looked
+    // live. Now nothing deletes a contract row — an agreement that once
+    // existed is a record, and P15 has to name its ending months later.
+    //
+    // 'cancelled' is still not a member of contract_status
+    // (draft|pending_influencer|pending_brand|active|disputed|withdrawn|declined|expired),
+    // so writing one would still throw at the database.
     const src = off();
     expect(src).not.toMatch(/UPDATE contracts SET status = 'cancelled'/);
-    expect(src).toMatch(/DELETE FROM contracts/);
+    expect(src).not.toMatch(/DELETE FROM contracts/);
+    expect(src).toMatch(/UPDATE contracts SET status = 'declined'/);
+    expect(src).toMatch(/declined_at = now\(\)/);
   });
 });

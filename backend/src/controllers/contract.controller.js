@@ -27,6 +27,8 @@ const pdfService          = require('../services/pdf.service');
 const storageService      = require('../services/storage.service');
 const escrowService       = require('../services/escrow.service');
 const productionService   = require('../services/production.service');
+// Item 7 — the one place the brand's signature locks money (approval Q9).
+const contractSign        = require('../services/contractSign.service');
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
@@ -431,16 +433,25 @@ const sign = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'typed_name is required', 422, 'typed_name');
   }
 
-  // Update contract
+  // Update contract.
+  //
+  // Item 7, Phase 2a — this is a compare-and-swap, not a blind write. The
+  // status check above reads outside any lock, so two taps or two devices can
+  // both reach here; `AND status = 'pending_influencer'` means exactly one of
+  // them writes, and the loser is told the truth rather than silently
+  // overwriting the first signature's name and timestamp.
   const { rows } = await db.query(
     `UPDATE contracts
      SET status = 'pending_brand',
          influencer_signed_name = $2,
          influencer_signed_at   = now()
-     WHERE id = $1
+     WHERE id = $1 AND status = 'pending_influencer'
      RETURNING *`,
     [contract.id, typed_name]
   );
+  if (rows.length === 0) {
+    throw new AppError('VALIDATION_ERROR', 'This is already signed.', 422, 'status');
+  }
 
   // Notify brand that influencer has signed
   await notificationService.send({
@@ -473,132 +484,11 @@ const sign = asyncHandler(async (req, res) => {
 // Throws AppError with WALLET_INSUFFICIENT on race-condition wallet exhaustion
 // (another contract grabbed funds first).
 // ─────────────────────────────────────────────────────────────────────────────
-async function _signOneContractInTx(client, contract, signedByUserId) {
-  const baseFee     = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
-  const bonusOnTop  = parseFloat(contract.bonus_amount || 0);
-  const effectiveFee = baseFee + bonusOnTop;
-  const platformFeePct  = parseFloat(contract.platform_fee_pct || 8);
-  const lockAmount      = parseFloat((effectiveFee * (1 + platformFeePct / 100)).toFixed(2));
-  const needsWalletLock = effectiveFee > 0;
-
-  // 0. Backfill base fee if missing
-  if (!contract.influencer_fee && baseFee > 0) {
-    await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [baseFee, contract.id]);
-    await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [baseFee, contract.campaign_influencer_id]);
-  }
-
-  // 0.5 Lock per-contract funds in brand wallet (engagement/hybrid only)
-  if (needsWalletLock) {
-    const { rows: walletRows } = await client.query(
-      `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
-      [contract.brand_id]
-    );
-    const currentBalance = parseFloat(walletRows[0].wallet_balance);
-    const newBalance = parseFloat((currentBalance - lockAmount).toFixed(2));
-    if (newBalance < 0) {
-      throw new AppError('WALLET_INSUFFICIENT', 'Wallet balance changed; please retry.', 422);
-    }
-    await client.query(
-      `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
-      [newBalance, contract.brand_id]
-    );
-    await client.query(
-      `INSERT INTO wallet_transactions
-         (brand_id, type, amount, direction, balance_after, campaign_id, notes)
-       VALUES ($1, 'escrow_lock', $2, 'debit', $3, $4, $5)`,
-      [
-        contract.brand_id,
-        lockAmount,
-        newBalance,
-        contract.campaign_id,
-        `Escrow lock for contract: ${contract.influencer_name || contract.influencer_id} (${contract.campaign_name})`,
-      ]
-    );
-  }
-
-  // 1. Mark contract as active
-  const { rows: contractRows } = await client.query(
-    `UPDATE contracts
-     SET status = 'active', brand_signed_at = now(), brand_signed_by = $2
-     WHERE id = $1
-     RETURNING *`,
-    [contract.id, signedByUserId]
-  );
-  const updatedContract = contractRows[0];
-
-  // 2. Mark campaign_influencer as contracted
-  await client.query(
-    `UPDATE campaign_influencers SET status = 'contracted' WHERE id = $1`,
-    [contract.campaign_influencer_id]
-  );
-
-  await events.record({
-    campaignInfluencerId: contract.campaign_influencer_id,
-    step: events.STEP.SIGN,
-    actorRole: 'brand',
-    actorUserId: signedByUserId,
-    action: 'countersigned',
-  }, client);
-
-  // 2b. Auto-create production_event row (mode from contracts.production_mode)
-  try {
-    await productionService.autoCreateForContract(client, updatedContract);
-  } catch (peErr) {
-    console.error('[CONTRACT] production_event auto-create failed:', peErr.message);
-  }
-
-  // 3. Create 3 escrow entries + 4. Release T1 (engagement/hybrid only)
-  let t1EntryId = null;
-  let t1Result  = null;
-  if (effectiveFee > 0) {
-    const entries = await escrowService.createEscrowEntries(
-      client,
-      contract.campaign_influencer_id,
-      effectiveFee,
-      contract.platform_fee_pct
-    );
-    t1EntryId = entries[0].id;
-    t1Result = await escrowService.processTrancheRelease(
-      client,
-      t1EntryId,
-      contract.influencer_id,
-      contract.brand_id,
-      contract.campaign_id
-    );
-  }
-
-  // 5. Auto-create deliverables — but ONLY where the brand is buying content.
-  //
-  // Founder, 2026-08-28: "content related reels and all is come mandatory only in pay for
-  // content type of campaign". His countersign was refused on a commission campaign with
-  // "campaign set has no deliverable formats" — a set the wizard had deliberately saved with an
-  // empty list, because a commission creator is not selling content.
-  //
-  // The rule now lives in ONE place. It was previously answered three different ways: the
-  // wizard sent [], this refused, and getMyCampaignDetail invented a reel.
-  // Contract: features/deliverables-only-when-buying-content
-  const { plannedDeliverables } = require('../services/deliverables.model');
-  const planned = plannedDeliverables(contract.goal, contract.formats_json, toCanonicalFormatType);
-  if (planned.error) throw new AppError('VALIDATION_ERROR', planned.error, 422);
-  const normalised = planned.formats;
-
-  for (const fmt of normalised) {
-    for (let i = 0; i < fmt.count; i++) {
-      await client.query(
-        `INSERT INTO deliverables
-           (campaign_influencer_id, type, quantity, status, submission_deadline, revision_limit)
-         VALUES ($1, $2, 1, 'pending', $3, $4)`,
-        [
-          contract.campaign_influencer_id,
-          fmt.type,
-          updatedContract.posting_date || null,
-          updatedContract.revision_limit,
-        ]
-      );
-    }
-  }
-
-  return { updatedContract, t1Result, t1EntryId, lockAmount, effectiveFee };
+// Item 7 — the countersignature now lives in ONE service, so brand-web and the
+// phone enforce the same rules and the same money maths (approval Q9).
+// services/contractSign.service.js is the only place funds lock.
+async function _signOneContractInTx(client, contract, signedByUserId, opts = {}) {
+  return contractSign.brandSignInTx(client, contract, signedByUserId, opts);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1054,8 +944,10 @@ const retryContractCreate = asyncHandler(async (req, res) => {
 
   // Retry — bubble up errors so caller sees real reason.
   const contractService = require('../services/contract.service');
-  const created = await contractService.autoCreate(ciId);
-  return success(res, { contract: created, created: !!created });
+  // Item 7 (approval 4.3): autoCreate now says which of the three things
+  // happened instead of returning a bare null for two of them.
+  const out = await contractService.autoCreate(ciId);
+  return success(res, { contract: out.contract, created: out.created, reason: out.reason });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1198,10 +1090,10 @@ const approveContract = asyncHandler(async (req, res) => {
     console.error('[CONTRACT] approve notification failed:', notifErr.message);
   }
 
-  // Regenerate PDF so both sides see the new clauses / bonus / requirements.
-  _generateAndStorePdf(contract.id).catch(err =>
-    console.error('[CONTRACT] PDF regen after approve failed:', err.message)
-  );
+  // Item 7 (approval Q12): NO document is produced here any more. The PDF is
+  // produced only once both signatures exist — before signing, the on-screen
+  // agreement is the agreement, and a PDF of an unsigned one is a document
+  // that says something nobody has agreed to.
 
   const { rows: fresh } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
   return success(res, { contract: fresh[0], re_approved: isReApprove });
@@ -1233,6 +1125,12 @@ const listBrandPending = asyncHandler(async (req, res) => {
         con.created_at,
         con.production_mode,
         con.campaign_influencer_id,
+        -- Item 7 (approval Q9): the website must show the SAME number as the
+        -- phone, so it reads the server's answer instead of recomputing one.
+        con.reference_no,
+        con.terms_json,
+        con.locked_amount,
+        con.campaign_fee_amount,
         cs.formats_json    AS set_formats_json,
         ci.formats_json    AS ci_formats_json,
         cs.goal,

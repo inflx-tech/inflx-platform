@@ -655,6 +655,10 @@ export const adminApi = {
   // Contract: features/item6-negotiation
   getPlatformSettings: () => api.get('/admin/platform-settings'),
   updatePlatformSettings: (data) => api.patch('/admin/platform-settings', data),
+  // Item 7 — the versioned standard terms. Contract: features/item7-agreement
+  getStandardTerms: () => api.get('/admin/standard-terms'),
+  getStandardTermsVersion: (v) => api.get(`/admin/standard-terms/${encodeURIComponent(v)}`),
+  publishStandardTerms: (data) => api.post('/admin/standard-terms', data),
   setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
   // Wave 1 — per-brand L3 commerce-commission override + per-influencer TDS controls
   setBrandCommerceCommissionOverride: (brandId, pct) =>

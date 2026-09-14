@@ -22,6 +22,9 @@ const { DEAD_STATUSES } = require('./collabOwedItems.service');
 const { calendarDay, todayInIndia, daysBetween, isBefore, endOfIndiaDay } = require('../utils/indiaDay');
 const { MIN_SHOPPABLE_POSTS } = require('../config/platformRules');
 const { deliverablesInWords, usageInWords, declineLabel } = require('./invitationCopy');
+const { splitAmount } = require('../utils/money');
+// Item 7 — the agreement's own sentences. Contract: features/item7-agreement
+const { BRAND: BRAND7, CREATOR: CREATOR7 } = require('./agreementCopy');
 
 /* ────────────────────────────────────────────────────────── grouping */
 
@@ -45,8 +48,14 @@ function groupOf(r) {
   if (r.signed_both) return 'signed';
   const threadOpen = !!r.neg_id && !r.neg_outcome;
   const movePending = !!r.move_requested_at && !r.move_answer && ['invited', 'negotiating'].includes(r.status);
-  if (movePending || (threadOpen && r.neg_turn === 'brand')) return 'yourMove';
+  // Item 7 (P1): TWO different "your move"s sit together — one creator needs an
+  // agreement sent, another has signed and is waiting for the brand.
+  const agreementOwed = r.contract_status === 'draft' && ['accepted', 'applied'].includes(r.status);
+  const hersSigned = !!r.creator_signed_at && !r.brand_signed_at && r.contract_status === 'pending_brand';
+  if (movePending || hersSigned || agreementOwed || (threadOpen && r.neg_turn === 'brand')) return 'yourMove';
   if (threadOpen) return 'negotiating';
+  // An agreement out and unsigned is her move, not a dead row: "Waiting for the creator".
+  if (r.contract_status === 'pending_influencer') return 'waiting';
   return STATUS_GROUP[r.status] || 'waiting';
 }
 const PER_GROUP = 50;
@@ -138,6 +147,7 @@ const ROW_SELECT = `
          COALESCE(i.full_name, u.name) AS name, i.profile_image_r2_key, i.instagram_handle,
          bo.name AS offer_name,
          con.signed_both, con.signed_at, con.contract_id, con.contract_status,
+         con.agreement_sent_at, con.reference_no, con.creator_signed_at, con.brand_signed_at,
          neg.*
     FROM campaign_influencers ci
     JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
@@ -146,7 +156,11 @@ const ROW_SELECT = `
     LEFT JOIN LATERAL (
       SELECT con.id AS contract_id, con.status AS contract_status,
              (${SIGNED_CONTRACT_SQL}) AS signed_both,
-             GREATEST(con.influencer_signed_at, con.brand_signed_at) AS signed_at
+             GREATEST(con.influencer_signed_at, con.brand_signed_at) AS signed_at,
+             -- Item 7: the set screen needs to tell "sent and waiting" from
+             -- "she signed, your move" from "signed by both".
+             con.sent_at AS agreement_sent_at, con.reference_no,
+             con.influencer_signed_at AS creator_signed_at, con.brand_signed_at
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
     ) con ON true
     ${NEG_JOIN}`;
@@ -183,8 +197,26 @@ function brandRow(r, goal) {
       remove: !r.signed_both && !DEAD_STATUSES.includes(r.status),
       viewTerms: true,
       thread: !!r.neg_id || !!r.move_requested_at,
-      sendAgreement: group === 'accepted' && !r.signed_both, // item 7's button
+      // Item 7 (P1) — the brand's two agreement moves, and the one thing it
+      // may still take back. Only one of these is ever true at a time.
+      sendAgreement: r.contract_status === 'draft' && ['accepted', 'applied'].includes(r.status) && !r.signed_both,
+      signAgreement: r.contract_status === 'pending_brand' && !!r.creator_signed_at && !r.brand_signed_at,
+      withdrawAgreement: r.contract_status === 'pending_influencer' && !r.creator_signed_at,
+      viewAgreement: !!r.contract_id && !!r.agreement_sent_at,
+      downloadAgreement: !!r.signed_both,
     },
+    // Item 7 — the line under the row, in the brand's words (P1).
+    agreement: r.contract_id ? {
+      reference: r.reference_no || null,
+      status: r.contract_status,
+      sentAt: r.agreement_sent_at || null,
+      creatorSignedAt: r.creator_signed_at || null,
+      brandSignedAt: r.brand_signed_at || null,
+      line: r.signed_both ? BRAND7.signedByBoth(r.brand_signed_at)
+        : r.creator_signed_at ? BRAND7.sheSignedYouComplete(r.name, r.creator_signed_at)
+        : r.agreement_sent_at ? BRAND7.agreementSent(r.agreement_sent_at)
+        : null,
+    } : null,
   };
 }
 
@@ -226,7 +258,8 @@ const CREATOR_SELECT = `
          b.business_name AS brand_name, b.logo_url AS brand_logo_url,
          rc.name AS city_name,
          bo.name AS offer_name,
-         con.signed_both,
+         con.signed_both, con.contract_id, con.contract_status, con.reference_no,
+         con.agreement_sent_at, con.creator_signed_at, con.brand_signed_at,
          neg.*,
          pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
          ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms
@@ -238,7 +271,12 @@ const CREATOR_SELECT = `
     LEFT JOIN ref_cities rc ON rc.id = bb.city_id
     LEFT JOIN brand_offers bo ON bo.id = ci.brand_offer_id
     LEFT JOIN LATERAL (
-      SELECT (${SIGNED_CONTRACT_SQL}) AS signed_both
+      SELECT (${SIGNED_CONTRACT_SQL}) AS signed_both,
+             -- Item 7: her card has to know whether the agreement has arrived,
+             -- whether she has signed it, and whether the brand has.
+             con.id AS contract_id, con.status AS contract_status, con.reference_no,
+             con.sent_at AS agreement_sent_at,
+             con.influencer_signed_at AS creator_signed_at, con.brand_signed_at
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
     ) con ON true
     ${NEG_JOIN}
@@ -265,7 +303,14 @@ function creatorState(r, today) {
     case 'invited': group = closedByCutoff ? 'expired' : 'invited'; endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
     case 'applied': group = closedByCutoff ? 'expired' : 'invited'; endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
     case 'negotiating': group = closedByCutoff ? 'expired' : (threadOpen && r.neg_turn === 'influencer' ? 'yourMove' : 'negotiating'); endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
-    case 'accepted': group = closedByCutoff && !r.signed_both ? 'expired' : 'accepted'; endedAt = group === 'expired' ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
+    case 'accepted':
+      // Item 7 (P4): once the agreement is out it is HER move, and the card says
+      // so. Before it arrives she is simply waiting for it.
+      if (closedByCutoff && !r.signed_both) { group = 'expired'; endedAt = r.expired_at || endOfIndiaDay(cutoff); }
+      else if (r.contract_status === 'pending_influencer' && !r.creator_signed_at) group = 'toSign';
+      else if (r.contract_status === 'pending_brand' && r.creator_signed_at) group = 'signedWaiting';
+      else group = 'accepted';
+      break;
     case 'deferred':
       // Item 6: moved to the pool — waiting there while the entry lives, closed once it expired or was removed.
       group = r.pool_from_state === 'waiting' ? 'pooled' : (r.pool_from_state ? 'closed' : 'deferred');
@@ -311,6 +356,19 @@ function creatorCard(r, today) {
     pool: r.pool_from_id ? { entryId: r.pool_from_id, state: r.pool_from_state, expiresAt: r.pool_from_expires_at, lifetimeDays: r.pool_from_lifetime, wantsGoLiveDate: r.deferred_go_live_date ? calendarDay(r.deferred_go_live_date) : null } : null,
     // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).
     fromPool: r.pool_entry_id ? { agreedAt: r.pool_sent_agreed_at, sameDate: !!(r.pool_sent_wants_date && st.postingDate && calendarDay(r.pool_sent_wants_date) === st.postingDate), termsLine: snapshotLine(r.goal, jsonObj(r.pool_sent_terms)) } : null,
+    // Item 7 — the agreement, in her words (P4, P7, P16).
+    agreement: r.contract_id && r.agreement_sent_at ? {
+      reference: r.reference_no || null,
+      status: r.contract_status,
+      sentAt: r.agreement_sent_at,
+      signedAt: r.creator_signed_at || null,
+      bothSignedAt: r.signed_both ? r.brand_signed_at : null,
+      line: r.signed_both ? null
+        : r.creator_signed_at ? CREATOR7.waitingForBrand(r.brand_name, st.cutoff)
+        : CREATOR7.readyToSign(st.cutoff),
+      canSign: st.group === 'toSign',
+      canDownload: !!r.signed_both,
+    } : null,
   };
 }
 
@@ -318,7 +376,15 @@ function creatorCard(r, today) {
 async function invitationsForCreator(influencerId, tab = 'invites', today = null) {
   const t = today || todayInIndia();
   const { rows } = await db.query(`${CREATOR_SELECT} WHERE ci.influencer_id = $1 ORDER BY COALESCE(ci.invited_at, ci.created_at) DESC`, [influencerId]);
-  const cards = rows.map(r => creatorCard(r, t)).filter(c => c.group !== 'signed');
+  const all = rows.map(r => creatorCard(r, t));
+  // Item 7 (P16): the Active tab is real now. A signed collaboration leaves
+  // Invites the moment both names are on the agreement — that signature is
+  // what moves it, not any status.
+  if (tab === 'active') {
+    const live = all.filter(c => c.group === 'signed' && c.status !== 'completed');
+    return { tab: 'active', rows: live, total: live.length };
+  }
+  const cards = all.filter(c => c.group !== 'signed');
   const now = Date.now();
   const isDone = (c) => !!c.endedAt && (now - new Date(c.endedAt).getTime()) > DONE_AFTER_DAYS * 86400000;
   const list = tab === 'done' ? cards.filter(isDone) : cards.filter(c => !isDone(c));
@@ -336,8 +402,10 @@ async function invitationForCreator(ciId, influencerId, today = null) {
   let paySplit = null;
   if (terms.fee != null) {
     const cfg = await paymentConfigSvc.getConfig();
-    const part = (p) => Math.round(Number(terms.fee) * Number(p) / 100);
-    paySplit = { t1Pct: cfg.tranche1Pct, t2Pct: cfg.tranche2Pct, t3Pct: cfg.tranche3Pct, t1: part(cfg.tranche1Pct), t2: part(cfg.tranche2Pct), t3: Number(terms.fee) - part(cfg.tranche1Pct) - part(cfg.tranche2Pct) };
+    // Item 7, approval 4.4 — the ONE shared splitter, the same call the escrow
+    // writer makes, so what she is shown before signing is what is written.
+    const [t1, t2, t3] = splitAmount(terms.fee, [cfg.tranche1Pct, cfg.tranche2Pct, cfg.tranche3Pct]);
+    paySplit = { t1Pct: cfg.tranche1Pct, t2Pct: cfg.tranche2Pct, t3Pct: cfg.tranche3Pct, t1, t2, t3 };
   }
   return {
     ...card,

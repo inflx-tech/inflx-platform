@@ -22,6 +22,7 @@ import { C5, GROUP_TONE, aimLabel5, modeLabel5, longDate5, rupees5, MIN_SHOPPABL
 // Item 6 — the counter choice (N1), the "not taking counters" line (N19) and the pool line (N17).
 import { CounterChoiceSheet6 } from '../../components/negotiation/sheets6';
 import { C6 } from '../../components/negotiation/copy6';
+import { C7 } from '../../components/agreement/copy7';
 
 const D = C5.creator.detail;
 
@@ -64,6 +65,8 @@ export default function InvitationScreen({ navigation, route }) {
   const chipLabel = C5.creator.chips[inv.group];
   let sentence = null;
   if (inv.group === 'accepted') sentence = C5.creator.waitingFor(inv.brand.name);
+  // Item 7 (P4, P7): once the agreement is out, the sentence is about the agreement.
+  else if (inv.agreement && inv.agreement.line) sentence = inv.agreement.line;
   else if (inv.group === 'expired') sentence = C5.creator.expiredBody(inv.cutoff);
   else if (inv.group === 'withdrawn') sentence = C5.creator.withdrawnBody(inv.brand.name, inv.withdrawnAt || inv.endedAt);
   else if (inv.group === 'closed') sentence = C5.creator.closedBody(inv.brand.name);
@@ -119,6 +122,17 @@ export default function InvitationScreen({ navigation, route }) {
         {inv.note ? <Text style={s.quote} testID="brand-note">“{inv.note}”</Text> : null}
         {inv.canAnswer ? <Text style={s.hint}>{D.final}</Text> : null}
       </ScrollView>
+
+      {/* Item 7 (P4): the agreement is hers to read and sign, so the footer says
+          so instead of sitting empty. */}
+      {!inv.canAnswer && inv.agreement ? (
+        <View style={s.footer} testID="agreement-actions">
+          <PrimaryButton
+            label={inv.agreement.canSign ? C7.creator.sign : C7.creator.agreementLink}
+            onPress={() => navigation.navigate('Agreement', { ciId: inv.id })}
+            testID="open-agreement" />
+        </View>
+      ) : null}
 
       {inv.canAnswer ? (
         <View style={s.footer} testID="answer-actions">

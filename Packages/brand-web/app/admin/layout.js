@@ -55,6 +55,7 @@ const NAV = [
   { section: 'SETTINGS' },
   { href: '/admin/settings/payments', label: 'Payment Config', icon: '⚙️', cap: 'settings' },
   { href: '/admin/settings/platform', label: 'Platform settings', icon: '🎚️', cap: 'settings' },
+  { href: '/admin/settings/terms', label: 'Standard terms', icon: '📜', cap: 'settings' },
   { href: '/admin/app-settings',      label: 'Follower App',   icon: '📱', cap: 'settings' },
   { href: '/admin/tax-summary',       label: 'Tax Summary',    icon: '🧾', cap: 'tax' },
   { href: '/admin/users',             label: 'Admin Users',    icon: '👥', cap: 'users' },

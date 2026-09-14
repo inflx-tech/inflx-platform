@@ -409,13 +409,15 @@ describe('POST /v1/contracts/:id/brand-sign', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.t1_released).toBe(true);
 
-    // fee=10000, T1=25%=2500, platform_fee=8%=200, net=2300
+    // Item 7 (rules v1.20 §3 and §9): she receives the agreed amount IN FULL.
+    // fee = 10000, T1 = 25% = 2500, and nothing is deducted from it. INFLX's
+    // take is the campaign fee, charged to the brand at the lock, never here.
     const { rows } = await query(
       `SELECT wallet_balance, total_earned FROM influencers WHERE id = $1`,
       [inf.id]
     );
-    expect(parseFloat(rows[0].wallet_balance)).toBeCloseTo(2300, 1);
-    expect(parseFloat(rows[0].total_earned)).toBeCloseTo(2300, 1);
+    expect(parseFloat(rows[0].wallet_balance)).toBeCloseTo(2500, 1);
+    expect(parseFloat(rows[0].total_earned)).toBeCloseTo(2500, 1);
 
     // T1 escrow entry should be released
     const { rows: escrowRows } = await query(

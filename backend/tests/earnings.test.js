@@ -243,9 +243,11 @@ describe('GET /v1/influencers/me/earnings', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // T1: 25% of 10000 = 2500, platform_fee 8% = 200, net = 2300
-    expect(parseFloat(res.body.data.wallet_balance)).toBeCloseTo(2300, 1);
-    expect(parseFloat(res.body.data.total_earned)).toBeCloseTo(2300, 1);
+    // Item 7 (rules v1.20 §3, §9): she receives the agreed amount IN FULL.
+    // T1 is 25% of 10000 = 2500, and nothing is deducted from it. INFLX's take
+    // is the campaign fee, charged to the brand at the lock.
+    expect(parseFloat(res.body.data.wallet_balance)).toBeCloseTo(2500, 1);
+    expect(parseFloat(res.body.data.total_earned)).toBeCloseTo(2500, 1);
   });
 
   it('returns pending_amount (locked escrow T2+T3 net)', async () => {
@@ -255,8 +257,9 @@ describe('GET /v1/influencers/me/earnings', () => {
       .get('/v1/influencers/me/earnings')
       .set('Authorization', `Bearer ${infToken}`);
 
-    // T2 net = 2500 * 0.92 = 2300; T3 net = 5000 * 0.92 = 4600; total pending = 6900
-    expect(parseFloat(res.body.data.pending_amount)).toBeCloseTo(6900, 1);
+    // Item 7: no platform charge comes out of a tranche, so the locked ones are
+    // worth their face value. T2 2500 + T3 5000 = 7500 pending.
+    expect(parseFloat(res.body.data.pending_amount)).toBeCloseTo(7500, 1);
   });
 
   it('pending_amount decreases as tranches are released', async () => {

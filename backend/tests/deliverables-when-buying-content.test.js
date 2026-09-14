@@ -124,7 +124,10 @@ describe('a pay-for-content collaboration — where the requirement stands', () 
 
 describe('all three places now ask the same question', () => {
   test('the countersign asks the rule instead of refusing on its own', () => {
-    const src = code('../src/controllers/contract.controller.js');
+    // Item 7 moved the countersign into ONE service so brand-web and the phone
+    // share it (approval Q9); the rule it asks is unchanged.
+    const src = code('../src/services/contractSign.service.js')
+      + code('../src/controllers/contract.controller.js');
     // ⚠️ This first asserted only that the function was NAMED. Hardcoding the goal at the call
     // site — plannedDeliverables('engagement', ...) — left it green while refusing every
     // commission countersign exactly as before. Assert what is passed, not that a word appears.

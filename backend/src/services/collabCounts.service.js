@@ -53,12 +53,29 @@ async function forBrand(brandId) {
                 OR (p.status = 'countered' AND p.counter_by = 'creator')))                AS her_pitches,
        (SELECT count(*)::int FROM collab_agreements a
          WHERE a.brand_id = $1 AND a.status = 'ready'
-           AND a.expires_at < now() + interval '14 days')                                 AS expiring_agreements`,
+           AND a.expires_at < now() + interval '14 days')                                 AS expiring_agreements,
+       -- Item 7: both of the brand's agreement moves. "Send agreement" — she
+       -- accepted and nothing has gone out — and "Sign" — she signed and the
+       -- brand has not. Neither was counted anywhere before; a draft sitting
+       -- unsent was invisible in every Needs You number.
+       (SELECT count(*)::int FROM contracts con
+          JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+          JOIN campaign_sets cs ON cs.id = ci.set_id
+          JOIN campaigns c ON c.id = cs.campaign_id
+         WHERE c.brand_id = $1 AND con.status = 'draft'
+           AND ci.status IN ('accepted', 'applied'))                                      AS agreements_to_send,
+       (SELECT count(*)::int FROM contracts con
+          JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+          JOIN campaign_sets cs ON cs.id = ci.set_id
+          JOIN campaigns c ON c.id = cs.campaign_id
+         WHERE c.brand_id = $1 AND con.status = 'pending_brand'
+           AND con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NULL)      AS agreements_to_sign`,
     [brandId]
   );
   const c = convo[0] || {};
   const creatorsTab =
-    Number(c.her_counters || 0) + Number(c.her_pitches || 0) + Number(c.expiring_agreements || 0);
+    Number(c.her_counters || 0) + Number(c.her_pitches || 0) + Number(c.expiring_agreements || 0)
+    + Number(c.agreements_to_send || 0) + Number(c.agreements_to_sign || 0);
 
   // ── Per creator, inside a campaign ───────────────────────────────────────────
   // One row per assignment, carrying just enough for the step calculation to run.
@@ -74,6 +91,7 @@ async function forBrand(brandId) {
             cam.name                    AS campaign_name,
             cam.status                  AS campaign_status,
             con.status                  AS contract_status,
+            (con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL) AS contract_signed_both,
             (pe.status = 'completed' OR pe.visit_completed_at IS NOT NULL) AS shoot_done,
             pe.status                   AS shoot_status,
             (SELECT count(*)::int FROM deliverables d
@@ -120,7 +138,10 @@ async function forBrand(brandId) {
       { status: a.ci_status },
       {
         track: a.set_goal === 'engagement' ? 'content' : (a.set_goal === 'hybrid' ? 'both' : 'sales'),
-        contractSignedByBoth: a.contract_status === 'active',
+        // Item 7 (approval Q11): the SIGNATURE TIMESTAMPS decide, not the status.
+        // Four seeded production rows are 'active' with no signatures at all, and
+        // two definitions of "signed by both" had been coexisting in the codebase.
+        contractSignedByBoth: a.contract_signed_both === true,
         shootDone: !!a.shoot_done,
         shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
         socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
@@ -250,6 +271,7 @@ async function stepsForCreator(influencerId) {
             b.id                        AS brand_id,
             b.business_name             AS brand_name,
             con.status                  AS contract_status,
+            (con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL) AS contract_signed_both,
             (pe.status = 'completed' OR pe.visit_completed_at IS NOT NULL) AS shoot_done,
             pe.status                   AS shoot_status,
             (SELECT count(*)::int FROM deliverables d
@@ -279,7 +301,10 @@ async function stepsForCreator(influencerId) {
       { status: a.ci_status },
       {
         track: a.set_goal === 'engagement' ? 'content' : (a.set_goal === 'hybrid' ? 'both' : 'sales'),
-        contractSignedByBoth: a.contract_status === 'active',
+        // Item 7 (approval Q11): the SIGNATURE TIMESTAMPS decide, not the status.
+        // Four seeded production rows are 'active' with no signatures at all, and
+        // two definitions of "signed by both" had been coexisting in the codebase.
+        contractSignedByBoth: a.contract_signed_both === true,
         shootDone: !!a.shoot_done,
         shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
         socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'

@@ -250,6 +250,17 @@ export const brandApi = {
   poolSetDefaults:   (entryIds) => api.post('/brands/me/pool/set-defaults', { entryIds }),
   removeFromPool:    (entryId) => api.delete(`/brands/me/pool/${entryId}`),
 
+  // ── Item 7 · the agreement and the two signatures ─────────────────────────
+  // Contract: features/item7-agreement. All new; another brand's set is 404.
+  agreementPreview:  (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/agreement/preview`),
+  sendAgreement:     (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/agreement/send`),
+  getAgreement:      (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/agreement`),
+  agreementCost:     (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/agreement/cost`),
+  signAgreement:     (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/agreement/sign`, body),
+  withdrawAgreement: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/agreement/withdraw`),
+  agreementDocument: (ciId) => api.get(`/agreements/${ciId}/document`),
+  standardTerms:     (version) => api.get(version ? `/standard-terms/${version}` : '/standard-terms'),
+
   // Places to search in — state, then city, each with a real count of creators who
   // are actually there. Only ever offers somewhere someone is.
   listCreatorLocations: () => api.get('/influencers/locations'),
@@ -474,6 +485,12 @@ export const influencerApi = {
   declineCounter:      (id, body) => api.post(`/influencers/me/invitations/${id}/thread/decline`, body),
   myPool:              () => api.get('/influencers/me/pool'),
   leavePool:           (entryId) => api.delete(`/influencers/me/pool/${entryId}`),
+  // ── Item 7 · the agreement. Contract: features/item7-agreement ────────────
+  myAgreement:         (id) => api.get(`/influencers/me/invitations/${id}/agreement`),
+  signMyAgreement:     (id, body) => api.post(`/influencers/me/invitations/${id}/agreement/sign`, body),
+  declineMyAgreement:  (id, body) => api.post(`/influencers/me/invitations/${id}/agreement/decline`, body),
+  myAgreementDocument: (id) => api.get(`/agreements/${id}/document`),
+  standardTerms:       (version) => api.get(version ? `/standard-terms/${version}` : '/standard-terms'),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),

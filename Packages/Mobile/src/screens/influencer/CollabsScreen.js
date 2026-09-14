@@ -20,7 +20,9 @@ import { InvitationCard5 } from '../../components/invitations/bits5';
 import { C5 } from '../../components/invitations/copy5';
 
 const F = C3.collabs;
-const TAB_PARAM = { Invites: 'invites', Done: 'done' };
+// Item 7: Active is real now — a collaboration leaves Invites the moment both
+// names are on the agreement. Contract: features/item7-agreement
+const TAB_PARAM = { Invites: 'invites', Active: 'active', Done: 'done' };
 
 export default function CollabsScreen({ navigation, route }) {
   const [segment, setSegment] = useState(route?.params?.segment || F.segments[0]);
@@ -52,7 +54,13 @@ export default function CollabsScreen({ navigation, route }) {
         <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingBottom: 40 }} testID={`collabs-${segment.toLowerCase()}`}
           renderItem={({ item }) => (
             // Item 6: a card with a conversation opens the thread; the rest open the invitation.
-            <InvitationCard5 card={item} onPress={() => navigation.navigate(item.negotiation || (item.moveRequest && !item.moveRequest.answer) ? 'Thread' : 'Invitation', { ciId: item.id })} />
+            // Item 7: an agreement that is hers to read opens the agreement; a
+            // conversation opens the thread; everything else opens the invitation.
+            <InvitationCard5 card={item} onPress={() => navigation.navigate(
+              item.agreement ? 'Agreement'
+                : (item.negotiation || (item.moveRequest && !item.moveRequest.answer)) ? 'Thread'
+                : 'Invitation',
+              { ciId: item.id })} />
           )}
           ListHeaderComponent={segment === 'Pitches' ? (
             <View style={s.card} testID="pitch-card">

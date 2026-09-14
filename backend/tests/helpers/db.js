@@ -132,8 +132,28 @@ async function reseedReferenceData(client) {
     INSERT INTO platform_settings (key, value, min_value, max_value, unit, label) VALUES
       ('negotiation_rounds',  2,  1,  5, 'rounds', 'Negotiation rounds'),
       ('pool_lifetime_days', 30,  7, 90, 'days',   'Pool entry lifetime'),
-      ('min_shoppable_posts', 1,  1, 10, 'post',   'Minimum shoppable posts')
+      ('min_shoppable_posts', 1,  1, 10, 'post',   'Minimum shoppable posts'),
+      ('campaign_fee_pct',    8,  0, 30, 'percent', 'INFLX campaign fee'),
+      ('remote_return_days',  7,  1, 60, 'days',   'Remote return window')
     ON CONFLICT (key) DO NOTHING
+  `);
+  // Item 7: the standard terms are seeded by migration 183 and are configuration
+  // too — and they are load-bearing, because generating an agreement without a
+  // current version is refused outright rather than stamped with nothing.
+  await client.query(`
+    INSERT INTO standard_terms (version, body_md, is_current)
+    VALUES ('1.0',
+'1. The influencer agrees to create and publish content as specified above.
+2. Content must be original, accurate, and comply with ASCI guidelines for sponsored content.
+3. The brand retains the right to request up to the specified number of revisions.
+4. Commission returns are subject to the return window stated in this agreement.
+5. TDS of 10% will be deducted from withdrawals as per applicable Indian tax law.
+6. Any disputes shall be resolved through the INFLX platform dispute resolution process.
+7. This contract is governed by the laws of India.
+8. The creator receives the agreed amount in full. The INFLX campaign fee is paid by the brand and is never deducted from a creator payment.
+9. For Remote work the creator returns anything she does not keep within the period stated in this agreement, and the brand pays the return shipping.',
+      true)
+    ON CONFLICT (version) DO NOTHING
   `);
 }
 

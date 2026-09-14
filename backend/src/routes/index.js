@@ -159,6 +159,10 @@ router.use('/', invitationRoutes);
 // Contract: features/item6-negotiation
 const item6Routes = require('./item6.routes');
 router.use('/', item6Routes);
+// Item 7 — the agreement, the two signatures, the standard terms. Fixed paths first.
+// Contract: features/item7-agreement
+const item7Routes = require('./item7.routes');
+router.use('/', item7Routes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
