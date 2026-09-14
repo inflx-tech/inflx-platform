@@ -11,6 +11,8 @@ import { Avatar } from '../../screens/brand/BrandBlockedCreatorsScreen';
 import { FieldError, TagRow } from '../settings/primitives';
 import { NumberField } from '../../screens/brand/BrandPitchSettingsScreen';
 import { C5, GROUP_TONE, DELIVERABLE_TYPES, aimLabel5, modeLabel5, longDate5, shortDate5, rupees5, fmtPct5 } from './copy5';
+// Item 6 — the negotiation lines on a set row (N20). Contract: features/item6-negotiation
+import { C6 } from '../negotiation/copy6';
 
 /** "Creator 1 of 3" / "All 3 creators" */
 export function Stepper5({ text, testID }) {
@@ -83,7 +85,23 @@ export function ReviewRow5({ name, avatarUrl, line, below, error, onPress, testI
 export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
   let meta = row.termsLine;
   let chip = null;
+  const neg = row.negotiation;
+  const day = (v) => (v ? new Date(v).toISOString().slice(0, 10) : null);
   switch (row.group) {
+    // Item 6 (N20): the brand's own move rises to the top — a counter waiting on her, or a
+    // request to move nobody has answered.
+    case 'yourMove':
+      meta = row.moveRequest && !row.moveRequest.answer
+        ? (row.moveRequest.goLiveDate ? C6.set.askedFor(row.moveRequest.goLiveDate, day(row.moveRequest.requestedAt)) : C6.set.askedForMode(row.moveRequest.shootMode, day(row.moveRequest.requestedAt)))
+        : C6.set.countered(neg && neg.lastCounter ? neg.lastCounter.line : row.termsLine, day(neg && neg.lastCounter ? neg.lastCounter.at : row.sentAt));
+      chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+      break;
+    case 'negotiating':
+      meta = neg && neg.lastCounter
+        ? (neg.lastCounter.by === 'brand' ? C6.set.youCountered(neg.lastCounter.line, day(neg.lastCounter.at)) : C6.set.countered(neg.lastCounter.line, day(neg.lastCounter.at)))
+        : row.termsLine;
+      chip = { label: C6.set.waitingChip, tone: 'waiting' };
+      break;
     case 'waiting': meta = [row.termsLine, C5.set.sent(row.sentAt)].filter(Boolean).join(' · '); break;
     case 'accepted': meta = C5.set.accepted(row.answeredAt || row.sentAt); chip = row.actions && row.actions.sendAgreement ? { label: C5.set.sendAgreement, tone: 'active' } : null; break;
     case 'signed': meta = C5.set.signed(row.signedAt); break;
@@ -119,8 +137,12 @@ export function InvitationCard5({ card, onPress, testID }) {
   else if (card.group === 'withdrawn') sentence = C5.creator.withdrawnBody(card.brand.name, card.endedAt);
   else if (card.group === 'closed') sentence = C5.creator.closedBody(card.brand.name);
   else if (card.group === 'declined') sentence = C5.creator.declinedBody(card.endedAt);
-  else if (card.group === 'negotiating') sentence = C5.creator.negotiatingBody;
+  // Item 6 (N12) — the three endings of a move request, in her words, and the two thread states.
+  else if (card.group === 'pooled') sentence = card.pool && card.pool.wantsGoLiveDate ? C6.creatorMove.agreedBody(card.pool.wantsGoLiveDate) : C6.creatorMove.agreedBodyMode;
   else if (card.group === 'deferred') sentence = C5.creator.deferredBody;
+  else if (card.group === 'yourMove') sentence = card.negotiation && card.negotiation.lastCounter ? `${card.brand.name} countered ${card.negotiation.lastCounter.line}.` : C6.thread.yourMoveMe;
+  else if (card.group === 'negotiating') sentence = C5.creator.negotiatingBody;
+  else if (card.moveRequest && card.moveRequest.answer === 'kept') sentence = C6.creatorMove.keptBody(card.brand.name, card.postingDate, card.cutoff);
   return (
     <TouchableOpacity style={b.card} onPress={onPress} activeOpacity={0.8} testID={testID || `invitation-card-${card.id}`}>
       <View style={b.cardTop}>

@@ -19,6 +19,9 @@ import { Avatar } from '../brand/BrandBlockedCreatorsScreen';
 import { Chip5, KV5 } from '../../components/invitations/bits5';
 import { DeclineSheet5 } from '../../components/invitations/sheets5';
 import { C5, GROUP_TONE, aimLabel5, modeLabel5, longDate5, rupees5, MIN_SHOPPABLE_POSTS } from '../../components/invitations/copy5';
+// Item 6 — the counter choice (N1), the "not taking counters" line (N19) and the pool line (N17).
+import { CounterChoiceSheet6 } from '../../components/negotiation/sheets6';
+import { C6 } from '../../components/negotiation/copy6';
 
 const D = C5.creator.detail;
 
@@ -79,6 +82,15 @@ export default function InvitationScreen({ navigation, route }) {
           {chipLabel ? <Chip5 label={chipLabel} tone={tone} testID={`state-chip-${inv.group}`} /> : null}
         </View>
         {sentence ? <View style={[s.sentence, { backgroundColor: T.state[tone].bg }]} testID="state-sentence"><Text style={[s.sentenceText, { color: T.state[tone].fg }]}>{sentence}</Text></View> : null}
+        {/* N17: sent from the pool. The line names the date only when this set really is the one
+            she asked for; otherwise it names the terms alone (APPROVAL §3.3). */}
+        {inv.fromPool ? (
+          <View style={s.pool} testID="from-pool">
+            <Text style={s.poolText}>{inv.fromPool.sameDate
+              ? C6.invitation.fromPool(inv.set.postingDate, inv.fromPool.termsLine, inv.fromPool.agreedAt)
+              : C6.invitation.fromPoolTermsOnly(inv.fromPool.termsLine, inv.fromPool.agreedAt)}</Text>
+          </View>
+        ) : null}
 
         <View style={s.locked} testID="set-block">
           <Text style={s.blockTitle}>🔒 {D.lockedTitle}</Text>
@@ -110,9 +122,14 @@ export default function InvitationScreen({ navigation, route }) {
 
       {inv.canAnswer ? (
         <View style={s.footer} testID="answer-actions">
+          {/* N19: when the brand is not taking counters the button is gone, not greyed, and one
+              plain line says why. She never taps something only to be refused. */}
+          {inv.counterHiddenReason === 'switch_off' ? <Text style={s.switchOff} testID="counter-off">{C6.invitation.counterOff(inv.brand.name)}</Text> : null}
           <PrimaryButton label={D.accept} onPress={() => setSheet('accept')} testID="accept" />
           <View style={s.pair}>
-            {inv.canCounter ? <View style={{ flex: 1, marginRight: 8 }}><SecondaryButton label={D.counter} onPress={() => navigation.navigate('CounterSoon', { ciId })} testID="counter" /></View> : null}
+            {inv.canCounter || inv.canMoveRequest ? (
+              <View style={{ flex: 1, marginRight: 8 }}><SecondaryButton label={D.counter} onPress={() => setSheet('choice')} testID="counter" /></View>
+            ) : null}
             <View style={{ flex: 1 }}><DangerButton label={D.decline} onPress={() => setSheet('decline')} testID="decline" /></View>
           </View>
         </View>
@@ -120,6 +137,14 @@ export default function InvitationScreen({ navigation, route }) {
       {toast}
       <ConfirmSheet visible={sheet === 'accept'} title={D.acceptTitle} body={D.acceptBody(inv.brand.name)} confirmLabel={D.accept} cancelLabel={D.notYet} onConfirm={accept} onCancel={() => setSheet(null)} />
       <DeclineSheet5 visible={sheet === 'decline'} busy={busy} onDecline={decline} onClose={() => setSheet(null)} />
+      {/* N1: two different things hide behind one word, so she picks which. */}
+      <CounterChoiceSheet6 visible={sheet === 'choice'}
+        roundLimit={(inv.negotiation && inv.negotiation.roundLimit) || 2}
+        countersUsed={(inv.negotiation && inv.negotiation.countersUsed) || 0}
+        canMoveRequest={inv.canMoveRequest}
+        onMoney={() => { setSheet(null); navigation.navigate('Counter', { ciId }); }}
+        onMove={() => { setSheet(null); navigation.navigate('MoveRequest', { ciId }); }}
+        onClose={() => setSheet(null)} />
     </View>
   );
 }
@@ -129,6 +154,9 @@ const s = StyleSheet.create({
   brand: { fontFamily: fonts.sansBold, fontSize: 16, color: T.ink },
   meta: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, marginTop: 2 },
   sentence: { borderRadius: 12, padding: 10, marginBottom: 12 },
+  pool: { borderRadius: 12, padding: 10, marginBottom: 12, backgroundColor: T.state.active.bg },
+  poolText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.active.fg, lineHeight: 17 },
+  switchOff: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, textAlign: 'center', marginBottom: 8 },
   sentenceText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, lineHeight: 17 },
   locked: { backgroundColor: T.surface, borderRadius: 14, padding: 12, marginBottom: 12 },
   card: { borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 12, marginBottom: 12 },

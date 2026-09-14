@@ -81,7 +81,8 @@ async function forBrand(brandId) {
                 AND d.status IN ('submitted','under_review'))            AS deliverables_awaiting_brand,
             (SELECT count(*)::int FROM deliverables d
               WHERE d.campaign_influencer_id = ci.id
-                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm
+                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm,
+            (SELECT n.current_turn FROM negotiations n WHERE n.campaign_influencer_id = ci.id AND n.outcome IS NULL LIMIT 1) AS negotiation_turn
        FROM campaign_influencers ci
        JOIN campaign_sets cs   ON cs.id  = ci.set_id
        JOIN campaigns cam      ON cam.id = cs.campaign_id
@@ -124,6 +125,7 @@ async function forBrand(brandId) {
         shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
         socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
                    : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
+        negotiationTurn: a.negotiation_turn || null,
       }
     );
     const own = step.owes(derived, step.TURN.YOU_BRAND);
@@ -194,6 +196,11 @@ async function forCreator(influencerId) {
            AND p.status = 'countered' AND p.counter_by = 'brand')                     AS pitch_counters,
        (SELECT count(*)::int FROM campaign_influencers ci
          WHERE ci.influencer_id = $1 AND ci.status = 'invited')                       AS invites_to_answer,
+       -- Item 6: a counter waiting for HER reply (negotiations.current_turn), never the brand's.
+       (SELECT count(*)::int FROM negotiations n
+         JOIN campaign_influencers cin ON cin.id = n.campaign_influencer_id
+        WHERE cin.influencer_id = $1 AND n.outcome IS NULL AND n.current_turn = 'influencer'
+          AND cin.status = 'negotiating')                                             AS counters_to_answer,
        (SELECT count(*)::int FROM contracts con
          JOIN campaign_influencers ci2 ON ci2.id = con.campaign_influencer_id
         WHERE ci2.influencer_id = $1 AND con.status = 'pending_influencer')           AS contracts_to_sign,
@@ -210,6 +217,7 @@ async function forCreator(influencerId) {
     invitations:            Number(r.invitations || 0),
     pitch_counters:         Number(r.pitch_counters || 0),
     invites_to_answer:      Number(r.invites_to_answer || 0),
+    counters_to_answer:     Number(r.counters_to_answer || 0),
     contracts_to_sign:      Number(r.contracts_to_sign || 0),
     posts_to_fix:           Number(r.posts_to_fix || 0),
     deliverables_to_submit: Number(r.deliverables_to_submit || 0),
@@ -249,7 +257,8 @@ async function stepsForCreator(influencerId) {
                 AND d.status IN ('submitted','under_review'))              AS deliverables_awaiting_brand,
             (SELECT count(*)::int FROM deliverables d
               WHERE d.campaign_influencer_id = ci.id
-                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm
+                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm,
+            (SELECT n.current_turn FROM negotiations n WHERE n.campaign_influencer_id = ci.id AND n.outcome IS NULL LIMIT 1) AS negotiation_turn
        FROM campaign_influencers ci
        JOIN campaign_sets cs   ON cs.id  = ci.set_id
        JOIN campaigns cam      ON cam.id = cs.campaign_id
@@ -275,6 +284,7 @@ async function stepsForCreator(influencerId) {
         shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
         socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
                    : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
+        negotiationTurn: a.negotiation_turn || null,
       }
     );
     return {

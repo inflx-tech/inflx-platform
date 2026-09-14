@@ -15,4 +15,13 @@
  */
 const MIN_SHOPPABLE_POSTS = 1;
 
-module.exports = { MIN_SHOPPABLE_POSTS };
+/**
+ * Item 6: the admin setting behind the constant (platform_settings.min_shoppable_posts, N22).
+ * Read at SEND and stamped onto the invitation; the constant is the fallback before migration
+ * 182 or if the read fails. A later change never moves a live invitation (rules §7B).
+ */
+async function minShoppablePosts() {
+  try { return Number(await require('../services/platformSettings.service').get('min_shoppable_posts')) || MIN_SHOPPABLE_POSTS; } catch (_) { return MIN_SHOPPABLE_POSTS; }
+}
+
+module.exports = { MIN_SHOPPABLE_POSTS, minShoppablePosts };

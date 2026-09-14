@@ -11,6 +11,8 @@ jest.mock('../../../services/api', () => ({
     createCampaign: jest.fn(), updateCampaign: jest.fn(), deleteCampaign: jest.fn(),
     createCampaignSet: jest.fn(), updateCampaignSet: jest.fn(), deleteCampaignSet: jest.fn(), duplicateSet: jest.fn(),
     listBranches: jest.fn(),
+    // Item 6 (N13): the Campaigns tab reads the pool for the row at the top.
+    getPool: jest.fn(),
   },
   influencerApi: {}, referenceApi: {}, clearSession: jest.fn(), uploadFile: jest.fn(),
 }));
@@ -39,7 +41,11 @@ const SET_B = { id: 'sB', campaignId: 'c1', name: 'Set B · Jewellery', state: '
 const SET_D = { ...SET_B, id: 'sD', name: 'Set D · Kids wear', state: 'expired', isPast: true, postingDate: `${yr}-09-02`, cutoff: `${yr}-08-30`, counts: { invited: 4, signed: 0, waiting: 0, declined: 4 }, canInvite: { ok: false } };
 const CAMPAIGN = { id: 'c1', name: 'Diwali Edit 2026', brief: 'Festive ethnic and jewellery push across Hyderabad and Vijayawada.', state: 'live', createdAt: `${yr}-09-09T00:00:00Z`, setCount: 2, counts: COUNTS, canDelete: false, startedFromGroup: null };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Item 6: no pool by default, so the row at the top of Campaigns stays hidden.
+  brandApi.getPool.mockResolvedValue(ok({ total: 0, groups: [] }));
+});
 
 describe('copy and counts (Q9)', () => {
   it('the counts line and the dates', () => {
@@ -101,7 +107,8 @@ describe('C3 — New campaign', () => {
     brandApi.createCampaign.mockResolvedValue(ok({ campaign: { id: 'c9', name: 'Diwali Edit 2026' }, dateRules: RULES }));
     fireEvent.press(getByTestId('campaign-next'));
     await waitFor(() => expect(n.replace).toHaveBeenCalled());
-    expect(brandApi.createCampaign).toHaveBeenCalledWith({ name: 'Diwali Edit 2026', brief: null, started_from_group_id: 'g1' });
+    // Item 6 (N18): the negotiation switch travels with the campaign, on by default.
+    expect(brandApi.createCampaign).toHaveBeenCalledWith({ name: 'Diwali Edit 2026', brief: null, started_from_group_id: 'g1', allow_negotiation: true });
     expect(n.replace).toHaveBeenCalledWith('BrandSetEdit', expect.objectContaining({ campaignId: 'c9', suggestedName: 'Set A', dateRules: RULES }));
   });
 });

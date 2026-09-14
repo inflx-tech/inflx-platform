@@ -18,6 +18,7 @@ import useRouteToast from '../../hooks/useRouteToast';
 import { StateChip4, SetCard4 } from '../../components/campaigns/bits4';
 import { TextSheet4, DuplicateSheet4 } from '../../components/campaigns/sheets4';
 import { C4, MSG4 } from '../../components/campaigns/copy4';
+import { C6 } from '../../components/negotiation/copy6';
 import { cutoffFor } from './BrandSetEditScreen';
 
 const D = C4.detail;
@@ -75,6 +76,8 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   const menuActions = [
     { label: D.menuRename, onPress: () => setSheet('rename') },
     { label: D.menuDesc, onPress: () => setSheet('desc') },
+    // Item 6 (N18): the switch may be changed at any time; it governs only new counters.
+    { label: `${C6.switch.menu}: ${c.allowNegotiation === false ? C6.switch.off : C6.switch.on}`, onPress: () => patch({ allow_negotiation: c.allowNegotiation === false }, C6.switch.saved) },
   ];
   if (c.canDelete) menuActions.push({ label: D.menuDelete, destructive: true, onPress: () => setConfirmDelete(true) });
 

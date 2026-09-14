@@ -38,6 +38,9 @@ import BrandSetPickCreatorsScreen from '../screens/brand/BrandSetPickCreatorsScr
 import BrandGroupInviteCheckScreen from '../screens/brand/BrandGroupInviteCheckScreen';
 import BrandCreatorTermsScreen from '../screens/brand/BrandCreatorTermsScreen';
 import BrandReviewSendScreen from '../screens/brand/BrandReviewSendScreen';
+// Item 6 — the negotiation thread and the pool. Contract: features/item6-negotiation
+import BrandThreadScreen from '../screens/brand/BrandThreadScreen';
+import BrandPoolScreen from '../screens/brand/BrandPoolScreen';
 
 const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
@@ -58,6 +61,9 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandGroupInviteCheck" component={BrandGroupInviteCheckScreen} />
       <CampaignsStack.Screen name="BrandCreatorTerms" component={BrandCreatorTermsScreen} />
       <CampaignsStack.Screen name="BrandReviewSend" component={BrandReviewSendScreen} />
+      {/* Item 6 — the conversation and the pool. Contract: features/item6-negotiation */}
+      <CampaignsStack.Screen name="BrandThread" component={BrandThreadScreen} />
+      <CampaignsStack.Screen name="BrandPool" component={BrandPoolScreen} />
     </CampaignsStack.Navigator>
   );
 }

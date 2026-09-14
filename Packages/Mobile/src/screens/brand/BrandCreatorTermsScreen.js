@@ -17,6 +17,7 @@ import { TextField4 } from '../../components/campaigns/bits4';
 import { Stepper5, LockedSetCard5, MinBox5, DeliverablesEditor5 } from '../../components/invitations/bits5';
 import { OfferSheet5, SpecialOfferSheet5, ScopePickerSheet5, loadBrandProducts } from '../../components/invitations/sheets5';
 import { C5, MSG5, USAGE_DURATIONS, USAGE_PLACES, SCOPE_LABEL, first, rupees5, fmtPct5, MIN_SHOPPABLE_POSTS } from '../../components/invitations/copy5';
+import { C6 } from '../../components/negotiation/copy6';
 import { getDraft, setTerms, setMinimums, copyTermsToAll, defaultTerms, validateLocal, scopeValue, markOver50Confirmed } from '../../components/invitations/draft5';
 
 const TT = C5.terms;
@@ -80,6 +81,8 @@ export default function BrandCreatorTermsScreen({ navigation, route }) {
       <Header title={TT.title(creator.name)} onBack={() => { save(); navigation.goBack(); }} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
         <Stepper5 text={TT.step(index + 1, n)} />
+        {/* Item 6 (N16): filled in from what was agreed in the pool. */}
+        {creator.poolTerms ? <View style={s.pool} testID="from-pool"><Text style={s.poolText}>{C6.terms.filled(f, creator.poolAgreedAt)}</Text></View> : null}
         <LockedSetCard5 set={draft.set} />
 
         {goal === 'hybrid' ? (
@@ -93,6 +96,7 @@ export default function BrandCreatorTermsScreen({ navigation, route }) {
           <>
             <Field label={TT.commission} required error={errs.commissionPct}>
               <NumberField value={String(t.commissionPct)} onChangeText={(v) => update({ commissionPct: v })} placeholder="10" suffix="%" decimal testID="commission" />
+              {creator.poolTerms ? <Text style={s.hint} testID="pool-field-hint">{C6.terms.fieldHint(f)}</Text> : null}
               {mins.commissionPct != null ? <Text style={s.hint}>{TT.minCommission(f, fmtPct5(mins.commissionPct))}</Text> : null}
               {belowCommission ? <MinBox5 text={MSG5.BELOW_MIN(f, fmtPct5(mins.commissionPct))} testID="min-commission" /> : null}
             </Field>
@@ -168,6 +172,8 @@ function Field({ label, required, hint, error, children }) {
 
 const s = StyleSheet.create({
   field: { marginBottom: 14 },
+  pool: { borderRadius: 12, padding: 10, backgroundColor: T.state.active.bg, marginBottom: 12 },
+  poolText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.active.fg, lineHeight: 17 },
   label: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginBottom: 6 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, marginTop: 6, lineHeight: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },

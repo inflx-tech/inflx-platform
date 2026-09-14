@@ -14,8 +14,12 @@
  */
 const db = require('../config/db');
 const { todayInIndia } = require('../utils/indiaDay');
-const { INVITE_CUTOFF_DAYS, OPEN_STATUSES } = require('../services/campaignState.service');
+const { INVITE_CUTOFF_DAYS, OPEN_STATUSES, cutoffFor } = require('../services/campaignState.service');
 const { SIGNED_CONTRACT_SQL } = require('../services/collabState');
+const { calendarDay } = require('../utils/indiaDay');
+// Item 6 — open negotiations end with the set's invitations. Contract: features/item6-negotiation
+const negotiation = require('../services/negotiation.service');
+const { ENDING, NOTIFY } = require('../services/negotiationCopy');
 
 /**
  * @param {object} opts
@@ -25,7 +29,8 @@ const { SIGNED_CONTRACT_SQL } = require('../services/collabState');
 async function run({ today = null } = {}) {
   const t = today || todayInIndia();
   console.log(`[CRON set-expiry] Running for ${t}...`);
-  const out = { checked: 0, expired: 0, invitationsClosed: 0, kept: 0 };
+  const out = { checked: 0, expired: 0, invitationsClosed: 0, kept: 0, negotiationsEnded: 0 };
+  const endedThreads = [];
   try {
     // Candidates: dated, not yet expired, cutoff day already over, at least one invitation.
     const { rows: due } = await db.query(
@@ -50,13 +55,26 @@ async function run({ today = null } = {}) {
             WHERE set_id = $1 AND status = ANY($2::campaign_influencer_status[])`,
           [id, OPEN_STATUSES]
         );
+        // Item 6: an open negotiation ends with its invitation, as 'expired'; the thread stays readable.
+        const ended = await negotiation.endForExpiredSet(id, tx);
         await tx.query(`UPDATE campaign_sets SET expired_at = now() WHERE id = $1`, [id]);
         out.expired += 1;
         out.invitationsClosed += rowCount;
-        console.log(`[CRON set-expiry] Set "${locked[0].name}" (${id}) expired: nobody signed by the cutoff; ${rowCount} open invitation(s) closed.`);
+        out.negotiationsEnded = (out.negotiationsEnded || 0) + ended.length;
+        endedThreads.push(...ended);
+        console.log(`[CRON set-expiry] Set "${locked[0].name}" (${id}) expired: nobody signed by the cutoff; ${rowCount} open invitation(s) closed; ${ended.length} negotiation(s) ended.`);
       });
     }
-    console.log(`[CRON set-expiry] Checked ${out.checked}, expired ${out.expired}, kept ${out.kept}, invitations closed ${out.invitationsClosed}.`);
+    // After commit: both sides of every ended thread are told, once each (N21's sentence).
+    for (const e of endedThreads) {
+      const ctx = await negotiation.loadContextAny(e.ci_id).catch(() => null);
+      if (!ctx) continue;
+      const cutoff = ctx.go_live_date ? cutoffFor(calendarDay(ctx.go_live_date)) : null;
+      const body = ENDING.expired(cutoff);
+      await negotiation.notify(ctx, 'brand', NOTIFY.EXPIRED, body, { negotiation_id: e.id });
+      await negotiation.notify(ctx, 'influencer', NOTIFY.EXPIRED, body, { negotiation_id: e.id });
+    }
+    console.log(`[CRON set-expiry] Checked ${out.checked}, expired ${out.expired}, kept ${out.kept}, invitations closed ${out.invitationsClosed}, negotiations ended ${out.negotiationsEnded || 0}.`);
     return out;
   } catch (e) {
     console.error('[CRON set-expiry] Failed:', e.message);

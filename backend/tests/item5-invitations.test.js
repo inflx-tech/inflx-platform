@@ -387,7 +387,8 @@ describe('after sending (checks 21–24, 36, 39)', () => {
     await signBoth(ids.Meera);
     let summary = await api.get(`${w.url}/summary`, w.b.token);
     let g = summary.body.data.creators.groups;
-    expect(summary.body.data.creators.order).toEqual(['waiting', 'negotiating', 'accepted', 'signed', 'deferred', 'declined', 'expired', 'withdrawn']);
+    // Item 6 (N20) put "Your move" and "Negotiating" first; "Asked for another date" became "Moved to your pool".
+    expect(summary.body.data.creators.order).toEqual(['yourMove', 'negotiating', 'accepted', 'signed', 'waiting', 'deferred', 'declined', 'expired', 'withdrawn']);
     expect(g.waiting.count).toBe(2); expect(g.accepted.count).toBe(1); expect(g.signed.count).toBe(1); expect(g.deferred.count).toBe(1); expect(g.declined.count).toBe(1);
     expect(g.deferred.rows[0]).toMatchObject({ name: 'Ritu', deferredGoLiveDate: day(17), actions: { withdraw: false, remove: true } });
     expect(g.declined.rows[0]).toMatchObject({ declineReason: 'fee_too_low', declineReasonLabel: 'Fee too low' });

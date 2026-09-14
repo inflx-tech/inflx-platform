@@ -1,0 +1,29 @@
+{
+  "feature": "item6-negotiation",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item6_Implementation_Prompt.md — 'The item 6 gap report is approved. Start building.')",
+  "approved_at": "2026-09-14T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item6_Negotiation_Mockups.html, N1-N22, locked; the approval message states 'The mockups are unchanged')",
+  "mockup_locked_at": "2026-09-14T00:00:00+05:30",
+  "notes": "Rules doc v1.18 §7B. Gap report Docs/ITEM6_NEGOTIATION_GAP_REPORT.md approved with twelve answers (reuse deferred and rename its group to 'Moved to your pool'; keep current_turn stored; rejected_by_brand for a brand decline; one move request per invitation with the fifth outcome 'moved'; stop reading payment_config.allow_commission_negotiation; the switch does not govern the move request; today + 7 with 'no longer possible' shown; a seven-day closing warning; pitch rounds deferred to item 8; reminders at 48h and 7d instead of an auto-decline; draft the contract on accept; stamp min_shoppable_posts at send) and four decisions (one service behind both doors; a used pool entry is never resurrected; a pool creator may be invited into a different date with a terms-only line; a notification when the brand keeps the date). Migration 182 (additive, no backfill). Brand and creator OTA plus one new admin page. Production-impacting - explicit go required before migrate/push/OTA. Nothing tested end to end until after item 7.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-14T00:00:00+05:30",
+      "migration_dry_run": "182 dry run against production 2026-09-14: 0 negotiations, 0 turns, 0 deferred, 8 invitations, 0 campaigns with the switch off; none of the sixteen columns and none of the three tables present; nothing to backfill. Nothing written.",
+      "backend_tests": "229 failed / 982 passed / 1211 (0 new failures vs the item 5 baseline of 229/940/1169; 43 new tests, all passing)",
+      "mobile_tests": "479 pass (20 new; baseline 459)",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). The founder's phone walk of checks 1-44 is the functional gate, and runs after item 7."
+    }
+  }
+}

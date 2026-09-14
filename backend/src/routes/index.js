@@ -155,6 +155,10 @@ router.use('/', socialRoutes);
 // influencer.routes' /:id for the same reason. Contract: features/item5-invitations
 const invitationRoutes = require('./invitation.routes');
 router.use('/', invitationRoutes);
+// Item 6 — negotiation, the move request, the pool, the platform settings. Fixed paths first.
+// Contract: features/item6-negotiation
+const item6Routes = require('./item6.routes');
+router.use('/', item6Routes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

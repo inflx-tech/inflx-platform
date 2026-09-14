@@ -14,6 +14,8 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 // Item 5 — accept and decline are shared with the new invitation endpoints.
 const invitationAnswer = require('../services/invitationAnswer.service');
+// Item 6 — counter / accept / decline / move request live in one service; these routes wrap it.
+const negotiation = require('../services/negotiation.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private helpers
@@ -187,73 +189,14 @@ const decline = asyncHandler(async (req, res) => {
  * Take herself out of the set, with what she'd actually prefer.
  */
 const defer = asyncHandler(async (req, res) => {
+  // Item 6 — the legacy door to the move request. It used to end the invitation on the spot
+  // (status 'deferred' the moment she asked); now it only records the request and the brand
+  // answers (agree / keep / decline). One service, two doors (APPROVAL §3.1, §4.8).
   const influencer = await getInfluencerOrThrow(req.user.sub);
-  const ci = await getCampaignInfluencer(req.params.id);
-
-  if (!ci) throw new AppError('NOT_FOUND', 'Offer not found', 404);
-  if (ci.influencer_id !== influencer.id) {
-    throw new AppError('FORBIDDEN', 'This offer does not belong to you', 403);
-  }
-
-  // Same stage as decline: before she has settled in. Once accepted, the fixed
-  // day/mode were part of what she just agreed to — raising a reservation on them
-  // then is a different conversation, not this button.
-  if (!['invited', 'negotiating'].includes(ci.status)) {
-    throw new AppError('VALIDATION_ERROR', `Cannot raise a reservation on an offer in '${ci.status}' status`, 422);
-  }
-
-  const { go_live_date, shoot_mode, note } = req.body;
-
-  if (!go_live_date && !shoot_mode) {
-    throw new AppError('VALIDATION_ERROR', 'Say what you would prefer instead — a day, a shoot mode, or both.', 422, 'go_live_date');
-  }
-
-  // Same picker rule the brand's own set-basics step is held to — she cannot
-  // propose a day the server would refuse a brand for building a set around either.
-  const setShape = require('../services/setShape.model');
-  if (go_live_date) {
-    const shape = setShape.validateSetShape({ go_live_date }, { offeredOnly: false });
-    if (!shape.ok) throw new AppError('VALIDATION_ERROR', shape.error, 422, 'go_live_date');
-  }
-  if (shoot_mode && !setShape.SHOOT_MODES.includes(shoot_mode)) {
-    throw new AppError('VALIDATION_ERROR', `shoot_mode must be one of: ${setShape.SHOOT_MODES.join(', ')}`, 422, 'shoot_mode');
-  }
-
-  const trimmedNote = typeof note === 'string' ? note.trim().slice(0, 1000) : null;
-
-  const { rows } = await db.query(
-    `UPDATE campaign_influencers
-        SET status = 'deferred',
-            deferred_at = now(),
-            deferred_go_live_date = $2,
-            deferred_shoot_mode = $3,
-            deferred_note = $4
-      WHERE id = $1
-      RETURNING *`,
-    [ci.id, go_live_date || null, shoot_mode || null, trimmedNote]
-  );
-
-  const { rows: brandUserRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name
-     FROM campaigns c
-     JOIN brands b ON b.id = c.brand_id
-     JOIN users u ON u.id = b.user_id
-     WHERE c.id = $1`,
-    [ci.campaign_id]
-  );
-  if (brandUserRows[0]) {
-    await notificationService.send({
-      userId: brandUserRows[0].user_id,
-      type:   'offer.deferred',
-      title:  'A creator has a reservation',
-      body:   `A creator in "${brandUserRows[0].campaign_name}" can't make the set's day or shoot — she's told you what would work.`,
-      data:   { screen: 'campaign_builder', campaign_id: ci.campaign_id },
-      fcmToken: brandUserRows[0].fcm_token,
-      sendSms:  false,
-    }).catch(err => console.error('[NOTIFICATION] offer.deferred send failed:', err.message));
-  }
-
-  return success(res, { campaign_influencer: rows[0] });
+  const ctx = await negotiation.loadContext(req.params.id, { influencerId: influencer.id });
+  if (!ctx) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+  const row = await negotiation.moveRequest({ ctx, goLiveDate: req.body?.go_live_date, shootMode: req.body?.shoot_mode, note: req.body?.note });
+  return success(res, { campaign_influencer: row });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -262,148 +205,18 @@ const defer = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const negotiate = asyncHandler(async (req, res) => {
+  // Item 6 — the legacy door to a creator's first counter: the body's proposed_fee /
+  // proposed_commission_pct are merged over the invitation's terms into a full snapshot and
+  // held to the same rules as the new endpoint (rounds, cutoff, switch, validator, no-change).
+  // No 48-hour clock; the platform commission gate is retired (APPROVAL Q5).
   const influencer = await getInfluencerOrThrow(req.user.sub);
-  const ci = await getCampaignInfluencer(req.params.id);
-
-  if (!ci) throw new AppError('NOT_FOUND', 'Offer not found', 404);
-  if (ci.influencer_id !== influencer.id) {
-    throw new AppError('FORBIDDEN', 'This offer does not belong to you', 403);
-  }
-
-  // Check for duplicate negotiation BEFORE status check — returns 409 if already exists
-  const { rows: existingNeg } = await db.query(
-    `SELECT id FROM negotiations WHERE campaign_influencer_id = $1`,
-    [ci.id]
-  );
-  if (existingNeg[0]) {
-    throw new AppError('CONFLICT', 'A negotiation already exists for this offer', 409);
-  }
-
-  if (ci.status !== 'invited') {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `Can only negotiate offers in 'invited' status. Current: '${ci.status}'`,
-      422
-    );
-  }
-
-  // collab-part2 W19 — negotiate once, then one click. A collaboration briefed from a
-  // handshake agreement carries agreement_id, which means money, time and the rest were
-  // already negotiated and settled BEFORE the campaign existed. Re-opening negotiation
-  // here would mean the handshake bought nothing. Accept (which generates the contract,
-  // as it always has) and Decline both remain — nobody is trapped, but settled is
-  // settled. A cold invite (agreement_id NULL) keeps full negotiation below.
-  if (ci.agreement_id) {
-    throw new AppError(
-      'FORBIDDEN',
-      'You already agreed these terms with the brand — accept to generate your contract, or decline.',
-      403
-    );
-  }
-
-  // Brand can disable negotiation per-campaign — fixed terms, take-it-or-leave-it.
-  if (ci.allow_negotiation === false) {
-    throw new AppError(
-      'FORBIDDEN',
-      'This brand has set fixed terms — please Accept or Decline.',
-      403
-    );
-  }
-
-  // Open-group flow has no negotiation step. Influencer either applies and
-  // the brand picks them, or they reject. Negotiation would muddle the
-  // brand's selection process.
-  if (ci.influencer_mode === 'open_group') {
-    throw new AppError(
-      'FORBIDDEN',
-      'This is an open call. Influencers apply or pass — there is no negotiation step.',
-      403
-    );
-  }
-
-  const { proposed_fee, proposed_commission_pct, proposed_deadline, note } = req.body;
-
-  // Validate at least one numeric proposal was provided
-  if ((proposed_fee == null || proposed_fee === '') &&
-      (proposed_commission_pct == null || proposed_commission_pct === '')) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      'Provide either proposed_fee or proposed_commission_pct',
-      422
-    );
-  }
-
-  // Gate commission negotiation behind admin flag
-  if (proposed_commission_pct != null && proposed_commission_pct !== '') {
-    const cfg = await paymentConfigSvc.getConfig();
-    if (!cfg.allowCommissionNegotiation) {
-      throw new AppError(
-        'VALIDATION_ERROR',
-        'Commission negotiation is currently disabled by the platform',
-        422,
-        'proposed_commission_pct'
-      );
-    }
-  }
-
-  // Create negotiation + first turn atomically. SLA = 48h from now to next response.
-  let negotiation, turn;
-  await db.withTransaction(async (client) => {
-    // Create negotiation thread (brand's turn to respond)
-    const { rows: negRows } = await client.query(
-      `INSERT INTO negotiations
-         (campaign_influencer_id, initiated_by, status, current_turn, expires_at)
-       VALUES ($1, $2, 'awaiting_brand', 'brand', now() + interval '48 hours')
-       RETURNING *`,
-      [ci.id, req.user.sub]
-    );
-    negotiation = negRows[0];
-
-    // Record first turn (influencer's opening)
-    const { rows: turnRows } = await client.query(
-      `INSERT INTO negotiation_turns
-         (negotiation_id, sent_by, proposed_fee, proposed_commission_pct, proposed_deadline, note)
-       VALUES ($1, 'influencer', $2, $3, $4, $5)
-       RETURNING *`,
-      [
-        negotiation.id,
-        proposed_fee || null,
-        proposed_commission_pct != null && proposed_commission_pct !== '' ? proposed_commission_pct : null,
-        proposed_deadline || null,
-        note || null,
-      ]
-    );
-    turn = turnRows[0];
-
-    // Move campaign_influencer to negotiating
-    await client.query(
-      `UPDATE campaign_influencers SET status = 'negotiating' WHERE id = $1`,
-      [ci.id]
-    );
-  });
-
-  // Notify brand that influencer started negotiation (their turn to respond)
-  const { rows: brandNotifRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name
-     FROM campaigns c
-     JOIN brands b ON b.id = c.brand_id
-     JOIN users u ON u.id = b.user_id
-     WHERE c.id = $1`,
-    [ci.campaign_id]
-  );
-  if (brandNotifRows[0]) {
-    await notificationService.send({
-      userId: brandNotifRows[0].user_id,
-      type:   'negotiation.turn',
-      title:  'Negotiation Round',
-      body:   `An influencer has countered your offer on "${brandNotifRows[0].campaign_name}". Your turn to respond.`,
-      data:   { screen: 'negotiation', negotiation_id: negotiation.id },
-      fcmToken: brandNotifRows[0].fcm_token,
-      sendSms:  false,
-    }).catch(err => console.error('[NOTIFICATION] negotiation.turn send failed:', err.message));
-  }
-
-  return success(res, { negotiation, turn }, 201);
+  const ctx = await negotiation.loadContext(req.params.id, { influencerId: influencer.id });
+  if (!ctx) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+  if (ctx.neg_id) throw new AppError('CONFLICT', 'A negotiation already exists for this offer', 409);
+  const negId = await negotiation.counter({ ctx, by: 'influencer', terms: req.body || {}, note: req.body?.note, actorUserId: req.user.sub, legacy: true });
+  const { rows: negRows } = await db.query(`SELECT * FROM negotiations WHERE id = $1`, [negId]);
+  const { rows: turnRows } = await db.query(`SELECT * FROM negotiation_turns WHERE negotiation_id = $1 ORDER BY created_at DESC LIMIT 1`, [negId]);
+  return success(res, { negotiation: negRows[0], turn: turnRows[0] }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -412,241 +225,46 @@ const negotiate = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const respond = asyncHandler(async (req, res) => {
+  // Item 6 — the legacy door for both sides: counter / accept / walkaway → the one service.
+  // A brand walk-away is a decline with an optional note; a creator walk-away needs one of the
+  // five reasons (legacy bodies without one read as 'other').
   const { rows: negRows } = await db.query(
-    `SELECT n.*,
-            ci.influencer_id,
-            ci.id AS ci_id,
-            cs.goal,
-            c.brand_id
-     FROM negotiations n
-     JOIN campaign_influencers ci ON ci.id = n.campaign_influencer_id
-     JOIN campaign_sets cs ON cs.id = ci.set_id
-     JOIN campaigns c ON c.id = cs.campaign_id
-     WHERE n.id = $1`,
+    `SELECT n.campaign_influencer_id, ci.influencer_id, c.brand_id FROM negotiations n
+       JOIN campaign_influencers ci ON ci.id = n.campaign_influencer_id
+       JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id WHERE n.id = $1`,
     [req.params.id]
   );
-
   if (!negRows[0]) throw new AppError('NOT_FOUND', 'Negotiation not found', 404);
-  const neg = negRows[0];
-
-  // Only allow open negotiations
-  if (neg.status === 'agreed' || neg.status === 'walked_away') {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `Negotiation is already closed (status: ${neg.status})`,
-      422
-    );
-  }
-
-  // Determine which party the requester is
-  const userRole = req.user.role; // 'brand' or 'influencer'
-  let userTurn;
-
-  if (userRole === 'brand') {
-    // Verify requester owns the campaign's brand
+  const ref = negRows[0];
+  let by, ctx;
+  if (req.user.role === 'brand') {
     const brand = await getBrandOrThrow(req.user.sub);
-    if (brand.id !== neg.brand_id) {
-      throw new AppError('FORBIDDEN', 'You do not own this campaign', 403);
-    }
-    userTurn = 'brand';
-  } else if (userRole === 'influencer') {
-    // Verify requester is the influencer on this offer
+    if (brand.id !== ref.brand_id) throw new AppError('FORBIDDEN', 'You do not own this campaign', 403);
+    by = 'brand'; ctx = await negotiation.loadContext(ref.campaign_influencer_id, { brandId: brand.id });
+  } else if (req.user.role === 'influencer') {
     const influencer = await getInfluencerOrThrow(req.user.sub);
-    if (influencer.id !== neg.influencer_id) {
-      throw new AppError('FORBIDDEN', 'This negotiation does not belong to you', 403);
-    }
-    userTurn = 'influencer';
+    if (influencer.id !== ref.influencer_id) throw new AppError('FORBIDDEN', 'This negotiation does not belong to you', 403);
+    by = 'influencer'; ctx = await negotiation.loadContext(ref.campaign_influencer_id, { influencerId: influencer.id });
   } else {
     throw new AppError('FORBIDDEN', 'Only brand or influencer can respond to negotiations', 403);
   }
-
-  // Enforce turn
-  if (neg.current_turn !== userTurn) {
-    throw new AppError(
-      'WRONG_TURN',
-      `It is not your turn. Waiting for ${neg.current_turn} to respond.`,
-      422
-    );
+  if (!ctx) throw new AppError('NOT_FOUND', 'Negotiation not found', 404);
+  if (ctx.outcome) throw new AppError('VALIDATION_ERROR', `Negotiation is already closed (status: ${ctx.neg_status})`, 422);
+  const { action } = req.body || {};
+  if (!VALID_ACTIONS.includes(action)) {
+    throw new AppError('VALIDATION_ERROR', `action must be one of: ${VALID_ACTIONS.join(', ')}`, 422, 'action');
   }
-
-  const { action, proposed_fee, proposed_commission_pct, proposed_deadline, note } = req.body;
-
-  if (!action || !VALID_ACTIONS.includes(action)) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      `action must be one of: ${VALID_ACTIONS.join(', ')}`,
-      422,
-      'action'
-    );
+  let contractError = null;
+  if (action === 'counter') {
+    await negotiation.counter({ ctx, by, terms: req.body || {}, note: req.body?.note, actorUserId: req.user.sub, legacy: true });
+  } else if (action === 'accept') {
+    ({ contractError } = await negotiation.accept({ ctx, by, actorUserId: req.user.sub }));
+  } else {
+    await negotiation.decline({ ctx, by, reason: by === 'influencer' ? (req.body?.reason || 'other') : undefined, note: req.body?.note, actorUserId: req.user.sub });
   }
-
-  // Gate commission counters behind admin flag
-  if (proposed_commission_pct != null && proposed_commission_pct !== '') {
-    const cfgGate = await paymentConfigSvc.getConfig();
-    if (!cfgGate.allowCommissionNegotiation) {
-      throw new AppError(
-        'VALIDATION_ERROR',
-        'Commission negotiation is currently disabled by the platform',
-        422,
-        'proposed_commission_pct'
-      );
-    }
-  }
-
-  let updatedNeg, updatedCi;
-
-  await db.withTransaction(async (client) => {
-    if (action === 'counter') {
-      // Add turn record (fee, commission, or both)
-      await client.query(
-        `INSERT INTO negotiation_turns
-           (negotiation_id, sent_by, proposed_fee, proposed_commission_pct, proposed_deadline, note)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          neg.id,
-          userTurn,
-          proposed_fee || null,
-          proposed_commission_pct != null && proposed_commission_pct !== '' ? proposed_commission_pct : null,
-          proposed_deadline || null,
-          note || null,
-        ]
-      );
-
-      // Flip turn — SLA clock resets to 48h for the next responder.
-      const nextTurn = userTurn === 'brand' ? 'influencer' : 'brand';
-      const nextStatus = nextTurn === 'brand' ? 'awaiting_brand' : 'awaiting_influencer';
-
-      const { rows } = await client.query(
-        `UPDATE negotiations
-         SET current_turn = $2,
-             status       = $3,
-             expires_at   = now() + interval '48 hours'
-         WHERE id = $1 RETURNING *`,
-        [neg.id, nextTurn, nextStatus]
-      );
-      updatedNeg = rows[0];
-
-      const { rows: ciRows } = await client.query(
-        `SELECT * FROM campaign_influencers WHERE id = $1`,
-        [neg.ci_id]
-      );
-      updatedCi = ciRows[0];
-
-    } else if (action === 'accept') {
-      // Mark negotiation as agreed — clear SLA clock
-      const { rows } = await client.query(
-        `UPDATE negotiations
-         SET status       = 'agreed',
-             current_turn = NULL,
-             expires_at   = NULL
-         WHERE id = $1 RETURNING *`,
-        [neg.id]
-      );
-      updatedNeg = rows[0];
-
-      // Pick the LAST proposed values from the thread (the values the
-      // accepting party is agreeing to). Fall back to whatever was passed
-      // in this body for back-compat.
-      const { rows: lastTurnRows } = await client.query(
-        `SELECT proposed_fee, proposed_commission_pct
-         FROM   negotiation_turns
-         WHERE  negotiation_id = $1
-         ORDER  BY created_at DESC
-         LIMIT  1`,
-        [neg.id]
-      );
-      const lastTurn = lastTurnRows[0] || {};
-      const lastProposedFee        = req.body.proposed_fee            ?? lastTurn.proposed_fee            ?? null;
-      const lastProposedCommission = req.body.proposed_commission_pct ?? lastTurn.proposed_commission_pct ?? null;
-
-      // Persist whichever fields were negotiated. COALESCE keeps existing
-      // values for fields that weren't part of this negotiation.
-      // Every goal flows through the full contract state machine. Conversion
-      // contracts skip tranches inside brandSign via the effectiveFee gate.
-      const { rows: ciRows } = await client.query(
-        `UPDATE campaign_influencers
-         SET status         = 'accepted',
-             agreed_fee     = COALESCE($2, agreed_fee, influencer_budget),
-             commission_pct = COALESCE($3, commission_pct)
-         WHERE id = $1 RETURNING *`,
-        [neg.ci_id, lastProposedFee, lastProposedCommission]
-      );
-      updatedCi = ciRows[0];
-
-    } else if (action === 'walkaway') {
-      // Mark negotiation as walked_away — clear SLA clock
-      const { rows } = await client.query(
-        `UPDATE negotiations
-         SET status       = 'walked_away',
-             current_turn = NULL,
-             expires_at   = NULL
-         WHERE id = $1 RETURNING *`,
-        [neg.id]
-      );
-      updatedNeg = rows[0];
-
-      // Mark offer as declined
-      const { rows: ciRows } = await client.query(
-        `UPDATE campaign_influencers SET status = 'declined', declined_reason = 'other'
-         WHERE id = $1 RETURNING *`,
-        [neg.ci_id]
-      );
-      updatedCi = ciRows[0];
-    }
-  });
-
-  // Auto-create contract when negotiation is agreed — runs for every goal.
-  let negContractError = null;
-  if (action === 'accept' && updatedCi) {
-    try {
-      const contractService = require('../services/contract.service');
-      await contractService.autoCreate(updatedCi.id);
-    } catch (contractErr) {
-      console.error('[CONTRACT] Auto-create failed on negotiate accept:', contractErr.message);
-      negContractError = contractErr.message;
-    }
-  }
-
-  // Notify the OTHER party when counter is sent
-  if (action === 'counter' && updatedNeg) {
-    const nextTurn = updatedNeg.current_turn; // 'brand' or 'influencer'
-    let notifyUserId, notifyFcmToken, notifyName;
-
-    if (nextTurn === 'brand') {
-      const { rows: br } = await db.query(
-        `SELECT u.id, u.fcm_token FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
-        [neg.brand_id]
-      );
-      if (br[0]) { notifyUserId = br[0].id; notifyFcmToken = br[0].fcm_token; }
-      notifyName = 'Brand';
-    } else {
-      const { rows: ir } = await db.query(
-        `SELECT u.id, u.fcm_token FROM influencers i JOIN users u ON u.id = i.user_id WHERE i.id = $1`,
-        [neg.influencer_id]
-      );
-      if (ir[0]) { notifyUserId = ir[0].id; notifyFcmToken = ir[0].fcm_token; }
-      notifyName = 'Influencer';
-    }
-
-    if (notifyUserId) {
-      await notificationService.send({
-        userId: notifyUserId,
-        type:   'negotiation.turn',
-        title:  'Counter Offer Received',
-        body:   `A counter offer has been made. Your turn to respond.`,
-        data:   { screen: 'negotiation', negotiation_id: neg.id },
-        fcmToken: notifyFcmToken,
-        sendSms: false,
-      }).catch(err => console.error('[NOTIFICATION] negotiation.turn counter failed:', err.message));
-    }
-  }
-
-  return success(res, {
-    negotiation: updatedNeg,
-    campaign_influencer: updatedCi,
-    contract_pending: !!negContractError,
-    contract_error:   negContractError,
-  });
+  const { rows: n2 } = await db.query(`SELECT * FROM negotiations WHERE id = $1`, [req.params.id]);
+  const { rows: c2 } = await db.query(`SELECT * FROM campaign_influencers WHERE id = $1`, [ref.campaign_influencer_id]);
+  return success(res, { negotiation: n2[0], campaign_influencer: c2[0], contract_pending: !!contractError, contract_error: contractError });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

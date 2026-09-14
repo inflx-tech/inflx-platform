@@ -152,7 +152,8 @@ export const C5 = {
     youEarn: (v) => `You earn ${v}`, commission: (p) => `${fmtPct5(p)} commission`,
     replyBy: (d, n) => `Reply by ${shortDate4(d)} · ${n == null ? '' : n === 0 ? 'today' : plural(n, 'day', 'days') + ' left'}`.replace(/ · $/, ''),
     posts: (d) => `Posts ${shortDate4(d)}`,
-    chips: { accepted: 'Accepted', expired: 'Expired', withdrawn: 'Withdrawn', closed: 'Closed', declined: 'Declined', negotiating: 'Negotiating', deferred: 'Another date asked' },
+    // Item 6 (N12, N20): 'pooled' is the agreed move; 'yourMove' is a counter waiting on her.
+    chips: { accepted: 'Accepted', expired: 'Expired', withdrawn: 'Withdrawn', closed: 'Closed', declined: 'Declined', negotiating: 'Waiting', yourMove: 'Your move', pooled: 'Agreed', deferred: 'Another date asked' },
     waitingFor: (b) => `Waiting for the agreement from ${b}.`,
     expiredBody: (d) => `You didn't reply by ${shortDate4(d)}, so this invitation closed.`,
     withdrawnBody: (b, d) => `${b} withdrew this invitation on ${stampDate4(d)}.`,
@@ -186,7 +187,8 @@ export const C5 = {
 
 /** Chip tone per group, on the item 2 palette (prompt §8). */
 export const GROUP_TONE = {
-  waiting: 'waiting', invited: 'waiting', negotiating: 'yourMove', accepted: 'active', signed: 'completed', deferred: 'waiting',
+  waiting: 'waiting', invited: 'waiting', negotiating: 'waiting', yourMove: 'yourMove', accepted: 'active', signed: 'completed',
+  pooled: 'active', deferred: 'waiting',
   declined: 'declined', expired: 'ended', withdrawn: 'ended', closed: 'ended', ok: 'active', below: 'yourMove',
 };
 

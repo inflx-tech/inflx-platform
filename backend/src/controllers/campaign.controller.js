@@ -553,7 +553,9 @@ const update = asyncHandler(async (req, res) => {
 
   // Item 4 — the name and description can be changed at any time (C11: Rename campaign, Edit
   // description, offered on a live campaign). The older money-adjacent fields stay draft-only.
-  const touchesLegacy = ['start_date', 'allow_negotiation'].some(f => req.body[f] !== undefined);
+  // Item 6 (APPROVAL §4.11): the negotiation switch may change at any time — it governs only new
+  // counters, and an open negotiation always runs to its end (rules §7B). start_date stays draft-only.
+  const touchesLegacy = ['start_date'].some(f => req.body[f] !== undefined);
   if (touchesLegacy && campaign.status !== 'draft') {
     throw new AppError('VALIDATION_ERROR', `Only draft campaigns can be edited. Current status: ${campaign.status}`, 422);
   }

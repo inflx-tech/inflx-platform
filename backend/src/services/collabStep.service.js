@@ -129,9 +129,14 @@ function stepForCollaboration(ci, x = {}) {
     return { step: STEP.SIGN, turn: TURN.YOU_CREATOR, state: 'invited', closed: false };
   }
   if (!x.contractSignedByBoth && ['accepted', 'pending_brand', 'pending_influencer', 'negotiating'].includes(s)) {
+    // Item 6: a negotiation belongs to whichever side owes the reply (negotiations.current_turn),
+    // never assumed to be the creator's. Unknown (legacy caller) keeps the old reading.
+    const negTurn = s === 'negotiating' && x.negotiationTurn
+      ? (x.negotiationTurn === 'brand' ? TURN.YOU_BRAND : TURN.YOU_CREATOR)
+      : null;
     return {
       step: STEP.SIGN,
-      turn: s === 'pending_brand' ? TURN.YOU_BRAND : TURN.YOU_CREATOR,
+      turn: negTurn || (s === 'pending_brand' ? TURN.YOU_BRAND : TURN.YOU_CREATOR),
       state: s,
       closed: false,
     };

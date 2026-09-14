@@ -50,7 +50,10 @@ export default function CollabsScreen({ navigation, route }) {
       </View>
       {status === 'loading' ? <Skeleton rows={4} /> : status === 'error' ? <LoadErrorList what={C5.creator.loadWhat} onRetry={load} /> : (
         <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingBottom: 40 }} testID={`collabs-${segment.toLowerCase()}`}
-          renderItem={({ item }) => <InvitationCard5 card={item} onPress={() => navigation.navigate('Invitation', { ciId: item.id })} />}
+          renderItem={({ item }) => (
+            // Item 6: a card with a conversation opens the thread; the rest open the invitation.
+            <InvitationCard5 card={item} onPress={() => navigation.navigate(item.negotiation || (item.moveRequest && !item.moveRequest.answer) ? 'Thread' : 'Invitation', { ciId: item.id })} />
+          )}
           ListHeaderComponent={segment === 'Pitches' ? (
             <View style={s.card} testID="pitch-card">
               <Text style={s.cardTitle}>{F.cardTitle}</Text>

@@ -63,7 +63,7 @@ const CAPABILITIES = [
   { key: 'pricing',       label: 'Pricing (tiers, features, L3 categories)', group: 'Pricing' },
 
   // SETTINGS
-  { key: 'settings',      label: 'Payment config + meals settings', group: 'Settings' },
+  { key: 'settings',      label: 'Payment config, platform settings + meals settings', group: 'Settings' },
   { key: 'users',         label: 'Admin users (superadmin only)', group: 'Settings' },
 ];
 

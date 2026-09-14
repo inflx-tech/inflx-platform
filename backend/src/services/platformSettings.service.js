@@ -1,0 +1,103 @@
+'use strict';
+
+/**
+ * Item 6 — the admin numbers the rules depend on (rules v1.18 §7B, N22).
+ * Contract: features/item6-negotiation · gap report §10
+ *
+ *   negotiation_rounds   2   1–5   copied onto a negotiation when it starts
+ *   pool_lifetime_days   30  7–90  copied onto a pool entry when it is created
+ *   min_shoppable_posts  1   1–10  copied onto an invitation when it is sent
+ *
+ * NEVER RETROACTIVE by construction: readers copy the value onto the row they create and read
+ * the row afterwards. Cached in-process for 60 seconds like paymentConfig, busted on write.
+ * Every change writes one audit row per changed key (who, when, old, new).
+ */
+
+const db = require('../config/db');
+const AppError = require('../utils/AppError');
+
+const DEFAULTS = Object.freeze({
+  negotiation_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Negotiation rounds' },
+  pool_lifetime_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pool entry lifetime' },
+  min_shoppable_posts: { value: 1, min: 1, max: 10, unit: 'post', label: 'Minimum shoppable posts' },
+});
+const KEYS = Object.freeze(Object.keys(DEFAULTS));
+
+/** N22 — the plain description under each setting, with its range and the never-retroactive fact. */
+const DESCRIPTION = Object.freeze({
+  negotiation_rounds: 'How many counters a single negotiation may hold. After the last one, the side receiving it can only accept or decline. Between 1 and 5. A negotiation keeps the number it started with, so changing this never affects one already running.',
+  pool_lifetime_days: "How long a creator stays in a brand's pool after agreeing terms but asking for a different date or mode. When it runs out the entry closes and the creator is told. Between 7 and 90 days.",
+  min_shoppable_posts: 'The least number of shoppable posts a creator must make in a Pay for Sale or Hybrid collaboration. Shown to both sides on the terms and never negotiated. Between 1 and 10. Stamped on each invitation when it is sent.',
+});
+
+const RANGE_MESSAGE = (min, max) => `Enter a number between ${min} and ${max}.`;
+
+let _cache = null;
+let _cacheTime = 0;
+const CACHE_TTL_MS = 60_000;
+
+/** Map key → { key, value, min, max, unit, label, description, updatedAt, updatedBy }. */
+async function getAll({ fresh = false } = {}) {
+  const now = Date.now();
+  if (!fresh && _cache && now - _cacheTime < CACHE_TTL_MS) return _cache;
+  const out = {};
+  try {
+    const { rows } = await db.query(`SELECT key, value, min_value, max_value, unit, label, updated_at, updated_by FROM platform_settings`);
+    for (const r of rows) {
+      out[r.key] = { key: r.key, value: Number(r.value), min: Number(r.min_value), max: Number(r.max_value), unit: r.unit, label: r.label, description: DESCRIPTION[r.key] || '', updatedAt: r.updated_at, updatedBy: r.updated_by || null };
+    }
+  } catch (e) {
+    // The table arrives with migration 182; before it, or if the read fails, the defaults stand.
+    console.error('[platformSettings] read failed, using defaults:', e.message);
+  }
+  for (const k of KEYS) if (!out[k]) out[k] = { key: k, ...DEFAULTS[k], description: DESCRIPTION[k], updatedAt: null, updatedBy: null };
+  _cache = out; _cacheTime = now;
+  return out;
+}
+
+/** One number. */
+async function get(key) {
+  const all = await getAll();
+  const s = all[key];
+  if (!s) throw new Error(`Unknown platform setting: ${key}`);
+  return s.value;
+}
+
+/**
+ * Admin write. `patch` = { key: value, … }. Out-of-range → 422 with the exact message; unknown
+ * keys are ignored. One audit row per key whose value actually changed. Busts the cache.
+ */
+async function update(patch, adminUserId) {
+  const current = await getAll({ fresh: true });
+  const changes = [];
+  for (const key of KEYS) {
+    if (patch[key] === undefined || patch[key] === null || patch[key] === '') continue;
+    const n = Number(patch[key]);
+    const s = current[key];
+    if (!Number.isInteger(n) || n < s.min || n > s.max) throw new AppError('VALIDATION_ERROR', RANGE_MESSAGE(s.min, s.max), 422, key);
+    if (n !== s.value) changes.push({ key, old: s.value, value: n });
+  }
+  if (!changes.length) return { changed: [], settings: current };
+  await db.withTransaction(async (tx) => {
+    for (const ch of changes) {
+      await tx.query(`UPDATE platform_settings SET value = $2, updated_at = now(), updated_by = $3 WHERE key = $1`, [ch.key, ch.value, adminUserId || null]);
+      await tx.query(`INSERT INTO platform_settings_audit (key, old_value, new_value, changed_by) VALUES ($1, $2, $3, $4)`, [ch.key, ch.old, ch.value, adminUserId || null]);
+    }
+  });
+  _cache = null; _cacheTime = 0;
+  return { changed: changes, settings: await getAll({ fresh: true }) };
+}
+
+/** The audit trail, newest first, with the admin's name. */
+async function audit({ limit = 20 } = {}) {
+  const { rows } = await db.query(
+    `SELECT a.id, a.key, a.old_value, a.new_value, a.changed_at, u.name AS changed_by_name, u.email AS changed_by_email
+       FROM platform_settings_audit a LEFT JOIN users u ON u.id = a.changed_by
+      ORDER BY a.changed_at DESC LIMIT $1`, [Math.min(100, Math.max(1, limit))]);
+  return rows.map(r => ({ id: r.id, key: r.key, label: (DEFAULTS[r.key] || {}).label || r.key, oldValue: r.old_value, newValue: r.new_value, changedAt: r.changed_at, changedBy: r.changed_by_name || r.changed_by_email || null }));
+}
+
+/** Tests only. */
+function _resetCache() { _cache = null; _cacheTime = 0; }
+
+module.exports = { KEYS, DEFAULTS, DESCRIPTION, RANGE_MESSAGE, getAll, get, update, audit, _resetCache };

@@ -18,7 +18,10 @@ export function startDraft(setId, { set, campaignName, creators, sourceGroupId =
   const prev = drafts.get(setId);
   const keep = prev && prev.set && prev.set.goal === set.goal ? prev.terms : {};
   const terms = {};
-  for (const c of creators) terms[c.id] = keep[c.id] || defaultTerms(set.goal);
+  // Item 6 (N16): a creator picked from the pool arrives with the money both sides already
+  // agreed, so the field is filled in and the screen says where it came from. Terms only travel
+  // when the Aim matches — the server sends none when it does not (rules v1.18 §7B).
+  for (const c of creators) terms[c.id] = keep[c.id] || (c.poolTerms ? fromPoolTerms(set.goal, c.poolTerms) : defaultTerms(set.goal));
   drafts.set(setId, { set, campaignName, creators: [...creators], terms, minimums: (prev && prev.minimums) || {}, sourceGroupId, over50Confirmed: false });
   return drafts.get(setId);
 }
@@ -54,6 +57,17 @@ export function copyTermsToAll(setId, fromId) {
       offer: src.offer && src.offer.kind === 'library' ? { ...src.offer } : (src.offer && src.offer.kind === 'special' ? mine.offer : src.offer),
     };
   }
+}
+
+/** Item 6 — the agreed snapshot from a pool entry, in the draft's shape. */
+export function fromPoolTerms(goal, s) {
+  const t = defaultTerms(goal);
+  if (!s) return t;
+  if (s.commissionPct != null) t.commissionPct = String(s.commissionPct);
+  if (s.fee != null) t.fee = String(s.fee);
+  if (Array.isArray(s.deliverables) && s.deliverables.length) t.deliverables = s.deliverables.map(d => ({ ...d }));
+  if (s.usageRights && s.usageRights.on) t.usage = { on: true, durationDays: s.usageRights.durationDays, places: [...(s.usageRights.places || [])] };
+  return t;
 }
 
 export function defaultTerms(goal) {

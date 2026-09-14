@@ -239,6 +239,17 @@ export const brandApi = {
   withdrawInvitation: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/withdraw`),
   removeInvitation:  (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/remove`),
 
+  // ── Item 6 · negotiation, the move request and the pool ───────────────────
+  // Contract: features/item6-negotiation. All new; another brand's set is 404.
+  brandThread:       (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/thread`),
+  brandAcceptCounter: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/thread/accept`),
+  brandCounter:      (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/thread/counter`, body),
+  brandDeclineCounter: (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/thread/decline`, body),
+  answerMoveRequest: (campaignId, setId, ciId, answer) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/move-answer`, { answer }),
+  getPool:           (params) => api.get(`/brands/me/pool${q(params || {})}`),
+  poolSetDefaults:   (entryIds) => api.post('/brands/me/pool/set-defaults', { entryIds }),
+  removeFromPool:    (entryId) => api.delete(`/brands/me/pool/${entryId}`),
+
   // Places to search in — state, then city, each with a real count of creators who
   // are actually there. Only ever offers somewhere someone is.
   listCreatorLocations: () => api.get('/influencers/locations'),
@@ -455,6 +466,14 @@ export const influencerApi = {
   myInvitation:      (id) => api.get(`/influencers/me/invitations/${id}`),
   acceptInvitation:  (id) => api.post(`/influencers/me/invitations/${id}/accept`),
   declineInvitation: (id, body) => api.post(`/influencers/me/invitations/${id}/decline`, body),
+  // ── Item 6 · countering, the move request and the pool. Contract: features/item6-negotiation ──
+  myThread:            (id) => api.get(`/influencers/me/invitations/${id}/thread`),
+  counterInvitation:   (id, body) => api.post(`/influencers/me/invitations/${id}/counter`, body),
+  requestMove:         (id, body) => api.post(`/influencers/me/invitations/${id}/move-request`, body),
+  acceptCounter:       (id) => api.post(`/influencers/me/invitations/${id}/thread/accept`),
+  declineCounter:      (id, body) => api.post(`/influencers/me/invitations/${id}/thread/decline`, body),
+  myPool:              () => api.get('/influencers/me/pool'),
+  leavePool:           (entryId) => api.delete(`/influencers/me/pool/${entryId}`),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),

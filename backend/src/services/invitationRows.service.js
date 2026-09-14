@@ -3,8 +3,9 @@
 /**
  * Item 5 — the read shapes: a set's creators grouped for the brand (I9), one invitation for the
  * brand (I10), the creator's Invites / Done lists (I11, I15) and one invitation for the creator
- * (I12, I13). Nothing here writes.
- * Contract: features/item5-invitations · prompt §5 A9, A10, A13, A14 · §6.7–§6.10 · D14 privacy
+ * (I12, I13). Item 6 adds "Your move" and "Negotiating" as the first two groups (N20), the pool
+ * states on the creator's cards (N12, N17) and why Counter is hidden (N19). Nothing here writes.
+ * Contract: features/item5-invitations · features/item6-negotiation · prompt §5 A9, A10, A13, A14
  *
  * PRIVACY. The creator shapes select exactly what she may see: the brand's name and logo, the
  * campaign and set names, the set's Aim / mode / city / dates, HER terms, the note. Never the
@@ -24,11 +25,11 @@ const { deliverablesInWords, usageInWords, declineLabel } = require('./invitatio
 
 /* ────────────────────────────────────────────────────────── grouping */
 
-/** The I9 groups in display order. */
-const GROUP_ORDER = ['waiting', 'negotiating', 'accepted', 'signed', 'deferred', 'declined', 'expired', 'withdrawn'];
+/** The N20 / I9 groups in display order. */
+const GROUP_ORDER = ['yourMove', 'negotiating', 'accepted', 'signed', 'waiting', 'deferred', 'declined', 'expired', 'withdrawn'];
 const GROUP_TITLE = {
-  waiting: 'Waiting to answer', negotiating: 'Negotiating', accepted: 'Accepted, waiting for the agreement', signed: 'Signed',
-  deferred: 'Asked for another date', declined: 'Declined', expired: 'Expired', withdrawn: 'Withdrawn and closed',
+  yourMove: 'Your move', negotiating: 'Negotiating', accepted: 'Accepted, waiting for the agreement', signed: 'Signed',
+  waiting: 'Waiting to answer', deferred: 'Moved to your pool', declined: 'Declined', expired: 'Expired', withdrawn: 'Withdrawn and closed',
 };
 const STATUS_GROUP = {
   invited: 'waiting', applied: 'waiting', negotiating: 'negotiating',
@@ -36,7 +37,18 @@ const STATUS_GROUP = {
   deferred: 'deferred', declined: 'declined', rejected_by_brand: 'declined',
   expired: 'expired', slots_filled: 'expired', withdrawn: 'withdrawn', removed: 'withdrawn',
 };
-const groupOf = (status, signedBoth) => (signedBoth ? 'signed' : (STATUS_GROUP[status] || 'waiting'));
+/**
+ * Item 6: a row is the brand's move when an open thread waits on the brand or a move request is
+ * unanswered; an open thread waiting on the creator is "Negotiating" (blue, Waiting chip).
+ */
+function groupOf(r) {
+  if (r.signed_both) return 'signed';
+  const threadOpen = !!r.neg_id && !r.neg_outcome;
+  const movePending = !!r.move_requested_at && !r.move_answer && ['invited', 'negotiating'].includes(r.status);
+  if (movePending || (threadOpen && r.neg_turn === 'brand')) return 'yourMove';
+  if (threadOpen) return 'negotiating';
+  return STATUS_GROUP[r.status] || 'waiting';
+}
 const PER_GROUP = 50;
 
 /* ─────────────────────────────────────────────────────────── helpers */
@@ -63,6 +75,13 @@ function termsLine(r, goal) {
   const money = goal === 'hybrid' ? [r.agreed_fee != null ? `₹${inr(r.agreed_fee)}` : null, pctText(r.commission_pct)].filter(Boolean).join(' + ') : pctText(r.commission_pct);
   return [money, scopeWords(r), offerWords(r)].filter(Boolean).join(' · ');
 }
+/** A turn snapshot as one line ("13%", "₹12,000 · 1 reel, 1 story", "₹5,000 + 10%"). */
+function snapshotLine(goal, s) {
+  if (!s) return null;
+  if (goal === 'engagement') return [s.fee != null ? `₹${inr(s.fee)}` : null, deliverablesInWords(s.deliverables)].filter(Boolean).join(' · ');
+  if (goal === 'hybrid') return [s.fee != null ? `₹${inr(s.fee)}` : null, pctText(s.commissionPct)].filter(Boolean).join(' + ');
+  return pctText(s.commissionPct);
+}
 
 async function productNames(ids) {
   const list = jsonArr(ids).filter(Boolean);
@@ -88,7 +107,8 @@ async function termsBlock(r, goal) {
       offerType: r.offer_type || null, config: jsonObj(r.offer_config_json),
       validFrom: r.offer_valid_from || null, validUntil: r.offer_valid_until || null,
     } : null,
-    shoppablePostsMin: selling ? MIN_SHOPPABLE_POSTS : null,
+    // Item 6: the minimum stamped at send (rules §7B); the constant for rows sent before it.
+    shoppablePostsMin: selling ? (r.min_shoppable_posts != null ? Number(r.min_shoppable_posts) : MIN_SHOPPABLE_POSTS) : null,
     deliverables: goal === 'engagement' ? jsonArr(r.formats_json).map(d => ({ type: d.type, count: Number(d.count) || 1 })) : null,
     deliverablesWords: goal === 'engagement' ? deliverablesInWords(jsonArr(r.formats_json)) : null,
     usageRights: goal === 'engagement' && usage && usage.on ? { on: true, durationDays: usage.duration_days == null ? null : Number(usage.duration_days), places: usage.places || [], words: usageInWords(usage) } : null,
@@ -96,18 +116,29 @@ async function termsBlock(r, goal) {
   };
 }
 
+const NEG_JOIN = `
+    LEFT JOIN LATERAL (
+      SELECT n.id AS neg_id, n.current_turn AS neg_turn, n.outcome AS neg_outcome, n.round_limit AS neg_round_limit, n.ended_at AS neg_ended_at,
+             (SELECT count(*)::int FROM negotiation_turns t WHERE t.negotiation_id = n.id AND t.kind = 'counter') AS neg_counters,
+             lc.terms_json AS neg_last_terms, lc.sent_by AS neg_last_by, lc.created_at AS neg_last_at
+        FROM negotiations n
+        LEFT JOIN LATERAL (SELECT t.terms_json, t.sent_by, t.created_at FROM negotiation_turns t WHERE t.negotiation_id = n.id AND t.kind = 'counter' ORDER BY t.created_at DESC LIMIT 1) lc ON true
+       WHERE n.campaign_influencer_id = ci.id LIMIT 1
+    ) neg ON true`;
+
 const ROW_SELECT = `
   SELECT ci.id, ci.influencer_id, ci.status, ci.agreed_fee, ci.commission_pct,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
          ci.offer_type, ci.offer_config_json, ci.brand_offer_id, ci.offer_valid_from, ci.offer_valid_until,
-         ci.formats_json, ci.brand_note, ci.usage_rights_json, ci.agreement_id,
+         ci.formats_json, ci.brand_note, ci.usage_rights_json, ci.agreement_id, ci.min_shoppable_posts, ci.pool_entry_id,
          ci.invited_at, ci.created_at, ci.answered_at, ci.declined_reason, ci.declined_note,
-         ci.deferred_go_live_date, ci.deferred_shoot_mode, ci.deferred_at, ci.withdrawn_at, ci.removed_at,
+         ci.deferred_go_live_date, ci.deferred_shoot_mode, ci.deferred_at, ci.deferred_note, ci.move_requested_at, ci.move_answer, ci.move_answered_at,
+         ci.withdrawn_at, ci.removed_at,
          ci.source, ci.source_group_id, g.name AS source_group_name,
          COALESCE(i.full_name, u.name) AS name, i.profile_image_r2_key, i.instagram_handle,
          bo.name AS offer_name,
          con.signed_both, con.signed_at, con.contract_id, con.contract_status,
-         EXISTS (SELECT 1 FROM negotiations n WHERE n.campaign_influencer_id = ci.id) AS has_negotiation
+         neg.*
     FROM campaign_influencers ci
     JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
     LEFT JOIN brand_offers bo ON bo.id = ci.brand_offer_id
@@ -117,10 +148,25 @@ const ROW_SELECT = `
              (${SIGNED_CONTRACT_SQL}) AS signed_both,
              GREATEST(con.influencer_signed_at, con.brand_signed_at) AS signed_at
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
-    ) con ON true`;
+    ) con ON true
+    ${NEG_JOIN}`;
+
+function negotiationOf(r, goal) {
+  if (!r.neg_id) return null;
+  const last = jsonObj(r.neg_last_terms);
+  return {
+    id: r.neg_id, open: !r.neg_outcome, whoseMove: r.neg_outcome ? null : r.neg_turn, outcome: r.neg_outcome || null, endedAt: r.neg_ended_at || null,
+    roundLimit: r.neg_round_limit != null ? Number(r.neg_round_limit) : null, countersUsed: Number(r.neg_counters || 0),
+    lastCounter: last ? { by: r.neg_last_by, at: r.neg_last_at, line: snapshotLine(goal, last) } : null,
+  };
+}
+function moveRequestOf(r) {
+  if (!r.move_requested_at) return null;
+  return { goLiveDate: r.deferred_go_live_date ? calendarDay(r.deferred_go_live_date) : null, shootMode: r.deferred_shoot_mode || null, note: r.deferred_note || null, requestedAt: r.move_requested_at, answer: r.move_answer || null, answeredAt: r.move_answered_at || null };
+}
 
 function brandRow(r, goal) {
-  const group = groupOf(r.status, r.signed_both);
+  const group = groupOf(r);
   return {
     id: r.id, influencerId: r.influencer_id, name: r.name, avatarUrl: r.avatar_url || null, instagramHandle: r.instagram_handle || null,
     status: r.status, group,
@@ -130,17 +176,19 @@ function brandRow(r, goal) {
     deferredGoLiveDate: r.deferred_go_live_date ? calendarDay(r.deferred_go_live_date) : null, deferredShootMode: r.deferred_shoot_mode || null, deferredAt: r.deferred_at || null,
     withdrawnAt: r.withdrawn_at || null, removedAt: r.removed_at || null,
     source: r.source || null, sourceGroup: r.source_group_id ? { id: r.source_group_id, name: r.source_group_name || null } : null,
+    negotiation: negotiationOf(r, goal), moveRequest: moveRequestOf(r),
     actions: {
-      withdraw: r.status === 'invited',
+      withdraw: r.status === 'invited' && !r.move_requested_at,
       // Every pre-signed status, deferred and applied included (founder Q10); never a dead row.
       remove: !r.signed_both && !DEAD_STATUSES.includes(r.status),
       viewTerms: true,
+      thread: !!r.neg_id || !!r.move_requested_at,
       sendAgreement: group === 'accepted' && !r.signed_both, // item 7's button
     },
   };
 }
 
-/** A9 — the set's creators grouped in the I9 order, at most 50 per group with the real count. */
+/** A9 — the set's creators grouped in the N20 order, at most 50 per group with the real count. */
 async function creatorsForSet(setId, goal) {
   const { rows } = await db.query(`${ROW_SELECT} WHERE ci.set_id = $1 ORDER BY ci.created_at DESC`, [setId]);
   await resolveAvatars(rows, { urlField: 'avatar_url', keyField: 'profile_image_r2_key' });
@@ -167,18 +215,21 @@ async function invitationForBrand(ciId, setId, goal) {
 /* ───────────────────────────────────────────────────── creator side */
 
 const CREATOR_SELECT = `
-  SELECT ci.id, ci.status, ci.agreed_fee, ci.commission_pct, ci.agreement_id,
+  SELECT ci.id, ci.status, ci.agreed_fee, ci.commission_pct, ci.agreement_id, ci.min_shoppable_posts, ci.pool_entry_id,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
          ci.offer_type, ci.offer_config_json, ci.brand_offer_id, ci.offer_valid_from, ci.offer_valid_until,
          ci.formats_json, ci.brand_note, ci.usage_rights_json,
-         ci.invited_at, ci.created_at, ci.answered_at, ci.declined_reason, ci.withdrawn_at, ci.removed_at, ci.deferred_at,
+         ci.invited_at, ci.created_at, ci.answered_at, ci.declined_reason, ci.declined_note, ci.withdrawn_at, ci.removed_at, ci.deferred_at,
+         ci.deferred_go_live_date, ci.deferred_shoot_mode, ci.deferred_note, ci.move_requested_at, ci.move_answer, ci.move_answered_at,
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode, cs.go_live_date, cs.expired_at, cs.influencer_mode,
          c.id AS campaign_id, c.name AS campaign_name, c.allow_negotiation,
          b.business_name AS brand_name, b.logo_url AS brand_logo_url,
          rc.name AS city_name,
          bo.name AS offer_name,
          con.signed_both,
-         EXISTS (SELECT 1 FROM negotiations n WHERE n.campaign_influencer_id = ci.id) AS has_negotiation
+         neg.*,
+         pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
+         ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms
     FROM campaign_influencers ci
     JOIN campaign_sets cs ON cs.id = ci.set_id
     JOIN campaigns c ON c.id = cs.campaign_id
@@ -189,41 +240,61 @@ const CREATOR_SELECT = `
     LEFT JOIN LATERAL (
       SELECT (${SIGNED_CONTRACT_SQL}) AS signed_both
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
-    ) con ON true`;
+    ) con ON true
+    ${NEG_JOIN}
+    LEFT JOIN brand_creator_pool pf ON pf.from_ci_id = ci.id
+    LEFT JOIN brand_creator_pool ps ON ps.id = ci.pool_entry_id`;
 
 /** Ended, withdrawn and closed cards stay for seven days, then move to Done (APPROVAL.md §4.11). */
 const DONE_AFTER_DAYS = 7;
 
 /**
- * The creator's view of one row: her group, when it ended, whether she can still act.
- *   invited · negotiating · accepted · deferred · declined · expired · withdrawn · closed
+ * The creator's view of one row: her group, when it ended, whether she can still act, and why
+ * Counter is hidden when it is (N19: the switch; the rounds; a briefed agreement; an open thread
+ * waiting on the brand).
+ *   invited · yourMove · negotiating · accepted · pooled · deferred · declined · expired · withdrawn · closed
  */
 function creatorState(r, today) {
   const postingDate = r.go_live_date ? calendarDay(r.go_live_date) : null;
   const cutoff = campaignState.cutoffFor(postingDate);
   const closedByCutoff = !!(r.expired_at || (cutoff && isBefore(cutoff, today)));
+  const threadOpen = !!r.neg_id && !r.neg_outcome;
   let group;
   let endedAt = null;
   switch (r.status) {
     case 'invited': group = closedByCutoff ? 'expired' : 'invited'; endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
     case 'applied': group = closedByCutoff ? 'expired' : 'invited'; endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
-    case 'negotiating': group = closedByCutoff ? 'expired' : 'negotiating'; endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
+    case 'negotiating': group = closedByCutoff ? 'expired' : (threadOpen && r.neg_turn === 'influencer' ? 'yourMove' : 'negotiating'); endedAt = closedByCutoff ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
     case 'accepted': group = closedByCutoff && !r.signed_both ? 'expired' : 'accepted'; endedAt = group === 'expired' ? (r.expired_at || endOfIndiaDay(cutoff)) : null; break;
-    case 'deferred': group = 'deferred'; break;
+    case 'deferred':
+      // Item 6: moved to the pool — waiting there while the entry lives, closed once it expired or was removed.
+      group = r.pool_from_state === 'waiting' ? 'pooled' : (r.pool_from_state ? 'closed' : 'deferred');
+      endedAt = r.pool_from_state && r.pool_from_state !== 'waiting' ? (r.pool_from_expires_at || r.deferred_at) : null;
+      break;
     case 'declined': group = 'declined'; endedAt = r.answered_at || null; break;
     case 'expired': case 'slots_filled': group = 'expired'; endedAt = r.expired_at || (cutoff ? endOfIndiaDay(cutoff) : null); break;
     case 'withdrawn': group = 'withdrawn'; endedAt = r.withdrawn_at; break;
-    case 'removed': case 'rejected_by_brand': group = 'closed'; endedAt = r.removed_at || r.answered_at || null; break;
+    case 'removed': case 'rejected_by_brand': group = 'closed'; endedAt = r.removed_at || r.move_answered_at || r.neg_ended_at || r.answered_at || null; break;
     default: group = 'signed'; // contracted / active / completed — item 7's Active tab
   }
   const daysLeft = cutoff && !closedByCutoff ? daysBetween(today, cutoff) : null;
-  const canAnswer = r.status === 'invited' && !closedByCutoff;
-  const canCounter = canAnswer && !r.agreement_id && r.allow_negotiation !== false && r.influencer_mode !== 'open_group' && !r.has_negotiation;
-  return { group, endedAt, postingDate, cutoff, daysLeft, canAnswer, canCounter, closedByCutoff };
+  const canAnswer = (r.status === 'invited' || (r.status === 'negotiating' && threadOpen && r.neg_turn === 'influencer')) && !closedByCutoff;
+  const roundLimit = r.neg_round_limit != null ? Number(r.neg_round_limit) : null;
+  const counters = Number(r.neg_counters || 0);
+  let counterHiddenReason = null;
+  if (!canAnswer) counterHiddenReason = 'closed';
+  else if (r.agreement_id) counterHiddenReason = 'agreement';
+  else if (r.influencer_mode === 'open_group') counterHiddenReason = 'open_group';
+  else if (!r.neg_id && r.allow_negotiation === false) counterHiddenReason = 'switch_off';
+  else if (r.neg_id && roundLimit != null && counters >= roundLimit) counterHiddenReason = 'rounds';
+  const canCounter = canAnswer && !counterHiddenReason;
+  const canMoveRequest = canAnswer && !r.move_requested_at;
+  return { group, endedAt, postingDate, cutoff, daysLeft, canAnswer, canCounter, counterHiddenReason, canMoveRequest, closedByCutoff, threadOpen };
 }
 
 function creatorCard(r, today) {
   const st = creatorState(r, today);
+  const last = jsonObj(r.neg_last_terms);
   return {
     id: r.id, status: r.status, group: st.group,
     brand: { name: r.brand_name, logoUrl: r.brand_logo_url || null },
@@ -233,7 +304,13 @@ function creatorCard(r, today) {
     commissionPct: r.goal !== 'engagement' && r.commission_pct != null ? Number(r.commission_pct) : null,
     fee: r.goal !== 'conversion' && r.agreed_fee != null ? Number(r.agreed_fee) : null,
     sentAt: r.invited_at || r.created_at, answeredAt: r.answered_at || null, endedAt: st.endedAt,
-    canAnswer: st.canAnswer, canCounter: st.canCounter,
+    canAnswer: st.canAnswer, canCounter: st.canCounter, counterHiddenReason: st.counterHiddenReason, canMoveRequest: st.canMoveRequest,
+    switchOn: r.allow_negotiation !== false,
+    negotiation: r.neg_id ? { id: r.neg_id, open: st.threadOpen, whoseMove: st.threadOpen ? r.neg_turn : null, outcome: r.neg_outcome || null, roundLimit: r.neg_round_limit != null ? Number(r.neg_round_limit) : null, countersUsed: Number(r.neg_counters || 0), lastCounter: last ? { by: r.neg_last_by, at: r.neg_last_at, line: snapshotLine(r.goal, last) } : null } : null,
+    moveRequest: moveRequestOf(r),
+    pool: r.pool_from_id ? { entryId: r.pool_from_id, state: r.pool_from_state, expiresAt: r.pool_from_expires_at, lifetimeDays: r.pool_from_lifetime, wantsGoLiveDate: r.deferred_go_live_date ? calendarDay(r.deferred_go_live_date) : null } : null,
+    // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).
+    fromPool: r.pool_entry_id ? { agreedAt: r.pool_sent_agreed_at, sameDate: !!(r.pool_sent_wants_date && st.postingDate && calendarDay(r.pool_sent_wants_date) === st.postingDate), termsLine: snapshotLine(r.goal, jsonObj(r.pool_sent_terms)) } : null,
   };
 }
 
@@ -273,6 +350,6 @@ async function invitationForCreator(ciId, influencerId, today = null) {
 }
 
 module.exports = {
-  GROUP_ORDER, GROUP_TITLE, groupOf, termsLine, termsBlock,
+  GROUP_ORDER, GROUP_TITLE, groupOf, termsLine, termsBlock, snapshotLine,
   creatorsForSet, invitationForBrand, invitationsForCreator, invitationForCreator, creatorState, DONE_AFTER_DAYS,
 };

@@ -36,6 +36,10 @@ const { validateOfferConfig } = require('./offerConfig.validator');
 const inputs = require('./invitationInputs.service');
 const { validateTerms, offerMessageFor } = require('./invitationTerms.service');
 const { MSG, NOTIFY, first } = require('./invitationCopy');
+// Item 6 — the pool hook and the stamped shoppable-post minimum. Contract: features/item6-negotiation
+const poolService = require('./pool.service');
+const platformRules = require('../config/platformRules');
+const { MSG: MSG6 } = require('./negotiationCopy');
 
 /** A row in one of these statuses is IN the set; anything else never blocks a fresh invitation. */
 const LIVE_STATUSES = ['invited', 'applied', 'accepted', 'negotiating', 'contracted', 'active', 'completed'];
@@ -268,11 +272,22 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     }
   }
 
+  // ── Item 6: from the pool (APPROVAL §3.2, §3.3). The entry must be this brand's, hers and
+  // still waiting; it is marked used at insert, whatever she then answers.
+  let poolEntry = null;
+  if (strict && (body.poolEntryId || body.pool_entry_id)) {
+    poolEntry = await poolService.waitingEntry({ entryId: body.poolEntryId || body.pool_entry_id, brandId: brand.id, influencerId: influencer_id });
+    if (!poolEntry || poolEntry.state !== 'waiting') throw new AppError('VALIDATION_ERROR', MSG6.POOL_GONE(name), 422, 'poolEntryId');
+  }
+  // ── Item 6: the admin minimum, stamped on the invitation at send (rules §7B) ──
+  const minShoppable = SELLING_GOALS.includes(goal) ? await platformRules.minShoppablePosts() : null;
+
   return {
     influencer_id, inf, name, terms, agreement, agreement_warnings, eligibility_warnings, minimums,
-    source: source || (agreement ? 'pitch' : (strict ? 'brand_picker' : 'legacy')),
-    sourceGroupId: sourceGroupId || null, actorUserId,
+    source: poolEntry ? 'pool' : (source || (agreement ? 'pitch' : (strict ? 'brand_picker' : 'legacy'))),
+    sourceGroupId: sourceGroupId || null, actorUserId, poolEntry,
     values: {
+      min_shoppable_posts: minShoppable, pool_entry_id: poolEntry ? poolEntry.id : null,
       agreed_fee: agreedFee, posting_date: postingDate, offer_expires_at: expiresAt,
       offer_type: offer.effType || null, offer_config_json: offer.effConfig ? JSON.stringify(offer.effConfig) : null,
       commission_pct, coupon_code: finalCouponCode,
@@ -300,10 +315,11 @@ async function insertOne(plan, { campaign, set, tx }) {
         brand_offer_id, allocation, promoted_brand_offer_ids,
         alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
         offer_valid_until, offer_valid_from, agreement_id, channels_json, formats_json,
-        invited_at, invited_by, source, source_group_id, brand_note, usage_rights_json)
+        invited_at, invited_by, source, source_group_id, brand_note, usage_rights_json,
+        min_shoppable_posts, pool_entry_id)
      VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
              $17, $18, $19, $20::jsonb, $21, $22, $23, $24::jsonb, $25::jsonb,
-             now(), $26, $27, $28, $29, $30::jsonb)
+             now(), $26, $27, $28, $29, $30::jsonb, $31, $32)
      RETURNING *`,
     [
       set.id, plan.influencer_id, v.agreed_fee, v.posting_date, v.offer_expires_at,
@@ -313,11 +329,17 @@ async function insertOne(plan, { campaign, set, tx }) {
       v.alloc_scope, v.alloc_category_node_id, v.alloc_category, v.alloc_product_ids,
       v.offer_valid_until, v.offer_valid_from, plan.agreement ? plan.agreement.id : null, v.channels_json, v.formats_json,
       plan.actorUserId, plan.source, plan.sourceGroupId, v.brand_note, v.usage_rights_json,
+      v.min_shoppable_posts || null, v.pool_entry_id || null,
     ]
   );
   const ci = rows[0];
   if (plan.agreement) {
     await handshakeService.consumeAgreement({ agreementId: plan.agreement.id, campaignId: campaign.id, ciId: ci.id, tx });
+  }
+  // Item 6: the pool entry is used the moment she is invited from it (rules §7B, APPROVAL §3.2).
+  if (plan.poolEntry) {
+    const used = await poolService.markUsed({ entryId: plan.poolEntry.id, brandId: plan.poolEntry.brand_id, influencerId: plan.influencer_id, ciId: ci.id }, tx);
+    if (!used) throw new AppError('VALIDATION_ERROR', MSG6.POOL_GONE(plan.name), 422, 'poolEntryId');
   }
   return ci;
 }
@@ -400,7 +422,7 @@ async function sendBatch({ brand, campaign, set, creators, sourceGroupId = null,
   const seen = new Set();
   for (const c of creators) {
     const influencerId = c.influencerId || c.influencer_id;
-    const body = { influencer_id: influencerId, ...(c.terms || {}), note: c.note !== undefined ? c.note : (c.terms || {}).note, offer: c.offer !== undefined ? c.offer : (c.terms || {}).offer };
+    const body = { influencer_id: influencerId, ...(c.terms || {}), note: c.note !== undefined ? c.note : (c.terms || {}).note, offer: c.offer !== undefined ? c.offer : (c.terms || {}).offer, poolEntryId: c.poolEntryId || c.pool_entry_id || undefined };
     try {
       if (seen.has(influencerId)) throw new AppError('CONFLICT', 'That creator is listed twice.', 409, 'influencer_id');
       seen.add(influencerId);

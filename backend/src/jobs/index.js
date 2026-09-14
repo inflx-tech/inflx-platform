@@ -21,7 +21,10 @@ const apifyEngagementJob   = require('./apify-engagement.job');
 const campaignStatusJob    = require('./campaign-status.job');
 const bookingReminderJob   = require('./booking-reminder.job');
 const lowWalletJob         = require('./low-wallet-alert.job');
-const negotiationExpiryJob = require('./negotiation-expiry.job');
+// Item 6 — the 48-hour negotiation-expiry job is retired (rules v1.18 §7B: no automatic decline;
+// the set's cutoff is the only deadline). Its hourly replacement expires pool entries and sends
+// the two silence reminders. Contract: features/item6-negotiation
+const negotiationHousekeepingJob = require('./negotiation-housekeeping.job');
 const productionReminderJob = require('./production-shipment-reminder.job');
 const subscriptionRenewalJob = require('./subscription-renewal.job');
 const settlementRetryJob     = require('./settlement-retry.job');
@@ -34,7 +37,6 @@ const setExpiryJob           = require('./set-expiry.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
-const negotiationExpiryRun = () => negotiationExpiryJob.runNegotiationExpiryJob();
 
 function startAllJobs() {
   if (!env.ENABLE_CRONS) {
@@ -63,8 +65,8 @@ function startAllJobs() {
   // the shortest clock is measured in days.
   cron.schedule('20 * * * *', handshakeExpiryJob.run, { timezone: tz });
 
-  // negotiation-expiry — every 30 minutes (auto-walks-away after 48h SLA)
-  cron.schedule('7,37 * * * *', negotiationExpiryRun, { timezone: tz });
+  // negotiation-housekeeping — hourly: pool expiry + closing notices, silence reminders (item 6)
+  cron.schedule('50 * * * *', () => negotiationHousekeepingJob.run(), { timezone: tz });
 
   // apify-engagement — 06:00 UTC daily
   cron.schedule('0 6 * * *', apifyEngagementJob.run);
@@ -122,7 +124,7 @@ module.exports = {
   campaignStatusJob,
   bookingReminderJob,
   lowWalletJob,
-  negotiationExpiryJob,
+  negotiationHousekeepingJob,
   productionReminderJob,
   subscriptionRenewalJob,
   settlementRetryJob,

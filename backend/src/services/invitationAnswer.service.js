@@ -129,6 +129,14 @@ async function decline(row, { reason, note, legacyCodes = false, today = null } 
     if (!rows[0]) throw new AppError('VALIDATION_ERROR', MSG.ANSWERED_TWICE, 422, 'status');
     // A contract nobody has signed must not sit there as though she might still sign it.
     await tx.query(`DELETE FROM contracts WHERE campaign_influencer_id = $1 AND influencer_signed_at IS NULL AND brand_signed_at IS NULL`, [row.id]);
+    // Item 6: a decline mid-negotiation ends the thread as declined by her; the thread stays readable.
+    await tx.query(
+      `INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, decline_reason, decline_note)
+       SELECT n.id, 'influencer', 'decline', $2, $3 FROM negotiations n WHERE n.campaign_influencer_id = $1 AND n.outcome IS NULL`,
+      [row.id, reason, text || null]);
+    await tx.query(
+      `UPDATE negotiations SET outcome = 'declined_by_creator', status = 'walked_away', ended_at = now(), current_turn = NULL, expires_at = NULL
+        WHERE campaign_influencer_id = $1 AND outcome IS NULL`, [row.id]);
     return rows[0];
   });
 

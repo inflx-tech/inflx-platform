@@ -42,6 +42,8 @@ function shapeCampaign(c) {
     id: c.id, name: c.name, brief: c.brief || null,
     createdAt: c.created_at, updatedAt: c.updated_at || c.created_at,
     startedFromGroup: c.started_from_group_id ? { id: c.started_from_group_id, name: c.group_name || null } : null,
+    // Item 6 (N18): the negotiation switch, on by default.
+    allowNegotiation: c.allow_negotiation !== false,
     legacyStatus: c.status,
   };
 }

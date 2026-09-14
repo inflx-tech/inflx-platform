@@ -101,12 +101,22 @@ async function pickStates({ brandId, set, ids }) {
 const pickable = asyncHandler(async (req, res) => {
   const brand = await brandOf(req.user.sub);
   const { set } = await ownedCampaignAndSet(req, brand.id);
-  const tab = req.query.tab === 'worked' ? 'worked' : 'all';
+  const tab = req.query.tab === 'worked' ? 'worked' : (req.query.tab === 'pool' ? 'pool' : 'all');
   let out;
   if (tab === 'all') {
     out = await discovery.discoverCreators(brand.id, { ...req.query, withGroups: false });
-  } else {
+  } else if (tab === 'worked') {
     out = await workedWith(brand.id, req.query);
+  } else {
+    // Item 6 (B13): the pool as a picker source. Terms travel only when the Aim matches;
+    // in a set of another Aim she is an ordinary pick with empty terms (rules §7B).
+    const poolService = require('../services/pool.service');
+    const list = await poolService.listForBrand(brand.id, { goal: set.goal });
+    const rows = list.groups.flatMap(g => g.rows).map(e => ({
+      id: e.creator.id, name: e.creator.name, avatarUrl: e.creator.avatarUrl, nicheLabel: null, cityName: null, instagram: null,
+      pool: { entryId: e.entryId, goal: e.goal, terms: e.selectable ? e.terms : null, termsLine: e.termsLine, sameAim: e.selectable, wantsGoLiveDate: e.wantsGoLiveDate, wantsShootMode: e.wantsShootMode, daysLeft: e.daysLeft, closingSoon: e.closingSoon, noLongerPossible: e.noLongerPossible, agreedAt: e.agreedAt },
+    }));
+    out = { total: rows.length, page: 1, rows };
   }
   const states = await pickStates({ brandId: brand.id, set, ids: out.rows.map(r => r.id) });
   out.rows = out.rows.map(r => ({ ...r, pick: states.get(r.id) }));

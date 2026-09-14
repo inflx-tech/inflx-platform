@@ -366,7 +366,11 @@ describe('POST /v1/negotiations/:id/respond', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.negotiation.status).toBe('walked_away');
-    expect(res.body.data.campaign_influencer.status).toBe('declined');
+    // Item 6 (APPROVAL Q3): a BRAND decline ends the invitation as rejected_by_brand — a status
+    // that was sitting dead — so the creator's own 'declined' never carries the brand's decision.
+    // Both group under Declined and both are re-invitable before the cutoff.
+    expect(res.body.data.campaign_influencer.status).toBe('rejected_by_brand');
+    expect(res.body.data.negotiation.outcome).toBe('declined_by_brand');
   });
 
   it('returns WRONG_TURN when influencer tries to respond when it is brand\'s turn', async () => {

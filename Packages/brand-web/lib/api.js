@@ -651,6 +651,10 @@ export const adminApi = {
   createAdminUser: (data) => api.post('/admin/users', data),
   getPaymentConfig: () => api.get('/admin/config/payments'),
   updatePaymentConfig: (data) => api.patch('/admin/config/payments', data),
+  // Item 6 (N22) — the platform settings the collaboration rules depend on, with their audit.
+  // Contract: features/item6-negotiation
+  getPlatformSettings: () => api.get('/admin/platform-settings'),
+  updatePlatformSettings: (data) => api.patch('/admin/platform-settings', data),
   setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
   // Wave 1 — per-brand L3 commerce-commission override + per-influencer TDS controls
   setBrandCommerceCommissionOverride: (brandId, pct) =>

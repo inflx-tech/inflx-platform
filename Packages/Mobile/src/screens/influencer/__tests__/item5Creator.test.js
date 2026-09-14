@@ -88,8 +88,11 @@ describe('I12 · I13 · I14 — the invitation', () => {
     expect(flat.indexOf('Set by the brand')).toBeLessThan(flat.indexOf('Your terms'));
     expect(flat).not.toMatch(/Road No|address/i);
     getByTestId('accept'); getByTestId('decline');
+    // Item 6 (N1): Counter now asks which — the money and the work, or the date and the mode.
     fireEvent.press(getByTestId('counter'));
-    expect(n.navigate).toHaveBeenCalledWith('CounterSoon', { ciId: 'ci1' });
+    getByText('What would you like to change?');
+    fireEvent.press(getByTestId('choice-continue'));
+    expect(n.navigate).toHaveBeenCalledWith('Counter', { ciId: 'ci1' });
   });
 
   it('a Pay for Content invitation spells out the deliverables and the 25/25/50 split in rupees (check 27)', async () => {

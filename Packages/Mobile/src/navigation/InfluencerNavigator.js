@@ -25,7 +25,10 @@ import YourNumbersScreen from '../screens/influencer/YourNumbersScreen';
 import SocialDetailScreen from '../screens/shared/SocialDetailScreen';
 // Item 5 — invitations. Contract: features/item5-invitations
 import InvitationScreen from '../screens/influencer/InvitationScreen';
-import CounterSoonScreen from '../screens/influencer/CounterSoonScreen';
+// Item 6 — countering, the request to move, and the thread. Contract: features/item6-negotiation
+import CounterScreen from '../screens/influencer/CounterScreen';
+import MoveRequestScreen from '../screens/influencer/MoveRequestScreen';
+import ThreadScreen from '../screens/influencer/ThreadScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -41,9 +44,12 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="BrandOverview" component={BrandOverviewScreen} />
       <CollabsStack.Screen name="BrandProducts" component={BrandProductsScreen} />
       <CollabsStack.Screen name="ProductDetail" component={ProductDetailScreen} />
-      {/* Item 5 — the invitation and the item 6 placeholder behind Counter. Contract: features/item5-invitations */}
+      {/* Item 5 — the invitation. Contract: features/item5-invitations */}
       <CollabsStack.Screen name="Invitation" component={InvitationScreen} />
-      <CollabsStack.Screen name="CounterSoon" component={CounterSoonScreen} />
+      {/* Item 6 — the counter, the move request and the thread. Contract: features/item6-negotiation */}
+      <CollabsStack.Screen name="Counter" component={CounterScreen} />
+      <CollabsStack.Screen name="MoveRequest" component={MoveRequestScreen} />
+      <CollabsStack.Screen name="Thread" component={ThreadScreen} />
     </CollabsStack.Navigator>
   );
 }

@@ -125,6 +125,16 @@ async function reseedReferenceData(client) {
       ('enterprise', 'Enterprise',     0.00, -1,-1, -1,  -1, true,  4, 'Enterprise plan')
     ON CONFLICT (tier_key) DO NOTHING
   `);
+  // Item 6: platform_settings is seeded by migration 182 and is configuration, not test data —
+  // the same reasoning as the tiers above. Without it every read falls back to the code defaults
+  // and no admin write has a row to change.
+  await client.query(`
+    INSERT INTO platform_settings (key, value, min_value, max_value, unit, label) VALUES
+      ('negotiation_rounds',  2,  1,  5, 'rounds', 'Negotiation rounds'),
+      ('pool_lifetime_days', 30,  7, 90, 'days',   'Pool entry lifetime'),
+      ('min_shoppable_posts', 1,  1, 10, 'post',   'Minimum shoppable posts')
+    ON CONFLICT (key) DO NOTHING
+  `);
 }
 
 async function truncateAll() {

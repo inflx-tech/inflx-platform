@@ -69,7 +69,9 @@ async function runOfferExpiryJob() {
       userId: offer.brand_user_id,
       type: 'offer.expired',
       title: 'Offer Expired',
-      body: `An influencer did not respond to your invitation for campaign "${offer.campaign_name}" within 48 hours.`,
+      // Item 6: this job expires at offer_expires_at (the posting date), never at 48 hours —
+      // the 48-hour clock is retired (rules v1.18 §7B). The old sentence said otherwise.
+      body: `An influencer did not respond to your invitation for campaign "${offer.campaign_name}" before the posting date.`,
       data: {
         screen: 'campaign_detail',
         campaign_id: offer.campaign_id,

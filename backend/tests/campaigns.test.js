@@ -271,7 +271,7 @@ describe('PATCH /v1/campaigns/:id', () => {
 
   // Item 4 (rules v1.14 §5B, mockup C11): a campaign can be renamed and its description edited
   // at any time; only the older money-adjacent fields stay draft-only.
-  it('renames a published campaign; the legacy fields stay draft-only (item 4)', async () => {
+  it('renames a published campaign; start_date stays draft-only (item 4); the negotiation switch changes at any time (item 6)', async () => {
     const { token } = await createApprovedBrand();
     const createRes = await createCampaign(token, { total_budget: 10000 });
     const cid = createRes.body.data.campaign.id;
@@ -286,10 +286,18 @@ describe('PATCH /v1/campaigns/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.campaign.name).toBe('Renamed while live');
 
+    // Item 6 (rules v1.18 §7B): the switch governs only new counters and may change at any time.
     res = await request(app)
       .patch(`/v1/campaigns/${cid}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ allow_negotiation: false });
+    expect(res.status).toBe(200);
+    expect(res.body.data.campaign.allow_negotiation).toBe(false);
+
+    res = await request(app)
+      .patch(`/v1/campaigns/${cid}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ start_date: '2027-01-01' });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });

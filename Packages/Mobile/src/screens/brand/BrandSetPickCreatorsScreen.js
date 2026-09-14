@@ -20,8 +20,10 @@ import { C3 } from '../../components/discovery/copy3';
 import { Chip5 } from '../../components/invitations/bits5';
 import { C5 } from '../../components/invitations/copy5';
 import { startDraft } from '../../components/invitations/draft5';
+import { C6, aimLabel6 as aimLabel4 } from '../../components/negotiation/copy6';
 
-const P = C5.pick;
+// Item 6 (B13): the pool is a fourth source inside any set's picker (rules v1.18 §7B).
+const P = { ...C5.pick, tabs: [...C5.pick.tabs, 'Pool'] };
 
 /** The pick state of a row, as the list needs it. */
 export function pickStateOf(item) {
@@ -53,7 +55,9 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   const fetcher = useCallback((params) => brandApi.pickable(campaignId, setId, { ...params, tab: 'all' }), [campaignId, setId]);
 
   function next() {
-    const creators = [...sel.values()].map(c => ({ id: c.id, name: c.name, avatarUrl: c.avatarUrl || null }));
+    // Item 6: a creator picked from the pool carries her entry and the terms she agreed, so the
+    // terms screen opens filled in and the entry is marked used when the invitation is sent.
+    const creators = [...sel.values()].map(c => ({ id: c.id, name: c.name, avatarUrl: c.avatarUrl || null, poolEntryId: c.pool ? c.pool.entryId : undefined, poolTerms: c.pool && c.pool.sameAim ? c.pool.terms : undefined, poolAgreedAt: c.pool ? c.pool.agreedAt : undefined }));
     startDraft(setId, { set: data.set, campaignName: data.campaign.name, creators, sourceGroupId: null });
     navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: 0 });
   }
@@ -74,8 +78,10 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
           header={<Text style={s.hint}>{P.hint}</Text>} />
       ) : tab === P.tabs[1] ? (
         <WorkedPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} />
-      ) : (
+      ) : tab === P.tabs[2] ? (
         <GroupsPickList onOpen={(g) => navigation.navigate('BrandGroupInviteCheck', { campaignId, setId, groupId: g.id, groupName: g.name })} />
+      ) : (
+        <PoolPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} />
       )}
       {tab !== P.tabs[2] ? (
         <View style={s.footer}>
@@ -127,6 +133,37 @@ function WorkedPickList({ campaignId, setId, selectedIds, onToggle }) {
           }} />
       )}
     </View>
+  );
+}
+
+/** Item 6 (B13) — pool creators inside this set's picker; terms travel only when the Aim matches. */
+function PoolPickList({ campaignId, setId, selectedIds, onToggle }) {
+  const [rows, setRows] = useState([]);
+  const [status, setStatus] = useState('loading');
+  const load = useCallback(async () => {
+    setStatus('loading');
+    const r = await brandApi.pickable(campaignId, setId, { tab: 'pool' });
+    if (!r.success) { setStatus('error'); return; }
+    setRows(r.data.rows || []); setStatus('ready');
+  }, [campaignId, setId]);
+  useEffect(() => { load(); }, [load]);
+  if (status === 'loading') return <Skeleton rows={4} />;
+  if (status === 'error') return <LoadErrorList what={C6.pool.loadWhat} onRetry={load} />;
+  return (
+    <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingTop: 4, paddingBottom: 140 }} testID="pool-pick"
+      ListEmptyComponent={<EmptyState title={C6.pool.emptyTitle} body={C6.pool.emptyBody} />}
+      renderItem={({ item }) => {
+        const ps = pickStateOf(item);
+        const disabled = ps.state !== 'ok';
+        const checked = ps.state === 'invited' || selectedIds.has(item.id);
+        const p = item.pool || {};
+        const sub = [aimLabel4(p.goal), p.sameAim ? p.termsLine : 'different Aim — no terms carried', `${p.daysLeft} days left`].filter(Boolean).join(' · ');
+        return (
+          <CheckboxRow checked={checked} disabled={disabled} onPress={() => onToggle(item)} testID={`select-${item.id}`}>
+            <MemberRow c={{ ...item, status: null }} sub={disabled ? ps.label : sub} right={ps.chip ? <Chip5 label={ps.chip} tone={ps.state === 'invited' ? 'waiting' : 'ended'} /> : (p.closingSoon ? <Chip5 label={C6.pool.closingSoon(p.daysLeft)} tone="yourMove" /> : null)} />
+          </CheckboxRow>
+        );
+      }} />
   );
 }
 

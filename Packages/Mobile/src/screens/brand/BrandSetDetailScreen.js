@@ -80,6 +80,8 @@ export default function BrandSetDetailScreen({ navigation, route }) {
     setTermsSent(r.data.invitation);
   }
   const openProfile = (row) => navigation.navigate('CreatorsTab', { screen: 'BrandCreatorProfile', params: { influencerId: row.influencerId } });
+  // Item 6 (N7, N10) — the conversation: her counter, or her request to move.
+  const openThread = (row) => navigation.navigate('BrandThread', { campaignId, setId, ciId: row.id });
   async function doConfirm() {
     const { kind, row } = confirm;
     setConfirm(null);
@@ -90,6 +92,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   }
   function creatorActions(row) {
     const a = [
+      ...(row.actions && row.actions.thread ? [{ label: 'Open the conversation', onPress: () => openThread(row) }] : []),
       { label: S5.menu.viewTerms, onPress: () => viewTerms(row) },
       { label: S5.menu.profile, onPress: () => openProfile(row) },
     ];
@@ -162,9 +165,11 @@ export default function BrandSetDetailScreen({ navigation, route }) {
                 <GroupHeader5 title={S5.groups[g.key] || g.title} count={g.count} />
                 {g.rows.map(row => (
                   <SetCreatorRow5 key={row.id} row={row}
-                    onPress={() => (row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
+                    // Item 6: a row with a thread or an unanswered move request opens the
+                    // conversation; the rest open the ⋯ menu.
+                    onPress={() => (row.actions && row.actions.thread ? openThread(row) : row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
                     onMore={() => setCreatorMenu(row)}
-                    onChip={row.group === 'accepted' ? () => show(SD.comingSoon) : undefined} />
+                    onChip={row.group === 'accepted' ? () => show(SD.comingSoon) : (row.actions && row.actions.thread ? () => openThread(row) : undefined)} />
                 ))}
                 {g.more ? <Text style={s.more}>{S5.more(g.more)}</Text> : null}
               </View>

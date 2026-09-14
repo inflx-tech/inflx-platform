@@ -55,7 +55,9 @@ export default function BrandReviewSendScreen({ navigation, route }) {
       if (Object.keys(e).length) { navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: i }); return; }
     }
     setBusy(true);
-    const body = { creators: d.creators.map(c => ({ influencerId: c.id, terms: toServer(goal, d.terms[c.id]) })), sourceGroupId: d.sourceGroupId || undefined };
+    // Item 6: a creator picked from the pool carries her entry id, so the entry is marked used
+    // the moment the invitation is sent, whatever she then answers (APPROVAL §3.2).
+    const body = { creators: d.creators.map(c => ({ influencerId: c.id, terms: toServer(goal, d.terms[c.id]), poolEntryId: c.poolEntryId || undefined })), sourceGroupId: d.sourceGroupId || undefined };
     const r = await brandApi.sendInvitations(campaignId, setId, body);
     setBusy(false);
     if (r.success) {

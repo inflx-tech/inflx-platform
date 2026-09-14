@@ -19,6 +19,8 @@ import DateField from '../../components/DateField';
 import { TextField4 } from '../../components/campaigns/bits4';
 import { BranchSheet4 } from '../../components/campaigns/sheets4';
 import { C4, MSG4, AIMS4, MODES4 } from '../../components/campaigns/copy4';
+import { C6 } from '../../components/negotiation/copy6';
+import { startDraft } from '../../components/invitations/draft5';
 import { addDays, earliestGoLiveDay } from '../../utils/setShape';
 
 const S = C4.set;
@@ -27,16 +29,20 @@ export const cutoffFor = (day) => (day ? addDays(day, -3) : null);
 
 export default function BrandSetEditScreen({ navigation, route }) {
   const { campaignId, campaignName, set: existing, suggestedName } = route?.params || {};
+  // Item 6 (N15) — building a set for creators from the pool: the Aim, the mode and the date they
+  // all asked for arrive already filled in. A wanted date that is now inside item 4's seven-day
+  // floor is NOT pre-filled (APPROVAL Q7); the banner says so.
+  const poolDefaults = route?.params?.poolDefaults || null;
   const editing = !!existing;
   const locked = !!(existing && existing.locked);
   const lockedFields = new Set((existing && existing.lockedFields) || []);
   const [rules, setRules] = useState(route?.params?.dateRules || null);
   const [branches, setBranches] = useState(null);
   const [name, setName] = useState(existing ? existing.name : (suggestedName || ''));
-  const [goal, setGoal] = useState(existing ? existing.goal : null);
-  const [mode, setMode] = useState(existing ? existing.shootMode : null);
+  const [goal, setGoal] = useState(existing ? existing.goal : (poolDefaults ? poolDefaults.goal : null));
+  const [mode, setMode] = useState(existing ? existing.shootMode : (poolDefaults ? poolDefaults.shoot_mode : null));
   const [branchId, setBranchId] = useState(existing && existing.branch ? existing.branch.id : null);
-  const [day, setDay] = useState(existing ? existing.postingDate : null);
+  const [day, setDay] = useState(existing ? existing.postingDate : (poolDefaults ? poolDefaults.go_live_date : null));
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [pickBranch, setPickBranch] = useState(false);
@@ -80,8 +86,17 @@ export default function BrandSetEditScreen({ navigation, route }) {
       else show(r.error?.message || COPY.saveFailed);
       return;
     }
-    if (editing) navigation.navigate('BrandSetDetail', { campaignId, setId: existing.id, toast: S.saved });
-    else navigation.replace('BrandCampaignDetail', { campaignId, name: campaignName, toast: S.saved });
+    if (editing) { navigation.navigate('BrandSetDetail', { campaignId, setId: existing.id, toast: S.saved }); return; }
+    // From the pool (N15 → N16): the new set goes straight to the terms screen with the agreed
+    // money already in the fields.
+    if (poolDefaults && poolDefaults.creators && poolDefaults.creators.length) {
+      const created = r.data.set;
+      const creators = poolDefaults.creators.map(c => ({ id: c.influencerId, name: c.name, avatarUrl: c.avatarUrl || null, poolEntryId: c.entryId, poolTerms: c.terms, poolAgreedAt: c.agreedAt }));
+      startDraft(created.id, { set: { ...created, goal, shootMode: mode, postingDate: day, cutoff: cutoffFor(day), branch: branch || null }, campaignName, creators, sourceGroupId: null });
+      navigation.replace('BrandCreatorTerms', { campaignId, setId: created.id, index: 0 });
+      return;
+    }
+    navigation.replace('BrandCampaignDetail', { campaignId, name: campaignName, toast: S.saved });
   }
 
   return (
@@ -89,6 +104,14 @@ export default function BrandSetEditScreen({ navigation, route }) {
       <Header title={editing ? S.editTitle : S.newTitle} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
         {campaignName ? <Text style={s.stepnote}>{String(campaignName).toUpperCase()}</Text> : null}
+
+        {poolDefaults ? (
+          <View style={s.pool} testID="pool-banner">
+            <Text style={s.poolT}>{C6.newSet.banner(poolDefaults.creators.length)}</Text>
+            <Text style={s.poolS}>{C6.newSet.names(poolDefaults.creators.map(c => c.name).join(', '), poolDefaults.wantedDate)}</Text>
+            {poolDefaults.dateNoLongerPossible ? <Text style={s.poolWarn} testID="pool-date-gone">{C6.newSet.dateGone(poolDefaults.wantedDate)}</Text> : null}
+          </View>
+        ) : null}
 
         <TextField4 label={S.nameLabel} required value={name} onChangeText={(v) => { setName(v); clear('name'); }} max={S.nameMax} hint={S.nameHint} error={errors.name} testID="set-name" />
 
@@ -104,7 +127,7 @@ export default function BrandSetEditScreen({ navigation, route }) {
           );
         })}
         <FieldError text={errors.goal} />
-        <Text style={s.hint}>{S.aimHint}</Text>
+        <Text style={s.hint}>{poolDefaults ? C6.newSet.aimNote(poolDefaults.creators.length, AIMS4.find(a => a.code === poolDefaults.goal)?.label || '') : S.aimHint}</Text>
 
         <Text style={[s.label, { marginTop: 16 }]}>{S.modeLabel} <Text style={{ color: T.danger }}>*</Text></Text>
         <View style={s.chips}>
@@ -134,7 +157,7 @@ export default function BrandSetEditScreen({ navigation, route }) {
                 {pending ? <View style={s.cut} testID="picker-cutoff"><Text style={s.cutText}>{S.pickerCutoff(cutoffFor(pending))}</Text></View> : null}
               </View>
             )} />
-          {day ? <View style={s.cut} testID="cutoff-line"><Text style={s.cutText}>{S.cutoffLine(cutoffFor(day))}</Text></View> : null}
+          {day ? <View style={s.cut} testID="cutoff-line"><Text style={s.cutText}>{poolDefaults && day === poolDefaults.go_live_date ? C6.newSet.dateHint(cutoffFor(day)) : S.cutoffLine(cutoffFor(day))}</Text></View> : null}
           <Text style={s.hint}>{S.dateHint}</Text>
           {locked ? <Text style={s.lock} testID="lock-note">🔒 {C4.setDetail.lockLive}</Text> : null}
         </View>
@@ -150,6 +173,10 @@ export default function BrandSetEditScreen({ navigation, route }) {
 
 const s = StyleSheet.create({
   stepnote: { fontFamily: fonts.monoMedium, fontSize: 11, color: T.ink3, letterSpacing: 0.6, marginBottom: 12 },
+  pool: { borderRadius: 12, padding: 11, backgroundColor: T.state.active.bg, marginBottom: 14 },
+  poolT: { fontFamily: fonts.sansBold, fontSize: 13, color: T.state.active.fg },
+  poolS: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.state.active.fg, marginTop: 2, lineHeight: 17 },
+  poolWarn: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.state.yourMove.fg, marginTop: 6, lineHeight: 17 },
   label: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginBottom: 8 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginTop: 6 },
   aim: { borderWidth: 1.5, borderColor: T.border, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 11, marginBottom: 8 },
