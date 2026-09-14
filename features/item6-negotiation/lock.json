@@ -17,7 +17,18 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-14T10:50:00+05:30",
+      "by": "founder go (\"pls migrate,push,OTA\")",
+      "commit": "134962f",
+      "migration": "182 applied to production 2026-09-14 (run-182.js --apply: sixteen columns, three tables, three indexes, three settings seeded at rounds 2 / lifetime 30 / shoppable posts 1; row counts unchanged at 0 negotiations, 0 turns, 8 invitations; no backfill needed; all checks OK)",
+      "render": "item 6 code live after push: GET /v1/influencers/me/invitations/:ciId/thread answers 401 (route exists) while a made-up sibling path answers 404",
+      "ota": { "brand": 216, "influencer": 203 },
+      "websites": "the push redeploys Vercel with the new admin page /admin/settings/platform. Its route cannot be proved from outside: the middleware redirects the whole /admin tree to /login when unauthenticated, so the new page, the existing payments page and a made-up path all answer 307 alike. Vercel served a fresh render (Age: 0) after the push.",
+      "backend_tests": "229 failed / 982 passed / 1211 (0 new failures vs the item 5 baseline of 229/940/1169; 43 new)",
+      "mobile_tests": "479 pass (20 new; baseline 459)",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). The founder's phone walk of checks 1-44 is the functional gate, and runs after item 7."
+    },
     "build": {
       "built_at": "2026-09-14T00:00:00+05:30",
       "migration_dry_run": "182 dry run against production 2026-09-14: 0 negotiations, 0 turns, 0 deferred, 8 invitations, 0 campaigns with the switch off; none of the sixteen columns and none of the three tables present; nothing to backfill. Nothing written.",
