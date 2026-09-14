@@ -17,7 +17,20 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-14T12:10:00+05:30",
+      "by": "founder go (\"pls go and push, migrate and OTA\")",
+      "commit": "5a8e9db",
+      "migration": "183 applied to production 2026-09-14 (run-183.js --apply: 21 columns, 3 contract_status values, standard_terms seeded at version 1.0, campaign_fee_pct 8 and remote_return_days 7 added to platform_settings, 6 indexes including the uq_escrow_ci_tranche money guard; row counts unchanged at 6 contracts, 1 both-signed, 0 escrow rows, 0 wallet transactions, 8 invitations; no backfill; all checks OK)",
+      "render": "item 7 code live after push: GET /v1/influencers/me/invitations/:ciId/agreement and GET /v1/standard-terms both answer 401 (routes exist) while a made-up sibling path answers 404",
+      "ota": { "brand": 217, "influencer": 204 },
+      "websites": "the push redeploys Vercel with the new admin page /admin/settings/terms and with brand-web's Approve & Send switched off. The admin route cannot be proved from outside: the middleware redirects the whole /admin tree to /login when unauthenticated, so it answers 307 exactly as every other admin path does.",
+      "money": "no money moved at deploy. Production still holds 0 escrow rows, 0 wallet transactions and zero balances; the first real lock will happen the first time a brand countersigns.",
+      "backend_tests": "229 failed / 1024 passed / 1253 (0 new failures vs the item 6 baseline of 229/982/1211; 42 new)",
+      "mobile_tests": "493 pass (14 new; baseline 479)",
+      "open": "payment_config.return_window_days stays 30 pending the founder's decision (Docs/ITEM7_AGREEMENT_BUILD_SUMMARY.md section 11). The agreement prints from the config either way.",
+      "note": "released stays false per GOVERNANCE.md section 5 (qa_all_green false). The full end-to-end pack across items 2-7, with the founder's device walk, is the next piece of work."
+    },
     "build": {
       "built_at": "2026-09-14T00:00:00+05:30",
       "migration_dry_run": "183 dry run against production 2026-09-14: 6 contracts (1 both-signed, 5 with neither signature, 4 of them status active), 1 with a PDF, 0 escrow rows, 0 wallet transactions, 8 invitations; no duplicate (invitation, tranche) escrow pair so the unique index will build; none of the 21 columns, 3 statuses, 1 table or 6 indexes present. Nothing to backfill. Nothing written.",
