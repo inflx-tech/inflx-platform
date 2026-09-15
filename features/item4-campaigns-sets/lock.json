@@ -45,7 +45,20 @@
       ],
       "why_no_test_caught_it": "There is no native side under node, so the calendar renders happily in jest while the device dies.",
       "mobile_tests": "523 pass / 0 fail (serial)",
-      "classification": "production-impacting — mobile JS only; OTA brand + influencer. No backend, no migration, no website."
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer. No backend, no migration, no website.",
+      "deployed_to_production": {
+        "at": "2026-09-15T18:47:00+05:30",
+        "by": "founder go (\"pls deploy , ship the OTA\")",
+        "commit": "3b7e0a7",
+        "migration": "none",
+        "render": "no backend change — the push is functionally inert on Render/Vercel",
+        "ota": {
+          "brand": 219,
+          "influencer": 206
+        },
+        "manifest_verified": "GET /v1/ota/manifest?flavor=<f>&runtime=3 returns brand 219 and influencer 206, native_runtime 3, same bundle hash sha256:f06cef10…",
+        "note": "Phones pick it up on the SECOND cold start (download on open one, load on open two)."
+      }
     }
   ]
 }
