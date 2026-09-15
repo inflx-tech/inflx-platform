@@ -1,7 +1,7 @@
 # Item 8 — the creator's pitch: what was built
 
 15 September 2026. Rules v1.21 §8 (rewritten) and §7B (amended). Mockups T1–T14, locked.
-Contract: `features/item8-pitch/`. **Nothing is deployed.**
+Contract: `features/item8-pitch/`. **LIVE — deployed 15 September 2026.**
 
 ---
 
@@ -67,11 +67,20 @@ five and no more.
 
 ---
 
-## 4. What is live-looking but is not
+## 4. Deployed
 
-Nothing. No migration has touched production, nothing is pushed, no OTA is published.
-Migration 184 has been applied to the **test** database only, and dry-run against
-production with every count the gap report listed.
+| | |
+|---|---|
+| Commit | `d06111a` |
+| Migration | **184 applied to production** — all 21 objects present, `platform_settings` now 7 keys, **row counts unchanged** (0 pitches, 22 agreements with 19 ready and untouched, 0 threads, 8 briefed invitations, 0 pool entries), no backfill |
+| Render | proved by route existence: `/v1/influencers/me/pitches` and `/v1/brands/me/pitches` answer **401** (auth runs first, so the routes exist); the control path answers **404**. Three probes — cold start |
+| OTA | **brand 218**, **influencer 205**, both manifests verified |
+| Websites | the push redeploys Vercel, but item 8 changed no brand-web file. The admin settings page is key-driven, so both new numbers appear on it with no web change |
+| Money | **none moved, and none can.** Item 8 writes one pool row on acceptance and nothing else |
+
+The seven retired write endpoints are **gone in production**, and `invite` with an
+`agreement_id` is refused there. Nothing on any shipped phone called them: the pitch
+affordance on both apps was a disabled "coming soon" button until this release.
 
 ---
 
@@ -164,10 +173,11 @@ Mobile: **518 pass**, 43 suites, all green (25 new; baseline 493).
 
 ---
 
-## 9. Nothing is deployed
+## 9. Live, on your go
 
-Migration 184 is written, dry-run and applied to the test database only. No push, no OTA.
-Item 8 is production-impacting and needs your explicit go before migrate / push / OTA.
+Migration 184 applied, `d06111a` pushed with gov-check green, Render proved by route
+existence, OTA **brand 218 / influencer 205**. See §4.
 
-**Item 8 moves no money.** Check 16 counts seven tables before and after an acceptance and
-every count is unchanged.
+**Item 8 moves no money.** Check 16 counts seven tables before and after an acceptance
+and every count is unchanged. Production still holds 0 pitches, 0 pool entries and 0
+negotiation threads — the first real one will be made by a creator on her phone.

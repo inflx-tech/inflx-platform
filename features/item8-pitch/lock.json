@@ -17,7 +17,24 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-15T00:00:00+05:30",
+      "by": "founder go (\"pls push,migrate and OTA\")",
+      "commit": "d06111a",
+      "migration": "184 applied to production 2026-09-15 (run-184.js --apply). All 21 objects present: campaign_influencer_id nullable, negotiations.pitch_id, the one-anchor CHECK, 10 influencer_proposals columns, brand_creator_pool.from_pitch_id + matched_shoot_mode, and 6 indexes including uq_pitch_open_per_aim. platform_settings now holds 7 keys (pitch_response_days 30, pitch_cooldown_days 30 added). Row counts UNCHANGED: 0 pitches, 22 agreements (19 ready, untouched per Q6), 0 threads, 8 briefed invitations, 0 pool entries. No backfill.",
+      "render": "proved live by route existence: GET /v1/influencers/me/pitches and GET /v1/brands/me/pitches both answer 401 (auth first, so the routes exist) while the control path /v1/influencers/me/pitches-that-do-not-exist answers 404. Took 3 probes — Render cold start.",
+      "ota": {
+        "brand": 218,
+        "influencer": 205
+      },
+      "websites": "the push redeploys Vercel but item 8 changed no brand-web file. The admin platform-settings page is key-driven, so pitch_response_days and pitch_cooldown_days appear on it with no web change.",
+      "money": "NO MONEY MOVED and none can. Item 8 writes one brand_creator_pool row on acceptance and nothing else; check 16 counts campaigns, campaign_sets, campaign_influencers, contracts, wallet_transactions, escrow_entries and collab_agreements before and after, and every count is unchanged. Money still enters only at item 7 signature.",
+      "retired_live": "seven old pitch write endpoints are now GONE in production (POST /influencers/me/proposals, .../withdraw, .../respond-counter, .../counter, POST /brands/me/proposals/:id/accept|reject|counter) and POST .../invite refuses an agreement_id. Nothing on any shipped phone called them — the pitch affordance on both apps was a disabled \"coming soon\" button until this release. Their reads stay.",
+      "backend_tests": "222 failed / 1070 passed / 1292 (0 new failures vs the item 7 baseline of 229/1024/1253; 52 new, all passing). The failure count falls by 7 only because collab-diary.test.js was deleted and 7 of its 9 tests were already red — a deletion, not a fix.",
+      "mobile_tests": "518 pass, 43 suites (25 new; baseline 493)",
+      "open": "item 7 leftover payment_config.return_window_days still 30; discoverCreators ranks an unmeasured creator as zero on the BRAND side (the fourth reason code is creator-side only); folding handshake_settings into platform_settings deferred as a tidy. See Docs/ITEM8_PITCH_BUILD_SUMMARY.md §8.",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). The full end-to-end pack across items 2-8, with the founder device walk, is the next piece of work."
+    },
     "build": {
       "built_at": "2026-09-15T00:00:00+05:30",
       "migration_dry_run": "184 dry run against production: 0 pitches, 0 negotiation threads, 0 pool entries, 19 ready agreements left untouched, 8 invitations carrying an agreement_id still readable; no brand-and-creator-and-Aim triple with two open pitches, so uq_pitch_open_per_aim will build. Nothing to backfill. Nothing written. Applied to the TEST database only.",
