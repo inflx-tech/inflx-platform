@@ -120,7 +120,7 @@ export default function BrandSetEditScreen({ navigation, route }) {
           const on = goal === a.code;
           return (
             <TouchableOpacity key={a.code} style={[s.aim, on && s.aimOn, !canEdit('goal') && s.dim]} onPress={() => { if (canEdit('goal')) { setGoal(a.code); clear('goal'); } }} disabled={!canEdit('goal')}
-              accessibilityRole="radio" accessibilityState={{ selected: on, disabled: !canEdit('goal') }} testID={`aim-${a.code}`}>
+              accessibilityRole="radio" accessibilityState={{ selected: !!on, disabled: !canEdit('goal') }} testID={`aim-${a.code}`}>
               <Text style={s.aimT}>{a.label}</Text>
               <Text style={s.aimS}>{a.sub}</Text>
             </TouchableOpacity>

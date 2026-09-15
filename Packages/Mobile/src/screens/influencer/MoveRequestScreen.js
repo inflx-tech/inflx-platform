@@ -62,7 +62,7 @@ export default function MoveRequestScreen({ navigation, route }) {
   }
 
   const Option = ({ on, onPress, title, sub, testID }) => (
-    <TouchableOpacity style={[s.option, on && s.optionOn]} onPress={onPress} testID={testID} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+    <TouchableOpacity style={[s.option, on && s.optionOn]} onPress={onPress} testID={testID} accessibilityRole="checkbox" accessibilityState={{ checked: !!on }}>
       <View style={{ flex: 1 }}><Text style={s.optionT}>{title}</Text><Text style={s.optionS}>{sub}</Text></View>
       <View style={[s.box, on && s.boxOn]}>{on ? <Text style={s.tick}>✓</Text> : null}</View>
     </TouchableOpacity>

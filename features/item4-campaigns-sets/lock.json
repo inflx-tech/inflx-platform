@@ -31,5 +31,21 @@
       "mobile_tests": "441 pass (12 new)",
       "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). The founder phone walk of checks 1-26 is the functional gate. Creator app untouched."
     }
-  }
+  },
+  "fixes": [
+    {
+      "at": "2026-09-15T18:45:00+05:30",
+      "found_by": "founder, phone walk of items 2-8 (step 27 — campaign → set → posting date)",
+      "defect": "The brand app force-closed the instant the posting-date calendar drew. DateField.blocked() returned max (null), not false, for every choosable day whenever no maxDate was given — which is every posting-date picker. The null reached the day cell as accessibilityState.disabled, and Android BaseViewManager.setViewState reads it with hasKey(\"disabled\") && getBoolean(\"disabled\"): hasKey is true for a null-valued key and getBoolean throws NoSuchKeyException. Uncatchable native crash.",
+      "blast_radius": "Every DateField in both apps: brand set posting date, offer start/end, special-offer dates; creator \"ask to move the date\" (item 6) and pitch date (item 8).",
+      "fix": "blocked/prevBlocked/nextBlocked return real booleans; the eight other accessibilityState literals in the two apps coerced with !! for the same reason.",
+      "guards": [
+        "Packages/Mobile/src/components/__tests__/dateField.test.js (opens the picker, asserts every day cell is a boolean — validated by reverting the fix)",
+        "Packages/Mobile/src/__tests__/accessibilityStateBooleans.test.js (static scan of the whole mobile tree)"
+      ],
+      "why_no_test_caught_it": "There is no native side under node, so the calendar renders happily in jest while the device dies.",
+      "mobile_tests": "523 pass / 0 fail (serial)",
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer. No backend, no migration, no website."
+    }
+  ]
 }

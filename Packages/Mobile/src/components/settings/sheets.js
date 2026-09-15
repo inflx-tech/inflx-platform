@@ -65,7 +65,7 @@ export function PickerSheet({ visible, title, hint, items, value, nounOne, nounM
         renderItem={({ item }) => {
           const on = sel.has(item.code);
           return (
-            <TouchableOpacity style={sh.optRow} onPress={() => toggle(item.code)} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+            <TouchableOpacity style={sh.optRow} onPress={() => toggle(item.code)} accessibilityRole="checkbox" accessibilityState={{ checked: !!on }}>
               <View style={[sh.box, on && sh.boxOn]}>{on ? <Text style={sh.tick}>✓</Text> : null}</View>
               <Text style={sh.optLabel}>{item.label}</Text>
             </TouchableOpacity>

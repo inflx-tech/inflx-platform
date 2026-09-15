@@ -85,15 +85,30 @@ export default function DateField({
     return cells;
   }, [cursor]);
 
-  const blocked = (d) => (min && d < min) || (max && d > max);
+  /**
+   * ⚠️ These three MUST return a real boolean, never null.
+   *
+   * `(min && d < min) || (max && d > max)` reads as a boolean but is not one: with no maxDate —
+   * which is every posting-date picker — the right-hand side evaluates to `max`, i.e. `null`,
+   * for every day that is NOT greyed out. That null went straight into `accessibilityState`
+   * below, and Android's BaseViewManager.setViewState does:
+   *
+   *     if (accessibilityState.hasKey("disabled") && !accessibilityState.getBoolean("disabled"))
+   *
+   * hasKey() is true for a key whose value is null, and getBoolean() on a null throws
+   * NoSuchKeyException — a native crash, so the app closed the moment the calendar drew. Jest
+   * never saw it: there is no native side under node. Found by the founder's thumb on the set
+   * posting date, and it was in EVERY date picker in the app.
+   */
+  const blocked = (d) => !!((min && d < min) || (max && d > max));
 
   const prevBlocked = useMemo(() => {
     const last = new Date(cursor.getFullYear(), cursor.getMonth(), 0);
-    return min && last < min;
+    return !!(min && last < min);
   }, [cursor, min]);
   const nextBlocked = useMemo(() => {
     const firstNext = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-    return max && firstNext > max;
+    return !!(max && firstNext > max);
   }, [cursor, max]);
 
   function pick(d) {
@@ -146,7 +161,7 @@ export default function DateField({
                 const on = selected && toISO(d) === toISO(selected);
                 return (
                   <TouchableOpacity key={toISO(d)} style={[s.cell, on && s.cellOn]} activeOpacity={off ? 1 : 0.6} onPress={() => pick(d)}
-                    disabled={off} accessibilityState={{ disabled: off, selected: !!on }} testID={`day-${toISO(d)}`}>
+                    disabled={off} accessibilityState={{ disabled: !!off, selected: !!on }} testID={`day-${toISO(d)}`}>
                     <Text style={[s.day, off && s.dayOff, on && s.dayOn]}>{d.getDate()}</Text>
                   </TouchableOpacity>
                 );

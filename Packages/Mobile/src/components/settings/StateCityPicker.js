@@ -144,7 +144,7 @@ export default function StateCityPicker({ visible, title, states, value, onApply
             renderItem={({ item }) => {
               const on = sel.has(item.id);
               return (
-                <TouchableOpacity style={sh.optRow} onPress={() => toggle(item.id)} testID={`city-${item.id}`} accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+                <TouchableOpacity style={sh.optRow} onPress={() => toggle(item.id)} testID={`city-${item.id}`} accessibilityRole="checkbox" accessibilityState={{ checked: !!on }}>
                   <View style={[sh.box, on && sh.boxOn]}>{on ? <Text style={sh.tick}>✓</Text> : null}</View>
                   <Text style={sh.optLabel}>{item.name}</Text>
                 </TouchableOpacity>

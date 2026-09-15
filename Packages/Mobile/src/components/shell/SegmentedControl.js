@@ -14,7 +14,7 @@ export default function SegmentedControl({ segments, value, onChange, testID }) 
         const on = seg === value;
         return (
           <TouchableOpacity key={seg} style={[s.seg, on && s.segOn]} onPress={() => onChange(seg)} activeOpacity={0.8}
-            accessibilityRole="tab" accessibilityState={{ selected: on }} testID={`segment-${seg}`}>
+            accessibilityRole="tab" accessibilityState={{ selected: !!on }} testID={`segment-${seg}`}>
             <Text style={[s.label, on && s.labelOn]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{seg}</Text>
           </TouchableOpacity>
         );

@@ -38,3 +38,51 @@ describe('reading a date back', () => {
     expect(() => prettyDate(0)).not.toThrow();
   });
 });
+
+/**
+ * THE CRASH THE FOUNDER FOUND (campaign → set → posting date, brand app on Android).
+ *
+ * `blocked()` used to be `(min && d < min) || (max && d > max)`. With no maxDate — which is
+ * every posting-date picker in the app — that returns `null`, not `false`, for every day that
+ * is still choosable. The null was handed to the day cell as accessibilityState.disabled, and
+ * Android's BaseViewManager reads it with hasKey("disabled") && getBoolean("disabled"):
+ * hasKey is true for a null, getBoolean throws NoSuchKeyException, and the app dies as the
+ * calendar draws.
+ *
+ * Nothing about that is visible under node, so this test asserts the one thing that matters to
+ * the native side: the value is a boolean, not merely falsy.
+ */
+describe('the calendar hands Android booleans, not nulls', () => {
+  const React = require('react');
+  const { render, fireEvent } = require('@testing-library/react-native');
+  const DateField = require('../DateField').default;
+
+  const openPicker = (props) => {
+    const r = render(React.createElement(DateField, { label: 'Posting date', value: null, onChange: () => {}, ...props }));
+    fireEvent.press(r.getByTestId('date-field'));
+    return r;
+  };
+
+  it('every day cell is disabled:false or disabled:true — never null (no maxDate)', () => {
+    const r = openPicker({ minDate: '2126-09-22' });
+    const cells = r.UNSAFE_root.findAll(n => typeof n.props.testID === 'string' && n.props.testID.startsWith('day-') && n.props.accessibilityState);
+    expect(cells.length).toBeGreaterThan(0);
+    for (const c of cells) {
+      expect(typeof c.props.accessibilityState.disabled).toBe('boolean');
+      expect(typeof c.props.accessibilityState.selected).toBe('boolean');
+    }
+  });
+
+  it('holds for a picker with no minDate and no maxDate at all', () => {
+    const r = openPicker({});
+    const cells = r.UNSAFE_root.findAll(n => typeof n.props.testID === 'string' && n.props.testID.startsWith('day-') && n.props.accessibilityState);
+    expect(cells.length).toBeGreaterThan(0);
+    for (const c of cells) expect(typeof c.props.accessibilityState.disabled).toBe('boolean');
+  });
+
+  it('still greys out the days before the earliest one', () => {
+    const r = openPicker({ minDate: '2126-09-22' });
+    expect(r.getByTestId('day-2126-09-21').props.accessibilityState.disabled).toBe(true);
+    expect(r.getByTestId('day-2126-09-22').props.accessibilityState.disabled).toBe(false);
+  });
+});
