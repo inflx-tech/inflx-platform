@@ -34,6 +34,9 @@ const postEligibilityJob     = require('./post-eligibility.job');
 const socialMeasureJob       = require('./social-measure.job');
 // Item 4 — a set whose cutoff passed with nobody signed expires. Contract: features/item4-campaigns-sets
 const setExpiryJob           = require('./set-expiry.job');
+// Item 8 — the pitch lane: the two reminders, the unanswered close, and the early
+// close when her date nears. Contract: features/item8-pitch
+const pitchHousekeepingJob   = require('./pitch-housekeeping.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -111,6 +114,11 @@ function startAllJobs() {
   // expired_at is the guard that makes a second run a no-op.
   cron.schedule('40 * * * *', () => setExpiryJob.run(), { timezone: tz });
 
+  // pitch-housekeeping (item 8) — hourly at :35, India time. Reminders at 7 and 21 days
+  // while the brand still owes the first answer, then the two closes. Every write is
+  // guarded, so a second run in the same hour changes nothing.
+  cron.schedule('35 * * * *', () => pitchHousekeepingJob.run(), { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -132,4 +140,5 @@ module.exports = {
   postEligibilityJob,
   socialMeasureJob,
   setExpiryJob,
+  pitchHousekeepingJob,
 };

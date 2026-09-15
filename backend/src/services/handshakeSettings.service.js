@@ -36,7 +36,9 @@ const DEFAULTS = Object.freeze({
   brand_max_per_week:       40,
   request_ttl_days:         7,
   decline_cooldown_days:    30,
-  counter_rounds_per_side:  2,
+  // Item 8 — counter_rounds_per_side is gone. A pitch's rounds come from item 6's
+  // `negotiation_rounds`, stamped on the thread when it starts, which is the only
+  // round limit left in the product. The column stays on the table; nothing reads it.
   broadcast_max_recipients: 30,
   agreement_expiry_days:    90,
 });

@@ -30,6 +30,8 @@
 const db = require('../config/db');
 const { resolveAvatars } = require('../utils/avatarResolver');
 const { SIGNED_CONTRACT_SQL } = require('./collabState');
+// Item 8 — the two sentences her brand list can say beyond the coarse codes.
+const PITCH_COPY = require('./pitchCopy');
 
 const AIMS_ALL = "ARRAY['conversion','engagement','hybrid']::text[]";
 const MODES_ALL = "ARRAY['visit','shipment']::text[]";
@@ -220,7 +222,14 @@ function creatorRow(r, groupIds) {
 const BRAND_BASE_CTE = `
   me AS (
     SELECT i.id, i.niche, i.language, COALESCE(i.followers_count, 0) AS ig, COALESCE(i.youtube_subscribers, 0) AS yt,
-           COALESCE(i.engagement_rate, 0) AS er, i.city_id
+           COALESCE(i.engagement_rate, 0) AS er, i.city_id,
+           -- Item 8, approval §2.1: which of those zeros are real zeros. The
+           -- comparison still uses the coerced value; only the reason code
+           -- changes, and only on HER list. Must stay in step with
+           -- collabEligibility.canCreatorPitchBrand — check 41 pins them.
+           (i.followers_count      IS NOT NULL) AS ig_measured,
+           (i.youtube_subscribers  IS NOT NULL) AS yt_measured,
+           (i.engagement_rate      IS NOT NULL) AS er_measured
       FROM influencers i WHERE i.id = $1
   ),
   base AS (
@@ -237,6 +246,11 @@ const BRAND_BASE_CTE = `
            EXISTS (SELECT 1 FROM collab_blocks cb
                     WHERE cb.blocker_type = 'brand' AND cb.blocker_id = b.id
                       AND cb.blocked_type = 'creator' AND cb.blocked_id = $1) AS blocked_me,
+           -- Item 8 (E1): the date her cooldown with this brand lifts, so T1 can
+           -- say when instead of only that she cannot. A block still masks it,
+           -- which is why this is read below NOT_ACCEPTING, never above it.
+           (SELECT pc.cooldown_until FROM proposal_cooldowns pc
+             WHERE pc.influencer_id = $1 AND pc.brand_id = b.id AND pc.cooldown_until > now()) AS cooldown_until,
            EXISTS (SELECT 1 FROM contracts con
                      JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
                      JOIN campaign_sets cs ON cs.id = ci.set_id
@@ -250,13 +264,18 @@ const BRAND_BASE_CTE = `
   scored AS (
     SELECT b.*,
            CASE WHEN NOT b.accepting OR b.blocked_me THEN 'NOT_ACCEPTING'
+                WHEN b.cooldown_until IS NOT NULL THEN 'COOLDOWN'
                 WHEN b.allow_past AND b.signed_before THEN 'OK'
                 WHEN b.niche_codes IS NOT NULL AND cardinality(b.niche_codes) > 0
                      AND NOT (COALESCE(me.niche, '{}'::varchar[])::text[] && b.niche_codes) THEN 'NOT_MATCHING'
                 WHEN (b.min_followers_instagram IS NOT NULL OR b.min_followers_youtube IS NOT NULL)
                      AND NOT ((b.min_followers_instagram IS NOT NULL AND me.ig >= b.min_followers_instagram)
-                           OR (b.min_followers_youtube   IS NOT NULL AND me.yt >= b.min_followers_youtube)) THEN 'NOT_MATCHING'
-                WHEN b.min_engagement_rate IS NOT NULL AND me.er < b.min_engagement_rate THEN 'NOT_MATCHING'
+                           OR (b.min_followers_youtube   IS NOT NULL AND me.yt >= b.min_followers_youtube))
+                  THEN CASE WHEN (b.min_followers_instagram IS NOT NULL AND NOT me.ig_measured)
+                              OR (b.min_followers_youtube   IS NOT NULL AND NOT me.yt_measured)
+                            THEN 'BEING_MEASURED' ELSE 'NOT_MATCHING' END
+                WHEN b.min_engagement_rate IS NOT NULL AND me.er < b.min_engagement_rate
+                  THEN CASE WHEN me.er_measured THEN 'NOT_MATCHING' ELSE 'BEING_MEASURED' END
                 WHEN b.language_codes IS NOT NULL AND cardinality(b.language_codes) > 0
                      AND NOT (COALESCE(me.language, '{}'::varchar[])::text[] && b.language_codes) THEN 'NOT_MATCHING'
                 WHEN b.city_ids IS NOT NULL AND cardinality(b.city_ids) > 0
@@ -309,7 +328,8 @@ async function findBrands(influencerId, q = {}) {
   const lim = p(PAGE);
   const { rows } = await db.query(
     `WITH ${BRAND_BASE_CTE}
-     SELECT s.id, s.name, s.logo_url, s.sub_categories, s.main_city, s.product_count, s.aims, s.modes, s.status
+     SELECT s.id, s.name, s.logo_url, s.sub_categories, s.main_city, s.product_count, s.aims, s.modes,
+            s.status, s.cooldown_until
        FROM scored s ${whereSql} ORDER BY ${sort} LIMIT ${lim} OFFSET ${off}`,
     params
   );
@@ -320,6 +340,11 @@ async function findBrands(influencerId, q = {}) {
       subCategories: Array.isArray(r.sub_categories) ? r.sub_categories : [],
       mainCity: r.main_city || null, productCount: Number(r.product_count || 0),
       acceptedAims: r.aims, acceptedModes: r.modes, status: r.status,
+      // Item 8 (T1): a pause with a date on it reads very differently from a
+      // refusal. Only ever present when the status IS the cooldown.
+      cooldownUntil: r.status === 'COOLDOWN' ? r.cooldown_until : null,
+      statusLine: r.status === 'COOLDOWN' ? PITCH_COPY.CREATOR.cooldownLine(r.name, r.cooldown_until)
+        : r.status === 'BEING_MEASURED' ? PITCH_COPY.CREATOR.beingMeasured : null,
     })),
   };
 }

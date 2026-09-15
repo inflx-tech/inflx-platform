@@ -34,6 +34,9 @@ const MSG = {
   INELIGIBLE: (name) => `${name} can no longer be invited to this set.`,
   DUPLICATE: (name) => `${name} is already in this set.`,
   SENT_LOCKED: "Terms can't be changed once the invitation is sent. Withdraw it and invite again.",
+  // Item 8, Phase 2a — the brief path is closed. A creator who agreed terms
+  // through a pitch now waits in the brand's pool and is invited from there.
+  BRIEF_CLOSED: 'Agreements are no longer briefed straight into a set. A creator who agreed terms waits in your pool — build a set for her from there.',
   WITHDRAW_ANSWERED: (name) => `${name} has already answered, so this can't be withdrawn.`,
   REMOVE_SIGNED: (name) => `${name} has signed, so she can't be removed here.`,
   ANSWER_CLOSED: (cutoffDay) => `This invitation closed on ${longDate(cutoffDay)}.`,

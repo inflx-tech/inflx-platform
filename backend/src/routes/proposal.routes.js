@@ -21,13 +21,11 @@ const router = Router();
 // ── Influencer ─────────────────────────────────────────────────────────────
 router.get   ('/influencers/me/discover-brands',           authenticate, requireRole('influencer'), ctrl.discoverBrands);
 router.get   ('/influencers/me/discover-brands/:id/products', authenticate, requireRole('influencer'), ctrl.discoverBrandProducts);
-router.post  ('/influencers/me/proposals',                 authenticate, requireRole('influencer'), ctrl.createProposal);
+// Item 8 — sending, withdrawing, countering and answering a counter moved to
+// routes/item8.routes (/influencers/me/pitches/*), the only door that has the
+// mode, the response deadline, item 4's date floor and item 6's thread.
 router.get   ('/influencers/me/proposals',                 authenticate, requireRole('influencer'), ctrl.listMyProposals);
 router.get   ('/influencers/me/proposals/:id',             authenticate, requireRole('influencer'), ctrl.getMyProposal);
-router.post  ('/influencers/me/proposals/:id/withdraw',    authenticate, requireRole('influencer'), ctrl.withdrawMyProposal);
-router.post  ('/influencers/me/proposals/:id/respond-counter', authenticate, requireRole('influencer'), ctrl.respondToCounter);
-// collab-phase0 — she can now counter back on her own pitch, not just accept or decline.
-router.post  ('/influencers/me/proposals/:id/counter',          authenticate, requireRole('influencer'), ctrl.creatorCounterProposal);
 
 // ── Brand criteria (any authenticated user can read; influencer needs it) ──
 router.get   ('/brands/:id/proposal-criteria',  authenticate, ctrl.getProposalCriteria);
@@ -37,9 +35,9 @@ router.get   ('/brands/me/proposal-settings',     authenticate, requireRole('bra
 router.patch ('/brands/me/proposal-settings',     authenticate, requireRole('brand'), ctrl.updateBrandSettings);
 router.get   ('/brands/me/proposals',             authenticate, requireRole('brand'), ctrl.listBrandProposals);
 router.get   ('/brands/me/proposals/:id',         authenticate, requireRole('brand'), ctrl.getBrandProposal);
-router.post  ('/brands/me/proposals/:id/accept',  authenticate, requireRole('brand'), ctrl.acceptProposal);
-router.post  ('/brands/me/proposals/:id/reject',  authenticate, requireRole('brand'), ctrl.rejectProposal);
-router.post  ('/brands/me/proposals/:id/counter', authenticate, requireRole('brand'), ctrl.counterProposal);
+// Item 8 — accept, reject and counter moved to /brands/me/pitches/*. Accepting
+// here wrote a collab_agreements row; accepting there writes a pool entry and
+// nothing else, which is the whole point of item 8 (rules v1.21 §8).
 router.post  ('/brands/me/proposals/:id/flag',    authenticate, requireRole('brand'), ctrl.flagProposal);
 
 // ── Admin ───────────────────────────────────────────────────────────────────

@@ -1,0 +1,29 @@
+{
+  "feature": "item8-pitch",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item8_Implementation_Prompt.md — 'Pls check the docs and start implementing item 8', with twelve answers and five additions)",
+  "approved_at": "2026-09-15T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item8_Pitch_Mockups.html, T1-T14, locked 15 Sep 2026)",
+  "mockup_locked_at": "2026-09-15T00:00:00+05:30",
+  "notes": "Rules doc v1.21 §8 (rewritten) and §7B (amended). Gap report Docs/ITEM8_PITCH_GAP_REPORT.md approved with twelve answers: Q1 one engine via a nullable campaign_influencer_id plus a pitch_id and two partial uniques; Q2 the response period governs the brand's FIRST answer only, after which the thread runs to the early close; Q3 proposed_go_live_date replacing the window and shoot_mode becoming required; Q4 the two limits (a partial unique index per Aim, a counting query per brand); Q5 the cooldown admin-controlled, stamped and mirrored, with blocking still masking it; Q6 the pool entry on acceptance AND NOTHING ELSE; Q7 §7B's matching rule as a flag on the pool entry plus one branch in item 5's send; Q8 the job at :35; Q9 the retirement plan in §6 order; Q10 the frontend plan with four new components; Q11 no backfill anywhere. Plus §2.1 a fourth reason code (BEING_MEASURED) on her screens only, §2.3 the two dead specs deleted, and nine extra checks (33-41). Phase 2a closed the brief path FIRST, before any new feature. Migration 184 (additive, no backfill). Brand and influencer OTA; no website change (the admin settings page is key-driven and picks the two new numbers up on its own). Production-impacting — explicit go required before migrate/push/OTA. Item 8 moves NO money.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-15T00:00:00+05:30",
+      "migration_dry_run": "184 dry run against production: 0 pitches, 0 negotiation threads, 0 pool entries, 19 ready agreements left untouched, 8 invitations carrying an agreement_id still readable; no brand-and-creator-and-Aim triple with two open pitches, so uq_pitch_open_per_aim will build. Nothing to backfill. Nothing written. Applied to the TEST database only.",
+      "backend_tests": "222 failed / 1070 passed / 1292 (0 new failures vs the item 7 baseline of 229/1024/1253; 52 new tests, all passing). The failure count FALLS by 7 only because tests/collab-diary.test.js was deleted and 7 of its 9 tests were already red — a deletion, not a fix; see 05-impact.md §1.",
+      "mobile_tests": "518 pass (25 new; baseline 493)",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). The full end-to-end pack across items 2-8, with the founder's device walk, is the next piece of work after this item."
+    }
+  }
+}

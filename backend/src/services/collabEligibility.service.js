@@ -33,6 +33,11 @@ const REASON = Object.freeze({
   OK:            'OK',
   NOT_ACCEPTING: 'NOT_ACCEPTING',
   NOT_MATCHING:  'NOT_MATCHING',
+  // Item 8, approval §2.1 — HER SCREEN ONLY. Returned by canCreatorPitchBrand,
+  // which is a creator-side question and whose answer a brand never reads.
+  // It never appears in canBrandInviteCreator or in inviteSummaryFor, so the
+  // brand's three coarse codes are unchanged.
+  BEING_MEASURED: 'BEING_MEASURED',
 });
 const WARNING = Object.freeze({
   BELOW_MIN_FEE:        'BELOW_MIN_FEE',
@@ -45,6 +50,7 @@ const MESSAGE = Object.freeze({
   pitch: {
     NOT_ACCEPTING: "This brand isn't accepting pitches right now.",
     NOT_MATCHING:  "You don't match this brand's pitch criteria.",
+    BEING_MEASURED: 'Your numbers are still being measured.',
   },
   invite: {
     NOT_ACCEPTING: "This creator isn't taking invitations right now.",
@@ -196,6 +202,17 @@ async function creatorFacts(influencerId) {
     followersYoutube: Number(r.youtube_subscribers || 0),
     engagementRate: Number(r.engagement_rate || 0),
     cityId,
+    // Item 8, approval §2.1 — which of those zeros are real zeros. Coercing a
+    // null to zero is right for the comparison (she cannot be admitted on a
+    // number nobody has), but it is wrong for the SENTENCE: "you don't meet
+    // what they're looking for" and "we haven't measured you yet" are different
+    // things, and only the second one she can wait out. Her screen gets the
+    // difference; the brand still sees the three coarse codes.
+    measured: {
+      instagram: r.followers_count != null,
+      youtube: r.youtube_subscribers != null,
+      engagement: r.engagement_rate != null,
+    },
   };
 }
 
@@ -306,11 +323,17 @@ async function canCreatorPitchBrand({ influencerId, brandId, aim, mode }) {
     // Either platform is enough — but only a platform the brand set a minimum FOR counts.
     const passIg = minIg != null && f.followersInstagram >= minIg;
     const passYt = minYt != null && f.followersYoutube   >= minYt;
-    if (!passIg && !passYt) return { ok: false, reason: REASON.NOT_MATCHING };
+    if (!passIg && !passYt) {
+      // She fails — but if a platform the brand asked about has never been
+      // measured, she may pass once it is, and saying "you don't match" would
+      // be telling her something untrue about herself (approval §2.1).
+      const awaiting = (minIg != null && !f.measured.instagram) || (minYt != null && !f.measured.youtube);
+      return { ok: false, reason: awaiting ? REASON.BEING_MEASURED : REASON.NOT_MATCHING };
+    }
   }
 
   if (settings.min_engagement_rate != null && f.engagementRate < settings.min_engagement_rate) {
-    return { ok: false, reason: REASON.NOT_MATCHING };
+    return { ok: false, reason: f.measured.engagement ? REASON.NOT_MATCHING : REASON.BEING_MEASURED };
   }
 
   if (Array.isArray(settings.language_codes) && settings.language_codes.length) {
@@ -330,6 +353,33 @@ async function canCreatorPitchBrand({ influencerId, brandId, aim, mode }) {
 // ── §3.2 Brand → Creator ─────────────────────────────────────────────────────
 
 /**
+ * Item 8, §7B — the pool entry that came from her OWN pitch, for THIS set's shape.
+ *
+ * "Where the pool entry came from a Pitch the Creator herself sent, her Pitch is
+ * the more recent and more specific statement: for a Set that matches what was
+ * agreed — the same Aim and the same Mode of Work — her Aim, Mode, city,
+ * category and minimum settings are not applied against her." (rules v1.21 §7B)
+ *
+ * Matching is the Aim AND the mode, both, and only a pool entry still waiting.
+ * A set that differs in either is an ordinary pick and every setting applies.
+ */
+async function agreedPitchFor(influencerId, brandId, set) {
+  const mode = normaliseMode(set && set.shoot_mode);
+  const aim = String((set && set.goal) || '').toLowerCase();
+  if (!aim || !mode) return null;
+  const { rows } = await db.query(
+    `SELECT id FROM brand_creator_pool
+      WHERE influencer_id = $1 AND brand_id = $2 AND from_pitch_id IS NOT NULL
+        AND state = 'waiting' AND expires_at > now()
+        AND goal = $3 AND matched_shoot_mode = $4
+      ORDER BY agreed_at DESC LIMIT 1`,
+    [influencerId, brandId, aim, mode]
+  );
+  return rows[0] || null;
+}
+
+
+/**
  * @param {object} p
  * @param {string} p.brandId
  * @param {string} p.influencerId
@@ -347,13 +397,19 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
   }
 
+  // Item 8, §7B: she pitched this brand for exactly this shape and it agreed, so
+  // her own filters are not turned against her. Only the two absolutes above
+  // survive — "a Creator who has since paused invitations, or who has since
+  // blocked that Brand, cannot be invited" — and they are already checked.
+  const herOwnPitch = await agreedPitchFor(influencerId, brandId, set);
+
   // 2. The set's Aim and mode.
   const aim = String(set?.goal || '').toLowerCase();
-  if (aim && !settings.accepted_aims.includes(aim)) {
+  if (!herOwnPitch && aim && !settings.accepted_aims.includes(aim)) {
     return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
   const mode = normaliseMode(set?.shoot_mode);
-  if (mode && !settings.accepted_modes.includes(mode)) {
+  if (!herOwnPitch && mode && !settings.accepted_modes.includes(mode)) {
     return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
 
@@ -363,7 +419,7 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
   // 3. Brand categories. A brand with none set does not match a creator who picked
   //    categories (founder Q5c). Creators who picked none are unaffected.
   const picked = Array.isArray(settings.brand_category_codes) ? settings.brand_category_codes : null;
-  if (picked && picked.length) {
+  if (!herOwnPitch && picked && picked.length) {
     if (!overlaps(brand.subCategories, picked)) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
 
@@ -375,7 +431,7 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     brand.branchCityIds = br[0] && br[0].city_id != null ? [Number(br[0].city_id)] : [];
   }
   // 4. Store Visit: at least one branch city must be somewhere she can travel (founder Q1).
-  if (mode === 'visit') {
+  if (!herOwnPitch && mode === 'visit') {
     const visit = (settings.visit_city_ids || []).map(Number);
     if (!brand.branchCityIds.some(id => visit.includes(Number(id)))) {
       return { ok: false, reason: REASON.NOT_MATCHING, warnings };
@@ -383,6 +439,10 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
   }
 
   // 5. OK — plus soft warnings. These never block.
+  //    Her minimums are hers to waive, and pitching below them waived them: the
+  //    brand is not warned about a bar she herself came in under (§7B).
+  if (herOwnPitch) return { ok: true, reason: REASON.OK, warnings: [], minimums: null, fromHerPitch: true };
+
   const fee = proposedTerms?.fee;
   const commission = proposedTerms?.commissionPct;
 
@@ -473,14 +533,42 @@ async function pitchSummaryFor(brandId, viewerInfluencerId) {
     canPitch = true;
     reason = REASON.OK;
   }
+
+  // Item 8 — a cooldown is a pause with a date on it, and the overview says
+  // when. Read BELOW the paused check on purpose: a block must keep looking
+  // exactly like a pause, so it masks the cooldown rather than the reverse
+  // (gap report §5, confirmed in the founder's answer 5).
+  let cooldownUntil = null;
+  if (!paused && viewerInfluencerId) {
+    const { rows } = await db.query(
+      `SELECT cooldown_until FROM proposal_cooldowns
+        WHERE influencer_id = $1 AND brand_id = $2 AND cooldown_until > now()`,
+      [viewerInfluencerId, brandId]
+    );
+    if (rows[0]) {
+      cooldownUntil = rows[0].cooldown_until;
+      canPitch = false;
+      reason = 'COOLDOWN';
+    }
+  }
+
   return {
     acceptingLabelState: paused ? 'paused' : 'accepting',
     aims: s.accepted_aims,
     modes: s.accepted_modes,
     canPitch,
     reason,
+    cooldownUntil,
+    cooldownLine: cooldownUntil
+      ? require('./pitchCopy').CREATOR.cooldownLine(await brandNameOf(brandId), cooldownUntil)
+      : null,
   };
 }
+
+const brandNameOf = async (brandId) => {
+  const { rows } = await db.query(`SELECT business_name FROM brands WHERE id = $1`, [brandId]);
+  return rows[0] ? rows[0].business_name : 'this brand';
+};
 
 /** The creator profile card for a brand viewer. Blocked ⇒ byte-identical to paused. */
 async function inviteSummaryFor(influencerId, viewerBrandId) {
@@ -519,6 +607,7 @@ module.exports = {
   creatorProfileCityId,
   brandFacts,
   canCreatorPitchBrand,
+  agreedPitchFor,
   canBrandInviteCreator,
   canBrandInviteMany,
   minCommissionFor,

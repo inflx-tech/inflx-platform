@@ -261,6 +261,16 @@ export const brandApi = {
   agreementDocument: (ciId) => api.get(`/agreements/${ciId}/document`),
   standardTerms:     (version) => api.get(version ? `/standard-terms/${version}` : '/standard-terms'),
 
+  // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
+  // Accepting creates a pool entry and nothing else, which is why there is no
+  // campaign or set in any of these paths.
+  pitchInbox:       () => api.get('/brands/me/pitches'),
+  pitch:            (id) => api.get(`/brands/me/pitches/${id}`),
+  acceptPitch:      (id) => api.post(`/brands/me/pitches/${id}/accept`),
+  rejectPitch:      (id, body) => api.post(`/brands/me/pitches/${id}/reject`, body),
+  pitchThread:      (id) => api.get(`/brands/me/pitches/${id}/thread`),
+  counterPitch:     (id, body) => api.post(`/brands/me/pitches/${id}/thread/counter`, body),
+
   // Places to search in — state, then city, each with a real count of creators who
   // are actually there. Only ever offers somewhere someone is.
   listCreatorLocations: () => api.get('/influencers/locations'),
@@ -491,6 +501,19 @@ export const influencerApi = {
   declineMyAgreement:  (id, body) => api.post(`/influencers/me/invitations/${id}/agreement/decline`, body),
   myAgreementDocument: (id) => api.get(`/agreements/${id}/document`),
   standardTerms:       (version) => api.get(version ? `/standard-terms/${version}` : '/standard-terms'),
+
+  // ── Item 8 · her pitch. Contract: features/item8-pitch ────────────────────
+  // The thread is item 6's engine on a different anchor, so these four mirror
+  // the invitation ones exactly.
+  pitchForm:        (brandId) => api.get(`/influencers/me/pitches/form/${brandId}`),
+  myPitches:        () => api.get('/influencers/me/pitches'),
+  sendPitch:        (body) => api.post('/influencers/me/pitches', body),
+  myPitch:          (id) => api.get(`/influencers/me/pitches/${id}`),
+  withdrawPitch:    (id) => api.post(`/influencers/me/pitches/${id}/withdraw`),
+  myPitchThread:    (id) => api.get(`/influencers/me/pitches/${id}/thread`),
+  counterMyPitch:   (id, body) => api.post(`/influencers/me/pitches/${id}/thread/counter`, body),
+  acceptMyPitch:    (id) => api.post(`/influencers/me/pitches/${id}/thread/accept`),
+  declineMyPitch:   (id, body) => api.post(`/influencers/me/pitches/${id}/thread/decline`, body),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),

@@ -13,6 +13,7 @@ import { EmptyState, PrimaryButton } from '../../components/settings/primitives'
 import { useToast, Skeleton } from '../../components/settings/feedback';
 import { s as base } from '../brand/BrandPitchSettingsScreen';
 import SegmentedControl from '../../components/shell/SegmentedControl';
+import MyPitchesScreen from './MyPitchesScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { C3 } from '../../components/discovery/copy3';
 import { LoadErrorList } from '../../components/discovery/DiscoverList';
@@ -23,6 +24,9 @@ const F = C3.collabs;
 // Item 7: Active is real now — a collaboration leaves Invites the moment both
 // names are on the agreement. Contract: features/item7-agreement
 const TAB_PARAM = { Invites: 'invites', Active: 'active', Done: 'done' };
+
+// Item 8 — the Pitches segment is her own list now, not a card pointing at the
+// brand directory. Contract: features/item8-pitch
 
 export default function CollabsScreen({ navigation, route }) {
   const [segment, setSegment] = useState(route?.params?.segment || F.segments[0]);
@@ -50,7 +54,20 @@ export default function CollabsScreen({ navigation, route }) {
         <Text style={s.title}>Collabs</Text>
         <SegmentedControl segments={F.segments} value={segment} onChange={setSegment} testID="collabs-segments" />
       </View>
-      {status === 'loading' ? <Skeleton rows={4} /> : status === 'error' ? <LoadErrorList what={C5.creator.loadWhat} onRetry={load} /> : (
+      {segment === 'Pitches' ? (
+        <View style={{ flex: 1 }}>
+          {/* The way in stays at the top; the list of what she sent is below it. */}
+          <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
+            <View style={s.card} testID="pitch-card">
+              <Text style={s.cardTitle}>{F.cardTitle}</Text>
+              <Text style={s.cardBody}>{F.cardBody}</Text>
+              <View style={{ marginTop: 12 }}><PrimaryButton label={F.cardButton} onPress={() => navigation.navigate('FindBrands')} testID="find-brands" /></View>
+            </View>
+          </View>
+          <MyPitchesScreen navigation={navigation} />
+        </View>
+      ) : null}
+      {segment === 'Pitches' ? null : status === 'loading' ? <Skeleton rows={4} /> : status === 'error' ? <LoadErrorList what={C5.creator.loadWhat} onRetry={load} /> : (
         <FlatList data={rows} keyExtractor={r => r.id} contentContainerStyle={{ padding: 18, paddingBottom: 40 }} testID={`collabs-${segment.toLowerCase()}`}
           renderItem={({ item }) => (
             // Item 6: a card with a conversation opens the thread; the rest open the invitation.
@@ -62,13 +79,6 @@ export default function CollabsScreen({ navigation, route }) {
                 : 'Invitation',
               { ciId: item.id })} />
           )}
-          ListHeaderComponent={segment === 'Pitches' ? (
-            <View style={s.card} testID="pitch-card">
-              <Text style={s.cardTitle}>{F.cardTitle}</Text>
-              <Text style={s.cardBody}>{F.cardBody}</Text>
-              <View style={{ marginTop: 12 }}><PrimaryButton label={F.cardButton} onPress={() => navigation.navigate('FindBrands')} testID="find-brands" /></View>
-            </View>
-          ) : null}
           ListEmptyComponent={<View testID={`collabs-empty-${segment.toLowerCase()}`}><EmptyState title={title} body={body} /></View>} />
       )}
       {toast}

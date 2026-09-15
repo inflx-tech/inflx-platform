@@ -555,7 +555,13 @@ describe('the creator (checks 25–33, 37, 42)', () => {
     const s2 = await send(w2, [one(p)]);
     const d = await api.get(`/influencers/me/invitations/${s2.body.data.rows[0].id}`, p.token);
     expect(d.body.data.invitation).toMatchObject({ canAnswer: true, canCounter: false });
-    expect((await query(`SELECT count(*)::int n FROM negotiations`)).rows[0].n).toBe(0);
+    // Item 8 gave the thread a second anchor, so a global count would also catch
+    // a pitch thread that has nothing to do with this switch. Scope it to the
+    // invitation this test is actually about.
+    expect((await query(
+      `SELECT count(*)::int n FROM negotiations WHERE campaign_influencer_id = $1`,
+      [s2.body.data.rows[0].id]
+    )).rows[0].n).toBe(0);
   });
 
   it('ended invitations stay in Invites for seven days, then move to Done', async () => {

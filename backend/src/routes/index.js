@@ -163,6 +163,10 @@ router.use('/', item6Routes);
 // Contract: features/item7-agreement
 const item7Routes = require('./item7.routes');
 router.use('/', item7Routes);
+// Item 8 — the creator's pitch, and its thread on item 6's engine. Fixed paths first.
+// Contract: features/item8-pitch
+const item8Routes = require('./item8.routes');
+router.use('/', item8Routes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

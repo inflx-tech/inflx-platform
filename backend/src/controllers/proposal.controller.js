@@ -109,87 +109,6 @@ const getProposalCriteria = asyncHandler(async (req, res) => {
   return success(res, { brand: rows[0], pitchSummary });
 });
 
-// POST /v1/influencers/me/proposals
-const createProposal = asyncHandler(async (req, res) => {
-  const inf = await getInfluencerByUserId(req.user.sub);
-  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
-
-  const {
-    brand_id, pitch_title, pitch_message, goal,
-    proposed_fee, proposed_commission_pct, proposed_deliverables,
-    proposed_posting_window_start, proposed_posting_window_end,
-    portfolio_links,
-    shoot_mode,   // Item 2 — visit | shipment; optional until item 8
-  } = req.body || {};
-
-  if (!brand_id) throw new AppError('VALIDATION_ERROR', 'brand_id is required', 422, 'brand_id');
-  if (!pitch_title || !String(pitch_title).trim()) {
-    throw new AppError('VALIDATION_ERROR', 'pitch_title is required', 422, 'pitch_title');
-  }
-  if (!pitch_message || !String(pitch_message).trim()) {
-    throw new AppError('VALIDATION_ERROR', 'pitch_message is required', 422, 'pitch_message');
-  }
-
-  if (goal != null && !eligibility.AIMS.includes(String(goal))) {
-    throw new AppError('VALIDATION_ERROR', 'goal must be conversion, engagement or hybrid', 422, 'goal');
-  }
-  if (shoot_mode != null && !eligibility.MODES.includes(String(shoot_mode))) {
-    throw new AppError('VALIDATION_ERROR', 'shoot_mode must be visit or shipment', 422, 'shoot_mode');
-  }
-
-  // Admin-level limits first (bans, cooldown, rate limits — rules §8, §25).
-  const elig = await proposalService.checkEligibility(inf.id, brand_id);
-  if (!elig.eligible) {
-    throw new AppError('FORBIDDEN', elig.reason, 403);
-  }
-
-  // Item 2 — the brand's own pitch settings (rules v1.10 §8A), checked again on send with
-  // the aim and mode of THIS pitch. Only a coarse code leaves: NOT_ACCEPTING covers both
-  // paused and blocked, NOT_MATCHING never says which filter failed.
-  const gate = await eligibility.canCreatorPitchBrand({
-    influencerId: inf.id, brandId: brand_id, aim: goal, mode: shoot_mode,
-  });
-  if (!gate.ok) {
-    throw new AppError(gate.reason, eligibility.MESSAGE.pitch[gate.reason], 403, 'brand_id');
-  }
-
-  const proposal = await proposalService.create(inf.id, brand_id, {
-    pitch_title, pitch_message, goal,
-    proposed_fee, proposed_commission_pct, proposed_deliverables,
-    proposed_posting_window_start, proposed_posting_window_end,
-    portfolio_links, shoot_mode,
-  });
-
-  // Notify brand
-  const { rows: brandRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, u.phone, b.business_name
-     FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
-    [brand_id]
-  );
-  const brand = brandRows[0];
-  if (brand) {
-    notify(
-      brand.user_id, brand.fcm_token, brand.phone,
-      'proposal.received',
-      'New proposal',
-      `${inf.instagram_handle ? '@' + inf.instagram_handle : 'An influencer'} sent you a proposal.`,
-      { screen: 'brand_proposal_inbox', proposal_id: proposal.id }
-    );
-  }
-
-  await events.record({
-    proposalId: proposal.id,
-    step: events.STEP.AGREE,
-    actorRole: 'creator',
-    actorUserId: req.user.sub,
-    action: 'pitched',
-    termsSnapshot: proposalService.currentTermsOf(proposal),
-    note: pitch_title || null,
-  });
-
-  return success(res, { proposal }, 201);
-});
-
 // GET /v1/influencers/me/proposals
 const listMyProposals = asyncHandler(async (req, res) => {
   const inf = await getInfluencerByUserId(req.user.sub);
@@ -207,141 +126,6 @@ const getMyProposal = asyncHandler(async (req, res) => {
     throw new AppError('NOT_FOUND', 'Proposal not found', 404);
   }
   return success(res, { proposal });
-});
-
-// POST /v1/influencers/me/proposals/:id/withdraw
-const withdrawMyProposal = asyncHandler(async (req, res) => {
-  const inf = await getInfluencerByUserId(req.user.sub);
-  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
-  const updated = await proposalService.withdraw(req.params.id, inf.id);
-  if (!updated) throw new AppError('VALIDATION_ERROR', 'Proposal cannot be withdrawn', 422);
-  return success(res, { proposal: updated });
-});
-
-// POST /v1/influencers/me/proposals/:id/respond-counter
-// Influencer accepts or declines the brand's counter.
-const respondToCounter = asyncHandler(async (req, res) => {
-  const inf = await getInfluencerByUserId(req.user.sub);
-  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
-  const proposal = await proposalService.getById(req.params.id);
-  if (!proposal || proposal.influencer_id !== inf.id) {
-    throw new AppError('NOT_FOUND', 'Proposal not found', 404);
-  }
-  if (proposal.status !== 'countered') {
-    throw new AppError('VALIDATION_ERROR', `Cannot respond to counter in status "${proposal.status}"`, 422);
-  }
-  // collab-phase0 — CORRECTION 3: nobody accepts their own counter.
-  // The status check above is no longer sufficient. 'countered' is now also true when
-  // SHE countered, so without this a creator could accept the terms she herself just
-  // proposed and produce an agreement the brand never consented to.
-  if (proposal.counter_by === 'creator') {
-    throw new AppError('VALIDATION_ERROR',
-      'You cannot answer your own counter. Waiting on the brand.', 422);
-  }
-  const action = String(req.body?.action || '').toLowerCase();  // 'accept' | 'decline'
-  if (!['accept', 'decline'].includes(action)) {
-    throw new AppError('VALIDATION_ERROR', 'action must be "accept" or "decline"', 422, 'action');
-  }
-
-  await events.record({
-    proposalId: proposal.id,
-    step: events.STEP.AGREE,
-    actorRole: 'creator',
-    actorUserId: req.user.sub,
-    action: action === 'decline' ? 'declined' : 'accepted',
-    termsSnapshot: proposalService.currentTermsOf(proposal),
-  });
-
-  if (action === 'decline') {
-    await db.query(
-      `UPDATE influencer_proposals
-       SET status = 'rejected', updated_at = NOW()
-       WHERE id = $1`,
-      [proposal.id]
-    );
-    return success(res, { proposal: { ...proposal, status: 'rejected' } });
-  }
-
-  // Accept counter — same flow as brand-accept (acceptedFlow uses counter terms).
-  // collab-part2: this now returns an AGREEMENT, not a campaign_influencer.
-  // resulting_campaign_influencer_id stays null until the agreement is briefed into a
-  // real campaign — reporting an id here would point the app at a campaign that does
-  // not exist, which is what the old fabricated stub was.
-  const agreement = await acceptedFlow(proposal);
-  return success(res, {
-    proposal: { ...proposal, status: 'accepted', resulting_campaign_influencer_id: null },
-    agreement,
-  });
-});
-
-/**
- * POST /v1/influencers/me/proposals/:id/counter   Body: { counter_terms, message? }
- *
- * collab-phase0 — NEW. The creator counters back on her own pitch.
- *
- * Until now her only replies to a brand's counter were accept or decline: pitch
- * ₹20,000, get countered ₹8,000, and take ₹8,000 or walk. The brand→creator direction
- * has always had two counters each. This closes the asymmetry under the same
- * admin-set limit — no new numbers are invented here.
- */
-const creatorCounterProposal = asyncHandler(async (req, res) => {
-  const inf = await getInfluencerByUserId(req.user.sub);
-  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
-  const proposal = await proposalService.getById(req.params.id);
-  if (!proposal || proposal.influencer_id !== inf.id) {
-    throw new AppError('NOT_FOUND', 'Proposal not found', 404);
-  }
-  if (!req.body?.counter_terms) {
-    throw new AppError('VALIDATION_ERROR', 'counter_terms is required', 422, 'counter_terms');
-  }
-
-  // The terms on the table before she moves them — captured now so the diary can say
-  // what changed rather than merely that something did.
-  const before = proposalService.currentTermsOf(proposal);
-
-  let updated;
-  try {
-    // Validation lives in the service, mirroring the brand→creator direction exactly:
-    // it checks against the CURRENT terms, refuses a counter that touches a required
-    // term, and enforces the admin-set round cap.
-    updated = await proposalService.creatorCounter(proposal.id, req.body.counter_terms);
-  } catch (err) {
-    if (err.message === 'NOT_FOUND') throw new AppError('NOT_FOUND', 'Proposal not found', 404);
-    throw new AppError('VALIDATION_ERROR', err.message, 422, err.field || 'counter_terms');
-  }
-
-  const after = proposalService.currentTermsOf(updated);
-  const cfg = await settings.get();
-  await events.record({
-    proposalId: proposal.id,
-    step: events.STEP.AGREE,
-    actorRole: 'creator',
-    actorUserId: req.user.sub,
-    action: 'countered',
-    termsSnapshot: after,
-    changed: events.diffTerms(before, after),
-    note: req.body.message || null,
-    roundOf: Number(updated.creator_rounds_used),
-    roundMax: cfg.counter_rounds_per_side,
-  });
-
-  const { rows: brandRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, u.phone
-     FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
-    [proposal.brand_id]
-  );
-  const brand = brandRows[0];
-  if (brand) {
-    notify(
-      brand.user_id, brand.fcm_token, brand.phone,
-      'proposal.countered_by_creator',
-      'Creator countered your terms',
-      `${proposal.influencer_handle ? '@' + proposal.influencer_handle : 'The creator'} answered your counter. Review and accept, counter, or reject.`,
-      { screen: 'brand_proposal_inbox', proposal_id: proposal.id }
-    );
-  }
-
-  return success(res, { proposal: updated });
 });
 
 // ─── Brand endpoints ────────────────────────────────────────────────────────
@@ -405,150 +189,6 @@ const getBrandProposal = asyncHandler(async (req, res) => {
   return success(res, { proposal });
 });
 
-// POST /v1/brands/me/proposals/:id/accept
-const acceptProposal = asyncHandler(async (req, res) => {
-  const brand = await getBrandByUserId(req.user.sub);
-  if (!brand) throw new AppError('NOT_FOUND', 'Brand not found', 404);
-  const proposal = await proposalService.getById(req.params.id);
-  if (!proposal || proposal.brand_id !== brand.id) {
-    throw new AppError('NOT_FOUND', 'Proposal not found', 404);
-  }
-  // collab-phase0 — the brand may now accept HER counter, but never its own.
-  // Before this, any 'countered' pitch was un-acceptable by the brand, which would
-  // have made the creator's new counter-back a dead end nobody could close.
-  const answeringHerCounter = proposal.status === 'countered' && proposal.counter_by === 'creator';
-  if (!['sent', 'viewed'].includes(proposal.status) && !answeringHerCounter) {
-    if (proposal.status === 'countered' && proposal.counter_by === 'brand') {
-      throw new AppError('VALIDATION_ERROR',
-        'You cannot accept your own counter. It is the creator\'s turn to answer.', 422);
-    }
-    throw new AppError('VALIDATION_ERROR', `Cannot accept in status "${proposal.status}"`, 422);
-  }
-
-  await events.record({
-    proposalId: proposal.id,
-    step: events.STEP.AGREE,
-    actorRole: 'brand',
-    actorUserId: req.user.sub,
-    action: 'accepted',
-    termsSnapshot: proposalService.currentTermsOf(proposal),
-  });
-  const agreement = await acceptedFlow(proposal);
-
-  // Notify influencer
-  const { rows: infRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, u.phone, u.name
-     FROM influencers inf JOIN users u ON u.id = inf.user_id WHERE inf.id = $1`,
-    [proposal.influencer_id]
-  );
-  const inf = infRows[0];
-  if (inf) {
-    // collab-part2: the copy and the destination both had to change. It used to say the
-    // contract was being prepared and deep-link to campaign_detail — both untrue now,
-    // because no campaign and no contract exist yet. Telling a creator to look at a
-    // campaign that is not there is worse than telling them nothing.
-    notify(
-      inf.user_id, inf.fcm_token, inf.phone,
-      'proposal.accepted',
-      'Pitch accepted',
-      `${brand.business_name} agreed to your terms. They will send you the campaign details next.`,
-      { screen: 'agreement_detail', agreement_id: agreement.id },
-      true
-    );
-  }
-
-  const updated = await proposalService.getById(proposal.id);
-  return success(res, { proposal: updated });
-});
-
-// POST /v1/brands/me/proposals/:id/reject  Body: { message? }
-const rejectProposal = asyncHandler(async (req, res) => {
-  const brand = await getBrandByUserId(req.user.sub);
-  if (!brand) throw new AppError('NOT_FOUND', 'Brand not found', 404);
-  const proposal = await proposalService.getById(req.params.id);
-  if (!proposal || proposal.brand_id !== brand.id) {
-    throw new AppError('NOT_FOUND', 'Proposal not found', 404);
-  }
-  let updated;
-  try {
-    updated = await proposalService.reject(proposal.id, req.body?.message || null);
-  } catch (err) {
-    throw new AppError('VALIDATION_ERROR', err.message, 422);
-  }
-
-  const { rows: infRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, u.phone
-     FROM influencers inf JOIN users u ON u.id = inf.user_id WHERE inf.id = $1`,
-    [proposal.influencer_id]
-  );
-  const inf = infRows[0];
-  if (inf) {
-    notify(
-      inf.user_id, inf.fcm_token, inf.phone,
-      'proposal.rejected',
-      'Proposal declined',
-      `${brand.business_name} declined your pitch${req.body?.message ? `: ${req.body.message}` : '.'}`,
-      { screen: 'my_proposals' }
-    );
-  }
-  return success(res, { proposal: updated });
-});
-
-// POST /v1/brands/me/proposals/:id/counter  Body: { counter_terms, message? }
-const counterProposal = asyncHandler(async (req, res) => {
-  const brand = await getBrandByUserId(req.user.sub);
-  if (!brand) throw new AppError('NOT_FOUND', 'Brand not found', 404);
-  const proposal = await proposalService.getById(req.params.id);
-  if (!proposal || proposal.brand_id !== brand.id) {
-    throw new AppError('NOT_FOUND', 'Proposal not found', 404);
-  }
-  if (!req.body?.counter_terms) {
-    throw new AppError('VALIDATION_ERROR', 'counter_terms is required', 422, 'counter_terms');
-  }
-  // Captured before the update so the diary can say what moved, not merely that
-  // something did. Must live OUTSIDE the try — the record block below reads it.
-  const beforeTerms = proposalService.currentTermsOf(proposal);
-  let updated;
-  try {
-    updated = await proposalService.counter(proposal.id, req.body.counter_terms, req.body.message || null);
-  } catch (err) {
-    throw new AppError('VALIDATION_ERROR', err.message, 422);
-  }
-  {
-    const afterTerms = proposalService.currentTermsOf(updated);
-    const cfg2 = await settings.get();
-    await events.record({
-      proposalId: proposal.id,
-      step: events.STEP.AGREE,
-      actorRole: 'brand',
-      actorUserId: req.user.sub,
-      action: 'countered',
-      termsSnapshot: afterTerms,
-      changed: events.diffTerms(beforeTerms, afterTerms),
-      note: req.body.message || null,
-      roundOf: Number(updated.brand_rounds_used),
-      roundMax: cfg2.counter_rounds_per_side,
-    });
-  }
-
-  const { rows: infRows } = await db.query(
-    `SELECT u.id AS user_id, u.fcm_token, u.phone
-     FROM influencers inf JOIN users u ON u.id = inf.user_id WHERE inf.id = $1`,
-    [proposal.influencer_id]
-  );
-  const inf = infRows[0];
-  if (inf) {
-    notify(
-      inf.user_id, inf.fcm_token, inf.phone,
-      'proposal.countered',
-      'Brand sent a counter',
-      `${brand.business_name} suggested updated terms. Review and accept or decline.`,
-      { screen: 'my_proposals', proposal_id: proposal.id }
-    );
-  }
-  return success(res, { proposal: updated });
-});
-
 // POST /v1/brands/me/proposals/:id/flag
 const flagProposal = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
@@ -560,64 +200,6 @@ const flagProposal = asyncHandler(async (req, res) => {
   await proposalService.flag(proposal.id, req.body?.reason || null);
   return success(res, { ok: true });
 });
-
-// ─── Acceptance flow (shared) ───────────────────────────────────────────────
-//
-// collab-part2-precampaign-handshake — THIS USED TO FABRICATE A CAMPAIGN.
-//
-// Accepting a pitch created a campaign + set + campaign_influencer + contract draft,
-// because there was nowhere else to put the result. Consequences, all real:
-//
-//   · the campaign was INSERTed with only (brand_id, name, status, created_at), which
-//     is why one-person dateless campaigns exist in production
-//   · the agreed creator never entered a REAL campaign — they got a stub with none of
-//     the campaign's offer, coupon prefix, product allocation or brief
-//   · a contract was drafted describing a campaign that did not meaningfully exist
-//   · the founder's intended sequence — agree first, then build properly — was exactly
-//     what the code skipped
-//
-// Acceptance now produces an AGREEMENT. The creator lands in the brand's "ready to
-// brief" list with the settled terms attached; the brand builds one real campaign from
-// however many creators agreed, and the contract is created from that campaign instead.
-//
-// Existing stub campaigns are left alone — founder's call: "leave them, fresh one will
-// carry these."
-/**
- * collab-phase0 — CORRECTION 1: settle the LATEST terms, whoever moved them last.
- *
- * This used to take a `useCounterTerms` boolean decided by the caller. That was safe
- * only while a brand was the only party who could counter a pitch. Now that a creator
- * can counter back, "the latest terms" is the single correct answer for every
- * acceptance in both directions — if a counter exists, that is what is being accepted.
- * Deciding it here rather than at each call site removes the possibility of one caller
- * getting it wrong.
- */
-async function acceptedFlow(proposal) {
-  const counterTerms = proposal.counter_terms
-    ? (typeof proposal.counter_terms === 'string' ? JSON.parse(proposal.counter_terms) : proposal.counter_terms)
-    : null;
-
-  // Flat pitch columns → the shared terms shape. One boundary, so both record types
-  // obey the same rules without restructuring influencer_proposals.
-  const settledTerms = handshake.termsFromProposal(proposal, counterTerms);
-
-  const agreement = await handshake.acceptIntoAgreement({
-    source: 'proposal',
-    sourceId: proposal.id,
-    brandId: proposal.brand_id,
-    influencerId: proposal.influencer_id,
-    settledTerms,
-  });
-
-  // resulting_campaign_influencer_id stays NULL until the agreement is briefed into a
-  // campaign — that is the point. acceptIntoAgreement already set status = 'accepted'.
-  await db.query(
-    `UPDATE influencer_proposals SET brand_response_at = NOW(), updated_at = NOW() WHERE id = $1`,
-    [proposal.id]
-  );
-
-  return agreement;
-}
 
 // ─── Admin ──────────────────────────────────────────────────────────────────
 
@@ -662,25 +244,31 @@ const adminSetInfluencerStatus = asyncHandler(async (req, res) => {
   return success(res, { influencer: rows[0] });
 });
 
+/**
+ * Item 8 — the seven WRITE doors on this path are gone, not switched off.
+ *
+ * Sending, withdrawing, countering, answering a counter, accepting and
+ * rejecting a pitch all now live in services/pitch.service, behind
+ * routes/item8.routes. Keeping a second set would have kept a second set of
+ * rules: none of these checked the mode, stamped a response deadline, honoured
+ * item 4's date floor or went through item 6's thread, and accepting here wrote
+ * a collab_agreements row — the destination item 8 retired (rules v1.21 §8).
+ *
+ * What stays are the READS, which nothing has replaced yet: brand discovery,
+ * the criteria card, the two lists, the flag, and the admin queue.
+ */
 module.exports = {
   // Influencer
   discoverBrands,
   discoverBrandProducts,
   getProposalCriteria,
-  createProposal,
   listMyProposals,
   getMyProposal,
-  withdrawMyProposal,
-  respondToCounter,
-  creatorCounterProposal,
   // Brand
   getBrandSettings,
   updateBrandSettings,
   listBrandProposals,
   getBrandProposal,
-  acceptProposal,
-  rejectProposal,
-  counterProposal,
   flagProposal,
   // Admin
   adminListProposals,

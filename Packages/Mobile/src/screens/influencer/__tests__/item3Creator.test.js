@@ -10,7 +10,9 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 jest.mock('../../../services/api', () => ({
   influencerApi: { getMe: jest.fn(), updateMe: jest.fn(), getInvitationSettings: jest.fn(), findBrands: jest.fn(), getBrandOverview: jest.fn(), blockBrand: jest.fn(), unblockBrand: jest.fn(),
     // Item 5 — the Invites tab is real now; F1's empty state is what an empty list shows.
-    myInvitations: jest.fn().mockResolvedValue({ success: true, data: { rows: [] } }) },
+    myInvitations: jest.fn().mockResolvedValue({ success: true, data: { rows: [] } }),
+    // Item 8 — the Pitches tab now renders her own list under the card.
+    myPitches: jest.fn().mockResolvedValue({ success: true, data: { rows: [], total: 0, groups: {} } }) },
   brandApi: {},
   referenceApi: {
     brandCategories: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'WOMEN', label: 'Women' }] } }),
@@ -71,6 +73,8 @@ describe('F1 — Collabs', () => {
     ['Invites', 'Active', 'Pitches', 'Done'].forEach(s => getByTestId(`segment-${s}`));
     await waitFor(() => getByText('No invitations yet'));
     fireEvent.press(getByTestId('segment-Pitches'));
+    // Item 8: the way in is still at the top, with her own list of what she has
+    // sent below it instead of nothing.
     await waitFor(() => getByTestId('find-brands'));
     fireEvent.press(getByTestId('find-brands'));
     expect(n.navigate).toHaveBeenCalledWith('FindBrands');
@@ -98,7 +102,8 @@ describe('O1 · O2 — brand overview', () => {
 
   it('OK: header line, about, accepts card, products with Out of stock, branches, links; Pitch shows the coming-soon toast (check 19)', async () => {
     influencerApi.getBrandOverview.mockResolvedValue(ok({ brand, products, posts: { total: 0, rows: [] }, pitchSummary: { reason: 'OK', aims: ['conversion'], modes: ['visit'] } }));
-    const { getByTestId, getByText } = render(<BrandOverviewScreen navigation={nav()} route={{ params: { brandId: 'b1' } }} />);
+    const n = nav();
+    const { getByTestId, getByText } = render(<BrandOverviewScreen navigation={n} route={{ params: { brandId: 'b1' } }} />);
     await waitFor(() => getByTestId('accepts-card'));
     expect(getByTestId('overview-line').props.children).toBe('Fashion · Hyderabad · 2 branches');
     getByText('Everyday ethnic wear.');
@@ -106,9 +111,10 @@ describe('O1 · O2 — brand overview', () => {
     getByText('Out of stock');
     getByText('Branches 2'); getByText('Warangal');
     getByText('@urban.threads');
+    // Item 8: the button is real now — it opens the form for this brand.
     expect(getByTestId('pitch-button').props.accessibilityState.disabled).toBe(false);
     fireEvent.press(getByTestId('pitch-button'));
-    await waitFor(() => getByText('Pitching brands is coming soon.'));
+    expect(n.navigate).toHaveBeenCalledWith('PitchForm', { brandId: 'b1', brandName: 'Urban Threads' });
   });
 
   it('NOT_ACCEPTING: banner and Pitch off; NOT_MATCHING: second banner', async () => {

@@ -35,7 +35,6 @@ export const C3 = {
     // Item 4 built campaigns; choosing and inviting creators is item 5.
     inviteSoon: 'Inviting creators is coming soon.',
     inviteGroupSoon: 'Inviting a group to a set is coming soon.',
-    pitchSoon: 'Pitching brands is coming soon.',
     cityAdded: (city) => `${city} is new on INFLX. We've added it to the city list.`,
   },
   tabs: { brand: ['Home', 'Campaigns', 'Creators', 'Wallet', 'Profile'], creator: ['Home', 'Collabs', '', 'Wallet', 'Profile'] },
@@ -61,7 +60,8 @@ export const C3 = {
     intro: "Creators you've signed at least one agreement with.",
     row: (n, d) => n === 1 ? `1 collaboration · signed ${d}` : `${n} collaborations · last signed ${d}`,
     emptyTitle: 'No creators yet', emptyBody: 'Creators appear here once you both sign an agreement.',
-    pitchesTitle: 'Pitches are coming soon', pitchesBody: 'Creators will be able to pitch you here.',
+    // Item 8 — retired: the Pitches segment is the real list now. Kept out of the
+    // copy file entirely rather than left saying something that is no longer true.
   },
   groups: {
     newGroup: 'New group', countN: (n) => `${n} ${n === 1 ? 'group' : 'groups'}`, sort: 'Recently updated',
@@ -106,11 +106,15 @@ export const C3 = {
     count: (n) => `${n} ${n === 1 ? 'brand' : 'brands'}`, showN: (n) => `Show ${n} ${n === 1 ? 'brand' : 'brands'}`,
     sorts: { newest: 'Newest', az: 'A–Z', products: 'Most products' },
     filterTitles: { category: 'Category', city: 'City', aims: 'Accepts pitches for', modes: 'Mode of work' },
-    chips: { OK: 'Accepting', NOT_ACCEPTING: 'Not accepting', NOT_MATCHING: "You don't match" },
+    chips: { OK: 'Accepting', NOT_ACCEPTING: 'Not accepting', NOT_MATCHING: "You don't match",
+      // Item 8 (approval §2.1, E1): two states that are not refusals. A cooldown
+      // ends, and an unmeasured number says nothing about her at all.
+      COOLDOWN: 'On cooldown', BEING_MEASURED: 'Being measured' },
   },
   overview: {
     header: (city, n) => [`Fashion`, city, n != null ? `${n} ${n === 1 ? 'branch' : 'branches'}` : null].filter(Boolean).join(' · '),
     accepts: 'Accepts pitches for', pitch: 'Pitch this brand',
+    measuringBody: "We're still measuring your Instagram and YouTube. Once that's done we can tell you whether you meet what this brand is looking for.",
     products: (n) => `Products ${n}`, seeAll: 'See all', outOfStock: 'Out of stock',
     posts: 'Posts by creators · Brand Store', postsEmptyTitle: 'No posts yet', postsEmptyBody: (b) => `Shoppable posts creators make for ${b} will show here.`,
     branches: (n) => `Branches ${n}`, branchesHint: 'Store Visit shoots happen at one of these branches. The exact address comes with the shoot plan.',

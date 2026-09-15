@@ -262,43 +262,6 @@ async function discoveryFacets() {
 
 // ─── Mutations ──────────────────────────────────────────────────────────────
 
-async function create(influencerId, brandId, payload) {
-  const expires = new Date(Date.now() + PROPOSAL_TTL_DAYS * 86400 * 1000);
-
-  const { rows } = await db.query(
-    `INSERT INTO influencer_proposals
-       (influencer_id, brand_id, pitch_title, pitch_message, goal,
-        proposed_fee, proposed_commission_pct, proposed_deliverables,
-        proposed_posting_window_start, proposed_posting_window_end,
-        portfolio_links, expires_at,
-        scope_level, scope_ref_json, theme_key, proposed_product_ids, shoot_mode)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16::jsonb,$17)
-     RETURNING *`,
-    [
-      influencerId, brandId,
-      payload.pitch_title.trim(),
-      payload.pitch_message.trim(),
-      payload.goal || null,
-      payload.proposed_fee != null ? Number(payload.proposed_fee) : null,
-      payload.proposed_commission_pct != null ? Number(payload.proposed_commission_pct) : null,
-      payload.proposed_deliverables ? JSON.stringify(payload.proposed_deliverables) : null,
-      payload.proposed_posting_window_start || null,
-      payload.proposed_posting_window_end || null,
-      Array.isArray(payload.portfolio_links) ? payload.portfolio_links.slice(0, 3) : [],
-      expires,
-      // Phase 8 — scope + theme (all optional; NULL = unscoped, today's behavior)
-      ['store', 'category', 'product'].includes(payload.scope_level) ? payload.scope_level : null,
-      payload.scope_ref_json ? JSON.stringify(payload.scope_ref_json) : null,
-      payload.theme_key || null,
-      Array.isArray(payload.proposed_product_ids) ? JSON.stringify(payload.proposed_product_ids) : null,
-      // Item 2 — the mode of work this pitch proposes (visit | shipment). Optional until
-      // item 8 makes it mandatory; the brand's accepted modes are enforced when present.
-      ['visit', 'shipment'].includes(payload.shoot_mode) ? payload.shoot_mode : null,
-    ]
-  );
-  return rows[0];
-}
-
 async function markViewed(proposalId) {
   const { rows } = await db.query(
     `UPDATE influencer_proposals
@@ -310,142 +273,6 @@ async function markViewed(proposalId) {
     [proposalId]
   );
   return rows[0];
-}
-
-async function reject(proposalId, message) {
-  const proposal = await getById(proposalId);
-  if (!proposal) throw new Error('NOT_FOUND');
-  if (!['sent', 'viewed', 'countered'].includes(proposal.status)) {
-    throw new Error(`Cannot reject in status "${proposal.status}"`);
-  }
-
-  const { rows } = await db.query(
-    `UPDATE influencer_proposals
-     SET status = 'rejected',
-         brand_response_at = NOW(),
-         brand_response_message = $2,
-         updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
-    [proposalId, message || null]
-  );
-
-  // Cooldown — same brand can't see new pitches from this influencer for 30d.
-  const cooldownUntil = new Date(Date.now() + COOLDOWN_DAYS_AFTER_REJECT * 86400 * 1000);
-  await db.query(
-    `INSERT INTO proposal_cooldowns (influencer_id, brand_id, cooldown_until, reason)
-     VALUES ($1, $2, $3, 'brand_rejected')
-     ON CONFLICT (influencer_id, brand_id)
-       DO UPDATE SET cooldown_until = EXCLUDED.cooldown_until, reason = EXCLUDED.reason`,
-    [proposal.influencer_id, proposal.brand_id, cooldownUntil]
-  );
-  return rows[0];
-}
-
-/**
- * Brand counters a pitch.
- *
- * collab-phase0: two changes.
- *   1. BOUNDED. This was unbounded — a brand could counter forever and grind a
- *      creator down. Now capped at handshake_settings.counter_rounds_per_side, the
- *      same admin-set number the brand→creator direction has always used.
- *   2. It can now answer the CREATOR's counter, not only a fresh pitch — otherwise
- *      giving her a counter-back creates a conversation neither side can close.
- */
-async function counter(proposalId, counterTerms, message) {
-  const proposal = await getById(proposalId);
-  if (!proposal) throw new Error('NOT_FOUND');
-
-  const answeringHerCounter = proposal.status === 'countered' && proposal.counter_by === 'creator';
-  if (!['sent', 'viewed'].includes(proposal.status) && !answeringHerCounter) {
-    if (proposal.status === 'countered' && proposal.counter_by === 'brand') {
-      throw new Error('You already countered. It is the creator\'s turn.');
-    }
-    throw new Error(`Cannot counter in status "${proposal.status}".`);
-  }
-
-  const cfg = await settings.get();
-  const used = Number(proposal.brand_rounds_used || 0);
-  if (used >= cfg.counter_rounds_per_side) {
-    throw new Error(`You have used both of your ${cfg.counter_rounds_per_side} counters — settle or decline.`);
-  }
-
-  const { rows } = await db.query(
-    `UPDATE influencer_proposals
-     SET status = 'countered',
-         counter_by = 'brand',
-         brand_rounds_used = brand_rounds_used + 1,
-         brand_response_at = NOW(),
-         brand_response_message = $2,
-         counter_terms = $3,
-         updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
-    [proposalId, message || null, counterTerms ? JSON.stringify(counterTerms) : null]
-  );
-  return rows[0];
-}
-
-/**
- * Creator counters back on her own pitch.
- *
- * collab-phase0: NEW. Until now her only replies to a brand's counter were accept or
- * decline — pitch ₹20,000, get countered ₹8,000, and she could take ₹8,000 or walk.
- * The brand→creator direction has always had two counters each; this makes the pitch
- * direction symmetric under the same admin-set limit.
- *
- * Deliberately mirrors counter() above rather than sharing a body: the guards differ
- * (she may only answer THEIR counter) and merging them would need a side flag that
- * makes both harder to read.
- */
-async function creatorCounter(proposalId, counterTerms) {
-  const proposal = await getById(proposalId);
-  if (!proposal) throw new Error('NOT_FOUND');
-
-  if (proposal.status !== 'countered') {
-    throw new Error(`Nothing to counter — this pitch is "${proposal.status}".`);
-  }
-  if (proposal.counter_by !== 'brand') {
-    throw new Error('You already countered. It is the brand\'s turn.');
-  }
-
-  const cfg = await settings.get();
-  const used = Number(proposal.creator_rounds_used || 0);
-  if (used >= cfg.counter_rounds_per_side) {
-    throw new Error(`You have used both of your ${cfg.counter_rounds_per_side} counters — accept or decline.`);
-  }
-
-  // Validated by the SAME module the brand→creator direction uses, against the terms
-  // CURRENTLY on the table rather than the opening pitch — so round two answers round
-  // one instead of re-litigating the original. A term either side marked as required
-  // is refused here, server-side, not merely hidden on a screen.
-  const current = currentTermsOf(proposal);
-  const check = terms.validateCounter(current, counterTerms);
-  if (!check.ok) { const e = new Error(check.message); e.field = check.field; throw e; }
-
-  const { rows } = await db.query(
-    `UPDATE influencer_proposals
-     SET status = 'countered',
-         counter_by = 'creator',
-         creator_rounds_used = creator_rounds_used + 1,
-         counter_terms = $2,
-         updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
-    [proposalId, counterTerms ? JSON.stringify(counterTerms) : null]
-  );
-  return rows[0];
-}
-
-async function withdraw(proposalId, influencerId) {
-  const { rows } = await db.query(
-    `UPDATE influencer_proposals
-     SET status = 'withdrawn', updated_at = NOW()
-     WHERE id = $1 AND influencer_id = $2 AND status IN ('sent','viewed','countered')
-     RETURNING *`,
-    [proposalId, influencerId]
-  );
-  return rows[0] || null;
 }
 
 async function flag(proposalId, reason) {
@@ -492,12 +319,7 @@ module.exports = {
   listForInfluencer,
   discoverEligibleBrands,
   discoveryFacets,
-  create,
   markViewed,
-  reject,
-  counter,
-  creatorCounter,
   currentTermsOf,
-  withdraw,
   flag,
 };

@@ -23,6 +23,9 @@ const DEFAULTS = Object.freeze({
   // Item 7 (rules v1.20 §3, §9) — both stamped onto the agreement at generation.
   campaign_fee_pct: { value: 8, min: 0, max: 30, unit: 'percent', label: 'INFLX campaign fee' },
   remote_return_days: { value: 7, min: 1, max: 60, unit: 'days', label: 'Remote return window' },
+  // Item 8 (rules v1.21 §8) — both stamped when they are applied.
+  pitch_response_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pitch response period' },
+  pitch_cooldown_days: { value: 30, min: 0, max: 90, unit: 'days', label: 'Pitch rejection cooldown' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
 
@@ -33,6 +36,8 @@ const DESCRIPTION = Object.freeze({
   min_shoppable_posts: 'The least number of shoppable posts a creator must make in a Pay for Sale or Hybrid collaboration. Shown to both sides on the terms and never negotiated. Between 1 and 10. Stamped on each invitation when it is sent.',
   campaign_fee_pct: "What INFLX charges the brand on a Pay for Content collaboration, as a percentage of the fee. Charged once, to the brand, when the funds lock at the brand's signature. It is never deducted from a creator payment, and no campaign fee is charged on a Hybrid fixed amount. Between 0 and 30. Stamped on each agreement when it is generated.",
   remote_return_days: 'How long a creator has to send back anything she does not keep after a Remote shoot, counted from posting. The brand pays the return shipping. Between 1 and 60 days. Printed in every Remote agreement and stamped on it when it is generated.',
+  pitch_response_days: "How long a brand has to give a creator its first answer on a pitch. She is told the date when she sends it, and the brand is reminded after seven days and again after twenty-one. Between 7 and 90 days. Stamped on each pitch when it is sent, so changing this never moves one already waiting. Once the brand has answered, this clock has done its job and the conversation runs until her proposed date comes too close for a set to be built.",
+  pitch_cooldown_days: 'How long a creator must wait before pitching the same brand again after a rejection. It is a pause, not a refusal: it never stops the brand inviting her and never stops her accepting. Counted per brand, not per Aim. Between 0 and 90 days. Stamped on the rejection when it is made. A brand that wants no further contact blocks her instead.',
 });
 
 const RANGE_MESSAGE = (min, max) => `Enter a number between ${min} and ${max}.`;

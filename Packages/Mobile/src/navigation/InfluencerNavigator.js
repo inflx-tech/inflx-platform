@@ -31,6 +31,13 @@ import MoveRequestScreen from '../screens/influencer/MoveRequestScreen';
 import ThreadScreen from '../screens/influencer/ThreadScreen';
 // Item 7 — reading and signing the agreement. Contract: features/item7-agreement
 import AgreementScreen from '../screens/influencer/AgreementScreen';
+// Item 8 — her pitch: the form, her list, one pitch, and the thread it can become.
+// Contract: features/item8-pitch
+import PitchFormScreen from '../screens/influencer/PitchFormScreen';
+import MyPitchesScreen from '../screens/influencer/MyPitchesScreen';
+import MyPitchScreen from '../screens/influencer/MyPitchScreen';
+import PitchThreadScreen from '../screens/shared/PitchThreadScreen';
+import PitchCounterScreen from '../screens/shared/PitchCounterScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -53,6 +60,12 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="MoveRequest" component={MoveRequestScreen} />
       <CollabsStack.Screen name="Thread" component={ThreadScreen} />
       <CollabsStack.Screen name="Agreement" component={AgreementScreen} />
+      {/* Item 8 — the pitch. The thread is item 6’s screen on a pitch anchor. */}
+      <CollabsStack.Screen name="PitchForm" component={PitchFormScreen} />
+      <CollabsStack.Screen name="MyPitches" component={MyPitchesScreen} />
+      <CollabsStack.Screen name="MyPitch" component={MyPitchScreen} />
+      <CollabsStack.Screen name="PitchThread" component={PitchThreadScreen} />
+      <CollabsStack.Screen name="PitchCounter" component={PitchCounterScreen} />
     </CollabsStack.Navigator>
   );
 }

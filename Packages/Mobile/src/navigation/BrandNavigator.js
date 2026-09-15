@@ -43,6 +43,17 @@ import BrandThreadScreen from '../screens/brand/BrandThreadScreen';
 import BrandPoolScreen from '../screens/brand/BrandPoolScreen';
 // Item 7 — the agreement and the two signatures. Contract: features/item7-agreement
 import BrandAgreementScreen from '../screens/brand/BrandAgreementScreen';
+// Item 8 — the pitches a brand receives, and the thread one can become.
+// Contract: features/item8-pitch
+import BrandPitchesScreen from '../screens/brand/BrandPitchesScreen';
+import BrandPitchScreen from '../screens/brand/BrandPitchScreen';
+import PitchThreadScreen from '../screens/shared/PitchThreadScreen';
+import PitchCounterScreen from '../screens/shared/PitchCounterScreen';
+
+// The pitch thread and counter are one screen each, serving both sides. The
+// brand's side is the same component with `side` fixed — not a second copy.
+const BrandPitchThreadScreen = (props) => <PitchThreadScreen {...props} side="brand" />;
+const BrandPitchCounterScreen = (props) => <PitchCounterScreen {...props} route={{ ...props.route, params: { ...(props.route && props.route.params), side: 'brand' } }} />;
 
 const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
@@ -79,6 +90,11 @@ function CreatorsStackScreen() {
       <CreatorsStack.Screen name="BrandGroupDetail" component={BrandGroupDetailScreen} />
       <CreatorsStack.Screen name="BrandGroupAddCreators" component={BrandGroupAddCreatorsScreen} />
       <CreatorsStack.Screen name="SocialDetail" component={SocialDetailScreen} />
+      {/* Item 8 — the pitches, on the Creators tab beside Discover and Groups. */}
+      <CreatorsStack.Screen name="BrandPitches" component={BrandPitchesScreen} />
+      <CreatorsStack.Screen name="BrandPitch" component={BrandPitchScreen} />
+      <CreatorsStack.Screen name="BrandPitchThread" component={BrandPitchThreadScreen} />
+      <CreatorsStack.Screen name="PitchCounter" component={BrandPitchCounterScreen} />
     </CreatorsStack.Navigator>
   );
 }

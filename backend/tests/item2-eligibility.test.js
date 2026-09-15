@@ -123,7 +123,11 @@ describe('§3.1 creator → brand', () => {
     await setBrand(b.brandId, { minIg: 10000, minYt: 5000 });
     expect((await pitch(d, b, 'conversion', 'visit')).reason).toBe('OK');
     const e = await creator({ ig: 8000, yt: null });              // never measured = 0 (Q16)
-    expect((await pitch(e, b, 'conversion', 'visit')).reason).toBe('NOT_MATCHING');
+    // Item 8, approval §2.1: she still FAILS — a number nobody has cannot admit
+    // her — but the reason she is given is the true one. She can wait this out;
+    // "you don't match" would have told her something untrue about herself.
+    expect((await pitch(e, b, 'conversion', 'visit')).ok).toBe(false);
+    expect((await pitch(e, b, 'conversion', 'visit')).reason).toBe('BEING_MEASURED');
   });
 
   it('4. engagement, languages and city', async () => {
@@ -259,7 +263,9 @@ describe('summaries never leak', () => {
     const b = await brand(); const c = await creator({ ig: 100 });
     await setBrand(b.brandId, { minIg: 10000, niches: ['comedy'], cityIds: [1], minEr: 9 });
     const s = await elig.pitchSummaryFor(b.brandId, c.influencerId);
-    expect(Object.keys(s).sort()).toEqual(['acceptingLabelState', 'aims', 'canPitch', 'modes', 'reason']);
+    // Item 8 adds the cooldown date to this card, and nothing else. It is hers
+    // — her own pause, with the day it lifts — never a threshold of the brand’s.
+    expect(Object.keys(s).sort()).toEqual(['acceptingLabelState', 'aims', 'canPitch', 'cooldownLine', 'cooldownUntil', 'modes', 'reason']);
     expect(s.reason).toBe('NOT_MATCHING');
     await block('brand', b.brandId, 'creator', c.influencerId);
     const blocked = await elig.pitchSummaryFor(b.brandId, c.influencerId);

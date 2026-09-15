@@ -120,30 +120,40 @@ describe('the contract endpoint carries what she needs to decide', () => {
   });
 });
 
-describe('briefing creates a contract she can sign immediately', () => {
-  // Item 5 moved the brief door into services/invitationSend.service.js (one service for every
-  // invitation row); the rules below are unchanged and now read from there.
+describe('the brief path is CLOSED (item 8, Phase 2a)', () => {
+  // Item 5 moved the brief door into services/invitationSend.service.js. Item 8
+  // closes it: briefing a settled agreement straight into a set skipped item 2's
+  // eligibility entirely — her paused switch, her blocks, her Aims, her modes,
+  // her categories and her minimums — so a creator who blocked the brand AFTER
+  // agreeing could still be put into a set by it.
+  //
+  // These tests used to assert the jump to accepted with a ready contract. That
+  // behaviour is now unreachable; what must be true instead is that the refusal
+  // is SERVER-SIDE, because a hidden button is not a switch-off.
   const camp = () => code('../src/services/invitationSend.service.js');
 
-  test('the brief creates the contract ready, not as a draft', () => {
-    // The whole bug: she was briefed, landed in Invitations, and had nothing to open.
-    expect(camp()).toContain("autoCreate(ci.id, { ready: true })");
-  });
-
-  test('and moves her row to accepted so she appears under To sign', () => {
-    expect(camp()).toMatch(/UPDATE campaign_influencers SET status = 'accepted'/);
-  });
-
-  test('but ONLY when the agreement is clean — a drifted one still asks her first', () => {
-    // agreement_warnings already said "they will have to agree again". Skipping straight to a
-    // contract on a drifted agreement would make her sign terms she never saw.
-    expect(camp()).toContain('if (!plan.agreement || plan.agreement_warnings.length) return false;');
-  });
-
-  test('and a failure falls back instead of losing the brief', () => {
+  test('an agreement_id is refused before anything is written', () => {
     const src = camp();
-    expect(src).toMatch(/catch \(err\)/);
-    expect(src).toMatch(/falling back to accept-first/);
+    expect(src).toContain('if (agreement_id) {');
+    expect(src).toContain("throw new AppError('VALIDATION_ERROR', MSG.BRIEF_CLOSED, 422, 'agreement_id');");
+    // Refused before the creator is even loaded, so nothing is read or written first.
+    expect(src.indexOf('MSG.BRIEF_CLOSED')).toBeLessThan(src.indexOf('await creatorFacts('));
+  });
+
+  test('the refusal is the founder-facing sentence, not a code', () => {
+    const copy = code('../src/services/invitationCopy.js');
+    expect(copy).toContain('BRIEF_CLOSED:');
+    expect(copy).toMatch(/waits in your pool/);
+  });
+
+  test('the eligibility skip can no longer be reached', () => {
+    // The `if (!agreement_id)` guard around canBrandInviteCreator still stands,
+    // but nothing can now arrive with an agreement_id to skip it.
+    const src = camp();
+    const refusalAt = src.indexOf('MSG.BRIEF_CLOSED');
+    const skipAt = src.indexOf('if (!agreement_id) {');
+    expect(refusalAt).toBeGreaterThan(-1);
+    expect(skipAt).toBeGreaterThan(refusalAt);
   });
 });
 

@@ -108,6 +108,12 @@ export function PoolRow6({ entry, checked, disabled, onToggle, onMore, testID })
           <Text style={b.poolName} numberOfLines={1}>{entry.creator.name}</Text>
           <Text style={b.poolMeta} numberOfLines={1}>{meta}</Text>
         </View>
+        {/*
+          Item 8 (T11): a creator who pitched sits beside one who asked to be
+          moved, and the brand should be able to tell which one came knocking.
+          The pool itself never cares how somebody arrived in it.
+        */}
+        {entry.fromPitchId ? <Chip5 label={C6.pool.fromPitch} tone="waiting" testID={`pool-from-pitch-${entry.entryId}`} /> : null}
         {entry.closingSoon ? <Chip5 label={C6.pool.closingSoon(entry.daysLeft)} tone="yourMove" testID={`closing-${entry.entryId}`} /> : null}
         {onMore ? <TouchableOpacity onPress={() => onMore(entry)} style={b.more} accessibilityLabel="More" testID={`pool-more-${entry.entryId}`}><Text style={b.moreText}>⋯</Text></TouchableOpacity> : null}
       </View>

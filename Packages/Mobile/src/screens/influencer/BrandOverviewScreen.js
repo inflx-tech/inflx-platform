@@ -1,7 +1,7 @@
 /**
  * BrandOverviewScreen — O1 · O2: a brand's overview as a creator sees it (item 2's X1–X3
  * grown up): header, about, "Accepts pitches for" or the grey banner, Pitch this brand
- * (coming soon), products, posts by creators, branch cities, links. ⋯ → Block.
+ * (item 8, T1 → T2), products, posts by creators, branch cities, links. ⋯ → Block.
  * Contract: features/item3-discovery-profiles-groups · prompt §6.7
  */
 
@@ -16,6 +16,9 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { hx } from '../brand/BrandCreatorProfileScreen';
 import BrandOverviewBody from '../../components/discovery/BrandOverviewBody';
 import { C3 } from '../../components/discovery/copy3';
+// Item 8 — the pitch button now opens the form. Contract: features/item8-pitch
+import { CooldownBox8 } from '../../components/pitch/bits8';
+import { MSG8 } from '../../components/pitch/copy8';
 
 const C = COPY.creator;
 
@@ -65,7 +68,20 @@ export default function BrandOverviewScreen({ navigation, route }) {
         <View style={hx.card} testID="accepts-card"><Text style={hx.cardTitle}>{C3.overview.accepts}</Text><TagRow items={tags} /></View>
       )}
       {reason === 'NOT_MATCHING' ? <Banner testID="not-matching-banner" title={C.notMatchingTitle} body={C.notMatchingBody} /> : null}
-      <PrimaryButton label={C3.overview.pitch} onPress={() => show(C3.toasts.pitchSoon)} disabled={reason !== 'OK'} testID="pitch-button" />
+      {/*
+        Item 8: the button is real. It is disabled for exactly the reasons the
+        server would refuse a send, and each reason says its own sentence —
+        a cooldown is a pause with a date, and an unmeasured number is not a
+        judgement about her (approval §2.1).
+      */}
+      {reason === 'COOLDOWN' ? <CooldownBox8 text={summary.cooldownLine} testID="pitch-cooldown" /> : null}
+      {reason === 'BEING_MEASURED' ? <Banner testID="being-measured-banner" title={MSG8.BEING_MEASURED} body={C3.overview.measuringBody} /> : null}
+      <PrimaryButton
+        label={C3.overview.pitch}
+        onPress={() => navigation.navigate('PitchForm', { brandId, brandName: name })}
+        disabled={reason !== 'OK'}
+        testID="pitch-button"
+      />
     </View>
   );
 

@@ -71,6 +71,72 @@ async function loadContext(ciId, { influencerId = null, brandId = null } = {}, c
   return rows[0] || null;
 }
 
+/**
+ * Item 8 — the SAME thread, hanging off a pitch instead of an invitation.
+ *
+ * Rules v1.21 §8: "Pitch negotiation uses the same mechanism as an invitation."
+ * So there is one engine, and this loader hands it a context with the same
+ * field names. Everything an invitation has and a pitch does not — the set, the
+ * campaign, the cutoff, the campaign switch, the open-group flag, the signed
+ * contract, the pool join — comes back null, and every downstream guard already
+ * treats null as "does not apply".
+ *
+ * Two deliberate consequences, both approved:
+ *   · the campaign switch does not apply to a pitch (approval Q3) — a brand that
+ *     does not want pitch negotiation pauses pitches, which is the right control;
+ *   · a pitch thread has no set cutoff. Its deadline is the pitch's own early
+ *     close, which the pitch job owns (approval Q2).
+ */
+async function loadPitchContext(pitchId, { influencerId = null, brandId = null } = {}, conn = db) {
+  const scope = influencerId ? 'p.influencer_id = $2' : 'p.brand_id = $2';
+  const { rows } = await conn.query(
+    `SELECT p.id, p.influencer_id, p.brand_id, p.status AS pitch_status, p.goal,
+            p.proposed_fee, p.proposed_commission_pct, p.proposed_deliverables,
+            p.proposed_go_live_date, p.shoot_mode, p.pitch_message,
+            p.response_due_at, p.created_at AS pitched_at, p.pool_entry_id,
+            b.business_name AS brand_name, bu.id AS brand_user_id, bu.fcm_token AS brand_fcm,
+            COALESCE(i.full_name, u.name) AS creator_name, u.id AS creator_user_id, u.fcm_token AS creator_fcm,
+            n.id AS neg_id, n.status AS neg_status, n.current_turn, n.round_limit, n.outcome,
+            n.ended_at, n.ended_by, n.initiated_by, n.created_at AS neg_started_at,
+            -- Her pitch is turn zero. It is STORED as a counter row so both
+            -- sides see the previous value beside the proposed one on every
+            -- line — but it is the opening position, not a round spent, exactly
+            -- as the brand's invitation is on the other side. Counting it would
+            -- silently give a pitch one counter where an invitation gets two.
+            (SELECT GREATEST(count(*)::int - 1, 0) FROM negotiation_turns t
+              WHERE t.negotiation_id = n.id AND t.kind = 'counter') AS counters_used
+       FROM influencer_proposals p
+       JOIN brands b ON b.id = p.brand_id JOIN users bu ON bu.id = b.user_id
+       JOIN influencers i ON i.id = p.influencer_id JOIN users u ON u.id = i.user_id
+       LEFT JOIN negotiations n ON n.pitch_id = p.id
+      WHERE p.id = $1 AND ${scope}`,
+    [pitchId, influencerId || brandId]
+  );
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    ...r,
+    kind: 'pitch',
+    // The four term values, under the names the engine already uses.
+    agreed_fee: r.proposed_fee,
+    commission_pct: r.proposed_commission_pct,
+    formats_json: r.proposed_deliverables,
+    usage_rights_json: null,          // never asked for in a pitch (rules §8)
+    // Everything invitation-shaped, absent and saying so.
+    status: r.pitch_status,
+    go_live_date: null, expired_at: null, set_id: null, set_name: null,
+    campaign_id: null, campaign_name: null, influencer_mode: null,
+    shoot_mode: r.shoot_mode, branch_id: null,
+    allow_negotiation: true,          // the switch is a campaign control; a pitch has no campaign
+    agreement_id: null, signed_both: false,
+    pool_id: null, pool_state: null, pool_expires_at: null,
+    move_requested_at: null, move_answer: null,
+  };
+}
+
+/** True when this context is a pitch rather than an invitation. */
+const isPitch = (ctx) => ctx && ctx.kind === 'pitch';
+
 /* ───────────────────────────────────────────────────────────── snapshots */
 
 /** The invitation's terms as they stand, in the turn shape (turn zero). */
@@ -163,7 +229,19 @@ function closedByCutoff(ctx, today = null) {
   return !!(ctx.expired_at || (cutoff && isBefore(cutoff, today || todayInIndia())));
 }
 
+/** The statuses a pitch is still answerable in (item 8). */
+const OPEN_PITCH_STATUSES = ['sent', 'viewed', 'countered'];
+
 function assertOpenInvitation(ctx) {
+  // Item 8: a pitch has its own vocabulary and its own deadline — no set, so no
+  // cutoff and no signed contract to end it.
+  if (isPitch(ctx)) {
+    if (ctx.outcome === 'agreed' || ctx.status === 'accepted') throw new AppError('LOCKED', MSG.AGREED, 422, 'status');
+    if (!OPEN_PITCH_STATUSES.includes(ctx.status)) {
+      throw new AppError('VALIDATION_ERROR', require('./pitchCopy').MSG.ANSWERED_TWICE, 422, 'status');
+    }
+    return;
+  }
   // Both signatures end everything: the terms are the agreement's now (rules §7B, §9).
   if (ctx.signed_both) throw new AppError('LOCKED', MSG.AGREED, 422, 'status');
   if (['accepted', 'contracted', 'active', 'completed'].includes(ctx.status) || ctx.outcome === 'agreed') throw new AppError('LOCKED', MSG.AGREED, 422, 'status');
@@ -178,7 +256,10 @@ async function notify(ctx, side, { type, title }, body, extra = {}) {
   const fcmToken = side === 'brand' ? ctx.brand_fcm : ctx.creator_fcm;
   await notificationService.send({
     userId, type, title, body, fcmToken, sendSms: false,
-    data: { screen: side === 'brand' ? 'brand_thread' : 'invitation_thread', campaign_influencer_id: ctx.id, campaign_id: ctx.campaign_id, set_id: ctx.set_id, ...extra },
+    // Item 8: the deep link names whichever thing the thread hangs off.
+    data: isPitch(ctx)
+      ? { screen: side === 'brand' ? 'brand_pitch' : 'my_pitch', pitch_id: ctx.id, ...extra }
+      : { screen: side === 'brand' ? 'brand_thread' : 'invitation_thread', campaign_influencer_id: ctx.id, campaign_id: ctx.campaign_id, set_id: ctx.set_id, ...extra },
   }).catch(err => console.error(`[NOTIFICATION] ${type} failed:`, err.message));
 }
 
@@ -212,7 +293,12 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
   const current = lastCounter && lastCounter.terms_json ? jsonObj(lastCounter.terms_json) : termsOf(ctx);
 
   if (!ctx.neg_id) {
-    if (by !== 'influencer') throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
+    // Item 8: on a pitch the CREATOR has already made the opening move — her
+    // pitch is turn zero — so the first counter is the brand's, and the thread
+    // starts there. On an invitation the brand made the opening move, so only
+    // she can start one.
+    if (!isPitch(ctx) && by !== 'influencer') throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
+    if (isPitch(ctx) && by !== 'brand') throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
     if (ctx.allow_negotiation === false) throw new AppError('NEGOTIATION_OFF', MSG.SWITCH_OFF(ctx.brand_name), 403, 'allow_negotiation');
     if (ctx.agreement_id) throw new AppError('FORBIDDEN', 'You already agreed these terms with the brand — accept to generate your contract, or decline.', 403);
     if (ctx.influencer_mode === 'open_group') throw new AppError('FORBIDDEN', 'Open-group applications cannot be negotiated.', 403);
@@ -232,12 +318,25 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
   let negId = ctx.neg_id;
   await db.withTransaction(async (tx) => {
     if (!negId) {
+      // Item 8: exactly one anchor is set, and the database enforces it.
       const { rows } = await tx.query(
-        `INSERT INTO negotiations (campaign_influencer_id, initiated_by, status, current_turn, round_limit, turn_changed_at)
-         VALUES ($1, $2, $3, $4, $5, now()) RETURNING id`,
-        [ctx.id, actorUserId || null, `awaiting_${next}`, next, roundLimit]
+        `INSERT INTO negotiations (campaign_influencer_id, pitch_id, initiated_by, status, current_turn, round_limit, turn_changed_at)
+         VALUES ($1, $2, $3, $4, $5, $6, now()) RETURNING id`,
+        [isPitch(ctx) ? null : ctx.id, isPitch(ctx) ? ctx.id : null, actorUserId || null, `awaiting_${next}`, next, roundLimit]
       );
       negId = rows[0].id;
+      // On a pitch, her pitch IS turn zero, so it is written as the opening
+      // counter. Both sides then see old beside new on every line afterwards,
+      // exactly as on an invitation.
+      if (isPitch(ctx)) {
+        const zero = termsOf(ctx);
+        await tx.query(
+          `INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, terms_json, proposed_fee, proposed_commission_pct, note, created_at)
+           VALUES ($1, 'influencer', 'counter', $2::jsonb, $3, $4, $5, $6)`,
+          [negId, JSON.stringify(zero), zero.fee != null ? zero.fee : null,
+           zero.commissionPct != null ? zero.commissionPct : null, ctx.pitch_message || null, ctx.pitched_at]
+        );
+      }
     } else {
       await tx.query(
         `UPDATE negotiations SET current_turn = $2, status = $3, turn_changed_at = now(), reminder_48h_sent_at = NULL, reminder_7d_sent_at = NULL, expires_at = NULL WHERE id = $1`,
@@ -249,10 +348,21 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
        VALUES ($1, $2, 'counter', $3::jsonb, $4, $5, $6)`,
       [negId, by, JSON.stringify(snapshot), snapshot.fee != null ? snapshot.fee : null, snapshot.commissionPct != null ? snapshot.commissionPct : null, text || null]
     );
-    await tx.query(
-      `UPDATE campaign_influencers SET status = 'negotiating', answered_at = COALESCE(answered_at, CASE WHEN $2 = 'influencer' THEN now() END) WHERE id = $1`,
-      [ctx.id, by]
-    );
+    // Item 8: the write-back goes to whichever row the thread hangs off.
+    if (isPitch(ctx)) {
+      // The engine says 'influencer'; migration 152's column says 'creator'.
+      // One word, two vocabularies — translated here rather than loosening a
+      // constraint that has been guarding this column since before item 8.
+      await tx.query(
+        `UPDATE influencer_proposals SET status = 'countered', counter_by = $2, updated_at = now() WHERE id = $1`,
+        [ctx.id, by === 'brand' ? 'brand' : 'creator']
+      );
+    } else {
+      await tx.query(
+        `UPDATE campaign_influencers SET status = 'negotiating', answered_at = COALESCE(answered_at, CASE WHEN $2 = 'influencer' THEN now() END) WHERE id = $1`,
+        [ctx.id, by]
+      );
+    }
   });
 
   const who = by === 'brand' ? ctx.brand_name : ctx.creator_name;
@@ -275,6 +385,25 @@ async function accept({ ctx, by, actorUserId }) {
   await db.withTransaction(async (tx) => {
     await tx.query(`INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, terms_json, proposed_fee, proposed_commission_pct) VALUES ($1, $2, 'accept', $3::jsonb, $4, $5)`,
       [ctx.neg_id, by, JSON.stringify(s), s.fee != null ? s.fee : null, s.commissionPct != null ? s.commissionPct : null]);
+    // Item 8: accepting a PITCH agrees the money and nothing else — the pitch
+    // service creates the pool entry after this commits. No campaign, no set,
+    // no invitation, no contract, no money (rules v1.21 §8).
+    if (isPitch(ctx)) {
+      await tx.query(
+        `UPDATE influencer_proposals
+            SET status = 'accepted', brand_response_at = now(), answered_by = $2,
+                proposed_fee = CASE WHEN $3 IN ('engagement','hybrid') THEN $4 ELSE proposed_fee END,
+                proposed_commission_pct = CASE WHEN $3 IN ('conversion','hybrid') THEN $5 ELSE proposed_commission_pct END,
+                proposed_deliverables = CASE WHEN $3 = 'engagement' THEN $6::jsonb ELSE proposed_deliverables END,
+                updated_at = now()
+          WHERE id = $1`,
+        [ctx.id, actorUserId || null, goal, s.fee != null ? s.fee : null,
+         s.commissionPct != null ? s.commissionPct : null,
+         s.deliverables ? JSON.stringify(s.deliverables) : null]
+      );
+      await endThread(tx, ctx.neg_id, 'agreed', actorUserId);
+      return;
+    }
     // Accepting rewrites the invitation itself (§7B). Only the Aim's negotiable columns move.
     await tx.query(
       `UPDATE campaign_influencers
@@ -290,6 +419,14 @@ async function accept({ ctx, by, actorUserId }) {
     );
     await endThread(tx, ctx.neg_id, 'agreed', actorUserId);
   });
+
+  // Item 8: a pitch creates no contract. The pool entry is the whole outcome,
+  // and the pitch service makes it after this returns.
+  if (isPitch(ctx)) {
+    const who = by === 'brand' ? ctx.brand_name : ctx.creator_name;
+    await notify(ctx, other(by), NOTIFY.AGREED, `${who} accepted ${termsLine(goal, s)}.`, { negotiation_id: ctx.neg_id });
+    return { contractError: null, agreedTerms: s };
+  }
 
   // The draft contract, the same call item 5's plain accept uses (APPROVAL Q11).
   let contractError = null;
@@ -317,6 +454,20 @@ async function decline({ ctx, by, reason, note, actorUserId }) {
   await db.withTransaction(async (tx) => {
     await tx.query(`INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, decline_reason, decline_note) VALUES ($1, $2, 'decline', $3, $4)`,
       [ctx.neg_id, by, by === 'influencer' ? reason : null, text || null]);
+    // Item 8: a declined pitch is rejected or withdrawn, and has no contract to
+    // end. The brand's rejection stamps the cooldown; the pitch service does
+    // that after this commits, so the number is stamped once, in one place.
+    if (isPitch(ctx)) {
+      await tx.query(
+        `UPDATE influencer_proposals
+            SET status = $2, brand_response_at = CASE WHEN $2 = 'rejected' THEN now() ELSE brand_response_at END,
+                brand_response_message = COALESCE($3, brand_response_message), updated_at = now()
+          WHERE id = $1`,
+        [ctx.id, by === 'influencer' ? 'withdrawn' : 'rejected', text || null]
+      );
+      await endThread(tx, ctx.neg_id, outcome, actorUserId);
+      return;
+    }
     if (by === 'influencer') {
       await tx.query(`UPDATE campaign_influencers SET status = 'declined', declined_reason = $2, declined_note = $3, answered_at = COALESCE(answered_at, now()) WHERE id = $1`, [ctx.id, reason, text || null]);
     } else {
@@ -432,15 +583,25 @@ async function thread(ctx, side) {
   const countersUsed = Number(ctx.counters_used || 0);
   const open = !!ctx.neg_id && !ctx.outcome;
   const closed = closedByCutoff(ctx);
-  const invitationOpen = OPEN_STATUSES.includes(ctx.status) && !closed;
+  // Item 8: a pitch has its own open vocabulary and no set cutoff to close it.
+  const invitationOpen = isPitch(ctx)
+    ? OPEN_PITCH_STATUSES.includes(ctx.status)
+    : (OPEN_STATUSES.includes(ctx.status) && !closed);
   const myMove = open && ctx.current_turn === side;
-  const canCounterNew = !ctx.neg_id && side === 'influencer' && invitationOpen && ctx.allow_negotiation !== false && !ctx.agreement_id && ctx.influencer_mode !== 'open_group';
+  // On a pitch the creator's opening move is the pitch itself, so the side that
+  // can start the thread is the brand.
+  const canCounterNew = !ctx.neg_id && invitationOpen
+    && (isPitch(ctx) ? side === 'brand'
+      : (side === 'influencer' && ctx.allow_negotiation !== false && !ctx.agreement_id && ctx.influencer_mode !== 'open_group'));
   const can = {
     counter: invitationOpen && (canCounterNew || (myMove && countersUsed < roundLimit)),
-    accept: invitationOpen && myMove,
-    decline: invitationOpen && myMove,
-    moveRequest: side === 'influencer' && invitationOpen && !ctx.move_requested_at,
-    moveAnswer: side === 'brand' && invitationOpen && !!ctx.move_requested_at && !ctx.move_answer,
+    // On a pitch the brand may accept or reject the opening pitch itself, with
+    // no thread open yet — that is T6's three buttons.
+    accept: invitationOpen && (myMove || (isPitch(ctx) && !ctx.neg_id && side === 'brand')),
+    decline: invitationOpen && (myMove || (isPitch(ctx) && !ctx.neg_id && side === 'brand')),
+    // The move request belongs to a set. A pitch has none.
+    moveRequest: !isPitch(ctx) && side === 'influencer' && invitationOpen && !ctx.move_requested_at,
+    moveAnswer: !isPitch(ctx) && side === 'brand' && invitationOpen && !!ctx.move_requested_at && !ctx.move_answer,
   };
   const lastCounter = [...turns].reverse().find(t => t.kind === 'counter');
   const current = lastCounter && lastCounter.terms_json ? jsonObj(lastCounter.terms_json) : zero;
@@ -544,4 +705,6 @@ async function loadContextAny(ciId) {
 module.exports = {
   OPEN_STATUSES, loadContext, loadContextAny, termsOf, normalizeSnapshot, termsLine, changesBetween,
   counter, accept, decline, moveRequest, moveAnswer, thread, endForExpiredSet, sendReminders, notify,
+  // Item 8 — the same engine, anchored to a pitch.
+  loadPitchContext, isPitch, OPEN_PITCH_STATUSES, endThread,
 };

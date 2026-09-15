@@ -35,14 +35,20 @@ function termsLine(goal, s) {
 }
 
 /** Runs on the caller's transaction. */
-async function create({ brandId, influencerId, goal, agreedTerms, wantsGoLiveDate, wantsShootMode, note, fromCampaignId, fromSetId, fromCiId }, tx = db) {
+async function create({ brandId, influencerId, goal, agreedTerms, wantsGoLiveDate, wantsShootMode, note, fromCampaignId, fromSetId, fromCiId, fromPitchId, matchedShootMode }, tx = db) {
   const lifetime = Number(await settings.get('pool_lifetime_days'));
   const { rows } = await tx.query(
     `INSERT INTO brand_creator_pool
-       (brand_id, influencer_id, goal, agreed_terms_json, wants_go_live_date, wants_shoot_mode, note, from_campaign_id, from_set_id, from_ci_id, lifetime_days, expires_at)
-     VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, now() + make_interval(days => $12::int))
+       (brand_id, influencer_id, goal, agreed_terms_json, wants_go_live_date, wants_shoot_mode, note,
+        from_campaign_id, from_set_id, from_ci_id, from_pitch_id, matched_shoot_mode, lifetime_days, expires_at)
+     VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12, $13, now() + make_interval(days => $14::int))
      RETURNING *`,
-    [brandId, influencerId, goal, JSON.stringify(agreedTerms || {}), wantsGoLiveDate || null, wantsShootMode || null, note || null, fromCampaignId || null, fromSetId || null, fromCiId || null, lifetime, lifetime]
+    [brandId, influencerId, goal, JSON.stringify(agreedTerms || {}), wantsGoLiveDate || null, wantsShootMode || null, note || null,
+      fromCampaignId || null, fromSetId || null, fromCiId || null,
+      // Item 8: where the entry came from. A pitch entry sits beside a move
+      // request in the same pool, and T11 needs to tell them apart.
+      fromPitchId || null, matchedShootMode || null,
+      lifetime, lifetime]
   );
   return rows[0];
 }
@@ -69,6 +75,11 @@ function shape(r, today) {
     noLongerPossible: !!(wantsDay && isBefore(wantsDay, earliest)),
     agreedAt: r.agreed_at, expiresAt: r.expires_at, daysLeft, closingSoon: r.state === 'waiting' && daysLeft < CLOSING_SOON_DAYS,
     from: { campaignId: r.from_campaign_id, campaignName: r.from_campaign_name || null, setId: r.from_set_id, setName: r.from_set_name || null, invitationId: r.from_ci_id },
+    // Item 8 (T11): a creator who pitched sits beside one who asked to be moved,
+    // and the brand should be able to tell which one came knocking. The pool
+    // itself never cares how somebody arrived in it.
+    fromPitchId: r.from_pitch_id || null,
+    matchedShootMode: r.matched_shoot_mode || null,
     usedInvitationId: r.used_ci_id || null,
   };
 }

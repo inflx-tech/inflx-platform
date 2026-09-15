@@ -204,7 +204,9 @@ describe('A5/A6 — what the other side sees', () => {
     const b = await brand(); const c = await creator({ ig: 100 });
     let r = await request(app).get(`/v1/brands/${b.brandId}/public`).set(auth(c.token));
     expect(r.status).toBe(200);
-    expect(r.body.data.pitchSummary).toEqual({ acceptingLabelState: 'accepting', aims: ['conversion', 'engagement', 'hybrid'], modes: ['visit', 'shipment'], canPitch: true, reason: 'OK' });
+    // Item 8 adds the cooldown pair — hers, not the brand’s, and null unless
+    // she actually has one with this brand.
+    expect(r.body.data.pitchSummary).toEqual({ acceptingLabelState: 'accepting', aims: ['conversion', 'engagement', 'hybrid'], modes: ['visit', 'shipment'], canPitch: true, reason: 'OK', cooldownUntil: null, cooldownLine: null });
     await request(app).put('/v1/brands/me/pitch-settings').set(auth(b.token)).send({ minFollowersInstagram: 10000 });
     r = await request(app).get(`/v1/brands/${b.brandId}/public`).set(auth(c.token));
     expect(r.body.data.pitchSummary.reason).toBe('NOT_MATCHING');
@@ -216,7 +218,7 @@ describe('A5/A6 — what the other side sees', () => {
     await request(app).put('/v1/brands/me/pitch-settings').set(auth(b.token)).send({ accepting: false });
     const paused = (await request(app).get(`/v1/brands/${b.brandId}/public`).set(auth(c.token))).body.data.pitchSummary;
     expect(blocked).toEqual(paused);
-    expect(paused).toEqual({ acceptingLabelState: 'paused', aims: ['conversion', 'engagement', 'hybrid'], modes: ['visit', 'shipment'], canPitch: false, reason: 'NOT_ACCEPTING' });
+    expect(paused).toEqual({ acceptingLabelState: 'paused', aims: ['conversion', 'engagement', 'hybrid'], modes: ['visit', 'shipment'], canPitch: false, reason: 'NOT_ACCEPTING', cooldownUntil: null, cooldownLine: null });
   });
 
   it('the old proposal-criteria endpoint no longer hands out the filters', async () => {
@@ -239,41 +241,55 @@ describe('A5/A6 — what the other side sees', () => {
 });
 
 describe('A7 — enforced on send', () => {
-  const pitchBody = (brandId, extra = {}) => ({ brand_id: brandId, pitch_title: 'Hi', pitch_message: 'Let us work', goal: 'conversion', ...extra });
+  // Item 8 retired POST /influencers/me/proposals: it checked item 2's settings
+  // but nothing else, and accepting one wrote a collab_agreements row. The door
+  // is now POST /influencers/me/pitches, and item 2's rules must still hold on
+  // it — which is what these three prove.
+  const goLive = () => new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const pitchBody = (brandId, extra = {}) => ({
+    brandId, goal: 'conversion', commissionPct: 12, scope: 'store',
+    shootMode: 'shipment', proposedGoLiveDate: goLive(),
+    message: 'I would love to work with you on this.', ...extra,
+  });
+  const sendPitch = (c, brandId, extra) =>
+    request(app).post('/v1/influencers/me/pitches').set(auth(c.token)).send(pitchBody(brandId, extra));
 
   it('a pitch to a brand whose filter she fails is refused with NOT_MATCHING and no threshold (check 4)', async () => {
     const b = await brand(); const c = await creator({ ig: 8000 });
     await request(app).put('/v1/brands/me/pitch-settings').set(auth(b.token)).send({ minFollowersInstagram: 10000 });
-    const r = await request(app).post('/v1/influencers/me/proposals').set(auth(c.token)).send(pitchBody(b.brandId));
+    const r = await sendPitch(c, b.brandId);
     expect(r.status).toBe(403);
     expect(r.body.error.code).toBe('NOT_MATCHING');
-    expect(r.body.error.message).toBe("You don't match this brand's pitch criteria.");
+    // Item 8 says it in her words; the code and the privacy rule are unchanged.
+    expect(r.body.error.message).toMatch(/^You don't meet what .* are looking for.$/);
     expect(JSON.stringify(r.body)).not.toMatch(/10000|followers/i);
   });
 
   it('paused or blocked → NOT_ACCEPTING; an accepted pitch is 201 and carries its mode; the wrong mode is refused', async () => {
     const b = await brand(); const c = await creator();
     await request(app).post('/v1/brands/me/blocked-creators').set(auth(b.token)).send({ influencerId: c.influencerId });
-    let r = await request(app).post('/v1/influencers/me/proposals').set(auth(c.token)).send(pitchBody(b.brandId));
+    let r = await sendPitch(c, b.brandId);
     expect(r.status).toBe(403);
     expect(r.body.error.code).toBe('NOT_ACCEPTING');
     await request(app).delete(`/v1/brands/me/blocked-creators/${c.influencerId}`).set(auth(b.token));
     await request(app).put('/v1/brands/me/pitch-settings').set(auth(b.token)).send({ acceptedModes: ['visit'] });
-    r = await request(app).post('/v1/influencers/me/proposals').set(auth(c.token)).send(pitchBody(b.brandId, { shoot_mode: 'shipment' }));
-    expect(r.status).toBe(403);
-    expect(r.body.error.code).toBe('NOT_MATCHING');
-    r = await request(app).post('/v1/influencers/me/proposals').set(auth(c.token)).send(pitchBody(b.brandId, { shoot_mode: 'visit' }));
+    // Item 8 refuses a mode the brand does not take before item 2's gate runs,
+    // so the field is named — she can fix it without guessing.
+    r = await sendPitch(c, b.brandId, { shootMode: 'shipment' });
+    expect(r.status).toBe(422);
+    expect(r.body.error.field).toBe('shootMode');
+    r = await sendPitch(c, b.brandId, { shootMode: 'visit' });
     expect(r.status).toBe(201);
-    expect(r.body.data.proposal.shoot_mode).toBe('visit');
+    expect(r.body.data.pitch.shootMode).toBe('visit');
   });
 
   it('changing settings after a pitch is sent does not touch the pitch (check 13)', async () => {
     const b = await brand(); const c = await creator();
-    const sent = await request(app).post('/v1/influencers/me/proposals').set(auth(c.token)).send(pitchBody(b.brandId));
+    const sent = await sendPitch(c, b.brandId);
     expect(sent.status).toBe(201);
     await request(app).put('/v1/brands/me/pitch-settings').set(auth(b.token)).send({ accepting: false });
     await request(app).post('/v1/brands/me/blocked-creators').set(auth(b.token)).send({ influencerId: c.influencerId });
-    const { rows } = await query(`SELECT status FROM influencer_proposals WHERE id=$1`, [sent.body.data.proposal.id]);
+    const { rows } = await query(`SELECT status FROM influencer_proposals WHERE id=$1`, [sent.body.data.pitch.id]);
     expect(rows[0].status).toBe('sent');
     const settings = await request(app).get('/v1/brands/me/pitch-settings').set(auth(b.token));
     expect(settings.body.data.openPitches).toBe(1);      // still needs the brand's answer

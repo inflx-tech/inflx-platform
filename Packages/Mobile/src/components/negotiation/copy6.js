@@ -152,6 +152,8 @@ export const C6 = {
     groupDate: (d) => `Want ${shortDate4(d)}`, groupMode: (m) => `Want ${m === 'visit' ? 'Store Visit' : 'Remote'}`, groupOther: 'Want a different set',
     noLonger: ' · no longer possible',
     row: (aim, terms, days) => `${aim} · ${terms} · ${plural(days, 'day', 'days')} left`,
+    // Item 8 (T11) — where a pool entry came from, when it was her own pitch.
+    fromPitch: 'PITCH',
     closingSoon: (n) => `Closing in ${plural(n, 'day', 'days')}`,
     aimHint: 'One set has one Aim, so only creators on the same Aim can go into it together.',
     create: (n) => `Create a set for ${plural(n, 'creator', 'creators')}`,

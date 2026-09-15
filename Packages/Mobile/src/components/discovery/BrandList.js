@@ -32,6 +32,8 @@ export function BrandCard({ b, onOpen }) {
         <StatusChip3 status={b.status} brandSide />
         {b.status === 'OK' ? <TagRow items={tags} /> : null}
       </View>
+      {/* Item 8 (E1): a state that ends says WHEN, in the server's own sentence. */}
+      {b.statusLine ? <Text style={s.meta} testID={`brand-statusline-${b.id}`}>{b.statusLine}</Text> : null}
     </TouchableOpacity>
   );
 }

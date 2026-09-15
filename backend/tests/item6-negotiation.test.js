@@ -648,9 +648,10 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     const a = await admin();
     let r = await api.get('/admin/platform-settings', a.token);
     expect(r.status).toBe(200);
-    // Item 7 added two more numbers to the same screen (rules v1.20 §9).
+    // Items 7 and 8 added more numbers to the same screen (rules v1.20 §9, v1.21 §8).
     expect(r.body.data.settings.map(x => x.key)).toEqual(
-      ['negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts', 'campaign_fee_pct', 'remote_return_days']
+      ['negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts', 'campaign_fee_pct',
+        'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days']
     );
     expect(r.body.data.settings[0]).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });
     expect(r.body.data.settings[0].description).toContain('never affects one already running');

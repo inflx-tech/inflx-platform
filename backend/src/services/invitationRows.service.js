@@ -262,7 +262,8 @@ const CREATOR_SELECT = `
          con.agreement_sent_at, con.creator_signed_at, con.brand_signed_at,
          neg.*,
          pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
-         ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms
+         ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms,
+         ps.from_pitch_id AS pool_sent_from_pitch
     FROM campaign_influencers ci
     JOIN campaign_sets cs ON cs.id = ci.set_id
     JOIN campaigns c ON c.id = cs.campaign_id
@@ -355,7 +356,18 @@ function creatorCard(r, today) {
     moveRequest: moveRequestOf(r),
     pool: r.pool_from_id ? { entryId: r.pool_from_id, state: r.pool_from_state, expiresAt: r.pool_from_expires_at, lifetimeDays: r.pool_from_lifetime, wantsGoLiveDate: r.deferred_go_live_date ? calendarDay(r.deferred_go_live_date) : null } : null,
     // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).
-    fromPool: r.pool_entry_id ? { agreedAt: r.pool_sent_agreed_at, sameDate: !!(r.pool_sent_wants_date && st.postingDate && calendarDay(r.pool_sent_wants_date) === st.postingDate), termsLine: snapshotLine(r.goal, jsonObj(r.pool_sent_terms)) } : null,
+    fromPool: r.pool_entry_id ? {
+      agreedAt: r.pool_sent_agreed_at,
+      sameDate: !!(r.pool_sent_wants_date && st.postingDate && calendarDay(r.pool_sent_wants_date) === st.postingDate),
+      termsLine: snapshotLine(r.goal, jsonObj(r.pool_sent_terms)),
+      // Item 8 (T12): the green line on the invitation her own pitch became.
+      // She has never seen this SET, so she still accepts it — but the numbers
+      // should be familiar, and the line says why they are.
+      fromPitch: !!r.pool_sent_from_pitch,
+      pitchLine: r.pool_sent_from_pitch && st.postingDate
+        ? require('./pitchCopy').CREATOR.fromPitch(snapshotLine(r.goal, jsonObj(r.pool_sent_terms)), r.pool_sent_agreed_at, st.postingDate)
+        : null,
+    } : null,
     // Item 7 — the agreement, in her words (P4, P7, P16).
     agreement: r.contract_id && r.agreement_sent_at ? {
       reference: r.reference_no || null,

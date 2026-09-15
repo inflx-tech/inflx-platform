@@ -134,7 +134,9 @@ async function reseedReferenceData(client) {
       ('pool_lifetime_days', 30,  7, 90, 'days',   'Pool entry lifetime'),
       ('min_shoppable_posts', 1,  1, 10, 'post',   'Minimum shoppable posts'),
       ('campaign_fee_pct',    8,  0, 30, 'percent', 'INFLX campaign fee'),
-      ('remote_return_days',  7,  1, 60, 'days',   'Remote return window')
+      ('remote_return_days',  7,  1, 60, 'days',   'Remote return window'),
+      ('pitch_response_days', 30, 7, 90, 'days',   'Pitch response period'),
+      ('pitch_cooldown_days', 30, 0, 90, 'days',   'Pitch rejection cooldown')
     ON CONFLICT (key) DO NOTHING
   `);
   // Item 7: the standard terms are seeded by migration 183 and are configuration

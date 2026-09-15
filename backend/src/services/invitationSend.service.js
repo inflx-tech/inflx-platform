@@ -111,6 +111,24 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     physical_delivery, delivery_address, influencer_budget, agreement_id, channels_json,
   } = body;
 
+  // ── Item 8, Phase 2a: THE BRIEF PATH IS CLOSED. ─────────────────────────
+  //
+  // Briefing a creator from a settled agreement skipped item 2's eligibility
+  // entirely — her paused switch, her blocks, her Aims, her modes, her
+  // categories and her minimums were all bypassed, so a creator who blocked
+  // the brand AFTER agreeing could still be put into a set by it. It could
+  // also land her on her signing queue with a contract in one call.
+  //
+  // Item 8 replaces it: an agreed pitch puts her in the brand's pool, and the
+  // ordinary send takes her out of it with every check applied. This refusal
+  // is server-side on purpose — a hidden button is not a switch-off.
+  //
+  // The eight invitations already created this way keep working untouched,
+  // and every reader of `campaign_influencers.agreement_id` keeps reading.
+  if (agreement_id) {
+    throw new AppError('VALIDATION_ERROR', MSG.BRIEF_CLOSED, 422, 'agreement_id');
+  }
+
   if (channels_json !== undefined) inputs.assertValidChannels(goal, channels_json);
   if (body.formats_json !== undefined && goal !== 'engagement') inputs.assertValidFormats(body.formats_json);
 

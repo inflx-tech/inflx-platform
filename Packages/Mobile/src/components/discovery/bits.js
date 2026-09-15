@@ -14,7 +14,12 @@ import { groupIndian } from '../settings/copy';
 /** Open (green) · Not taking invitations (grey) · Not open to your brand (red) · Blocked by you (grey). */
 export function StatusChip3({ status, blockedByYou, brandSide, testID }) {
   const map = brandSide ? C3.findBrands.chips : C3.discover.chips;
-  const tone = status === 'OK' ? T.state.active : status === 'NOT_MATCHING' ? T.state.declined : T.state.ended;
+  // Item 8: a cooldown and an unmeasured number are WAITING, not refusals.
+  // Colouring them like "you don't match" would tell her the wrong thing.
+  const tone = status === 'OK' ? T.state.active
+    : status === 'NOT_MATCHING' ? T.state.declined
+      : status === 'COOLDOWN' || status === 'BEING_MEASURED' ? T.state.waiting
+        : T.state.ended;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }} testID={testID}>
       {status ? <View style={[st.chip, { backgroundColor: tone.bg }]}><Text style={[st.chipText, { color: tone.fg }]}>{map[status] || status}</Text></View> : null}

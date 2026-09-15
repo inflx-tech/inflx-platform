@@ -1,6 +1,6 @@
 /**
  * BrandCreatorsScreen — D1: the Creators tab. Four segments: Discover (D1/D2), Groups
- * (G1/G2), Pitches (coming soon) and Worked with (W1).
+ * (G1/G2), Pitches (item 8, T5) and Worked with (W1).
  * Contract: features/item3-discovery-profiles-groups · prompt §6.2–§6.5
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,6 +20,9 @@ import { GroupNameSheet, AddToGroupSheet } from '../../components/discovery/Grou
 import useReferenceLists from '../../hooks/useReferenceLists';
 import useRouteToast from '../../hooks/useRouteToast';
 import { C3, whenLabel } from '../../components/discovery/copy3';
+// Item 8 — the Pitches segment is no longer "coming soon"; it is the real list.
+// Contract: features/item8-pitch
+import BrandPitchesScreen from './BrandPitchesScreen';
 
 const G = C3.groups;
 const W = C3.worked;
@@ -47,7 +50,7 @@ export default function BrandCreatorsScreen({ navigation, route }) {
           onOpen={openCreator} onAddToGroup={(c) => setAddTo({ id: c.id, name: c.name })} />
       ) : null}
       {segment === 'Groups' ? <GroupsPane navigation={navigation} /> : null}
-      {segment === 'Pitches' ? <EmptyState title={W.pitchesTitle} body={W.pitchesBody} /> : null}
+      {segment === 'Pitches' ? <BrandPitchesScreen navigation={navigation} /> : null}
       {segment === 'Worked with' ? <WorkedWithPane onOpen={openCreator} /> : null}
       {toast}
       <AddToGroupSheet creator={addTo} onClose={() => setAddTo(null)} onDone={show} />

@@ -11,6 +11,8 @@ jest.mock('../../../services/api', () => ({
     getMe: jest.fn(), getPitchSettings: jest.fn(), discoverCreators: jest.fn(), listGroups: jest.fn(), createGroup: jest.fn(),
     getCreatorProfile: jest.fn(), groupsForCreator: jest.fn(), setGroupsForCreator: jest.fn(), workedWith: jest.fn(),
     blockCreator: jest.fn(), unblockCreator: jest.fn(), listBranches: jest.fn(),
+    // Item 8 — the Pitches segment renders the real inbox.
+    pitchInbox: jest.fn().mockResolvedValue({ success: true, data: { total: 0, unread: 0, order: [], groups: {} } }),
   },
   referenceApi: {
     brandCategories: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'WOMEN', label: 'Women' }, { code: 'KIDS', label: 'Kids' }] } }),
@@ -122,12 +124,13 @@ describe('D1 — Discover', () => {
     getByTestId('clear-filters');
   });
 
-  it('Pitches segment is the coming-soon empty state; Groups segment lists cards or the empty state', async () => {
+  it('Pitches segment is the real inbox (item 8); Groups segment lists cards or the empty state', async () => {
     brandApi.discoverCreators.mockResolvedValue(ok({ total: 0, page: 1, rows: [] }));
     brandApi.listGroups.mockResolvedValue(ok({ groups: [{ id: 'g1', name: 'Diwali', memberCount: 3, openCount: 2, changed: true, updatedAt: new Date().toISOString(), createdAt: new Date().toISOString(), avatars: [] }] }));
     const { getByText, getByTestId } = render(<BrandCreatorsScreen navigation={nav()} route={{ params: {} }} />);
     fireEvent.press(getByTestId('segment-Pitches'));
-    getByText('Pitches are coming soon');
+    // Item 8: no longer a placeholder. With no pitches it is the real empty state.
+    await waitFor(() => getByTestId('pitch-inbox-empty'));
     fireEvent.press(getByTestId('segment-Groups'));
     await waitFor(() => getByText('Diwali'));
     getByText('3 creators · updated today');
