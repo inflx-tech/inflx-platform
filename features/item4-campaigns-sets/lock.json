@@ -72,7 +72,20 @@
         "item5Brand.test.js — does not open the picker by itself once invitations have closed",
         "item4Brand.test.js — saving a new set rebuilds the stack to campaigns/campaign/new set"
       ],
-      "classification": "production-impacting — mobile JS only; OTA brand + influencer."
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer.",
+      "deployed_to_production": {
+        "at": "2026-09-16T09:35:00+05:30",
+        "by": "founder go (\"pls commit,push and publish OTA\")",
+        "commit": "a744591",
+        "migration": "none",
+        "render": "no backend change — the push is functionally inert on Render/Vercel",
+        "ota": {
+          "brand": 220,
+          "influencer": 207
+        },
+        "manifest_verified": "brand 220 and influencer 207, native_runtime 3, same bundle hash sha256:d532e9f2…",
+        "note": "Phones pick it up on the SECOND cold start."
+      }
     }
   ]
 }

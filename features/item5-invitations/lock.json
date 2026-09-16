@@ -45,7 +45,20 @@
         "item5Brand.test.js — creators are fetched while the set summary is still pending, and Next stays inert until it lands"
       ],
       "validated": "All four new tests were run against the pre-fix code and failed first.",
-      "classification": "production-impacting — mobile JS only; OTA brand + influencer (useReferenceLists is shared with the creator app)."
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer (useReferenceLists is shared with the creator app).",
+      "deployed_to_production": {
+        "at": "2026-09-16T09:35:00+05:30",
+        "by": "founder go (\"pls commit,push and publish OTA\")",
+        "commit": "a744591",
+        "migration": "none",
+        "render": "no backend change — the push is functionally inert on Render/Vercel",
+        "ota": {
+          "brand": 220,
+          "influencer": 207
+        },
+        "manifest_verified": "brand 220 and influencer 207, native_runtime 3, same bundle hash sha256:d532e9f2…",
+        "note": "Phones pick it up on the SECOND cold start."
+      }
     }
   ]
 }
