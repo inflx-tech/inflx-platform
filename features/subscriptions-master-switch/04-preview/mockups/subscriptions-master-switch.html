@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX — the subscriptions master switch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --page:#F4F5F7; --bg:#FFFFFF; --surface2:#F7F8FA; --border:#E3E5E9;
+  --t1:#16192B; --t2:#5B6070; --t3:#8A8F9E;
+  --navy:#16192B;
+  --warn-fg:#B04600; --warn-bg:#FFEBDD; --warn-br:#F3C9AC;
+  --ok-fg:#1A7A3D; --ok-bg:#E4F5EA;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --sans:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--t1);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 18px 80px}
+h1{font-size:26px;font-weight:800;margin:0 0 4px}
+.lede{color:var(--t2);font-size:14px;margin:0 0 26px;max-width:70ch}
+.panel{margin-top:34px}
+.panel > h2{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin:0 0 4px}
+.panel > p.note{font-size:13px;color:var(--t2);margin:0 0 12px;max-width:74ch}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.row{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:18px;align-items:flex-start;justify-content:space-between}
+.row:last-child{border-bottom:0}
+.row .lbl{font-size:14px;font-weight:700}
+.row .desc{font-size:12.5px;color:var(--t3);margin-top:3px;max-width:62ch;line-height:1.55}
+.val{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.unit{font-size:12px;color:var(--t3);width:54px;text-align:left}
+.ctrl{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.num{width:88px;padding:8px 10px;text-align:right;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:14px}
+.sw{width:50px;height:29px;border-radius:999px;background:var(--navy);position:relative;flex-shrink:0}
+.sw.off{background:#C9CCD4}
+.sw i{position:absolute;top:3px;left:24px;width:23px;height:23px;border-radius:50%;background:#fff}
+.sw.off i{left:3px}
+.swlbl{font-size:12.5px;font-weight:700;color:var(--t2);width:26px}
+.hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.hdr h3{font-size:19px;font-weight:800;margin:0}
+.hdr p{font-size:12.5px;color:var(--t3);margin:3px 0 0}
+.btn{padding:9px 16px;border-radius:9px;font-size:13.5px;font-weight:700;border:1px solid var(--border);background:#fff;color:var(--t2)}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn.danger{background:#B3261E;color:#fff;border-color:#B3261E}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.audit{font-size:12px;color:var(--t3);background:var(--surface2);border-radius:9px;padding:10px 13px;margin-top:18px}
+.banner{display:flex;gap:11px;align-items:flex-start;background:var(--warn-bg);border:1px solid var(--warn-br);color:var(--warn-fg);border-radius:11px;padding:12px 14px;font-size:13px;font-weight:600;margin-bottom:16px}
+.dialog{max-width:440px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:0 18px 46px rgba(16,20,40,.17)}
+.dialog h4{margin:0 0 8px;font-size:17px;font-weight:800}
+.dialog p{margin:0 0 6px;font-size:13.5px;color:var(--t2);line-height:1.6}
+.dialog ul{margin:8px 0 14px 18px;padding:0;font-size:13.5px;color:var(--t2);line-height:1.7}
+.phone{width:300px;border:1px solid var(--border);border-radius:24px;background:#fff;padding:18px 16px 22px;box-shadow:0 10px 30px rgba(16,20,40,.08)}
+.phone h5{margin:0 0 2px;font-size:17px;font-weight:800}
+.plan{border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:14px}
+.plan .name{font-size:15px;font-weight:800}
+.plan .price{font-size:12.5px;color:var(--t3);margin-top:2px}
+.meter{margin-top:12px}
+.meter .m{font-size:12px;color:var(--t2);display:flex;justify-content:space-between;margin-top:7px}
+.bar{height:6px;border-radius:99px;background:#EDEFF3;margin-top:4px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--navy)}
+.two{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start}
+.cap{font-size:12px;color:var(--t3);margin-top:8px;max-width:300px;line-height:1.55}
+.tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--ok-bg);color:var(--ok-fg)}
+.tag.off{background:var(--no-bg);color:var(--no-fg)}
+</style></head>
+<body><div class="wrap">
+
+<h1>The subscriptions master switch</h1>
+<p class="lede">One control that decides whether plan limits apply at all. Off means every brand is
+unlimited; it does <b>not</b> mean anybody stops being charged. Nothing you have configured is lost
+while it is off — the tiers, the prices and your per-brand overrides sit exactly where you left them.</p>
+
+<div class="panel">
+  <h2>M1 · Admin → Settings → Platform, as it is today plus one row</h2>
+  <p class="note">The switch sits above the numbers, because it governs them. Read view: no editing yet.</p>
+  <div class="hdr"><div><h3>Platform settings</h3><p>The numbers the collaboration rules depend on. A change applies only to what starts afterwards.</p></div><button class="btn">Edit</button></div>
+  <div class="card">
+    <div class="row">
+      <div><div class="lbl">Subscription plans <span class="tag">On</span></div>
+        <div class="desc">When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan are still charged.</div></div>
+      <div class="ctrl"><span class="swlbl">On</span><div class="sw"><i></i></div></div>
+    </div>
+    <div class="row">
+      <div><div class="lbl">Negotiation rounds</div><div class="desc">How many counters a single negotiation may hold. Between 1 and 5.</div></div>
+      <div class="ctrl"><span class="val">2</span><span class="unit">rounds</span></div>
+    </div>
+    <div class="row">
+      <div><div class="lbl">Pool entry lifetime</div><div class="desc">How long a creator stays in a pool. Between 7 and 90 days.</div></div>
+      <div class="ctrl"><span class="val">30</span><span class="unit">days</span></div>
+    </div>
+    <div class="row">
+      <div><div class="lbl">INFLX campaign fee</div><div class="desc">What INFLX charges the brand on a Pay for Content collaboration. Between 0 and 30.</div></div>
+      <div class="ctrl"><span class="val">8</span><span class="unit">percent</span></div>
+    </div>
+  </div>
+  <div class="audit">No changes yet. Every change is recorded.</div>
+</div>
+
+<div class="panel">
+  <h2>M2 · Editing — the switch flipped off, not yet saved</h2>
+  <p class="note">A number becomes a box; this one stays a switch. Nothing has happened to any brand yet.</p>
+  <div class="card">
+    <div class="row">
+      <div><div class="lbl">Subscription plans <span class="tag off">Off</span></div>
+        <div class="desc">When this is off, no plan limit applies to any brand… Billing is not affected.</div></div>
+      <div class="ctrl"><span class="swlbl">Off</span><div class="sw off"><i></i></div></div>
+    </div>
+    <div class="row">
+      <div><div class="lbl">Negotiation rounds</div><div class="desc">Between 1 and 5.</div></div>
+      <div class="ctrl"><input class="num" value="2"><span class="unit">rounds</span></div>
+    </div>
+  </div>
+  <div class="actions"><button class="btn">Cancel</button><button class="btn primary">Save</button></div>
+</div>
+
+<div class="panel">
+  <h2>M3 · The confirm — because this one is not a number</h2>
+  <p class="note">Every other setting on this page moves one rule by a few days. This one changes what the whole platform allows, so it is the only one that asks.</p>
+  <div class="dialog">
+    <h4>Turn subscription plans off?</h4>
+    <p>Every brand becomes unlimited until you turn this back on:</p>
+    <ul>
+      <li>no quota can block anyone — sets, campaigns, invitations, products, media</li>
+      <li>every feature is included for everyone</li>
+      <li>no “upgrade to continue” message can appear</li>
+    </ul>
+    <p><b>Billing is not affected.</b> Brands on a paid plan keep their plan and are still charged on the same date.</p>
+    <p>Your tiers, prices and per-brand overrides are kept, and apply again when you switch this back on.</p>
+    <div class="actions"><button class="btn">Cancel</button><button class="btn danger">Turn off</button></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>M4 · Saved</h2>
+  <p class="note">The audit line reads it in words, not in ones and zeros. Within a minute every brand on the platform stops hitting limits.</p>
+  <div class="banner"><span>●</span><span>Plan limits are switched off platform-wide. Nothing here is being enforced until you switch them back on.</span></div>
+  <div class="audit">Last changed by Aveen on 16 Sep 2026, 10:40 am · subscription plans <b>on → off</b>. Every change is recorded.</div>
+</div>
+
+<div class="panel">
+  <h2>M5 · The other admin pages, while it is off</h2>
+  <p class="note">Subscriptions, Pricing → Tiers and Pricing → Features all keep working and keep saving. They just say plainly that what you are editing is asleep.</p>
+  <div class="banner"><span>●</span><span>Plan limits are switched off platform-wide. What you change here is stored and will apply when you switch them back on.</span></div>
+  <div class="hdr"><div><h3>Pricing → Tiers</h3><p>Free · Growth · Pro · Enterprise</p></div><button class="btn">Edit</button></div>
+  <div class="card">
+    <div class="row"><div><div class="lbl">Free</div><div class="desc">Sets per campaign 1 · Active campaigns 5 · Invitations per cycle 5 · Products 10</div></div><div class="ctrl"><span class="unit">₹0</span></div></div>
+    <div class="row"><div><div class="lbl">Growth</div><div class="desc">Sets per campaign 3 · Active campaigns 14 · Invitations per cycle 25 · Products 100</div></div><div class="ctrl"><span class="unit">₹—</span></div></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>M6 · What the brand sees on her phone</h2>
+  <p class="note">The plan page still names her plan and its price — she is still paying for it. What goes is anything that implies she is running short, because she is not.</p>
+  <div class="two">
+    <div>
+      <div class="phone">
+        <h5>Your plan</h5>
+        <div class="plan">
+          <div class="name">Free</div>
+          <div class="price">₹0 / month · renews 26 Sep</div>
+          <div class="meter">
+            <div class="m"><span>Sets per campaign</span><span>1 of 1</span></div><div class="bar"><span style="width:100%"></span></div>
+            <div class="m"><span>Invitations this cycle</span><span>4 of 5</span></div><div class="bar"><span style="width:80%"></span></div>
+          </div>
+        </div>
+        <div style="margin-top:14px"><button class="btn primary" style="width:100%">Upgrade to Growth</button></div>
+      </div>
+      <div class="cap"><b>Switch on</b> — exactly as today.</div>
+    </div>
+    <div>
+      <div class="phone">
+        <h5>Your plan</h5>
+        <div class="plan">
+          <div class="name">Free</div>
+          <div class="price">₹0 / month · renews 26 Sep</div>
+        </div>
+        <div class="cap" style="margin-top:12px">No limits are being applied at the moment.</div>
+      </div>
+      <div class="cap"><b>Switch off</b> — the plan and its price stay; the meters and the Upgrade button go, because there is nothing to be short of.</div>
+    </div>
+  </div>
+</div>
+
+</div></body></html>

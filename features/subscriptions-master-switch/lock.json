@@ -1,0 +1,21 @@
+{
+  "feature": "subscriptions-master-switch",
+  "spec_version": "1.0.0",
+  "status": "awaiting-approval",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Asked for by the founder 2026-09-16 during the items 2-8 walk, after the free tier's one-set-per-campaign limit stopped Act 3. Two decisions already taken by the founder: the switch governs RESTRICTIONS ONLY and never billing; plan and pricing pages stay reachable while it is off, with the upgrade prompts hidden. Ships ON, so applying it changes nothing until somebody flips it. Production-impacting: migration + Render + Vercel + brand OTA; explicit go required.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
