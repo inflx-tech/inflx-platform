@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX — money on the phone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* The live app's own tokens — settingsTokens in theme/tokens.js. Nothing invented. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-soft:#FFF3C4;
+  --danger:#C42B2B; --danger-soft:#FDE8E8;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding:30px 18px 90px}
+h1{font-size:27px;font-weight:800;margin:0 0 6px}
+.lede{color:var(--ink2);font-size:14px;margin:0 0 8px;max-width:76ch}
+.rail{display:flex;gap:26px;flex-wrap:wrap;margin-top:30px;align-items:flex-start}
+.slot{width:340px}
+.slot h2{font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin:0 0 3px}
+.slot p.cap{font-size:12.5px;color:var(--ink2);margin:0 0 10px;line-height:1.5;min-height:34px}
+.phone{background:var(--bg);border:1px solid var(--border);border-radius:22px;overflow:hidden;box-shadow:0 10px 28px rgba(26,26,23,.08)}
+.status{background:var(--surface);color:var(--ink3);font-size:10.5px;padding:5px 14px;display:flex;justify-content:space-between;font-family:var(--mono)}
+.nav{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.nav .back{font-size:19px;color:var(--ink);line-height:1}
+.nav .title{font-size:17px;font-weight:800}
+.body{padding:16px;min-height:404px}
+.tabs{display:flex;border-top:1px solid var(--border);background:var(--bg)}
+.tabs div{flex:1;text-align:center;font-size:9.5px;color:var(--ink3);padding:8px 0 10px}
+.tabs div.on{color:var(--ink);font-weight:800}
+.tabs .ic{display:block;font-size:15px;margin-bottom:2px}
+
+.big{font-size:34px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.card{border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--bg)}
+.card.flat{background:var(--surface);border-color:var(--surface)}
+.split{display:flex;gap:10px}
+.split>div{flex:1;border:1.5px solid var(--border);border-radius:12px;padding:11px}
+.split .n{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:3px}
+.btn{display:block;width:100%;text-align:center;border-radius:12px;padding:13px;font-size:14px;font-weight:800;border:0;margin-top:4px}
+.btn.p{background:var(--primary);color:var(--ink)}
+.btn.g{background:var(--surface);color:var(--ink3)}
+.btn.s{background:var(--bg);color:var(--ink);border:1.5px solid var(--border)}
+.hint{font-size:12px;color:var(--ink2);line-height:1.55;margin-top:8px}
+.tiny{font-size:11.5px;color:var(--ink3);line-height:1.5;margin-top:6px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.row .t{font-size:13.5px;font-weight:700}
+.row .s{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.row .v{font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.v.out{color:var(--ink)}
+.v.in{color:var(--active-fg)}
+.field{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.field .cur{font-size:19px;font-weight:800;color:var(--ink3)}
+.field .amt{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums}
+.field.focus{border-color:var(--ink)}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.chip{border:1.5px solid var(--border);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:700}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.box{border-radius:12px;padding:12px 13px;margin-bottom:12px}
+.box .h{font-size:13.5px;font-weight:800}
+.box .b{font-size:12.5px;margin-top:3px;line-height:1.5}
+.box.red{background:var(--danger-soft);color:var(--danger)}
+.box.green{background:var(--active-bg);color:var(--active-fg)}
+.box.blue{background:var(--wait-bg);color:var(--wait-fg)}
+.box.purple{background:var(--done-bg);color:var(--done-fg)}
+.box.amber{background:var(--move-bg);color:var(--move-fg)}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--ink);margin:38px auto 14px}
+.mid{text-align:center}
+.tick{width:52px;height:52px;border-radius:50%;background:var(--active-bg);color:var(--active-fg);font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:26px auto 12px}
+.note{background:var(--surface);border-radius:11px;padding:12px 13px;font-size:12.5px;color:var(--ink2);line-height:1.55;margin-top:14px}
+.sec{margin-top:52px;padding-top:22px;border-top:2px solid var(--border)}
+.sec h3{font-size:16px;font-weight:800;margin:0 0 6px}
+.sec p{font-size:13.5px;color:var(--ink2);max-width:92ch;margin:0 0 10px;line-height:1.6}
+table{border-collapse:collapse;width:100%;max-width:92ch;font-size:13px;margin-top:6px}
+th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--surface);font-weight:800;font-size:12px}
+code{font-family:var(--mono);font-size:12px;background:var(--surface);padding:1px 5px;border-radius:4px}
+</style></head>
+<body><div class="wrap">
+
+<h1>Money on the phone</h1>
+<p class="lede">A brand cannot add money from the phone at all today — the Wallet tab is a "Coming soon"
+placeholder, and the agreement's red box tries to send her to the website, which Android will not open.
+So the first 25% has never reached a creator. These are the screens that close it.</p>
+<p class="lede"><b>Every number here comes from a field that already exists</b> — the wallet endpoint already
+returns available, reserved and settled; the ledger already records every top-up, lock, fee and payout.
+Nothing on these screens needs a new calculation.</p>
+
+<div class="rail">
+
+  <div class="slot">
+    <h2>W1 · Wallet tab</h2>
+    <p class="cap">Replaces "Coming soon". One number she cares about, two she should see, and the ledger underneath.</p>
+    <div class="phone">
+      <div class="status"><span>7:50</span><span>▲ ▮</span></div>
+      <div class="body" style="padding-top:22px">
+        <div class="lbl">Available to spend</div>
+        <div class="big">₹0</div>
+        <div class="hint" style="margin-top:2px">Money you can commit to an agreement.</div>
+        <button class="btn p" style="margin-top:14px">Add money</button>
+
+        <div class="split" style="margin-top:16px">
+          <div><div class="lbl">Locked</div><div class="n">₹0</div><div class="tiny">in agreements</div></div>
+          <div><div class="lbl">Paid out</div><div class="n">₹0</div><div class="tiny">to creators</div></div>
+        </div>
+
+        <div class="lbl" style="margin:18px 0 2px">Recent activity</div>
+        <div class="card" style="padding:4px 14px">
+          <div class="row"><div><div class="t">Nothing yet</div><div class="s">Your top-ups and payments appear here.</div></div></div>
+        </div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div class="on"><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W2 · Wallet tab, with history</h2>
+    <p class="cap">The same screen once money has moved. Every row is one ledger entry — type, note, amount, direction.</p>
+    <div class="phone">
+      <div class="status"><span>7:50</span><span>▲ ▮</span></div>
+      <div class="body" style="padding-top:22px">
+        <div class="lbl">Available to spend</div>
+        <div class="big">₹37,040</div>
+        <div class="hint" style="margin-top:2px">Money you can commit to an agreement.</div>
+        <button class="btn p" style="margin-top:14px">Add money</button>
+
+        <div class="split" style="margin-top:16px">
+          <div><div class="lbl">Locked</div><div class="n">₹9,000</div><div class="tiny">in agreements</div></div>
+          <div><div class="lbl">Paid out</div><div class="n">₹3,000</div><div class="tiny">to creators</div></div>
+        </div>
+
+        <div class="lbl" style="margin:18px 0 2px">Recent activity</div>
+        <div class="card" style="padding:4px 14px">
+          <div class="row"><div><div class="t">Paid to Asha M.</div><div class="s">On signing · 16 Sep</div></div><div class="v out">−₹3,000</div></div>
+          <div class="row"><div><div class="t">Campaign fee</div><div class="s">Diwali Edit 2026 · 16 Sep</div></div><div class="v out">−₹960</div></div>
+          <div class="row"><div><div class="t">Locked for Asha M.</div><div class="s">Diwali Edit 2026 · 16 Sep</div></div><div class="v out">−₹12,000</div></div>
+          <div class="row"><div><div class="t">Money added</div><div class="s">16 Sep, 7:52 pm</div></div><div class="v in">+₹50,000</div></div>
+        </div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div class="on"><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W3 · Add money</h2>
+    <p class="cap">Reached from the Wallet tab. Nothing is pre-filled, because nothing is owed yet.</p>
+    <div class="phone">
+      <div class="status"><span>7:51</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span class="title">Add money</span></div>
+      <div class="body">
+        <div class="lbl">How much</div>
+        <div class="field focus" style="margin-top:7px"><span class="cur">₹</span><span class="amt">10,000</span></div>
+        <div class="chips">
+          <span class="chip">₹5,000</span><span class="chip on">₹10,000</span>
+          <span class="chip">₹25,000</span><span class="chip">₹50,000</span>
+        </div>
+        <div class="hint">This money sits in your wallet until you sign an agreement. Nothing is committed to anyone until then.</div>
+        <button class="btn p" style="margin-top:20px">Add ₹10,000</button>
+        <div class="tiny mid" style="margin-top:9px">Paid by UPI, card or net banking.</div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div class="on"><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W4 · Add money, sent from an agreement</h2>
+    <p class="cap">The same screen, arriving from Asha's agreement. It knows the exact shortfall and says what it is for.</p>
+    <div class="phone">
+      <div class="status"><span>7:51</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span class="title">Add money</span></div>
+      <div class="body">
+        <div class="box blue"><div class="h">Asha's agreement needs ₹12,960</div>
+          <div class="b">₹12,000 for Asha and ₹960 campaign fee. We'll bring you straight back to sign.</div></div>
+
+        <div class="lbl">How much</div>
+        <div class="field focus" style="margin-top:7px"><span class="cur">₹</span><span class="amt">12,960</span></div>
+        <div class="chips">
+          <span class="chip on">Exactly ₹12,960</span><span class="chip">₹25,000</span><span class="chip">₹50,000</span>
+        </div>
+        <div class="hint">Add more than you need and the extra stays in your wallet for the next agreement.</div>
+        <button class="btn p" style="margin-top:20px">Add ₹12,960</button>
+        <div class="tiny mid" style="margin-top:9px">Paid by UPI, card or net banking.</div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W5 · Paying</h2>
+    <p class="cap">The payment sheet is Razorpay's, not ours. This is the moment before and after it.</p>
+    <div class="phone">
+      <div class="status"><span>7:52</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="back" style="color:var(--ink3)">‹</span><span class="title">Add money</span></div>
+      <div class="body mid">
+        <div class="spin"></div>
+        <div style="font-size:15px;font-weight:800">Talking to your bank</div>
+        <div class="hint" style="text-align:center">Don't close the app. If you cancelled, nothing has been taken.</div>
+        <div class="note" style="text-align:left">While the platform is in test mode, this step completes on its own and no real money moves. It becomes a real payment sheet the moment live payments are switched on — the screens do not change.</div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W6 · Added — and pointed back</h2>
+    <p class="cap">The one thing she wants next is the button. Coming from the Wallet tab, it says "Done" instead.</p>
+    <div class="phone">
+      <div class="status"><span>7:52</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="title">Money added</span></div>
+      <div class="body mid">
+        <div class="tick">✓</div>
+        <div style="font-size:19px;font-weight:800">₹12,960 added</div>
+        <div class="hint" style="text-align:center">Your wallet now has <b>₹12,960</b> available.</div>
+        <button class="btn p" style="margin-top:22px">Back to Asha's agreement</button>
+        <button class="btn s" style="margin-top:9px">Stay in Wallet</button>
+        <div class="note" style="text-align:left">Nothing is committed to Asha yet. The money moves when you sign.</div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W7 · Cancelled or failed</h2>
+    <p class="cap">She backed out, or the bank refused. Said plainly, with the way forward.</p>
+    <div class="phone">
+      <div class="status"><span>7:52</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span class="title">Add money</span></div>
+      <div class="body">
+        <div class="box amber"><div class="h">Payment not completed</div>
+          <div class="b">Nothing has been taken from your account, and your wallet is unchanged.</div></div>
+        <div class="lbl">How much</div>
+        <div class="field" style="margin-top:7px"><span class="cur">₹</span><span class="amt">12,960</span></div>
+        <div class="chips"><span class="chip on">Exactly ₹12,960</span><span class="chip">₹25,000</span></div>
+        <button class="btn p" style="margin-top:20px">Try again</button>
+        <button class="btn s" style="margin-top:9px">Back to the agreement</button>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W8 · The agreement, now fundable</h2>
+    <p class="cap">The red box is gone. This screen already exists — only the box it shows changes.</p>
+    <div class="phone">
+      <div class="status"><span>7:53</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span class="title">Agreement · Asha</span></div>
+      <div class="body">
+        <div class="card" style="padding:11px 14px">
+          <div class="row"><div><div class="t">On signing</div></div><div class="v">₹3,000</div></div>
+          <div class="row"><div><div class="t">When her content is live</div></div><div class="v">₹3,000</div></div>
+          <div class="row"><div><div class="t">After it stays live</div></div><div class="v">₹6,000</div></div>
+        </div>
+        <div class="box green"><div class="h">You have enough</div>
+          <div class="b">₹12,960 available. Signing locks ₹12,960 and sends Asha ₹3,000 straight away.</div></div>
+        <div class="lbl" style="margin-bottom:5px">Signatures</div>
+        <div class="box purple" style="margin-bottom:9px"><div class="h">Asha M. (practice)</div>
+          <div class="b">Signed 16 Sep 2026, 7:48 pm</div></div>
+        <div class="card" style="padding:11px 14px"><div class="t">Kanchi Silks (practice)</div><div class="s">Not signed yet</div></div>
+        <button class="btn p" style="margin-top:14px">Sign and lock ₹12,960</button>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slot">
+    <h2>W9 · Signed — the money moved</h2>
+    <p class="cap">The end of the chain, and the first rupee INFLX has ever moved. Already built on the server; this is what she reads.</p>
+    <div class="phone">
+      <div class="status"><span>7:54</span><span>▲ ▮</span></div>
+      <div class="nav"><span class="back">‹</span><span class="title">Agreement · Asha</span></div>
+      <div class="body">
+        <div class="box green"><div class="h">✓ Agreed — this collaboration is live</div>
+          <div class="b">Both of you have signed. Asha has been paid her first instalment.</div></div>
+        <div class="card" style="padding:11px 14px">
+          <div class="row"><div><div class="t">Locked from your wallet</div><div class="s">₹12,000 for Asha · ₹960 campaign fee</div></div><div class="v out">₹12,960</div></div>
+          <div class="row"><div><div class="t">Sent to Asha now</div><div class="s">On signing · 25%</div></div><div class="v in">₹3,000</div></div>
+          <div class="row"><div><div class="t">Still held</div><div class="s">When live · after it stays live</div></div><div class="v">₹9,000</div></div>
+        </div>
+        <button class="btn s" style="margin-top:8px">See the wallet</button>
+        <div class="note">Asha receives every rupee of the ₹12,000 she agreed. The ₹960 campaign fee is yours, and is never taken out of her money.</div>
+      </div>
+      <div class="tabs">
+        <div><span class="ic">⌂</span>Home</div><div class="on"><span class="ic">◈</span>Campaigns</div>
+        <div><span class="ic">◉</span>Creators</div><div><span class="ic">▣</span>Wallet</div>
+        <div><span class="ic">☺</span>Profile</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="sec">
+  <h3>Where every number comes from</h3>
+  <p>Nothing on these screens is computed in the app. Each figure is a field the backend already returns today.</p>
+  <table>
+    <tr><th>On screen</th><th>Field</th><th>Endpoint</th></tr>
+    <tr><td>Available to spend</td><td><code>available_balance</code></td><td>GET /brands/me/wallet</td></tr>
+    <tr><td>Locked in agreements</td><td><code>reserved_balance</code></td><td>GET /brands/me/wallet</td></tr>
+    <tr><td>Paid out to creators</td><td><code>settled_balance</code></td><td>GET /brands/me/wallet</td></tr>
+    <tr><td>Recent activity rows</td><td><code>type · notes · amount · direction · created_at</code></td><td>GET /brands/me/wallet/transactions</td></tr>
+    <tr><td>The shortfall, and what it is for</td><td><code>shortfall · totalToLock · availableBalance</code></td><td>the agreement screen already reads it</td></tr>
+    <tr><td>₹3,000 / ₹3,000 / ₹6,000</td><td><code>payouts.t1 · t2 · t3</code></td><td>the agreement screen already reads it</td></tr>
+    <tr><td>What signing did</td><td><code>locked_amount · released_amount</code></td><td>written by the signature itself</td></tr>
+  </table>
+</div>
+
+<div class="sec">
+  <h3>Three decisions inside these screens</h3>
+  <p><b>1. The shortfall is offered exactly, not rounded up.</b> W4 pre-fills ₹12,960 — the precise amount owed —
+  rather than nudging her to ₹25,000. She can choose more; the screen does not choose it for her.</p>
+  <p><b>2. Adding money commits nothing.</b> Said twice, in W3 and W6, because the whole point of the wallet is that
+  money sits safely until a signature moves it. A brand who fears that adding money spends it will not add money.</p>
+  <p><b>3. Test mode is admitted, not hidden.</b> W5 says plainly that no real money moves yet. When live payments are
+  switched on, that paragraph disappears and not one screen changes.</p>
+</div>
+
+</div></body></html>

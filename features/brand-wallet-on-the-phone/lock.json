@@ -1,0 +1,21 @@
+{
+  "feature": "brand-wallet-on-the-phone",
+  "spec_version": "1.0.0",
+  "status": "awaiting-approval",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "The brand app has no wallet at all (WalletTab is ComingSoonScreen) and the agreement's shortfall button tries to open the website, which Android 11+ refuses because the app never declared <queries>. So no brand can add money from the phone, so no brand can sign, so no creator has ever been paid. The locking and the 25% release are ALREADY built and correct in contractSign.brandSignInTx and are NOT being rebuilt. Mobile only: one OTA, no migration, no backend, no website. Awaiting the founder's spec lock and mockup lock on W1-W9.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
