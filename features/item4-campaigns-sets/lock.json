@@ -100,7 +100,20 @@
       ],
       "validated": "The two out-loud tests were run against the pre-fix code and failed first; the field-error test passes on both, which is the point.",
       "not_fixed_here": "The walk needs two sets in one campaign (steps 27 and 30), which the free tier forbids. That is a plan decision, not a defect — the founder is choosing between moving the practice brands to a tier that allows it, raising the free limit, or a per-brand override. A platform-wide subscriptions master switch is the next contract.",
-      "classification": "production-impacting — mobile JS only; OTA brand + influencer (the counter screen is the creator app)."
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer (the counter screen is the creator app).",
+      "deployed_to_production": {
+        "at": "2026-09-16T10:25:00+05:30",
+        "by": "founder go (\"First ship the fix, then we build subscriptions one\")",
+        "commit": "1be653b",
+        "migration": "none",
+        "render": "no backend change — the push is functionally inert on Render/Vercel",
+        "ota": {
+          "brand": 221,
+          "influencer": 208
+        },
+        "manifest_verified": "brand 221 and influencer 208, native_runtime 3, same bundle hash sha256:5b1af4f3…",
+        "note": "The first brand upload returned \"fetch failed\" and did NOT land (manifest still read 220); the retry published 221. Phones pick it up on the SECOND cold start."
+      }
     }
   ]
 }
