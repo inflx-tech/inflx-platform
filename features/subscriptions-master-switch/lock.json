@@ -16,7 +16,17 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "maestro_green": false
+    "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-16T14:05:00+05:30",
+      "by": "founder go (\"Yes pls deploy\")",
+      "commit": "301f386 (feature) + 73bf1c7 (the runner)",
+      "migration": "185 applied to production with scripts/run-185.js --apply: settings 7 → 8, the switch present at value 1 (ON), min 0 max 1; subscriptions 5, tiers 4, tier_features 52, features 13 — all unchanged.",
+      "render": "proved live, not assumed: signed in as the Label Fern practice brand and read GET /brands/me/subscription → plans_enforced: true, and GET /brands/me/quota-preflight?action=createProduct → limit 10, plans_enforced: true. The new field is being served and limits still apply.",
+      "vercel": "admin.inflx.in serving (X-Vercel-Id present); the admin page itself sits behind login, so the founder opening Admin → Settings → Platform is the functional gate.",
+      "ota": "none — nothing in the mobile apps changed.",
+      "state": "The switch is ON. Nothing about the platform has changed for anybody; it is now possible to turn plan limits off from admin."
+    }
   },
   "build": {
     "at": "2026-09-16T13:30:00+05:30",
