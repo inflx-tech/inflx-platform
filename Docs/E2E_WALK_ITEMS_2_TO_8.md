@@ -52,7 +52,7 @@ practice shoppers. Any other number gets a real SMS, so stay inside this list.
 |---|---|---|
 | **The OTP** | Pretend for the cast above | `000000` always works for them |
 | **Paying money into the wallet** | **Pretend** | You can top up without a card. Everything *after* the top-up — the locking, the splitting, the ledger — is completely real |
-| **Instagram and YouTube numbers** | **Pretend** | Nobody's real account is being read. Fixture numbers only |
+| **Instagram and YouTube numbers** | **Pretend for the practice cast, real for one account** | The 22 practice creators carry seeded measurements (section 1.4). **Akshaya Reddy is genuinely scraped** — 193,221 followers at 5.1% — and is the shape everything else was modelled on |
 
 Everything else is real: real database, real rules, real notifications, real agreement.
 
@@ -65,21 +65,39 @@ in the live database. Act 6 is where that changes for the first time.
 the phone doesn't work, tell me and I'll credit it directly — but try the button first,
 because if it's broken that is itself a finding.
 
-### 1.4 The practice creators have no numbers, and that is a pre-existing problem
+### 1.4 The practice creators now HAVE numbers *(rewritten 16 Sep — this section used to say the opposite)*
 
-Thirteen Instagram accounts have been sitting in "measuring" since **20 August** — nearly a
-month. Eleven more read "not found". Only two creators on the whole platform have real
-measured numbers, and neither is in the practice cast.
+All 22 practice creators were reading "—" for a simple reason: their Instagram handles do not
+exist on Instagram, so the real Apify run came back "not found" for every one of them. No
+follower count, no engagement, and no YouTube account at all. That is correct behaviour on
+made-up handles, but it meant no filter, no minimum and no sort could be tested on them.
 
-**So during this walk, most creators will show "—" where a follower count should be.**
+**They have been given measurements**, written into the same four places a real measurement
+writes, shaped exactly like the one genuinely scraped account (Akshaya Reddy). Nothing marks
+them as seeded: every filter, sort, minimum and screen treats them as measured creators.
 
-That is correct behaviour (a dash, never a zero — that is item 3b's rule and item 8's
-new rule working), but the *cause* is wrong: those thirteen should have finished measuring
-weeks ago. I have not diagnosed why. **Treat "—" as expected during the walk and do not
-log it as a bug** — it is already on my list as its own thing.
+The spread was chosen for testing, not for realism alone:
 
-One good side effect: it gives you a live look at item 8's newest sentence, "Your numbers
-are still being measured."
+| | |
+|---|---|
+| **Size** | 6 nano (3k–9k) · 8 micro (22k–83k) · 5 macro (160k–310k) · 3 mega (839k–1.7m) |
+| **Engagement** | 9.0% at the small end down to 1.9% at the largest — it falls as reach grows, as it really does |
+| **Where** | Telangana and Andhra only: Hyderabad 6, Visakhapatnam 3, Vijayawada 2, Guntur 2, Nellore 2, Warangal 2, then Karimnagar, Tirupati, Kurnool, Rajahmundry, Kakinada |
+| **Niches** | fashion 8 · fitness 5 · beauty 5 · lifestyle 4 |
+| **Languages** | Telugu 22 · English 12 · Hindi 6 · Tamil 1 |
+
+Against the minimums you set in steps 3 and 4 (10,000 followers, 2% engagement): **16 of 22
+pass the follower bar, 21 pass the engagement bar, 15 pass both.** So there are creators on
+both sides of every filter, and Anita at 1.9% against Pooja at exactly 2.0% gives you the
+boundary.
+
+**Two creators still show "—", and should.** Kartikeya's Instagram is private and Somepalli
+Anusha's handle is not found. Those are real accounts, correctly left alone.
+
+> **To see "Your numbers are still being measured" anyway.** Measuring everybody took away the
+> only way to meet an unmeasured creator. You can put one back on purpose:
+> `node backend/scripts/seed-practice-numbers.js --blank=+917900000126` (Vikram L., who this
+> walk does not otherwise use). Re-run the seed with `--apply` to give him his numbers back.
 
 ### 1.5 What you need in your hands
 
@@ -228,7 +246,11 @@ words "blocked" from the receiving end?
 
 **13.** Creators tab → Discover.
 *You should see:* a list of creators with a status chip on each.
-*Expect:* most will show **"—"** where followers should be. That is section 1.4, not a bug.
+*Expect (changed 16 Sep):* every practice creator now carries real-looking numbers — followers,
+YouTube subscribers and an engagement percentage. Sort by **Most followers** and the list runs
+from Arjun at 1.67m down to the nano creators at 3–5k. Only two creators still read "—", and
+both should: a private account and a handle that does not exist.
+*Proves:* the numbers reach the card, the sort and the filters (item 3, item 3b).
 
 **14.** Search for **"asha"**. Then search for **"@asha_practice"**.
 *You should see:* she's found both ways.
@@ -527,20 +549,21 @@ up: a pitch goes in at one end and comes out as an ordinary invitation at the ot
 ### Influencer app — Nandini G. `+917900000125`
 
 **65.** Collabs → Pitches → "Pitch a brand" → find **Kanchi Silks**.
-*You should see:* remember that Kanchi Silks accepts **Pay for Content and Pay for Sale**,
-**Remote only**, minimum 10,000 Instagram followers and 2% engagement — and Nandini has no
-measured numbers at all.
-*You should probably see:* **"Being measured"**, with the line *"Your numbers are still
-being measured."*
-*Proves:* item 8, check 35 — **the newest sentence on the platform.** The old behaviour
-would have told her "You don't match", which would have been untrue.
+*You should see:* she can pitch them. Nandini now measures **72,100 followers at 5.7%**, and
+Kanchi Silks asks for 10,000 and 2%, so she clears both.
+*Proves:* the brand list judges her on real numbers (item 3, check 20; item 8, check 1).
 
-> If she reads "You don't match" instead, that is an **F**. She hasn't been measured; that
-> is not the same as not matching.
+> **Rewritten 16 Sep.** This step used to expect **"Being measured"**, because nobody in the
+> practice cast had numbers. They do now (section 1.4), so the step proves the ordinary case
+> instead. To still see item 8's newest sentence — *"Your numbers are still being measured"* —
+> blank one creator on purpose:
+> `node backend/scripts/seed-practice-numbers.js --blank=+917900000126`, sign in as **Vikram L.**
+> `+917900000126` and look at Kanchi Silks. He must read **"Being measured"**, never **"You don't
+> match"** — he has not been measured, which is not the same as not matching. If he reads "You
+> don't match", that is an **F** (item 8, check 35). Then restore him with `--apply`.
 
-**66.** To get past this, temporarily **remove the follower and engagement minimums** on
-Kanchi Silks' pitch settings (brand app, Profile → Pitch settings → Save), then come back.
-*You should see:* she can now pitch them.
+**66.** *(No longer needed — it existed only to get past the unmeasured state in step 65.
+Skip it. If you blanked Vikram above, restore him now.)*
 
 **67.** Tap **Pitch this brand**.
 *You should see:* only **Pay for Content** and **Pay for Sale** offered — no Hybrid — and a

@@ -1,0 +1,35 @@
+{
+  "feature": "practice-creator-numbers",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (\"ok pls apply those\", 2026-09-16)",
+  "approved_at": "2026-09-16T17:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "n/a — no UI. Data only; the founder reviewed the CSV and the spread table before it was applied.",
+  "mockup_locked_at": "2026-09-16T17:00:00+05:30",
+  "notes": "The 22 practice creators had no measurements because their Instagram handles do not exist, so Apify answered not_found. Seeded into the same four tables a real measurement writes, shaped like the one genuinely scraped account. Accounts are PARKED (next check dated 2099) so the hourly measure job cannot blank them. Production data change, applied on an explicit go.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "applied_to_production": {
+    "at": "2026-09-16T17:05:00+05:30",
+    "by": "founder go (\"ok pls apply those\")",
+    "how": "node backend/scripts/seed-practice-numbers.js --apply (dry-run first)",
+    "before": "measured_ig 2, measured_yt 1, accounts 28, snapshots 4, current metrics 3",
+    "after": "measured_ig 24, measured_yt 23, accounts 50, snapshots 48, current metrics 47",
+    "creators": "22 of 22 found and written",
+    "real_account_untouched": "asserted by the script: Akshaya Reddy still 193221 followers, 5.10 engagement, 52000 subscribers",
+    "verified_live": "Signed in as the Label Fern practice brand against production and read Discover back: sorted by followers it runs Arjun 1,675,700 → the nano creators, zero dashes on page one. Server-side filter counts: 100k+ followers 9, 5%+ engagement 14, speaks Telugu 22, in Hyderabad 6, beauty 5.",
+    "parked": "profile_due_at and posts_due_at set to 2099 on all 44 practice accounts, so the hourly social-measure job can never pick them up and blank them.",
+    "still_unmeasured": "Kartikeya kanumarlapudi (Instagram private) and Somepalli Anusha (handle not found) — real accounts, correctly left alone.",
+    "walk_doc": "Docs/E2E_WALK_ITEMS_2_TO_8.md sections 1.2 and 1.4 rewritten, steps 13, 65 and 66 updated — 65 used to expect \"Being measured\", which only held while nobody had numbers.",
+    "reversible": "scripts/seed-practice-numbers.js --blank=<practice phone> un-measures one creator on purpose (so item 8 check 35 can still be seen); --apply puts her back."
+  }
+}
