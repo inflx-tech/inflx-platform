@@ -25,7 +25,6 @@ import {
   StandardTermsRow7, StateBox7, ShortfallCard7, MoneyMoved7,
 } from '../../components/agreement/bits7';
 import { SendAgreementSheet7, BrandSignSheet7, WithdrawAgreementSheet7 } from '../../components/agreement/sheets7';
-import { openWebDashboard } from '../../utils/openWebDashboard';
 
 export default function BrandAgreementScreen({ navigation, route }) {
   const { campaignId, setId, ciId, preview } = route.params || {};
@@ -179,7 +178,16 @@ export default function BrandAgreementScreen({ navigation, route }) {
             {shortfall ? (
               <ShortfallCard7 shortfall={cost.shortfall} available={cost.availableBalance} needed={cost.totalToLock}>
                 <PrimaryButton label={C7.brand.addToWallet(rupees5(cost.shortfall))}
-                  onPress={() => openWebDashboard('/dashboard/wallet')} testID="add-to-wallet" />
+                  onPress={() => navigation.navigate('BrandAddMoney', {
+                    need: cost.shortfall,
+                    forWhom: firstName,
+                    fee: cost.fee,
+                    campaignFee: cost.campaignFee,
+                    // This screen refetches on focus, so coming back shows the green box and a live
+                    // Sign button without anything being handed back.
+                    returnTo: { screen: 'BrandAgreement', params: route?.params || {} },
+                  })}
+                  testID="add-to-wallet" />
                 <Text style={s.hint}>{C7.brand.bringYouBack}</Text>
               </ShortfallCard7>
             ) : (

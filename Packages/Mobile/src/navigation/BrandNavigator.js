@@ -31,6 +31,9 @@ import SocialDetailScreen from '../screens/shared/SocialDetailScreen';
 import BrandCampaignsScreen from '../screens/brand/BrandCampaignsScreen';
 import BrandCampaignNewScreen from '../screens/brand/BrandCampaignNewScreen';
 import BrandSetEditScreen from '../screens/brand/BrandSetEditScreen';
+// features/brand-wallet-on-the-phone — the money a brand needs before she can sign.
+import BrandWalletScreen from '../screens/brand/BrandWalletScreen';
+import BrandAddMoneyScreen from '../screens/brand/BrandAddMoneyScreen';
 import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScreen';
 import BrandSetDetailScreen from '../screens/brand/BrandSetDetailScreen';
 // Item 5 — the set's creator picker, the group check, terms per creator, review and send.
@@ -59,7 +62,18 @@ const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const CampaignsStack = createNativeStackNavigator();
+// features/brand-wallet-on-the-phone — the Wallet tab is a stack now, so Add money pushes over it.
+const WalletStack = createNativeStackNavigator();
 const noHeader = { headerShown: false };
+
+function WalletStackScreen() {
+  return (
+    <WalletStack.Navigator screenOptions={{ headerShown: false }}>
+      <WalletStack.Screen name="BrandWallet" component={BrandWalletScreen} />
+      <WalletStack.Screen name="BrandAddMoney" component={BrandAddMoneyScreen} />
+    </WalletStack.Navigator>
+  );
+}
 
 function CampaignsStackScreen() {
   return (
@@ -78,6 +92,7 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandThread" component={BrandThreadScreen} />
       <CampaignsStack.Screen name="BrandPool" component={BrandPoolScreen} />
       <CampaignsStack.Screen name="BrandAgreement" component={BrandAgreementScreen} />
+      <CampaignsStack.Screen name="BrandAddMoney" component={BrandAddMoneyScreen} />
     </CampaignsStack.Navigator>
   );
 }
@@ -142,7 +157,7 @@ export default function BrandNavigator() {
       <Tab.Screen name="HomeTab" component={ComingSoonScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
       <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} />
       <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} />
-      <Tab.Screen name="WalletTab" component={ComingSoonScreen} initialParams={{ kind: 'brandWallet', tabTitle: 'Wallet' }} options={{ title: 'Wallet' }} />
+      <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
       <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

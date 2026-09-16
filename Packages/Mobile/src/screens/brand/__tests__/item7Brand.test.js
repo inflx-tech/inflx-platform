@@ -161,8 +161,9 @@ describe('P9 · P11 · P12 — signing, with the money in view', () => {
       availableBalance: 6000, shortfall: 3720, enough: false,
       line: 'Your wallet has ₹6,000 available and this needs ₹9,720.',
     }) }));
+    const n = nav();
     const { getByText, getByTestId } = render(
-      <BrandAgreementScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA', ciId: 'ci1' } }} />
+      <BrandAgreementScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', ciId: 'ci1' } }} />
     );
     await waitFor(() => getByTestId('shortfall'));
     getByText('Add ₹3,720 to sign');
@@ -170,8 +171,17 @@ describe('P9 · P11 · P12 — signing, with the money in view', () => {
     getByText("We'll bring you straight back here to sign.");
     getByText('Tanvi signed on 14 Sep and is waiting. If nobody signs by 17 Oct, this closes on its own.');
 
+    // features/brand-wallet-on-the-phone — this used to try to open the website, which Android 11+
+    // refuses. It now goes to the in-app Add money screen, carrying the exact shortfall, what the
+    // two halves of it are, and where to come back to.
     fireEvent.press(getByTestId('add-to-wallet'));
-    expect(openWebDashboard).toHaveBeenCalled();
+    expect(n.navigate).toHaveBeenCalledWith('BrandAddMoney', {
+      need: 3720,
+      forWhom: 'Tanvi',
+      fee: 9000,
+      campaignFee: 720,
+      returnTo: { screen: 'BrandAgreement', params: { campaignId: 'c1', setId: 'sA', ciId: 'ci1' } },
+    });
 
     // The sign button is there but cannot be used.
     const btn = getByTestId('brand-sign');
