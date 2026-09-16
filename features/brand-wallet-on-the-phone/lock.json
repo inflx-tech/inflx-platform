@@ -16,6 +16,36 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "maestro_green": false
+    "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-16T21:05:00+05:30",
+      "by": "founder go (\"pls done OTA\")",
+      "commit": "acddd95 (the build) + daa8d86 (02 and 03, which gov-check correctly demanded before governed code could ship)",
+      "migration": "none",
+      "backend": "none",
+      "website": "none",
+      "ota": {
+        "brand": 222
+      },
+      "creator_app": "untouched — still 208. Nothing in this contract reaches it.",
+      "manifest_verified": "brand 222, native_runtime 3, published 2026-09-16T15:30:55Z, bundle sha256:177a9677…",
+      "note": "The first brand upload returned \"fetch failed\" and did NOT land (the manifest still read 221); the retry published 222. Phones pick it up on the SECOND cold start."
+    }
+  },
+  "build": {
+    "at": "2026-09-16T21:00:00+05:30",
+    "screens": [
+      "screens/brand/BrandWalletScreen.js (new) — W1, W2",
+      "screens/brand/BrandAddMoneyScreen.js (new) — W3 to W7, every phase in one screen",
+      "components/wallet/copyW.js (new) — the words, including the two load-bearing sentences",
+      "navigation/BrandNavigator.js — WalletTab is a stack now, not ComingSoonScreen; BrandAddMoney registered in both the wallet and campaigns stacks",
+      "screens/brand/BrandAgreementScreen.js — the shortfall button navigates in-app with need, forWhom, fee, campaignFee, returnTo",
+      "utils/openWebDashboard.js — the canOpenURL gate removed"
+    ],
+    "not_built": "Withdrawals (founder: \"leave withdraw for now\"). The locking and the 25% release — already correct in contractSign.brandSignInTx, not one line touched.",
+    "added_beyond_the_mockups": "A third payment outcome the drawings did not separate: paid, but not confirmed. W7 says \"nothing has been taken\", which is true when she cancels and when the bank refuses, and FALSE when the payment went through and our verify call failed. That case now says what is actually known. A test asserts neither of the other two sentences can appear.",
+    "tests": "12 new in screens/brand/__tests__/brandWallet.test.js. Mobile suite 542 passed / 0 failed (serial) against 530 before — the 12 new ones, nothing else moved. No import cycles.",
+    "one_test_updated": "item7Brand.test.js asserted openWebDashboard was called from the shortfall button; it now asserts the in-app navigation and its full payload. Intent unchanged.",
+    "unproven": "The real Razorpay sheet on a device. Every test mocks the payment helper and production runs RAZORPAY_MOCK=true, so the first live run takes the simulated branch. The first genuine card payment is a separate decision."
   }
 }
