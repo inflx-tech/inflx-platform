@@ -648,13 +648,16 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     const a = await admin();
     let r = await api.get('/admin/platform-settings', a.token);
     expect(r.status).toBe(200);
-    // Items 7 and 8 added more numbers to the same screen (rules v1.20 §9, v1.21 §8).
+    // Items 7 and 8 added more numbers to the same screen (rules v1.20 §9, v1.21 §8), and the
+    // subscriptions master switch leads the list because it governs whether the plan limits
+    // apply at all (features/subscriptions-master-switch).
     expect(r.body.data.settings.map(x => x.key)).toEqual(
-      ['negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts', 'campaign_fee_pct',
-        'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days']
+      ['subscriptions_enforced', 'negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts',
+        'campaign_fee_pct', 'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days']
     );
-    expect(r.body.data.settings[0]).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });
-    expect(r.body.data.settings[0].description).toContain('never affects one already running');
+    const rounds = r.body.data.settings.find(x => x.key === 'negotiation_rounds');
+    expect(rounds).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });
+    expect(rounds.description).toContain('never affects one already running');
     expect(r.body.data.lastChange).toBeNull();
     r = await api.patch('/admin/platform-settings', a.token, { negotiation_rounds: 9 });
     expect(r.status).toBe(422); expect(r.body.error.message).toBe(MSG6.RANGE(1, 5)); expect(r.body.error.field).toBe('negotiation_rounds');

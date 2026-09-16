@@ -17,6 +17,9 @@ const db = require('../config/db');
 const AppError = require('../utils/AppError');
 
 const DEFAULTS = Object.freeze({
+  // The master switch (features/subscriptions-master-switch). 1 = plan limits apply, 0 = nothing
+  // is restricted. 'switch' tells the admin page to draw it as a switch, not a number box.
+  subscriptions_enforced: { value: 1, min: 0, max: 1, unit: 'on/off', label: 'Subscription plans', kind: 'switch' },
   negotiation_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Negotiation rounds' },
   pool_lifetime_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pool entry lifetime' },
   min_shoppable_posts: { value: 1, min: 1, max: 10, unit: 'post', label: 'Minimum shoppable posts' },
@@ -38,6 +41,7 @@ const DESCRIPTION = Object.freeze({
   remote_return_days: 'How long a creator has to send back anything she does not keep after a Remote shoot, counted from posting. The brand pays the return shipping. Between 1 and 60 days. Printed in every Remote agreement and stamped on it when it is generated.',
   pitch_response_days: "How long a brand has to give a creator its first answer on a pitch. She is told the date when she sends it, and the brand is reminded after seven days and again after twenty-one. Between 7 and 90 days. Stamped on each pitch when it is sent, so changing this never moves one already waiting. Once the brand has answered, this clock has done its job and the conversation runs until her proposed date comes too close for a set to be built.",
   pitch_cooldown_days: 'How long a creator must wait before pitching the same brand again after a rejection. It is a pause, not a refusal: it never stops the brand inviting her and never stops her accepting. Counted per brand, not per Aim. Between 0 and 90 days. Stamped on the rejection when it is made. A brand that wants no further contact blocks her instead.',
+  subscriptions_enforced: 'When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan keep their plan and are still charged. A brand can go past its plan while this is off; when you switch it back on nothing is deleted and nothing stops working, she simply cannot add more.',
 });
 
 const RANGE_MESSAGE = (min, max) => `Enter a number between ${min} and ${max}.`;
@@ -54,7 +58,7 @@ async function getAll({ fresh = false } = {}) {
   try {
     const { rows } = await db.query(`SELECT key, value, min_value, max_value, unit, label, updated_at, updated_by FROM platform_settings`);
     for (const r of rows) {
-      out[r.key] = { key: r.key, value: Number(r.value), min: Number(r.min_value), max: Number(r.max_value), unit: r.unit, label: r.label, description: DESCRIPTION[r.key] || '', updatedAt: r.updated_at, updatedBy: r.updated_by || null };
+      out[r.key] = { key: r.key, value: Number(r.value), min: Number(r.min_value), max: Number(r.max_value), unit: r.unit, label: r.label, kind: (DEFAULTS[r.key] || {}).kind || 'number', description: DESCRIPTION[r.key] || '', updatedAt: r.updated_at, updatedBy: r.updated_by || null };
     }
   } catch (e) {
     // The table arrives with migration 182; before it, or if the read fails, the defaults stand.

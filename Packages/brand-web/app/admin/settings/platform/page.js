@@ -8,7 +8,15 @@ import { adminApi } from '../../../../lib/api';
  * changes apply only to what starts afterwards (they are copied onto the thing they govern when it
  * is created), and every edit is logged. Modelled on settings/payments.
  * Contract: features/item6-negotiation · rules v1.18 §7B
+ *
+ * Item added 2026-09-16: a 0/1 setting (`kind: 'switch'`) draws as a switch rather than a number
+ * box, and `subscriptions_enforced` — the master switch over every plan limit on the platform —
+ * asks before it turns off, because it is the only setting here that changes what the product
+ * allows rather than by how much. Contract: features/subscriptions-master-switch
  */
+const SWITCH_MASTER = 'subscriptions_enforced';
+const isSwitch = (s) => s.kind === 'switch' || (s.min === 0 && s.max === 1);
+const onOff = (v) => (Number(v) === 0 ? 'off' : 'on');
 const RANGE_MESSAGE = (min, max) => `Enter a number between ${min} and ${max}.`;
 
 function fmtWhen(iso) {
@@ -27,6 +35,7 @@ export default function PlatformSettingsPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [confirmOff, setConfirmOff] = useState(false);
 
   const showToast = (msg, type = 'ok') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
 
@@ -46,13 +55,24 @@ export default function PlatformSettingsPage() {
     const errs = {};
     settings.forEach(s => {
       const v = Number(form[s.key]);
-      if (form[s.key] === '' || !Number.isInteger(v) || v < s.min || v > s.max) errs[s.key] = RANGE_MESSAGE(s.min, s.max);
+      if (form[s.key] === '' || !Number.isInteger(v) || v < s.min || v > s.max) {
+        errs[s.key] = isSwitch(s) ? 'This can only be on or off.' : RANGE_MESSAGE(s.min, s.max);
+      }
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSave() {
+  /** Turning the master switch OFF is the one save on this page that asks first. */
+  function handleSave() {
+    if (!validate()) return;
+    const was = settings.find(x => x.key === SWITCH_MASTER);
+    if (was && Number(was.value) === 1 && Number(form[SWITCH_MASTER]) === 0) { setConfirmOff(true); return; }
+    return doSave();
+  }
+
+  async function doSave() {
+    setConfirmOff(false);
     if (!validate()) return;
     setSaving(true);
     const patch = {}; settings.forEach(s => { patch[s.key] = Number(form[s.key]); });
@@ -79,10 +99,17 @@ export default function PlatformSettingsPage() {
         </div>
       )}
 
+      {!loading && settings.some(x => x.key === SWITCH_MASTER && Number(x.value) === 0) && (
+        <div className="mb-5 flex gap-3 items-start rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900" data-testid="plans-off-banner">
+          <span>●</span>
+          <span>Plan limits are switched off platform-wide. Every brand is unlimited until you switch them back on. Billing is unaffected — brands on a paid plan are still charged.</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display text-xl font-bold text-t1">Platform settings</h1>
-          <p className="text-xs text-t3 mt-0.5">The numbers the collaboration rules depend on. A change applies only to what starts afterwards.</p>
+          <p className="text-xs text-t3 mt-0.5">The switch that decides whether plan limits apply at all, and the numbers the collaboration rules depend on. A change applies only to what starts afterwards.</p>
         </div>
         {!editing && !loading && !loadError && (
           <button onClick={() => setEditing(true)} className="px-4 py-2 bg-navy text-white font-semibold text-sm rounded-lg hover:bg-navy-mid transition-colors">Edit</button>
@@ -105,14 +132,30 @@ export default function PlatformSettingsPage() {
                   <p className="text-xs text-t3 mt-1 leading-relaxed">{s.description}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {editing ? (
-                    <input type="number" min={s.min} max={s.max} step={1} value={form[s.key] ?? ''} data-testid={`setting-${s.key}`}
-                      onChange={e => { setForm(f => ({ ...f, [s.key]: e.target.value })); setErrors(er => { const n = { ...er }; delete n[s.key]; return n; }); }}
-                      className={`w-24 px-3 py-2 text-sm text-right rounded-lg border ${errors[s.key] ? 'border-red-500' : 'border-border'} focus:outline-none focus:border-navy`} />
+                  {isSwitch(s) ? (
+                    <>
+                      <span className="text-xs font-bold text-t2 w-7">{onOff(editing ? form[s.key] : s.value) === 'on' ? 'On' : 'Off'}</span>
+                      <button type="button" role="switch" disabled={!editing} data-testid={`setting-${s.key}`}
+                        aria-checked={onOff(editing ? form[s.key] : s.value) === 'on'}
+                        aria-label={s.label}
+                        onClick={() => { if (!editing) return; setForm(f => ({ ...f, [s.key]: Number(f[s.key]) === 1 ? '0' : '1' })); setErrors(er => { const n = { ...er }; delete n[s.key]; return n; }); }}
+                        className={`relative w-[50px] h-[29px] rounded-full transition-colors ${onOff(editing ? form[s.key] : s.value) === 'on' ? 'bg-navy' : 'bg-gray-300'} ${editing ? 'cursor-pointer' : 'opacity-70 cursor-default'}`}>
+                        <span className={`absolute top-[3px] w-[23px] h-[23px] rounded-full bg-white transition-all ${onOff(editing ? form[s.key] : s.value) === 'on' ? 'left-[24px]' : 'left-[3px]'}`} />
+                      </button>
+                    </>
+                  ) : editing ? (
+                    <>
+                      <input type="number" min={s.min} max={s.max} step={1} value={form[s.key] ?? ''} data-testid={`setting-${s.key}`}
+                        onChange={e => { setForm(f => ({ ...f, [s.key]: e.target.value })); setErrors(er => { const n = { ...er }; delete n[s.key]; return n; }); }}
+                        className={`w-24 px-3 py-2 text-sm text-right rounded-lg border ${errors[s.key] ? 'border-red-500' : 'border-border'} focus:outline-none focus:border-navy`} />
+                      <span className="text-xs text-t3 w-12">{s.unit}</span>
+                    </>
                   ) : (
-                    <span className="text-lg font-bold text-t1 tabular-nums">{s.value}</span>
+                    <>
+                      <span className="text-lg font-bold text-t1 tabular-nums">{s.value}</span>
+                      <span className="text-xs text-t3 w-12">{s.unit}</span>
+                    </>
                   )}
-                  <span className="text-xs text-t3 w-12">{s.unit}</span>
                 </div>
               </div>
               {errors[s.key] && <p className="text-xs text-red-600 mt-1 text-right">{errors[s.key]}</p>}
@@ -128,10 +171,33 @@ export default function PlatformSettingsPage() {
         </div>
       )}
 
+      {confirmOff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" data-testid="confirm-plans-off">
+          <div className="max-w-md w-full bg-white rounded-2xl border border-border p-6">
+            <h4 className="font-display text-lg font-bold text-t1 mb-2">Turn subscription plans off?</h4>
+            <p className="text-sm text-t2 mb-2">Every brand becomes unlimited until you turn this back on:</p>
+            <ul className="text-sm text-t2 list-disc ml-5 mb-3 space-y-1">
+              <li>no quota can block anyone — sets, campaigns, invitations, products, media</li>
+              <li>every feature is included for everyone</li>
+              <li>no “upgrade to continue” message can appear</li>
+            </ul>
+            <p className="text-sm text-t2 mb-2"><b>Billing is not affected.</b> Brands on a paid plan keep their plan and are still charged on the same date.</p>
+            <p className="text-sm text-t2 mb-4">Your tiers, prices and per-brand overrides are kept, and apply again when you switch this back on.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmOff(false)} className="px-4 py-2 text-sm font-semibold text-t2 rounded-lg border border-border hover:bg-surface2">Cancel</button>
+              <button onClick={doSave} data-testid="confirm-plans-off-yes" className="px-4 py-2 bg-red-700 text-white font-semibold text-sm rounded-lg hover:bg-red-800">Turn off</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* The audit line at the foot (N22) */}
       <div className="text-xs text-t3 bg-surface2 rounded-lg px-3 py-2 mt-5" data-testid="audit-line">
         {lastChange
-          ? <>Last changed by {lastChange.changedBy || 'an admin'} on {fmtWhen(lastChange.changedAt)} · {lastChange.label.toLowerCase()} {lastChange.oldValue ?? '—'} → {lastChange.newValue}. Every change is recorded.</>
+          ? <>Last changed by {lastChange.changedBy || 'an admin'} on {fmtWhen(lastChange.changedAt)} · {lastChange.label.toLowerCase()}{' '}
+              {lastChange.key === SWITCH_MASTER
+                ? <>{lastChange.oldValue == null ? '—' : onOff(lastChange.oldValue)} → {onOff(lastChange.newValue)}</>
+                : <>{lastChange.oldValue ?? '—'} → {lastChange.newValue}</>}. Every change is recorded.</>
           : <>No changes yet. Every change is recorded.</>}
       </div>
     </div>

@@ -49,3 +49,33 @@ behaviour. Nothing changes until somebody flips it.
 The walk's Act 3 needs two sets in one campaign, which the free tier forbids. With this, the
 whole subscription layer can be switched off for the walk and switched back on afterwards,
 without touching a single tier number or inventing practice-brand exceptions.
+
+---
+
+## Found while building, and deliberately NOT fixed here
+
+**The test harness makes every quota test vacuous.** `truncateAll()` empties the `features`
+catalogue and never puts it back, so `getEntitlements` sees an empty catalogue, every quota reads
+back `null`, and the middleware treats `null` as "not configured" and passes. A test that means to
+prove a limit *blocks* is proving nothing. (There is a second layer: the reseeded rows get new ids
+while the entitlements catalogue and the platform settings are cached for 60 seconds, so even a
+correct reseed is read stale.)
+
+I fixed it in `tests/helpers/db.js` on 2026-09-16 and measured the result honestly:
+
+| | suites | tests failed | tests passed |
+|---|---|---|---|
+| HEAD, before this contract | 46 | 222 | 1070 |
+| with the global reseed | 47 | 245 | 1061 |
+
+The 14 new tests all passed, so the reseed turned **23 previously-green tests red**. Those tests
+were green only because nothing was being enforced; with a real catalogue they meet real limits
+and their fixtures have never set up entitlements. That is a genuine finding and a real piece of
+work — and it is **not this contract's**. Fixing 23 unrelated tests inside a feature commit would
+bury both.
+
+So the reseed was reverted, and this suite seeds its own catalogue in its own `beforeEach`, where
+it cannot touch anybody else. The harness defect is written up at the top of
+`tests/subscriptions-master-switch.test.js` and should be carved as its own contract:
+**"the quota tests do not test quotas"**. Until then, every existing assertion of the form
+"this plan limit blocks" should be read as unproven.

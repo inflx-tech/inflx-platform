@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { adminApi } from '../../../lib/api';
+import PlansOffBanner from '../../../components/PlansOffBanner';
 
 // Active brand subscriptions queue + mandate status + next charge.
 // Read-only view; brand-side cancellation happens via the brand UI (Phase A7-brand).
@@ -60,6 +61,7 @@ export default function AdminSubscriptionsPage() {
 
   return (
     <div className="max-w-6xl">
+      <PlansOffBanner />
       {toast && (
         <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold ${toast.type === 'err' ? 'bg-red-600 text-white' : 'bg-teal-600 text-white'}`}>
           {toast.type === 'err' ? '✗' : '✓'} {toast.msg}

@@ -26,3 +26,14 @@ and a line pointing at the switch, so it is still findable from where she looked
 what its plan allows — four sets on a three-set plan, say. When the switch goes back on, nothing is
 deleted and nothing stops working: quotas are *counted*, not stamped, so she simply cannot add a
 fifth. That is the only place this switch can surprise anyone, and it is stated in `02-workflow.md`.
+
+---
+
+## Built, 2026-09-16 — one departure worth recording here too
+
+**M6 moved from the phone to the website.** There is no plan or subscription screen in the brand
+mobile app: nothing under `Packages/Mobile/src` reads a subscription, a tier or a quota. The
+brand's plan lives at brand-web → Dashboard → Settings → Subscription, and the upgrade wall that
+quotas actually trigger is `components/QuotaWallModal.js` on the products and campaigns pages.
+M6 is built there, with the behaviour the mockup promised. Nothing was built on the phone, because
+there is nothing there to change. See `06-diff/notes.md`.

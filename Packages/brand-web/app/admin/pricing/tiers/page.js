@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { adminApi } from '../../../../lib/api';
+import PlansOffBanner from '../../../../components/PlansOffBanner';
 
 function fmtINR(n) { if (n == null) return '—'; return '₹' + Number(n).toLocaleString('en-IN'); }
 function fmtLimit(n) { if (n == null) return '—'; if (n === -1) return '∞'; return Number(n).toLocaleString('en-IN'); }
@@ -94,6 +95,7 @@ export default function PricingTiersListPage() {
 
   return (
     <div className="px-6 py-6 max-w-6xl">
+      <PlansOffBanner />
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold text-t1">Subscription Tiers (L1)</h1>
         <div className="flex gap-2">

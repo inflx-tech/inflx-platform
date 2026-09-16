@@ -150,6 +150,12 @@ function fmtEntitlement(e) {
 
 export default function SubscriptionPage() {
   const [sub, setSub]       = useState(null);
+  /**
+   * features/subscriptions-master-switch — false means no plan limit is being applied to anyone.
+   * Her plan and its price still stand and she is still charged for them, so the plan card stays;
+   * what goes is everything that implies she is running short, because she is not.
+   * Defaults to enforced, so an older API that does not send the flag behaves exactly as today.
+   */
   const [tiers, setTiers]   = useState([]);
   const [loading, setL]     = useState(true);
   const [err, setErr]       = useState(null);
@@ -358,6 +364,7 @@ export default function SubscriptionPage() {
 
   const sub_row = sub?.subscription;
   const usage   = sub?.usage || {};
+  const plansEnforced = sub?.plans_enforced !== false;   // features/subscriptions-master-switch
   const currentTierKey = sub?.tier?.tier_key || sub?.tier_key || 'free';
   const currentTier = tiers.find(t => t.tier_key === currentTierKey) || null;
   const currentPriceRow = currentTier?.prices?.find(
@@ -410,6 +417,9 @@ export default function SubscriptionPage() {
 
           <div className="card">
             <h2>Usage this cycle</h2>
+            {plansEnforced === false ? (
+              <div className="row"><span className="k">No limits are being applied at the moment.</span></div>
+            ) : (<>
             {[
               { k: 'Campaigns',          used: usage.campaigns                       ?? 0, lim: currentTier?.max_campaigns           ?? 1 },
               { k: 'Products listed',    used: usage.products                        ?? 0, lim: currentTier?.max_products            ?? 10 },
@@ -422,7 +432,7 @@ export default function SubscriptionPage() {
                   <span className={`v ${b.cls}`}>{b.display}</span>
                 </div>
               );
-            })}
+            })}</>)}
           </div>
         </div>
 
@@ -499,6 +509,8 @@ export default function SubscriptionPage() {
                 <div className="actions">
                   {isCurrent ? (
                     <button className="btn" disabled>Current plan</button>
+                  ) : plansEnforced === false ? (
+                    <button className="btn" disabled title="Plan limits are switched off platform-wide">Not needed right now</button>
                   ) : (
                     <button
                       className="btn primary"

@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi } from '../../../../lib/api';
+import PlansOffBanner from '../../../../components/PlansOffBanner';
 
 const CATEGORIES = [
   { key: 'influencer',  label: 'Influencer' },
@@ -112,6 +113,7 @@ export default function FeaturesCatalogPage() {
 
   return (
     <div className="px-6 py-6 max-w-6xl">
+      <PlansOffBanner />
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold text-t1">Features catalog</h1>
         <button onClick={() => setShowAdd(true)} className="px-4 py-2 bg-navy text-white rounded-lg text-sm font-bold hover:opacity-90">+ Add feature</button>

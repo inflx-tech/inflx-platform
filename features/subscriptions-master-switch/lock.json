@@ -1,15 +1,15 @@
 {
   "feature": "subscriptions-master-switch",
   "spec_version": "1.0.0",
-  "status": "awaiting-approval",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "mockup_locked": false,
-  "mockup_locked_by": null,
-  "mockup_locked_at": null,
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (\"pls lock it and start building\", 2026-09-16)",
+  "approved_at": "2026-09-16T11:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (M1–M6, subscriptions-master-switch.html — locked with the spec, 2026-09-16)",
+  "mockup_locked_at": "2026-09-16T11:00:00+05:30",
   "notes": "Asked for by the founder 2026-09-16 during the items 2-8 walk, after the free tier's one-set-per-campaign limit stopped Act 3. Two decisions already taken by the founder: the switch governs RESTRICTIONS ONLY and never billing; plan and pricing pages stay reachable while it is off, with the upgrade prompts hidden. Ships ON, so applying it changes nothing until somebody flips it. Production-impacting: migration + Render + Vercel + brand OTA; explicit go required.",
   "release": {
     "qa_all_green": false,
@@ -17,5 +17,26 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false
+  },
+  "build": {
+    "at": "2026-09-16T13:30:00+05:30",
+    "migration": "185_subscriptions_master_switch.sql — one platform_settings row, value 1 (ON). No schema change.",
+    "backend": [
+      "services/platformSettings.service.js — the key, declared FIRST so it leads the admin page; kind: \"switch\" travels in the payload",
+      "services/entitlements.service.js — plansEnforced() read once, honoured in getEntitlements (and so in quotaFor/configFor) and short-circuited in hasFeature; _unrestricted() is the off answer",
+      "controllers/subscription.controller.js — plans_enforced on the plan payload and the quota preflight"
+    ],
+    "web": [
+      "admin/settings/platform — a 0/1 setting draws as a switch; turning the master switch OFF asks first; amber banner while off; the audit line reads \"on → off\"",
+      "components/PlansOffBanner.js on admin Subscriptions, Pricing → Tiers and Pricing → Features — all three stay fully editable",
+      "dashboard/settings/subscription — while off, the usage meters become one line and every other tier's Choose button reads \"Not needed right now\". The plan, its price and the next charge stay."
+    ],
+    "mobile": "NOTHING. There is no plan, tier or quota screen in the brand app — checked, not assumed. M6 is built on the website; see 06-diff/notes.md.",
+    "tests": "backend/tests/subscriptions-master-switch.test.js — 14 tests over expected outputs 1-21, each run with the switch on AND off. Includes: a missing row enforces, a failing read enforces, OFF is never narrower than ON across the whole catalogue, and billing is byte-identical across a flip.",
+    "regression": "Backend suite 222 failed / 1084 passed / 1306 vs a measured HEAD baseline of 222 failed / 1070 passed / 1292 — the 14 new tests, nothing else moved. 46 failing suites before and after. brand-web `next build` exits 0.",
+    "one_existing_test_updated": "item6-negotiation.test.js check 29 asserted the exact key list and settings[0] on the platform-settings screen. The switch now leads that list, so the assertion names negotiation_rounds instead of indexing position 0, and the new key is in the expected list. Intent unchanged.",
+    "found_and_scoped_out": "The test harness truncates the features catalogue and never reseeds it, so every quota reads null and the middleware passes — meaning every existing \"this plan limit blocks\" assertion is unproven. Reseeding it globally turns 23 currently-green tests red. Measured, reverted, and written up in 05-impact.md as its own contract: \"the quota tests do not test quotas\".",
+    "released": false,
+    "note": "Built and certified, NOT deployed. Needs migration 185 + push (Render + Vercel). No OTA — nothing in the mobile apps changed."
   }
 }

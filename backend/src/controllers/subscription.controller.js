@@ -38,6 +38,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const taxService = require('../services/tax.service');
 const storageService = require('../services/storage.service');
 const invoiceService = require('../services/invoice.service');
+const entitlementsService = require('../services/entitlements.service');
 const { toPaise } = require('../utils/money');
 
 async function _getBrandIdFromUser(userId) {
@@ -171,7 +172,6 @@ const getSubscription = asyncHandler(async (req, res) => {
   );
 
   // Entitlements (Phase A10): effective feature map for the brand's active tier.
-  const entitlementsService = require('../services/entitlements.service');
   const entResult = await entitlementsService.getEntitlementsPlain(db, brandId);
 
   if (!rows[0]) {
@@ -187,6 +187,9 @@ const getSubscription = asyncHandler(async (req, res) => {
       usage: await _countUsage(brandId, new Date(Date.now() - 30 * 86400_000)),
       entitlements: entResult.entitlements,
       tier_key: entResult.tier_key,
+      // features/subscriptions-master-switch — false means no limit is being applied to anyone.
+      // Her plan and its price still stand, and she is still charged for it.
+      plans_enforced: entResult.plans_enforced !== false,
     });
   }
 
@@ -195,6 +198,7 @@ const getSubscription = asyncHandler(async (req, res) => {
     usage: await _countUsage(brandId, rows[0].current_cycle_start),
     entitlements: entResult.entitlements,
     tier_key: entResult.tier_key,
+    plans_enforced: entResult.plans_enforced !== false,
   });
 });
 
@@ -680,7 +684,9 @@ const quotaPreflight = asyncHandler(async (req, res) => {
     req.params.campaignId = req.query.campaign_id;
   }
   const r = await evaluateQuota(req, action);
-  return success(res, r);
+  // features/subscriptions-master-switch — the client hides its upgrade wall on this, and a
+  // switched-off platform can never answer would_block: true.
+  return success(res, { ...r, plans_enforced: await entitlementsService.plansEnforced() });
 });
 
 // ── GET /v1/admin/subscription-tiers ─────────────────────────────────────────

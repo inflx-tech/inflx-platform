@@ -23,6 +23,34 @@
  */
 
 const db = require('../config/db');
+const platformSettings = require('./platformSettings.service');
+
+/**
+ * ⚠️ THE MASTER SWITCH — features/subscriptions-master-switch.
+ *
+ * One admin setting decides whether plan limits apply AT ALL. Off, every brand behaves as if it
+ * were on the unlimited plan; the tiers, prices and per-brand overrides are untouched and apply
+ * again the moment it goes back on.
+ *
+ * It is read HERE, once, because every plan restriction on the platform runs through this file:
+ * quotaFor (→ middleware/quotaCheck), hasFeature/requireFeature, configFor. Nothing else
+ * enforces a plan.
+ *
+ * It is NOT read by the billing path, and must never be. webhook.controller.js and
+ * pricing.service.js read tiers to CHARGE money; the switch governs restrictions only (founder,
+ * 2026-09-16). A brand on a paid plan keeps its plan and keeps being charged while this is off.
+ *
+ * ON is the failure mode. A missing row, a failed read, a table that does not exist yet — all
+ * of them answer "enforced", because a settings failure must never silently unlock the product.
+ */
+async function plansEnforced() {
+  try {
+    return Number(await platformSettings.get('subscriptions_enforced')) !== 0;
+  } catch (e) {
+    console.error('[entitlements] master switch read failed, enforcing:', e.message);
+    return true;
+  }
+}
 
 const CACHE_TTL_MS = 60_000;
 let _catalogCache    = null;
@@ -89,6 +117,12 @@ async function getEntitlements(client, brandId) {
   const c = client || db;
   const catalog = await _loadCatalog(c);
 
+  // The master switch. Read first: with it off, nothing below can narrow the answer.
+  if (!(await plansEnforced())) {
+    const offTierId = await getActiveTierId(c, brandId);
+    return _unrestricted(catalog, offTierId, await _tierKeyOf(c, offTierId), null);
+  }
+
   const tierId = await getActiveTierId(c, brandId);
   if (!tierId) {
     // No tier resolved — return all features as not-included with catalog defaults
@@ -104,7 +138,7 @@ async function getEntitlements(client, brandId) {
         label:        f.label,
       });
     }
-    return { tier_id: null, tier_key: 'free', entitlements: ents };
+    return { tier_id: null, tier_key: 'free', entitlements: ents, plans_enforced: true };
   }
 
   const { rows: tierRows } = await c.query(
@@ -134,7 +168,9 @@ async function getEntitlements(client, brandId) {
     const src = ov || tf;
     ents.set(f.feature_key, {
       included:     src ? src.included : false,
-      quota_value:  src && src.quota_value != null ? parseFloat(src.quota_value) : f.default_quota,
+      // Both sides coerced: the catalogue default arrives from pg as a numeric STRING ("10.00"),
+      // and a string never === -1, so an unlimited default would stop reading as unlimited.
+      quota_value:  src && src.quota_value != null ? parseFloat(src.quota_value) : (f.default_quota == null ? null : parseFloat(f.default_quota)),
       config:       src ? (src.config || {}) : {},
       feature_type: f.feature_type,
       is_enforced:  f.is_enforced,
@@ -146,7 +182,30 @@ async function getEntitlements(client, brandId) {
     });
   }
 
-  return { tier_id: tierId, tier_key: tierKey, entitlements: ents };
+  return { tier_id: tierId, tier_key: tierKey, entitlements: ents, plans_enforced: true };
+}
+
+/**
+ * Every feature, unlimited and included — what a brand's entitlements look like with the master
+ * switch off. The tier is still named, because she is still ON that tier and still paying for it;
+ * only the restrictions are lifted.
+ */
+function _unrestricted(catalog, tierId, tierKey, ents) {
+  const out = new Map();
+  for (const f of catalog.list) {
+    const was = ents && ents.get(f.feature_key);
+    out.set(f.feature_key, {
+      included:     true,
+      quota_value:  -1,
+      config:       {},
+      feature_type: f.feature_type,
+      is_enforced:  f.is_enforced,
+      category:     f.category,
+      label:        f.label,
+      _is_overridden: was ? was._is_overridden : false,
+    });
+  }
+  return { tier_id: tierId, tier_key: tierKey, entitlements: out, plans_enforced: false };
 }
 
 /**
@@ -180,6 +239,7 @@ async function hasFeature(client, brandId, featureKey) {
   const f = catalog.byKey.get(featureKey);
   if (!f) return true;                  // unknown feature → ungated (defensive)
   if (!f.is_enforced) return true;      // not yet wired for enforcement
+  if (!(await plansEnforced())) return true;   // master switch off → everything is included
   const { entitlements } = await getEntitlements(c, brandId);
   const e = entitlements.get(featureKey);
   return !!(e && e.included);
@@ -267,10 +327,18 @@ async function getEntitlementsPlain(client, brandId) {
   const r = await getEntitlements(client || db, brandId);
   const ent = {};
   for (const [key, val] of r.entitlements.entries()) ent[key] = val;
-  return { tier_id: r.tier_id, tier_key: r.tier_key, entitlements: ent };
+  return { tier_id: r.tier_id, tier_key: r.tier_key, entitlements: ent, plans_enforced: r.plans_enforced !== false };
+}
+
+/** The tier key for a tier id — the brand is still ON her tier while the switch is off. */
+async function _tierKeyOf(client, tierId) {
+  if (!tierId) return 'free';
+  const { rows } = await (client || db).query(`SELECT tier_key FROM subscription_tiers WHERE id = $1 LIMIT 1`, [tierId]);
+  return rows[0]?.tier_key || 'free';
 }
 
 module.exports = {
+  plansEnforced,
   getEntitlements,
   getEntitlementsPlain,
   hasFeature,
