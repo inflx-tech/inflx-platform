@@ -137,8 +137,18 @@ accepted, no minimums set. The Save button is grey because nothing has changed.
 ways of working **Remote only**, and a minimum engagement of **2%**. Save.
 *You should see:* it saves, and the screen reflects what you set when you come back to it.
 
-**5.** Go to Profile → Blocked creators. Block **Ravi K.**
-*You should see:* he's on the blocked list.
+**5.** Block **Ravi K.**, then check the list.
+
+> **Corrected 16 Sep** — the original step said "Profile → Blocked creators", and there is no
+> such row on Profile. There are two screens, not one, and blocking happens on the first:
+>
+> - **To block:** Creators tab → Discover → find **Ravi K.** → open him → **⋯** (top right) →
+>   **Block Ravi K.** → confirm.
+> - **To see who you've blocked:** Profile → **Pitch settings** → scroll to the bottom →
+>   **Blocked creators**. That screen lists them and lets you unblock; it cannot add anyone.
+
+*You should see:* after blocking, Ravi carries a "Blocked by you" chip in Discover, and he
+appears on the Blocked creators list inside Pitch settings.
 *Proves:* blocking works from the brand side (check 5).
 
 ### Influencer app — sign in as Asha M. `+917900000110`
@@ -152,15 +162,45 @@ ways of working **Remote only**, and a minimum engagement of **2%**. Save.
 
 **8.** Set the brand categories you'd work with to **Women's fashion** only. Save.
 
+> **Do this before you go on (added 16 Sep).** On the **brand app**, go to Profile →
+> **Sub-categories** and make sure **Women's fashion** is ticked for Kanchi Silks. Right now
+> it has **no sub-categories at all**, and the rule you approved (item 2, Q5c) is that *a
+> brand with none set does not match a creator who picked categories*. So the moment Asha
+> saves "Women's fashion" here, Kanchi Silks can no longer invite her — she reads **"Not open
+> to this set"** in the picker at step 32, and Acts 4, 5 and 6 stop dead.
+>
+> This is a gap in the practice data, not a bug: the app warns the brand about it on the
+> Profile row ("Choose your sub-categories so creators who filter by category can find you").
+> Setting it also gives that screen a walk of its own. Verified against the live database on
+> 16 Sep: Kanchi Silks `sub_categories` is empty, and Asha reads NOT_MATCHING to them because
+> of it. Meera, Nandini, Priya and Ravi picked no categories, so they are unaffected.
+
 **9.** Turn "Open to invitations" **off**, then back **on**. Save each time.
 *Proves:* the pause switch (check 5).
 
 ### The doors, tested
 
-**10.** Still as Asha — go to Collabs → Pitches → "Pitch a brand", and find **Kanchi
-Silks**.
-*You should see:* she can see them. Note what the status chip says.
-*Proves:* the brand list respects the brand's settings (item 3, check 20; item 8, check 1).
+**10.** Still as Asha — go to Collabs → Pitches → "Pitch a brand". **Kanchi Silks will not be
+in the list.** Now turn the **"Brands I can pitch"** filter **off**, and look again.
+*You should see:* with the filter on, six brands and no Kanchi Silks. With it off, Kanchi
+Silks appears with the chip **"Being measured"** and the line *"Your numbers are still being
+measured."*
+*Proves:* the brand list respects the brand's settings (item 3, check 20; item 8, check 1)
+— and item 8's newest sentence, a step earlier than Act 7 expects it.
+
+> **Corrected 16 Sep.** The original step said "find Kanchi Silks · you should see she can see
+> them", which cannot happen at this point in the walk and is the document's mistake, not the
+> app's. In step 3 you gave Kanchi Silks a minimum of **10,000 Instagram followers**, and in
+> step 4 a **2% engagement** minimum. Asha has no measured numbers at all (section 1.4), so
+> she is not *refused* — she is **waiting to be measured**, and that is not the same thing.
+> The list's default filter shows only brands she can pitch **today**, so a brand she is
+> merely waiting on is hidden until you turn the filter off. Verified against the live
+> database on 16 Sep: seven brands exist, six read OK for Asha, Kanchi Silks reads
+> BEING_MEASURED.
+>
+> **An open question this raises** (answer it as an **N**): should a brand that is only
+> *waiting on her numbers* be shown in the default list, with its sentence, rather than
+> hidden with the outright refusals? "Not yet" and "no" are being treated the same here.
 
 **11.** Sign in as **Ravi K.** `+917900000115` on the influencer app. Find Kanchi Silks the
 same way.
@@ -285,6 +325,10 @@ Content**, way of working **Remote**, posting date **30 days from today**.
 **32.** Add creators → pick from the **"Diwali edit"** group.
 *You should see:* the three of them, each marked as eligible or not, and a count split.
 *Proves:* the creator picker (item 5, checks 1–5).
+
+> If **Asha** reads "Not open to this set" here, you skipped the sub-categories note under
+> step 8. Set Kanchi Silks' sub-categories to include Women's fashion and come back; you do
+> not need to redo anything else.
 
 **33. A question, not a check.** Look for **Ravi K.** in this picker. You blocked him in
 step 5.
