@@ -11,6 +11,7 @@ import { brandApi, uploadFile } from '../../services/api';
 import { FieldError } from '../../components/settings/primitives';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
+import { applyServerError } from '../../utils/serverError';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
 import ImagePickerField from '../../components/discovery/ImagePickerField';
 import { Header, s as base } from './BrandPitchSettingsScreen';
@@ -79,8 +80,7 @@ export default function BrandBusinessDetailsScreen({ navigation }) {
     const r = await brandApi.updateMe(payload);
     setSaving(false);
     if (!r.success) {
-      if (r.error?.field) setErrors({ [r.error.field]: r.error.message });
-      else show(r.error?.message || COPY.saveFailed);
+      applyServerError(r.error, { fields: ['business_name', 'about', 'contact_person', 'gstin'], setErrors, show, fallback: COPY.saveFailed });
       return;
     }
     setDone(true);

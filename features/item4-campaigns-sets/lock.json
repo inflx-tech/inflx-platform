@@ -86,6 +86,21 @@
         "manifest_verified": "brand 220 and influencer 207, native_runtime 3, same bundle hash sha256:d532e9f2…",
         "note": "Phones pick it up on the SECOND cold start."
       }
+    },
+    {
+      "at": "2026-09-16T00:00:00+05:30",
+      "found_by": "founder, walk of items 2-8 — \"it is not adding any set\"",
+      "defect": "Save did nothing at all. The set WAS refused, correctly: the practice brands are on the free tier, whose sets_per_campaign quota is 1, and the campaign already had one set. The server said so in a sentence carrying field: \"createSet\" — the ACTION, not a form field — and every one of these screens did `if (r.error?.field) setErrors({ [r.error.field]: r.error.message })`, filing the sentence under a key nothing renders. The refusal existed and was invisible.",
+      "diagnosis": "Read from production 2026-09-16: no campaign and no set were written that day; Label Fern is on tier free; free grants sets_per_campaign=1, active_campaigns=5, invitations_per_cycle=5; growth 3, pro 10, enterprise unlimited.",
+      "fix": "New utils/serverError.js: a message may only be filed under a field the form actually draws; anything else is spoken out loud. Applied to all six screens carrying the swallow — new set, new campaign, branch edit, business details, links, and the creator counter.",
+      "guards": [
+        "item4Brand.test.js — says the plan limit out loud when a set is refused, and does not navigate",
+        "item4Brand.test.js — says it out loud on the campaign screen too",
+        "item4Brand.test.js — still puts a real field error under its own field (the behaviour that must NOT change)"
+      ],
+      "validated": "The two out-loud tests were run against the pre-fix code and failed first; the field-error test passes on both, which is the point.",
+      "not_fixed_here": "The walk needs two sets in one campaign (steps 27 and 30), which the free tier forbids. That is a plan decision, not a defect — the founder is choosing between moving the practice brands to a tier that allows it, raising the free limit, or a per-brand override. A platform-wide subscriptions master switch is the next contract.",
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer (the counter screen is the creator app)."
     }
   ]
 }

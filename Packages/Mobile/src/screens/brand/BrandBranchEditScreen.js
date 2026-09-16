@@ -10,6 +10,7 @@ import { brandApi } from '../../services/api';
 import { FieldError, SwitchRow, StatusChip } from '../../components/settings/primitives';
 import { SaveBar, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
+import { applyServerError } from '../../utils/serverError';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
 import PlaceSearchField from '../../components/discovery/PlaceSearchField';
 import { Header, s as base } from './BrandPitchSettingsScreen';
@@ -46,8 +47,7 @@ export default function BrandBranchEditScreen({ navigation, route }) {
     const r = editing ? await brandApi.updateBranch(branch.id, body) : await brandApi.createBranch(body);
     setSaving(false);
     if (!r.success) {
-      if (r.error?.field) setErrors({ [r.error.field]: r.error.message });
-      else show(r.error?.message || COPY.saveFailed);
+      applyServerError(r.error, { fields: ['name', 'place_id'], setErrors, show, fallback: COPY.saveFailed });
       return;
     }
     setDone(true);

@@ -12,6 +12,7 @@ import { influencerApi } from '../../services/api';
 import { PrimaryButton, SwitchRow, Chip, FieldError } from '../../components/settings/primitives';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
+import { applyServerError } from '../../utils/serverError';
 import { Header, NumberField, s as base } from '../brand/BrandPitchSettingsScreen';
 import { TextField4 } from '../../components/campaigns/bits4';
 import { DeliverablesEditor5, MinBox5 } from '../../components/invitations/bits5';
@@ -93,8 +94,8 @@ export default function CounterScreen({ navigation, route }) {
     influencerApi.counterInvitation(ciId, { terms: proposed, note: note.trim() || undefined }).then(r => {
       setSaving(false);
       if (!r.success) {
-        if (r.error?.field) setErrs({ [r.error.field]: r.error.message });
-        else setErrs({ form: r.error?.message || COPY.saveFailed });
+        // 'form' is this screen's out-loud line; anything it cannot draw lands there.
+        applyServerError(r.error, { fields: ['fee', 'commissionPct', 'deliverables', 'note', 'usage'], setErrors: setErrs, show: (m) => setErrs({ form: m }), fallback: COPY.saveFailed });
         return;
       }
       navigation.replace('Thread', { ciId, toast: C6.counter.sent });

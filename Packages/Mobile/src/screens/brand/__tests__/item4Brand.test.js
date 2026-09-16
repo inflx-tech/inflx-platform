@@ -282,3 +282,61 @@ describe('C7 · C8 · C9 · C10 — Set detail', () => {
     expect(n.push).toHaveBeenCalledWith('BrandSetDetail', { campaignId: 'c1', setId: 'sCopy', toast: 'Set created.' });
   });
 });
+
+/**
+ * The silent save, 2026-09-16. Founder: "it is not adding any set" — Save did nothing at all.
+ *
+ * The set WAS refused, correctly: her practice brand is on the free plan, which allows one
+ * set per campaign, and the server said so in a sentence. But the sentence carried
+ * field: 'createSet' — the ACTION, not a form field — and the screen filed it under that key,
+ * where nothing is drawn. The refusal existed and was invisible.
+ */
+describe('a refusal this form cannot draw is spoken out loud', () => {
+  const QUOTA = {
+    success: false,
+    error: {
+      code: 'QUOTA_EXCEEDED',
+      message: 'Limit reached on the free plan: sets per campaign (1 / 1). Upgrade to continue.',
+      field: 'createSet',
+      details: { action: 'createSet', used: 1, limit: 1, current_tier: 'free', upgrade_to: ['growth', 'pro'] },
+    },
+  };
+
+  const fillSet = async (r) => {
+    fireEvent.changeText(r.getByTestId('set-name'), 'Set B · Jewellery');
+    fireEvent.press(r.getByTestId('aim-engagement'));
+    fireEvent.press(r.getByTestId('mode-shipment'));
+    fireEvent.press(r.getByTestId('posting-date'));
+    fireEvent.press(r.getByTestId(`day-${earliestGoLiveDay()}`));
+    fireEvent.press(r.getByTestId('date-confirm'));
+    await waitFor(() => r.getByTestId('cutoff-line'));
+  };
+
+  it('says the plan limit out loud when a set is refused, and does not navigate', async () => {
+    brandApi.createCampaignSet.mockResolvedValue(QUOTA);
+    const n = nav();
+    const r = render(<BrandSetEditScreen navigation={n} route={{ params: { campaignId: 'c1', campaignName: 'Diwali Edit 2026', dateRules: RULES, suggestedName: 'Set B' } }} />);
+    await fillSet(r);
+    fireEvent.press(r.getByTestId('save-set'));
+    await waitFor(() => r.getByText(QUOTA.error.message));
+    expect(n.reset).not.toHaveBeenCalled();
+  });
+
+  it('still puts a real field error under its own field', async () => {
+    brandApi.createCampaignSet.mockResolvedValue({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Choose a posting date at least 7 days from today.', field: 'go_live_date' } });
+    const r = render(<BrandSetEditScreen navigation={nav()} route={{ params: { campaignId: 'c1', dateRules: RULES, suggestedName: 'Set B' } }} />);
+    await fillSet(r);
+    fireEvent.press(r.getByTestId('save-set'));
+    await waitFor(() => r.getByText('Choose a posting date at least 7 days from today.'));
+  });
+
+  it('says it out loud on the campaign screen too', async () => {
+    brandApi.createCampaign.mockResolvedValue({ success: false, error: { code: 'QUOTA_EXCEEDED', message: 'Limit reached on the free plan: active campaigns (5 / 5). Upgrade to continue.', field: 'createCampaign' } });
+    const n = nav();
+    const r = render(<BrandCampaignNewScreen navigation={n} route={{ params: {} }} />);
+    fireEvent.changeText(r.getByTestId('campaign-name'), 'Diwali Edit 2026');
+    fireEvent.press(r.getByTestId('campaign-next'));
+    await waitFor(() => r.getByText('Limit reached on the free plan: active campaigns (5 / 5). Upgrade to continue.'));
+    expect(n.replace).not.toHaveBeenCalled();
+  });
+});

@@ -14,8 +14,11 @@ import { Header, s as base } from './BrandPitchSettingsScreen';
 import { TextField4 } from '../../components/campaigns/bits4';
 import { C4, MSG4 } from '../../components/campaigns/copy4';
 import { C6 } from '../../components/negotiation/copy6';
+import { applyServerError } from '../../utils/serverError';
 
 const N = C4.newCampaign;
+/** The only error keys this form draws a line for (utils/serverError.js says why). */
+const NEW_FIELDS = ['name', 'brief'];
 
 export default function BrandCampaignNewScreen({ navigation, route }) {
   const { groupId, groupName, groupCount } = route?.params || {};
@@ -38,8 +41,7 @@ export default function BrandCampaignNewScreen({ navigation, route }) {
     const r = await brandApi.createCampaign({ name: name.trim(), brief: brief.trim() || null, started_from_group_id: groupId || undefined, allow_negotiation: allowNegotiation });
     setSaving(false);
     if (!r.success) {
-      if (r.error?.field) setErrors({ [r.error.field]: r.error.message });
-      else show(r.error?.message || COPY.saveFailed);
+      applyServerError(r.error, { fields: NEW_FIELDS, setErrors, show, fallback: COPY.saveFailed });
       return;
     }
     const c = r.data.campaign;

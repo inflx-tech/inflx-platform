@@ -22,8 +22,11 @@ import { C4, MSG4, AIMS4, MODES4 } from '../../components/campaigns/copy4';
 import { C6 } from '../../components/negotiation/copy6';
 import { startDraft } from '../../components/invitations/draft5';
 import { addDays, earliestGoLiveDay } from '../../utils/setShape';
+import { applyServerError } from '../../utils/serverError';
 
 const S = C4.set;
+/** The only error keys this form draws a line for. Anything else must be said out loud. */
+const SET_FIELDS = ['name', 'goal', 'shoot_mode', 'branch_id', 'go_live_date'];
 /** Posting date − 3 days, the same rule the server applies (campaignState.cutoffFor). */
 export const cutoffFor = (day) => (day ? addDays(day, -3) : null);
 
@@ -82,8 +85,9 @@ export default function BrandSetEditScreen({ navigation, route }) {
     const r = editing ? await brandApi.updateCampaignSet(campaignId, existing.id, body) : await brandApi.createCampaignSet(campaignId, body);
     setSaving(false);
     if (!r.success) {
-      if (r.error?.field) setErrors({ [r.error.field]: r.error.message });
-      else show(r.error?.message || COPY.saveFailed);
+      // A refusal this form cannot draw — the plan's set limit, for one — is SPOKEN, not
+      // filed under a field that does not exist. See utils/serverError.js.
+      applyServerError(r.error, { fields: SET_FIELDS, setErrors, show, fallback: COPY.saveFailed });
       return;
     }
     if (editing) { navigation.navigate('BrandSetDetail', { campaignId, setId: existing.id, toast: S.saved }); return; }
