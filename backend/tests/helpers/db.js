@@ -125,6 +125,62 @@ async function reseedReferenceData(client) {
       ('enterprise', 'Enterprise',     0.00, -1,-1, -1,  -1, true,  4, 'Enterprise plan')
     ON CONFLICT (tier_key) DO NOTHING
   `);
+  /**
+   * ⚠ THE CATALOGUE, AND THE TIER ROWS THAT GIVE IT MEANING.
+   *
+   * Contract: features/quota-tests-prove-nothing
+   *
+   * Both are configuration seeded by migration 061, both are reached by CASCADE, and neither
+   * was being put back. The cost was silent and total:
+   *
+   *   no `features` rows  -> entitlements.getEntitlements reads an EMPTY catalogue
+   *                       -> every quota answers null
+   *                       -> quotaCheck reads null as "not configured" and PASSES
+   *
+   * So "the 11th product must be refused" failed unnoticed among the suite's known failures,
+   * while every test that creates several products or campaigns passed for the wrong reason:
+   * not because its brand was entitled to them, but because no limit existed at all.
+   *
+   * `tier_features` is the second half and just as necessary. subscription_tiers alone is not
+   * what entitlements reads. With a catalogue but no tier rows, EVERY brand falls back to the
+   * catalogue defaults - 1 campaign, 1 set, 10 products, 5 invites - whichever plan it is on,
+   * so an enterprise test brand (what registerBrand creates) reads as the smallest plan there
+   * is. Seeding the catalogue without this turns 23 green tests red; measured 2026-09-16.
+   */
+  await client.query(`
+    INSERT INTO features (feature_key, label, category, feature_type, unit, default_quota, sort_order, description) VALUES
+      ('discover_filter',           'Discover filter',                'influencer',  'config',   NULL,        NULL,  1, 'Limits which influencers a brand can see by niche and area'),
+      ('search_filters_advanced',   'Advanced search filters',        'influencer',  'boolean',  NULL,        NULL,  2, 'Access to collaboration history + engagement-tier filters on top of basic search'),
+      ('bulk_outreach',             'Bulk influencer outreach',       'influencer',  'boolean',  NULL,        NULL,  3, 'Send invitations to many influencers in one action'),
+      ('invitations_per_cycle',     'Influencer invitations per cycle','influencer', 'quota',    'per_cycle', 5,     4, 'Max number of influencer invites a brand can issue per subscription cycle'),
+      ('open_group_broadcast',      'Open-group campaign broadcast',  'influencer',  'config',   NULL,        NULL,  5, 'Publish a campaign as open-group with area scope + recipient cap'),
+      ('active_campaigns',          'Active campaigns',               'campaigns',   'quota',    'count',     1,     6, 'Max simultaneously active campaigns'),
+      ('sets_per_campaign',         'Sets per campaign',              'campaigns',   'quota',    'count',     1,     7, 'Max influencer sets a brand can create within one campaign'),
+      ('products_in_store',         'Products in store',              'products',    'quota',    'count',     10,    8, 'Max active product listings visible to followers'),
+      ('media_gallery_items',       'Media gallery items',            'products',    'quota',    'count',     20,    9, 'Max images/videos uploadable to a brand gallery'),
+      ('multi_branch_support',      'Multi-branch support',           'brand_store', 'boolean',  NULL,        NULL,  10, 'Manage multiple physical branches under one brand account'),
+      ('self_serve_onboarding',     'Self-serve onboarding',          'support',     'baseline', NULL,        NULL,  11, 'Default account creation flow available to everyone'),
+      ('dedicated_onboarding_call', 'Dedicated onboarding call',      'support',     'boolean',  NULL,        NULL,  12, 'One-on-one onboarding call with INFLX team at sign-up'),
+      ('phone_support_24x7',        '24x7 phone support',             'support',     'boolean',  NULL,        NULL,  13, 'Round-the-clock phone support hotline')
+    ON CONFLICT (feature_key) DO NOTHING
+  `);
+  // Each tier carries its own number, straight off the tier row, so enterprise reads -1
+  // (unlimited) and free reads the free numbers.
+  await client.query(`
+    INSERT INTO tier_features (tier_id, feature_id, included, quota_value, config)
+    SELECT t.id, f.id,
+           CASE WHEN f.feature_type = 'quota' THEN true ELSE t.tier_key <> 'free' END,
+           CASE f.feature_key
+             WHEN 'active_campaigns'      THEN t.max_campaigns
+             WHEN 'sets_per_campaign'     THEN t.max_sets_per_campaign
+             WHEN 'invitations_per_cycle' THEN t.max_influencers_per_cycle
+             WHEN 'products_in_store'     THEN t.max_products
+             WHEN 'media_gallery_items'   THEN CASE WHEN t.is_enterprise THEN -1 ELSE 20 END
+           END,
+           '{}'::jsonb
+      FROM subscription_tiers t, features f
+    ON CONFLICT (tier_id, feature_id) DO NOTHING
+  `);
   // Item 6: platform_settings is seeded by migration 182 and is configuration, not test data —
   // the same reasoning as the tiers above. Without it every read falls back to the code defaults
   // and no admin write has a row to change.
@@ -157,6 +213,15 @@ async function reseedReferenceData(client) {
       true)
     ON CONFLICT (version) DO NOTHING
   `);
+
+  /**
+   * The reseeded rows come back with NEW ids, and two services hold them for 60 seconds: the
+   * entitlements catalogue and the platform settings. Without this the cached rows point at ids
+   * that no longer exist, every tier_features lookup misses, and the service falls back to the
+   * catalogue defaults - which reads exactly like "enterprise is capped at 10 products".
+   */
+  try { require('../../src/services/entitlements.service').bustCatalogCache(); } catch (e) { /* not loaded */ }
+  try { require('../../src/services/platformSettings.service')._resetCache(); } catch (e) { /* not loaded */ }
 }
 
 async function truncateAll() {

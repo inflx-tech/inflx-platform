@@ -1,0 +1,35 @@
+{
+  "feature": "quota-tests-prove-nothing",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (\"pls fix that\", 2026-09-16)",
+  "approved_at": "2026-09-16T14:30:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "n/a — no UI. Test harness only; nothing is drawn.",
+  "mockup_locked_at": "2026-09-16T14:30:00+05:30",
+  "notes": "Found while building features/subscriptions-master-switch. truncateAll() empties the features catalogue and never reseeds it, and tier_features is not reseeded either, so every quota reads null, quotaCheck treats that as 'not configured' and passes, and every assertion of the form 'this plan limit blocks' is unproven. Deploy-inert: backend/tests/** only, nothing under backend/src/**.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "note": "NOT released, and it should not be: GOVERNANCE.md §5 ties released=true to qa_all_green, and the suite still carries 221 pre-existing failures this contract deliberately did not take on. The work itself is merged and deploy-inert — nothing reaches Render, Vercel or any phone. released flips only when the suite is genuinely green."
+  },
+  "build": {
+    "at": "2026-09-16T16:00:00+05:30",
+    "changed": [
+      "tests/helpers/db.js — reseed the features catalogue (13 rows) and tier_features (each tier carrying its OWN max_* numbers), then bust the entitlements catalogue cache and the platform-settings cache",
+      "tests/harness-reference-data.test.js — NEW: four checks watching the floor every quota test stands on",
+      "tests/subscriptions-master-switch.test.js — local catalogue seeding removed; the harness does it now"
+    ],
+    "src_touched": "none — not one line under backend/src/**",
+    "measured": "Two full runs diffed BY TEST NAME. Before: 46 suites / 222 failed / 1084 passed. After: 45 suites / 221 failed / 1085 passed. FIXED: 1 — quotaCheck \"11th product → 422\", the check that has been lying. NEWLY BROKEN: 0.",
+    "the_23": "The master-switch contract predicted 23 green tests going red, measured against an INCOMPLETE fix that reseeded the catalogue but not tier_features. With both halves seeded, an enterprise test brand reads -1 as its plan always said, and none of the 23 trips. No test needed fixing individually.",
+    "guard_validated": "The four new checks were run with the reseed removed — all four fail — and with it restored — all four pass.",
+    "classification": "deploy-inert: backend/tests/** only. Nothing reaches Render, Vercel or any phone."
+  }
+}

@@ -43,37 +43,8 @@ async function freeBrand() {
   return { u, br };
 }
 
-/**
- * ⚠️ THIS SUITE SEEDS ITS OWN CATALOGUE, AND HAS TO.
- *
- * `truncateAll()` empties `features` and never puts it back, so by the time a test runs, the
- * entitlements catalogue is EMPTY: every quota reads back null, the middleware treats null as
- * "not configured" and passes, and a test that means to prove a limit BLOCKS is really proving
- * nothing at all. Both caches have to be cleared too, because the rows come back with new ids
- * after every truncate while the services hold the old ones for 60 seconds.
- *
- * Seeding it globally in tests/helpers/db.js was tried on 2026-09-16 and reverted: it turns 23
- * currently-green tests red, because those tests pass only while nothing is enforced. They are
- * not this contract's to fix, and fixing them here would hide them. Logged in 05-impact.md as
- * its own piece of work.
- */
-async function seedCatalogue() {
-  await query(`
-    INSERT INTO features (feature_key, label, category, feature_type, unit, default_quota, sort_order, description) VALUES
-      ('bulk_outreach',         'Bulk influencer outreach',        'influencer', 'boolean', NULL,        NULL, 3, 'Send invitations to many influencers in one action'),
-      ('invitations_per_cycle', 'Influencer invitations per cycle','influencer', 'quota',   'per_cycle', 5,    4, 'Max invites per cycle'),
-      ('active_campaigns',      'Active campaigns',                'campaigns',  'quota',   'count',     1,    6, 'Max simultaneously active campaigns'),
-      ('sets_per_campaign',     'Sets per campaign',               'campaigns',  'quota',   'count',     1,    7, 'Max sets within one campaign'),
-      ('products_in_store',     'Products in store',               'products',   'quota',   'count',     10,   8, 'Max active product listings')
-    ON CONFLICT (feature_key) DO NOTHING
-  `);
-  entitlements.bustCatalogCache();
-  platformSettings._resetCache();
-}
-
 beforeEach(async () => {
   await truncateAll();
-  await seedCatalogue();
   await query(`DELETE FROM subscription_tiers`);
   await query(
     `INSERT INTO subscription_tiers
