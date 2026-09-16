@@ -28,7 +28,7 @@ const BrandSetDetailScreen = require('../BrandSetDetailScreen').default;
 const { MSG4, countsLine4, shortDate4, longDate4 } = require('../../../components/campaigns/copy4');
 const { earliestGoLiveDay, addDays, today } = require('../../../utils/setShape');
 
-const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), replace: jest.fn(), push: jest.fn(), setParams: jest.fn(), addListener: jest.fn(() => () => {}), dispatch: jest.fn() });
+const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), replace: jest.fn(), push: jest.fn(), reset: jest.fn(), setParams: jest.fn(), addListener: jest.fn(() => () => {}), dispatch: jest.fn() });
 const ok = (data) => ({ success: true, data });
 const yr = new Date().getFullYear();
 const RULES = { today: today(), earliestPostingDate: earliestGoLiveDay(), minDaysAhead: 7, cutoffDaysBefore: 3 };
@@ -156,7 +156,16 @@ describe('C4 · C5 — New set and the date picker', () => {
     fireEvent.press(getByTestId('save-set'));
     await waitFor(() => expect(brandApi.createCampaignSet).toHaveBeenCalled());
     expect(brandApi.createCampaignSet).toHaveBeenCalledWith('c1', { name: 'Set A · Ethnic wear', goal: 'conversion', shoot_mode: 'shipment', branch_id: null, go_live_date: earliest });
-    expect(n.replace).toHaveBeenCalledWith('BrandCampaignDetail', expect.objectContaining({ campaignId: 'c1', toast: 'Set saved.' }));
+    // Founder, 2026-09-16: a new set opens straight away and carries her on to the creators.
+    // The stack under it is campaigns → this campaign → the new set, so Back is the campaign.
+    expect(n.reset).toHaveBeenCalledWith({
+      index: 2,
+      routes: [
+        { name: 'BrandCampaigns' },
+        { name: 'BrandCampaignDetail', params: { campaignId: 'c1', name: 'Diwali Edit 2026' } },
+        { name: 'BrandSetDetail', params: { campaignId: 'c1', setId: 'sN', toast: 'Set saved.', addCreators: true } },
+      ],
+    });
     expect(getAllByText).toBeTruthy();
   });
 
@@ -212,7 +221,7 @@ describe('C7 · C8 · C9 · C10 — Set detail', () => {
     getByText('Pay for Content'); getByText('Remote'); getByText(`24 Oct ${yr}`); getByText(`21 Oct ${yr}`);
     getByText('🔒 Aim, posting date, mode and branch lock when you send the first invitation.');
     fireEvent.press(getByTestId('add-creators'));
-    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', { campaignId: 'c1', setId: 'sB' });
+    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', { campaignId: 'c1', setId: 'sB', campaignName: 'Diwali Edit 2026', setName: 'Set B · Jewellery' });
     getByText('No creators yet'); getByText('Add creators, agree their terms and send invitations.');
     fireEvent.press(getByTestId('set-menu'));
     expect(getAllByText('Edit set').length).toBe(2); getByText('Duplicate set'); getByText('Delete set');

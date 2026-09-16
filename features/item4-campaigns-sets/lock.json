@@ -59,6 +59,20 @@
         "manifest_verified": "GET /v1/ota/manifest?flavor=<f>&runtime=3 returns brand 219 and influencer 206, native_runtime 3, same bundle hash sha256:f06cef10…",
         "note": "Phones pick it up on the SECOND cold start (download on open one, load on open two)."
       }
+    },
+    {
+      "at": "2026-09-16T00:00:00+05:30",
+      "found_by": "founder, phone walk of items 2-8 (screenshots: campaign detail, Add creators, Creators tab)",
+      "defect": "Saving a new set dropped her back on the campaign page with the set as a card she had to notice and tap before she could find Add creators. The first set of a campaign was worse: it replaced the stack with the campaign LIST, so the campaign page she had just filled in never appeared at all.",
+      "fix": "A new set rebuilds the stack as campaigns -> this campaign -> the new set, and the set carries her straight on to the picker (route param addCreators, consumed once). Editing an existing set is unchanged: it lands on the set and stops.",
+      "founder_decision": "First time creating a set: after saving, move to Add creators. Already created: the Add creators button stands until the set date permits, i.e. posting date minus three days.",
+      "already_built": "The cutoff gate was ALREADY live and correct — campaignState.describeSet computes canInvite (false once today > posting date - 3), and BrandSetDetailScreen renders Add creators only while canInvite.ok, on both draft and live sets. Surveyed, not rebuilt.",
+      "guards": [
+        "item5Brand.test.js — a set that arrives asking for creators opens the picker by itself, once",
+        "item5Brand.test.js — does not open the picker by itself once invitations have closed",
+        "item4Brand.test.js — saving a new set rebuilds the stack to campaigns/campaign/new set"
+      ],
+      "classification": "production-impacting — mobile JS only; OTA brand + influencer."
     }
   ]
 }

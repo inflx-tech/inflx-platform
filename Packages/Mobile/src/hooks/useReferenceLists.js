@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { InteractionManager } from 'react-native';
 import { referenceApi } from '../services/api';
 
 /**
@@ -10,17 +11,26 @@ export default function useReferenceLists() {
   const [languages, setLanguages] = useState([]);
   const [categories, setCategories] = useState([]);
   const [states, setStates] = useState([]);
+  /**
+   * These four are for the Filters sheet, not for the list. They used to fire the moment a
+   * screen mounted, four requests racing the one request the brand is actually waiting for —
+   * the creators. They now wait until the screen has finished opening, so nothing competes
+   * with the first paint. (Founder, 2026-09-16: the creator list took too long to appear.)
+   */
   useEffect(() => {
     let alive = true;
-    Promise.all([referenceApi.creatorNiches(), referenceApi.languages(), referenceApi.brandCategories(), referenceApi.states()])
-      .then(([n, l, c, s]) => {
-        if (!alive) return;
-        if (n.success) setNiches(n.data.items || []);
-        if (l.success) setLanguages(l.data.items || []);
-        if (c.success) setCategories(c.data.items || []);
-        if (s.success) setStates(s.data.items || []);
-      }).catch(() => {});
-    return () => { alive = false; };
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (!alive) return;
+      Promise.all([referenceApi.creatorNiches(), referenceApi.languages(), referenceApi.brandCategories(), referenceApi.states()])
+        .then(([n, l, c, s]) => {
+          if (!alive) return;
+          if (n.success) setNiches(n.data.items || []);
+          if (l.success) setLanguages(l.data.items || []);
+          if (c.success) setCategories(c.data.items || []);
+          if (s.success) setStates(s.data.items || []);
+        }).catch(() => {});
+    });
+    return () => { alive = false; if (task && task.cancel) task.cancel(); };
   }, []);
   const cityIndex = useMemo(() => {
     const m = new Map();

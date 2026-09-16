@@ -89,7 +89,7 @@ describe('I9 · I10 — the set after invitations go out', () => {
     getByText('10% · whole store · no offer · sent 12 Sep'); getByText('Accepted 13 Sep'); getByText('Fee too low');
     getByText('Wants 27 Oct'); getByText('Another set'); getByText('Send agreement');
     fireEvent.press(getAllByTestId('add-creators')[0]);
-    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', { campaignId: 'c1', setId: 'sA' });
+    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', expect.objectContaining({ campaignId: 'c1', setId: 'sA' }));
   });
 
   it('hides Add creators once the cutoff has passed (check 19)', async () => {
@@ -304,5 +304,69 @@ describe('I8 — Review and send', () => {
     expect(brandApi.sendInvitations.mock.calls[1][2].creators.map(c => c.influencerId)).toEqual(['p']);
     expect(n.navigate).toHaveBeenCalledWith('BrandSetDetail', { campaignId: 'c1', setId: 'sA', toast: '1 invitation sent.' });
     expect(queryByTestId('failed-banner')).toBeNull();
+  });
+});
+
+/**
+ * The founder's three notes from the walk, 2026-09-16 (screenshots in the thread).
+ * Contract: features/item4-campaigns-sets · features/item5-invitations
+ */
+describe('Add creators — the founder\'s notes of 16 Sep', () => {
+  const RICH = [
+    { id: 'p', name: 'Priya Sharma', nicheLabel: 'Fashion', cityName: 'Hyderabad', instagram: 193200, youtube: 52000, engagement: 5.1,
+      acceptedAims: ['conversion', 'engagement', 'hybrid'], acceptedModes: ['visit', 'shipment'], status: 'OK', pick: { state: 'ok' } },
+  ];
+
+  it('shows the same card as the Creators tab — followers, engagement and the Aim/mode tags', async () => {
+    brandApi.pickable.mockResolvedValue(ok({ total: 1, page: 1, rows: RICH }));
+    const { getByText, getByTestId } = render(<BrandSetPickCreatorsScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    await waitFor(() => getByTestId('select-p'));
+    // The numbers she picks ON. The old compact row showed none of them.
+    getByText('193.2K'); getByText('Instagram');
+    getByText('52.0K'); getByText('YouTube');
+    getByText('5.1%'); getByText('Engagement');
+    getByText('Pay for Sale'); getByText('Pay for Content'); getByText('Hybrid'); getByText('📍 Store Visit'); getByText('Remote');
+    // and the tick that makes it a pick rather than a browse
+    getByTestId('tick-p');
+    expect(getByTestId('select-p').props.accessibilityState).toMatchObject({ checked: false, disabled: false });
+    fireEvent.press(getByTestId('select-p'));
+    expect(getByTestId('select-p').props.accessibilityState.checked).toBe(true);
+  });
+
+  it('starts loading the creators without waiting for the set summary (the slow open)', async () => {
+    let releaseSummary;
+    brandApi.setSummary.mockReturnValue(new Promise(r => { releaseSummary = r; }));
+    brandApi.pickable.mockResolvedValue(ok({ total: 1, page: 1, rows: RICH }));
+    const { getByTestId, getByText } = render(
+      <BrandSetPickCreatorsScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA', campaignName: 'Diwali Edit 2026', setName: 'Set A · Ethnic wear' } }} />
+    );
+    // The summary promise is still pending here, and the creators are already fetched and drawn.
+    await waitFor(() => expect(brandApi.pickable).toHaveBeenCalled());
+    await waitFor(() => getByTestId('select-p'));
+    // The names the caller already knew are on screen too — no wait for them either.
+    getByText('DIWALI EDIT 2026 · SET A · ETHNIC WEAR');
+    // Next stays inert until the summary lands, because the draft is built from it.
+    fireEvent.press(getByTestId('select-p'));
+    expect(getByTestId('pick-next').props.accessibilityState.disabled).toBe(true);
+    await act(async () => { releaseSummary(ok(SUMMARY)); });
+    expect(getByTestId('pick-next').props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('a set that arrives asking for creators opens the picker by itself, once', async () => {
+    const n = nav();
+    const route = { params: { campaignId: 'c1', setId: 'sA', addCreators: true } };
+    render(<BrandSetDetailScreen navigation={n} route={route} />);
+    await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators',
+      expect.objectContaining({ campaignId: 'c1', setId: 'sA', setName: 'Set A · Ethnic wear' })));
+    expect(n.setParams).toHaveBeenCalledWith({ addCreators: undefined });
+    expect(n.navigate.mock.calls.filter(c => c[0] === 'BrandSetPickCreators').length).toBe(1);
+  });
+
+  it('does not open the picker by itself once invitations have closed', async () => {
+    brandApi.setSummary.mockResolvedValue(ok({ ...SUMMARY, set: { ...SET, cutoffPassed: true, canInvite: { ok: false, reason: 'cutoff_passed' } } }));
+    const n = nav();
+    render(<BrandSetDetailScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', addCreators: true } }} />);
+    await waitFor(() => expect(n.setParams).toHaveBeenCalled());
+    expect(n.navigate.mock.calls.filter(c => c[0] === 'BrandSetPickCreators').length).toBe(0);
   });
 });

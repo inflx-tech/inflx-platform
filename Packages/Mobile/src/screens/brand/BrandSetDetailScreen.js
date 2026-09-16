@@ -5,7 +5,7 @@
  * (one creator's ⋯: view terms sent, open profile, withdraw, remove).
  * Contract: features/item4-campaigns-sets · features/item5-invitations · prompt §6.5–§6.8
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
@@ -51,10 +51,32 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   }, [campaignId, setId]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  /**
+   * Founder, 2026-09-16: "when I create a set it is simply creating set and when I click then
+   * opening for add creators — it should show immediately after creating set, then it should
+   * ask to add creators."
+   *
+   * So a set she has just made lands HERE (she sees what she made) and is carried straight on
+   * to picking creators; the set stays underneath, so Back from the picker is her new set, not
+   * the campaign. A set she is only editing lands here and stops — its "Add creators" button is
+   * hers to tap, and it stands only while invitations are still open (posting date − 3 days,
+   * the server's canInvite).
+   */
+  const carriedOn = useRef(false);
+  useEffect(() => {
+    if (!route?.params?.addCreators || carriedOn.current || !data) return;
+    carriedOn.current = true;
+    navigation.setParams({ addCreators: undefined });
+    const s = data.set;
+    if (s && s.canInvite && s.canInvite.ok) {
+      navigation.navigate('BrandSetPickCreators', { campaignId, setId, campaignName: data.campaign.name, setName: s.name });
+    }
+  }, [data, route?.params?.addCreators]); // eslint-disable-line
+
   const set = data && data.set;
   const title = set ? set.name : (route?.params?.name || '');
   const edit = () => navigation.navigate('BrandSetEdit', { campaignId, campaignName: data.campaign.name, set, dateRules: data.dateRules });
-  const addCreators = () => navigation.navigate('BrandSetPickCreators', { campaignId, setId });
+  const addCreators = () => navigation.navigate('BrandSetPickCreators', { campaignId, setId, campaignName: data.campaign.name, setName: set.name });
 
   async function rename(v) {
     const r = await brandApi.updateCampaignSet(campaignId, setId, { name: v });

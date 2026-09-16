@@ -35,6 +35,11 @@ export function pickStateOf(item) {
 
 export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   const { campaignId, setId } = route?.params || {};
+  // Founder, 2026-09-16: "loading of creators info is too slow". It was two round trips end to
+  // end — the set summary first, and only when THAT came back did the creator list start
+  // loading. Both now start together, so the cards arrive in one wait instead of two, and the
+  // caller hands over the names it already has so the subline needs no wait at all.
+  const names = { campaign: route?.params?.campaignName || null, set: route?.params?.setName || null };
   const [status, setStatus] = useState('loading');
   const [data, setData] = useState(null);
   const [tab, setTab] = useState(P.tabs[0]);
@@ -43,6 +48,7 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
+  // The set summary no longer gates the screen; it only fills the subline and arms "Next".
   const load = useCallback(async () => {
     setStatus('loading');
     const r = await brandApi.setSummary(campaignId, setId);
@@ -55,6 +61,7 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   const fetcher = useCallback((params) => brandApi.pickable(campaignId, setId, { ...params, tab: 'all' }), [campaignId, setId]);
 
   function next() {
+    if (!data) return;
     // Item 6: a creator picked from the pool carries her entry and the terms she agreed, so the
     // terms screen opens filled in and the entry is marked used when the invitation is sent.
     const creators = [...sel.values()].map(c => ({ id: c.id, name: c.name, avatarUrl: c.avatarUrl || null, poolEntryId: c.pool ? c.pool.entryId : undefined, poolTerms: c.pool && c.pool.sameAim ? c.pool.terms : undefined, poolAgreedAt: c.pool ? c.pool.agreedAt : undefined }));
@@ -62,14 +69,17 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
     navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: 0 });
   }
 
-  if (status === 'loading') return <View style={base.screen}><Header title={P.title} onBack={() => navigation.goBack()} /><Skeleton /></View>;
+  // Only a set summary that FAILED stops the screen; a slow one does not.
   if (status === 'error') return <View style={base.screen}><Header title={P.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
+
+  const campaignName = (data && data.campaign.name) || names.campaign;
+  const setName = (data && data.set.name) || names.set;
 
   return (
     <View style={base.screen} testID="set-pick-creators">
       <Header title={P.title} onBack={() => navigation.goBack()} />
       <View style={{ paddingHorizontal: 18, paddingTop: 8 }}>
-        <Text style={s.sub} testID="pick-subline">{P.sub(data.campaign.name, data.set.name)}</Text>
+        <Text style={s.sub} testID="pick-subline">{campaignName || setName ? P.sub(campaignName || '', setName || '') : ' '}</Text>
         <SegmentedControl segments={P.tabs} value={tab} onChange={setTab} testID="pick-tabs" />
       </View>
       {tab === P.tabs[0] ? (
@@ -85,7 +95,7 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
       )}
       {tab !== P.tabs[2] ? (
         <View style={s.footer}>
-          <PrimaryButton label={P.next(sel.size)} onPress={next} disabled={!sel.size} testID="pick-next" />
+          <PrimaryButton label={P.next(sel.size)} onPress={next} disabled={!sel.size || !data} testID="pick-next" />
         </View>
       ) : null}
       {toast}

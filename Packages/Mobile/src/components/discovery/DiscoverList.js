@@ -18,23 +18,44 @@ import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { Skeleton, LoadError } from '../settings/feedback';
 import { EmptyState, TagRow, PrimaryButton } from '../settings/primitives';
 import { Avatar } from '../../screens/brand/BrandBlockedCreatorsScreen';
-import { StatTriple, StatusChip3, CheckboxRow } from './bits';
+import { StatTriple, StatusChip3 } from './bits';
 import FiltersSheet, { CREATOR_DEFAULTS, changedCount, quickChip } from './FiltersSheet';
 import { aimLabel, modeLabel } from '../settings/copy';
 import { C3, fmtCompact, AIM_ORDER, MODE_ORDER } from './copy3';
 
-export function CreatorCard({ c, onOpen, onAddToGroup, compact }) {
+/**
+ * One creator, as the Creators tab draws her.
+ *
+ * `select` turns the same card into a pick: the ⊕ becomes a tick, the whole card toggles, and
+ * a locked row (already invited, or her settings rule this set out) dims and says why.
+ * Founder, 2026-09-16: picking creators for a set must show the SAME list as the Creators tab.
+ * It used to fall back to a one-line MemberRow, so the followers, the engagement and the
+ * Aim/mode tags — everything she picks ON — were missing exactly where she is choosing.
+ *   select: { checked, disabled, onToggle, note, chip, tone }
+ */
+export function CreatorCard({ c, onOpen, onAddToGroup, compact, select }) {
   const meta = [c.nicheLabel, c.cityName, (c.languages || []).join(', ')].filter(Boolean).join(' · ');
   const tags = [...AIM_ORDER.filter(a => (c.acceptedAims || []).includes(a)).map(aimLabel), ...MODE_ORDER.filter(m => (c.acceptedModes || []).includes(m)).map(m => m === 'visit' ? `📍 ${modeLabel(m)}` : modeLabel(m))];
+  const picking = !!select;
+  const checked = picking && !!select.checked;
+  const locked = picking && !!select.disabled;
+  const sub = picking && select.note ? select.note : meta;
+  const a11y = picking ? { checked, disabled: locked } : undefined;
   return (
-    <TouchableOpacity style={s.card} onPress={() => onOpen && onOpen(c)} activeOpacity={0.85} testID={`creator-${c.id}`}>
+    <TouchableOpacity style={[s.card, checked && s.cardOn, locked && s.cardOff]}
+      onPress={picking ? select.onToggle : (onOpen ? () => onOpen(c) : undefined)}
+      disabled={locked} activeOpacity={0.85}
+      accessibilityRole={picking ? 'checkbox' : 'button'} accessibilityState={a11y}
+      testID={picking ? `select-${c.id}` : `creator-${c.id}`}>
       <View style={s.cardTop}>
         <Avatar name={c.name} url={c.avatarUrl} size={44} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={s.name} numberOfLines={1}>{c.name}</Text>
-          {meta ? <Text style={s.meta} numberOfLines={1}>{meta}</Text> : null}
+          {sub ? <Text style={s.meta} numberOfLines={1}>{sub}</Text> : null}
         </View>
-        {onAddToGroup ? (
+        {picking ? (
+          <View style={[s.tick, checked && s.tickOn]} testID={`tick-${c.id}`}>{checked ? <Text style={s.tickMark}>✓</Text> : null}</View>
+        ) : onAddToGroup ? (
           <TouchableOpacity style={s.plus} onPress={() => onAddToGroup(c)} accessibilityLabel="Add to group" testID={`add-to-group-${c.id}`}>
             <Text style={s.plusText}>+</Text>
           </TouchableOpacity>
@@ -42,7 +63,13 @@ export function CreatorCard({ c, onOpen, onAddToGroup, compact }) {
       </View>
       <StatTriple instagram={c.instagram} youtube={c.youtube} engagement={c.engagement} compact={compact} />
       <View style={{ marginTop: 8 }}>
-        {c.status === 'OK' ? <TagRow items={tags} /> : <StatusChip3 status={c.status} />}
+        {picking && select.chip ? (
+          <View style={{ flexDirection: 'row' }}>
+            <View style={[s.pickChip, { marginLeft: 0, backgroundColor: (select.tone || T.state.ended).bg }]}>
+              <Text style={[s.pickChipText, { color: (select.tone || T.state.ended).fg }]}>{select.chip}</Text>
+            </View>
+          </View>
+        ) : c.status === 'OK' ? <TagRow items={tags} /> : <StatusChip3 status={c.status} />}
         {c.blockedByYou ? <StatusChip3 status={null} blockedByYou /> : null}
       </View>
     </TouchableOpacity>
@@ -115,22 +142,24 @@ export default function DiscoverList({
     if (mode === 'select' && pickState) {
       const ps = pickState(item) || { state: 'ok' };
       const locked = ps.state !== 'ok';
-      const checked = ps.state === 'invited' || (selectedIds && selectedIds.has(item.id));
+      const checked = ps.state === 'invited' || !!(selectedIds && selectedIds.has(item.id));
       return (
-        <CheckboxRow checked={checked} disabled={locked} onPress={() => onToggleSelect && onToggleSelect(item)} testID={`select-${item.id}`}>
-          <MemberRow c={locked ? { ...item, status: null } : item} sub={locked ? ps.label : undefined}
-            right={ps.chip ? <View style={[s.pickChip, { backgroundColor: ps.state === 'invited' ? T.state.waiting.bg : T.state.ended.bg }]}><Text style={[s.pickChipText, { color: ps.state === 'invited' ? T.state.waiting.fg : T.state.ended.fg }]}>{ps.chip}</Text></View> : null} />
-        </CheckboxRow>
+        <CreatorCard c={locked ? { ...item, status: null } : item} select={{
+          checked, disabled: locked, onToggle: () => onToggleSelect && onToggleSelect(item),
+          note: locked ? ps.label : undefined, chip: ps.chip,
+          tone: ps.state === 'invited' ? T.state.waiting : T.state.ended,
+        }} />
       );
     }
     if (mode === 'select') {
-      const disabled = disabledIds && disabledIds.has(item.id);
-      const checked = disabled || (selectedIds && selectedIds.has(item.id));
+      const disabled = !!(disabledIds && disabledIds.has(item.id));
+      const checked = disabled || !!(selectedIds && selectedIds.has(item.id));
       const full = !checked && capacityLeft != null && capacityLeft <= 0;
       return (
-        <CheckboxRow checked={checked} disabled={disabled || full} onPress={() => onToggleSelect && onToggleSelect(item)} testID={`select-${item.id}`}>
-          <MemberRow c={disabled ? { ...item, status: null } : item} sub={disabled ? (disabledLabel || C3.groups.alreadyIn) : undefined} />
-        </CheckboxRow>
+        <CreatorCard c={disabled ? { ...item, status: null } : item} select={{
+          checked, disabled: disabled || full, onToggle: () => onToggleSelect && onToggleSelect(item),
+          note: disabled ? (disabledLabel || C3.groups.alreadyIn) : undefined,
+        }} />
       );
     }
     return <CreatorCard c={item} onOpen={onOpen} onAddToGroup={onAddToGroup} />;
@@ -222,6 +251,11 @@ export const s = StyleSheet.create({
   sortItemText: { fontFamily: fonts.sansMedium, fontSize: 14, color: T.ink2 },
   capHint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, marginBottom: 6 },
   card: { borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 14, marginBottom: 12, backgroundColor: T.bg },
+  cardOn: { borderColor: T.ink, borderWidth: 1.5, backgroundColor: T.surface },
+  cardOff: { opacity: 0.5 },
+  tick: { width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: T.border, alignItems: 'center', justifyContent: 'center', backgroundColor: T.bg },
+  tickOn: { backgroundColor: T.ink, borderColor: T.ink },
+  tickMark: { fontFamily: fonts.sansBold, fontSize: 14, color: T.bg, marginTop: -1 },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
   name: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: T.ink },
   meta: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, marginTop: 2 },

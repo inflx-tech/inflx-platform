@@ -96,7 +96,22 @@ export default function BrandSetEditScreen({ navigation, route }) {
       navigation.replace('BrandCreatorTerms', { campaignId, setId: created.id, index: 0 });
       return;
     }
-    navigation.replace('BrandCampaignDetail', { campaignId, name: campaignName, toast: S.saved });
+    /**
+     * A NEW set opens straight away and carries her on to the creators (founder, 2026-09-16).
+     *
+     * The stack is rebuilt rather than replaced because this screen is reached two ways — "Add
+     * another set" from the campaign, and the first set right after creating the campaign. Both
+     * must end up in the same place: campaigns → this campaign → the new set. Back from the set
+     * is then the campaign she just filled, which the first-set path never used to show at all.
+     */
+    navigation.reset({
+      index: 2,
+      routes: [
+        { name: 'BrandCampaigns' },
+        { name: 'BrandCampaignDetail', params: { campaignId, name: campaignName } },
+        { name: 'BrandSetDetail', params: { campaignId, setId: r.data.set.id, toast: S.saved, addCreators: true } },
+      ],
+    });
   }
 
   return (
