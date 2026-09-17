@@ -1,0 +1,22 @@
+{
+  "feature": "same-creator-many-sets",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (\"if exclusively present then update that it can accept same creator into another set in same campaign but not into same set\", 2026-09-17)",
+  "approved_at": "2026-09-17T12:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "n/a — no screen added or redrawn. A server refusal stops being issued; the screens that displayed it are untouched.",
+  "mockup_locked_at": "2026-09-17T12:00:00+05:30",
+  "notes": "The campaign-wide block in invitationSend.service.js was legacy and contradicted rules v1.21 §148 and §268. Item 4 APPROVAL Q6 only narrowed it (excluded dead statuses); it was never approved as a rule. Removed, and the open-group broadcast exclusion rescoped from campaign to set. item4 check 22 rewritten — it had been asserting the wrong rule. Full suite diffed by test name: 0 newly broken.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null
+  }
+}

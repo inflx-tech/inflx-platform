@@ -213,21 +213,30 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     throw new AppError('VALIDATION_ERROR', 'conversion and hybrid collaborations need either an allocation (alloc_scope) or an offer', 422, 'alloc_scope');
   }
 
-  // ── Already in this set (LIVE row), then elsewhere in the campaign (item 4 Q6) ──
+  /**
+   * ── Already LIVE in THIS set. That is the whole rule. ──────────────────────
+   *
+   * Rules v1.21:
+   *   §148 "The same Creator may belong to multiple Sets within the same Campaign, for example
+   *         for different Aims or different negotiated arrangements."
+   *   §268 "A Creator who is live in this Set cannot be chosen again. A Creator whose earlier
+   *         invitation ended … may be invited again, to this Set or to another Set of the same
+   *         Campaign, while there is still time."
+   *
+   * There used to be a second check here refusing her anywhere else in the campaign — legacy,
+   * predating item 4, which only narrowed it (APPROVAL Q6 excluded the dead statuses). It was
+   * never in the rules and directly contradicts both lines above. Removed 2026-09-17 after the
+   * founder hit it at Review and send: "Asha M. is already in another set of this campaign",
+   * refusing a Pay for Sale set to a creator already on a Pay for Content one — the exact case
+   * §148 names as allowed.
+   *
+   * One set, one live row. Across sets, nothing to say.
+   */
   const { rows: sameSet } = await db.query(
     `SELECT 1 FROM campaign_influencers WHERE set_id = $1 AND influencer_id = $2 AND status = ANY($3::campaign_influencer_status[]) LIMIT 1`,
     [set.id, influencer_id, LIVE_STATUSES]
   );
   if (sameSet[0]) throw new AppError('CONFLICT', MSG.DUPLICATE(name), 409, 'influencer_id');
-  const { rows: crossSet } = await db.query(
-    `SELECT ci.id FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id
-      WHERE cs.campaign_id = $1 AND ci.influencer_id = $2 AND ci.set_id <> $3
-        AND NOT (ci.status = ANY($4::campaign_influencer_status[]))`,
-    [campaign.id, influencer_id, set.id, campaignState.NON_BLOCKING_STATUSES]
-  );
-  if (crossSet[0]) {
-    throw new AppError('CONFLICT', strict ? `${name} is already in another set of this campaign.` : 'This influencer is already assigned to another set in this campaign', 409, 'influencer_id');
-  }
 
   // ── Engagement / hybrid budget (legacy) ─────────────────────────────────
   if ((goal === 'engagement' || goal === 'hybrid') && influencer_budget != null && set.set_budget != null) {

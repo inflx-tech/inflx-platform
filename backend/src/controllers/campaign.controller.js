@@ -233,14 +233,17 @@ async function materialiseOpenGroupInvites(tx, campaign, sets) {
     if (set.influencer_mode !== 'open_group') continue;
 
     const { conditions, params, nextIdx } = buildOpenGroupMatchClauses(set.open_group_filters || {}, 1);
-    // Exclude anyone LIVE on another set in this campaign. Item 4 (founder Q6): a dead or
-    // deferred row does not exclude her, same as the invite path.
+    // Exclude anyone already live in THIS set — not in the campaign. Rules v1.21 §148 and §268:
+    // the same creator may belong to several sets of one campaign, and only a live row in this
+    // set puts her out of the running for it. A dead or deferred row does not exclude her at all,
+    // same as the invite path. (The campaign-wide version was removed 2026-09-17; see
+    // invitationSend.service for the whole story.)
     conditions.push(
-      `NOT EXISTS (SELECT 1 FROM campaign_influencers ci2 JOIN campaign_sets cs2 ON cs2.id = ci2.set_id
-                    WHERE cs2.campaign_id = ${nextIdx} AND ci2.influencer_id = i.id
+      `NOT EXISTS (SELECT 1 FROM campaign_influencers ci2
+                    WHERE ci2.set_id = ${nextIdx} AND ci2.influencer_id = i.id
                       AND NOT (ci2.status = ANY(${nextIdx + 1}::campaign_influencer_status[])))`
     );
-    params.push(campaign.id, campaignState.NON_BLOCKING_STATUSES);
+    params.push(set.id, campaignState.NON_BLOCKING_STATUSES);
     let nextParamIdx = nextIdx + 2;
 
     // A12.5 — area_scope filter (city/state) injected with proper placeholder.

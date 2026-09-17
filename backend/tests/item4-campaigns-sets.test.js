@@ -225,18 +225,47 @@ describe('counts, states and the two lists', () => {
     expect(st.body.data.set.state).toBe('live');
   });
 
-  it('cross-set: a creator who declined, expired or deferred in Set A can be invited to Set B; one who is live cannot (check 22)', async () => {
+  it('the same creator may be in several sets of one campaign; only a LIVE row in THIS set refuses her (check 22, rules v1.21 §148 §268)', async () => {
+    /**
+     * ⚠️ REWRITTEN 2026-09-17. This test used to assert the opposite of the rules.
+     *
+     * It required a 409 when a creator live in Set A was invited to Set B. Rules v1.21:
+     *   §148 "The same Creator may belong to multiple Sets within the same Campaign, for
+     *         example for different Aims or different negotiated arrangements."
+     *   §268 "A Creator who is live in this Set cannot be chosen again. A Creator whose earlier
+     *         invitation ended … may be invited again, to this Set or to another Set of the
+     *         same Campaign, while there is still time."
+     *
+     * The founder hit the real thing at Review and send: a Pay for Sale set refused because the
+     * creator was already on a Pay for Content set of the same campaign — the exact case §148
+     * names as allowed. The campaign-wide block was legacy, never in the rules; item 4 only
+     * narrowed it (APPROVAL Q6 excluded the dead statuses) rather than questioning it.
+     *
+     * So this now asserts BOTH halves of §268, where it used to assert one and get it backwards.
+     */
     const b = await brand(); const c = await campaign(b);
     const a = await set(b, c.id, { name: 'Set A', goal: 'engagement' }); const s2 = await set(b, c.id, { name: 'Set B', goal: 'engagement' });
     const cr = await creator();
-    const invite = () => api.post(`/campaigns/${c.id}/sets/${s2.id}/invite`, b.token, { influencer_id: cr.influencerId, agreed_fee: 5000 });
+    const invite = (setId) => api.post(`/campaigns/${c.id}/sets/${setId}/invite`, b.token, { influencer_id: cr.influencerId, agreed_fee: 5000 });
+
+    // Live in Set A, invited to Set B — ALLOWED. §148.
     const rowA = await inviteRow(a.id, cr.influencerId, 'invited');
-    let r = await invite(); expect(r.status).toBe(409);
+    let r = await invite(s2.id);
+    expect([201, 403]).toContain(r.status);   // 403 only if her own settings refuse
+    expect(r.status).not.toBe(409);
+
+    // Live in Set B, invited to Set B again — REFUSED. §268, first sentence.
+    await query(`DELETE FROM campaign_influencers WHERE set_id = $1`, [s2.id]);
+    await inviteRow(s2.id, cr.influencerId, 'invited');
+    r = await invite(s2.id);
+    expect(r.status).toBe(409);
+
+    // An ended row in Set A never blocked Set B, and still does not.
     for (const st of ['declined', 'expired', 'deferred', 'rejected_by_brand', 'slots_filled']) {
       await query(`UPDATE campaign_influencers SET status = $2 WHERE id = $1`, [rowA, st]);
       await query(`DELETE FROM campaign_influencers WHERE set_id = $1`, [s2.id]);
-      r = await invite();
-      expect([201, 403]).toContain(r.status); // 403 only if her invitation settings refuse; never the cross-set 409
+      r = await invite(s2.id);
+      expect([201, 403]).toContain(r.status);
       expect(r.status).not.toBe(409);
     }
   });
