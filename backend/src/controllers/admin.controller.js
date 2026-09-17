@@ -842,16 +842,30 @@ const updatePaymentConfig = asyncHandler(async (req, res) => {
 // PATCH /admin/brands/:id/platform-fee  (finance+ override per-brand fee %)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Item 9 — null CLEARS the override, exactly like the escrow one below.
+ *
+ * Until migration 186 this column defaulted to 8.00 and was read by nobody who
+ * mattered, so "no override" was not a state anything needed. Now NULL means
+ * "follow the platform-wide campaign fee", which is the ordinary case and what
+ * every brand sits at — so there has to be a way back to it. Without this the
+ * override was a one-way door: an admin could set a brand's fee and then never
+ * return it to the default.
+ */
 const setBrandPlatformFee = asyncHandler(async (req, res) => {
-  const { platform_fee_pct } = req.body;
-  const fee = parseFloat(platform_fee_pct);
-  if (isNaN(fee) || fee < 0 || fee > 50) {
-    throw new AppError('VALIDATION_ERROR', 'platform_fee_pct must be 0–50', 422, 'platform_fee_pct');
+  const raw = req.body.platform_fee_pct;
+  let value = null;
+  if (raw !== null && raw !== '' && raw !== undefined) {
+    const fee = parseFloat(raw);
+    if (isNaN(fee) || fee < 0 || fee > 50) {
+      throw new AppError('VALIDATION_ERROR', 'platform_fee_pct must be 0–50, or null to follow the platform fee', 422, 'platform_fee_pct');
+    }
+    value = fee.toFixed(2);
   }
 
   const { rows } = await db.query(
     `UPDATE brands SET platform_fee_pct = $1 WHERE id = $2 RETURNING id, platform_fee_pct`,
-    [fee.toFixed(2), req.params.id]
+    [value, req.params.id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
 

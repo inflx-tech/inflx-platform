@@ -50,6 +50,16 @@
         "test": "item7-agreement.test.js — \"still locked FOLLOWS the payments\". Releases tranche 2 and asserts released 2250→4500 and stillLocked 7470→5220, then asserts released_amount is STILL 2250 so the card keeps its meaning. Reverting the fix makes it fail with Expected 4500 / Received 2250 — checked, not assumed.",
         "tests": "item7-agreement 46 passed. The 5 failures in escrow-fee-tiers, earnings and campaigns-live were verified present in the pre-fix baseline — pre-existing debt, not caused here.",
         "founder_decision": "answering the item 9 report: \"Q2 fix this now\"."
+      },
+      {
+        "at": "2026-09-17",
+        "founder_decision": "\"make override real\" and \"pay for content set it default to 7 days ... but make it default 7 days\".",
+        "problem": "brands.platform_fee_pct was read by the older website door and IGNORED by the door that actually locks the money, which always used the platform-wide campaign fee. An override would have been quoted to a brand and then never charged. It had never shown because the column DEFAULTED to 8.00 — the same as the platform number — so every brand looked overridden and none really was.",
+        "fix": "migration 186 drops that default and nulls the rows that merely equal the platform number, so NULL now honestly means \"no override\". The agreement resolves the brand percentage first and the platform one otherwise, and stamps whichever wins. Both doors — the phone and the older website one — now call one shared totalToLockFor(), which also fixed the second half of the defect: the website was adding a campaign fee to Hybrid and Pay for Sale, where the rules say zero, and could refuse a signature whose real cost was ₹0.",
+        "also_found": "making NULL meaningful turned the admin endpoint into a one-way door — it accepted 0–50 and rejected null, so an override could be set and never removed. Now null clears it, matching the escrow-override endpoint beside it that always did this properly.",
+        "t3_wait": "tranche_3_release_after_days default 30 → 7, and the live row set to 7. The clock still starts when the brand confirms content is live and is still admin-editable. Dry run against production: all four tranche-3 rows are still locked, none armed, so nothing was brought forward.",
+        "safety": "brands.platform_fee_pct also feeds the sale-side platform cut as a fallback, which already reads COALESCE(platform_fee_pct, 8.00) — so nulling the column leaves sales untouched. Checked before applying.",
+        "tests": "three new tests in item7-agreement: a 12% brand is quoted AND charged 12% and it is stamped; a brand with no override follows the platform 8%; an override is still never charged on a Hybrid fixed amount. Reverting the fix makes the first fail with Expected 11200 / Received 10800. Full backend 222 failed / 1102 passed / 1324 with ONE new failure, brand.test.js expecting the old 8.00 default, updated to the new truth."
       }
     ]
   }

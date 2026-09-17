@@ -86,7 +86,12 @@ describe('GET /v1/brands/me', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.brand.business_name).toBeDefined();
     expect(res.body.data.brand.wallet_balance).toBeDefined();
-    expect(res.body.data.brand.platform_fee_pct).toBe('8.00');
+    // Item 9 (migration 186): a new brand has NO campaign-fee override, so this is
+    // null and it follows the platform-wide number. It used to default to 8.00, which
+    // made every brand look overridden and left no way to say "no override" — the
+    // admin pages had always read it as `platform_fee_pct ?? 8`, so null was the
+    // intent all along and the column default was the accident.
+    expect(res.body.data.brand.platform_fee_pct).toBeNull();
   });
 
   it('returns 401 without an auth token', async () => {

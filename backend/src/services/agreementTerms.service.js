@@ -48,6 +48,8 @@ const CONTEXT_SQL = `
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode, cs.go_live_date, cs.branch_id,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id,
          b.business_name AS brand_name, bu.id AS brand_user_id, bu.name AS brand_user_name,
+         -- Item 9: this brand's own campaign fee, or NULL to follow the platform number.
+         b.platform_fee_pct AS brand_campaign_fee_pct,
          bu.city AS brand_city, bu.state AS brand_state,
          i.full_name AS creator_name, i.instagram_handle, i.city AS creator_city, i.state AS creator_state,
          iu.id AS creator_user_id, iu.name AS creator_user_name,
@@ -147,6 +149,40 @@ function moneyFor(goal, fee, campaignFeePct, tranchePcts) {
 }
 
 /**
+ * Item 9 — the campaign fee that applies to one brand.
+ *
+ * A brand may carry its own percentage, set by an admin. NULL means it has none
+ * and follows the platform-wide number, which is the ordinary case.
+ *
+ * ONE function, because two doors ask this question — the agreement, and the
+ * older website pre-check that tells a brand what it must have in its wallet.
+ * Before item 9 they answered differently: the website read the brand column and
+ * the agreement ignored it, so an override would have been quoted and then never
+ * charged. Nobody had used one, which is the only reason it never showed.
+ */
+function campaignFeePctFor(brandOverridePct, settings) {
+  if (brandOverridePct !== null && brandOverridePct !== undefined && brandOverridePct !== '') {
+    return Number(brandOverridePct);
+  }
+  return Number(settings.campaign_fee_pct.value);
+}
+
+/**
+ * What a brand must have available to sign this collaboration, answered once for
+ * every door. Pay for Sale locks nothing; Hybrid locks the fixed fee with no
+ * campaign fee; Pay for Content locks the fee plus the campaign fee (rules §10).
+ */
+async function totalToLockFor(goal, fee, brandOverridePct) {
+  const [settings, cfg] = await Promise.all([platformSettings.getAll(), paymentConfigSvc.getConfig()]);
+  const money = moneyFor(
+    goal, fee,
+    campaignFeePctFor(brandOverridePct, settings),
+    [cfg.tranche1Pct, cfg.tranche2Pct, cfg.tranche3Pct]
+  );
+  return { totalToLock: money.totalToLock, campaignFee: money.campaignFee, campaignFeePct: money.campaignFeePct, gate: money.gate };
+}
+
+/**
  * Build the snapshot from the invitation. Pure of side effects — the caller
  * decides whether to store it (send) or merely show it (preview).
  */
@@ -157,7 +193,11 @@ async function buildSnapshot(ctx, client = db) {
   const cfg = await paymentConfigSvc.getConfig();
   const terms = await standardTerms.current();
 
-  const campaignFeePct = settings.campaign_fee_pct.value;
+  // Item 9: the brand's own campaign fee when an admin has set one, the
+  // platform-wide number otherwise. NULL means "no override" — see migration 186.
+  // Whichever wins is STAMPED into the snapshot below, so a later change to
+  // either number never moves a collaboration that is already signed.
+  const campaignFeePct = campaignFeePctFor(ctx.brand_campaign_fee_pct, settings);
   const tranchePcts = [cfg.tranche1Pct, cfg.tranche2Pct, cfg.tranche3Pct];
   const money = moneyFor(goal, ctx.agreed_fee, campaignFeePct, tranchePcts);
 
@@ -246,4 +286,5 @@ async function buildSnapshot(ctx, client = db) {
 
 module.exports = {
   loadContext, buildSnapshot, moneyFor, nextReference, scopeWords, CONTEXT_SQL,
+  campaignFeePctFor, totalToLockFor,
 };

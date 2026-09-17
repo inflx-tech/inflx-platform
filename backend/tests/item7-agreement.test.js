@@ -339,6 +339,60 @@ describe('the money (checks 14–19, 35–37)', () => {
     expect(tx.filter(t => t.type === 'platform_fee').map(t => Number(t.amount))).toEqual([720]);
   });
 
+  it('⚠️ a per-brand campaign fee REACHES THE MONEY, not just the quote (item 9)', async () => {
+    /**
+     * Founder, 17 Sep: "if admin wants per brand settings he can set … that per
+     * brand overrides default one if set in admin."
+     *
+     * It did not. brands.platform_fee_pct was read by the older website door and
+     * ignored by the door that actually locks, which always used the platform-wide
+     * campaign fee. An override would have been quoted to a brand and then never
+     * charged. Nobody had set one, which is the only reason it never showed.
+     *
+     * NULL still means "follow the platform number" — that is the ordinary case
+     * and the reason migration 186 dropped the column's 8.00 default.
+     */
+    const w = await world('engagement', { terms: { fee: 10000, deliverables: [{ type: 'reel', count: 1 }] } });
+    await query(`UPDATE brands SET platform_fee_pct = 12 WHERE id = $1`, [w.brandId]);
+    await upToHerSignature(w);
+
+    // Quoted with her brand's 12%, not the platform's 8%.
+    const cost = await api.get(`${w.url}/invitations/${w.ciId}/agreement/cost`, w.b.token);
+    expect(cost.body.data.cost.totalToLock).toBe(11200);
+
+    const r = await brandSign(w);
+    expect(r.status).toBe(200);
+    const row = await con(w.ciId);
+    // …and CHARGED with it. 10000 + 12% = 11200, of which 1200 is the fee.
+    expect(Number(row.locked_amount)).toBe(11200);
+    expect(Number(row.campaign_fee_amount)).toBe(1200);
+    // Stamped, so a later change to either number cannot move this one.
+    expect(row.terms_json.money.campaignFeePct).toBe(12);
+    expect(await wallet(w.brandId)).toBe(500000 - 11200);
+    // She still receives the agreed amount whole — the fee is the brand's.
+    expect(await infWallet(w.cr.influencerId)).toBe(2500);
+  });
+
+  it('a brand with no override follows the platform number (item 9)', async () => {
+    const w = await world('engagement', { terms: { fee: 10000, deliverables: [{ type: 'reel', count: 1 }] } });
+    await query(`UPDATE brands SET platform_fee_pct = NULL WHERE id = $1`, [w.brandId]);
+    await upToHerSignature(w);
+    await brandSign(w);
+    const row = await con(w.ciId);
+    expect(Number(row.locked_amount)).toBe(10800);          // the platform's 8%
+    expect(row.terms_json.money.campaignFeePct).toBe(8);
+  });
+
+  it('an override is still never charged on a Hybrid fixed amount (item 9)', async () => {
+    const w = await world('hybrid', { terms: { fee: 5000, commissionPct: 10, scope: 'store' } });
+    await query(`UPDATE brands SET platform_fee_pct = 12 WHERE id = $1`, [w.brandId]);
+    await upToHerSignature(w);
+    await brandSign(w);
+    const row = await con(w.ciId);
+    expect(Number(row.locked_amount)).toBe(5000);           // the fee alone
+    expect(Number(row.campaign_fee_amount)).toBe(0);
+  });
+
   it('⚠️ "still locked" FOLLOWS the payments — it does not freeze at the first one', async () => {
     /**
      * Item 9 gap report §4.5. contracts.released_amount is written once, at the

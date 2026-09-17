@@ -24,6 +24,9 @@ const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
 const notificationService = require('../services/notification.service');
 const pdfService          = require('../services/pdf.service');
+// Item 9: the one place that answers "what must the brand have available", so this
+// older door and the agreement can never disagree about the money again.
+const agreementTerms      = require('../services/agreementTerms.service');
 const storageService      = require('../services/storage.service');
 const escrowService       = require('../services/escrow.service');
 const productionService   = require('../services/production.service');
@@ -543,11 +546,20 @@ const brandSign = asyncHandler(async (req, res) => {
   // moment both parties have agreed on the final fee. If brand wallet
   // doesn't have enough, brand-sign is refused with WALLET_INSUFFICIENT.
   //
-  // What gets locked = effectiveFee + (effectiveFee × platform_fee_pct%).
-  // All values are RUPEES (migration 021).
-  const platformFeePct  = parseFloat(contract.platform_fee_pct || 8);
-  const lockAmount      = parseFloat((effectiveFee * (1 + platformFeePct / 100)).toFixed(2));
-  const needsWalletLock = effectiveFee > 0;   // conversion-only contracts skip this
+  // Item 9 — ONE answer to "what must the brand have", shared with the agreement.
+  //
+  // This used to work it out itself: `effectiveFee × (1 + brands.platform_fee_pct%)`,
+  // with no test for the Aim. Two things were wrong with that. It read a different
+  // percentage from the one the agreement stamps and charges, so a per-brand
+  // override would have been quoted here and never taken. And it added a campaign
+  // fee to Hybrid and to Pay for Sale, where the rules say zero — so it could
+  // refuse a signature with "not enough money" on a collaboration that costs ₹0.
+  const lockPlan = await agreementTerms.totalToLockFor(
+    contract.goal, effectiveFee, contract.platform_fee_pct
+  );
+  const platformFeePct  = lockPlan.campaignFeePct;
+  const lockAmount      = lockPlan.totalToLock;
+  const needsWalletLock = lockPlan.gate && lockAmount > 0;
 
   if (needsWalletLock) {
     const { rows: brandWalletRows } = await db.query(
@@ -710,13 +722,14 @@ const bulkBrandSign = asyncHandler(async (req, res) => {
   }
 
   // Compute total wallet lock across all contracts
+  // Item 9 — the same shared answer, per contract, so a batch cannot disagree
+  // with what each one will actually cost when it is signed.
   let totalLock = 0;
   for (const c of contracts) {
     const baseFee = parseFloat(c.influencer_fee || c.agreed_fee || c.influencer_budget || c.per_influencer_budget || 0);
     const bonus   = parseFloat(c.bonus_amount || 0);
-    const eff     = baseFee + bonus;
-    const fee     = parseFloat(c.platform_fee_pct || 8);
-    totalLock += eff * (1 + fee / 100);
+    const plan = await agreementTerms.totalToLockFor(c.goal, baseFee + bonus, c.platform_fee_pct);
+    totalLock += plan.totalToLock;
   }
   totalLock = parseFloat(totalLock.toFixed(2));
 
@@ -1005,9 +1018,10 @@ const approveContract = asyncHandler(async (req, res) => {
   // contracts have base = 0, so this reduces to bonus only — still
   // checked because brand could attach a goodwill bonus to a conversion
   // contract.
+  // Item 9 — the same shared answer again. A Pay for Sale contract locks nothing,
+  // so it is no longer refused for a wallet balance it never needed.
   const baseFee        = parseFloat(contract.influencer_fee || 0);
-  const platformFeePct = parseFloat(contract.platform_fee_pct || 8);
-  const projectedLock  = (baseFee + bonus) * (1 + platformFeePct / 100);
+  const projectedLock  = (await agreementTerms.totalToLockFor(contract.goal, baseFee + bonus, contract.platform_fee_pct)).totalToLock;
   const walletBalance  = parseFloat(contract.brand_wallet_balance || 0);
 
   // Only enforce when there's an upfront fee component. Pure conversion
