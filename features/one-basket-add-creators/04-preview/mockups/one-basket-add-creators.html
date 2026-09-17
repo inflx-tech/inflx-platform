@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX · One basket for Add creators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+</svg>
+<style>
+/* Only what this contract adds on top of the locked item-5 kit. */
+.basket{border-top:1px solid var(--border);background:#fff;padding:9px 14px 14px;display:grid;gap:8px}
+.bline{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.bline .n{font-weight:800;font-size:13px}
+.bline .src{color:var(--ink2)}
+.bline .rev{margin-left:auto;font-weight:700;text-decoration:underline;text-underline-offset:3px;font-size:12px}
+.stack{display:flex;align-items:center;gap:0}
+.was{background:var(--surface);border-radius:10px;padding:8px 10px;font-size:11.5px;color:var(--ink2)}
+.gone{position:relative}
+.gone::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(196,43,43,.07) 0 8px,rgba(196,43,43,.14) 8px 16px);border-radius:12px}
+.flag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;background:var(--no-bg);color:var(--no-fg);width:max-content}
+.flag.ok{background:var(--active-bg);color:var(--active-fg)}
+.grouprow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.grouprow:last-child{border-bottom:0}
+.grouprow .t{flex:1;display:grid;gap:1px}
+.grouprow .t b{font-size:13.5px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12.5px;color:var(--ink2)}
+.legend b{color:var(--ink)}
+table.rules{border-collapse:collapse;width:100%;font-size:13.5px;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+table.rules th,table.rules td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+table.rules th{background:var(--surface);font-size:12px;letter-spacing:.02em}
+table.rules tr:last-child td{border-bottom:0}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">INFLX · amendment to item 5 · Add creators · drawn 17 Sep 2026 · awaiting lock</div>
+  <h1>One basket for Add creators</h1>
+  <p class="lede">Founder, 17 Sep: <i>"say i opened one set… then i can able to add pool creators, from group and from list of creators selected manually… but navigation to add creators is not actually supporting this."</i> She is right. Three of the four tabs fill one basket; the Groups tab leaves the screen and starts its own separate send, throwing the basket away. This makes all four tabs fill the same basket, and one Send finish the job.</p>
+  <span class="pill">Draft · for lock · nothing built yet</span>
+</header>
+
+<section>
+  <header>
+    <h2>1 · What happens today</h2>
+    <p class="prose">Nothing here is broken by accident — it is two roads that were built at different times and never joined. The screens below are the ones in her hands right now.</p>
+  </header>
+  <div class="flow">
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+        <div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+        <div class="segc four"><span class="on">All creators</span><span>Worked with</span><span>Groups</span><span>Pool</span></div>
+        <div class="search"><svg class="ico"><use href="#i-search"/></svg>Search by name or @handle</div>
+        <div>
+          <div class="mrow2"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">Fashion · Hyderabad · 48.2K IG</span></div></div>
+          <div class="mrow2"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b><span class="xs mut">Fashion · Hyderabad · 18.4K IG</span></div></div>
+          <div class="mrow2"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#DDE9FB">DR</span><div class="t"><b>Divya R.</b><span class="xs mut">Fashion · Hyderabad · 64.1K IG</span></div></div>
+          <div class="mrow2"><span class="check"></span><span class="avatar av-s" style="background:#E7E3FB">RV</span><div class="t"><b>Ritu V.</b><span class="xs mut">Fashion · Vijayawada · 22.7K IG</span></div></div>
+        </div>
+      </div>
+      <div class="savebar"><button class="btn block b-pri" type="button">Next: terms for 3 creators</button></div>
+    </div><div class="cap"><i>TODAY 1</i><b>Three ticked by hand</b><span>The basket is the button. This part works, and works across All creators, Worked with and Pool.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+        <div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+        <div class="segc four"><span>All creators</span><span>Worked with</span><span class="on">Groups</span><span>Pool</span></div>
+        <div>
+          <div class="grouprow"><div class="t"><b>Diwali shortlist</b><span class="xs mut">12 creators</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="grouprow"><div class="t"><b>Hyderabad regulars</b><span class="xs mut">7 creators</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="grouprow"><div class="t"><b>Saree specialists</b><span class="xs mut">5 creators</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="toast t-warn" style="margin-top:auto"><svg class="ico"><use href="#i-alert"/></svg><span><b>The 3 you ticked have vanished from view.</b> No footer, no count. Nothing tells you they are still held.</span></div>
+      </div>
+    </div><div class="cap"><i>TODAY 2</i><b>Groups tab — the footer disappears</b><span>The button is hidden on this tab, so the running total is invisible. No group can be ticked; a group can only be opened.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invite a group</h3></div>
+        <div class="crumbs">SET A · ETHNIC WEAR</div>
+        <div class="card tint"><b>9 of 12 can be invited</b><span class="xs mut">Diwali shortlist · Pay for Sale · Store Visit · posts 20 Oct</span></div>
+        <div class="sechd2">Will be invited · 9</div>
+        <div class="row between"><span class="stack"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#FFE7A3">TS</span><span class="avatar av-s" style="background:#DDE9FB">DR</span></span><span class="xs mut">+5 more</span></div>
+        <div class="sechd2">Can't be invited · 3</div>
+        <div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#E7E3FB">RV</span><div class="t"><b>Ritu V.</b><span class="xs mut">Not taking invitations</span></div></div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">KD</span><div class="t"><b>Kavya D.</b><span class="xs mut">Not open to this set</span></div></div>
+        </div>
+        <div class="toast t-err"><svg class="ico"><use href="#i-ban"/></svg><span><b>This button starts a brand-new send.</b> Priya, Sneha and Divya are dropped. The pool picks are dropped. Only these 9 go forward.</span></div>
+      </div>
+      <div class="savebar gone"><button class="btn block b-pri" type="button">Next: terms for 9 creators</button></div>
+    </div><div class="cap"><i>TODAY 3</i><b>The group check — a second, separate road</b><span>The screen itself is good and stays. Its button is the problem: it begins its own draft instead of joining the one already in progress.</span></div></div>
+
+  </div>
+</section>
+
+<section>
+  <header>
+    <h2>2 · The change</h2>
+    <p class="prose">Two edits, both small. The running total follows you onto the Groups tab, and the group check <b>adds to</b> the basket instead of replacing it. Everything else on both screens stays exactly as it is.</p>
+  </header>
+  <div class="flow">
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+        <div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+        <div class="segc four"><span>All creators</span><span>Worked with</span><span>Groups</span><span class="on">Pool</span></div>
+        <div>
+          <div class="mrow2"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#E6F4EA">MK</span><div class="t"><b>Meera K.</b><span class="xs mut">Pay for Sale · 12% · agreed 2 Sep · 9 days left</span></div></div>
+          <div class="mrow2"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><span class="avatar av-s" style="background:#FFE7A3">AS</span><div class="t"><b>Anjali S.</b><span class="xs mut">Pay for Sale · 10% · agreed 5 Sep · 12 days left</span></div></div>
+          <div class="mrow2"><span class="check"></span><span class="avatar av-s" style="background:#DDE9FB">VN</span><div class="t"><b>Vani N.</b><span class="xs mut">different Aim — no terms carried · 6 days left</span></div></div>
+        </div>
+      </div>
+      <div class="basket">
+        <div class="bline"><span class="stack"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#DDE9FB">DR</span></span><span class="n">5 selected</span><span class="rev">Review</span></div>
+        <button class="btn block b-pri" type="button">Next: terms for 5 creators</button>
+      </div>
+    </div><div class="cap"><i>AFTER 1</i><b>Pool picks join the three by hand</b><span>Unchanged from today — but the footer now shows <b>who</b> is in the basket, not only how many, so it survives a tab change in the eye as well as in memory.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+        <div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+        <div class="segc four"><span>All creators</span><span>Worked with</span><span class="on">Groups</span><span>Pool</span></div>
+        <div>
+          <div class="grouprow"><div class="t"><b>Diwali shortlist</b><span class="xs mut">12 creators · 9 can be invited</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="grouprow"><div class="t"><b>Hyderabad regulars</b><span class="xs mut">7 creators · 7 can be invited</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="grouprow"><div class="t"><b>Saree specialists</b><span class="xs mut">5 creators · 2 already selected</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="hint">Open a group to see who can be invited, then add them to your selection.</div>
+      </div>
+      <div class="basket">
+        <div class="bline"><span class="stack"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#DDE9FB">DR</span></span><span class="n">5 selected</span><span class="rev">Review</span></div>
+        <button class="btn block b-pri" type="button">Next: terms for 5 creators</button>
+      </div>
+    </div><div class="cap"><i>AFTER 2</i><b>Groups tab keeps the footer</b><span>The one visual change on this tab. The group rows also gain a second line saying how many of that group this set can actually take, so you know before you open it.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Invite a group</h3></div>
+        <div class="crumbs">SET A · ETHNIC WEAR</div>
+        <div class="card tint"><b>9 of 12 can be invited</b><span class="xs mut">Diwali shortlist · Pay for Sale · Store Visit · posts 20 Oct</span></div>
+        <div class="sechd2">Will be added · 9</div>
+        <div class="row between"><span class="stack"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#FFE7A3">TS</span><span class="avatar av-s" style="background:#DDE9FB">DR</span></span><span class="xs mut">+5 more</span></div>
+        <div class="was">2 of them — Priya Sharma and Sneha N. — you had already picked. They will not be added twice.</div>
+        <div class="sechd2">Can't be invited · 3</div>
+        <div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#E7E3FB">RV</span><div class="t"><b>Ritu V.</b><span class="xs mut">Not taking invitations</span></div></div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#DDE9FB">KD</span><div class="t"><b>Kavya D.</b><span class="xs mut">Not open to this set</span></div></div>
+        </div>
+        <div class="hint">Each creator still gets their own invitation and their own terms. The group is never shown to them.</div>
+      </div>
+      <div class="savebar">
+        <div class="xs mut" style="text-align:center;margin-bottom:6px">5 already selected · 7 new from this group</div>
+        <button class="btn block b-pri" type="button">Add 7 to selection</button>
+      </div>
+    </div><div class="cap"><i>AFTER 3</i><b>The group check, now a doorway back</b><span>Same screen, same honest breakdown of who can't come and why. Only the button changes — and it now tells you the truth about overlap before you tap it.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+        <div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+        <div class="toast t-ok"><svg class="ico"><use href="#i-check"/></svg><span>7 added from Diwali shortlist. 2 were already in your selection.</span></div>
+        <div class="segc four"><span>All creators</span><span>Worked with</span><span class="on">Groups</span><span>Pool</span></div>
+        <div>
+          <div class="grouprow"><div class="t"><b>Diwali shortlist</b><span class="xs mut">12 creators · 9 selected</span></div><span class="chip s-active">Added</span></div>
+          <div class="grouprow"><div class="t"><b>Hyderabad regulars</b><span class="xs mut">7 creators · 7 can be invited</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="grouprow"><div class="t"><b>Saree specialists</b><span class="xs mut">5 creators · 2 already selected</span></div><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+      </div>
+      <div class="basket">
+        <div class="bline"><span class="stack"><span class="avatar av-s" style="background:#FFE7A3">PS</span><span class="avatar av-s" style="background:#FDE2E2">SN</span><span class="avatar av-s" style="background:#DDE9FB">DR</span><span class="avatar av-s" style="background:#E6F4EA">MK</span></span><span class="n">12 selected</span><span class="rev">Review</span></div>
+        <button class="btn block b-pri" type="button">Next: terms for 12 creators</button>
+      </div>
+    </div><div class="cap"><i>AFTER 4</i><b>Back where you were, with twelve</b><span>Three manual + two pool + seven from a group, in one basket, going out in one Send. This is the screen the founder was looking for.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr" style="opacity:.35">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Add creators</h3></div>
+        <div class="crumbs">DIWALI EDIT 2026 · SET A · ETHNIC WEAR</div>
+        <div style="height:220px"></div>
+      </div>
+      <div class="dim"><div class="sheet"><span class="grab"></span>
+        <div class="row between"><b style="font-size:15px">12 selected</b><span class="xs mut">Tap to remove</span></div>
+        <div class="sechd2">Picked by hand · 3</div>
+        <div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b></div><svg class="ico" style="color:var(--ink3)"><use href="#i-x"/></svg></div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#FDE2E2">SN</span><div class="t"><b>Sneha N.</b></div><svg class="ico" style="color:var(--ink3)"><use href="#i-x"/></svg></div>
+        </div>
+        <div class="sechd2">From the pool · 2</div>
+        <div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#E6F4EA">MK</span><div class="t"><b>Meera K.</b><span class="xs mut">terms already agreed · 12%</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-x"/></svg></div>
+        </div>
+        <div class="sechd2">From Diwali shortlist · 7</div>
+        <div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">TS</span><div class="t"><b>Tanvi S.</b></div><svg class="ico" style="color:var(--ink3)"><use href="#i-x"/></svg></div>
+        </div>
+        <button class="btn block b-sec" type="button">Done</button>
+      </div></div>
+    </div><div class="cap"><i>AFTER 5</i><b>Review — what is in the basket, and where each came from</b><span><b>New screen.</b> With twelve creators from three sources you need to see and undo. Cut this and the rest still works — the basket just becomes harder to trust.</span></div></div>
+
+    <div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+      <div class="scr">
+        <div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Review and send</h3></div>
+        <div class="crumbs">SET A · ETHNIC WEAR · 12 CREATORS</div>
+        <div class="card tint"><b>12 invitations, one send</b><span class="xs mut">Each creator gets their own terms. Nobody sees the others.</span></div>
+        <div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">PS</span><div class="t"><b>Priya Sharma</b><span class="xs mut">10% · whole store · Festive 15%</span></div><span class="tag">By hand</span></div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#E6F4EA">MK</span><div class="t"><b>Meera K.</b><span class="xs mut">12% · whole store · from the pool</span></div><span class="tag">Pool</span></div>
+          <div class="mrow2"><span class="avatar av-s" style="background:#FFE7A3">TS</span><div class="t"><b>Tanvi S.</b><span class="xs mut">10% · whole store · Festive 15%</span></div><span class="tag">Diwali shortlist</span></div>
+        </div>
+        <div class="hint">Where a creator came from is recorded for your own reporting. It is never shown to her.</div>
+      </div>
+      <div class="savebar"><button class="btn block b-pri" type="button">Send 12 invitations</button></div>
+    </div><div class="cap"><i>AFTER 6</i><b>Review and send, unchanged but honest</b><span>The only difference: the source tag is now per creator rather than one label for the whole batch. The database column is already per row, so this costs a migration of nothing.</span></div></div>
+
+  </div>
+</section>
+
+<section>
+  <header>
+    <h2>3 · The rules this obeys</h2>
+    <p class="prose">Combining sources changes who is in the basket. It changes nothing about who may be invited — every existing refusal still applies, one creator at a time.</p>
+  </header>
+  <table class="rules">
+    <tr><th>Situation</th><th>What happens</th></tr>
+    <tr><td>A creator is in the group <b>and</b> already ticked by hand</td><td>Added once. The check screen says so before you tap.</td></tr>
+    <tr><td>A group member her own settings rule out</td><td>Not added, and named under "Can't be invited" — exactly as today.</td></tr>
+    <tr><td>A group member already live in this set</td><td>Not added. "Already in this set."</td></tr>
+    <tr><td>A group member live in <b>another set</b> of this campaign</td><td><b>Added.</b> That is the fix deployed this morning — rules v1.21 §148.</td></tr>
+    <tr><td>You add two groups</td><td>Both merge into the basket. Each creator keeps the group she came from.</td></tr>
+    <tr><td>A pool creator whose Aim matches</td><td>Arrives with her agreed terms filled in, as today.</td></tr>
+    <tr><td>You tap Back from the group check</td><td>Nothing is added. The basket is exactly as you left it.</td></tr>
+  </table>
+</section>
+
+<section>
+  <header>
+    <h2>4 · What it costs</h2>
+  </header>
+  <div class="legend">
+    <span><b>Brand app</b> — the picker footer, the group-check button, one new review sheet.</span>
+    <span><b>Backend</b> — accept a source group per creator instead of one per batch.</span>
+    <span><b>Migration</b> — none. <code>campaign_influencers.source_group_id</code> is already per row.</span>
+    <span><b>Creator app</b> — nothing. She never sees any of this.</span>
+    <span><b>Ships as</b> — one push and one brand OTA.</span>
+  </div>
+</section>
+
+<footer style="padding-block:34px 60px"><p class="xs mut">INFLX · features/one-basket-add-creators · drawn 17 Sep 2026 · not yet locked, nothing built</p></footer>
+</div>
+</body></html>

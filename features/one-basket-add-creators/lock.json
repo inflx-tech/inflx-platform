@@ -1,0 +1,22 @@
+{
+  "feature": "one-basket-add-creators",
+  "spec_version": "1.0.0",
+  "status": "drawn — awaiting founder lock",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Founder, 2026-09-17: the Groups tab forks away from the picker basket, so pool + group + manual cannot be combined in one send. Nine screens drawn in 04-preview/mockups/one-basket-add-creators.html on the locked item-5 stylesheet: three showing today's fork, six showing the basket. The Review sheet (AFTER 5) is a new screen and is marked cuttable. NOTHING BUILT — mockup_locked is false and must be true before any app code, per gov-check Rule 3.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null
+  }
+}
