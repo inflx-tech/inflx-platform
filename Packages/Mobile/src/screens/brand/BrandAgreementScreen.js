@@ -33,6 +33,9 @@ export default function BrandAgreementScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
+  // The reason the server refused a signature, shown INSIDE the sign sheet. A toast cannot be
+  // seen from behind a modal, so a refusal announced that way is a refusal nobody reads.
+  const [signError, setSignError] = useState(null);
   const { toast, show } = useToast();
 
   const load = useCallback(async () => {
@@ -63,14 +66,18 @@ export default function BrandAgreementScreen({ navigation, route }) {
 
   async function sign(body) {
     setBusy(true);
+    setSignError(null);
     const r = await brandApi.signAgreement(campaignId, setId, ciId, body);
     setBusy(false);
     if (!r || !r.success) {
-      // A short balance is refused with the shortfall named as an amount.
-      show((r && r.error && r.error.message) || MSG7.ALREADY_SIGNED);
+      // Whatever the reason — a short balance names the shortfall, a set that cannot be
+      // countersigned says why — it belongs in the sheet she is looking at, not in a toast
+      // behind it. The sheet stays open so she can act on it.
+      setSignError((r && r.error && r.error.message) || MSG7.ALREADY_SIGNED);
       load();
       return;
     }
+    setSignError(null);
     setSheet(null);
     setAg(r.data.agreement);
   }
@@ -252,7 +259,8 @@ export default function BrandAgreementScreen({ navigation, route }) {
       <SendAgreementSheet7 visible={sheet === 'send'} creatorName={firstName} cutoff={t.cutoff || ag.cutoff}
         busy={busy} onSend={send} onClose={() => setSheet(null)} />
       <BrandSignSheet7 visible={sheet === 'sign'} defaultName="" brandName={brandName} creatorName={firstName}
-        cost={cost} busy={busy} onSign={sign} onClose={() => setSheet(null)} />
+        cost={cost} busy={busy} serverError={signError} onSign={sign}
+        onClose={() => { setSignError(null); setSheet(null); }} />
       <WithdrawAgreementSheet7 visible={sheet === 'withdraw'} creatorName={firstName}
         busy={busy} onWithdraw={withdraw} onClose={() => setSheet(null)} />
       {toast}

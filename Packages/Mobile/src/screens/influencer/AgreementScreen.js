@@ -30,6 +30,8 @@ export default function AgreementScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
+  // Why a signature was refused, shown in the sheet she is looking at.
+  const [signError, setSignError] = useState(null);
   const { toast, show } = useToast();
 
   const load = useCallback(async () => {
@@ -43,9 +45,16 @@ export default function AgreementScreen({ navigation, route }) {
 
   async function sign(body) {
     setBusy(true);
+    setSignError(null);
     const r = await influencerApi.signMyAgreement(ciId, body);
     setBusy(false);
-    if (!r || !r.success) { show((r && r.error && r.error.message) || MSG7.ALREADY_SIGNED); return; }
+    if (!r || !r.success) {
+      // Inside the sheet, not in a toast behind it. See BrandAgreementScreen for the whole story:
+      // a refusal announced from behind a modal is a refusal nobody reads.
+      setSignError((r && r.error && r.error.message) || MSG7.ALREADY_SIGNED);
+      return;
+    }
+    setSignError(null);
     setSheet(null);
     setAg(r.data.agreement);
     show(C7.creator.signed);
@@ -186,7 +195,8 @@ export default function AgreementScreen({ navigation, route }) {
       ) : null}
 
       <CreatorSignSheet7 visible={sheet === 'sign'} defaultName={creatorName} brandName={brandName}
-        busy={busy} onSign={sign} onClose={() => setSheet(null)} />
+        busy={busy} serverError={signError} onSign={sign}
+        onClose={() => { setSignError(null); setSheet(null); }} />
       <DeclineAgreementSheet7 visible={sheet === 'decline'} brandName={brandName}
         busy={busy} onDecline={decline} onClose={() => setSheet(null)} />
       {toast}

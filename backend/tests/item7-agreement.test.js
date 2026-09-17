@@ -373,6 +373,37 @@ describe('the money (checks 14–19, 35–37)', () => {
     expect(card).toBeDefined();
     expect(card.hasUpfrontMoney).toBe(false);
   });
+  it('⚠️ a Hybrid set with NO content formats can be countersigned — rules v1.21 §7', async () => {
+    /**
+     * Found in production 2026-09-17. INFLX-2026-00003: hybrid, ₹4,000, formats_json []. The
+     * brand typed her name, ticked both boxes, tapped Sign and lock — and the server refused,
+     * every time, because deliverables.model counted Hybrid as content-buying and demanded at
+     * least one format. She never saw the reason (it went to a toast behind the modal), so the
+     * sheet appeared to reopen on its own.
+     *
+     * v1.21 §7 says what each Aim may counter: Pay for Content has deliverables, Hybrid has
+     * "fixed fee and commission percentage" and no deliverables — its work is the Pay-for-Sale
+     * shoppable side. A Hybrid collaboration with no content named is complete, not broken.
+     *
+     * The divergence was noted in this very file at build time. This is it decided, the rules
+     * winning over the model.
+     */
+    const w = await world('hybrid', { terms: { fee: 4000, commissionPct: 10 }, setOver: { formats_json: [] } });
+    await upToHerSignature(w);
+
+    const r = await brandSign(w);
+    expect(r.status).toBe(200);
+
+    const row = await con(w.ciId);
+    expect(row.status).toBe('active');
+    // Hybrid carries no campaign fee (§9), so the lock is the fixed money alone.
+    expect(Number(row.locked_amount)).toBe(4000);
+    expect(Number(row.campaign_fee_amount)).toBe(0);
+    // and the first 25% of the upfront amount reaches her, as §10 requires
+    expect(Number(row.released_amount)).toBe(1000);
+    expect(await infWallet(w.cr.influencerId)).toBe(1000);
+  });
+
   it('Hybrid locks the fixed fee alone, with no campaign fee (checks 15, 36)', async () => {
     // The set carries the formats. NOTE a divergence found while writing this:
     // deliverables.model treats Hybrid as content-buying, so a Hybrid set with

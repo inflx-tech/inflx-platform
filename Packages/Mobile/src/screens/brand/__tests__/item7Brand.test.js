@@ -281,3 +281,36 @@ describe('P1 — where the agreement starts', () => {
     expect(n.navigate).toHaveBeenCalledWith('BrandAgreement', { campaignId: 'c1', setId: 'sA', ciId: 'r2', preview: false });
   });
 });
+
+/**
+ * The sign sheet that would not go away.
+ * Contract: features/hybrid-signature-and-the-silent-refusal
+ *
+ * A refused signature used to be announced with a toast, which renders behind the modal. So the
+ * brand saw nothing at all: the sheet simply stayed open, she tried again, and it "kept coming
+ * back". The refusal now appears inside the sheet, where she is looking.
+ */
+describe('a refused signature says why, in the sheet', () => {
+  it('shows the server reason inside the sheet, and keeps the sheet open', async () => {
+    brandApi.getAgreement.mockResolvedValue(ok({ agreement: AG() }));
+    brandApi.agreementCost.mockResolvedValue(ok({ cost: COST() }));
+    brandApi.signAgreement.mockResolvedValue({ success: false, error: { message: 'This campaign pays for content, so the set has to say what content.' } });
+
+    const n = nav();
+    const { getByTestId, getByText, queryByTestId } = render(
+      <BrandAgreementScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', ciId: 'ci1' } }} />
+    );
+    await waitFor(() => getByTestId('brand-sign'));
+    fireEvent.press(getByTestId('brand-sign'));
+    await waitFor(() => getByTestId('brand-sign-sheet'));
+
+    fireEvent.changeText(getByTestId('brand-sign-name'), 'Kanchi Silks');
+    fireEvent.press(getByTestId('brand-tick-read'));
+    fireEvent.press(getByTestId('brand-tick-money'));
+    fireEvent.press(getByTestId('brand-sign-submit'));
+
+    // the reason is on screen, and the sheet is still open so she can act on it
+    await waitFor(() => getByText('This campaign pays for content, so the set has to say what content.'));
+    expect(queryByTestId('brand-sign-sheet')).not.toBeNull();
+  });
+});

@@ -43,7 +43,7 @@ export function SendAgreementSheet7({ visible, creatorName, cutoff, busy, onSend
 /* ─────────────────────────────────────────────────────────────── P6 */
 
 /** Her signature. A typed name, two ticks, and what we record. */
-export function CreatorSignSheet7({ visible, defaultName, brandName, busy, onSign, onClose }) {
+export function CreatorSignSheet7({ visible, defaultName, brandName, busy, serverError, onSign, onClose }) {
   const [name, setName] = useState('');
   const [t1, setT1] = useState(false);
   const [t2, setT2] = useState(false);
@@ -69,7 +69,7 @@ export function CreatorSignSheet7({ visible, defaultName, brandName, busy, onSig
       <CheckboxRow checked={t2} onPress={() => setT2(v => !v)} testID="tick-binding">
         <Text style={s.tick}>{C7.creator.tickBinding(brandName)}</Text>
       </CheckboxRow>
-      <FieldError text={err} />
+      <FieldError text={err || serverError} />
       <Text style={s.hint}>{C7.creator.recordHint}</Text>
       <PrimaryButton label={C7.creator.signAgreement} onPress={submit} busy={busy} testID="sign-submit" />
     </Sheet>
@@ -120,7 +120,16 @@ export function DeclineAgreementSheet7({ visible, brandName, busy, onDecline, on
  * irreversible, so the sheet lists it: the money locks, the first payment
  * leaves, and the terms can never change again.
  */
-export function BrandSignSheet7({ visible, defaultName, brandName, creatorName, cost, busy, onSign, onClose }) {
+/**
+ * ⚠️ serverError is why this sheet exists in its current shape.
+ *
+ * A refused signature used to be announced with a toast — which renders on the SCREEN, behind this
+ * modal. So when the server said no, the brand saw nothing at all: the sheet simply stayed open.
+ * She typed her name again, ticked again, tapped again, and it "kept coming back". Found in
+ * production 2026-09-17, where every attempt was being refused for a real reason she was never
+ * shown. A refusal must appear where the person is looking.
+ */
+export function BrandSignSheet7({ visible, defaultName, brandName, creatorName, cost, busy, serverError, onSign, onClose }) {
   const [name, setName] = useState('');
   const [t1, setT1] = useState(false);
   const [t2, setT2] = useState(false);
@@ -152,7 +161,7 @@ export function BrandSignSheet7({ visible, defaultName, brandName, creatorName, 
           {gate ? C7.brand.tickMoney(locked, released, creatorName) : C7.brand.tickComplete}
         </Text>
       </CheckboxRow>
-      <FieldError text={err} />
+      <FieldError text={err || serverError} />
       <Text style={s.hint}>{C7.brand.irreversible}</Text>
       <PrimaryButton
         label={gate ? C7.brand.signAndLock(locked) : C7.brand.signAndComplete}

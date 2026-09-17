@@ -39,6 +39,30 @@
 const CONTENT_BUYING_GOALS = ['engagement', 'hybrid'];
 
 /**
+ * ⚠️ WHICH AIMS MUST NAME THEIR CONTENT — and it is NOT the same list.
+ *
+ * Rules v1.21 §7, what each side may counter:
+ *   Pay for Content → fee, DELIVERABLES (content types and counts), usage rights
+ *   Hybrid          → fixed fee and commission percentage. No deliverables.
+ * and the Hybrid definition: "Sale/Shoppable workflow identical to Pay for Sale, while upfront
+ * fixed money follows the Pay-for-Content-style 25%/25%/50% milestone payment."
+ *
+ * So Hybrid is Pay-for-Sale work plus fixed money. Its work requirement is shoppable posts, not
+ * content formats. Treating it as content-buying made a Hybrid set with no formats IMPOSSIBLE TO
+ * COUNTERSIGN: the brand typed her name, tapped Sign, and the server refused with an error she
+ * could not see, so the sheet kept reopening. Found in production 2026-09-17 on
+ * INFLX-2026-00003 (hybrid, ₹4,000, formats_json []). The divergence was known and noted in
+ * item7-agreement.test.js at build time; this is it being decided in the rules' favour.
+ *
+ * A Hybrid set that DOES name formats still gets those deliverables — the brand asked for them.
+ * It simply may not be refused for having none.
+ */
+const CONTENT_REQUIRED_GOALS = ['engagement'];
+function requiresContent(goal) {
+  return CONTENT_REQUIRED_GOALS.includes(String(goal || "").toLowerCase());
+}
+
+/**
  * @param {string} goal  campaign_sets.goal — 'conversion' | 'engagement' | 'hybrid'
  * @returns {boolean}
  */
@@ -74,6 +98,8 @@ function plannedDeliverables(goal, formatsJson, canonical) {
   }
 
   if (!Array.isArray(raw) || raw.length === 0) {
+    // Hybrid with nothing named is a complete collaboration: fixed money plus shoppable posts.
+    if (!requiresContent(goal)) return { formats: [], error: null };
     return {
       formats: [],
       // Said in the brand's own words. The old message named a JSON column at a brand who has
@@ -135,4 +161,4 @@ function resolveFormats(herFormats, setFormats) {
   return null;
 }
 
-module.exports = { buysContent, plannedDeliverables, resolveFormats, CONTENT_BUYING_GOALS, VALID_TYPES };
+module.exports = { buysContent, requiresContent, plannedDeliverables, resolveFormats, CONTENT_BUYING_GOALS, CONTENT_REQUIRED_GOALS, VALID_TYPES };
