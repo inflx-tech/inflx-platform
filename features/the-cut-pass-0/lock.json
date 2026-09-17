@@ -64,7 +64,17 @@
         "test_harness_hole_found": "tests/helpers/db.js was not reseeding `categories` after truncateAll — the same CASCADE that once wiped subscription_tiers. Every test saw an EMPTY rate table, so the 8% fallback looked like correct behaviour and no test could ever have caught a missing rate. Now reseeded with fashion and restaurant.",
         "production_state": "one brand does not match: \"Preeti chouhan\", registered as home_beauty before the gate existed. Status pending, zero products — never approved, cannot sell, so nothing is being mischarged. Left alone. The other eight match (fashion ×5 including two capitalised, restaurant ×2, Fitness ×1 which aliases to gym_fitness).",
         "reported_to_founder": "fashion is configured at 10% / 5% / 7%, not the 8% he believed. His to set at /admin/pricing/categories.",
-        "tests": "tests/business-category-sync.test.js — 6 new, all passing, including one proving the guard actually catches a vertical opened without a rate rather than always passing. Full backend 221 failed / 1109 passed / 1330: ZERO new failures, one fixed, six new."
+        "tests": "tests/business-category-sync.test.js — 6 new, all passing, including one proving the guard actually catches a vertical opened without a rate rather than always passing. Full backend 221 failed / 1109 passed / 1330: ZERO new failures, one fixed, six new.",
+        "deployed": {
+          "at": "2026-09-17",
+          "by": "founder go (\"pls go\")",
+          "commit": "c869dfd",
+          "migration": "none",
+          "ota": "none — no phone file changed",
+          "websites": "the push redeploys Vercel with one line of text on /admin/pricing/categories saying which business is open for registration.",
+          "verification": "HONEST LIMIT: this change has nothing externally observable. The fashion-only gate answered identically before and after — a non-fashion registration was already refused — and what actually changed is an internal guard, a louder log line when a business type matches no rate, a test, and one sentence on an admin page behind login. The API answers (route live, auth first), and /health returns a static version rather than a build marker, so the new build cannot be proved from outside the way a new route can. Nothing here alters behaviour a person could see; the proof is the test suite, not a probe.",
+          "tests": "backend 221 failed / 1109 passed / 1330 — zero new failures, one fixed, six new."
+        }
       }
     ]
   },
