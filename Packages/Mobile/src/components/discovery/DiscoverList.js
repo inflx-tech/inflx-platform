@@ -167,8 +167,20 @@ export default function DiscoverList({
 
   return (
     <View style={{ flex: 1 }} testID={testID}>
+      {/*
+        Founder, 2026-09-17: "all the screen is covered with header things … if we
+        come to creator visibility screen, it is almost nothing."
+
+        It was four stacked bands pinned above the list — the caller's hint, the
+        search box, the filter chips and the count/sort row — so on a 6" phone
+        exactly ONE creator card fitted, and opening the keyboard to search left
+        none at all.
+
+        Only the two you actually touch stay pinned now. The hint and the count
+        ride at the top of the list and scroll away once you are looking at
+        people, which is the moment you stop needing them.
+      */}
       <View style={s.controls}>
-        {header || null}
         <TextInput style={s.search} value={search} onChangeText={setSearch} placeholder={C3.discover.search} placeholderTextColor={T.ink3} autoCorrect={false} autoCapitalize="none" testID="discover-search" />
         <View style={s.quick}>
           <TouchableOpacity style={[s.qchip, filters.openOnly && s.qchipOn]} onPress={() => setFilters(f => ({ ...f, openOnly: !f.openOnly }))} testID="quick-open">
@@ -181,12 +193,6 @@ export default function DiscoverList({
             <TouchableOpacity style={s.qchip} onPress={clearAll} testID="quick-chip"><Text style={s.qchipText}>{chip}  ✕</Text></TouchableOpacity>
           ) : null}
         </View>
-        {status !== 'error' ? (
-          <View style={s.countRow}>
-            <Text style={s.count}>{status === 'loading' ? '' : C3.discover.count(total)}</Text>
-            <TouchableOpacity onPress={() => setSortOpen(o => !o)} testID="sort-toggle"><Text style={s.sort}>{C3.discover.sorts[sort]} ▾</Text></TouchableOpacity>
-          </View>
-        ) : null}
         {sortOpen ? (
           <View style={s.sortMenu}>
             {Object.entries(C3.discover.sorts).map(([k, l]) => (
@@ -206,6 +212,21 @@ export default function DiscoverList({
           keyExtractor={r => r.id}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 18, paddingTop: 0, paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListHeaderComponent={
+            <View>
+              {header || null}
+              {status !== 'error' ? (
+                <View style={s.countRow}>
+                  <Text style={s.count}>{C3.discover.count(total)}</Text>
+                  <TouchableOpacity onPress={() => setSortOpen(o => !o)} testID="sort-toggle">
+                    <Text style={s.sort}>{C3.discover.sorts[sort]} ▾</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+          }
           onEndReachedThreshold={0.4}
           onEndReached={() => { if (hasMore && status === 'ready') load(page + 1); }}
           ListFooterComponent={status === 'more' ? <ActivityIndicator color={T.ink3} style={{ marginVertical: 12 }} /> : null}

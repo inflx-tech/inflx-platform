@@ -30,6 +30,17 @@
       "backend_tests": "474 failed / 562 passed (0 new failures vs baseline 474/521)",
       "mobile_tests": "388 passed",
       "note": "released stays false on purpose: GOVERNANCE.md §5 ties the release record to qa_all_green, and the backend suite carries 474 pre-existing failures (test factory registers brands as restaurant). The item itself is live everywhere; the founder device walk of checks 1-17 is the functional gate."
-    }
+    },
+    "walk_fixes": [
+      {
+        "at": "2026-09-17",
+        "reported": "founder, walking items 2-8: \"you claimed creators loading issue is working fine and reduced to one to one and half second ... pls check this not fixed.\"",
+        "measured": "GET /campaigns/:id/sets/:sid/pickable?tab=all against production: 18511 ms, 18301 ms, 18331 ms on three consecutive runs. Not a cold start. countOnly on the same endpoint returned in 1074 ms, and the list SQL itself EXPLAIN ANALYZEs at 1.8 ms — so the query was never the cost.",
+        "cause": "canBrandInviteMany was a sequential for-loop calling canBrandInviteCreator once per creator. Each call made about five separate database round trips — her invitation settings, her minimum commissions, her blocks, her agreed pitch, and brandFacts for THE SAME BRAND every time. 26 creators came to roughly 130 sequential trips. The 2026-09-16 fix removed a round trip between the phone and the server, which was real but was not this.",
+        "mine": "item 8 added the agreedPitchFor lookup (§7B) inside that loop without noticing the loop, making an existing defect about 20% worse.",
+        "fix": "the rule is now a pure function, decideInvite, with one copy of the logic that both the single and the list paths call. canBrandInviteMany prefetches every fact in five set-based queries and evaluates in memory. Measured against production: 7 round trips for 26 creators instead of ~130, and the list answer agrees with the single answer on 8 of 8 spot checks.",
+        "tests": "item2-eligibility + item2-settings-api 41 green; item5/item6/item8 120 green; full backend 221 failed / 1099 passed / 1320 with ZERO new failures vs the item 8 baseline."
+      }
+    ]
   }
 }

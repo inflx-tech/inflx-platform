@@ -388,20 +388,40 @@ async function agreedPitchFor(influencerId, brandId, set) {
  * @returns {{ ok: boolean, reason: string, warnings: string[] }}
  */
 async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms }) {
-  const settings = await loadCreatorInvitationSettings(influencerId);
+  // The four facts this decision needs, fetched together rather than one after
+  // the other. Nothing here depends on anything else here.
+  const [settings, blocked, herOwnPitch, brand0] = await Promise.all([
+    loadCreatorInvitationSettings(influencerId),
+    isBlocked('creator', influencerId, 'brand', brandId),
+    agreedPitchFor(influencerId, brandId, set),
+    brandFacts(brandId),
+  ]);
+  return decideInvite({
+    settings, blocked, herOwnPitch: !!herOwnPitch,
+    brand: await withSetBranchCity(brand0, set),
+    set, proposedTerms,
+  });
+}
+
+/**
+ * The rule itself, with every fact already in hand. **Pure** — no database, no
+ * awaits — which is what lets the list version ask it 26 times without 26 trips.
+ *
+ * There is exactly one copy of these rules. Both `canBrandInviteCreator` and
+ * `canBrandInviteMany` call this, so the single answer and the list answer
+ * cannot drift; that was the whole point of putting item 2 in one file.
+ */
+function decideInvite({ settings, blocked, herOwnPitch, brand, set, proposedTerms }) {
   const warnings = [];
 
   // 1. Not open, or blocked → NOT_ACCEPTING.
-  if (!settings.open) return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
-  if (await isBlocked('creator', influencerId, 'brand', brandId)) {
-    return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
-  }
+  if (!settings || !settings.open) return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
+  if (blocked) return { ok: false, reason: REASON.NOT_ACCEPTING, warnings };
 
   // Item 8, §7B: she pitched this brand for exactly this shape and it agreed, so
   // her own filters are not turned against her. Only the two absolutes above
   // survive — "a Creator who has since paused invitations, or who has since
   // blocked that Brand, cannot be invited" — and they are already checked.
-  const herOwnPitch = await agreedPitchFor(influencerId, brandId, set);
 
   // 2. The set's Aim and mode.
   const aim = String(set?.goal || '').toLowerCase();
@@ -413,7 +433,6 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
 
-  const brand = await brandFacts(brandId);
   if (!brand) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
 
   // 3. Brand categories. A brand with none set does not match a creator who picked
@@ -423,13 +442,6 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
     if (!overlaps(brand.subCategories, picked)) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
 
-  // Item 4 — a set names ONE branch. Store Visit is checked against that branch's city, not
-  // every branch the brand owns. A set without a branch (built before item 4) keeps the
-  // brand-wide check below.
-  if (mode === 'visit' && set && set.branch_id) {
-    const { rows: br } = await db.query(`SELECT city_id FROM brand_branches WHERE id = $1`, [set.branch_id]);
-    brand.branchCityIds = br[0] && br[0].city_id != null ? [Number(br[0].city_id)] : [];
-  }
   // 4. Store Visit: at least one branch city must be somewhere she can travel (founder Q1).
   if (!herOwnPitch && mode === 'visit') {
     const visit = (settings.visit_city_ids || []).map(Number);
@@ -475,16 +487,140 @@ async function canBrandInviteCreator({ brandId, influencerId, set, proposedTerms
  * @returns {Promise<Array<{influencerId:string, ok:boolean, reason:string, warnings:string[], minimums:object|null}>>}
  */
 async function canBrandInviteMany({ brandId, set, creators }) {
-  const out = [];
-  for (const c of creators || []) {
-    const influencerId = c.influencerId || c.influencer_id;
-    if (!influencerId) continue;
+  const list = (creators || [])
+    .map(c => ({ ...c, influencerId: c.influencerId || c.influencer_id }))
+    .filter(c => c.influencerId);
+  if (!list.length) return [];
+  const ids = [...new Set(list.map(c => c.influencerId))];
+
+  // Five queries for the whole page, whatever its length.
+  //
+  // This used to be a `for` loop calling canBrandInviteCreator, which meant five
+  // round trips PER CREATOR — her settings, her minimums, her blocks, her agreed
+  // pitch, and `brandFacts` for the same brand over and over. Twenty-six
+  // creators came to roughly a hundred and thirty trips and took EIGHTEEN
+  // SECONDS on the picker, while the SQL underneath ran in under two
+  // milliseconds. The rule was never slow; asking it one creator at a time was.
+  const [settingsById, blocked, pitched, brand0] = await Promise.all([
+    loadCreatorInvitationSettingsMany(ids),
+    blockedAgainstBrandMany(ids, brandId),
+    agreedPitchForMany(ids, brandId, set),
+    brandFacts(brandId),
+  ]);
+  const brand = await withSetBranchCity(brand0, set);
+
+  return list.map((c) => {
     try {
-      const r = await canBrandInviteCreator({ brandId, influencerId, set, proposedTerms: { fee: c.fee, commissionPct: c.commissionPct } });
-      out.push({ influencerId, ok: r.ok, reason: r.reason, warnings: r.warnings || [], minimums: r.minimums || null });
+      const r = decideInvite({
+        settings: settingsById.get(c.influencerId),
+        blocked: blocked.has(c.influencerId),
+        herOwnPitch: pitched.has(c.influencerId),
+        brand,
+        set,
+        proposedTerms: { fee: c.fee, commissionPct: c.commissionPct },
+      });
+      return { influencerId: c.influencerId, ok: r.ok, reason: r.reason, warnings: r.warnings || [], minimums: r.minimums || null };
     } catch (e) {
-      out.push({ influencerId, ok: false, reason: REASON.NOT_MATCHING, warnings: [], minimums: null });
+      return { influencerId: c.influencerId, ok: false, reason: REASON.NOT_MATCHING, warnings: [], minimums: null };
     }
+  });
+}
+
+/* ── the batch loaders, each one query ─────────────────────────────────────── */
+
+/** A set names ONE branch, so Store Visit is judged on that branch's city. */
+async function withSetBranchCity(brand, set) {
+  if (!brand) return brand;
+  if (normaliseMode(set && set.shoot_mode) !== 'visit' || !set || !set.branch_id) return brand;
+  const { rows } = await db.query(`SELECT city_id FROM brand_branches WHERE id = $1`, [set.branch_id]);
+  return { ...brand, branchCityIds: rows[0] && rows[0].city_id != null ? [Number(rows[0].city_id)] : [] };
+}
+
+/** Which of these creators have blocked this brand. */
+async function blockedAgainstBrandMany(ids, brandId) {
+  const { rows } = await db.query(
+    `SELECT blocker_id FROM collab_blocks
+      WHERE blocker_type = 'creator' AND blocker_id = ANY($1::uuid[])
+        AND blocked_type = 'brand' AND blocked_id = $2`,
+    [ids, brandId]
+  );
+  return new Set(rows.map(r => r.blocker_id));
+}
+
+/** Which of these creators reached this brand's pool through a pitch of this shape (§7B). */
+async function agreedPitchForMany(ids, brandId, set) {
+  const mode = normaliseMode(set && set.shoot_mode);
+  const aim = String((set && set.goal) || '').toLowerCase();
+  if (!aim || !mode) return new Set();
+  const { rows } = await db.query(
+    `SELECT DISTINCT influencer_id FROM brand_creator_pool
+      WHERE influencer_id = ANY($1::uuid[]) AND brand_id = $2 AND from_pitch_id IS NOT NULL
+        AND state = 'waiting' AND expires_at > now()
+        AND goal = $3 AND matched_shoot_mode = $4`,
+    [ids, brandId, aim, mode]
+  );
+  return new Set(rows.map(r => r.influencer_id));
+}
+
+/**
+ * `loadCreatorInvitationSettings` for many creators at once, with the same
+ * missing-row-means-defaults rule — including the default that her Store Visit
+ * city is her own city.
+ */
+async function loadCreatorInvitationSettingsMany(ids) {
+  const [{ rows: srows }, { rows: crows }] = await Promise.all([
+    db.query(`SELECT * FROM creator_invitation_settings WHERE influencer_id = ANY($1::uuid[])`, [ids]),
+    db.query(
+      `SELECT influencer_id, aim, category_code, pct FROM creator_min_commissions
+        WHERE influencer_id = ANY($1::uuid[]) ORDER BY aim, category_code`, [ids]),
+  ]);
+  const commissionsBy = new Map();
+  for (const r of crows) {
+    if (!commissionsBy.has(r.influencer_id)) commissionsBy.set(r.influencer_id, []);
+    commissionsBy.get(r.influencer_id).push({ aim: r.aim, category_code: r.category_code, pct: Number(r.pct) });
+  }
+  const byId = new Map(srows.map(r => [r.influencer_id, r]));
+  const missing = ids.filter(id => !byId.has(id));
+  const cityById = missing.length ? await creatorProfileCityIdMany(missing) : new Map();
+
+  const out = new Map();
+  for (const id of ids) {
+    const row = byId.get(id);
+    const min_commissions = commissionsBy.get(id) || [];
+    if (!row) {
+      const cityId = cityById.get(id);
+      out.set(id, {
+        ...CREATOR_DEFAULTS, influencer_id: id,
+        visit_city_ids: cityId ? [cityId] : [],
+        visit_cities_defaulted: true, min_commissions, saved: false,
+      });
+      continue;
+    }
+    out.set(id, {
+      influencer_id: id,
+      open: row.open, paused_at: row.paused_at,
+      accepted_aims: row.accepted_aims, accepted_modes: row.accepted_modes,
+      visit_city_ids: row.visit_city_ids || [], visit_cities_defaulted: false,
+      brand_category_codes: row.brand_category_codes,
+      min_fee_engagement: num(row.min_fee_engagement), min_fee_hybrid: num(row.min_fee_hybrid),
+      updated_at: row.updated_at, min_commissions, saved: true,
+    });
+  }
+  return out;
+}
+
+/** Canonical city id for many creators: the stored id, else the typed city by name. */
+async function creatorProfileCityIdMany(ids) {
+  const { rows } = await db.query(
+    `SELECT i.id, i.city_id, COALESCE(i.city, u.city) AS city_name
+       FROM influencers i JOIN users u ON u.id = i.user_id
+      WHERE i.id = ANY($1::uuid[])`,
+    [ids]
+  );
+  const out = new Map();
+  for (const r of rows) {
+    if (r.city_id) { out.set(r.id, Number(r.city_id)); continue; }
+    out.set(r.id, await ref.cityIdForName(r.city_name));   // in-memory list, no trip
   }
   return out;
 }

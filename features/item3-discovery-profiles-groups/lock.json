@@ -23,10 +23,23 @@
       "commit": "97dff06",
       "migrations": "170-174 applied to production 2026-09-11 (run-170-174.js --apply: 9 brands, 25 creators, 7 groups / 28 members untouched; 36 states, 92 cities, one main branch per brand, 25/25 creators matched)",
       "render": "POST /v1/places/resolve -> 401 and GET /v1/reference/cities -> 401 (routes live); fake siblings -> 404",
-      "ota": { "brand": 211, "influencer": 199 },
+      "ota": {
+        "brand": 211,
+        "influencer": 199
+      },
       "backend_tests": "229 failed / 869 passed / 1098 (0 new failures vs after-fix baseline 229/807/1036; before the factory fix 474/521/1036)",
       "mobile_tests": "22 new + 36 item 2 pass; release bundle builds",
       "note": "released stays false on purpose: GOVERNANCE.md §5 ties the release record to qa_all_green and the suite carries 229 pre-existing failures. The item is live everywhere; the founder phone walk of checks 1-31 is the functional gate."
-    }
+    },
+    "walk_fixes": [
+      {
+        "at": "2026-09-17",
+        "reported": "founder, walking items 2-8: \"when i try to search, creators it self masked under key pad ... all the screen is covered with header things ... if we come to creator visibility screen, it is almost nothing ... this happened in many places.\"",
+        "cause": "DiscoverList pinned FOUR stacked bands above the list and none of them scrolled — the caller's hint, the search box, the filter chips, and the count/sort row. On a 6-inch phone exactly one creator card fitted; opening the keyboard (adjustResize, which is correct) left none. Because DiscoverList is shared, the same waste appeared on Discover and in the group screens — the \"many places\" the founder named.",
+        "fix": "only the two controls a person actually touches stay pinned (search, filters). The hint and the count/sort ride in ListHeaderComponent, so they are there when you arrive and scroll away once you are looking at people. Added keyboardShouldPersistTaps=\"handled\" so a creator can be tapped without dismissing the keyboard first, and keyboardDismissMode=\"on-drag\". About 100px returned permanently, on every screen that uses the list.",
+        "tests": "item3Brand + item5Brand + item3Creator 44 green; full mobile 559 passed, 46 suites, 0 failures.",
+        "not_done": "the copy itself was left alone. The hint is still the locked sentence; it now scrolls rather than being reworded, because rewording locked copy is the founder's call and not a layout fix."
+      }
+    ]
   }
 }
