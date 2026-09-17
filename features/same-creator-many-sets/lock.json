@@ -17,6 +17,13 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null
+    "deployed_to_production": {
+      "at": "2026-09-17T12:40:00+05:30",
+      "by": "founder go (\"first deploy the first set fix\")",
+      "commit": "ab63180",
+      "migration": "none",
+      "render": "pushed; gov-check passed. /health 200 (36s first probe = the redeploy cold start, 0.6s on the second), and POST /v1/campaigns/:id/sets/:sid/invitations answers 401 not 404, so the route is live. Honestly: no endpoint carries a commit hash, and this rule only shows itself on a send, which is a write that creates invitations — so I did not exercise it on the founder's behalf. The proof is her own Review and send.",
+      "ota": "none — the phone never enforced this rule, it only printed the server's refusal"
+    }
   }
 }
