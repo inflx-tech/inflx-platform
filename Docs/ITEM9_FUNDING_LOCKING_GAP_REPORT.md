@@ -221,3 +221,97 @@ One thing was fixed separately today and is already recorded: the creator's wall
 her second and third payments *"On signing"* because the screen read a field the server does not
 send. The money was never wrong; the sentence was. That is committed and tested, awaiting the same
 deploy as everything else.
+
+---
+
+# 9. The founder's answers — 17 September 2026
+
+## Q2 + Q3 — the return window and the final-payment wait: **closed, no work**
+
+> *"7 days or 30 days or 45 days or something else will set by admin, that is return window. Now as
+> an admin we set 30 days. If I change to 7 days then it will change to 7 days."*
+
+Both numbers are already dials on **Admin → Settings → Payments**:
+
+- **Default Commission Return Window (days)** — currently 30
+- **T3 Release After (days)** — currently 30
+
+So §5 of this report was wrong to call the 30 a drift. It is a deliberate admin setting, and the
+rules' "defaults to 7" is the *default*, not a ceiling. Nothing to build.
+
+**This also closes item 7's open question**, which has been carried since 14 September. The answer
+is: 30 is intentional, and it changes on the admin screen whenever the founder wants. The only
+thing to remember is that each collaboration stamps the number when its agreement is generated, so
+a change applies to the next collaboration, not to one already signed.
+
+## Q1 — Hybrid's second payment: **decided**
+
+> *"For Hybrid we don't have deliverables. So what we do: we ask creator to select at least one
+> deliverable for both Pay for Sale and Hybrid in social media. He simply upload content and get
+> brand approval. This we don't ask at agreement — only as a step to confirm that content is live.
+> We don't demand that particular deliverable, we ask him to submit. Then we got confirmation for
+> uploading content in social media."*
+
+The design, as understood:
+
+| | Pay for Content | **Pay for Sale and Hybrid** |
+|---|---|---|
+| Who names the content | The **brand**, in the agreement | The **creator**, at the content step |
+| When | At agreement — it is the thing being bought | **After the shoot**, not at agreement |
+| Is it demanded? | Yes — the agreed package must be delivered in full | **No.** She picks at least one and submits it |
+| What it is for | The deliverable *is* the deal | Only to confirm the content went live |
+
+The flow for Pay for Sale and Hybrid becomes: she picks at least one social deliverable → uploads
+the content → the brand approves → the content goes live → the brand confirms it is live.
+
+**That confirmation is the trigger that releases Hybrid's second 25% and queues the final 50%** —
+the same door Pay for Content already uses, reached a different way.
+
+For **Pay for Sale** this changes no money, because there is no escrow on a commission-only deal.
+It matters there only for the social and shoppable flow.
+
+**One consequence worth naming:** a deliverable will have two different origins depending on the
+Aim — brand-specified at agreement for Pay for Content, creator-chosen after the shoot for the
+other two. Today the code has only the first, created at signing from the set's formats.
+
+## Q6 — the shoot gate: **deferred to item 10**
+
+> *"When item 10 starts then code triggers item 10 shoot plan begins or enable shoot plan — this if
+> not enabled then you make it."*
+
+Item 10 owns the shoot. The funding condition in §4.2 of this report is handed to it, and if the
+enabling does not exist when item 10 starts, it gets built there.
+
+## Q4 — the bonus: **leave it**
+
+> *"Leave about bonus one, this is old one."*
+
+No action. §4.3 stays on the record as a known trap rather than a fix.
+
+## Q5 — withdrawals and paying out: **the wallet item**
+
+> *"Amount locked, credited to creator wallet (25, 25 and 50). Creator manually request withdrawal
+> — that we design while building wallet. Then admin process the payments, this we take care while
+> building wallet."*
+
+Withdrawal requests and the admin payout run belong to the wallet build, not to item 9.
+
+---
+
+## 10. What item 9 actually has left
+
+After those answers, most of this report is either closed or deferred. What remains:
+
+| # | What | Size |
+|---|---|---|
+| 1 | **The content step for Pay for Sale and Hybrid** — she picks at least one deliverable after the shoot, submits, the brand approves and confirms live; that confirmation releases Hybrid's second payment and queues the third | The real work. Overlaps the content item |
+| 2 | **The website's wrong percentage** (§4.4) — three pre-checks use a per-brand column instead of the campaign-fee setting and ignore the Aim, so they can refuse a signature whose real cost is ₹0 | Small, contained |
+| 3 | **"Still locked" goes stale** (§4.5) — nothing updates the released figure after the first payment | Small |
+| 4 | **The campaign fee is in no wallet bucket** (§4.5) — the brand's four wallet numbers stop adding up once a fee is charged | Small |
+| 5 | **No range check on the waiting period** (§4.5) — 0 days and 3,650 days are both accepted | Small |
+
+Items 2 to 5 are the kind of thing that is cheapest to fix while the money code is open.
+
+**The open question is item 1's home:** is that content step item 9's remainder, or does it belong
+to the content item that comes after the shoot? It cannot be built before the shoot exists, because
+it starts with "after the shoot she uploads".
