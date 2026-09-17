@@ -59,7 +59,19 @@
         "also_found": "making NULL meaningful turned the admin endpoint into a one-way door — it accepted 0–50 and rejected null, so an override could be set and never removed. Now null clears it, matching the escrow-override endpoint beside it that always did this properly.",
         "t3_wait": "tranche_3_release_after_days default 30 → 7, and the live row set to 7. The clock still starts when the brand confirms content is live and is still admin-editable. Dry run against production: all four tranche-3 rows are still locked, none armed, so nothing was brought forward.",
         "safety": "brands.platform_fee_pct also feeds the sale-side platform cut as a fallback, which already reads COALESCE(platform_fee_pct, 8.00) — so nulling the column leaves sales untouched. Checked before applying.",
-        "tests": "three new tests in item7-agreement: a 12% brand is quoted AND charged 12% and it is stamped; a brand with no override follows the platform 8%; an override is still never charged on a Hybrid fixed amount. Reverting the fix makes the first fail with Expected 11200 / Received 10800. Full backend 222 failed / 1102 passed / 1324 with ONE new failure, brand.test.js expecting the old 8.00 default, updated to the new truth."
+        "tests": "three new tests in item7-agreement: a 12% brand is quoted AND charged 12% and it is stamped; a brand with no override follows the platform 8%; an override is still never charged on a Hybrid fixed amount. Reverting the fix makes the first fail with Expected 11200 / Received 10800. Full backend 222 failed / 1102 passed / 1324 with ONE new failure, brand.test.js expecting the old 8.00 default, updated to the new truth.",
+        "deployed": {
+          "at": "2026-09-17",
+          "by": "founder go (\"deploy it and OTA\")",
+          "commit": "1f25394",
+          "ota": {
+            "brand": "unchanged at 224 — only a creator screen changed",
+            "influencer": 211
+          },
+          "migration": "186 applied to production 2026-09-17. All nine brands moved to NULL — following the platform fee, which is exactly the 8.00 they already held, so no fee changed for anyone. tranche_3_release_after_days 30 → 7. The six signed collaborations kept the percentages stamped on them (four at 0, two at 8), so nothing was recalculated.",
+          "money": "NO MONEY MOVED. Before and after: 12 escrow rows, ₹25,875 still locked, 18 ledger rows. All four tranche-3 rows were still `locked` when the wait changed, so no creator's final payment was brought forward.",
+          "render": "live — /brands/me/wallet answers 200 with the reserved/available breakdown intact."
+        }
       }
     ]
   }

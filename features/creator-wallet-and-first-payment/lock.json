@@ -37,7 +37,17 @@
         "cause": "a display defect, and a serious one. GET /influencers/me/earnings returns locked_entries from `SELECT ee.*`, so the column is `tranche_number`. CreatorWalletScreen read `e.tranche`, which is undefined, so every row fell through to the default label and said \"On signing\" — including the 50%. Three quarters of her fee appeared to be due at signature.",
         "why_tests_missed_it": "the fixture in creatorWallet.test.js invented `tranche: 2`, the field the screen happened to read, instead of copying the shape the server actually sends. The test proved the screen agreed with itself. The fixture now carries `tranche_number`; reverting the one-word fix makes that test fail, which was checked.",
         "fix": "CreatorWalletScreen reads tranche_number. The copy function was already correct — \"When your post goes live and the brand confirms it\" for T2, \"After your post has stayed live\" for T3.",
-        "tests": "mobile 559 passed, 46 suites, 0 failing."
+        "tests": "mobile 559 passed, 46 suites, 0 failing.",
+        "deployed": {
+          "at": "2026-09-17",
+          "by": "founder go (\"deploy it and OTA\")",
+          "commit": "1f25394",
+          "ota": {
+            "brand": "unchanged at 224 — only a creator screen changed",
+            "influencer": 211
+          },
+          "note": "the label fix ships in influencer 211. The brand app was deliberately left at 224: the only screen that changed is hers, and republishing would push 2.2 MB to every brand phone for no behaviour change (item 4's precedent)."
+        }
       }
     ]
   }
