@@ -31,9 +31,17 @@ describe('the creator wallet', () => {
     influencerApi.getEarnings.mockResolvedValue(ok({
       wallet_balance: '3000.00', pending_balance: '0.00', total_earned: '3000.00',
       available_to_withdraw: '3000.00', pending_amount: '9000.00',
+      // These rows are shaped EXACTLY as GET /influencers/me/earnings returns them —
+      // `SELECT ee.*` from escrow_entries, so the column is `tranche_number`.
+      //
+      // This fixture used to say `tranche`, which is the field the screen happened to
+      // read, so the test proved the screen agreed with itself and nothing more. In
+      // production every row got undefined and read "On signing", which told a creator
+      // three quarters of her fee was due at signature. Copy the server's shape, never
+      // the reader's.
       locked_entries: [
-        { id: 'e2', tranche: 2, amount: '3000.00', campaign_name: 'Diwali Edit 2026' },
-        { id: 'e3', tranche: 3, amount: '6000.00', campaign_name: 'Diwali Edit 2026' },
+        { id: 'e2', tranche_number: 2, amount: '3000.00', campaign_name: 'Diwali Edit 2026' },
+        { id: 'e3', tranche_number: 3, amount: '6000.00', campaign_name: 'Diwali Edit 2026' },
       ],
       commission_summary: { pending: 0, confirmed: 0, total: 0 },
     }));

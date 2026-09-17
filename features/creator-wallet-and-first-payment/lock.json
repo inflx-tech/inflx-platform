@@ -28,6 +28,17 @@
       },
       "brand_app": "untouched — still 222.",
       "note": "The 25% was already correct in production before this shipped. What shipped is the app being able to say so, and a stand-in wallet to see it in."
-    }
+    },
+    "walk_fixes": [
+      {
+        "at": "2026-09-17",
+        "reported": "founder, walking the creator wallet: \"it is showing next 50% even without release it is showing in creator wallet transaction ... check same for new hybrid funding test campaign\".",
+        "data_layer_verdict": "THE MONEY WAS NEVER WRONG. Read straight from production escrow_entries: New hybrid funding test, hybrid, fee ₹8,500 → T1 ₹2,125 RELEASED on signing, T2 ₹2,125 LOCKED trigger content_live, T3 ₹4,250 LOCKED trigger day_30_post_live. Same shape on all four signed collaborations, each splitting exactly to its fee. Nothing had been released early and nothing had reached her balance.",
+        "cause": "a display defect, and a serious one. GET /influencers/me/earnings returns locked_entries from `SELECT ee.*`, so the column is `tranche_number`. CreatorWalletScreen read `e.tranche`, which is undefined, so every row fell through to the default label and said \"On signing\" — including the 50%. Three quarters of her fee appeared to be due at signature.",
+        "why_tests_missed_it": "the fixture in creatorWallet.test.js invented `tranche: 2`, the field the screen happened to read, instead of copying the shape the server actually sends. The test proved the screen agreed with itself. The fixture now carries `tranche_number`; reverting the one-word fix makes that test fail, which was checked.",
+        "fix": "CreatorWalletScreen reads tranche_number. The copy function was already correct — \"When your post goes live and the brand confirms it\" for T2, \"After your post has stayed live\" for T3.",
+        "tests": "mobile 559 passed, 46 suites, 0 failing."
+      }
+    ]
   }
 }

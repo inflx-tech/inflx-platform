@@ -84,7 +84,16 @@ export default function CreatorWalletScreen() {
               <View key={e.id || i} style={[s.row, i === locked.length - 1 && { borderBottomWidth: 0 }]} testID={`locked-${e.id || i}`}>
                 <View style={{ flex: 1, paddingRight: 10 }}>
                   <Text style={s.t}>{e.campaign_name || C.aCollaboration}</Text>
-                  <Text style={s.sub}>{C.tranche(e.tranche)}</Text>
+                  {/*
+                    Founder, 2026-09-17: "it is showing next 50% even without
+                    release". The MONEY was never wrong — T2 and T3 are locked in
+                    escrow and nothing had been released early. The SENTENCE was:
+                    the server sends `tranche_number`, this read `tranche`, so
+                    every row got undefined and fell through to the default,
+                    "On signing". Three quarters of her fee looked due at
+                    signature. A label about money is not a cosmetic thing.
+                  */}
+                  <Text style={s.sub}>{C.tranche(e.tranche_number)}</Text>
                 </View>
                 <Text style={s.v}>{money(e.amount)}</Text>
               </View>
