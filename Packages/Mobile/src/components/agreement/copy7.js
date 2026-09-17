@@ -176,6 +176,13 @@ export const C7 = {
     readyToSign: (cutoff) => `Agreement ready to sign · by ${shortDate7(cutoff)}`,
     waitingForAgreement: (brand) => `Waiting for the agreement from ${brand}.`,
     inWallet: (amount, date) => `${amount} is in your wallet. Signed ${shortDate7(date)}.`,
+    // A commission-only collaboration pays nothing on signing — there is no fixed money to
+    // pay 25% of. Saying "₹0 is in your wallet" describes it as a failure when it is simply
+    // how a Pay for Sale deal works: she earns when she sells.
+    signedEarnAsYouSell: (date) => `Signed ${shortDate7(date)}. You earn as you sell.`,
+    // Both signed, and the first payment has not landed yet — the rules pay it at the
+    // signature, so this is a state we should almost never see, and must not call zero.
+    signedPaymentComing: (date) => `Signed ${shortDate7(date)}. Your first payment is on its way.`,
     nextTheyShip: 'They ship your products',
     nextBookVisit: 'Book your store visit',
     agreementLink: 'Agreement',

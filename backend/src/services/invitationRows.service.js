@@ -160,7 +160,11 @@ const ROW_SELECT = `
              -- Item 7: the set screen needs to tell "sent and waiting" from
              -- "she signed, your move" from "signed by both".
              con.sent_at AS agreement_sent_at, con.reference_no,
-             con.influencer_signed_at AS creator_signed_at, con.brand_signed_at
+             con.influencer_signed_at AS creator_signed_at, con.brand_signed_at,
+             -- What the brand's signature actually moved. released_amount is written by
+             -- contractSign.brandSignInTx at the moment the first tranche is paid, so it is the
+             -- money itself and not a recalculation of it.
+             con.released_amount, con.locked_amount, con.influencer_fee
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
     ) con ON true
     ${NEG_JOIN}`;
@@ -260,6 +264,8 @@ const CREATOR_SELECT = `
          bo.name AS offer_name,
          con.signed_both, con.contract_id, con.contract_status, con.reference_no,
          con.agreement_sent_at, con.creator_signed_at, con.brand_signed_at,
+         -- The money itself, so her card can say what the signature moved rather than zero.
+         con.released_amount, con.influencer_fee,
          neg.*,
          pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
          ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms,
@@ -277,7 +283,11 @@ const CREATOR_SELECT = `
              -- whether she has signed it, and whether the brand has.
              con.id AS contract_id, con.status AS contract_status, con.reference_no,
              con.sent_at AS agreement_sent_at,
-             con.influencer_signed_at AS creator_signed_at, con.brand_signed_at
+             con.influencer_signed_at AS creator_signed_at, con.brand_signed_at,
+             -- What the brand's signature actually moved. released_amount is written by
+             -- contractSign.brandSignInTx at the moment the first tranche is paid, so it is the
+             -- money itself and not a recalculation of it.
+             con.released_amount, con.locked_amount, con.influencer_fee
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
     ) con ON true
     ${NEG_JOIN}
@@ -368,6 +378,22 @@ function creatorCard(r, today) {
         ? require('./pitchCopy').CREATOR.fromPitch(snapshotLine(r.goal, jsonObj(r.pool_sent_terms)), r.pool_sent_agreed_at, st.postingDate)
         : null,
     } : null,
+    /**
+     * ⚠️ WHAT THE SIGNATURE ACTUALLY MOVED, ON THE CARD SHE READS.
+     *
+     * Found in production 2026-09-17: Asha signed, ₹3,000 was released into her wallet that
+     * second, contracts.released_amount read 3000 and so did her wallet_balance — and her
+     * Collabs card said "₹0 is in your wallet". The money was right. The number was never put
+     * in the payload the card reads, so the screen fell back to zero and told her she had
+     * nothing. Computed is not delivered.
+     *
+     * hasUpfrontMoney is the second half: a commission-only collaboration pays nothing at the
+     * signature, and must not be described as having paid zero. She earns when she sells.
+     * Contract: features/creator-wallet-and-first-payment
+     */
+    firstPayment: r.released_amount == null ? null : Number(r.released_amount),
+    hasUpfrontMoney: Number(r.influencer_fee || 0) > 0,
+
     // Item 7 — the agreement, in her words (P4, P7, P16).
     agreement: r.contract_id && r.agreement_sent_at ? {
       reference: r.reference_no || null,

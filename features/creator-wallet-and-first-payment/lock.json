@@ -1,0 +1,15 @@
+{
+  "feature": "creator-wallet-and-first-payment",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (\"build temporary wallet which shows money and fix that 25% one as well\", 2026-09-17)",
+  "approved_at": "2026-09-17T09:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — a deliberate stand-in, asked for as 'a small frontend that simply shows creator wallet with funds, later we design it clearly whenever the item came'. No mockup round: the screen is temporary by instruction and says so on itself.",
+  "mockup_locked_at": "2026-09-17T09:00:00+05:30",
+  "notes": "The 25% WAS released — wallet_balance 3000, total_earned 3000, contracts.released_amount 3000, exactly as rules v1.21 §10 requires. The card said zero because firstPayment was never in the payload it reads. Also: the creator Wallet tab was ComingSoonScreen, so there was nowhere to see the money. Payment engine untouched.",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+}

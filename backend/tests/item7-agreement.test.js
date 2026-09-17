@@ -339,6 +339,40 @@ describe('the money (checks 14–19, 35–37)', () => {
     expect(tx.filter(t => t.type === 'platform_fee').map(t => Number(t.amount))).toEqual([720]);
   });
 
+  it('⚠️ and the number REACHES HER CARD — computed is not delivered', async () => {
+    /**
+     * Found in production 2026-09-17: Asha signed, ₹3,000 was released into her wallet that
+     * second, the contract row read released_amount 3000 — and her Collabs card said
+     * "₹0 is in your wallet". The money was right. The payload the card reads never carried the
+     * number, so the screen fell back to zero and told her she had nothing.
+     *
+     * Asserting the wallet is not enough. This asserts the sentence she can actually see.
+     */
+    const w = await world('engagement');
+    await upToHerSignature(w);
+    await brandSign(w);
+
+    const r = await api.get('/influencers/me/invitations?tab=active', w.cr.token);
+    expect(r.status).toBe(200);
+    const card = (r.body.data.invitations || r.body.data.rows || []).find(x => x.id === w.ciId);
+    expect(card).toBeDefined();
+
+    // the money the signature actually moved, on the card
+    expect(card.firstPayment).toBe(2250);
+    // and enough to tell a fee deal from a commission-only one, so neither is called zero
+    expect(card.hasUpfrontMoney).toBe(true);
+  });
+
+  it('a commission-only collaboration says it has no upfront money, rather than zero', async () => {
+    const w = await world('conversion', { terms: { commissionPct: 17 } });
+    await upToHerSignature(w);
+    await brandSign(w);
+
+    const r = await api.get('/influencers/me/invitations?tab=active', w.cr.token);
+    const card = (r.body.data.invitations || r.body.data.rows || []).find(x => x.id === w.ciId);
+    expect(card).toBeDefined();
+    expect(card.hasUpfrontMoney).toBe(false);
+  });
   it('Hybrid locks the fixed fee alone, with no campaign fee (checks 15, 36)', async () => {
     // The set carries the formats. NOTE a divergence found while writing this:
     // deliverables.model treats Hybrid as content-buying, so a Hybrid set with

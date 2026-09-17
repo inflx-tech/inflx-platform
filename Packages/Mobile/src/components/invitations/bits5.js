@@ -164,9 +164,18 @@ export function InvitationCard5({ card, onPress, testID }) {
   // moves a collaboration out of Invites, so an Active card says what she has
   // been paid and what happens next.
   if (card.group === 'signed') {
-    sentence = card.agreement && card.agreement.bothSignedAt
-      ? C7.creator.inWallet(rupees5(card.firstPayment != null ? card.firstPayment : 0), card.agreement.bothSignedAt)
-      : null;
+    // ⚠️ This used to read card.firstPayment, which the server never sent, and fall back to 0 —
+    // so a creator with ₹3,000 in her wallet was told she had nothing. Three cases now, and
+    // none of them invents a number:
+    //   · paid            — say the amount the signature actually moved
+    //   · commission-only — nothing is paid on signing, and that is not a zero
+    //   · signed, unpaid  — the rules pay at the signature, so this is nearly impossible; if it
+    //                       happens, say the payment is coming rather than that it is zero
+    const signedAt = card.agreement && card.agreement.bothSignedAt;
+    if (!signedAt) sentence = null;
+    else if (card.firstPayment > 0) sentence = C7.creator.inWallet(rupees5(card.firstPayment), signedAt);
+    else if (card.hasUpfrontMoney === false) sentence = C7.creator.signedEarnAsYouSell(signedAt);
+    else sentence = C7.creator.signedPaymentComing(signedAt);
   } else if (card.agreement && card.agreement.line) {
     sentence = card.agreement.line;
   }

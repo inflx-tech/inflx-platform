@@ -12,6 +12,8 @@ import BrandOverviewScreen from '../screens/influencer/BrandOverviewScreen';
 // Item 3 — the five-tab shell, Collabs, Find brands, the profile screens and Payment & tax.
 // Contract: features/item3-discovery-profiles-groups
 import ComingSoonScreen from '../components/shell/ComingSoonScreen';
+// features/creator-wallet-and-first-payment — a stand-in wallet, so money that already exists is visible.
+import CreatorWalletScreen from '../screens/influencer/CreatorWalletScreen';
 import CollabsScreen from '../screens/influencer/CollabsScreen';
 import FindBrandsScreen from '../screens/influencer/FindBrandsScreen';
 import ProfileInfoScreen from '../screens/influencer/ProfileInfoScreen';
@@ -95,7 +97,7 @@ export default function InfluencerNavigator() {
       <Tab.Screen name="HomeTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
       <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} />
       <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} />
-      <Tab.Screen name="WalletTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorWallet', tabTitle: 'Wallet' }} options={{ title: 'Wallet' }} />
+      <Tab.Screen name="WalletTab" component={CreatorWalletScreen} options={{ title: 'Wallet' }} />
       <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );
