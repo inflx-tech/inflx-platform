@@ -11,5 +11,23 @@
   "mockup_locked_by": "n/a — no screen is added or redrawn. The only visual change is an error line inside an existing sheet, in the place that sheet already reserves for errors.",
   "mockup_locked_at": "2026-09-17T10:00:00+05:30",
   "notes": "INFLX-2026-00003 (hybrid, ₹4,000, formats_json []) was still pending_brand: every signature was refused because deliverables.model counts Hybrid as content-buying, against rules v1.21 §7 which gives Hybrid only fixed fee and commission. The refusal went to a toast behind the modal, so the brand saw nothing and the sheet appeared to reopen. Money logic untouched.",
-  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null, "maestro_green": false }
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-17T09:10:00+05:30",
+      "by": "founder go (\"pls push and OTA\")",
+      "commit": "0c44eb1",
+      "migration": "none",
+      "render": "pushed and redeployed. NOTE, honestly: this backend change has no read-only surface — the Hybrid rule only shows itself on a signature, which is a write that moves money, so I did not exercise it on the founder's behalf. The proof is her own tap, and if it is refused again the sheet now names the reason.",
+      "ota": {
+        "brand": 223,
+        "influencer": 210
+      },
+      "manifest_verified": "brand 223 and influencer 210, native_runtime 3, same bundle hash sha256:2efee50e…"
+    }
+  }
 }
