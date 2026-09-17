@@ -146,6 +146,18 @@ export default function PricingCategoriesPage() {
             Per-category fee % charged on follower transactions. Path A = direct buy, Path B = via influencer click,
             Path C = attribution within 30 days. Cache TTL ~60s; edits apply on next transaction after cache miss.
           </p>
+          {/*
+            Item 9: this screen and the list of businesses INFLX lets register are two
+            different lists, and the second one is far shorter. A rate here does nothing
+            until that business can actually sign up, so say which one is live rather
+            than leaving sixteen rows all looking equally in use.
+          */}
+          <p className="text-xs text-t2 mt-1.5">
+            <span className="font-semibold">Open for registration today: Fashion.</span>{' '}
+            The rest are configured but no new business can register under them
+            (INFLX is fashion-only). A store pays the rate for the business type it
+            registered as — one rate for everything that store sells.
+          </p>
         </div>
         <button onClick={() => setAddOpen(true)}
           className="px-4 py-2 bg-navy text-white font-semibold text-sm rounded-lg hover:bg-navy-mid transition-colors">

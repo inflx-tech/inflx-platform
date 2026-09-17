@@ -42,14 +42,38 @@
     "released_at": null,
     "maestro_green": false,
     "deploy_class": "PRODUCTION-IMPACTING. backend/src auto-deploys to Render on push, and brand-web to Vercel. Behaviour changes for anyone registering a brand from the moment it lands.",
-    "deploy_targets": ["render (backend)", "vercel (brand-web)", "ota (brand mobile)"],
+    "deploy_targets": [
+      "render (backend)",
+      "vercel (brand-web)",
+      "ota (brand mobile)"
+    ],
     "outward_facing": "YES — this is the first change in the programme that alters what a NEW customer can sign up as. Existing customers see nothing change.",
     "why_not_released": "gov-check Rule 2 refuses released:true while qa_all_green is false. Platform QA is not green (~231 pre-existing failures, unchanged by this contract). Saying otherwise would be a fabricated attestation.",
-    "device_walk_required": "YES — NOT YET DONE. Five steps in 06-diff/notes.md. Step 4 matters most: confirm an EXISTING brand can still edit its address, so the gate has not locked out the nine already registered."
+    "device_walk_required": "YES — NOT YET DONE. Five steps in 06-diff/notes.md. Step 4 matters most: confirm an EXISTING brand can still edit its address, so the gate has not locked out the nine already registered.",
+    "walk_fixes": [
+      {
+        "at": "2026-09-17",
+        "founder": "\"close the registration gap ... now in registration we kept only one business that is fashion. make both sync each, also tell me path in admin where these categories exists.\"",
+        "what_was_already_true": "pass 0 had already shut the door: one server-side gate accepting only `fashion`, enforced on BOTH paths that write brands.category — registration and profile edit. A new brand cannot be anything but fashion, and fashion matches its rate exactly. The gap was not the door.",
+        "the_real_gap": "nothing linked the two lists. The businesses INFLX ACCEPTS (businessCategory.model) and the businesses INFLX can CHARGE (the categories rate table, keyed by the store's registered business type) never looked at each other. Re-opening a vertical is a one-line edit to ACCEPTED_CATEGORIES, and nobody would have noticed the new vertical had no rate until a real sale quietly charged the last-resort 8%.",
+        "fix": [
+          "businessCategory.acceptedWithoutARate(liveKeys) — the check that the two lists agree. Kept free of the database so a test, a boot check or a script can all ask it.",
+          "the silent fallback in pricing.service now warns loudly, naming the brand, the business type and where to fix it. It stays a fallback rather than an error: a sale must never fail because a rate is missing, but it must be findable.",
+          "the admin categories screen says which business is open for registration today, so sixteen rows no longer all look equally in use."
+        ],
+        "test_harness_hole_found": "tests/helpers/db.js was not reseeding `categories` after truncateAll — the same CASCADE that once wiped subscription_tiers. Every test saw an EMPTY rate table, so the 8% fallback looked like correct behaviour and no test could ever have caught a missing rate. Now reseeded with fashion and restaurant.",
+        "production_state": "one brand does not match: \"Preeti chouhan\", registered as home_beauty before the gate existed. Status pending, zero products — never approved, cannot sell, so nothing is being mischarged. Left alone. The other eight match (fashion ×5 including two capitalised, restaurant ×2, Fitness ×1 which aliases to gym_fitness).",
+        "reported_to_founder": "fashion is configured at 10% / 5% / 7%, not the 8% he believed. His to set at /admin/pricing/categories.",
+        "tests": "tests/business-category-sync.test.js — 6 new, all passing, including one proving the guard actually catches a vertical opened without a rate rather than always passing. Full backend 221 failed / 1109 passed / 1330: ZERO new failures, one fixed, six new."
+      }
+    ]
   },
   "deployed_2026_09_02": {
     "by": "aveenswamy1989@gmail.com (founder) — \"pls go and push and deploy\"",
-    "commits": ["f763575 (the change)", "0b75772 (02-workflow + 05-impact, added after gov-check blocked the push)"],
+    "commits": [
+      "f763575 (the change)",
+      "0b75772 (02-workflow + 05-impact, added after gov-check blocked the push)"
+    ],
     "gov_check": "BLOCKED the first push — the contract had 01 and 06 but not 02 and 05. The two files were WRITTEN, not overridden. GOVERNANCE_OVERRIDE was available and deliberately not used. Second push passed: 5 governed changes, contract-backed.",
     "vercel": "VERIFIED BY CONTENT, not by a cache header. Fetched the live login page from inflx.in, extracted the deployed JS bundle, and confirmed it contains 'INFLX is a fashion platform' and contains NONE of pest_control / car_rental / restaurant / INDUSTRY_HIERARCHY. This is stronger evidence than the Age:0 the standard calls for, and it is the first deploy this session proved that way.",
     "ota": "brand version 207, native_runtime 3 — manifest verified directly, then the signed bundle itself was downloaded and searched: the new copy is present. Influencer and follower not republished; neither screen changed.",

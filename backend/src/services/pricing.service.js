@@ -433,9 +433,23 @@ async function computeL3OnFollowerTxn(args) {
     used_category_key  = categoryKey;
   } else {
     // Fallback: legacy brands.platform_fee_pct (defaults to 8%)
+    //
+    // Item 9: say so out loud. This branch means the store's registered business
+    // type matched NO rate, so it is being charged a last-resort percentage that
+    // nobody chose for it — and it would go on being charged that for as long as
+    // it trades, silently. One live brand is in exactly this state (`home_beauty`,
+    // registered before the accepted-business gate existed).
+    //
+    // Not an error: a sale must never fail because a rate is missing. But it must
+    // be findable, which before this it was not.
     fee_pct            = parseFloat(brandRows[0]?.legacy_pct || 8.00);
     source             = 'brand_legacy_fallback';
     used_category_key  = null;
+    console.warn(
+      `[pricing] NO RATE for business type "${brandCategory}" (brand ${brandId}) — ` +
+      `charging the fallback ${fee_pct}%. Add a rate at /admin/pricing/categories, ` +
+      `or correct this brand's business type.`
+    );
   }
 
   const fee_amount = parseFloat((amt * fee_pct / 100).toFixed(2));

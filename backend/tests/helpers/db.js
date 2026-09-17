@@ -215,6 +215,24 @@ async function reseedReferenceData(client) {
   `);
 
   /**
+   * Item 9: the per-business sale rates, seeded by migration 058 and destroyed by the
+   * same CASCADE that took the tiers. This is the table that decides what INFLX takes
+   * when a follower buys, looked up by the business type a store registered under —
+   * so with it empty every sale silently falls back to a last-resort 8% and the
+   * fallback looks like correct behaviour.
+   *
+   * Only the businesses INFLX currently accepts are needed here; fashion is the live
+   * one (Docs/THE_CUT.md) and restaurant is kept because rows registered before the
+   * accepted-business gate still carry it.
+   */
+  await client.query(`
+    INSERT INTO categories (category_key, name, label, path_a_pct, path_b_pct, path_c_pct, active) VALUES
+      ('fashion',    'Fashion',    'Fashion',    10.00, 5.00, 7.00, true),
+      ('restaurant', 'Restaurant', 'Restaurant',  8.00, 4.00, 6.00, true)
+    ON CONFLICT (category_key) DO NOTHING
+  `);
+
+  /**
    * The reseeded rows come back with NEW ids, and two services hold them for 60 seconds: the
    * entitlements catalogue and the platform settings. Without this the cached rows point at ids
    * that no longer exist, every tier_features lookup misses, and the service falls back to the

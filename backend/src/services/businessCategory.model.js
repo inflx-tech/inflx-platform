@@ -35,6 +35,27 @@ function isAcceptedCategory(value) {
 }
 
 /**
+ * Item 9 — the two lists must agree, and nothing used to make them.
+ *
+ * A business INFLX accepts must also be a business INFLX can CHARGE. The rate
+ * a store pays on a sale is looked up by its registered business type, and when
+ * that lookup misses, the code quietly falls back to 8% — no error, nobody told,
+ * and the brand is charged the wrong rate for as long as it trades.
+ *
+ * Re-opening a vertical is a one-line edit to ACCEPTED_CATEGORIES above. It
+ * would have been very easy to add "furniture" and not notice that nobody had
+ * given furniture a rate. This is the check that notices.
+ *
+ * Returns the accepted categories that have NO active rate — empty is healthy.
+ * `categoryKeys` is the set of live rate keys, passed in so this file stays free
+ * of the database and can be called from a test, a boot check or a script.
+ */
+function acceptedWithoutARate(categoryKeys) {
+  const live = new Set([...(categoryKeys || [])].map(k => String(k).trim().toLowerCase()));
+  return ACCEPTED_CATEGORIES.filter(c => !live.has(c));
+}
+
+/**
  * The message a rejected category gets. Written for a business owner reading it on a
  * signup form, not for a developer reading a log: it says what we do take, rather than
  * only what we refused.
@@ -44,4 +65,4 @@ function rejectionMessage() {
        + 'accessories are supported today.';
 }
 
-module.exports = { ACCEPTED_CATEGORIES, isAcceptedCategory, rejectionMessage };
+module.exports = { ACCEPTED_CATEGORIES, isAcceptedCategory, rejectionMessage, acceptedWithoutARate };
