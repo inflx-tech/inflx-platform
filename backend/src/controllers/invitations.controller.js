@@ -210,17 +210,43 @@ const checkEligibility = asyncHandler(async (req, res) => {
   });
 });
 
-/** A8 — POST /campaigns/:id/sets/:sid/invitations { creators: [{ influencerId, terms, note?, offer? }], sourceGroupId? } */
+/**
+ * A8 — POST /campaigns/:id/sets/:sid/invitations
+ *   { creators: [{ influencerId, terms, note?, offer?, sourceGroupId? }], sourceGroupId? }
+ *
+ * 2026-09-17: the group may now be named PER CREATOR. The picker's basket can hold a group, the
+ * pool and hand-picked creators at once, so one label for the whole batch would be false for
+ * most of the rows. The batch-level field still works and still applies to everyone who did not
+ * bring her own, which is what an older bundle sends.
+ *
+ * Every id offered — batch or per creator — is checked against this brand before it is stored.
+ * A group belonging to someone else is dropped to NULL, never trusted, never an error.
+ */
 const sendInvitations = asyncHandler(async (req, res) => {
   const brand = await brandOf(req.user.sub);
   const { campaign, set } = await ownedCampaignAndSet(req, brand.id);
   const body = req.body || {};
-  let sourceGroupId = body.sourceGroupId || body.source_group_id || null;
-  if (sourceGroupId) {
-    const { rows } = await db.query(`SELECT id FROM influencer_groups WHERE id = $1 AND brand_id = $2`, [sourceGroupId, brand.id]);
-    if (!rows[0]) sourceGroupId = null;
+  const asked = new Set();
+  const batchId = body.sourceGroupId || body.source_group_id || null;
+  if (batchId) asked.add(batchId);
+  for (const c of Array.isArray(body.creators) ? body.creators : []) {
+    const g = c && (c.sourceGroupId || c.source_group_id);
+    if (g) asked.add(g);
   }
-  const out = await invitationSend.sendBatch({ brand, campaign, set, creators: body.creators, sourceGroupId, actorUserId: req.user.sub });
+  let mine = new Set();
+  if (asked.size) {
+    const { rows } = await db.query(
+      `SELECT id FROM influencer_groups WHERE brand_id = $1 AND id = ANY($2::uuid[])`,
+      [brand.id, [...asked]]
+    );
+    mine = new Set(rows.map(r => r.id));
+  }
+  const sourceGroupId = batchId && mine.has(batchId) ? batchId : null;
+  const creators = (Array.isArray(body.creators) ? body.creators : []).map(c => {
+    const g = c && (c.sourceGroupId || c.source_group_id);
+    return { ...c, sourceGroupId: g && mine.has(g) ? g : undefined };
+  });
+  const out = await invitationSend.sendBatch({ brand, campaign, set, creators, sourceGroupId, actorUserId: req.user.sub });
   const counts = (await campaignState.countsForSets([set.id])).get(set.id) || campaignState.EMPTY_COUNTS;
   return success(res, { ...out, set: shapeSet(set, counts, null) }, 201);
 });

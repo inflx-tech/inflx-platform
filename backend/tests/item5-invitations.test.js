@@ -248,6 +248,62 @@ describe('sending — one action, all or nothing (checks 17, 18, 20, 38)', () =>
     const mine = await api.get(`/influencers/me/invitations/${row.id}`, p.token);
     expect(JSON.stringify(mine.body)).not.toMatch(LEAK);
   });
+
+  /**
+   * features/one-basket-add-creators. The picker can now hold a group, the pool and
+   * hand-picked creators at once, so one label for the whole batch would be false for most of
+   * the rows. The group rides on the creator; the batch-level field is the fallback.
+   */
+  it('one send, several sources: the group is recorded per creator (one-basket check 10)', async () => {
+    const w = await world('conversion');
+    const inGroup = await creator(); const byHand = await creator(); const alsoGroup = await creator();
+    const g = await api.post('/brands/me/influencer-groups', w.b.token, { name: 'Diwali shortlist', influencer_ids: [inGroup.influencerId, alsoGroup.influencerId] });
+    const gid = g.body.data.group ? g.body.data.group.id : g.body.data.id;
+
+    const r = await send(w, [
+      one(inGroup, SALE, { sourceGroupId: gid }),
+      one(alsoGroup, SALE, { sourceGroupId: gid }),
+      one(byHand),
+    ]);
+    expect(r.status).toBe(201);
+
+    const rows = {};
+    for (const x of r.body.data.rows) { const row = await ciRow(x.id); rows[row.influencer_id] = row; }
+    expect(rows[inGroup.influencerId].source).toBe('group');
+    expect(rows[inGroup.influencerId].source_group_id).toBe(gid);
+    expect(rows[alsoGroup.influencerId].source).toBe('group');
+    expect(rows[byHand.influencerId].source).toBe('brand_picker');
+    expect(rows[byHand.influencerId].source_group_id).toBeNull();
+  });
+
+  it('a source group belonging to another brand is dropped, not obeyed (one-basket check 11)', async () => {
+    const w = await world('conversion');
+    const other = await brand();
+    const p = await creator();
+    const g = await api.post('/brands/me/influencer-groups', other.token, { name: 'Not yours', influencer_ids: [p.influencerId] });
+    const gid = g.body.data.group ? g.body.data.group.id : g.body.data.id;
+
+    const r = await send(w, [one(p, SALE, { sourceGroupId: gid })]);
+    expect(r.status).toBe(201);
+    const row = await ciRow(r.body.data.rows[0].id);
+    expect(row.source).toBe('brand_picker');
+    expect(row.source_group_id).toBeNull();
+  });
+
+  it('the old shape still works: a batch-level group applies to everyone (one-basket check 12)', async () => {
+    const w = await world('conversion');
+    const a = await creator(); const b2 = await creator();
+    const g = await api.post('/brands/me/influencer-groups', w.b.token, { name: 'Old bundle', influencer_ids: [a.influencerId, b2.influencerId] });
+    const gid = g.body.data.group ? g.body.data.group.id : g.body.data.id;
+
+    const r = await send(w, [one(a), one(b2)], { sourceGroupId: gid });
+    expect(r.status).toBe(201);
+    for (const x of r.body.data.rows) {
+      const row = await ciRow(x.id);
+      expect(row.source).toBe('group');
+      expect(row.source_group_id).toBe(gid);
+    }
+  });
 });
 
 /* ─────────────────────────────────────────── picker, group check, eligibility */

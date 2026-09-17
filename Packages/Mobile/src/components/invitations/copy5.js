@@ -52,6 +52,15 @@ export const DECLINE_REASONS = [
 export const SCOPE_LABEL = { store: 'Whole store', category: 'Some categories', products: 'Chosen products' };
 export const MIN_SHOPPABLE_POSTS = 1;
 
+/** "Priya Sharma", "Priya Sharma and Sneha N.", "Priya Sharma, Sneha N. and 2 others". */
+export function nameList5(names) {
+  const n = (names || []).filter(Boolean);
+  if (!n.length) return '';
+  if (n.length === 1) return n[0];
+  if (n.length === 2) return `${n[0]} and ${n[1]}`;
+  return `${n[0]}, ${n[1]} and ${n.length - 2} ${n.length - 2 === 1 ? 'other' : 'others'}`;
+}
+
 export const C5 = {
   pick: {
     title: 'Add creators',
@@ -62,6 +71,15 @@ export const C5 = {
     next: (n) => `Next: terms for ${plural(n, 'creator', 'creators')}`,
     groupsEmptyTitle: 'No groups yet', groupsEmptyBody: 'Groups are made on the Creators tab. Invite one here in a single step.',
     groupRow: (n) => plural(n, 'creator', 'creators'),
+    // The basket, shared by all four tabs (2026-09-17).
+    groupRowPicked: (n, k) => `${plural(n, 'creator', 'creators')} · ${k} already selected`,
+    selected: (n) => `${n} selected`,
+    review: 'Review',
+    reviewTitle: (n) => `${n} selected`,
+    reviewRemoveHint: 'Tap to remove',
+    byHand: 'Picked by hand', fromPool: 'From the pool', fromGroup: (g) => `From ${g}`,
+    reviewDone: 'Done',
+    emptyBasket: 'Nobody selected yet.',
     loadWhat: 'creators',
   },
   group: {
@@ -73,6 +91,18 @@ export const C5 = {
     hint: 'Each creator still gets their own invitation and their own terms. The group is never shown to them.',
     next: (k) => `Next: terms for ${plural(k, 'creator', 'creators')}`,
     nobody: 'Nobody in this group can be invited to this set.',
+    /**
+     * 2026-09-17 — the group check now adds to the picker's basket instead of starting its own
+     * send, so its words change from "next" to "add", and it says what the overlap is BEFORE
+     * the tap rather than surprising her after it.
+     */
+    willAdd: (k) => `Will be added · ${k}`,
+    add: (k) => `Add ${plural(k, 'creator', 'creators')} to selection`,
+    addNone: 'Everyone here is already selected',
+    running: (have, add) => `${have} already selected · ${add} new from this group`,
+    overlap: (names) => `${names} — you had already picked. ${names.includes(' and ') ? 'They will' : 'She will'} not be added twice.`,
+    added: (k, g) => `${plural(k, 'creator', 'creators')} added from ${g}.`,
+    addedDup: (k, g, d) => `${plural(k, 'creator', 'creators')} added from ${g}. ${d} ${d === 1 ? 'was' : 'were'} already in your selection.`,
   },
   terms: {
     title: (name) => `Terms · ${name}`,
@@ -122,6 +152,7 @@ export const C5 = {
     title: 'Review and send', all: (n) => `All ${plural(n, 'creator', 'creators')}`,
     belowMany: (n) => `${n} ${n === 1 ? 'creator is' : 'creators are'} below their own minimum. They can still be invited and can counter.`,
     ok: 'OK', below: 'Below min',
+    from: (g) => `from ${g}`,
     hint: (date) => `Each creator gets their own invitation. They can accept, counter or decline until ${shortDate4(date)}.`,
     send: (n) => `Send ${plural(n, 'invitation', 'invitations')}`,
     sent: (n) => `${plural(n, 'invitation', 'invitations')} sent.`,

@@ -30,6 +30,7 @@ const BrandSetDetailScreen = require('../BrandSetDetailScreen').default;
 const BrandSetPickCreatorsScreen = require('../BrandSetPickCreatorsScreen').default;
 const BrandCreatorTermsScreen = require('../BrandCreatorTermsScreen').default;
 const BrandReviewSendScreen = require('../BrandReviewSendScreen').default;
+const BrandGroupInviteCheckScreen = require('../BrandGroupInviteCheckScreen').default;
 const { MSG5, C5 } = require('../../../components/invitations/copy5');
 const draft = require('../../../components/invitations/draft5');
 
@@ -67,6 +68,8 @@ const CREATORS = [
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // The basket lives in the draft5 module, so it survives a render. Empty it between tests.
+  draft.clearBasket('sA');
   brandApi.setSummary.mockResolvedValue(ok(SUMMARY));
   brandApi.pickable.mockResolvedValue(ok({ total: 3, page: 1, rows: CREATORS }));
   brandApi.listGroups.mockResolvedValue(ok({ groups: [{ id: 'g1', name: 'Diwali shortlist', memberCount: 12 }] }));
@@ -147,6 +150,115 @@ describe('I1 — Add creators', () => {
     getByText('12 creators');
     fireEvent.press(getByTestId('group-g1'));
     expect(n.navigate).toHaveBeenCalledWith('BrandGroupInviteCheck', { campaignId: 'c1', setId: 'sA', groupId: 'g1', groupName: 'Diwali shortlist' });
+  });
+
+  /**
+   * features/one-basket-add-creators. Founder, 2026-09-17: "i can able to add pool creators,
+   * from group and from list of creators selected manually ...but navigation to add creators is
+   * not actually supporting this." The Groups tab used to leave the picker and start its own
+   * send, throwing the basket away. These are the checks that it no longer can.
+   */
+  it('the footer follows you onto the Groups tab, where it used to vanish (one-basket check 1)', async () => {
+    const n = nav();
+    const { getByText, getByTestId, queryByTestId } = render(<BrandSetPickCreatorsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    await waitFor(() => getByTestId('select-p'));
+    fireEvent.press(getByTestId('select-p'));
+    getByText('Next: terms for 1 creator');
+    fireEvent.press(getByText('Groups'));
+    await waitFor(() => getByTestId('group-g1'));
+    // The bug was exactly this: no footer, no count, nothing saying the pick was still held.
+    expect(queryByTestId('pick-footer')).not.toBeNull();
+    getByText('1 selected');
+    getByText('Next: terms for 1 creator');
+  });
+
+  it('the Review sheet groups the basket by source, and removing drops the count (one-basket check 9)', async () => {
+    draft.addToBasket('sA', [{ id: 'p', name: 'Priya Sharma' }]);
+    draft.addToBasket('sA', [{ id: 't', name: 'Tanvi S.', sourceGroupName: 'Diwali shortlist' }], 'g1');
+    const n = nav();
+    const { getByText, getByTestId, queryByText } = render(<BrandSetPickCreatorsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    await waitFor(() => getByTestId('select-p'));
+    getByText('2 selected');
+    fireEvent.press(getByTestId('pick-basket'));
+    getByText('Picked by hand · 1');
+    getByText('From Diwali shortlist · 1');
+    fireEvent.press(getByTestId('basket-remove-t'));
+    expect(queryByText('From Diwali shortlist · 1')).toBeNull();
+    // the footer's own count, not the sheet heading that happens to read the same
+    expect(getByTestId('pick-count').props.children).toBe('1 selected');
+  });
+});
+
+describe('I2 — the group check adds to the basket', () => {
+  const CHECK = {
+    group: { id: 'g1', name: 'Diwali shortlist', memberCount: 4 },
+    set: { id: 'sA', name: 'Set A · Ethnic wear', goal: 'conversion', shootMode: 'visit', postingDate: `${yr}-10-20` },
+    counts: { can: 3, cannot: 1, total: 4 },
+    can: [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }, { id: 't', name: 'Tanvi S.' }],
+    cannot: [{ id: 'k', name: 'Kavya D.', label: 'Not open to this set', pick: { state: 'ineligible' } }],
+  };
+  const open = (n) => render(<BrandGroupInviteCheckScreen navigation={n}
+    route={{ params: { campaignId: 'c1', setId: 'sA', groupId: 'g1', groupName: 'Diwali shortlist' } }} />);
+  beforeEach(() => { brandApi.groupCheck.mockResolvedValue(ok(CHECK)); });
+
+  it('adds the group to the basket and goes back to the picker, saying so (one-basket checks 2, 3)', async () => {
+    const n = nav();
+    const { getByText, getByTestId } = open(n);
+    await waitFor(() => getByTestId('group-summary'));
+    getByText('3 of 4 can be invited');
+    getByText('Will be added · 3');
+    getByText('Not open to this set');
+    getByText('0 already selected · 3 new from this group');
+    fireEvent.press(getByTestId('group-next'));
+    expect(draft.getBasket('sA').map(c => c.id).sort()).toEqual(['p', 's', 't']);
+    expect(draft.getBasket('sA').every(c => c.sourceGroupId === 'g1')).toBe(true);
+    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', {
+      campaignId: 'c1', setId: 'sA', toast: '3 creators added from Diwali shortlist.',
+    });
+  });
+
+  it('names the overlap before the tap, and never adds anyone twice (one-basket checks 2, 4)', async () => {
+    draft.addToBasket('sA', [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }]);
+    const n = nav();
+    const { getByText, getByTestId } = open(n);
+    await waitFor(() => getByTestId('group-summary'));
+    getByText('Priya Sharma and Sneha N. — you had already picked. They will not be added twice.');
+    getByText('Add 1 creator to selection');
+    getByText('2 already selected · 1 new from this group');
+    fireEvent.press(getByTestId('group-next'));
+    expect(draft.getBasket('sA').length).toBe(3);
+    // the two she already had keep the source they arrived with — not overwritten by the group
+    expect(draft.getBasket('sA').find(c => c.id === 'p').sourceGroupId).toBeFalsy();
+    expect(draft.getBasket('sA').find(c => c.id === 't').sourceGroupId).toBe('g1');
+    expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', expect.objectContaining({
+      toast: '1 creator added from Diwali shortlist. 2 were already in your selection.',
+    }));
+  });
+
+  it('a group already wholly in the basket cannot be added again (one-basket check 5)', async () => {
+    draft.addToBasket('sA', CHECK.can.map(c => ({ ...c })));
+    const n = nav();
+    const { getByText, getByTestId } = open(n);
+    await waitFor(() => getByTestId('group-summary'));
+    getByText('Everyone here is already selected');
+    expect(getByTestId('group-next').props.accessibilityState.disabled).toBe(true);
+  });
+
+  it('backing out adds nobody (one-basket check 6)', async () => {
+    draft.addToBasket('sA', [{ id: 'x', name: 'Only her' }]);
+    const n = nav();
+    const { getByTestId } = open(n);
+    await waitFor(() => getByTestId('group-summary'));
+    expect(draft.getBasket('sA').map(c => c.id)).toEqual(['x']);
+    expect(n.navigate).not.toHaveBeenCalled();
+  });
+
+  it('a group nobody can be invited from is still refused, as before (one-basket check 7)', async () => {
+    brandApi.groupCheck.mockResolvedValue(ok({ ...CHECK, counts: { can: 0, cannot: 4, total: 4 }, can: [] }));
+    const { getByText, getByTestId } = open(nav());
+    await waitFor(() => getByTestId('group-summary'));
+    getByText('Nobody in this group can be invited to this set.');
+    expect(getByTestId('group-next').props.accessibilityState.disabled).toBe(true);
   });
 });
 
@@ -261,6 +373,61 @@ describe('I3 · I4 · I5 — terms, creator by creator', () => {
 });
 
 describe('I8 — Review and send', () => {
+  /**
+   * features/one-basket-add-creators check 8. This asserts the PAYLOAD, not the screen. The
+   * source can render perfectly on the row and still be dropped before the request — that is a
+   * bug that looks exactly like a pass.
+   */
+  /**
+   * The basket outlives a single screen, which is the whole point of it — so it also has to be
+   * emptied at the right moments, or Add creators greets her with a dozen people the server
+   * would now refuse.
+   */
+  it('a sent basket is a spent basket (one-basket check 13)', async () => {
+    draft.addToBasket('sA', [{ id: 'p', name: 'Priya Sharma' }]);
+    draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }], sourceGroupId: null });
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    brandApi.sendInvitations.mockResolvedValue(ok({ sent: 1, rows: [] }));
+    const { getByTestId } = render(<BrandReviewSendScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    await waitFor(() => getByTestId('review-row-p'));
+    fireEvent.press(getByTestId('send-invitations'));
+    await waitFor(() => expect(brandApi.sendInvitations).toHaveBeenCalled());
+    await waitFor(() => expect(draft.getBasket('sA')).toEqual([]));
+  });
+
+  it('removing a creator from the draft removes her from the basket too (one-basket check 14)', () => {
+    draft.addToBasket('sA', [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }]);
+    draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }], sourceGroupId: null });
+    draft.removeCreators('sA', ['s']);
+    expect(draft.getBasket('sA').map(c => c.id)).toEqual(['p']);
+  });
+
+  it('a mixed basket sends the group per creator, and none for the rest (one-basket check 8)', async () => {
+    draft.startDraft('sA', {
+      set: SET, campaignName: 'Diwali Edit 2026', sourceGroupId: null,
+      creators: [
+        { id: 'p', name: 'Priya Sharma' },
+        { id: 't', name: 'Tanvi S.', sourceGroupId: 'g1', sourceGroupName: 'Diwali shortlist' },
+      ],
+    });
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    draft.setTerms('sA', 't', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    brandApi.sendInvitations.mockResolvedValue(ok({ sent: 2, rows: [] }));
+    const n = nav();
+    const { getByText, getByTestId } = render(<BrandReviewSendScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
+    await waitFor(() => getByTestId('review-row-p'));
+    // where she came from, on her row
+    getByText('from Diwali shortlist');
+    fireEvent.press(getByTestId('send-invitations'));
+    await waitFor(() => expect(brandApi.sendInvitations).toHaveBeenCalled());
+    const body = brandApi.sendInvitations.mock.calls[0][2];
+    const byId = Object.fromEntries(body.creators.map(c => [c.influencerId, c]));
+    expect(byId.t.sourceGroupId).toBe('g1');
+    expect(byId.p.sourceGroupId).toBeUndefined();
+    // and no batch-level label claiming they all came from one place
+    expect(body.sourceGroupId).toBeUndefined();
+  });
+
   it('rows with the terms line and OK / Below min; the warning; Send calls the API once with every creator and goes back with a toast (check 17)', async () => {
     draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }], sourceGroupId: null });
     draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10', offer: { kind: 'library', brandOfferId: 'o1', name: 'Festive 15%' } });

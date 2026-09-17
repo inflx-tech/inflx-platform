@@ -68,13 +68,14 @@ export function GroupHeader5({ title, count, testID }) {
 }
 
 /** I8 — one creator on Review: name · terms line · OK / Below min. */
-export function ReviewRow5({ name, avatarUrl, line, below, error, onPress, testID }) {
+export function ReviewRow5({ name, avatarUrl, line, source, below, error, onPress, testID }) {
   return (
     <TouchableOpacity style={b.row} onPress={onPress} activeOpacity={0.7} testID={testID}>
       <Avatar name={name} url={avatarUrl} size={40} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Text style={b.name} numberOfLines={1}>{name}</Text>
         <Text style={b.meta} numberOfLines={1}>{line}</Text>
+        {source ? <Text style={b.source} numberOfLines={1} testID="review-source">{C5.review.from(source)}</Text> : null}
         {error ? <Text style={b.rowError}>{error}</Text> : null}
       </View>
       <Chip5 label={error ? C5.pick.cantInvite : below ? C5.review.below : C5.review.ok} tone={error ? 'declined' : below ? 'below' : 'ok'} />
@@ -247,6 +248,7 @@ export const b = StyleSheet.create({
   name: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: T.ink },
   meta: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, marginTop: 2 },
   rowError: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: T.danger, marginTop: 2 },
+  source: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink3, marginTop: 2 },
   more: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   moreText: { fontFamily: fonts.sansBold, fontSize: 20, color: T.ink },
   card: { borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 12, marginBottom: 10, backgroundColor: T.bg },

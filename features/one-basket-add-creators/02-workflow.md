@@ -15,8 +15,10 @@
 ## After
 
 1–2. Unchanged. The footer now also shows three faces and a **Review** link.
-3. **Groups tab — the footer stays**, reading *"5 selected."* Each group row gains a second line:
-   *"12 creators · 9 can be invited"*, or *"5 creators · 2 already selected"*.
+3. **Groups tab — the footer stays**, reading *"5 selected."* A group already contributing to
+   the basket says so: *"5 creators · 2 already selected"*. It does NOT say how many of the group
+   this set can take — that answer costs the full eligibility query, and paying it for every group
+   on the tab would undo the load-time fix of 2026-09-16. It stays inside the group check.
 4. Tap **Diwali shortlist** → the same group check.
 5. It now says **"Will be added · 9"**, and underneath, plainly:
    *"2 of them — Priya Sharma and Sneha N. — you had already picked. They will not be added
@@ -31,7 +33,7 @@
 
 | | |
 |---|---|
-| `BrandSetPickCreatorsScreen` | footer rendered on all four tabs; basket face row + Review; `addMany(creators, groupId)` passed to the Groups tab; group rows show a per-set count |
+| `BrandSetPickCreatorsScreen` | footer rendered on all four tabs; basket face row + Review; `addMany(creators, groupId)` passed to the Groups tab; group rows show how many of that group are already in the basket |
 | `BrandGroupInviteCheckScreen` | stops calling `startDraft`; calls `addMany` and `navigation.goBack()`; overlap counted and named; button copy |
 | `draft5.js` | `sourceGroupId` moves from the draft to the creator |
 | `BrandReviewSendScreen` | sends `creators[].sourceGroupId`; shows the source tag per row |

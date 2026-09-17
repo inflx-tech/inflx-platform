@@ -16,7 +16,7 @@ import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { Stepper5, LockedSetCard5, ReviewRow5 } from '../../components/invitations/bits5';
 import { C5, MSG5 } from '../../components/invitations/copy5';
-import { getDraft, clearDraft, removeCreators, toServer, summaryLine, validateLocal } from '../../components/invitations/draft5';
+import { getDraft, clearDraft, clearBasket, removeCreators, toServer, summaryLine, validateLocal } from '../../components/invitations/draft5';
 
 const R = C5.review;
 
@@ -57,11 +57,27 @@ export default function BrandReviewSendScreen({ navigation, route }) {
     setBusy(true);
     // Item 6: a creator picked from the pool carries her entry id, so the entry is marked used
     // the moment the invitation is sent, whatever she then answers (APPROVAL §3.2).
-    const body = { creators: d.creators.map(c => ({ influencerId: c.id, terms: toServer(goal, d.terms[c.id]), poolEntryId: c.poolEntryId || undefined })), sourceGroupId: d.sourceGroupId || undefined };
+    //
+    // 2026-09-17: the group rides on the CREATOR. One send can now mix a group, the pool and
+    // hand-picked creators, so a single label for the batch would be false for most of them.
+    // The batch-level field is still sent when the whole draft shares one group, which is what
+    // an older screen (or an older bundle) produces.
+    const body = {
+      creators: d.creators.map(c => ({
+        influencerId: c.id,
+        terms: toServer(goal, d.terms[c.id]),
+        poolEntryId: c.poolEntryId || undefined,
+        sourceGroupId: c.sourceGroupId || undefined,
+      })),
+      sourceGroupId: d.sourceGroupId || undefined,
+    };
     const r = await brandApi.sendInvitations(campaignId, setId, body);
     setBusy(false);
     if (r.success) {
       clearDraft(setId);
+      // Everyone in it has just been invited. Leaving them ticked would greet her with a basket
+      // full of people the server would now refuse.
+      clearBasket(setId);
       navigation.navigate('BrandSetDetail', { campaignId, setId, toast: R.sent(r.data.sent) });
       return;
     }
@@ -91,7 +107,8 @@ export default function BrandReviewSendScreen({ navigation, route }) {
         {failedIds.length ? <View testID="failed-banner"><Banner title={R.failedTitle(failedIds.length)} body={R.failedBody} /></View>
           : belowCount ? <View style={s.warn} testID="below-banner"><Text style={s.warnText}>{R.belowMany(belowCount)}</Text></View> : null}
         {draft.creators.map((c, i) => (
-          <ReviewRow5 key={c.id} name={c.name} avatarUrl={c.avatarUrl} line={summaryLine(goal, draft.terms[c.id] || {})} below={(warnings[c.id] || []).length > 0} error={failures[c.id]}
+          <ReviewRow5 key={c.id} name={c.name} avatarUrl={c.avatarUrl} line={summaryLine(goal, draft.terms[c.id] || {})}
+            source={c.sourceGroupName || null} below={(warnings[c.id] || []).length > 0} error={failures[c.id]}
             onPress={() => navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: i })} testID={`review-row-${c.id}`} />
         ))}
         <Text style={s.hint}>{R.hint(draft.set.cutoff)}</Text>

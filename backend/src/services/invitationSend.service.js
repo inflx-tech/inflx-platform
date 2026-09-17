@@ -435,7 +435,13 @@ async function sendLegacy({ brand, campaign, set, body, actorUserId }) {
 
 /**
  * The item 5 send: all or nothing (APPROVAL.md Q2).
- * @param {Array<{influencerId, terms?, note?, offer?}>} creators
+ *
+ * `sourceGroupId` here is the batch-level fallback. A creator may name her own, which wins —
+ * one send can mix a group, the pool and hand-picked creators (2026-09-17), and the source is
+ * recorded per row because `campaign_influencers.source_group_id` was always a per-row column.
+ * The controller has already checked every id against this brand.
+ *
+ * @param {Array<{influencerId, terms?, note?, offer?, sourceGroupId?}>} creators
  */
 async function sendBatch({ brand, campaign, set, creators, sourceGroupId = null, actorUserId }) {
   if (!Array.isArray(creators) || creators.length === 0) throw new AppError('VALIDATION_ERROR', MSG.NOBODY_PICKED, 422, 'creators');
@@ -453,7 +459,8 @@ async function sendBatch({ brand, campaign, set, creators, sourceGroupId = null,
     try {
       if (seen.has(influencerId)) throw new AppError('CONFLICT', 'That creator is listed twice.', 409, 'influencer_id');
       seen.add(influencerId);
-      plans.push(await prepareOne({ brand, campaign, set, body, mode: 'strict', source: sourceGroupId ? 'group' : 'brand_picker', sourceGroupId, actorUserId }));
+      const mine = c.sourceGroupId || c.source_group_id || sourceGroupId || null;
+      plans.push(await prepareOne({ brand, campaign, set, body, mode: 'strict', source: mine ? 'group' : 'brand_picker', sourceGroupId: mine, actorUserId }));
     } catch (e) {
       if (!(e instanceof AppError)) throw e;
       failures.push({ influencerId, name: (e.details && e.details.name) || null, code: e.code, field: e.field || null, message: e.message });

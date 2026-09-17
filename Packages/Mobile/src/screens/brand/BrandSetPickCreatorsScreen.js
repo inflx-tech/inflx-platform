@@ -1,11 +1,24 @@
 /**
  * BrandSetPickCreatorsScreen — I1: All creators (the item 3 Discover list in select mode, with
- * the set-level pick state per row), Worked with, and Groups (→ I2). "Next: terms for {n}
+ * the set-level pick state per row), Worked with, Groups (→ I2) and Pool. "Next: terms for {n}
  * creators" starts the in-app draft and opens the terms screen for the first creator.
- * Contract: features/item5-invitations · prompt §6.1
+ *
+ * ── One basket (2026-09-17) ──────────────────────────────────────────────────
+ * Founder: "i can able to add pool creators, from group and from list of creators selected
+ * manually ...but navigation to add creators is not actually supporting this."
+ *
+ * It did not. Three tabs ticked into this screen's own useState; the Groups tab LEFT the screen
+ * for the group check, which called startDraft with the group's members only and so threw the
+ * picks away. The footer was hidden here too, so nothing even hinted they were still held.
+ *
+ * The selection now lives in draft5's basket, which both screens reach, and the footer renders
+ * on all four tabs. The group check adds to the basket and comes back.
+ *
+ * Contract: features/item5-invitations · prompt §6.1 · features/one-basket-add-creators
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, EmptyState } from '../../components/settings/primitives';
@@ -19,7 +32,9 @@ import useRouteToast from '../../hooks/useRouteToast';
 import { C3 } from '../../components/discovery/copy3';
 import { Chip5 } from '../../components/invitations/bits5';
 import { C5 } from '../../components/invitations/copy5';
-import { startDraft } from '../../components/invitations/draft5';
+import { startDraft, getBasket, toggleInBasket, removeFromBasket } from '../../components/invitations/draft5';
+import { Sheet } from '../../components/settings/sheets';
+import { Avatar } from './BrandBlockedCreatorsScreen';
 import { C6, aimLabel6 as aimLabel4 } from '../../components/negotiation/copy6';
 
 // Item 6 (B13): the pool is a fourth source inside any set's picker (rules v1.18 §7B).
@@ -43,7 +58,12 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [data, setData] = useState(null);
   const [tab, setTab] = useState(P.tabs[0]);
-  const [sel, setSel] = useState(new Map()); // id → creator row
+  // The selection lives in draft5 so the group check can add to it. This is a mirror that
+  // re-reads on focus, which is how the picks are still here after a trip to the group check.
+  const [sel, setSel] = useState(() => new Map(getBasket(setId).map(c => [c.id, c])));
+  const [reviewing, setReviewing] = useState(false);
+  const syncBasket = useCallback(() => setSel(new Map(getBasket(setId).map(c => [c.id, c]))), [setId]);
+  useFocusEffect(useCallback(() => { syncBasket(); }, [syncBasket]));
   const lists = useReferenceLists();
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
@@ -57,14 +77,23 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
   }, [campaignId, setId]);
   useEffect(() => { load(); }, [load]);
 
-  const toggle = (c) => setSel(prev => { const n = new Map(prev); if (n.has(c.id)) n.delete(c.id); else n.set(c.id, c); return n; });
+  const toggle = (c) => { toggleInBasket(setId, c); syncBasket(); };
+  const drop = (id) => { removeFromBasket(setId, id); syncBasket(); };
   const fetcher = useCallback((params) => brandApi.pickable(campaignId, setId, { ...params, tab: 'all' }), [campaignId, setId]);
 
   function next() {
     if (!data) return;
     // Item 6: a creator picked from the pool carries her entry and the terms she agreed, so the
     // terms screen opens filled in and the entry is marked used when the invitation is sent.
-    const creators = [...sel.values()].map(c => ({ id: c.id, name: c.name, avatarUrl: c.avatarUrl || null, poolEntryId: c.pool ? c.pool.entryId : undefined, poolTerms: c.pool && c.pool.sameAim ? c.pool.terms : undefined, poolAgreedAt: c.pool ? c.pool.agreedAt : undefined }));
+    // sourceGroupId rides on the CREATOR now, not the draft — one send can mix sources, so one
+    // label for the whole batch would be a lie.
+    const creators = [...sel.values()].map(c => ({
+      id: c.id, name: c.name, avatarUrl: c.avatarUrl || null,
+      sourceGroupId: c.sourceGroupId || null, sourceGroupName: c.sourceGroupName || null,
+      poolEntryId: c.pool ? c.pool.entryId : undefined,
+      poolTerms: c.pool && c.pool.sameAim ? c.pool.terms : undefined,
+      poolAgreedAt: c.pool ? c.pool.agreedAt : undefined,
+    }));
     startDraft(setId, { set: data.set, campaignName: data.campaign.name, creators, sourceGroupId: null });
     navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: 0 });
   }
@@ -89,15 +118,27 @@ export default function BrandSetPickCreatorsScreen({ navigation, route }) {
       ) : tab === P.tabs[1] ? (
         <WorkedPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} />
       ) : tab === P.tabs[2] ? (
-        <GroupsPickList onOpen={(g) => navigation.navigate('BrandGroupInviteCheck', { campaignId, setId, groupId: g.id, groupName: g.name })} />
+        <GroupsPickList selectedIds={new Set(sel.keys())}
+          onOpen={(g) => navigation.navigate('BrandGroupInviteCheck', { campaignId, setId, groupId: g.id, groupName: g.name })} />
       ) : (
         <PoolPickList campaignId={campaignId} setId={setId} selectedIds={new Set(sel.keys())} onToggle={toggle} />
       )}
-      {tab !== P.tabs[2] ? (
-        <View style={s.footer}>
-          <PrimaryButton label={P.next(sel.size)} onPress={next} disabled={!sel.size || !data} testID="pick-next" />
-        </View>
-      ) : null}
+      {/* On every tab, including Groups. A basket you cannot see is a basket you do not trust. */}
+      <View style={s.footer} testID="pick-footer">
+        {sel.size ? (
+          <TouchableOpacity style={s.basket} onPress={() => setReviewing(true)} activeOpacity={0.7} testID="pick-basket">
+            <View style={s.faces}>
+              {[...sel.values()].slice(0, 3).map(c => (
+                <View key={c.id} style={{ marginRight: 6 }}><Avatar name={c.name} url={c.avatarUrl} size={24} /></View>
+              ))}
+            </View>
+            <Text style={s.count} testID="pick-count">{P.selected(sel.size)}</Text>
+            <Text style={s.reviewLink}>{P.review}</Text>
+          </TouchableOpacity>
+        ) : null}
+        <PrimaryButton label={P.next(sel.size)} onPress={next} disabled={!sel.size || !data} testID="pick-next" />
+      </View>
+      <BasketSheet visible={reviewing} rows={[...sel.values()]} onRemove={drop} onClose={() => setReviewing(false)} />
       {toast}
     </View>
   );
@@ -177,7 +218,7 @@ function PoolPickList({ campaignId, setId, selectedIds, onToggle }) {
   );
 }
 
-function GroupsPickList({ onOpen }) {
+function GroupsPickList({ onOpen, selectedIds }) {
   const [groups, setGroups] = useState(null);
   const [status, setStatus] = useState('loading');
   const load = useCallback(async () => {
@@ -194,15 +235,76 @@ function GroupsPickList({ onOpen }) {
       ListEmptyComponent={<EmptyState title={P.groupsEmptyTitle} body={P.groupsEmptyBody} />}
       renderItem={({ item }) => (
         <TouchableOpacity style={s.groupRow} onPress={() => onOpen(item)} testID={`group-${item.id}`}>
-          <View style={{ flex: 1 }}><Text style={s.groupName}>{item.name}</Text><Text style={s.groupSub}>{P.groupRow(item.memberCount || 0)}</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.groupName}>{item.name}</Text>
+            {/* How many of this group are already in the basket. Free — the basket is local.
+                How many this SET can take is deliberately not shown: that answer costs the full
+                eligibility query per group, and paying it for every row would undo the load-time
+                fix of 2026-09-16. It lives inside the group check, where it is paid for once. */}
+            <Text style={s.groupSub}>{(() => {
+              const k = (item.members || []).filter(m => selectedIds.has(m.id)).length;
+              return k ? P.groupRowPicked(item.memberCount || 0, k) : P.groupRow(item.memberCount || 0);
+            })()}</Text>
+          </View>
           <Text style={s.chev}>›</Text>
         </TouchableOpacity>
       )} />
   );
 }
 
+/**
+ * What is in the basket, grouped by where each creator came from, with a way to take her out.
+ * With a dozen creators from three sources, a number alone is not something you can check.
+ */
+function BasketSheet({ visible, rows, onRemove, onClose }) {
+  const groups = [];
+  const push = (title, list) => { if (list.length) groups.push({ title, list }); };
+  push(P.byHand, rows.filter(c => !c.sourceGroupId && !c.pool));
+  push(P.fromPool, rows.filter(c => !c.sourceGroupId && c.pool));
+  const byGroup = new Map();
+  for (const c of rows.filter(x => x.sourceGroupId)) {
+    if (!byGroup.has(c.sourceGroupId)) byGroup.set(c.sourceGroupId, []);
+    byGroup.get(c.sourceGroupId).push(c);
+  }
+  for (const [, list] of byGroup) push(P.fromGroup(list[0].sourceGroupName || 'a group'), list);
+
+  return (
+    <Sheet visible={visible} onClose={onClose} testID="basket-sheet">
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={s.sheetTitle}>{P.reviewTitle(rows.length)}</Text>
+        <Text style={s.sheetHint}>{P.reviewRemoveHint}</Text>
+      </View>
+      <ScrollView style={{ maxHeight: 380 }}>
+        {rows.length ? groups.map(g => (
+          <View key={g.title}>
+            <Text style={s.sheetSec}>{`${g.title} · ${g.list.length}`}</Text>
+            {g.list.map(c => (
+              <TouchableOpacity key={c.id} style={s.basketRow} onPress={() => onRemove(c.id)} activeOpacity={0.7} testID={`basket-remove-${c.id}`}>
+                <Avatar name={c.name} url={c.avatarUrl} size={32} />
+                <Text style={s.basketName} numberOfLines={1}>{c.name}</Text>
+                <Text style={s.basketX}>×</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )) : <Text style={s.groupSub}>{P.emptyBasket}</Text>}
+      </ScrollView>
+      <View style={{ marginTop: 10 }}><PrimaryButton label={P.reviewDone} onPress={onClose} testID="basket-done" /></View>
+    </Sheet>
+  );
+}
+
 const s = StyleSheet.create({
   sub: { fontFamily: fonts.sansBold, fontSize: 10.5, color: T.ink3, letterSpacing: 0.6, marginBottom: 10 },
+  basket: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  faces: { flexDirection: 'row', alignItems: 'center' },
+  count: { fontFamily: fonts.sansBold, fontSize: 13.5, color: T.ink, marginLeft: 2 },
+  reviewLink: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.ink, marginLeft: 'auto', textDecorationLine: 'underline' },
+  sheetTitle: { fontFamily: fonts.sansBold, fontSize: 16, color: T.ink, flex: 1 },
+  sheetHint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3 },
+  sheetSec: { fontFamily: fonts.sansBold, fontSize: 11, color: T.ink3, letterSpacing: 0.5, marginTop: 12, marginBottom: 4, textTransform: 'uppercase' },
+  basketRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: T.border },
+  basketName: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: T.ink, flex: 1, marginLeft: 10 },
+  basketX: { fontFamily: fonts.sansRegular, fontSize: 20, color: T.ink3, paddingHorizontal: 6 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, lineHeight: 16, marginBottom: 8 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
   search: { fontFamily: fonts.sansRegular, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: T.ink, backgroundColor: T.surface },

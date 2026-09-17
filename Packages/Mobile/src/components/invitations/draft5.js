@@ -7,12 +7,66 @@
  *   getDraft(setId) → { set, campaignName, creators[], terms{id→terms}, minimums{id→{fee,commissionPct}}, sourceGroupId, over50Confirmed }
  *   setTerms / copyTermsToAll / removeCreators / clearDraft
  *   defaultTerms(goal) · validateLocal(goal, terms) · toServer(terms) · summaryLine(goal, terms)
+ *
+ * ── The basket ───────────────────────────────────────────────────────────────
+ * Founder, 2026-09-17: "i can able to add pool creators, from group and from list of creators
+ * selected manually ...but navigation to add creators is not actually supporting this."
+ *
+ * It did not, because the picker held its selection in its own useState while the group check
+ * was a separate screen that called startDraft directly — so opening a group threw the picker's
+ * picks away. The selection now lives here, where both screens can reach it, and the draft is
+ * started once from whatever the basket holds.
+ *
+ *   getBasket(setId) → creator[]   ·   basketIds(setId) → Set
+ *   addToBasket(setId, creators, sourceGroupId) → { added, already }
+ *   toggleInBasket / removeFromBasket / clearBasket
+ *
+ * A creator carries the group she arrived from. One send can now mix sources, so "where this
+ * came from" is per creator and no longer one label for the whole batch.
  */
 import { MSG5, DELIVERABLE_TYPES, USAGE_PLACES, deliverablesShort, rupees5, fmtPct5, SCOPE_LABEL } from './copy5';
 
 const drafts = new Map();
+/** setId → Map(creatorId → creator). The picker's selection, survives leaving the picker. */
+const baskets = new Map();
+
+const bag = (setId) => { if (!baskets.has(setId)) baskets.set(setId, new Map()); return baskets.get(setId); };
+
+export const getBasket = (setId) => [...bag(setId).values()];
+export const basketIds = (setId) => new Set(bag(setId).keys());
+export const basketSize = (setId) => bag(setId).size;
+export const clearBasket = (setId) => { baskets.delete(setId); };
+export const removeFromBasket = (setId, id) => { bag(setId).delete(id); };
+
+/** Tick or untick one creator. Returns true if she is now in. */
+export function toggleInBasket(setId, c) {
+  const m = bag(setId);
+  if (m.has(c.id)) { m.delete(c.id); return false; }
+  m.set(c.id, { ...c });
+  return true;
+}
+
+/**
+ * Add several at once — the group check's door back into the picker. A creator already in the
+ * basket is left exactly as she is: her source, and any pool terms she arrived with, are not
+ * overwritten by a later group. Returns what actually happened so the screen can say so.
+ */
+export function addToBasket(setId, creators, sourceGroupId = null) {
+  const m = bag(setId);
+  let added = 0;
+  const already = [];
+  for (const c of creators || []) {
+    if (m.has(c.id)) { already.push(c); continue; }
+    m.set(c.id, { ...c, sourceGroupId: sourceGroupId || c.sourceGroupId || null });
+    added += 1;
+  }
+  return { added, already };
+}
 
 export function startDraft(setId, { set, campaignName, creators, sourceGroupId = null }) {
+  // Back-compat: a caller that still names one group for the whole send stamps it on everyone
+  // who did not bring her own. The picker passes none and lets each creator carry her own.
+  if (sourceGroupId) creators = (creators || []).map(c => ({ ...c, sourceGroupId: c.sourceGroupId || sourceGroupId }));
   // Terms typed earlier for the same creator survive a trip back to the picker — but only while
   // the set's Aim is the same, because the shape of the terms follows the Aim.
   const prev = drafts.get(setId);
@@ -35,6 +89,9 @@ export function removeCreators(setId, ids) {
   const gone = new Set(ids);
   d.creators = d.creators.filter(c => !gone.has(c.id));
   for (const id of gone) delete d.terms[id];
+  // The basket is what the picker shows. Dropping a creator from the draft without dropping her
+  // from the basket would put her back on the next visit to Add creators.
+  for (const id of gone) bag(setId).delete(id);
 }
 
 /**
