@@ -38,7 +38,17 @@
         "cause": "DiscoverList pinned FOUR stacked bands above the list and none of them scrolled — the caller's hint, the search box, the filter chips, and the count/sort row. On a 6-inch phone exactly one creator card fitted; opening the keyboard (adjustResize, which is correct) left none. Because DiscoverList is shared, the same waste appeared on Discover and in the group screens — the \"many places\" the founder named.",
         "fix": "only the two controls a person actually touches stay pinned (search, filters). The hint and the count/sort ride in ListHeaderComponent, so they are there when you arrive and scroll away once you are looking at people. Added keyboardShouldPersistTaps=\"handled\" so a creator can be tapped without dismissing the keyboard first, and keyboardDismissMode=\"on-drag\". About 100px returned permanently, on every screen that uses the list.",
         "tests": "item3Brand + item5Brand + item3Creator 44 green; full mobile 559 passed, 46 suites, 0 failures.",
-        "not_done": "the copy itself was left alone. The hint is still the locked sentence; it now scrolls rather than being reworded, because rewording locked copy is the founder's call and not a layout fix."
+        "not_done": "the copy itself was left alone. The hint is still the locked sentence; it now scrolls rather than being reworded, because rewording locked copy is the founder's call and not a layout fix.",
+        "deployed": {
+          "at": "2026-09-17",
+          "commit": "fcdf7aa",
+          "ota": {
+            "brand": 224,
+            "influencer": "unchanged at 210 — the creator app uses only LoadErrorList from that file"
+          },
+          "migration": "none",
+          "note": "brand app only. Discover, the group screens and the set picker all get the reclaimed space, since they share DiscoverList."
+        }
       }
     ]
   }

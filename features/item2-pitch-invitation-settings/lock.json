@@ -39,7 +39,17 @@
         "cause": "canBrandInviteMany was a sequential for-loop calling canBrandInviteCreator once per creator. Each call made about five separate database round trips — her invitation settings, her minimum commissions, her blocks, her agreed pitch, and brandFacts for THE SAME BRAND every time. 26 creators came to roughly 130 sequential trips. The 2026-09-16 fix removed a round trip between the phone and the server, which was real but was not this.",
         "mine": "item 8 added the agreedPitchFor lookup (§7B) inside that loop without noticing the loop, making an existing defect about 20% worse.",
         "fix": "the rule is now a pure function, decideInvite, with one copy of the logic that both the single and the list paths call. canBrandInviteMany prefetches every fact in five set-based queries and evaluates in memory. Measured against production: 7 round trips for 26 creators instead of ~130, and the list answer agrees with the single answer on 8 of 8 spot checks.",
-        "tests": "item2-eligibility + item2-settings-api 41 green; item5/item6/item8 120 green; full backend 221 failed / 1099 passed / 1320 with ZERO new failures vs the item 8 baseline."
+        "tests": "item2-eligibility + item2-settings-api 41 green; item5/item6/item8 120 green; full backend 221 failed / 1099 passed / 1320 with ZERO new failures vs the item 8 baseline.",
+        "deployed": {
+          "at": "2026-09-17",
+          "commit": "fcdf7aa",
+          "ota": {
+            "brand": 224,
+            "influencer": "unchanged at 210 — the creator app uses only LoadErrorList from that file"
+          },
+          "migration": "none",
+          "measured_live": "the same endpoint, same brand shape, after the deploy: 2723 ms / 1576 ms / 1470 ms on three consecutive runs, against 18511 / 18301 / 18331 before. Twelve times faster, measured rather than predicted."
+        }
       }
     ]
   }

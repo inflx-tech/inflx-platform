@@ -1,7 +1,7 @@
 {
   "feature": "one-basket-add-creators",
   "spec_version": "1.0.0",
-  "status": "built — awaiting deploy go",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (\"ok pls lock and start implementation\", 2026-09-17)",
   "approved_at": "2026-09-17T13:10:00+05:30",
@@ -17,6 +17,17 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null
+    "deployed_to_production": {
+      "at": "2026-09-17",
+      "by": "founder go — asked which of the three unpushed commits to deploy and chose \"Push all three — I want both live\"",
+      "commit": "4a8ac2b (pushed with fcdf7aa)",
+      "migration": "none",
+      "ota": {
+        "brand": 224,
+        "influencer": "unchanged at 210"
+      },
+      "render": "live — the picker endpoint answers 200 with the new timings",
+      "note": "rode the same push as the picker speed fix. Surfaced to the founder BEFORE pushing rather than carried up silently, because this contract still read \"awaiting deploy go\"."
+    }
   }
 }
