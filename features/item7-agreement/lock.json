@@ -23,7 +23,10 @@
       "commit": "5a8e9db",
       "migration": "183 applied to production 2026-09-14 (run-183.js --apply: 21 columns, 3 contract_status values, standard_terms seeded at version 1.0, campaign_fee_pct 8 and remote_return_days 7 added to platform_settings, 6 indexes including the uq_escrow_ci_tranche money guard; row counts unchanged at 6 contracts, 1 both-signed, 0 escrow rows, 0 wallet transactions, 8 invitations; no backfill; all checks OK)",
       "render": "item 7 code live after push: GET /v1/influencers/me/invitations/:ciId/agreement and GET /v1/standard-terms both answer 401 (routes exist) while a made-up sibling path answers 404",
-      "ota": { "brand": 217, "influencer": 204 },
+      "ota": {
+        "brand": 217,
+        "influencer": 204
+      },
       "websites": "the push redeploys Vercel with the new admin page /admin/settings/terms and with brand-web's Approve & Send switched off. The admin route cannot be proved from outside: the middleware redirects the whole /admin tree to /login when unauthenticated, so it answers 307 exactly as every other admin path does.",
       "money": "no money moved at deploy. Production still holds 0 escrow rows, 0 wallet transactions and zero balances; the first real lock will happen the first time a brand countersigns.",
       "backend_tests": "229 failed / 1024 passed / 1253 (0 new failures vs the item 6 baseline of 229/982/1211; 42 new)",
@@ -37,6 +40,17 @@
       "backend_tests": "229 failed / 1024 passed / 1253 (0 new failures vs the item 6 baseline of 229/982/1211; 42 new tests, all passing)",
       "mobile_tests": "493 pass (14 new; baseline 479)",
       "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). This is the first item that moves money; the founder's walk runs with the end-to-end pack across items 2-7, which is the next piece of work."
-    }
+    },
+    "walk_fixes": [
+      {
+        "at": "2026-09-17",
+        "found_by": "item 9 gap report §4.5",
+        "problem": "contracts.released_amount was doing two jobs and only one of them worked. It is written once, at the signature, and never again — correct for the reader that wants \"what the signature moved\" (her Collabs card), wrong for the one that subtracted it from locked_amount and called the result \"still locked\". From the second payment onwards the agreement screen reported money as locked that had already been paid out.",
+        "fix": "the running total now comes from the escrow rows, which are the ledger — a released_so_far sum added to the agreement context query, read by moneySummary. contracts.released_amount is left exactly as it was, still meaning the first payment, so her card is untouched.",
+        "test": "item7-agreement.test.js — \"still locked FOLLOWS the payments\". Releases tranche 2 and asserts released 2250→4500 and stillLocked 7470→5220, then asserts released_amount is STILL 2250 so the card keeps its meaning. Reverting the fix makes it fail with Expected 4500 / Received 2250 — checked, not assumed.",
+        "tests": "item7-agreement 46 passed. The 5 failures in escrow-fee-tiers, earnings and campaigns-live were verified present in the pre-fix baseline — pre-existing debt, not caused here.",
+        "founder_decision": "answering the item 9 report: \"Q2 fix this now\"."
+      }
+    ]
   }
 }

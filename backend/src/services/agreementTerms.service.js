@@ -58,7 +58,19 @@ const CONTEXT_SQL = `
          con.brand_signed_at, con.brand_signed_name, con.brand_signed_by, con.brand_signed_ip, con.brand_signed_device,
          con.withdrawn_at, con.declined_at, con.decline_reason, con.decline_note, con.expired_at,
          con.locked_amount, con.campaign_fee_amount, con.released_amount, con.money_at,
-         con.pdf_url, con.pdf_generated_at, con.pdf_sha256
+         con.pdf_url, con.pdf_generated_at, con.pdf_sha256,
+         -- Founder, item 9: "still locked" was wrong from the second payment onwards.
+         --
+         -- contracts.released_amount is written once, at the signature, and never
+         -- again — which is right for the ONE thing that reads it as "what the
+         -- signature moved" (her Collabs card), and wrong for the other, which
+         -- subtracted it from the locked amount and called the result "still
+         -- locked". One field was doing two jobs and only one of them worked.
+         --
+         -- The escrow rows are the ledger, so the running total is taken from them
+         -- and nothing has to be kept in step by hand.
+         (SELECT COALESCE(SUM(e.amount), 0) FROM escrow_entries e
+           WHERE e.campaign_influencer_id = ci.id AND e.status = 'released') AS released_so_far
     FROM campaign_influencers ci
     JOIN campaign_sets cs ON cs.id = ci.set_id
     JOIN campaigns c ON c.id = cs.campaign_id

@@ -339,6 +339,41 @@ describe('the money (checks 14–19, 35–37)', () => {
     expect(tx.filter(t => t.type === 'platform_fee').map(t => Number(t.amount))).toEqual([720]);
   });
 
+  it('⚠️ "still locked" FOLLOWS the payments — it does not freeze at the first one', async () => {
+    /**
+     * Item 9 gap report §4.5. contracts.released_amount is written once, at the
+     * signature, and never again. One reader wants exactly that ("what the
+     * signature moved", on her card); the other subtracted it from the locked
+     * amount and called the answer "still locked". One field, two jobs, and only
+     * the first one worked — so from the second payment onwards the agreement
+     * screen reported money as locked that had already been paid out.
+     *
+     * The running total now comes from the escrow rows, which are the ledger.
+     */
+    const w = await world('engagement');
+    await upToHerSignature(w);
+    await brandSign(w);
+
+    const afterSigning = await api.get(`${w.url}/invitations/${w.ciId}/agreement`, w.b.token);
+    expect(afterSigning.body.data.agreement.money).toMatchObject({
+      locked: 9720, released: 2250, stillLocked: 7470,
+    });
+
+    // The second payment goes out. Released by the same call confirm-live makes.
+    const t2 = (await query(
+      `SELECT id FROM escrow_entries WHERE campaign_influencer_id = $1 AND tranche_number = 2`, [w.ciId]
+    )).rows[0];
+    await require('../src/services/escrow.service').processTrancheReleaseStandalone(t2.id);
+
+    const afterSecond = await api.get(`${w.url}/invitations/${w.ciId}/agreement`, w.b.token);
+    expect(afterSecond.body.data.agreement.money.released).toBe(4500);
+    expect(afterSecond.body.data.agreement.money.stillLocked).toBe(5220);
+
+    // …and her card still reports what the SIGNATURE moved, not the running total.
+    const row = await con(w.ciId);
+    expect(Number(row.released_amount)).toBe(2250);
+  });
+
   it('⚠️ and the number REACHES HER CARD — computed is not delivered', async () => {
     /**
      * Found in production 2026-09-17: Asha signed, ₹3,000 was released into her wallet that

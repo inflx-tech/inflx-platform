@@ -179,7 +179,13 @@ async function read(ciId, { side, userId, preview = false } = {}) {
 function moneySummary(ctx, snapshot) {
   const m = (snapshot && snapshot.money) || {};
   const locked = ctx.locked_amount == null ? null : Number(ctx.locked_amount);
-  const released = ctx.released_amount == null ? null : Number(ctx.released_amount);
+  // Everything released so far, counted from the escrow rows — NOT from
+  // contracts.released_amount, which only ever holds the first payment. Before
+  // this, "still locked" froze at its day-one value and stayed there for the
+  // life of the collaboration (item 9 gap report §4.5).
+  const released = ctx.released_so_far == null
+    ? (ctx.released_amount == null ? null : Number(ctx.released_amount))
+    : Number(ctx.released_so_far);
   return {
     fee: m.fee == null ? null : Number(m.fee),
     campaignFeePct: m.campaignFeePct == null ? null : Number(m.campaignFeePct),
