@@ -29,8 +29,10 @@ const { MSG: MSG5, DECLINE_REASONS, declineLabel, deliverablesInWords, usageInWo
 const { MSG: MSG4 } = require('./campaignCopy');
 const { MSG, ENDING, NOTIFY } = require('./negotiationCopy');
 const { SIGNED_CONTRACT_SQL } = require('./collabState');
-const { calendarDay, todayInIndia, addDays, isBefore } = require('../utils/indiaDay');
+const { calendarDay, todayInIndia, addDays, isBefore, endOfIndiaDay } = require('../utils/indiaDay');
 const setShape = require('./setShape.model');
+// Item 10 — the third anchor: a store visit's TIME, negotiated through this same engine.
+const { MSG: MSG10, NOTIFY: NOTIFY10, whenLine } = require('./productionCopy');
 
 const OPEN_STATUSES = ['invited', 'negotiating'];
 const REASON_CODES = DECLINE_REASONS.map(r => r.code);
@@ -137,10 +139,88 @@ async function loadPitchContext(pitchId, { influencerId = null, brandId = null }
 /** True when this context is a pitch rather than an invitation. */
 const isPitch = (ctx) => ctx && ctx.kind === 'pitch';
 
+/**
+ * Item 10 — the SAME thread, hanging off a store visit's shoot plan.
+ *
+ * Rules v1.24 §11.1: "the time is the only thing either side may change, and it is agreed
+ * through the same negotiation mechanism as sections 7B and 8, with the same Admin round limit
+ * stamped when it starts. There is no declining a time." So: a third loader, the same field
+ * names, and one negotiable term — `visitAt`.
+ *
+ * What is deliberately different from the other two anchors, each a founder decision:
+ *   · the plan as SENT is turn zero (like a pitch), by the brand, at plan_sent_at;
+ *   · EITHER side may open the thread — she counters the plan, or either moves an agreed time;
+ *   · the campaign's negotiation switch does NOT apply (approval §2.4): a creator who cannot say
+ *     "that morning doesn't work" would simply not turn up. allow_negotiation is forced true here
+ *     and nothing downstream may re-introduce it for this anchor;
+ *   · there is no decline (approval, Q5 of the gap report) — the only alternative to accepting a
+ *     time is proposing another;
+ *   · the thread REOPENS when a time is moved (Q7): counters_used is counted since the last
+ *     accept turn, so each episode gets the budget stamped at birth, and round_limit is never
+ *     re-read from settings.
+ */
+async function loadShootContext(eventId, { influencerId = null, brandId = null } = {}, conn = db) {
+  const scope = influencerId ? 'ci.influencer_id = $2' : 'c.brand_id = $2';
+  const { rows } = await conn.query(
+    `SELECT pe.id, pe.contract_id, pe.mode AS shoot_mode, pe.status AS shoot_status,
+            pe.visit_scheduled_at AS visit_at, pe.plan_sent_at, pe.time_agreed_at,
+            pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+            ci.id AS campaign_influencer_id, ci.influencer_id, ci.status,
+            cs.id AS set_id, cs.goal, cs.go_live_date, cs.expired_at, cs.name AS set_name, cs.branch_id,
+            c.id AS campaign_id, c.name AS campaign_name, c.brand_id,
+            b.business_name AS brand_name, bu.id AS brand_user_id, bu.fcm_token AS brand_fcm,
+            COALESCE(i.full_name, u.name) AS creator_name, u.id AS creator_user_id, u.fcm_token AS creator_fcm,
+            n.id AS neg_id, n.status AS neg_status, n.current_turn, n.round_limit, n.outcome,
+            n.ended_at, n.ended_by, n.initiated_by, n.created_at AS neg_started_at,
+            -- Rounds are counted PER EPISODE (Q7). Before any agreement the plan is turn zero
+            -- and not a round spent; after an agreement only the counters since that accept
+            -- count, so a moved time gets the stamped budget again.
+            (SELECT CASE WHEN la.t IS NULL THEN GREATEST(count(*)::int - 1, 0)
+                         ELSE count(*) FILTER (WHERE t.created_at > la.t)::int END
+               FROM negotiation_turns t,
+                    (SELECT max(a.created_at) AS t FROM negotiation_turns a WHERE a.negotiation_id = n.id AND a.kind = 'accept') la
+              WHERE t.negotiation_id = n.id AND t.kind = 'counter'
+              GROUP BY la.t) AS counters_used,
+            (SELECT count(*)::int FROM negotiation_turns a WHERE a.negotiation_id = n.id AND a.kind = 'accept') AS episodes_agreed
+       FROM production_events pe
+       JOIN contracts con ON con.id = pe.contract_id
+       JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c ON c.id = cs.campaign_id
+       JOIN brands b ON b.id = c.brand_id JOIN users bu ON bu.id = b.user_id
+       JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
+       LEFT JOIN negotiations n ON n.production_event_id = pe.id
+      WHERE pe.id = $1 AND ${scope}`,
+    [eventId, influencerId || brandId]
+  );
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    ...r,
+    kind: 'shoot',
+    shoot_complete: r.shoot_status === 'completed' || !!r.brand_completed_at || !!r.auto_confirmed_at,
+    // The four money terms do not exist here. Nothing reads them for a shoot, and null says so.
+    agreed_fee: null, commission_pct: null, formats_json: null, usage_rights_json: null,
+    influencer_mode: null,
+    allow_negotiation: true,          // approval §2.4 — the campaign switch never applies to a visit time
+    agreement_id: null, signed_both: true,
+    pool_id: null, pool_state: null, pool_expires_at: null,
+    move_requested_at: null, move_answer: null,
+  };
+}
+
+/** True when this context is a shoot plan. */
+const isShoot = (ctx) => ctx && ctx.kind === 'shoot';
+/** Which thing the thread hangs off: 'invitation' | 'pitch' | 'shoot'. */
+const anchorOf = (ctx) => (isPitch(ctx) ? 'pitch' : isShoot(ctx) ? 'shoot' : 'invitation');
+
 /* ───────────────────────────────────────────────────────────── snapshots */
 
 /** The invitation's terms as they stand, in the turn shape (turn zero). */
 function termsOf(ctx) {
+  // Item 10: a shoot plan has one term. The time as it stands on the row — the plan as sent,
+  // or the last agreed time.
+  if (isShoot(ctx)) return { visitAt: ctx.visit_at ? new Date(ctx.visit_at).toISOString() : null };
   const usage = jsonObj(ctx.usage_rights_json);
   switch (ctx.goal) {
     case 'engagement':
@@ -159,7 +239,8 @@ function termsOf(ctx) {
  * present is held to the rules; an invitation sent before item 5 without deliverables or a
  * commission can still be countered on the number it does carry).
  */
-function normalizeSnapshot(goal, terms, mode = 'strict') {
+function normalizeSnapshot(goal, terms, mode = 'strict', shoot = null) {
+  if (shoot) return normalizeShootSnapshot(terms, shoot);
   const t = validateTerms(goal, terms || {}, { mode });
   switch (goal) {
     case 'engagement':
@@ -172,20 +253,42 @@ function normalizeSnapshot(goal, terms, mode = 'strict') {
 }
 
 /**
+ * Item 10 — the one shoot term, validated: a real instant, in the future, and no later than the
+ * last moment of the posting day in India (rules §11.1). Everything else in the body is ignored
+ * — only the time is negotiable, so a fee sent along cannot become a counter.
+ */
+function normalizeShootSnapshot(terms, ctx) {
+  const raw = terms && terms.visitAt;
+  const t = raw ? new Date(raw) : null;
+  if (!t || Number.isNaN(t.getTime())) throw new AppError('VALIDATION_ERROR', MSG10.TIME_REQUIRED, 422, 'visitAt');
+  if (!ctx.go_live_date) throw new AppError('NO_POSTING_DATE', MSG10.NO_POSTING_DATE, 422, 'visitAt');
+  if (t.getTime() <= Date.now()) throw new AppError('TIME_IN_PAST', MSG10.TIME_IN_PAST, 422, 'visitAt');
+  const day = calendarDay(ctx.go_live_date);
+  if (t.getTime() > endOfIndiaDay(day).getTime()) throw new AppError('TIME_AFTER_POSTING', MSG10.TIME_AFTER_POSTING(day), 422, 'visitAt');
+  return { visitAt: t.toISOString() };
+}
+
+/**
  * A snapshot reduced to what "changed something" means: the same numbers, the same deliverable
  * rows and the same usage places, whatever order they were typed in.
+ *
+ * Item 10: and the same INSTANT. This function is load-bearing for the third anchor — before
+ * `v` was added, two snapshots differing only in the visit time canonicalised identically and
+ * every time-only counter would have been refused as "nothing changed" (gap report §6.2 #5).
  */
 function canon(s) {
   if (!s) return 'null';
   const u = s.usageRights && s.usageRights.on ? { d: s.usageRights.durationDays == null ? 'forever' : Number(s.usageRights.durationDays), p: [...(s.usageRights.places || [])].sort() } : null;
   const d = (s.deliverables || []).map(x => `${x.type}:${Number(x.count) || 1}`).sort();
-  return JSON.stringify({ c: s.commissionPct == null ? null : Number(s.commissionPct), f: s.fee == null ? null : Number(s.fee), d, u });
+  const v = s.visitAt ? new Date(s.visitAt).getTime() : null;
+  return JSON.stringify({ c: s.commissionPct == null ? null : Number(s.commissionPct), f: s.fee == null ? null : Number(s.fee), d, u, v: Number.isNaN(v) ? String(s.visitAt) : v });
 }
 const sameSnapshot = (a, b) => canon(a) === canon(b);
 
 /** "13%" · "₹12,000 · 1 reel, 1 story" · "₹5,000 + 10%" */
 function termsLine(goal, s) {
   if (!s) return null;
+  if (s.visitAt !== undefined) return whenLine(s.visitAt);          // Item 10: "Sat 18 Oct, 11:00 am"
   if (goal === 'engagement') return [s.fee != null ? `₹${inr(s.fee)}` : null, deliverablesInWords(s.deliverables)].filter(Boolean).join(' · ');
   if (goal === 'hybrid') return [s.fee != null ? `₹${inr(s.fee)}` : null, pct(s.commissionPct)].filter(Boolean).join(' + ');
   return pct(s.commissionPct);
@@ -195,6 +298,11 @@ function termsLine(goal, s) {
 function changesBetween(goal, prev, next) {
   const out = [];
   const push = (term, from, to) => { if (from !== to) out.push({ term, from, to }); };
+  // Item 10: one line, "They asked for 18 Oct, 11:00 am → 19 Oct, 4:00 pm".
+  if ((prev && prev.visitAt !== undefined) || (next && next.visitAt !== undefined)) {
+    push('visitAt', whenLine(prev && prev.visitAt) || '—', whenLine(next && next.visitAt) || '—');
+    return out;
+  }
   if (goal === 'engagement') {
     push('fee', prev.fee != null ? `₹${inr(prev.fee)}` : '—', next.fee != null ? `₹${inr(next.fee)}` : '—');
     push('deliverables', deliverablesInWords(prev.deliverables) || '—', deliverablesInWords(next.deliverables) || '—');
@@ -233,6 +341,13 @@ function closedByCutoff(ctx, today = null) {
 const OPEN_PITCH_STATUSES = ['sent', 'viewed', 'countered'];
 
 function assertOpenInvitation(ctx) {
+  // Item 10: a shoot thread stays open until the shoot is COMPLETE — confirmed by the brand or
+  // by itself. Agreement does not end it (a moved time reopens it, Q7); the posting date does not
+  // end it (past it the collaboration is flagged Delayed and the plan stays usable, §11.1).
+  if (isShoot(ctx)) {
+    if (ctx.shoot_complete) throw new AppError('SHOOT_COMPLETE', MSG10.SHOOT_COMPLETE, 422, 'status');
+    return;
+  }
   // Item 8: a pitch has its own vocabulary and its own deadline — no set, so no
   // cutoff and no signed contract to end it.
   if (isPitch(ctx)) {
@@ -256,10 +371,12 @@ async function notify(ctx, side, { type, title }, body, extra = {}) {
   const fcmToken = side === 'brand' ? ctx.brand_fcm : ctx.creator_fcm;
   await notificationService.send({
     userId, type, title, body, fcmToken, sendSms: false,
-    // Item 8: the deep link names whichever thing the thread hangs off.
+    // Item 8 / 10: the deep link names whichever thing the thread hangs off.
     data: isPitch(ctx)
       ? { screen: side === 'brand' ? 'brand_pitch' : 'my_pitch', pitch_id: ctx.id, ...extra }
-      : { screen: side === 'brand' ? 'brand_thread' : 'invitation_thread', campaign_influencer_id: ctx.id, campaign_id: ctx.campaign_id, set_id: ctx.set_id, ...extra },
+      : isShoot(ctx)
+        ? { screen: side === 'brand' ? 'brand_shoot' : 'my_shoot', production_event_id: ctx.id, campaign_influencer_id: ctx.campaign_influencer_id, campaign_id: ctx.campaign_id, set_id: ctx.set_id, ...extra }
+        : { screen: side === 'brand' ? 'brand_thread' : 'invitation_thread', campaign_influencer_id: ctx.id, campaign_id: ctx.campaign_id, set_id: ctx.set_id, ...extra },
   }).catch(err => console.error(`[NOTIFICATION] ${type} failed:`, err.message));
 }
 
@@ -277,6 +394,18 @@ const endThread = (tx, negId, outcome, actorUserId) => negId && tx.query(
   `UPDATE negotiations SET outcome = $2, status = CASE WHEN $2 = 'agreed' THEN 'agreed'::negotiation_status ELSE 'walked_away'::negotiation_status END,
           ended_at = now(), ended_by = $3, current_turn = NULL, expires_at = NULL WHERE id = $1 AND outcome IS NULL`,
   [negId, outcome, actorUserId || null]);
+/**
+ * Item 10 — the SAME thread again (rules §11.1 "the same conversation reopens rather than a new
+ * one starting"). Shoot anchor only, enforced in the WHERE: an invitation or pitch thread that
+ * has ended stays ended. The stamped round_limit is untouched (Q7); counters are counted from
+ * the last accept, so the episode starts with the full budget.
+ */
+const reopen = (tx, negId, nextTurn) => tx.query(
+  `UPDATE negotiations SET outcome = NULL, ended_at = NULL, ended_by = NULL,
+          status = $3::negotiation_status, current_turn = $2, turn_changed_at = now(),
+          reminder_48h_sent_at = NULL, reminder_7d_sent_at = NULL, expires_at = NULL
+    WHERE id = $1 AND production_event_id IS NOT NULL`,
+  [negId, nextTurn, `awaiting_${nextTurn}`]);
 
 /* ───────────────────────────────────────────────────────────── counter */
 
@@ -285,44 +414,59 @@ const endThread = (tx, negId, outcome, actorUserId) => negId && tx.query(
  * @param {'influencer'|'brand'} by
  * @param {object} terms  the whole set for the Aim (camel or snake); or a legacy body via `legacy: true`
  */
-async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
+async function counter({ ctx, by, terms, note, actorUserId, legacy = false, reopen: wantReopen = false }) {
   assertOpenInvitation(ctx);
   const goal = ctx.goal;
   const turns = await turnsOf(ctx.neg_id);
   const lastCounter = [...turns].reverse().find(t => t.kind === 'counter');
   const current = lastCounter && lastCounter.terms_json ? jsonObj(lastCounter.terms_json) : termsOf(ctx);
 
+  // Item 10 — a shoot thread that ENDED agreed, or a plan she accepted directly, can only be
+  // changed by a MOVE (F6, `reopen: true`), never by a plain counter (§7 table: "The time is
+  // already agreed. Ask to move it instead."). The move reopens the same thread.
+  const shootAgreed = isShoot(ctx) && ((ctx.neg_id && ctx.outcome) || (!ctx.neg_id && ctx.time_agreed_at));
+  if (shootAgreed && !wantReopen) throw new AppError('TIME_ALREADY_AGREED', MSG10.TIME_ALREADY_AGREED, 422, 'status');
+  const reopening = isShoot(ctx) && !!ctx.neg_id && !!ctx.outcome && wantReopen;
+
   if (!ctx.neg_id) {
     // Item 8: on a pitch the CREATOR has already made the opening move — her
     // pitch is turn zero — so the first counter is the brand's, and the thread
     // starts there. On an invitation the brand made the opening move, so only
-    // she can start one.
-    if (!isPitch(ctx) && by !== 'influencer') throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
+    // she can start one. Item 10: on a shoot EITHER side may open it — she
+    // counters the plan, or either side moves an agreed time.
+    if (anchorOf(ctx) === 'invitation' && by !== 'influencer') throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
     if (isPitch(ctx) && by !== 'brand') throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
-    if (ctx.allow_negotiation === false) throw new AppError('NEGOTIATION_OFF', MSG.SWITCH_OFF(ctx.brand_name), 403, 'allow_negotiation');
+    if (isShoot(ctx) && !ctx.plan_sent_at) throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
+    // Approval §2.4: the campaign's negotiation switch governs COMMERCIAL terms. It has nothing
+    // to do with a visit time — loadShootContext forces allow_negotiation true, and this guard
+    // is skipped for a shoot on purpose. Do not "make it consistent" later.
+    if (!isShoot(ctx) && ctx.allow_negotiation === false) throw new AppError('NEGOTIATION_OFF', MSG.SWITCH_OFF(ctx.brand_name), 403, 'allow_negotiation');
     if (ctx.agreement_id) throw new AppError('FORBIDDEN', 'You already agreed these terms with the brand — accept to generate your contract, or decline.', 403);
     if (ctx.influencer_mode === 'open_group') throw new AppError('FORBIDDEN', 'Open-group applications cannot be negotiated.', 403);
-  } else {
+  } else if (!reopening) {
     if (ctx.current_turn !== by) throw new AppError('WRONG_TURN', MSG.NOT_YOUR_MOVE(by === 'brand' ? ctx.creator_name : ctx.brand_name), 422, 'status');
   }
   const roundLimit = await roundLimitOf(ctx);
   const used = Number(ctx.counters_used || 0);
-  if (used >= roundLimit) throw new AppError('NO_ROUNDS_LEFT', MSG.NO_ROUNDS_LEFT, 422, 'status');
+  if (used >= roundLimit) throw new AppError('NO_ROUNDS_LEFT', isShoot(ctx) ? MSG10.NO_ROUNDS_LEFT : MSG.NO_ROUNDS_LEFT, 422, 'status');
 
   const text = typeof note === 'string' ? note.trim() : '';
   if (text.length > 300) throw new AppError('VALIDATION_ERROR', MSG.NOTE_LONG, 422, 'note');
-  const snapshot = normalizeSnapshot(goal, legacy ? snapshotFromLegacy(goal, current, terms || {}) : terms, legacy ? 'legacy' : 'strict');
+  const snapshot = normalizeSnapshot(goal, legacy ? snapshotFromLegacy(goal, current, terms || {}) : terms, legacy ? 'legacy' : 'strict', isShoot(ctx) ? ctx : null);
   if (sameSnapshot(snapshot, current)) throw new AppError('VALIDATION_ERROR', MSG.NOTHING_CHANGED, 422, 'terms');
 
   const next = other(by);
   let negId = ctx.neg_id;
   await db.withTransaction(async (tx) => {
     if (!negId) {
-      // Item 8: exactly one anchor is set, and the database enforces it.
+      // Item 8 / 10: exactly one anchor is set, and the database enforces it.
       const { rows } = await tx.query(
-        `INSERT INTO negotiations (campaign_influencer_id, pitch_id, initiated_by, status, current_turn, round_limit, turn_changed_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now()) RETURNING id`,
-        [isPitch(ctx) ? null : ctx.id, isPitch(ctx) ? ctx.id : null, actorUserId || null, `awaiting_${next}`, next, roundLimit]
+        `INSERT INTO negotiations (campaign_influencer_id, pitch_id, production_event_id, initiated_by, status, current_turn, round_limit, turn_changed_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, now()) RETURNING id`,
+        [anchorOf(ctx) === 'invitation' ? ctx.id : null, isPitch(ctx) ? ctx.id : null, isShoot(ctx) ? ctx.id : null,
+         // initiated_by is NOT NULL; every context carries both user ids, so the acting side's
+         // is the honest fallback when a caller (a job, a test) does not name the person.
+         actorUserId || (by === 'brand' ? ctx.brand_user_id : ctx.creator_user_id), `awaiting_${next}`, next, roundLimit]
       );
       negId = rows[0].id;
       // On a pitch, her pitch IS turn zero, so it is written as the opening
@@ -337,6 +481,19 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
            zero.commissionPct != null ? zero.commissionPct : null, ctx.pitch_message || null, ctx.pitched_at]
         );
       }
+      // On a shoot, the plan as SENT is turn zero, by the brand, at the moment it was sent (or,
+      // when she accepted the plan directly and someone now moves it, the agreed time at the
+      // moment it was agreed).
+      if (isShoot(ctx)) {
+        const zero = termsOf(ctx);
+        await tx.query(
+          `INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, terms_json, created_at)
+           VALUES ($1, 'brand', 'counter', $2::jsonb, $3)`,
+          [negId, JSON.stringify(zero), ctx.time_agreed_at || ctx.plan_sent_at || new Date()]
+        );
+      }
+    } else if (reopening) {
+      await reopen(tx, negId, next);
     } else {
       await tx.query(
         `UPDATE negotiations SET current_turn = $2, status = $3, turn_changed_at = now(), reminder_48h_sent_at = NULL, reminder_7d_sent_at = NULL, expires_at = NULL WHERE id = $1`,
@@ -348,7 +505,7 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
        VALUES ($1, $2, 'counter', $3::jsonb, $4, $5, $6)`,
       [negId, by, JSON.stringify(snapshot), snapshot.fee != null ? snapshot.fee : null, snapshot.commissionPct != null ? snapshot.commissionPct : null, text || null]
     );
-    // Item 8: the write-back goes to whichever row the thread hangs off.
+    // Item 8 / 10: the write-back goes to whichever row the thread hangs off.
     if (isPitch(ctx)) {
       // The engine says 'influencer'; migration 152's column says 'creator'.
       // One word, two vocabularies — translated here rather than loosening a
@@ -356,6 +513,13 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
       await tx.query(
         `UPDATE influencer_proposals SET status = 'countered', counter_by = $2, updated_at = now() WHERE id = $1`,
         [ctx.id, by === 'brand' ? 'brand' : 'creator']
+      );
+    } else if (isShoot(ctx)) {
+      // The time is contested again. visit_scheduled_at KEEPS the last sent/agreed time until a
+      // new one is accepted — the proposal lives in the thread, the row says what stands.
+      await tx.query(
+        `UPDATE production_events SET status = 'proposed', time_agreed_at = NULL, updated_at = now() WHERE id = $1`,
+        [ctx.id]
       );
     } else {
       await tx.query(
@@ -366,7 +530,15 @@ async function counter({ ctx, by, terms, note, actorUserId, legacy = false }) {
   });
 
   const who = by === 'brand' ? ctx.brand_name : ctx.creator_name;
-  await notify(ctx, next, NOTIFY.TURN, `${who} countered ${termsLine(goal, snapshot)}. Your move.`, { negotiation_id: negId });
+  if (isShoot(ctx)) {
+    await notify(ctx, next, reopening || shootAgreed ? NOTIFY10.MOVED : NOTIFY10.TIME_COUNTERED,
+      reopening || shootAgreed
+        ? `${who} asked to move the visit to ${termsLine(goal, snapshot)}.${text ? ` "${text}"` : ''}`
+        : `${who} asked for a different time: ${termsLine(goal, snapshot)}. Your move.`,
+      { negotiation_id: negId });
+  } else {
+    await notify(ctx, next, NOTIFY.TURN, `${who} countered ${termsLine(goal, snapshot)}. Your move.`, { negotiation_id: negId });
+  }
   return negId;
 }
 
@@ -385,6 +557,16 @@ async function accept({ ctx, by, actorUserId }) {
   await db.withTransaction(async (tx) => {
     await tx.query(`INSERT INTO negotiation_turns (negotiation_id, sent_by, kind, terms_json, proposed_fee, proposed_commission_pct) VALUES ($1, $2, 'accept', $3::jsonb, $4, $5)`,
       [ctx.neg_id, by, JSON.stringify(s), s.fee != null ? s.fee : null, s.commissionPct != null ? s.commissionPct : null]);
+    // Item 10: accepting a TIME writes it onto the shoot row and stamps the moment. No money,
+    // no status beyond 'confirmed' (the planning is done; the visit is still to happen).
+    if (isShoot(ctx)) {
+      await tx.query(
+        `UPDATE production_events SET visit_scheduled_at = $2, time_agreed_at = now(), status = 'confirmed', updated_at = now() WHERE id = $1`,
+        [ctx.id, s.visitAt]
+      );
+      await endThread(tx, ctx.neg_id, 'agreed', actorUserId);
+      return;
+    }
     // Item 8: accepting a PITCH agrees the money and nothing else — the pitch
     // service creates the pool entry after this commits. No campaign, no set,
     // no invitation, no contract, no money (rules v1.21 §8).
@@ -427,6 +609,12 @@ async function accept({ ctx, by, actorUserId }) {
     await notify(ctx, other(by), NOTIFY.AGREED, `${who} accepted ${termsLine(goal, s)}.`, { negotiation_id: ctx.neg_id });
     return { contractError: null, agreedTerms: s };
   }
+  // Item 10: a time is agreed. Nothing else happens — the visit is still to come.
+  if (isShoot(ctx)) {
+    const who = by === 'brand' ? ctx.brand_name : ctx.creator_name;
+    await notify(ctx, other(by), NOTIFY10.TIME_AGREED, `${who} agreed ${termsLine(goal, s)} for the store visit.`, { negotiation_id: ctx.neg_id });
+    return { contractError: null, agreedTerms: s };
+  }
 
   // The draft contract, the same call item 5's plain accept uses (APPROVAL Q11).
   let contractError = null;
@@ -441,6 +629,9 @@ async function accept({ ctx, by, actorUserId }) {
 /* ───────────────────────────────────────────────────────────── decline */
 
 async function decline({ ctx, by, reason, note, actorUserId }) {
+  // Item 10 (rules §11.1): "There is no declining a time: the only alternative to accepting one
+  // is proposing another." No route offers it; the engine refuses it too.
+  if (isShoot(ctx)) throw new AppError('NO_DECLINE', MSG10.NO_DECLINE, 422, 'status');
   if (!ctx.neg_id) throw new AppError('VALIDATION_ERROR', MSG.NO_THREAD, 422, 'status');
   assertOpenInvitation(ctx);
   if (ctx.current_turn !== by) throw new AppError('WRONG_TURN', MSG.NOT_YOUR_MOVE(by === 'brand' ? ctx.creator_name : ctx.brand_name), 422, 'status');
@@ -582,32 +773,47 @@ async function thread(ctx, side) {
   const roundLimit = await roundLimitOf(ctx);
   const countersUsed = Number(ctx.counters_used || 0);
   const open = !!ctx.neg_id && !ctx.outcome;
-  const closed = closedByCutoff(ctx);
+  const closed = isShoot(ctx) ? false : closedByCutoff(ctx);
   // Item 8: a pitch has its own open vocabulary and no set cutoff to close it.
+  // Item 10: a shoot thread is open until the shoot is complete; agreement does not close it.
   const invitationOpen = isPitch(ctx)
     ? OPEN_PITCH_STATUSES.includes(ctx.status)
-    : (OPEN_STATUSES.includes(ctx.status) && !closed);
+    : isShoot(ctx)
+      ? !!ctx.plan_sent_at && !ctx.shoot_complete
+      : (OPEN_STATUSES.includes(ctx.status) && !closed);
   const myMove = open && ctx.current_turn === side;
+  const shootTimeAgreed = isShoot(ctx) && (!!ctx.time_agreed_at || (!!ctx.neg_id && ctx.outcome === 'agreed'));
   // On a pitch the creator's opening move is the pitch itself, so the side that
-  // can start the thread is the brand.
+  // can start the thread is the brand. On a shoot she counters the sent plan.
   const canCounterNew = !ctx.neg_id && invitationOpen
     && (isPitch(ctx) ? side === 'brand'
-      : (side === 'influencer' && ctx.allow_negotiation !== false && !ctx.agreement_id && ctx.influencer_mode !== 'open_group'));
+      : isShoot(ctx) ? (side === 'influencer' && !shootTimeAgreed)
+        : (side === 'influencer' && ctx.allow_negotiation !== false && !ctx.agreement_id && ctx.influencer_mode !== 'open_group'));
   const can = {
-    counter: invitationOpen && (canCounterNew || (myMove && countersUsed < roundLimit)),
+    counter: invitationOpen && !shootTimeAgreed && (canCounterNew || (myMove && countersUsed < roundLimit)),
     // On a pitch the brand may accept or reject the opening pitch itself, with
-    // no thread open yet — that is T6's three buttons.
-    accept: invitationOpen && (myMove || (isPitch(ctx) && !ctx.neg_id && side === 'brand')),
-    decline: invitationOpen && (myMove || (isPitch(ctx) && !ctx.neg_id && side === 'brand')),
-    // The move request belongs to a set. A pitch has none.
-    moveRequest: !isPitch(ctx) && side === 'influencer' && invitationOpen && !ctx.move_requested_at,
-    moveAnswer: !isPitch(ctx) && side === 'brand' && invitationOpen && !!ctx.move_requested_at && !ctx.move_answer,
+    // no thread open yet — that is T6's three buttons. On a shoot she may accept
+    // the sent plan with no thread (F4).
+    accept: invitationOpen && !shootTimeAgreed && (myMove || (isPitch(ctx) && !ctx.neg_id && side === 'brand') || (isShoot(ctx) && !ctx.neg_id && side === 'influencer')),
+    // Rules §11.1: there is no declining a time.
+    decline: !isShoot(ctx) && invitationOpen && (myMove || (isPitch(ctx) && !ctx.neg_id && side === 'brand')),
+    // The move request belongs to a set. A pitch has none; a shoot has its own move (below).
+    moveRequest: anchorOf(ctx) === 'invitation' && side === 'influencer' && invitationOpen && !ctx.move_requested_at,
+    moveAnswer: anchorOf(ctx) === 'invitation' && side === 'brand' && invitationOpen && !!ctx.move_requested_at && !ctx.move_answer,
+    // Item 10 — either side may move an AGREED time before the visit is confirmed (§11.1, Q3:
+    // the brand may still move it after she marked attended; she may not).
+    move: isShoot(ctx) && invitationOpen && shootTimeAgreed && (side === 'brand' || !ctx.influencer_completed_at),
   };
   const lastCounter = [...turns].reverse().find(t => t.kind === 'counter');
   const current = lastCounter && lastCounter.terms_json ? jsonObj(lastCounter.terms_json) : zero;
   const cutoff = cutoffOf(ctx);
   const out = {
     invitationId: ctx.id, goal, status: ctx.status,
+    // Item 10: say which thing this thread hangs off, and name it properly.
+    anchor: anchorOf(ctx),
+    shootId: isShoot(ctx) ? ctx.id : null,
+    visitAt: isShoot(ctx) && ctx.visit_at ? new Date(ctx.visit_at).toISOString() : null,
+    timeAgreedAt: isShoot(ctx) ? ctx.time_agreed_at || null : null,
     brand: { name: ctx.brand_name }, creator: { id: ctx.influencer_id, name: ctx.creator_name },
     campaignName: ctx.campaign_name, setName: ctx.set_name, postingDate: ctx.go_live_date ? calendarDay(ctx.go_live_date) : null, cutoff, cutoffPassed: closed,
     switchOn: ctx.allow_negotiation !== false,
@@ -625,7 +831,7 @@ async function thread(ctx, side) {
     can,
     ending: endingOf(ctx, goal, current, cutoff),
   };
-  if (side === 'brand') {
+  if (side === 'brand' && !isShoot(ctx)) {   // a visit time has no minimums to warn about
     const gate = await eligibility.canBrandInviteCreator({ brandId: ctx.brand_id, influencerId: ctx.influencer_id, set: { goal, shoot_mode: ctx.shoot_mode, branch_id: ctx.branch_id }, proposedTerms: { fee: current.fee, commissionPct: current.commissionPct } }).catch(() => null);
     out.warnings = gate && gate.ok ? gate.warnings : [];
     out.minimums = gate && gate.ok ? gate.minimums : null;
@@ -646,7 +852,7 @@ function endingOf(ctx, goal, current, cutoff) {
   const d = ctx.ended_at ? require('./campaignCopy').longDate(new Date(ctx.ended_at).toISOString().slice(0, 10)) : '';
   const f = first(ctx.creator_name);
   switch (ctx.outcome) {
-    case 'agreed': return { outcome: 'agreed', text: ENDING.agreed(termsLine(goal, current), d) };
+    case 'agreed': return { outcome: 'agreed', text: isShoot(ctx) ? `Time agreed on ${d}: ${termsLine(goal, current)}.` : ENDING.agreed(termsLine(goal, current), d) };
     case 'declined_by_creator': return { outcome: 'declined_by_creator', text: ENDING.declined_by_creator(f, d, declineLabel(ctx.declined_reason), cutoff) };
     case 'declined_by_brand': return { outcome: 'declined_by_brand', text: ENDING.declined_by_brand(d, f, ctx.declined_note) };
     case 'expired': return { outcome: 'expired', text: ENDING.expired(cutoff) };
@@ -707,4 +913,7 @@ module.exports = {
   counter, accept, decline, moveRequest, moveAnswer, thread, endForExpiredSet, sendReminders, notify,
   // Item 8 — the same engine, anchored to a pitch.
   loadPitchContext, isPitch, OPEN_PITCH_STATUSES, endThread,
+  // Item 10 — the same engine, anchored to a store visit's shoot plan. `canon` is exported so
+  // the change detector can be tested on its own (approval check 38).
+  loadShootContext, isShoot, anchorOf, reopen, canon,
 };
