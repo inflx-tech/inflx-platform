@@ -1726,7 +1726,8 @@ const getProductionQueue = asyncHandler(async (req, res) => {
             camp.name AS campaign_name,
             b.business_name AS brand_name,
             inf_u.name AS influencer_name,
-            inf.instagram_handle AS influencer_handle
+            inf.instagram_handle AS influencer_handle,
+            ci.id AS campaign_influencer_id
      FROM   production_events pe
      JOIN   contracts c ON c.id = pe.contract_id
      JOIN   campaign_influencers ci ON ci.id = c.campaign_influencer_id
@@ -1746,8 +1747,16 @@ const getProductionQueue = asyncHandler(async (req, res) => {
     [RESCHEDULE_LIMIT]
   );
 
+  // Item 10: the §10 gate as a column. A shoot row on a collaboration that is not signed and
+  // funded is itself the anomaly admin should see — every door in the apps refuses it.
+  const shootGate = require('../services/shootGate.service');
+  const gates = await shootGate.shootGateMany(rows.map(r => r.campaign_influencer_id));
+
   const items = rows.map(r => {
     const reasons = [];
+    const g = gates.get(r.campaign_influencer_id) || null;
+    r.gate = g ? { open: g.open, reason: g.reason } : null;
+    if (g && !g.open) reasons.push(g.reason === 'NOT_SIGNED' ? 'Not signed by both' : 'Money not locked');
     if (r.status === 'proposed' && Number(r.days_since_created) >= 3) {
       reasons.push(`Stale 'proposed' for ${Math.floor(r.days_since_created)}d`);
     }

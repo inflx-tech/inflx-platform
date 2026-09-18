@@ -12,6 +12,8 @@ const db = require('../config/db');
 const productionService = require('../services/production.service');
 // stage-4 — what is in the box, and who may say the shoot is done.
 const parcel = require('../services/parcel.service');
+// Item 10 — the §10 gate: signed by both, and funded where the aim carries fixed money.
+const shootGate = require('../services/shootGate.service');
 const notificationService = require('../services/notification.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
@@ -66,25 +68,16 @@ async function ensureParty(contract, req, expected) {
 }
 
 /**
- * Item 7 (approval 4.1) — the shoot plan opens on BOTH SIGNATURES, nothing less.
+ * Item 7 (approval 4.1) put BOTH SIGNATURES on the two doors that create the row. Item 10
+ * (rules §10, §11.1) puts the WHOLE gate on EVERY door: signed by both, and for Pay for Content
+ * and Hybrid funded, locked and the first 25% released. One definition, in
+ * shootGate.service — the signature test is item 7's two timestamps, never contracts.status,
+ * because four seeded rows are 'active' with no signatures at all.
  *
- * These two endpoints checked party membership and no status at all, so a
- * brand could force a shoot plan into existence on an unsigned agreement —
- * which made the whole of item 7 optional. The signature test is the canonical
- * one (`collabState.SIGNED_CONTRACT_SQL`), not `contracts.status`, because the
- * four seeded rows are 'active' with no signatures at all.
+ * Every handler below asks it: the contract-scoped reads, the visit details, the date range,
+ * and — through getEventOrThrow — every event-scoped transition and parcel route.
  */
-async function assertBothSignatures(contractId) {
-  const { rows } = await db.query(
-    `SELECT influencer_signed_at, brand_signed_at FROM contracts WHERE id = $1`, [contractId]
-  );
-  const c = rows[0];
-  if (!c) throw new AppError('NOT_FOUND', 'Contract not found', 404);
-  if (!c.influencer_signed_at || !c.brand_signed_at) {
-    throw new AppError('VALIDATION_ERROR',
-      'The shoot plan opens once the agreement is signed by both of you.', 422, 'status');
-  }
-}
+const assertShootOpen = (contractId) => shootGate.assertShootOpen(contractId);
 
 function actorFromReq(req) {
   return { user_id: req.user.sub, role: req.user.role };
@@ -93,6 +86,9 @@ function actorFromReq(req) {
 async function getEventOrThrow(eventId) {
   const event = await productionService.getById(eventId);
   if (!event) throw new AppError('NOT_FOUND', 'Production event not found', 404);
+  // Item 10: a row exists only because the gate was open when it was born — but the gate is
+  // asked again here, so a future door that creates rows differently cannot open these.
+  await shootGate.assertShootOpen(event.contract_id);
   return event;
 }
 
@@ -122,7 +118,7 @@ function notify(targetUser, fcmToken, phone, type, title, body, data) {
 const initialiseProduction = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'brand');
-  await assertBothSignatures(contract.id);
+  await assertShootOpen(contract.id);
 
   const { mode } = req.body || {};
   if (!productionService.VALID_MODES.includes(mode)) {
@@ -154,7 +150,7 @@ const initialiseProduction = asyncHandler(async (req, res) => {
 const getProduction = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'either');
-  await assertBothSignatures(contract.id);
+  await assertShootOpen(contract.id);
   let event = await productionService.getByContractId(contract.id);
 
   // The `!== 'remote'` that used to be here skipped the heal for remote contracts, because a
@@ -192,6 +188,7 @@ const getProduction = asyncHandler(async (req, res) => {
 const setVisitDetails = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'brand');
+  await assertShootOpen(contract.id);
   const event = await productionService.getByContractId(contract.id);
   if (!event) throw new AppError('NOT_FOUND', 'No production event for this contract', 404);
   if (event.mode !== 'visit') {
@@ -235,6 +232,7 @@ const setVisitDetails = asyncHandler(async (req, res) => {
 const getDateRange = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'either');
+  await assertShootOpen(contract.id);
   const range = await productionService.getVisitDateRange(contract.id);
   return success(res, { range });
 });
@@ -579,12 +577,23 @@ const listCampaignProduction = asyncHandler(async (req, res) => {
      LEFT JOIN production_events pe ON pe.contract_id = con.id
      WHERE c.id = $1
        AND c.brand_id = $2
-       AND ci.status IN ('contracted', 'active', 'live', 'completed')
+       -- Item 10 (approval §2.3): a fourth value used to sit in this list that is not a member
+       -- of campaign_influencer_status, so it silently matched nothing. A signed collaboration
+       -- runs contracted → active → completed; those three are the roster.
+       AND ci.status IN ('contracted', 'active', 'completed')
      ORDER BY inf.instagram_handle ASC`,
     [req.params.id, brand.id]
   );
 
-  return success(res, { production: rows });
+  // Item 10: the gate as a column, so the roster says WHY a shoot is not open rather than
+  // showing a row that every other door would refuse.
+  const gates = await shootGate.shootGateMany(rows.map(r => r.campaign_influencer_id));
+  const production = rows.map(r => {
+    const g = gates.get(r.campaign_influencer_id) || null;
+    return { ...r, gate: g ? { open: g.open, reason: g.reason, money: g.money } : null };
+  });
+
+  return success(res, { production });
 });
 
 
@@ -661,7 +670,14 @@ const listBrandShoots = asyncHandler(async (req, res) => {
     [brand.id]
   );
 
-  return success(res, { shoots: rows });
+  // Item 10: the gate as a FILTER. A shoot whose collaboration is not signed and funded is not
+  // a shoot the brand can act on, and every door behind this list would refuse it.
+  const gates = await shootGate.shootGateMany(rows.map(r => r.campaign_influencer_id));
+  const shoots = rows
+    .filter(r => { const g = gates.get(r.campaign_influencer_id); return g && g.open; })
+    .map(r => ({ ...r, gate: { open: true, money: gates.get(r.campaign_influencer_id).money } }));
+
+  return success(res, { shoots });
 });
 
 // ─── The parcel ─────────────────────────────────────────────────────────────

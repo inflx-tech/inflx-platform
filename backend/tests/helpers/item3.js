@@ -32,6 +32,14 @@ async function brand(over = {}) {
   const b = await registerBrand(token, { business_name: over.business_name || `Brand ${rnd()}`, category: 'fashion', sub_categories: over.sub_categories || ['WOMEN'], city: over.city || 'Hyderabad', state: over.state || 'Telangana', ...over.register });
   await query(`UPDATE users SET status=$2 WHERE id=$1`, [user.id, over.status || 'approved']);
   if (over.approvedAt) await query(`UPDATE brands SET approved_at=$2 WHERE id=$1`, [b.id, over.approvedAt]);
+  // Item 10 (founder Q6): a Store Visit set now needs a branch WITH a street address. The
+  // registration path builds the Main Branch from the typed address, which these fixtures
+  // never supply — so give it one here, the way a real brand's would have one. Pass
+  // `over.mainAddress: null` to get a brand whose main branch has no address.
+  if (over.mainAddress !== null) {
+    await query(`UPDATE brand_branches SET formatted_address = COALESCE(formatted_address, $2) WHERE brand_id = $1 AND is_main`,
+      [b.id, over.mainAddress || `Road No. 12, Banjara Hills, ${over.city || 'Hyderabad'}, ${over.state || 'Telangana'} 500034, India`]);
+  }
   return { token, userId: user.id, brandId: b.id, name: b.business_name };
 }
 

@@ -175,13 +175,6 @@ async function brandSignInTx(client, contract, signedByUserId, opts = {}) {
     step: events.STEP.SIGN, actorRole: 'brand', actorUserId: signedByUserId, action: 'countersigned',
   }, client);
 
-  // 2b. The next step opens: the shoot plan for Store Visit, the shipment for Remote.
-  try {
-    await productionService.autoCreateForContract(client, updatedContract);
-  } catch (peErr) {
-    console.error('[CONTRACT] production_event auto-create failed:', peErr.message);
-  }
-
   // 3 and 4. Three escrow entries, and the first released to her, now.
   let t1EntryId = null;
   let t1Result = null;
@@ -195,6 +188,26 @@ async function brandSignInTx(client, contract, signedByUserId, opts = {}) {
     );
     await client.query(`UPDATE contracts SET released_amount = $2 WHERE id = $1`,
       [contract.id, t1Result ? t1Result.netAmount : 0]);
+  }
+
+  // 4b. The next step opens: the shoot plan for Store Visit, the shipment for Remote.
+  //
+  // Item 10: this ran BEFORE the escrow rows (step 3) and the first release (step 4). Atomic
+  // either way, but it meant the shoot row was born a moment before the money — and now that
+  // autoCreateForContract asks the §10 gate itself, it has to run after the money is real.
+  // Same transaction, same client: a failed lock still rolls the whole signature back.
+  //
+  // Inside a SAVEPOINT. A failure here used to be caught and logged — but a failed SQL statement
+  // leaves the whole transaction aborted, so the catch hid a signature that would then 500 on
+  // the next statement or COMMIT silently as a ROLLBACK. The shoot row is not allowed to take
+  // the signature and the money down with it; the savepoint lets the signature stand.
+  await client.query('SAVEPOINT shoot_row');
+  try {
+    await productionService.autoCreateForContract(client, updatedContract);
+    await client.query('RELEASE SAVEPOINT shoot_row');
+  } catch (peErr) {
+    await client.query('ROLLBACK TO SAVEPOINT shoot_row');
+    console.error('[CONTRACT] production_event auto-create failed:', peErr.message);
   }
 
   // 5. Deliverables, but only where the brand is buying content.

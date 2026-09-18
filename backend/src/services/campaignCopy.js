@@ -33,6 +33,9 @@ const MSG = {
   DELETE_SET_IN_USE: "This set is linked to offers or sales, so it can't be deleted.",
   DELETE_CAMPAIGN_IN_USE: "This campaign is linked to payments or sales, so it can't be deleted.",
   BRANCH_IN_USE: "A set still uses this branch, so it can't be removed.",
+  // Item 10 (founder Q6): a Store Visit set must name a branch a creator can be sent to. Caught
+  // here, before anyone is invited or money is locked, and again at send as a safety net.
+  BRANCH_NO_ADDRESS: (branch) => `Add the street address to ${branch} before you use it for a store visit. You can do that under Branches and come straight back.`,
 };
 
 module.exports = { MSG, longDate };

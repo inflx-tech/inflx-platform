@@ -262,8 +262,12 @@ async function validateSetInput(body, { brandId, existing = null, today = null, 
   const branchId = pick('branch_id');
   if (mode === 'visit') {
     if (!branchId) return { ok: false, field: 'branch_id', message: MSG.BRANCH };
-    const { rows } = await conn.query(`SELECT id, city_id FROM brand_branches WHERE id = $1 AND brand_id = $2`, [branchId, brandId]);
+    const { rows } = await conn.query(`SELECT id, city_id, name, formatted_address FROM brand_branches WHERE id = $1 AND brand_id = $2`, [branchId, brandId]);
     if (!rows[0]) return { ok: false, field: 'branch_id', message: MSG.BRANCH };
+    // Item 10 (founder Q6): the street address is what the creator is sent with the plan. A
+    // branch without one is a dead end with her money in it by the time anyone notices, so it
+    // is refused here — on create, and on any update that names or keeps a branch for a visit.
+    if (!String(rows[0].formatted_address || '').trim()) return { ok: false, field: 'branch_id', message: MSG.BRANCH_NO_ADDRESS(rows[0].name) };
   }
   const day = pick('go_live_date');
   if (requireAll || body.go_live_date !== undefined) {

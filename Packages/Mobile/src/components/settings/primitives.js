@@ -141,10 +141,30 @@ export function SecondaryButton({ label, onPress, testID }) {
   );
 }
 
-export function DangerButton({ label, onPress, testID }) {
+// Item 10 (approval §2.2): `busy` used to be accepted and dropped, so the four confirm sheets
+// that pass it — decline, withdraw, reject, withdraw pitch — stayed tappable mid-request and a
+// second tap could fire a second decline. Same contract as PrimaryButton now: busy disables
+// the button and shows the spinner; two taps make one request.
+export function DangerButton({ label, onPress, disabled, busy, busyLabel, testID }) {
+  const off = disabled || busy;
   return (
-    <TouchableOpacity testID={testID} onPress={onPress} activeOpacity={0.85} style={st.dangerBtn}>
-      <Text style={st.dangerText}>{label}</Text>
+    <TouchableOpacity
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!off }}
+      onPress={onPress}
+      disabled={off}
+      activeOpacity={0.85}
+      style={[st.dangerBtn, off && { opacity: 0.6 }]}
+    >
+      {busy ? (
+        <View style={st.busyRow}>
+          <ActivityIndicator color={T.danger} />
+          <Text style={[st.dangerText, { marginLeft: 8 }]}>{busyLabel || 'Working'}</Text>
+        </View>
+      ) : (
+        <Text style={st.dangerText}>{label}</Text>
+      )}
     </TouchableOpacity>
   );
 }

@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Store Visit Shoot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+
+.turn{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.turn.mine{background:var(--surface);border-color:transparent}
+.turn .hd{display:flex;gap:8px;align-items:center}
+.turn .hd b{font-size:12.5px}
+.turn .hd .when{font-size:11px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.chg{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+.chg>span:first-child{color:var(--ink2);flex:none;white-space:nowrap}
+.chg .v{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end;text-align:right;flex:1;min-width:0}
+.chg .old{color:var(--ink3);text-decoration:line-through;font-weight:600}
+.chg .ar{color:var(--ink3);font-weight:700}
+.chg .new{font-weight:800}
+.chg.same .new{font-weight:600;color:var(--ink2)}
+.qnote{font-size:12.5px;color:var(--ink2);font-style:italic;line-height:1.4}
+.rnd{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.05em;color:var(--ink2);background:var(--surface);padding:4px 9px;border-radius:999px;justify-self:start}
+.last{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--move-bg);color:var(--move-fg);display:flex;gap:8px;align-items:flex-start}
+.waitbox{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--wait-bg);color:var(--wait-fg);display:flex;gap:8px;align-items:flex-start}
+.okbox{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--active-bg);color:var(--active-fg);display:flex;gap:8px;align-items:flex-start}
+.greybox{border-radius:12px;padding:9px 11px;font-size:12.5px;background:var(--surface);color:var(--ink2)}
+.poolrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.poolrow:last-child{border-bottom:0}
+.poolrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.poolrow .t b{font-size:13px}
+.pgrp{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;padding-top:4px}
+.pgrp .n{font-weight:700;color:var(--ink2)}
+.entry{display:flex;gap:10px;align-items:center;border:1.5px solid var(--ink);border-radius:14px;padding:11px}
+.entry .t{flex:1;min-width:0;display:grid;gap:2px}
+.entry b{font-size:13.5px}
+.web{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;width:560px;max-width:100%;align-self:flex-start}
+.web .wtop{background:var(--ink);color:#fff;padding:9px 14px;font-size:12px;font-weight:700;display:flex;gap:10px;align-items:center}
+.web .wtop .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35)}
+.web .wbody{padding:4px 14px 14px}
+.setrow{padding:13px 0;border-bottom:1px solid var(--border);display:grid;gap:5px}
+.setrow:last-child{border-bottom:0}
+.setrow .sh{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.setrow b{font-size:13.5px}
+.setrow .d{font-size:12px;color:var(--ink2);line-height:1.45}
+.setrow .val{display:flex;gap:7px;align-items:center;flex:none}
+.setrow .val .field{width:72px;justify-content:center;height:34px}
+.setrow .unit2{font-size:12px;color:var(--ink2)}
+.audit{font-size:11.5px;color:var(--ink3);padding-top:10px}
+.shot.wide{width:600px;max-width:100%}
+
+.sig{border:1.5px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.sig.done{border-color:transparent;background:var(--active-bg)}
+.sig .who{font-size:11px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.sig .nm{font-size:15px;font-weight:800}
+.sig .mt{font-size:11.5px;color:var(--ink2)}
+.tick{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.tick .bx{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--border);flex:none;display:grid;place-items:center;margin-top:1px}
+.tick .bx.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tick .bx .ico{width:12px;height:12px}
+.mrows{display:grid;gap:0}
+.mline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border)}
+.mline:last-child{border-bottom:0}
+.mline span{color:var(--ink2)}
+.mline b{font-variant-numeric:tabular-nums}
+.mline.tot{border-top:1.5px solid var(--ink);border-bottom:0;margin-top:2px;padding-top:8px;font-size:13.5px}
+.mline.tot span{color:var(--ink);font-weight:700}
+.mline.tot b{font-weight:800}
+.short{border-radius:12px;padding:10px 11px;background:var(--no-bg);color:var(--no-fg);font-size:12.5px;font-weight:600;display:grid;gap:2px}
+.short b{font-size:15px}
+.ref{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink3)}
+.numlist{display:grid;gap:7px;counter-reset:t}
+.numlist div{display:flex;gap:8px;font-size:12px;color:var(--ink2);line-height:1.45}
+.numlist div::before{counter-increment:t;content:counter(t);font-family:var(--mono);font-size:10px;color:var(--ink3);flex:none;width:14px;padding-top:2px}
+.dpage{border:1px solid var(--border);border-radius:14px;background:#fff;width:540px;max-width:100%;align-self:flex-start;padding:22px 24px;display:grid;gap:16px}
+.dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.dhead .ttl{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.dhead .sub{font-size:12px;color:var(--ink2)}
+.dsec{display:grid;gap:7px}
+.dsec h5{margin:0;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.dparties{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dparties div{display:grid;gap:2px;font-size:12.5px;color:var(--ink2)}
+.dparties b{font-size:13.5px;color:var(--ink)}
+.drow{display:flex;justify-content:space-between;gap:14px;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:0}
+.drow span{color:var(--ink2)}
+.drow b{text-align:right}
+.dsigs{display:grid;grid-template-columns:1fr 1fr;gap:16px;border-top:1px solid var(--border);padding-top:14px}
+.dsig{display:grid;gap:2px}
+.dsig .n{font-size:15px;font-weight:800}
+.dsig .m{font-size:11px;color:var(--ink3)}
+.dsig .l{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.dfoot{font-size:11px;color:var(--ink3);border-top:1px solid var(--border);padding-top:10px;line-height:1.5}
+.shot.doc{width:560px;max-width:100%}
+
+.bcard2{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:9px}
+.bcard2 .top{display:flex;gap:10px;align-items:center}
+.bcard2 .nm{font-weight:800;font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcard2 .top .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcard2 .chips{flex-wrap:wrap;gap:5px}
+.bcard2 .chip{flex:none}
+.pcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.pcard .top{display:flex;gap:10px;align-items:center}
+.pcard .top b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pcard .top .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cool{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--ended-bg);color:var(--ended-fg);display:flex;gap:8px;align-items:flex-start}
+.limit{font-size:11.5px;color:var(--ink3);text-align:right}
+.miniStat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.miniStat div{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid}
+.miniStat b{font-size:13px;font-variant-numeric:tabular-nums}
+.miniStat span{font-size:10.5px;color:var(--ink2)}
+.fromtag{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.04em;color:var(--done-fg);background:var(--done-bg);padding:3px 7px;border-radius:6px}
+
+.gate{border-radius:12px;padding:10px 11px;display:grid;gap:5px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px}
+.gate .g{display:flex;gap:8px;align-items:flex-start;font-weight:600}
+.gate .ico{flex:none;margin-top:1px}
+.gate.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.addr{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.addr .street{font-size:13px;line-height:1.45}
+.addr .nm2{font-weight:800;font-size:14px}
+.addr .acts{display:flex;gap:7px;flex-wrap:wrap}
+.when{border-radius:14px;padding:12px;background:var(--ink);color:#fff;display:grid;gap:3px}
+.when .d{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.when .t2{font-size:13px;opacity:.75}
+.when.soft{background:var(--surface);color:var(--ink)}
+.when.soft .t2{color:var(--ink2);opacity:1}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stepline{display:grid;gap:0}
+.stepline .s{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:12.5px}
+.stepline .dot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center;margin-top:1px}
+.stepline .dot.on{background:var(--active-fg);border-color:var(--active-fg);color:#fff}
+.stepline .dot.now{border-color:var(--move-fg);background:var(--move-bg)}
+.stepline .dot .ico{width:9px;height:9px}
+.stepline .s b{font-size:12.5px}
+.stepline .s .mut2{color:var(--ink3)}
+.delay{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--move-bg);color:var(--move-fg);display:flex;gap:8px;align-items:flex-start}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+
+  <symbol id="i-doc" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 17l9.5-9.5a2.1 2.1 0 0 1 3 3L8 20H5z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0 4-4m-4 4-4-4M4 19h16"/></symbol>
+
+  <symbol id="i-nav" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3 20 20l-8-4-8 4z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h3l1.5 4-2 1.5a12 12 0 0 0 6 6L17 12.5 21 14v3a2 2 0 0 1-2.2 2A16 16 0 0 1 5 5.2 2 2 0 0 1 7 3"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/></symbol>
+</svg>
+</head><body>
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">INFLX rebuild · Item 10 of 21 · Stage 3: locked 18 Sep 2026</div>
+  <h1>The store visit</h1>
+  <p class="lede">The first step where somebody has to actually turn up somewhere. The brand sends a time and, with it, the street address the creator has never seen; she accepts it or asks for another; she visits and marks that she has been; the brand confirms. Its first job is the funding gate §10 has always described and nothing has ever enforced. Based on rules doc v1.23 (§11.1, plus §10, §9, §21, §24, §25, §28). Remote is item 11. Names, numbers and dates are example data.</p>
+  <span class="pill">Locked · build to these screens · rules doc v1.23 §11.1</span>
+</header>
+<section><header><div class="eyebrow">Brand app · Opening the shoot</div><h2>Funded first, then planned</h2><p class="prose">The shoot is the first step that needs the money to be real. Before any of it opens, the collaboration must be signed by both and — for Pay for Content and Hybrid — funded, locked and the first payment released.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="row between"><span class="xs mut">Pay for Content · Store Visit</span><span class="chip s-active">Active</span></div><div class="gate"><div class="g"><svg class="ico" ><use href="#i-check"/></svg><span>Signed by both on 14 Sep</span></div><div class="g"><svg class="ico" ><use href="#i-check"/></svg><span>₹9,720 locked</span></div><div class="g"><svg class="ico" ><use href="#i-check"/></svg><span>₹2,250 released to Tanvi</span></div></div><div class="stepline"><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Agreement signed</b><span class="xs mut2">14 Sep</span></div></div><div class="s"><span class="dot now"></span><div style="display:grid;gap:1px"><b>Shoot plan</b><span class="xs mut2">Send her a time</span></div></div><div class="s"><span class="dot"></span><div style="display:grid;gap:1px"><b>Content</b><span class="xs mut2">After the shoot</span></div></div><div class="s"><span class="dot"></span><div style="display:grid;gap:1px"><b>Live and paid</b><span class="xs mut2">Posts 24 Oct</span></div></div></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>She posts on 24 Oct · 12 days</span></div></div><div class="savebar"><button class="btn block b-pri" type="button">Plan the visit</button></div></div><div class="cap"><i>V1</i><b>Brand · the shoot opens</b><span>The gate §10 always described and nothing ever enforced: signed, funded, and the first payment out. For Pay for Sale the same card shows only the signature, because there is no money to lock.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div><div class="crumbs">TANVI SURESH · SET A</div><div class="tcard locked"><div class="sechd2"><svg class="ico" ><use href="#i-lock"/></svg> From the set</div><div class="tline"><span>Mode</span><b>Store Visit</b></div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>She posts on</span><b>24 Oct 2026</b></div></div><div class="grp"><div class="lbl">Who she should ask for <span class="req">*</span></div><div class="field">Ravi Menon</div></div><div class="grp"><div class="lbl">Their number <span class="req">*</span></div><div class="field">+91 98490 11223</div><div class="hint">She sees this once you send the plan.</div></div><div class="twocol"><div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field"><svg class="ico" ><use href="#i-cal2"/></svg>18 Oct</div></div><div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field"><svg class="ico" ><use href="#i-clock2"/></svg>11:00 am</div></div></div><div class="hint">Dates after 24 Oct aren't offered — she can't shoot after the day she posts.</div><div class="grp"><div class="lbl">Roughly how long</div><div class="field">About 2 hours</div></div><div class="grp"><div class="lbl">Anything she should bring or know</div><div class="textarea" style="color:var(--ink3)">Parking is behind the building. Come to the first floor and ask at the desk.</div></div></div><div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-send"/></svg>Send to Tanvi</button></div></div><div class="cap"><i>V2</i><b>Brand · the plan</b><span>The branch is inherited and locked. Everything else is what a real visit actually needs — a name, a number, a time, how long, and how to get in.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Plan the visit</h3></div><div class="crumbs">TANVI SURESH</div><div style="height:280px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Send this plan to Tanvi?</b><div class="tcard"><div class="sechd2">What she gets</div><div class="tline"><span>The full address</span><b>Road No. 12, Banjara Hills</b></div><div class="tline"><span>Ravi's number</span><b>+91 98490 11223</b></div><div class="tline"><span>The time</span><b>18 Oct, 11:00 am</b></div></div><div class="greybox">She can accept the time or ask for a different one. She can't change anything else — the branch and the posting date came from the set.</div><div class="btnrow"><button class="btn b-sec sm2" type="button">Not yet</button><button class="btn b-pri sm2" type="button">Send</button></div></div></div></div><div class="cap"><i>V3</i><b>Brand · sending it</b><span>Sending is where the street address stops being private. Until now she has only seen the city, and she should be able to judge the journey before she agrees a time.</span></div></div></div></section>
+<section><header><div class="eyebrow">Both apps · Agreeing a time</div><h2>The only thing either side can change</h2><p class="prose">The branch comes from the set and the posting date is locked from item 4, so the time is all that is left to agree. It runs through the same negotiation engine as everything else, with the same round limit.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><h3>Collabs</h3></div><div class="segc"><span>Invites</span><span class="on">Active</span><span>Pitches</span><span>Done</span></div><div class="invcard"><div class="top"><span class="newdot"></span><span class="logo" style="background:#FFE7A3">UT</span><div style="flex:1;min-width:0"><b style="font-size:14px">Urban Threads</b><div class="xs mut">Diwali Edit 2026 · Set A</div></div><span class="chip s-move">Your move</span></div><div class="chips"><span class="tag">Pay for Content</span><span class="tag"><svg class="ico" style="width:11px;height:11px"><use href="#i-pin"/></svg>Store Visit</span><span class="tag">Posts 24 Oct</span></div><div class="last"><svg class="ico" ><use href="#i-pin"/></svg><span>Store visit planned for 18 Oct, 11:00 am</span></div></div><div class="invcard"><div class="top"><span class="logo" style="background:#DDE9FB">SK</span><div style="flex:1;min-width:0"><b style="font-size:14px">Stride Kicks</b><div class="xs mut">Winter Run · Set B</div></div><span class="chip s-active">Active</span></div><div class="tline"><span>Next</span><b>They ship your products</b></div></div></div><nav class="tabbar" aria-label="Creator tabs"><span class="tab"><span class="p"><svg class="ico" ><use href="#i-home"/></svg></span>Home</span><span class="tab on"><span class="p"><svg class="ico" ><use href="#i-send"/></svg></span>Collabs</span><span class="tab"><span class="plus"><svg class="ico" ><use href="#i-plus"/></svg></span></span><span class="tab"><span class="p"><svg class="ico" ><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab"><span class="p"><svg class="ico" ><use href="#i-user"/></svg></span>Profile</span></nav></div><div class="cap"><i>V4</i><b>Creator · the plan arrives</b><span>Under Active, because the collaboration is real now. One line says the only thing that matters yet: where and when.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your store visit</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="when"><div class="d">Sat 18 Oct, 11:00 am</div><div class="t2">About 2 hours</div></div><div class="addr"><div class="nm2">Banjara Hills</div><div class="street">Road No. 12, Banjara Hills,<br>Hyderabad, Telangana 500034</div><div class="acts"><button class="btn b-sec sm2" type="button"><svg class="ico" ><use href="#i-nav"/></svg>Open in Maps</button><button class="btn b-sec sm2" type="button"><svg class="ico" ><use href="#i-phone"/></svg>Ravi Menon</button></div></div><div class="tcard"><div class="sechd2">Before you go</div><p class="sm mut">Parking is behind the building. Come to the first floor and ask at the desk.</p></div><div class="greybox">You post on 24 Oct, so this has to happen before then. Ask for another time if 18 Oct doesn't work.</div><button class="btn block b-pri" type="button">This time works</button><button class="btn block b-sec" type="button"><svg class="ico" ><use href="#i-undo"/></svg>Ask for another time</button></div></div><div class="cap"><i>V5</i><b>Creator · what she was sent</b><span>The address, the person, the time and the walk-in instructions. Two buttons, because the only thing she can change is the time.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Ask for another time</h3></div><div class="crumbs">URBAN THREADS</div><div style="height:300px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><span class="rnd">ROUND 1 OF 2</span><div class="twocol"><div class="grp"><div class="lbl">Date <span class="req">*</span></div><div class="field focus"><svg class="ico" ><use href="#i-cal2"/></svg>19 Oct</div></div><div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field"><svg class="ico" ><use href="#i-clock2"/></svg>4:00 pm</div></div></div><div class="chg"><span>They asked for</span><span class="v"><b class="old">18 Oct, 11:00 am</b><span class="ar">→</span><b class="new">19 Oct, 4:00 pm</b></span></div><div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea" style="color:var(--ink3)">I have a shoot that morning. Afternoon suits me better.</div></div><div class="greybox">Only the time can change. The branch and the 24 Oct posting date came from the set.</div><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-send"/></svg>Send</button></div></div></div><div class="cap"><i>V6</i><b>Creator · countering the time</b><span>Item 6's thread again, with a single field in the snapshot. The same admin round limit as every other negotiation — not a separate "two rounds" hidden in the shoot code.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN · SET A</div><div class="last"><svg class="ico" ><use href="#i-alert"/></svg><span>Your move. Tanvi asked for a different time.</span></div><span class="rnd">ROUND 1 OF 2</span><div class="turn"><div class="hd"><span class="avatar av-s" style="background:#FFE7A3">TS</span><b>Tanvi asked</b><span class="when">15 Oct</span></div><div class="chg"><span>Time</span><span class="v"><b class="old">18 Oct, 11:00 am</b><span class="ar">→</span><b class="new">19 Oct, 4:00 pm</b></span></div><div class="qnote">“I have a shoot that morning. Afternoon suits me better.”</div></div><div class="turn mine"><div class="hd"><span class="avatar av-s" style="background:#FFE7A3">UT</span><b>You sent the plan</b><span class="when">14 Oct</span></div><div class="chg same"><span>Time</span><span class="v"><b class="new">18 Oct, 11:00 am</b></span></div><div class="chg same"><span>Branch</span><span class="v"><b class="new">Banjara Hills</b></span></div><div class="chg same"><span>Ask for</span><span class="v"><b class="new">Ravi Menon</b></span></div></div><button class="btn block b-pri" type="button">Accept 19 Oct, 4:00 pm</button><button class="btn block b-sec" type="button"><svg class="ico" ><use href="#i-undo"/></svg>Suggest another time</button><div class="hint">There is no declining a time. If it can't work, suggest a different one.</div></div></div><div class="cap"><i>V7</i><b>Brand · her counter</b><span>Two buttons, not three. A time that doesn't suit is never a refusal — it is another time.</span></div></div></div></section>
+<section><header><div class="eyebrow">The visit itself</div><h2>She marks it, they confirm, nobody is stranded</h2><p class="prose">The creator marking her own attendance is what removes the last place she can be stuck waiting. The brand confirms, and if it never does, three days does it instead — which is safe because completing a shoot moves no money.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your store visit</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="okbox"><svg class="ico" ><use href="#i-check"/></svg><span>Time agreed on 15 Oct.</span></div><div class="when"><div class="d">Sun 19 Oct, 4:00 pm</div><div class="t2">Today · about 2 hours</div></div><div class="addr"><div class="nm2">Banjara Hills</div><div class="street">Road No. 12, Banjara Hills,<br>Hyderabad, Telangana 500034</div><div class="acts"><button class="btn b-sec sm2" type="button"><svg class="ico" ><use href="#i-nav"/></svg>Open in Maps</button><button class="btn b-sec sm2" type="button"><svg class="ico" ><use href="#i-phone"/></svg>Ravi Menon</button></div></div><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-check"/></svg>I've been to the store</button><div class="hint">Tap this after your visit. Urban Threads confirm it, and then you shoot and upload.</div><div class="row"><button class="btn b-txt sm2" type="button"><svg class="ico" ><use href="#i-undo"/></svg>Ask to move this</button></div></div></div><div class="cap"><i>V8</i><b>Creator · on the day</b><span>The card becomes a thing to act on. "I've been to the store" is hers to tap, so a brand that forgets can never leave her stranded.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your store visit</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="waitbox"><svg class="ico" ><use href="#i-clock2"/></svg><span>You marked this done on 19 Oct. Waiting for Urban Threads to confirm.</span></div><div class="when soft"><div class="d">Sun 19 Oct, 4:00 pm</div><div class="t2">Visited</div></div><div class="greybox">If they don't confirm by 22 Oct it confirms itself and you can start uploading. Nothing about your payment depends on this step.</div><div class="stepline"><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Agreement signed</b><span class="xs mut2">14 Sep</span></div></div><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Store visit</b><span class="xs mut2">19 Oct</span></div></div><div class="s"><span class="dot now"></span><div style="display:grid;gap:1px"><b>Content</b><span class="xs mut2">Once they confirm</span></div></div><div class="s"><span class="dot"></span><div style="display:grid;gap:1px"><b>Live and paid</b><span class="xs mut2">Posts 24 Oct</span></div></div></div></div></div><div class="cap"><i>V9</i><b>Creator · marked, waiting</b><span>The auto-confirm is promised up front, with the date. And the sentence that stops her worrying: no money hangs on this step.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN · SET A</div><div class="last"><svg class="ico" ><use href="#i-alert"/></svg><span>Your move. Tanvi says she visited on 19 Oct.</span></div><div class="when soft"><div class="d">Sun 19 Oct, 4:00 pm</div><div class="t2">Banjara Hills · Ravi Menon</div></div><div class="greybox">Confirming opens her content step. If you do nothing, this confirms itself on 22 Oct.</div><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-check"/></svg>Confirm the shoot is done</button><div class="row"><button class="btn b-txt sm2" type="button">She didn't come — send a new time</button></div></div></div><div class="cap"><i>V10</i><b>Brand · confirming</b><span>One tap, with the deadline stated. The quiet alternative is a new time, not a dispute — which is what actually happens when somebody misses a visit.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="okbox"><svg class="ico" ><use href="#i-check"/></svg><span>Shoot done on 19 Oct. Tanvi is working on the content.</span></div><div class="stepline"><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Agreement signed</b><span class="xs mut2">14 Sep</span></div></div><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Shoot plan</b><span class="xs mut2">Visited 19 Oct</span></div></div><div class="s"><span class="dot now"></span><div style="display:grid;gap:1px"><b>Content</b><span class="xs mut2">With Tanvi</span></div></div><div class="s"><span class="dot"></span><div style="display:grid;gap:1px"><b>Live and paid</b><span class="xs mut2">Posts 24 Oct</span></div></div></div><div class="tcard"><div class="sechd2">The visit</div><div class="tline"><span>Branch</span><b>Banjara Hills</b></div><div class="tline"><span>When</span><b>19 Oct, 4:00 pm</b></div><div class="tline"><span>She marked it</span><b>19 Oct, 7:12 pm</b></div><div class="tline"><span>You confirmed</span><b>20 Oct, 9:40 am</b></div></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>She posts on 24 Oct · 4 days</span></div></div></div><div class="cap"><i>V11</i><b>Brand · done</b><span>The visit becomes a record with two timestamps, and the collaboration moves on. Nothing here moved money — that waits for the content going live.</span></div></div></div></section>
+<section><header><div class="eyebrow">Moving it, and missing it</div><h2>Nothing here is a dispute</h2><p class="prose">A time that doesn't work is a new time. A visit that never happened is a new time. Even the posting date passing is a flag and an explanation, not a door closing — both sides have money in this already.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN</div><div style="height:260px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">Move the visit?</b><div class="twocol"><div class="grp"><div class="lbl">New date <span class="req">*</span></div><div class="field focus"><svg class="ico" ><use href="#i-cal2"/></svg>21 Oct</div></div><div class="grp"><div class="lbl">Time <span class="req">*</span></div><div class="field"><svg class="ico" ><use href="#i-clock2"/></svg>11:00 am</div></div></div><div class="chg"><span>Agreed</span><span class="v"><b class="old">19 Oct, 4:00 pm</b><span class="ar">→</span><b class="new">21 Oct, 11:00 am</b></span></div><div class="grp"><div class="lbl">Say why (optional)</div><div class="textarea" style="color:var(--ink3)">The store is closed on Sunday for a private event.</div></div><div class="greybox">Tanvi has to agree the new time. It still has to be before 24 Oct.</div><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-send"/></svg>Send new time</button></div></div></div><div class="cap"><i>V12</i><b>Either side can move it</b><span>The same thread reopens rather than a second one starting, so the whole history of a visit stays in one place.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">SHOOT PLAN · SET A</div><div class="last"><svg class="ico" ><use href="#i-alert"/></svg><span>The 19 Oct visit came and went with nothing marked.</span></div><div class="when soft"><div class="d">Sun 19 Oct, 4:00 pm</div><div class="t2">Passed</div></div><div class="greybox">Nobody is blamed for this. Sort it out with Tanvi however you like, then send a new time — there are 5 days before she posts.</div><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-cal2"/></svg>Send a new time</button><div class="row"><button class="btn b-txt sm2" type="button"><svg class="ico" ><use href="#i-phone"/></svg>Call Tanvi</button></div></div></div><div class="cap"><i>V13</i><b>When the time simply passes</b><span>No "she didn't come" and no "the store was shut" — those turn into blame and neither side gains. One button, a new time, and a phone number.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="row between"><span class="xs mut">Pay for Content · Store Visit</span><span class="chip s-move">Delayed</span></div><div class="delay"><svg class="ico" ><use href="#i-alert"/></svg><span>The 24 Oct posting date passed before the shoot happened. This is now a delayed collaboration.</span></div><div class="tcard"><div class="sechd2">Where it stopped</div><div class="tline"><span>Stage</span><b>Time agreed, not visited</b></div><div class="tline"><span>Agreed time</span><b>19 Oct, 4:00 pm</b></div><div class="tline"><span>Delayed since</span><b>25 Oct</b></div></div><div class="greybox">Nothing has changed about the money: ₹9,720 is still locked and Tanvi keeps the ₹2,250 she was paid at signing. You can still plan a visit and carry on.</div><button class="btn block b-pri" type="button"><svg class="ico" ><use href="#i-cal2"/></svg>Send a new time</button></div></div><div class="cap"><i>V14</i><b>Past the posting date</b><span>Flagged, explained, and not frozen. Both of them have already put money and time in, so the last thing to do is bar the door — moving it into a delayed set is a later item's job.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your store visit</h3></div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">THEY MOVED IT</div><div class="greybox">Urban Threads asked to move the visit to 21 Oct, 11:00 am. Their reason: "The store is closed on Sunday for a private event."</div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">CONFIRMED BY ITSELF</div><div class="greybox">Urban Threads didn't confirm by 22 Oct, so the visit was marked done and your content step is open.</div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">DELAYED</div><div class="greybox">The 24 Oct posting date passed before the visit happened. Urban Threads will send a new time. The ₹2,250 you were paid at signing stays yours.</div><div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">NOT YET</div><div class="empty"><span class="c"><svg class="ico" ><use href="#i-pin"/></svg></span><b>No visit planned yet</b><span class="sm mut">Urban Threads will send a time and the store address.</span></div></div></div><div class="cap"><i>V15</i><b>Creator · every other state</b><span>Four sentences, each naming what happened, whose move it is, and what it means for her money.</span></div></div></div></section>
+
+<section>
+  <header><div class="eyebrow">For lock and the gap prompt</div><h2>Rules behind these screens</h2></header>
+  <div class="tscroll"><table>
+    <thead><tr><th>Topic</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td>The gate</td><td>The shoot opens only when both signatures exist and, for Pay for Content and Hybrid, the funds are locked and the first 25% has been released (&sect;10). Pay for Sale opens on the signatures alone, because it has no fixed money. This is the rule &sect;10 has always stated and nothing has ever enforced: today the only check is that both signatures exist, and two endpoints do not check even that.</td></tr>
+      <tr><td>Who starts it</td><td>The brand. The mode comes from the agreement and can never change inside the shoot plan (&sect;11).</td></tr>
+      <tr><td>What the plan carries</td><td>The branch, inherited from the set and not editable; the person to ask for and their number; the date and time; roughly how long; and anything to bring or know. The last two are optional and neither is negotiable.</td></tr>
+      <tr><td>The address</td><td>The creator has only ever seen the branch&rsquo;s city. The full street address is revealed when the plan is sent, before she agrees a time, so she can judge the journey first.</td></tr>
+      <tr><td>What can be negotiated</td><td>The time, and nothing else. It runs through the same negotiation engine as items 6 and 8, with the same admin round limit stamped when it starts. There is no declining a time &mdash; the only alternative to accepting is proposing another.</td></tr>
+      <tr><td>The time picker</td><td>Never offers a date after the set&rsquo;s posting date. A shoot cannot happen after the day it was to be posted, so the error is made impossible rather than explained.</td></tr>
+      <tr><td>Rescheduling</td><td>Either side may move an agreed time before it happens. The same thread reopens rather than a new one starting, and the new time is still capped by the posting date.</td></tr>
+      <tr><td>The time passing</td><td>If the agreed time passes with nothing marked, neither side is blamed and nothing is recorded against anyone. The brand sends a new time; they sort out what happened between themselves.</td></tr>
+      <tr><td>Marking it done</td><td>The creator marks that she attended. The brand confirms. If the brand does nothing for an Admin-controlled period, three days by default, it confirms itself &mdash; which is safe because completing a shoot moves no money and only opens the content step.</td></tr>
+      <tr><td>What it records</td><td>Both timestamps: when she marked it and when it was confirmed, or that it confirmed itself.</td></tr>
+      <tr><td>Past the posting date</td><td>A job marks the collaboration Delayed the day after the posting date if the shoot is not complete, records the stage it stopped at, and tells both sides. The shoot stays fully usable, nothing moves out of its set, and no money moves in either direction. Moving a delayed collaboration into its own set is a later item.</td></tr>
+      <tr><td>Money</td><td>Nothing in item 10 locks, releases or refunds anything. The first 25% was paid at signing; the rest waits for the content going live (&sect;12).</td></tr>
+      <tr><td>Out of scope</td><td>Transport, travel routes and costs are deliberately outside the platform (&sect;11.1). Remote is item 11.</td></tr>
+      <tr><td>Privacy</td><td>The creator never sees the campaign description or the brand&rsquo;s internal notes. The brand&rsquo;s contact number is shown to her only once the plan is sent.</td></tr>
+      <tr><td>States on lists</td><td>Loading, empty and couldn&rsquo;t load, as in items 2&ndash;9.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+<footer>INFLX rebuild · item 10 · opens on item 7's signatures and item 9's locked funds, uses item 4's branch and posting date and item 6's negotiation thread. Item 11 is the Remote shoot; item 12 is the content, where Hybrid's waiting payments finally get their trigger.</footer></div>
+</body></html>

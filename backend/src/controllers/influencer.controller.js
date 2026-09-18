@@ -1610,9 +1610,15 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     }
   }
 
-  // Step 2b: Auto-create deliverables if contract is active but none exist
-  // (handles contracts signed before deliverable-creation fix was deployed)
-  if (deliverables.length === 0 && contract && (contract.status === 'active' || contract.status === 'completed')) {
+  // Step 2b: Auto-create deliverables if the contract is SIGNED BY BOTH but none exist
+  // (handles contracts signed before deliverable-creation fix was deployed).
+  //
+  // Item 10 (approval §2.1): this used to key on the contract's STATUS being active, which is
+  // not a signature test — four seeded production rows are active with no signatures at all, and
+  // would have had deliverables invented for them here. The two timestamps are the only
+  // definition of signed (item 7; collabState.SIGNED_CONTRACT_SQL). 'completed' was never a
+  // contract_status value, so that arm was dead.
+  if (deliverables.length === 0 && contract && contract.influencer_signed_at && contract.brand_signed_at) {
     try {
       // Fetch formats_json — her own row first, else the set's (stage-a, migration 166)
       const { rows: setRows } = await db.query(

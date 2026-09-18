@@ -360,7 +360,8 @@ describe('privacy and branches', () => {
     const b = await brand(); const c = await campaign(b);
     const main = await branchOf(b.brandId);
     const second = (await query(
-      `INSERT INTO brand_branches (brand_id, name, city_id, state_id, is_main) SELECT $1, 'Banjara Hills', city_id, state_id, false FROM brand_branches WHERE id = $2 RETURNING id`,
+      // Item 10 (founder Q6): a Store Visit set needs a branch with a street address, so this fixture carries one.
+      `INSERT INTO brand_branches (brand_id, name, formatted_address, city_id, state_id, is_main) SELECT $1, 'Banjara Hills', 'Road No. 12, Banjara Hills, Hyderabad, Telangana 500034, India', city_id, state_id, false FROM brand_branches WHERE id = $2 RETURNING id`,
       [b.brandId, main.id])).rows[0];
     await set(b, c.id, { shoot_mode: 'visit', branch_id: second.id });
     let r = await api.del(`/brands/me/branches/${second.id}`, b.token);

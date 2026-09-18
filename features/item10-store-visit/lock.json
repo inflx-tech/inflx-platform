@@ -1,0 +1,21 @@
+{
+  "feature": "item10-store-visit",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item10_Implementation_Prompt.md — 'The item 10 gap report is approved. Start building.')",
+  "approved_at": "2026-09-18T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item10_StoreVisit_Mockups_1.html, V1–V15 'Stage 3: locked 18 Sep 2026'; re-issued with the approval byte-identical to the file the gap report was written against)",
+  "mockup_locked_at": "2026-09-18T00:00:00+05:30",
+  "notes": "Rules doc v1.24 §11.1 (v1.24 corrects the four contradictions the gap report found; no rule changed). Gap report Docs/ITEM10_STOREVISIT_GAP_REPORT.md approved with fourteen answers (Q1 new §11.1 prose wins; Q2 correct the six wrong shoot rows behind --fix-modes after the resolver change; Q3 a move after she marked clears her mark and the auto-confirm clock, logged as attended_cleared, refused after confirmation; Q4 block a zero-fee paid collaboration; Q5 one send call, no draft; Q6 refuse a branch with no street address at set create/update AND at send; Q7 round budget per episode, stamped limit never re-read; Q8 the JS chip picker, keep the Stage-4 guard; Q9 attended from 00:00 IST on the day; Q10 no minimum notice; Q11 prefill the login number, both fields required; Q12 retire the website panel server-side; Q13 Delayed on campaign_influencers; Q14 legacy row read-only, NO_POSTING_DATE on send) and five further decisions (the deliverable heal keys on signatures; DangerButton honours busy; 'live' is not a status; the negotiation switch does not apply to a visit time; a 48-hour reminder lane at :55). Supersedes stage-4-the-shoot, shoot-starts-where-the-agreement-left-it, shoot-plan-you-can-actually-see, post-agreement-shoot-and-content. Migration 187 (additive) plus one six-row data correction. Production-impacting — explicit go required before migrate/push/OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

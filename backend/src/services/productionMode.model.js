@@ -44,12 +44,23 @@ const MODES = ['visit', 'shipment', 'remote'];
  * — a brand may deliberately change the arrangement at Approve & Send, and that is a later
  * decision by the same two people.
  *
+ * Item 10 (features/item10-store-visit): THE SET COMES FIRST. Since the campaign-and-set-first
+ * pivot the mode of work is chosen once, on the set, and locked the moment the first invitation
+ * goes out (rules §28). Neither of the two older sources below is written on that path — the
+ * brief door that filled the agreement is closed (item 8), and Approve & Send is switched off
+ * (item 7) — so every set-first collaboration fell through to 'remote'. In production on
+ * 18 Sep 2026 that was six of seven signed collaborations, including the only Store Visit.
+ *
  * @param {object} o
+ * @param {string} o.setMode         campaign_sets.shoot_mode — the authority when present
  * @param {string} o.contractMode    contracts.production_mode — usually null
  * @param {string} o.agreementMode   collab_agreements.terms_json->>'mode'
- * @returns {{ mode: string, source: 'contract'|'agreement'|'default' }}
+ * @returns {{ mode: string, source: 'set'|'contract'|'agreement'|'default' }}
  */
-function resolveProductionMode({ contractMode, agreementMode } = {}) {
+function resolveProductionMode({ setMode, contractMode, agreementMode } = {}) {
+  const s = String(setMode || '').toLowerCase();
+  if (MODES.includes(s)) return { mode: s, source: 'set' };
+
   const c = String(contractMode || '').toLowerCase();
   if (MODES.includes(c)) return { mode: c, source: 'contract' };
 

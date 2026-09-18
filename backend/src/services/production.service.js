@@ -21,6 +21,8 @@ const VALID_MODES = ['visit', 'shipment', 'remote'];
 // Which shoot, and what state it starts in — one place, so no caller invents a third answer.
 // Contract: features/shoot-starts-where-the-agreement-left-it
 const { resolveProductionMode, initialStatusFor } = require('./productionMode.model');
+// Item 10 — may this collaboration reach the shoot at all? One definition, asked at birth.
+const shootGate = require('./shootGate.service');
 // Calendar days, in India, without losing one. Contract: features/dates-stop-losing-a-day
 const { calendarDay, todayInIndia, addDays, daysBetween, startOfIndiaDay, endOfIndiaDay } =
   require('../utils/indiaDay');
@@ -163,12 +165,28 @@ async function agreementModeFor(client, contractId) {
 // shipment address from the campaign_influencer's delivery_address (which
 // the influencer set during onboarding) if available.
 async function autoCreateForContract(client, contract, agreementMode) {
-  // The mode the two of them ALREADY AGREED. contracts.production_mode is written in exactly
-  // one place — the brand's "Approve & Send" step — which briefing-straight-to-signing skips by
-  // design. So it is usually null, and `|| 'remote'` silently invented a remote shoot on a
-  // collaboration whose agreement plainly said 'visit'.
-  // Contract: features/shoot-starts-where-the-agreement-left-it
+  // Skip duplicate creation if a row already exists (e.g. retried brand-sign).
+  const existing = await client.query(
+    `SELECT id FROM production_events WHERE contract_id = $1`,
+    [contract.id]
+  );
+  if (existing.rows[0]) return existing.rows[0];
+
+  // Item 10 — THE GATE, asked by the thing that creates the row, not only by the doors that
+  // read it. Signed by both, and for Pay for Content and Hybrid funded with the first 25% out
+  // (rules §10). Asked on the caller's connection so the countersign transaction sees its own
+  // escrow rows. No future caller can create an ungated shoot through here.
+  // Contract: features/item10-store-visit
+  const gate = await shootGate.assertShootOpenForCollab(contract.campaign_influencer_id, client);
+
+  // Item 10: THE SET COMES FIRST. campaign_sets.shoot_mode is the mode of work the two of them
+  // agreed, locked when the first invitation went out (rules §28). The two older sources —
+  // contracts.production_mode from Approve & Send, and the handshake agreement's mode — are not
+  // written on the set-first path, so reading only them invented a 'remote' shoot on every
+  // set-first collaboration in production, including the only Store Visit.
+  // Contracts: features/item10-store-visit · features/shoot-starts-where-the-agreement-left-it
   const resolved = resolveProductionMode({
+    setMode:       gate.shootMode,
     contractMode:  contract.production_mode,
     agreementMode: agreementMode !== undefined ? agreementMode : await agreementModeFor(client, contract.id),
   });
@@ -176,13 +194,6 @@ async function autoCreateForContract(client, contract, agreementMode) {
   if (!VALID_MODES.includes(mode)) {
     throw new Error(`Invalid production_mode "${mode}" on contract ${contract.id}`);
   }
-
-  // Skip duplicate creation if a row already exists (e.g. retried brand-sign).
-  const existing = await client.query(
-    `SELECT id FROM production_events WHERE contract_id = $1`,
-    [contract.id]
-  );
-  if (existing.rows[0]) return existing.rows[0];
 
   // NOTHING starts completed. This used to read `mode === 'remote' ? 'completed' : 'proposed'`
   // on the reasoning that remote has "nothing to coordinate". There is nothing to COORDINATE —
@@ -194,8 +205,12 @@ async function autoCreateForContract(client, contract, agreementMode) {
   // Falls back to NULL — brand can override at the visit/shipment-details step.
   let shipFields = {};
   if (mode === 'shipment') {
+    // Item 10: `u.pincode` was selected here and users has no such column. This branch was
+    // never reached before the set's mode was honoured — every set-first shipment resolved to
+    // 'remote' — so the error was latent. Item 11 (§11.2) replaces this prefill with the
+    // address she supplies at the shoot plan; until then, no pincode is guessed.
     const { rows } = await client.query(
-      `SELECT ci.delivery_address, u.city, u.state, u.pincode
+      `SELECT ci.delivery_address, u.city, u.state, NULL::text AS pincode
        FROM   campaign_influencers ci
        JOIN   influencers inf ON inf.id = ci.influencer_id
        JOIN   users u ON u.id = inf.user_id
@@ -215,8 +230,9 @@ async function autoCreateForContract(client, contract, agreementMode) {
   const { rows: created } = await client.query(
     `INSERT INTO production_events
        (contract_id, mode, status,
-        shipment_to_address_line, shipment_to_pincode, shipment_to_city, shipment_to_state)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+        shipment_to_address_line, shipment_to_pincode, shipment_to_city, shipment_to_state,
+        branch_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
     [
       contract.id, mode, initialStatus,
@@ -224,11 +240,14 @@ async function autoCreateForContract(client, contract, agreementMode) {
       shipFields.shipment_to_pincode || null,
       shipFields.shipment_to_city || null,
       shipFields.shipment_to_state || null,
+      // Item 10: the set's branch rides with the row from birth. The ADDRESS is not copied
+      // here — it is snapshotted when the plan is sent, which is when she may see it.
+      mode === 'visit' ? gate.branchId : null,
     ]
   );
   const event = created[0];
 
-  await logAction(client, event.id, null, 'system', 'mode_set', `Mode set to ${mode}`, { mode });
+  await logAction(client, event.id, null, 'system', 'mode_set', `Mode set to ${mode} (from the ${resolved.source})`, { mode, source: resolved.source });
   if (initialStatus === 'completed') {
     await logAction(client, event.id, null, 'system', 'completed', 'Remote mode auto-completed', null);
   } else {
