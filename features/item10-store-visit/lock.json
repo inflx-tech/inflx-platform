@@ -17,6 +17,17 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
+    "deployed_to_production": {
+      "at": "2026-09-18",
+      "by": "founder go (\"pls go\")",
+      "commit": "1c6eea6",
+      "migration": "187 applied to production 2026-09-18 (run-187.js --apply): 11 production_events unchanged, both negotiations satisfy the rewritten one-anchor CHECK, shoot_auto_confirm_days seeded at 3 (1–30), 0 delayed rows. Then, after Render was proved live, run-187.js --fix-modes --apply corrected exactly the six rows the dry run named (five remote→shipment, one remote→visit; all Kanchi Silks practice), mode only; 0 still disagreeing.",
+      "render": "item 10 code live after push: GET /v1/influencers/me/invitations/:ciId/shoot answers 401 (route exists) while a made-up sibling answers 404 — polled every 30 s until both held.",
+      "ota": { "brand": 225, "influencer": 212 },
+      "websites": "the push redeploys Vercel with brand-web's visit panel as a read-only card and its render gate on the two signatures.",
+      "money": "NO MONEY MOVED. Read-only after everything: 12 escrow rows, ₹25,875 still locked, 18 ledger rows, brand balances ₹0.00, creator balances ₹8,625 — identical to the item 9 post-deploy figures.",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). Open for the founder: V13's call link (her number is never sent to the brand), moving a delayed set's posting date before a new time, and the three practice branches' missing street addresses."
+    },
     "build": {
       "built_at": "2026-09-18T00:00:00+05:30",
       "commits": "5dd9f68 (2a gate + mode), 38cfb2c (2b third anchor), 5221cd1 (2c flow + jobs), 95ee418 (2d retirements), 0e98273 (3 screens), + the Phase 4 commit",
