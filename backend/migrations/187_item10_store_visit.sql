@@ -34,7 +34,8 @@ ALTER TABLE production_events
   ADD COLUMN IF NOT EXISTS brand_completed_by   uuid REFERENCES users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS auto_confirm_days    int,
   ADD COLUMN IF NOT EXISTS auto_confirm_due_at  timestamptz,
-  ADD COLUMN IF NOT EXISTS auto_confirmed_at    timestamptz;
+  ADD COLUMN IF NOT EXISTS auto_confirmed_at    timestamptz,
+  ADD COLUMN IF NOT EXISTS reminder_sent_at     timestamptz;
 
 ALTER TABLE production_events DROP CONSTRAINT IF EXISTS pe_visit_notes_len;
 ALTER TABLE production_events ADD CONSTRAINT pe_visit_notes_len
@@ -54,6 +55,8 @@ COMMENT ON COLUMN production_events.auto_confirm_days IS
   'Item 10. platform_settings.shoot_auto_confirm_days as it stood when she marked attended. Stamped, never re-read, so an admin change never moves a due date already promised.';
 COMMENT ON COLUMN production_events.auto_confirm_due_at IS
   'Item 10. influencer_completed_at + auto_confirm_days. The job confirms the shoot at this moment if the brand has not. Safe because completing a shoot moves no money.';
+COMMENT ON COLUMN production_events.reminder_sent_at IS
+  'Item 10 (approval §2.5). When she was last nudged about a sent plan she has not answered and no thread is open. Once a thread exists the nudge is recorded on negotiations.reminder_48h_sent_at instead.';
 COMMENT ON COLUMN production_events.auto_confirmed_at IS
   'Item 10. Set when the shoot confirmed ITSELF. brand_completed_at stays NULL in that case, so the record says honestly which of the two happened.';
 

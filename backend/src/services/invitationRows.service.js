@@ -25,6 +25,8 @@ const { deliverablesInWords, usageInWords, declineLabel } = require('./invitatio
 const { splitAmount } = require('../utils/money');
 // Item 7 — the agreement's own sentences. Contract: features/item7-agreement
 const { BRAND: BRAND7, CREATOR: CREATOR7 } = require('./agreementCopy');
+// Item 10 — the store visit's stage and one-line sentence for her Active card (V4).
+const shootPlan = require('./shootPlan.service');
 
 /* ────────────────────────────────────────────────────────── grouping */
 
@@ -266,6 +268,9 @@ const CREATOR_SELECT = `
          con.agreement_sent_at, con.creator_signed_at, con.brand_signed_at,
          -- The money itself, so her card can say what the signature moved rather than zero.
          con.released_amount, con.influencer_fee,
+         -- Item 10: the shoot's stage inputs (the lateral below); the projection is explicit, so name them.
+         pe.shoot_id, pe.pe_shoot_mode, pe.shoot_status, pe.visit_scheduled_at,
+         pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
          neg.*,
          pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
          ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms,
@@ -290,6 +295,12 @@ const CREATOR_SELECT = `
              con.released_amount, con.locked_amount, con.influencer_fee
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
     ) con ON true
+    -- Item 10: the shoot, so her Active card can carry the one line that matters (V4).
+    LEFT JOIN LATERAL (
+      SELECT pe.id AS shoot_id, pe.mode AS pe_shoot_mode, pe.status AS shoot_status, pe.visit_scheduled_at,
+             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at
+        FROM production_events pe WHERE pe.contract_id = con.contract_id
+    ) pe ON true
     ${NEG_JOIN}
     LEFT JOIN brand_creator_pool pf ON pf.from_ci_id = ci.id
     LEFT JOIN brand_creator_pool ps ON ps.id = ci.pool_entry_id`;
@@ -365,6 +376,14 @@ function creatorCard(r, today) {
     negotiation: r.neg_id ? { id: r.neg_id, open: st.threadOpen, whoseMove: st.threadOpen ? r.neg_turn : null, outcome: r.neg_outcome || null, roundLimit: r.neg_round_limit != null ? Number(r.neg_round_limit) : null, countersUsed: Number(r.neg_counters || 0), lastCounter: last ? { by: r.neg_last_by, at: r.neg_last_at, line: snapshotLine(r.goal, last) } : null } : null,
     moveRequest: moveRequestOf(r),
     pool: r.pool_from_id ? { entryId: r.pool_from_id, state: r.pool_from_state, expiresAt: r.pool_from_expires_at, lifetimeDays: r.pool_from_lifetime, wantsGoLiveDate: r.deferred_go_live_date ? calendarDay(r.deferred_go_live_date) : null } : null,
+    // Item 10 (V4): the store visit, in one line, once a plan has been sent. Derived from the
+    // timestamps by the same function the shoot screens use, so the card and the screen agree.
+    shoot: r.shoot_id && r.pe_shoot_mode === 'visit' && r.plan_sent_at ? {
+      stage: shootPlan.stageOf({ id: r.shoot_id, status: r.shoot_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
+      line: shootPlan.lineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
+      visitAt: r.visit_scheduled_at || null,
+      delayed: !!r.delayed_at,
+    } : null,
     // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).
     fromPool: r.pool_entry_id ? {
       agreedAt: r.pool_sent_agreed_at,

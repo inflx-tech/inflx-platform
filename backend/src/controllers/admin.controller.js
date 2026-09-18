@@ -1727,7 +1727,14 @@ const getProductionQueue = asyncHandler(async (req, res) => {
             b.business_name AS brand_name,
             inf_u.name AS influencer_name,
             inf.instagram_handle AS influencer_handle,
-            ci.id AS campaign_influencer_id
+            ci.id AS campaign_influencer_id,
+            -- Item 10: the store visit's own timestamps, the posting date, the Delayed flag,
+            -- and how many times the time thread has reopened (a pattern admin should see, Q7).
+            pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at,
+            pe.auto_confirmed_at, pe.auto_confirm_due_at,
+            cs.go_live_date, ci.delayed_at, ci.delayed_stage,
+            (SELECT count(*)::int FROM negotiation_turns t JOIN negotiations n ON n.id = t.negotiation_id
+              WHERE n.production_event_id = pe.id AND t.kind = 'accept') AS times_agreed
      FROM   production_events pe
      JOIN   contracts c ON c.id = pe.contract_id
      JOIN   campaign_influencers ci ON ci.id = c.campaign_influencer_id
@@ -1757,6 +1764,8 @@ const getProductionQueue = asyncHandler(async (req, res) => {
     const g = gates.get(r.campaign_influencer_id) || null;
     r.gate = g ? { open: g.open, reason: g.reason } : null;
     if (g && !g.open) reasons.push(g.reason === 'NOT_SIGNED' ? 'Not signed by both' : 'Money not locked');
+    if (r.delayed_at) reasons.push(`Delayed since ${new Date(r.delayed_at).toISOString().slice(0, 10)} (${r.delayed_stage})`);
+    if (Number(r.times_agreed) >= 2) reasons.push(`Time moved ${Number(r.times_agreed) - 1}× after agreement`);
     if (r.status === 'proposed' && Number(r.days_since_created) >= 3) {
       reasons.push(`Stale 'proposed' for ${Math.floor(r.days_since_created)}d`);
     }

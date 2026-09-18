@@ -22,6 +22,8 @@
 
 const db = require('../config/db');
 const step = require('./collabStep.service');
+// Item 10 — the shoot's stage, from the one function the shoot screens use.
+const shootPlan = require('./shootPlan.service');
 // Stage 3 — what is owed at a level that belongs to no creator, as a LIST.
 const owedItems = require('./collabOwedItems.service');
 
@@ -94,6 +96,11 @@ async function forBrand(brandId) {
             (con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL) AS contract_signed_both,
             (pe.status = 'completed' OR pe.visit_completed_at IS NOT NULL) AS shoot_done,
             pe.status                   AS shoot_status,
+            -- Item 10: the shoot's stage inputs, identical on both sides (see collabStep step 3).
+            pe.id                       AS shoot_id,
+            pe.mode                     AS shoot_mode,
+            pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+            (SELECT sn.current_turn FROM negotiations sn WHERE sn.production_event_id = pe.id AND sn.outcome IS NULL LIMIT 1) AS shoot_thread_turn,
             (SELECT count(*)::int FROM deliverables d
               WHERE d.campaign_influencer_id = ci.id
                 AND d.status IN ('submitted','under_review'))            AS deliverables_awaiting_brand,
@@ -144,6 +151,10 @@ async function forBrand(brandId) {
         contractSignedByBoth: a.contract_signed_both === true,
         shootDone: !!a.shoot_done,
         shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
+        // Item 10: the stage, derived from the timestamps by the one function the shoot uses.
+        shoot: a.shoot_id && a.shoot_mode === 'visit'
+          ? { stage: shootPlan.stageOf({ id: a.shoot_id, status: a.shoot_status, plan_sent_at: a.plan_sent_at, time_agreed_at: a.time_agreed_at, influencer_completed_at: a.influencer_completed_at, brand_completed_at: a.brand_completed_at, auto_confirmed_at: a.auto_confirmed_at }), threadTurn: a.shoot_thread_turn || null }
+          : null,
         socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
                    : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
         negotiationTurn: a.negotiation_turn || null,
@@ -230,7 +241,17 @@ async function forCreator(influencerId) {
        (SELECT count(*)::int FROM deliverables d
          JOIN campaign_influencers ci3 ON ci3.id = d.campaign_influencer_id
         WHERE ci3.influencer_id = $1
-          AND d.status IN ('pending','revision_requested'))                           AS deliverables_to_submit`,
+          AND d.status IN ('pending','revision_requested'))                           AS deliverables_to_submit,
+       -- Item 10: a store visit waiting on HER — a sent plan she has not answered (no thread,
+       -- no agreed time), or a time thread whose move is hers. Only on a signed, funded
+       -- collaboration, which is the only kind that has a sent plan.
+       (SELECT count(*)::int FROM production_events pe
+         JOIN contracts con ON con.id = pe.contract_id
+         JOIN campaign_influencers ci4 ON ci4.id = con.campaign_influencer_id
+         LEFT JOIN negotiations sn ON sn.production_event_id = pe.id AND sn.outcome IS NULL
+        WHERE ci4.influencer_id = $1 AND pe.mode = 'visit' AND pe.status <> 'completed'
+          AND pe.plan_sent_at IS NOT NULL AND pe.time_agreed_at IS NULL AND pe.influencer_completed_at IS NULL
+          AND (sn.id IS NULL OR sn.current_turn = 'influencer'))                       AS shoot_to_answer`,
     [influencerId]
   );
   const r = rows[0] || {};
@@ -242,6 +263,7 @@ async function forCreator(influencerId) {
     contracts_to_sign:      Number(r.contracts_to_sign || 0),
     posts_to_fix:           Number(r.posts_to_fix || 0),
     deliverables_to_submit: Number(r.deliverables_to_submit || 0),
+    shoot_to_answer:        Number(r.shoot_to_answer || 0),
   };
   return {
     total: Object.values(items).reduce((a, b) => a + b, 0),
@@ -274,6 +296,11 @@ async function stepsForCreator(influencerId) {
             (con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL) AS contract_signed_both,
             (pe.status = 'completed' OR pe.visit_completed_at IS NOT NULL) AS shoot_done,
             pe.status                   AS shoot_status,
+            -- Item 10: the shoot's stage inputs, identical on both sides (see collabStep step 3).
+            pe.id                       AS shoot_id,
+            pe.mode                     AS shoot_mode,
+            pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+            (SELECT sn.current_turn FROM negotiations sn WHERE sn.production_event_id = pe.id AND sn.outcome IS NULL LIMIT 1) AS shoot_thread_turn,
             (SELECT count(*)::int FROM deliverables d
               WHERE d.campaign_influencer_id = ci.id
                 AND d.status IN ('submitted','under_review'))              AS deliverables_awaiting_brand,
@@ -307,6 +334,10 @@ async function stepsForCreator(influencerId) {
         contractSignedByBoth: a.contract_signed_both === true,
         shootDone: !!a.shoot_done,
         shootTurn: a.shoot_status === 'proposed' ? step.TURN.YOU_BRAND : step.TURN.NOBODY,
+        // Item 10: the stage, derived from the timestamps by the one function the shoot uses.
+        shoot: a.shoot_id && a.shoot_mode === 'visit'
+          ? { stage: shootPlan.stageOf({ id: a.shoot_id, status: a.shoot_status, plan_sent_at: a.plan_sent_at, time_agreed_at: a.time_agreed_at, influencer_completed_at: a.influencer_completed_at, brand_completed_at: a.brand_completed_at, auto_confirmed_at: a.auto_confirmed_at }), threadTurn: a.shoot_thread_turn || null }
+          : null,
         socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
                    : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
         negotiationTurn: a.negotiation_turn || null,

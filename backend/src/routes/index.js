@@ -167,6 +167,10 @@ router.use('/', item7Routes);
 // Contract: features/item8-pitch
 const item8Routes = require('./item8.routes');
 router.use('/', item8Routes);
+// Item 10 — the Store Visit shoot plan, and its time thread on item 6's engine.
+// Contract: features/item10-store-visit
+const item10Routes = require('./item10.routes');
+router.use('/', item10Routes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

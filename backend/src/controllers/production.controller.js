@@ -624,6 +624,9 @@ const listBrandShoots = asyncHandler(async (req, res) => {
         pe.reschedule_count_influencer,
         pe.visit_scheduled_at, pe.visit_completed_at,
         pe.visit_address, pe.visit_city,
+        -- Item 10: the plan's own timestamps and the Delayed flag, so the list can say the stage.
+        pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+        ci.delayed_at, ci.delayed_stage, cs.go_live_date,
         pe.shipment_courier, pe.shipment_awb,
         pe.shipment_dispatched_at, pe.shipment_expected_at,
         pe.shipment_delivered_at, pe.shipment_received_confirmed_at,
@@ -673,9 +676,15 @@ const listBrandShoots = asyncHandler(async (req, res) => {
   // Item 10: the gate as a FILTER. A shoot whose collaboration is not signed and funded is not
   // a shoot the brand can act on, and every door behind this list would refuse it.
   const gates = await shootGate.shootGateMany(rows.map(r => r.campaign_influencer_id));
+  const shootPlan = require('../services/shootPlan.service');
   const shoots = rows
     .filter(r => { const g = gates.get(r.campaign_influencer_id); return g && g.open; })
-    .map(r => ({ ...r, gate: { open: true, money: gates.get(r.campaign_influencer_id).money } }));
+    .map(r => ({
+      ...r,
+      gate: { open: true, money: gates.get(r.campaign_influencer_id).money },
+      stage: r.mode === 'visit' ? shootPlan.stageOf({ id: r.production_event_id, status: r.production_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }) : null,
+      delayed: r.delayed_at ? { at: r.delayed_at, stage: r.delayed_stage } : null,
+    }));
 
   return success(res, { shoots });
 });

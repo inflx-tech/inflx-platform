@@ -143,7 +143,23 @@ function stepForCollaboration(ci, x = {}) {
   }
 
   // 3 — the shoot, until it is marked done.
+  //
+  // Item 10 (§24, the four moves): whose move the shoot is comes from its STAGE, one rule for
+  // both sides. `x.shoot` = { stage, threadTurn } from shootPlan.stageOf and the time thread:
+  //   not_sent  → the brand owes a plan
+  //   sent      → an open thread's turn owns it; no thread → she owes an answer on the time
+  //   agreed    → nobody (the visit is still to happen)
+  //   attended  → the brand owes a confirmation
+  // Callers that predate item 10 still pass `shootTurn`, which stands when `shoot` is absent.
   if (!x.shootDone) {
+    if (x.shoot && x.shoot.stage) {
+      const s = x.shoot;
+      let turn = TURN.NOBODY;
+      if (s.stage === 'not_sent') turn = TURN.YOU_BRAND;
+      else if (s.stage === 'sent') turn = s.threadTurn === 'brand' ? TURN.YOU_BRAND : TURN.YOU_CREATOR;
+      else if (s.stage === 'attended') turn = TURN.YOU_BRAND;
+      return { step: STEP.SHOOT, turn, state: `shoot_${s.stage}`, closed: false };
+    }
     return { step: STEP.SHOOT, turn: x.shootTurn || TURN.NOBODY, state: 'shoot', closed: false };
   }
 

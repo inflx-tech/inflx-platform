@@ -37,6 +37,11 @@ const setExpiryJob           = require('./set-expiry.job');
 // Item 8 — the pitch lane: the two reminders, the unanswered close, and the early
 // close when her date nears. Contract: features/item8-pitch
 const pitchHousekeepingJob   = require('./pitch-housekeeping.job');
+// Item 10 — the store visit's three lanes: auto-confirm, Delayed, reminders.
+// Contract: features/item10-store-visit
+const shootAutoConfirmJob    = require('./shoot-auto-confirm.job');
+const collabDelayedJob       = require('./collab-delayed.job');
+const shootRemindersJob      = require('./shoot-reminders.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -119,6 +124,14 @@ function startAllJobs() {
   // guarded, so a second run in the same hour changes nothing.
   cron.schedule('35 * * * *', () => pitchHousekeepingJob.run(), { timezone: tz });
 
+  // Item 10 — three lanes on the free minutes, so no two touch a shoot at once:
+  //   :05 Delayed flag (before set-expiry at :40 has run for the hour — independent anyway),
+  //   :45 auto-confirm (after set-expiry, so a set that just expired is settled first),
+  //   :55 reminders. Every write is guarded; a second run in the same hour changes nothing.
+  cron.schedule('5 * * * *',  () => collabDelayedJob.run(), { timezone: tz });
+  cron.schedule('45 * * * *', () => shootAutoConfirmJob.run(), { timezone: tz });
+  cron.schedule('55 * * * *', () => shootRemindersJob.run(), { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -141,4 +154,7 @@ module.exports = {
   socialMeasureJob,
   setExpiryJob,
   pitchHousekeepingJob,
+  shootAutoConfirmJob,
+  collabDelayedJob,
+  shootRemindersJob,
 };

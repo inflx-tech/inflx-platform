@@ -29,6 +29,8 @@ const DEFAULTS = Object.freeze({
   // Item 8 (rules v1.21 §8) — both stamped when they are applied.
   pitch_response_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pitch response period' },
   pitch_cooldown_days: { value: 30, min: 0, max: 90, unit: 'days', label: 'Pitch rejection cooldown' },
+  // Item 10 (rules v1.24 §11.1, §7B) — stamped onto the shoot row when she marks attended.
+  shoot_auto_confirm_days: { value: 3, min: 1, max: 30, unit: 'days', label: 'Store visit auto-confirm' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
 
@@ -41,6 +43,7 @@ const DESCRIPTION = Object.freeze({
   remote_return_days: 'How long a creator has to send back anything she does not keep after a Remote shoot, counted from posting. The brand pays the return shipping. Between 1 and 60 days. Printed in every Remote agreement and stamped on it when it is generated.',
   pitch_response_days: "How long a brand has to give a creator its first answer on a pitch. She is told the date when she sends it, and the brand is reminded after seven days and again after twenty-one. Between 7 and 90 days. Stamped on each pitch when it is sent, so changing this never moves one already waiting. Once the brand has answered, this clock has done its job and the conversation runs until her proposed date comes too close for a set to be built.",
   pitch_cooldown_days: 'How long a creator must wait before pitching the same brand again after a rejection. It is a pause, not a refusal: it never stops the brand inviting her and never stops her accepting. Counted per brand, not per Aim. Between 0 and 90 days. Stamped on the rejection when it is made. A brand that wants no further contact blocks her instead.',
+  shoot_auto_confirm_days: "How long a brand has to confirm a store visit after the creator marks that she attended. If the brand does nothing, the visit confirms itself and her content step opens — safe because completing a shoot moves no money. Between 1 and 30 days. Stamped on the visit when she marks it, so changing this never moves a date already promised.",
   subscriptions_enforced: 'When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan keep their plan and are still charged. A brand can go past its plan while this is off; when you switch it back on nothing is deleted and nothing stops working, she simply cannot add more.',
 });
 
