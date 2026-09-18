@@ -180,6 +180,12 @@ export default function AgreementScreen({ navigation, route }) {
 
         {bothSigned ? (
           <View style={{ marginTop: 10 }}>
+            {/* Item 10: the store visit is the next step for her, once both have signed. */}
+            {!remote ? (
+              <View style={{ marginBottom: 8 }}>
+                <PrimaryButton label={C7.creator.storeVisit} onPress={() => navigation.navigate('Shoot', { ciId })} testID="store-visit" />
+              </View>
+            ) : null}
             <PrimaryButton label={C7.brand.download} onPress={download} testID="download" />
           </View>
         ) : null}

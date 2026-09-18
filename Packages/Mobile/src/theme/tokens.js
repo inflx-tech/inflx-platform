@@ -520,5 +520,8 @@ export const settingsTokens = {
     declined:  { fg: '#C42B2B', bg: '#FDE8E8' },
     disputed:  { fg: '#FFFFFF', bg: '#A51D2D' },
     ended:     { fg: '#55544D', bg: '#EFEFEA' },
+    // Item 10 — the eighth tone. A delayed collaboration needs attention and nothing is lost,
+    // so it is the yourMove amber family under its own name (prompt §8).
+    delayed:   { fg: '#B04600', bg: '#FFEBDD' },
   },
 };

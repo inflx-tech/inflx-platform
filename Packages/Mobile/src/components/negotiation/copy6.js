@@ -41,7 +41,8 @@ export function termValue(goal, key, terms) {
     default: return '—';
   }
 }
-export const TERM_LABEL = { commissionPct: 'Commission', fee: 'Fee', deliverables: 'What you deliver', usageRights: 'Usage rights', postingDate: 'Posts on', shootMode: 'Mode' };
+// Item 10: `visitAt` is the store visit's one negotiable term; the server prints its values.
+export const TERM_LABEL = { commissionPct: 'Commission', fee: 'Fee', deliverables: 'What you deliver', usageRights: 'Usage rights', postingDate: 'Posts on', shootMode: 'Mode', visitAt: 'Time' };
 /** Which terms a change line may show, per Aim (rules v1.18 §7B). */
 export const NEGOTIABLE = { conversion: ['commissionPct'], engagement: ['fee', 'deliverables', 'usageRights'], hybrid: ['fee', 'commissionPct'] };
 

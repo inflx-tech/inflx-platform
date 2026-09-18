@@ -40,6 +40,11 @@ import MyPitchesScreen from '../screens/influencer/MyPitchesScreen';
 import MyPitchScreen from '../screens/influencer/MyPitchScreen';
 import PitchThreadScreen from '../screens/shared/PitchThreadScreen';
 import PitchCounterScreen from '../screens/shared/PitchCounterScreen';
+// Item 10 — her store visit, and the time thread on item 6's engine.
+// Contract: features/item10-store-visit
+import ShootScreen from '../screens/influencer/ShootScreen';
+import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
+import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -68,6 +73,10 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="MyPitch" component={MyPitchScreen} />
       <CollabsStack.Screen name="PitchThread" component={PitchThreadScreen} />
       <CollabsStack.Screen name="PitchCounter" component={PitchCounterScreen} />
+      {/* Item 10 — the store visit. Contract: features/item10-store-visit */}
+      <CollabsStack.Screen name="Shoot" component={ShootScreen} />
+      <CollabsStack.Screen name="ShootThread" component={ShootThreadScreen} />
+      <CollabsStack.Screen name="ShootCounter" component={ShootCounterScreen} />
     </CollabsStack.Navigator>
   );
 }

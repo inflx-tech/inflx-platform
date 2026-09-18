@@ -73,8 +73,10 @@ export default function CollabsScreen({ navigation, route }) {
             // Item 6: a card with a conversation opens the thread; the rest open the invitation.
             // Item 7: an agreement that is hers to read opens the agreement; a
             // conversation opens the thread; everything else opens the invitation.
+            // Item 10: a card with a store visit under way opens the visit — the live thing.
             <InvitationCard5 card={item} onPress={() => navigation.navigate(
-              item.agreement ? 'Agreement'
+              item.shoot ? 'Shoot'
+                : item.agreement ? 'Agreement'
                 : (item.negotiation || (item.moveRequest && !item.moveRequest.answer)) ? 'Thread'
                 : 'Invitation',
               { ciId: item.id })} />

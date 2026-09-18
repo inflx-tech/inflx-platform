@@ -52,11 +52,20 @@ import BrandPitchesScreen from '../screens/brand/BrandPitchesScreen';
 import BrandPitchScreen from '../screens/brand/BrandPitchScreen';
 import PitchThreadScreen from '../screens/shared/PitchThreadScreen';
 import PitchCounterScreen from '../screens/shared/PitchCounterScreen';
+// Item 10 — the store visit: the plan, the time thread, the visit itself.
+// Contract: features/item10-store-visit
+import BrandShootScreen from '../screens/brand/BrandShootScreen';
+import BrandShootPlanScreen from '../screens/brand/BrandShootPlanScreen';
+import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
+import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 
 // The pitch thread and counter are one screen each, serving both sides. The
 // brand's side is the same component with `side` fixed — not a second copy.
 const BrandPitchThreadScreen = (props) => <PitchThreadScreen {...props} side="brand" />;
 const BrandPitchCounterScreen = (props) => <PitchCounterScreen {...props} route={{ ...props.route, params: { ...(props.route && props.route.params), side: 'brand' } }} />;
+// Item 10 — the same rule for the shoot's time thread and counter.
+const BrandShootThreadScreen = (props) => <ShootThreadScreen {...props} side="brand" />;
+const BrandShootCounterScreen = (props) => <ShootCounterScreen {...props} route={{ ...props.route, params: { ...(props.route && props.route.params), side: 'brand' } }} />;
 
 const Tab = createBottomTabNavigator();
 const CreatorsStack = createNativeStackNavigator();
@@ -93,6 +102,11 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandPool" component={BrandPoolScreen} />
       <CampaignsStack.Screen name="BrandAgreement" component={BrandAgreementScreen} />
       <CampaignsStack.Screen name="BrandAddMoney" component={BrandAddMoneyScreen} />
+      {/* Item 10 — the store visit. Contract: features/item10-store-visit */}
+      <CampaignsStack.Screen name="BrandShoot" component={BrandShootScreen} />
+      <CampaignsStack.Screen name="BrandShootPlan" component={BrandShootPlanScreen} />
+      <CampaignsStack.Screen name="BrandShootThread" component={BrandShootThreadScreen} />
+      <CampaignsStack.Screen name="BrandShootCounter" component={BrandShootCounterScreen} />
     </CampaignsStack.Navigator>
   );
 }

@@ -115,6 +115,8 @@ export const C7 = {
     nextVisit: (name) => `Book the store visit with ${name}. The shoot plan is open now.`,
     download: 'Download',
     shootPlan: 'Shoot plan',
+    // Item 10 (V1): the button's real name for a store visit.
+    planTheVisit: 'Plan the visit',
     // P14 — withdraw
     withdrawTitle: 'Withdraw this agreement?',
     withdrawBody: (name) => `${name} hasn't signed yet. She goes back to waiting for an agreement, and you can send the same one again.`,
@@ -186,6 +188,8 @@ export const C7 = {
     nextTheyShip: 'They ship your products',
     nextBookVisit: 'Book your store visit',
     agreementLink: 'Agreement',
+    // Item 10: the button that opens her store visit from the signed agreement.
+    storeVisit: 'Store visit',
   },
 };
 

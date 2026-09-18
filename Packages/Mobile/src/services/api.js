@@ -261,6 +261,16 @@ export const brandApi = {
   agreementDocument: (ciId) => api.get(`/agreements/${ciId}/document`),
   standardTerms:     (version) => api.get(version ? `/standard-terms/${version}` : '/standard-terms'),
 
+  // ── Item 10 · the store visit. Contract: features/item10-store-visit ──────
+  // Under item 7's paths. Every one is behind the §10 gate on the server. There
+  // is no decline on the time thread — the route does not exist.
+  getShoot:          (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot`),
+  sendShootPlan:     (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/plan`, body),
+  counterShootTime:  (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/thread/counter`, body),
+  acceptShootTime:   (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/thread/accept`),
+  moveShoot:         (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/move`, body),
+  confirmShoot:      (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/confirm`),
+
   // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
   // Accepting creates a pool entry and nothing else, which is why there is no
   // campaign or set in any of these paths.
@@ -501,6 +511,14 @@ export const influencerApi = {
   declineMyAgreement:  (id, body) => api.post(`/influencers/me/invitations/${id}/agreement/decline`, body),
   myAgreementDocument: (id) => api.get(`/agreements/${id}/document`),
   standardTerms:       (version) => api.get(version ? `/standard-terms/${version}` : '/standard-terms'),
+
+  // ── Item 10 · her store visit. Contract: features/item10-store-visit ──────
+  myShoot:            (id) => api.get(`/influencers/me/invitations/${id}/shoot`),
+  acceptMyShootTime:  (id) => api.post(`/influencers/me/invitations/${id}/shoot/accept`),
+  counterMyShootTime: (id, body) => api.post(`/influencers/me/invitations/${id}/shoot/thread/counter`, body),
+  acceptMyShootCounter: (id) => api.post(`/influencers/me/invitations/${id}/shoot/thread/accept`),
+  moveMyShoot:        (id, body) => api.post(`/influencers/me/invitations/${id}/shoot/move`, body),
+  markAttended:       (id) => api.post(`/influencers/me/invitations/${id}/shoot/attended`),
 
   // ── Item 8 · her pitch. Contract: features/item8-pitch ────────────────────
   // The thread is item 6's engine on a different anchor, so these four mirror

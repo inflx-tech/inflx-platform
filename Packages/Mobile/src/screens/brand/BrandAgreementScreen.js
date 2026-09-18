@@ -25,11 +25,15 @@ import {
   StandardTermsRow7, StateBox7, ShortfallCard7, MoneyMoved7,
 } from '../../components/agreement/bits7';
 import { SendAgreementSheet7, BrandSignSheet7, WithdrawAgreementSheet7 } from '../../components/agreement/sheets7';
+// Item 10 (V1) — the gate as ticks, the four-step line, the posting countdown, "Plan the visit".
+import { GateCard10, StepLine10 } from '../../components/shoot/bits10';
+import { C10 } from '../../components/shoot/copy10';
 
 export default function BrandAgreementScreen({ navigation, route }) {
   const { campaignId, setId, ciId, preview } = route.params || {};
   const [ag, setAg] = useState(null);
   const [cost, setCost] = useState(null);
+  const [shoot, setShoot] = useState(null);
   const [status, setStatus] = useState('loading');
   const [sheet, setSheet] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -50,6 +54,13 @@ export default function BrandAgreementScreen({ navigation, route }) {
     if (!preview && r.data.agreement.can && r.data.agreement.can.sign) {
       const c = await brandApi.agreementCost(campaignId, setId, ciId);
       if (c && c.success) setCost(c.data.cost);
+    }
+    // Item 10: once both have signed, V1's gate card and step line come from the shoot itself,
+    // so the ticks and amounts are the money that actually moved, not a recalculation.
+    const sg = r.data.agreement.signatures || {};
+    if (!preview && sg.creator && sg.brand) {
+      const sh = await brandApi.getShoot(campaignId, setId, ciId);
+      setShoot(sh && sh.success ? sh.data.shoot : null);
     }
   }, [campaignId, setId, ciId, preview]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -226,12 +237,28 @@ export default function BrandAgreementScreen({ navigation, route }) {
           <>
             <MoneyMoved7 locked={ag.money.locked} released={ag.money.released}
               stillLocked={ag.money.stillLocked} creatorName={firstName} />
-            <Card7 title={C7.brand.next} tone="tint" testID="next-step">
-              <Text style={s.para}>{remote ? C7.brand.nextShip(firstName) : C7.brand.nextVisit(firstName)}</Text>
-            </Card7>
+            {/* Item 10 (V1): the gate §10 always described, as ticks; the step line; the countdown. */}
+            {shoot ? (
+              <>
+                <GateCard10 gate={{ ...shoot.gate, creatorName }} />
+                <StepLine10 steps={shoot.steps} />
+                {shoot.postingDate ? <Text style={s.countdown} testID="posting-countdown">{C10.countdown(shoot.postingDate, shoot.daysToPosting)}</Text> : null}
+              </>
+            ) : (
+              <Card7 title={C7.brand.next} tone="tint" testID="next-step">
+                <Text style={s.para}>{remote ? C7.brand.nextShip(firstName) : C7.brand.nextVisit(firstName)}</Text>
+              </Card7>
+            )}
             <View style={s.row}>
               <View style={{ flex: 1 }}><SecondaryButton label={C7.brand.download} onPress={download} testID="download" /></View>
-              <View style={{ flex: 1 }}><PrimaryButton label={C7.brand.shootPlan} onPress={() => show('Shoot plan opens in item 10.')} testID="shoot-plan" /></View>
+              <View style={{ flex: 1 }}>
+                <PrimaryButton
+                  label={remote ? C7.brand.shootPlan : C7.brand.planTheVisit}
+                  onPress={() => (remote
+                    ? show(C10.remoteNext)
+                    : navigation.navigate('BrandShoot', { campaignId, setId, ciId }))}
+                  testID="shoot-plan" />
+              </View>
             </View>
           </>
         ) : null}
@@ -290,6 +317,7 @@ const s = StyleSheet.create({
   para: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 20 },
   quote: { fontFamily: fonts.sansRegular, fontSize: 13.5, color: T.ink, lineHeight: 20, fontStyle: 'italic' },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, lineHeight: 18, marginBottom: 12 },
+  countdown: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink, marginBottom: 12 },
   sigHd: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1, color: T.ink3, marginTop: 6, marginBottom: 8 },
   row: { flexDirection: 'row', gap: 10, marginTop: 4 },
   footer: { padding: 16, borderTopWidth: 1, borderTopColor: T.border, backgroundColor: '#FFFFFF' },

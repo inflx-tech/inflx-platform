@@ -194,6 +194,8 @@ export function InvitationCard5({ card, onPress, testID }) {
       <Text style={b.money}>{C5.creator.youEarn(money)}</Text>
       {card.group === 'invited' && card.cutoff ? <Text style={b.meta}>{C5.creator.replyBy(card.cutoff, card.daysLeft)}</Text> : null}
       {sentence ? <View style={[b.sentence, { backgroundColor: (T.state[tone] || T.state.ended).bg }]}><Text style={[b.sentenceText, { color: (T.state[tone] || T.state.ended).fg }]}>{sentence}</Text></View> : null}
+      {/* Item 10 (V4): under Active, one line says the only thing that matters yet — where and when. */}
+      {card.shoot && card.shoot.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`shoot-line-${card.id}`}>{card.shoot.line}</Text> : null}
     </TouchableOpacity>
   );
 }
