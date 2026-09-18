@@ -15,9 +15,45 @@ const ref = require('./referenceLists.service');
 
 const MSG = Object.freeze({
   NAME_REQUIRED: 'Enter a branch name.',
-  ADDRESS_REQUIRED: 'Search and pick your branch address.',
+  ADDRESS_REQUIRED: 'Search and pick your branch address, or type it.',
+  ADDRESS_LONG: 'Keep the address under 200 characters.',
+  PINCODE: 'Enter a 6-digit PIN code.',
+  CITY_UNKNOWN: "We couldn't tell which city this branch is in. Search the address instead.",
   MAIN_BRANCH: "The main branch can't be removed. Make another branch the main one first.",
 });
+
+/**
+ * Item 10 (founder, 18 Sep): the Google search is not answering, and a Store Visit set now needs
+ * a branch with a street address. So an address may be TYPED as well as picked. A typed address
+ * carries no place id, no coordinates and no map pin; "Open in Maps" falls back to searching the
+ * text. The city and state come from the branch as it stands (edit) or from the brand's
+ * registration city (create) — never guessed from the text.
+ *
+ * @returns {{ formattedAddress: string, pincode: string|null }}
+ */
+function typedAddress(body) {
+  const text = String(body.address_text || '').replace(/\s+/g, ' ').trim();
+  if (!text) throw validationError('address_text', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
+  if (text.length > 200) throw validationError('address_text', 'BRANCH_ADDRESS_LONG', MSG.ADDRESS_LONG);
+  const pin = body.pincode == null || body.pincode === '' ? null : String(body.pincode).trim();
+  if (pin != null && !/^\d{6}$/.test(pin)) throw validationError('pincode', 'BRANCH_PINCODE', MSG.PINCODE);
+  return { formattedAddress: text, pincode: pin };
+}
+
+/** The brand's registration city and state as ref ids, for a branch created by typing. */
+async function brandCityIds(brandId) {
+  const { rows } = await db.query(`SELECT u.city, u.state FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`, [brandId]);
+  const r = rows[0];
+  if (!r) return { cityId: null, stateId: null };
+  let stateId = r.state ? await ref.findStateId(r.state) : null;
+  let cityId = null;
+  if (r.city && String(r.city).trim()) {
+    const { rows: c } = await db.query(
+      `SELECT id, state_id FROM ref_cities WHERE name_norm = lower(trim($1)) ORDER BY (state_id = $2) DESC NULLS LAST, id LIMIT 1`, [r.city, stateId]);
+    if (c[0]) { cityId = c[0].id; if (!stateId) stateId = c[0].state_id; }
+  }
+  return { cityId, stateId };
+}
 
 function shape(r) {
   return {
@@ -87,8 +123,17 @@ function validationError(field, code, message) {
 async function create(brandId, body, { userId } = {}) {
   const name = String(body?.name || '').trim();
   if (!name) throw validationError('name', 'BRANCH_NAME_REQUIRED', MSG.NAME_REQUIRED);
-  if (!body?.place_id) throw validationError('place_id', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
-  const place = await ref.resolvePlace(body.place_id, { session: body.session, userId });
+  if (!body?.place_id && !body?.address_text) throw validationError('place_id', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
+  let place;
+  if (body.place_id) {
+    place = await ref.resolvePlace(body.place_id, { session: body.session, userId });
+  } else {
+    // Item 10: typed. The city and state are the brand's own — a typed line is never parsed.
+    const t = typedAddress(body);
+    const ids = await brandCityIds(brandId);
+    if (!ids.stateId) throw validationError('address_text', 'BRANCH_CITY_UNKNOWN', MSG.CITY_UNKNOWN);
+    place = { placeId: null, formattedAddress: t.formattedAddress, pincode: t.pincode, lat: null, lng: null, city: ids.cityId ? { id: ids.cityId, added: false } : null, state: { id: ids.stateId } };
+  }
   const existing = await count(brandId);
   const makeMain = existing === 0 || body.is_main === true;
   const branch = await db.withTransaction(async (tx) => {
@@ -124,6 +169,11 @@ async function update(brandId, id, body, { userId } = {}) {
     sets.push(`google_place_id = ${p(place.placeId)}`, `formatted_address = ${p(place.formattedAddress)}`,
       `pincode = ${p(place.pincode)}`, `lat = ${p(place.lat)}`, `lng = ${p(place.lng)}`,
       `city_id = ${p(place.city ? place.city.id : null)}`, `state_id = ${p(place.state.id)}`);
+  } else if (body.address_text !== undefined) {
+    // Item 10: a typed address replaces the text and drops the pin; the city and state the
+    // branch already has are kept — the typed line is never parsed into a place.
+    const t = typedAddress(body);
+    sets.push(`google_place_id = NULL`, `formatted_address = ${p(t.formattedAddress)}`, `pincode = ${p(t.pincode)}`, `lat = NULL`, `lng = NULL`);
   }
   await db.withTransaction(async (tx) => {
     if (body.is_main === true && !current.isMain) {

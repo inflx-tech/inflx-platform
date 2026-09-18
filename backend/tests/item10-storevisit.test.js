@@ -251,6 +251,46 @@ describe('a Store Visit needs a branch with a street address (check 45, founder 
   });
 });
 
+/* ───────────────────────────────────────────────────────────── a typed address (founder, 18 Sep) */
+
+describe('a branch address may be typed as well as searched', () => {
+  it('typing an address onto an address-less main branch unblocks the Store Visit set; the city and state stay', async () => {
+    const b = await brand({ mainAddress: null });
+    // The three practice brands in production were seeded with no address at all; make this one the same.
+    await query(`UPDATE brand_branches SET formatted_address = NULL, pincode = NULL, lat = NULL, lng = NULL, google_place_id = NULL WHERE brand_id = $1 AND is_main`, [b.brandId]);
+    const main = (await query(`SELECT * FROM brand_branches WHERE brand_id = $1 AND is_main`, [b.brandId])).rows[0];
+    expect(main.formatted_address).toBeNull();
+    const c = await w10.campaign(b);
+    let r = await api.post(`/campaigns/${c.id}/sets`, b.token, { name: 'Set A', goal: 'engagement', shoot_mode: 'visit', go_live_date: w10.day(12), branch_id: main.id });
+    expect(r.status).toBe(422);
+    // too long, a bad PIN, empty — each named
+    r = await api.put(`/brands/me/branches/${main.id}`, b.token, { address_text: 'x'.repeat(201) });
+    expect(r.status).toBe(422); expect(r.body.error.field).toBe('address_text');
+    r = await api.put(`/brands/me/branches/${main.id}`, b.token, { address_text: 'Shop 4, MG Road', pincode: '12' });
+    expect(r.status).toBe(422); expect(r.body.error.field).toBe('pincode');
+    r = await api.put(`/brands/me/branches/${main.id}`, b.token, { address_text: '   ' });
+    expect(r.status).toBe(422); expect(r.body.error.field).toBe('address_text');
+    // typed
+    r = await api.put(`/brands/me/branches/${main.id}`, b.token, { address_text: 'Shop 4,  MG Road, Labbipet', pincode: '520010' });
+    expect(r.status).toBe(200);
+    expect(r.body.data.branch).toMatchObject({ formattedAddress: 'Shop 4, MG Road, Labbipet', pincode: '520010', lat: null, lng: null, cityName: main.city_id ? expect.any(String) : null });
+    const after = (await query(`SELECT * FROM brand_branches WHERE id = $1`, [main.id])).rows[0];
+    expect(after.google_place_id).toBeNull(); expect(after.city_id).toBe(main.city_id); expect(after.state_id).toBe(main.state_id);
+    r = await api.post(`/campaigns/${c.id}/sets`, b.token, { name: 'Set A', goal: 'engagement', shoot_mode: 'visit', go_live_date: w10.day(12), branch_id: main.id });
+    expect(r.status).toBe(201);
+  });
+
+  it('a new branch can be created by typing; its city and state are the brand\'s own', async () => {
+    const b = await brand({ city: 'Hyderabad', state: 'Telangana' });
+    const r = await api.post('/brands/me/branches', b.token, { name: 'Kondapur', address_text: '2nd floor, Botanical Garden Rd, Kondapur', pincode: '500084' });
+    expect(r.status).toBe(201);
+    expect(r.body.data.branch).toMatchObject({ name: 'Kondapur', formattedAddress: '2nd floor, Botanical Garden Rd, Kondapur', cityName: 'Hyderabad', stateName: 'Telangana', isMain: false });
+    // neither a search nor a typed line → the old message, now saying both ways
+    const none = await api.post('/brands/me/branches', b.token, { name: 'Nowhere' });
+    expect(none.status).toBe(422); expect(none.body.error.message).toBe('Search and pick your branch address, or type it.');
+  });
+});
+
 /* ───────────────────────────────────────────────────────────── the retired doors (Phase 2d, founder Q12) */
 
 describe('the retired doors answer with a sentence, server-side (Phase 2d, Q12)', () => {

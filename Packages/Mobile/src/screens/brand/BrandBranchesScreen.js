@@ -65,7 +65,10 @@ export default function BrandBranchesScreen({ navigation, route }) {
                 <Text style={s.name} numberOfLines={1}>{b.name}</Text>
                 {b.isMain ? <View style={{ marginLeft: 8 }}><StatusChip on label={B.main} /></View> : null}
               </View>
-              {b.formattedAddress ? <Text style={s.addr}>{b.formattedAddress}</Text> : null}
+              {b.formattedAddress
+                ? <Text style={s.addr}>{b.formattedAddress}</Text>
+                // Item 10: a Store Visit set needs the street address, so its absence is said where you would look for it.
+                : <Text style={[s.addr, { color: T.danger }]} testID={`branch-no-address-${b.id}`}>{B.noAddressYet}</Text>}
               <Text style={s.city}>{[b.cityName, b.stateName].filter(Boolean).join(' · ')}</Text>
               <View style={s.actions}>
                 <TouchableOpacity onPress={() => navigation.navigate('BrandBranchEdit', { branch: b })} testID={`branch-edit-${b.id}`}><Text style={s.action}>{B.edit}</Text></TouchableOpacity>

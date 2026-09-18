@@ -41,7 +41,7 @@ describe('A4 · A5 — branches', () => {
     r = await api.post('/brands/me/branches', b.token, { name: 'Second store' });
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('place_id');
-    expect(r.body.error.message).toBe('Search and pick your branch address.');
+    expect(r.body.error.message).toBe('Search and pick your branch address, or type it.');   // item 10: an address may be typed too
   });
 
   it('create resolves the address: known city → no new city; a new city is added once with source=google (check 8)', async () => {

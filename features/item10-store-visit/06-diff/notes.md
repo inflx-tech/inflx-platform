@@ -45,3 +45,17 @@ date picker import in shoot files is kept and now enforces Q8.
 Evidence: `Packages/Mobile/src/components/shoot/__tests__/shoot10.test.js` (imports, the Indian
 clock without Intl, the gate card per Aim, the step line, the time card, the address card, the
 picker's cap and steps, the copy); full mobile suite 575 / 575.
+
+## Walk fix 1 — a branch address may be typed (founder, 18 Sep, after the first walk)
+
+**Before:** the branch edit screen offered only the Google address search, which was not
+answering; a branch with no address looked identical to one with an address; the three practice
+brands had no address at all (seeded, never registered), so no Store Visit set could be created.
+
+**After:** *Type the address instead* on the edit screen (on by default when the branch has no
+address) — a street address of up to 200 characters and an optional 6-digit PIN, saved as the
+branch's address with no map pin; the city and state stay what the branch already had (or the
+brand's registration city for a new branch). *Search on Google instead* switches back. The
+branch card says *No street address yet — tap Edit to add one* in red where there is none.
+Server: `address_text` / `pincode` accepted beside `place_id` on create and update.
+Tests: `item10-storevisit` (2 new), `item3-branches` (message updated); mobile 575/575.
