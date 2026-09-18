@@ -460,7 +460,11 @@ async function flagDelayed({ today = null } = {}) {
        LEFT JOIN production_events pe ON pe.contract_id = con.id
       WHERE ci.delayed_at IS NULL AND cs.go_live_date IS NOT NULL AND cs.go_live_date < $1::date
         AND con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL
-        AND (pe.id IS NULL OR pe.status <> 'completed')`, [t]);
+        AND (pe.id IS NULL OR pe.status <> 'completed')
+        -- Item 10 flags STORE VISITS. A Remote collaboration's stages (address, dispatch, receipt)
+        -- arrive with item 11, which extends this lane and its vocabulary; flagging one now would
+        -- record "plan not sent" against a shipment, which means nothing. Item 12 adds content.
+        AND COALESCE(pe.mode, cs.shoot_mode) = 'visit'`, [t]);
   const told = [];
   for (const row of rows) {
     out.checked += 1;

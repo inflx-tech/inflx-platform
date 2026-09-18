@@ -347,9 +347,11 @@ describe('Delayed (checks 22, 23, 24)', () => {
     const attendedW = await attended(await w10.signedByBoth('engagement'));
     const done = await attended(await w10.signedByBoth('engagement')); await bConfirm(done);
     const future = await w10.signedByBoth('engagement');
-    for (const w of [notSent, sentOnly, agreedW, attendedW, done]) await backdate(w);
+    const remote = await w10.signedByBoth('conversion', { mode: 'shipment' });     // item 11's; not flagged here
+    for (const w of [notSent, sentOnly, agreedW, attendedW, done, remote]) await backdate(w);
     const out = await delayedJob.run();
     expect(out).toMatchObject({ flagged: 4, failed: 0 });
+    expect((await query(`SELECT delayed_at FROM campaign_influencers WHERE id = $1`, [remote.ciId])).rows[0].delayed_at).toBeNull();
     const stage = async (w) => (await query(`SELECT delayed_at, delayed_stage FROM campaign_influencers WHERE id = $1`, [w.ciId])).rows[0];
     expect((await stage(notSent)).delayed_stage).toBe('plan_not_sent');
     expect((await stage(sentOnly)).delayed_stage).toBe('time_not_agreed');

@@ -16,6 +16,15 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "maestro_green": false
+    "maestro_green": false,
+    "build": {
+      "built_at": "2026-09-18T00:00:00+05:30",
+      "commits": "5dd9f68 (2a gate + mode), 38cfb2c (2b third anchor), 5221cd1 (2c flow + jobs), 95ee418 (2d retirements), 0e98273 (3 screens), + the Phase 4 commit",
+      "migration_dry_run": "187 dry run against production 2026-09-18: 11 production_events (6 remote/confirmed, 1 shipment/confirmed, 3 visit/completed, 1 visit/proposed), 2 negotiations both with exactly one anchor (the num_nonnulls CHECK will accept them), 18 campaign_influencers, 8 platform_settings keys, none of the four markers present. --fix-modes dry run: exactly six rows disagree with their set, all Kanchi Silks practice — five remote→shipment, one remote→visit (posts 26 Sep) — status, timestamps, escrow, wallets, contracts untouched. Nothing written.",
+      "backend_tests": "1384 tests / 1161 passed / 223 failed on the full run; 54 new all passing; 2 new failures both assertion drift (settings key list; the window's first day) updated and re-run green — effective 221 failed = the item 10 baseline (1330 / 1109 / 221), 0 new failures",
+      "mobile_tests": "575 pass / 48 suites (12 new: shoot10 9, dangerButton 3)",
+      "governance_check": "OK — 46 governed changes, all contract-backed; mockup_locked and 06-diff/notes.md present",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). Production-impacting; nothing deployed until the founder's explicit go: run-187 --apply → push → run-187 --fix-modes --apply → OTA brand → OTA influencer. No money moves at deploy."
+    }
   }
 }

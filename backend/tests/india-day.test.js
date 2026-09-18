@@ -143,8 +143,12 @@ describe('the visit window itself', () => {
     expect(prod()).toContain('addDays(calendarDay(r.posting_date), -PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING)');
   });
 
-  test('tomorrow is tomorrow in India, not on the server', () => {
-    expect(prod()).toContain('addDays(todayInIndia(), 1)');
+  test('the earliest day is TODAY in India, not on the server (item 10, founder Q10: no minimum notice)', () => {
+    // Was "tomorrow" (addDays(todayInIndia(), 1)). Rules v1.24 §11.1 sets no minimum notice — a
+    // brand and a creator who agree on "this afternoon" are not doing anything wrong — so the
+    // window opens today; only the past is refused, and that is judged on the instant.
+    expect(prod()).toContain('const earliest = todayInIndia();');
+    expect(prod()).not.toContain('addDays(todayInIndia(), 1)');
   });
 
   test('⚠️ it reads window_end, the field the wizard actually writes', () => {
