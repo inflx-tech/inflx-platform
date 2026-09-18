@@ -299,39 +299,41 @@ function ProductionPanel({ contractId }) {
     return (
       <div className="p-5 border-t border-[#F4F4F5]">
         <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-[12px] p-3 text-[11.5px] text-[#52525B] text-center">
-          Remote mode — no physical coordination needed. Influencer will start content from the brief.
+          Remote — nothing is sent and there is no time to agree. The creator marks the shoot done in the app when she has shot it.
         </div>
       </div>
     );
   }
 
+  // Item 10 (approval Q12): the mode of work comes from the set and nobody picks it here any more.
+  // The row is created at the brand's signature; a missing row means the read door will heal it.
   if (!event) {
-    async function initialiseAs(m) {
-      if (m === 'remote' && !confirm('Switch to remote? No coordination needed — content is created from your brief alone.')) return;
-      setSaving(true); setError(null);
-      const res = await productionApi.initialise(contractId, m);
-      setSaving(false);
-      if (res.success) load();
-      else setError(res.error?.message || 'Could not initialise');
-    }
     return (
       <div className="p-5 border-t border-[#F4F4F5]">
-        <div className="text-[12px] font-bold text-[#0A0A0A] mb-1">Set up production</div>
-        <div className="text-[11px] text-[#71717A] mb-3">Pick how the influencer will get what they need for the shoot.</div>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { v: 'visit',    label: 'Visit' },
-            { v: 'shipment', label: 'Shipment' },
-            { v: 'remote',   label: 'Remote' },
-          ].map(opt => (
-            <button key={opt.v} onClick={() => initialiseAs(opt.v)} disabled={saving}
-              className="py-3 px-3 bg-white border border-[#E4E4E7] hover:border-[#0A0A0A] rounded-[10px] text-center disabled:opacity-50 transition-colors">
-              <div className="text-[12px] font-bold text-[#0A0A0A]">{opt.label}</div>
-            </button>
-          ))}
+        <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-[12px] p-3 text-[11.5px] text-[#52525B] text-center">
+          The shoot plan is managed in the app. It opens once the agreement is signed by both and, where there is fixed money, the funds are locked.
         </div>
-        {error && <div className="mt-2 text-[11px] text-[#B91C1C]">{error}</div>}
-        {saving && <div className="mt-2 text-[11px] text-[#71717A]">Setting up…</div>}
+      </div>
+    );
+  }
+
+  // Item 10 (approval Q12): the store visit is planned, agreed, attended and confirmed in the app.
+  // This website panel used to run its own slot dance and a mode switch; both are retired on the
+  // server (production.controller, Phase 2d), so nothing here may pretend otherwise. Read-only.
+  if (event.mode === 'visit') {
+    const when = event.visit_scheduled_at ? new Date(event.visit_scheduled_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : null;
+    const stage = event.status === 'completed' || event.brand_completed_at || event.auto_confirmed_at ? 'Shoot done'
+      : event.influencer_completed_at ? 'She marked the visit done — waiting for your confirmation in the app'
+      : event.time_agreed_at ? `Store visit agreed for ${when}`
+      : event.plan_sent_at ? `Plan sent for ${when} — time not agreed yet`
+      : 'No plan sent yet';
+    return (
+      <div className="p-5 border-t border-[#F4F4F5]">
+        <div className="text-[12px] font-bold text-[#0A0A0A] mb-1">Store visit</div>
+        <div className="text-[11.5px] text-[#52525B] mb-2">{stage}</div>
+        <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-[12px] p-3 text-[11px] text-[#71717A] text-center">
+          The shoot plan is managed in the app — open the collaboration on your phone to plan the visit, agree a time or confirm the shoot.
+        </div>
       </div>
     );
   }
@@ -965,7 +967,9 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
             </div>
           )}
 
-          {contract.status === 'active' && (
+          {/* Item 10 (approval §2.1, check 48): the two signature timestamps are the only definition
+              of signed — never contracts.status, which four seeded rows carry as 'active' unsigned. */}
+          {!!(contract.influencer_signed_at && contract.brand_signed_at) && (
             <ProductionPanel contractId={contract.id} />
           )}
         </div>

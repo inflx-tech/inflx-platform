@@ -59,6 +59,7 @@ const PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW  = 3;   // …or ≥ 3 days before co
 async function getVisitDateRange(contractId) {
   const { rows } = await db.query(
     `SELECT con.posting_date,
+            cs.go_live_date,
             cs.content_end_date,
             cs.window_end,
             c.end_date AS campaign_end_date
@@ -72,13 +73,18 @@ async function getVisitDateRange(contractId) {
   const r = rows[0];
   if (!r) throw new Error('Contract not found for visit date range');
 
-  // Tomorrow, in India — not "tomorrow on the server", which on Render is UTC and rolls over
-  // five and a half hours late.
-  const earliest = addDays(todayInIndia(), 1);
+  // Item 10 (rules v1.24 §11.1): TODAY in India, not tomorrow — there is no minimum notice
+  // (founder Q10); only the past is refused, and that is judged on the instant, not the day.
+  const earliest = todayInIndia();
 
   // Latest: work back from whichever deadline this collaboration actually has.
   let latest, basis;
-  if (r.posting_date) {
+  if (r.go_live_date) {
+    // Item 10: the set's posting day itself, inclusive. "No time later than the Set's Posting
+    // Date is offered" — the day she posts is the last day she can shoot, not the day before.
+    basis = 'posting_date';
+    latest = calendarDay(r.go_live_date);
+  } else if (r.posting_date) {
     basis = 'post_by';
     latest = addDays(calendarDay(r.posting_date), -PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING);
   } else if (r.window_end || r.content_end_date) {

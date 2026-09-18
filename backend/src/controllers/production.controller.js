@@ -14,6 +14,20 @@ const productionService = require('../services/production.service');
 const parcel = require('../services/parcel.service');
 // Item 10 — the §10 gate: signed by both, and funded where the aim carries fixed money.
 const shootGate = require('../services/shootGate.service');
+const { MSG: MSG10 } = require('../services/productionCopy');
+
+/**
+ * Item 10, Phase 2d — RETIRED DOORS (approval Q12: "server-side, not by hiding the buttons").
+ *
+ * The store visit's time is agreed through the shoot plan (item10.routes) on item 6's engine,
+ * and the mode of work comes from the set and never changes inside the shoot (rules §11). So the
+ * Stage-P slot dance for a visit — visit-details, propose-slot, accept, counter-propose — the
+ * brand's mode picker on /initialise, and flip-to-remote are switched off HERE with a sentence,
+ * whatever any client still shows. The shipment half of accept / counter-propose is item 11's
+ * and is left as it was.
+ */
+const retiredModeChoice = () => { throw new AppError('RETIRED_MODE_CHOICE', MSG10.RETIRED_MODE_CHOICE, 422, 'mode'); };
+const retiredSlotDanceForVisit = (event) => { if (event && event.mode === 'visit') throw new AppError('RETIRED_SLOT_DANCE', MSG10.RETIRED_SLOT_DANCE, 422, 'status'); };
 const notificationService = require('../services/notification.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
@@ -119,24 +133,10 @@ const initialiseProduction = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'brand');
   await assertShootOpen(contract.id);
-
-  const { mode } = req.body || {};
-  if (!productionService.VALID_MODES.includes(mode)) {
-    throw new AppError('VALIDATION_ERROR',
-      `mode must be one of: ${productionService.VALID_MODES.join(', ')}`, 422, 'mode');
-  }
-
-  // Update production_mode on the contract row first so autoCreateForContract
-  // sees the right mode when it reads the full row.
-  await db.query(`UPDATE contracts SET production_mode = $1 WHERE id = $2`, [mode, contract.id]);
-  const { rows: full } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
-  let event;
-  try {
-    event = await productionService.autoCreateForContract(db, full[0]);
-  } catch (e) {
-    throw new AppError('INTERNAL_ERROR', `Could not initialise production: ${e.message}`, 500);
-  }
-  return success(res, { production_event: event, production_mode: mode });
+  // Item 10 (Phase 2d): the mode comes from the set. Nobody picks it here any more. The row is
+  // created at the brand's signature (contractSign → autoCreateForContract), and the read door
+  // heals a legacy contract without asking anyone to choose.
+  return retiredModeChoice();
 });
 
 // GET /v1/contracts/:id/production
@@ -194,6 +194,7 @@ const setVisitDetails = asyncHandler(async (req, res) => {
   if (event.mode !== 'visit') {
     throw new AppError('VALIDATION_ERROR', 'visit-details only applies to visit-mode events', 422);
   }
+  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): the plan is sent through the shoot plan
 
   let updated;
   try {
@@ -246,6 +247,7 @@ const proposeSlot = asyncHandler(async (req, res) => {
   if (event.mode !== 'visit') {
     throw new AppError('VALIDATION_ERROR', 'propose-slot only applies to visit-mode events', 422);
   }
+  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): she counters the time on the shoot plan's thread
 
   let updated;
   try {
@@ -284,6 +286,8 @@ const flipToRemote = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'either');
+  // Item 10 (Phase 2d, rules §11): the mode of work cannot change inside the shoot plan.
+  retiredModeChoice();
 
   let updated;
   try {
@@ -324,6 +328,7 @@ const acceptEvent = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, event.mode === 'shipment' ? 'influencer' : 'either');
+  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): a visit time is accepted on the shoot plan; shipment stays for item 11
 
   let updated;
   try {
@@ -353,6 +358,7 @@ const counterPropose = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'either');
+  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): a visit time is countered on the shoot plan's thread; shipment stays for item 11
 
   let updated;
   try {

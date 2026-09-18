@@ -251,6 +251,38 @@ describe('a Store Visit needs a branch with a street address (check 45, founder 
   });
 });
 
+/* ───────────────────────────────────────────────────────────── the retired doors (Phase 2d, founder Q12) */
+
+describe('the retired doors answer with a sentence, server-side (Phase 2d, Q12)', () => {
+  it('the mode picker, flip-to-remote and the visit slot dance are switched off; the shipment half is not', async () => {
+    const v = await w10.signedByBoth('engagement');
+    const r1 = await api.post(`/contracts/${v.con.id}/production/initialise`, v.b.token, { mode: 'visit' });
+    expect(r1.status).toBe(422); expect(r1.body.error.code).toBe('RETIRED_MODE_CHOICE'); expect(r1.body.error.message).toBe(MSG.RETIRED_MODE_CHOICE);
+    const r2 = await api.post(`/production-events/${v.pe.id}/flip-to-remote`, v.cr.token, {});
+    expect(r2.status).toBe(422); expect(r2.body.error.code).toBe('RETIRED_MODE_CHOICE');
+    for (const [who, m, p, body] of [
+      ['brand', 'post', `/contracts/${v.con.id}/production/visit-details`, { visit_address: 'x' }],
+      ['creator', 'post', `/production-events/${v.pe.id}/propose-slot`, { visit_scheduled_at: new Date(Date.now() + 86400000).toISOString() }],
+      ['creator', 'post', `/production-events/${v.pe.id}/accept`, {}],
+      ['brand', 'post', `/production-events/${v.pe.id}/counter-propose`, {}],
+    ]) {
+      const r = await api.post(p, who === 'brand' ? v.b.token : v.cr.token, body);
+      expect([p, r.status, r.body.error && r.body.error.code]).toEqual([p, 422, 'RETIRED_SLOT_DANCE']);
+      expect(r.body.error.message).toBe(MSG.RETIRED_SLOT_DANCE);
+    }
+    expect((await w10.pe(v.con.id)).mode).toBe('visit');                 // nothing moved
+    // the read door and the date range still answer, and the range is capped by the posting day inclusive
+    expect((await api.get(`/contracts/${v.con.id}/production`, v.b.token)).status).toBe(200);
+    const range = await api.get(`/contracts/${v.con.id}/production/date-range`, v.cr.token);
+    expect(range.status).toBe(200);
+    expect(range.body.data.range).toMatchObject({ basis: 'posting_date', earliest: w10.day(0), latest: w10.day(12), impossible: false });
+    // a shipment event's accept is item 11's and is NOT retired here
+    const s = await w10.signedByBoth('conversion', { mode: 'shipment' });
+    const r3 = await api.post(`/production-events/${s.pe.id}/accept`, s.cr.token, {});
+    expect(r3.body.error ? r3.body.error.code : 'ok').not.toBe('RETIRED_SLOT_DANCE');
+  });
+});
+
 /* ───────────────────────────────────────────────────────────── the small defects (checks 48, §2.1, §2.3) */
 
 describe('nothing reads contracts.status = \'active\' as a signature (check 48, approval §2.1)', () => {
