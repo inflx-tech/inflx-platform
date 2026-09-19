@@ -92,7 +92,15 @@
     {
       "at": "2026-09-19",
       "by": "founder (chat — \"for approval it is not mandatory to complete all profile … make it not mandatory\")",
-      "what": "§6.3 approval-refuses-incomplete withdrawn on both admin paths; completeness stays a nag (profile tab, submit, finish-profile sheet) and admin information (missing lists on the review pages and now on the verification queue rows). See AMENDMENT-2026-09-19-approval-not-completeness.md."
+      "what": "§6.3 approval-refuses-incomplete withdrawn on both admin paths; completeness stays a nag (profile tab, submit, finish-profile sheet) and admin information (missing lists on the review pages and now on the verification queue rows). See AMENDMENT-2026-09-19-approval-not-completeness.md.",
+      "deployed": {
+        "at": "2026-09-19",
+        "by": "founder go (\"pls go, commit and push\")",
+        "commit": "96c7e06",
+        "migration": "none",
+        "ota": "none",
+        "note": "Render + Vercel on push; no route to probe — the next Verify from the Pending tab is the proof."
+      }
     }
   ]
 }
