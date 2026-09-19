@@ -24,6 +24,9 @@ router.get('/analytics', authenticate, requireRole('brand', 'admin'), requireApp
 router.post('/register',  authenticate, requireRole('influencer'), ctrl.register);
 router.get('/me',         authenticate, requireRole('influencer'), ctrl.getMe);
 router.patch('/me',       authenticate, requireRole('influencer'), ctrl.updateMe);
+// registration-and-profile §6: her account reaches the admin queue when she submits it; this is
+// also the creator resubmit path after a rejection (§6.4).
+router.post('/me/submit-for-review', authenticate, requireRole('influencer'), ctrl.submitForReview);
 // Her own photo — the only route by which a picture of a creator is ever set.
 // Contract: features/creator-photo-and-reach
 router.post('/me/profile-image/upload-url', authenticate, requireRole('influencer'), ctrl.getProfileImageUploadUrl);
@@ -58,9 +61,12 @@ router.get('/me/campaigns',                          authenticate, requireRole('
 router.get('/me/campaigns/:campaign_influencer_id',  authenticate, requireRole('influencer'), ctrl.getMyCampaignDetail);
 
 // ── Withdrawals (Phase 5) ─────────────────────────────────────────────────────
-router.post('/me/withdraw',              authenticate, requireRole('influencer'), withdrawalCtrl.initiateWithdrawal);
+// registration-and-profile §6.3: a pending creator now reaches the app, so every creator
+// action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
+// side has used all along.
+router.post('/me/withdraw',              authenticate, requireRole('influencer'), requireApproved, withdrawalCtrl.initiateWithdrawal);
 router.get('/me/withdrawals',            authenticate, requireRole('influencer'), withdrawalCtrl.listWithdrawals);
-router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer'), withdrawalCtrl.retryWithdrawal);
+router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer'), requireApproved, withdrawalCtrl.retryWithdrawal);
 
 // ── TDS Certificate (Phase F) ─────────────────────────────────────────────────
 router.get('/me/tds-certificate', authenticate, requireRole('influencer'), ctrl.getTdsCertificate);

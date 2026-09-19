@@ -12,6 +12,10 @@
  * and her collaboration card said "₹0 is in your wallet".
  *
  * Every number comes from GET /influencers/me/earnings. Nothing is computed here.
+ *
+ * features/registration-and-profile C7 — below the balance, "Payment details": UPI, bank
+ * account (number + IFSC, one entry) and PAN moved here out of the profile. None of it blocks
+ * approval; it is needed before her first withdrawal. Values come from GET /influencers/me.
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
@@ -19,20 +23,34 @@ import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { EmptyState } from '../../components/settings/primitives';
-import { Skeleton, LoadError } from '../../components/settings/feedback';
+import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
+import useRouteToast from '../../hooks/useRouteToast';
+import DetailSection, { ADDED, NOT_ADDED, HAND_CHECK } from '../../components/wallet/DetailSection';
 import { CREATOR_WALLET as C } from '../../components/wallet/copyCreator';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
-export default function CreatorWalletScreen() {
+export const PAYMENT_DETAILS = {
+  title: 'Payment details',
+  noteTitle: 'Add these to get paid',
+  noteBody: 'Not needed for approval — only before your first withdrawal.',
+  upi: 'UPI', bank: 'Bank account', bankSub: 'Account number + IFSC', pan: 'PAN', panSub: 'For your TDS certificate',
+};
+
+export default function CreatorWalletScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [d, setD] = useState(null);
+  const [me, setMe] = useState(null);
+  const { toast, show } = useToast();
+  useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
     setStatus(st => (st === 'ready' ? 'ready' : 'loading'));
-    const r = await influencerApi.getEarnings();
+    const [r, m] = await Promise.all([influencerApi.getEarnings(), influencerApi.getMe()]);
     if (!r.success) { setStatus('error'); return; }
     setD(r.data);
+    // The details are a nice-to-have on this screen: a wallet without them is still a wallet.
+    setMe(m && m.success ? (m.data.influencer || m.data) : null);
     setStatus('ready');
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -46,6 +64,8 @@ export default function CreatorWalletScreen() {
   const comm = d.commission_summary || {};
   const commPending = Number(comm.pending || 0);
   const locked = Array.isArray(d.locked_entries) ? d.locked_entries : [];
+  const val = (has) => (me ? (has ? ADDED : NOT_ADDED) : '—');
+  const open = (kind) => navigation && navigation.navigate('PayoutDetail', { kind });
 
   return (
     <View style={s.screen} testID="creator-wallet">
@@ -76,6 +96,19 @@ export default function CreatorWalletScreen() {
             <Text style={s.boxB}>{C.commissionBody}</Text>
           </View>
         ) : null}
+
+        <DetailSection
+          testID="payment-details"
+          title={PAYMENT_DETAILS.title}
+          noteTitle={PAYMENT_DETAILS.noteTitle}
+          noteBody={PAYMENT_DETAILS.noteBody}
+          rows={[
+            { key: 'upi', label: PAYMENT_DETAILS.upi, value: val(me && me.has_upi), onPress: () => open('upi'), testID: 'row-upi' },
+            { key: 'bank', label: PAYMENT_DETAILS.bank, sub: PAYMENT_DETAILS.bankSub, value: val(me && me.has_bank_account), onPress: () => open('bank'), testID: 'row-bank' },
+            { key: 'pan', label: PAYMENT_DETAILS.pan, sub: PAYMENT_DETAILS.panSub, value: val(me && me.has_pan), onPress: () => open('pan'), testID: 'row-pan' },
+          ]}
+          footer={HAND_CHECK}
+        />
 
         <Text style={[s.label, { marginTop: 18, marginBottom: 6 }]}>{C.waitingOn}</Text>
         {locked.length ? (
@@ -109,6 +142,7 @@ export default function CreatorWalletScreen() {
           <Text style={s.noteT}>{C.standInNote}</Text>
         </View>
       </ScrollView>
+      {toast}
     </View>
   );
 }

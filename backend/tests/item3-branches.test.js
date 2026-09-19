@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * Item 3 — branches (A4/A5) and place resolution (D3): the first branch is main, a Google
- * address resolves to a canonical state + city, a new city is added, a state alias maps,
- * an unknown state adds nothing and is logged, the main branch can't be removed, and
+ * Item 3 — branches (A4/A5): the first branch is main, the main branch can't be removed, and
  * /brands/me reports the main city. Contract: features/item3-discovery-profiles-groups
+ * registration-and-profile (18 Sep 2026): Google place resolution retired; every address is the
+ * four parts, and the second branch must say which is main.
  */
 
 const { truncateAll } = require('./helpers/db');
@@ -32,105 +32,99 @@ describe('A4 · A5 — branches', () => {
     expect(me.body.data.needsMainCity).toBe(true);
   });
 
-  it('create requires a name and an address with the exact messages', async () => {
+  // registration-and-profile §1.1, §4, §9: every address is four parts — street, pincode, state,
+  // city — and the Google place search is gone. The second branch must say which is main.
+  const four = async (over = {}) => {
+    const { rows: [c] } = await query(`SELECT c.id AS city_id, c.state_id FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE s.name = $1 AND c.name = $2`,
+      [over.state || 'Telangana', over.city || 'Hyderabad']);
+    return { name: over.name || 'Two', address_text: over.address_text || 'Plot 8, Road No. 36', pincode: over.pincode || '500033', state_id: c.state_id, city_id: c.city_id, ...(over.is_main === undefined ? {} : { is_main: over.is_main }) };
+  };
+
+  it('create requires a name, a street, a 6-digit pincode and a picked city with the exact messages', async () => {
     const b = await brand();
-    let r = await api.post('/brands/me/branches', b.token, { place_id: 'x' });
+    let r = await api.post('/brands/me/branches', b.token, { address_text: 'x' });
     expect(r.status).toBe(422);
     expect(r.body.error.field).toBe('name');
     expect(r.body.error.message).toBe('Enter a branch name.');
     r = await api.post('/brands/me/branches', b.token, { name: 'Second store' });
     expect(r.status).toBe(422);
-    expect(r.body.error.field).toBe('place_id');
-    expect(r.body.error.message).toBe('Search and pick your branch address, or type it.');   // item 10: an address may be typed too
+    expect(r.body.error.field).toBe('address_text');
+    expect(r.body.error.message).toBe('Enter the street address.');
+    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', place_id: 'hyd' });
+    expect(r.status).toBe(422);
+    expect(r.body.error.field).toBe('address_text');
+    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', address_text: 'Plot 8' });
+    expect(r.status).toBe(422);
+    expect(r.body.error.field).toBe('pincode');
+    expect(r.body.error.message).toBe('Enter a 6-digit PIN code.');
+    r = await api.post('/brands/me/branches', b.token, { name: 'Second store', address_text: 'Plot 8', pincode: '500033' });
+    expect(r.status).toBe(422);
+    expect(r.body.error.field).toBe('city_id');
+    expect(r.body.error.message).toBe('Pick the state, then the nearest major city.');
   });
 
-  it('create resolves the address: known city → no new city; a new city is added once with source=google (check 8)', async () => {
-    mockPlaces({ hyd: PLACE.hyd, newc: PLACE.newCity });
+  it('create stores the four parts, adds no city and no coordinates; a city outside its state is refused (check 8)', async () => {
     const b = await brand();
     const before = (await query(`SELECT count(*)::int AS n FROM ref_cities`)).rows[0].n;
-    let r = await api.post('/brands/me/branches', b.token, { name: 'Banjara Hills', place_id: 'hyd' });
+    let r = await api.post('/brands/me/branches', b.token, await four({ name: 'Banjara Hills', is_main: false }));
     expect(r.status).toBe(201);
     expect(r.body.data.cityAdded).toBe(false);
-    expect(r.body.data.branch).toMatchObject({ name: 'Banjara Hills', cityName: 'Hyderabad', stateName: 'Telangana', pincode: '500034', isMain: false });
+    expect(r.body.data.branch).toMatchObject({ name: 'Banjara Hills', cityName: 'Hyderabad', stateName: 'Telangana', pincode: '500033', formattedAddress: 'Plot 8, Road No. 36', isMain: false, googlePlaceId: null, lat: null, lng: null });
     expect((await query(`SELECT count(*)::int AS n FROM ref_cities`)).rows[0].n).toBe(before);
-
-    r = await api.post('/brands/me/branches', b.token, { name: 'Ongolu', place_id: 'newc' });
-    expect(r.status).toBe(201);
-    expect(r.body.data.cityAdded).toBe(true);
-    expect(r.body.data.branch.cityName).toBe('Ongolu Town');
-    const { rows } = await query(`SELECT source FROM ref_cities WHERE name = 'Ongolu Town'`);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].source).toBe('google');
-    // The same address again does not add a second row.
-    r = await api.post('/brands/me/branches', b.token, { name: 'Ongolu 2', place_id: 'newc' });
-    expect(r.body.data.cityAdded).toBe(false);
-    expect((await query(`SELECT count(*)::int AS n FROM ref_cities WHERE name = 'Ongolu Town'`)).rows[0].n).toBe(1);
-  });
-
-  it('a state alias maps ("NCT of Delhi" → Delhi) and the state count never grows (check 29)', async () => {
-    mockPlaces({ d: PLACE.delhi });
-    const b = await brand();
-    const states = (await query(`SELECT count(*)::int AS n FROM ref_states`)).rows[0].n;
-    expect(states).toBe(36);
-    const r = await api.post('/brands/me/branches', b.token, { name: 'CP', place_id: 'd' });
-    expect(r.status).toBe(201);
-    expect(r.body.data.branch.stateName).toBe('Delhi');
+    const wrong = await four({ state: 'Kerala', city: 'Kochi' });
+    const { rows: [tg] } = await query(`SELECT id FROM ref_states WHERE name = 'Telangana'`);
+    r = await api.post('/brands/me/branches', b.token, { ...wrong, state_id: tg.id });
+    expect(r.status).toBe(422);
+    expect(r.body.error.field).toBe('city_id');
     expect((await query(`SELECT count(*)::int AS n FROM ref_states`)).rows[0].n).toBe(36);
   });
 
-  it('an unresolvable state → 422 STATE_UNKNOWN with the exact message; nothing added; raw state logged for admin (check 29)', async () => {
-    mockPlaces({ sg: PLACE.unknownState });
+  it('the second branch must say which one is main — never assumed (spec §4)', async () => {
     const b = await brand();
-    const before = await query(`SELECT (SELECT count(*) FROM ref_states)::int AS s, (SELECT count(*) FROM ref_cities)::int AS c, (SELECT count(*) FROM brand_branches WHERE brand_id=$1)::int AS b`, [b.brandId]);
-    const r = await api.post('/brands/me/branches', b.token, { name: 'Overseas', place_id: 'sg' });
+    let r = await api.post('/brands/me/branches', b.token, await four());
     expect(r.status).toBe(422);
-    expect(r.body.error.code).toBe('STATE_UNKNOWN');
-    expect(r.body.error.message).toBe("We couldn't match this address to a state. Try a nearby address.");
-    const after = await query(`SELECT (SELECT count(*) FROM ref_states)::int AS s, (SELECT count(*) FROM ref_cities)::int AS c, (SELECT count(*) FROM brand_branches WHERE brand_id=$1)::int AS b`, [b.brandId]);
-    expect(after.rows[0]).toEqual(before.rows[0]);
-    const { rows } = await query(`SELECT raw_state, raw_city, place_id FROM ref_unknown_states`);
-    expect(rows).toEqual([{ raw_state: 'Central Region', raw_city: 'Singapore', place_id: 'sg' }]);
+    expect(r.body.error.field).toBe('is_main');
+    expect(r.body.error.message).toBe('Which one is your main branch?');
+    expect((await api.get('/brands/me/branches', b.token)).body.data.branches).toHaveLength(1);
+    r = await api.post('/brands/me/branches', b.token, await four({ is_main: true }));
+    expect(r.status).toBe(201);
+    expect(r.body.data.branch.isMain).toBe(true);
+    const list = (await api.get('/brands/me/branches', b.token)).body.data.branches;
+    expect(list.filter(x => x.isMain).map(x => x.name)).toEqual(['Two']);
+    // the third needs no answer and is not main
+    r = await api.post('/brands/me/branches', b.token, await four({ name: 'Three', state: 'Kerala', city: 'Kochi', pincode: '682001' }));
+    expect(r.status).toBe(201);
+    expect(r.body.data.branch.isMain).toBe(false);
   });
 
-  it('POST /places/resolve answers the app directly and is rate-limited at 60 a minute per user', async () => {
-    mockPlaces({ hyd: PLACE.hyd });
+  it('POST /places/resolve is gone', async () => {
     const b = await brand();
-    const r = await api.post('/places/resolve', b.token, { place_id: 'hyd' });
-    expect(r.status).toBe(200);
-    expect(r.body.data).toMatchObject({ placeId: 'hyd', pincode: '500034', state: { name: 'Telangana' }, city: { name: 'Hyderabad', added: false } });
-    let last;
-    for (let i = 0; i < 60; i += 1) last = await api.post('/places/resolve', b.token, { place_id: 'hyd' });
-    expect(last.status).toBe(429);
-    expect(last.body.error.code).toBe('RATE_LIMITED');
-    const nf = await api.post('/places/resolve', b.token, { place_id: 'nope' });
-    expect([404, 429]).toContain(nf.status);
+    expect((await api.post('/places/resolve', b.token, { place_id: 'hyd' })).status).toBe(404);
   });
 
   it('make-main moves the flag; exactly one main; users.city follows the main branch', async () => {
-    mockPlaces({ d: PLACE.delhi });
     const b = await brand({ city: 'Hyderabad', state: 'Telangana' });
-    const r = await api.post('/brands/me/branches', b.token, { name: 'CP', place_id: 'd' });
+    const r = await api.post('/brands/me/branches', b.token, await four({ name: 'Kochi store', state: 'Kerala', city: 'Kochi', pincode: '682001', is_main: false }));
     const id = r.body.data.branch.id;
     const m = await api.post(`/brands/me/branches/${id}/make-main`, b.token);
     expect(m.status).toBe(200);
     const { rows } = await query(`SELECT name, is_main FROM brand_branches WHERE brand_id = $1 ORDER BY is_main DESC`, [b.brandId]);
     expect(rows.filter(x => x.is_main)).toHaveLength(1);
-    expect(rows[0].name).toBe('CP');
+    expect(rows[0].name).toBe('Kochi store');
     const u = await query(`SELECT city, state FROM users WHERE id = $1`, [b.userId]);
-    expect(u.rows[0]).toEqual({ city: 'New Delhi', state: 'Delhi' });
+    expect(u.rows[0]).toEqual({ city: 'Kochi', state: 'Kerala' });
     const me = await api.get('/brands/me', b.token);
-    expect(me.body.data.mainCity.name).toBe('New Delhi');
+    expect(me.body.data.mainCity.name).toBe('Kochi');
   });
 
   it('the main branch cannot be removed (exact message); another branch can; another brand cannot touch it', async () => {
-    mockPlaces({ hyd: PLACE.hyd });
     const b = await brand();
     const other = await brand();
     const main = (await api.get('/brands/me/branches', b.token)).body.data.branches.find(x => x.isMain);
     let r = await api.del(`/brands/me/branches/${main.id}`, b.token);
     expect(r.status).toBe(422);
     expect(r.body.error.message).toBe("The main branch can't be removed. Make another branch the main one first.");
-    const second = (await api.post('/brands/me/branches', b.token, { name: 'Two', place_id: 'hyd' })).body.data.branch;
+    const second = (await api.post('/brands/me/branches', b.token, await four({ is_main: false }))).body.data.branch;
     r = await api.del(`/brands/me/branches/${second.id}`, other.token);
     expect(r.status).toBe(404);
     r = await api.del(`/brands/me/branches/${second.id}`, b.token);
@@ -138,23 +132,29 @@ describe('A4 · A5 — branches', () => {
     expect((await api.get('/brands/me/branches', b.token)).body.data.branches).toHaveLength(1);
   });
 
-  it('update renames, re-addresses and can promote to main in one call', async () => {
-    mockPlaces({ hyd: PLACE.hyd, d: PLACE.delhi });
+  it('update renames, re-addresses part by part and can promote to main in one call', async () => {
     const b = await brand();
-    const second = (await api.post('/brands/me/branches', b.token, { name: 'Two', place_id: 'hyd' })).body.data.branch;
+    const second = (await api.post('/brands/me/branches', b.token, await four({ is_main: false }))).body.data.branch;
     let r = await api.put(`/brands/me/branches/${second.id}`, b.token, { name: '' });
     expect(r.status).toBe(422);
     expect(r.body.error.message).toBe('Enter a branch name.');
-    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { name: 'Delhi store', place_id: 'd', is_main: true });
+    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { pincode: '12' });
+    expect(r.status).toBe(422);
+    expect(r.body.error.field).toBe('pincode');
+    const kochi = await four({ state: 'Kerala', city: 'Kochi' });
+    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { name: 'Kochi store', address_text: 'MG Road', pincode: '682001', state_id: kochi.state_id, city_id: kochi.city_id, is_main: true });
     expect(r.status).toBe(200);
-    expect(r.body.data.branch).toMatchObject({ name: 'Delhi store', cityName: 'New Delhi', stateName: 'Delhi', isMain: true });
+    expect(r.body.data.branch).toMatchObject({ name: 'Kochi store', formattedAddress: 'MG Road', pincode: '682001', cityName: 'Kochi', stateName: 'Kerala', isMain: true });
     expect((await query(`SELECT count(*)::int AS n FROM brand_branches WHERE brand_id=$1 AND is_main`, [b.brandId])).rows[0].n).toBe(1);
+    // the street alone keeps the pincode; the city alone keeps the street
+    r = await api.put(`/brands/me/branches/${second.id}`, b.token, { address_text: 'Marine Drive' });
+    expect(r.body.data.branch).toMatchObject({ formattedAddress: 'Marine Drive', pincode: '682001', cityName: 'Kochi' });
   });
 
   it('a creator cannot read or write branches', async () => {
     const { creator } = require('./helpers/item3');
     const c = await creator();
     expect((await api.get('/brands/me/branches', c.token)).status).toBe(403);
-    expect((await api.post('/brands/me/branches', c.token, { name: 'x', place_id: 'y' })).status).toBe(403);
+    expect((await api.post('/brands/me/branches', c.token, { name: 'x', address_text: 'y' })).status).toBe(403);
   });
 });

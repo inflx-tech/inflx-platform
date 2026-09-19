@@ -61,12 +61,18 @@ async function brandCategories() {
   });
 }
 
-/** States with their cities nested — the shape the state-then-city picker consumes. */
-async function statesWithCities() {
-  return cached('states', async () => {
-    const { rows: states } = await db.query(`SELECT id, name, sort FROM ref_states ORDER BY sort, name`);
+/**
+ * States with their cities nested — the shape the state-then-city picker consumes.
+ * { offered: true } — only the states and cities flagged is_offered (registration-and-profile
+ * §1.4): the six southern states and their 146 district headquarters. Registration and the
+ * profile pickers read this; matching, search and display keep reading the whole table.
+ */
+async function statesWithCities({ offered = false } = {}) {
+  return cached(offered ? 'states:offered' : 'states', async () => {
+    const where = offered ? 'WHERE is_offered' : '';
+    const { rows: states } = await db.query(`SELECT id, name, sort FROM ref_states ${where} ORDER BY sort, name`);
     const { rows: cities } = await db.query(
-      `SELECT id, state_id, name, sort FROM ref_cities ORDER BY sort, name`
+      `SELECT id, state_id, name, sort FROM ref_cities ${where} ORDER BY sort, name`
     );
     const byState = new Map(states.map(s => [s.id, { ...s, cities: [] }]));
     for (const c of cities) {
@@ -240,6 +246,28 @@ async function resolvePlace(placeId, { session, userId } = {}) {
 /** Test seam: forget cached place details and rate buckets. */
 function resetResolveState() { resolveCache.clear(); rateBuckets.clear(); }
 
+/**
+ * registration-and-profile: resolve a picked state_id + city_id pair to names, or null when
+ * either is missing or the city is not in that state. The pair is what registration and the
+ * profile now store — there is no longer any path that writes an unresolved city name.
+ */
+async function resolveStateCity(stateId, cityId) {
+  const s = Number(stateId), c = Number(cityId);
+  if (!Number.isInteger(s) || !Number.isInteger(c)) return null;
+  const { rows } = await db.query(
+    `SELECT c.id AS city_id, c.name AS city_name, s.id AS state_id, s.name AS state_name
+       FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE c.id = $1 AND s.id = $2`, [c, s]);
+  return rows[0] ? { cityId: rows[0].city_id, cityName: rows[0].city_name, stateId: rows[0].state_id, stateName: rows[0].state_name } : null;
+}
+
+/** The same, from typed names — one OTA generation of old phones still sends them. */
+async function resolveStateCityNames(stateName, cityName) {
+  const stateId = await findStateId(stateName);
+  if (!stateId) return null;
+  const { rows } = await db.query(`SELECT id FROM ref_cities WHERE state_id = $1 AND name_norm = lower(trim($2))`, [stateId, String(cityName || '')]);
+  return rows[0] ? resolveStateCity(stateId, rows[0].id) : null;
+}
+
 async function unknownCityIds(ids) {
   const { byId } = await cityIndex();
   return (ids || []).filter(id => !byId.has(Number(id)));
@@ -248,6 +276,7 @@ async function unknownCityIds(ids) {
 module.exports = {
   STATE_UNKNOWN, PLACE_NOT_FOUND,
   resolvePlace, findOrAddCity, findStateId, citiesByIds, resetResolveState,
+  resolveStateCity, resolveStateCityNames,
   creatorNiches,
   languages,
   brandCategories,

@@ -9,6 +9,8 @@ const ledgerService       = require('../services/ledger.service');
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
+// registration-and-profile — approval refuses an incomplete profile; the queues say what is missing.
+const completeness        = require('../services/profileCompleteness.service');
 
 // Multer: memory storage, CSV/Excel only, max 5MB
 const upload = multer({
@@ -38,15 +40,22 @@ const getBrandQueue = asyncHandler(async (req, res) => {
     // city/state live on users, not brands — the same shape the creator queue has.
     // The queue row shows them, so it has to ask for them.
     // Contract: features/admin-creator-review-completeness
+    // registration-and-profile §6.1: submitted accounts first, then the ones still filling in.
     `SELECT b.*, u.status AS user_status, u.phone, u.name, u.email,
             u.city, u.state, u.created_at AS user_created_at
      FROM brands b
      JOIN users u ON u.id = b.user_id
      WHERE u.status = 'pending'
-     ORDER BY b.created_at ASC
+     ORDER BY (b.submitted_for_review_at IS NULL) ASC, b.created_at ASC
      LIMIT $1 OFFSET $2`,
     [limit, offset]
   );
+  for (const b of brands) {
+    delete b.bank_account_no;
+    const c = await completeness.forBrand(b.id);
+    b.missing_count = c.missing.length;
+    b.missing_fields = c.missing_labels;
+  }
 
   const { rows: countRows } = await db.query(
     `SELECT COUNT(*) AS total FROM brands b JOIN users u ON u.id = b.user_id WHERE u.status = 'pending'`
@@ -80,7 +89,8 @@ const getInfluencerQueue = asyncHandler(async (req, res) => {
     `SELECT i.id, i.instagram_handle, i.youtube_handle,
             i.followers_count, i.engagement_rate,
             i.youtube_subscribers, i.youtube_videos, i.youtube_scrape_last_run,
-            i.niche, i.language, i.content_style, i.created_at, i.scrape_last_run,
+            i.niche, i.niche_other, i.language, i.content_style, i.created_at, i.scrape_last_run,
+            i.age, i.gender, i.bio, i.submitted_for_review_at,
             COALESCE(i.full_name, u.name) AS full_name,
             COALESCE(i.city,  u.city)     AS city,
             COALESCE(i.state, u.state)    AS state,
@@ -88,10 +98,16 @@ const getInfluencerQueue = asyncHandler(async (req, res) => {
      FROM influencers i
      JOIN users u ON u.id = i.user_id
      WHERE u.status = 'pending'
-     ORDER BY i.created_at ASC
+     ORDER BY (i.submitted_for_review_at IS NULL) ASC, i.created_at ASC
      LIMIT $1 OFFSET $2`,
     [limit, offset]
   );
+  // registration-and-profile §9A: the queue row says how much is missing.
+  for (const i of influencers) {
+    const c = await completeness.forCreator(i.id);
+    i.missing_count = c ? c.missing.length : null;
+    i.missing_fields = c ? c.missing_labels : [];
+  }
 
   const { rows: countRows } = await db.query(
     `SELECT COUNT(*) AS total FROM influencers i JOIN users u ON u.id = i.user_id WHERE u.status = 'pending'`
@@ -141,6 +157,12 @@ const updateBrandStatus = asyncHandler(async (req, res) => {
   }
 
   if (status === 'approved') {
+    // registration-and-profile §6: approval refuses an incomplete profile, naming what is
+    // missing. Reinstating a suspended brand is not an approval decision and is not gated.
+    if (brand.user_status !== 'suspended') {
+      const summary = await completeness.forBrand(brand.id);
+      if (!summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
+    }
     // Approve, or reinstate a suspended/rejected brand. Clears any prior
     // rejection/suspension note and stamps fresh approval provenance.
     await db.query(

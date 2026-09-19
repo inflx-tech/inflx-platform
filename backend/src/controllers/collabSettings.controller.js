@@ -495,7 +495,8 @@ const unblockBrand = asyncHandler(async (req, res) => {
 const getCreatorNiches   = asyncHandler(async (_req, res) => success(res, { items: await ref.creatorNiches() }));
 const getLanguages       = asyncHandler(async (_req, res) => success(res, { items: await ref.languages() }));
 const getBrandCategories = asyncHandler(async (_req, res) => success(res, { items: await ref.brandCategories() }));
-const getStates          = asyncHandler(async (_req, res) => success(res, { items: await ref.statesWithCities() }));
+// ?offered=1 — only the six southern states and their 146 district headquarters (registration-and-profile §1.4).
+const getStates          = asyncHandler(async (req, res) => success(res, { items: await ref.statesWithCities({ offered: req.query.offered === '1' || req.query.offered === 'true' }) }));
 
 module.exports = {
   MSG,

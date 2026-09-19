@@ -203,6 +203,8 @@ describe('Approve and reject from the account page', () => {
   it('approves a brand by its brand id — the id the page has', async () => {
     const { adminToken, brand } = await scenario();
     await query(`UPDATE users SET status = 'pending' WHERE id = (SELECT user_id FROM brands WHERE id = $1)`, [brand.id]);
+    // registration-and-profile §6: approval refuses an incomplete profile, so complete it first.
+    await require('./helpers/factories').completeBrandProfile(brand.id);
 
     const res = await request(app)
       .patch(`/v1/admin/brands/${brand.id}/status`)

@@ -108,6 +108,28 @@ async function fetchOnce(method, path, body, token) {
 // row with no matching brands row.
 const SESSION_ESTABLISHING_PATHS = ['/auth/refresh', '/auth/send-otp', '/auth/verify-otp'];
 
+// features/registration-and-profile — the account gate. A pending (or rejected) account is
+// inside the app now, so every real action can answer 403 ACCOUNT_PENDING / ACCOUNT_REJECTED.
+// Rather than each screen reading that error and drawing its own sheet, the client fires one
+// event and the PendingSheetHost (mounted once per navigator) shows the words. Listeners
+// receive { code, message }. Returns an unsubscribe.
+const ACCOUNT_GATE_CODES = ['ACCOUNT_PENDING', 'ACCOUNT_REJECTED'];
+const _accountGateListeners = new Set();
+export function onAccountGate(fn) {
+  _accountGateListeners.add(fn);
+  return () => { _accountGateListeners.delete(fn); };
+}
+function emitAccountGate(error) {
+  for (const fn of [..._accountGateListeners]) {
+    try { fn(error); } catch (_) { /* a listener must never break the request */ }
+  }
+}
+function maybeEmitAccountGate(status, json) {
+  if (status !== 403 || !json || json.success !== false) return;
+  const code = json.error && json.error.code;
+  if (ACCOUNT_GATE_CODES.includes(code)) emitAccountGate({ code, message: json.error.message });
+}
+
 async function request(method, path, body) {
   // Skip the refresh dance for the endpoints that hand out sessions.
   const isSessionEstablishing = SESSION_ESTABLISHING_PATHS.includes(path.split('?')[0]);
@@ -145,7 +167,9 @@ async function request(method, path, body) {
 
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const json = JSON.parse(text);
+      maybeEmitAccountGate(res.status, json);
+      return json;
     } catch (parseErr) {
       console.log('[API] Non-JSON response:', text.substring(0, 200));
       return { success: false, error: { code: 'PARSE_ERROR', message: `Server returned invalid response (HTTP ${res.status})` } };
@@ -220,6 +244,9 @@ export const brandApi = {
   // left the phone and the spinner never stopped. The server route has been live all
   // along (POST /brands/resubmit) — only this line was missing.
   resubmit: (data) => api.post('/brands/resubmit', data),
+  // features/registration-and-profile — the account reaches the admin queue when the brand
+  // submits it. 422 PROFILE_INCOMPLETE names what is missing; from rejected this IS the resubmit.
+  submitForReview: () => api.post('/brands/me/submit-for-review'),
   // Docs/THE_CUT.md pass 1 — the pre-campaign handshake bindings are removed with
   // its screens. The server still answers these routes; disconnecting it is pass 3.
 
@@ -481,6 +508,8 @@ export const influencerApi = {
   getDiscoverOptions: () => api.get('/influencers/me/discover-options'),
   getMe: () => api.get('/influencers/me'),
   updateMe: (data) => api.patch('/influencers/me', data),
+  // features/registration-and-profile — see brandApi.submitForReview.
+  submitForReview: () => api.post('/influencers/me/submit-for-review'),
   // Her own photo — ask for a short-lived link, PUT the file, then save the key.
   // Contract: features/creator-photo-and-reach
   getProfileImageUploadUrl: (body) => api.post('/influencers/me/profile-image/upload-url', body),
@@ -699,9 +728,10 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
 const q = (params = {}) => { const p = Object.entries(params).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0)).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(Array.isArray(v) ? v.join(',') : v)}`); return p.length ? `?${p.join('&')}` : ''; };
 
 export const referenceApi = {
-  // Item 3 — Google address search (server proxy) and place → canonical city (adds it when new)
-  placesAutocomplete: (input, session) => api.get(`/follower/places/autocomplete${q({ q: input, session })}`),
-  resolvePlace:       (place_id, session) => api.post('/places/resolve', { place_id, session }),
+  // features/registration-and-profile — Google Places left address entry. The brand and creator
+  // apps pick State then City from the offered lists (six southern states, 146 cities). The
+  // follower app's own place search lives on followerApi and is untouched.
+  offeredStates:      () => api.get('/reference/states?offered=1'),
   citiesByIds:        (ids) => api.get(`/reference/cities${q({ ids })}`),
   creatorNiches:   () => api.get('/reference/creator-niches'),
   languages:       () => api.get('/reference/languages'),

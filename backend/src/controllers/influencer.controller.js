@@ -41,14 +41,31 @@ function normaliseYoutube(value) {
 /** Item 3 extras for the creator's own profile: canonical city names and measured-at. */
 async function ownProfileExtras(influencer) {
   const { rows } = await db.query(
-    `SELECT i.city_id, rc.name AS city_name, rs.name AS state_name,
+    `SELECT i.city_id, rc.name AS city_name, COALESCE(i.state_id, rc.state_id) AS state_id, rs.name AS state_name,
             GREATEST(i.scrape_last_run, i.youtube_scrape_last_run) AS measured_at
-       FROM influencers i LEFT JOIN ref_cities rc ON rc.id = i.city_id LEFT JOIN ref_states rs ON rs.id = rc.state_id
+       FROM influencers i LEFT JOIN ref_cities rc ON rc.id = i.city_id LEFT JOIN ref_states rs ON rs.id = COALESCE(i.state_id, rc.state_id)
       WHERE i.id = $1`, [influencer.id]);
   const r = rows[0] || {};
-  return { city_id: r.city_id == null ? null : Number(r.city_id), city_name: r.city_name || null, state_name: r.state_name || null, measured_at: r.measured_at || null };
+  return { city_id: r.city_id == null ? null : Number(r.city_id), city_name: r.city_name || null,
+           state_id: r.state_id == null ? null : Number(r.state_id), state_name: r.state_name || null, measured_at: r.measured_at || null };
 }
 const referralService = require('../services/referral.service');
+// registration-and-profile — what "complete" means for approval; the offered state + city.
+const completeness = require('../services/profileCompleteness.service');
+const GENDERS = ['female', 'male', 'other'];
+async function resolvePickedCity({ state_id, city_id, state, city }, field = 'city_id') {
+  if (state_id != null || city_id != null) {
+    const r = await referenceLists.resolveStateCity(state_id, city_id);
+    if (!r) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+    return r;
+  }
+  if (state && city) {
+    const r = await referenceLists.resolveStateCityNames(state, city);
+    if (!r) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+    return r;
+  }
+  throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+}
 // Stage 0 — one step number and one needs-you count, both apps reading the same source.
 const collabCounts = require('../services/collabCounts.service');
 
@@ -247,11 +264,13 @@ const register = asyncHandler(async (req, res) => {
   const instagramHandle = igNorm ? igNorm.handle_norm : null;
   const youtubeHandle   = ytNorm ? socialAccounts.legacyHandle('youtube', ytNorm) : null;
   const fullName        = (req.body.name || '').trim();
-  const city            = (req.body.city || '').trim();
 
   if (!fullName) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   }
+  // registration-and-profile §2.1: state and nearest major city, both required, both from the
+  // offered lists, resolved on the way in. Typed names from the previous bundle still resolve.
+  const place = await resolvePickedCity(req.body);
 
   // Prevent duplicate registration
   const existing = await getInfluencerByUserId(userId);
@@ -263,8 +282,8 @@ const register = asyncHandler(async (req, res) => {
   // verify-otp inserted a "Pending (1234)" placeholder so the row would satisfy
   // the NOT NULL constraint. We overwrite it here once the user fills the form.
   await db.query(
-    `UPDATE users SET name = $1, city = COALESCE(NULLIF($2, ''), city) WHERE id = $3`,
-    [fullName, city, userId]
+    `UPDATE users SET name = $1, city = $2, state = $3 WHERE id = $4`,
+    [fullName, place.cityName, place.stateName, userId]
   );
 
   // Item 3b: no Apify call here any more (it used to run apifyService.scrapeProfile before
@@ -281,10 +300,10 @@ const register = asyncHandler(async (req, res) => {
   // Contract: features/admin-creator-review-completeness
   const { rows } = await db.query(
     `INSERT INTO influencers
-       (user_id, instagram_handle, youtube_handle, full_name, city)
-     VALUES ($1, $2, $3, $4, NULLIF($5, ''))
+       (user_id, instagram_handle, youtube_handle, full_name, city, state, city_id, state_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [userId, instagramHandle, youtubeHandle, fullName, city]
+    [userId, instagramHandle, youtubeHandle, fullName, place.cityName, place.stateName, place.cityId, place.stateId]
   );
 
   const influencer = rows[0];
@@ -292,14 +311,7 @@ const register = asyncHandler(async (req, res) => {
   // Item 3b: her accounts, waiting for admin approval. Not measured until then.
   await socialAccounts.ensureForRegistration(influencer.id, { instagram: hasIg ? rawIg : null, youtube: hasYt ? rawYt : null });
 
-  // D-1 intake — optional referral code attaches a referral edge at signup.
-  // Best-effort: a bad/missing/duplicate code is soft-noted, never aborts
-  // registration. Reuses the exact redeem path POST /referrals/redeem uses.
-  const referral = await referralService.redeemCodeForEntity({
-    code: req.body.referral_code,
-    referredType: 'influencer',
-    referredId: influencer.id,
-  });
+  // registration-and-profile §10: the referral system is parked; referral_code is ignored.
 
   // Attempt to link to an existing scraped creator_profile.
   const claim = await tryClaimCreatorProfile({
@@ -334,8 +346,7 @@ const register = asyncHandler(async (req, res) => {
   return success(res, {
     influencer: sanitiseInfluencer(full),
     user_status: full.user_status,
-    referral_applied: !!referral.edge,
-    ...(referral.note ? { referral_note: referral.note } : {}),
+    completeness: await completeness.forCreator(influencer.id),
     claim: {
       match_count:        claim.match_count,
       // True when exactly one creator_profile is linked to this user
@@ -384,7 +395,38 @@ const getMe = asyncHandler(async (req, res) => {
   return success(res, {
     influencer: sanitised,
     user_status: influencer.user_status,
+    completeness: await completeness.forCreator(influencer.id),
+    submitted_for_review_at: influencer.submitted_for_review_at || null,
+    rejection_reason: influencer.user_status === 'rejected' ? (influencer.rejection_reason || null) : null,
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /influencers/me/submit-for-review
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * registration-and-profile §6: her account reaches the admin queue when she submits it, not
+ * when she registers. Refused while incomplete, with the list. A rejected creator edits her
+ * own form (PATCH /influencers/me) and submits again through this same door — the creator
+ * resubmit path that never existed (§6.4).
+ */
+const submitForReview = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerByUserId(req.user.sub);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  if (influencer.user_status === 'approved') throw new AppError('CONFLICT', 'This account is already approved.', 409);
+  if (influencer.user_status === 'suspended') throw new AppError('CONFLICT', 'This account is suspended. Contact support.', 409);
+  const summary = await completeness.forCreator(influencer.id);
+  if (!summary.complete) throw completeness.incompleteError(AppError, summary, 'user');
+  await db.query(`UPDATE influencers SET submitted_for_review_at = now(), rejection_reason = NULL, updated_at = now() WHERE id = $1`, [influencer.id]);
+  if (influencer.user_status === 'rejected') {
+    await db.query(`UPDATE users SET status = 'pending' WHERE id = $1`, [influencer.user_id]);
+    // The claim row follows her back into the verification queue so admin can approve again.
+    await db.query(
+      `UPDATE creator_profiles SET verification_status = 'claimed', rejection_reason = NULL
+        WHERE linked_influencer_id = $1 AND verification_status = 'rejected'`, [influencer.id]).catch(() => {});
+  }
+  return success(res, { user_status: 'pending', submitted: true, message: 'Sent for review. Usually within 24 hours.' });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -448,14 +490,25 @@ const updateMe = asyncHandler(async (req, res) => {
     // Instagram picture is never written here — founder instruction 2026-08-22.
     // Contract: features/creator-photo-and-reach
     profile_image_key,
-    // Item 3 — her city comes from a Google place id, resolved and stored as city_id.
-    place_id,
-    session,
+    // registration-and-profile §3.1: the two pickers, age, gender, email, the Other description.
+    state_id,
+    city_id,
+    age,
+    gender,
+    email,
+    niche_other,
   } = req.body;
 
   const updates = {};
 
-  if (language !== undefined) updates.language = language;
+  // registration-and-profile §3.4: languages come from the list of 30, one or more.
+  if (language !== undefined) {
+    const arr = Array.isArray(language) ? language : (language == null || language === '' ? [] : [language]);
+    const codes = [...new Set(arr.map(v => String(v).trim()).filter(Boolean))];
+    const bad = referenceLists.unknownCodes(codes, await referenceLists.languages());
+    if (bad.length) throw fieldError('language', 'LANGUAGE_UNKNOWN', 'Pick your languages from the list.');
+    updates.language = codes;
+  }
   if (content_style !== undefined) updates.content_style = content_style;
   // Item 2 (founder Q4, rules v1.10 §8A): a creator chooses EXACTLY ONE niche from the
   // reference list and the profile does not save without one. The column stays an array
@@ -471,6 +524,38 @@ const updateMe = asyncHandler(async (req, res) => {
       throw new AppError('VALIDATION_ERROR', 'Choose a niche from the list.', 422, 'niche');
     }
     updates.niche = codes;
+    // registration-and-profile §3.3: Other needs the typed description; picking a real niche
+    // clears it (and any open queue entry resolves itself).
+    if (codes[0] === 'other') {
+      const desc = niche_other == null ? '' : String(niche_other).trim();
+      if (!desc) throw fieldError('niche_other', 'NICHE_OTHER_REQUIRED', 'Tell us what kind of content you make.');
+      if (desc.length > 80) throw fieldError('niche_other', 'NICHE_OTHER_LONG', 'Keep it under 80 characters.');
+      updates.niche_other = desc;
+      updates.niche_other_resolved_at = null;
+    } else {
+      updates.niche_other = null;
+      updates.niche_other_resolved_at = null;
+    }
+  } else if (niche_other !== undefined && Array.isArray(influencer.niche) && influencer.niche[0] === 'other') {
+    const desc = niche_other == null ? '' : String(niche_other).trim();
+    if (!desc) throw fieldError('niche_other', 'NICHE_OTHER_REQUIRED', 'Tell us what kind of content you make.');
+    if (desc.length > 80) throw fieldError('niche_other', 'NICHE_OTHER_LONG', 'Keep it under 80 characters.');
+    updates.niche_other = desc;
+  }
+  if (age !== undefined) {
+    const n = age == null || age === '' ? null : Number(age);
+    if (n != null && (!Number.isInteger(n) || n < 13 || n > 99)) throw fieldError('age', 'AGE_INVALID', 'Enter your age (13 to 99).');
+    updates.age = n;
+  }
+  if (gender !== undefined) {
+    const g = gender == null || gender === '' ? null : String(gender).trim().toLowerCase();
+    if (g != null && !GENDERS.includes(g)) throw fieldError('gender', 'GENDER_INVALID', 'Choose one of the options.');
+    updates.gender = g;
+  }
+  if (email !== undefined) {
+    const v = email == null ? null : String(email).trim().toLowerCase();
+    if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) throw fieldError('email', 'EMAIL_INVALID', 'Enter a valid email address.');
+    updates.email = v || null;
   }
   // Item 3b (A5): a handle change, add or remove goes through the social-account rules —
   // after approval the old numbers are cleared and the new handle waits for admin's
@@ -492,28 +577,21 @@ const updateMe = asyncHandler(async (req, res) => {
     if (v && v.length > 150) throw fieldError('bio', 'BIO_TOO_LONG', 'Keep it under 150 characters.');
     updates.bio = v || null;
   }
-  if (city !== undefined) updates.city = city;
   if (full_name !== undefined) {
     if (!String(full_name || '').trim()) throw fieldError('full_name', 'NAME_REQUIRED', 'Enter your full name.');
     updates.full_name = String(full_name).trim();
   }
-  // Item 3 (A8): city through Google. Resolves to a canonical city (adding it when new) and
-  // keeps the typed columns in step so every older reader still sees a name.
+  // registration-and-profile §1: the two pickers replace the Google city search. place_id is
+  // ignored. A typed city alone is refused — there is no path that writes an unresolved name.
   let placeResolved = null;
-  if (place_id !== undefined) {
-    if (!place_id) throw fieldError('place_id', 'CITY_REQUIRED', 'Search and pick your city.');
-    try {
-      placeResolved = await referenceLists.resolvePlace(place_id, { session, userId: req.user.sub });
-    } catch (e) {
-      if (e.code === referenceLists.STATE_UNKNOWN) throw new AppError(referenceLists.STATE_UNKNOWN, e.message, 422, 'place_id');
-      if (e.code === referenceLists.PLACE_NOT_FOUND) throw fieldError('place_id', 'CITY_REQUIRED', 'Search and pick your city.');
-      if (e.code === 'RATE_LIMITED') throw new AppError('RATE_LIMITED', e.message, 429);
-      throw e;
-    }
-    if (!placeResolved.city) throw fieldError('place_id', 'CITY_REQUIRED', 'Search and pick your city.');
-    updates.city_id = placeResolved.city.id;
-    updates.city = placeResolved.city.name;
-    updates.state = placeResolved.state.name;
+  if (state_id !== undefined || city_id !== undefined) {
+    placeResolved = await resolvePickedCity({ state_id: state_id !== undefined ? state_id : influencer.state_id, city_id });
+    updates.city_id = placeResolved.cityId;
+    updates.state_id = placeResolved.stateId;
+    updates.city = placeResolved.cityName;
+    updates.state = placeResolved.stateName;
+  } else if (city !== undefined) {
+    throw fieldError('city_id', 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
   }
   // '' clears the photo back to initials — a creator must be able to remove a
   // picture of herself, so an empty string is a deliberate value, not a no-op.
@@ -559,7 +637,7 @@ const updateMe = asyncHandler(async (req, res) => {
     await db.query(`UPDATE users SET name = $1 WHERE id = $2`, [nameUpdate, req.user.sub]);
   }
   if (placeResolved) {
-    await db.query(`UPDATE users SET city = $1, state = $2 WHERE id = $3`, [placeResolved.city.name, placeResolved.state.name, req.user.sub]);
+    await db.query(`UPDATE users SET city = $1, state = $2 WHERE id = $3`, [placeResolved.cityName, placeResolved.stateName, req.user.sub]);
   }
 
 
@@ -568,7 +646,7 @@ const updateMe = asyncHandler(async (req, res) => {
   const out = sanitiseInfluencer(updated);
   Object.assign(out, await ownProfileExtras(updated));
   out.needsNiche = !(Array.isArray(updated.niche) && updated.niche.length === 1);
-  return success(res, { influencer: out, cityAdded: !!(placeResolved && placeResolved.city && placeResolved.city.added), social: { changed: socialChanges } });
+  return success(res, { influencer: out, cityAdded: false, social: { changed: socialChanges }, completeness: await completeness.forCreator(influencer.id) });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -894,12 +972,17 @@ const getPublicById = asyncHandler(async (req, res) => {
       const { rows: [priv] } = await db.query(
         `SELECT u.phone, u.status,
                 i.wallet_balance, i.pending_balance,
-                i.scrape_last_run, i.tds_exempt, i.tds_override_pct
+                i.scrape_last_run, i.tds_exempt, i.tds_override_pct,
+                i.niche_other, i.niche_other_resolved_at, i.email, i.submitted_for_review_at, i.rejection_reason,
+                (i.pan_number IS NOT NULL) AS has_pan, (i.bank_account_no IS NOT NULL) AS has_bank_account, (i.upi_id IS NOT NULL) AS has_upi
            FROM influencers i JOIN users u ON u.id = i.user_id
           WHERE i.id = $1`,
         [id]
       );
       if (priv) Object.assign(legacy[0], priv);
+      // registration-and-profile §9A.2: the review page's roll-up from the one rule.
+      const c = await completeness.forCreator(id);
+      if (c) { legacy[0].completeness = c; legacy[0].missing_fields = c.missing_labels; }
     }
     // Her own uploaded photo, turned into a URL that loads. This used to point at
     // the scraped-picture key and was therefore permanently a no-op for onboarded
@@ -2108,4 +2191,4 @@ const getNeedsYou = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, getMe, updateMe, getProfileImageUploadUrl, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo, getNeedsYou };
+module.exports = { register, getMe, submitForReview, updateMe, getProfileImageUploadUrl, search, getLocations, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo, getNeedsYou };

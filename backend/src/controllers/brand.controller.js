@@ -12,7 +12,6 @@ const { verticalFor } = require('../utils/vertical');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveProductImage } = require('../utils/productImage');
-const referralService = require('../services/referral.service');
 const businessCategory = require('../services/businessCategory.model');
 // Item 2 — the eight fashion sub-categories + the pitch summary a creator sees.
 // Contract: features/item2-pitch-invitation-settings
@@ -23,6 +22,9 @@ const eligibility = require('../services/collabEligibility.service');
 const branchesService = require('../services/brandBranches.service');
 const brandProducts = require('../services/brandProducts.service');
 const storageService = require('../services/storage.service');
+// registration-and-profile — what "complete" means, the encrypted bank entry.
+const completeness = require('../services/profileCompleteness.service');
+const { encrypt } = require('../utils/encrypt');
 
 const LOGO_MSG = 'Upload a JPG or PNG under 5 MB.';
 const LOGO_MAX_BYTES = 5 * 1024 * 1024;
@@ -70,7 +72,7 @@ function validateProductFields(schema, body) {
 
 async function getBrandByUserId(userId) {
   const { rows } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.phone AS login_phone, b.phone AS business_phone, u.name, u.fcm_token,
+    `SELECT b.*, u.status AS user_status, u.phone, u.phone AS login_phone, u.name, u.fcm_token,
             -- A brand's city and state live on the USER row — there is no brands.city
             -- column. The admin page asked for brand.city and so always printed a dash.
             -- Contract: features/admin-account-review
@@ -85,7 +87,7 @@ async function getBrandByUserId(userId) {
 
 async function getBrandById(brandId) {
   const { rows } = await db.query(
-    `SELECT b.*, u.status AS user_status, u.phone, u.phone AS login_phone, b.phone AS business_phone, u.name, u.fcm_token,
+    `SELECT b.*, u.status AS user_status, u.phone, u.phone AS login_phone, u.name, u.fcm_token,
             -- Same reason as above: the admin brand page asked for brand.city, which does
             -- not exist on brands. Contract: features/admin-account-review
             u.city, u.state, u.created_at AS user_created_at
@@ -98,15 +100,40 @@ async function getBrandById(brandId) {
 }
 
 function sanitiseBrand(brand) {
-  // Never return internal admin fields to non-admin callers.
-  // The controller will pass the full row; routes for brands strip admin fields.
-  const { fcm_token, ...safe } = brand;
+  // Never return internal admin fields to non-admin callers, and never the bank account
+  // number — only whether one is on file (registration-and-profile §5).
+  const { fcm_token, bank_account_no, ...safe } = brand;
+  safe.has_bank_account = !!bank_account_no;
   return safe;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /brands/register
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * registration-and-profile (spec §2.2, §2.3): the seven fields, every one required and
+ * validated here. State and city arrive as ids from the offered lists and are resolved to a
+ * canonical row on the way in — there is no longer any path that writes an unresolved city
+ * name. A typed `city`/`state` pair is still accepted from phones on the previous bundle and
+ * is resolved against the same lists; when it does not resolve the registration is refused.
+ * latitude / longitude / locality / formatted_address / google_maps_url / referral_code are
+ * no longer read — they are simply ignored, so an old phone is not broken mid-OTA.
+ */
+async function resolvePickedCity({ state_id, city_id, state, city }, field = 'city_id') {
+  let resolved = null;
+  if (state_id != null || city_id != null) {
+    resolved = await referenceLists.resolveStateCity(state_id, city_id);
+    if (!resolved) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+    return resolved;
+  }
+  if (state && city) {
+    resolved = await referenceLists.resolveStateCityNames(state, city);
+    if (!resolved) throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+    return resolved;
+  }
+  throw fieldError(field, 'CITY_REQUIRED', 'Pick your state, then your nearest major city.');
+}
 
 const register = asyncHandler(async (req, res) => {
   const userId = req.user.sub;
@@ -115,31 +142,17 @@ const register = asyncHandler(async (req, res) => {
     business_name,
     category,
     sub_categories, // Item 2 — one or more of the eight fashion sub-categories (required)
-    gstin,
     address_line,
     pincode,
-    city,           // lives on users table
-    state,          // lives on users table
-    // Optional location capture (contract: features/brand-register-location-picker).
-    // Sent by the registration form's search/maps-link modes; absent for manual.
-    latitude,
-    longitude,
-    locality,
-    formatted_address,
-    google_maps_url,
-    referral_code,  // OPTIONAL — attaches a referral edge at signup (D-1 intake)
   } = req.body;
 
   if (!business_name || !business_name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'business_name is required', 422, 'business_name');
   }
-  if (!category || !category.trim()) {
-    throw new AppError('VALIDATION_ERROR', 'category is required', 422, 'category');
-  }
-  // Docs/THE_CUT.md pass 0 — the two signup forms are a suggestion; this is the gate.
-  // Without it, a direct request registers a pest-control business and the whole
-  // cleaning effort refills behind us.
-  if (!businessCategory.isAcceptedCategory(category)) {
+  // Business type stays stated, not chosen: Fashion. An absent category means fashion; a
+  // present one still has to pass THE CUT's gate (Docs/THE_CUT.md pass 0).
+  const cat = category && String(category).trim() ? String(category).trim() : 'fashion';
+  if (!businessCategory.isAcceptedCategory(cat)) {
     throw new AppError('VALIDATION_ERROR', businessCategory.rejectionMessage(), 422, 'category');
   }
   // Item 2 — check 15: a new brand cannot finish registration without a sub-category.
@@ -147,40 +160,13 @@ const register = asyncHandler(async (req, res) => {
   if (!name || !name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   }
-  if (!city || !city.trim()) {
-    throw new AppError('VALIDATION_ERROR', 'city is required', 422, 'city');
-  }
-  if (!state || !state.trim()) {
-    throw new AppError('VALIDATION_ERROR', 'state is required', 422, 'state');
-  }
   if (!address_line || !address_line.trim()) {
     throw new AppError('VALIDATION_ERROR', 'address_line is required', 422, 'address_line');
   }
   if (!pincode || !/^[0-9]{6}$/.test(String(pincode).trim())) {
     throw new AppError('VALIDATION_ERROR', 'pincode must be a 6-digit number', 422, 'pincode');
   }
-
-  // Optional coordinates — validate when present; a Google Maps URL resolved
-  // server-side is the source of truth and overrides client-sent coords.
-  let lat = latitude != null ? parseFloat(latitude) : null;
-  let lng = longitude != null ? parseFloat(longitude) : null;
-  if ((lat != null && (!Number.isFinite(lat) || lat < -90 || lat > 90)) ||
-      (lng != null && (!Number.isFinite(lng) || lng < -180 || lng > 180))) {
-    throw new AppError('VALIDATION_ERROR', 'latitude/longitude out of range', 422, 'latitude');
-  }
-  let loc = (locality && String(locality).trim()) || null;
-  let fmtAddr = (formatted_address && String(formatted_address).trim()) || null;
-  if (google_maps_url) {
-    const r = await geocoding.resolveMapsUrl(google_maps_url, {
-      name: business_name && business_name.trim(),
-      city: city && city.trim(),
-    });
-    if (r && r.verified) {
-      lat = r.lat; lng = r.lng;
-      loc = r.locality || loc;
-      fmtAddr = r.formatted_address || fmtAddr;
-    }
-  }
+  const place = await resolvePickedCity(req.body);
 
   // Idempotency: disallow duplicate registration
   const existing = await getBrandByUserId(userId);
@@ -188,39 +174,26 @@ const register = asyncHandler(async (req, res) => {
     throw new AppError('CONFLICT', 'Brand profile already exists for this account', 409);
   }
 
-  // Update the users row first — name + city + state live there. We do this
-  // before the brand insert so a failed insert leaves the user's name updated
-  // (better UX than rolling back to "Brand User").
+  // The users row carries the contact name and the resolved city/state names (there is no
+  // brands.city column). Written first so a failed insert leaves the name updated.
   await db.query(
     `UPDATE users SET name = $2, city = $3, state = $4 WHERE id = $1`,
-    [userId, name.trim(), city.trim(), state.trim()]
+    [userId, name.trim(), place.cityName, place.stateName]
   );
 
-  // lat/lng are the discovery columns (mig 051 reads these); latitude/longitude
-  // are legacy — kept in sync exactly as updateMe does.
   const { rows } = await db.query(
-    `INSERT INTO brands (user_id, business_name, category, gstin, address_line, pincode,
-                         lat, lng, latitude, longitude, locality, formatted_address, sub_categories)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, $9, $10, $11)
+    `INSERT INTO brands (user_id, business_name, category, address_line, pincode, sub_categories)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [userId, business_name.trim(), category.trim(), gstin || null, address_line.trim(), String(pincode).trim(),
-     lat, lng, loc, fmtAddr, subCategories]
+    [userId, business_name.trim(), cat, address_line.trim(), String(pincode).trim(), subCategories]
   );
 
   const brand = rows[0];
 
-  // D-1 intake — optional referral code attaches a referral edge at signup.
-  // Best-effort: a bad/missing/duplicate code is soft-noted, never aborts
-  // registration. Reuses the exact redeem path POST /referrals/redeem uses.
-  const referral = await referralService.redeemCodeForEntity({
-    code: referral_code,
-    referredType: 'brand',
-    referredId: brand.id,
-  });
-
-  // Item 3 (A4): the typed registration address becomes the brand's Main Branch so its city
-  // shows to creators from day one. Never blocks registration.
-  await branchesService.ensureMainFromBrandRow(brand.id).catch((e) => console.error('[branches] seeding the main branch failed:', e.message));
+  // The registration address is the brand's Main Branch (spec §4, §7) — with the resolved
+  // city and state ids, so creators see its city from day one.
+  await branchesService.ensureMainFromBrandRow(brand.id, { cityId: place.cityId, stateId: place.stateId })
+    .catch((e) => console.error('[branches] seeding the main branch failed:', e.message));
 
   // Fetch with user status joined
   const full = await getBrandById(brand.id);
@@ -228,8 +201,7 @@ const register = asyncHandler(async (req, res) => {
   return success(res, {
     brand: sanitiseBrand(full),
     user_status: full.user_status,
-    referral_applied: !!referral.edge,
-    ...(referral.note ? { referral_note: referral.note } : {}),
+    completeness: await completeness.forBrand(brand.id),
   }, 201);
 });
 
@@ -242,21 +214,46 @@ const getMe = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   // Item 3 (A1 header): branches and the main city, plus the sub-category reminder flag.
-  const [branches, mainCity] = await Promise.all([branchesService.list(brand.id), branchesService.mainCity(brand.id)]);
+  // registration-and-profile: the completeness roll-up the profile tab and Submit read.
+  const [branches, mainCity, complete] = await Promise.all([branchesService.list(brand.id), branchesService.mainCity(brand.id), completeness.forBrand(brand.id)]);
   return success(res, {
     brand: sanitiseBrand(brand), user_status: brand.user_status,
     branches, mainCity,
     needsSubCategories: !Array.isArray(brand.sub_categories) || brand.sub_categories.length === 0,
     needsMainCity: !mainCity,
+    completeness: complete,
+    submitted_for_review_at: brand.submitted_for_review_at || null,
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /brands/me/submit-for-review   (also POST /brands/resubmit)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * registration-and-profile §6: the account reaches the admin queue when the brand submits
+ * it, not when it registers. Refused while incomplete, with the list. A rejected brand
+ * edits its own form (PATCH /brands/me) and then submits again through the same door —
+ * that is the resubmit the old endpoint pretended to be.
+ */
+const submitForReview = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  if (brand.user_status === 'approved') throw new AppError('CONFLICT', 'This account is already approved.', 409);
+  if (brand.user_status === 'suspended') throw new AppError('CONFLICT', 'This account is suspended. Contact support.', 409);
+  const summary = await completeness.forBrand(brand.id);
+  if (!summary.complete) throw completeness.incompleteError(AppError, summary, 'user');
+  await db.query(`UPDATE brands SET submitted_for_review_at = now(), rejection_reason = NULL, updated_at = now() WHERE id = $1`, [brand.id]);
+  if (brand.user_status === 'rejected') {
+    await db.query(`UPDATE users SET status = 'pending' WHERE id = $1`, [brand.user_id]);
+  }
+  return success(res, { user_status: 'pending', submitted: true, message: 'Sent for review. Usually within 24 hours.' });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PATCH /brands/me
 // ─────────────────────────────────────────────────────────────────────────────
 
-const locationService = require('../services/location.service');
-const geocoding = require('../services/geocoding.service');
 
 const updateMe = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
@@ -291,7 +288,10 @@ const updateMe = asyncHandler(async (req, res) => {
 
   // Whitelist of updatable fields. lat/lng are the CANONICAL distance columns
   // (mig 051 index + discovery rules read these); latitude/longitude are legacy.
-  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'lat', 'lng', 'latitude', 'longitude', 'locality', 'formatted_address', 'listing_data', 'cover_image_url'];
+  // registration-and-profile §9: lat/lng/latitude/longitude/locality/formatted_address and
+  // google_maps_url are no longer accepted — coordinates are not captured anywhere any more.
+  // address_line/pincode are written through the main branch (below), never here directly.
+  const allowed = ['business_name', 'category', 'gstin', 'logo_url', 'listing_data', 'cover_image_url'];
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -364,45 +364,45 @@ const updateMe = asyncHandler(async (req, res) => {
     updates.cover_image_url = req.body.listing_data.cover_image_url;
   }
 
-  // Resolve coordinates from a Google Maps URL (robust: short-link expand +
-  // coord regex + forward-geocode by name). Writes the CANONICAL lat/lng (what
-  // distance ranking reads) + locality/formatted_address, and keeps the legacy
-  // latitude/longitude in sync. Replaces the old extractLatLng (which returned
-  // null for the founder's maps.app.goo.gl share links → all brands had no coords).
-  const mapsUrl = req.body.google_maps_url || req.body.listing_data?.google_maps_url;
-  if (mapsUrl) {
-    const r = await geocoding.resolveMapsUrl(mapsUrl, {
-      name: req.body.business_name || brand.business_name,
-      city: req.body.city || null,
-    });
-    if (r && r.verified && r.lat != null && r.lng != null) {
-      updates.lat = r.lat; updates.lng = r.lng;
-      updates.latitude = r.lat; updates.longitude = r.lng; // sync legacy columns
-      if (r.locality) updates.locality = r.locality;
-      if (r.formatted_address) updates.formatted_address = r.formatted_address;
+  // registration-and-profile §3.2, §5, §7 — email (collected only), the bank entry (account
+  // number + IFSC together, encrypted like the creator's), and the address as the main branch.
+  if (req.body.email !== undefined) {
+    const v = req.body.email == null ? null : String(req.body.email).trim().toLowerCase();
+    if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) throw fieldError('email', 'EMAIL_INVALID', 'Enter a valid email address.');
+    updates.email = v || null;
+  }
+  if (req.body.bank_account_no !== undefined || req.body.bank_ifsc !== undefined) {
+    const acct = req.body.bank_account_no == null ? '' : String(req.body.bank_account_no).replace(/\s+/g, '');
+    const ifsc = req.body.bank_ifsc == null ? '' : String(req.body.bank_ifsc).trim().toUpperCase();
+    if (!acct && !ifsc) { updates.bank_account_no = null; updates.bank_ifsc = null; }
+    else if (!acct || !ifsc) throw fieldError(acct ? 'bank_ifsc' : 'bank_account_no', 'BANK_PAIR', 'Enter the account number and the IFSC together.');
+    else { updates.bank_account_no = encrypt(acct); updates.bank_ifsc = ifsc; }
+  }
+  const addressKeys = ['address_line', 'pincode', 'state_id', 'city_id'];
+  const addressPatch = addressKeys.some(k => req.body[k] !== undefined);
+  if (addressPatch) {
+    try {
+      await branchesService.setMainAddress(brand.id, {
+        address_text: req.body.address_line, pincode: req.body.pincode, state_id: req.body.state_id, city_id: req.body.city_id,
+      });
+    } catch (e) {
+      if (e && e.code === 'VALIDATION_ERROR') throw new AppError('VALIDATION_ERROR', e.message, 422, e.field || null, e.details || null);
+      throw e;
     }
   }
 
-  // Keep lat/lng <-> latitude/longitude consistent for manual (non-URL) entry.
-  if (updates.lat == null && updates.latitude != null) { updates.lat = updates.latitude; }
-  if (updates.lng == null && updates.longitude != null) { updates.lng = updates.longitude; }
-  if (updates.latitude == null && updates.lat != null) { updates.latitude = updates.lat; }
-  if (updates.longitude == null && updates.lng != null) { updates.longitude = updates.lng; }
-
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length === 0 && !addressPatch) {
     throw new AppError('VALIDATION_ERROR', 'No valid fields provided to update', 422);
   }
 
-  const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`);
-  const values = [brand.id, ...Object.values(updates)];
-
-  await db.query(
-    `UPDATE brands SET ${setClauses.join(', ')} WHERE id = $1`,
-    values
-  );
+  if (Object.keys(updates).length > 0) {
+    const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`);
+    const values = [brand.id, ...Object.values(updates)];
+    await db.query(`UPDATE brands SET ${setClauses.join(', ')} WHERE id = $1`, values);
+  }
 
   const updated = await getBrandById(brand.id);
-  return success(res, { brand: sanitiseBrand(updated) });
+  return success(res, { brand: sanitiseBrand(updated), completeness: await completeness.forBrand(brand.id) });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -412,8 +412,11 @@ const updateMe = asyncHandler(async (req, res) => {
 const getById = asyncHandler(async (req, res) => {
   const brand = await getBrandById(req.params.id);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand not found', 404);
-
-  return success(res, { brand });
+  // registration-and-profile §9A.1: the review page's missing list comes from the one rule.
+  const [complete, branches] = await Promise.all([completeness.forBrand(brand.id), branchesService.list(brand.id)]);
+  const { bank_account_no, ...safe } = brand;
+  safe.has_bank_account = !!bank_account_no;
+  return success(res, { brand: safe, completeness: complete, missing_fields: complete.missing_labels, branches, submitted_for_review_at: brand.submitted_for_review_at || null });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -436,6 +439,9 @@ const updateStatus = asyncHandler(async (req, res) => {
 
   // Update brand record
   if (status === 'approved') {
+    // registration-and-profile §6: approval refuses an incomplete profile, naming what is missing.
+    const summary = await completeness.forBrand(brand.id);
+    if (!summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
     await db.query(
       `UPDATE brands SET rejection_reason = NULL, approved_at = now(), approved_by = $2 WHERE id = $1`,
       [brand.id, adminUserId]
@@ -490,21 +496,16 @@ const updateStatus = asyncHandler(async (req, res) => {
 // POST /brands/resubmit
 // ─────────────────────────────────────────────────────────────────────────────
 
-const resubmit = asyncHandler(async (req, res) => {
+// registration-and-profile §6.4: resubmit used to flip the status back and resend the identical
+// data. It is now the same door as Submit for review — refused when incomplete, and only
+// meaningful from rejected.
+const resubmit = asyncHandler(async (req, res, next) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
-
   if (brand.user_status !== 'rejected') {
     throw new AppError('CONFLICT', 'Account can only be resubmitted when in rejected status', 409);
   }
-
-  await db.query(
-    `UPDATE brands SET rejection_reason = NULL WHERE id = $1`,
-    [brand.id]
-  );
-  await db.query(`UPDATE users SET status = 'pending' WHERE id = $1`, [brand.user_id]);
-
-  return success(res, { user_status: 'pending', message: 'Account resubmitted for review' });
+  return submitForReview(req, res, next);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1402,6 +1403,7 @@ const getTemplateColumns = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  submitForReview,
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue, searchDishes,
   listProducts, createProduct, updateProduct, deleteProduct, getTagOptions, getOfferCategories,

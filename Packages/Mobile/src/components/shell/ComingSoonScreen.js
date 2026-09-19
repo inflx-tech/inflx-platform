@@ -12,7 +12,8 @@ import { C3 } from '../discovery/copy3';
 const TARGETS = {
   brandHome: { tab: 'CreatorsTab' }, brandWallet: { tab: 'CreatorsTab' },
   creatorHome: { tab: 'CollabsTab', screen: 'FindBrands' }, creatorCreate: { tab: 'CollabsTab', screen: 'FindBrands' },
-  creatorWallet: { tab: 'ProfileTab', screen: 'PaymentTax' },
+  // features/registration-and-profile — Payment & tax left the profile; the Wallet tab is real.
+  creatorWallet: { tab: 'WalletTab' },
 };
 
 export default function ComingSoonScreen({ navigation, route, kind: kindProp, title: titleProp }) {

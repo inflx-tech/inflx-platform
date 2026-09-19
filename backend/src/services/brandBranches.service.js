@@ -5,9 +5,13 @@
  * Contract: features/item3-discovery-profiles-groups · rules v1.11 §8A, §11.1 · prompt D2, A2
  *
  * Rules: exactly one main branch per brand; the main branch cannot be removed, only
- * replaced by making another branch main; creators only ever see city names. A branch is
- * created from a Google place id: the server resolves address, city and state and adds
- * the city to the canonical list when it is new (referenceLists.resolvePlace).
+ * replaced by making another branch main; creators only ever see city names.
+ *
+ * registration-and-profile (spec §1.1, §4, §9): every address is exactly four parts — street
+ * (typed), pincode (6 digits), state (picked), city (picked, in that state). The Google place
+ * search is gone from branch add and edit; a branch carries no place id and no coordinates.
+ * When a brand adds its SECOND branch it must say which of the two is the main one — never
+ * assumed. From the third branch on, make-main covers it.
  */
 
 const db = require('../config/db');
@@ -15,10 +19,11 @@ const ref = require('./referenceLists.service');
 
 const MSG = Object.freeze({
   NAME_REQUIRED: 'Enter a branch name.',
-  ADDRESS_REQUIRED: 'Search and pick your branch address, or type it.',
+  ADDRESS_REQUIRED: 'Enter the street address.',
   ADDRESS_LONG: 'Keep the address under 200 characters.',
   PINCODE: 'Enter a 6-digit PIN code.',
-  CITY_UNKNOWN: "We couldn't tell which city this branch is in. Search the address instead.",
+  CITY_REQUIRED: 'Pick the state, then the nearest major city.',
+  MAIN_CHOICE_REQUIRED: 'Which one is your main branch?',
   MAIN_BRANCH: "The main branch can't be removed. Make another branch the main one first.",
 });
 
@@ -31,28 +36,20 @@ const MSG = Object.freeze({
  *
  * @returns {{ formattedAddress: string, pincode: string|null }}
  */
-function typedAddress(body) {
+function typedAddress(body, { requirePin = true } = {}) {
   const text = String(body.address_text || '').replace(/\s+/g, ' ').trim();
   if (!text) throw validationError('address_text', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
   if (text.length > 200) throw validationError('address_text', 'BRANCH_ADDRESS_LONG', MSG.ADDRESS_LONG);
   const pin = body.pincode == null || body.pincode === '' ? null : String(body.pincode).trim();
-  if (pin != null && !/^\d{6}$/.test(pin)) throw validationError('pincode', 'BRANCH_PINCODE', MSG.PINCODE);
+  if ((pin == null && requirePin) || (pin != null && !/^\d{6}$/.test(pin))) throw validationError('pincode', 'BRANCH_PINCODE', MSG.PINCODE);
   return { formattedAddress: text, pincode: pin };
 }
 
-/** The brand's registration city and state as ref ids, for a branch created by typing. */
-async function brandCityIds(brandId) {
-  const { rows } = await db.query(`SELECT u.city, u.state FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`, [brandId]);
-  const r = rows[0];
-  if (!r) return { cityId: null, stateId: null };
-  let stateId = r.state ? await ref.findStateId(r.state) : null;
-  let cityId = null;
-  if (r.city && String(r.city).trim()) {
-    const { rows: c } = await db.query(
-      `SELECT id, state_id FROM ref_cities WHERE name_norm = lower(trim($1)) ORDER BY (state_id = $2) DESC NULLS LAST, id LIMIT 1`, [r.city, stateId]);
-    if (c[0]) { cityId = c[0].id; if (!stateId) stateId = c[0].state_id; }
-  }
-  return { cityId, stateId };
+/** The picked state + city, resolved; the city must sit in the state. */
+async function pickedCity(body) {
+  const r = await ref.resolveStateCity(body.state_id, body.city_id);
+  if (!r) throw validationError('city_id', 'BRANCH_CITY_REQUIRED', MSG.CITY_REQUIRED);
+  return r;
 }
 
 function shape(r) {
@@ -117,63 +114,53 @@ function validationError(field, code, message) {
 }
 
 /**
- * Create from a Google place id. body: { name, place_id, is_main?, session? }
- * Returns { branch, cityAdded }.
+ * Create from the four parts. body: { name, address_text, pincode, state_id, city_id, is_main? }
+ * The first branch is main. The SECOND requires is_main to be stated (true or false) —
+ * MAIN_CHOICE_REQUIRED otherwise. Returns { branch }.
  */
-async function create(brandId, body, { userId } = {}) {
+async function create(brandId, body) {
   const name = String(body?.name || '').trim();
   if (!name) throw validationError('name', 'BRANCH_NAME_REQUIRED', MSG.NAME_REQUIRED);
-  if (!body?.place_id && !body?.address_text) throw validationError('place_id', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
-  let place;
-  if (body.place_id) {
-    place = await ref.resolvePlace(body.place_id, { session: body.session, userId });
-  } else {
-    // Item 10: typed. The city and state are the brand's own — a typed line is never parsed.
-    const t = typedAddress(body);
-    const ids = await brandCityIds(brandId);
-    if (!ids.stateId) throw validationError('address_text', 'BRANCH_CITY_UNKNOWN', MSG.CITY_UNKNOWN);
-    place = { placeId: null, formattedAddress: t.formattedAddress, pincode: t.pincode, lat: null, lng: null, city: ids.cityId ? { id: ids.cityId, added: false } : null, state: { id: ids.stateId } };
-  }
+  if (body?.place_id && !body?.address_text) throw validationError('address_text', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
+  const t = typedAddress(body || {});
+  const place = await pickedCity(body || {});
   const existing = await count(brandId);
+  if (existing === 1 && typeof body.is_main !== 'boolean') throw validationError('is_main', 'MAIN_CHOICE_REQUIRED', MSG.MAIN_CHOICE_REQUIRED);
   const makeMain = existing === 0 || body.is_main === true;
   const branch = await db.withTransaction(async (tx) => {
     if (makeMain) await tx.query(`UPDATE brand_branches SET is_main = false, updated_at = now() WHERE brand_id = $1 AND is_main`, [brandId]);
     const { rows } = await tx.query(
       `INSERT INTO brand_branches (brand_id, name, google_place_id, formatted_address, pincode, lat, lng, city_id, state_id, is_main)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-      [brandId, name, place.placeId, place.formattedAddress, place.pincode, place.lat, place.lng, place.city ? place.city.id : null, place.state.id, makeMain]
+       VALUES ($1,$2,NULL,$3,$4,NULL,NULL,$5,$6,$7) RETURNING id`,
+      [brandId, name, t.formattedAddress, t.pincode, place.cityId, place.stateId, makeMain]
     );
     return rows[0].id;
   });
   await syncMainToBrandRow(brandId);
-  return { branch: await get(brandId, branch), cityAdded: !!(place.city && place.city.added) };
+  return { branch: await get(brandId, branch), cityAdded: false };
 }
 
-/** Update name and/or address and/or main flag. */
-async function update(brandId, id, body, { userId } = {}) {
+/** Update name and/or any of the four address parts and/or the main flag. */
+async function update(brandId, id, body) {
   const current = await get(brandId, id);
   if (!current) return null;
   const sets = [];
   const params = [brandId, id];
   const p = (v) => { params.push(v); return `$${params.length}`; };
-  let cityAdded = false;
   if (body.name !== undefined) {
     const name = String(body.name || '').trim();
     if (!name) throw validationError('name', 'BRANCH_NAME_REQUIRED', MSG.NAME_REQUIRED);
     sets.push(`name = ${p(name)}`);
   }
-  if (body.place_id !== undefined) {
-    if (!body.place_id) throw validationError('place_id', 'BRANCH_ADDRESS_REQUIRED', MSG.ADDRESS_REQUIRED);
-    const place = await ref.resolvePlace(body.place_id, { session: body.session, userId });
-    cityAdded = !!(place.city && place.city.added);
-    sets.push(`google_place_id = ${p(place.placeId)}`, `formatted_address = ${p(place.formattedAddress)}`,
-      `pincode = ${p(place.pincode)}`, `lat = ${p(place.lat)}`, `lng = ${p(place.lng)}`,
-      `city_id = ${p(place.city ? place.city.id : null)}`, `state_id = ${p(place.state.id)}`);
-  } else if (body.address_text !== undefined) {
-    // Item 10: a typed address replaces the text and drops the pin; the city and state the
-    // branch already has are kept — the typed line is never parsed into a place.
-    const t = typedAddress(body);
+  if (body.address_text !== undefined || body.pincode !== undefined) {
+    const t = typedAddress({ address_text: body.address_text !== undefined ? body.address_text : current.formattedAddress,
+                             pincode: body.pincode !== undefined ? body.pincode : current.pincode });
     sets.push(`google_place_id = NULL`, `formatted_address = ${p(t.formattedAddress)}`, `pincode = ${p(t.pincode)}`, `lat = NULL`, `lng = NULL`);
+  }
+  if (body.state_id !== undefined || body.city_id !== undefined) {
+    const place = await pickedCity({ state_id: body.state_id !== undefined ? body.state_id : current.stateId,
+                                     city_id: body.city_id !== undefined ? body.city_id : current.cityId });
+    sets.push(`city_id = ${p(place.cityId)}`, `state_id = ${p(place.stateId)}`);
   }
   await db.withTransaction(async (tx) => {
     if (body.is_main === true && !current.isMain) {
@@ -185,7 +172,18 @@ async function update(brandId, id, body, { userId } = {}) {
     }
   });
   await syncMainToBrandRow(brandId);
-  return { branch: await get(brandId, id), cityAdded };
+  return { branch: await get(brandId, id), cityAdded: false };
+}
+
+/**
+ * registration-and-profile §7: the brand's address IS its main branch. PATCH /brands/me with
+ * any of address_line / pincode / state_id / city_id lands here. Creates the main branch when
+ * the brand somehow has none.
+ */
+async function setMainAddress(brandId, body) {
+  const { rows } = await db.query(`SELECT id FROM brand_branches WHERE brand_id = $1 AND is_main LIMIT 1`, [brandId]);
+  if (rows[0]) return update(brandId, rows[0].id, body);
+  return create(brandId, { name: 'Main Branch', ...body, is_main: true });
 }
 
 async function makeMain(brandId, id) {
@@ -223,10 +221,11 @@ async function syncMainToBrandRow(brandId) {
       WHERE bb.brand_id = $1 AND bb.is_main LIMIT 1`, [brandId]);
   const m = rows[0];
   if (!m) return;
+  // registration-and-profile: the main branch is the address; the brand row's address_line /
+  // pincode and the users row's city / state follow it. Coordinates are no longer written.
   await db.query(
-    `UPDATE brands SET lat = COALESCE($2, lat), lng = COALESCE($3, lng), latitude = COALESCE($2, latitude), longitude = COALESCE($3, longitude),
-            formatted_address = COALESCE($4, formatted_address), pincode = COALESCE($5, pincode), address_line = COALESCE($4, address_line)
-      WHERE id = $1`, [brandId, m.lat, m.lng, m.formatted_address, m.pincode]);
+    `UPDATE brands SET formatted_address = COALESCE($2, formatted_address), pincode = COALESCE($3, pincode), address_line = COALESCE($2, address_line)
+      WHERE id = $1`, [brandId, m.formatted_address, m.pincode]);
   if (m.city) {
     await db.query(`UPDATE users u SET city = $2, state = COALESCE($3, u.state) FROM brands b WHERE b.user_id = u.id AND b.id = $1`, [brandId, m.city, m.state]);
   }
@@ -238,7 +237,7 @@ async function syncMainToBrandRow(brandId) {
  * right after /brands/register so a new brand shows its city from day one. The city is
  * matched by name (never auto-added here — founder Q8); state through the alias table.
  */
-async function ensureMainFromBrandRow(brandId) {
+async function ensureMainFromBrandRow(brandId, ids = null) {
   const { rows: n } = await db.query(`SELECT count(*)::int AS n FROM brand_branches WHERE brand_id = $1`, [brandId]);
   if (n[0].n > 0) return null;
   const { rows } = await db.query(
@@ -246,9 +245,10 @@ async function ensureMainFromBrandRow(brandId) {
        FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`, [brandId]);
   const r = rows[0];
   if (!r) return null;
-  let stateId = r.state ? await ref.findStateId(r.state) : null;
-  let cityId = null;
-  if (r.city && String(r.city).trim()) {
+  // registration-and-profile: registration hands over the resolved ids directly.
+  let stateId = ids && ids.stateId ? ids.stateId : (r.state ? await ref.findStateId(r.state) : null);
+  let cityId = ids && ids.cityId ? ids.cityId : null;
+  if (!cityId && r.city && String(r.city).trim()) {
     const { rows: c } = await db.query(
       `SELECT id, state_id FROM ref_cities WHERE name_norm = lower(trim($1)) ORDER BY (state_id = $2) DESC NULLS LAST, id LIMIT 1`,
       [r.city, stateId]);
@@ -261,4 +261,4 @@ async function ensureMainFromBrandRow(brandId) {
   return get(brandId, ins[0].id);
 }
 
-module.exports = { MSG, list, get, count, cityNames, mainCity, create, update, makeMain, remove, shape, ensureMainFromBrandRow };
+module.exports = { MSG, list, get, count, cityNames, mainCity, create, update, setMainAddress, makeMain, remove, shape, ensureMainFromBrandRow };

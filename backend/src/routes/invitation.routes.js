@@ -8,11 +8,14 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireApproved, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/invitations.controller');
 
 const router = Router();
-const creator = [authenticate, requireRole('influencer')];
+// registration-and-profile §6.3: a pending creator now reaches the app, so every creator
+// action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
+// side has used all along.
+const creator = [authenticate, requireRole('influencer'), requireApproved];
 
 router.get ('/influencers/me/invitations',              ...creator, ctrl.myInvitations);
 router.get ('/influencers/me/invitations/:ciId',        ...creator, ctrl.myInvitation);

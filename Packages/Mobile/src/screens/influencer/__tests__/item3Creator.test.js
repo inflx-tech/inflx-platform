@@ -1,10 +1,11 @@
 /**
  * Item 3 — the creator app: A7 rows (no notifications switch, niche warning), F1 Collabs,
- * F2 Find brands statuses, O1/O2 brand overview with products, Payment & tax rules.
+ * F2 Find brands statuses, O1/O2 brand overview with products, and the payout rules — which
+ * moved with the fields to the Wallet tab (features/registration-and-profile C7).
  * Contract: features/item3-discovery-profiles-groups
  */
 import React from 'react';
-import { Switch, Alert } from 'react-native';
+import { Switch } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
@@ -19,6 +20,7 @@ jest.mock('../../../services/api', () => ({
     creatorNiches: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'fashion', label: 'Fashion' }] } }),
     languages: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'Telugu', label: 'Telugu' }] } }),
     states: jest.fn().mockResolvedValue({ success: true, data: { items: [] } }),
+    offeredStates: jest.fn().mockResolvedValue({ success: true, data: { items: [] } }),
   },
   clearSession: jest.fn(), uploadFile: jest.fn(),
 }));
@@ -32,7 +34,7 @@ const ProfileScreen = require('../ProfileScreen').default;
 const CollabsScreen = require('../CollabsScreen').default;
 const FindBrandsScreen = require('../FindBrandsScreen').default;
 const BrandOverviewScreen = require('../BrandOverviewScreen').default;
-const PaymentTaxScreen = require('../PaymentTaxScreen').default;
+const PayoutDetailScreen = require('../PayoutDetailScreen').default;
 
 const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), setParams: jest.fn(), addListener: jest.fn(() => () => {}), dispatch: jest.fn() });
 const ok = (data) => ({ success: true, data });
@@ -44,11 +46,14 @@ beforeEach(() => {
 });
 
 describe('A7 — profile rows', () => {
-  it('lists the five rows, no notifications switch, and the invitation summary', async () => {
+  it('lists the rows, no notifications switch, no Payment & tax (it moved to Wallet), and the invitation summary', async () => {
     influencerApi.getMe.mockResolvedValue(ok({ influencer: ME }));
-    const { getByTestId, getByText, UNSAFE_queryAllByType, queryByText } = render(<ProfileScreen navigation={nav()} route={{ params: {} }} />);
+    const { getByTestId, getByText, UNSAFE_queryAllByType, queryByText, queryByTestId } = render(<ProfileScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => getByTestId('row-profile-info'));
-    ['row-niche', 'row-invitation-settings', 'row-payment-tax', 'row-legal', 'row-logout'].forEach(id => getByTestId(id));
+    ['row-niche', 'row-invitation-settings', 'row-legal', 'row-logout'].forEach(id => getByTestId(id));
+    // features/registration-and-profile C4: UPI / bank / PAN live on the Wallet tab now.
+    expect(queryByTestId('row-payment-tax')).toBeNull();
+    expect(queryByText('Payment & tax')).toBeNull();
     expect(UNSAFE_queryAllByType(Switch)).toHaveLength(0);
     getByText('Open · Pay for Sale · Remote');
     expect(queryByText('Pick your niche. Brands use it to find creators like you.')).toBeNull();
@@ -59,9 +64,9 @@ describe('A7 — profile rows', () => {
     const n = nav();
     const { getByTestId, getByText } = render(<ProfileScreen navigation={n} route={{ params: {} }} />);
     await waitFor(() => getByText('Pick your niche. Brands use it to find creators like you.'));
-    fireEvent.press(getByTestId('row-payment-tax'));
+    fireEvent.press(getByTestId('row-profile-info'));
     fireEvent.press(getByTestId('row-niche'));
-    expect(n.navigate).toHaveBeenCalledWith('PaymentTax');
+    expect(n.navigate).toHaveBeenCalledWith('ProfileInfo');
     expect(n.navigate).toHaveBeenCalledWith('NicheLanguages');
   });
 });
@@ -125,24 +130,29 @@ describe('O1 · O2 — brand overview', () => {
   });
 });
 
-describe('Payment & tax — ported rules', () => {
-  it('refuses UPI and bank together, requires IFSC with an account, and saves', async () => {
-    influencerApi.getMe.mockResolvedValue(ok({ influencer: { ...ME, has_upi: false, has_payout_method: false } }));
-    influencerApi.updateMe.mockResolvedValue(ok({ influencer: { ...ME, has_upi: true, has_payout_method: true } }));
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    const { getByTestId, getAllByText } = render(<PaymentTaxScreen navigation={nav()} />);
-    await waitFor(() => getAllByText('Not configured'));
-    fireEvent.press(getByTestId('payout-edit'));
-    fireEvent.changeText(getByTestId('upi'), 'priya@upi');
-    fireEvent.changeText(getByTestId('bank-account'), '123456');
+describe('Payout details — the ported rule (now on the Wallet tab, C7)', () => {
+  it('a bank account is ONE entry: the account number and the IFSC are saved together, never one without the other', async () => {
+    influencerApi.updateMe.mockResolvedValue(ok({ influencer: { ...ME, has_bank_account: true } }));
+    const n = nav();
+    const { getByTestId, getByText } = render(<PayoutDetailScreen navigation={n} route={{ params: { kind: 'bank' } }} />);
+    getByText('Bank account');
+    fireEvent.changeText(getByTestId('payout-bank_account_no'), '123456');
     fireEvent.press(getByTestId('payout-save'));
-    expect(alert).toHaveBeenCalledWith('Choose one', 'Please provide either UPI ID or Bank Account, not both.');
-    fireEvent.changeText(getByTestId('upi'), '');
-    fireEvent.press(getByTestId('payout-save'));
-    expect(alert).toHaveBeenCalledWith('IFSC required', 'Please enter your bank IFSC code.');
-    fireEvent.changeText(getByTestId('bank-ifsc'), 'SBIN0001234');
+    getByText('Enter both the account number and the IFSC.');
+    expect(influencerApi.updateMe).not.toHaveBeenCalled();
+    fireEvent.changeText(getByTestId('payout-bank_ifsc'), 'SBIN0001234');
     fireEvent.press(getByTestId('payout-save'));
     await waitFor(() => expect(influencerApi.updateMe).toHaveBeenCalledWith({ bank_account_no: '123456', bank_ifsc: 'SBIN0001234' }));
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('Saved', 'Payment details updated.'));
+    await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('CreatorWallet', { toast: 'Saved.' }));
+    getByText('Our team checks these by hand, usually the same day.');
+  });
+
+  it('the server\'s BANK_PAIR refusal lands under the form, in its words', async () => {
+    influencerApi.updateMe.mockResolvedValue({ success: false, error: { code: 'BANK_PAIR', message: 'Send both or neither.' } });
+    const { getByTestId, getByText } = render(<PayoutDetailScreen navigation={nav()} route={{ params: { kind: 'bank' } }} />);
+    fireEvent.changeText(getByTestId('payout-bank_account_no'), '1');
+    fireEvent.changeText(getByTestId('payout-bank_ifsc'), 'X');
+    fireEvent.press(getByTestId('payout-save'));
+    await waitFor(() => getByText('Send both or neither.'));
   });
 });

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { adminApi } from '../../../../lib/api';
+import { api, adminApi } from '../../../../lib/api';
 
 /**
  * Admin → Influencers → one creator.
@@ -107,6 +107,55 @@ function youtubeUrl(raw) {
 
 const fmtNum = (n) => (n == null ? null : Number(n).toLocaleString('en-IN'));
 
+/**
+ * GET /influencers/:id answers { influencer, inviteSummary, cityName, stateName, … }. The
+ * roll-up (completeness, missing_fields, submitted_for_review_at, niche_other, has_pan…)
+ * rides on `influencer`; the resolved city and state names are siblings. Merge, so the page
+ * sees both — the old `data.influencer || data` threw the city names away.
+ * Contract: features/registration-and-profile §9A.2
+ */
+function unwrap(data) {
+  if (data && data.influencer) return { ...data, ...data.influencer };
+  return data;
+}
+
+/** "2h ago" — for the "Pending · submitted 2h ago" pill. Null when there is no timestamp. */
+function relTime(iso) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return null;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? '1 day ago' : `${d} days ago`;
+}
+
+/** The three pills of the review table: ok (teal), miss (red), new (gold). Dark text on a pale ground, always. */
+function Tag({ kind = 'ok', children }) {
+  const cls = kind === 'miss' ? 'bg-red-pale text-red' : kind === 'new' ? 'bg-gold-pale text-yellow-700' : 'bg-teal-pale text-teal-deep';
+  return <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap align-middle ${cls}`}>{children}</span>;
+}
+
+/**
+ * One row of the review table (mockup A2). `missing` is the server's verdict from the one
+ * completeness rule — when set, the cell shows the Missing tag whatever the value.
+ */
+function Row({ label, missing, mono, children }) {
+  const kids  = Array.isArray(children) ? children : [children];
+  const empty = kids.every(c => c == null || c === '' || c === false);
+  return (
+    <tr className="border-t border-border">
+      <td className="py-2 pr-3 text-xs text-t3 w-[40%] align-top">{label}</td>
+      <td className={`py-2 text-sm text-t2 ${mono ? 'font-mono tabular-nums' : ''}`}>
+        {missing ? <Tag kind="miss">Missing</Tag> : (empty ? <span className="text-t3">—</span> : children)}
+      </td>
+    </tr>
+  );
+}
+
 export default function InfluencerProfilePage() {
   const { id } = useParams();
   const [influencer, setInfluencer] = useState(null);
@@ -117,12 +166,14 @@ export default function InfluencerProfilePage() {
   // Wave 1 — per-influencer TDS controls (override + exempt).
   const [tdsInput, setTdsInput] = useState('');
   const [savingTds, setSavingTds] = useState(false);
+  // Reference lists for labels (registration-and-profile §9A.2).
+  const [refs, setRefs] = useState({ niches: [], languages: [] });
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 4000); }
 
   async function reload() {
     const res = await adminApi.getInfluencerById(id);
-    if (res.success) setInfluencer(res.data?.influencer || res.data);
+    if (res.success) setInfluencer(unwrap(res.data));
     return res;
   }
 
@@ -172,11 +223,29 @@ export default function InfluencerProfilePage() {
     async function load() {
       const res = await adminApi.getInfluencerById(id);
       setLoading(false);
-      if (res.success) setInfluencer(res.data?.influencer || res.data);
+      if (res.success) setInfluencer(unwrap(res.data));
       else setError(res.error?.message || 'Failed to load influencer');
     }
     load();
   }, [id]);
+
+  // The reference lists, so niche and language codes read as words. Codes are the
+  // fallback if either list fails to load — never a blank cell.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [n, l] = await Promise.all([
+        api.get('/reference/creator-niches').catch(() => null),
+        api.get('/reference/languages').catch(() => null),
+      ]);
+      if (!alive) return;
+      setRefs({
+        niches:    (n && n.success && Array.isArray(n.data?.items)) ? n.data.items : (n && n.success && Array.isArray(n.data)) ? n.data : [],
+        languages: (l && l.success && Array.isArray(l.data?.items)) ? l.data.items : (l && l.success && Array.isArray(l.data)) ? l.data : [],
+      });
+    })();
+    return () => { alive = false; };
+  }, []);
 
   if (loading) return <div className="p-8 text-center text-t3 text-sm">Loading...</div>;
   if (error) return <div className="p-4 bg-red-pale rounded-xl text-red text-sm">{error}</div>;
@@ -185,9 +254,21 @@ export default function InfluencerProfilePage() {
   const status     = influencer.user_status || influencer.status;
   const isApproved = status === 'approved';
   const isPending  = status === 'pending';
-  const waitingDays = influencer.created_at
-    ? Math.floor((Date.now() - new Date(influencer.created_at).getTime()) / 86400000)
-    : null;
+
+  // registration-and-profile §9A.2 — the roll-up is the server's one rule (§6.2: full name ·
+  // state · city · a handle · photo · bio · niche · a language · age · gender). PAN, bank,
+  // UPI and email are Wallet, not approval, and say so.
+  const completeness  = influencer.completeness || null;
+  const missingKeys   = new Set((completeness && completeness.missing) || []);
+  const missingLabels = influencer.missing_fields || (completeness && completeness.missing_labels) || [];
+  const isMissing     = (key) => missingKeys.has(key);
+  const submittedRel  = relTime(influencer.submitted_for_review_at);
+  const cityOnList    = influencer.city_id != null;
+  const nicheCodes    = (influencer.niche || []).filter(Boolean);
+  const nicheLabel    = (code) => (refs.niches.find(n => n.code === code) || {}).label || code;
+  const langLabel     = (code) => (refs.languages.find(l => l.code === code) || {}).label || code;
+  const isOther       = nicheCodes[0] === 'other';
+  const moneyOnFile   = [influencer.has_pan && 'PAN', influencer.has_bank_account && 'bank account', influencer.has_upi && 'UPI'].filter(Boolean);
 
   const displayName = influencer.full_name || influencer.name || null;
   const ytHandle    = influencer.youtube_handle
@@ -196,7 +277,10 @@ export default function InfluencerProfilePage() {
   const ytLink      = influencer.youtube_url || youtubeUrl(influencer.youtube_handle);
   const igLink      = influencer.instagram_url
     || (influencer.instagram_handle ? `https://instagram.com/${influencer.instagram_handle}` : null);
-  const place       = [influencer.city, influencer.state].filter(Boolean).join(', ');
+  // Resolved reference names first (§7); the typed columns are the fallback for a creator
+  // who predates the state-then-city picker.
+  const place       = [influencer.cityName || influencer.city_name || influencer.city, influencer.stateName || influencer.state_name || influencer.state]
+    .filter(Boolean).join(', ');
 
   // Reach is stated per platform and never summed — two audiences, two numbers. A figure
   // that has never been checked reads "Never checked", not 0: a confident zero is exactly
@@ -278,9 +362,11 @@ export default function InfluencerProfilePage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {isPending && waitingDays != null && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-pale text-yellow-700 whitespace-nowrap">
-                {waitingDays === 0 ? 'today' : waitingDays === 1 ? 'waiting 1 day' : `waiting ${waitingDays} days`}
+            {/* When she pressed Submit is the thing the queue cannot tell you at a glance.
+                Not yet submitted means she registered and stopped; she is not in the queue. */}
+            {isPending && (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-gold-pale text-yellow-700 whitespace-nowrap">
+                Pending · {submittedRel ? `submitted ${submittedRel}` : 'not yet submitted'}
               </span>
             )}
             {igLink && (
@@ -308,6 +394,19 @@ export default function InfluencerProfilePage() {
           </div>
         </div>
 
+        {/* §9A.2 — the roll-up. Counted by the server against the §6.2 creator checklist, so
+            a rejection can name exactly what is missing. */}
+        {missingLabels.length > 0 ? (
+          <div className="mb-4 p-3 bg-red-pale border border-red/30 rounded-lg">
+            <div className="text-xs font-bold text-red">{missingLabels.length} {missingLabels.length === 1 ? 'thing' : 'things'} missing</div>
+            <div className="text-xs text-red mt-0.5">{missingLabels.join(' · ')}</div>
+          </div>
+        ) : completeness ? (
+          <div className="mb-4 p-3 bg-teal-pale border border-teal/30 rounded-lg text-xs font-bold text-teal-deep">
+            Profile complete · {completeness.done} of {completeness.total}
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
           {statCfg.map(s => (
             <div key={s.label} className="bg-surface2 rounded-lg p-2.5 text-center">
@@ -320,35 +419,76 @@ export default function InfluencerProfilePage() {
 
         <SocialPanel influencerId={id} onToast={showToast} />
 
-        {/* What she gave us at signup — the five facts, in the order she was asked for
-            them, so a review reads as a review. */}
-        <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-2">What she supplied at signup</div>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <Field label="Full name" value={displayName} missing="Not given" />
-          {/* The number is the whole point of an admin looking her up. It was small grey
-              text in the header; scraped creators had none at all until the endpoint was
-              taught to send it. Contract: features/admin-account-review */}
-          <Field label="Phone" value={influencer.phone} missing="No number on file" mono />
-          <Field label="Where" value={place} missing="Not stated" />
-          <Field label="Registered" value={influencer.created_at ? new Date(influencer.created_at).toLocaleDateString('en-IN') : ''} />
-          <Field
-            label="Instagram handle"
-            value={influencer.instagram_handle ? `@${influencer.instagram_handle}` : ''}
-            missing="Not given"
-            href={igLink}
-          />
-          <Field
-            label="YouTube channel"
-            value={ytHandle}
-            missing="Not given"
-            href={ytLink}
-          />
+        {/* The §6.2 checklist, one row each, in the order she was asked (mockup A2). What
+            she typed sits next to the server's verdict on it, so a review reads as a review.
+            Items that are not required for approval say so rather than reading as gaps. */}
+        <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-2">Profile review</div>
+        <div className="overflow-x-auto mb-4">
+          <table className="w-full">
+            <tbody>
+              <Row label="Full name" missing={isMissing('full_name')}>
+                {displayName ? <b className="text-t1">{displayName}</b> : ''}
+              </Row>
+              {/* The number is the whole point of an admin looking her up. Contract:
+                  features/admin-account-review */}
+              <Row label="Phone" mono>{influencer.phone}</Row>
+              <Row label="City / state" missing={isMissing('city') || isMissing('state')}>
+                {place}
+                {cityOnList && <> <Tag>on list</Tag></>}
+              </Row>
+              <Row label="Instagram" mono missing={isMissing('handle')}>
+                {influencer.instagram_handle
+                  ? <a href={igLink} target="_blank" rel="noopener noreferrer" className="text-navy hover:underline">@{influencer.instagram_handle} ↗</a>
+                  : <span className="font-body text-t3 italic">Not given</span>}
+              </Row>
+              <Row label="YouTube" mono>
+                {ytHandle
+                  ? <a href={ytLink} target="_blank" rel="noopener noreferrer" className="text-navy hover:underline">{ytHandle} ↗</a>
+                  : <span className="font-body text-t3 italic">No channel on file</span>}
+              </Row>
+              <Row label="Photo" missing={isMissing('photo')}>
+                {influencer.profile_image_url
+                  ? <img src={influencer.profile_image_url} alt="" className="w-10 h-10 rounded-full object-cover border border-border" />
+                  : ''}
+              </Row>
+              <Row label="Bio" missing={isMissing('bio')}>{influencer.bio}</Row>
+              {/* Other is a door, not a hole: what she typed shows here, and the tag leads to
+                  the queue where it becomes a real niche (§3.3, §9A.3). */}
+              <Row label="Niche" missing={isMissing('niche')}>
+                {isOther
+                  ? (
+                    <>
+                      <b className="text-t1">Other</b>
+                      {influencer.niche_other ? <> — &ldquo;{influencer.niche_other}&rdquo;</> : null}
+                      {!influencer.niche_other_resolved_at && (
+                        <> <a href="/admin/niches/other" className="hover:opacity-80"><Tag kind="new">needs mapping</Tag></a></>
+                      )}
+                    </>
+                  )
+                  : nicheCodes.map(nicheLabel).join(', ')}
+              </Row>
+              <Row label="Languages" missing={isMissing('language')}>
+                {(influencer.language || []).filter(Boolean).map(langLabel).join(', ')}
+              </Row>
+              <Row label="Age" missing={isMissing('age')}>{influencer.age != null ? String(influencer.age) : ''}</Row>
+              <Row label="Gender" missing={isMissing('gender')}>
+                {influencer.gender ? String(influencer.gender).charAt(0).toUpperCase() + String(influencer.gender).slice(1) : ''}
+              </Row>
+              <Row label="Email">
+                {influencer.email || <>Not supplied <Tag>not required</Tag></>}
+              </Row>
+              <Row label="PAN / bank">
+                {moneyOnFile.length
+                  ? <>{moneyOnFile.join(', ')} on file <Tag>not required</Tag></>
+                  : <>Not supplied <Tag>not required</Tag></>}
+              </Row>
+              <Row label="Registered">{influencer.created_at ? new Date(influencer.created_at).toLocaleDateString('en-IN') : ''}</Row>
+            </tbody>
+          </table>
         </div>
 
         <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-2">Platform record</div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Niche" value={(influencer.niche || []).filter(Boolean).join(', ')} missing="Not stated" />
-          <Field label="Language" value={(influencer.language || []).filter(Boolean).join(', ')} missing="Not stated" />
           <Field
             label="Instagram last checked"
             value={influencer.scrape_last_run

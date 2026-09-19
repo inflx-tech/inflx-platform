@@ -25,8 +25,9 @@ const ROUTES = [
   '/admin/approvals',
   '/admin/brands',
   '/admin/influencers',
+  '/admin/niches/other',
   '/admin/production-queue',
-  '/admin/master-dishes',
+  // '/admin/master-dishes' removed 2026-09-19: the page left with the cut (60ca1d9); the entry was stale.
   '/admin/marketing/inbox',
   '/admin/marketing/funnel',
   '/admin/marketing/settings',

@@ -10,7 +10,7 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireApproved } = require('../middleware/auth');
 const ctrl = require('../controllers/discovery.controller');
 
 const router = Router();
@@ -29,14 +29,17 @@ router.post  ('/brands/me/branches/:id/make-main', ...brand, ctrl.makeMainBranch
 router.delete('/brands/me/branches/:id',           ...brand, ctrl.removeBranch);
 
 // A9 — creator finds brands
-router.get('/influencers/me/find-brands', ...creator, ctrl.findBrands);
+// registration-and-profile §6.3: a pending creator now reaches the app, so every creator
+// action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
+// side has used all along.
+router.get('/influencers/me/find-brands', ...creator, requireApproved, ctrl.findBrands);
 
 // A11 — a brand's published products (creator or the brand itself)
 router.get('/brands/:id/products',            authenticate, ctrl.listBrandProducts);
 router.get('/brands/:id/products/:productId', authenticate, ctrl.brandProductDetail);
 
-// A3 — Google place → canonical state + city (adds the city when new)
-router.post('/places/resolve', authenticate, ctrl.resolvePlace);
+// registration-and-profile §9: POST /places/resolve is retired — Google place search has left
+// address entry in the brand and creator apps. (The follower app's location endpoints stay.)
 
 // A13 — cities by id
 router.get('/reference/cities', authenticate, ctrl.citiesByIds);

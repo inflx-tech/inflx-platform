@@ -13,12 +13,40 @@ const CATEGORIES = [
 
 const AREA_SCOPES = ['city', 'state', 'all_india'];
 
-function Field({ label, value }) {
+/** "2h ago" — for the "Pending · submitted 2h ago" pill. Null when there is no timestamp. */
+function relTime(iso) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return null;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? '1 day ago' : `${d} days ago`;
+}
+
+/** The three pills of the review table: ok (teal), miss (red), new (gold). Dark text on a pale ground, always. */
+function Tag({ kind = 'ok', children }) {
+  const cls = kind === 'miss' ? 'bg-red-pale text-red' : kind === 'new' ? 'bg-gold-pale text-yellow-700' : 'bg-teal-pale text-teal-deep';
+  return <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap align-middle ${cls}`}>{children}</span>;
+}
+
+/**
+ * One row of the review table (mockup A1). `missing` is the server's verdict from the one
+ * completeness rule — when set, the cell shows the Missing tag whatever the value.
+ */
+function Row({ label, missing, mono, children }) {
+  const kids  = Array.isArray(children) ? children : [children];
+  const empty = kids.every(c => c == null || c === '' || c === false);
   return (
-    <div>
-      <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-1">{label}</div>
-      <div className="bg-surface2 border border-border rounded-lg px-3 py-2 text-sm text-t2">{value || '—'}</div>
-    </div>
+    <tr className="border-t border-border">
+      <td className="py-2 pr-3 text-xs text-t3 w-[40%] align-top">{label}</td>
+      <td className={`py-2 text-sm text-t2 ${mono ? 'font-mono tabular-nums' : ''}`}>
+        {missing ? <Tag kind="miss">Missing</Tag> : (empty ? <span className="text-t3">—</span> : children)}
+      </td>
+    </tr>
   );
 }
 
@@ -287,6 +315,10 @@ export default function BrandProfilePage() {
   const [commerceInput, setCommerceInput] = useState('');
   const [savingCommerce, setSavingCommerce] = useState(false);
   const [toast, setToast] = useState('');
+  // registration-and-profile §9A.1 — the siblings GET /brands/:id sends beside `brand`:
+  // the one completeness rule (§6.2), its labels, the branches (city/state live on the main
+  // branch) and when the brand pressed Submit for review.
+  const [review, setReview] = useState({ completeness: null, missing_fields: [], branches: [], submitted_for_review_at: null });
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
 
@@ -331,7 +363,15 @@ export default function BrandProfilePage() {
     async function load() {
       const res = await adminApi.getBrandById(id);
       setLoading(false);
-      if (res.success) setBrand(res.data?.brand || res.data);
+      if (res.success) {
+        setBrand(res.data?.brand || res.data);
+        setReview({
+          completeness:            res.data?.completeness || null,
+          missing_fields:          res.data?.missing_fields || res.data?.completeness?.missing_labels || [],
+          branches:                res.data?.branches || [],
+          submitted_for_review_at: res.data?.submitted_for_review_at || null,
+        });
+      }
       else setError(res.error?.message || 'Failed to load brand');
     }
     load();
@@ -349,47 +389,25 @@ export default function BrandProfilePage() {
   const isApproved = status === 'approved';
   const isPending  = status === 'pending';
 
-  // How long someone has been waiting is the one thing a queue cannot tell you at a
-  // glance, and it is the difference between "new" and "forgotten".
-  const waitingDays = brand.created_at
-    ? Math.floor((Date.now() - new Date(brand.created_at).getTime()) / 86400000)
-    : null;
-
-  // What they did not give us. Neither is required to trade — but they are the easiest
-  // things to ask for, so the screen should say which are absent rather than leave the
-  // admin to notice the gaps.
-  /**
-   * Does the pin they dropped agree with the address they typed?
-   * Contract: features/admin-account-review (item 4)
-   *
-   * Both values are already stored, so this costs nothing. When a Vijayawada address
-   * carries a pin in another state, that is the single most useful thing an approval
-   * screen can tell you.
-   *
-   * Deliberately a SOFT signal. A disagreement is not proof of anything — a pin can
-   * legitimately resolve to the larger city that contains a locality, and Indian city
-   * names have several accepted spellings. So it says what disagrees and leaves the
-   * judgement where it belongs. It never blocks approval.
-   */
-  const pinCheck = (() => {
-    const pin = (brand.formatted_address || '').toLowerCase();
-    if (!brand.latitude && !brand.formatted_address) return { kind: 'none' };
-    if (!pin) return { kind: 'coords' };
-
-    const typed = [brand.locality, brand.city, brand.state].filter(Boolean);
-    if (typed.length === 0) return { kind: 'nothing-typed' };
-
-    const hit = typed.find(t => pin.includes(String(t).toLowerCase()));
-    return hit ? { kind: 'agrees', on: hit } : { kind: 'differs', typed: typed.join(', ') };
-  })();
-
-  const missing = [
-    !brand.gstin && 'GST number',
-    !brand.address_line && 'street address',
-    !brand.pincode && 'pincode',
-    !brand.latitude && 'map pin',
-    !brand.logo_url && 'logo',
-  ].filter(Boolean);
+  // registration-and-profile §9A.1 — the missing list is the server's one rule (§6.2: contact
+  // name · business name · what you sell · street · pincode · state · city · logo · about ·
+  // contact person), never recomputed here. GST is Wallet, not approval; the map pin and its
+  // coordinates are gone from the model altogether.
+  const completeness  = review.completeness;
+  const missingKeys   = new Set((completeness && completeness.missing) || []);
+  const missingLabels = review.missing_fields || [];
+  const isMissing     = (key) => missingKeys.has(key);
+  // City and state live on the MAIN branch, resolved to reference rows (§7). The users-row
+  // copy is only a fallback for a brand that predates the branch model.
+  const branches      = review.branches || [];
+  const mainBranch    = branches.find(b => b.isMain) || branches[0] || null;
+  const cityName      = (mainBranch && mainBranch.cityName) || brand.city || '';
+  const stateName     = (mainBranch && mainBranch.stateName) || brand.state || '';
+  const cityOnList    = !!(mainBranch && mainBranch.cityId);
+  const street        = (mainBranch && mainBranch.formattedAddress) || brand.address_line || '';
+  const pincode       = (mainBranch && mainBranch.pincode) || brand.pincode || '';
+  const sells         = Array.isArray(brand.sub_categories) ? brand.sub_categories.filter(Boolean).join(', ') : '';
+  const submittedRel  = relTime(review.submitted_for_review_at);
 
   return (
     <div className="max-w-3xl">
@@ -416,79 +434,64 @@ export default function BrandProfilePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isPending && waitingDays != null && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gold-pale text-yellow-700 whitespace-nowrap">
-                {waitingDays === 0 ? 'today' : waitingDays === 1 ? 'waiting 1 day' : `waiting ${waitingDays} days`}
-              </span>
-            )}
-            <StatusBadge status={status} />
+            {/* A pending brand reads as "Pending · submitted 2h ago" — when it pressed Submit
+                is the thing the queue cannot tell you at a glance. Not yet submitted means
+                it registered and stopped; it is not in the queue at all. */}
+            {isPending
+              ? (
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-gold-pale text-yellow-700 whitespace-nowrap">
+                  Pending · {submittedRel ? `submitted ${submittedRel}` : 'not yet submitted'}
+                </span>
+              )
+              : <StatusBadge status={status} />}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {/* Phone as a labelled field. It was small grey text beside the contact name,
-              which is not where anyone looks for the one thing they need to reach a
-              business. Contract: features/admin-account-review */}
-          <Field label="Phone" value={brand.phone || 'Not provided'} />
-          <Field label="Contact person" value={brand.name || 'Not provided'} />
-          <Field label="Category" value={brand.category} />
-          {/* City lives on the user record. This asked for brand.city, which does not
-              exist, so it was always a dash. */}
-          <Field label="City" value={[brand.city, brand.state].filter(Boolean).join(', ')} />
-          {/* The column is gstin. gst_number was never a field, so a supplied GST number
-              still showed as missing. */}
-          <Field label="GST Number" value={brand.gstin || 'Not provided'} />
-          <Field label="Registered" value={brand.created_at ? new Date(brand.created_at).toLocaleDateString('en-IN') : '—'} />
-        </div>
-
-        {/* Where they are — collected at sign-up and never once displayed, which is the
-            single most useful thing when deciding whether a business is real. */}
-        <div className="mt-4 pt-4 border-t border-border">
-          <div className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-2">Address</div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Street" value={brand.address_line || 'Not provided'} />
-            <Field label="Area · Pincode" value={[brand.locality, brand.pincode].filter(Boolean).join(' — ') || 'Not provided'} />
-            <Field label="Map pin" value={brand.formatted_address || (brand.latitude ? `${brand.latitude}, ${brand.longitude}` : 'No pin dropped')} />
-            <Field label="Wallet Balance" value={fmtMoney(brand.wallet_balance)} />
+        {/* §9A.1 — the roll-up. Counted by the server against the §6.2 brand checklist, so a
+            rejection can name exactly what is missing. */}
+        {missingLabels.length > 0 ? (
+          <div className="mb-4 p-3 bg-red-pale border border-red/30 rounded-lg">
+            <div className="text-xs font-bold text-red">{missingLabels.length} {missingLabels.length === 1 ? 'thing' : 'things'} missing</div>
+            <div className="text-xs text-red mt-0.5">{missingLabels.join(' · ')}</div>
           </div>
-
-          {pinCheck.kind === 'agrees' && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-teal-deep">
-              <span className="w-1.5 h-1.5 rounded-full bg-teal flex-shrink-0" />
-              The pin agrees with the address they typed ({pinCheck.on}).
-            </div>
-          )}
-          {pinCheck.kind === 'differs' && (
-            <div className="mt-3 p-3 bg-gold-pale rounded-lg text-xs text-yellow-700">
-              <strong>Worth a look.</strong> They typed <strong>{pinCheck.typed}</strong>, but
-              the pin they dropped resolves to <strong>{brand.formatted_address}</strong>.
-              Those may still be the same place — a pin often names the larger city, and city
-              names have several spellings — but it is worth asking.
-            </div>
-          )}
-          {pinCheck.kind === 'coords' && (
-            <div className="mt-3 text-xs text-t3">
-              A pin was dropped but never resolved to an address, so it cannot be compared.
-            </div>
-          )}
-          {pinCheck.kind === 'none' && (
-            <div className="mt-3 text-xs text-t3">
-              No pin was dropped, so there is nothing to check the address against.
-            </div>
-          )}
-        </div>
-
-        {/* What is absent. Said plainly, because an admin should not have to notice
-            gaps by scanning for dashes. Contract: features/admin-account-review */}
-        {isPending && missing.length > 0 && (
-          <div className="mt-4 p-3 bg-surface2 rounded-lg">
-            <div className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-1">Before you decide</div>
-            <div className="text-xs text-t2">
-              No {missing.join(', no ')}. None of these are required to trade — they are
-              simply the easiest things to ask for if you want more certainty.
-            </div>
+        ) : completeness ? (
+          <div className="mb-4 p-3 bg-teal-pale border border-teal/30 rounded-lg text-xs font-bold text-teal-deep">
+            Profile complete · {completeness.done} of {completeness.total}
           </div>
-        )}
+        ) : null}
+
+        {/* The §6.2 checklist, one row each, in the order the brand was asked. Items that
+            are not required for approval say so rather than reading as gaps. */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <tbody>
+              <Row label="Business name" missing={isMissing('business_name')}>
+                {brand.business_name ? <b className="text-t1">{brand.business_name}</b> : ''}
+              </Row>
+              <Row label="Contact name" missing={isMissing('contact_name')}>{brand.name}</Row>
+              <Row label="Contact person" missing={isMissing('contact_person')}>{brand.contact_person}</Row>
+              <Row label="Phone" mono>{brand.phone}</Row>
+              <Row label="Sells" missing={isMissing('sub_categories')}>{sells}</Row>
+              <Row label="Street" missing={isMissing('address_line')}>{street}</Row>
+              <Row label="City / state" missing={isMissing('city') || isMissing('state')}>
+                {[cityName, stateName].filter(Boolean).join(', ') || ''}
+                {cityOnList && <> <Tag>on list</Tag></>}
+              </Row>
+              <Row label="Pincode" mono missing={isMissing('pincode')}>{pincode}</Row>
+              <Row label="About" missing={isMissing('about')}>{brand.about}</Row>
+              <Row label="Logo" missing={isMissing('logo')}>
+                {brand.logo_url
+                  ? <img src={brand.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover border border-border" />
+                  : ''}
+              </Row>
+              <Row label="GST number" mono>
+                {brand.gstin || <span className="font-body">Not supplied <Tag>not required</Tag></span>}
+              </Row>
+              <Row label="Registered">{brand.created_at ? new Date(brand.created_at).toLocaleDateString('en-IN') : ''}</Row>
+              <Row label="Wallet balance" mono>{fmtMoney(brand.wallet_balance)}</Row>
+            </tbody>
+          </table>
+        </div>
 
         {/* Status is read-only here — decided exclusively on Brands → Pending
             Verification (features/admin-people-pipeline). This page and the Brands

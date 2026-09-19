@@ -180,7 +180,7 @@ describe('A3/A4 — blocks', () => {
 });
 
 describe('A8 — reference lists', () => {
-  it('serves niches (20), languages (10), the 8 categories and states with nested cities', async () => {
+  it('serves niches (21), languages (30), the 8 categories and states with nested cities', async () => {
     const c = await creator();
     const [n, l, k, s] = await Promise.all([
       request(app).get('/v1/reference/creator-niches').set(auth(c.token)),
@@ -188,14 +188,17 @@ describe('A8 — reference lists', () => {
       request(app).get('/v1/reference/brand-categories').set(auth(c.token)),
       request(app).get('/v1/reference/states').set(auth(c.token)),
     ]);
-    expect(n.body.data.items).toHaveLength(20);
-    expect(l.body.data.items).toHaveLength(10);
+    // registration-and-profile: 20 niches + Other; 30 languages (migration 188).
+    expect(n.body.data.items).toHaveLength(21);
+    expect(l.body.data.items).toHaveLength(30);
     expect(k.body.data.items.map(x => x.code)).toEqual(['MEN', 'WOMEN', 'KIDS', 'PLUS_SIZE', 'WATCHES', 'IMITATION_JEWELLERY', 'FOOTWEAR', 'BAGS_ACCESSORIES']);
-    // Item 3 (founder Q9): all 36 states and union territories, 92 seeded cities.
+    // Item 3 (founder Q9): all 36 states and union territories stay; the 92 seeded cities plus
+    // the 114 southern district headquarters migration 188 added (146 offered: 31 already
+    // there by name, Rajahmundry renamed to Rajamahendravaram rather than duplicated).
     expect(s.body.data.items).toHaveLength(36);
     const tg = s.body.data.items.find(x => x.name === 'Telangana');
     expect(tg.cities.map(x => x.name)).toContain('Hyderabad');
-    expect(s.body.data.items.reduce((a, x) => a + x.cities.length, 0)).toBe(92);
+    expect(s.body.data.items.reduce((a, x) => a + x.cities.length, 0)).toBe(206);
   });
 });
 

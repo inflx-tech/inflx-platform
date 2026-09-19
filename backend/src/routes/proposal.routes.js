@@ -13,14 +13,17 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireRole, requireAnyAdminRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireAnyAdminRole, requireApproved } = require('../middleware/auth');
 const ctrl = require('../controllers/proposal.controller');
 
 const router = Router();
 
 // ── Influencer ─────────────────────────────────────────────────────────────
-router.get   ('/influencers/me/discover-brands',           authenticate, requireRole('influencer'), ctrl.discoverBrands);
-router.get   ('/influencers/me/discover-brands/:id/products', authenticate, requireRole('influencer'), ctrl.discoverBrandProducts);
+// registration-and-profile §6.3: a pending creator now reaches the app, so every creator
+// action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
+// side has used all along.
+router.get   ('/influencers/me/discover-brands',           authenticate, requireRole('influencer'), requireApproved, ctrl.discoverBrands);
+router.get   ('/influencers/me/discover-brands/:id/products', authenticate, requireRole('influencer'), requireApproved, ctrl.discoverBrandProducts);
 // Item 8 — sending, withdrawing, countering and answering a counter moved to
 // routes/item8.routes (/influencers/me/pitches/*), the only door that has the
 // mode, the response deadline, item 4's date floor and item 6's thread.

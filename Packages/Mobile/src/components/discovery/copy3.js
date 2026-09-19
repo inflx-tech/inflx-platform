@@ -31,7 +31,7 @@ export const C3 = {
     brandWallet:    { title: 'Wallet is coming soon', body: 'Funds, payments and sales settlements will show here.', button: 'Explore creators' },
     creatorHome:    { title: 'Home is coming soon', body: 'Your to-dos and new invitations will show here.', button: 'Find brands' },
     creatorCreate:  { title: 'Shoppable posts are coming soon', body: "You'll create posts that link to products here.", button: 'Find brands' },
-    creatorWallet:  { title: 'Wallet is coming soon', body: 'Your earnings and payouts will show here. Payment & tax details are in Profile for now.', button: 'Open Payment & tax' },
+    creatorWallet:  { title: 'Wallet is coming soon', body: 'Your earnings and payouts will show here.', button: 'Open Wallet' },
   },
   toasts: {
     // Item 4 built campaigns; choosing and inviting creators is item 5.
@@ -127,28 +127,34 @@ export const C3 = {
     sizes: 'Sizes',
   },
   brandProfile: {
-    rows: { details: ['Business details', 'Name, logo, about, contact, GSTIN'], subs: 'Sub-categories', branches: 'Branches', pitch: 'Pitch settings', overview: ['Brand overview', 'See what creators see'], links: ['Links', 'Website, Instagram'], legal: 'Legal & policies' },
+    // features/registration-and-profile B3 — GSTIN left this list for the Wallet tab; "What you sell" is the mockup's row name.
+    rows: { details: ['Business details', 'Logo, name, about, contact'], subs: 'What you sell', branches: 'Branches', pitch: 'Pitch settings', overview: ['Brand overview', 'See what creators see'], links: ['Links', 'Website, Instagram'], legal: 'Legal & policies' },
     subsWarning: 'Choose your sub-categories so creators who filter by category can find you.',
     mainCityWarning: 'Add your main branch address so creators can see your city.',
     logout: 'Log out',
-    details: { title: 'Business details', logo: 'Brand logo', logoHint: 'JPG or PNG, square, up to 5 MB', change: 'Change', remove: 'Remove', name: 'Brand name *', about: 'About', aboutHint: 'Shown on your brand overview.', contact: 'Contact person *', gstin: 'GSTIN', phone: 'Phone', major: 'Major category', lockedHint: "Phone and major category can't be changed here. Contact INFLX support to change them.", save: 'Save changes' },
+    // features/registration-and-profile B4 — GSTIN out (Wallet), email in; the login phone IS the business phone.
+    details: { title: 'Business details', logo: 'Brand logo', logoHint: 'JPG or PNG, under 5 MB', change: 'Change', remove: 'Remove', name: 'Business name *', about: 'About', aboutHint: 'Shown on your brand overview.', contact: 'Contact person *', email: 'Email', phone: 'Phone', phoneHint: 'Your login number. This is your business number too.', major: 'Business type', save: 'Save' },
     subs: { title: 'Sub-categories', intro: 'Pick everything you sell. Creators who choose categories in their invitation settings are matched against these.', major: 'Major category', label: 'Sub-categories *' },
-    branches: { title: 'Branches', main: 'Main', edit: 'Edit', maps: 'Open in Maps', remove: 'Remove', add: 'Add a branch', hint: 'Store Visit shoots happen at one of these branches. Creators see only the city names.',
+    // features/registration-and-profile B5–B7 — the four-part address (street · pincode · state ·
+    // city) everywhere; the Google search, the Maps link and the map pin are gone.
+    branches: { title: 'Branches', main: 'Main', edit: 'Edit', makeMain: 'Make main', remove: 'Remove', add: 'Add a branch',
+      hint: 'Creators only ever see the city — never the street address, until a store visit is planned.',
       removeTitle: (n) => `Remove ${n}?`, removeBody: "It won't be used for new Store Visit shoots. Shoots already planned there don't change.", removeConfirm: 'Remove', keep: 'Keep',
-      addTitle: 'Add a branch', editTitle: 'Edit branch', name: 'Branch name *', address: 'Address *', makeMain: 'Make this the main branch', save: 'Save branch', locations: (n) => `${n} ${n === 1 ? 'location' : 'locations'}`,
-      // Item 10: an address may be typed as well as searched (the Google search is not always answering).
-      typeInstead: 'Type the address instead', searchInstead: 'Search on Google instead',
-      typedLabel: 'Street address *', typedPlaceholder: 'Shop no., street, area — as a creator would need to find it', pin: 'PIN code', pinPlaceholder: '6 digits',
-      typedHint: 'A typed address has no map pin. Open in Maps will search the words you type.',
-      noAddressYet: 'No street address yet — tap Edit to add one. A Store Visit set needs it.' },
+      addTitle: 'Add a branch', editTitle: 'Edit branch', name: 'Branch name *', save: 'Save branch', locations: (n) => `${n} ${n === 1 ? 'location' : 'locations'}`,
+      street: 'Street address *', streetPlaceholder: 'Shop no., street, area — as a creator would need to find it', pin: 'Pincode *', pinPlaceholder: '6 digits',
+      streetNote: "A store visit can't be planned to a branch with no street address — so this one is required.",
+      noAddressYet: 'No street address yet — tap Edit to add one. A Store Visit set needs it.',
+      mainSheet: { title: 'Which is your main branch?', body: 'The main branch is the city creators see, and where a store visit goes by default.',
+        first: 'your first branch', fresh: 'new', save: 'Save both' } },
     linksScreen: { title: 'Links', website: 'Website', instagram: 'Instagram' },
   },
   creatorProfile: {
-    rows: { info: ['Profile info', 'Photo, name, bio, city, social accounts'], niche: 'Niche & languages', invitation: 'Invitation settings', payment: 'Payment & tax', legal: 'Legal & policies' },
+    // features/registration-and-profile C4–C6 — Payment & tax left the profile for the Wallet tab;
+    // the city is picked (State → nearest major city), and age, gender, email are new.
+    rows: { info: ['Profile info', 'Photo, name, city, age, gender'], niche: 'Niche & languages', invitation: 'Invitation settings', legal: 'Legal & policies' },
     logout: 'Log out',
-    info: { title: 'Profile info', photo: 'Profile photo', photoHint: 'JPG or PNG, up to 5 MB', change: 'Change', name: 'Full name *', bio: 'Bio', city: 'City *', cityHint: 'Search with Google. New cities are added to INFLX automatically.', ig: 'Instagram', yt: 'YouTube', numbers: 'Your numbers', measured: 'Measured by INFLX', numbersHint: (d) => `Updated ${d}. These come from your connected accounts and can't be typed in.`, numbersHintNoDate: "These come from your connected accounts and can't be typed in.", save: 'Save changes' },
-    niche: { title: 'Niche & languages', yours: 'Your niche *', hint: 'Pick the one that describes most of your content.', languages: 'Languages you create in', warning: 'Pick your niche. Brands use it to find creators like you.' },
-    payment: { title: 'Payment & tax' },
+    info: { title: 'Profile info', photo: 'Add a photo', photoHint: 'JPG or PNG, under 5 MB', change: 'Change', name: 'Full name *', bio: 'Bio', age: 'Age', gender: 'Gender', email: 'Email', emailHint: "We won't show this to brands.", ig: 'Instagram', yt: 'YouTube', numbers: 'Your numbers', measured: 'Measured by INFLX', numbersHint: (d) => `Updated ${d}. These come from your connected accounts and can't be typed in.`, numbersHintNoDate: "These come from your connected accounts and can't be typed in.", save: 'Save' },
+    niche: { title: 'Niche & languages', yours: 'Your niche *', hint: "Pick one — the thing you're known for.", other: 'What kind of content? *', otherNote: "We'll add this to the list so brands can find you by it. Until then you're found every other way.", otherRequired: 'Tell us what kind of content you make.', otherLong: 'Keep it under 80 characters.', languages: 'Languages *', warning: 'Pick your niche. Brands use it to find creators like you.' },
   },
 };
 

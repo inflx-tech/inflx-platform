@@ -167,6 +167,8 @@ describe('PATCH /v1/brands/:id/status', () => {
   it('approves a brand and updates user status to approved', async () => {
     const { token: brandToken } = await createBrandUser();
     const brand = await registerBrand(brandToken);
+    // registration-and-profile §6: approval refuses an incomplete profile, so complete it first.
+    await require('./helpers/factories').completeBrandProfile(brand.id);
     const { token: adminToken } = await createAdminUser('reviewer');
 
     const res = await request(app)
@@ -225,6 +227,10 @@ describe('POST /v1/brands/resubmit', () => {
       .patch(`/v1/brands/${brand.id}/status`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ status: 'rejected', reason: 'Missing docs' });
+
+    // registration-and-profile §6.4: resubmit is the same door as Submit for review and is
+    // refused while the profile is incomplete — so the brand completes it first.
+    await require('./helpers/factories').completeBrandProfile(brand.id);
 
     // Brand resubmits
     const res = await request(app)

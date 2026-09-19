@@ -59,10 +59,15 @@ describe('registration stores what she typed on the influencer row', () => {
     expect(rows[0].user_name).toBe('Anusha Somepalli');
   });
 
-  test('an empty city stores NULL rather than an empty string', async () => {
-    const { inf } = await pendingCreator({ city: '' });
-    const { rows } = await query(`SELECT city FROM influencers WHERE id = $1`, [inf.id]);
-    expect(rows[0].city).toBeNull();
+  test('an empty city is refused at registration — the city is picked from the list, never typed (registration-and-profile §2.1)', async () => {
+    const { token } = await createInfluencerUser();
+    const res = await request(app)
+      .post('/v1/influencers/register')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Priya', instagram_handle: `p_${Date.now()}`, city: '', state: 'Telangana' });
+    expect(res.status).toBe(422);
+    expect(res.body.error.field).toBe('city_id');
+    expect(res.body.error.details.fields[0].code).toBe('CITY_REQUIRED');
   });
 });
 

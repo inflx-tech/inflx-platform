@@ -84,6 +84,8 @@ describe('PATCH /v1/admin/brands/:id/status', () => {
   it('approves a brand, sets approved_at, and fires a notification', async () => {
     const { token: brandToken } = await createBrandUser();
     const brand = await registerBrand(brandToken);
+    // registration-and-profile §6: approval refuses an incomplete profile, so complete it first.
+    await require('./helpers/factories').completeBrandProfile(brand.id);
     const { token: adminToken } = await createAdminUser('reviewer');
 
     const res = await request(app)

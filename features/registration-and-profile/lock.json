@@ -1,0 +1,58 @@
+{
+  "feature": "registration-and-profile",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 18 Sep 2026 — 'next lock these things then draw the mockups then we lock mockups then we start building'; seed lists approved with 'this is fine, what actually needs' and 'ok drop sankrit')",
+  "approved_at": "2026-09-18T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 18 Sep 2026 — attached registration-and-profile-mockups-v1.html and said \"Pls start implementation\"; the two founder changes already applied — C2 explainer removed, bank+IFSC one entry — stand)",
+  "mockup_locked_at": "2026-09-18T00:00:00+05:30",
+  "notes": "Scope is the three phone apps PLUS the admin screens at Packages/brand-web/app/admin/**; the brand-facing website (app/dashboard, app/login) is re-skinned later onto the same backend. Admin is three screens: the brand review page's missing-fields list already EXISTS and is wrong for the new model (it asks for GST, now Wallet not approval, and for a map pin, being deleted) so it is corrected not created; the creator review page has no roll-up at all so it gains one; and the Other-niche queue is new. Founder decisions recorded verbatim in PROMPT.md. Seed lists backend/seeds/south_cities_draft.csv (146 district headquarters across six southern states) and backend/seeds/languages_draft.csv (30, Sanskrit deliberately dropped), both approved 18 Sep, neither loaded into any database yet. Three corrections were stated back to the founder and not disputed: (1) his 'most of the thing is working now except a popup' was half right — the brand's actions are already refused server-side with the right words, the creator's actions are refused nowhere, and no pending user reaches the app at all today, so opening that door is the real work and it makes the creator-side gap live; (2) removing Google Places costs nothing in any live flow, because coordinates are read only by the dormant shopper feed and meal-radius rules while store visits use the typed visit address; (3) brand sub-categories already behave exactly as he described, so that decision is a confirmation not a change. 'Item 11' was NOT used as the name — it is already reserved for the shipment shoot, item 10's sibling. No migration drafted yet. No code changed. Nothing deployed. BUILD 18–19 Sep 2026: migration 188 + run-188.js; backend registration/profile/completeness/submit/gate/branches/niche-queue/agreement; 17 phone screens; 3 admin screens. See 06-diff/notes.md and API.md.",
+  "mockups": {
+    "file": "04-preview/mockups/registration-and-profile-mockups-v1.html",
+    "screens": 22,
+    "drawn_at": "2026-09-18T00:00:00+05:30",
+    "founder_changes_applied": [
+      "C2 (creator register step 2): the 'Why we ask' explainer block removed.",
+      "Wallet, both sides: bank account number and IFSC are ONE entry, not two rows. Spec 5 updated to match — a bank account without an IFSC is not a usable payout destination, so two list items would invite a half-filled state worth nothing."
+    ],
+    "awaiting": null,
+    "locked": true
+  },
+  "sequence": {
+    "1_spec_locked": true,
+    "2_mockups_drawn": true,
+    "3_mockups_locked": true,
+    "4_build": true,
+    "rule": "No app code before step 3. Founder's instruction, 18 Sep. Step 3 reached 18 Sep — build started the same day."
+  },
+  "out_of_scope": [
+    "The follower app's location capture — Google stays there, untouched; it positions the shopper feed, which is a different job from address entry, and the founder wants it kept and extended later.",
+    "The BRAND-FACING website only — Packages/brand-web/app/dashboard/** and app/login/**. Re-skinned afterwards onto this same backend. Admin is IN scope: founder 18 Sep, 'web site means brand web, not admin web — design admin web along with mobile apps', and he chose option A (build admin alongside the phone apps) over shipping approval half-working. The live admin is Packages/brand-web/app/admin/** — the same package as the brand site, a different folder — so the boundary is by folder, not by package.",
+    "Email verification — collected now, OTP or link next version (there is no email-sending capability in the backend at all today: no nodemailer, no SendGrid, no SES, no SMTP; SMS goes through MSG91 and has no email equivalent).",
+    "Terms-acceptance recording — not this version.",
+    "The referral system — parked whole; the code box is removed.",
+    "Format validation of PAN / IFSC / GSTIN / UPI — manual, offline, by the team."
+  ],
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-19T00:00:00+05:30",
+      "committed": false,
+      "migration_dry_run": "188 dry run against production 2026-09-18: 36 states, 92 cities, 10 languages, 20 niches, 10 brands, 26 creators, 0 pending creators, 3 pending brands (they will be marked submitted at their registration time so the queue does not empty), 1 Rajahmundry row (renamed, not duplicated). Nothing written.",
+      "backend_tests": "baseline on pristine HEAD (9711fd7): 1386 / 1165 / 221. After: 1404 / 1183 / 221 — 0 new failures, 0 fixed. registration-profile.test.js: 37 checks green. Deliberate re-baselines: item2-settings-api counts (21 niches, 30 languages, 206 cities), item3-branches + item3-profile Google tests rewritten to the pickers, brand/admin/item3b/item3-brand-overview/item10-storevisit fixtures complete the profile or send the four parts. Two jest runs on one Postgres produce spurious deadlocks in item10-engine — the clean serial run is the evidence.",
+      "mobile_tests": "599 pass / 49 suites (registrationProfile.test.js 22 new).",
+      "admin": "next build exits 0; /admin/niches/other in the route manifest. Playwright admin specs run directly (nav-sweep, role-gate, approvals, approvals-reject): 34 passed; the one red was the stale /admin/master-dishes entry (page deleted by the cut, 60ca1d9) — removed, sweep then 23/23. The full pnpm qa lane still FAILS at suite load on qa/unit/campaign-end-and-open-ended.spec.ts and wizard-allocation-wiring.spec.ts reading app/dashboard/campaigns/new/page.js, also deleted by the cut — pre-existing, not touched here.",
+      "governance_check": "gov-check scans the committed range only; it will evaluate this contract at commit time (lock approved + 01/02/05 present + mockup_locked + 06-diff/notes.md non-empty). Note: the local branch already carries the founder's unpushed 9711fd7 (item 10 walk fix) which gov-check flags as contract-less — it rides along with the push.",
+      "note": "released stays false per GOVERNANCE.md §5. Production-impacting; nothing committed or deployed until the founder's explicit go: run-188 --apply → commit → push (Render + Vercel) → OTA brand → OTA influencer. No money moves."
+    }
+  }
+}

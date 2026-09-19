@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -13,7 +14,11 @@ import BrandBlockedCreatorsScreen from '../screens/brand/BrandBlockedCreatorsScr
 import BrandCreatorProfileScreen from '../screens/brand/BrandCreatorProfileScreen';
 // Item 3 — the five-tab shell, discovery, groups, profile screens and the brand overview.
 // Contract: features/item3-discovery-profiles-groups
-import ComingSoonScreen from '../components/shell/ComingSoonScreen';
+// features/registration-and-profile — a pending brand is inside the app now: the Home tab is
+// the pending home until approval (then the ComingSoon placeholder as before), and the sheet
+// host shows the server's ACCOUNT_PENDING words on any gated action.
+import PendingHomeScreen from '../components/shell/PendingHomeScreen';
+import PendingSheetHost from '../components/shell/PendingSheetHost';
 import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
 import BrandGroupAddCreatorsScreen from '../screens/brand/BrandGroupAddCreatorsScreen';
@@ -34,6 +39,7 @@ import BrandSetEditScreen from '../screens/brand/BrandSetEditScreen';
 // features/brand-wallet-on-the-phone — the money a brand needs before she can sign.
 import BrandWalletScreen from '../screens/brand/BrandWalletScreen';
 import BrandAddMoneyScreen from '../screens/brand/BrandAddMoneyScreen';
+import BrandPayoutDetailScreen from '../screens/brand/BrandPayoutDetailScreen';
 import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScreen';
 import BrandSetDetailScreen from '../screens/brand/BrandSetDetailScreen';
 // Item 5 — the set's creator picker, the group check, terms per creator, review and send.
@@ -80,6 +86,8 @@ function WalletStackScreen() {
     <WalletStack.Navigator screenOptions={{ headerShown: false }}>
       <WalletStack.Screen name="BrandWallet" component={BrandWalletScreen} />
       <WalletStack.Screen name="BrandAddMoney" component={BrandAddMoneyScreen} />
+      {/* features/registration-and-profile B8 — GST number and bank account live on the Wallet tab. */}
+      <WalletStack.Screen name="BrandPayoutDetail" component={BrandPayoutDetailScreen} />
     </WalletStack.Navigator>
   );
 }
@@ -167,12 +175,15 @@ export const tabScreenOptions = ({ route }) => ({
 
 export default function BrandNavigator() {
   return (
-    <Tab.Navigator initialRouteName="CreatorsTab" screenOptions={tabScreenOptions}>
-      <Tab.Screen name="HomeTab" component={ComingSoonScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-      <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} />
-      <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} />
-      <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
-      <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
-    </Tab.Navigator>
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator initialRouteName="CreatorsTab" screenOptions={tabScreenOptions}>
+        <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
+        <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} />
+        <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} />
+        <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
+        <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
+      </Tab.Navigator>
+      <PendingSheetHost />
+    </View>
   );
 }

@@ -18,8 +18,18 @@ import { PrimaryButton, EmptyState } from '../../components/settings/primitives'
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import useRouteToast from '../../hooks/useRouteToast';
 import { WALLET, txLabel, txAmount, rupeesW } from '../../components/wallet/copyW';
+import DetailSection, { ADDED, NOT_ADDED, HAND_CHECK } from '../../components/wallet/DetailSection';
 
 const W = WALLET.tab;
+
+// features/registration-and-profile B8 — GSTIN and the bank account live here, out of the
+// profile. Neither blocks approval; both are needed before money moves.
+export const BUSINESS_DETAILS = {
+  title: 'Business & payment details',
+  noteTitle: 'Needed before money moves',
+  noteBody: 'Not needed for approval. Our team verifies these by hand.',
+  gst: 'GST number', gstSub: 'Appears on your agreements', bank: 'Bank account', bankSub: 'Account number + IFSC',
+};
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** "16 Sep" — and the time too when it is today, because she has just done it. */
@@ -40,16 +50,18 @@ export default function BrandWalletScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [wallet, setWallet] = useState(null);
   const [rows, setRows] = useState([]);
+  const [brand, setBrand] = useState(null);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
   const load = useCallback(async () => {
     setStatus(st => (st === 'ready' ? 'ready' : 'loading'));
-    const [w, t] = await Promise.all([brandApi.getWallet(), brandApi.getWalletTransactions()]);
+    const [w, t, m] = await Promise.all([brandApi.getWallet(), brandApi.getWalletTransactions(), brandApi.getMe()]);
     if (!w.success) { setStatus('error'); return; }
     setWallet(w.data.wallet || w.data);
-    // The ledger is a nice-to-have: a wallet that loads without its history is still a wallet.
+    // The ledger and the details are nice-to-haves: a wallet that loads without them is still a wallet.
     setRows(t.success ? (t.data.transactions || []) : []);
+    setBrand(m && m.success ? (m.data.brand || m.data) : null);
     setStatus('ready');
   }, []);
   // Refetches on focus, so coming back from Add money shows the new balance without a pull.
@@ -63,6 +75,8 @@ export default function BrandWalletScreen({ navigation, route }) {
   const available = Number(wallet.available_balance ?? wallet.wallet_balance ?? 0);
   const locked = Number(wallet.reserved_balance ?? 0);
   const paidOut = Number(wallet.settled_balance ?? 0);
+  const val = (has) => (brand ? (has ? ADDED : NOT_ADDED) : '—');
+  const openDetail = (kind) => navigation.navigate('BrandPayoutDetail', { kind });
 
   return (
     <View style={s.screen} testID="brand-wallet">
@@ -88,6 +102,18 @@ export default function BrandWalletScreen({ navigation, route }) {
             <Text style={s.tiny}>{W.paidOutSub}</Text>
           </View>
         </View>
+
+        <DetailSection
+          testID="business-details"
+          title={BUSINESS_DETAILS.title}
+          noteTitle={BUSINESS_DETAILS.noteTitle}
+          noteBody={BUSINESS_DETAILS.noteBody}
+          rows={[
+            { key: 'gst', label: BUSINESS_DETAILS.gst, sub: BUSINESS_DETAILS.gstSub, value: val(brand && !!brand.gstin), onPress: () => openDetail('gst'), testID: 'row-gst' },
+            { key: 'bank', label: BUSINESS_DETAILS.bank, sub: BUSINESS_DETAILS.bankSub, value: val(brand && brand.has_bank_account), onPress: () => openDetail('bank'), testID: 'row-bank' },
+          ]}
+          footer={HAND_CHECK}
+        />
 
         <Text style={[s.label, { marginTop: 18, marginBottom: 6 }]}>{W.activity}</Text>
         {rows.length ? (

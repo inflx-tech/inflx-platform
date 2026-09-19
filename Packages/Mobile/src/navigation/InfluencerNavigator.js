@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -9,16 +10,21 @@ import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 import InvitationSettingsScreen from '../screens/influencer/InvitationSettingsScreen';
 import BlockedBrandsScreen from '../screens/influencer/BlockedBrandsScreen';
 import BrandOverviewScreen from '../screens/influencer/BrandOverviewScreen';
-// Item 3 — the five-tab shell, Collabs, Find brands, the profile screens and Payment & tax.
+// Item 3 — the five-tab shell, Collabs, Find brands and the profile screens.
 // Contract: features/item3-discovery-profiles-groups
 import ComingSoonScreen from '../components/shell/ComingSoonScreen';
+// features/registration-and-profile — a pending creator is inside the app now: the Home tab is
+// the pending home until approval, the sheet host shows ACCOUNT_PENDING on any gated action,
+// and Payment & tax left the profile for the Wallet tab (UPI / bank / PAN).
+import PendingHomeScreen from '../components/shell/PendingHomeScreen';
+import PendingSheetHost from '../components/shell/PendingSheetHost';
 // features/creator-wallet-and-first-payment — a stand-in wallet, so money that already exists is visible.
 import CreatorWalletScreen from '../screens/influencer/CreatorWalletScreen';
+import PayoutDetailScreen from '../screens/influencer/PayoutDetailScreen';
 import CollabsScreen from '../screens/influencer/CollabsScreen';
 import FindBrandsScreen from '../screens/influencer/FindBrandsScreen';
 import ProfileInfoScreen from '../screens/influencer/ProfileInfoScreen';
 import NicheLanguagesScreen from '../screens/influencer/NicheLanguagesScreen';
-import PaymentTaxScreen from '../screens/influencer/PaymentTaxScreen';
 import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
 import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
 // Item 3b — Your numbers (R4/R5) and the platform detail (S2/S3 with the R4 banner).
@@ -50,7 +56,19 @@ import { tabScreenOptions } from './BrandNavigator';
 const Tab = createBottomTabNavigator();
 const CollabsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const WalletStack = createNativeStackNavigator();
 const noHeader = { headerShown: false };
+
+// features/registration-and-profile C7 — the Wallet tab is a stack now, so a payout detail
+// (UPI, bank account, PAN) pushes over it.
+function WalletStackScreen() {
+  return (
+    <WalletStack.Navigator screenOptions={noHeader}>
+      <WalletStack.Screen name="CreatorWallet" component={CreatorWalletScreen} />
+      <WalletStack.Screen name="PayoutDetail" component={PayoutDetailScreen} />
+    </WalletStack.Navigator>
+  );
+}
 
 function CollabsStackScreen() {
   return (
@@ -87,7 +105,6 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
       <ProfileStack.Screen name="NicheLanguages" component={NicheLanguagesScreen} />
-      <ProfileStack.Screen name="PaymentTax" component={PaymentTaxScreen} />
       <ProfileStack.Screen name="YourNumbers" component={YourNumbersScreen} />
       <ProfileStack.Screen name="SocialDetail" component={SocialDetailScreen} />
       {/* Item 2 */}
@@ -102,12 +119,15 @@ function ProfileStackScreen() {
 
 export default function InfluencerNavigator() {
   return (
-    <Tab.Navigator initialRouteName="CollabsTab" screenOptions={tabScreenOptions}>
-      <Tab.Screen name="HomeTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-      <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} />
-      <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} />
-      <Tab.Screen name="WalletTab" component={CreatorWalletScreen} options={{ title: 'Wallet' }} />
-      <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
-    </Tab.Navigator>
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator initialRouteName="CollabsTab" screenOptions={tabScreenOptions}>
+        <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
+        <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} />
+        <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} />
+        <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
+        <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
+      </Tab.Navigator>
+      <PendingSheetHost />
+    </View>
   );
 }

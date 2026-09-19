@@ -20,7 +20,7 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireRole, requireAnyAdminRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireAnyAdminRole, requireApproved } = require('../middleware/auth');
 const ctrl = require('../controllers/production.controller');
 
 const router = Router();
@@ -54,13 +54,16 @@ router.post(
 );
 
 // Event-scoped state transitions
-router.post('/production-events/:id/propose-slot',     authenticate, requireRole('influencer'), ctrl.proposeSlot);
-router.post('/production-events/:id/accept',           authenticate, requireRole('brand', 'influencer'), ctrl.acceptEvent);
-router.post('/production-events/:id/counter-propose',  authenticate, requireRole('brand', 'influencer'), ctrl.counterPropose);
+// registration-and-profile §6.3: a pending creator now reaches the app, so every creator
+// action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
+// side has used all along.
+router.post('/production-events/:id/propose-slot',     authenticate, requireRole('influencer'), requireApproved, ctrl.proposeSlot);
+router.post('/production-events/:id/accept',           authenticate, requireRole('brand', 'influencer'), requireApproved, ctrl.acceptEvent);
+router.post('/production-events/:id/counter-propose',  authenticate, requireRole('brand', 'influencer'), requireApproved, ctrl.counterPropose);
 router.post('/production-events/:id/dispatch',         authenticate, requireRole('brand'),       ctrl.dispatch);
-router.post('/production-events/:id/confirm-received', authenticate, requireRole('influencer'), ctrl.confirmReceived);
-router.post('/production-events/:id/complete',         authenticate, requireRole('brand', 'influencer'), ctrl.complete);
-router.post('/production-events/:id/flip-to-remote',   authenticate, requireRole('brand', 'influencer'), ctrl.flipToRemote);
+router.post('/production-events/:id/confirm-received', authenticate, requireRole('influencer'), requireApproved, ctrl.confirmReceived);
+router.post('/production-events/:id/complete',         authenticate, requireRole('brand', 'influencer'), requireApproved, ctrl.complete);
+router.post('/production-events/:id/flip-to-remote',   authenticate, requireRole('brand', 'influencer'), requireApproved, ctrl.flipToRemote);
 router.post('/production-events/:id/cancel',           authenticate, requireAnyAdminRole, ctrl.adminCancel);
 
 

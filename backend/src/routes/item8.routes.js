@@ -10,11 +10,14 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireApproved, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/pitch.controller');
 
 const router = Router();
-const creator = [authenticate, requireRole('influencer')];
+// registration-and-profile §6.3: a pending creator now reaches the app, so every creator
+// action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
+// side has used all along.
+const creator = [authenticate, requireRole('influencer'), requireApproved];
 const brand = [authenticate, requireRole('brand')];
 
 // ── Creator — E2–E5, T1–T4, T13, T14 ────────────────────────────────────────

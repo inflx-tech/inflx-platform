@@ -8,6 +8,8 @@ const influencerRoutes  = require('./influencer.routes');
 const adminRoutes       = require('./admin.routes');
 const adminSectionsRoutes = require('./adminSections.routes');
 const adminWorldRulesRoutes = require('./adminWorldRules.routes');
+// registration-and-profile — the Other niche queue (spec §9A.3)
+const adminNichesRoutes = require('./adminNiches.routes');
 const adminPagesRoutes = require('./adminPages.routes');
 const adminConceptsRoutes = require('./adminConcepts.routes');
 const creatorPostsRoutes = require('./creatorPosts.routes');
@@ -113,6 +115,9 @@ router.use('/admin/sections', adminSectionsRoutes);
 
 // ── World Rules admin API (Phase 3, mig 126 — admin only) ────────────────────
 router.use('/admin/world-rules', adminWorldRulesRoutes);
+
+// ── Other-niche queue (registration-and-profile) ─────────────────────────────
+router.use('/admin/niches', adminNichesRoutes);
 
 // ── Custom-page registry admin API (App Builder — admin only) ────────────────
 router.use('/admin/pages', adminPagesRoutes);

@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Registration &amp; Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:70ch}
+.prose{color:var(--ink2);max-width:72ch}
+header.top{padding-block:34px 14px;display:grid;gap:10px;border-bottom:1px solid var(--border)}
+section{padding-block:34px 6px;display:grid;gap:16px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+.pill.new{background:var(--active-bg);color:var(--active-fg)}
+.pill.same{background:var(--ended-bg);color:var(--ended-fg)}
+.pill.gone{background:var(--no-bg);color:var(--no-fg)}
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:3px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:610px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:11px;position:relative}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;flex:none;font-size:14px}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:7px}
+.lbl{font-weight:700;font-size:12.5px}
+.lbl .req{color:var(--no-fg)}
+.hint{font-size:11px;color:var(--ink2);line-height:1.35}
+.inp{border:1px solid var(--border);background:var(--bg);border-radius:10px;padding:9px 11px;font-size:13px;min-height:36px;display:flex;align-items:center;color:var(--ink)}
+.inp.ph{color:var(--ink3)}
+.inp.sel{justify-content:space-between}
+.inp.sel::after{content:"▾";color:var(--ink3);font-size:11px}
+.inp.dis{background:var(--surface);color:var(--ink3)}
+.inp.err{border-color:var(--no-fg)}
+.errtxt{font-size:11px;color:var(--no-fg);font-weight:600}
+.btn{border-radius:11px;padding:11px;text-align:center;font-weight:800;font-size:13px;background:var(--primary);color:#1A1A17}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}
+.btn.dis{background:var(--surface);color:var(--ink3)}
+.btn.dark{background:var(--ink);color:#fff}
+.card{border:1px solid var(--border);border-radius:13px;padding:11px;background:var(--bg);display:grid;gap:7px}
+.card.soft{background:var(--surface)}
+.note{border-radius:11px;padding:10px;font-size:11.5px;line-height:1.4;display:grid;gap:3px}
+.note.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.note.no{background:var(--no-bg);color:var(--no-fg)}
+.note.ok{background:var(--active-bg);color:var(--active-fg)}
+.note.warn{background:var(--move-bg);color:var(--move-fg)}
+.note b{font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--border);border-radius:999px;padding:5px 10px;font-size:11.5px;font-weight:600;background:var(--bg)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.other{border-style:dashed}
+.prow{display:flex;align-items:center;gap:9px;padding:11px 2px;border-bottom:1px solid var(--border)}
+.prow:last-child{border-bottom:0}
+.prow .t{flex:1;display:grid;gap:1px}
+.prow .t b{font-size:13px;font-weight:700}
+.prow .t span{font-size:11px;color:var(--ink2)}
+.prow .cv{font-size:11px;color:var(--ink3);text-align:right;max-width:110px}
+.prow .ch{color:var(--ink3);font-size:13px}
+.dot{width:7px;height:7px;border-radius:99px;background:var(--no-fg);flex:none}
+.tabs{display:flex;gap:2px;border-top:1px solid var(--border);padding-top:9px;margin-top:auto}
+.tab{flex:1;display:grid;gap:3px;justify-items:center;font-size:9.5px;font-weight:700;color:var(--ink3)}
+.tab.on{color:var(--ink)}
+.tab .gl{font-size:15px;line-height:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:14px;display:grid;gap:9px;box-shadow:0 -14px 34px rgba(26,26,23,.16)}
+.scrim{position:absolute;inset:0;background:rgba(26,26,23,.34)}
+.list{display:grid;gap:0}
+.li{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--border);font-size:12.5px}
+.li:last-child{border-bottom:0}
+.li.on{font-weight:700}
+.li .tick{margin-left:auto;font-weight:800}
+.ava{width:46px;height:46px;border-radius:99px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;font-weight:800;color:var(--ink2);flex:none}
+.sq{width:46px;height:46px;border-radius:11px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;font-weight:800;color:var(--ink2);flex:none;font-size:11px}
+.steps{display:flex;gap:5px}
+.sbar{height:3px;border-radius:9px;background:var(--border);flex:1}
+.sbar.on{background:var(--ink)}
+/* desktop admin frames */
+.desk{width:100%;max-width:520px;background:var(--bg);border:1px solid var(--border);border-radius:13px;overflow:hidden;font-size:12.5px}
+.deskbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono);color:var(--ink2)}
+.deskbody{padding:13px;display:grid;gap:11px}
+.shot.wide{justify-items:stretch}
+.shot.wide .cap{max-width:520px}
+table.mk{width:100%;border-collapse:collapse;font-size:11.5px}
+table.mk th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:5px 6px;border-bottom:1px solid var(--border);font-family:var(--mono);font-weight:500}
+table.mk td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:top}
+table.mk tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px}
+.tag.miss{background:var(--no-bg);color:var(--no-fg)}
+.tag.ok{background:var(--active-bg);color:var(--active-fg)}
+.tag.new{background:var(--move-bg);color:var(--move-fg)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;padding:13px;border:1px solid var(--border);border-radius:13px;background:var(--bg)}
+.foot{padding-block:44px 60px;color:var(--ink2);font-size:13px;display:grid;gap:8px;border-top:1px solid var(--border);margin-top:34px}
+.kbd{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+</style></head>
+<body><div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">features/registration-and-profile · mockups v1 · 18 Sep 2026</p>
+  <h1>Registration, profile &amp; approval</h1>
+  <p class="lede">Twenty screens, drawn from the locked spec. Registration gets short and always-valid; everything else moves to the profile; approval stops being a rubber stamp; a pending account finally gets into the app. Google Places leaves address entry entirely.</p>
+  <div class="legend">
+    <span class="pill new">new screen</span>
+    <span class="pill">changed</span>
+    <span class="pill same">unchanged — shown for flow</span>
+    <span class="pill gone">something removed here</span>
+  </div>
+</header>
+
+<!-- ─────────────────────────── CREATOR ─────────────────────────── -->
+<section>
+  <header>
+    <p class="eyebrow">Part 1</p>
+    <h2>Creator app</h2>
+    <p class="prose">Five fields to register, all mandatory. City stops being optional free text — which is the single change that closes the store-visit matching failure at its source.</p>
+  </header>
+
+  <div class="flow">
+
+    <!-- C1 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar"></div></div>
+        <div class="grp" style="margin-top:6px">
+          <h3 style="font-size:19px;font-weight:800">Tell us about you</h3>
+          <p class="hint">Two quick steps. You can add the rest later.</p>
+        </div>
+        <div class="grp"><div class="lbl">Full name <span class="req">*</span></div><div class="inp">Priya Sharma</div></div>
+        <div class="grp"><div class="lbl">State <span class="req">*</span></div><div class="inp sel">Telangana</div></div>
+        <div class="grp">
+          <div class="lbl">Your nearest major city <span class="req">*</span></div>
+          <div class="inp sel">Hyderabad</div>
+          <p class="hint">The closest big city to you — not your exact town or area.</p>
+        </div>
+        <div style="flex:1"></div>
+        <div class="btn">Continue</div>
+      </div></div>
+      <div class="cap"><b>C1 · Register, step 1</b><span>State first, then the city list narrows to it. The helper line is load-bearing: it is the only reason a 146-city list works.</span><i>was: name + optional typed city</i></div>
+    </div>
+
+    <!-- C1b -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar"></div></div>
+        <div class="bar"><div class="ib">‹</div><h3>Nearest major city</h3></div>
+        <div class="inp ph">Search Telangana cities</div>
+        <div class="list" style="flex:1;overflow:hidden">
+          <div class="li on">Hyderabad <span class="tick">✓</span></div>
+          <div class="li">Warangal</div>
+          <div class="li">Karimnagar</div>
+          <div class="li">Nizamabad</div>
+          <div class="li">Khammam</div>
+          <div class="li">Mahbubnagar</div>
+          <div class="li">Hanumakonda</div>
+          <div class="li">Medchal</div>
+          <div class="li">Sangareddy</div>
+          <div class="li">Siddipet</div>
+          <div class="li mut">Nalgonda</div>
+          <div class="li mut">Suryapet</div>
+        </div>
+        <p class="hint">33 cities in Telangana</p>
+      </div></div>
+      <div class="cap"><b>C1b · The city picker</b><span>A plain filtered list of that state's district headquarters. No map, no search-as-you-type against Google, no free text.</span><i>replaces the Google place search</i></div>
+    </div>
+
+    <!-- C2 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar on"></div></div>
+        <div class="bar"><div class="ib">‹</div></div>
+        <div class="grp">
+          <h3 style="font-size:19px;font-weight:800">Where do you post?</h3>
+          <p class="hint">At least one. We check it belongs to you before you go live.</p>
+        </div>
+        <div class="grp"><div class="lbl">Instagram</div><div class="inp"><span class="mut" style="margin-right:2px">@</span>priya.styles</div></div>
+        <div class="grp"><div class="lbl">YouTube</div><div class="inp ph">@yourchannel</div></div>
+        <div style="flex:1"></div>
+        <div class="btn">Create my account</div>
+      </div></div>
+      <div class="cap"><b>C2 · Register, step 2</b><span>Handles. Unchanged from today — drawn so the flow reads whole.</span><i class="pill same" style="display:inline-block;margin-top:2px">unchanged</i></div>
+    </div>
+
+    <!-- C3 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>INFLX</h3><div class="ib">◔</div></div>
+        <div class="note wait"><b>Under review</b><span>Usually within 24 hours. You can look around while you wait.</span></div>
+        <div class="card soft"><div class="row"><div class="sq">★</div><div class="t" style="flex:1"><b style="font-size:12.5px">Brands on INFLX</b><p class="hint">Browse who's here</p></div></div></div>
+        <div class="card soft"><div class="row"><div class="sq">▤</div><div class="t" style="flex:1"><b style="font-size:12.5px">How collaborations work</b><p class="hint">A 2-minute read</p></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="row between"><b style="font-size:14px">Finish your profile</b><span class="mut">✕</span></div>
+          <p class="hint">6 of 10 done. Add your photo, bio, niche and languages.</p>
+          <div class="note ok"><span><b>This gets you approved faster</b> — an admin can only verify an account that's complete.</span></div>
+          <div class="btn">Complete profile</div>
+          <div class="btn ghost">Later</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>C3 · Pending home <span class="pill new" style="display:inline-block">new</span></b><span>She is <em>in</em> the app. Today she hits a dead-end Waiting screen whose only button is Sign out.</span><i>the popup carries the reason, not just the ask</i></div>
+    </div>
+
+    <!-- C4 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Profile</h3></div>
+        <div class="row" style="gap:11px"><div class="ava">PS</div><div class="t" style="flex:1"><b style="font-size:14px">Priya Sharma</b><p class="hint">@priya.styles · Hyderabad</p><span class="tag miss" style="margin-top:3px">Under review</span></div></div>
+        <div class="note warn"><b>4 things left</b><span>Photo, bio, age, gender</span></div>
+        <div class="list">
+          <div class="prow"><div class="t"><b>Profile info</b><span>Photo, name, city, age, gender</span></div><div class="dot"></div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Your numbers</b><span>Measured after approval</span></div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Niche &amp; languages</b></div><div class="dot"></div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Invitation settings</b></div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Legal</b></div><div class="ch">›</div></div>
+        </div>
+        <div class="btn dis">Submit for review</div>
+        <p class="hint" style="text-align:center">Finish the 4 items above to submit</p>
+        <div class="tabs"><div class="tab"><span class="gl">⌂</span>Home</div><div class="tab"><span class="gl">◎</span>Collabs</div><div class="tab"><span class="gl">▤</span>Wallet</div><div class="tab on"><span class="gl">●</span>Profile</div></div>
+      </div></div>
+      <div class="cap"><b>C4 · Profile main</b><span>Payment &amp; Tax has left this list. Red dots mark what blocks submission. The submit button is the new gate.</span><i class="pill gone" style="display:inline-block;margin-top:2px">Payment &amp; Tax removed</i></div>
+    </div>
+
+    <!-- C5 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Profile info</h3></div>
+        <div class="row" style="gap:10px"><div class="ava">PS</div><div class="t"><b style="font-size:12.5px">Add a photo</b><p class="hint">JPG or PNG, under 5 MB</p></div></div>
+        <div class="grp"><div class="lbl">Full name <span class="req">*</span></div><div class="inp">Priya Sharma</div></div>
+        <div class="grp"><div class="lbl">Bio <span class="req">*</span></div><div class="inp ph" style="min-height:52px;align-items:flex-start;padding-top:9px">A line about what you make</div><p class="hint">0 / 150</p></div>
+        <div class="grp"><div class="lbl">State <span class="req">*</span></div><div class="inp sel">Telangana</div></div>
+        <div class="grp"><div class="lbl">Nearest major city <span class="req">*</span></div><div class="inp sel">Hyderabad</div></div>
+        <div class="row" style="gap:8px">
+          <div class="grp" style="flex:1"><div class="lbl">Age <span class="req">*</span></div><div class="inp ph">24</div></div>
+          <div class="grp" style="flex:1"><div class="lbl">Gender <span class="req">*</span></div><div class="inp sel ph">Select</div></div>
+        </div>
+        <div class="grp"><div class="lbl">Email</div><div class="inp ph">you@email.com</div><p class="hint">We won't show this to brands.</p></div>
+        <div class="btn">Save</div>
+      </div></div>
+      <div class="cap"><b>C5 · Profile info</b><span>Two pickers replace the Google city search. Age, gender and email are new.</span><i class="pill gone" style="display:inline-block;margin-top:2px">Google city search removed</i></div>
+    </div>
+
+    <!-- C6 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Niche &amp; languages</h3></div>
+        <div class="grp"><div class="lbl">Your niche <span class="req">*</span></div><p class="hint">Pick one — the thing you're known for.</p>
+          <div class="chips">
+            <span class="chip">Fashion</span><span class="chip">Beauty</span><span class="chip">Lifestyle</span>
+            <span class="chip">Comedy</span><span class="chip">Food</span><span class="chip">Travel</span>
+            <span class="chip">Fitness</span><span class="chip">Daily vlogs</span>
+            <span class="chip on other">Other ✓</span>
+          </div>
+        </div>
+        <div class="grp"><div class="lbl">What kind of content? <span class="req">*</span></div><div class="inp">Pet &amp; dog training</div>
+          <div class="note wait"><span>We'll add this to the list so brands can find you by it. Until then you're found every other way.</span></div>
+        </div>
+        <div class="grp"><div class="lbl">Languages <span class="req">*</span></div>
+          <div class="chips">
+            <span class="chip on">English</span><span class="chip">Hindi</span><span class="chip on">Telugu</span>
+            <span class="chip">Tamil</span><span class="chip">Kannada</span><span class="chip">Malayalam</span>
+            <span class="chip">Tulu</span><span class="chip">Konkani</span><span class="chip mut">+22 more</span>
+          </div>
+        </div>
+        <div class="btn">Save</div>
+      </div></div>
+      <div class="cap"><b>C6 · Niche &amp; languages</b><span>"Other" opens a box and is honest about what it means. 30 languages, southern ones first.</span><i>Other is how the niche list grows</i></div>
+    </div>
+
+    <!-- C7 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Wallet</h3></div>
+        <div class="card"><p class="hint">Available to withdraw</p><b style="font-size:23px">₹8,625</b><p class="hint">₹2,400 still held until return windows close</p></div>
+        <p class="lbl" style="margin-top:3px">Payment details</p>
+        <div class="note warn"><b>Add these to get paid</b><span>Not needed for approval — only before your first withdrawal.</span></div>
+        <div class="list">
+          <div class="prow"><div class="t"><b>UPI</b></div><div class="cv">Not added</div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Bank account</b><span>Account number + IFSC</span></div><div class="cv">Not added</div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>PAN</b><span>For your TDS certificate</span></div><div class="cv">Not added</div><div class="ch">›</div></div>
+        </div>
+        <p class="hint">Our team checks these by hand, usually the same day.</p>
+        <div class="tabs"><div class="tab"><span class="gl">⌂</span>Home</div><div class="tab"><span class="gl">◎</span>Collabs</div><div class="tab on"><span class="gl">▤</span>Wallet</div><div class="tab"><span class="gl">●</span>Profile</div></div>
+      </div></div>
+      <div class="cap"><b>C7 · Wallet <span class="pill new" style="display:inline-block">new home</span></b><span>UPI, bank, IFSC and PAN move here out of the profile. Says plainly that none of it blocks approval.</span><i>no format checking — the team verifies</i></div>
+    </div>
+
+    <!-- C8 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Needs a fix</h3></div>
+        <div class="note no"><b>What the admin said</b><span>The Instagram handle doesn't match the name on the account. Please check the spelling.</span></div>
+        <p class="hint">Change what's wrong and send it back. Review usually takes under a day.</p>
+        <div class="grp"><div class="lbl">Full name</div><div class="inp">Priya Sharma</div></div>
+        <div class="grp"><div class="lbl">State</div><div class="inp sel">Telangana</div></div>
+        <div class="grp"><div class="lbl">Nearest major city</div><div class="inp sel">Hyderabad</div></div>
+        <div class="grp"><div class="lbl">Instagram</div><div class="inp err"><span class="mut" style="margin-right:2px">@</span>priya.styles</div><p class="errtxt">Check this one</p></div>
+        <div class="grp"><div class="lbl">YouTube</div><div class="inp ph">@yourchannel</div></div>
+        <div style="flex:1"></div>
+        <div class="btn">Send for review again</div>
+        <div class="btn ghost">Sign out</div>
+      </div></div>
+      <div class="cap"><b>C8 · Rejected</b><span>Her own form back, pre-filled and editable. Today this screen calls the <em>brand</em> endpoint, so a rejected creator is refused outright.</span><i>needs a creator resubmit path</i></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────────────── BRAND ─────────────────────────── -->
+<section>
+  <header>
+    <p class="eyebrow">Part 2</p>
+    <h2>Brand app</h2>
+    <p class="prose">Seven fields, one screen. The map, the place search, the Maps-link box and the referral code all go. Street and pincode are typed; state and city are picked.</p>
+  </header>
+
+  <div class="flow">
+
+    <!-- B1 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="grp"><h3 style="font-size:19px;font-weight:800">Set up your business</h3><p class="hint">Reviewed by our team, usually within 24 hours.</p></div>
+        <div class="grp"><div class="lbl">Your name <span class="req">*</span></div><div class="inp">Ravi Kumar</div></div>
+        <div class="grp"><div class="lbl">Business name <span class="req">*</span></div><div class="inp">Label Fern</div></div>
+        <div class="grp"><div class="lbl">Business type</div><div class="inp dis">Fashion — clothing, footwear, jewellery</div></div>
+        <div class="grp"><div class="lbl">What do you sell? <span class="req">*</span></div>
+          <div class="chips"><span class="chip on">Women</span><span class="chip">Men</span><span class="chip">Kids</span><span class="chip on">Footwear</span><span class="chip">Watches</span><span class="chip">Bags</span></div>
+        </div>
+        <div class="grp"><div class="lbl">Street address <span class="req">*</span></div><div class="inp ph" style="min-height:46px;align-items:flex-start;padding-top:9px">Shop 12, Road No. 4, Banjara Hills</div></div>
+        <div class="row" style="gap:8px">
+          <div class="grp" style="flex:1"><div class="lbl">Pincode <span class="req">*</span></div><div class="inp ph">500034</div></div>
+          <div class="grp" style="flex:1.2"><div class="lbl">State <span class="req">*</span></div><div class="inp sel ph">Select</div></div>
+        </div>
+        <div class="grp"><div class="lbl">Nearest major city <span class="req">*</span></div><div class="inp sel ph">Pick a state first</div><p class="hint">The closest big city — not your exact area.</p></div>
+        <div class="btn dis">Create business account</div>
+      </div></div>
+      <div class="cap"><b>B1 · Register</b><span>Seven fields, all mandatory. The city field stays locked until a state is chosen.</span><i class="pill gone" style="display:inline-block;margin-top:2px">map · place search · Maps link · referral code all removed</i></div>
+    </div>
+
+    <!-- B2 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Label Fern</h3><div class="ib">◔</div></div>
+        <div class="note wait"><b>Under review</b><span>Usually within 24 hours.</span></div>
+        <div class="card soft"><div class="row"><div class="sq">▦</div><div class="t" style="flex:1"><b style="font-size:12.5px">Campaigns</b><p class="hint">Locked until approved</p></div></div></div>
+        <div class="card soft"><div class="row"><div class="sq">◎</div><div class="t" style="flex:1"><b style="font-size:12.5px">Find creators</b><p class="hint">Locked until approved</p></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="row between"><b style="font-size:14px">Finish your profile</b><span class="mut">✕</span></div>
+          <p class="hint">7 of 10 done. Add your logo, an about line and a contact person.</p>
+          <div class="note ok"><span><b>This gets you approved faster</b> — an admin can only verify a business that's complete.</span></div>
+          <div class="btn">Complete profile</div>
+          <div class="btn ghost">Later</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>B2 · Pending home <span class="pill new" style="display:inline-block">new</span></b><span>In the app, everything locked. The server already refuses these actions with the right words — only the door is new.</span><i>brand gating already exists server-side</i></div>
+    </div>
+
+    <!-- B2b -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Find creators</h3></div>
+        <div class="inp ph">Search creators</div>
+        <div class="card soft" style="opacity:.45"><div class="row"><div class="ava">PS</div><div class="t" style="flex:1"><b style="font-size:12.5px">Priya Sharma</b><p class="hint">Fashion · Hyderabad</p></div></div></div>
+        <div class="card soft" style="opacity:.45"><div class="row"><div class="ava">AN</div><div class="t" style="flex:1"><b style="font-size:12.5px">Ananya N</b><p class="hint">Beauty · Bengaluru</p></div></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="row"><div class="sq">◔</div><div class="t" style="flex:1"><b style="font-size:13.5px">Your account is under review</b></div></div>
+          <p class="hint">This will be available once an admin approves you — usually within 24 hours.</p>
+          <div class="note ok"><span>A complete profile gets reviewed faster.</span></div>
+          <div class="btn">Finish my profile</div>
+          <div class="btn ghost">OK</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>B2b · Trying to act while pending</b><span>The same words the server already returns, shown properly instead of as an error toast.</span><i>ACCOUNT_PENDING, rendered</i></div>
+    </div>
+
+    <!-- B3 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Profile</h3></div>
+        <div class="row" style="gap:11px"><div class="sq">LF</div><div class="t" style="flex:1"><b style="font-size:14px">Label Fern</b><p class="hint">Fashion · Hyderabad</p><span class="tag miss" style="margin-top:3px">Under review</span></div></div>
+        <div class="note warn"><b>3 things left</b><span>Logo, about, contact person</span></div>
+        <div class="list">
+          <div class="prow"><div class="t"><b>Business details</b><span>Logo, name, about, contact</span></div><div class="dot"></div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>What you sell</b></div><div class="cv">Women, Footwear</div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Branches</b></div><div class="cv">1 location</div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Pitch settings</b></div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Legal</b></div><div class="ch">›</div></div>
+        </div>
+        <div class="btn dis">Submit for review</div>
+        <p class="hint" style="text-align:center">Finish the 3 items above to submit</p>
+        <div class="tabs"><div class="tab"><span class="gl">⌂</span>Home</div><div class="tab"><span class="gl">▦</span>Campaigns</div><div class="tab"><span class="gl">▤</span>Wallet</div><div class="tab on"><span class="gl">●</span>Profile</div></div>
+      </div></div>
+      <div class="cap"><b>B3 · Profile main</b><span>GSTIN has left this list for the Wallet tab.</span><i class="pill gone" style="display:inline-block;margin-top:2px">GSTIN moved out</i></div>
+    </div>
+
+    <!-- B4 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Business details</h3></div>
+        <div class="row" style="gap:10px"><div class="sq">LF</div><div class="t"><b style="font-size:12.5px">Add a logo</b><p class="hint">JPG or PNG, under 5 MB</p></div></div>
+        <div class="grp"><div class="lbl">Business name <span class="req">*</span></div><div class="inp">Label Fern</div></div>
+        <div class="grp"><div class="lbl">About <span class="req">*</span></div><div class="inp ph" style="min-height:52px;align-items:flex-start;padding-top:9px">A line about your brand</div><p class="hint">0 / 200</p></div>
+        <div class="grp"><div class="lbl">Contact person <span class="req">*</span></div><div class="inp ph">Who should we ask for?</div></div>
+        <div class="grp"><div class="lbl">Email</div><div class="inp ph">you@business.com</div></div>
+        <div class="grp"><div class="lbl">Phone</div><div class="inp dis">+91 98••• ••210</div><p class="hint">Your login number. This is your business number too.</p></div>
+        <div class="grp"><div class="lbl">Business type</div><div class="inp dis">Fashion</div></div>
+        <div class="btn">Save</div>
+      </div></div>
+      <div class="cap"><b>B4 · Business details</b><span>GSTIN out, email in. The phone is stated as the business number — there is no second phone field any more.</span><i>brands.phone was never written by anything</i></div>
+    </div>
+
+    <!-- B5 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Branches</h3></div>
+        <div class="card">
+          <div class="row between"><b style="font-size:13px">Banjara Hills</b><span class="tag ok">Main</span></div>
+          <p class="hint">Shop 12, Road No. 4, Banjara Hills<br>Hyderabad, Telangana · 500034</p>
+          <div class="row" style="gap:6px"><span class="chip">Edit</span></div>
+        </div>
+        <div class="card">
+          <div class="row between"><b style="font-size:13px">Jubilee Hills</b></div>
+          <p class="hint">Plot 8, Road No. 36<br>Hyderabad, Telangana · 500033</p>
+          <div class="row" style="gap:6px"><span class="chip">Edit</span><span class="chip">Make main</span><span class="chip">Remove</span></div>
+        </div>
+        <div class="btn ghost">+ Add a branch</div>
+        <p class="hint">Creators only ever see the city — never the street address, until a store visit is planned.</p>
+      </div></div>
+      <div class="cap"><b>B5 · Branches</b><span>Which one is main is never a guess. The main branch can't be removed, only replaced.</span><i>address is four parts now</i></div>
+    </div>
+
+    <!-- B6 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Add a branch</h3></div>
+        <div class="grp"><div class="lbl">Branch name <span class="req">*</span></div><div class="inp">Jubilee Hills</div></div>
+        <div class="grp"><div class="lbl">Street address <span class="req">*</span></div><div class="inp" style="min-height:46px;align-items:flex-start;padding-top:9px">Plot 8, Road No. 36</div></div>
+        <div class="row" style="gap:8px">
+          <div class="grp" style="flex:1"><div class="lbl">Pincode <span class="req">*</span></div><div class="inp">500033</div></div>
+          <div class="grp" style="flex:1.2"><div class="lbl">State <span class="req">*</span></div><div class="inp sel">Telangana</div></div>
+        </div>
+        <div class="grp"><div class="lbl">Nearest major city <span class="req">*</span></div><div class="inp sel">Hyderabad</div></div>
+        <div class="note wait"><span>A store visit can't be planned to a branch with no street address — so this one is required.</span></div>
+        <div style="flex:1"></div>
+        <div class="btn">Save branch</div>
+      </div></div>
+      <div class="cap"><b>B6 · Add / edit a branch</b><span>Same four-part address everywhere.</span><i class="pill gone" style="display:inline-block;margin-top:2px">Google address search removed</i></div>
+    </div>
+
+    <!-- B7 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Add a branch</h3></div>
+        <div class="grp" style="opacity:.35"><div class="lbl">Branch name</div><div class="inp">Jubilee Hills</div></div>
+        <div class="grp" style="opacity:.35"><div class="lbl">Street address</div><div class="inp" style="min-height:46px;align-items:flex-start;padding-top:9px">Plot 8, Road No. 36</div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <b style="font-size:14px">Which is your main branch?</b>
+          <p class="hint">The main branch is the city creators see, and where a store visit goes by default.</p>
+          <div class="list">
+            <div class="li on"><div class="t" style="flex:1"><b>Banjara Hills</b><span class="hint">Hyderabad · your first branch</span></div><span class="tick">✓</span></div>
+            <div class="li"><div class="t" style="flex:1"><b>Jubilee Hills</b><span class="hint">Hyderabad · new</span></div></div>
+          </div>
+          <div class="btn">Save both</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>B7 · The second-branch question <span class="pill new" style="display:inline-block">new</span></b><span>Asked once, at the exact moment a second branch appears. Never assumed, never silently kept.</span><i>from the third branch on, "Make main" covers it</i></div>
+    </div>
+
+    <!-- B8 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Wallet</h3></div>
+        <div class="card"><p class="hint">Balance</p><b style="font-size:23px">₹0.00</b><p class="hint">₹25,875 locked in live collaborations</p></div>
+        <p class="lbl" style="margin-top:3px">Business &amp; payment details</p>
+        <div class="note warn"><b>Needed before money moves</b><span>Not needed for approval. Our team verifies these by hand.</span></div>
+        <div class="list">
+          <div class="prow"><div class="t"><b>GST number</b><span>Appears on your agreements</span></div><div class="cv">Not added</div><div class="ch">›</div></div>
+          <div class="prow"><div class="t"><b>Bank account</b><span>Account number + IFSC</span></div><div class="cv">Not added</div><div class="ch">›</div></div>
+        </div>
+        <p class="hint">Our team checks these by hand, usually the same day.</p>
+        <div class="tabs"><div class="tab"><span class="gl">⌂</span>Home</div><div class="tab"><span class="gl">▦</span>Campaigns</div><div class="tab on"><span class="gl">▤</span>Wallet</div><div class="tab"><span class="gl">●</span>Profile</div></div>
+      </div></div>
+      <div class="cap"><b>B8 · Wallet <span class="pill new" style="display:inline-block">new home</span></b><span>GSTIN, bank and IFSC live here. The GST line says where it shows up, so there's a reason to fill it.</span><i>no format checking</i></div>
+    </div>
+
+    <!-- B9 -->
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Needs a fix</h3></div>
+        <div class="note no"><b>What the admin said</b><span>The street address doesn't look like a retail address. Please add the shop number.</span></div>
+        <p class="hint">Change what's wrong and send it back.</p>
+        <div class="grp"><div class="lbl">Business name</div><div class="inp">Label Fern</div></div>
+        <div class="grp"><div class="lbl">Street address</div><div class="inp err" style="min-height:46px;align-items:flex-start;padding-top:9px">Road No. 4, Banjara Hills</div><p class="errtxt">Check this one</p></div>
+        <div class="row" style="gap:8px">
+          <div class="grp" style="flex:1"><div class="lbl">Pincode</div><div class="inp">500034</div></div>
+          <div class="grp" style="flex:1.2"><div class="lbl">State</div><div class="inp sel">Telangana</div></div>
+        </div>
+        <div class="grp"><div class="lbl">Nearest major city</div><div class="inp sel">Hyderabad</div></div>
+        <div style="flex:1"></div>
+        <div class="btn">Send for review again</div>
+        <div class="btn ghost">Sign out</div>
+      </div></div>
+      <div class="cap"><b>B9 · Rejected</b><span>Today this button changes nothing — it re-sends the identical data the admin just rejected.</span><i>resubmit must accept edits</i></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────────────── ADMIN ─────────────────────────── -->
+<section>
+  <header>
+    <p class="eyebrow">Part 3</p>
+    <h2>Admin</h2>
+    <p class="prose">Three screens at <span class="kbd">app/admin/</span>. Without these, approval ships half-working: an admin can approve and reject, but is guessing at what's missing and the "Other" answers pile up unworked.</p>
+  </header>
+
+  <div class="flow" style="grid-template-columns:repeat(auto-fill,minmax(480px,1fr))">
+
+    <!-- A1 -->
+    <div class="shot wide">
+      <div class="desk">
+        <div class="deskbar"><span>admin.inflx.in</span><span>/admin/brands/a41f…</span></div>
+        <div class="deskbody">
+          <div class="row between"><b style="font-size:15px">Label Fern</b><span class="tag miss">Pending · submitted 2h ago</span></div>
+          <div class="card" style="border-color:var(--no-fg);background:var(--no-bg)">
+            <b style="font-size:12px;color:var(--no-fg)">3 things missing</b>
+            <p style="font-size:11.5px;color:var(--no-fg);margin:0">logo · about · contact person</p>
+          </div>
+          <table class="mk">
+            <tr><td style="width:40%">Business name</td><td><b>Label Fern</b></td></tr>
+            <tr><td>Contact name</td><td>Ravi Kumar</td></tr>
+            <tr><td>Contact person</td><td><span class="tag miss">Missing</span></td></tr>
+            <tr><td>Phone</td><td style="font-family:var(--mono)">+919876543210</td></tr>
+            <tr><td>Sells</td><td>Women, Footwear</td></tr>
+            <tr><td>Street</td><td>Shop 12, Road No. 4, Banjara Hills</td></tr>
+            <tr><td>City / state</td><td>Hyderabad, Telangana <span class="tag ok">on list</span></td></tr>
+            <tr><td>Pincode</td><td style="font-family:var(--mono)">500034</td></tr>
+            <tr><td>About</td><td><span class="tag miss">Missing</span></td></tr>
+            <tr><td>Logo</td><td><span class="tag miss">Missing</span></td></tr>
+            <tr><td>GST number</td><td>Not supplied <span class="tag ok">not required</span></td></tr>
+          </table>
+          <div class="row" style="gap:7px"><span class="btn dark" style="padding:8px 14px">Approve</span><span class="btn ghost" style="padding:8px 14px">Reject with remarks</span></div>
+        </div>
+      </div>
+      <div class="cap"><b>A1 · Brand review</b><span>This list already exists and is <em>wrong</em>: today it demands a GST number (now Wallet, not approval) and a map pin (being deleted), and never asks for about, contact person, city, state or sub-categories. Corrected, not created.</span><i>app/admin/brands/[id]</i></div>
+    </div>
+
+    <!-- A2 -->
+    <div class="shot wide">
+      <div class="desk">
+        <div class="deskbar"><span>admin.inflx.in</span><span>/admin/influencers/c19b…</span></div>
+        <div class="deskbody">
+          <div class="row between"><b style="font-size:15px">Priya Sharma</b><span class="tag miss">Pending · submitted 20m ago</span></div>
+          <div class="card" style="border-color:var(--no-fg);background:var(--no-bg)">
+            <b style="font-size:12px;color:var(--no-fg)">2 things missing</b>
+            <p style="font-size:11.5px;color:var(--no-fg);margin:0">photo · gender</p>
+          </div>
+          <table class="mk">
+            <tr><td style="width:40%">Full name</td><td><b>Priya Sharma</b></td></tr>
+            <tr><td>Phone</td><td style="font-family:var(--mono)">+919876500011</td></tr>
+            <tr><td>City / state</td><td>Hyderabad, Telangana <span class="tag ok">on list</span></td></tr>
+            <tr><td>Instagram</td><td style="font-family:var(--mono)">@priya.styles <span class="tag new">ownership unchecked</span></td></tr>
+            <tr><td>YouTube</td><td>No channel on file</td></tr>
+            <tr><td>Photo</td><td><span class="tag miss">Missing</span></td></tr>
+            <tr><td>Bio</td><td>Everyday fits for Hyderabad weather</td></tr>
+            <tr><td>Niche</td><td><b>Other</b> — "Pet &amp; dog training" <span class="tag new">needs mapping</span></td></tr>
+            <tr><td>Languages</td><td>English, Telugu</td></tr>
+            <tr><td>Age</td><td>24</td></tr>
+            <tr><td>Gender</td><td><span class="tag miss">Missing</span></td></tr>
+            <tr><td>PAN / bank</td><td>Not supplied <span class="tag ok">not required</span></td></tr>
+          </table>
+          <div class="row" style="gap:7px"><span class="btn dark" style="padding:8px 14px">Verify &amp; approve</span><span class="btn ghost" style="padding:8px 14px">Reject with remarks</span></div>
+        </div>
+      </div>
+      <div class="cap"><b>A2 · Creator review <span class="pill new" style="display:inline-block">list is new</span></b><span>Today this page shows every field with a "Not stated" placeholder but has no roll-up, so an admin reads the whole page and decides for themselves.</span><i>app/admin/influencers/[id]</i></div>
+    </div>
+
+    <!-- A3 -->
+    <div class="shot wide">
+      <div class="desk">
+        <div class="deskbar"><span>admin.inflx.in</span><span>/admin/niches/other</span></div>
+        <div class="deskbody">
+          <div class="row between"><b style="font-size:15px">"Other" niche queue</b><span class="tag new">4 waiting</span></div>
+          <p class="hint">Each creator typed what she makes. Map her to a niche we already have, or add a new one to the list.</p>
+          <table class="mk">
+            <tr><th>Creator</th><th>She typed</th><th>Action</th></tr>
+            <tr><td><b>Priya Sharma</b><br><span class="hint">Hyderabad</span></td><td>Pet &amp; dog training</td><td><span class="chip">Map to…</span> <span class="chip">Add as new niche</span></td></tr>
+            <tr><td><b>Nikhil R</b><br><span class="hint">Kochi</span></td><td>Street food reviews</td><td><span class="chip on">→ Food vlogging</span> <span class="chip">Change</span></td></tr>
+            <tr><td><b>Sana M</b><br><span class="hint">Bengaluru</span></td><td>Thrift &amp; second-hand fashion</td><td><span class="chip">Map to…</span> <span class="chip">Add as new niche</span></td></tr>
+            <tr><td><b>Arun V</b><br><span class="hint">Coimbatore</span></td><td>Bike touring</td><td><span class="chip">Map to…</span> <span class="chip">Add as new niche</span></td></tr>
+          </table>
+          <div class="note wait" style="font-size:11px"><span>Until she's mapped, a creator on "Other" is found by every rule that doesn't filter on niche — and by none that do.</span></div>
+        </div>
+      </div>
+      <div class="cap"><b>A3 · "Other" niche queue <span class="pill new" style="display:inline-block">new</span></b><span>This is the mechanism by which the niche list grows. Without it, "Other" is a hole rather than a door.</span><i>new route</i></div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <header><p class="eyebrow">For the record</p><h2>What these screens do and don't decide</h2></header>
+  <div class="card" style="max-width:760px">
+    <p class="prose" style="font-size:13.5px"><b>They do decide:</b> the field list at every step, what is mandatory where, the two-step state-then-city picker and its wording, where the money fields live, what a pending account can reach, what the popup says and why, and what an admin sees before approving.</p>
+    <p class="prose" style="font-size:13.5px"><b>They don't decide:</b> exact spacing, icon set, or copy that isn't shown here. Those follow the app's existing components.</p>
+    <p class="prose" style="font-size:13.5px"><b>Not drawn, because nothing changes:</b> the phone and OTP screens, invitation and pitch settings, "Your numbers", and everything behind approval.</p>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>features/registration-and-profile</b> · mockups v1 · drawn from 01-spec.md (spec-locked 18 Sep 2026)</p>
+  <p>Nothing here is built. No code changed, no migration written, nothing loaded into any database. Seed lists approved and waiting at <span class="kbd">backend/seeds/south_cities_draft.csv</span> and <span class="kbd">languages_draft.csv</span>.</p>
+</div>
+
+</div></body></html>

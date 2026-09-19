@@ -20,7 +20,10 @@ describe('O1 — /brands/:id/public', () => {
     mockPlaces({ hyd: PLACE.hyd });
     const b = await brand({ business_name: 'Urban Threads', sub_categories: ['WOMEN', 'KIDS'], city: 'Hyderabad', state: 'Telangana' });
     await api.patch('/brands/me', b.token, { about: 'Everyday ethnic wear.', website_url: 'https://urbanthreads.in', instagram_handle: '@urban.threads' });
-    await api.post('/brands/me/branches', b.token, { name: 'Banjara Hills', place_id: 'hyd' });
+    // registration-and-profile: a branch is its four parts now (the second one must say which is main)
+    const { rows: [hyd] } = await query(`SELECT c.id AS city_id, c.state_id FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE s.name = 'Telangana' AND c.name = 'Hyderabad'`);
+    const added = await api.post('/brands/me/branches', b.token, { name: 'Banjara Hills', address_text: 'Road No 12, Banjara Hills', pincode: '500034', state_id: hyd.state_id, city_id: hyd.city_id, is_main: false });
+    expect(added.status).toBe(201);
     await product(b.brandId, { name: 'Kurta', price: 1299 });
     const c = await creator();
     const r = await api.get(`/brands/${b.brandId}/public`, c.token);

@@ -1,10 +1,11 @@
 /**
- * BrandBranchesScreen — A4: the brand's branches. Each row: name (Main chip), address,
- * city · state, then Edit · Open in Maps · Remove. Creators only ever see city names.
- * Contract: features/item3-discovery-profiles-groups · prompt §6.1 A4
+ * BrandBranchesScreen — B5: the brand's branches. Each card: name (Main tag), the street line,
+ * "City, State · pincode", then Edit · Make main · Remove (the main branch shows Edit alone —
+ * it can't be removed, only replaced). Creators only ever see the city.
+ * Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
@@ -18,9 +19,10 @@ import { C3, MSG3 } from '../../components/discovery/copy3';
 
 const B = C3.brandProfile.branches;
 
-export function mapsUrl(b) {
-  if (b.lat != null && b.lng != null) return `https://www.google.com/maps/search/?api=1&query=${b.lat},${b.lng}${b.googlePlaceId ? `&query_place_id=${b.googlePlaceId}` : ''}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.formattedAddress || b.name)}`;
+/** "Hyderabad, Telangana · 500034" */
+export function cityLine(b) {
+  const place = [b.cityName, b.stateName].filter(Boolean).join(', ');
+  return [place, b.pincode].filter(Boolean).join(' · ');
 }
 
 export default function BrandBranchesScreen({ navigation, route }) {
@@ -48,6 +50,14 @@ export default function BrandBranchesScreen({ navigation, route }) {
     if (!r.success) { show(r.error?.message || COPY.saveFailed); return; }
     setRows(prev => prev.filter(x => x.id !== b.id));
   }
+  async function makeMain(b) {
+    const r = await brandApi.makeMainBranch(b.id);
+    if (!r.success) { show(r.error?.message || COPY.saveFailed); return; }
+    setRows(prev => prev.map(x => ({ ...x, isMain: x.id === b.id })));
+    show(`${b.name} is your main branch now.`);
+  }
+  const mainBranch = rows.find(b => b.isMain) || null;
+  const add = () => navigation.navigate('BrandBranchEdit', { branchCount: rows.length, mainBranch });
 
   return (
     <View style={base.screen}>
@@ -57,8 +67,8 @@ export default function BrandBranchesScreen({ navigation, route }) {
           data={rows}
           keyExtractor={b => b.id}
           contentContainerStyle={{ padding: 18, paddingBottom: 120 }}
-          ListHeaderComponent={<Text style={[base.hint, { marginBottom: 10 }]}>{B.hint}</Text>}
-          ListEmptyComponent={<EmptyState title="No branches yet" body={C3.brandProfile.mainCityWarning} />}
+          ListEmptyComponent={<EmptyState title="No branches yet" body="Add your store's address so creators can see your city." />}
+          ListFooterComponent={rows.length ? <Text style={[base.hint, { marginTop: 4 }]} testID="branches-hint">{B.hint}</Text> : null}
           renderItem={({ item: b }) => (
             <View style={s.card} testID={`branch-${b.id}`}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -69,18 +79,18 @@ export default function BrandBranchesScreen({ navigation, route }) {
                 ? <Text style={s.addr}>{b.formattedAddress}</Text>
                 // Item 10: a Store Visit set needs the street address, so its absence is said where you would look for it.
                 : <Text style={[s.addr, { color: T.danger }]} testID={`branch-no-address-${b.id}`}>{B.noAddressYet}</Text>}
-              <Text style={s.city}>{[b.cityName, b.stateName].filter(Boolean).join(' · ')}</Text>
+              <Text style={s.city} testID={`branch-city-${b.id}`}>{cityLine(b)}</Text>
               <View style={s.actions}>
                 <TouchableOpacity onPress={() => navigation.navigate('BrandBranchEdit', { branch: b })} testID={`branch-edit-${b.id}`}><Text style={s.action}>{B.edit}</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => Linking.openURL(mapsUrl(b)).catch(() => {})} testID={`branch-maps-${b.id}`}><Text style={s.action}>{B.maps}</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => askRemove(b)} testID={`branch-remove-${b.id}`}><Text style={[s.action, { color: T.danger }]}>{B.remove}</Text></TouchableOpacity>
+                {!b.isMain ? <TouchableOpacity onPress={() => makeMain(b)} testID={`branch-make-main-${b.id}`}><Text style={s.action}>{B.makeMain}</Text></TouchableOpacity> : null}
+                {!b.isMain ? <TouchableOpacity onPress={() => askRemove(b)} testID={`branch-remove-${b.id}`}><Text style={[s.action, { color: T.danger }]}>{B.remove}</Text></TouchableOpacity> : null}
               </View>
             </View>
           )}
         />
       )}
       <View style={s.footer}>
-        <PrimaryButton label={B.add} onPress={() => navigation.navigate('BrandBranchEdit', {})} testID="add-branch" />
+        <PrimaryButton label={`+ ${B.add}`} onPress={add} testID="add-branch" />
       </View>
       {toast}
       <ConfirmSheet visible={!!confirm} danger title={confirm ? B.removeTitle(confirm.name) : ''} body={B.removeBody}

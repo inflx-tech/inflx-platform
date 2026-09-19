@@ -21,6 +21,8 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveAvatars } = require('../utils/avatarResolver');
+// registration-and-profile — verifying is approving, so it refuses an incomplete profile.
+const completeness = require('../services/profileCompleteness.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /v1/admin/creator-verifications
@@ -77,6 +79,13 @@ const verify = asyncHandler(async (req, res) => {
   if (target[0].verification_status !== 'claimed') {
     throw new AppError('CONFLICT',
       `Cannot verify: current status is ${target[0].verification_status}`, 409);
+  }
+
+  // registration-and-profile §6: verifying here IS the creator's approval, so it refuses an
+  // incomplete profile and names what is missing (spec §6.2 creator checklist).
+  if (target[0].linked_influencer_id) {
+    const summary = await completeness.forCreator(target[0].linked_influencer_id);
+    if (summary && !summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
   }
 
   await db.query('BEGIN');

@@ -1,9 +1,10 @@
 /**
- * BrandProfileScreen — A1: the brand's Profile tab. A header (logo, name, "Fashion · city",
- * account status) and one row per thing to edit: Business details, Sub-categories, Branches,
- * Pitch settings, Brand overview, Links, Legal & policies, Log out. The old inline editor is
- * gone; each row opens its own screen.
- * Contract: features/item3-discovery-profiles-groups · prompt §6.1 A1
+ * BrandProfileScreen — B3: the brand's Profile tab. A header (logo, name, "Fashion · city",
+ * account status), the amber "N things left" note, one row per thing to edit with a red dot
+ * where a missing item lives (Business details · What you sell · Branches · Pitch settings ·
+ * Brand overview · Links · Legal · Log out), then "Submit for review" — the new gate. GSTIN has
+ * left this list for the Wallet tab.
+ * Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
  */
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
@@ -11,7 +12,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, brandPalette as BP, fonts } from '../../theme/tokens';
 import { brandApi, referenceApi, clearSession } from '../../services/api';
 import { AuthContext } from '../../../App';
-import StatusPill from '../../components/brand/StatusPill';
 import { StatusChip, PrimaryButton } from '../../components/settings/primitives';
 import { useToast, Skeleton } from '../../components/settings/feedback';
 import { aimsPhrase, modesPhrase } from '../../components/settings/copy';
@@ -19,10 +19,12 @@ import { s as base } from './BrandPitchSettingsScreen';
 import { Avatar } from './BrandBlockedCreatorsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { C3, subCategoryLabel } from '../../components/discovery/copy3';
+import { CompletenessNote, SubmitForReviewBlock, Dot } from '../../components/registration/ReviewBlock';
+import { BRAND_ROW_KEYS, rowNeeds, REVIEW_COPY } from '../../components/registration/completeness';
 
 const R = C3.brandProfile;
 
-export function ProfileRow({ label, sub, value, warn, right, onPress, testID }) {
+export function ProfileRow({ label, sub, value, warn, right, dot, onPress, testID }) {
   return (
     <TouchableOpacity style={s.row} onPress={onPress} activeOpacity={0.7} testID={testID} accessibilityRole="button">
       <View style={{ flex: 1 }}>
@@ -32,6 +34,7 @@ export function ProfileRow({ label, sub, value, warn, right, onPress, testID }) 
         {warn ? <View style={s.warn}><Text style={s.warnText}>{warn}</Text></View> : null}
       </View>
       {right || null}
+      {dot ? <Dot testID={testID ? `${testID}-dot` : undefined} /> : null}
       <Text style={s.chev}>›</Text>
     </TouchableOpacity>
   );
@@ -44,6 +47,7 @@ export default function BrandProfileScreen({ navigation, route }) {
   const [me, setMe] = useState(null);
   const [pitch, setPitch] = useState(null);
   const [cats, setCats] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
@@ -64,6 +68,15 @@ export default function BrandProfileScreen({ navigation, route }) {
     ]);
   }
 
+  async function submitForReview() {
+    setSubmitting(true);
+    const r = await brandApi.submitForReview();
+    setSubmitting(false);
+    if (!r.success) { show(r.error?.message || "Couldn't send it for review. Please try again."); return; }
+    show(r.data?.message || 'Sent for review.');
+    load();
+  }
+
   if (status === 'loading') return <View style={base.screen}><Text style={s.title}>Profile</Text><Skeleton /></View>;
   if (status === 'error') {
     const noProfile = loadError === 'no_profile';
@@ -81,6 +94,10 @@ export default function BrandProfileScreen({ navigation, route }) {
   }
 
   const b = me.brand;
+  const st = me.user_status || b.user_status || 'pending';
+  const completeness = me.completeness || null;
+  const missing = completeness ? completeness.missing : [];
+  const pendingDots = st !== 'approved';
   const subs = Array.isArray(b.sub_categories) ? b.sub_categories : [];
   const subLabels = subs.map(code => cats.find(c => c.code === code)?.label || subCategoryLabel(code)).join(', ');
   const headerLine = me.mainCity ? `Fashion · ${me.mainCity.name}` : 'Fashion';
@@ -96,18 +113,20 @@ export default function BrandProfileScreen({ navigation, route }) {
             <Text style={s.name} numberOfLines={1}>{b.business_name}</Text>
             <Text style={s.line} testID="profile-header-line">{headerLine}</Text>
           </View>
-          <StatusPill status={me.user_status || b.user_status || 'pending'} />
+          <StatusChip on={st === 'approved'} label={REVIEW_COPY.status[st] || st} />
         </View>
+        <CompletenessNote completeness={completeness} userStatus={st} />
         <View style={{ paddingHorizontal: 18 }}>
-          <ProfileRow label={R.rows.details[0]} sub={R.rows.details[1]} onPress={() => navigation.navigate('BrandBusinessDetails')} testID="row-business-details" />
-          <ProfileRow label={R.rows.subs} value={subLabels} warn={me.needsSubCategories ? R.subsWarning : ''} onPress={() => navigation.navigate('BrandSubCategories')} testID="row-sub-categories" />
-          <ProfileRow label={R.rows.branches} value={R.branches.locations((me.branches || []).length)} warn={me.needsMainCity ? R.mainCityWarning : ''} onPress={() => navigation.navigate('BrandBranches')} testID="row-branches" />
+          <ProfileRow label={R.rows.details[0]} sub={R.rows.details[1]} dot={pendingDots && rowNeeds(BRAND_ROW_KEYS.details, missing)} onPress={() => navigation.navigate('BrandBusinessDetails')} testID="row-business-details" />
+          <ProfileRow label={R.rows.subs} value={subLabels} dot={pendingDots && rowNeeds(BRAND_ROW_KEYS.subs, missing)} onPress={() => navigation.navigate('BrandSubCategories')} testID="row-sub-categories" />
+          <ProfileRow label={R.rows.branches} value={R.branches.locations((me.branches || []).length)} dot={pendingDots && rowNeeds(BRAND_ROW_KEYS.branches, missing)} onPress={() => navigation.navigate('BrandBranches')} testID="row-branches" />
           <ProfileRow label={R.rows.pitch} value={pitchValue} right={pitch ? <StatusChip on={pitch.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('BrandPitchSettings')} testID="row-pitch-settings" />
           <ProfileRow label={R.rows.overview[0]} sub={R.rows.overview[1]} onPress={() => navigation.navigate('BrandOwnOverview', { brandId: b.id })} testID="row-brand-overview" />
           <ProfileRow label={R.rows.links[0]} sub={R.rows.links[1]} onPress={() => navigation.navigate('BrandLinks')} testID="row-links" />
           <ProfileRow label={R.rows.legal} onPress={() => navigation.navigate('LegalList')} testID="row-legal" />
           <TouchableOpacity style={s.logout} onPress={logout} testID="row-logout"><Text style={s.logoutText}>{R.logout}</Text></TouchableOpacity>
         </View>
+        <SubmitForReviewBlock completeness={completeness} userStatus={st} submittedAt={me.submitted_for_review_at} onSubmit={submitForReview} busy={submitting} />
       </ScrollView>
       {toast}
     </View>

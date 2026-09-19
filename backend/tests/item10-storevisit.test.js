@@ -280,14 +280,15 @@ describe('a branch address may be typed as well as searched', () => {
     expect(r.status).toBe(201);
   });
 
-  it('a new branch can be created by typing; its city and state are the brand\'s own', async () => {
+  it('a new branch is created from its four parts — street, pincode, state, city (registration-and-profile §1.1)', async () => {
     const b = await brand({ city: 'Hyderabad', state: 'Telangana' });
-    const r = await api.post('/brands/me/branches', b.token, { name: 'Kondapur', address_text: '2nd floor, Botanical Garden Rd, Kondapur', pincode: '500084' });
+    const { rows: [hyd] } = await query(`SELECT c.id AS city_id, c.state_id FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE s.name = 'Telangana' AND c.name = 'Hyderabad'`);
+    const r = await api.post('/brands/me/branches', b.token, { name: 'Kondapur', address_text: '2nd floor, Botanical Garden Rd, Kondapur', pincode: '500084', state_id: hyd.state_id, city_id: hyd.city_id, is_main: false });
     expect(r.status).toBe(201);
     expect(r.body.data.branch).toMatchObject({ name: 'Kondapur', formattedAddress: '2nd floor, Botanical Garden Rd, Kondapur', cityName: 'Hyderabad', stateName: 'Telangana', isMain: false });
-    // neither a search nor a typed line → the old message, now saying both ways
+    // no street → refused with the four-part wording; the Google search is gone
     const none = await api.post('/brands/me/branches', b.token, { name: 'Nowhere' });
-    expect(none.status).toBe(422); expect(none.body.error.message).toBe('Search and pick your branch address, or type it.');
+    expect(none.status).toBe(422); expect(none.body.error.message).toBe('Enter the street address.');
   });
 });
 

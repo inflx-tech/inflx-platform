@@ -645,6 +645,12 @@ export const adminApi = {
   updateInfluencerStatus: (id, data) => api.patch(`/admin/influencers/${id}/status`, data),
   getBrandById: (id) => api.get(`/brands/${id}`),
   getInfluencerById: (id) => api.get(`/influencers/${id}`),
+  // registration-and-profile §9A.3 — the "Other" niche queue: who typed what, map her to an
+  // existing niche, or add a niche to the reference list (and map her in the same call).
+  // Capability: approvals.
+  listOtherNiches: () => api.get('/admin/niches/other'),
+  mapOtherNiche:   (influencerId, data) => api.post(`/admin/niches/other/${encodeURIComponent(influencerId)}/map`, data),
+  createNiche:     (data) => api.post('/admin/niches', data),
   getEscrow: (status) => api.get(`/admin/escrow?status=${status || 'all'}`),
   releaseEscrow: (id, reason) => api.post(`/admin/escrow/${id}/release`, { override_reason: reason }),
   getAdminUsers: () => api.get('/admin/users'),

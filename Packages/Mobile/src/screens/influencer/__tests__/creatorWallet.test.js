@@ -10,7 +10,8 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
-  influencerApi: { getEarnings: jest.fn() },
+  // features/registration-and-profile C7 — the UPI / bank / PAN rows read her own record.
+  influencerApi: { getEarnings: jest.fn(), getMe: jest.fn().mockResolvedValue({ success: true, data: { influencer: { has_upi: false, has_bank_account: false, has_pan: false } } }) },
   brandApi: {}, referenceApi: {}, clearSession: jest.fn(), uploadFile: jest.fn(),
 }));
 jest.mock('../../../../App', () => ({ AuthContext: require('react').createContext({ setRole: () => {} }) }));

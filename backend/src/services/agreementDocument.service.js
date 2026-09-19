@@ -72,13 +72,18 @@ async function render(contract) {
   doc.moveDown(0.15);
   doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#E5E4DE');
 
-  // The parties — names and cities only. Phase 1 identity (rules §9).
+  // The parties. registration-and-profile §8: GSTIN, PAN and both registered addresses print
+  // from the snapshot when present and as an empty line when not — never a gate.
   label('The parties');
   const bp = [s.parties.brand.city, s.parties.brand.state].filter(Boolean).join(', ');
   const cp = [s.parties.creator.city, s.parties.creator.state].filter(Boolean).join(', ');
   row(s.parties.brand.name, `Brand${bp ? ' · ' + bp : ''}`);
   if (contract.brand_signed_name) row('Signing for the brand', contract.brand_signed_name);
+  if (s.parties.brand.address !== undefined) row('Brand address', s.parties.brand.address || '');
+  if (s.parties.brand.gstin !== undefined) row('Brand GSTIN', s.parties.brand.gstin || '');
   row(s.parties.creator.name, `Creator${cp ? ' · ' + cp : ''}${s.parties.creator.handle ? ' · @' + s.parties.creator.handle : ''}`);
+  if (s.parties.creator.address !== undefined) row('Creator address', s.parties.creator.address || '');
+  if (s.parties.creator.pan !== undefined) row('Creator PAN', s.parties.creator.pan || '');
 
   // The work
   label('The work');

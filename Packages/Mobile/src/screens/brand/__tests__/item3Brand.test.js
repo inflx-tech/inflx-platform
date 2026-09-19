@@ -19,6 +19,7 @@ jest.mock('../../../services/api', () => ({
     creatorNiches: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'fashion', label: 'Fashion' }] } }),
     languages: jest.fn().mockResolvedValue({ success: true, data: { items: [{ code: 'Telugu', label: 'Telugu' }] } }),
     states: jest.fn().mockResolvedValue({ success: true, data: { items: [{ id: 1, name: 'Telangana', cities: [{ id: 10, name: 'Hyderabad' }] }] } }),
+    offeredStates: jest.fn().mockResolvedValue({ success: true, data: { items: [{ id: 1, name: 'Telangana', cities: [{ id: 10, name: 'Hyderabad' }] }] } }),
   },
   clearSession: jest.fn(), uploadFile: jest.fn(),
 }));
@@ -62,22 +63,33 @@ describe('copy helpers', () => {
 });
 
 describe('A1 — brand profile', () => {
-  it('shows the orange reminders when sub-categories or the main city are missing, and "Fashion" alone (check 20)', async () => {
-    brandApi.getMe.mockResolvedValue(ok({ brand: { ...BRAND, sub_categories: [] }, user_status: 'approved', branches: [], mainCity: null, needsSubCategories: true, needsMainCity: true }));
-    const { getByText, getByTestId } = render(<BrandProfileScreen navigation={nav()} route={{ params: {} }} />);
+  // features/registration-and-profile B3: the orange reminders became the amber "N things left"
+  // note plus a red dot on each row that owns a missing item, and "Submit for review" is the gate.
+  it('a pending, incomplete brand: "Fashion" alone, "3 things left", dots on the rows that own them, Submit disabled with the hint (check 20)', async () => {
+    brandApi.getMe.mockResolvedValue(ok({ brand: { ...BRAND, sub_categories: [], user_status: 'pending' }, user_status: 'pending', branches: [], mainCity: null,
+      completeness: { total: 10, done: 7, complete: false, missing: ['sub_categories', 'state', 'city'], missing_labels: ['what you sell', 'state', 'nearest major city'] } }));
+    const { getByText, getByTestId, queryByTestId } = render(<BrandProfileScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => getByTestId('profile-header-line'));
     expect(getByTestId('profile-header-line').props.children).toBe('Fashion');
-    getByText('Choose your sub-categories so creators who filter by category can find you.');
-    getByText('Add your main branch address so creators can see your city.');
+    getByText('Under review');
+    getByText('3 things left');
+    getByText('What you sell, state, nearest major city');
+    getByTestId('row-sub-categories-dot'); getByTestId('row-branches-dot');
+    expect(queryByTestId('row-business-details-dot')).toBeNull();
+    expect(getByTestId('submit-for-review').props.accessibilityState.disabled).toBe(true);
+    getByText('Finish the 3 items above to submit');
   });
 
-  it('shows "Fashion · City", the chosen sub-categories and no reminders once set', async () => {
-    brandApi.getMe.mockResolvedValue(ok({ brand: BRAND, user_status: 'approved', branches: [{ id: 'x', isMain: true }], mainCity: { id: 10, name: 'Hyderabad' }, needsSubCategories: false, needsMainCity: false }));
-    const { queryByText, getByTestId, getByText } = render(<BrandProfileScreen navigation={nav()} route={{ params: {} }} />);
+  it('approved and complete: "Fashion · City", the chosen sub-categories, no note, no dots, no submit block', async () => {
+    brandApi.getMe.mockResolvedValue(ok({ brand: BRAND, user_status: 'approved', branches: [{ id: 'x', isMain: true }], mainCity: { id: 10, name: 'Hyderabad' },
+      completeness: { total: 10, done: 10, complete: true, missing: [], missing_labels: [] } }));
+    const { queryByText, getByTestId, getByText, queryByTestId } = render(<BrandProfileScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => getByTestId('profile-header-line'));
     expect(getByTestId('profile-header-line').props.children).toBe('Fashion · Hyderabad');
     await waitFor(() => getByText('Women'));
-    expect(queryByText('Add your main branch address so creators can see your city.')).toBeNull();
+    expect(queryByText(/things left/)).toBeNull();
+    expect(queryByTestId('row-branches-dot')).toBeNull();
+    expect(queryByTestId('submit-for-review')).toBeNull();
     getByText('1 location');
     getByText('Accepting · Pay for Sale · Store Visit');
   });

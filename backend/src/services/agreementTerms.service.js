@@ -39,7 +39,15 @@ const num = (v) => (v == null ? null : Number(v));
  * NOTE the branch: `bb.name` and the city only. `bb.formatted_address` is the
  * street address and must never reach an agreement (rules §5B — the exact
  * address goes with the shoot plan, not before).
+ *
+ * registration-and-profile §8: the agreement gains the brand's GSTIN, the creator's PAN and
+ * both REGISTERED addresses (the brand's main branch — street, pincode, city, state; the
+ * creator's city and state), read from whatever is on file when it is generated. A missing
+ * value prints empty. The set's shoot branch (bb) stays city-only as before.
  */
+const { decrypt } = require('../utils/encrypt');
+function decryptQuiet(v) { if (!v) return ''; try { return decrypt(v) || ''; } catch (_) { return ''; } }
+
 const CONTEXT_SQL = `
   SELECT ci.id, ci.status, ci.influencer_id, ci.agreed_fee, ci.commission_pct,
          ci.formats_json, ci.usage_rights_json, ci.brand_note, ci.min_shoppable_posts,
@@ -51,7 +59,12 @@ const CONTEXT_SQL = `
          -- Item 9: this brand's own campaign fee, or NULL to follow the platform number.
          b.platform_fee_pct AS brand_campaign_fee_pct,
          bu.city AS brand_city, bu.state AS brand_state,
+         b.gstin AS brand_gstin,
+         mb.formatted_address AS brand_street, mb.pincode AS brand_pincode,
+         COALESCE(mrc.name, bu.city) AS brand_reg_city, COALESCE(mrs.name, bu.state) AS brand_reg_state,
          i.full_name AS creator_name, i.instagram_handle, i.city AS creator_city, i.state AS creator_state,
+         i.pan_number AS creator_pan_enc,
+         COALESCE(irc.name, i.city) AS creator_reg_city, COALESCE(irs.name, i.state) AS creator_reg_state,
          iu.id AS creator_user_id, iu.name AS creator_user_name,
          bb.name AS branch_name, rc.name AS branch_city,
          con.id AS contract_id, con.status AS contract_status, con.reference_no, con.terms_json,
@@ -82,6 +95,11 @@ const CONTEXT_SQL = `
     JOIN users iu ON iu.id = i.user_id
     LEFT JOIN brand_branches bb ON bb.id = cs.branch_id
     LEFT JOIN ref_cities rc ON rc.id = bb.city_id
+    LEFT JOIN brand_branches mb ON mb.brand_id = b.id AND mb.is_main
+    LEFT JOIN ref_cities mrc ON mrc.id = mb.city_id
+    LEFT JOIN ref_states mrs ON mrs.id = mb.state_id
+    LEFT JOIN ref_cities irc ON irc.id = i.city_id
+    LEFT JOIN ref_states irs ON irs.id = COALESCE(i.state_id, irc.state_id)
     LEFT JOIN contracts con ON con.campaign_influencer_id = ci.id
    WHERE ci.id = $1`;
 
@@ -223,12 +241,17 @@ async function buildSnapshot(ctx, client = db) {
         name: ctx.brand_name,
         city: ctx.brand_city || null,
         state: ctx.brand_state || null,
+        // registration-and-profile §8 — printed when on file, empty when not. No gate.
+        gstin: ctx.brand_gstin || '',
+        address: [ctx.brand_street, ctx.brand_reg_city, ctx.brand_reg_state, ctx.brand_pincode].filter(Boolean).join(', '),
       },
       creator: {
         name: ctx.creator_name || ctx.creator_user_name || null,
         city: ctx.creator_city || null,
         state: ctx.creator_state || null,
         handle: ctx.instagram_handle || null,
+        pan: decryptQuiet(ctx.creator_pan_enc),
+        address: [ctx.creator_reg_city, ctx.creator_reg_state].filter(Boolean).join(', '),
       },
     },
 

@@ -14,6 +14,8 @@ jest.mock('../../../services/api', () => ({
   brandApi: {
     getWallet: jest.fn(), getWalletTransactions: jest.fn(),
     createTopup: jest.fn(), verifyTopup: jest.fn(),
+    // features/registration-and-profile B8 — the GST / bank rows read the brand's own record.
+    getMe: jest.fn().mockResolvedValue({ success: true, data: { brand: { gstin: null, has_bank_account: false } } }),
   },
   influencerApi: {}, referenceApi: {}, clearSession: jest.fn(), uploadFile: jest.fn(),
 }));

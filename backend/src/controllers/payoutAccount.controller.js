@@ -18,10 +18,20 @@ const { success }  = require('../utils/response');
 const AppError     = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const routeService = require('../services/razorpayRoute.service');
+// registration-and-profile §5: the brand's bank account is one encrypted entry on the row
+// (Wallet tab). listing_data.bank_details is read only when the row has none (website era).
+const { decrypt } = require('../utils/encrypt');
+function bankOf(brand) {
+  if (brand.bank_account_no && brand.bank_ifsc) {
+    let acct = null; try { acct = decrypt(brand.bank_account_no); } catch (_) { acct = null; }
+    if (acct) return { account_number: acct, ifsc_code: brand.bank_ifsc, account_holder_name: brand.business_name };
+  }
+  return (brand.listing_data && brand.listing_data.bank_details) || {};
+}
 
 async function getBrandRow(userId) {
   const { rows } = await db.query(
-    `SELECT b.id, b.business_name, b.gstin, b.listing_data,
+    `SELECT b.id, b.business_name, b.gstin, b.listing_data, b.bank_account_no, b.bank_ifsc,
             b.razorpay_linked_account_id, b.linked_account_status,
             u.phone
        FROM brands b
@@ -36,7 +46,7 @@ const getPayoutAccount = asyncHandler(async (req, res) => {
   const brand = await getBrandRow(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  const bank = (brand.listing_data && brand.listing_data.bank_details) || {};
+  const bank = bankOf(brand);
   const hasBank = !!(bank.account_number && bank.ifsc_code);
 
   // If a linked account exists, refresh its status (reconciliation). Stored
@@ -69,7 +79,7 @@ const createPayoutAccount = asyncHandler(async (req, res) => {
     throw new AppError('CONFLICT', 'A payout account is already connected.', 409);
   }
 
-  const bank = (brand.listing_data && brand.listing_data.bank_details) || {};
+  const bank = bankOf(brand);
   if (!bank.account_number || !bank.ifsc_code) {
     throw new AppError(
       'PAYMENT_METHOD_MISSING',

@@ -192,18 +192,49 @@ async function setBrandTier(brandId, tierKey) {
  */
 async function registerInfluencer(token, overrides = {}) {
   const handle = overrides.instagram_handle || `testhandle_${Date.now()}`;
+  // registration-and-profile §2.1: state and nearest major city are required and resolved
+  // against the reference lists; typed names still resolve for one OTA generation. Older
+  // tests pass a city alone, so its state is looked up here — the way the picker would.
+  let state = overrides.state;
+  if (!state && overrides.city) {
+    const { rows } = await query(
+      `SELECT s.name FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE c.name_norm = lower(trim($1)) ORDER BY c.id LIMIT 1`, [overrides.city]);
+    state = rows[0] ? rows[0].name : 'Telangana';
+  }
   const res = await request(app)
     .post('/v1/influencers/register')
     .set('Authorization', `Bearer ${token}`)
     // /influencers/register requires instagram_handle AND name
     // (influencer.controller.js:202,205). The factory historically
     // omitted name — the dominant Phase-3 cascade (×394).
-    .send({ instagram_handle: handle, name: overrides.name || 'Test Influencer', ...overrides });
+    .send({ instagram_handle: handle, name: overrides.name || 'Test Influencer', state: state || 'Telangana', city: 'Hyderabad', ...overrides });
 
   if (res.status !== 201) {
     throw new Error(`registerInfluencer failed: ${JSON.stringify(res.body)}`);
   }
   return res.body.data.influencer;
+}
+
+/**
+ * registration-and-profile §6.2: approval refuses an incomplete profile. Tests that approve
+ * an account first make it complete the way a real person would have — everything on the
+ * checklist except what registration already wrote (name, state, city, handle).
+ */
+async function completeCreatorProfile(influencerId, over = {}) {
+  await query(
+    `UPDATE influencers SET profile_image_r2_key = COALESCE(profile_image_r2_key, $2), bio = COALESCE(bio, $3),
+            niche = COALESCE(niche, $4), language = CASE WHEN language IS NULL OR cardinality(language) = 0 THEN $5 ELSE language END,
+            age = COALESCE(age, $6), gender = COALESCE(gender, $7)
+      WHERE id = $1`,
+    [influencerId, over.photoKey || `creator-photos/${influencerId}/photo.jpg`, over.bio || 'Everyday fits for Hyderabad weather',
+     over.niche || ['fashion'], over.language || ['Telugu', 'English'], over.age || 24, over.gender || 'female']
+  );
+}
+async function completeBrandProfile(brandId, over = {}) {
+  await query(
+    `UPDATE brands SET logo_url = COALESCE(logo_url, $2), about = COALESCE(about, $3), contact_person = COALESCE(contact_person, $4) WHERE id = $1`,
+    [brandId, over.logoUrl || 'https://example.test/logo.png', over.about || 'A fashion label.', over.contactPerson || 'Ravi Kumar']
+  );
 }
 
 module.exports = {
@@ -216,4 +247,6 @@ module.exports = {
   loginUser,
   latestOtp,
   setBrandTier,
+  completeCreatorProfile,
+  completeBrandProfile,
 };

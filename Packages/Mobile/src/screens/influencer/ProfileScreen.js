@@ -1,9 +1,9 @@
 /**
- * ProfileScreen — A7: the creator's Profile tab. Header (photo, name, @handle, account
- * status) and one row per thing to edit: Profile info, Niche & languages, Invitation
- * settings, Payment & tax, Legal & policies, Log out. The inline edit modes and the
- * decorative notifications switch are gone (founder's item-3 decisions).
- * Contract: features/item3-discovery-profiles-groups · prompt §6.1 A7
+ * ProfileScreen — C4: the creator's Profile tab. Header (photo, name, @handle · city, account
+ * status), the amber "N things left" note, one row per thing to edit with a red dot where a
+ * missing item lives (Profile info · Your numbers · Niche & languages · Invitation settings ·
+ * Legal), then "Submit for review" — the new gate. Payment & tax has left this list for the
+ * Wallet tab. Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
  */
 import React, { useCallback, useContext, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
@@ -21,6 +21,8 @@ import useRouteToast from '../../hooks/useRouteToast';
 import { C3, fmtCompact } from '../../components/discovery/copy3';
 // Item 3b — the "Your numbers" row between Profile info and Niche (R3). Contract: features/item3b-social-numbers
 import { C3B } from '../../components/social/copy3b';
+import { CompletenessNote, SubmitForReviewBlock } from '../../components/registration/ReviewBlock';
+import { CREATOR_ROW_KEYS, rowNeeds, REVIEW_COPY } from '../../components/registration/completeness';
 
 const R = C3.creatorProfile;
 
@@ -42,14 +44,15 @@ export function socialSubtitle(social) {
   if (social.youtube) parts.push(`YouTube ${fmtCompact(social.youtube.subscribers)}`);
   return C3B.r3.sub(parts);
 }
-const STATUS_LABEL = { approved: 'Approved', pending: 'Pending review', rejected: 'Rejected', suspended: 'Suspended' };
 
 export default function ProfileScreen({ navigation, route }) {
   const { setRole: setAppRole } = useContext(AuthContext);
   const [status, setStatus] = useState('loading');
   const [me, setMe] = useState(null);
+  const [meta, setMeta] = useState({});
   const [invite, setInvite] = useState(null);
   const [social, setSocial] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
@@ -57,6 +60,7 @@ export default function ProfileScreen({ navigation, route }) {
     const [r, i, so] = await Promise.all([influencerApi.getMe(), influencerApi.getInvitationSettings(), influencerApi.getMySocial ? influencerApi.getMySocial() : Promise.resolve({ success: false })]);
     if (!r.success) { setStatus('error'); return; }
     setMe(r.data?.influencer || r.data);
+    setMeta(r.data || {});
     setInvite(i.success ? i.data.summary || null : null);
     setSocial(so && so.success ? so.data : null);
     setStatus('ready');
@@ -68,6 +72,15 @@ export default function ProfileScreen({ navigation, route }) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: async () => { await clearSession(); setAppRole(''); } },
     ]);
+  }
+
+  async function submitForReview() {
+    setSubmitting(true);
+    const r = await influencerApi.submitForReview();
+    setSubmitting(false);
+    if (!r.success) { show(r.error?.message || "Couldn't send it for review. Please try again."); return; }
+    show(r.data?.message || 'Sent for review.');
+    load();
   }
 
   if (status === 'loading') return <View style={base.screen}><Text style={s.title}>Profile</Text><Skeleton /></View>;
@@ -82,9 +95,12 @@ export default function ProfileScreen({ navigation, route }) {
   }
 
   const name = me.full_name || me.name || me.instagram_handle || 'Creator';
-  const st = me.user_status || 'pending';
+  const st = meta.user_status || me.user_status || 'pending';
+  const completeness = meta.completeness || null;
+  const missing = completeness ? completeness.missing : [];
   const needsNiche = me.needsNiche != null ? me.needsNiche : !(Array.isArray(me.niche) && me.niche.length === 1);
   const inviteValue = invite ? `${invite.labelState === 'paused' ? 'Paused' : 'Open'} · ${aimsPhrase(invite.aims)} · ${modesPhrase(invite.modes)}` : '';
+  const line = [me.instagram_handle ? `@${me.instagram_handle}` : '', me.city_name || me.city || ''].filter(Boolean).join(' · ');
 
   return (
     <View style={base.screen} testID="creator-profile-main">
@@ -94,19 +110,20 @@ export default function ProfileScreen({ navigation, route }) {
           <Avatar name={name} url={me.profile_image_url} size={56} />
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text style={s.name} numberOfLines={1}>{name}</Text>
-            {me.instagram_handle ? <Text style={s.line}>@{me.instagram_handle}</Text> : null}
+            {line ? <Text style={s.line}>{line}</Text> : null}
           </View>
-          <StatusChip on={st === 'approved'} label={STATUS_LABEL[st] || st} />
+          <StatusChip on={st === 'approved'} label={REVIEW_COPY.status[st] || st} />
         </View>
+        <CompletenessNote completeness={completeness} userStatus={st} />
         <View style={{ paddingHorizontal: 18 }}>
-          <ProfileRow label={R.rows.info[0]} sub={R.rows.info[1]} onPress={() => navigation.navigate('ProfileInfo')} testID="row-profile-info" />
+          <ProfileRow label={R.rows.info[0]} sub={R.rows.info[1]} dot={st !== 'approved' && rowNeeds(CREATOR_ROW_KEYS.info, missing)} onPress={() => navigation.navigate('ProfileInfo')} testID="row-profile-info" />
           <ProfileRow label={C3B.r3.row} sub={socialSubtitle(social)} right={<SocialChip chip={social && social.chip} />} onPress={() => navigation.navigate('YourNumbers')} testID="row-your-numbers" />
-          <ProfileRow label={R.rows.niche} warn={needsNiche ? R.niche.warning : ''} onPress={() => navigation.navigate('NicheLanguages')} testID="row-niche" />
+          <ProfileRow label={R.rows.niche} warn={needsNiche ? R.niche.warning : ''} dot={st !== 'approved' && rowNeeds(CREATOR_ROW_KEYS.niche, missing)} onPress={() => navigation.navigate('NicheLanguages')} testID="row-niche" />
           <ProfileRow label={R.rows.invitation} value={inviteValue} right={invite ? <StatusChip on={invite.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('InvitationSettings')} testID="row-invitation-settings" />
-          <ProfileRow label={R.rows.payment} onPress={() => navigation.navigate('PaymentTax')} testID="row-payment-tax" />
           <ProfileRow label={R.rows.legal} onPress={() => navigation.navigate('LegalList')} testID="row-legal" />
           <TouchableOpacity style={s.logout} onPress={logout} testID="row-logout"><Text style={s.logoutText}>{R.logout}</Text></TouchableOpacity>
         </View>
+        <SubmitForReviewBlock completeness={completeness} userStatus={st} submittedAt={meta.submitted_for_review_at} onSubmit={submitForReview} busy={submitting} />
       </ScrollView>
       {toast}
     </View>

@@ -45,7 +45,7 @@ async function brand(over = {}) {
 
 async function creator(over = {}) {
   const { token, user } = await createInfluencerUser();
-  const inf = await registerInfluencer(token, { instagram_handle: over.handle || `c_${rnd()}`, name: over.name || 'Priya Sharma', city: over.city || 'Hyderabad' });
+  const inf = await registerInfluencer(token, { instagram_handle: over.handle || `c_${rnd()}`, name: over.name || 'Priya Sharma', city: over.city || 'Hyderabad', state: over.state || 'Telangana' });
   await query(`UPDATE users SET status=$2 WHERE id=$1`, [user.id, over.status || 'approved']);
   await query(
     `UPDATE influencers SET followers_count=$2, youtube_subscribers=$3, engagement_rate=$4, niche=$5, language=$6, youtube_handle=$7 WHERE id=$1`,

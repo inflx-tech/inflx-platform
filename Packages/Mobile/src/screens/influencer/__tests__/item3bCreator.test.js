@@ -8,10 +8,14 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 jest.mock('../../../services/api', () => ({
   influencerApi: { getMe: jest.fn(), updateMe: jest.fn(), getInvitationSettings: jest.fn(), getMySocial: jest.fn(), getMySocialDetail: jest.fn(), checkSocialAgain: jest.fn(), register: jest.fn(), getProfileImageUploadUrl: jest.fn() },
   brandApi: {},
-  referenceApi: { placesAutocomplete: jest.fn(), resolvePlace: jest.fn() },
+  // features/registration-and-profile: the Google place search is gone; the pickers read the offered states.
+  referenceApi: { offeredStates: jest.fn().mockResolvedValue({ success: true, data: { items: [
+    { id: 1, name: 'Telangana', cities: [{ id: 16, name: 'Hyderabad' }, { id: 17, name: 'Warangal' }] },
+  ] } }) },
   clearSession: jest.fn(), uploadFile: jest.fn(),
 }));
-jest.mock('../../../../App', () => ({ AuthContext: require('react').createContext({ setRole: () => {} }) }));
+const mockSetRole = jest.fn();
+jest.mock('../../../../App', () => ({ AuthContext: require('react').createContext({ setRole: mockSetRole }) }));
 jest.mock('@react-navigation/native', () => ({ useFocusEffect: (cb) => { const React = require('react'); React.useEffect(() => cb(), [cb]); } }));
 
 const { influencerApi } = require('../../../services/api');
@@ -24,7 +28,7 @@ const InfluencerRegisterScreen = require('../../auth/InfluencerRegisterScreen').
 const nav = () => ({ goBack: jest.fn(), navigate: jest.fn(), setParams: jest.fn(), reset: jest.fn(), addListener: jest.fn(() => () => {}), dispatch: jest.fn() });
 const ok = (data) => ({ success: true, data });
 const yr = new Date().getFullYear();
-const ME = { id: 'c1', full_name: 'Priya Sharma', instagram_handle: 'priya.styles', youtube_handle: 'priyastyles', user_status: 'approved', niche: ['fashion'], language: ['Telugu'], needsNiche: false, city_id: 16, city_name: 'Hyderabad', state_name: 'Telangana' };
+const ME = { id: 'c1', full_name: 'Priya Sharma', instagram_handle: 'priya.styles', youtube_handle: 'priyastyles', user_status: 'approved', niche: ['fashion'], language: ['Telugu'], needsNiche: false, city_id: 16, city_name: 'Hyderabad', state_id: 1, state_name: 'Telangana' };
 const IG_OK = { state: 'ok', handle: 'priya.styles', verified: true, followers: 48200, engagement: 4.2, posts90d: 18, lastProfileAt: `${yr}-09-09`, lastPostsAt: `${yr}-09-01`, postsDueAt: `${yr}-09-16`, checkAgainAvailableAt: null };
 const YT_OK = { state: 'ok', handle: 'priyastyles', subscribers: 12100, avgLongViews: 9400, avgShortsViews: 22100, lastProfileAt: `${yr}-09-09`, lastPostsAt: `${yr}-09-01`, postsDueAt: `${yr}-09-16`, checkAgainAvailableAt: null };
 
@@ -137,13 +141,22 @@ describe('R6 — changing a handle on Profile info', () => {
 });
 
 describe('R1 — registration in two steps', () => {
-  it('step 1 needs a name; step 2 needs at least one valid account with the exact errors; sends handles as typed and queues nothing itself', async () => {
-    influencerApi.register.mockResolvedValue(ok({ influencer: { id: 'c1' }, claim: { claimed: false, conflict: false, match_count: 0, scrape_fired: false } }));
+  it('step 1 needs a name, a state and a city (C1); step 2 needs at least one valid account with the exact errors; sends handles as typed with the city ids, and the pending account enters the app', async () => {
+    influencerApi.register.mockResolvedValue(ok({ influencer: { id: 'c1' }, user_status: 'pending', claim: { claimed: false, conflict: false, match_count: 0, scrape_fired: false } }));
     const n = nav();
     const { getByTestId, getByText, queryByTestId } = render(<InfluencerRegisterScreen navigation={n} />);
-    getByText('Set up your profile');
+    getByText('Tell us about you');
     expect(getByTestId('reg-continue-1').props.accessibilityState?.disabled ?? true).toBeTruthy();
     fireEvent.changeText(getByTestId('reg-name'), 'Akshaya Reddy');
+    // features/registration-and-profile: the city is required and picked — State first, then the city.
+    fireEvent.press(getByTestId('reg-continue-1'));
+    getByText('Pick your state.'); getByText('Pick your nearest major city.');
+    fireEvent.press(getByTestId('reg-state'));
+    await waitFor(() => getByTestId('reg-state-option-1'));
+    fireEvent.press(getByTestId('reg-state-option-1'));
+    fireEvent.press(getByTestId('reg-city'));
+    await waitFor(() => getByTestId('reg-city-option-16'));
+    fireEvent.press(getByTestId('reg-city-option-16'));
     fireEvent.press(getByTestId('reg-continue-1'));
     getByText('Your social accounts'); getByText('INFLX measures your public numbers from these accounts. Brands see them on your profile.');
     getByText('Add at least one. Your account must be public. We measure your numbers after INFLX approves your profile.');
@@ -158,12 +171,21 @@ describe('R1 — registration in two steps', () => {
     fireEvent.changeText(getByTestId('reg-youtube'), 'https://www.youtube.com/@lakkireddyakshayareddy-30');
     fireEvent.changeText(getByTestId('reg-instagram'), '_akshayareddyyy');
     fireEvent.press(getByTestId('reg-continue-2'));
-    await waitFor(() => expect(influencerApi.register).toHaveBeenCalledWith({ name: 'Akshaya Reddy', instagram_handle: '_akshayareddyyy', youtube_handle: 'https://www.youtube.com/@lakkireddyakshayareddy-30' }));
-    expect(n.reset).toHaveBeenCalled();
+    await waitFor(() => expect(influencerApi.register).toHaveBeenCalledWith({ name: 'Akshaya Reddy', state_id: 1, city_id: 16, instagram_handle: '_akshayareddyyy', youtube_handle: 'https://www.youtube.com/@lakkireddyakshayareddy-30' }));
+    // The Waiting screen is retired: a pending creator enters the app (spec §6.5).
+    await waitFor(() => expect(mockSetRole).toHaveBeenCalledWith('influencer'));
+    expect(n.reset).not.toHaveBeenCalled();
   });
   it('both fields empty → "Add at least one account."', async () => {
     const { getByTestId, getByText } = render(<InfluencerRegisterScreen navigation={nav()} />);
     fireEvent.changeText(getByTestId('reg-name'), 'A');
+    // Step 1 will not pass without the state and the city now (C1).
+    fireEvent.press(getByTestId('reg-state'));
+    await waitFor(() => getByTestId('reg-state-option-1'));
+    fireEvent.press(getByTestId('reg-state-option-1'));
+    fireEvent.press(getByTestId('reg-city'));
+    await waitFor(() => getByTestId('reg-city-option-16'));
+    fireEvent.press(getByTestId('reg-city-option-16'));
     fireEvent.press(getByTestId('reg-continue-1'));
     fireEvent.changeText(getByTestId('reg-instagram'), 'x');
     fireEvent.changeText(getByTestId('reg-instagram'), '');

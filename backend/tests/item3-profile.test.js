@@ -29,14 +29,14 @@ describe('A2 — brand business details', () => {
     expect(me.body.data.brand.about).toHaveLength(200);
   });
 
-  it('/brands/me carries the login phone separately from the business phone (the shadowing fix)', async () => {
+  it('/brands/me carries the login phone; brands.phone is retired as a concept (registration-and-profile §7)', async () => {
     const b = await brand();
     await query(`UPDATE brands SET phone = '+911234567890' WHERE id = $1`, [b.brandId]);
     const me = await api.get('/brands/me', b.token);
     const { rows: [u] } = await query(`SELECT phone FROM users WHERE id = $1`, [b.userId]);
     expect(me.body.data.brand.login_phone).toBe(u.phone);
     expect(me.body.data.brand.phone).toBe(u.phone);
-    expect(me.body.data.brand.business_phone).toBe('+911234567890');
+    expect(me.body.data.brand.business_phone).toBeUndefined();
   });
 
   it('links: instagram handle is normalised from @name or a URL; website saved as typed', async () => {
@@ -104,31 +104,26 @@ describe('A8 — creator profile info', () => {
     expect((await api.get('/influencers/me', c.token)).body.data.influencer.needsNiche).toBe(true);
   });
 
-  it('city through Google: resolves to a canonical city, adds a new one, keeps the typed columns in step, STATE_UNKNOWN adds nothing', async () => {
-    mockPlaces({ d: PLACE.delhi, newc: PLACE.newCity, sg: PLACE.unknownState });
+  it('city through the two pickers: resolves to the canonical row, keeps the typed columns in step; Google is gone (registration-and-profile §1)', async () => {
+    mockPlaces({ d: PLACE.delhi });   // never consulted any more
     const c = await creator();
-    let r = await api.patch('/influencers/me', c.token, { place_id: 'd' });
+    const { rows: [kochi] } = await query(`SELECT c.id AS city_id, c.state_id FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE s.name = 'Kerala' AND c.name = 'Kochi'`);
+    let r = await api.patch('/influencers/me', c.token, { state_id: kochi.state_id, city_id: kochi.city_id });
     expect(r.status).toBe(200);
     expect(r.body.data.cityAdded).toBe(false);
-    let { rows: [row] } = await query(`SELECT i.city, i.state, rc.name AS city_name FROM influencers i LEFT JOIN ref_cities rc ON rc.id = i.city_id WHERE i.id = $1`, [c.influencerId]);
-    expect(row).toEqual({ city: 'New Delhi', state: 'Delhi', city_name: 'New Delhi' });
+    const { rows: [row] } = await query(`SELECT i.city, i.state, i.state_id, rc.name AS city_name FROM influencers i LEFT JOIN ref_cities rc ON rc.id = i.city_id WHERE i.id = $1`, [c.influencerId]);
+    expect(row).toEqual({ city: 'Kochi', state: 'Kerala', state_id: kochi.state_id, city_name: 'Kochi' });
     const { rows: [u] } = await query(`SELECT city, state FROM users WHERE id = $1`, [c.userId]);
-    expect(u).toEqual({ city: 'New Delhi', state: 'Delhi' });
+    expect(u).toEqual({ city: 'Kochi', state: 'Kerala' });
 
-    r = await api.patch('/influencers/me', c.token, { place_id: 'newc' });
-    expect(r.body.data.cityAdded).toBe(true);
-    expect((await query(`SELECT source FROM ref_cities WHERE name = 'Ongolu Town'`)).rows[0].source).toBe('google');
-
-    const states = (await query(`SELECT count(*)::int AS n FROM ref_states`)).rows[0].n;
-    r = await api.patch('/influencers/me', c.token, { place_id: 'sg' });
-    expect(r.status).toBe(422);
-    expect(r.body.error.code).toBe('STATE_UNKNOWN');
-    expect(r.body.error.message).toBe("We couldn't match this address to a state. Try a nearby address.");
-    expect((await query(`SELECT count(*)::int AS n FROM ref_states`)).rows[0].n).toBe(states);
-    ({ rows: [row] } = await query(`SELECT city FROM influencers WHERE id = $1`, [c.influencerId]));
-    expect(row.city).toBe('Ongolu Town');
-    r = await api.patch('/influencers/me', c.token, { place_id: '' });
-    expect(r.status).toBe(422); expect(r.body.error.message).toBe('Search and pick your city.');
+    const before = (await query(`SELECT count(*)::int AS n FROM ref_cities`)).rows[0].n;
+    r = await api.patch('/influencers/me', c.token, { place_id: 'd', bio: 'hi' });
+    expect(r.status).toBe(200);                                                    // place_id ignored, nothing added
+    expect((await query(`SELECT count(*)::int AS n FROM ref_cities`)).rows[0].n).toBe(before);
+    expect((await query(`SELECT city FROM influencers WHERE id = $1`, [c.influencerId])).rows[0].city).toBe('Kochi');
+    r = await api.patch('/influencers/me', c.token, { city_id: 999999 });
+    expect(r.status).toBe(422); expect(r.body.error.message).toBe('Pick your state, then your nearest major city.');
+    expect((await api.post('/places/resolve', c.token, { place_id: 'd' })).status).toBe(404);
   });
 
   it('photo: only a JPG/PNG under 5 MB in her own folder is accepted as the profile image key', async () => {

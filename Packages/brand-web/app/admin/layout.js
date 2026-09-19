@@ -14,6 +14,8 @@ const NAV = [
   { section: 'PEOPLE' },
   { href: '/admin/approvals', label: 'Approvals', icon: '✅', badge: 'pending', cap: 'approvals' },
   { href: '/admin/influencers', label: 'Influencers', icon: '⭐', cap: 'influencers' },
+  // registration-and-profile §9A.3 — creators who chose "Other" and typed their niche.
+  { href: '/admin/niches/other', label: 'Other niches', icon: '🗂️', cap: 'approvals' },
   { href: '/admin/brands', label: 'Brands', icon: '🏢', cap: 'brands' },
   { href: '/admin/production-queue', label: 'Production Queue', icon: '🚚', cap: 'production' },
   { href: '/admin/orders', label: 'Orders', icon: '📦', cap: 'orders' },

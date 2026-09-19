@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { influencerApi } from '../../services/api';
+import { AuthContext } from '../../../App';
 import { C3B, MSG3B, validInstagram, validYoutube } from '../../components/social/copy3b';
+import OfferedStateCityFields, { MSG_STATE, MSG_CITY } from '../../components/registration/OfferedStateCityFields';
 
 const P = {
   bg:          '#FAFAFA',
@@ -26,18 +28,21 @@ const P = {
 const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
 
 /**
- * Influencer registration — two steps since item 3b (rules v1.12 §2A, founder Q16):
- *   1. details (name, city)
+ * Influencer registration — two steps (C1, C2):
+ *   1. full name, State, "Your nearest major city" (picked, filtered by state) — all required.
  *   2. "Your social accounts" (R1): Instagram username and/or YouTube handle or channel link,
  *      at least one, format checked on the device with the exact §6 messages.
- * Nothing is measured here: the creator lands on the existing "approval pending" screen and
- * the first measurement runs when admin approves. Payload + navigation.reset preserved.
- * Contract: features/item3b-social-numbers
+ * On success the creator lands IN the app as a pending account (the pending home says "under
+ * review"); the Waiting screen is retired. City was optional free text before — it is now
+ * required and resolved, which is the fix that closes the store-visit matching failure.
+ * Contract: features/registration-and-profile · features/item3b-social-numbers
  */
 export default function InfluencerRegisterScreen({ navigation }) {
+  const { setRole: setAppRole } = useContext(AuthContext);
   const [step,        setStep]        = useState(1);
   const [fullName,    setFullName]    = useState('');
-  const [city,        setCity]        = useState('');
+  const [stateId,     setStateId]     = useState(null);
+  const [cityId,      setCityId]      = useState(null);
   const [igHandle,    setIgHandle]    = useState('');
   const [ytHandle,    setYtHandle]    = useState('');
   const [loading,     setLoading]     = useState(false);
@@ -46,7 +51,12 @@ export default function InfluencerRegisterScreen({ navigation }) {
 
   function next() {
     setError('');
-    if (!fullName.trim()) { setError('Please enter your full name'); return; }
+    const errs = {};
+    if (!fullName.trim()) errs.name = 'Enter your full name.';
+    if (stateId == null) errs.state = MSG_STATE;
+    if (cityId == null) errs.city = MSG_CITY;
+    if (Object.keys(errs).length) { setFieldErr(errs); return; }
+    setFieldErr({});
     setStep(2);
   }
 
@@ -60,8 +70,7 @@ export default function InfluencerRegisterScreen({ navigation }) {
     if (Object.keys(errs).length) { setFieldErr(errs); return; }
 
     setLoading(true);
-    const body = { name: fullName.trim() };
-    if (city.trim()) body.city = city.trim();
+    const body = { name: fullName.trim(), state_id: stateId, city_id: cityId };
     if (igRaw) body.instagram_handle = igRaw;
     if (ytRaw) body.youtube_handle = ytRaw;
     const res = await influencerApi.register(body);
@@ -71,18 +80,15 @@ export default function InfluencerRegisterScreen({ navigation }) {
       const f = res.error?.field;
       if (f === 'instagram_handle') setFieldErr({ ig: res.error.message });
       else if (f === 'youtube_handle') setFieldErr({ yt: res.error.message });
+      else if (f === 'city_id' || f === 'state_id') { setFieldErr({ city: res.error.message }); setStep(1); }
+      else if (f === 'name') { setFieldErr({ name: res.error.message }); setStep(1); }
       else setError(res.error?.message || 'Registration failed');
       return;
     }
 
-    const claim = res.data?.claim || {};
-    const params = {
-      claimMatched:    !!claim.claimed,
-      claimConflict:   !!claim.conflict,
-      claimMatchCount: claim.match_count || 0,
-      handle:          validInstagram(igRaw) || validYoutube(ytRaw) || '',
-    };
-    navigation.reset({ index: 0, routes: [{ name: 'Waiting', params }] });
+    // Pending accounts enter the app now (spec §6.5). Nothing is measured here: the first
+    // measurement runs when admin approves.
+    setAppRole('influencer');
   }
 
   const canContinue1 = fullName.trim().length > 0;
@@ -99,10 +105,21 @@ export default function InfluencerRegisterScreen({ navigation }) {
             <Text style={styles.lede}>{C3B.r1.step1Lede}</Text>
 
             <Text style={styles.label}>Full name <Text style={styles.req}>*</Text></Text>
-            <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={P.muted3} autoCorrect={false} testID="reg-name" />
+            <TextInput style={[styles.input, fieldErr.name && styles.inputError]} value={fullName} onChangeText={(t) => { setFullName(t); setFieldErr(e => ({ ...e, name: '' })); }} placeholder="Your full name" placeholderTextColor={P.muted3} autoCorrect={false} testID="reg-name" />
+            {fieldErr.name ? <Text style={styles.fieldError} testID="err-name">{fieldErr.name}</Text> : null}
 
-            <Text style={styles.label}>City</Text>
-            <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="Hyderabad / Nellore / …" placeholderTextColor={P.muted3} autoCorrect={false} testID="reg-city" />
+            <View style={{ height: 4 }} />
+            <OfferedStateCityFields
+              stateId={stateId}
+              cityId={cityId}
+              onChange={({ stateId: s, cityId: c }) => { setStateId(s); setCityId(c); setFieldErr(e => ({ ...e, state: '', city: '' })); }}
+              errors={{ state: fieldErr.state, city: fieldErr.city }}
+              testIDPrefix="reg"
+              labelStyle={styles.pickerLabel}
+              fieldStyle={styles.pickerField}
+              hintStyle={styles.hint}
+              placeholderColor={P.muted2}
+            />
           </>
         ) : (
           <>
@@ -159,7 +176,7 @@ export default function InfluencerRegisterScreen({ navigation }) {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={[styles.btn, !canSubmit && styles.btnDisabled]} onPress={handleRegister} disabled={!canSubmit} testID="reg-continue-2">
-            <Text style={styles.btnText}>{loading ? 'Registering…' : C3B.r1.continue}</Text>
+            <Text style={styles.btnText}>{loading ? 'Registering…' : 'Create my account'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -178,10 +195,13 @@ const styles = StyleSheet.create({
   lede:          { fontSize: 13, color: P.muted, marginBottom: 22, lineHeight: 19 },
 
   label:         { fontSize: 11.5, fontWeight: '600', color: P.ink2, marginBottom: 8, marginTop: 6 },
+  pickerLabel:   { fontSize: 11.5, fontWeight: '600', color: P.ink2, marginBottom: 8, marginTop: 6, fontFamily: undefined },
+  pickerField:   { backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 },
   req:           { color: P.danger, fontWeight: '700' },
-  hint:          { fontSize: 12, color: P.muted, lineHeight: 17, marginTop: 4 },
+  hint:          { fontSize: 12, color: P.muted, lineHeight: 17, marginTop: 6 },
 
-  input:         { backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: P.ink, marginBottom: 14 },
+  input:         { backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: P.ink, marginBottom: 6 },
+  inputError:    { borderColor: P.danger },
 
   handleRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, marginBottom: 6 },
   rowError:      { borderColor: P.danger },

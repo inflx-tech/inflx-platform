@@ -19,7 +19,8 @@ describe('POST /v1/influencers/register', () => {
     const res = await request(app)
       .post('/v1/influencers/register')
       .set('Authorization', `Bearer ${token}`)
-      .send({ instagram_handle: 'foodie_priya_hyd', name: 'Priya' }); // register requires name (influencer.controller.js:205)
+      // registration-and-profile §2.1: name, state and nearest major city are required.
+      .send({ instagram_handle: 'foodie_priya_hyd', name: 'Priya', state: 'Telangana', city: 'Hyderabad' });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);

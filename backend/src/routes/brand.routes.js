@@ -28,6 +28,10 @@ router.post('/register',  authenticate, requireRole('brand'), ctrl.register);
 router.get('/me',         authenticate, requireRole('brand'), ctrl.getMe);
 router.patch('/me',       authenticate, requireRole('brand'), ctrl.updateMe);
 router.post('/resubmit',  authenticate, requireRole('brand'), ctrl.resubmit);
+// registration-and-profile §6: the account reaches the admin queue when the brand submits it.
+router.post('/me/submit-for-review', authenticate, requireRole('brand'), ctrl.submitForReview);
+// registration-and-profile §6: the account reaches the admin queue when the brand submits it.
+router.post('/me/submit-for-review', authenticate, requireRole('brand'), ctrl.submitForReview);
 
 // Brand inbox — items waiting on brand action (negotiations, reviews, signatures)
 router.get('/me/inbox-summary',  authenticate, requireRole('brand'), inboxCtrl.getSummary);

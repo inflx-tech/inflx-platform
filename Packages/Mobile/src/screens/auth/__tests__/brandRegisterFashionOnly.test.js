@@ -42,8 +42,10 @@ describe('the server is the real gate', () => {
 
   it('⚠️ registration refuses anything else', () => {
     // Without this the two forms are cosmetic — a direct request registers a
-    // pest-control business and pass 0 has achieved nothing.
-    expect(controller).toContain('businessCategory.isAcceptedCategory(category)');
+    // pest-control business and pass 0 has achieved nothing. The gate is the
+    // call, whatever the register handler names its local (it was `category`,
+    // features/registration-and-profile's rewrite calls it `cat`).
+    expect(controller).toMatch(/if \(!businessCategory\.isAcceptedCategory\(\w+\)\)/);
   });
 
   it('⚠️ and so does editing the profile afterwards', () => {

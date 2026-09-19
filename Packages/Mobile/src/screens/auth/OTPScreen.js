@@ -160,10 +160,11 @@ export default function OTPScreen({ navigation, route }) {
         // (contract: features/brand-mobile-register).
         navigation.navigate('BrandRegister');
       } else {
-        const status = brandRes.data?.brand?.status || brandRes.data?.user_status;
-        if (status === 'rejected')      navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
-        else if (status === 'approved') setAppRole('brand');
-        else                             navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
+        // features/registration-and-profile — a pending brand enters the app (the pending
+        // home says "under review"); only a rejected one is kept out, with the admin's remarks.
+        const status = brandRes.data?.user_status || brandRes.data?.brand?.status;
+        if (status === 'rejected') navigation.reset({ index: 0, routes: [{ name: 'Rejected', params: { reason: brandRes.data?.brand?.rejection_reason || null } }] });
+        else setAppRole('brand');
       }
     } else if (user.role === 'influencer') {
       const infRes = await influencerApi.getMe();
@@ -171,9 +172,8 @@ export default function OTPScreen({ navigation, route }) {
         navigation.navigate('InfluencerRegister');
       } else {
         const status = infRes.data?.user_status;
-        if (status === 'rejected')      navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
-        else if (status === 'approved') setAppRole('influencer');
-        else                             navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
+        if (status === 'rejected') navigation.reset({ index: 0, routes: [{ name: 'Rejected', params: { reason: infRes.data?.rejection_reason || null } }] });
+        else setAppRole('influencer');
       }
     } else if (user.role === 'follower') {
       setAppRole('follower');
@@ -243,6 +243,7 @@ export default function OTPScreen({ navigation, route }) {
           style={[styles.btn, (!otpComplete || loading) && styles.btnDisabled]}
           onPress={handleVerify}
           disabled={!otpComplete || loading}
+          testID="otp-verify"
         >
           <Text style={styles.btnText}>{loading ? 'Verifying…' : 'Verify OTP'}</Text>
         </TouchableOpacity>

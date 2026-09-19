@@ -26,9 +26,12 @@ const approveViaSql = async (c) => { await query(`UPDATE users SET status='appro
 /** Register through the API (pending), like the app does. */
 async function pendingCreator(handles) {
   const { token, user } = await createInfluencerUser();
-  const body = { name: 'Akshaya Reddy', ...handles };
+  // registration-and-profile §2.1: state and city are required at registration; §6: approval
+  // refuses an incomplete profile, so the rest of the checklist is filled the way she would.
+  const body = { name: 'Akshaya Reddy', state: 'Telangana', city: 'Hyderabad', ...handles };
   const r = await api.post('/influencers/register', token, body);
   if (r.status !== 201) throw new Error(`register: ${JSON.stringify(r.body)}`);
+  await require('./helpers/factories').completeCreatorProfile(r.body.data.influencer.id);
   return { token, userId: user.id, influencerId: r.body.data.influencer.id, res: r };
 }
 
@@ -41,7 +44,7 @@ describe('A6 — registration', () => {
     expect(r.status).toBe(422); expect(r.body.error.message).toBe('Enter a valid Instagram username.'); expect(r.body.error.field).toBe('instagram_handle');
     r = await api.post('/influencers/register', token, { name: 'X', youtube_handle: 'priya styles' });
     expect(r.status).toBe(422); expect(r.body.error.message).toBe('Enter a YouTube handle or channel link.');
-    r = await api.post('/influencers/register', token, { name: 'X', instagram_handle: `https://www.instagram.com/${IG}/`, youtube_handle: `https://www.youtube.com/${YT}` });
+    r = await api.post('/influencers/register', token, { name: 'X', state: 'Telangana', city: 'Hyderabad', instagram_handle: `https://www.instagram.com/${IG}/`, youtube_handle: `https://www.youtube.com/${YT}` });
     expect(r.status).toBe(201);
     const inf = r.body.data.influencer;
     expect(inf.instagram_handle).toBe(IG); expect(inf.youtube_handle).toBe(YT.slice(1));

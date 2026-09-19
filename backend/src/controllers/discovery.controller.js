@@ -94,29 +94,23 @@ const findBrands = asyncHandler(async (req, res) => {
   return success(res, await discovery.findBrands(influencerId, req.query));
 });
 
-// ── A3 Places resolve (any signed-in role) ──────────────────────────────────
-const resolvePlace = asyncHandler(async (req, res) => {
-  const { place_id, session } = req.body || {};
-  try {
-    const r = await ref.resolvePlace(place_id, { session, userId: req.user.sub });
-    return success(res, r);
-  } catch (e) { rethrow(e); }
-});
+// registration-and-profile §9: A3 place resolution retired with POST /places/resolve — Google
+// place search has left address entry in the brand and creator apps.
 
-// ── A2 Branches (brand) ──────────────────────────────────────────────────────
+// ── A2 Branches (brand) — four-part address (registration-and-profile §1.1, §4) ──
 const listBranches = asyncHandler(async (req, res) => {
   const brandId = await brandIdOf(req.user.sub);
   return success(res, { branches: await branches.list(brandId) });
 });
 const createBranch = asyncHandler(async (req, res) => {
   const brandId = await brandIdOf(req.user.sub);
-  try { return success(res, await branches.create(brandId, req.body || {}, { userId: req.user.sub }), 201); }
+  try { return success(res, await branches.create(brandId, req.body || {}), 201); }
   catch (e) { rethrow(e); }
 });
 const updateBranch = asyncHandler(async (req, res) => {
   const brandId = await brandIdOf(req.user.sub);
   try {
-    const out = await branches.update(brandId, req.params.id, req.body || {}, { userId: req.user.sub });
+    const out = await branches.update(brandId, req.params.id, req.body || {});
     if (!out) throw new AppError('NOT_FOUND', 'Branch not found', 404);
     return success(res, out);
   } catch (e) { rethrow(e); }
@@ -153,7 +147,7 @@ const citiesByIds = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  discoverCreators, workedWith, findBrands, resolvePlace,
+  discoverCreators, workedWith, findBrands,
   listBranches, createBranch, updateBranch, makeMainBranch, removeBranch,
   listBrandProducts, brandProductDetail, citiesByIds,
 };
