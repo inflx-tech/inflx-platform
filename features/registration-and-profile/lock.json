@@ -87,5 +87,12 @@
         "render": "live with the change-phone route at 10:08:49 IST (same deploy)"
       }
     }
-  }
+  },
+  "amendments": [
+    {
+      "at": "2026-09-19",
+      "by": "founder (chat — \"for approval it is not mandatory to complete all profile … make it not mandatory\")",
+      "what": "§6.3 approval-refuses-incomplete withdrawn on both admin paths; completeness stays a nag (profile tab, submit, finish-profile sheet) and admin information (missing lists on the review pages and now on the verification queue rows). See AMENDMENT-2026-09-19-approval-not-completeness.md."
+    }
+  ]
 }

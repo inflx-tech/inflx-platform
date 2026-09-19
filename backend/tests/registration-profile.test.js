@@ -243,45 +243,45 @@ describe('Completeness and submission (checks 18–27)', () => {
     expect((await query(`SELECT status FROM users WHERE id = $1`, [b.userId])).rows[0].status).toBe('pending');
   });
 
-  it('admin approval refuses an incomplete brand on both paths, and names the gaps (24, 26)', async () => {
+  it('admin approval is the team\'s manual check, never a completeness gate — the review page still names the gaps (24, 26; amended 19 Sep)', async () => {
     const b = await brand({ status: 'pending' });
     const admin = await createAdminUser('superadmin');
-    let r = await api.patch(`/admin/brands/${b.brandId}/status`, admin.token, { status: 'approved' });
-    expect(r.status).toBe(422); expect(r.body.error.code).toBe('PROFILE_INCOMPLETE');
-    expect(r.body.error.message).toBe('This profile is missing: logo, about, contact person. Ask them to complete it before approving.');
-    r = await api.patch(`/brands/${b.brandId}/status`, admin.token, { status: 'approved' });
-    expect(r.status).toBe(422); expect(r.body.error.code).toBe('PROFILE_INCOMPLETE');
     const page = await api.get(`/brands/${b.brandId}`, admin.token);
     expect(page.body.data.missing_fields).toEqual(['logo', 'about', 'contact person']);
     expect(page.body.data.branches).toHaveLength(1);
     expect(page.body.data.brand.bank_account_no).toBeUndefined();
-    await completeBrandProfile(b.brandId);
-    r = await api.patch(`/admin/brands/${b.brandId}/status`, admin.token, { status: 'approved' });
+    // incomplete, on both admin paths → approved
+    let r = await api.patch(`/admin/brands/${b.brandId}/status`, admin.token, { status: 'approved' });
     expect(r.status).toBe(200);
+    expect((await query(`SELECT status FROM users WHERE id = $1`, [b.userId])).rows[0].status).toBe('approved');
+    const b3 = await brand({ status: 'pending' });
+    r = await api.patch(`/brands/${b3.brandId}/status`, admin.token, { status: 'approved' });
+    expect(r.status).toBe(200);
+    // the nag survives approval: the profile tab still lists what is missing
+    expect((await api.get('/brands/me', b.token)).body.data.completeness.missing_labels).toEqual(['logo', 'about', 'contact person']);
     // rejection still works on an incomplete one, and reinstating a suspended brand is not gated
     const b2 = await brand({ status: 'pending' });
     r = await api.patch(`/admin/brands/${b2.brandId}/status`, admin.token, { status: 'rejected', reason: 'No shop number' });
     expect(r.status).toBe(200);
   });
 
-  it('creator verify refuses an incomplete creator; complete → approved and measuring starts (25, 26)', async () => {
+  it('creator verify is the ownership check, never a completeness gate — approved and measuring while incomplete, gaps reported (25, 26; amended 19 Sep)', async () => {
     const { token, user } = await createInfluencerUser();
     const tg = await ids('Telangana', 'Hyderabad');
     const reg = await api.post('/influencers/register', token, { name: 'Priya', instagram_handle: `p_${rnd()}`, ...tg });
     const infId = reg.body.data.influencer.id;
     const admin = await createAdminUser('superadmin');
     const { rows: [cp] } = await query(`SELECT id FROM creator_profiles WHERE linked_influencer_id = $1`, [infId]);
-    let r = await api.post(`/admin/creator-verifications/${cp.id}/verify`, admin.token);
-    expect(r.status).toBe(422); expect(r.body.error.code).toBe('PROFILE_INCOMPLETE');
-    expect(r.body.error.details.missing_labels).toEqual(['photo', 'bio', 'niche', 'a language', 'age', 'gender']);
     const page = await api.get(`/influencers/${infId}`, admin.token);
     expect(page.body.data.influencer.missing_fields).toEqual(['photo', 'bio', 'niche', 'a language', 'age', 'gender']);
     expect(page.body.data.influencer.completeness.done).toBe(4);
     expect(page.body.data.influencer.submitted_for_review_at).toBeNull();
-    await completeCreatorProfile(infId);
-    r = await api.post(`/admin/creator-verifications/${cp.id}/verify`, admin.token);
+    const r = await api.post(`/admin/creator-verifications/${cp.id}/verify`, admin.token);
     expect(r.status).toBe(200);
+    expect(r.body.data.missing_fields).toEqual(['photo', 'bio', 'niche', 'a language', 'age', 'gender']);
     expect((await query(`SELECT status FROM users WHERE id = $1`, [user.id])).rows[0].status).toBe('approved');
+    // the nag survives approval: her profile tab still lists what is missing
+    expect((await api.get('/influencers/me', token)).body.data.completeness.missing_labels).toEqual(['photo', 'bio', 'niche', 'a language', 'age', 'gender']);
     const { rows: [acc] } = await query(`SELECT state, ownership FROM creator_social_accounts WHERE influencer_id = $1 AND platform = 'instagram'`, [infId]);
     expect(acc).toMatchObject({ state: 'measuring', ownership: 'confirmed' });
   });

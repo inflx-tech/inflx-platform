@@ -245,6 +245,8 @@ half-finished signup is no longer a ghost row sitting invisibly in a queue.
 
 ### 6.2 Complete means
 
+**Amended 19 Sep 2026 — see `AMENDMENT-2026-09-19-approval-not-completeness.md`: approval never refuses an incomplete profile; the list below is the nag and the admin information, not a gate.**
+
 **Creator:** full name · state · city · at least one social handle · photo · bio · niche (or
 `Other` + description) · at least one language · age · gender.
 

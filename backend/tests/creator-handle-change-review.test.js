@@ -85,16 +85,17 @@ describe('verify (checks 3, 4, 5)', () => {
     expect((await state(c.influencerId)).filter(a => !a.replaced_at)).toEqual([expect.objectContaining({ handle_norm: B, state: 'measuring', ownership: 'confirmed' })]);
   });
 
-  it('an incomplete profile is refused first; nothing renamed, nothing confirmed', async () => {
+  it('an incomplete profile does not block the ownership check — verified, renamed, confirmed, gaps reported (amended 19 Sep)', async () => {
     const A = `a_${rnd()}`, B = `b_${rnd()}`;
     const c = await pendingCreator({ ig: A });
     await api.patch('/influencers/me', c.token, { instagram_handle: B });
     await query(`UPDATE influencers SET bio = NULL, age = NULL WHERE id = $1`, [c.influencerId]);
     const admin = await createAdminUser('superadmin');
     const r = await api.post(`/admin/creator-verifications/${c.profileId}/verify`, admin.token);
-    expect(r.status).toBe(422); expect(r.body.error.code).toBe('PROFILE_INCOMPLETE');
-    expect((await query(`SELECT ig_handle, verification_status FROM creator_profiles WHERE id = $1`, [c.profileId])).rows[0]).toEqual({ ig_handle: A, verification_status: 'claimed' });
-    expect((await state(c.influencerId)).filter(a => !a.replaced_at)[0].state).toBe('waiting_approval');
+    expect(r.status).toBe(200);
+    expect(r.body.data.missing_fields).toEqual(['bio', 'age']);
+    expect((await query(`SELECT ig_handle, verification_status FROM creator_profiles WHERE id = $1`, [c.profileId])).rows[0]).toEqual({ ig_handle: B, verification_status: 'verified' });
+    expect((await state(c.influencerId)).filter(a => !a.replaced_at)[0]).toMatchObject({ handle_norm: B, state: 'measuring', ownership: 'confirmed' });
   });
 });
 

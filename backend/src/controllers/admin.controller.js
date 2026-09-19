@@ -157,12 +157,9 @@ const updateBrandStatus = asyncHandler(async (req, res) => {
   }
 
   if (status === 'approved') {
-    // registration-and-profile §6: approval refuses an incomplete profile, naming what is
-    // missing. Reinstating a suspended brand is not an approval decision and is not gated.
-    if (brand.user_status !== 'suspended') {
-      const summary = await completeness.forBrand(brand.id);
-      if (!summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
-    }
+    // Founder, 19 Sep 2026 (amending registration-and-profile §6.3): approval is the team's
+    // manual check of the business, not a completeness check — the missing list stays visible
+    // on the review page and the profile tab keeps nagging, but never blocks approval here.
     // Approve, or reinstate a suspended/rejected brand. Clears any prior
     // rejection/suspension note and stamps fresh approval provenance.
     await db.query(

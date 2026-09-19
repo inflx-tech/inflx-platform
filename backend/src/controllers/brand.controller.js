@@ -439,9 +439,8 @@ const updateStatus = asyncHandler(async (req, res) => {
 
   // Update brand record
   if (status === 'approved') {
-    // registration-and-profile §6: approval refuses an incomplete profile, naming what is missing.
-    const summary = await completeness.forBrand(brand.id);
-    if (!summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
+    // Founder, 19 Sep 2026 (amending registration-and-profile §6.3): approval is the team's
+    // manual check, not a completeness check — the missing list informs, never blocks.
     await db.query(
       `UPDATE brands SET rejection_reason = NULL, approved_at = now(), approved_by = $2 WHERE id = $1`,
       [brand.id, adminUserId]

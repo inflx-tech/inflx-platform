@@ -69,6 +69,9 @@ const listQueue = asyncHandler(async (req, res) => {
          FROM creator_social_accounts WHERE influencer_id = $1 AND replaced_at IS NULL ORDER BY platform`, [r.influencer_row_id]);
     r.current_accounts = acc.map(a => ({ platform: a.platform, handle: a.handle_raw, handle_norm: a.handle_norm, url: a.channel_url, state: a.state, ownership: a.ownership }));
     r.changed = changedSinceClaim(r);
+    // Founder, 19 Sep: what she has not filled yet — information for the team, never a gate.
+    const summary = await completeness.forCreator(r.influencer_row_id);
+    r.missing_fields = summary ? summary.missing_labels : [];
   }
   return success(res, { verifications: rows });
 });
@@ -104,11 +107,14 @@ const verify = asyncHandler(async (req, res) => {
       `Cannot verify: current status is ${target[0].verification_status}`, 409);
   }
 
-  // registration-and-profile §6: verifying here IS the creator's approval, so it refuses an
-  // incomplete profile and names what is missing (spec §6.2 creator checklist).
+  // Founder, 19 Sep 2026 (amending registration-and-profile §6.3): approval is the team's check
+  // that the accounts BELONG to her — a manual ownership check, because there is no smart
+  // authentication yet. It is NOT a completeness check. The missing list is returned as
+  // information for admin, never a refusal; the profile tab keeps nagging her for the rest.
+  let missingFields = [];
   if (target[0].linked_influencer_id) {
     const summary = await completeness.forCreator(target[0].linked_influencer_id);
-    if (summary && !summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
+    if (summary) missingFields = summary.missing_labels;
   }
 
   let recordRenamed = null;
@@ -196,7 +202,7 @@ const verify = asyncHandler(async (req, res) => {
       if (process.env.NODE_ENV !== 'test') for (const a of started) socialMeasure.kick(a.id, 'full', 'approval');
     }
     const { rows: after } = await db.query(`SELECT * FROM creator_profiles WHERE id = $1`, [profileId]);
-    return success(res, { verified: after[0] || verifiedRows[0], record_renamed: recordRenamed });
+    return success(res, { verified: after[0] || verifiedRows[0], record_renamed: recordRenamed, missing_fields: missingFields });
   } catch (e) {
     await db.query('ROLLBACK');
     throw e;

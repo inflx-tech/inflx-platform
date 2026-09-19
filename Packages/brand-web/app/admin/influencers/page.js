@@ -881,6 +881,13 @@ function ProfileRow({ row, onChange, onNotice, readOnly }) {
           {row.bio_email && <span>✉ {row.bio_email}</span>}
           {row.bio_phone && <span>📞 {row.bio_phone}</span>}
         </div>
+        {/* Approval = the team checks the accounts are hers, NOT a completeness check.
+            Missing profile fields are informational only — never a block. */}
+        {Array.isArray(row.missing_fields) && row.missing_fields.length > 0 && (
+          <div className="mt-0.5 text-[11px] text-t3">
+            Not yet filled: {row.missing_fields.join(', ')} · she can add these after approval — not needed to verify her.
+          </div>
+        )}
         {row.rejection_reason && (
           <div className="mt-1 text-[11px] text-red bg-red/5 border border-red/20 rounded px-2 py-1">Rejected: {row.rejection_reason}</div>
         )}
