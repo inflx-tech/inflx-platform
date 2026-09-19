@@ -14,7 +14,12 @@ const { authenticate, requireRole, requireApproved } = require('../middleware/au
 const ctrl = require('../controllers/discovery.controller');
 
 const router = Router();
-const brand   = [authenticate, requireRole('brand')];
+// registration-and-profile §6.5 (founder decision 18): a pending brand is inside the app now and
+// may reach home, profile and wallet only — campaigns, creators, groups, pitches and the pool
+// answer ACCOUNT_PENDING until admin approves.
+const brand   = [authenticate, requireRole('brand'), requireApproved];
+// Branches are profile, not an action: a pending brand keeps editing its address (spec §6.5).
+const brandAny = [authenticate, requireRole('brand')];
 const creator = [authenticate, requireRole('influencer')];
 
 // A5, A7 — brand finds creators
@@ -22,11 +27,11 @@ router.get('/brands/me/discover-creators', ...brand, ctrl.discoverCreators);
 router.get('/brands/me/worked-with',       ...brand, ctrl.workedWith);
 
 // A2 — branches
-router.get   ('/brands/me/branches',               ...brand, ctrl.listBranches);
-router.post  ('/brands/me/branches',               ...brand, ctrl.createBranch);
-router.put   ('/brands/me/branches/:id',           ...brand, ctrl.updateBranch);
-router.post  ('/brands/me/branches/:id/make-main', ...brand, ctrl.makeMainBranch);
-router.delete('/brands/me/branches/:id',           ...brand, ctrl.removeBranch);
+router.get   ('/brands/me/branches',                        ...brandAny, ctrl.listBranches);
+router.post  ('/brands/me/branches',                        ...brandAny, ctrl.createBranch);
+router.put   ('/brands/me/branches/:id',                    ...brandAny, ctrl.updateBranch);
+router.post  ('/brands/me/branches/:id/make-main',          ...brandAny, ctrl.makeMainBranch);
+router.delete('/brands/me/branches/:id',                    ...brandAny, ctrl.removeBranch);
 
 // A9 — creator finds brands
 // registration-and-profile §6.3: a pending creator now reaches the app, so every creator

@@ -1,0 +1,36 @@
+{
+  "feature": "change-login-number",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 19 Sep 2026 — \"pls lock the screens and implement both pending user access and number changing flow\")",
+  "approved_at": "2026-09-19T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 19 Sep 2026, same message; mockups N0–N6 as drawn)",
+  "mockup_locked_at": "2026-09-19T00:00:00+05:30",
+  "notes": "Founder ask 19 Sep 2026: change the login number from inside the app — OTP to the old number, verify, then the new number and its OTP. Drafted as 01-spec.md + 04-preview/mockups/change-login-number-mockups-v1.html (N0–N6) for the founder's lock. Design points the founder should confirm: (1) old number verified first, both phones needed, no lost-SIM self-service; (2) the change applies to this role only — one number may hold a brand AND a creator account (users_phone_role_key) but never two of the same role; (3) confirming signs out every other session; (4) 15-minute window; (5) pending/rejected accounts may change their number. Nothing built.",
+  "sequence": {
+    "1_spec_locked": true,
+    "2_mockups_drawn": true,
+    "3_mockups_locked": true,
+    "4_build": true
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-19T00:00:00+05:30",
+      "committed": false,
+      "server": "migration 189 (phone_changes) + run-189.js (prod dry run: 134 users, table absent); changePhone.controller.js with the four /auth/change-phone routes; jwtService.revokeAllRefreshTokens; auth.controller exports buildTokenPayload",
+      "phones": "shared/ChangeNumberScreen (N1–N4, 4-segment bar, six-box codes, 30 s resend, the N6 wordings), Change number link on Business details and Profile info (the creator screen gained a locked Phone tile — it had none), authApi.changePhone*, return-with-toast re-read; api.js keeps the session on a 401 from the four change-phone paths (a mistyped code no longer signs the user out)",
+      "tests": "backend change-login-number.test.js checks 1–12 green (7 tests); mobile changeNumber.test.js (10) + authSessionSurvival (2); mobile 624/624",
+      "note": "Production-impacting; nothing committed or deployed until the founder's explicit go: run-189 --apply → commit → push → OTA brand → OTA influencer. No money moves."
+    }
+  }
+}

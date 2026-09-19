@@ -15,7 +15,10 @@ const router = Router();
 // action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
 // side has used all along.
 const creator = [authenticate, requireRole('influencer'), requireApproved];
-const brand = [authenticate, requireRole('brand')];
+// registration-and-profile §6.5 (founder decision 18): a pending brand is inside the app now and
+// may reach home, profile and wallet only — campaigns, creators, groups, pitches and the pool
+// answer ACCOUNT_PENDING until admin approves.
+const brand = [authenticate, requireRole('brand'), requireApproved];
 
 // Creator — B1–B4, B11
 router.get   ('/influencers/me/invitations/:ciId/thread',         ...creator, ctrl.creatorThread);

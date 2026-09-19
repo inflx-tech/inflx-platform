@@ -65,3 +65,19 @@ niche" (modal), the explanatory note, an empty state; in the nav under People.
 Departures from the mockups: A1/A2 keep the existing rule that approve and reject live on the
 Pending Verification tab (the mockups drew the buttons on the detail page; the pages already
 say where the decision is made, and §9A.1 says corrected, not created).
+
+## Fix, 19 Sep 2026 — the pending brand could still reach campaigns and creators
+
+**Reported by the founder** after registering Anu Fashion World: straight into campaign creation
+and creator browsing before approval. **Cause:** the server gated only campaign create/update/
+delete and the old creator search; the creators list the phone uses (discover-creators),
+worked-with, the creator profile page, groups, campaign lists and sets, the pool, the pitch inbox
+and creator-invitations were open; and the Campaigns / Creators tabs were live tabs.
+
+**After (server):** `requireApproved` on discovery, every campaign route, groups, item 6/7/8/10
+brand routes, creator-invitations; `requireApprovedFor('brand')` on the shared creator-profile
+route so admin passes. A pending brand keeps `/brands/me`, branches, wallet, pitch settings and
+the reference lists. **After (phones):** the account's status is held in a small store fed by OTP,
+cold start and every `/me`; tapping Campaigns / Creators (brand) or Collabs / Create (creator)
+while not approved is swallowed and raises the B2b sheet; the app opens on Home for such an
+account; the locked Home tiles raise the sheet on tap instead of being dead.

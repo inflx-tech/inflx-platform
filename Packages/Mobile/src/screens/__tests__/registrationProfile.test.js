@@ -30,6 +30,8 @@ jest.mock('../../services/api', () => {
     },
     onAccountGate: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
     __emitGate: (e) => { for (const fn of [...listeners]) fn(e); },
+    // The real emitter is exported now (tab lock + locked tiles raise the sheet through it).
+    emitAccountGate: jest.fn((e) => { for (const fn of [...listeners]) fn(e); }),
     clearSession: jest.fn(), uploadFile: jest.fn(),
   };
 });
@@ -438,6 +440,29 @@ describe('C3 · B2 — pending home', () => {
     r = render(<PendingHomeScreen navigation={nav()} route={{ params: { kind: 'brandHome', tabTitle: 'Home' } }} />);
     await waitFor(() => r.getByTestId('coming-soon-brandHome'));
     r.getByText('Home is coming soon');
+  });
+
+  it('brand: a tapped locked tile raises the under-review sheet with the server\'s words — not silently dead', async () => {
+    const { getAccountStatus } = require('../../services/accountStatus');
+    brandApi.getMe.mockResolvedValue(ok({ brand: { business_name: 'Label Fern' }, user_status: 'pending', completeness: { total: 10, done: 10, complete: true, missing_labels: [] } }));
+    const r = render(<>
+      <PendingHomeScreen navigation={nav()} route={{ params: { kind: 'brandHome', tabTitle: 'Home' } }} />
+      <PendingSheetHost navigate={jest.fn()} />
+    </>);
+    await waitFor(() => r.getByTestId('pending-home-brand'));
+    expect(getAccountStatus()).toBe('pending');          // the home's own /me feeds the store
+    expect(r.queryByText('Your account is under review')).toBeNull();
+    fireEvent.press(r.getByTestId('pending-card-campaigns'));
+    expect(api.emitAccountGate).toHaveBeenCalledWith({ code: 'ACCOUNT_PENDING', message: 'Your account is under review by admin. This feature will be available once approved (usually within 24 hours).' });
+    r.getByText('Your account is under review');
+    r.getByText('Your account is under review by admin. This feature will be available once approved (usually within 24 hours).');
+    fireEvent.press(r.getByTestId('pending-sheet-ok'));
+    expect(r.queryByText('Your account is under review')).toBeNull();
+    // The second tile too — Find creators is just as locked.
+    fireEvent.press(r.getByTestId('pending-card-creators'));
+    r.getByText('Your account is under review');
+    expect(api.emitAccountGate).toHaveBeenCalledTimes(2);
+    expect(r.getAllByText('Locked until approved')).toHaveLength(2);   // still visibly locked
   });
 });
 

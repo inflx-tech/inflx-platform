@@ -8,6 +8,7 @@ import { OneSignal, LogLevel } from 'react-native-onesignal';
 import { colors } from './src/theme/tokens';
 import { ONESIGNAL_APP_ID } from './src/config/api';
 import APP_ROLE from './src/config/appRole';
+import { setAccountStatus } from './src/services/accountStatus';
 
 import AuthNavigator from './src/navigation/AuthNavigator';
 import InfluencerNavigator from './src/navigation/InfluencerNavigator';
@@ -111,6 +112,11 @@ export default function App() {
           return;
         }
 
+        // features/registration-and-profile — the tab lock reads the account status at the
+        // navigator's first render, so seed it from the stored user BEFORE the role flips the
+        // navigator in. The stored `status` is what verify-otp returned (and api.js keeps it
+        // current from every GET /me); the background /me below refreshes it again.
+        setAccountStatus(user.status || null);
         setRole(storedRole);
 
         // Profile guard — a stored session only proves WHO the user is, not
@@ -128,6 +134,7 @@ export default function App() {
         if (PROFILE_PATH[storedRole]) {
           const { api } = require('./src/services/api');
           api.get(PROFILE_PATH[storedRole]).then(async (res) => {
+            if (res.success && res.data?.user_status) setAccountStatus(res.data.user_status);
             if (!res.success && res.error?.code === 'NOT_FOUND') {
               await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
               setRole('');

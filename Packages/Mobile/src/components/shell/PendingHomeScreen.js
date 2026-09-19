@@ -12,7 +12,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
-import { brandApi, influencerApi } from '../../services/api';
+import { brandApi, influencerApi, emitAccountGate } from '../../services/api';
+import { setAccountStatus } from '../../services/accountStatus';
+import { gateEventFor } from '../../navigation/lockedTab';
 import { PrimaryButton, SecondaryButton } from '../settings/primitives';
 import { Sheet, sh } from '../settings/sheets';
 import { Skeleton } from '../settings/feedback';
@@ -77,6 +79,8 @@ export default function PendingHomeScreen(props) {
     const r = isBrand ? await brandApi.getMe() : await influencerApi.getMe();
     if (!r || !r.success) { setStatus('unknown'); return; }
     setMe(r.data || {});
+    // Keep the tab lock's store current — this screen reads /me on every mount anyway.
+    if (r.data && r.data.user_status) setAccountStatus(r.data.user_status);
     setStatus('ready');
   }, [isBrand]);
   useEffect(() => { load(); }, [load]);
@@ -97,6 +101,12 @@ export default function PendingHomeScreen(props) {
   const copy = isBrand ? PENDING_COPY.brand : PENDING_COPY.creator;
   const heading = isBrand ? ((me.brand && me.brand.business_name) || 'Home') : PENDING_COPY.creator.brandTitle;
   const goProfile = () => { setSheet(false); navigation.navigate('ProfileTab'); };
+  // A locked tile stays visually locked but is not silently dead: a tap raises the same sheet a
+  // locked tab press (or the server's 403) raises, with the server's words for this status.
+  const pressCard = (c) => {
+    if (c.locked) { emitAccountGate(gateEventFor(userStatus)); return; }
+    if (c.screen) navigation.navigate(c.tab, { screen: c.screen }); else if (c.tab) navigation.navigate(c.tab);
+  };
 
   return (
     <View style={s.screen} testID={`pending-home-${isBrand ? 'brand' : 'creator'}`}>
@@ -110,10 +120,9 @@ export default function PendingHomeScreen(props) {
           <TouchableOpacity
             key={c.key}
             style={[s.card, c.locked && s.cardLocked]}
-            disabled={!!c.locked}
-            onPress={() => { if (c.screen) navigation.navigate(c.tab, { screen: c.screen }); else if (c.tab) navigation.navigate(c.tab); }}
+            onPress={() => pressCard(c)}
             accessibilityRole="button"
-            accessibilityState={{ disabled: !!c.locked }}
+            accessibilityHint={c.locked ? c.sub : undefined}
             testID={`pending-card-${c.key}`}
           >
             <Text style={s.cardTitle}>{c.title}</Text>

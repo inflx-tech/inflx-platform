@@ -198,6 +198,20 @@ const requireApproved = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * requireApprovedFor(...roles) — requireApproved, but only when the caller's role is one of
+ * `roles`. For routes a brand shares with admin (a creator's profile page, for instance):
+ * the brand must be approved, admin passes through untouched.
+ * Contract: features/registration-and-profile §6.5 — a pending brand sees home, profile and
+ * wallet, nothing else.
+ */
+function requireApprovedFor(...roles) {
+  return (req, res, next) => {
+    if (roles.includes(req.user?.role)) return requireApproved(req, res, next);
+    return next();
+  };
+}
+
+/**
  * requireBrandFeature(featureKey)
  * Gates a brand-side route by the brand's category schema. The brand's
  * `category` (brands.category) resolves to public/schemas/<category>.json;
@@ -224,4 +238,4 @@ function requireBrandFeature(featureKey) {
   });
 }
 
-module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, requireCapability, authenticateOptional, requireApproved, requireBrandFeature };
+module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, requireCapability, authenticateOptional, requireApproved, requireApprovedFor, requireBrandFeature };

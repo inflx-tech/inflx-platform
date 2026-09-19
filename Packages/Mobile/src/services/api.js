@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config/api';
+import { setAccountStatus } from './accountStatus';
 
 async function getToken() {
   try {
@@ -19,6 +20,7 @@ async function getRefreshToken() {
 
 export async function clearSession() {
   await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
+  setAccountStatus(null);   // no session → no status; the next account's is read fresh
 }
 
 // Single in-flight refresh promise so concurrent 401s don't trigger
@@ -108,6 +110,16 @@ async function fetchOnce(method, path, body, token) {
 // row with no matching brands row.
 const SESSION_ESTABLISHING_PATHS = ['/auth/refresh', '/auth/send-otp', '/auth/verify-otp'];
 
+// features/change-login-number — the four change-phone steps are authenticated, so an
+// expired access token still gets the one silent refresh + retry above. But a 401 that
+// survives the retry is the server's business answer ("Invalid or expired OTP", or
+// CHANGE_EXPIRED after 15 minutes) — never a statement about the session. Clearing the
+// tokens there would sign a person out for mistyping one code. These paths hand the
+// server's words back to the screen instead.
+const KEEP_SESSION_ON_401_PATHS = [
+  '/auth/change-phone/start', '/auth/change-phone/verify-old', '/auth/change-phone/send-new', '/auth/change-phone/confirm',
+];
+
 // features/registration-and-profile — the account gate. A pending (or rejected) account is
 // inside the app now, so every real action can answer 403 ACCOUNT_PENDING / ACCOUNT_REJECTED.
 // Rather than each screen reading that error and drawing its own sheet, the client fires one
@@ -119,7 +131,9 @@ export function onAccountGate(fn) {
   _accountGateListeners.add(fn);
   return () => { _accountGateListeners.delete(fn); };
 }
-function emitAccountGate(error) {
+// Exported so the tab lock (navigation/lockedTab.js) and the pending home's locked tiles can
+// raise the very same sheet, with the server's words, without a request having been made.
+export function emitAccountGate(error) {
   for (const fn of [..._accountGateListeners]) {
     try { fn(error); } catch (_) { /* a listener must never break the request */ }
   }
@@ -128,6 +142,23 @@ function maybeEmitAccountGate(status, json) {
   if (status !== 403 || !json || json.success !== false) return;
   const code = json.error && json.error.code;
   if (ACCOUNT_GATE_CODES.includes(code)) emitAccountGate({ code, message: json.error.message });
+}
+
+// The account's status rides on GET /brands/me and GET /influencers/me as `user_status`. Every
+// successful read refreshes the accountStatus store (so a submit or an admin approval is felt
+// without a restart) and the stored user, so the next cold start opens on the right tab.
+const ACCOUNT_STATUS_PATHS = ['/brands/me', '/influencers/me'];
+function maybeRecordAccountStatus(method, path, json) {
+  if (method !== 'GET' || !ACCOUNT_STATUS_PATHS.includes(path.split('?')[0])) return;
+  if (!json || json.success !== true || !json.data || !json.data.user_status) return;
+  const status = json.data.user_status;
+  setAccountStatus(status);
+  AsyncStorage.getItem('inflx_user').then((str) => {
+    if (!str) return null;
+    const user = JSON.parse(str);
+    if (user.status === status) return null;
+    return AsyncStorage.setItem('inflx_user', JSON.stringify({ ...user, status }));
+  }).catch(() => {});
 }
 
 async function request(method, path, body) {
@@ -149,7 +180,7 @@ async function request(method, path, body) {
       } else if (refreshed.transient) {
         return { success: false, error: { code: 'NETWORK_ERROR', message: 'Could not reach the server. Please try again.' } };
       }
-      if (res.status === 401) {
+      if (res.status === 401 && !KEEP_SESSION_ON_401_PATHS.includes(path.split('?')[0])) {
         // Definitive: refresh token invalid/expired, or retry still rejected.
         // Guests (no session at all) get a sign-in prompt, not "expired" —
         // the app is guest-first and this copy reads as a scary bug to them.
@@ -169,6 +200,7 @@ async function request(method, path, body) {
     try {
       const json = JSON.parse(text);
       maybeEmitAccountGate(res.status, json);
+      maybeRecordAccountStatus(method, path, json);
       return json;
     } catch (parseErr) {
       console.log('[API] Non-JSON response:', text.substring(0, 200));
@@ -198,6 +230,12 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
   registerFcmToken: (token) => api.post('/auth/fcm-token', { token }),
   registerOneSignalPlayerId: (playerId) => api.post('/auth/onesignal-player-id', { player_id: playerId }),
+  // features/change-login-number — four steps, old number first. The screen stores the fresh
+  // pair `confirm` returns exactly as OTPScreen does after sign-in.
+  changePhoneStart: () => api.post('/auth/change-phone/start'),
+  changePhoneVerifyOld: (otp) => api.post('/auth/change-phone/verify-old', { otp }),
+  changePhoneSendNew: (changeToken, newPhone) => api.post('/auth/change-phone/send-new', { change_token: changeToken, new_phone: newPhone }),
+  changePhoneConfirm: (changeToken, otp) => api.post('/auth/change-phone/confirm', { change_token: changeToken, otp }),
 };
 
 export const brandApi = {

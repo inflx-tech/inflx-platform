@@ -73,4 +73,53 @@ describe('api client — 401 handling on session-establishing endpoints', () => 
     expect(res.success).toBe(true);
     expect(await AsyncStorage.getItem('inflx_token')).toBe('fresh');
   });
+
+  // features/change-login-number — the four change-phone steps are protected (one refresh +
+  // retry on a stale access token is right), but a 401 that survives the retry is the
+  // server's answer to a wrong code or a 15-minute-old change token. Mistyping one code
+  // must never sign the person out.
+  it('a wrong code on change-phone/verify-old refreshes once, then keeps the session and returns the real message', async () => {
+    await AsyncStorage.setItem('inflx_token', 'access-abc');
+    await AsyncStorage.setItem('inflx_refresh_token', 'refresh-abc');
+    await AsyncStorage.setItem('inflx_user', JSON.stringify({ id: 'u1', role: 'brand' }));
+
+    global.fetch = jest.fn((url) => {
+      if (String(url).includes('/auth/refresh')) {
+        return jsonRes(200, { success: true, data: { access_token: 'fresh', refresh_token: 'refresh-def' } });
+      }
+      return jsonRes(401, { success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or expired OTP' } });
+    });
+
+    const res = await api.post('/auth/change-phone/verify-old', { otp: '000000' });
+    await flush();
+
+    expect(res.success).toBe(false);
+    expect(res.error.message).toBe('Invalid or expired OTP');
+    // verify-old → refresh → verify-old again: the retry happened, the wipe did not.
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(await AsyncStorage.getItem('inflx_token')).toBe('fresh');
+    expect(await AsyncStorage.getItem('inflx_refresh_token')).toBe('refresh-def');
+    expect(await AsyncStorage.getItem('inflx_user')).not.toBeNull();
+  });
+
+  it('CHANGE_EXPIRED on change-phone/confirm reaches the screen with its words; the session stays', async () => {
+    await AsyncStorage.setItem('inflx_token', 'access-abc');
+    await AsyncStorage.setItem('inflx_refresh_token', 'refresh-abc');
+    const words = 'Time\'s up. Start again from "Change number" — you have 15 minutes end to end.';
+
+    global.fetch = jest.fn((url) => {
+      if (String(url).includes('/auth/refresh')) {
+        return jsonRes(200, { success: true, data: { access_token: 'fresh', refresh_token: 'refresh-def' } });
+      }
+      return jsonRes(401, { success: false, error: { code: 'CHANGE_EXPIRED', message: words } });
+    });
+
+    const res = await api.post('/auth/change-phone/confirm', { change_token: 'stale', otp: '482913' });
+    await flush();
+
+    expect(res.error.code).toBe('CHANGE_EXPIRED');
+    expect(res.error.message).toBe(words);
+    expect(await AsyncStorage.getItem('inflx_token')).toBe('fresh');
+    expect(await AsyncStorage.getItem('inflx_refresh_token')).toBe('refresh-def');
+  });
 });

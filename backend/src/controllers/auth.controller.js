@@ -339,4 +339,6 @@ const registerOneSignalPlayerId = asyncHandler(async (req, res) => {
   return success(res, { message: 'OneSignal player ID registered' });
 });
 
-module.exports = { sendOtp, verifyOtp, refresh, logout, registerFcmToken, registerOneSignalPlayerId };
+// buildTokenPayload is shared with changePhone.controller (change-login-number): the device
+// that changes its number gets a fresh session shaped exactly like sign-in's.
+module.exports = { sendOtp, verifyOtp, refresh, logout, registerFcmToken, registerOneSignalPlayerId, buildTokenPayload };

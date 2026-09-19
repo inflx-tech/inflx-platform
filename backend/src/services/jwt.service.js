@@ -88,7 +88,21 @@ async function revokeRefreshToken(rawToken) {
   );
 }
 
+/**
+ * Revoke every refresh token of a user — change-login-number §3 rule 6: when the login number
+ * changes, every other device is signed out at its next refresh. The caller issues the device
+ * that made the change a fresh pair afterwards.
+ */
+async function revokeAllRefreshTokens(userId) {
+  const { rowCount } = await db.query(
+    `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1 AND revoked = false`,
+    [userId]
+  );
+  return rowCount;
+}
+
 module.exports = {
+  revokeAllRefreshTokens,
   generateAccessToken,
   generateRefreshToken,
   verifyToken,

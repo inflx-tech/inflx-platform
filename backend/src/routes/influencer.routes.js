@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, requireRole, requireApproved } = require('../middleware/auth');
+const { authenticate, requireRole, requireApproved, requireApprovedFor } = require('../middleware/auth');
 const ctrl = require('../controllers/influencer.controller');
 const offerCtrl = require('../controllers/offer.controller');
 const withdrawalCtrl = require('../controllers/withdrawal.controller');
@@ -91,7 +91,10 @@ router.delete('/me/store/items/:id', authenticate, requireRole('influencer'), st
 router.get('/me/contracts', authenticate, requireRole('influencer'), mediaCtrl.listInfluencerContracts);
 
 // ── Public profile view (brand + admin) ──────────────────────────────────────
-router.get('/:id',            authenticate, requireRole('brand', 'admin'), ctrl.getPublicById);
+// registration-and-profile §6.5 (founder decision 18): a pending brand is inside the app now and
+// may reach home, profile and wallet only — campaigns, creators, groups, pitches and the pool
+// answer ACCOUNT_PENDING until admin approves.
+router.get('/:id',            authenticate, requireRole('brand', 'admin'), requireApprovedFor('brand'), ctrl.getPublicById);
 
 // ── Admin: trigger Instagram rescrape ────────────────────────────────────────
 router.post('/:id/rescrape',  authenticate, requireAnyAdminRole,           ctrl.rescrape);

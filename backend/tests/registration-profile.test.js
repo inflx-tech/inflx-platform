@@ -18,6 +18,8 @@ const { encrypt } = require('../src/utils/encrypt');
 
 beforeEach(async () => { await truncateAll(); await resetReference(); });
 afterEach(() => jest.restoreAllMocks());
+// the Other-queue check adds a niche; reference rows survive truncateAll, so hand the next suite a clean list
+afterEach(() => resetReference());
 
 const ids = async (stateName, cityName) => {
   const { rows: [s] } = await query(`SELECT id FROM ref_states WHERE name = $1`, [stateName]);
@@ -329,6 +331,35 @@ describe('The creator gate (checks 28, 29)', () => {
     expect((await api.get('/influencers/me/find-brands', c.token)).body.error.code).toBe('ACCOUNT_REJECTED');
     await query(`UPDATE users SET status = 'approved' WHERE id = $1`, [c.userId]);
     expect((await api.get('/influencers/me/find-brands', c.token)).status).toBe(200);
+  });
+});
+
+describe('The brand gate (spec §6.5, founder decision 18)', () => {
+  it('a pending brand reaches home, profile, wallet and branches — and nothing else', async () => {
+    const b = await brand({ status: 'pending' });
+    const c = await creator();
+    const refused = [
+      ['get', '/brands/me/discover-creators'], ['get', '/brands/me/worked-with'], ['get', `/influencers/${c.influencerId}`],
+      ['get', '/campaigns'], ['post', '/campaigns'], ['get', '/campaigns/summary'],
+      ['get', '/brands/me/influencer-groups'], ['post', '/brands/me/influencer-groups'],
+      ['get', '/brands/me/pitches'], ['get', '/brands/me/pool'], ['get', '/brands/me/creator-invitations'],
+      ['get', '/influencers/search'],
+    ];
+    for (const [m, p] of refused) {
+      const r = await api[m](p, b.token, { name: 'x' });
+      expect([p, r.status, r.body.error && r.body.error.code]).toEqual([p, 403, 'ACCOUNT_PENDING']);
+    }
+    for (const p of ['/brands/me', '/brands/me/branches', '/brands/me/wallet', '/reference/states?offered=1', '/reference/brand-categories', '/brands/me/pitch-settings']) {
+      const r = await api.get(p, b.token);
+      expect([p, r.status]).toEqual([p, 200]);
+    }
+    expect((await api.patch('/brands/me', b.token, { about: 'hi' })).status).toBe(200);
+    // admin still reads a creator's page through the shared route; an approved brand too
+    const admin = await createAdminUser('superadmin');
+    expect((await api.get(`/influencers/${c.influencerId}`, admin.token)).status).toBe(200);
+    await query(`UPDATE users SET status = 'approved' WHERE id = $1`, [b.userId]);
+    expect((await api.get('/brands/me/discover-creators', b.token)).status).toBe(200);
+    expect((await api.get(`/influencers/${c.influencerId}`, b.token)).status).toBe(200);
   });
 });
 

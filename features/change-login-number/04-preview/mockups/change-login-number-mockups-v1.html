@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Change Login Number</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--page:#EEEEEA;--bg:#FFFFFF;--surface:#F6F6F3;--border:#E5E4DE;--ink:#1A1A17;--ink2:#5B5A53;--ink3:#77766E;--primary:#FFC700;--wait-fg:#1D5FBF;--wait-bg:#E6EFFC;--active-fg:#1A7A3D;--active-bg:#E4F5EA;--no-fg:#C42B2B;--no-bg:#FDE8E8;--move-fg:#B04600;--move-bg:#FFEBDD;--ended-fg:#55544D;--ended-bg:#EFEFEA;--sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px}h1,h2,h3{margin:0;letter-spacing:-.015em}h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}h2{font-size:clamp(21px,3vw,27px);font-weight:800}p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}.lede{font-size:16px;color:var(--ink2);max-width:70ch}.prose{color:var(--ink2);max-width:72ch}
+header.top{padding-block:34px 14px;display:grid;gap:10px;border-bottom:1px solid var(--border)}section{padding-block:34px 6px;display:grid;gap:16px}section>header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--active-bg);color:var(--active-fg);width:max-content}
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 22px;align-items:start}.shot{display:grid;gap:8px;justify-items:center;align-content:start}.cap{display:grid;gap:3px;width:100%;max-width:320px}.cap b{font-size:13.5px}.cap span{font-size:12.5px;color:var(--ink2)}.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:610px;position:relative;font-size:13.5px}.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:11px;position:relative}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}.bar h3{font-size:16px;font-weight:800;flex:1}.ib{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;flex:none;font-size:14px}
+.mut{color:var(--ink2)}.grp{display:grid;gap:7px}.lbl{font-weight:700;font-size:12.5px}.hint{font-size:11px;color:var(--ink2);line-height:1.35}
+.inp{border:1px solid var(--border);background:var(--bg);border-radius:10px;padding:9px 11px;font-size:13px;min-height:36px;display:flex;align-items:center;color:var(--ink)}.inp.ph{color:var(--ink3)}.inp.dis{background:var(--surface);color:var(--ink3)}.inp.err{border-color:var(--no-fg)}.errtxt{font-size:11px;color:var(--no-fg);font-weight:600}
+.btn{border-radius:11px;padding:11px;text-align:center;font-weight:800;font-size:13px;background:var(--primary);color:#1A1A17}.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--ink)}.btn.dis{background:var(--surface);color:var(--ink3)}.btn.dark{background:var(--ink);color:#fff}
+.note{border-radius:11px;padding:10px;font-size:11.5px;line-height:1.4;display:grid;gap:3px}.note.wait{background:var(--wait-bg);color:var(--wait-fg)}.note.no{background:var(--no-bg);color:var(--no-fg)}.note.ok{background:var(--active-bg);color:var(--active-fg)}.note.warn{background:var(--move-bg);color:var(--move-fg)}.note b{font-size:12px}
+.otp{display:flex;gap:6px}.otp span{flex:1;height:44px;border:1px solid var(--border);border-radius:10px;display:grid;place-items:center;font-family:var(--mono);font-size:18px;font-weight:600}.otp span.on{border-color:var(--ink)}
+.link{color:var(--wait-fg);font-weight:700;font-size:12.5px}.steps{display:flex;gap:5px}.sbar{height:3px;border-radius:9px;background:var(--border);flex:1}.sbar.on{background:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;padding:13px;border:1px solid var(--border);border-radius:13px;background:var(--bg)}.foot{padding-block:44px 60px;color:var(--ink2);font-size:13px;display:grid;gap:8px;border-top:1px solid var(--border);margin-top:34px}.card{border:1px solid var(--border);border-radius:13px;padding:11px;background:var(--bg);display:grid;gap:7px}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+</style></head>
+<body><div class="wrap">
+<header class="top">
+  <p class="eyebrow">features/change-login-number · mockups v1 · 19 Sep 2026 · DRAFT</p>
+  <h1>Change login number</h1>
+  <p class="lede">One entry point, four screens, both phones must be in hand. Drawn once; the creator app and the brand app show the same four screens under their own headers.</p>
+  <div class="legend"><span class="pill">new screen</span></div>
+</header>
+
+<section>
+  <header><p class="eyebrow">Entry</p><h2>Where it starts</h2><p class="prose">The Phone field in Profile info (creator) and Business details (brand) is locked today. It gains one link.</p></header>
+  <div class="flow">
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Business details</h3></div>
+        <div class="grp"><div class="lbl">Business name <span style="color:var(--no-fg)">*</span></div><div class="inp">Anu Fashion World</div></div>
+        <div class="grp"><div class="lbl">Contact person <span style="color:var(--no-fg)">*</span></div><div class="inp">Anu</div></div>
+        <div class="grp"><div class="lbl">Email</div><div class="inp ph">you@business.com</div></div>
+        <div class="grp"><div class="row between"><div class="lbl">Phone</div><span class="link">Change number</span></div><div class="inp dis">+91 98••• ••210</div><p class="hint">Your login number. This is your business number too.</p></div>
+        <div class="grp"><div class="lbl">Business type</div><div class="inp dis">Fashion</div></div>
+        <div style="flex:1"></div>
+        <div class="btn">Save</div>
+      </div></div>
+      <div class="cap"><b>N0 · The entry point</b><span>"Change number" beside the locked phone. Same spot on the creator's Profile info.</span><i>the only way in</i></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <header><p class="eyebrow">The flow</p><h2>Four screens</h2><p class="prose">Old number first, then the new one. Fifteen minutes end to end, or it starts over.</p></header>
+  <div class="flow">
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar"></div><div class="sbar"></div><div class="sbar"></div></div>
+        <div class="bar"><div class="ib">‹</div><h3>Change number</h3></div>
+        <div class="grp"><h3 style="font-size:19px;font-weight:800">First, confirm it's you</h3><p class="hint">We'll text a code to your current number.</p></div>
+        <div class="card"><p class="hint">Current number</p><b style="font-size:16px;font-family:var(--mono)">+91 98765 43210</b></div>
+        <div class="note wait"><span>You'll need both phones: the old one to receive this code, the new one for the next.</span></div>
+        <div style="flex:1"></div>
+        <div class="btn">Send code</div>
+      </div></div>
+      <div class="cap"><b>N1 · Confirm the old number</b><span>Says up front that both phones are needed, so nobody starts without them.</span><i>POST /auth/change-phone/start</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar on"></div><div class="sbar"></div><div class="sbar"></div></div>
+        <div class="bar"><div class="ib">‹</div><h3>Change number</h3></div>
+        <div class="grp"><h3 style="font-size:19px;font-weight:800">Enter the code</h3><p class="hint">Sent to +91 98765 43210</p></div>
+        <div class="otp"><span class="on">4</span><span class="on">8</span><span class="on">2</span><span></span><span></span><span></span></div>
+        <p class="hint">Didn't get it? <span class="link">Resend in 0:24</span></p>
+        <div style="flex:1"></div>
+        <div class="btn dis">Verify</div>
+      </div></div>
+      <div class="cap"><b>N2 · The old number's code</b><span>Same six-box code entry as sign-in. Five wrong tries end the attempt.</span><i>POST /auth/change-phone/verify-old → change_token</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar on"></div><div class="sbar on"></div><div class="sbar"></div></div>
+        <div class="bar"><div class="ib">‹</div><h3>Change number</h3></div>
+        <div class="grp"><h3 style="font-size:19px;font-weight:800">Your new number</h3><p class="hint">This becomes your login number from now on.</p></div>
+        <div class="grp"><div class="lbl">New mobile number</div><div class="inp"><span class="mut" style="margin-right:6px">+91</span>91234 56789</div></div>
+        <div class="note warn"><span>This changes the number for your <b>brand</b> account only. If you also have a creator account on the old number, change it from the creator app.</span></div>
+        <div style="flex:1"></div>
+        <div class="btn">Send code</div>
+      </div></div>
+      <div class="cap"><b>N3 · The new number</b><span>Refused if it is the same number, or if it already holds an account of this role: "This number already has a brand account. Sign in with it instead."</span><i>POST /auth/change-phone/send-new</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar on"></div><div class="sbar on"></div><div class="sbar on"></div></div>
+        <div class="bar"><div class="ib">‹</div><h3>Change number</h3></div>
+        <div class="grp"><h3 style="font-size:19px;font-weight:800">Enter the code</h3><p class="hint">Sent to +91 91234 56789</p></div>
+        <div class="otp"><span class="on">7</span><span class="on">1</span><span class="on">9</span><span class="on">0</span><span class="on">3</span><span class="on">5</span></div>
+        <p class="hint">Didn't get it? <span class="link">Resend in 0:12</span></p>
+        <div class="note wait"><span>When you confirm, the old number is signed out everywhere. This phone stays signed in.</span></div>
+        <div style="flex:1"></div>
+        <div class="btn">Confirm new number</div>
+      </div></div>
+      <div class="cap"><b>N4 · The new number's code</b><span>Confirming rewrites the login number, signs out every other session, and keeps this one.</span><i>POST /auth/change-phone/confirm</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Business details</h3></div>
+        <div class="note ok"><b>Your login number is now +91 91234 56789.</b><span>Use it the next time you sign in.</span></div>
+        <div class="grp"><div class="lbl">Business name <span style="color:var(--no-fg)">*</span></div><div class="inp">Anu Fashion World</div></div>
+        <div class="grp"><div class="lbl">Contact person <span style="color:var(--no-fg)">*</span></div><div class="inp">Anu</div></div>
+        <div class="grp"><div class="row between"><div class="lbl">Phone</div><span class="link">Change number</span></div><div class="inp dis">+91 91••• ••789</div><p class="hint">Your login number. This is your business number too.</p></div>
+        <div style="flex:1"></div>
+        <div class="btn">Save</div>
+      </div></div>
+      <div class="cap"><b>N5 · Done</b><span>Back where it started, with the new number in the field and a green line that fades after a moment.</span><i>toast on return</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="steps"><div class="sbar on"></div><div class="sbar on"></div><div class="sbar on"></div><div class="sbar"></div></div>
+        <div class="bar"><div class="ib">‹</div><h3>Change number</h3></div>
+        <div class="grp"><h3 style="font-size:19px;font-weight:800">Your new number</h3></div>
+        <div class="grp"><div class="lbl">New mobile number</div><div class="inp err"><span class="mut" style="margin-right:6px">+91</span>98765 43210</div><p class="errtxt">That's already your number.</p></div>
+        <div class="note no"><b>This number already has a brand account.</b><span>Sign in with it instead.</span></div>
+        <div class="note no"><b>Time's up.</b><span>Start again from "Change number" — you have 15 minutes end to end.</span></div>
+        <div style="flex:1"></div>
+        <div class="btn dis">Send code</div>
+      </div></div>
+      <div class="cap"><b>N6 · The three refusals</b><span>Drawn together so the wording is agreed once: same number · number already has this role · 15 minutes passed.</span><i>each appears alone in the app</i></div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <header><p class="eyebrow">For the record</p><h2>What these screens decide</h2></header>
+  <div class="card" style="max-width:760px">
+    <p class="prose" style="font-size:13.5px"><b>They decide:</b> the entry point, the order (old number first), the both-phones warning, the this-role-only warning, the three refusals and their words, and that confirming signs out every other session.</p>
+    <p class="prose" style="font-size:13.5px"><b>They don't decide:</b> what happens when the old phone is lost — the team handles that offline, no self-service this version.</p>
+  </div>
+</section>
+
+<div class="foot"><p><b>features/change-login-number</b> · mockups v1 · drawn from 01-spec.md (DRAFT — nothing locked, nothing built)</p></div>
+</div></body></html>

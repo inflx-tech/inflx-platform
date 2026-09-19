@@ -6,7 +6,8 @@
  * Contract: features/registration-and-profile · features/item3-discovery-profiles-groups
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi, uploadFile } from '../../services/api';
 import { FieldError } from '../../components/settings/primitives';
@@ -14,9 +15,11 @@ import { SaveBar, useToast, Skeleton, LoadError } from '../../components/setting
 import { COPY } from '../../components/settings/copy';
 import { applyServerError } from '../../utils/serverError';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
+import useRouteToast from '../../hooks/useRouteToast';
 import ImagePickerField from '../../components/discovery/ImagePickerField';
 import { Header, s as base } from './BrandPitchSettingsScreen';
-import { C3, MSG3, maskPhone } from '../../components/discovery/copy3';
+import { C3, MSG3 } from '../../components/discovery/copy3';
+import { maskIndian } from '../shared/ChangeNumberScreen';
 
 const D = C3.brandProfile.details;
 const ABOUT_MAX = 200;
@@ -34,10 +37,18 @@ function Field({ label, value, onChangeText, error, testID, multiline, maxLength
     </View>
   );
 }
-function Locked({ label, value, hint, testID }) {
+/** A locked field; `action` draws a link beside the label (features/change-login-number N0). */
+export function Locked({ label, value, hint, testID, action }) {
   return (
     <View style={{ marginBottom: 14 }}>
-      <Text style={base.label}>{label}</Text>
+      <View style={s.labelRow}>
+        <Text style={base.label}>{label}</Text>
+        {action ? (
+          <TouchableOpacity onPress={action.onPress} accessibilityRole="link" testID={action.testID} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={s.link}>{action.label}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
       <View style={s.locked}><Text style={s.lockedText} testID={testID}>🔒 {value}</Text></View>
       {hint ? <Text style={base.hint}>{hint}</Text> : null}
     </View>
@@ -46,7 +57,7 @@ function Locked({ label, value, hint, testID }) {
 
 const formOf = (b) => ({ business_name: b.business_name || '', about: b.about || '', contact_person: b.contact_person || b.listing_data?.contact_person_name || '', email: b.email || '' });
 
-export default function BrandBusinessDetailsScreen({ navigation }) {
+export default function BrandBusinessDetailsScreen({ navigation, route }) {
   const [status, setStatus] = useState('loading');
   const [brand, setBrand] = useState(null);
   const [f, setF] = useState(formOf({}));
@@ -66,6 +77,12 @@ export default function BrandBusinessDetailsScreen({ navigation }) {
     setStatus('ready');
   }, []);
   useEffect(() => { load(); }, [load]);
+  // features/change-login-number N5 — coming back with a toast means the login number moved:
+  // re-read /me so the phone tile shows the new number, then show the green line once.
+  const returnedToast = route?.params?.toast;
+  useFocusEffect(useCallback(() => { if (returnedToast) load(); }, [returnedToast, load]));
+  useRouteToast(navigation, route, show);
+  const changeNumber = () => navigation.navigate('ChangeNumber', { role: 'brand', returnTo: 'BrandBusinessDetails', phone: brand?.login_phone || brand?.phone || '' });
 
   const initial = brand ? formOf(brand) : f;
   const dirty = Object.keys(f).some(k => f[k] !== initial[k]);
@@ -117,8 +134,8 @@ export default function BrandBusinessDetailsScreen({ navigation }) {
     setBrand(prev => ({ ...prev, logo_url: null }));
   }
 
-  if (status === 'loading') return <View style={base.screen}><Header title={D.title} onBack={() => navigation.goBack()} /><Skeleton /></View>;
-  if (status === 'error') return <View style={base.screen}><Header title={D.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
+  if (status === 'loading') return <View style={base.screen}><Header title={D.title} onBack={() => navigation.goBack()} /><Skeleton />{toast}</View>;
+  if (status === 'error') return <View style={base.screen}><Header title={D.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} />{toast}</View>;
 
   return (
     <View style={base.screen}>
@@ -132,7 +149,8 @@ export default function BrandBusinessDetailsScreen({ navigation }) {
         <Field label={D.contact} value={f.contact_person} onChangeText={set('contact_person')} placeholder="Who should we ask for?" error={errors.contact_person || (dirty ? clientErrors.contact_person : '')} testID="field-contact" />
         <Field label={D.email} value={f.email} onChangeText={set('email')} placeholder="you@business.com" autoCapitalize="none" keyboardType="email-address" error={errors.email || clientErrors.email} testID="field-email" />
         {/* The login number IS the business number — brands.phone was never written by anything (spec §7). */}
-        <Locked label={D.phone} value={maskPhone(brand.login_phone)} hint={D.phoneHint} testID="locked-phone" />
+        <Locked label={D.phone} value={maskIndian(brand.login_phone || brand.phone)} hint={D.phoneHint} testID="locked-phone"
+          action={{ label: D.changeNumber, onPress: changeNumber, testID: 'change-number-link' }} />
         <Locked label={D.major} value="Fashion" testID="locked-type" />
       </ScrollView>
       <SaveBar dirty={dirty} errorCount={dirty ? errorCount : 0} saving={saving} onSave={save} label={D.save} />
@@ -147,4 +165,6 @@ const s = StyleSheet.create({
   counter: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink3, textAlign: 'right', marginTop: 4 },
   locked: { backgroundColor: T.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
   lockedText: { fontFamily: fonts.sansMedium, fontSize: 14, color: T.ink2 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  link: { fontFamily: fonts.sansBold, fontSize: 13, color: T.state.waiting.fg, marginBottom: 8 },
 });

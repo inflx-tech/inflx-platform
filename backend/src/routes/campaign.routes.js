@@ -7,7 +7,10 @@ const ctrl = require('../controllers/campaign.controller');
 const invCtrl = require('../controllers/invitations.controller');
 
 const router = Router();
-const brandAuth = [authenticate, requireRole('brand')];
+// registration-and-profile §6.5 (founder decision 18): a pending brand is inside the app now and
+// may reach home, profile and wallet only — campaigns, creators, groups, pitches and the pool
+// answer ACCOUNT_PENDING until admin approves.
+const brandAuth = [authenticate, requireRole('brand'), requireApproved];
 const brandApproved = [authenticate, requireRole('brand'), requireApproved];
 
 // ── Campaign CRUD ────────────────────────────────────────────────────────────

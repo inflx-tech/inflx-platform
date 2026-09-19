@@ -71,6 +71,13 @@
       "admin": "next build exits 0; /admin/niches/other in the route manifest. Playwright admin specs run directly (nav-sweep, role-gate, approvals, approvals-reject): 34 passed; the one red was the stale /admin/master-dishes entry (page deleted by the cut, 60ca1d9) — removed, sweep then 23/23. The full pnpm qa lane still FAILS at suite load on qa/unit/campaign-end-and-open-ended.spec.ts and wizard-allocation-wiring.spec.ts reading app/dashboard/campaigns/new/page.js, also deleted by the cut — pre-existing, not touched here.",
       "governance_check": "gov-check scans the committed range only; it will evaluate this contract at commit time (lock approved + 01/02/05 present + mockup_locked + 06-diff/notes.md non-empty). Note: the local branch already carries the founder's unpushed 9711fd7 (item 10 walk fix) which gov-check flags as contract-less — it rides along with the push.",
       "note": "released stays false per GOVERNANCE.md §5. Production-impacting; nothing committed or deployed until the founder's explicit go: run-188 --apply → commit → push (Render + Vercel) → OTA brand → OTA influencer. No money moves."
+    },
+    "fix_2026_09_19": {
+      "reported": "founder, 19 Sep 2026: registered Anu Fashion World and went straight into campaign creation and creator browsing before approval",
+      "server": "requireApproved on discovery (discover-creators, worked-with), every campaign route, groups, item 6/7/8/10 brand routes, creator-invitations; requireApprovedFor(brand) on the shared creator-profile route (admin passes); branches, /brands/me, wallet, pitch settings and reference lists stay open to a pending brand",
+      "phones": "accountStatus store fed by OTP, cold start and every /me; Campaigns/Creators (brand) and Collabs/Create (creator) tab presses swallowed and the B2b sheet raised while not approved; app opens on Home for such an account; locked Home tiles raise the sheet; suspended gets its own sheet title",
+      "tests": "registration-profile.test.js gains the brand-gate check (12 refused routes, 6 allowed, admin pass-through); mobile lockedTab.test.js (12) + 1; mobile suite 624/624; backend full run 1411 / 1188 / 223 vs baseline 1386 / 1165 / 221 — the two extra reds were a niche leaking from the Other-queue test into item2 (fixed: reference reset drops admin-added niches, the suite cleans up after itself) and item 10 check 35, whose production_event_log ORDER BY created_at ties intermittently (passed in three other full runs and twice alone; pre-existing fragility, not touched)",
+      "deployed": null
     }
   }
 }

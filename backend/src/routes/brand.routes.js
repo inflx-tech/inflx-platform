@@ -161,8 +161,8 @@ router.get('/:id/public', authenticate, ctrl.getPublicProfile);
 // ── Creator invitations (brand → unclaimed scraped creators) ────────────────
 // Brand invites a non-onboarded creator → admin queue picks it up and runs outreach.
 router.post('/me/creator-invitations',         authenticate, requireRole('brand'), requireApproved, invitationCtrl.createInvitation);
-router.get('/me/creator-invitations',          authenticate, requireRole('brand'), invitationCtrl.listMyInvitations);
-router.delete('/me/creator-invitations/:id',   authenticate, requireRole('brand'), invitationCtrl.withdrawInvitation);
+router.get('/me/creator-invitations',          authenticate, requireRole('brand'), requireApproved, invitationCtrl.listMyInvitations);
+router.delete('/me/creator-invitations/:id',   authenticate, requireRole('brand'), requireApproved, invitationCtrl.withdrawInvitation);
 
 // Admin routes (reviewer+ can view, approve, reject)
 router.get('/:id',         authenticate, requireAdminRole('reviewer'), ctrl.getById);

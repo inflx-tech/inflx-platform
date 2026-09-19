@@ -18,12 +18,17 @@ import ComingSoonScreen from '../components/shell/ComingSoonScreen';
 // and Payment & tax left the profile for the Wallet tab (UPI / bank / PAN).
 import PendingHomeScreen from '../components/shell/PendingHomeScreen';
 import PendingSheetHost from '../components/shell/PendingSheetHost';
+// The tab lock: Collabs and Create are locked until approval (the press raises the sheet), and
+// a pending creator opens on Home, never on a locked tab's content.
+import { lockedTabListeners, initialTabFor } from './lockedTab';
+import { getAccountStatus } from '../services/accountStatus';
 // features/creator-wallet-and-first-payment — a stand-in wallet, so money that already exists is visible.
 import CreatorWalletScreen from '../screens/influencer/CreatorWalletScreen';
 import PayoutDetailScreen from '../screens/influencer/PayoutDetailScreen';
 import CollabsScreen from '../screens/influencer/CollabsScreen';
 import FindBrandsScreen from '../screens/influencer/FindBrandsScreen';
 import ProfileInfoScreen from '../screens/influencer/ProfileInfoScreen';
+import ChangeNumberScreen from '../screens/shared/ChangeNumberScreen';
 import NicheLanguagesScreen from '../screens/influencer/NicheLanguagesScreen';
 import BrandProductsScreen from '../screens/shared/BrandProductsScreen';
 import ProductDetailScreen from '../screens/shared/ProductDetailScreen';
@@ -104,6 +109,7 @@ function ProfileStackScreen() {
     <ProfileStack.Navigator screenOptions={noHeader}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
+      <ProfileStack.Screen name="ChangeNumber" component={ChangeNumberScreen} initialParams={{ role: 'influencer', returnTo: 'ProfileInfo' }} />
       <ProfileStack.Screen name="NicheLanguages" component={NicheLanguagesScreen} />
       <ProfileStack.Screen name="YourNumbers" component={YourNumbersScreen} />
       <ProfileStack.Screen name="SocialDetail" component={SocialDetailScreen} />
@@ -118,12 +124,15 @@ function ProfileStackScreen() {
 }
 
 export default function InfluencerNavigator() {
+  // Read once, at mount: initialRouteName only matters the first time the navigator renders.
+  // The lock itself reads the live status on every press (lockedTab.js).
+  const initialRouteName = initialTabFor(getAccountStatus(), 'CollabsTab');
   return (
     <View style={{ flex: 1 }}>
-      <Tab.Navigator initialRouteName="CollabsTab" screenOptions={tabScreenOptions}>
+      <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
         <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-        <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} />
-        <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} />
+        <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} listeners={lockedTabListeners()} />
+        <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} listeners={lockedTabListeners()} />
         <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
         <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
       </Tab.Navigator>

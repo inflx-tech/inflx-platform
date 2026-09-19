@@ -17,10 +17,18 @@ import { navigationRef } from '../../navigation/navRef';
 export const GATE_COPY = {
   pendingTitle: 'Your account is under review',
   rejectedTitle: 'Your account needs a fix',
+  suspendedTitle: 'Your account is suspended',
   note: 'A complete profile gets reviewed faster.',
   finish: 'Finish my profile',
   ok: 'OK',
 };
+
+function titleFor(event) {
+  const code = event && event.code;
+  if (code === 'ACCOUNT_REJECTED') return GATE_COPY.rejectedTitle;
+  if (code === 'ACCOUNT_SUSPENDED') return GATE_COPY.suspendedTitle;
+  return GATE_COPY.pendingTitle;
+}
 
 export default function PendingSheetHost({ navigate }) {
   const [event, setEvent] = useState(null);
@@ -43,7 +51,7 @@ export default function PendingSheetHost({ navigate }) {
 
   return (
     <Sheet visible={!!event} onClose={close} testID="pending-sheet">
-      <Text style={sh.title}>{event && event.code === 'ACCOUNT_REJECTED' ? GATE_COPY.rejectedTitle : GATE_COPY.pendingTitle}</Text>
+      <Text style={sh.title}>{titleFor(event)}</Text>
       <Text style={sh.body} testID="pending-sheet-message">{event ? event.message : ''}</Text>
       <View style={s.green}><Text style={s.greenText}>{GATE_COPY.note}</Text></View>
       <View style={{ height: 16 }} />

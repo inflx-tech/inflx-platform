@@ -8,6 +8,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi, uploadFile } from '../../services/api';
 import { FieldError, Section } from '../../components/settings/primitives';
@@ -15,7 +16,10 @@ import { ConfirmSheet } from '../../components/settings/sheets';
 import { SaveBar, useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import { COPY, shortDate } from '../../components/settings/copy';
 import useUnsavedGuard from '../../hooks/useUnsavedGuard';
+import useRouteToast from '../../hooks/useRouteToast';
 import ImagePickerField from '../../components/discovery/ImagePickerField';
+import { Locked } from '../brand/BrandBusinessDetailsScreen';
+import { maskIndian } from '../shared/ChangeNumberScreen';
 import OfferedStateCityFields, { SinglePickSheet, MSG_CITY } from '../../components/registration/OfferedStateCityFields';
 import { StatTriple } from '../../components/discovery/bits';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
@@ -74,6 +78,12 @@ export default function ProfileInfoScreen({ navigation, route }) {
     setStatus('ready');
   }, []);
   useEffect(() => { load(); }, [load]);
+  // features/change-login-number N5 — coming back with a toast means the login number moved:
+  // re-read /me so the phone tile shows the new number, then show the green line once.
+  const returnedToast = route?.params?.toast;
+  useFocusEffect(useCallback(() => { if (returnedToast) load(); }, [returnedToast, load]));
+  useRouteToast(navigation, route, show);
+  const changeNumber = () => navigation.navigate('ChangeNumber', { role: 'influencer', returnTo: 'ProfileInfo', phone: inf?.phone || '' });
   useEffect(() => {
     if (status !== 'ready' || !focus) return;
     const t = setTimeout(() => { (focus === 'instagram' ? igRef : ytRef).current?.focus?.(); }, 300);
@@ -159,8 +169,8 @@ export default function ProfileInfoScreen({ navigation, route }) {
     } finally { setPhotoBusy(false); }
   }
 
-  if (status === 'loading') return <View style={base.screen}><Header title={I.title} onBack={() => navigation.goBack()} /><Skeleton /></View>;
-  if (status === 'error') return <View style={base.screen}><Header title={I.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
+  if (status === 'loading') return <View style={base.screen}><Header title={I.title} onBack={() => navigation.goBack()} /><Skeleton />{toast}</View>;
+  if (status === 'error') return <View style={base.screen}><Header title={I.title} onBack={() => navigation.goBack()} /><LoadError onRetry={load} />{toast}</View>;
 
   const name = f.full_name || inf.instagram_handle || 'Creator';
   const genderLabel = (GENDERS.find(g => g.id === f.gender) || {}).name || '';
@@ -219,6 +229,9 @@ export default function ProfileInfoScreen({ navigation, route }) {
         <Text style={base.hint}>{I.emailHint}</Text>
         <FieldError text={errors.email || clientErrors.email} />
         <View style={{ height: 14 }} />
+        {/* The login number — locked here; it moves through Change number (features/change-login-number). */}
+        <Locked label={I.phone} value={maskIndian(inf.phone)} hint={I.phoneHint} testID="locked-phone"
+          action={{ label: I.changeNumber, onPress: changeNumber, testID: 'change-number-link' }} />
         <Text style={base.label}>{I.ig}</Text>
         <View style={s.handleRow}>
           <Text style={s.at}>@</Text>

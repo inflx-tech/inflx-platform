@@ -19,10 +19,15 @@ import BrandCreatorProfileScreen from '../screens/brand/BrandCreatorProfileScree
 // host shows the server's ACCOUNT_PENDING words on any gated action.
 import PendingHomeScreen from '../components/shell/PendingHomeScreen';
 import PendingSheetHost from '../components/shell/PendingSheetHost';
+// The tab lock: Campaigns and Creators are locked until approval (the press raises the sheet),
+// and a pending brand opens on Home, never on a locked tab's content.
+import { lockedTabListeners, initialTabFor } from './lockedTab';
+import { getAccountStatus } from '../services/accountStatus';
 import BrandCreatorsScreen from '../screens/brand/BrandCreatorsScreen';
 import BrandGroupDetailScreen from '../screens/brand/BrandGroupDetailScreen';
 import BrandGroupAddCreatorsScreen from '../screens/brand/BrandGroupAddCreatorsScreen';
 import BrandBusinessDetailsScreen from '../screens/brand/BrandBusinessDetailsScreen';
+import ChangeNumberScreen from '../screens/shared/ChangeNumberScreen';
 import BrandSubCategoriesScreen from '../screens/brand/BrandSubCategoriesScreen';
 import BrandBranchesScreen from '../screens/brand/BrandBranchesScreen';
 import BrandBranchEditScreen from '../screens/brand/BrandBranchEditScreen';
@@ -141,6 +146,7 @@ function ProfileStackScreen() {
     <ProfileStack.Navigator screenOptions={noHeader}>
       <ProfileStack.Screen name="BrandProfile" component={BrandProfileScreen} />
       <ProfileStack.Screen name="BrandBusinessDetails" component={BrandBusinessDetailsScreen} />
+      <ProfileStack.Screen name="ChangeNumber" component={ChangeNumberScreen} initialParams={{ role: 'brand', returnTo: 'BrandBusinessDetails' }} />
       <ProfileStack.Screen name="BrandSubCategories" component={BrandSubCategoriesScreen} />
       <ProfileStack.Screen name="BrandBranches" component={BrandBranchesScreen} />
       <ProfileStack.Screen name="BrandBranchEdit" component={BrandBranchEditScreen} />
@@ -174,12 +180,15 @@ export const tabScreenOptions = ({ route }) => ({
 });
 
 export default function BrandNavigator() {
+  // Read once, at mount: initialRouteName only matters the first time the navigator renders.
+  // The lock itself reads the live status on every press (lockedTab.js).
+  const initialRouteName = initialTabFor(getAccountStatus(), 'CreatorsTab');
   return (
     <View style={{ flex: 1 }}>
-      <Tab.Navigator initialRouteName="CreatorsTab" screenOptions={tabScreenOptions}>
+      <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
         <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'brandHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
-        <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} />
-        <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} />
+        <Tab.Screen name="CampaignsTab" component={CampaignsStackScreen} options={{ title: 'Campaigns' }} listeners={lockedTabListeners()} />
+        <Tab.Screen name="CreatorsTab" component={CreatorsStackScreen} options={{ title: 'Creators' }} listeners={lockedTabListeners()} />
         <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
         <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
       </Tab.Navigator>

@@ -23,6 +23,8 @@ const rnd = () => Math.random().toString(36).slice(2, 8);
 async function resetReference() {
   await query(`DELETE FROM ref_cities WHERE source = 'google'`);
   await query(`DELETE FROM ref_unknown_states`);
+  // registration-and-profile: niches admin adds through the Other queue (sort > 20) are not seed rows
+  await query(`DELETE FROM ref_creator_niches WHERE sort > 20 AND code <> 'other'`);
   ref.invalidate();
   ref.resetResolveState();
 }

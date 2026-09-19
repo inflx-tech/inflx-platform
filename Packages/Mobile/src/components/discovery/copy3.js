@@ -133,7 +133,7 @@ export const C3 = {
     mainCityWarning: 'Add your main branch address so creators can see your city.',
     logout: 'Log out',
     // features/registration-and-profile B4 — GSTIN out (Wallet), email in; the login phone IS the business phone.
-    details: { title: 'Business details', logo: 'Brand logo', logoHint: 'JPG or PNG, under 5 MB', change: 'Change', remove: 'Remove', name: 'Business name *', about: 'About', aboutHint: 'Shown on your brand overview.', contact: 'Contact person *', email: 'Email', phone: 'Phone', phoneHint: 'Your login number. This is your business number too.', major: 'Business type', save: 'Save' },
+    details: { title: 'Business details', logo: 'Brand logo', logoHint: 'JPG or PNG, under 5 MB', change: 'Change', remove: 'Remove', name: 'Business name *', about: 'About', aboutHint: 'Shown on your brand overview.', contact: 'Contact person *', email: 'Email', phone: 'Phone', phoneHint: 'Your login number. This is your business number too.', changeNumber: 'Change number', major: 'Business type', save: 'Save' },
     subs: { title: 'Sub-categories', intro: 'Pick everything you sell. Creators who choose categories in their invitation settings are matched against these.', major: 'Major category', label: 'Sub-categories *' },
     // features/registration-and-profile B5–B7 — the four-part address (street · pincode · state ·
     // city) everywhere; the Google search, the Maps link and the map pin are gone.
@@ -153,7 +153,7 @@ export const C3 = {
     // the city is picked (State → nearest major city), and age, gender, email are new.
     rows: { info: ['Profile info', 'Photo, name, city, age, gender'], niche: 'Niche & languages', invitation: 'Invitation settings', legal: 'Legal & policies' },
     logout: 'Log out',
-    info: { title: 'Profile info', photo: 'Add a photo', photoHint: 'JPG or PNG, under 5 MB', change: 'Change', name: 'Full name *', bio: 'Bio', age: 'Age', gender: 'Gender', email: 'Email', emailHint: "We won't show this to brands.", ig: 'Instagram', yt: 'YouTube', numbers: 'Your numbers', measured: 'Measured by INFLX', numbersHint: (d) => `Updated ${d}. These come from your connected accounts and can't be typed in.`, numbersHintNoDate: "These come from your connected accounts and can't be typed in.", save: 'Save' },
+    info: { title: 'Profile info', photo: 'Add a photo', photoHint: 'JPG or PNG, under 5 MB', change: 'Change', name: 'Full name *', bio: 'Bio', age: 'Age', gender: 'Gender', email: 'Email', emailHint: "We won't show this to brands.", phone: 'Phone', phoneHint: 'Your login number.', changeNumber: 'Change number', ig: 'Instagram', yt: 'YouTube', numbers: 'Your numbers', measured: 'Measured by INFLX', numbersHint: (d) => `Updated ${d}. These come from your connected accounts and can't be typed in.`, numbersHintNoDate: "These come from your connected accounts and can't be typed in.", save: 'Save' },
     niche: { title: 'Niche & languages', yours: 'Your niche *', hint: "Pick one — the thing you're known for.", other: 'What kind of content? *', otherNote: "We'll add this to the list so brands can find you by it. Until then you're found every other way.", otherRequired: 'Tell us what kind of content you make.', otherLong: 'Keep it under 80 characters.', languages: 'Languages *', warning: 'Pick your niche. Brands use it to find creators like you.' },
   },
 };

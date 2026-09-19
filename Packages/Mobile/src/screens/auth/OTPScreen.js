@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import Clipboard from '@react-native-clipboard/clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi, influencerApi, brandApi } from '../../services/api';
+import { setAccountStatus } from '../../services/accountStatus';
 import { AuthContext } from '../../../App';
 import APP_ROLE from '../../config/appRole';
 
@@ -163,6 +164,8 @@ export default function OTPScreen({ navigation, route }) {
         // features/registration-and-profile — a pending brand enters the app (the pending
         // home says "under review"); only a rejected one is kept out, with the admin's remarks.
         const status = brandRes.data?.user_status || brandRes.data?.brand?.status;
+        // The tab lock reads this before the navigator mounts — set it before the role.
+        setAccountStatus(status || user.status || null);
         if (status === 'rejected') navigation.reset({ index: 0, routes: [{ name: 'Rejected', params: { reason: brandRes.data?.brand?.rejection_reason || null } }] });
         else setAppRole('brand');
       }
@@ -172,6 +175,7 @@ export default function OTPScreen({ navigation, route }) {
         navigation.navigate('InfluencerRegister');
       } else {
         const status = infRes.data?.user_status;
+        setAccountStatus(status || user.status || null);
         if (status === 'rejected') navigation.reset({ index: 0, routes: [{ name: 'Rejected', params: { reason: infRes.data?.rejection_reason || null } }] });
         else setAppRole('influencer');
       }
