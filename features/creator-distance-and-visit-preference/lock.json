@@ -1,7 +1,7 @@
 {
   "feature": "creator-distance-and-visit-preference",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 19 Sep 2026 — reviewed Docs/NEXT_ROUND_2026-09-19.md items 1–3 and said \"Ok go and start implementing in the order you recommended\")",
   "approved_at": "2026-09-19T00:00:00+05:30",
@@ -23,10 +23,23 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-19",
+      "by": "founder go (\"pls go migrate,commit,push and OTA\")",
+      "commit": "39dac9a",
+      "migration": "190 applied to production 2026-09-19 (run-190.js --apply): 146 offered cities with coordinates, 0 without; Vijayawada→Guntur 31.6 km. All checks OK.",
+      "render": "no new route to probe (distance rides on existing discover rows); push + gov-check OK; the phones degrade gracefully (no km shown) until Render restarts",
+      "ota": {
+        "brand": 228,
+        "influencer": 215,
+        "native_runtime": "3"
+      },
+      "money": "NO MONEY MOVED.",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). Open: the founder's walk — Creators nearest first on Anu Fashion World; a creator with no visit cities pickable for a Store Visit set from anywhere."
+    },
     "build": {
       "built_at": "2026-09-19T00:00:00+05:30",
-      "committed": false,
+      "committed": true,
       "server": "migration 190 (ref_cities.lat/lng, 146 rows from south_cities_coords.csv) + run-190.js (prod dry run: 146 offered, column absent); discovery.service home CTE + distance_km + within filter + nearest-first default + distanceForCreators (worked-with); collabEligibility rule 4 empty=anywhere, never-saved default []; collabSettings PUT no longer refuses Store Visit with no cities",
       "phones": "copy3 sorts/distance labels; DiscoverList meta line with km / Same city; FiltersSheet Sort row (Nearest first default) + Distance row (Anywhere default); InvitationSettings Anywhere value + hint; client validation rule visit-cities-required dropped",
       "tests": "backend creator-distance-and-visit-preference.test.js (5 tests, items 1–3) green; item2-eligibility, item3-find-brands, item5-invitations green; item2-settings-api two assertions re-baselined (defaults empty, empty list not an error); mobile 633/633 (distance.test.js 9 new). Final clean full run 1421 / 1200 / 221 vs baseline 1386 / 1165 / 221 — 0 new failures",
