@@ -288,9 +288,8 @@ const putCreatorInvitationSettings = asyncHandler(async (req, res) => {
     visitCityIds = [];
   }
   visitCityIds = visitCityIds || [];
-  if (modes.includes('visit') && visitCityIds.length === 0) {
-    errors.push({ field: 'visitCityIds', code: 'VISIT_CITIES_REQUIRED', message: MSG.VISIT_CITIES });
-  }
+  // creator-distance-and-visit-preference (founder, 19 Sep 2026): an empty list with Store Visit
+  // on means "anywhere" and saves. (Item 2 refused it with VISIT_CITIES_REQUIRED.)
   if (visitCityIds.length) {
     const bad = await ref.unknownCityIds(visitCityIds);
     if (bad.length) errors.push({ field: 'visitCityIds', code: 'UNKNOWN_CODE', message: MSG.UNKNOWN });

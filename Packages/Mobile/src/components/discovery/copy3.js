@@ -53,9 +53,13 @@ export const C3 = {
     filters: 'Filters', filtersN: (n) => `Filters · ${n}`, clearAll: 'Clear all',
     showN: (n) => `Show ${n} ${n === 1 ? 'creator' : 'creators'}`,
     count: (n) => `${n} ${n === 1 ? 'creator' : 'creators'}`,
-    sorts: { followers: 'Most followers', engagement: 'Highest engagement', newest: 'Newest' },
-    filterTitles: { niche: 'Niche', ig: 'Instagram followers', yt: 'YouTube subscribers', er: 'Engagement', city: 'City', language: 'Language', aims: 'Open to Aims', modes: 'Mode of work' },
-    buckets: { followers: [['', 'Any'], ['1000', '1K+'], ['10000', '10K+'], ['50000', '50K+'], ['100000', '100K+']], er: [['', 'Any'], ['2', '2%+'], ['4', '4%+'], ['6', '6%+']] },
+    // creator-distance-and-visit-preference (D1/D2): nearest first is the default sort; the
+    // distance chips narrow to 50 km, 100 km, the brand's state, or anywhere (the default).
+    sorts: { distance: 'Nearest first', followers: 'Most followers', engagement: 'Highest engagement', newest: 'Newest' },
+    filterTitles: { sort: 'Sort', distance: 'Distance from your main branch', niche: 'Niche', ig: 'Instagram followers', yt: 'YouTube subscribers', er: 'Engagement', city: 'City', language: 'Language', aims: 'Open to Aims', modes: 'Mode of work' },
+    buckets: { followers: [['', 'Any'], ['1000', '1K+'], ['10000', '10K+'], ['50000', '50K+'], ['100000', '100K+']], er: [['', 'Any'], ['2', '2%+'], ['4', '4%+'], ['6', '6%+']],
+      within: [['50', 'Within 50 km'], ['100', 'Within 100 km'], ['state', 'Same state'], ['any', 'Anywhere']] },
+    distanceHint: 'Creators without a city show only under Anywhere.',
     chips: { OK: 'Open', NOT_ACCEPTING: 'Not taking invitations', NOT_MATCHING: 'Not open to your brand', blocked: 'Blocked by you' },
   },
   worked: {
@@ -165,6 +169,19 @@ export function fmtCompact(n) {
   if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
   if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`;
   return String(Math.round(v));
+}
+/**
+ * creator-distance-and-visit-preference: the distance after the city on a creator row.
+ * 0 → "Same city", a number → "32 km", null/undefined (either side has no city) → null (nothing shown).
+ */
+export function distanceLabel(km) {
+  if (km == null || typeof km !== 'number' || Number.isNaN(km)) return null;
+  return km === 0 ? 'Same city' : `${Math.round(km)} km`;
+}
+/** The row's distance whichever spelling the API used (`distanceKm` camel, `distance_km` as the contract names it). */
+export function distanceOf(c) {
+  if (!c) return null;
+  return c.distanceKm != null ? c.distanceKm : (c.distance_km != null ? c.distance_km : null);
 }
 export function fmtPct(n) {
   if (n == null || Number.isNaN(Number(n))) return '—';

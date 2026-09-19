@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Creators By Distance</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--page:#EEEEEA;--bg:#FFFFFF;--surface:#F6F6F3;--border:#E5E4DE;--ink:#1A1A17;--ink2:#5B5A53;--ink3:#77766E;--primary:#FFC700;--wait-fg:#1D5FBF;--wait-bg:#E6EFFC;--active-fg:#1A7A3D;--active-bg:#E4F5EA;--sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px}h1,h2,h3{margin:0;letter-spacing:-.015em}h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}h2{font-size:clamp(21px,3vw,27px);font-weight:800}p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}.lede{font-size:16px;color:var(--ink2);max-width:70ch}.prose{color:var(--ink2);max-width:72ch}
+header.top{padding-block:34px 14px;display:grid;gap:10px;border-bottom:1px solid var(--border)}section{padding-block:34px 6px;display:grid;gap:16px}section>header{display:grid;gap:6px}
+.pill{display:inline-flex;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--active-bg);color:var(--active-fg);width:max-content}
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 22px;align-items:start}.shot{display:grid;gap:8px;justify-items:center}.cap{display:grid;gap:3px;width:100%;max-width:320px}.cap b{font-size:13.5px}.cap span{font-size:12.5px;color:var(--ink2)}.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:610px;position:relative;font-size:13.5px}.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:11px;position:relative}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}.bar h3{font-size:16px;font-weight:800;flex:1}.ib{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;font-size:14px}
+.inp{border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;min-height:36px;display:flex;align-items:center;color:var(--ink3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{border:1px solid var(--border);border-radius:999px;padding:5px 10px;font-size:11.5px;font-weight:600;background:var(--bg)}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.card{border:1px solid var(--border);border-radius:13px;padding:11px;background:var(--bg);display:flex;gap:10px;align-items:center}.ava{width:42px;height:42px;border-radius:99px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;font-weight:800;color:var(--ink2);font-size:12px;flex:none}
+.t{flex:1;display:grid;gap:2px}.t b{font-size:13.5px}.t span{font-size:11.5px;color:var(--ink2)}.km{font-family:var(--mono);font-size:11px;color:var(--ink);font-weight:600}
+.lbl{font-weight:700;font-size:12.5px}.hint{font-size:11px;color:var(--ink2);line-height:1.35}.sec{font-family:var(--mono);font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.prow{display:flex;align-items:center;gap:9px;padding:11px 2px;border-bottom:1px solid var(--border)}.prow .t b{font-size:13px}.prow .cv{font-size:11px;color:var(--ink3);text-align:right;max-width:120px}.prow .ch{color:var(--ink3)}
+.note{border-radius:11px;padding:10px;font-size:11.5px;line-height:1.4}.note.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--border);border-radius:16px 16px 0 0;padding:14px;display:grid;gap:10px;box-shadow:0 -14px 34px rgba(26,26,23,.16)}.scrim{position:absolute;inset:0;background:rgba(26,26,23,.34)}
+.btn{border-radius:11px;padding:11px;text-align:center;font-weight:800;font-size:13px;background:var(--primary);color:#1A1A17}
+.foot{padding-block:44px 60px;color:var(--ink2);font-size:13px;border-top:1px solid var(--border);margin-top:34px}
+</style></head>
+<body><div class="wrap">
+<header class="top">
+  <p class="eyebrow">features/creator-distance-and-visit-preference · mockups v1 · 19 Sep 2026</p>
+  <h1>Creators, nearest first</h1>
+  <p class="lede">Every creator list a brand sees is ordered from its main branch city outward, with the distance on the row. A brand in Vijayawada sees Vijayawada, then Guntur, then Eluru. Her Store Visit preference is hers: cities picked means only those; none picked means anywhere.</p>
+  <div class="pill">3 screens</div>
+</header>
+
+<section>
+  <div class="flow">
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Creators</h3><div class="ib">⚲</div></div>
+        <div class="inp">Search creators</div>
+        <div class="chips"><span class="chip on">Nearest first</span><span class="chip">Anywhere ▾</span><span class="chip">Filters</span></div>
+        <div class="card"><div class="ava">PS</div><div class="t"><b>Priya Sharma</b><span>Fashion · Vijayawada · <span class="km">Same city</span></span></div></div>
+        <div class="card"><div class="ava">AN</div><div class="t"><b>Ananya N</b><span>Beauty · Guntur · <span class="km">32 km</span></span></div></div>
+        <div class="card"><div class="ava">RK</div><div class="t"><b>Rahul K</b><span>Lifestyle · Eluru · <span class="km">58 km</span></span></div></div>
+        <div class="card"><div class="ava">SM</div><div class="t"><b>Sana M</b><span>Fashion · Machilipatnam · <span class="km">64 km</span></span></div></div>
+        <div class="card"><div class="ava">NR</div><div class="t"><b>Nikhil R</b><span>Food · Hyderabad · <span class="km">272 km</span></span></div></div>
+        <div class="card" style="opacity:.6"><div class="ava">JD</div><div class="t"><b>Jyoti D</b><span>Fashion · no city yet</span></div></div>
+      </div></div>
+      <div class="cap"><b>D1 · Discover, nearest first</b><span>Distance after the city on every row. "Same city" for 0. A creator with no city sorts last with nothing shown. The same row appears in the set's picker and in add-to-group.</span><i>GET /brands/me/discover-creators → distance_km</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><h3>Creators</h3><div class="ib">⚲</div></div>
+        <div class="inp">Search creators</div>
+        <div class="card" style="opacity:.4"><div class="ava">PS</div><div class="t"><b>Priya Sharma</b><span>Fashion · Vijayawada · <span class="km">Same city</span></span></div></div>
+        <div class="scrim"></div>
+        <div class="sheet">
+          <b style="font-size:14px">Filters</b>
+          <div><p class="sec">Sort</p><div class="chips" style="margin-top:6px"><span class="chip on">Nearest first</span><span class="chip">Most followers</span><span class="chip">Highest engagement</span><span class="chip">Newest</span></div></div>
+          <div><p class="sec">Distance from your main branch</p><div class="chips" style="margin-top:6px"><span class="chip">Within 50 km</span><span class="chip on">Within 100 km</span><span class="chip">Same state</span><span class="chip">Anywhere</span></div><p class="hint" style="margin-top:5px">From Vijayawada. Creators without a city show only under Anywhere.</p></div>
+          <div><p class="sec">Niche</p><div class="chips" style="margin-top:6px"><span class="chip">Fashion</span><span class="chip">Beauty</span><span class="chip">Lifestyle</span></div></div>
+          <div class="btn">Apply · 4 creators</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>D2 · The filter</b><span>Nearest first is the default sort. The distance chips narrow to 50 km, 100 km, the state, or anywhere.</span><i>sort=distance · within=50|100|state|any</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>▮▮▮</span></div><div class="scr">
+        <div class="bar"><div class="ib">‹</div><h3>Invitation settings</h3></div>
+        <div class="prow"><div class="t"><b>Open to invitations</b></div><div class="cv">On</div></div>
+        <div class="prow"><div class="t"><b>Aims</b></div><div class="cv">All three</div><div class="ch">›</div></div>
+        <div class="prow"><div class="t"><b>Mode of work</b></div><div class="cv">Store Visit, Remote</div><div class="ch">›</div></div>
+        <div class="prow" style="border-bottom:0"><div class="t"><b>Cities you can visit</b><span class="hint">Anywhere — any brand can invite you for a store visit. Pick cities to limit it.</span></div><div class="cv">Anywhere</div><div class="ch">›</div></div>
+        <div class="note wait">When you pick cities, only brands with a branch in one of them can invite you to a store visit.</div>
+      </div></div>
+      <div class="cap"><b>D3 · Her preference, in words</b><span>An empty list now means anywhere, and says so. Picked cities keep the "N cities in M states" summary and limit Store Visit invitations to those.</span><i>empty visit_city_ids = anywhere</i></div>
+    </div>
+
+  </div>
+</section>
+<div class="foot"><p><b>features/creator-distance-and-visit-preference</b> · mockups v1 · drawn from 01-spec.md · built on the founder's go of 19 Sep ("go and start implementing in the order you recommended")</p></div>
+</div></body></html>

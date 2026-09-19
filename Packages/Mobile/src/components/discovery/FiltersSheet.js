@@ -12,13 +12,16 @@ import StateCityPicker from '../settings/StateCityPicker';
 import { AIMS, MODES, aimLabel, modeLabel } from '../settings/copy';
 import { C3 } from './copy3';
 
-export const CREATOR_DEFAULTS = Object.freeze({ openOnly: true, nicheCodes: [], minInstagram: '', minYoutube: '', minEngagement: '', cityIds: [], languageCodes: [], aims: [], modes: [] });
+// creator-distance-and-visit-preference: `sort` ('distance' = nearest first, the server default)
+// and `within` ('50' | '100' | 'state' | 'any') travel with the filters as query params.
+export const CREATOR_DEFAULTS = Object.freeze({ openOnly: true, sort: 'distance', within: 'any', nicheCodes: [], minInstagram: '', minYoutube: '', minEngagement: '', cityIds: [], languageCodes: [], aims: [], modes: [] });
 export const BRAND_DEFAULTS = Object.freeze({ canPitchOnly: true, categoryCodes: [], cityIds: [], aims: [], modes: [] });
 
-/** How many filters differ from the defaults (for "Filters · N"). */
+/** How many filters differ from the defaults (for "Filters · N"). A sort orders; it never narrows, so it is not counted. */
 export function changedCount(f, defaults) {
   let n = 0;
   for (const k of Object.keys(defaults)) {
+    if (k === 'sort') continue;
     const a = f[k], d = defaults[k];
     if (Array.isArray(d) ? (a || []).length > 0 : String(a ?? '') !== String(d ?? '')) n += 1;
   }
@@ -33,6 +36,7 @@ export function quickChip(f, defaults, lists) {
   if (f.minYoutube) parts.push(`YT ${C3.discover.buckets.followers.find(b => b[0] === String(f.minYoutube))?.[1] || f.minYoutube}`);
   if (f.minEngagement) parts.push(`${C3.discover.buckets.er.find(b => b[0] === String(f.minEngagement))?.[1] || f.minEngagement}`);
   if ((f.cityIds || []).length) parts.push(lists.cityName ? lists.cityName(f.cityIds[0]) : 'City');
+  if (f.within && f.within !== 'any') parts.push(C3.discover.buckets.within.find(b => b[0] === String(f.within))?.[1] || f.within);
   if ((f.languageCodes || []).length) parts.push(f.languageCodes[0]);
   if ((f.aims || []).length) parts.push(aimLabel(f.aims[0]));
   if ((f.modes || []).length) parts.push(modeLabel(f.modes[0]));
@@ -103,6 +107,14 @@ export default function FiltersSheet({ visible, kind, value, lists, fetchCount, 
         ) : (
           <>
             <SwitchRow testID="filter-openonly" label={C3.discover.openOnlyLong} value={!!f.openOnly} onValueChange={(v) => set({ openOnly: v })} />
+            {/* creator-distance-and-visit-preference (D2): sort first, nearest first selected by default; then the distance chips. */}
+            <Group title={C3.discover.filterTitles.sort}>
+              <Buckets testID="filter-sort" options={Object.entries(C3.discover.sorts)} value={f.sort || CREATOR_DEFAULTS.sort} onChange={(v) => set({ sort: v })} />
+            </Group>
+            <Group title={C3.discover.filterTitles.distance}>
+              <Buckets testID="filter-within" options={C3.discover.buckets.within} value={f.within || CREATOR_DEFAULTS.within} onChange={(v) => set({ within: v })} />
+              <Text style={s.hint}>{C3.discover.distanceHint}</Text>
+            </Group>
             <Group title={C3.discover.filterTitles.niche}>
               <View style={s.chips}>
                 {shownNiches.map(n => <Chip key={n.code} testID={`filter-niche-${n.code}`} label={n.label} selected={(f.nicheCodes || []).includes(n.code)} onPress={() => toggle('nicheCodes', n.code)} />)}
@@ -146,6 +158,7 @@ const s = StyleSheet.create({
   group: { marginTop: 14 },
   groupTitle: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink2, marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
+  hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink3, marginTop: 2, lineHeight: 17 },
   rowBtn: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11 },
   rowBtnText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 14, color: T.ink },
   chev: { fontFamily: fonts.sansBold, fontSize: 18, color: T.ink3 },

@@ -44,12 +44,18 @@ describe('Invitation settings (creator)', () => {
     expect(getByTestId('save-button').props.accessibilityState.disabled).toBe(true);
   });
 
-  it('turning Store Visit off hides the cities row; on with no cities cannot save (check 9)', async () => {
+  // creator-distance-and-visit-preference (D3): check 9 withdrawn — no cities means anywhere,
+  // the row says so in words, and it is not a save-blocking error.
+  it('turning Store Visit off hides the cities row; on with no cities reads "Anywhere" and is not an error', async () => {
     influencerApi.getInvitationSettings.mockResolvedValue(ok({ ...DEFAULTS, visitCityIds: [] }));
-    const { getByTestId, getByText, queryByTestId } = render(<InvitationSettingsScreen navigation={nav()} />);
+    const { getByTestId, getByText, queryByText, queryByTestId } = render(<InvitationSettingsScreen navigation={nav()} />);
     await waitFor(() => getByTestId('row-visit-cities'));
-    getByText('Pick at least one city, or turn off Store Visit.');
+    getByText('Anywhere');
+    getByText('Anywhere — any brand can invite you for a store visit. Pick cities to limit it.');
+    expect(queryByText('Pick at least one city, or turn off Store Visit.')).toBeNull();
+    // Nothing changed yet, so Save is grey for being clean — not for an error.
     expect(getByTestId('save-button').props.accessibilityState.disabled).toBe(true);
+    expect(queryByTestId('save-bar-fix')).toBeNull();
     fireEvent.press(getByTestId('mode-visit'));
     expect(queryByTestId('row-visit-cities')).toBeNull();
     expect(getByTestId('save-button').props.accessibilityState.disabled).toBe(false);

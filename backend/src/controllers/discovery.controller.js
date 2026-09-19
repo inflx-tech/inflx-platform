@@ -82,9 +82,11 @@ const workedWith = asyncHandler(async (req, res) => {
     params
   );
   await resolveAvatars(rows, { urlField: 'avatar_url', keyField: 'profile_image_r2_key' });
+  // creator-distance-and-visit-preference: the km from the main branch city rides on these rows too
+  const km = await discovery.distanceForCreators(brandId, rows.map(r => r.id));
   return success(res, {
     total: cnt[0].n, page,
-    rows: rows.map(r => ({ influencerId: r.id, name: r.name, instagramHandle: r.instagram_handle, avatarUrl: r.avatar_url || null, collaborations: r.collaborations, lastSignedAt: r.last_signed_at })),
+    rows: rows.map(r => ({ influencerId: r.id, name: r.name, instagramHandle: r.instagram_handle, avatarUrl: r.avatar_url || null, collaborations: r.collaborations, lastSignedAt: r.last_signed_at, distanceKm: km.has(r.id) ? km.get(r.id) : null })),
   });
 });
 

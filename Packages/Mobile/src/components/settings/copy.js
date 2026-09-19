@@ -149,6 +149,9 @@ export const COPY = {
     aimsHint: 'Brands see these on your profile.',
     modesTitle: 'Mode of work',
     visitCities: 'Cities you can visit',
+    // creator-distance-and-visit-preference (D3): an empty list means anywhere, and says so.
+    visitAnywhere: 'Anywhere',
+    visitAnywhereHint: 'Anywhere — any brand can invite you for a store visit. Pick cities to limit it.',
     categoriesTitle: 'Brand categories',
     categoriesHint: 'None picked means any category. Only you see this.',
     minimumsTitle: 'Your minimums, by Aim',

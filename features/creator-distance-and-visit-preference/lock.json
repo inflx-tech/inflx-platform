@@ -1,0 +1,36 @@
+{
+  "feature": "creator-distance-and-visit-preference",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 19 Sep 2026 — reviewed Docs/NEXT_ROUND_2026-09-19.md items 1–3 and said \"Ok go and start implementing in the order you recommended\")",
+  "approved_at": "2026-09-19T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder go of 19 Sep covering the listed screens (Discover/picker rows with distance and filter, the settings wording); drawn as D1–D3 from the agreed list and sent back for objection",
+  "mockup_locked_at": "2026-09-19T00:00:00+05:30",
+  "notes": "Items 1–3 of the 19 Sep round: city coordinates seeded from backend/seeds/south_cities_coords.csv (146 rows, migration 190, no Google); creators ordered by distance from the brand's main branch city with distance_km on every row and a within-50/100/state/any filter; Store Visit selection follows HER visit-cities preference — picked cities limit, an empty list means anywhere (item 2's default-to-own-city withdrawn). Founder's exact words on the rule: \"if she chosen any preference in invitation we allow that if she is not choose anything means we can allow any one can call her for store visit..if set then only those cities..if not allow any city\".",
+  "sequence": {
+    "1_spec_locked": true,
+    "2_mockups_drawn": true,
+    "3_mockups_locked": true,
+    "4_build": true
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-19T00:00:00+05:30",
+      "committed": false,
+      "server": "migration 190 (ref_cities.lat/lng, 146 rows from south_cities_coords.csv) + run-190.js (prod dry run: 146 offered, column absent); discovery.service home CTE + distance_km + within filter + nearest-first default + distanceForCreators (worked-with); collabEligibility rule 4 empty=anywhere, never-saved default []; collabSettings PUT no longer refuses Store Visit with no cities",
+      "phones": "copy3 sorts/distance labels; DiscoverList meta line with km / Same city; FiltersSheet Sort row (Nearest first default) + Distance row (Anywhere default); InvitationSettings Anywhere value + hint; client validation rule visit-cities-required dropped",
+      "tests": "backend creator-distance-and-visit-preference.test.js (5 tests, items 1–3) green; item2-eligibility, item3-find-brands, item5-invitations green; item2-settings-api two assertions re-baselined (defaults empty, empty list not an error); mobile 633/633 (distance.test.js 9 new). Final clean full run 1421 / 1200 / 221 vs baseline 1386 / 1165 / 221 — 0 new failures",
+      "note": "Production-impacting; no money. Nothing committed or deployed until the founder's go: run-190 --apply → commit → push → OTA brand → OTA influencer."
+    }
+  }
+}

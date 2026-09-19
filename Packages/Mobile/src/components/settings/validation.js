@@ -31,9 +31,8 @@ export function validateCreatorSettings(s) {
   const e = {};
   if (!s.acceptedAims || s.acceptedAims.length === 0) e.acceptedAims = MSG.AIMS_CREATOR;
   if (!s.acceptedModes || s.acceptedModes.length === 0) e.acceptedModes = MSG.MODES;
-  if ((s.acceptedModes || []).includes('visit') && (!s.visitCityIds || s.visitCityIds.length === 0)) {
-    e.visitCityIds = MSG.VISIT_CITIES;
-  }
+  // creator-distance-and-visit-preference: an empty visit list means "anywhere" now, so Store
+  // Visit with no cities is a valid, saveable choice. (MSG.VISIT_CITIES stays for a server echo.)
   if (!isBlank(s.minFeeEngagement) && !isWhole(s.minFeeEngagement)) e.minFeeEngagement = MSG.WHOLE_RUPEES;
   if (!isBlank(s.minFeeHybrid) && !isWhole(s.minFeeHybrid)) e.minFeeHybrid = MSG.WHOLE_RUPEES;
   for (const [key, val] of Object.entries(s.commissions || {})) {

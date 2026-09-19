@@ -44,7 +44,24 @@ const PAGE = 20;
  * $2 = the brand's sub_categories (text[]; NULL when none set).
  * Every consumer adds its own WHERE on top of `base`.
  */
+/**
+ * creator-distance-and-visit-preference (founder, 19 Sep 2026): every creator list a brand sees
+ * is ordered from the brand's MAIN BRANCH city outward. `home` is that city's centre (NULL row
+ * when the brand has none); each creator row gets distance_km between city centres, rounded to
+ * the km, NULL when either side has no coordinates. No Google anywhere — ref_cities.lat/lng
+ * are seeded once (migration 190).
+ */
+const DISTANCE_KM_SQL = (a, b) =>
+  `round(6371 * acos(least(1.0, cos(radians(${a}.lat)) * cos(radians(${b}.lat)) * cos(radians(${b}.lng) - radians(${a}.lng))
+                               + sin(radians(${a}.lat)) * sin(radians(${b}.lat)))))::int`;
+
 const CREATOR_BASE_CTE = `
+  home AS (
+    SELECT rc.lat, rc.lng, rc.state_id
+      FROM brand_branches bb JOIN ref_cities rc ON rc.id = bb.city_id
+     WHERE bb.brand_id = $1 AND bb.is_main
+     LIMIT 1
+  ),
   base AS (
     SELECT i.id,
            COALESCE(i.full_name, u.name)                          AS name,
@@ -54,6 +71,7 @@ const CREATOR_BASE_CTE = `
            i.followers_count, i.youtube_subscribers, i.engagement_rate,
            GREATEST(i.scrape_last_run, i.youtube_scrape_last_run) AS measured_at,
            i.city_id, rc.name AS city_name, rs.name AS state_name,
+           rc.lat, rc.lng, rc.state_id                            AS city_state_id,
            i.profile_image_r2_key,
            COALESCE(i.approved_at, u.created_at)                  AS approved_order,
            COALESCE(s.open, true)                                 AS open,
@@ -75,11 +93,14 @@ const CREATOR_BASE_CTE = `
   ),
   scored AS (
     SELECT b.*,
+           h.state_id AS home_state_id,
+           CASE WHEN h.lat IS NOT NULL AND b.lat IS NOT NULL THEN ${DISTANCE_KM_SQL('h', 'b')} END AS distance_km,
            CASE WHEN NOT b.open OR b.blocked_us THEN 'NOT_ACCEPTING'
                 WHEN b.brand_category_codes IS NOT NULL AND cardinality(b.brand_category_codes) > 0
                      AND NOT (b.brand_category_codes::text[] && COALESCE($2::text[], '{}'::text[])) THEN 'NOT_MATCHING'
                 ELSE 'OK' END AS status
       FROM base b
+      LEFT JOIN home h ON true
   )`;
 
 async function brandSubCategories(brandId) {
@@ -98,6 +119,18 @@ async function statusForCreators(brandId, influencerIds) {
     [brandId, subs, ids]
   );
   return new Map(rows.map(r => [r.id, r.status]));
+}
+
+/** Map<influencerId, km|null> from the brand's main branch city — for lists built outside discover (worked-with). */
+async function distanceForCreators(brandId, influencerIds) {
+  const ids = [...new Set((influencerIds || []).filter(Boolean))];
+  if (!ids.length) return new Map();
+  const { rows } = await db.query(
+    `WITH ${CREATOR_BASE_CTE}
+     SELECT id, distance_km FROM scored WHERE id = ANY($3::uuid[])`,
+    [brandId, null, ids]
+  );
+  return new Map(rows.map(r => [r.id, r.distance_km == null ? null : Number(r.distance_km)]));
 }
 
 const clean = (v) => (v == null || v === '' ? null : v);
@@ -139,6 +172,10 @@ async function discoverCreators(brandId, q = {}) {
   if (aims && aims.length) where.push(`s.aims::text[] && ${p(aims)}::text[]`);
   const modes = arr(q.modes);
   if (modes && modes.length) where.push(`s.modes::text[] && ${p(modes)}::text[]`);
+  // creator-distance-and-visit-preference: within 50 / 100 km, same state, or anywhere (default).
+  const within = String(q.within || 'any');
+  if (within === '50' || within === '100') where.push(`s.distance_km IS NOT NULL AND s.distance_km <= ${p(Number(within))}`);
+  else if (within === 'state') where.push(`s.home_state_id IS NOT NULL AND s.city_state_id = s.home_state_id`);
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const countSql = `WITH ${CREATOR_BASE_CTE} SELECT count(*)::int AS n FROM scored s ${whereSql}`;
@@ -146,9 +183,12 @@ async function discoverCreators(brandId, q = {}) {
   const total = cnt[0].n;
   if (q.countOnly === true || q.countOnly === '1' || q.countOnly === 'true') return { total };
 
+  const byReach = 'GREATEST(COALESCE(s.followers_count, 0), COALESCE(s.youtube_subscribers, 0)) DESC, s.name ASC';
   const sort = q.sort === 'engagement' ? 's.engagement_rate DESC NULLS LAST, s.followers_count DESC NULLS LAST'
     : q.sort === 'newest' ? 's.approved_order DESC'
-    : 'GREATEST(COALESCE(s.followers_count, 0), COALESCE(s.youtube_subscribers, 0)) DESC, s.name ASC';
+    : q.sort === 'followers' ? byReach
+    // default — nearest first, ties by reach; creators or brands without a city sort last
+    : `s.distance_km ASC NULLS LAST, ${byReach}`;
   const page = Math.max(1, parseInt(q.page, 10) || 1);
   const off = p((page - 1) * PAGE);
   const lim = p(PAGE);
@@ -156,6 +196,7 @@ async function discoverCreators(brandId, q = {}) {
     `WITH ${CREATOR_BASE_CTE}
      SELECT s.id, s.name, s.instagram_handle, s.youtube_handle, s.niche_code, s.languages, s.followers_count,
             s.youtube_subscribers, s.engagement_rate, s.measured_at, s.city_id, s.city_name, s.state_name,
+            s.distance_km,
             s.profile_image_r2_key, s.aims, s.modes, s.status, s.blocked_by_us,
             rn.label AS niche_label
        FROM scored s LEFT JOIN ref_creator_niches rn ON rn.code = s.niche_code
@@ -198,6 +239,8 @@ function creatorRow(r, groupIds) {
     nicheLabel: r.niche_label || null,
     cityName: r.city_name || null,
     stateName: r.state_name || null,
+    // creator-distance-and-visit-preference: km from the brand's main branch city, or null
+    distanceKm: r.distance_km == null ? null : Number(r.distance_km),
     languages: Array.isArray(r.languages) ? r.languages : [],
     instagram: r.followers_count == null ? null : Number(r.followers_count),
     youtube: r.youtube_subscribers == null ? null : Number(r.youtube_subscribers),
@@ -350,6 +393,8 @@ async function findBrands(influencerId, q = {}) {
 }
 
 module.exports = {
+  DISTANCE_KM_SQL,
+  distanceForCreators,
   PAGE, CREATOR_BASE_CTE, BRAND_BASE_CTE,
   statusForCreators, statusForBrands, discoverCreators, findBrands, creatorRow, brandSubCategories,
 };

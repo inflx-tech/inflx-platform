@@ -94,14 +94,14 @@ describe('A1 — brand pitch settings', () => {
 });
 
 describe('A2 — creator invitation settings', () => {
-  it('GET defaults: visit cities default to her profile city, one row-less commission list', async () => {
+  it('GET defaults: visit cities empty = anywhere (19 Sep 2026 — no longer her profile city), one row-less commission list', async () => {
     const c = await creator();
     const r = await request(app).get('/v1/influencers/me/invitation-settings').set(auth(c.token));
     expect(r.status).toBe(200);
     const s = r.body.data.settings;
     expect(s.saved).toBe(false);
-    expect(s.visitCityIds).toEqual([await ref.cityIdForName('Hyderabad')]);
-    expect(s.visitCitiesDefaulted).toBe(true);
+    expect(s.visitCityIds).toEqual([]);
+    expect(s.visitCitiesDefaulted).toBe(false);
     expect(s.minCommissions).toEqual([]);
   });
 
@@ -114,7 +114,8 @@ describe('A2 — creator invitation settings', () => {
     expect(r.status).toBe(422);
     const byField = Object.fromEntries(r.body.error.details.fields.map(f => [f.field, f.message]));
     expect(byField.acceptedAims).toBe('Pick at least one Aim. To stop all invitations, turn off Open to invitations instead.');
-    expect(byField.visitCityIds).toBe('Pick at least one city, or turn off Store Visit.');
+    // creator-distance-and-visit-preference (19 Sep 2026): Store Visit with no cities = anywhere — no longer an error
+    expect(byField.visitCityIds).toBeUndefined();
     expect(byField.minFeeEngagement).toBe('Enter an amount in whole rupees.');
     expect(byField.minFeeHybrid).toBe('Enter an amount in whole rupees.');
     expect(byField['minCommissions[0].pct']).toBe('Commission must be between 1 and 100%.');

@@ -46,8 +46,10 @@ describe('creator invitation settings', () => {
     expect(validateCreatorSettings({ ...creatorOk, acceptedAims: [] }).acceptedAims)
       .toBe('Pick at least one Aim. To stop all invitations, turn off Open to invitations instead.');
   });
-  it('Store Visit on with no cities cannot save (check 9)', () => {
-    expect(validateCreatorSettings({ ...creatorOk, visitCityIds: [] }).visitCityIds).toBe('Pick at least one city, or turn off Store Visit.');
+  // creator-distance-and-visit-preference: check 9 withdrawn — an empty visit list now means
+  // "anywhere" and is a valid, saveable choice with Store Visit on.
+  it('Store Visit on with no cities is valid (empty list = anywhere)', () => {
+    expect(validateCreatorSettings({ ...creatorOk, visitCityIds: [] })).toEqual({});
     expect(validateCreatorSettings({ ...creatorOk, visitCityIds: [], acceptedModes: ['shipment'] })).toEqual({});
   });
   it('fees are whole rupees', () => {

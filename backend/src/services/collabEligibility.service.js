@@ -128,12 +128,13 @@ async function loadCreatorInvitationSettings(influencerId) {
   const minCommissions = crows.map(r => ({ aim: r.aim, category_code: r.category_code, pct: Number(r.pct) }));
   const row = srows[0];
   if (!row) {
-    const cityId = await creatorProfileCityId(influencerId);
+    // creator-distance-and-visit-preference (founder, 19 Sep 2026): an empty list means
+    // "anywhere" — no default to her own city any more.
     return {
       ...CREATOR_DEFAULTS,
       influencer_id: influencerId,
-      visit_city_ids: cityId ? [cityId] : [],
-      visit_cities_defaulted: true,
+      visit_city_ids: [],
+      visit_cities_defaulted: false,
       min_commissions: minCommissions,
       saved: false,
     };
@@ -442,10 +443,13 @@ function decideInvite({ settings, blocked, herOwnPitch, brand, set, proposedTerm
     if (!overlaps(brand.subCategories, picked)) return { ok: false, reason: REASON.NOT_MATCHING, warnings };
   }
 
-  // 4. Store Visit: at least one branch city must be somewhere she can travel (founder Q1).
+  // 4. Store Visit — founder, 19 Sep 2026 (creator-distance-and-visit-preference): HER
+  //    preference decides. If she picked visit cities, a branch in one of them; if she picked
+  //    none, any brand anywhere may pick her. (Item 2's Q1 defaulted an empty list to her own
+  //    city, which made every Store Visit set city-locked; that default is withdrawn.)
   if (!herOwnPitch && mode === 'visit') {
     const visit = (settings.visit_city_ids || []).map(Number);
-    if (!brand.branchCityIds.some(id => visit.includes(Number(id)))) {
+    if (visit.length && !brand.branchCityIds.some(id => visit.includes(Number(id)))) {
       return { ok: false, reason: REASON.NOT_MATCHING, warnings };
     }
   }

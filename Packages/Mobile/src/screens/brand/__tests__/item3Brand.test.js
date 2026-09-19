@@ -125,7 +125,8 @@ describe('D1 — Discover', () => {
     getByText('Not open to your brand');
     expect(getAllByText('Blocked by you')).toHaveLength(1);
     expect(getAllByText('48.2K')).toHaveLength(4);
-    expect(brandApi.discoverCreators.mock.calls[0][0]).toMatchObject({ openOnly: true, sort: 'followers', page: 1 });
+    // creator-distance-and-visit-preference: nearest first is the default sort, anywhere the default reach.
+    expect(brandApi.discoverCreators.mock.calls[0][0]).toMatchObject({ openOnly: true, sort: 'distance', within: 'any', page: 1 });
   });
 
   it('shows the empty state with Clear filters when nothing matches', async () => {

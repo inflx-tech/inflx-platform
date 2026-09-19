@@ -145,7 +145,9 @@ export default function InvitationSettingsScreen({ navigation }) {
   const catLabel = (code) => (lists.categories.find(c => c.code === code) || {}).label || code;
   const cityCounts = countCities(form.visitCityIds, lists.states);
   const cityNames = cityNamesFor(form.visitCityIds, lists.states);
-  const visitValue = form.visitCityIds.length === 0 ? COPY.picker.none
+  // creator-distance-and-visit-preference (D3): no cities = anywhere, said in words under the row.
+  const visitAnywhere = form.visitCityIds.length === 0;
+  const visitValue = visitAnywhere ? C.visitAnywhere
     : form.visitCityIds.length <= 2 ? cityNames.join(', ')
     : `${cityCounts.cities} cities in ${cityCounts.states} ${cityCounts.states === 1 ? 'state' : 'states'}`;
   const industries = cats.length ? cats.map(c => ({ code: c, label: catLabel(c) })) : [{ code: 'ALL', label: C.allIndustries }];
@@ -197,7 +199,7 @@ export default function InvitationSettingsScreen({ navigation }) {
           </View>
           <FieldError text={errors.acceptedModes} />
           {visitOn ? (
-            <SettingRow testID="row-visit-cities" label={C.visitCities} value={visitValue} onPress={() => setSheet('cities')} error={errors.visitCityIds} />
+            <SettingRow testID="row-visit-cities" label={C.visitCities} value={visitValue} hint={visitAnywhere ? C.visitAnywhereHint : undefined} onPress={() => setSheet('cities')} error={errors.visitCityIds} />
           ) : null}
         </Section>
 

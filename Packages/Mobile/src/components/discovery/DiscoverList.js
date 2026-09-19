@@ -21,7 +21,7 @@ import { Avatar } from '../../screens/brand/BrandBlockedCreatorsScreen';
 import { StatTriple, StatusChip3 } from './bits';
 import FiltersSheet, { CREATOR_DEFAULTS, changedCount, quickChip } from './FiltersSheet';
 import { aimLabel, modeLabel } from '../settings/copy';
-import { C3, fmtCompact, AIM_ORDER, MODE_ORDER } from './copy3';
+import { C3, fmtCompact, distanceLabel, distanceOf, AIM_ORDER, MODE_ORDER } from './copy3';
 
 /**
  * One creator, as the Creators tab draws her.
@@ -34,7 +34,9 @@ import { C3, fmtCompact, AIM_ORDER, MODE_ORDER } from './copy3';
  *   select: { checked, disabled, onToggle, note, chip, tone }
  */
 export function CreatorCard({ c, onOpen, onAddToGroup, compact, select }) {
-  const meta = [c.nicheLabel, c.cityName, (c.languages || []).join(', ')].filter(Boolean).join(' · ');
+  // creator-distance-and-visit-preference (D1): "Fashion · Guntur · 32 km" — the distance rides
+  // after the city; "Same city" for 0; nothing when either side has no city.
+  const meta = [c.nicheLabel, c.cityName, distanceLabel(distanceOf(c)), (c.languages || []).join(', ')].filter(Boolean).join(' · ');
   const tags = [...AIM_ORDER.filter(a => (c.acceptedAims || []).includes(a)).map(aimLabel), ...MODE_ORDER.filter(m => (c.acceptedModes || []).includes(m)).map(m => m === 'visit' ? `📍 ${modeLabel(m)}` : modeLabel(m))];
   const picking = !!select;
   const checked = picking && !!select.checked;
@@ -76,9 +78,9 @@ export function CreatorCard({ c, onOpen, onAddToGroup, compact, select }) {
   );
 }
 
-/** Compact row for group members / pickers: avatar · name · "Niche · City · 48.2K IG" · status chip. */
+/** Compact row for group members / pickers: avatar · name · "Niche · City · 32 km · 48.2K IG" · status chip. */
 export function MemberRow({ c, right, onOpen, sub }) {
-  const meta = sub || [c.nicheLabel, c.cityName, c.instagram != null ? `${fmtCompact(c.instagram)} IG` : null].filter(Boolean).join(' · ');
+  const meta = sub || [c.nicheLabel, c.cityName, distanceLabel(distanceOf(c)), c.instagram != null ? `${fmtCompact(c.instagram)} IG` : null].filter(Boolean).join(' · ');
   return (
     <TouchableOpacity style={s.member} onPress={onOpen ? () => onOpen(c) : undefined} activeOpacity={onOpen ? 0.7 : 1} testID={`member-${c.id}`}>
       <Avatar name={c.name} url={c.avatarUrl} size={40} />
@@ -100,8 +102,11 @@ export default function DiscoverList({
   pickState,
 }) {
   const [search, setSearch] = useState('');
+  // creator-distance-and-visit-preference: `sort` (default 'distance' — nearest first) and `within`
+  // (default 'any') ride inside the filters, so the sheet and the count-row menu share one value.
   const [filters, setFilters] = useState({ ...CREATOR_DEFAULTS, openOnly: defaultOpenOnly });
-  const [sort, setSort] = useState('followers');
+  const sort = filters.sort || CREATOR_DEFAULTS.sort;
+  const setSort = (k) => setFilters(f => ({ ...f, sort: k }));
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
