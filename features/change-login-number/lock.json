@@ -1,7 +1,7 @@
 {
   "feature": "change-login-number",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 19 Sep 2026 — \"pls lock the screens and implement both pending user access and number changing flow\")",
   "approved_at": "2026-09-19T00:00:00+05:30",
@@ -23,10 +23,27 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-19",
+      "by": "founder go (\"pls go , migration,push,deploy,OTA\")",
+      "commit": "fcf7cb7",
+      "migration": "189 applied to production 2026-09-19 (run-189.js --apply): 134 users; phone_changes created, 0 rows.",
+      "render": "POST /v1/auth/change-phone/start answers 401 (route exists) while a made-up sibling answers 404 — held at 10:08:49 IST.",
+      "ota": {
+        "brand": 227,
+        "influencer": 214,
+        "published_at": {
+          "brand": "2026-09-19T04:39:39.109Z",
+          "influencer": "2026-09-19T04:40:29.080Z"
+        },
+        "native_runtime": "3"
+      },
+      "money": "NO MONEY MOVED.",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). Open: the founder's phone walk of N0–N5."
+    },
     "build": {
       "built_at": "2026-09-19T00:00:00+05:30",
-      "committed": false,
+      "committed": true,
       "server": "migration 189 (phone_changes) + run-189.js (prod dry run: 134 users, table absent); changePhone.controller.js with the four /auth/change-phone routes; jwtService.revokeAllRefreshTokens; auth.controller exports buildTokenPayload",
       "phones": "shared/ChangeNumberScreen (N1–N4, 4-segment bar, six-box codes, 30 s resend, the N6 wordings), Change number link on Business details and Profile info (the creator screen gained a locked Phone tile — it had none), authApi.changePhone*, return-with-toast re-read; api.js keeps the session on a 401 from the four change-phone paths (a mistyped code no longer signs the user out)",
       "tests": "backend change-login-number.test.js checks 1–12 green (7 tests); mobile changeNumber.test.js (10) + authSessionSurvival (2); mobile 624/624",

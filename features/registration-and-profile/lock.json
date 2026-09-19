@@ -77,7 +77,15 @@
       "server": "requireApproved on discovery (discover-creators, worked-with), every campaign route, groups, item 6/7/8/10 brand routes, creator-invitations; requireApprovedFor(brand) on the shared creator-profile route (admin passes); branches, /brands/me, wallet, pitch settings and reference lists stay open to a pending brand",
       "phones": "accountStatus store fed by OTP, cold start and every /me; Campaigns/Creators (brand) and Collabs/Create (creator) tab presses swallowed and the B2b sheet raised while not approved; app opens on Home for such an account; locked Home tiles raise the sheet; suspended gets its own sheet title",
       "tests": "registration-profile.test.js gains the brand-gate check (12 refused routes, 6 allowed, admin pass-through); mobile lockedTab.test.js (12) + 1; mobile suite 624/624; backend full run 1411 / 1188 / 223 vs baseline 1386 / 1165 / 221 — the two extra reds were a niche leaking from the Other-queue test into item2 (fixed: reference reset drops admin-added niches, the suite cleans up after itself) and item 10 check 35, whose production_event_log ORDER BY created_at ties intermittently (passed in three other full runs and twice alone; pre-existing fragility, not touched)",
-      "deployed": null
+      "deployed": {
+        "at": "2026-09-19",
+        "commit": "fcf7cb7",
+        "ota": {
+          "brand": 227,
+          "influencer": 214
+        },
+        "render": "live with the change-phone route at 10:08:49 IST (same deploy)"
+      }
     }
   }
 }
