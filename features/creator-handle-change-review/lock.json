@@ -1,7 +1,7 @@
 {
   "feature": "creator-handle-change-review",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 19 Sep 2026 — \"pls lock it and build it\")",
   "approved_at": "2026-09-19T00:00:00+05:30",
@@ -23,10 +23,20 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-19",
+      "by": "founder go (\"pls commit and push\")",
+      "commit": "b23cad5",
+      "migration": "none",
+      "ota": "none (admin + server only)",
+      "render": "no new route to probe; the change rides on GET /admin/creator-verifications (admin token needed) — proof is the push + gov-check OK and the next admin load of the Pending tab",
+      "vercel": "admin.inflx.in redeployed on push",
+      "money": "NO MONEY MOVED.",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false). Open: the founder verifies Anusha from the redrawn row."
+    },
     "build": {
       "built_at": "2026-09-19T00:00:00+05:30",
-      "committed": false,
+      "committed": true,
       "server": "creatorVerification.controller: listQueue rows carry current_accounts + changed (old → new per platform); verify renames the claimed profile to the current handles inside its transaction, record_renamed false when another scraped profile holds the new Instagram handle (ig_handle UNIQUE); measurement untouched; incomplete-profile refusal first",
       "admin": "influencers/page.js: shared HandleChange line; ClusterCard header without the grey signed-up-as line; ProfileRow leads with current channels, CHANGED SINCE SIGNUP tag + amber block per V1, Signup profile facts line, Verify & approve; V2 green line with the record-kept suffix; Handle checks rows use the same line. next build exit 0; stubbed Playwright walk of V1/V2 matched the mockups; amber text uses orange-deep for contrast",
       "tests": "creator-handle-change-review.test.js checks 1–6 green (5 tests); item3b-pipeline + admin-creator-review green; backend full run 1416 / 1195 / 221 vs baseline 1386 / 1165 / 221 — 0 new failures",
