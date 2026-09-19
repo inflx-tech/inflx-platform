@@ -1,7 +1,7 @@
 {
   "feature": "registration-and-profile",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 18 Sep 2026 — 'next lock these things then draw the mockups then we lock mockups then we start building'; seed lists approved with 'this is fine, what actually needs' and 'ok drop sankrit')",
   "approved_at": "2026-09-18T00:00:00+05:30",
@@ -43,10 +43,28 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-19",
+      "by": "founder go (\"pls go deploy,push,migrate and OTA\")",
+      "commit": "7cfb04b",
+      "migration": "188 applied to production 2026-09-19 (run-188.js --apply): before 36 states / 92 cities / 10 languages / 20 niches / 10 brands / 26 creators / 3 pending brands; after 6 offered states, 146 offered cities (0 outside the six), 206 cities, 30 languages (English, Hindi, Telugu first; no Sanskrit), 21 niches, 25 creators with a state = 25 with a city, 3 pending brands marked submitted. All checks OK.",
+      "render": "new code live after push: POST /v1/influencers/me/submit-for-review and GET /v1/admin/niches/other answer 401 (routes exist) while a made-up sibling answers 404 — polled every 30 s until all three held (07:14 IST).",
+      "ota": {
+        "brand": 226,
+        "influencer": 213,
+        "published_at": {
+          "brand": "2026-09-19T01:45:09.971Z",
+          "influencer": "2026-09-19T01:45:56.613Z"
+        },
+        "native_runtime": "3"
+      },
+      "websites": "the push redeploys Vercel with the three admin screens; admin.inflx.in/admin/niches/other answers the login redirect on a fresh deploy (age 0).",
+      "money": "NO MONEY MOVED — this feature has no money path; balances, escrow and ledger untouched.",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — the pnpm qa lane fails at suite load on two pre-existing unit specs). Open for the founder: the phone walk of C1–C8 / B1–B9; the three practice brands cannot be approved until logo, about and contact person are filled."
+    },
     "build": {
       "built_at": "2026-09-19T00:00:00+05:30",
-      "committed": false,
+      "committed": true,
       "migration_dry_run": "188 dry run against production 2026-09-18: 36 states, 92 cities, 10 languages, 20 niches, 10 brands, 26 creators, 0 pending creators, 3 pending brands (they will be marked submitted at their registration time so the queue does not empty), 1 Rajahmundry row (renamed, not duplicated). Nothing written.",
       "backend_tests": "baseline on pristine HEAD (9711fd7): 1386 / 1165 / 221. After: 1404 / 1183 / 221 — 0 new failures, 0 fixed. registration-profile.test.js: 37 checks green. Deliberate re-baselines: item2-settings-api counts (21 niches, 30 languages, 206 cities), item3-branches + item3-profile Google tests rewritten to the pickers, brand/admin/item3b/item3-brand-overview/item10-storevisit fixtures complete the profile or send the four parts. Two jest runs on one Postgres produce spurious deadlocks in item10-engine — the clean serial run is the evidence.",
       "mobile_tests": "599 pass / 49 suites (registrationProfile.test.js 22 new).",
