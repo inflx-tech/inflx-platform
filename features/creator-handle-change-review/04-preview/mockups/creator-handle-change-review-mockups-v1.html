@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Creator Handle Change Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:light;--page:#EEEEEA;--bg:#FFFFFF;--surface:#F6F6F3;--border:#E5E4DE;--ink:#1A1A17;--ink2:#5B5A53;--ink3:#77766E;--wait-fg:#1D5FBF;--wait-bg:#E6EFFC;--active-fg:#1A7A3D;--active-bg:#E4F5EA;--no-fg:#C42B2B;--no-bg:#FDE8E8;--move-fg:#B04600;--move-bg:#FFEBDD;--gold-fg:#8A6200;--gold-bg:#FFF3C4;--sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px}h1,h2{margin:0;letter-spacing:-.015em}h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}h2{font-size:clamp(21px,3vw,27px);font-weight:800}p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}.lede{font-size:16px;color:var(--ink2);max-width:70ch}.prose{color:var(--ink2);max-width:72ch}
+header.top{padding-block:34px 14px;display:grid;gap:10px;border-bottom:1px solid var(--border)}section{padding-block:34px 6px;display:grid;gap:16px}section>header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}.pill.new{background:var(--active-bg);color:var(--active-fg)}
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:30px 22px;align-items:start}.shot{display:grid;gap:8px;justify-items:stretch}.cap{display:grid;gap:3px;max-width:560px}.cap b{font-size:13.5px}.cap span{font-size:12.5px;color:var(--ink2)}.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.desk{width:100%;max-width:560px;background:var(--bg);border:1px solid var(--border);border-radius:13px;overflow:hidden;font-size:12.5px}.deskbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono);color:var(--ink2)}.deskbody{padding:13px;display:grid;gap:11px}
+.card{border:1px solid var(--border);border-radius:12px;overflow:hidden}.chead{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;justify-content:space-between;gap:8px;align-items:center}.chead b{font-size:12.5px}.chead span{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.crow{padding:12px;display:flex;gap:10px;align-items:flex-start}.ava{width:40px;height:40px;border-radius:99px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;font-weight:800;color:var(--ink2);font-size:11px;flex:none}
+.handles{display:flex;gap:14px;flex-wrap:wrap;align-items:center}.handles b{font-size:14px}.handles .pl{font-family:var(--mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.tag{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px}.tag.gold{background:var(--gold-bg);color:var(--gold-fg)}.tag.grey{background:var(--surface);color:var(--ink3)}.tag.warn{background:var(--move-bg);color:var(--move-fg)}
+.changed{background:var(--move-bg);border:1px solid #F3C9A8;border-radius:10px;padding:9px 11px;display:grid;gap:5px;margin-top:8px}.changed b{font-size:11.5px;color:var(--move-fg)}.changed .ln{font-family:var(--mono);font-size:11.5px;color:var(--ink)}.changed .ln .pl{display:inline-block;width:78px;color:var(--ink3);font-family:var(--sans);font-size:10.5px;font-weight:700}.changed .ln .arrow{color:var(--move-fg);font-weight:700;margin:0 6px}.changed .hint{font-size:11px;color:var(--move-fg)}
+.facts{font-size:11px;color:var(--ink3);display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}.facts .lbl{font-weight:700;color:var(--ink2)}
+.btns{display:flex;gap:6px;flex:none}.btn{border-radius:8px;padding:6px 11px;font-weight:800;font-size:11px}.btn.dark{background:#146B5C;color:#fff}.btn.ghost{background:var(--surface);color:var(--ink2)}
+.note{border-radius:11px;padding:10px;font-size:11.5px;line-height:1.4}.note.wait{background:var(--wait-bg);color:var(--wait-fg)}.note.ok{background:var(--active-bg);color:var(--active-fg)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;padding:13px;border:1px solid var(--border);border-radius:13px;background:var(--bg)}.foot{padding-block:44px 60px;color:var(--ink2);font-size:13px;display:grid;gap:8px;border-top:1px solid var(--border);margin-top:34px}
+</style></head>
+<body><div class="wrap">
+<header class="top">
+  <p class="eyebrow">features/creator-handle-change-review · mockups v1 · 19 Sep 2026 · DRAFT</p>
+  <h1>Pending Verification, when she changed her channels</h1>
+  <p class="lede">The row leads with what admin must verify now, says plainly when that differs from what she signed up with, and Verify approves the channels admin looked at.</p>
+  <div class="legend"><span class="pill">changed</span><span class="pill new">new block</span></div>
+</header>
+
+<section>
+  <header><p class="eyebrow">admin.inflx.in/admin/influencers?tab=pending</p><h2>Two rows</h2><p class="prose">The first creator changed both channels after signing up. The second changed nothing.</p></header>
+  <div class="flow">
+
+    <div class="shot">
+      <div class="desk"><div class="deskbar"><span>admin.inflx.in</span><span>/admin/influencers?tab=pending</span></div><div class="deskbody">
+        <div class="card">
+          <div class="chead"><b>Somepalli Anusha</b><span>+918465994979 · requested 26 Aug 2026, 6:15 pm</span></div>
+          <div class="crow">
+            <div class="ava">SA</div>
+            <div style="flex:1;min-width:0">
+              <div class="handles">
+                <span><span class="pl">Instagram</span><b>@stories_by_srilok</b></span>
+                <span><span class="pl">YouTube</span><b>stories_by_srilok</b></span>
+                <span class="tag warn">CHANGED SINCE SIGNUP</span>
+              </div>
+              <div class="changed">
+                <b>She changed her channels after signing up</b>
+                <div class="ln"><span class="pl">Instagram</span>@anusha9somepalli<span class="arrow">→</span>@stories_by_srilok</div>
+                <div class="ln"><span class="pl">YouTube</span>anusha1298<span class="arrow">→</span>stories_by_srilok</div>
+                <p class="hint">Check the new ones belong to her before verifying. Verify approves the new channels and starts measuring them.</p>
+              </div>
+              <div class="facts"><span class="lbl">Signup profile</span><span>@anusha9somepalli</span><span>12.4k followers</span><span class="tag grey">SCRAPE PENDING</span><span>✉ anusha@…</span></div>
+            </div>
+            <div class="btns"><span class="btn dark">✓ Verify & approve</span><span class="btn ghost">Reject</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="chead"><b>Nikhil R</b><span>+919876500123 · requested 18 Sep 2026, 11:02 am</span></div>
+          <div class="crow">
+            <div class="ava">NR</div>
+            <div style="flex:1;min-width:0">
+              <div class="handles">
+                <span><span class="pl">Instagram</span><b>@nikhil.eats</b></span>
+                <span class="tag gold">CLAIMED</span>
+              </div>
+              <div class="facts"><span class="lbl">Signup profile</span><span>8.1k followers</span><span class="tag gold">MICRO</span><span>📞 +91 98…</span></div>
+            </div>
+            <div class="btns"><span class="btn dark">✓ Verify & approve</span><span class="btn ghost">Reject</span></div>
+          </div>
+        </div>
+
+        <div class="note wait">A profile that is not complete cannot be verified — the refusal names what is missing (registration-and-profile §6).</div>
+      </div></div>
+      <div class="cap"><b>V1 · The queue</b><span>Current channels large and linked; the amber block only when something changed; the signup profile's facts underneath, labelled. No more ten-point grey line at the top.</span><i>GET /admin/creator-verifications gains current_accounts + changed</i></div>
+    </div>
+
+    <div class="shot">
+      <div class="desk"><div class="deskbar"><span>admin.inflx.in</span><span>/admin/influencers?tab=pending · after Verify</span></div><div class="deskbody">
+        <div class="note ok"><b>Verified and approved.</b> @stories_by_srilok and stories_by_srilok are now hers on INFLX; measuring starts now — numbers appear within the hour.</div>
+        <div class="card">
+          <div class="chead"><b>Somepalli Anusha</b><span>verified just now</span></div>
+          <div class="crow">
+            <div class="ava">SA</div>
+            <div style="flex:1;min-width:0">
+              <div class="handles">
+                <span><span class="pl">Instagram</span><b>@stories_by_srilok</b></span>
+                <span><span class="pl">YouTube</span><b>stories_by_srilok</b></span>
+                <span class="tag grey">MEASURING</span>
+              </div>
+              <div class="facts"><span class="lbl">Record</span><span>signup profile renamed to @stories_by_srilok</span><span>old @anusha9somepalli kept in history</span></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>V2 · After Verify</b><span>The record admin approved names the channels admin looked at; the old handle stays in the account history. Measurement is item 3b's existing pipeline.</span><i>verify rewrites creator_profiles handles in its transaction</i></div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <header><p class="eyebrow">For the record</p><h2>What these screens decide</h2></header>
+  <div class="card" style="max-width:760px;padding:11px;background:var(--bg)">
+    <p class="prose" style="font-size:13.5px"><b>They decide:</b> current channels lead the row; the amber "changed since signup" block and its wording; Verify approves and measures the current channels and renames the signup record; the incomplete-profile refusal stays first.</p>
+    <p class="prose" style="font-size:13.5px"><b>They don't decide:</b> how an approved creator's later change is verified — that stays on the Handle checks tab, which only gains the same old → new line.</p>
+  </div>
+</section>
+<div class="foot"><p><b>features/creator-handle-change-review</b> · mockups v1 · DRAFT — nothing locked, nothing built</p></div>
+</div></body></html>

@@ -58,8 +58,31 @@ const listQueue = asyncHandler(async (req, res) => {
     [statuses]
   );
   await resolveAvatars(rows);
+  // creator-handle-change-review: the row leads with what is to be verified NOW — the creator's
+  // current accounts — and says plainly when they differ from the handles she claimed with.
+  for (const r of rows) {
+    r.current_accounts = [];
+    r.changed = [];
+    if (!r.influencer_row_id) continue;
+    const { rows: acc } = await db.query(
+      `SELECT platform, handle_raw, handle_norm, channel_url, state, ownership
+         FROM creator_social_accounts WHERE influencer_id = $1 AND replaced_at IS NULL ORDER BY platform`, [r.influencer_row_id]);
+    r.current_accounts = acc.map(a => ({ platform: a.platform, handle: a.handle_raw, handle_norm: a.handle_norm, url: a.channel_url, state: a.state, ownership: a.ownership }));
+    r.changed = changedSinceClaim(r);
+  }
   return success(res, { verifications: rows });
 });
+
+/** Instagram / YouTube handles she has now versus the ones on the claimed profile. */
+function changedSinceClaim(r) {
+  const norm = (v) => (v == null ? null : String(v).trim().replace(/^@+/, '').toLowerCase() || null);
+  const out = [];
+  const pairs = [['instagram', r.ig_handle, r.influencer_ig], ['youtube', r.youtube_handle, r.influencer_yt]];
+  for (const [platform, from, to] of pairs) {
+    if (norm(from) !== norm(to)) out.push({ platform, from: from || null, to: to || null });
+  }
+  return out;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /v1/admin/creator-verifications/:id/verify
@@ -88,6 +111,7 @@ const verify = asyncHandler(async (req, res) => {
     if (summary && !summary.complete) throw completeness.incompleteError(AppError, summary, 'admin');
   }
 
+  let recordRenamed = null;
   await db.query('BEGIN');
   try {
     // Verify the target
@@ -136,6 +160,27 @@ const verify = asyncHandler(async (req, res) => {
       if (infRows[0]) {
         await db.query(`UPDATE users SET status = 'approved' WHERE id = $1`, [infRows[0].user_id]);
       }
+      // creator-handle-change-review: the record admin approved names the channels admin looked
+      // at. Renamed to the creator's CURRENT handles; skipped (and reported) when another scraped
+      // profile already carries that Instagram handle (ig_handle is UNIQUE) — the old handle then
+      // stays on the record, the accounts are still confirmed and measured below.
+      const { rows: cur } = await db.query(`SELECT instagram_handle, youtube_handle FROM influencers WHERE id = $1`, [target[0].linked_influencer_id]);
+      if (cur[0]) {
+        const wantIg = cur[0].instagram_handle || null;
+        const wantYt = cur[0].youtube_handle || null;
+        const { rows: clash } = wantIg
+          ? await db.query(`SELECT 1 FROM creator_profiles WHERE ig_handle = $1 AND id <> $2`, [wantIg, profileId])
+          : { rows: [] };
+        if (clash.length) {
+          recordRenamed = false;
+          await db.query(`UPDATE creator_profiles SET youtube_handle = COALESCE($2, youtube_handle) WHERE id = $1`, [profileId, wantYt]);
+        } else {
+          await db.query(
+            `UPDATE creator_profiles SET ig_handle = COALESCE($2, ig_handle), youtube_handle = COALESCE($3, youtube_handle) WHERE id = $1`,
+            [profileId, wantIg, wantYt]);
+          recordRenamed = true;
+        }
+      }
     }
 
     await db.query('COMMIT');
@@ -150,7 +195,8 @@ const verify = asyncHandler(async (req, res) => {
       const started = await socialAccounts.onCreatorApproved(target[0].linked_influencer_id, adminId);
       if (process.env.NODE_ENV !== 'test') for (const a of started) socialMeasure.kick(a.id, 'full', 'approval');
     }
-    return success(res, { verified: verifiedRows[0] });
+    const { rows: after } = await db.query(`SELECT * FROM creator_profiles WHERE id = $1`, [profileId]);
+    return success(res, { verified: after[0] || verifiedRows[0], record_renamed: recordRenamed });
   } catch (e) {
     await db.query('ROLLBACK');
     throw e;

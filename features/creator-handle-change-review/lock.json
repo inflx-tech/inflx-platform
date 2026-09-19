@@ -1,0 +1,36 @@
+{
+  "feature": "creator-handle-change-review",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 19 Sep 2026 — \"pls lock it and build it\")",
+  "approved_at": "2026-09-19T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 19 Sep 2026, same message; V1/V2 as drawn)",
+  "mockup_locked_at": "2026-09-19T00:00:00+05:30",
+  "notes": "Founder ask 19 Sep 2026 from Influencers → Pending Verification: a creator who changed her channels after signing up shows the OLD handle large and the CURRENT ones in ten-point grey; make the row say she changed, lead with the current channels, verify those, and after Verify measure them. Survey: the current accounts ARE measured after verify today (item 3b saves a pre-approval change as waiting_approval and onCreatorApproved confirms every current account), so the gap is the screen and the record — the claimed creator_profile stays on the old handle. Drafted as 01-spec.md + mockup V1/V2 for the founder's lock. Nothing built.",
+  "sequence": {
+    "1_spec_locked": true,
+    "2_mockups_drawn": true,
+    "3_mockups_locked": true,
+    "4_build": true
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-19T00:00:00+05:30",
+      "committed": false,
+      "server": "creatorVerification.controller: listQueue rows carry current_accounts + changed (old → new per platform); verify renames the claimed profile to the current handles inside its transaction, record_renamed false when another scraped profile holds the new Instagram handle (ig_handle UNIQUE); measurement untouched; incomplete-profile refusal first",
+      "admin": "influencers/page.js: shared HandleChange line; ClusterCard header without the grey signed-up-as line; ProfileRow leads with current channels, CHANGED SINCE SIGNUP tag + amber block per V1, Signup profile facts line, Verify & approve; V2 green line with the record-kept suffix; Handle checks rows use the same line. next build exit 0; stubbed Playwright walk of V1/V2 matched the mockups; amber text uses orange-deep for contrast",
+      "tests": "creator-handle-change-review.test.js checks 1–6 green (5 tests); item3b-pipeline + admin-creator-review green; backend full run 1416 / 1195 / 221 vs baseline 1386 / 1165 / 221 — 0 new failures",
+      "note": "Production-impacting (Render + Vercel on push); no migration, no OTA, no money. Nothing committed until the founder's go."
+    }
+  }
+}

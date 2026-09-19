@@ -52,6 +52,36 @@ function ChannelDots({ phone, email, whatsapp }) {
   );
 }
 
+// creator-handle-change-review — one "old → new" line per platform, shared by the Pending
+// Verification row (changed since signup) and the Handle checks tab (approved creator's change).
+// Instagram handles carry the @, YouTube handles don't; a missing side renders as "—".
+// Contract: features/creator-handle-change-review
+const PLATFORM_LABEL = { instagram: 'Instagram', youtube: 'YouTube' };
+const platformLabel = (p) => PLATFORM_LABEL[p] || (p ? p.charAt(0).toUpperCase() + p.slice(1) : '');
+const bareHandle = (h) => (h == null ? '' : String(h).trim().replace(/^@+/, ''));
+const showHandle = (platform, h) => {
+  const b = bareHandle(h);
+  if (!b) return '—';
+  return platform === 'instagram' ? `@${b}` : b;
+};
+const channelUrl = (platform, h, url) => {
+  if (url) return url;
+  const b = bareHandle(h);
+  if (!b) return null;
+  return platform === 'youtube' ? `https://youtube.com/@${b}` : `https://instagram.com/${b}`;
+};
+
+function HandleChange({ platform, from, to }) {
+  return (
+    <div className="font-mono text-[11.5px] text-t1">
+      <span className="inline-block w-[78px] font-sans text-[10.5px] font-bold text-t3">{platformLabel(platform)}</span>
+      <span>{showHandle(platform, from)}</span>
+      <span className="mx-1.5 font-bold text-orange-deep">→</span>
+      <span>{showHandle(platform, to)}</span>
+    </div>
+  );
+}
+
 function LeadStatusBadge({ status }) {
   const cfg = {
     not_contacted: 'bg-surface2 text-t3',
@@ -628,6 +658,9 @@ function PendingVerificationTab() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // creator-handle-change-review V2: the green "Verified and approved." line after a verify.
+  // Lives here (not in the row) because the verified row leaves this list on reload.
+  const [notice, setNotice] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -638,6 +671,7 @@ function PendingVerificationTab() {
   }, [tab]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setNotice(null); }, [tab]);
 
   const clusters = groupByClaimUser(rows);
 
@@ -660,6 +694,12 @@ function PendingVerificationTab() {
       </div>
 
       {error && <div className="bg-red/10 border border-red/30 rounded-xl p-3 text-xs text-red">{error}</div>}
+      {notice && (
+        <div className="bg-teal-pale border border-teal-deep/30 rounded-xl p-3 text-xs text-teal-deep flex items-start justify-between gap-3">
+          <span><b>Verified and approved.</b> {notice}</span>
+          <button onClick={() => setNotice(null)} className="text-teal-deep/70 hover:text-teal-deep font-bold flex-shrink-0" aria-label="Dismiss">×</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="bg-white rounded-xl border border-border p-8 text-center text-t3 text-sm">Loading…</div>
@@ -673,7 +713,7 @@ function PendingVerificationTab() {
       ) : (
         <div className="space-y-3">
           {clusters.map(cluster => (
-            <ClusterCard key={cluster.key} cluster={cluster} onChange={load} readOnly={tab !== 'claimed'} />
+            <ClusterCard key={cluster.key} cluster={cluster} onChange={load} onNotice={setNotice} readOnly={tab !== 'claimed'} />
           ))}
         </div>
       )}
@@ -697,8 +737,10 @@ function groupByClaimUser(rows) {
   return Array.from(map.values());
 }
 
-function ClusterCard({ cluster, onChange, readOnly }) {
+function ClusterCard({ cluster, onChange, onNotice, readOnly }) {
   const isConflict = cluster.rows.length > 1;
+  // Rows arrive ordered by claim_requested_at ASC, so the first row is the earliest request.
+  const requestedAt = cluster.rows.find(r => r.claim_requested_at)?.claim_requested_at;
   return (
     <div className={`bg-white rounded-xl border overflow-hidden ${isConflict ? 'border-orange/40' : 'border-border'}`}>
       <div className={`px-3 py-2 ${isConflict ? 'bg-orange/10' : 'bg-surface2'} border-b border-border`}>
@@ -706,8 +748,7 @@ function ClusterCard({ cluster, onChange, readOnly }) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-xs text-t1">{cluster.claim_user_name || '—'}</span>
             {cluster.claim_user_phone && <span className="text-[10px] text-t3 font-mono">{cluster.claim_user_phone}</span>}
-            {cluster.influencer_ig && <span className="text-[10px] text-t3">signed up as <span className="font-semibold text-t2">@{cluster.influencer_ig}</span></span>}
-            {cluster.influencer_yt && <span className="text-[10px] text-t3">yt: <span className="font-semibold text-t2">{cluster.influencer_yt}</span></span>}
+            {requestedAt && <span className="text-[10px] text-t3 font-mono">· requested {new Date(requestedAt).toLocaleString('en-IN')}</span>}
           </div>
           {isConflict && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange text-white whitespace-nowrap">
@@ -722,24 +763,46 @@ function ClusterCard({ cluster, onChange, readOnly }) {
         )}
       </div>
       <div className="divide-y divide-border">
-        {cluster.rows.map(r => <ProfileRow key={r.id} row={r} onChange={onChange} readOnly={readOnly} />)}
+        {cluster.rows.map(r => <ProfileRow key={r.id} row={r} onChange={onChange} onNotice={onNotice} readOnly={readOnly} />)}
       </div>
     </div>
   );
 }
 
-function ProfileRow({ row, onChange, readOnly }) {
+function ProfileRow({ row, onChange, onNotice, readOnly }) {
   const [busy, setBusy] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [err, setErr] = useState(null);
 
+  // creator-handle-change-review: the row leads with what is to be verified NOW — the creator's
+  // current channels. Older rows (no influencer row yet) fall back to the claimed profile.
+  const accounts = (row.current_accounts && row.current_accounts.length > 0)
+    ? row.current_accounts
+    : [
+        row.ig_handle && { platform: 'instagram', handle: row.ig_handle },
+        row.youtube_handle && { platform: 'youtube', handle: row.youtube_handle },
+      ].filter(Boolean);
+  const changed = Array.isArray(row.changed) ? row.changed : [];
+  const currentIg = accounts.find(a => a.platform === 'instagram');
+  const currentYt = accounts.find(a => a.platform === 'youtube');
+  const claimedIgDiffers = !!row.ig_handle && bareHandle(row.ig_handle).toLowerCase() !== bareHandle(currentIg?.handle).toLowerCase();
+  const claimedYtDiffers = !!row.youtube_handle && bareHandle(row.youtube_handle).toLowerCase() !== bareHandle(currentYt?.handle).toLowerCase();
+  const handleNames = accounts.map(a => showHandle(a.platform, a.handle)).join(' and ');
+
   async function doVerify() {
-    if (!confirm(`Verify @${row.ig_handle} as the correct profile for this user?`)) return;
+    if (!confirm(`Verify ${handleNames || `@${row.ig_handle}`} as this creator's channels and approve the account?`)) return;
     setBusy(true); setErr(null);
     const res = await adminApi.verifyCreator(row.id);
     setBusy(false);
     if (!res.success) { setErr(res.error?.message || 'Verify failed'); return; }
+    if (onNotice) {
+      const renamed = res.data?.record_renamed;
+      onNotice(
+        `${handleNames || `@${row.ig_handle}`} ${accounts.length > 1 ? 'are' : 'is'} now hers on INFLX; measuring starts now — numbers appear within the hour.` +
+        (renamed === false ? ' (the signup record kept its old handle: another profile already uses the new one)' : '')
+      );
+    }
     onChange();
   }
 
@@ -771,23 +834,52 @@ function ProfileRow({ row, onChange, readOnly }) {
           onError={(e) => { e.currentTarget.style.display = 'none'; }} />
       ) : (
         <div className="w-10 h-10 rounded-full bg-surface2 flex items-center justify-center text-[10px] font-bold text-t3 flex-shrink-0">
-          {(row.ig_handle || '?').slice(0, 2).toUpperCase()}
+          {bareHandle(currentIg?.handle || row.ig_handle || '?').slice(0, 2).toUpperCase()}
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-          <a href={`https://instagram.com/${row.ig_handle}`} target="_blank" rel="noreferrer" className="font-semibold text-sm text-t1 hover:text-orange">@{row.ig_handle}</a>
-          {row.full_name && <span className="text-xs text-t3">· {row.full_name}</span>}
-          <VerifyStatusPill status={row.verification_status} />
-          {isPending && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gold-pale text-yellow-700">SCRAPE PENDING</span>}
-          {row.follower_tier && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">{row.follower_tier}</span>}
+        {/* Current channels — large, linked, each with a small mono platform label */}
+        <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap mb-0.5">
+          {accounts.map(a => {
+            const href = channelUrl(a.platform, a.handle, a.url);
+            const label = <span className="font-mono text-[10px] uppercase tracking-wider text-t3 mr-1">{platformLabel(a.platform)}</span>;
+            const text = showHandle(a.platform, a.handle);
+            return (
+              <span key={a.platform} className="inline-flex items-center">
+                {label}
+                {href
+                  ? <a href={href} target="_blank" rel="noreferrer" className="font-semibold text-sm text-t1 hover:text-orange">{text}</a>
+                  : <span className="font-semibold text-sm text-t1">{text}</span>}
+              </span>
+            );
+          })}
+          {accounts.length === 0 && <span className="font-semibold text-sm text-t3">No channels on file</span>}
+          {changed.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange/10 text-orange-deep">CHANGED SINCE SIGNUP</span>
+          )}
+          {(changed.length === 0 || row.verification_status !== 'claimed') && <VerifyStatusPill status={row.verification_status} />}
         </div>
-        <div className="text-[11px] text-t3 flex flex-wrap gap-x-3 gap-y-0.5">
+
+        {/* Amber block — only when she changed a channel after signing up (mockup V1) */}
+        {changed.length > 0 && (
+          <div className="mt-2 rounded-lg border border-orange/40 bg-orange/10 px-2.5 py-2 space-y-1">
+            <div className="text-[11.5px] font-bold text-orange-deep">She changed her channels after signing up</div>
+            {changed.map(c => <HandleChange key={c.platform} platform={c.platform} from={c.from} to={c.to} />)}
+            <p className="text-[11px] text-orange-deep">Check the new ones belong to her before verifying. Verify approves the new channels and starts measuring them.</p>
+          </div>
+        )}
+
+        {/* Signup profile — the scraped facts of the profile she claimed with */}
+        <div className="mt-1.5 text-[11px] text-t3 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          <span className="font-bold text-t2">Signup profile</span>
+          {claimedIgDiffers && <span>@{bareHandle(row.ig_handle)}</span>}
+          {claimedYtDiffers && <span>YT: {bareHandle(row.youtube_handle)}</span>}
+          {row.full_name && <span>{row.full_name}</span>}
           {row.followers_count > 0 && <span>{fmtNum(row.followers_count)} followers</span>}
-          {row.youtube_handle && <span>YT: {row.youtube_handle}</span>}
+          {row.follower_tier && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-gold/10 text-yellow-700 border border-gold/30">{row.follower_tier}</span>}
+          {isPending && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gold-pale text-yellow-700">SCRAPE PENDING</span>}
           {row.bio_email && <span>✉ {row.bio_email}</span>}
           {row.bio_phone && <span>📞 {row.bio_phone}</span>}
-          {row.claim_requested_at && <span>requested {new Date(row.claim_requested_at).toLocaleString()}</span>}
         </div>
         {row.rejection_reason && (
           <div className="mt-1 text-[11px] text-red bg-red/5 border border-red/20 rounded px-2 py-1">Rejected: {row.rejection_reason}</div>
@@ -807,7 +899,7 @@ function ProfileRow({ row, onChange, readOnly }) {
         <div className="flex gap-1 flex-shrink-0">
           {row.verification_status === 'claimed' && !showReject && (
             <>
-              <button onClick={doVerify} disabled={busy} className="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white hover:bg-teal-deep/90 disabled:opacity-50">✓ Verify</button>
+              <button onClick={doVerify} disabled={busy} className="px-2.5 py-1 rounded text-[11px] font-bold bg-teal-deep text-white hover:bg-teal-deep/90 disabled:opacity-50">✓ Verify & approve</button>
               <button onClick={() => setShowReject(true)} disabled={busy} className="px-2.5 py-1 rounded text-[11px] font-bold bg-surface2 text-t2 hover:bg-red/10 hover:text-red">Reject</button>
             </>
           )}
@@ -1173,8 +1265,8 @@ function HandleChecksTab() {
           <div key={c.id} className="border-t border-border py-3 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 text-xs">
             <div>
               <div className="font-bold text-t1">{c.creator_name} <span className="text-t3 font-normal capitalize">· {c.platform}</span></div>
-              <div className="text-t2 mt-1">Old: {openUrl(c.old_url)}</div>
-              <div className="text-t2">New: {openUrl(c.channel_url)} <span className="text-t3">(@{c.handle_norm})</span></div>
+              <div className="mt-1"><HandleChange platform={c.platform} from={c.old_handle} to={c.handle_norm} /></div>
+              <div className="text-t2 mt-0.5">Open: old {openUrl(c.old_url)} <span className="text-t3">·</span> new {openUrl(c.channel_url)}</div>
               <div className="text-t3 mt-1">Asked {new Date(c.created_at).toLocaleString('en-IN')}</div>
             </div>
             <div className="flex gap-2 items-start">
