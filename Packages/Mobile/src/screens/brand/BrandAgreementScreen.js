@@ -252,8 +252,12 @@ export default function BrandAgreementScreen({ navigation, route }) {
             <View style={s.row}>
               <View style={{ flex: 1 }}><SecondaryButton label={C7.brand.download} onPress={download} testID="download" /></View>
               <View style={{ flex: 1 }}>
+                {/* Walk fix (20 Sep): this button is the only door to the shoot, so it says what
+                    the shoot actually needs — "Confirm the shoot is done" once she has marked
+                    attended, not "Plan the visit" forever. */}
                 <PrimaryButton
-                  label={remote ? C7.brand.shootPlan : C7.brand.planTheVisit}
+                  label={remote ? C7.brand.shootPlan : C10.openLabel(shoot && shoot.stage, shoot && shoot.passed)}
+                  icon={!remote && shoot && shoot.stage === 'attended' ? 'check' : undefined}
                   onPress={() => (remote
                     ? show(C10.remoteNext)
                     : navigation.navigate('BrandShoot', { campaignId, setId, ciId }))}

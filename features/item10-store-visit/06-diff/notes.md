@@ -59,3 +59,45 @@ brand's registration city for a new branch). *Search on Google instead* switches
 branch card says *No street address yet — tap Edit to add one* in red where there is none.
 Server: `address_text` / `pincode` accepted beside `place_id` on create and update.
 Tests: `item10-storevisit` (2 new), `item3-branches` (message updated); mobile 575/575.
+
+## Walk fix 2 — the brand's front door and the icons (founder, 20 Sep)
+
+Founder, after walking the store visit: *"i did not find any screen from brand where he needs to
+confirm that shoot is done, also no symbol on who ask person with mobile call symbol."* Both real.
+Report: `Docs/ITEM10_STOREVISIT_WALK_REPORT.md`.
+
+**Before:** V10 was built and tested but reachable only from one button at the bottom of the
+agreement screen — six taps deep, labelled "Plan the visit" at every stage, so nothing ever told
+the brand she had visited and it was his move. The set-detail row said "Signed by both on 14 Sep"
+for ever. At the agreed stage nothing mentioned the confirm step at all. And item 10 used none of
+the seven icons the mockups carry, including the phone on the contact button.
+
+**After:**
+- **The agreement button tells the truth** — "Plan the visit" → "Waiting on her answer" →
+  "The store visit" → **"Confirm the shoot is done"** (with a tick) → "The visit time passed —
+  send a new time". Same button, same place.
+- **The set-detail row carries the shoot** — "Plan sent for Sun 18 Oct, 11:00 am — waiting for
+  Tanvi to answer", "Tanvi says she visited — confirm the shoot is done" with a **Your move**
+  chip, "Shoot done 19 Oct". Tapping a signed visit opens the visit; the ⋯ menu gains "Open the
+  store visit". One sentence on a line the row already had — the mirror of V4 on her card.
+- **The agreed stage says what is coming**: "Tanvi marks the visit once she has been, and then
+  you confirm it. Nothing moves until she does."
+- **The Active chip** on V1.
+- **All seven icons**: phone on the contact (and on "Call Tanvi"), navigation on Open in Maps,
+  padlock on "From the set", tick on the two confirm buttons and the done step dots and the green
+  boxes, undo on the three "another time" actions, alert on "Your move" and the amber boxes,
+  clock on the blue waiting box, send on the four send buttons, calendar on "Send a new time".
+  `PrimaryButton` / `SecondaryButton` take an optional `icon`, `Card7` a `titleIcon`, and a new
+  `TextButton` carries the quiet actions — all additive, no existing caller changed.
+- **V13's "Call Tanvi" is in** (founder decision, 20 Sep, overriding the gap report's reading of
+  §11.1): the server sends the creator's number to the **brand only**, on the **passed** stage
+  only. Her side never carries it, and it disappears again the moment she marks the visit.
+
+Deliberately NOT built, because the sequence puts them later: the cross-campaign **Shoots list**
+and the **Needs You home surface** (§24, a later item — the four moves and `/brands/me/shoots`
+are already wired and waiting), and **notification deep links** (no notification in either app
+opens anything; its own job).
+
+Tests: `item10-flow` +2 (her number only when passed and never on her side; the row's line through
+all five stages), `shoot10` +3 (the phone and maps symbols, the truthful button labels, the two new
+sentences), gate-card assertions moved from text glyphs to the real icons. Mobile 636/636.

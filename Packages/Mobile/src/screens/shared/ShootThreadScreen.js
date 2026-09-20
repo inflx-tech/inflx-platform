@@ -99,9 +99,9 @@ export default function ShootThreadScreen({ navigation, route, side = 'influence
 
       {myMove ? (
         <View style={s.bar} testID="shoot-thread-actions">
-          <PrimaryButton label={C10.thread.accept(thread.current && thread.current.visitAt)} onPress={accept} busy={busy} testID="shoot-thread-accept" />
+          <PrimaryButton label={C10.thread.accept(thread.current && thread.current.visitAt)} icon="check" onPress={accept} busy={busy} testID="shoot-thread-accept" />
           {thread.can && thread.can.counter ? (
-            <SecondaryButton label={brandSide ? C10.thread.suggestAnother : C10.hers.askAnother}
+            <SecondaryButton icon="undo-variant" label={brandSide ? C10.thread.suggestAnother : C10.hers.askAnother}
               onPress={() => navigation.navigate(brandSide ? 'BrandShootCounter' : 'ShootCounter', { campaignId, setId, ciId })}
               testID="shoot-thread-counter" />
           ) : null}

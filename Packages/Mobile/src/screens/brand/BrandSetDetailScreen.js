@@ -106,6 +106,9 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   const openThread = (row) => navigation.navigate('BrandThread', { campaignId, setId, ciId: row.id });
   // Item 7 — the preview before it is sent, the agreement itself afterwards.
   const openAgreement = (row, preview) => navigation.navigate('BrandAgreement', { campaignId, setId, ciId: row.id, preview: !!preview });
+  // Item 10 walk fix: a signed Store Visit opens the shoot itself, not the agreement. The
+  // agreement is still one tap away from there; this is the door the brand actually needs.
+  const openShoot = (row) => navigation.navigate('BrandShoot', { campaignId, setId, ciId: row.id });
   async function doConfirm() {
     const { kind, row } = confirm;
     setConfirm(null);
@@ -116,6 +119,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   }
   function creatorActions(row) {
     const a = [
+      ...(row.shoot ? [{ label: 'Open the store visit', onPress: () => openShoot(row) }] : []),
       ...(row.actions && row.actions.thread ? [{ label: 'Open the conversation', onPress: () => openThread(row) }] : []),
       { label: S5.menu.viewTerms, onPress: () => viewTerms(row) },
       { label: S5.menu.profile, onPress: () => openProfile(row) },
@@ -191,12 +195,19 @@ export default function BrandSetDetailScreen({ navigation, route }) {
                   <SetCreatorRow5 key={row.id} row={row}
                     // Item 6: a row with a thread or an unanswered move request opens the
                     // conversation; the rest open the ⋯ menu.
-                    onPress={() => (row.actions && row.actions.thread ? openThread(row) : row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
+                    // Item 10: a signed Store Visit opens the visit — that is the live thing on
+                    // that row. Item 6: a thread or an unanswered move request opens the
+                    // conversation; the rest open the ⋯ menu.
+                    onPress={() => (row.shoot ? openShoot(row)
+                      : row.actions && row.actions.thread ? openThread(row)
+                        : row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
                     onMore={() => setCreatorMenu(row)}
                     // Item 7: the chip is the brand's actual next move on that row —
                     // send the agreement, or sign the one she has already signed.
+                    // Item 10: or confirm the shoot she says she has been to.
                     onChip={
-                      row.actions && row.actions.sendAgreement ? () => openAgreement(row, true)
+                      row.shoot && row.shoot.stage === 'attended' ? () => openShoot(row)
+                        : row.actions && row.actions.sendAgreement ? () => openAgreement(row, true)
                         : row.actions && row.actions.signAgreement ? () => openAgreement(row, false)
                         : row.actions && row.actions.thread ? () => openThread(row)
                         : undefined

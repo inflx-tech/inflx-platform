@@ -27,7 +27,7 @@ export function SendPlanSheet10({ visible, creatorName, contactName, address, ph
       <Text style={sh.body}>{C10.plan.confirmBody}</Text>
       <FieldError text={serverError} />
       <View style={{ height: 8 }} />
-      <PrimaryButton label={C10.plan.send} onPress={onSend} busy={busy} busyLabel="Sending" testID="send-plan-confirm" />
+      <PrimaryButton label={C10.plan.send} icon="send-outline" onPress={onSend} busy={busy} busyLabel="Sending" testID="send-plan-confirm" />
       <SecondaryButton label={C10.plan.notYet} onPress={onClose} testID="send-plan-cancel" />
     </Sheet>
   );
@@ -54,7 +54,7 @@ export function MoveTimeSheet10({ visible, side = 'brand', otherName, currentAt,
       <Text style={sh.hint}>{brand ? C10.brand.moveHint(otherName, postingDate) : C10.brand.moveHintHers(otherName, postingDate)}</Text>
       <FieldError text={err || serverError} />
       <View style={{ height: 8 }} />
-      <PrimaryButton label={C10.brand.sendNew} onPress={send} busy={busy} busyLabel="Sending" testID="move-send" />
+      <PrimaryButton label={C10.brand.sendNew} icon="send-outline" onPress={send} busy={busy} busyLabel="Sending" testID="move-send" />
       <SecondaryButton label={C10.plan.notYet} onPress={onClose} testID="move-cancel" />
     </Sheet>
   );

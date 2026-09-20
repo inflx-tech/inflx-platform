@@ -36,7 +36,7 @@ const SELECT = `
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode AS set_mode, cs.go_live_date, cs.branch_id AS set_branch_id,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id,
          b.business_name AS brand_name, bu.id AS brand_user_id, bu.phone AS brand_phone,
-         COALESCE(i.full_name, u.name) AS creator_name, u.id AS creator_user_id,
+         COALESCE(i.full_name, u.name) AS creator_name, u.id AS creator_user_id, u.phone AS creator_phone,
          con.id AS contract_id, con.brand_signed_at, con.influencer_signed_at, con.locked_amount, con.released_amount,
          pe.*,
          bb.name AS branch_name_now, bb.formatted_address AS branch_address_now, bb.lat AS branch_lat_now, bb.lng AS branch_lng_now,
@@ -222,6 +222,12 @@ async function read(ciId, { side, userId, campaignId = null, setId = null }) {
     can, steps,
     // The brand's own login number, prefilled into "their number" (Q11). Never sent to her.
     contactPrefill: side === 'brand' ? { name: null, phone: r.brand_phone || null } : undefined,
+    // V13 (founder, 20 Sep): when the agreed time has come and gone, the brand may ring her —
+    // "sort it out with her however you like, then send a new time". This is the ONE thing the
+    // brand learns about her in the shoot, and it is deliberately narrow: her side never, any
+    // other stage never, the lists never. It appears only here, only for the brand, and only
+    // once the time has passed with nothing marked.
+    creatorPhone: side === 'brand' && passed ? (r.creator_phone || null) : undefined,
     branchNow: side === 'brand' ? { name: r.branch_name_now, address: r.branch_address_now, city: r.branch_city_now } : undefined,
     legacyNoPostingDate: !r.go_live_date,
   };
@@ -555,6 +561,21 @@ function notifyBrand(r, key, body, extra = {}) {
     .catch(err => console.error(`[NOTIFICATION] ${key.type} failed:`, err.message));
 }
 
+/**
+ * The same line on the BRAND's side — the set-detail row, so he can see where the visit has got
+ * to without opening it. Says whose move it is, because that is the question the row answers.
+ * Item 10 walk fix (20 Sep). The cross-campaign list of what is waiting is Needs You's (§24).
+ */
+function brandLineFor(pe, creatorName) {
+  const who = first(creatorName);
+  const stage = stageOf(pe);
+  if (stage === 'complete') return `Shoot done ${shortDay(pe.brand_completed_at || pe.auto_confirmed_at || pe.visit_scheduled_at)}`;
+  if (stage === 'attended') return `${who} says she visited — confirm the shoot is done`;
+  if (stage === 'agreed') return passedOf(pe) ? `The ${shortDay(pe.visit_scheduled_at)} visit passed with nothing marked — send a new time` : `Store visit ${whenLine(pe.visit_scheduled_at)}`;
+  if (stage === 'sent') return `Plan sent for ${whenLine(pe.visit_scheduled_at)} — waiting for ${who} to answer`;
+  return null;
+}
+
 /** One line for her Active card (V4) and the brand's list. */
 function lineFor(pe) {
   const stage = stageOf(pe);
@@ -568,5 +589,5 @@ function lineFor(pe) {
 module.exports = {
   read, send, acceptTime, counterTime, acceptCounter, move, attended, confirm,
   autoConfirmDue, flagDelayed, remind,
-  stageOf, passedOf, delayedStageOf, lineFor, validateVisitAt, normalisePhone,
+  stageOf, passedOf, delayedStageOf, lineFor, brandLineFor, validateVisitAt, normalisePhone,
 };

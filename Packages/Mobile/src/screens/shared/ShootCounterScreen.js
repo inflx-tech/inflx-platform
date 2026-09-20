@@ -85,7 +85,7 @@ export default function ShootCounterScreen({ navigation, route }) {
         <FieldError text={errs.form} />
       </ScrollView>
       <View style={s.bar}>
-        <PrimaryButton label={C10.counter.send} onPress={send} busy={saving} testID="send-counter" />
+        <PrimaryButton label={C10.counter.send} icon="send-outline" onPress={send} busy={saving} testID="send-counter" />
       </View>
       {toast}
     </View>

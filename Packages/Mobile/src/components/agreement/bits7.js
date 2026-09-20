@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { rupees5 } from '../invitations/copy5';
 import { C7, stamp7, shortDate7 } from './copy7';
@@ -52,11 +53,18 @@ export function TermRow7({ label, value, testID }) {
 }
 
 /** A titled card, the shape every section on these screens uses. */
-export function Card7({ title, children, tone, testID }) {
+export function Card7({ title, children, tone, titleIcon, testID }) {
   const bg = tone === 'tint' ? T.surface : '#FFFFFF';
   return (
     <View style={[b.card, { backgroundColor: bg }]} testID={testID}>
-      {title ? <Text style={b.cardTitle}>{title}</Text> : null}
+      {/* `titleIcon` is an optional MaterialCommunityIcons name before the title — item 10's
+          locked card carries a padlock (V2). Additive; every existing caller is unchanged. */}
+      {title ? (
+        <View style={b.cardTitleRow}>
+          {titleIcon ? <Icon name={titleIcon} size={13} color={T.ink2} style={{ marginRight: 6 }} /> : null}
+          <Text style={b.cardTitle}>{title}</Text>
+        </View>
+      ) : null}
       {children}
     </View>
   );
@@ -132,7 +140,8 @@ export function StateBox7({ tone = 'wait', text, testID }) {
 export const b = StyleSheet.create({
   ref: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1, color: T.ink3, textTransform: 'uppercase', marginBottom: 10 },
   card: { borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
-  cardTitle: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink2, marginBottom: 8 },
+  cardTitle: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink2 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 6, gap: 12 },
   rowLabel: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, flexShrink: 1 },
   rowLabelStrong: { fontFamily: fonts.sansBold, color: T.ink },

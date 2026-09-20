@@ -12,13 +12,13 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import { PrimaryButton, SecondaryButton, EmptyState } from '../../components/settings/primitives';
+import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
-import { Card7, StateBox7 } from '../../components/agreement/bits7';
-import { StepLine10, TimeCard10, AddressCard10, AmberBox10, GreenBox10, DelayedChip10 } from '../../components/shoot/bits10';
+import { Card7 } from '../../components/agreement/bits7';
+import { StepLine10, TimeCard10, AddressCard10, AmberBox10, GreenBox10, DelayedChip10, WaitBox10, MoveBox10 } from '../../components/shoot/bits10';
 import { MoveTimeSheet10 } from '../../components/shoot/sheets10';
 import { C10, MSG10, whenShort10, day10 } from '../../components/shoot/copy10';
 
@@ -97,8 +97,8 @@ export default function ShootScreen({ navigation, route }) {
         {stage === 'sent' ? (
           <>
             {myMove && lastTurn && lastTurn.by === 'brand'
-              ? <StateBox7 tone="move" text={moved ? C10.hers.theyMoved(brand, lastTurn.terms && lastTurn.terms.visitAt, lastTurn.note) : C10.hers.theyCountered(brand, lastTurn.terms && lastTurn.terms.visitAt, lastTurn.note)} testID="they-asked" />
-              : theirsWaiting ? <StateBox7 tone="wait" text={C10.hers.waitingForThem(brand)} testID="waiting-them" /> : null}
+              ? <MoveBox10 text={moved ? C10.hers.theyMoved(brand, lastTurn.terms && lastTurn.terms.visitAt, lastTurn.note) : C10.hers.theyCountered(brand, lastTurn.terms && lastTurn.terms.visitAt, lastTurn.note)} testID="they-asked" />
+              : theirsWaiting ? <WaitBox10 text={C10.hers.waitingForThem(brand)} testID="waiting-them" /> : null}
             <TimeCard10 iso={(myMove && thread.current && thread.current.visitAt) || plan.visitAt} sub={about} live />
             <AddressCard10 branch={plan.branch} contact={plan.contact} />
             {plan.notes ? <Card7 title={C10.hers.beforeYouGo} tone="tint" testID="before-you-go"><Text style={s.para}>{plan.notes}</Text></Card7> : null}
@@ -121,7 +121,7 @@ export default function ShootScreen({ navigation, route }) {
         {/* V9 — marked, waiting: the auto-confirm promised up front, and the payment sentence. */}
         {stage === 'attended' ? (
           <>
-            <StateBox7 tone="wait" text={C10.hers.markedWaiting(plan.attendedAt, brand)} testID="marked-box" />
+            <WaitBox10 text={C10.hers.markedWaiting(plan.attendedAt, brand)} testID="marked-box" />
             <TimeCard10 iso={plan.visitAt} sub={C10.hers.visited} live={false} />
             <Text style={s.para} testID="auto-confirm">{C10.hers.autoConfirm(plan.autoConfirmDueAt)}</Text>
             <StepLine10 steps={stepsHers} />
@@ -141,21 +141,21 @@ export default function ShootScreen({ navigation, route }) {
       <View style={s.bar} testID="shoot-actions">
         {stage === 'sent' && !(thread && thread.negotiation && thread.negotiation.id) ? (
           <>
-            <PrimaryButton label={C10.hers.thisTimeWorks} onPress={acceptPlan} busy={busy} testID="this-time-works" />
-            {sh.can.counter ? <SecondaryButton label={C10.hers.askAnother} onPress={() => navigation.navigate('ShootCounter', { ciId })} testID="ask-another" /> : null}
+            <PrimaryButton label={C10.hers.thisTimeWorks} icon="check" onPress={acceptPlan} busy={busy} testID="this-time-works" />
+            {sh.can.counter ? <SecondaryButton label={C10.hers.askAnother} icon="undo-variant" onPress={() => navigation.navigate('ShootCounter', { ciId })} testID="ask-another" /> : null}
           </>
         ) : null}
         {stage === 'sent' && (thread && thread.negotiation && thread.negotiation.id) && myMove ? (
           <>
-            <PrimaryButton label={C10.hers.acceptNew(thread.current && thread.current.visitAt)} onPress={acceptCounter} busy={busy} testID="accept-counter" />
-            {sh.can.counter ? <SecondaryButton label={C10.hers.askAnother} onPress={() => navigation.navigate('ShootCounter', { ciId })} testID="ask-another" /> : null}
+            <PrimaryButton label={C10.hers.acceptNew(thread.current && thread.current.visitAt)} icon="check" onPress={acceptCounter} busy={busy} testID="accept-counter" />
+            {sh.can.counter ? <SecondaryButton label={C10.hers.askAnother} icon="undo-variant" onPress={() => navigation.navigate('ShootCounter', { ciId })} testID="ask-another" /> : null}
             <Text style={s.hint}>{MSG10.NO_DECLINE}</Text>
           </>
         ) : null}
         {stage === 'agreed' ? (
           <>
-            {sh.can.markAttended ? <PrimaryButton label={C10.hers.beenToStore} onPress={attended} busy={busy} testID="been-to-store" /> : null}
-            {sh.can.move ? <SecondaryButton label={C10.hers.askToMove} onPress={() => setSheet('move')} testID="ask-to-move" /> : null}
+            {sh.can.markAttended ? <PrimaryButton label={C10.hers.beenToStore} icon="check" onPress={attended} busy={busy} testID="been-to-store" /> : null}
+            {sh.can.move ? <TextButton label={C10.hers.askToMove} icon="undo-variant" onPress={() => setSheet('move')} testID="ask-to-move" /> : null}
           </>
         ) : null}
       </View>

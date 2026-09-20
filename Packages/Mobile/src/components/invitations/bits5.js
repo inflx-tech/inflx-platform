@@ -122,7 +122,17 @@ export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
         : [row.termsLine, C5.set.sent(row.sentAt)].filter(Boolean).join(' · ');
       break;
     case 'accepted': meta = C5.set.accepted(row.answeredAt || row.sentAt); break;
-    case 'signed': meta = C5.set.signedByBoth(row.signedAt); break;
+    // Item 10 walk fix: once signed, the row says where the SHOOT has got to rather than
+    // repeating the signature date for ever — and chips "Your move" when he owes the
+    // confirmation, so the brand can see it without opening the agreement.
+    case 'signed':
+      if (row.shoot && row.shoot.line) {
+        meta = row.shoot.line;
+        if (row.shoot.stage === 'attended') chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+      } else {
+        meta = C5.set.signedByBoth(row.signedAt);
+      }
+      break;
     case 'deferred': meta = [row.deferredGoLiveDate ? C5.set.wants(row.deferredGoLiveDate) : null, row.deferredAt ? shortDate5(new Date(row.deferredAt).toISOString().slice(0, 10)) : null].filter(Boolean).join(' · '); chip = { label: C5.set.anotherSet, tone: 'waiting' }; break;
     case 'declined': meta = [row.declineReasonLabel, row.answeredAt ? shortDate5(new Date(row.answeredAt).toISOString().slice(0, 10)) : null].filter(Boolean).join(' · '); break;
     case 'expired': meta = C5.set.expiredMeta; break;

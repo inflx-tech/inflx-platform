@@ -83,6 +83,18 @@ export const C10 = {
   countdownHers: (day, n) => `You post on ${day10(day)} · ${n} ${n === 1 ? 'day' : 'days'}`,
   planTheVisit: 'Plan the visit',
   remoteNext: 'The Remote shoot — shipping the products — arrives with item 11.',
+  /**
+   * V1's button, told the truth (walk fix, 20 Sep). It used to say "Plan the visit" at every
+   * stage, so a brand whose creator had already visited saw nothing asking him to confirm.
+   * The agreement screen is the only door to the shoot until Needs You (§24) builds the list.
+   */
+  openLabel: (stage, passed) =>
+    stage === 'complete' ? 'The store visit'
+      : stage === 'attended' ? 'Confirm the shoot is done'
+      : stage === 'agreed' ? (passed ? 'The visit time passed — send a new time' : 'The store visit')
+      : stage === 'sent' ? 'Waiting on her answer — open the visit'
+      : 'Plan the visit',
+  activeChip: 'Active',
 
   /* ── V2 · the plan ── */
   plan: {
@@ -187,11 +199,16 @@ export const C10 = {
     /* waiting states */
     waitingOnHer: (name) => `Waiting for ${first(name)} to answer on the time.`,
     timeAgreed: (date, iso) => `Time agreed on ${day10(date)}: ${whenShort10(iso)}.`,
+    // The mockups draw no brand screen for the agreed stage, so nothing said what happens next
+    // and the confirm step looked missing. It is not a task list — it is the sentence that
+    // tells the brand the ball is with her (walk fix, 20 Sep).
+    whatHappensNext: (name) => `${first(name)} marks the visit once she has been, and then you confirm it. Nothing moves until she does.`,
     openConversation: 'Open the conversation',
     /* V13 */
     passedTitle: (iso) => `The ${day10(iso)} visit came and went with nothing marked.`,
     passedBody: (name, n) => `Nobody is blamed for this. Sort it out with ${first(name)} however you like, then send a new time — there ${n === 1 ? 'is 1 day' : `are ${n} days`} before she posts.`,
     sendNewTime: 'Send a new time',
+    // V13 (founder, 20 Sep): once the time has passed the brand may ring her to sort it out.
     call: (name) => `Call ${first(name)}`,
     /* V12 */
     moveTitle: 'Move the visit?',

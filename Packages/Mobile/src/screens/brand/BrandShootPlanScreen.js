@@ -92,7 +92,7 @@ export default function BrandShootPlanScreen({ navigation, route }) {
         <Text style={s.crumb}>{`${String(name).toUpperCase()} · ${String(sh.setName || '').toUpperCase()}`}</Text>
 
         {/* The locked card: mode, branch, posting date — all from the set. */}
-        <Card7 title={C10.plan.fromTheSet} tone="tint" testID="locked-card">
+        <Card7 title={C10.plan.fromTheSet} titleIcon="lock-outline" tone="tint" testID="locked-card">
           <Row10 label={C10.plan.mode} value={MODE_LABEL10[sh.mode] || sh.mode} />
           <Row10 label={C10.plan.branch} value={branch.name} />
           <Row10 label={C10.plan.shePostsOn} value={longDay10(sh.postingDate)} />
@@ -112,7 +112,7 @@ export default function BrandShootPlanScreen({ navigation, route }) {
           placeholder={C10.plan.bringPh} max={500} multiline error={errs.notes} testID="notes" />
       </ScrollView>
       <View style={s.bar}>
-        <PrimaryButton label={C10.plan.sendTo(name)} onPress={review} testID="send-to" />
+        <PrimaryButton label={C10.plan.sendTo(name)} icon="send-outline" onPress={review} testID="send-to" />
       </View>
 
       <SendPlanSheet10 visible={sheet} creatorName={name} contactName={contactName} address={branch.address} phone={contactPhone} visitAt={visitAt}

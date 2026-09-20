@@ -9,6 +9,7 @@
  */
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { Card7 } from '../agreement/bits7';
 import { C10, istParts, dayParts, istToIso, clock10, day10, whenLine10, todayIst10 } from './copy10';
@@ -31,7 +32,7 @@ export function GateCard10({ gate, testID }) {
     <View style={[g.card, { backgroundColor: c.bg }]} testID={testID || 'gate-card'}>
       {lines.map((l, i) => (
         <View key={i} style={g.line} testID={`gate-line-${i}`}>
-          <Text style={[g.mark, { color: c.fg }]}>{l.ok ? '✓' : '⧗'}</Text>
+          <Icon name={l.ok ? 'check' : 'timer-sand'} size={15} color={c.fg} style={g.mark} testID={l.ok ? 'gate-tick' : 'gate-hourglass'} />
           <Text style={[g.text, { color: c.fg }]}>{l.text}</Text>
         </View>
       ))}
@@ -48,7 +49,9 @@ export function StepLine10({ steps, testID }) {
     <View style={g.steps} testID={testID || 'step-line'}>
       {steps.map((st) => (
         <View key={st.key} style={g.step} testID={`step-${st.key}-${st.state}`}>
-          <View style={[g.dot, st.state === 'done' ? g.dotDone : st.state === 'now' ? g.dotNow : g.dotLater]} />
+          <View style={[g.dot, st.state === 'done' ? g.dotDone : st.state === 'now' ? g.dotNow : g.dotLater]}>
+            {st.state === 'done' ? <Icon name="check" size={9} color="#FFFFFF" /> : null}
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[g.stepLabel, st.state === 'later' && { color: T.ink3 }]}>{st.label}</Text>
             {st.detail ? <Text style={g.stepDetail}>{st.detail}</Text> : null}
@@ -89,11 +92,14 @@ export function AddressCard10({ branch, contact, testID }) {
       <View style={g.addrRow}>
         {maps && branch.address ? (
           <TouchableOpacity style={g.addrBtn} onPress={() => Linking.openURL(maps).catch(() => {})} activeOpacity={0.8} testID="open-in-maps">
+            <Icon name="navigation-variant-outline" size={14} color={T.ink} testID="maps-icon" />
             <Text style={g.addrBtnText}>{C10.hers.openInMaps}</Text>
           </TouchableOpacity>
         ) : null}
+        {/* The phone symbol is what makes this read as "call Ravi" rather than a name on a button. */}
         {contact && contact.phone ? (
           <TouchableOpacity style={g.addrBtn} onPress={() => Linking.openURL(`tel:${contact.phone}`).catch(() => {})} activeOpacity={0.8} testID="call-contact">
+            <Icon name="phone-outline" size={14} color={T.ink} testID="phone-icon" />
             <Text style={g.addrBtnText}>{contact.name || contact.phone}</Text>
           </TouchableOpacity>
         ) : null}
@@ -128,8 +134,32 @@ export function AmberBox10({ text, testID }) {
   if (!text) return null;
   const c = T.state.delayed || T.state.yourMove;
   return (
-    <View style={[g.box, { backgroundColor: c.bg }]} testID={testID}>
-      <Text style={[g.boxText, { color: c.fg }]}>{text}</Text>
+    <View style={[g.box, g.boxRow, { backgroundColor: c.bg }]} testID={testID}>
+      <Icon name="alert-circle-outline" size={16} color={c.fg} style={g.boxIcon} />
+      <Text style={[g.boxText, { color: c.fg, flex: 1 }]}>{text}</Text>
+    </View>
+  );
+}
+
+/** The blue "waiting" box with its clock (V9). */
+export function WaitBox10({ text, testID }) {
+  if (!text) return null;
+  return (
+    <View style={[g.box, g.boxRow, { backgroundColor: T.state.waiting.bg }]} testID={testID}>
+      <Icon name="clock-outline" size={16} color={T.state.waiting.fg} style={g.boxIcon} />
+      <Text style={[g.boxText, { color: T.state.waiting.fg, flex: 1 }]}>{text}</Text>
+    </View>
+  );
+}
+
+/** The amber "your move" line with its alert (V7, V10). */
+export function MoveBox10({ text, testID }) {
+  if (!text) return null;
+  const c = T.state.yourMove;
+  return (
+    <View style={[g.box, g.boxRow, { backgroundColor: c.bg }]} testID={testID}>
+      <Icon name="alert-circle-outline" size={16} color={c.fg} style={g.boxIcon} />
+      <Text style={[g.boxText, { color: c.fg, flex: 1 }]}>{text}</Text>
     </View>
   );
 }
@@ -138,8 +168,9 @@ export function AmberBox10({ text, testID }) {
 export function GreenBox10({ text, testID }) {
   if (!text) return null;
   return (
-    <View style={[g.box, { backgroundColor: T.state.active.bg }]} testID={testID}>
-      <Text style={[g.boxText, { color: T.state.active.fg }]}>{text}</Text>
+    <View style={[g.box, g.boxRow, { backgroundColor: T.state.active.bg }]} testID={testID}>
+      <Icon name="check" size={16} color={T.state.active.fg} style={g.boxIcon} />
+      <Text style={[g.boxText, { color: T.state.active.fg, flex: 1 }]}>{text}</Text>
     </View>
   );
 }
@@ -224,7 +255,7 @@ export const g = StyleSheet.create({
 
   steps: { borderRadius: 14, borderWidth: 1, borderColor: T.border, padding: 14, marginBottom: 12 },
   step: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 6 },
-  dot: { width: 12, height: 12, borderRadius: 6, marginTop: 3, marginRight: 12 },
+  dot: { width: 14, height: 14, borderRadius: 7, marginTop: 2, marginRight: 12, alignItems: 'center', justifyContent: 'center' },
   dotDone: { backgroundColor: T.state.active.fg },
   dotNow: { borderWidth: 2.5, borderColor: T.state.yourMove.fg, backgroundColor: '#FFFFFF' },
   dotLater: { borderWidth: 1.5, borderColor: T.border, backgroundColor: '#FFFFFF' },
@@ -241,7 +272,7 @@ export const g = StyleSheet.create({
   addrName: { fontFamily: fonts.sansBold, fontSize: 14.5, color: T.ink },
   addrText: { fontFamily: fonts.sansRegular, fontSize: 13, color: T.ink2, lineHeight: 19, marginTop: 3 },
   addrRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
-  addrBtn: { borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  addrBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: T.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   addrBtnText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink },
 
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, gap: 12 },
@@ -251,6 +282,8 @@ export const g = StyleSheet.create({
   chip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
   chipText: { fontFamily: fonts.sansBold, fontSize: 11 },
   box: { borderRadius: 12, padding: 12, marginBottom: 12 },
+  boxRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  boxIcon: { marginRight: 8, marginTop: 1 },
   boxText: { fontFamily: fonts.sansSemiBold, fontSize: 13, lineHeight: 19 },
 
   pickHd: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginTop: 10, marginBottom: 6 },

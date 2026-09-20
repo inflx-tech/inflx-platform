@@ -393,6 +393,50 @@ describe('Delayed (checks 22, 23, 24)', () => {
   });
 });
 
+/* ───────────────────────────────────────────── the walk fix (20 Sep) */
+
+describe('the walk fix — her number when the time passes, and the shoot on the brand\'s row', () => {
+  it('V13: the brand gets her number ONLY once the time has passed, and never on her side', async () => {
+    const w = await agreed(await w10.signedByBoth('engagement'));
+    const creatorPhone = (await query(`SELECT u.phone FROM influencers i JOIN users u ON u.id = i.user_id WHERE i.id = $1`, [w.cr.influencerId])).rows[0].phone;
+    // agreed but not yet passed — nothing
+    expect((await bShoot(w)).body.data.shoot.creatorPhone).toBeUndefined();
+    await timePassed(w);
+    const passed = (await bShoot(w)).body.data.shoot;
+    expect(passed.passed).toBe(true);
+    expect(passed.creatorPhone).toBe(creatorPhone);
+    // her own screen never carries it, at any stage
+    expect((await hShoot(w)).body.data.shoot.creatorPhone).toBeUndefined();
+    expect(JSON.stringify((await hShoot(w)).body)).not.toContain(creatorPhone);
+    // and once the visit is marked it is gone again
+    await hAttend(w);
+    expect((await bShoot(w)).body.data.shoot.creatorPhone).toBeUndefined();
+  });
+
+  it('the brand\'s set-detail row says where the visit is, and chips Your move when he owes the confirmation', async () => {
+    const w = await w10.signedByBoth('engagement');
+    const rowOf = async () => {
+      const r = await api.get(`/campaigns/${w.c.id}/sets/${w.s.id}/summary`, w.b.token);
+      expect(r.status).toBe(200);
+      // creators.groups is keyed by group name, each { count, rows[], more }.
+      const groups = (r.body.data.creators && r.body.data.creators.groups) || {};
+      for (const g of Object.values(groups)) for (const row of (g.rows || [])) if (row.id === w.ciId) return row;
+      return null;
+    };
+    expect((await rowOf()).shoot).toBeNull();                       // nothing sent yet
+    await bSend(w);
+    expect((await rowOf()).shoot).toMatchObject({ stage: 'sent', line: expect.stringMatching(/^Plan sent for .* waiting for Tanvi to answer$/) });
+    await hAccept(w);
+    expect((await rowOf()).shoot).toMatchObject({ stage: 'agreed', line: expect.stringMatching(/^Store visit /) });
+    await timePassed(w);
+    expect((await rowOf()).shoot.line).toMatch(/passed with nothing marked — send a new time$/);
+    await hAttend(w);
+    expect((await rowOf()).shoot).toMatchObject({ stage: 'attended', line: 'Tanvi says she visited — confirm the shoot is done' });
+    await bConfirm(w);
+    expect((await rowOf()).shoot).toMatchObject({ stage: 'complete', line: expect.stringMatching(/^Shoot done /) });
+  });
+});
+
 /* ───────────────────────────────────────────── Needs You (28) and reminders (47) */
 
 describe('Needs You and reminders (checks 28, 47)', () => {

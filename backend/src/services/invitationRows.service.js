@@ -150,6 +150,9 @@ const ROW_SELECT = `
          bo.name AS offer_name,
          con.signed_both, con.signed_at, con.contract_id, con.contract_status,
          con.agreement_sent_at, con.reference_no, con.creator_signed_at, con.brand_signed_at,
+         -- Item 10 walk fix: the shoot's stage inputs, so the row can say where the visit is.
+         pe.shoot_id, pe.pe_shoot_mode, pe.shoot_status, pe.visit_scheduled_at,
+         pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
          neg.*
     FROM campaign_influencers ci
     JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
@@ -169,6 +172,11 @@ const ROW_SELECT = `
              con.released_amount, con.locked_amount, con.influencer_fee
         FROM contracts con WHERE con.campaign_influencer_id = ci.id ORDER BY con.created_at DESC LIMIT 1
     ) con ON true
+    LEFT JOIN LATERAL (
+      SELECT pe.id AS shoot_id, pe.mode AS pe_shoot_mode, pe.status AS shoot_status, pe.visit_scheduled_at,
+             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at
+        FROM production_events pe WHERE pe.contract_id = con.contract_id
+    ) pe ON true
     ${NEG_JOIN}`;
 
 function negotiationOf(r, goal) {
@@ -222,6 +230,14 @@ function brandRow(r, goal) {
         : r.creator_signed_at ? BRAND7.sheSignedYouComplete(r.name, r.creator_signed_at)
         : r.agreement_sent_at ? BRAND7.agreementSent(r.agreement_sent_at)
         : null,
+    } : null,
+    // Item 10 walk fix: once the agreement is signed, the row says where the SHOOT has got to —
+    // the mirror of the line her Active card already carries (V4). One sentence on a line this
+    // row already has; the list of what is waiting across campaigns is Needs You's (§24), later.
+    shoot: r.shoot_id && r.pe_shoot_mode === 'visit' && r.plan_sent_at ? {
+      stage: shootPlan.stageOf({ id: r.shoot_id, status: r.shoot_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
+      line: shootPlan.brandLineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }, r.name),
+      visitAt: r.visit_scheduled_at || null,
     } : null,
   };
 }

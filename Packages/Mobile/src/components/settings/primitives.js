@@ -18,6 +18,7 @@
 
 import React from 'react';
 import { View, Text, TouchableOpacity, Switch, StyleSheet, ActivityIndicator } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 
 export function Chip({ label, selected, onPress, disabled, testID }) {
@@ -109,7 +110,12 @@ export function Banner({ title, body, testID }) {
   );
 }
 
-export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, testID }) {
+/**
+ * `icon` is an optional MaterialCommunityIcons name drawn before the label, as the item 10
+ * mockups do (a tick on "Confirm the shoot is done", a phone on a call). Additive — every
+ * existing caller passes nothing and is unchanged.
+ */
+export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, icon, testID }) {
   const off = disabled || busy;
   return (
     <TouchableOpacity
@@ -126,6 +132,11 @@ export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, testI
           <ActivityIndicator color={T.ink} />
           <Text style={[st.primaryText, { marginLeft: 8 }]}>{busyLabel || 'Saving'}</Text>
         </View>
+      ) : icon ? (
+        <View style={st.busyRow}>
+          <Icon name={icon} size={17} color={off ? T.disabledText : T.onPrimary} />
+          <Text style={[st.primaryText, off && st.primaryTextOff, { marginLeft: 8 }]}>{label}</Text>
+        </View>
       ) : (
         <Text style={[st.primaryText, off && st.primaryTextOff]}>{label}</Text>
       )}
@@ -133,10 +144,27 @@ export function PrimaryButton({ label, onPress, disabled, busy, busyLabel, testI
   );
 }
 
-export function SecondaryButton({ label, onPress, testID }) {
+export function SecondaryButton({ label, onPress, icon, testID }) {
   return (
     <TouchableOpacity testID={testID} onPress={onPress} activeOpacity={0.85} style={st.secondary}>
-      <Text style={st.secondaryText}>{label}</Text>
+      {icon ? (
+        <View style={st.busyRow}>
+          <Icon name={icon} size={16} color={T.ink} />
+          <Text style={[st.secondaryText, { marginLeft: 8 }]}>{label}</Text>
+        </View>
+      ) : (
+        <Text style={st.secondaryText}>{label}</Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+/** A quiet text action with an icon — the mockups' "Ask to move this", "Call Tanvi". */
+export function TextButton({ label, onPress, icon, testID }) {
+  return (
+    <TouchableOpacity testID={testID} onPress={onPress} activeOpacity={0.7} style={st.textBtn}>
+      {icon ? <Icon name={icon} size={15} color={T.ink2} /> : null}
+      <Text style={[st.textBtnLabel, icon && { marginLeft: 6 }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -221,6 +249,8 @@ export const st = StyleSheet.create({
   busyRow: { flexDirection: 'row', alignItems: 'center' },
   secondary: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: T.border, backgroundColor: T.bg, marginTop: 10 },
   secondaryText: { fontFamily: fonts.sansSemiBold, fontSize: 15, color: T.ink },
+  textBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
+  textBtnLabel: { fontFamily: fonts.sansSemiBold, fontSize: 13.5, color: T.ink2 },
   dangerBtn: { backgroundColor: T.danger, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   dangerText: { fontFamily: fonts.sansBold, fontSize: 15, color: '#FFFFFF' },
   status: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999 },

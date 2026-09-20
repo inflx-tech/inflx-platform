@@ -44,8 +44,11 @@ describe('the gate card (check 4)', () => {
     const pfs = render(<GateCard10 gate={{ open: true, reason: null, signed: { at: '2026-09-14T06:00:00Z' }, money: { required: false } }} />);
     expect(pfs.queryByText(/locked/)).toBeNull();
     expect(pfs.getAllByTestId(/gate-line-/)).toHaveLength(1);
+    // A condition not yet met shows an hourglass instead of a tick (mockup V1).
+    expect(pfc.getAllByTestId('gate-tick')).toHaveLength(3);
     const closed = render(<GateCard10 gate={{ open: false, reason: 'NOT_FUNDED', signed: { at: '2026-09-14T06:00:00Z' }, money: { required: true, locked: 0, released: 0 } }} />);
-    expect(closed.getAllByText('⧗')).toHaveLength(2);
+    expect(closed.getAllByTestId('gate-hourglass')).toHaveLength(2);
+    expect(closed.getAllByTestId('gate-tick')).toHaveLength(1);       // the signature still holds
   });
 });
 
@@ -90,6 +93,32 @@ describe('the time picker offers no day after the posting date (check 6)', () =>
   it('a posting date already passed offers no day at all', () => {
     const r = render(<TimePicker10 value={null} onChange={() => {}} maxDay="2020-01-01" />);
     expect(r.queryAllByTestId(/^day-\d+$/)).toHaveLength(0);
+  });
+});
+
+describe('the walk fix — icons, the truthful button, the call link (20 Sep)', () => {
+  it('the contact button carries a phone symbol and the maps button a navigation one', () => {
+    const r = render(<AddressCard10 branch={{ name: 'Banjara Hills', address: 'Road No. 12', mapsUrl: 'https://maps' }} contact={{ name: 'Ravi Menon', phone: '+919849011223' }} />);
+    expect(r.getByTestId('phone-icon')).toBeTruthy();       // the founder's "mobile call symbol"
+    expect(r.getByTestId('maps-icon')).toBeTruthy();
+    expect(r.getByTestId('call-contact')).toBeTruthy();
+    // no contact, no phone symbol
+    const noContact = render(<AddressCard10 branch={{ name: 'B', address: 'x' }} contact={null} />);
+    expect(noContact.queryByTestId('phone-icon')).toBeNull();
+  });
+
+  it('V1\'s button says what the shoot needs, not "Plan the visit" for ever', () => {
+    expect(C10.openLabel('not_sent', false)).toBe('Plan the visit');
+    expect(C10.openLabel('sent', false)).toBe('Waiting on her answer — open the visit');
+    expect(C10.openLabel('agreed', false)).toBe('The store visit');
+    expect(C10.openLabel('agreed', true)).toBe('The visit time passed — send a new time');
+    expect(C10.openLabel('attended', false)).toBe('Confirm the shoot is done');
+    expect(C10.openLabel('complete', false)).toBe('The store visit');
+  });
+
+  it('the agreed stage says the confirm step is coming, and V13 offers her number', () => {
+    expect(C10.brand.whatHappensNext('Tanvi Suresh')).toBe('Tanvi marks the visit once she has been, and then you confirm it. Nothing moves until she does.');
+    expect(C10.brand.call('Tanvi Suresh')).toBe('Call Tanvi');
   });
 });
 
