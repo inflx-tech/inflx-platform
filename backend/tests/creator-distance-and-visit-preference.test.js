@@ -89,6 +89,22 @@ describe('Store Visit follows her preference (item 3)', () => {
     expect(v.ok).toBe(true);
   });
 
+  it('the set picker\'s batch path agrees: a never-saved creator elsewhere is OK for a Store Visit; only picked cities limit (founder, 20 Sep — the batch loader had kept the old default)', async () => {
+    const hyd = await brand({ city: 'Hyderabad', state: 'Telangana' });
+    const a = await creator({ name: 'Never saved, Guntur' }); await placeCreator(a, 'Guntur');
+    const b = await creator({ name: 'Picked Guntur only' }); await placeCreator(b, 'Guntur');
+    await setCreatorInvite(b.influencerId, { visitCityIds: [await cityId('Guntur')] });
+    const c = await creator({ name: 'Picked Hyderabad' }); await placeCreator(c, 'Vijayawada');
+    await setCreatorInvite(c.influencerId, { visitCityIds: [await cityId('Hyderabad')] });
+    const { rows: [branch] } = await query(`SELECT id FROM brand_branches WHERE brand_id = $1 AND is_main`, [hyd.brandId]);
+    const set = { goal: 'engagement', shoot_mode: 'visit', branch_id: branch.id };
+    const out = await eligibility.canBrandInviteMany({ brandId: hyd.brandId, set, creators: [a, b, c].map(x => ({ influencerId: x.influencerId })) });
+    const byId = Object.fromEntries(out.map(o => [o.influencerId, o]));
+    expect(byId[a.influencerId].ok).toBe(true);
+    expect(byId[b.influencerId]).toMatchObject({ ok: false, reason: 'NOT_MATCHING' });
+    expect(byId[c.influencerId].ok).toBe(true);
+  });
+
   it('her settings read back with an empty list and no defaulted flag', async () => {
     const c = await creator();
     const r = await api.get('/influencers/me/invitation-settings', c.token);

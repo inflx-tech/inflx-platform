@@ -584,19 +584,19 @@ async function loadCreatorInvitationSettingsMany(ids) {
     commissionsBy.get(r.influencer_id).push({ aim: r.aim, category_code: r.category_code, pct: Number(r.pct) });
   }
   const byId = new Map(srows.map(r => [r.influencer_id, r]));
-  const missing = ids.filter(id => !byId.has(id));
-  const cityById = missing.length ? await creatorProfileCityIdMany(missing) : new Map();
 
   const out = new Map();
   for (const id of ids) {
     const row = byId.get(id);
     const min_commissions = commissionsBy.get(id) || [];
     if (!row) {
-      const cityId = cityById.get(id);
+      // creator-distance-and-visit-preference (founder, 19 Sep 2026): never saved = anywhere.
+      // This batch loader kept item 2's own-city default after the single loader lost it, which
+      // is why the set picker still locked a Store Visit to the branch city (founder, 20 Sep).
       out.set(id, {
         ...CREATOR_DEFAULTS, influencer_id: id,
-        visit_city_ids: cityId ? [cityId] : [],
-        visit_cities_defaulted: true, min_commissions, saved: false,
+        visit_city_ids: [],
+        visit_cities_defaulted: false, min_commissions, saved: false,
       });
       continue;
     }

@@ -44,6 +44,12 @@
       "phones": "copy3 sorts/distance labels; DiscoverList meta line with km / Same city; FiltersSheet Sort row (Nearest first default) + Distance row (Anywhere default); InvitationSettings Anywhere value + hint; client validation rule visit-cities-required dropped",
       "tests": "backend creator-distance-and-visit-preference.test.js (5 tests, items 1–3) green; item2-eligibility, item3-find-brands, item5-invitations green; item2-settings-api two assertions re-baselined (defaults empty, empty list not an error); mobile 633/633 (distance.test.js 9 new). Final clean full run 1421 / 1200 / 221 vs baseline 1386 / 1165 / 221 — 0 new failures",
       "note": "Production-impacting; no money. Nothing committed or deployed until the founder's go: run-190 --apply → commit → push → OTA brand → OTA influencer."
+    },
+    "fix_2026_09_20": {
+      "reported": "founder, 20 Sep: on a Vijayawada Store Visit set only Vijayawada creators were selectable although almost no creator had saved visit cities",
+      "cause": "collabEligibility.loadCreatorInvitationSettingsMany (the batch loader the set picker uses through canBrandInviteMany) still applied item 2's never-saved = own-city default; only the single loader had been changed on 19 Sep",
+      "fix": "batch loader returns [] (anywhere) for a never-saved creator; test through canBrandInviteMany with a real branch",
+      "deployed": null
     }
   }
 }

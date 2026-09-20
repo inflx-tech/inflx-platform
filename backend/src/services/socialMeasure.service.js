@@ -72,6 +72,9 @@ async function instagramRun(acc, runType, ctx) {
 async function youtubeRun(acc, runType, ctx) {
   const out = { snapshot: null, posts: [], profileError: null, ceiling: false };
   const url = acc.channel_url;
+  // Founder, 20 Sep 2026: an account from before item 3b can have no channel address; Apify was
+  // being handed an empty URL and answering "invalid-input" four times. Say why, without a call.
+  if (!url) throw new Error('No channel address stored for this YouTube account — ask the creator to re-enter the handle.');
   const since = windowFor(ctx.now).start.toISOString().slice(0, 10);
   if (runType === 'profile') {
     const r = await ctx.call(env.APIFY_YOUTUBE_ACTOR, { startUrls: [{ url }], maxResults: 1, maxResultsShorts: 0, maxResultStreams: 0 });

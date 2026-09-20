@@ -41,6 +41,13 @@
       "admin": "influencers/page.js: shared HandleChange line; ClusterCard header without the grey signed-up-as line; ProfileRow leads with current channels, CHANGED SINCE SIGNUP tag + amber block per V1, Signup profile facts line, Verify & approve; V2 green line with the record-kept suffix; Handle checks rows use the same line. next build exit 0; stubbed Playwright walk of V1/V2 matched the mockups; amber text uses orange-deep for contrast",
       "tests": "creator-handle-change-review.test.js checks 1–6 green (5 tests); item3b-pipeline + admin-creator-review green; backend full run 1416 / 1195 / 221 vs baseline 1386 / 1165 / 221 — 0 new failures",
       "note": "Production-impacting (Render + Vercel on push); no migration, no OTA, no money. Nothing committed until the founder's go."
+    },
+    "fix_2026_09_20": {
+      "reported": "founder, 20 Sep: Somepalli Anusha was verified on 19 Sep but nothing was measured",
+      "cause": "she changed both channels at 09:07 UTC while her account counted as approved, so the new accounts went to waiting_check (Handle checks); Verify at 11:15 confirmed only waiting_approval accounts, so nothing was confirmed and no measurement started. Also her old YouTube row had no channel address and Apify was handed an empty URL four times (invalid-input)",
+      "fix": "onCreatorApproved confirms waiting_approval AND waiting_check current accounts (resets failure_count/last_error); youtubeRun refuses to call Apify without a channel address and records the reason. Two tests added",
+      "deployed": null,
+      "founder_step": "after the push, press Verify is not possible again (she is verified) — instead confirm her two rows in Influencers → Handle checks, OR I can run onCreatorApproved for her once on production; measuring starts within the hour either way"
     }
   }
 }

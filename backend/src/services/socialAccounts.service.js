@@ -80,11 +80,15 @@ async function ensureForRegistration(influencerId, handles, tx = db) {
 
 /** Admin approved the creator: every waiting handle is hers, and its first full run is due now. */
 async function onCreatorApproved(influencerId, adminId, tx = db) {
+  // creator-handle-change-review (founder, 20 Sep 2026): admin verified exactly the channels
+  // she has NOW, whichever queue they sat in — a change made while her account counted as
+  // approved lands in waiting_check, and Anusha's two channels were left there unmeasured.
+  // Both waiting states are confirmed here; a channel already measuring is untouched.
   const { rows } = await tx.query(
     `UPDATE creator_social_accounts
         SET state = 'measuring', ownership = 'confirmed', ownership_by = $2, ownership_at = now(),
-            profile_due_at = now(), posts_due_at = now(), retry_at = NULL, updated_at = now()
-      WHERE influencer_id = $1 AND replaced_at IS NULL AND state = 'waiting_approval'
+            profile_due_at = now(), posts_due_at = now(), retry_at = NULL, failure_count = 0, last_error = NULL, updated_at = now()
+      WHERE influencer_id = $1 AND replaced_at IS NULL AND state IN ('waiting_approval', 'waiting_check')
       RETURNING *`, [influencerId, adminId || null]);
   return rows;
 }

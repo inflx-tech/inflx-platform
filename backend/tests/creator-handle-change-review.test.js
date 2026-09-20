@@ -99,6 +99,41 @@ describe('verify (checks 3, 4, 5)', () => {
   });
 });
 
+describe('verify confirms the channels admin looked at, whatever queue they sat in (founder, 20 Sep — Anusha)', () => {
+  it('channels left in waiting_check are confirmed and queued for measurement by Verify', async () => {
+    const A = `a_${rnd()}`, B = `b_${rnd()}`, Y = `y_${rnd()}`;
+    const c = await pendingCreator({ ig: A });
+    // the change was made while her account counted as approved → waiting_check, not waiting_approval
+    await query(`UPDATE users SET status = 'approved' WHERE id = $1`, [c.userId]);
+    expect((await api.patch('/influencers/me', c.token, { instagram_handle: B, youtube_handle: `@${Y}` })).status).toBe(200);
+    await query(`UPDATE users SET status = 'pending' WHERE id = $1`, [c.userId]);
+    expect((await state(c.influencerId)).filter(a => !a.replaced_at).map(a => a.state)).toEqual(['waiting_check', 'waiting_check']);
+    const admin = await createAdminUser('superadmin');
+    const r = await api.post(`/admin/creator-verifications/${c.profileId}/verify`, admin.token);
+    expect(r.status).toBe(200);
+    expect((await state(c.influencerId)).filter(a => !a.replaced_at).map(a => [a.platform, a.state, a.ownership]))
+      .toEqual([['instagram', 'measuring', 'confirmed'], ['youtube', 'measuring', 'confirmed']]);
+    expect((await query(`SELECT count(*)::int AS n FROM creator_social_accounts WHERE influencer_id = $1 AND replaced_at IS NULL AND state = 'waiting_check'`, [c.influencerId])).rows[0].n).toBe(0);
+  });
+
+  it('a YouTube account with no stored channel address fails with a reason and no Apify call', async () => {
+    const measure = require('../src/services/socialMeasure.service');
+    const A = `a_${rnd()}`, Y = `y_${rnd()}`;
+    const c = await pendingCreator({ ig: A, yt: `@${Y}` });
+    const admin = await createAdminUser('superadmin');
+    expect((await api.post(`/admin/creator-verifications/${c.profileId}/verify`, admin.token)).status).toBe(200);
+    const { rows: [yt] } = await query(`SELECT id FROM creator_social_accounts WHERE influencer_id = $1 AND platform = 'youtube' AND replaced_at IS NULL`, [c.influencerId]);
+    await query(`UPDATE creator_social_accounts SET channel_url = NULL WHERE id = $1`, [yt.id]);
+    let called = 0; apify.setMockResolver(() => { called += 1; return []; });
+    const out = await measure.runAccount(yt.id, 'full', 'schedule');
+    expect(out.result).toBe('technical_failure');
+    expect(called).toBe(0);
+    const { rows: [run] } = await query(`SELECT error FROM creator_social_runs WHERE account_id = $1 ORDER BY started_at DESC LIMIT 1`, [yt.id]);
+    expect(run.error).toBe('No channel address stored for this YouTube account — ask the creator to re-enter the handle.');
+    apify.setMockResolver(null);
+  });
+});
+
 describe('handle checks (check 6)', () => {
   it('an approved creator who changes a handle still lands on Handle checks with old_handle', async () => {
     const A = `a_${rnd()}`, B = `b_${rnd()}`;
