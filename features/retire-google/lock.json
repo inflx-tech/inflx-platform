@@ -1,7 +1,7 @@
 {
   "feature": "retire-google",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat 20 Sep 2026 — \"go to 5 and 6\" of Docs/NEXT_ROUND_2026-09-19.md, which he reviewed on 19 Sep)",
   "approved_at": "2026-09-20T00:00:00+05:30",
@@ -23,10 +23,21 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
-    "deployed_to_production": null,
+    "deployed_to_production": {
+      "at": "2026-09-20",
+      "by": "founder go (\"pls push\")",
+      "commit": "5e26387",
+      "migration": "none",
+      "ota": "none",
+      "render": "proved 08:47:58 IST: GET /v1/internal/geocode-health went 200 → 404, and /v1/follower/reverse-geocode?lat=16.51&lng=80.65 changed from Google's \"Christurajupuram\" to our own \"Vijayawada, Andhra Pradesh, km 0\" — the live follower app's cold-start call now answers without Google",
+      "vercel": "inflx.in redeployed on push (registration page without Google)",
+      "money": "NO MONEY MOVED.",
+      "founder_todo": "remove GOOGLE_PLACES_API_KEY and GOOGLE_GEOCODING_API_KEY from Render env; nothing reads them",
+      "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false)."
+    },
     "build": {
       "built_at": "2026-09-20T00:00:00+05:30",
-      "committed": false,
+      "committed": true,
       "server": "geocoding.controller.js, geocoding.service.js, places.service.js deleted; /internal/geocode-maps-url, /internal/geocode-health, /internal/places-health, /follower/geocode, /follower/places/autocomplete, /follower/places/details removed; referenceLists gains nearestCity(lat,lng) + cityCentreForName(name), loses resolvePlace/findOrAddCity/rate limiting; /follower/reverse-geocode, follower home sections and the stored follower location answer from the nearest offered city; follower addresses typed without a pin take the typed city centre; test helpers lose the Google mock",
       "website": "login/page.js register step: street, pincode, State + Nearest major city selects from /reference/states?offered=1, submits state_id/city_id; search/Maps-link/manual pills, coords, referral box, INDIAN_STATES removed; lib/api.js geoApi removed; settings/profile: four-part main-branch address block (pre-filled from branches[], saved via PATCH /brands/me), google_maps_url gone; DynamicFieldRenderer google_maps_link → plain URL input; GoogleMapsLinkField.js deleted. next build exit 0; auth.spec 1 passed; stubbed browser smoke: payload exactly the seven fields, no /places or geocode requests",
       "tests": "retire-google.test.js 4/4 green; item3-branches, item3-profile, item3-brand-overview, creator-distance green without the Google mock. Full backend run 1425 / 1207 / 218 vs baseline 1386 / 1165 / 221 — 0 new failures; 4 follower-store address tests that used to fail on the Google lookup now PASS (address creation no longer needs Google). The 8 remaining follower-store reds (public store/category pages) are in the baseline.",
