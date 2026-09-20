@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Website Address Without Google</title>
+<style>
+:root{color-scheme:light;--page:#EEEEEA;--bg:#fff;--border:#E4E4E7;--ink:#18181B;--ink2:#52525B;--ink3:#71717A;--yellow:#FFC107;--sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px}h1,h2{margin:0;letter-spacing:-.015em}h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}h2{font-size:24px;font-weight:800}p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}.lede{font-size:16px;color:var(--ink2);max-width:70ch}
+header.top{padding-block:34px 14px;display:grid;gap:10px;border-bottom:1px solid var(--border)}section{padding-block:34px 6px;display:grid;gap:16px}
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:30px 22px;align-items:start}.shot{display:grid;gap:8px}.cap{display:grid;gap:3px;max-width:460px}.cap b{font-size:13.5px}.cap span{font-size:12.5px;color:var(--ink2)}.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.desk{width:100%;max-width:460px;background:var(--bg);border:1px solid var(--border);border-radius:13px;overflow:hidden;font-size:12.5px}.deskbar{background:#F6F6F3;border-bottom:1px solid var(--border);padding:8px 12px;font-size:11px;font-family:var(--mono);color:var(--ink2)}.deskbody{padding:16px;display:grid;gap:12px}
+.sec{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}.sec span{width:18px;height:18px;border-radius:99px;background:var(--yellow);display:grid;place-items:center;font-size:10px}
+.lbl{font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:4px}.inp{border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:13px;min-height:38px;display:flex;align-items:center;color:var(--ink)}.inp.ph{color:#A1A1AA}.inp.sel::after{content:"▾";margin-left:auto;color:#A1A1AA}.inp.dis{background:#FAFAFA;color:#A1A1AA}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hint{font-size:11px;color:var(--ink3);margin-top:4px}.btn{border-radius:10px;padding:11px;text-align:center;font-weight:800;font-size:13px;background:var(--ink);color:#fff}.gone{font-size:11.5px;color:#B91C1C;background:#FDEEE9;border-radius:8px;padding:8px 10px}
+.foot{padding-block:44px 60px;color:var(--ink2);font-size:13px;border-top:1px solid var(--border);margin-top:34px}
+</style></head>
+<body><div class="wrap">
+<header class="top"><p class="eyebrow">features/retire-google · mockups v1 · 20 Sep 2026</p><h1>The website address, without Google</h1><p class="lede">The same four parts the phones take. Nothing else changes on the page.</p></header>
+<section><div class="flow">
+  <div class="shot">
+    <div class="desk"><div class="deskbar">inflx.in/login · Set up your business · section 2</div><div class="deskbody">
+      <div class="sec"><span>2</span> Location</div>
+      <div class="gone">Removed: 🔍 Search place · 🔗 Maps link · ✍️ Manual pills, the search box, the Maps-link box, "Location captured", the Referral code box.</div>
+      <div><div class="lbl">Business address *</div><div class="inp">Shop 12, Road No. 4, Banjara Hills</div></div>
+      <div class="two"><div><div class="lbl">Pincode *</div><div class="inp">500034</div></div><div><div class="lbl">State *</div><div class="inp sel">Telangana</div></div></div>
+      <div><div class="lbl">Your nearest major city *</div><div class="inp sel">Hyderabad</div><p class="hint">The closest big city to you — not your exact town or area.</p></div>
+      <div class="btn">Create business account</div>
+    </div></div>
+    <div class="cap"><b>W1 · Website registration</b><span>State first, then the city list narrows to it; the city select reads "Pick a state first" until a state is chosen.</span><i>POST /brands/register { …, state_id, city_id }</i></div>
+  </div>
+  <div class="shot">
+    <div class="desk"><div class="deskbar">inflx.in/dashboard/settings/profile · Main branch address</div><div class="deskbody">
+      <div class="sec"><span>📍</span> Main branch address</div>
+      <div class="gone">Removed: the Google Maps link field.</div>
+      <div><div class="lbl">Business address</div><div class="inp">Shop 12, Road No. 4, Banjara Hills</div></div>
+      <div class="two"><div><div class="lbl">Pincode</div><div class="inp">500034</div></div><div><div class="lbl">State</div><div class="inp sel">Telangana</div></div></div>
+      <div><div class="lbl">Nearest major city</div><div class="inp sel">Hyderabad</div></div>
+      <div class="hint">Branches are managed in the INFLX Brand app.</div>
+      <div class="btn">Save</div>
+    </div></div>
+    <div class="cap"><b>W2 · Website profile</b><span>Pre-filled from the main branch; saving rewrites it through the same door the phone uses.</span><i>PATCH /brands/me { address_line, pincode, state_id, city_id }</i></div>
+  </div>
+</div></section>
+<div class="foot"><p><b>features/retire-google</b> · mockups v1 · items 5 and 6 of Docs/NEXT_ROUND_2026-09-19.md, founder go 20 Sep ("go to 5 and 6")</p></div>
+</div></body></html>

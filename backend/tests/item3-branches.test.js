@@ -8,7 +8,7 @@
  */
 
 const { truncateAll } = require('./helpers/db');
-const { query, resetReference, brand, mockPlaces, PLACE, api } = require('./helpers/item3');
+const { query, resetReference, brand, api } = require('./helpers/item3');
 
 beforeEach(async () => { await truncateAll(); await resetReference(); });
 afterEach(() => jest.restoreAllMocks());

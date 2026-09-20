@@ -200,18 +200,6 @@ export const listingApi = {
   },
 };
 
-// Location capture for registration (contract: brand-register-location-picker).
-// Reuses the follower Places proxy + the restaurant-wizard maps resolver.
-export const geoApi = {
-  placesAutocomplete: (q, session) =>
-    api.get(`/follower/places/autocomplete?q=${encodeURIComponent(q)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
-  placeDetails: (placeId, session) =>
-    api.get(`/follower/places/details?place_id=${encodeURIComponent(placeId)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
-  geocodeMapsUrl: (google_maps_url, name, city) =>
-    api.post('/internal/geocode-maps-url', { google_maps_url, name, city }),
-};
-
-
 /**
  * Which role is this door? Derived from where the page is being served, because that
  * is the one thing the login screen always knows for certain.

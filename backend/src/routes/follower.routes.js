@@ -27,13 +27,9 @@ router.delete('/follows/:influencer_id', ...followerAuth, ctrl.unfollowInfluence
 
 // ── Location (auth required) — device/selected coords + reverse-geocoded area ──
 router.post('/location', ...followerAuth, ctrl.updateLocation);
-// Public reverse-geocode (location switcher "current location" label).
+// Public "where am I" → the nearest offered city (retire-google: no Google; the live follower
+// app calls this on cold start). /geocode and /places/* are retired.
 router.get('/reverse-geocode', authenticateOptional, ctrl.reverseGeocode);
-// Public forward-geocode (verify/locate a typed address before save).
-router.get('/geocode', authenticateOptional, ctrl.geocodeQuery);
-// Places Autocomplete + Details proxy (Swiggy-style area search).
-router.get('/places/autocomplete', authenticateOptional, ctrl.placesAutocomplete);
-router.get('/places/details', authenticateOptional, ctrl.placeDetails);
 
 // ── Addresses (auth required) ────────────────────────────────────────────────
 router.post('/addresses',     ...followerAuth, ctrl.createAddress);

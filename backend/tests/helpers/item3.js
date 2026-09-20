@@ -4,9 +4,8 @@
  * Item 3 — shared fixtures for the discovery / profile / groups suites.
  * Contract: features/item3-discovery-profiles-groups
  *
- * Everything here goes through the real API or plain SQL against the test database. Google
- * is the one thing mocked: `mockPlaces({...})` makes places.details answer from a fixture so
- * a test can hand the server a place id and check what the server does with the answer.
+ * Everything here goes through the real API or plain SQL against the test database. Nothing is
+ * mocked: Google left the platform (retire-google, 20 Sep 2026).
  */
 
 const request = require('supertest');
@@ -14,7 +13,6 @@ const app = require('../../src/app');
 const { query } = require('./db');
 const { createBrandUser, createInfluencerUser, registerBrand, registerInfluencer } = require('./factories');
 const ref = require('../../src/services/referenceLists.service');
-const places = require('../../src/services/places.service');
 
 const auth = (t) => ({ Authorization: `Bearer ${t}` });
 const rnd = () => Math.random().toString(36).slice(2, 8);
@@ -26,7 +24,6 @@ async function resetReference() {
   // registration-and-profile: niches admin adds through the Other queue (sort > 20) are not seed rows
   await query(`DELETE FROM ref_creator_niches WHERE sort > 20 AND code <> 'other'`);
   ref.invalidate();
-  ref.resetResolveState();
 }
 
 async function brand(over = {}) {
@@ -108,17 +105,6 @@ async function product(brandId, over = {}) {
   return p.id;
 }
 
-/** Make Google answer from a fixture: { [placeId]: detailsObject | null }. Returns the spy. */
-function mockPlaces(fixture) {
-  return jest.spyOn(places, 'details').mockImplementation(async (placeId) => (Object.prototype.hasOwnProperty.call(fixture, placeId) ? fixture[placeId] : null));
-}
-const PLACE = {
-  hyd: { lat: 17.41, lng: 78.44, formatted_address: 'Road No 12, Banjara Hills, Hyderabad, Telangana 500034, India', name: 'Store', area_name: 'Banjara Hills', city: 'Hyderabad', state: 'Telangana', pincode: '500034' },
-  delhi: { lat: 28.63, lng: 77.22, formatted_address: 'Connaught Place, New Delhi, Delhi 110001, India', name: 'Store', area_name: 'Connaught Place', city: 'New Delhi', state: 'NCT of Delhi', pincode: '110001' },
-  newCity: { lat: 15.5, lng: 80.05, formatted_address: 'Main Rd, Ongolu Town, Andhra Pradesh 523001, India', name: 'Store', area_name: 'Ongolu Town', city: 'Ongolu Town', state: 'Andhra Pradesh', pincode: '523001' },
-  unknownState: { lat: 1.3, lng: 103.8, formatted_address: 'Orchard Rd, Singapore', name: 'Store', area_name: 'Orchard', city: 'Singapore', state: 'Central Region', pincode: '238801' },
-};
-
 const api = {
   get: (path, token) => request(app).get(`/v1${path}`).set(auth(token)),
   post: (path, token, body) => request(app).post(`/v1${path}`).set(auth(token)).send(body || {}),
@@ -127,4 +113,4 @@ const api = {
   del: (path, token) => request(app).delete(`/v1${path}`).set(auth(token)),
 };
 
-module.exports = { app, request, auth, query, ref, resetReference, brand, creator, setBrandPitch, setCreatorInvite, block, collab, product, mockPlaces, PLACE, api, rnd };
+module.exports = { app, request, auth, query, ref, resetReference, brand, creator, setBrandPitch, setCreatorInvite, block, collab, product, api, rnd };

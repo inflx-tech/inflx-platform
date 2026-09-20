@@ -7,7 +7,7 @@
  */
 
 const { truncateAll } = require('./helpers/db');
-const { query, resetReference, brand, creator, mockPlaces, PLACE, api } = require('./helpers/item3');
+const { query, resetReference, brand, creator, api } = require('./helpers/item3');
 const storage = require('../src/services/storage.service');
 
 beforeEach(async () => { await truncateAll(); await resetReference(); });
@@ -105,7 +105,6 @@ describe('A8 — creator profile info', () => {
   });
 
   it('city through the two pickers: resolves to the canonical row, keeps the typed columns in step; Google is gone (registration-and-profile §1)', async () => {
-    mockPlaces({ d: PLACE.delhi });   // never consulted any more
     const c = await creator();
     const { rows: [kochi] } = await query(`SELECT c.id AS city_id, c.state_id FROM ref_cities c JOIN ref_states s ON s.id = c.state_id WHERE s.name = 'Kerala' AND c.name = 'Kochi'`);
     let r = await api.patch('/influencers/me', c.token, { state_id: kochi.state_id, city_id: kochi.city_id });

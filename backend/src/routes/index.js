@@ -89,9 +89,6 @@ const listingRoutes         = require('./listing.routes');
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional, authenticate } = require('../middleware/auth');
 
-// Wave 1 (Dining) — geocoding for the restaurant listing wizard's
-// google_maps_link field type
-const geocodingCtrl     = require('../controllers/geocoding.controller');
 const mediaAssetCtrl    = require('../controllers/mediaAsset.controller');
 
 // Phase A6 — public subscription tier catalog (no auth)
@@ -246,12 +243,8 @@ router.get('/category/:super_category/stores',    authenticateOptional, follower
 // ── Phase A6 — Subscription tier catalog (public read; admin edits via /admin/pricing/tiers in Phase A7)
 router.get('/subscription-tiers', subscriptionCtrl.listTiers);
 
-// ── Wave 1 (Dining) — geocoding for restaurant listing wizard ────────────────
-// Authenticated: any logged-in user (brand on web). Mock mode in dev returns
-// fixed Vijayawada coords; prod hits Google Geocoding API.
-router.post('/internal/geocode-maps-url',         authenticate, geocodingCtrl.geocodeMapsUrl);
-router.get('/internal/geocode-health',            geocodingCtrl.geocodeHealth);
-router.get('/internal/places-health',             geocodingCtrl.placesHealth);
+// ── retire-google (20 Sep 2026): /internal/geocode-maps-url, geocode-health and places-health
+// are gone with the Google key. Nothing live for fashion depended on them.
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);

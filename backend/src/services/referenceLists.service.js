@@ -17,7 +17,6 @@
  */
 
 const db = require('../config/db');
-const places = require('./places.service');
 
 const CACHE_MS = 60_000;
 const cache = new Map();   // key -> { at, value }
@@ -154,28 +153,13 @@ async function citiesByIds(ids) {
   return out;
 }
 
-// ── Item 3: Google place → canonical state + city, adding the CITY when new ──
+// ── retire-google (19–20 Sep 2026): no Google service anywhere ───────────────
 //
-// States are never added (founder Q9). A state is found by exact name, then through
-// ref_state_aliases (Google spellings such as "NCT of Delhi"). A city is found by its
-// normalised name inside that state; when absent it is INSERTED with source='google'
-// under UNIQUE (state_id, name_norm), so two users adding the same city at the same
-// moment end with one row and only the first is told "new on INFLX".
-
-const STATE_UNKNOWN = 'STATE_UNKNOWN';
-const PLACE_NOT_FOUND = 'PLACE_NOT_FOUND';
-const resolveCache = new Map();          // place_id -> { at, value }   (10 minutes, founder decision 7)
-const RESOLVE_CACHE_MS = 10 * 60_000;
-const rateBuckets = new Map();           // userId -> [timestamps]     (60 per minute per user)
-
-function rateLimited(userId) {
-  if (!userId) return false;
-  const now = Date.now();
-  const arr = (rateBuckets.get(userId) || []).filter(t => now - t < 60_000);
-  arr.push(now);
-  rateBuckets.set(userId, arr);
-  return arr.length > 60;
-}
+// A state is found by exact name, then through ref_state_aliases (kept for typed names from
+// older bundles and the website). Cities are never added at runtime any more: the list is the
+// fixed offered set (registration-and-profile §1.4). A phone's coordinates are turned into a
+// city by picking the nearest offered city centre (migration 190) — this replaces Google
+// reverse geocoding for the follower app's "current location" label and the feed's city.
 
 async function findStateId(rawState) {
   const n = norm(rawState);
@@ -186,65 +170,33 @@ async function findStateId(rawState) {
   return al[0] ? al[0].state_id : null;
 }
 
-/** Find-or-add a city in a state. Returns { id, name, added }. */
-async function findOrAddCity(stateId, rawCity) {
-  const n = norm(rawCity);
-  if (!n) return null;
-  const { rows } = await db.query(`SELECT id, name FROM ref_cities WHERE state_id = $1 AND name_norm = $2`, [stateId, n]);
-  if (rows[0]) return { id: rows[0].id, name: rows[0].name, added: false };
-  const display = String(rawCity).trim();
-  const { rows: ins } = await db.query(
-    `INSERT INTO ref_cities (state_id, name, name_norm, sort, source)
-     VALUES ($1, $2, $3, 999, 'google')
-     ON CONFLICT (state_id, name_norm) DO NOTHING
-     RETURNING id, name`,
-    [stateId, display, n]
-  );
-  invalidate();
-  if (ins[0]) return { id: ins[0].id, name: ins[0].name, added: true };
-  const { rows: again } = await db.query(`SELECT id, name FROM ref_cities WHERE state_id = $1 AND name_norm = $2`, [stateId, n]);
-  return again[0] ? { id: again[0].id, name: again[0].name, added: false } : null;
-}
-
 /**
- * Resolve a Google place id into an address the platform can store.
- * @returns {{ placeId, formattedAddress, pincode, lat, lng, state:{id,name}, city:{id,name,added} }}
- * @throws Error with .code = PLACE_NOT_FOUND | STATE_UNKNOWN | RATE_LIMITED
+ * The nearest offered city to a coordinate, with the distance, or null when the point is
+ * absurdly far from every offered city (more than maxKm, default 300) or the coordinates
+ * are not numbers. { id, name, stateId, stateName, lat, lng, km }.
  */
-async function resolvePlace(placeId, { session, userId } = {}) {
-  if (!placeId) { const e = new Error('place_id is required'); e.code = PLACE_NOT_FOUND; throw e; }
-  if (rateLimited(userId)) { const e = new Error('Too many address lookups. Try again in a minute.'); e.code = 'RATE_LIMITED'; throw e; }
-  const hit = resolveCache.get(placeId);
-  let d = hit && Date.now() - hit.at < RESOLVE_CACHE_MS ? hit.value : null;
-  if (!d) {
-    d = await places.details(placeId, { sessiontoken: session });
-    if (!d) { const e = new Error('place not found'); e.code = PLACE_NOT_FOUND; throw e; }
-    resolveCache.set(placeId, { at: Date.now(), value: d });
-  }
-  const stateId = await findStateId(d.state);
-  if (!stateId) {
-    await db.query(`INSERT INTO ref_unknown_states (raw_state, raw_city, place_id, user_id) VALUES ($1,$2,$3,$4)`,
-      [d.state || null, d.city || null, placeId, userId || null]).catch(() => {});
-    console.warn('[places] STATE_UNKNOWN', JSON.stringify({ state: d.state, city: d.city, placeId }));
-    const e = new Error("We couldn't match this address to a state. Try a nearby address."); e.code = STATE_UNKNOWN; throw e;
-  }
-  const { rows: st } = await db.query(`SELECT id, name FROM ref_states WHERE id = $1`, [stateId]);
-  // Google's locality is the city; when absent fall back to the area name so a village
-  // address still lands somewhere sensible (the founder can review source=google rows).
-  const city = await findOrAddCity(stateId, d.city || d.area_name);
-  return {
-    placeId,
-    formattedAddress: d.formatted_address || null,
-    pincode: d.pincode || null,
-    lat: d.lat == null ? null : d.lat,
-    lng: d.lng == null ? null : d.lng,
-    state: { id: st[0].id, name: st[0].name },
-    city: city ? { id: city.id, name: city.name, added: city.added } : null,
-  };
+async function nearestCity(lat, lng, { maxKm = 300 } = {}) {
+  const la = Number(lat), ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+  const { rows } = await db.query(
+    `SELECT c.id, c.name, c.state_id, s.name AS state_name, c.lat, c.lng,
+            round(6371 * acos(least(1.0, cos(radians($1)) * cos(radians(c.lat)) * cos(radians(c.lng) - radians($2))
+                                       + sin(radians($1)) * sin(radians(c.lat)))))::int AS km
+       FROM ref_cities c JOIN ref_states s ON s.id = c.state_id
+      WHERE c.is_offered AND c.lat IS NOT NULL AND c.lng IS NOT NULL
+      ORDER BY km ASC, c.sort ASC LIMIT 1`, [la, ln]);
+  const r = rows[0];
+  if (!r || r.km > maxKm) return null;
+  return { id: r.id, name: r.name, stateId: r.state_id, stateName: r.state_name, lat: Number(r.lat), lng: Number(r.lng), km: r.km };
 }
 
-/** Test seam: forget cached place details and rate buckets. */
-function resetResolveState() { resolveCache.clear(); rateBuckets.clear(); }
+/** The centre of a city typed by name (any state), or null. For addresses typed without a pin. */
+async function cityCentreForName(name) {
+  const n = norm(name);
+  if (!n) return null;
+  const { rows } = await db.query(`SELECT id, name, lat, lng FROM ref_cities WHERE name_norm = $1 AND lat IS NOT NULL ORDER BY is_offered DESC, id LIMIT 1`, [n]);
+  return rows[0] ? { id: rows[0].id, name: rows[0].name, lat: Number(rows[0].lat), lng: Number(rows[0].lng) } : null;
+}
 
 /**
  * registration-and-profile: resolve a picked state_id + city_id pair to names, or null when
@@ -274,8 +226,8 @@ async function unknownCityIds(ids) {
 }
 
 module.exports = {
-  STATE_UNKNOWN, PLACE_NOT_FOUND,
-  resolvePlace, findOrAddCity, findStateId, citiesByIds, resetResolveState,
+  findStateId, citiesByIds,
+  nearestCity, cityCentreForName,
   resolveStateCity, resolveStateCityNames,
   creatorNiches,
   languages,

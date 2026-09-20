@@ -1,0 +1,37 @@
+{
+  "feature": "retire-google",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 20 Sep 2026 — \"go to 5 and 6\" of Docs/NEXT_ROUND_2026-09-19.md, which he reviewed on 19 Sep)",
+  "approved_at": "2026-09-20T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder go of 20 Sep on the listed item (\"Website registration takes the four-part address; the Maps-link boxes on registration, profile and listing go\"); drawn as W1/W2 from that line",
+  "mockup_locked_at": "2026-09-20T00:00:00+05:30",
+  "notes": "Items 5 and 6 of the 19 Sep round. Item 4 (the follower app's location sheet) deferred by the founder to the follower-app redesign; its server half — nearest offered city from our own coordinates — lands here so the key can go. Survey 20 Sep: the LIVE follower app (profile-only) still mounts LocationProvider and calls GET /follower/reverse-geocode on cold start when GPS is allowed and no saved location exists, so that route stays and answers from migration 190's coordinates; /follower/geocode and /follower/places/* were called only by the unrendered LocationSheet and the website registration page; /internal/geocode-maps-url only by the website's Maps-link boxes. Nothing live for fashion depended on a Google API.",
+  "sequence": {
+    "1_spec_locked": true,
+    "2_mockups_drawn": true,
+    "3_mockups_locked": true,
+    "4_build": true
+  },
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deployed_to_production": null,
+    "build": {
+      "built_at": "2026-09-20T00:00:00+05:30",
+      "committed": false,
+      "server": "geocoding.controller.js, geocoding.service.js, places.service.js deleted; /internal/geocode-maps-url, /internal/geocode-health, /internal/places-health, /follower/geocode, /follower/places/autocomplete, /follower/places/details removed; referenceLists gains nearestCity(lat,lng) + cityCentreForName(name), loses resolvePlace/findOrAddCity/rate limiting; /follower/reverse-geocode, follower home sections and the stored follower location answer from the nearest offered city; follower addresses typed without a pin take the typed city centre; test helpers lose the Google mock",
+      "website": "login/page.js register step: street, pincode, State + Nearest major city selects from /reference/states?offered=1, submits state_id/city_id; search/Maps-link/manual pills, coords, referral box, INDIAN_STATES removed; lib/api.js geoApi removed; settings/profile: four-part main-branch address block (pre-filled from branches[], saved via PATCH /brands/me), google_maps_url gone; DynamicFieldRenderer google_maps_link → plain URL input; GoogleMapsLinkField.js deleted. next build exit 0; auth.spec 1 passed; stubbed browser smoke: payload exactly the seven fields, no /places or geocode requests",
+      "tests": "retire-google.test.js 4/4 green; item3-branches, item3-profile, item3-brand-overview, creator-distance green without the Google mock. Full backend run 1425 / 1207 / 218 vs baseline 1386 / 1165 / 221 — 0 new failures; 4 follower-store address tests that used to fail on the Google lookup now PASS (address creation no longer needs Google). The 8 remaining follower-store reds (public store/category pages) are in the baseline.",
+      "founder_todo": "after the push: remove GOOGLE_PLACES_API_KEY and GOOGLE_GEOCODING_API_KEY from Render (nothing reads them); optionally disable the key in the Google console",
+      "note": "Production-impacting (Render + Vercel on push); no migration, no OTA, no money. Nothing committed until the founder's go."
+    }
+  }
+}

@@ -13,6 +13,11 @@ APIs leaving the platform. Each item becomes its own contract with the usual loc
 | 5 | **Website Google removal** | Registration on the website takes the same four-part address as the phones (place search and Maps-link box removed); the profile and listing pages lose the Maps-link resolver. | brand website | with the website re-skin, or on its own if you want it sooner |
 | 6 | **Retire the Google key** | After 4 and 5: the Places and Geocoding services, their routes and the key are removed. Free Maps links ("Open in Maps") and device location stay. | nobody | none |
 
+## Status (20 Sep 2026)
+- Items 1–3: LIVE 19 Sep (contract creator-distance-and-visit-preference).
+- Item 4: DEFERRED by the founder to the follower-app redesign ("we will take care while we start designing followers app"); its server half (nearest offered city from our coordinates, no Google) shipped with items 5+6 so the key could go.
+- Items 5+6: contract retire-google, founder go 20 Sep ("go to 5 and 6").
+
 ## Order proposed
 1 → 2 → 3 in one push (they share the coordinates), then 4, then 5 and 6 together.
 

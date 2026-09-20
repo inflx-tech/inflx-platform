@@ -3,7 +3,6 @@
 import TeamMemberListEditor from './TeamMemberListEditor';
 import WeeklyScheduleEditor from './WeeklyScheduleEditor';
 import VariantMatrixEditor from './VariantMatrixEditor';
-import GoogleMapsLinkField from './GoogleMapsLinkField';
 import ImageField from './ImageField';
 
 /**
@@ -24,8 +23,8 @@ import ImageField from './ImageField';
  *     free-text "string" type that DynamicFieldRenderer was aliasing to text)
  *
  * Wave 1 — Dining refresh (restaurant.json):
- *   - google_maps_link (Verify button → /v1/internal/geocode-maps-url →
- *     populates lat/lng/locality/formatted_address via onMultiChange)
+ *   - google_maps_link (a plain URL box since item 5 of NEXT_ROUND_2026-09-19 —
+ *     the Verify → geocode resolver is gone with the Google key)
  *   - image      (single, dropzone + GalleryPicker, optional cover badge)
  *   - image[]    (gallery, multi-pick + reorder + min/max)
  *
@@ -35,10 +34,9 @@ import ImageField from './ImageField';
  *   - field:         field def from schema (type, key, label, etc.)
  *   - value:         current value (single or multi shape per type)
  *   - onChange:      (key, value) => void
- *   - onMultiChange: (updates: {key: value, ...}) => void — used by field
- *                    types that need to write multiple keys at once
- *                    (e.g. google_maps_link writes url + lat/lng/locality).
- *                    Optional — falls back to repeated onChange when absent.
+ *   - onMultiChange: (updates: {key: value, ...}) => void — for field types
+ *                    that need to write multiple keys at once. Optional; no
+ *                    built-in type uses it today.
  *   - error:         optional error string
  */
 
@@ -76,36 +74,15 @@ export default function DynamicFieldRenderer({ field, value, onChange, onMultiCh
     );
   }
 
-  // ── google_maps_link (Wave 1 Dining) ───────────────────────────────────────
-  // Brand pastes a Google Maps share URL → click Verify → backend extracts
-  // lat/lng + reverse-geocodes locality. Component writes the URL via
-  // onChange(field.key, url) and the derived fields via onMultiChange when
-  // available (so wizardState picks up { lat, lng, locality, formatted_address,
-  // place_id, city } in one render cycle).
+  // ── google_maps_link ───────────────────────────────────────────────────────
+  // Item 5 (NEXT_ROUND_2026-09-19): the Verify button and the geocode resolver
+  // behind it are gone with the Google key. The retired restaurant schema still
+  // declares this type, so it renders as a plain URL box — the link is stored,
+  // nothing is derived from it.
   if (field.type === 'google_maps_link') {
     return (
-      <GoogleMapsLinkField
-        field={field}
-        value={value}
-        onChange={(url) => onChange(field.key, url)}
-        onVerified={(geo) => {
-          // Push all derived fields onto wizardState
-          const updates = { [field.key]: geo.input_url || value };
-          if (geo.lat != null)              updates.lat = geo.lat;
-          if (geo.lng != null)              updates.lng = geo.lng;
-          if (geo.locality)                 updates.locality = geo.locality;
-          if (geo.formatted_address)        updates.formatted_address = geo.formatted_address;
-          if (geo.place_id)                 updates.place_id = geo.place_id;
-          if (geo.city)                     updates.city = geo.city;
-          if (typeof onMultiChange === 'function') {
-            onMultiChange(updates);
-          } else {
-            // Fallback — write each key one at a time
-            for (const [k, v] of Object.entries(updates)) onChange(k, v);
-          }
-        }}
-        error={error}
-      />
+      <input type="url" value={value || ''} onChange={e => onChange(field.key, e.target.value)}
+        placeholder={field.placeholder || 'https://maps.app.goo.gl/…'} className={`${base} ${borderCls}`} />
     );
   }
 

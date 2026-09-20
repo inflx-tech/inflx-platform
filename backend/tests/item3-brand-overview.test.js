@@ -8,7 +8,7 @@
  */
 
 const { truncateAll } = require('./helpers/db');
-const { query, resetReference, brand, creator, setBrandPitch, product, mockPlaces, PLACE, api } = require('./helpers/item3');
+const { query, resetReference, brand, creator, setBrandPitch, product, api } = require('./helpers/item3');
 
 beforeEach(async () => { await truncateAll(); await resetReference(); });
 afterEach(() => jest.restoreAllMocks());
@@ -17,7 +17,6 @@ const LEAK = /address_line|formatted_address|"pincode"|gstin|"phone"|login_phone
 
 describe('O1 — /brands/:id/public', () => {
   it('returns the overview fields and nothing private (check 26)', async () => {
-    mockPlaces({ hyd: PLACE.hyd });
     const b = await brand({ business_name: 'Urban Threads', sub_categories: ['WOMEN', 'KIDS'], city: 'Hyderabad', state: 'Telangana' });
     await api.patch('/brands/me', b.token, { about: 'Everyday ethnic wear.', website_url: 'https://urbanthreads.in', instagram_handle: '@urban.threads' });
     // registration-and-profile: a branch is its four parts now (the second one must say which is main)

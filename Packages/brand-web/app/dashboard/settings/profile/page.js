@@ -5,23 +5,17 @@ import useEntitlements from '../../../../lib/useEntitlements';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
-  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  // Union Territories
-  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
-];
-
-const EMPTY_BRANCH = {
-  name: '', state: '', city: '', pincode: '', address: '', phone: '', google_maps_url: '',
-};
+// Docs/NEXT_ROUND_2026-09-19.md item 5: the main-branch address is the same four-part
+// address the phones take — street typed, 6-digit pincode, state picked, nearest major
+// city picked from that state (ids from GET /reference/states?offered=1). No Google.
+const EMPTY_ADDRESS = { address: '', pincode: '', stateId: null, cityId: null };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+function toId(v) {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
 
 function initials(name) {
   const src = (name || '').trim();
@@ -221,13 +215,31 @@ export default function ProfilePage() {
   // Contact person
   const [contactName, setContactName] = useState('');
 
-  // Main branch address (structured)
-  const [mainBranch, setMainBranch] = useState({
-    state: '', city: '', pincode: '', address: '', google_maps_url: '',
-  });
+  // Main branch address (item 5 — the four-part address). `savedAddress` is what the
+  // server last told us, so save only sends the address when something in it changed.
+  const [mainBranch, setMainBranch]     = useState(EMPTY_ADDRESS);
+  const [savedAddress, setSavedAddress] = useState(EMPTY_ADDRESS);
+  const [states, setStates]             = useState([]);   // [{ id, name, cities:[{ id, name }] }]
+  useEffect(() => {
+    api.get('/reference/states?offered=1').then(r => {
+      if (r?.success && Array.isArray(r.data?.items)) setStates(r.data.items);
+    }).catch(() => {});
+  }, []);
+  const selectedState = states.find(s => s.id === mainBranch.stateId) || null;
+  const cityOptions = selectedState?.cities || [];
 
-  // Additional branches
-  const [branches, setBranches] = useState([]);
+  // GET /brands/me returns { brand, branches:[{ isMain, formattedAddress, pincode, stateId,
+  // cityId, ... }], ... }; the main branch is the address this page edits.
+  function addressFromMe(data, b) {
+    const branches = Array.isArray(data?.branches) ? data.branches : [];
+    const main = branches.find(br => br.isMain) || branches[0] || null;
+    return {
+      address: (main?.formattedAddress ?? b?.address_line) || '',
+      pincode: (main?.pincode ?? b?.pincode) || '',
+      stateId: toId(main?.stateId),
+      cityId:  toId(main?.cityId),
+    };
+  }
 
   useEffect(() => {
     async function load() {
@@ -246,17 +258,9 @@ export default function ProfilePage() {
         const ld = b.listing_data || {};
         setContactName(ld.contact_person_name || b.name || '');
 
-        const allBranches = ld.branches || [];
-        const main = allBranches.find(br => br.name === 'Main Branch') || {};
-        setMainBranch({
-          state:           main.state || '',
-          city:            main.city || '',
-          pincode:         main.pincode || b.pincode || '',
-          address:         main.address || b.address_line || '',
-          google_maps_url: main.google_maps_url || '',
-        });
-
-        setBranches(allBranches.filter(br => br.name !== 'Main Branch'));
+        const addr = addressFromMe(res.data, b);
+        setMainBranch(addr);
+        setSavedAddress(addr);
       }
     }
     load();
@@ -274,17 +278,10 @@ export default function ProfilePage() {
   function handleMainBranchChange(field, value) {
     setMainBranch(prev => ({ ...prev, [field]: value }));
   }
-
-  function addBranch() {
-    setBranches(prev => [...prev, { ...EMPTY_BRANCH }]);
-  }
-
-  function updateBranch(index, field, value) {
-    setBranches(prev => prev.map((b, i) => i === index ? { ...b, [field]: value } : b));
-  }
-
-  function removeBranch(index) {
-    setBranches(prev => prev.filter((_, i) => i !== index));
+  function pickState(v) {
+    const id = toId(v);
+    // The city belongs to the state; changing one clears the other.
+    setMainBranch(prev => ({ ...prev, stateId: id, cityId: null }));
   }
 
   async function handleSave(e) {
@@ -302,11 +299,26 @@ export default function ProfilePage() {
     if (form.gstin !== (brand?.gstin || ''))                 payload.gstin = form.gstin.trim();
     if (form.logo_url !== (brand?.logo_url || ''))           payload.logo_url = form.logo_url.trim();
 
-    // Flatten main branch address to top-level for backward compat
+    // Main branch address — any of the four rewrites the MAIN branch on the server
+    // (PATCH /brands/me: address_line, pincode, state_id, city_id), so when one part
+    // changed all four are sent together, and all four must be complete.
     const mainAddr = mainBranch.address.trim();
     const mainPin  = mainBranch.pincode.trim();
-    if (mainAddr !== (brand?.address_line || '')) payload.address_line = mainAddr;
-    if (mainPin !== (brand?.pincode || ''))       payload.pincode = mainPin;
+    const addressChanged =
+      mainAddr !== (savedAddress.address || '').trim() ||
+      mainPin  !== (savedAddress.pincode || '').trim() ||
+      mainBranch.stateId !== savedAddress.stateId ||
+      mainBranch.cityId  !== savedAddress.cityId;
+    if (addressChanged) {
+      if (!mainAddr) { showToast('Business address is required', 'err'); setSaving(false); return; }
+      if (!/^[0-9]{6}$/.test(mainPin)) { showToast('Pincode must be 6 digits', 'err'); setSaving(false); return; }
+      if (!mainBranch.stateId) { showToast('Select your state', 'err'); setSaving(false); return; }
+      if (!mainBranch.cityId) { showToast('Pick your nearest major city', 'err'); setSaving(false); return; }
+      payload.address_line = mainAddr;
+      payload.pincode      = mainPin;
+      payload.state_id     = mainBranch.stateId;
+      payload.city_id      = mainBranch.cityId;
+    }
 
     // Item 2 — sub-categories; sent only when changed, and never as an empty list.
     const existingSubs = Array.isArray(brand?.sub_categories) ? brand.sub_categories : [];
@@ -315,21 +327,9 @@ export default function ProfilePage() {
       payload.sub_categories = subCategories;
     }
 
-    // listing_data
+    // listing_data — Item 4: branches are no longer written from the website (APPROVAL.md
+    // §2.3); whatever `listing_data.branches` holds is left exactly as it is.
     const existingLd = brand?.listing_data || {};
-    const mainBranchEntry = {
-      name: 'Main Branch',
-      state: mainBranch.state,
-      city: mainBranch.city.trim(),
-      pincode: mainBranch.pincode.trim(),
-      address: mainBranch.address.trim(),
-      phone: brand?.phone || '',
-      google_maps_url: mainBranch.google_maps_url.trim(),
-    };
-    const additionalBranches = branches.filter(b => b.name.trim() || b.address.trim());
-    // Item 4: branches are no longer written from the website (APPROVAL.md §2.3). Whatever the
-    // column holds is left exactly as it is.
-    void mainBranchEntry; void additionalBranches;
     const newLd = {
       ...existingLd,
       contact_person_name: contactName.trim(),
@@ -349,6 +349,11 @@ export default function ProfilePage() {
     if (res.success) {
       const updated = res.data?.brand || res.data;
       setBrand(updated);
+      if (addressChanged) {
+        // PATCH answers { brand, completeness } without branches; what we sent is what
+        // the main branch now holds.
+        setSavedAddress({ address: mainAddr, pincode: mainPin, stateId: mainBranch.stateId, cityId: mainBranch.cityId });
+      }
       showToast('Profile updated successfully');
     } else {
       showToast(res.error?.message || 'Failed to update profile', 'err');
@@ -517,6 +522,53 @@ export default function ProfilePage() {
               className="mono"
               placeholder="22AAAAA0000A1Z5"
             />
+          </div>
+
+          {/* Item 5 — main branch address: the same four parts the phones take. */}
+          <div className="field">
+            <label className="field-l">Business address<span className="req">*</span></label>
+            <input
+              type="text"
+              value={mainBranch.address}
+              onChange={(e) => handleMainBranchChange('address', e.target.value)}
+              placeholder="Building, street, area"
+            />
+            <div className="field-help">Your main branch. Other branches are managed in the INFLX Brand app.</div>
+          </div>
+
+          <div className="field-row">
+            <div className="field">
+              <label className="field-l">Pincode<span className="req">*</span></label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={mainBranch.pincode}
+                onChange={(e) => handleMainBranchChange('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="mono"
+                placeholder="6-digit"
+              />
+            </div>
+            <div className="field">
+              <label className="field-l">State<span className="req">*</span></label>
+              <select value={mainBranch.stateId ?? ''} onChange={(e) => pickState(e.target.value)}>
+                <option value="">Select your state</option>
+                {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="field">
+            <label className="field-l">Your nearest major city<span className="req">*</span></label>
+            <select
+              value={mainBranch.cityId ?? ''}
+              onChange={(e) => handleMainBranchChange('cityId', toId(e.target.value))}
+              disabled={!selectedState}
+            >
+              <option value="">{selectedState ? 'Select your nearest major city' : 'Pick a state first'}</option>
+              {cityOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <div className="field-help">The closest big city to you — not your exact town or area.</div>
           </div>
 
           <div className="prf-save">

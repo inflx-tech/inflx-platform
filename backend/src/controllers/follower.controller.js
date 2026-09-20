@@ -33,8 +33,8 @@ const sectionLibrary = require('../services/sectionLibrary.service');
 const { runRule, etaFromDistanceKm, OFFER_BEST_PCT, offerFieldsFromPct, OFFER_LIVE_GATE, OFFER_APPLIES } = require('../services/sectionRules.service');
 const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
-const geocoding = require('../services/geocoding.service');
-const places = require('../services/places.service');
+// retire-google (20 Sep 2026): a coordinate becomes a city by nearest offered city centre.
+const ref = require('../services/referenceLists.service');
 const paymentConfigSvc = require('../services/paymentConfig.service');
 
 // ── Helper: get follower row or throw ────────────────────────────────────────
@@ -291,20 +291,18 @@ const createAddress = asyncHandler(async (req, res) => {
     );
   }
 
-  // Address must be Google-locatable: prefer client-sent coords (e.g. "use current
-  // location"), else forward-geocode the typed text. ENFORCED — an address Google
-  // can't locate is rejected (no silent null-coord save).
+  // retire-google: prefer client-sent coords ("use current location"); otherwise the typed
+  // city's centre from our own list. No Google. An address with neither is refused.
   let lat = Number.isFinite(parseFloat(req.body.lat)) ? parseFloat(req.body.lat) : null;
   let lng = Number.isFinite(parseFloat(req.body.lng)) ? parseFloat(req.body.lng) : null;
   if (lat == null || lng == null) {
-    const query = [line1, line2, city, pincode].filter(Boolean).join(', ');
-    const geo = await geocoding.forwardGeocode(query);
-    if (geo && geo.lat != null) { lat = geo.lat; lng = geo.lng; }
+    const centre = await ref.cityCentreForName(city);
+    if (centre) { lat = centre.lat; lng = centre.lng; }
   }
   if (lat == null || lng == null) {
     throw new AppError('VALIDATION_ERROR',
-      "We couldn't locate that address. Add area / city / pincode, or use 'Current location'.",
-      422, 'line1');
+      "We couldn't place that address. Pick your city from the list, or use 'Current location'.",
+      422, 'city');
   }
 
   const { rows } = await db.query(
@@ -1363,8 +1361,8 @@ const updateLocation = asyncHandler(async (req, res) => {
   const stale = !follower.location_updated_at ||
     (Date.now() - new Date(follower.location_updated_at).getTime()) > 24 * 60 * 60 * 1000;
   if (!areaName || movedFar || stale) {
-    const geo = await geocoding.reverseGeocode(lat, lng);
-    if (geo && (geo.locality || geo.city)) areaName = geo.locality || geo.city;
+    const near = await ref.nearestCity(lat, lng);
+    if (near) areaName = near.name;
   }
 
   await db.query(
@@ -1374,63 +1372,27 @@ const updateLocation = asyncHandler(async (req, res) => {
   return success(res, { area_name: areaName, lat, lng });
 });
 
-// GET /v1/follower/reverse-geocode?lat&lng → { area_name } (public; for the
-// location switcher's "current location" label). Cached reverse-geocode.
+// GET /v1/follower/reverse-geocode?lat&lng → { area_name, city, city_id } (public; the follower
+// app's "current location" label). retire-google: the nearest offered city, from our own
+// coordinates (migration 190) — no Google. Null when the point is far from every offered city.
 const reverseGeocode = asyncHandler(async (req, res) => {
   const lat = parseFloat(req.query.lat);
   const lng = parseFloat(req.query.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     throw new AppError('VALIDATION_ERROR', 'lat/lng required', 422, 'lat');
   }
-  const geo = await geocoding.reverseGeocode(lat, lng);
-  return success(res, { area_name: (geo && (geo.locality || geo.city)) || null, city: geo?.city || null });
-});
-
-// GET /v1/follower/geocode?q=... → verify/locate a typed address (forward
-// geocode). { found, lat, lng, formatted_address, area_name }. Powers the
-// AddressScreen "✓ Located" feedback before save.
-const geocodeQuery = asyncHandler(async (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (!q) throw new AppError('VALIDATION_ERROR', 'q required', 422, 'q');
-  const geo = await geocoding.forwardGeocode(q);
-  if (!geo || geo.lat == null) return success(res, { found: false });
-  return success(res, {
-    found: true, lat: geo.lat, lng: geo.lng,
-    formatted_address: geo.formatted_address || null,
-    area_name: geo.locality || geo.city || null,
-    city: geo.city || null,
-  });
-});
-
-// GET /v1/follower/places/autocomplete?q=&session=&lat=&lng= → predictions[]
-const placesAutocomplete = asyncHandler(async (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (!q) return success(res, { predictions: [] });
-  const lat = parseFloat(req.query.lat); const lng = parseFloat(req.query.lng);
-  const predictions = await places.autocomplete(q, {
-    sessiontoken: req.query.session || null,
-    lat: Number.isFinite(lat) ? lat : null, lng: Number.isFinite(lng) ? lng : null,
-  });
-  return success(res, { predictions });
-});
-
-// GET /v1/follower/places/details?place_id=&session= → { lat, lng, ... }
-const placeDetails = asyncHandler(async (req, res) => {
-  const placeId = (req.query.place_id || '').trim();
-  if (!placeId) throw new AppError('VALIDATION_ERROR', 'place_id required', 422, 'place_id');
-  const d = await places.details(placeId, { sessiontoken: req.query.session || null });
-  if (!d) throw new AppError('NOT_FOUND', 'place not found', 404);
-  return success(res, d);
+  const near = await ref.nearestCity(lat, lng);
+  return success(res, { area_name: near ? near.name : null, city: near ? near.name : null, city_id: near ? near.id : null, state: near ? near.stateName : null, km: near ? near.km : null });
 });
 
 // GET /v1/follower/home
 const getHomeSections = asyncHandler(async (req, res) => {
   const { followerId, city, lat, lng } = await resolveFollowerContext(req);
   const data = await sectionEngine.buildSections({ screen: 'home', city, followerId, lat, lng });
-  // Area name for the Home header — works logged-out (cached reverse-geocode).
+  // Area name for the Home header — the nearest offered city (retire-google).
   if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    const geo = await geocoding.reverseGeocode(lat, lng);
-    data.area_name = (geo && (geo.locality || geo.city)) || null;
+    const near = await ref.nearestCity(lat, lng);
+    data.area_name = near ? near.name : null;
   }
   return success(res, data);
 });
@@ -2015,9 +1977,6 @@ module.exports = {
   getCategoryStores,
   updateLocation,
   reverseGeocode,
-  geocodeQuery,
-  placesAutocomplete,
-  placeDetails,
   getHomeSections,
   getCategorySections,
   getBusinessSections,

@@ -1,7 +1,7 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, authApi, brandApi, geoApi, setSessionCookie } from '../../lib/api';
+import { api, authApi, brandApi, setSessionCookie } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
 
 // Device-local draft of the registration step. Cleared on successful
@@ -34,16 +34,14 @@ const SUB_CATEGORIES_FALLBACK = [
   { code: 'BAGS_ACCESSORIES', label: 'Bags & Accessories' },
 ];
 
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
-  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Andaman & Nicobar', 'Chandigarh', 'Dadra & Nagar Haveli and Daman & Diu',
-  'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
-];
+// Docs/NEXT_ROUND_2026-09-19.md item 5: the website takes the same four-part address as
+// the phones — street typed, 6-digit pincode, state picked, nearest major city picked from
+// that state. States and cities come from GET /reference/states?offered=1 (the six offered
+// states and their cities, ids included); nothing here talks to Google any more.
+function toId(v) {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -69,27 +67,24 @@ export default function LoginPage() {
     setSubCategories(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
   }
   const [addressLine, setAddressLine] = useState('');
-  const [city, setCity]               = useState('');
-  const [state, setStateField]        = useState('');
   const [pincode, setPincode]         = useState('');
-  const [referralCode, setReferralCode] = useState(''); // optional — D-1 intake
-  // Location capture (contract: brand-register-location-picker).
-  // 'search' (Places autocomplete) | 'link' (Google Maps URL) | 'manual'
-  const [locMode, setLocMode]         = useState('search');
-  const [locQuery, setLocQuery]       = useState('');
-  const [locSugs, setLocSugs]         = useState([]);
-  const [mapsUrl, setMapsUrl]         = useState('');
-  const [locating, setLocating]       = useState(false);
-  const [coords, setCoords]           = useState(null);   // { lat, lng }
-  const [locLocality, setLocLocality] = useState('');
-  const [locFormatted, setLocFormatted] = useState('');
-  const debounceRef = useRef(null);
-  // 'idle' | 'searching' | 'empty' | 'error' — the search box used to give no
-  // feedback at all, so a slow or failed lookup was indistinguishable from a
-  // dead field. The backend cold-starts and the first call can take 8s+.
-  const [locState, setLocState] = useState('idle');
-  const locSeqRef = useRef(0);
-  const placesSessionRef = useRef(Math.random().toString(36).slice(2) + Date.now().toString(36));
+  // Item 5 — state and nearest major city are picked by id from the offered list.
+  const [stateId, setStateId]         = useState(null);
+  const [cityId, setCityId]           = useState(null);
+  const [states, setStates]           = useState([]);   // [{ id, name, cities:[{ id, name }] }]
+  useEffect(() => {
+    if (step !== 'register') return;
+    api.get('/reference/states?offered=1').then(r => {
+      if (r?.success && Array.isArray(r.data?.items)) setStates(r.data.items);
+    }).catch(() => {});
+  }, [step]);
+  const selectedState = states.find(s => s.id === stateId) || null;
+  const cityOptions = selectedState?.cities || [];
+  function pickState(v) {
+    const id = toId(v);
+    setStateId(id);
+    setCityId(null);   // the city belongs to the state; changing one clears the other
+  }
   const [loading, setLoading]         = useState(false);
   const [resending, setResending]     = useState(false);
   const [error, setError]             = useState('');
@@ -101,7 +96,7 @@ export default function LoginPage() {
   // the wizard to the phone step AND burned one of the 5 hourly OTPs. A few
   // refreshes locked the user out for an hour with no way back to their
   // half-filled form — which is exactly what happens when someone notices a
-  // wrong Google Maps link and tries to start over.
+  // typo in the address and tries to start over.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -117,15 +112,12 @@ export default function LoginPage() {
       // Deliberately NOT restored: the server would refuse it, and restoring it would
       // resurrect a choice that no longer exists.
       setAddressLine(d.addressLine || '');
-      setCity(d.city || '');
-      setStateField(d.state || '');
       setPincode(d.pincode || '');
-      setReferralCode(d.referralCode || '');
-      setLocMode(d.locMode || 'search');
-      setMapsUrl(d.mapsUrl || '');
-      setCoords(d.coords || null);
-      setLocLocality(d.locLocality || '');
-      setLocFormatted(d.locFormatted || '');
+      // Drafts saved before item 5 carry typed `city`/`state` names, a Maps link, coords,
+      // a referral code. None of that is restored — unknown keys are simply ignored.
+      const sid = toId(d.stateId);
+      setStateId(sid);
+      setCityId(sid ? toId(d.cityId) : null);
       setStep('register');
       setRestored(true);
     } catch { /* corrupt draft — fall through to a clean phone step */ }
@@ -137,13 +129,10 @@ export default function LoginPage() {
     if (typeof window === 'undefined' || step !== 'register') return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        phone, name, businessName, addressLine, city,
-        state, pincode, referralCode, locMode, mapsUrl, coords,
-        locLocality, locFormatted,
+        phone, name, businessName, addressLine, pincode, stateId, cityId,
       }));
     } catch { /* quota or private mode — persistence is best-effort */ }
-  }, [step, phone, name, businessName, addressLine, city,
-      state, pincode, referralCode, locMode, mapsUrl, coords, locLocality, locFormatted]);
+  }, [step, phone, name, businessName, addressLine, pincode, stateId, cityId]);
 
   const fmt = phone.startsWith('+91') ? phone : `+91${phone}`;
 
@@ -209,75 +198,6 @@ export default function LoginPage() {
     setStep('register');
   }
 
-  /* ── Location capture handlers ─────────────────────────────────────── */
-
-  function applyPlace(d, fallbackLabel) {
-    if (d.lat != null && d.lng != null) setCoords({ lat: d.lat, lng: d.lng });
-    setLocLocality(d.area_name || d.locality || '');
-    setLocFormatted(d.formatted_address || '');
-    if (d.formatted_address) setAddressLine(d.formatted_address);
-    else if (fallbackLabel) setAddressLine(fallbackLabel);
-    if (d.city) setCity(d.city);
-    // Google returns official names ("Jammu and Kashmir", "Andaman and Nicobar
-    // Islands") while INDIAN_STATES uses ampersands, so an exact includes()
-    // silently dropped the autofill for those. Match on a normalised form.
-    if (d.state) {
-      const norm = s => String(s).toLowerCase().replace(/\s*&\s*|\s+and\s+/g, ' and ').replace(/\s+/g, ' ').trim();
-      const hit = INDIAN_STATES.find(s => norm(s) === norm(d.state));
-      if (hit) setStateField(hit);
-    }
-    if (d.pincode && /^[0-9]{6}$/.test(String(d.pincode))) setPincode(String(d.pincode));
-  }
-
-  function onLocQueryChange(v) {
-    setLocQuery(v);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (v.trim().length < 3) { setLocSugs([]); setLocState('idle'); return; }
-    setLocState('searching');
-    debounceRef.current = setTimeout(async () => {
-      // Guard against out-of-order responses: the API can take several seconds
-      // on a cold backend, so a slow reply for an earlier query must not
-      // overwrite the results of a later one.
-      const seq = ++locSeqRef.current;
-      const res = await geoApi.placesAutocomplete(v.trim(), placesSessionRef.current).catch(() => null);
-      if (seq !== locSeqRef.current) return;
-
-      if (!res?.success) {
-        // The backend answers 200 with an empty list for a missing/rejected
-        // Google key AND for a genuine no-match, so a null/failed response is
-        // the only case we can honestly call an error.
-        setLocSugs([]);
-        setLocState('error');
-        return;
-      }
-      const preds = res.data?.predictions || [];
-      setLocSugs(preds);
-      setLocState(preds.length ? 'idle' : 'empty');
-    }, 350);
-  }
-
-  async function pickSuggestion(p) {
-    setLocSugs([]);
-    setLocState('idle');
-    locSeqRef.current++;   // cancel any in-flight lookup for the old query
-    setLocQuery(p.description || p.main || '');
-    const res = await geoApi.placeDetails(p.place_id, placesSessionRef.current).catch(() => null);
-    if (res?.success && res.data) applyPlace(res.data, p.description);
-    else setError('Could not load that place — pick another or switch to Manual.');
-  }
-
-  async function locateMapsUrl() {
-    if (!mapsUrl.trim()) return;
-    setError('');
-    setLocating(true);
-    const res = await geoApi
-      .geocodeMapsUrl(mapsUrl.trim(), businessName.trim() || undefined, city.trim() || undefined)
-      .catch(() => null);
-    setLocating(false);
-    if (res?.success && res.data?.verified) applyPlace(res.data);
-    else setError("Couldn't read a location from that link. In Google Maps use Share → Copy link, paste it here — or use Search / Manual.");
-  }
-
   // Step 3: Register brand
   async function handleRegister(e) {
     e.preventDefault();
@@ -286,9 +206,9 @@ export default function LoginPage() {
     if (!businessName.trim()) { setError('Please enter your business name'); return; }
     if (subCategories.length === 0) { setError('Pick at least one category your brand sells'); return; }
     if (!addressLine.trim()) { setError('Please enter your business address'); return; }
-    if (!city.trim()) { setError('Please enter your city'); return; }
-    if (!state.trim()) { setError('Please select your state'); return; }
     if (!/^[0-9]{6}$/.test(pincode.trim())) { setError('Pincode must be 6 digits'); return; }
+    if (!stateId) { setError('Please select your state'); return; }
+    if (!cityId) { setError('Please pick your nearest major city'); return; }
 
     setLoading(true);
 
@@ -298,17 +218,9 @@ export default function LoginPage() {
       category,
       sub_categories: subCategories,
       address_line:  addressLine.trim(),
-      city:          city.trim(),
-      state:         state.trim(),
       pincode:       pincode.trim(),
-      ...(coords ? {
-        latitude:  coords.lat,
-        longitude: coords.lng,
-        ...(locLocality  && { locality: locLocality }),
-        ...(locFormatted && { formatted_address: locFormatted }),
-      } : {}),
-      ...(locMode === 'link' && mapsUrl.trim() ? { google_maps_url: mapsUrl.trim() } : {}),
-      ...(referralCode.trim() ? { referral_code: referralCode.trim() } : {}),
+      state_id:      stateId,
+      city_id:       cityId,
     });
     setLoading(false);
 
@@ -580,112 +492,35 @@ export default function LoginPage() {
                   <span>Location</span>
                 </div>
 
-                {/* Mode pills — Search (default) / Maps link / Manual */}
-                <div className="flex gap-1.5 mb-3">
-                  {[['search', '🔍 Search place'], ['link', '🔗 Maps link'], ['manual', '✍️ Manual']].map(([m, lbl]) => (
-                    <button key={m} type="button" onClick={() => { setLocMode(m); setLocSugs([]); }}
-                      className={`flex-1 py-2 px-1 rounded-[10px] text-[11.5px] font-semibold border transition-colors ${
-                        locMode === m ? 'border-[#FFC107] bg-[#FFFBEB] text-[#18181B]' : 'border-[#E4E4E7] bg-white text-[#71717A]'}`}>
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-
-                {locMode === 'search' && (
-                  <div className="mb-3.5 relative">
-                    <label className={labelClass}>Search your business or area</label>
-                    <input type="text" value={locQuery} onChange={e => onLocQueryChange(e.target.value)}
-                      placeholder="Type shop name or area… (min 3 letters)" className={inputClass} />
-
-                    {locState === 'searching' && (
-                      <div className="mt-1.5 text-[11.5px] text-[#71717A]">
-                        Searching… the first lookup can take a few seconds.
-                      </div>
-                    )}
-                    {locState === 'empty' && (
-                      <div className="mt-1.5 text-[11.5px] text-[#71717A]">
-                        No places matched. Try a shorter name or a nearby landmark — or use
-                        <button type="button" onClick={() => setLocMode('link')} className="mx-1 font-semibold text-[#18181B] underline underline-offset-2">Maps link</button>
-                        instead.
-                      </div>
-                    )}
-                    {locState === 'error' && (
-                      <div className="mt-1.5 text-[11.5px] text-[#B91C1C]">
-                        Search isn&apos;t responding right now.
-                        <button type="button" onClick={() => onLocQueryChange(locQuery)} className="mx-1 font-semibold underline underline-offset-2">Retry</button>
-                        or switch to
-                        <button type="button" onClick={() => setLocMode('link')} className="mx-1 font-semibold underline underline-offset-2">Maps link</button>
-                        or
-                        <button type="button" onClick={() => setLocMode('manual')} className="ml-1 font-semibold underline underline-offset-2">Manual</button>.
-                      </div>
-                    )}
-
-                    {locSugs.length > 0 && (
-                      <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-[#E4E4E7] rounded-[10px] overflow-hidden shadow-lg">
-                        {locSugs.slice(0, 5).map(p => (
-                          <button key={p.place_id} type="button" onClick={() => pickSuggestion(p)}
-                            className="block w-full text-left px-3 py-2 border-b border-[#F4F4F5] last:border-0 hover:bg-[#FFFBEB]">
-                            <span className="block text-[13px] font-semibold text-[#18181B]">{p.main}</span>
-                            <span className="block text-[11.5px] text-[#71717A]">{p.secondary}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {locMode === 'link' && (
-                  <div className="mb-3.5">
-                    <label className={labelClass}>Paste your Google Maps link</label>
-                    <div className="flex gap-2">
-                      <input type="url" value={mapsUrl} onChange={e => setMapsUrl(e.target.value)}
-                        placeholder="https://maps.app.goo.gl/…" className={inputClass} />
-                      <button type="button" onClick={locateMapsUrl} disabled={locating || !mapsUrl.trim()}
-                        className="shrink-0 px-4 rounded-[10px] bg-[#18181B] text-white text-[12px] font-semibold disabled:opacity-40">
-                        {locating ? '…' : '📍 Locate'}
-                      </button>
-                    </div>
-                    <div className="text-[11px] text-[#71717A] mt-1.5">In Google Maps: Share → Copy link → paste here.</div>
-                  </div>
-                )}
-
-                {coords && (
-                  <div className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 bg-[#ECFDF5] border border-[#A7F3D0] rounded-full text-[11.5px] font-semibold text-[#047857]">
-                    ✓ Location captured{locLocality ? ` — ${locLocality}` : ''}
-                  </div>
-                )}
-
+                {/* Item 5 — the same four-part address the phones take: street typed,
+                    pincode typed, state picked, nearest major city picked from that state. */}
                 <div className="mb-3.5">
                   <label className={labelClass}>Business address{reqAst}</label>
                   <input type="text" value={addressLine} onChange={e => setAddressLine(e.target.value)}
                     placeholder="Building, street, area" className={inputClass} required />
                 </div>
-                <div className="grid grid-cols-2 gap-3 mb-3.5">
-                  <div>
-                    <label className={labelClass}>City{reqAst}</label>
-                    <input type="text" value={city} onChange={e => setCity(e.target.value)}
-                      placeholder="e.g. Vijayawada" className={inputClass} required />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Pincode{reqAst}</label>
-                    <input type="text" inputMode="numeric" maxLength={6} value={pincode}
-                      onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="6-digit" className={monoInputClass} required />
-                  </div>
+                <div className="mb-3.5">
+                  <label className={labelClass}>Pincode{reqAst}</label>
+                  <input type="text" inputMode="numeric" maxLength={6} value={pincode}
+                    onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="6-digit" className={monoInputClass} required />
                 </div>
-                <div className="mb-4">
+                <div className="mb-3.5">
                   <label className={labelClass}>State{reqAst}</label>
-                  <select value={state} onChange={e => setStateField(e.target.value)}
+                  <select value={stateId ?? ''} onChange={e => pickState(e.target.value)}
                     className={selectClass} required>
                     <option value="">Select your state</option>
-                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </div>
                 <div className="mb-4">
-                  <label className={labelClass}>Referral code <span className="text-[#A1A1AA] font-normal">(if any)</span></label>
-                  <input type="text" value={referralCode}
-                    onChange={e => setReferralCode(e.target.value.toUpperCase().trim())}
-                    placeholder="e.g. INFLX-7QK4M2" className={monoInputClass} />
+                  <label className={labelClass}>Your nearest major city{reqAst}</label>
+                  <select value={cityId ?? ''} onChange={e => setCityId(toId(e.target.value))}
+                    className={selectClass} disabled={!selectedState} required>
+                    <option value="">{selectedState ? 'Select your nearest major city' : 'Pick a state first'}</option>
+                    {cityOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <div className="mt-1.5 text-[11px] text-[#71717A]">The closest big city to you — not your exact town or area.</div>
                 </div>
               </div>
 
@@ -697,7 +532,7 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading || !name.trim() || !businessName.trim() || subCategories.length === 0 || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
+                disabled={loading || !name.trim() || !businessName.trim() || subCategories.length === 0 || !addressLine.trim() || pincode.length !== 6 || !stateId || !cityId}
                 className={btnPrimary}
               >
                 {loading ? 'Registering…' : 'Complete registration'}
