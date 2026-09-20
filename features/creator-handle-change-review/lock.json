@@ -46,7 +46,14 @@
       "reported": "founder, 20 Sep: Somepalli Anusha was verified on 19 Sep but nothing was measured",
       "cause": "she changed both channels at 09:07 UTC while her account counted as approved, so the new accounts went to waiting_check (Handle checks); Verify at 11:15 confirmed only waiting_approval accounts, so nothing was confirmed and no measurement started. Also her old YouTube row had no channel address and Apify was handed an empty URL four times (invalid-input)",
       "fix": "onCreatorApproved confirms waiting_approval AND waiting_check current accounts (resets failure_count/last_error); youtubeRun refuses to call Apify without a channel address and records the reason. Two tests added",
-      "deployed": null,
+      "deployed": {
+        "at": "2026-09-20",
+        "by": "founder go (\"pls go commit , push\")",
+        "commit": "2448857",
+        "migration": "none",
+        "ota": "none",
+        "anusha": "her two current channels (stories_by_srilok on Instagram and YouTube) confirmed on production by hand right after the push — state measuring, ownership confirmed, due now; the scheduler measures within the hour"
+      },
       "founder_step": "after the push, press Verify is not possible again (she is verified) — instead confirm her two rows in Influencers → Handle checks, OR I can run onCreatorApproved for her once on production; measuring starts within the hour either way"
     }
   }

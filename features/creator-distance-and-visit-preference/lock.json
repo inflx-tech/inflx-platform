@@ -49,7 +49,13 @@
       "reported": "founder, 20 Sep: on a Vijayawada Store Visit set only Vijayawada creators were selectable although almost no creator had saved visit cities",
       "cause": "collabEligibility.loadCreatorInvitationSettingsMany (the batch loader the set picker uses through canBrandInviteMany) still applied item 2's never-saved = own-city default; only the single loader had been changed on 19 Sep",
       "fix": "batch loader returns [] (anywhere) for a never-saved creator; test through canBrandInviteMany with a real branch",
-      "deployed": null
+      "deployed": {
+        "at": "2026-09-20",
+        "by": "founder go (\"pls go commit , push\")",
+        "commit": "2448857",
+        "migration": "none",
+        "ota": "none"
+      }
     }
   }
 }
