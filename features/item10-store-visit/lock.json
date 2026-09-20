@@ -17,6 +17,26 @@
     "released_by": null,
     "released_at": null,
     "maestro_green": false,
+    "walk_fixes": [
+      {
+        "at": "2026-09-18",
+        "found_by": "founder, first walk",
+        "problem": "The branch edit screen offered only the Google address search, which was not answering, and a Store Visit set now needs a branch with a street address. A branch with no address looked identical to one with an address, and the three practice brands had none (seeded, never registered), so no Store Visit set could be created at all.",
+        "fix": "address_text (≤200) and an optional 6-digit pincode accepted beside place_id on branch create and update; no map pin; the city and state stay the branch's own (or the brand's registration city for a new branch). The edit screen gained \"Type the address instead\", on by default when the branch has none, and the branch card says when the address is missing.",
+        "tests": "item10-storevisit +2 (typing unblocks the Store Visit set, city and state preserved; a new branch created by typing); item3-branches message assertion updated. Mobile 575/575.",
+        "note": "Superseded four days later in spirit by features/registration-and-profile, which made the four-part typed address the only address model and retired Google entirely."
+      },
+      {
+        "at": "2026-09-20",
+        "found_by": "founder, walking the store visit against the locked mockups",
+        "problem": "Two findings, both real. (1) \"I did not find any screen from brand where he needs to confirm that shoot is done.\" V10 was built and tested but its only door was one button at the bottom of the agreement screen — six taps deep and labelled \"Plan the visit\" at every stage, so nothing ever told the brand she had visited and it was his move; the set-detail row said \"Signed by both on 14 Sep\" for ever; and the agreed stage never mentioned the confirm step. (2) \"No symbol on who-ask person with mobile call symbol\" — item 10 used none of the seven icons the mockups carry.",
+        "audit": "Docs/ITEM10_STOREVISIT_WALK_REPORT.md — the founder's mockup file was byte-identical to the locked one, so this was implementation drift, not a spec disagreement. Checked against rules v1.25 (§11.1 unchanged; §2B's four-part address and city-only-until-planned both agree with what is built) and against the build sequence.",
+        "fix": "The agreement button says what the shoot needs (\"Confirm the shoot is done\", with a tick). The brand's set-detail row carries the shoot's stage, chips Your move when he owes the confirmation, opens the visit on tap, and gains \"Open the store visit\" in the ⋯ menu. The agreed stage says the confirm step is coming. The Active chip on V1. All seven mockup icons — PrimaryButton/SecondaryButton take an optional `icon`, Card7 a `titleIcon`, plus a new TextButton; all additive, no existing caller changed.",
+        "founder_decision": "V13's \"Call Tanvi\" is IN (\"if time pass then brand can get creator number to call\"), overriding the gap report's reading of §11.1 that the brand learns nothing new about her. Built narrowly: the creator's number reaches the BRAND only, on the PASSED stage only; her side never carries it and it disappears again the moment she marks the visit.",
+        "sequence": "The cross-campaign Shoots list and the Needs You home surface were proposed and WITHDRAWN — Needs You is §24 and a later item in the 21-item sequence, and item 10's brief was only that the counts learn the four moves, which they do. /brands/me/shoots is built, gated and ordered, waiting for that item. Notification deep links are their own job: no notification in either app opens anything.",
+        "tests": "item10-flow +2 (her number only once passed and never on her side; the row's line through all five stages), shoot10 +3 (the phone and maps symbols, the truthful button labels, the two new sentences); the gate-card assertions moved from text glyphs to the real icons. Backend 0 new failures against after-item10.json; mobile 636/636."
+      }
+    ],
     "deployed_to_production": {
       "at": "2026-09-18",
       "by": "founder go (\"pls go\")",
