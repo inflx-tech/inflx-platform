@@ -42,6 +42,9 @@ const pitchHousekeepingJob   = require('./pitch-housekeeping.job');
 const shootAutoConfirmJob    = require('./shoot-auto-confirm.job');
 const collabDelayedJob       = require('./collab-delayed.job');
 const shootRemindersJob      = require('./shoot-reminders.job');
+// Item 11 — the Remote return confirms itself at the stamped due.
+// Contract: features/item11-remote
+const remoteReturnAutoConfirmJob = require('./remote-return-autoconfirm.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -138,6 +141,12 @@ function startAllJobs() {
   cron.schedule('5 * * * *',  () => collabDelayedJob.run(), { timezone: tz });
   cron.schedule('45 * * * *', () => shootAutoConfirmJob.run(), { timezone: tz });
   cron.schedule('55 * * * *', () => shootRemindersJob.run(), { timezone: tz });
+
+  // Item 11 — :15, the only free minute left, so no two lanes touch a shoot at once. The
+  // Delayed lane at :05 and the reminder lane at :55 are item 10's and now carry BOTH modes;
+  // this one is item 11's own: a Remote return the brand has not confirmed by its STAMPED due
+  // confirms itself. Contract: features/item11-remote
+  cron.schedule('15 * * * *', () => remoteReturnAutoConfirmJob.run(), { timezone: tz });
 
   console.log('[JOBS] All cron jobs scheduled.');
 }
