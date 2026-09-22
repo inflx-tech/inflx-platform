@@ -18,5 +18,30 @@
     "released_at": null,
     "maestro_green": false,
     "walk_fixes": []
+  },
+  "build": {
+    "built_at": "2026-09-22T00:00:00+05:30",
+    "commits": "8690f010 (2a), a625d7fd (2b), 2172886c (2b follow-up), c4aac974 (2c), 50e07dc8 (2c follow-up), 08b7589f + 8eccb9c4 (3 screens), 3711273a + c6666f41 (4), 15b1caac (the 191 runner)",
+    "backend_tests": "full suite vs baseline_item11.json: suites 126->131, tests 1430->1545, failed 232->218. 0 newly failing, 0 deleted, 117 new all green, 15 newly passing (the per-file phone-collision fix in the test factories, not an item 11 feature). The one reported newly-failing (section-banner-gateway) was a 30s timeout inside truncateAll() on a loaded 65-minute run; re-run alone the suite passes in 1.2s, 3/3 green.",
+    "mobile_tests": "54 suites / 680 tests all passing; 44 item 11 (remote11 19, remoteScreens 25)",
+    "governance_check": "OK — 59 governed changes, all contract-backed; mockup_locked and 06-diff/notes.md present",
+    "checks": "60 / 60 pass — features/item11-remote/03-expected-outputs.md",
+    "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — the ~218 pre-existing failures are unchanged debt, and the certification is no-regression, never green)."
+  },
+  "deployed_to_production": {
+    "at": "2026-09-22",
+    "by": "founder go (\"do it sequentially and logically\")",
+    "commit": "15b1caac (pushed c41b9998..15b1caac)",
+    "migration": "191 applied to production 2026-09-22 via run-191.js --apply, after a --dry that confirmed finding 3 live: the then-current ci_delayed_stage_known CHECK rejected ALL FIVE Remote stages. 24 structural checks OK (the four wallet_tx_type values added and escrow_lock untouched; shipment_events.dedupe_key UNIQUE; shipments.production_event_id ON DELETE RESTRICT and NULLABLE for item 16; the widened CHECK accepting all five Remote stages). PG 17.6. No backfill: shipments, shipment_events, brand_branch_pickups and brand_dues all 0 rows, 12 production_events unchanged.",
+    "render": "item 11 live, proved by route existence: GET /v1/influencers/me/invitations/:ciId/remote answers 401 and the brand F1, F5, label.pdf and admin test-parcels routes all answer 401, while a made-up sibling (.../remote-nope) answers 404. The shipping webhook answers 403, not 404 — it exists and fails closed on an unsigned payload. Probed after a first pass returned 404 across the board, i.e. the deploy was watched in.",
+    "ota": {
+      "brand": 230,
+      "influencer": 217,
+      "native_runtime": "3 — unchanged; item 11 adds no native code (the label opens with Linking.openURL, as the Agreement PDF already does)"
+    },
+    "websites": "the push redeploys Vercel. NOT INDEPENDENTLY VERIFIED: every /admin path sits behind an auth middleware that 307s to /login before routing resolves — a control probe of /admin/definitely-not-a-real-page returned the same 307, so route-existence cannot distinguish a deleted page from a live one from outside. The founder confirms on first login that Production Queue has gone from the admin nav and Test parcels is present.",
+    "env": "SHIPPING_PROVIDER deliberately NOT set on Render. The code default is simulator in both config/env.js and shipping/index.js, and Shiprocket needs SHIPROCKET_ENABLED===\"true\" on top, so unset is the safe state. Setting it explicitly is a belt-and-braces step left to the founder.",
+    "money": "NO MONEY MOVED. Read before the migration, after the migration, and again after Render and both OTA publishes — identical every time: 12 escrow rows / Rs 34,500, contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions, and 0 rows of type courier_*. 0 shipments, 0 addresses sent, 0 dues, 0 delayed.",
+    "open_for_the_founder": "the wallet top-up, the Kanchi Silks (practice) main-branch address (4 of 11 branches still have no street address or no pincode, and F7/F8 refuse those), and sizes on three products — which three is still the founder's call. Also still open from item 7: return_window_days 30 vs 7."
   }
 }
