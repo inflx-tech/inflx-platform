@@ -46,7 +46,7 @@ export function ReturnGiftSwitch11({ value, onChange, disabled, testID }) {
             onPress={() => !disabled && onChange(k)}
             disabled={disabled}
             accessibilityRole="button"
-            accessibilityState={{ selected: on, disabled: !!disabled }}
+            accessibilityState={{ selected: !!on, disabled: !!disabled }}
             testID={`${testID || 'return-gift'}-${k}`}
             style={[s.switchHalf, on && { backgroundColor: c.bg }, disabled && { opacity: 0.45 }]}
           >
@@ -119,7 +119,7 @@ export function ProductRow11({ product, line, onChange, onRemove, disabled, test
                 const on = line.variantId === v.id;
                 return (
                   <Pressable key={v.id} onPress={() => onChange({ ...line, variantId: v.id })}
-                    accessibilityState={{ selected: on }}
+                    accessibilityState={{ selected: !!on }}
                     testID={`variant-${v.id}`}
                     style={[s.variant, on && s.variantOn]}>
                     <Text style={[s.variantText, on && { color: '#FFFFFF' }]}>{v.label}</Text>
@@ -220,7 +220,7 @@ export function ThreeWayCheck11({ value, note, onChange, onNote, disabled, testI
           const on = value === o.k;
           return (
             <Pressable key={o.k} onPress={() => !disabled && onChange(o.k)} disabled={disabled}
-              accessibilityRole="button" accessibilityState={{ selected: on, disabled: !!disabled }}
+              accessibilityRole="button" accessibilityState={{ selected: !!on, disabled: !!disabled }}
               testID={`${testID || 'check'}-${o.k}`}
               style={[s.threeWayBtn, on && { backgroundColor: o.tone.bg, borderColor: o.tone.fg }, disabled && { opacity: 0.45 }]}>
               <Text style={[s.threeWayText, on && { color: o.tone.fg }]}>{o.label}</Text>
@@ -286,7 +286,7 @@ export function BoxPicker11({ value, onChange, dims, onDims, testID }) {
           const on = value === b.key;
           return (
             <Pressable key={b.key} onPress={() => onChange(b.key)}
-              accessibilityRole="button" accessibilityState={{ selected: on }}
+              accessibilityRole="button" accessibilityState={{ selected: !!on }}
               testID={`box-${b.key}`}
               style={[s.box, on && s.boxOn]}>
               <Text style={[s.boxLabel, on && { color: '#FFFFFF' }]}>{b.label}</Text>

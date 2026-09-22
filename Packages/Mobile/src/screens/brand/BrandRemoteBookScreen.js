@@ -111,7 +111,7 @@ export default function BrandRemoteBookScreen({ navigation, route }) {
             const on = branchId === b.id;
             return (
               <Pressable key={b.id} onPress={() => { if (usable) { setBranchId(b.id); setQuote(null); } }}
-                disabled={!usable} accessibilityRole="radio" accessibilityState={{ selected: on, disabled: !usable }}
+                disabled={!usable} accessibilityRole="radio" accessibilityState={{ selected: !!on, disabled: !usable }}
                 testID={`branch-${b.id}`} style={[s.branch, on && s.branchOn, !usable && s.branchDead]}>
                 <View style={[s.radio, on && s.radioOn]} />
                 <View style={{ flex: 1 }}>

@@ -69,7 +69,7 @@ export function PickupDaySheet11({ visible, address, brandName, today, busy, ser
           const on = day === d;
           return (
             <Pressable key={d} onPress={() => { setDay(d); setErr(null); }}
-              accessibilityRole="button" accessibilityState={{ selected: on }}
+              accessibilityRole="button" accessibilityState={{ selected: !!on }}
               testID={`day-${d}`} style={[sh.chip, on && sh.chipOn]}>
               <Text style={[sh.chipText, on && { color: '#FFFFFF' }]}>{pickupDayLabel(d, today)}</Text>
             </Pressable>

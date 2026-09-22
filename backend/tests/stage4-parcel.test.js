@@ -263,7 +263,27 @@ describe('Stage 4 — B-6: dropping touches a hand-picked allocation only', () =
   });
 });
 
-describe('Stage 4 — B-1: an empty box cannot be dispatched', () => {
+/* ═══════════════════════════════════════════════════════════════════════════
+ * RETIRED BY ITEM 11 (features/item11-remote, Phase 2a · approval §3.19)
+ *
+ * These two assertions still PASS, and that is exactly the problem: they read the controller's
+ * SOURCE TEXT looking for a guard that is now unreachable. Item 11 retired `dispatch` outright
+ * and `complete` for Remote (RETIRED_DISPATCH / RETIRED_COMPLETE_REMOTE, thrown BEFORE the code
+ * these greps find), so the old code sits behind the retirement and the greps keep succeeding
+ * while proving nothing about behaviour.
+ *
+ * Green-but-vacuous is worse than red: a red test gets looked at.
+ *
+ * NEITHER IS DELETED. Both are kept here, skipped, with the retirement that caused it and the
+ * test that replaced it, so a reader can see what the rule was and where it went:
+ *   · "an empty box cannot be dispatched" → item11-phase2a proves dispatch answers
+ *     RETIRED_DISPATCH; a parcel is booked through F8 now, and F8 refuses NO_LINES on an empty
+ *     one (item11-remote-flow, check 10).
+ *   · "the completion endpoint answers 403" → §2.9's caller audit kept `complete` alive for a
+ *     Store Visit and retired it for Remote; F14 replaces it and adds the rule this door never
+ *     had — she must have checked what arrived first (item11-remote-return, check 22).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+describe.skip('Stage 4 — B-1: an empty box cannot be dispatched [RETIRED by item 11]', () => {
   test('the controller checks the parcel before dispatching', () => {
     const body = bodyOf('../src/controllers/production.controller', 'const dispatch = asyncHandler');
     expect(body).toContain('parcel.listItems');
@@ -278,5 +298,32 @@ describe('Stage 4 — B-1: an empty box cannot be dispatched', () => {
     expect(body).toContain('403');
     // And the old visit-only refusal is gone, or a remote shoot could never be finished.
     expect(body).not.toContain('complete only applies to visit-mode events');
+  });
+});
+
+/**
+ * …and what actually holds now, EXECUTED rather than grepped where it can be. The two doors
+ * above are closed, and the sentences they answer with are item 11's.
+ */
+describe('Stage 4 — B-1, as item 11 leaves it', () => {
+  const { MSG } = require('../src/services/productionCopy');
+
+  test('dispatch and confirm-received are retired, and say where the work happens now', () => {
+    const body = bodyOf('../src/controllers/production.controller', 'const dispatch = asyncHandler');
+    expect(body).toContain("retired11('RETIRED_DISPATCH'");
+    // The retirement comes FIRST, or it is a note rather than a blocker — the same reasoning
+    // the retired assertion used about the empty-box guard it replaced.
+    expect(body.indexOf('RETIRED_DISPATCH')).toBeLessThan(body.indexOf('parcel.listItems'));
+    expect(MSG.RETIRED_DISPATCH).toMatch(/booked through INFLX now/i);
+    expect(MSG.RETIRED_CONFIRM_RECEIVED).toMatch(/item by item/i);
+  });
+
+  test('complete is retired for REMOTE ONLY — the Store Visit caller §2.9 found is untouched', () => {
+    const body = bodyOf('../src/controllers/production.controller', 'const complete = asyncHandler');
+    expect(body).toContain('retired11ForRemote');
+    // parcel.canComplete still decides who may mark a VISIT done; that rule did not change.
+    expect(body).toContain('parcel.canComplete');
+    expect(parcel.canComplete('visit', 'brand')).toBe(true);
+    expect(parcel.canComplete('shipment', 'brand')).toBe(false);
   });
 });
