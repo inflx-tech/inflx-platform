@@ -123,7 +123,18 @@ router.get('/tax-summary', authenticate, requireCapability('tax'), ctrl.getTaxSu
 router.get('/analytics', authenticate, requireCapability('analytics'), ctrl.getAnalytics);
 
 // Production queue — flag stuck production events to admin (Phase P.3) — 'production'
+// Item 11 (approval §3.3): its brand-web PAGE is retired; the endpoint stays because item 10's
+// tests read it, and because the gate column and Delayed flag it gained in item 10 are useful.
 router.get('/production/queue', authenticate, requireCapability('production'), ctrl.getProductionQueue);
+
+// ── Item 11 · Test parcels (mockup R18) — a new 'shipping' capability ────────
+// Admin plays the courier while the Shiprocket account does not exist. Every press goes
+// through the SAME webhook handler a real provider will reach, and is logged with who and
+// when (check 35). Contract: features/item11-remote §6.4
+const testParcels = require('../controllers/testParcels.controller');
+router.get ('/test-parcels',            authenticate, requireCapability('shipping'), testParcels.list);
+router.get ('/test-parcels/:id/events', authenticate, requireCapability('shipping'), testParcels.events);
+router.post('/test-parcels/:id/events', authenticate, requireCapability('shipping'), testParcels.inject);
 
 // Influencer Instagram rescrape — already in influencer.routes.js (/influencers/:id/rescrape)
 

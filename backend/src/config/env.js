@@ -128,6 +128,27 @@ module.exports = {
   // existing behaviour.
   APIFY_INGEST_MODE: process.env.APIFY_INGEST_MODE || 'internal',
 
+  // ── Item 11: the shipping layer (features/item11-remote §6) ───────────────
+  // SHIPPING_PROVIDER chooses the provider for NEW shipments. An existing shipment always
+  // uses the provider written on its own row, so switching this never redirects a parcel
+  // already in flight. 'simulator' is the only live provider in item 11.
+  //
+  // The Shiprocket adapter is switched off TWICE on purpose: index.js refuses to hand it out
+  // unless SHIPPING_PROVIDER === 'shiprocket', AND the adapter's own client throws unless
+  // SHIPROCKET_ENABLED === 'true'. A test asserts no HTTP call leaves the server while off.
+  // NONE of these is set on Render. Going live is the founder's decision, after a few real
+  // test shipments.
+  SHIPPING_PROVIDER: process.env.SHIPPING_PROVIDER || 'simulator',
+  SHIPROCKET_ENABLED: process.env.SHIPROCKET_ENABLED === 'true',
+  SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL || '',
+  SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD || '',
+  SHIPROCKET_BASE_URL: process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in',
+  SHIPROCKET_WEBHOOK_SECRET: process.env.SHIPROCKET_WEBHOOK_SECRET || '',
+  SHIPROCKET_CHANNEL_ID: process.env.SHIPROCKET_CHANNEL_ID || '',
+  // Approval §2.3 — a switch that makes the SIMULATOR refuse to quote a return, so the
+  // "lock falls back to the outbound price" path is tested and not merely written.
+  SIMULATOR_NO_RETURN_QUOTE: process.env.SIMULATOR_NO_RETURN_QUOTE === 'true',
+
   PLATFORM_FEE_PCT: parseFloat(process.env.PLATFORM_FEE_PCT || '8'),
   TDS_PCT: parseFloat(process.env.TDS_PCT || '10'),
   RETURN_WINDOW_DAYS: parseInt(process.env.RETURN_WINDOW_DAYS || '30', 10),

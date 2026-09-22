@@ -28,4 +28,16 @@ const router = Router();
 // uses those bytes for HMAC signature verification and then parses JSON.
 router.post('/razorpay', express.raw({ type: '*/*', limit: '5mb' }), ctrl.handleWebhook);
 
+// POST /v1/webhooks/shipping/:provider — item 11 (features/item11-remote §6.3).
+//
+// Mounted HERE, beside Razorpay's, so it inherits the raw-body arrangement above: app.js
+// skips express.json() for /v1/webhooks/*, express.raw() reads the bytes, and a signature can
+// be checked against exactly what was sent. A handler that verifies a signature over
+// re-serialised JSON is verifying its own output.
+//
+// The SAME endpoint serves the simulator. Admin's Test parcels page posts here, the update
+// walks the same path, and every downstream effect runs as it will in production.
+const shippingWebhook = require('../controllers/shippingWebhook.controller');
+router.post('/shipping/:provider', express.raw({ type: '*/*', limit: '2mb' }), shippingWebhook.handle);
+
 module.exports = router;

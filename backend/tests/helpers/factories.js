@@ -12,7 +12,25 @@ const app = require('../../src/app');
 const { query } = require('./db');
 const jwtService = require('../../src/services/jwt.service');
 
-let phoneCounter = 9800000000;
+/**
+ * Item 11 (Phase 2b) — WHY THIS IS NOT A PLAIN COUNTER.
+ *
+ * It was `let phoneCounter = 9800000000`, and Jest gives every test FILE its own module
+ * registry — so every suite started at the same number and handed out the same phones. One
+ * number is allowed to hold several ROLES on INFLX (project_environment_reality), so the
+ * second suite's createBrandUser did not fail: it logged in as the FIRST suite's brand, and
+ * registerBrand then answered "Brand profile already exists for this account".
+ *
+ * Alone, a suite passes. Run beside another that also makes a brand, and it dies at load —
+ * which is a large part of why 52 of 126 suites crash in a full in-band run today.
+ *
+ * Each file now takes its own thousand-wide block, chosen at random from a range no real
+ * Indian mobile occupies in this database, and counts within it. Nothing depends on the old
+ * literal (grepped: no test or source mentions 98000000xx), and a phone is still stable for
+ * the life of the file that made it.
+ */
+const PHONE_BLOCK = 9700000000 + Math.floor(Math.random() * 90000) * 1000;
+let phoneCounter = PHONE_BLOCK;
 
 function nextPhone() {
   phoneCounter += 1;

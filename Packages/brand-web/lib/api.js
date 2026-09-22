@@ -671,6 +671,12 @@ export const adminApi = {
   getInfluencerSocial:  (id)         => api.get(`/admin/influencers/${id}/social`),
   getAnalytics: (days = 30) => api.get(`/admin/analytics?days=${days}`),
   getProductionQueue: () => api.get('/admin/production/queue'),
+  // Item 11 — Test parcels (R18). Admin plays the courier while the Shiprocket account does
+  // not exist; every press goes through the same webhook a real provider will reach.
+  // Contract: features/item11-remote
+  getTestParcels:         ()            => api.get('/admin/test-parcels'),
+  getTestParcelEvents:    (id)          => api.get(`/admin/test-parcels/${id}/events`),
+  injectTestParcelEvent:  (id, body)    => api.post(`/admin/test-parcels/${id}/events`, body),
   getWithdrawals: (status, search, page) => api.get(`/admin/withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
   getBrandWithdrawals: (status, search, page) => api.get(`/admin/brand-withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),

@@ -123,11 +123,19 @@ async function addItems(eventId, { brandId, items, parcelNo = 1 }, conn) {
     const qty = Math.max(1, Number(it.quantity || 1));
     // eslint-disable-next-line no-await-in-loop
     const { rows } = await conn.query(
+      // Item 11 (migration 191): the unique index this ON CONFLICT targets is now PARTIAL.
+      // The same product in two sizes is two legitimate lines, so uniqueness split into
+      // (event, parcel, product) WHERE variant_id IS NULL and (event, parcel, product,
+      // variant) WHERE variant_id IS NOT NULL. Postgres will not match an inference clause to
+      // a partial index unless the predicate is repeated — without the WHERE below this
+      // statement raises "no unique or exclusion constraint matching the ON CONFLICT
+      // specification". This door never sets a variant, so the variant-less index is the
+      // right one and the predicate is always true here.
       `INSERT INTO production_event_items
          (production_event_id, product_id, name_at_dispatch, price_at_dispatch,
           sku_at_dispatch, quantity, parcel_no)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (production_event_id, parcel_no, product_id)
+       ON CONFLICT (production_event_id, parcel_no, product_id) WHERE variant_id IS NULL
          DO UPDATE SET quantity = EXCLUDED.quantity, updated_at = now()
        RETURNING *`,
       [eventId, p.id, p.name, p.price, p.sku || null, qty, parcelNo]

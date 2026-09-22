@@ -23,6 +23,8 @@ const NAV = [
   // can never fill again. The exceptions that matter now are the Delayed flag, the 48-hour
   // reminder lane and Test parcels. The endpoint stays mounted; item 10's tests read it.
   { href: '/admin/orders', label: 'Orders', icon: '📦', cap: 'orders' },
+  // Item 11 (R18): Admin plays the courier until the Shiprocket account is live.
+  { href: '/admin/test-parcels', label: 'Test parcels', icon: '🚚', cap: 'shipping' },
   { section: 'CONTENT' },
   // Concept P0 (2026-07-23): Creator Experience Engine pages (Design System /
   // Theme Library / Design Library / Exp. Templates) DELETED — never follower-

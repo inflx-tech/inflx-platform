@@ -38,6 +38,11 @@ const CAPABILITIES = [
   { key: 'brands',        label: 'Brands directory',     group: 'Management' },
   { key: 'influencers',   label: 'Influencers',          group: 'Management' },
   { key: 'production',    label: 'Production queue',      group: 'Management' },
+  // Item 11 (approval §3.15): Test parcels is its own capability, not 'production'. It can
+  // inject courier events that move money and notify both sides — that is a different kind of
+  // power from reading a stall queue, and it should be grantable on its own. It is withheld
+  // from reviewer and finance by default; superadmin has it like everything else.
+  { key: 'shipping',      label: 'Test parcels (simulated courier)', group: 'Management' },
   { key: 'orders',        label: 'Orders',               group: 'Management' },
 
   // CONTENT / catalogue + merch engine
