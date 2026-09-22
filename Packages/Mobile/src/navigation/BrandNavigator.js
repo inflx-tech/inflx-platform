@@ -67,6 +67,10 @@ import PitchCounterScreen from '../screens/shared/PitchCounterScreen';
 // Contract: features/item10-store-visit
 import BrandShootScreen from '../screens/brand/BrandShootScreen';
 import BrandShootPlanScreen from '../screens/brand/BrandShootPlanScreen';
+// Item 11 — the Remote shoot: the products, the parcel, the return.
+import BrandRemoteScreen from '../screens/brand/BrandRemoteScreen';
+import BrandRemoteProductsScreen from '../screens/brand/BrandRemoteProductsScreen';
+import BrandRemoteBookScreen from '../screens/brand/BrandRemoteBookScreen';
 import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
 import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 
@@ -120,6 +124,10 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandShootPlan" component={BrandShootPlanScreen} />
       <CampaignsStack.Screen name="BrandShootThread" component={BrandShootThreadScreen} />
       <CampaignsStack.Screen name="BrandShootCounter" component={BrandShootCounterScreen} />
+      {/* Item 11 — the Remote shoot. Contract: features/item11-remote */}
+      <CampaignsStack.Screen name="BrandRemote" component={BrandRemoteScreen} />
+      <CampaignsStack.Screen name="BrandRemoteProducts" component={BrandRemoteProductsScreen} />
+      <CampaignsStack.Screen name="BrandRemoteBook" component={BrandRemoteBookScreen} />
     </CampaignsStack.Navigator>
   );
 }

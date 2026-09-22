@@ -174,7 +174,18 @@ const ROW_SELECT = `
     ) con ON true
     LEFT JOIN LATERAL (
       SELECT pe.id AS shoot_id, pe.mode AS pe_shoot_mode, pe.status AS shoot_status, pe.visit_scheduled_at,
-             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at
+             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+             -- Item 11: the Remote facts, so the brand's set row opens the right screen and says
+             -- where the shoot has got to. Same three as the creator's lateral.
+             pe.address_sent_at,
+             (SELECT s.delivered_at FROM shipments s
+               WHERE s.production_event_id = pe.id AND s.direction = 'outbound' AND s.cancelled_at IS NULL
+               ORDER BY s.created_at DESC LIMIT 1)                             AS parcel_delivered_at,
+             (SELECT s.booked_at FROM shipments s
+               WHERE s.production_event_id = pe.id AND s.direction = 'outbound' AND s.cancelled_at IS NULL
+               ORDER BY s.created_at DESC LIMIT 1)                             AS parcel_booked_at,
+             (SELECT count(*)::int FROM production_event_items i
+               WHERE i.production_event_id = pe.id AND i.receipt_status IS NULL) AS lines_unchecked
         FROM production_events pe WHERE pe.contract_id = con.contract_id
     ) pe ON true
     ${NEG_JOIN}`;
@@ -238,6 +249,14 @@ function brandRow(r, goal) {
       stage: shootPlan.stageOf({ id: r.shoot_id, status: r.shoot_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
       line: shootPlan.brandLineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }, r.name),
       visitAt: r.visit_scheduled_at || null,
+    } : null,
+    // Item 11: present from the moment the collaboration is signed — on Remote the brand
+    // arrives before anything has been created, and the row still has to open the right screen
+    // and say that it is waiting for her address.
+    remote: r.shoot_id && r.pe_shoot_mode !== 'visit' ? {
+      kind: 'remote',
+      stage: remoteLineStage(r),
+      line: remoteBrandLineFor(r),
     } : null,
   };
 }
@@ -349,6 +368,17 @@ function remoteLineStage(r) {
   if (r.parcel_booked_at) return 'in_transit';
   if (r.address_sent_at) return 'sent';
   return 'not_sent';
+}
+function remoteBrandLineFor(r) {
+  switch (remoteLineStage(r)) {
+    case 'not_sent':  return 'Waiting for her delivery address';
+    case 'sent':      return 'Her address is here — pick the products';
+    case 'in_transit':return 'The parcel is on its way to her';
+    case 'delivered': return 'Delivered — she is checking it';
+    case 'checked':   return 'Checked — waiting for her to shoot';
+    case 'shot':      return 'Shoot done';
+    default:          return null;
+  }
 }
 function remoteLineFor(r) {
   switch (remoteLineStage(r)) {

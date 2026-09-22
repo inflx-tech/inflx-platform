@@ -109,6 +109,11 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   // Item 10 walk fix: a signed Store Visit opens the shoot itself, not the agreement. The
   // agreement is still one tap away from there; this is the door the brand actually needs.
   const openShoot = (row) => navigation.navigate('BrandShoot', { campaignId, setId, ciId: row.id });
+  // Item 11: the mode decides which shoot opens. The set's own mode is the authority (§11),
+  // so a row with no shoot row yet still reaches the right screen — which matters on Remote,
+  // where the brand arrives before anything has been created.
+  const openRemote = (row) => navigation.navigate('BrandRemote', { campaignId, setId, ciId: row.id });
+  const isRemote = (row) => !!row.remote || (set && set.shootMode && set.shootMode !== 'visit' && !!row.contract);
   async function doConfirm() {
     const { kind, row } = confirm;
     setConfirm(null);
@@ -120,6 +125,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   function creatorActions(row) {
     const a = [
       ...(row.shoot ? [{ label: 'Open the store visit', onPress: () => openShoot(row) }] : []),
+      ...(isRemote(row) ? [{ label: 'Open the Remote shoot', onPress: () => openRemote(row) }] : []),
       ...(row.actions && row.actions.thread ? [{ label: 'Open the conversation', onPress: () => openThread(row) }] : []),
       { label: S5.menu.viewTerms, onPress: () => viewTerms(row) },
       { label: S5.menu.profile, onPress: () => openProfile(row) },

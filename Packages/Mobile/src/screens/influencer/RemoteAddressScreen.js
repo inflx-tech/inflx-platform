@@ -108,7 +108,7 @@ export default function RemoteAddressScreen({ navigation, route }) {
   }
 
   if (status === 'loading') return <View style={base.screen}><Header title={C11.creator.formTitle} onBack={() => navigation.goBack()} /><Skeleton rows={6} /></View>;
-  if (status === 'error') return <View style={base.screen}><Header title={C11.creator.formTitle} onBack={() => navigation.goBack()} /><LoadError what={C11.loadWhat} onRetry={load} /></View>;
+  if (status === 'error') return <View style={base.screen}><Header title={C11.creator.formTitle} onBack={() => navigation.goBack()} /><LoadError onRetry={load} /></View>;
 
   const brandName = (sh && sh.brand && sh.brand.name) || 'the brand';
   const blocked = coverage && coverage.delivers === false;

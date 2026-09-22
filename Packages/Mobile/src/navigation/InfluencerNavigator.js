@@ -54,6 +54,9 @@ import PitchCounterScreen from '../screens/shared/PitchCounterScreen';
 // Item 10 — her store visit, and the time thread on item 6's engine.
 // Contract: features/item10-store-visit
 import ShootScreen from '../screens/influencer/ShootScreen';
+// Item 11 — the Remote shoot: her address, the parcel, the check, the return.
+import RemoteShootScreen from '../screens/influencer/RemoteShootScreen';
+import RemoteAddressScreen from '../screens/influencer/RemoteAddressScreen';
 import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
 import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 import { tabScreenOptions } from './BrandNavigator';
@@ -100,6 +103,9 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="Shoot" component={ShootScreen} />
       <CollabsStack.Screen name="ShootThread" component={ShootThreadScreen} />
       <CollabsStack.Screen name="ShootCounter" component={ShootCounterScreen} />
+      {/* Item 11 — the Remote shoot. Contract: features/item11-remote */}
+      <CollabsStack.Screen name="MyRemote" component={RemoteShootScreen} />
+      <CollabsStack.Screen name="RemoteAddress" component={RemoteAddressScreen} />
     </CollabsStack.Navigator>
   );
 }

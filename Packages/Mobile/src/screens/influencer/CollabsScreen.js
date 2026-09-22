@@ -74,11 +74,15 @@ export default function CollabsScreen({ navigation, route }) {
             // Item 7: an agreement that is hers to read opens the agreement; a
             // conversation opens the thread; everything else opens the invitation.
             // Item 10: a card with a store visit under way opens the visit — the live thing.
+            // Item 11: a Remote collaboration opens the Remote screen, and it does so from the
+            // moment it is signed — on Remote SHE moves first, so "Send your delivery address"
+            // has to be reachable before anything exists to describe.
             <InvitationCard5 card={item} onPress={() => navigation.navigate(
               item.shoot ? 'Shoot'
-                : item.agreement ? 'Agreement'
-                : (item.negotiation || (item.moveRequest && !item.moveRequest.answer)) ? 'Thread'
-                : 'Invitation',
+                : item.remote ? 'MyRemote'
+                  : item.agreement ? 'Agreement'
+                    : (item.negotiation || (item.moveRequest && !item.moveRequest.answer)) ? 'Thread'
+                      : 'Invitation',
               { ciId: item.id })} />
           )}
           ListEmptyComponent={<View testID={`collabs-empty-${segment.toLowerCase()}`}><EmptyState title={title} body={body} /></View>} />
