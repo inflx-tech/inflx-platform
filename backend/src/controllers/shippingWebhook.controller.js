@@ -30,6 +30,9 @@ const asyncHandler = require('../utils/asyncHandler');
 const webhook = require('../services/shipping/webhook');
 const shiprocket = require('../services/shipping/shiprocket');
 const { EVENT_LIST } = require('../services/shipping/contract');
+// Item 11 — the effects queue their notifications inside the transaction and we flush them
+// once it has committed. Item 10's rule: nobody is told about something that then rolls back.
+const remoteEffects = require('../services/remoteEffects');
 
 const parseJson = (raw) => {
   try { return JSON.parse(Buffer.isBuffer(raw) ? raw.toString('utf8') : String(raw || '{}')); }
@@ -62,6 +65,7 @@ const handle = asyncHandler(async (req, res) => {
       return success(res, { received: true, applied: false, note: 'status not mapped' });
     }
     const out = await webhook.handle({ provider, ...u, payload });
+    await remoteEffects.flush();
     return success(res, { received: true, duplicate: !!out.duplicate, applied: !!out.applied });
   }
 
@@ -88,7 +92,7 @@ async function injectSimulated({ shipmentId, event, occurredAt, amount, reason, 
   if (env.SHIPPING_PROVIDER !== 'simulator') {
     throw new AppError('TEST_PARCEL_REAL_PROVIDER', 'Test parcels only work with the simulator.', 422, 'provider');
   }
-  return webhook.handle({
+  const out = await webhook.handle({
     provider: 'simulator',
     shipmentId,
     event,
@@ -97,6 +101,9 @@ async function injectSimulated({ shipmentId, event, occurredAt, amount, reason, 
     reason: reason || null,
     payload: { source: 'admin-test-parcels', event, by: actorUserId, at: new Date().toISOString(), amount: amount ?? null, reason: reason || null },
   });
+  // The same flush a real provider's delivery gets — that is the whole point of R18.
+  await remoteEffects.flush();
+  return out;
 }
 
 module.exports = { handle, injectSimulated };

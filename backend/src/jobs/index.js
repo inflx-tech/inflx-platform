@@ -164,4 +164,5 @@ module.exports = {
   shootAutoConfirmJob,
   collabDelayedJob,
   shootRemindersJob,
+  remoteReturnAutoConfirmJob,
 };

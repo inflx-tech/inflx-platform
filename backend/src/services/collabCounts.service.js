@@ -251,7 +251,43 @@ async function forCreator(influencerId) {
          LEFT JOIN negotiations sn ON sn.production_event_id = pe.id AND sn.outcome IS NULL
         WHERE ci4.influencer_id = $1 AND pe.mode = 'visit' AND pe.status <> 'completed'
           AND pe.plan_sent_at IS NOT NULL AND pe.time_agreed_at IS NULL AND pe.influencer_completed_at IS NULL
-          AND (sn.id IS NULL OR sn.current_turn = 'influencer'))                       AS shoot_to_answer`,
+          AND (sn.id IS NULL OR sn.current_turn = 'influencer'))                       AS shoot_to_answer,
+       -- Item 11 (rules v1.27 §11.2, §24): a REMOTE shoot waiting on HER. Four of the six
+       -- moves are hers, and the flow is strictly sequential, so exactly one can be open at a
+       -- time — which is why this counts collaborations rather than moves:
+       --   1. her address is not sent
+       --   2. the parcel is delivered and a line is unanswered
+       --   3. every line is answered and the shoot is not marked
+       --   4. the shoot is marked, Return items she RECEIVED are outstanding, and no return
+       --      shipment exists yet
+       -- The return never BLOCKS anything, but it is still her move, and Needs You is a list
+       -- of moves rather than of blockers (§24).
+       (SELECT count(*)::int FROM production_events pe2
+          JOIN contracts con2 ON con2.id = pe2.contract_id
+          JOIN campaign_influencers ci5 ON ci5.id = con2.campaign_influencer_id
+          JOIN campaign_sets cs5 ON cs5.id = ci5.set_id
+         WHERE ci5.influencer_id = $1
+           AND COALESCE(pe2.mode, cs5.shoot_mode, 'remote') <> 'visit'
+           AND con2.influencer_signed_at IS NOT NULL AND con2.brand_signed_at IS NOT NULL
+           AND (
+             pe2.address_sent_at IS NULL
+             OR EXISTS (SELECT 1 FROM shipments s5
+                         WHERE s5.production_event_id = pe2.id AND s5.direction = 'outbound'
+                           AND s5.delivered_at IS NOT NULL AND s5.cancelled_at IS NULL
+                           AND EXISTS (SELECT 1 FROM production_event_items i5
+                                        WHERE i5.production_event_id = pe2.id AND i5.receipt_status IS NULL))
+             OR (pe2.influencer_completed_at IS NULL
+                 AND EXISTS (SELECT 1 FROM production_event_items i6 WHERE i6.production_event_id = pe2.id)
+                 AND NOT EXISTS (SELECT 1 FROM production_event_items i7
+                                  WHERE i7.production_event_id = pe2.id AND i7.receipt_status IS NULL))
+             OR (pe2.influencer_completed_at IS NOT NULL
+                 AND EXISTS (SELECT 1 FROM production_event_items i8
+                              WHERE i8.production_event_id = pe2.id AND i8.disposition = 'return'
+                                AND i8.receipt_status = 'received')
+                 AND NOT EXISTS (SELECT 1 FROM shipments s6
+                                  WHERE s6.production_event_id = pe2.id AND s6.direction = 'return'
+                                    AND s6.cancelled_at IS NULL))
+           ))                                                                          AS remote_to_answer`,
     [influencerId]
   );
   const r = rows[0] || {};
@@ -264,6 +300,7 @@ async function forCreator(influencerId) {
     posts_to_fix:           Number(r.posts_to_fix || 0),
     deliverables_to_submit: Number(r.deliverables_to_submit || 0),
     shoot_to_answer:        Number(r.shoot_to_answer || 0),
+    remote_to_answer:       Number(r.remote_to_answer || 0),
   };
   return {
     total: Object.values(items).reduce((a, b) => a + b, 0),

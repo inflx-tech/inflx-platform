@@ -52,6 +52,75 @@ const MSG = {
   RETIRED_COMPLETE_REMOTE: 'She marks a Remote shoot done in the app, once she has checked what arrived.',
   RETIRED_DROP: "Dropping an item is not part of a Remote shoot. What she reports is recorded as it stands, and you can report a difference to INFLX.",
   RETIRED_SHIPMENT_SLOT: 'There is nothing to agree on a Remote shoot. She sends her address, and you pick the products and book the parcel.',
+
+  /* ── Item 11 · the Remote shoot (rules v1.27 §11.2) ────────────────────────
+   * Every sentence below is the gap-check prompt's §7, verbatim. The server and the app say
+   * the SAME words — the app imports its copy from a mirror of this file — so a refusal never
+   * arrives in two voices. Nothing here may be paraphrased at a call site.
+   */
+  // Her address (R3, R4a, R4b)
+  NAME_REQUIRED: 'Enter your name.',
+  PHONE_REQUIRED: 'Enter a 10-digit mobile number.',
+  STREET_REQUIRED: 'Enter your street and house.',
+  PINCODE_REQUIRED: 'Enter a 6-digit pincode.',
+  STATE_REQUIRED: 'Choose your state.',
+  CITY_REQUIRED: 'Choose your nearest major city.',
+  NOTE_LONG: 'Keep it under 200 characters.',
+  SIZES_LONG: 'Keep it under 100 characters.',
+  NOT_DELIVERABLE: (pin) => `Couriers don't deliver to ${pin} yet. Try an address at a pincode nearby, such as where you work or a friend's.`,
+  ADDRESS_ALREADY_SENT: (brand) => `Your address is already with ${brand}.`,
+  ADDRESS_LOCKED: 'Your address is locked for this shoot.',
+  CORRECTION_NOT_ALLOWED: 'You can correct your address only if the courier brings the parcel back.',
+  CORRECTION_USED: "You've already corrected your address once.",
+
+  // The products (R5)
+  ADDRESS_NOT_SENT: (name) => `${name} hasn't sent her address yet.`,
+  // v1.27 §11.2 / approval Q3: a sale collaboration with no scope receives NOTHING. The whole
+  // catalogue is never used in its place, because that would widen what she may sell.
+  SCOPE_NOT_SET: (name) => `${name}'s selling scope hasn't been set, so there's nothing you can send her yet.`,
+  OUT_OF_SCOPE: (name) => `${name} can't sell this product under your agreement.`,
+  UNAVAILABLE: 'This product isn’t available right now.',
+  NO_LINES: 'Add at least one product.',
+  TOO_MANY_LINES: 'A parcel can hold up to 20 products.',
+  TOO_MANY_OF_VARIANT: 'At most 5 of one size.',
+  VARIANT_REQUIRED: 'Choose a size for this product.',
+  // Approval Q1 — a WARNING on the screen, never a block, and the return is settled between them.
+  RETURN_NO_PICKUP: (pin, name) => `Couriers can't collect returns from ${pin}. If you mark this Return, ${name} sends it back herself and you cover the cost directly.`,
+
+  // Booking (R6, R6b, R7)
+  BOX_REQUIRED: 'Choose a box size.',
+  WEIGHT_REQUIRED: 'Enter the packed weight.',
+  SHORT_BALANCE: (n) => `Add ${n} to book this parcel.`,
+  ALREADY_BOOKED: 'This parcel is already booked.',
+  LIST_LOCKED: 'The products are locked once the parcel is booked.',
+  ALREADY_COLLECTED: 'The courier has already collected this parcel.',
+  NOT_BOOKED: 'This parcel isn’t booked yet.',
+  REBOOK_NOT_ALLOWED: 'You can book again only if the courier brings the parcel back.',
+  REBOOK_USED: 'This parcel has already been booked again once.',
+
+  // Checking and shoot done (R9, R11)
+  NOT_DELIVERED: 'The parcel hasn’t been delivered yet.',
+  ALREADY_CHECKED: 'This is already checked.',
+  CHECK_NOTE_LONG: 'Keep it under 300 characters.',
+  CHECK_FIRST: 'Check what arrived first.',
+  DONE_ALREADY: 'This is already marked.',
+
+  // The return (R12, R13, R15a, R15b)
+  SHOOT_NOT_DONE: 'Mark the shoot done first.',
+  NOTHING_TO_RETURN: 'Nothing to send back — everything is a gift.',
+  PICKUP_DAY_PAST: 'Choose a pickup day from tomorrow.',
+  RETURN_ALREADY_BOOKED: 'The return pickup is already booked.',
+  GIFT_TO_RETURN: "A gift can't be turned back into a return.",
+  RETURN_NOT_DELIVERED: 'The return hasn’t reached you yet.',
+  ALREADY_CONFIRMED: 'This is already confirmed.',
+  ALREADY_REPORTED: "You've already reported this.",
+  OVERDUE_NOT_YET: 'The return isn’t overdue yet.',
+  // Q1 — the no-courier return
+  SELF_SEND_NOT_ALLOWED: 'The courier is collecting this return, so there is nothing for you to send yourself.',
+  SELF_SEND_NOTE_LONG: 'Keep it under 200 characters.',
+
+  // Admin
+  TEST_PARCEL_REAL_PROVIDER: 'Test parcels only work with the simulator.',
 };
 
 /**
@@ -90,6 +159,60 @@ const NOTIFY = {
   AUTO_CONFIRMED: { type: 'shoot.auto_confirmed', title: 'Shoot confirmed itself' },
   DELAYED:        { type: 'collab.delayed',       title: 'This collaboration is delayed' },
   REMINDER:       { type: 'shoot.reminder',       title: 'A store visit is waiting on you' },
+};
+
+/**
+ * Item 11 — the seventeen keys of D13. `sendSms: false` on every one of them: the only SMS in
+ * the shoot was the retired shipment-reminder job's, and none of these is worth a text message.
+ * Push and the in-app bell, as items 5–10 do it.
+ */
+const NOTIFY11 = {
+  ADDRESS_SENT:      { type: 'remote.address_sent',      title: 'Her delivery address is here' },
+  BOOKED:            { type: 'remote.booked',            title: 'Your products are on the way' },
+  COLLECTED:         { type: 'remote.collected',         title: 'The courier has the parcel' },
+  OUT_FOR_DELIVERY:  { type: 'remote.out_for_delivery',  title: 'Out for delivery today' },
+  ATTEMPT_FAILED:    { type: 'remote.attempt_failed',    title: 'The courier couldn’t deliver' },
+  DELIVERED:         { type: 'remote.delivered',         title: 'The parcel has arrived' },
+  BACK_TO_STORE:     { type: 'remote.back_to_store',     title: 'The parcel came back' },
+  WEIGHT_CHARGE:     { type: 'remote.weight_charge',     title: 'A courier weight charge' },
+  DIFFERENCE:        { type: 'remote.difference',        title: 'She reported a difference' },
+  SHOOT_DONE:        { type: 'remote.shoot_done',        title: 'She has finished the shoot' },
+  RETURN_TO_GIFT:    { type: 'remote.return_to_gift',    title: 'You can keep it' },
+  RETURN_BOOKED:     { type: 'remote.return_booked',     title: 'The return pickup is booked' },
+  RETURN_COLLECTED:  { type: 'remote.return_collected',  title: 'The return is on its way' },
+  RETURN_DELIVERED:  { type: 'remote.return_delivered',  title: 'The return reached the branch' },
+  RETURN_CONFIRMED:  { type: 'remote.return_confirmed',  title: 'The return is confirmed' },
+  RETURN_OVERDUE:    { type: 'remote.return_overdue',    title: 'The return is overdue' },
+  DELAYED:           { type: 'collab.delayed',           title: 'This collaboration is delayed' },
+  REMINDER:          { type: 'remote.reminder',          title: 'A Remote shoot is waiting on you' },
+};
+
+/**
+ * The Remote stage, in the words the screens use. Derived from timestamps exactly as item 10
+ * derives the visit's — never stored twice.
+ *
+ *   not_sent → sent → booked → in_transit → delivered → checked → shot
+ *   …then the return lane, which is SEPARATE and never blocks anything (§11.2).
+ */
+const REMOTE_STAGE_LABEL = {
+  not_sent:   'Waiting for her address',
+  sent:       'Address sent, not booked',
+  booked:     'Booked, not collected',
+  in_transit: 'On the way',
+  delivered:  'Delivered, not checked',
+  checked:    'Checked, shoot not marked',
+  shot:       'Shoot done',
+};
+
+/** The return's own stage. Its own lane, on purpose. */
+const RETURN_STAGE_LABEL = {
+  none:       'Nothing to send back',
+  due:        'To send back',
+  booked:     'Pickup booked',
+  in_transit: 'On its way back',
+  delivered:  'At the branch, not confirmed',
+  confirmed:  'Confirmed',
+  overdue:    'Overdue',
 };
 
 const STAGE_LABEL = {
@@ -138,5 +261,6 @@ function assertRemoteMode(mode, brandName) {
 }
 
 module.exports = {
-  MSG, NOTIFY, STAGE_LABEL, DELAYED_STAGE_LABEL, whenLine, shortDay, assertRemoteMode,
+  MSG, NOTIFY, NOTIFY11, STAGE_LABEL, DELAYED_STAGE_LABEL, REMOTE_STAGE_LABEL, RETURN_STAGE_LABEL,
+  whenLine, shortDay, assertRemoteMode,
 };

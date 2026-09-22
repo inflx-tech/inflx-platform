@@ -8,6 +8,8 @@ const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { toPaise, fromPaise } = require('../utils/money');
+// Item 11 — money in settles what is owed (v1.27 §11.2, approval Q4).
+const remoteMoney = require('../services/remoteMoney.service');
 const paymentConfigSvc = require('../services/paymentConfig.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -211,6 +213,7 @@ const verifyTopup = asyncHandler(async (req, res) => {
   // ── Credit wallet atomically (rupees everywhere inside our DB) ──────────
   let newBalance;
   let transaction;
+  let duesSettled = [];
 
   await db.withTransaction(async (client) => {
     const { rows: brandRows } = await client.query(
@@ -229,15 +232,26 @@ const verifyTopup = asyncHandler(async (req, res) => {
       `INSERT INTO wallet_transactions
          (brand_id, type, amount, direction, balance_after, razorpay_payment_id, notes)
        VALUES ($1, 'topup', $2, 'credit', $3, $4, $5)
-       RETURNING *`,
+       RETURNING *`,   // item 11: dues are settled from this credit, below
       [brand.id, amountRupees, newBalance, razorpay_payment_id, 'Wallet top-up via Razorpay']
     );
     transaction = txRows[0];
+
+    // Item 11 (v1.27 §11.2, approval Q4) — MONEY IN SETTLES WHAT IS OWED.
+    // A courier charge that arrived when the wallet was short became a brand_dues row rather
+    // than blocking anything. It comes off the top of the next money in, oldest first, only as
+    // far as this credit reaches, and inside THIS transaction — so a settled due and the money
+    // that settled it can never come apart.
+    duesSettled = (await remoteMoney.settleDuesFromCredit(client, brand.id, amountRupees)).settled;
+    if (duesSettled.length) {
+      newBalance = await remoteMoney.available(brand.id, client);
+    }
   });
 
   return success(res, {
     wallet_balance: newBalance,
     transaction,
+    dues_settled: duesSettled,
   });
 });
 

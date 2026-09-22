@@ -124,6 +124,13 @@ app.get('/o/:id', trackingCtrl.trackOffer);
 // ─── API routes ───────────────────────────────────────────────────────────────
 app.use('/v1', routes);
 
+// Item 11 — what a courier update MEANS to a collaboration (money, notifications, the return
+// clock). Registered HERE, at startup, because services/shipping must never import item 11:
+// the dependency points one way so item 16 can reuse the layer for a customer's order.
+// Registering on the app rather than in index.js means the tests get it too — they mount this
+// module, not the server. Contract: features/item11-remote §6.3
+require('./services/remoteEffects').register();
+
 // ─── 404 catch-all ───────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({

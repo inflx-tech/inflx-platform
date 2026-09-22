@@ -1285,6 +1285,11 @@ const processBrandWithdrawal = asyncHandler(async (req, res) => {
        VALUES ($1, 'withdrawal', $2, 'credit', $3, $4)`,
       [withdrawal.brand_id, amount, newBalance, note]
     );
+    // Item 11 (v1.27 §11.2, approval Q4) — money in settles what is owed. A withdrawal that
+    // comes back is money the brand can spend again, so an outstanding courier charge comes
+    // off it first, oldest-first, in this same transaction.
+    await require('../services/remoteMoney.service')
+      .settleDuesFromCredit(client, withdrawal.brand_id, amount);
   }
 
   if (action === 'reject') {

@@ -314,7 +314,18 @@ const CREATOR_SELECT = `
     -- Item 10: the shoot, so her Active card can carry the one line that matters (V4).
     LEFT JOIN LATERAL (
       SELECT pe.id AS shoot_id, pe.mode AS pe_shoot_mode, pe.status AS shoot_status, pe.visit_scheduled_at,
-             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at
+             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+             -- Item 11: the Remote shoot's own timestamps, so her Active card can route to the
+             -- Remote screen and say the one line that matters (R2).
+             pe.address_sent_at,
+             (SELECT s.delivered_at FROM shipments s
+               WHERE s.production_event_id = pe.id AND s.direction = 'outbound' AND s.cancelled_at IS NULL
+               ORDER BY s.created_at DESC LIMIT 1)                             AS parcel_delivered_at,
+             (SELECT s.booked_at FROM shipments s
+               WHERE s.production_event_id = pe.id AND s.direction = 'outbound' AND s.cancelled_at IS NULL
+               ORDER BY s.created_at DESC LIMIT 1)                             AS parcel_booked_at,
+             (SELECT count(*)::int FROM production_event_items i
+               WHERE i.production_event_id = pe.id AND i.receipt_status IS NULL) AS lines_unchecked
         FROM production_events pe WHERE pe.contract_id = con.contract_id
     ) pe ON true
     ${NEG_JOIN}
@@ -323,6 +334,33 @@ const CREATOR_SELECT = `
 
 /** Ended, withdrawn and closed cards stay for seven days, then move to Done (APPROVAL.md §4.11). */
 const DONE_AFTER_DAYS = 7;
+
+/**
+ * Item 11 (R2) — where a Remote shoot has got to, and the one line her Active card shows.
+ *
+ * Derived from the same timestamps remoteShoot.stageOf reads, deliberately in the SAME order,
+ * so the card and the screen behind it cannot disagree. Kept here rather than imported because
+ * this query flattens the shipment into three columns; importing the service would mean loading
+ * every line and shipment for every row of a list.
+ */
+function remoteLineStage(r) {
+  if (r.influencer_completed_at) return 'shot';
+  if (r.parcel_delivered_at) return Number(r.lines_unchecked) > 0 ? 'delivered' : 'checked';
+  if (r.parcel_booked_at) return 'in_transit';
+  if (r.address_sent_at) return 'sent';
+  return 'not_sent';
+}
+function remoteLineFor(r) {
+  switch (remoteLineStage(r)) {
+    case 'not_sent':  return 'Send your delivery address';
+    case 'sent':      return 'Address sent — waiting for your products';
+    case 'in_transit':return 'Your products are on the way';
+    case 'delivered': return 'Your parcel arrived — say what turned up';
+    case 'checked':   return 'Mark the shoot done when you have shot';
+    case 'shot':      return 'Shoot done';
+    default:          return null;
+  }
+}
 
 /**
  * The creator's view of one row: her group, when it ended, whether she can still act, and why
@@ -398,6 +436,16 @@ function creatorCard(r, today) {
       stage: shootPlan.stageOf({ id: r.shoot_id, status: r.shoot_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
       line: shootPlan.lineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
       visitAt: r.visit_scheduled_at || null,
+      delayed: !!r.delayed_at,
+    } : null,
+    // Item 11 (R2): the Remote shoot on her Active card. Present from the moment the
+    // collaboration is signed, because on Remote SHE moves first — "Send your delivery
+    // address" is the card's whole point, and it has to be there before anything exists to
+    // describe. `kind` is what the app routes on, so one card can open either screen.
+    remote: r.shoot_id && r.pe_shoot_mode !== 'visit' ? {
+      kind: 'remote',
+      stage: remoteLineStage(r),
+      line: remoteLineFor(r),
       delayed: !!r.delayed_at,
     } : null,
     // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).

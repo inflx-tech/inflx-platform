@@ -10,12 +10,17 @@
  * Contract: features/item10-store-visit
  */
 const shootPlan = require('../services/shootPlan.service');
+// Item 11 — the Remote half. Six moves, one rule, and the one exemption from the
+// posting-date stop: an OVERDUE RETURN keeps reminding her past it (rules v1.27 §11.2).
+const remoteJobs = require('../services/remoteJobs.service');
 
 async function run({ now = new Date() } = {}) {
   console.log('[CRON shoot-reminders] Running...');
   try {
-    const out = await shootPlan.remind({ now });
-    console.log(`[CRON shoot-reminders] Checked ${out.checked}, sent ${out.sent}.`);
+    const visit = await shootPlan.remind({ now });
+    const remote = await remoteJobs.remindRemote({ now });
+    const out = { checked: visit.checked + remote.checked, sent: visit.sent + remote.sent, visit, remote };
+    console.log(`[CRON shoot-reminders] Checked ${out.checked}, sent ${out.sent} (visit ${visit.sent}, remote ${remote.sent}).`);
     return out;
   } catch (e) {
     console.error('[CRON shoot-reminders] Failed:', e.message);

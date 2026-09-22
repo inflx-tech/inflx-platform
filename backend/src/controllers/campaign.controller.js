@@ -1499,6 +1499,13 @@ const cancel = asyncHandler(async (req, res) => {
           `Campaign cancelled — escrow refund for: ${campaign.name}`,
         ]
       );
+
+      // Item 11 (v1.27 §11.2, approval Q4) — money in settles what is owed. "Next money in"
+      // is EVERY credit that reaches brands.wallet_balance, not only a top-up: an escrow
+      // refund is money the brand can spend, so an outstanding courier charge comes off it
+      // first, oldest-first, in this same transaction.
+      await require('../services/remoteMoney.service')
+        .settleDuesFromCredit(client, brand.id, refundAmount);
     }
 
     await client.query(

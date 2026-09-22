@@ -173,6 +173,10 @@ router.use('/', item8Routes);
 // Contract: features/item10-store-visit
 const item10Routes = require('./item10.routes');
 router.use('/', item10Routes);
+// Item 11 — the Remote shoot: her address, the products, the parcel, the return.
+// Contract: features/item11-remote
+const item11Routes = require('./item11.routes');
+router.use('/', item11Routes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

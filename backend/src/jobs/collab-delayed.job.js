@@ -12,12 +12,24 @@
  * Contract: features/item10-store-visit
  */
 const shootPlan = require('../services/shootPlan.service');
+// Item 11 — the Remote half of the same lane. Two functions rather than one because the two
+// modes derive their stage from entirely different timestamps, and a single query that tried
+// to do both would be readable by nobody.
+const remoteJobs = require('../services/remoteJobs.service');
 
 async function run({ today = null } = {}) {
   console.log('[CRON collab-delayed] Running...');
   try {
-    const out = await shootPlan.flagDelayed({ today });
-    console.log(`[CRON collab-delayed] Checked ${out.checked}, flagged ${out.flagged}, skipped (gate closed) ${out.skippedGate}, failed ${out.failed}.`);
+    const visit = await shootPlan.flagDelayed({ today });
+    const remote = await remoteJobs.flagDelayedRemote({ today });
+    const out = {
+      checked: visit.checked + remote.checked,
+      flagged: visit.flagged + remote.flagged,
+      skippedGate: visit.skippedGate + remote.skippedGate,
+      failed: visit.failed + remote.failed,
+      visit, remote,
+    };
+    console.log(`[CRON collab-delayed] Checked ${out.checked}, flagged ${out.flagged} (visit ${visit.flagged}, remote ${remote.flagged}), skipped (gate closed) ${out.skippedGate}, failed ${out.failed}.`);
     return out;
   } catch (e) {
     console.error('[CRON collab-delayed] Failed:', e.message);
