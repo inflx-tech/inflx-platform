@@ -193,7 +193,18 @@ async function reseedReferenceData(client) {
       ('remote_return_days',  7,  1, 60, 'days',   'Remote return window'),
       ('pitch_response_days', 30, 7, 90, 'days',   'Pitch response period'),
       ('pitch_cooldown_days', 30, 0, 90, 'days',   'Pitch rejection cooldown'),
-      ('shoot_auto_confirm_days', 3, 1, 30, 'days', 'Store visit auto-confirm')
+      ('shoot_auto_confirm_days', 3, 1, 30, 'days', 'Store visit auto-confirm'),
+      -- Item 11 (R17). And "subscriptions_enforced", which migration 185 added and this list
+      -- never gained — so after the first truncateAll of any run it was missing too.
+      --
+      -- WHY A MISSING ROW HERE IS NOT COSMETIC: platform_settings_audit.key REFERENCES
+      -- platform_settings(key). The service validates a write against the CODE defaults, so
+      -- an admin PATCH of a key with no row passes validation, updates nothing, and then dies
+      -- on the audit insert's foreign key — surfacing as a bare 422 "Referenced resource does
+      -- not exist" that says nothing about what is actually wrong. Every key the code knows
+      -- about belongs in this list.
+      ('subscriptions_enforced', 1, 0, 1, 'on/off', 'Subscription plans'),
+      ('remote_return_autoconfirm_days', 7, 1, 30, 'days', 'Remote return auto-confirm')
     ON CONFLICT (key) DO NOTHING
   `);
   // Item 7: the standard terms are seeded by migration 183 and are configuration

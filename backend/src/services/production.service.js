@@ -277,7 +277,10 @@ async function getLog(eventId) {
     `SELECT id, actor_role, action, notes, metadata, created_at
      FROM   production_event_log
      WHERE  production_event_id = $1
-     ORDER  BY created_at ASC`,
+     -- Item 11: (created_at, seq). created_at DEFAULT now() is the TRANSACTION timestamp, so
+     -- two rows written together are indistinguishable by it and the order came out at random.
+     -- migration 191 adds the bigserial that settles it.
+     ORDER  BY created_at ASC, seq ASC`,
     [eventId]
   );
   return rows;

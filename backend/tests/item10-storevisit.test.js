@@ -214,7 +214,7 @@ describe('the mode — the set comes first (checks 35, 36)', () => {
     const s = await w10.signedByBoth('conversion', { mode: 'shipment' });
     expect(s.pe.mode).toBe('shipment');
     expect(s.pe.branch_id).toBeNull();
-    const log = (await query(`SELECT action, notes FROM production_event_log WHERE production_event_id = $1 ORDER BY created_at`, [v.pe.id])).rows;
+    const log = (await query(`SELECT action, notes FROM production_event_log WHERE production_event_id = $1 ORDER BY created_at, seq`, [v.pe.id])).rows;
     expect(log[0].notes).toBe('Mode set to visit (from the set)');
   });
 

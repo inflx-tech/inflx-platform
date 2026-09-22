@@ -648,13 +648,17 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     const a = await admin();
     let r = await api.get('/admin/platform-settings', a.token);
     expect(r.status).toBe(200);
-    // Items 7, 8 and 10 added more numbers to the same screen (rules v1.20 §9, v1.21 §8, v1.24
-    // §11.1), and the subscriptions master switch leads the list because it governs whether the
-    // plan limits apply at all (features/subscriptions-master-switch).
+    // Items 7, 8, 10 and 11 added more numbers to the same screen (rules v1.20 §9, v1.21 §8,
+    // v1.24 §11.1, v1.27 §11.2), and the subscriptions master switch leads the list because it
+    // governs whether the plan limits apply at all (features/subscriptions-master-switch).
+    //
+    // ASSERTION DRIFT, item 11 (R17): remote_return_autoconfirm_days is the one new number —
+    // how long a brand has to confirm a Remote return before it confirms itself. The list is
+    // asserted exactly on purpose, so a number appearing on this screen is never a surprise.
     expect(r.body.data.settings.map(x => x.key)).toEqual(
       ['subscriptions_enforced', 'negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts',
         'campaign_fee_pct', 'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days',
-        'shoot_auto_confirm_days']
+        'shoot_auto_confirm_days', 'remote_return_autoconfirm_days']
     );
     const rounds = r.body.data.settings.find(x => x.key === 'negotiation_rounds');
     expect(rounds).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });
