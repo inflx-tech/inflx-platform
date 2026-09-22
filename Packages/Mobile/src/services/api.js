@@ -336,6 +336,22 @@ export const brandApi = {
   moveShoot:         (campaignId, setId, ciId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/move`, body),
   confirmShoot:      (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/shoot/confirm`),
 
+  // ── Item 11 · the Remote shoot, the brand's side. Contract: features/item11-remote ──
+  // Every one is behind the §10 gate AND the mode check on the server. There is no decline
+  // and no counter — a Remote shoot has nothing to negotiate; those routes do not exist.
+  remote:            (c, s2, ciId) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote`),
+  remoteProducts:    (c, s2, ciId, q) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/products${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  remoteSaveLines:   (c, s2, ciId, body) => api.put(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/lines`, body),
+  remoteQuote:       (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/quote`, body),
+  remoteBook:        (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/book`, body),
+  remoteLabel:       (c, s2, ciId) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/label`),
+  remoteCancel:      (c, s2, ciId) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/cancel`),
+  remoteRebook:      (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/rebook`, body),
+  remoteReport:      (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/report`, body),
+  remoteAcknowledge: (c, s2, ciId) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/acknowledge`),
+  remoteGift:        (c, s2, ciId, lineId) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/lines/${lineId}/gift`),
+  remoteConfirmReturn: (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/return/confirm`, body),
+
   // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
   // Accepting creates a pool entry and nothing else, which is why there is no
   // campaign or set in any of these paths.
@@ -586,6 +602,17 @@ export const influencerApi = {
   acceptMyShootCounter: (id) => api.post(`/influencers/me/invitations/${id}/shoot/thread/accept`),
   moveMyShoot:        (id, body) => api.post(`/influencers/me/invitations/${id}/shoot/move`, body),
   markAttended:       (id) => api.post(`/influencers/me/invitations/${id}/shoot/attended`),
+
+  // ── Item 11 · the Remote shoot, her side. Contract: features/item11-remote ──
+  // SHE MOVES FIRST: until the address is sent the brand has nothing to do (rules §11.2).
+  myRemote:           (id) => api.get(`/influencers/me/invitations/${id}/remote`),
+  myRemoteCoverage:   (id, pincode) => api.post(`/influencers/me/invitations/${id}/remote/coverage`, { pincode }),
+  myRemoteAddress:    (id, body) => api.post(`/influencers/me/invitations/${id}/remote/address`, body),
+  myRemoteCorrect:    (id, body) => api.post(`/influencers/me/invitations/${id}/remote/address/correct`, body),
+  myRemoteCheck:      (id, body) => api.post(`/influencers/me/invitations/${id}/remote/check`, body),
+  myRemoteDone:       (id) => api.post(`/influencers/me/invitations/${id}/remote/done`),
+  myRemoteBookReturn: (id, body) => api.post(`/influencers/me/invitations/${id}/remote/return/book`, body),
+  myRemoteSelfSent:   (id, body) => api.post(`/influencers/me/invitations/${id}/remote/return/sent`, body),
 
   // ── Item 8 · her pitch. Contract: features/item8-pitch ────────────────────
   // The thread is item 6's engine on a different anchor, so these four mirror
