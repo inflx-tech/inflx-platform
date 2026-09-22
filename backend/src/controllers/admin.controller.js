@@ -1734,14 +1734,14 @@ const getProductionQueue = asyncHandler(async (req, res) => {
             pe.mode,
             pe.status,
             pe.created_at,
-            pe.shipment_dispatched_at,
-            pe.shipment_courier,
-            pe.shipment_awb,
+            -- Item 11 (approval §3.3): shipment_dispatched_at / _courier / _awb are gone from
+            -- this projection. They were written only by the hand-typed "dispatch" door, which
+            -- is retired, so the "in_progress > 14 days" bucket below can never fill again.
+            -- The Remote flow's own stalls are the :55 reminder lane's and the Delayed flag's.
             pe.visit_scheduled_at,
             pe.reschedule_count_brand,
             pe.reschedule_count_influencer,
             EXTRACT(EPOCH FROM (NOW() - pe.created_at)) / 86400 AS days_since_created,
-            EXTRACT(EPOCH FROM (NOW() - pe.shipment_dispatched_at)) / 86400 AS days_since_dispatch,
             camp.name AS campaign_name,
             b.business_name AS brand_name,
             inf_u.name AS influencer_name,
@@ -1765,7 +1765,6 @@ const getProductionQueue = asyncHandler(async (req, res) => {
      WHERE  pe.status NOT IN ('completed', 'cancelled')
        AND  (
               (pe.status = 'proposed'   AND pe.created_at < NOW() - INTERVAL '3 days')
-           OR (pe.status = 'in_progress' AND pe.shipment_dispatched_at < NOW() - INTERVAL '14 days')
            OR pe.reschedule_count_brand >= $1
            OR pe.reschedule_count_influencer >= $1
             )
@@ -1787,9 +1786,6 @@ const getProductionQueue = asyncHandler(async (req, res) => {
     if (Number(r.times_agreed) >= 2) reasons.push(`Time moved ${Number(r.times_agreed) - 1}× after agreement`);
     if (r.status === 'proposed' && Number(r.days_since_created) >= 3) {
       reasons.push(`Stale 'proposed' for ${Math.floor(r.days_since_created)}d`);
-    }
-    if (r.status === 'in_progress' && Number(r.days_since_dispatch || 0) >= 14) {
-      reasons.push(`Shipment unconfirmed for ${Math.floor(r.days_since_dispatch)}d`);
     }
     if (Number(r.reschedule_count_brand) >= RESCHEDULE_LIMIT) reasons.push('Brand reschedule limit reached');
     if (Number(r.reschedule_count_influencer) >= RESCHEDULE_LIMIT) reasons.push('Influencer reschedule limit reached');

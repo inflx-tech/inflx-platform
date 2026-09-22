@@ -25,19 +25,26 @@ export default function ProductionSection({ id, influencers = [] }) {
         Store visits, product shipments and remote creators for this campaign. Manage each one&apos;s logistics below.
       </div>
       {rows.map((ci) => {
-        const physical = ci.physical_delivery === true || ci.physical_delivery === 'true';
-        const addr = (ci.delivery_address || '').trim();
+        // Item 11, finding 2: `ci.delivery_address` was read here to decide the icon and the
+        // line. It is a creator street address, the roster no longer sends it, and nothing
+        // ever wrote it. The mode says everything this card needs — and says it correctly:
+        // a shipment is not "no logistics needed", it is the whole of item 11.
+        const mode = ci.mode || ci.production_mode || null;
+        const isVisit = mode === 'visit';
+        const isRemote = mode === 'shipment' || mode === 'remote';
         return (
           <div key={ci.id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-3 flex items-center gap-3">
-            <span className={`w-9 h-9 rounded-[9px] flex items-center justify-center text-[13px] ${physical ? (addr ? 'bg-[#DBEAFE] text-[#1D4ED8]' : 'bg-[#FFF7CC] text-[#6B5A00]') : 'bg-[#D1FAE5] text-[#047857]'}`}>
-              {physical ? (addr ? '↗' : '◎') : '⌂'}
+            <span className={`w-9 h-9 rounded-[9px] flex items-center justify-center text-[13px] ${isRemote ? 'bg-[#DBEAFE] text-[#1D4ED8]' : isVisit ? 'bg-[#FFF7CC] text-[#6B5A00]' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+              {isRemote ? '↗' : isVisit ? '◎' : '·'}
             </span>
             <div className="flex-1 min-w-0">
               <div className="text-[13.5px] font-bold text-[#0A0A0A] truncate">
                 {ci.instagram_handle ? `@${ci.instagram_handle}` : (ci.influencer_name || 'Creator')}
               </div>
               <div className="text-[11.5px] text-[#71717A] truncate">
-                {physical ? (addr ? `Ship product · ${addr}` : 'Store visit · schedule a slot') : 'Remote · no logistics needed'}
+                {isRemote ? 'Remote · products are shipped to her, in the app'
+                  : isVisit ? 'Store visit · agreed in the app'
+                  : 'Not started'}
               </div>
             </div>
             <Link

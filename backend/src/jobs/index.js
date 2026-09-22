@@ -88,9 +88,16 @@ function startAllJobs() {
   // low-wallet-alert — 09:00 UTC daily
   cron.schedule('0 9 * * *', lowWalletJob.run);
 
-  // production-shipment-reminder — 09:30 IST daily; nudges influencers with
-  // unconfirmed shipments and flags 14+ day stalls for admin attention.
-  cron.schedule('30 9 * * *', productionReminderJob.run, { timezone: tz });
+  // production-shipment-reminder — RETIRED by item 11 (approval §3.3). NOT SCHEDULED.
+  //
+  // It nudged on `mode='shipment' AND status='in_progress' AND shipment_dispatched_at` — the
+  // hand-typed dispatch item 11 retires, so it can never match again. It also asked NO GATE
+  // (it would have nudged an unsigned collaboration) and sent an SMS at 14 days, which is the
+  // only SMS anywhere in the shoot. Item 11's `:55` lane covers every Remote move at 48 hours,
+  // behind the gate, push and in-app only.
+  //
+  // The file stays for the moment so its behaviour is readable beside the replacement; nothing
+  // calls `.run()` but the tests. Contract: features/item11-remote
 
   // subscription-renewal — 02:00 IST daily; charges due brand_subscriptions
   // (mock-mode synthetic invoice; live-mode TODO Razorpay subscription charge).

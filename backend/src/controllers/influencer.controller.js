@@ -1528,7 +1528,13 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
          ci.offer_type,
          ci.offer_config_json,
          ci.physical_delivery,
-         ci.delivery_address,
+         -- Item 11, finding 2: ci.delivery_address was selected here and returned on the
+         -- creator's collaboration read. It is a free-text legacy column (migration 002) that
+         -- nothing writes — 0 of 19 rows in production carry one — but it is a CREATOR STREET
+         -- ADDRESS, and item 11 is the item that starts holding those. A column that leaves
+         -- through a payload nobody audits is the shape of the leak, whether or not it is
+         -- populated today. Her address now lives on the shoot row behind address_sent_at and
+         -- reaches the brand through F1 alone. The column and its data are left in place.
          -- collab-part6 §6.1 — the creator was never told WHICH terms were already
          -- settled at the handshake. Part 2 enforces it (renegotiation is refused);
          -- the value was stored and delivered to nobody, so the one-click promise was

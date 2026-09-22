@@ -207,31 +207,22 @@ async function autoCreateForContract(client, contract, agreementMode) {
   // sides for a store visit, the creator for a remote shoot.
   const initialStatus = initialStatusFor(mode);
 
-  // Auto-fill shipping address from campaign_influencers.delivery_address.
-  // Falls back to NULL — brand can override at the visit/shipment-details step.
-  let shipFields = {};
-  if (mode === 'shipment') {
-    // Item 10: `u.pincode` was selected here and users has no such column. This branch was
-    // never reached before the set's mode was honoured — every set-first shipment resolved to
-    // 'remote' — so the error was latent. Item 11 (§11.2) replaces this prefill with the
-    // address she supplies at the shoot plan; until then, no pincode is guessed.
-    const { rows } = await client.query(
-      `SELECT ci.delivery_address, u.city, u.state, NULL::text AS pincode
-       FROM   campaign_influencers ci
-       JOIN   influencers inf ON inf.id = ci.influencer_id
-       JOIN   users u ON u.id = inf.user_id
-       WHERE  ci.id = $1`,
-      [contract.campaign_influencer_id]
-    );
-    if (rows[0]) {
-      shipFields = {
-        shipment_to_address_line: rows[0].delivery_address || null,
-        shipment_to_city:    rows[0].city || null,
-        shipment_to_state:   rows[0].state || null,
-        shipment_to_pincode: rows[0].pincode || null,
-      };
-    }
-  }
+  // Item 11, finding 2 — THE PREFILL IS GONE.
+  //
+  // A block here used to read `campaign_influencers.delivery_address` plus `users.city/state`
+  // and copy them into shipment_to_* AT THE BRAND'S SIGNATURE — that is, a creator address
+  // written onto the shoot row before she had sent anything, and then handed out by
+  // getProduction and listCampaignProduction, both of which returned it unfiltered.
+  //
+  // §11.2 is explicit about the order: "The Creator starts it. Until she does, the Brand sees
+  // that it is waiting for her address and has nothing to do." The address arrives when SHE
+  // sends it at the shoot plan, is checked against the courier network at that moment, and
+  // locks (§28). Guessing it from a legacy free-text column inverts the whole item.
+  //
+  // Item 10 had already disarmed half of this (it selected `u.pincode`, which does not exist,
+  // so the branch threw the moment the mode resolver started producing real shipments). The
+  // other half goes now. The columns and their data stay where they are.
+  const shipFields = {};
 
   const { rows: created } = await client.query(
     `INSERT INTO production_events

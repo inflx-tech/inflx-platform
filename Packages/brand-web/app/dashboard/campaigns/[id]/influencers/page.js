@@ -177,10 +177,6 @@ function ProductionPanel({ contractId }) {
   const [showCounter, setShowCounter]     = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
 
-  const [courier, setCourier]       = useState('');
-  const [awb, setAwb]               = useState('');
-  const [expectedAt, setExpectedAt] = useState('');
-
   const load = useCallback(async () => {
     setLoading(true);
     const [res, rangeRes] = await Promise.all([
@@ -200,9 +196,6 @@ function ProductionPanel({ contractId }) {
         setVWindow(e.visit_window_minutes || 60);
         setVContactName(e.visit_contact_name || '');
         setVContactPhone(e.visit_contact_phone || '');
-        setCourier(e.shipment_courier || '');
-        setAwb(e.shipment_awb || '');
-        setExpectedAt(e.shipment_expected_at ? new Date(e.shipment_expected_at).toISOString().slice(0, 10) : '');
       }
     }
     if (rangeRes?.success) setDateRange(rangeRes.data?.range || null);
@@ -269,19 +262,6 @@ function ProductionPanel({ contractId }) {
     setSaving(false);
     if (res.success) load();
     else setError(res.error?.message || 'Flip failed');
-  }
-
-  async function saveDispatch() {
-    if (!event) return;
-    setSaving(true); setError(null);
-    const res = await productionApi.dispatch(event.id, {
-      courier:     courier.trim(),
-      awb:         awb.trim(),
-      expected_at: expectedAt ? new Date(expectedAt).toISOString() : null,
-    });
-    setSaving(false);
-    if (res.success) load();
-    else setError(res.error?.message || 'Dispatch failed');
   }
 
   async function markVisitDone() {
@@ -569,45 +549,23 @@ function ProductionPanel({ contractId }) {
         );
       })()}
 
-      {event.mode === 'shipment' && (
-        <div className="space-y-2">
-          <div className="text-[11.5px] text-[#52525B] bg-white border border-[#E4E4E7] rounded-[8px] p-2">
-            <span className="font-bold">Shipping to: </span>
-            {[event.shipment_to_address_line, event.shipment_to_city, event.shipment_to_state, event.shipment_to_pincode].filter(Boolean).join(', ') || 'Address not yet provided'}
-          </div>
-          {event.status === 'confirmed' && (
-            <>
-              <input value={courier} onChange={e => setCourier(e.target.value)} placeholder="Courier (e.g. Bluedart, Delhivery)"
-                list="courier-suggestions"
-                className="w-full border border-[#E4E4E7] rounded-[8px] p-2 text-[11.5px] focus:border-[#FFC107] outline-none" />
-              <datalist id="courier-suggestions">
-                <option value="Bluedart" /><option value="Delhivery" /><option value="Shiprocket" />
-                <option value="DTDC" /><option value="India Post" /><option value="Ekart" />
-                <option value="XpressBees" /><option value="Ecom Express" />
-              </datalist>
-              <input value={awb} onChange={e => setAwb(e.target.value)} placeholder="AWB / Tracking number"
-                className="w-full border border-[#E4E4E7] rounded-[8px] p-2 text-[11.5px] font-mono focus:border-[#FFC107] outline-none" />
-              <input type="date" value={expectedAt} onChange={e => setExpectedAt(e.target.value)}
-                className="w-full border border-[#E4E4E7] rounded-[8px] p-2 text-[11.5px] focus:border-[#FFC107] outline-none" />
-              <button onClick={saveDispatch} disabled={saving || !courier.trim() || !awb.trim()}
-                className="w-full py-2 bg-[#0A0A0A] text-[#FFC107] text-[12px] font-bold rounded-[10px] disabled:opacity-50">
-                {saving ? 'Marking…' : 'Mark as dispatched'}
-              </button>
-            </>
-          )}
-          {event.status === 'in_progress' && (
-            <div className="text-[11.5px] bg-white border border-[#E4E4E7] rounded-[8px] p-2">
-              <div><span className="font-bold">Courier:</span> {event.shipment_courier || '—'}</div>
-              <div><span className="font-bold">AWB:</span> <span className="font-mono">{event.shipment_awb || '—'}</span></div>
-              {event.shipment_expected_at && <div><span className="font-bold">Expected:</span> {new Date(event.shipment_expected_at).toLocaleDateString('en-IN')}</div>}
-              <div className="text-[#71717A] mt-1">Awaiting influencer to confirm receipt.</div>
-            </div>
-          )}
-          {event.status === 'completed' && (
-            <div className="text-[11.5px] text-[#047857] bg-[#D1FAE5] border border-[#10B981]/40 rounded-[8px] p-2">
-              Package received {event.shipment_received_confirmed_at ? `on ${new Date(event.shipment_received_confirmed_at).toLocaleDateString('en-IN')}` : ''}.
-            </div>
-          )}
+      {(event.mode === 'shipment' || event.mode === 'remote') && (
+        // Item 11 (approval §3.3) — the shipment panel is RETIRED, and is now a read-only card.
+        //
+        // What stood here: "Shipping to" printed from shipment_to_*, a typed courier box (with
+        // a Shiprocket option in the datalist, which was never an integration), a typed AWB, an
+        // expected date, and "Mark as dispatched". Three reasons it goes:
+        //   · shipment_to_address_line is a CREATOR STREET ADDRESS, and the roster no longer
+        //     sends it to anyone (finding 2);
+        //   · the endpoints behind the button — dispatch, confirm-received — are switched off
+        //     server-side, so the button could only ever show an error;
+        //   · §11.2 books the parcel through INFLX, which needs a branch, a box, a weight, a
+        //     wallet and a label. None of that fits a text box on a website.
+        // The card names where it happens now, and nothing more.
+        <div className="text-[11.5px] text-[#52525B] bg-white border border-[#E4E4E7] rounded-[8px] p-3">
+          <div className="font-bold text-[#0A0A0A] mb-1">Remote shoot</div>
+          <div>Parcels are managed in the app. She sends her delivery address there, you pick the
+            products and book the parcel, and INFLX arranges the courier and the label.</div>
         </div>
       )}
 

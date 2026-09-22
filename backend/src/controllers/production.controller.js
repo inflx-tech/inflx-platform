@@ -25,9 +25,39 @@ const { MSG: MSG10 } = require('../services/productionCopy');
  * brand's mode picker on /initialise, and flip-to-remote are switched off HERE with a sentence,
  * whatever any client still shows. The shipment half of accept / counter-propose is item 11's
  * and is left as it was.
+ *
+ * ── Item 11, Phase 2a — THE SHIPMENT HALF GOES TOO (approval §3.3) ──────────────────────────
+ *
+ * The 2024 flow was: the brand types a courier name and an AWB into a box on the website and
+ * presses "Mark as dispatched"; she presses "confirm received". Item 11 books a real parcel
+ * through INFLX's shipping layer, tracks it by webhook, and takes her answer item by item. The
+ * old doors are switched off here, in the same way and for the same reason as item 10's.
+ *
+ *   dispatch                → F8 book the parcel
+ *   confirm-received        → F12 her check
+ *   complete (Remote only)  → F14 shoot done. NOT retired for a visit — §2.9 of the approval
+ *                             asked for the caller audit first, and it found one: the brand
+ *                             website's "Mark visit done" button
+ *                             (Packages/brand-web/.../influencers/page.js:525 → :287) sits
+ *                             inside the visit branch and is live. So only the shipment /
+ *                             remote branch is retired, and the visit branch is untouched.
+ *   items/:itemId/drop      → nothing. Item 11 records what she reports and lets the brand
+ *                             report a difference to INFLX; it never edits her answer away.
+ *   accept / counter-propose (shipment half) → nothing. There is no slot to agree on a Remote
+ *                             shoot. Their visit half was already retired by item 10, and the
+ *                             two website callers (acceptSlot :232, sendCounter :239) are both
+ *                             on that already-dead visit path — so no live caller is touched.
+ *
+ * Every one leaves its data and its columns alone.
  */
 const retiredModeChoice = () => { throw new AppError('RETIRED_MODE_CHOICE', MSG10.RETIRED_MODE_CHOICE, 422, 'mode'); };
 const retiredSlotDanceForVisit = (event) => { if (event && event.mode === 'visit') throw new AppError('RETIRED_SLOT_DANCE', MSG10.RETIRED_SLOT_DANCE, 422, 'status'); };
+/** Item 11: a door the Remote flow replaces. Refuses whatever the mode, unless `remoteOnly`. */
+const retired11 = (code, message) => { throw new AppError(code, message, 422, 'status'); };
+/** Item 11: a door retired for Remote but still live for a Store Visit (see `complete`). */
+const retired11ForRemote = (event, code, message) => {
+  if (!event || event.mode !== 'visit') retired11(code, message);
+};
 const notificationService = require('../services/notification.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
@@ -51,6 +81,13 @@ async function getContractParties(contractId) {
             b_u.phone AS brand_phone,
             camp.name AS campaign_name,
             inf_u.name AS influencer_name,
+            -- Item 11, finding 1. THE BRAND'S OWN ID. This row joins brands to reach the
+            -- business name and has never projected b.id, so addParcelItems passed
+            -- brandId: undefined into a "WHERE brand_id = $1" and matched nothing — every
+            -- add-products call answered "Some of those products are not in your catalogue."
+            -- Latent because no parcel has ever been packed and, until item 10 fixed the mode
+            -- resolver on 18 Sep, no set-first collaboration was a shipment at all.
+            b.id AS brand_id,
             b.business_name AS brand_name
      FROM contracts c
      JOIN campaign_influencers ci ON ci.id = c.campaign_influencer_id
@@ -108,6 +145,81 @@ async function getEventOrThrow(eventId) {
 
 async function getContractByEvent(event) {
   return getContractParties(event.contract_id);
+}
+
+/* ─── Item 11, finding 2: the shoot row is projected, never spread ───────────
+ *
+ * These two doors used to hand back the WHOLE production_events row — `success(res, {
+ * production_event: event })` and `{ ...r }` on the roster. That was survivable only because
+ * the row held nothing private: a branch address the brand already owns, and four hand-typed
+ * courier fields.
+ *
+ * Item 11 puts a creator's NAME, PHONE, STREET, PINCODE, DELIVERY NOTE and SIZES on that row.
+ * A spread would post all of it to whoever asked, from the moment she saved it, with no test
+ * failing. So the whitelist lands FIRST — before the columns exist — and the rule is that
+ * nothing reaches a client except through one of these two functions.
+ *
+ * The three privacy rules, in one place (§11.2, approval §3.2):
+ *   · the BRAND sees ship_to_* only after address_sent_at;
+ *   · the CREATOR never sees a branch street address or pincode — she sees the city, and the
+ *     visit_* address only once item 10's plan_sent_at has passed (that is item 10's rule,
+ *     honoured here so this projection can serve both modes);
+ *   · nobody else sees anything — the callers already ensureParty / scope by brand.
+ */
+
+/** Fields that are nobody's secret: what the shoot is, and where it has got to. */
+const PE_PUBLIC = [
+  'id', 'contract_id', 'mode', 'status',
+  'visit_scheduled_at', 'visit_window_minutes', 'visit_duration_text',
+  'visit_branch_name', 'visit_city', 'visit_state',
+  'branch_id', 'plan_sent_at', 'time_agreed_at',
+  'brand_completed_at', 'influencer_completed_at', 'visit_completed_at',
+  'auto_confirm_days', 'auto_confirm_due_at', 'auto_confirmed_at',
+  'reschedule_count_brand', 'reschedule_count_influencer',
+  'slot_proposed_by', 'created_at', 'updated_at',
+];
+
+/** The branch's street address and the person to ask for. Item 10 reveals these at plan_sent_at. */
+const PE_VISIT_PRIVATE = [
+  'visit_address', 'visit_pincode', 'visit_maps_url', 'visit_lat', 'visit_lng',
+  'visit_contact_name', 'visit_contact_phone', 'visit_notes',
+];
+
+/** HER address, as item 11 will write it. The brand sees these only after address_sent_at. */
+const PE_SHIP_TO_PRIVATE = [
+  'address_sent_at', 'address_corrected_at',
+  'ship_to_name', 'ship_to_phone', 'ship_to_street', 'ship_to_pincode',
+  'ship_to_state_id', 'ship_to_city_id', 'ship_to_state_name', 'ship_to_city_name',
+  'ship_to_note', 'ship_to_sizes',
+  'coverage_delivers', 'coverage_return_pickup', 'coverage_checked_at',
+];
+
+const pick = (row, keys) => {
+  const out = {};
+  for (const k of keys) if (Object.prototype.hasOwnProperty.call(row, k)) out[k] = row[k];
+  return out;
+};
+
+/**
+ * One production_events row, as `side` is allowed to see it.
+ * @param {object} row  the raw row
+ * @param {'brand'|'influencer'} side
+ */
+function projectEvent(row, side) {
+  if (!row) return null;
+  const out = pick(row, PE_PUBLIC);
+
+  // The branch's street address: the brand's own, so always; hers only once the plan is sent.
+  if (side === 'brand' || row.plan_sent_at) Object.assign(out, pick(row, PE_VISIT_PRIVATE));
+
+  // Her address: the brand's to see once she has sent it, and hers always.
+  if (side === 'influencer' || row.address_sent_at) Object.assign(out, pick(row, PE_SHIP_TO_PRIVATE));
+  else out.address_sent_at = null;
+
+  // The eleven legacy shipment_* columns (migration 024) are DELIBERATELY absent. They were
+  // hand-typed, item 11 retires the doors that wrote them, and shipment_to_address_line is a
+  // creator address by another name. The data stays in the table; it leaves through nothing.
+  return out;
 }
 
 // Best-effort push to a specific user — never block the response.
@@ -178,7 +290,14 @@ const getProduction = asyncHandler(async (req, res) => {
     });
   }
   const log = await productionService.getLog(event.id);
-  return success(res, { production_event: event, production_mode: contract.production_mode, log });
+  // Item 11, finding 2: PROJECTED, never spread. `side` comes from who is asking, not from the
+  // JWT role alone — a user may hold both roles on one number (project_environment_reality).
+  const side = req.user.sub === contract.influencer_user_id ? 'influencer' : 'brand';
+  return success(res, {
+    production_event: projectEvent(event, side),
+    production_mode:  contract.production_mode,
+    log,
+  });
 });
 
 // POST /v1/contracts/:id/production/visit-details
@@ -328,7 +447,10 @@ const acceptEvent = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, event.mode === 'shipment' ? 'influencer' : 'either');
-  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): a visit time is accepted on the shoot plan; shipment stays for item 11
+  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): a visit time is accepted on the shoot plan
+  // Item 11 (Phase 2a): and there is nothing to accept on a Remote one. Both halves are now
+  // closed, so this route answers a sentence whatever the mode.
+  retired11('RETIRED_SHIPMENT_SLOT', MSG10.RETIRED_SHIPMENT_SLOT);
 
   let updated;
   try {
@@ -358,7 +480,10 @@ const counterPropose = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'either');
-  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): a visit time is countered on the shoot plan's thread; shipment stays for item 11
+  retiredSlotDanceForVisit(event);   // Item 10 (Phase 2d): a visit time is countered on the shoot plan's thread
+  // Item 11 (Phase 2a): and a Remote shoot has no time and no address to counter — she sends
+  // her address once and it locks (§28). Both halves closed.
+  retired11('RETIRED_SHIPMENT_SLOT', MSG10.RETIRED_SHIPMENT_SLOT);
 
   let updated;
   try {
@@ -400,6 +525,9 @@ const dispatch = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'brand');
+  // Item 11 (Phase 2a): a typed courier name and a typed AWB are not a shipment. F8 books one
+  // through INFLX's shipping layer, debits the brand, locks the return and returns a label.
+  retired11('RETIRED_DISPATCH', MSG10.RETIRED_DISPATCH);
 
   // stage-4 — a parcel with no contents is a note, not a shipment. Without this she gets a
   // courier number and a box, and no way to say WHICH of three sarees never turned up.
@@ -435,6 +563,10 @@ const confirmReceived = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'influencer');
+  // Item 11 (Phase 2a): "the box arrived" is not what §11.2 asks of her. F12 takes her answer
+  // line by line — received, missing or damaged, with a note — and a difference never stops
+  // her shoot. This door could record a whole parcel as fine with one press.
+  retired11('RETIRED_CONFIRM_RECEIVED', MSG10.RETIRED_CONFIRM_RECEIVED);
 
   // stage-4 — her answers ride along, one per item. Optional: a shipment dispatched before
   // this stage has no items, and she must still be able to say the box arrived.
@@ -487,6 +619,16 @@ const complete = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'either');
+  // Item 11 (Phase 2a), approval §2.9 — RETIRED FOR REMOTE ONLY.
+  //
+  // The caller audit found a live Store Visit caller: the brand website's "Mark visit done"
+  // (Packages/brand-web/app/dashboard/campaigns/[id]/influencers/page.js:525 → markVisitDone
+  // :287), inside the visit branch. Retiring this route outright would break item 10's own
+  // path from the website, so the visit branch stays exactly as it was.
+  //
+  // For Remote, F14 replaces it and adds the rule this door has never had: she must have
+  // checked what arrived first (§11.2, "once she has checked what arrived").
+  retired11ForRemote(event, 'RETIRED_COMPLETE_REMOTE', MSG10.RETIRED_COMPLETE_REMOTE);
 
   // stage-4 — this used to refuse anything that was not a visit, which meant a REMOTE shoot
   // had no way of being marked done at all. Who may mark it now depends on the mode, and the
@@ -570,10 +712,14 @@ const listCampaignProduction = asyncHandler(async (req, res) => {
         pe.visit_address, pe.visit_city, pe.visit_pincode,
         pe.visit_scheduled_at, pe.visit_window_minutes,
         pe.visit_contact_name, pe.visit_contact_phone, pe.visit_completed_at,
-        pe.shipment_to_address_line, pe.shipment_to_city, pe.shipment_to_pincode,
-        pe.shipment_courier, pe.shipment_awb,
-        pe.shipment_dispatched_at, pe.shipment_expected_at,
-        pe.shipment_delivered_at, pe.shipment_received_confirmed_at
+        pe.plan_sent_at
+        -- (address_sent_at joins this list in 2c, once migration 191 has created it.)
+        -- Item 11, finding 2: the six legacy shipment_to_* / shipment_courier / shipment_awb
+        -- columns are GONE from this projection. shipment_to_address_line is a creator address
+        -- by another name, and this roster emitted it with the gate as a COLUMN — every row
+        -- came back whether the gate was open or not. The hand-typed courier fields go with
+        -- them, because the doors that wrote them are retired below. The data stays in the
+        -- table; nothing carries it to a client.
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns     c  ON c.id  = cs.campaign_id
@@ -764,6 +910,15 @@ const dropParcelItem = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'brand');
+  // Item 11 (Phase 2a): dropping belonged to a flow where a shortfall was answered by a resend
+  // or a removal. §11.2 has neither — there is one parcel, her answer is recorded as she gave
+  // it, and if the brand disagrees it reports a difference to INFLX (F13), which item 18 picks
+  // up. A door that lets the brand erase a line she flagged is the opposite of that.
+  //
+  // It also carved products out of a hand-picked selling scope (parcel.service.dropItem
+  // :209-229), which would now silently narrow what she may sell — a thing settled at signing
+  // and not the shoot's to change.
+  retired11('RETIRED_DROP', MSG10.RETIRED_DROP);
 
   const result = await parcel.dropItem(event.id, req.params.itemId, db);
   if (!result.ok) throw new AppError('NOT_FOUND', result.message, 404);

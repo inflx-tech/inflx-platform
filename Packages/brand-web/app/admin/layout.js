@@ -17,7 +17,11 @@ const NAV = [
   // registration-and-profile §9A.3 — creators who chose "Other" and typed their niche.
   { href: '/admin/niches/other', label: 'Other niches', icon: '🗂️', cap: 'approvals' },
   { href: '/admin/brands', label: 'Brands', icon: '🏢', cap: 'brands' },
-  { href: '/admin/production-queue', label: 'Production Queue', icon: '🚚', cap: 'production' },
+  // Item 11 (approval §3.3): Production Queue RETIRED. Its three buckets were a stale
+  // 'proposed' visit, a reschedule limit, and a shipment dispatched 14 days ago with no
+  // confirmation — and that third one was the hand-typed dispatch item 11 switched off, so it
+  // can never fill again. The exceptions that matter now are the Delayed flag, the 48-hour
+  // reminder lane and Test parcels. The endpoint stays mounted; item 10's tests read it.
   { href: '/admin/orders', label: 'Orders', icon: '📦', cap: 'orders' },
   { section: 'CONTENT' },
   // Concept P0 (2026-07-23): Creator Experience Engine pages (Design System /

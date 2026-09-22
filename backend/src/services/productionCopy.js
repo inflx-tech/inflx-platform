@@ -14,8 +14,13 @@ const MSG = {
   // The gate (§10) — the two sentences from the prompt, verbatim.
   NOT_SIGNED: "This collaboration isn't signed by both of you yet.",
   NOT_FUNDED: "The money for this collaboration isn't locked yet.",
-  // Mode
+  // Mode — the two refusals are MIRRORS. Item 10's endpoints answer the first when a Remote
+  // collaboration reaches them; item 11's answer the second when a Store Visit one does
+  // (rules v1.27 §11.2: "A Remote collaboration cannot use any Store Visit action, and a Store
+  // Visit collaboration cannot use any Remote one"). Both sentences are the gap-check prompt's,
+  // verbatim; neither may be paraphrased at a call site.
   WRONG_MODE: (name) => `This is a Remote collaboration. Products are shipped to ${name}.`,
+  WRONG_MODE_VISIT: (brand) => `This is a Store Visit collaboration. ${brand} send a time and the store address.`,
   // The plan
   CONTACT_NAME: 'Enter who she should ask for.',
   CONTACT_PHONE: 'Enter a contact number.',
@@ -40,6 +45,13 @@ const MSG = {
   // Retired doors (Phase 2d)
   RETIRED_MODE_CHOICE: 'The mode of work comes from the set and cannot be chosen or changed inside the shoot plan.',
   RETIRED_SLOT_DANCE: 'Visit times are agreed through the shoot plan now.',
+  // Item 11 (approval §3.3) — the hand-typed courier flow, retired server-side, not by hiding
+  // buttons. One sentence per door, each naming where the thing happens now.
+  RETIRED_DISPATCH: 'Parcels are booked through INFLX now. Pick the products and book the parcel in the app — INFLX arranges the courier and gives you the label.',
+  RETIRED_CONFIRM_RECEIVED: 'She checks the parcel item by item in the app now.',
+  RETIRED_COMPLETE_REMOTE: 'She marks a Remote shoot done in the app, once she has checked what arrived.',
+  RETIRED_DROP: "Dropping an item is not part of a Remote shoot. What she reports is recorded as it stands, and you can report a difference to INFLX.",
+  RETIRED_SHIPMENT_SLOT: 'There is nothing to agree on a Remote shoot. She sends her address, and you pick the products and book the parcel.',
 };
 
 /**
@@ -94,6 +106,37 @@ const DELAYED_STAGE_LABEL = {
   not_attended: 'Time agreed, not visited',
   not_confirmed: 'Visited, not confirmed',
   content_not_live: 'Content not live',
+  // Item 11 (rules v1.27 §11.2) — the five Remote stages. The CHECK on
+  // campaign_influencers.delayed_stage is widened to match in migration 191; before that it
+  // listed only the five above and would have REJECTED every one of these (finding 3).
+  address_not_sent: 'Address not sent',
+  not_booked: 'Not booked',
+  in_transit: 'On the way',
+  not_checked: 'Delivered, not checked',
+  shoot_not_marked: 'Checked, shoot not marked',
 };
 
-module.exports = { MSG, NOTIFY, STAGE_LABEL, DELAYED_STAGE_LABEL, whenLine, shortDay };
+/**
+ * Item 11 — a Remote path refuses a Store Visit collaboration, and says which it is.
+ *
+ * Kept here rather than in a service so the two directions sit beside each other and neither
+ * can drift: item 10's `assertOpenVisit` throws MSG.WRONG_MODE, this throws MSG.WRONG_MODE_VISIT.
+ *
+ * `mode` is the shoot row's; where there is no row yet it is the set's (`campaign_sets.shoot_mode`),
+ * which is the authority anyway (§11: the mode comes from the set and never changes).
+ * A NULL mode is a pre-set-first collaboration and resolves to 'remote' — item 11's side — so it
+ * is NOT refused here; `productionMode.resolveProductionMode` has already had its say.
+ *
+ * @param {string|null} mode
+ * @param {string} brandName
+ */
+function assertRemoteMode(mode, brandName) {
+  if (String(mode || '').toLowerCase() === 'visit') {
+    const AppError = require('../utils/AppError');
+    throw new AppError('WRONG_MODE_VISIT', MSG.WRONG_MODE_VISIT(brandName || 'They'), 422, 'mode');
+  }
+}
+
+module.exports = {
+  MSG, NOTIFY, STAGE_LABEL, DELAYED_STAGE_LABEL, whenLine, shortDay, assertRemoteMode,
+};

@@ -1,0 +1,22 @@
+{
+  "feature": "item11-remote",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (INFLX_Item11_Implementation_Prompt.md — 'The item 11 gap report is approved, with the changes in this message. Start building.')",
+  "approved_at": "2026-09-22T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (INFLX_Item11_Remote_Mockups.html, R1–R18 plus the rules table; re-issued with the approval, byte-identical to the file the gap report was written against)",
+  "mockup_locked_at": "2026-09-22T00:00:00+05:30",
+  "notes": "Rules doc v1.27 §11.2 (v1.27 writes the answers to Q1, Q3, Q4 and Q5 and the two money rules into §11.2 as prose; no rule of v1.26 changed). Gap report Docs/ITEM11_REMOTE_GAP_REPORT.md approved with ten answers (Q1 no return lock and no pickup on a no-return pincode — she sends it back herself and marks 'I've sent it back', which stamps the auto-confirm clock on a provider='none' return row; Q2 variant_id nullable, 'at most 5' per (product, variant); Q3 SCOPE_NOT_SET for Pay for Sale and Hybrid with no scope, never the catalogue; Q4 a due never blocks anything and is taken oldest-first from EVERY credit path; Q5 cancel-and-rebook before collection is unlimited, 'once' applies only after a back-to-store; Q6 declared value yes, delivery challan deferred behind a nullable challan_key; Q7 gst_amount added now, no invoicing built; Q8 reconciliation deferred, quoted_amount and charged_amount kept separate; Q9 an address-less branch is unselectable on R6 as well as refused; Q10 the founder does the wallet and the branch, three Kanchi Silks products get sizes only after he approves the list) and nine corrections (2.1 ON DELETE RESTRICT on shipments and shipment_events; 2.2 a return costing more than its lock charges the difference or records a due, never delaying her pickup; 2.3 the lock falls back to the outbound price when the provider gives no return quote, with a simulator switch to test it; 2.4 a rebook keeps the locked lines and the existing return lock, charges a new outbound price, re-checks coverage and clears any earlier check; 2.5 brand_branch_pickups keyed on (branch_id, provider) with an address_hash; 2.6 the reminder anchor moves with the open move; 2.7 three report kinds — difference, return, overdue; 2.8 difference_acknowledged_at for 'It's fine, carry on'; 2.9 complete is retired for Remote ONLY — the caller audit found a live Store Visit caller on the brand website). Four findings earned the approval: addParcelItems has never been able to work; three live endpoints could leak a creator address; the Delayed CHECK would have thrown on the first Remote stage; every brand wallet in production is Rs 0.00. Migration 191 (additive) plus a non-transactional preamble for four wallet_tx_type values. Builds on features/item10-store-visit. Production-impacting — explicit go required before migrate/push/OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  }
+}
