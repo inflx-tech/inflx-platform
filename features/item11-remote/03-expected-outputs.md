@@ -107,7 +107,7 @@ asserts both.
 | 38 | Loading, empty and couldn't-load on every Remote screen, both sides | **Pass** | `M` check 38; every screen renders all three |
 | 39 | `DangerButton` and every new confirm sheet honour `busy` | **Pass** | `M` check 39 — a second tap on the cancel sheet produces one call |
 | 40 | `addParcelItems` works for the owning brand and is refused for any other | **Pass** | `A` check 40 (three cases) |
-| 41 | Backend tests show no new failures against `baseline_item11.json` | **Pass** | `compare-tests.js` — see the build summary |
+| 41 | Backend tests show no new failures against `baseline_item11.json` | **Pass** | `compare-tests.js`: **0 newly failing, 0 gone, 117 new all green, 15 newly passing**; suites 126→131, failures 232→218. The one reported newly-failing (`section-banner-gateway`) was a 30 s timeout in `truncateAll()` on a loaded machine — re-run alone it passes in 1.2 s, all 3 green |
 
 ---
 

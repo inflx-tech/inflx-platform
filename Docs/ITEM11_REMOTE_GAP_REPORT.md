@@ -875,8 +875,13 @@ Assumptions 1–13 hold against the code as it stands, with three caveats worth 
 
 - **(1) the gate** is item 10's, unchanged and mode-agnostic — ✅. But **the mode check in the
   Remote direction does not exist yet**; the message in §7 is new copy.
-- **(5) products** — the scope resolver is ready, but **two of the eight signed collaborations in
-  production have no `alloc_scope` at all**, and the picker would show them nothing. See Q3.
+- **(5) products** — the scope resolver is ready. ~~Two of the eight signed collaborations in
+  production have no `alloc_scope` at all, and the picker would show them nothing.~~
+  **CORRECTED 22 Sep, after Phase 4:** that counted the nulls without checking the aim. Both
+  scope-less rows (`d3fde0dc…`, `ef874178…`) are **Pay for Content**, where a null scope is
+  correct and the picker shows the whole published catalogue. **No Pay for Sale or Hybrid
+  collaboration in production lacks a scope**, so `SCOPE_NOT_SET` cannot fire today. Q3's
+  recommendation was built anyway, for the next one. See Q3.
 - **(7) every rupee is the brand's** — ✅ in design, but **every brand wallet in production is
   ₹0.00**, so nothing can be booked until you top one up. See Q8.
 
@@ -990,6 +995,9 @@ Production census, 22 Sep 2026 (SELECT only)
   brand_branches                         : 11 rows · 11 mains · 4 with no address AND no pincode
   brand wallets                          : 11 brands · TOTAL ₹0.00
   alloc_scope on signed                  : store 5 · category 1 · NULL 2
+  ...by aim (corrected 22 Sep)           : conversion/store 3 · conversion/category 1
+                                           hybrid/store 2 · engagement/NULL 2
+                                           => PfS or Hybrid with NO scope: 0
   platform_settings                      : 9 keys, remote_return_days = 7
   next free migration                    : 191
 
