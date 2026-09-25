@@ -20,7 +20,7 @@
     "walk_fixes": []
   },
   "deployed_to_production": {
-    "phase": "2a + 2b (the device proof pending)",
+    "phase": "2a + 2b (device proof PASSED 2026-09-25)",
     "at": "2026-09-25",
     "by": "founder go (\"yes pls go step 1-3\")",
     "commit": "c23d8634 (pushed 186ef852..c23d8634)",
@@ -33,6 +33,15 @@
     },
     "websites": "the push redeploys Vercel; not independently verified from outside (auth redirect)",
     "money": "NO MONEY MOVED — identical before the migration, after it, and after Render + the OTA: 12 escrow rows / Rs 34,500 (T1 released x4, T2 locked x4, T3 locked x4), contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions",
-    "pending": "the founder sets CONTENT_UPLOAD_PROBE=on on Render, runs the 200 MB upload + size-lock test on a real phone (Profile -> Upload test), then removes the switch. Phase 2c does not start until that passes."
+    "pending": "Phase 2c may start (2a + 2b finished and proved).",
+    "device_proof": {
+      "at": "2026-09-25",
+      "by": "founder, own Android phone, creator app OTA 218, production R2 (bucket inflx-assets)",
+      "large_upload": "PASSED twice — 194.9 MB MP4 (204,360,095 bytes, 80 s) streamed with the { uri } body, head() matched byte for byte and type, deleted; 1m 17s and 1m 46s",
+      "size_lock_small": "PASSED — a 14 MB MP4 on a URL signed one byte short: R2 answered 403, nothing kept",
+      "size_lock_large": "refused, but the card read FAILED under an over-strict harness rule: on a 195 MB body R2 rejects and cuts the connection mid-upload, so the phone saw a dropped connection instead of reading the 403. Nothing kept. The lock is the signed Content-Length, proved by the small run; the product screens treat both as 'The upload didn't finish. Try again.'",
+      "note": "the founder's earlier 14 MB / 18 MB results were WhatsApp-forwarded copies (WhatsApp recompresses video); INFLX uploaded exactly what it was given",
+      "switch": "CONTENT_UPLOAD_PROBE to be removed from Render by the founder after the run"
+    }
   }
 }
