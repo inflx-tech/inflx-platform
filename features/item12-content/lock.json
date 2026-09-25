@@ -20,7 +20,7 @@
     "walk_fixes": []
   },
   "deployed_to_production": {
-    "phase": "2a + 2b (device proof PASSED 2026-09-25)",
+    "phase": "ALL — 2a + 2b (device proof passed) + 2c + 3 + 4",
     "at": "2026-09-25",
     "by": "founder go (\"yes pls go step 1-3\")",
     "commit": "c23d8634 (pushed 186ef852..c23d8634)",
@@ -33,7 +33,7 @@
     },
     "websites": "the push redeploys Vercel; not independently verified from outside (auth redirect)",
     "money": "NO MONEY MOVED — identical before the migration, after it, and after Render + the OTA: 12 escrow rows / Rs 34,500 (T1 released x4, T2 locked x4, T3 locked x4), contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions",
-    "pending": "Phase 2c may start (2a + 2b finished and proved).",
+    "pending": "The founder: CONTENT_UPLOAD_PROBE off on Render; the walkthrough needs a Pay for Content collaboration whose shoot is done (the item 11 wallet top-up and parcel are still open for Asha).",
     "device_proof": {
       "at": "2026-09-25",
       "by": "founder, own Android phone, creator app OTA 218, production R2 (bucket inflx-assets)",
@@ -42,6 +42,20 @@
       "size_lock_large": "refused, but the card read FAILED under an over-strict harness rule: on a 195 MB body R2 rejects and cuts the connection mid-upload, so the phone saw a dropped connection instead of reading the 403. Nothing kept. The lock is the signed Content-Length, proved by the small run; the product screens treat both as 'The upload didn't finish. Try again.'",
       "note": "the founder's earlier 14 MB / 18 MB results were WhatsApp-forwarded copies (WhatsApp recompresses video); INFLX uploaded exactly what it was given",
       "switch": "CONTENT_UPLOAD_PROBE to be removed from Render by the founder after the run"
+    },
+    "second_push": {
+      "at": "2026-09-25",
+      "by": "founder go (\"ok pls deploy rest\")",
+      "commit": "5cc4b345 (pushed c23d8634..5cc4b345)",
+      "render": "live, proved by route existence: POST .../content/confirm-live answered 000 (deploy in progress) then 401 while a made-up sibling (.../confirm-nope) stayed 404; G1, submit and approve answer 401",
+      "ota": {
+        "brand": 231,
+        "influencer": 219,
+        "follower": "unchanged (229)",
+        "native_runtime": "3 — unchanged"
+      },
+      "money": "NO MONEY MOVED — identical before the push and after Render + both OTAs: 12 escrow rows / Rs 34,500 (T1 released x4, T2 locked x4, T3 locked x4), contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions. collab_content 0, content_files 0; Delayed unchanged (2 x address_not_sent).",
+      "websites": "the push redeploys Vercel (brand-web: read-only content panels, Payments waiting period read-only, Platform settings three new numbers); not independently verified from outside (auth redirect)."
     }
   },
   "build": {
