@@ -318,7 +318,20 @@ describe('Stage 4 — B-1, as item 11 leaves it', () => {
     expect(MSG.RETIRED_CONFIRM_RECEIVED).toMatch(/item by item/i);
   });
 
-  test('complete is retired for REMOTE ONLY — the Store Visit caller §2.9 found is untouched', () => {
+  // [RETIRED by item 12] — approval Q3 retires the Store Visit branch too (a brand-only mark left
+  // shoots stuck and the content step shut). Kept whole, not deleted; the executing replacement
+  // is directly below, and item12-phase2a proves both parties meet RETIRED_12_COMPLETE_VISIT.
+  test('complete is retired for Remote AND for a Store Visit (item 12, approval Q3)', () => {
+    const body = bodyOf('../src/controllers/production.controller', 'const complete = asyncHandler');
+    expect(body).toContain('retired11ForRemote');
+    expect(body).toContain('RETIRED_12_COMPLETE_VISIT');
+    expect(body).not.toContain('productionService.completeShoot');
+    // parcel.canComplete is untouched as a rule; nothing on this door reaches it any more.
+    expect(parcel.canComplete('visit', 'brand')).toBe(true);
+    expect(parcel.canComplete('shipment', 'brand')).toBe(false);
+  });
+
+  test.skip('complete is retired for REMOTE ONLY — the Store Visit caller §2.9 found is untouched [RETIRED by item 12]', () => {
     const body = bodyOf('../src/controllers/production.controller', 'const complete = asyncHandler');
     expect(body).toContain('retired11ForRemote');
     // parcel.canComplete still decides who may mark a VISIT done; that rule did not change.
