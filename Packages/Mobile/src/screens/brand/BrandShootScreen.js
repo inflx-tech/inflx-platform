@@ -23,6 +23,7 @@ import { GateCard10, StepLine10, TimeCard10, Row10, DelayedChip10, AmberBox10, G
 import { MoveTimeSheet10 } from '../../components/shoot/sheets10';
 import { C10, MSG10, whenShort10, day10, stamp10, AIM_LABEL10, MODE_LABEL10 } from '../../components/shoot/copy10';
 import { first } from '../../components/invitations/copy5';
+import { C12 } from '../../components/content/copy12';
 
 export default function BrandShootScreen({ navigation, route }) {
   const { campaignId, setId, ciId } = route.params || {};
@@ -185,6 +186,10 @@ export default function BrandShootScreen({ navigation, route }) {
 
       {/* One main button at a time — the one the stage actually offers. */}
       <View style={s.bar} testID="brand-shoot-actions">
+        {/* Item 12: the visit is done — the content step is where the brand goes next. */}
+        {stage === 'complete' && sh.aim === 'engagement' ? (
+          <PrimaryButton label={C12.openContentBrand} onPress={() => navigation.navigate('BrandContent', { campaignId, setId, ciId })} testID="open-content" />
+        ) : null}
         {stage === 'not_sent' && sh.can.send ? (
           <PrimaryButton label={C10.planTheVisit} onPress={() => navigation.navigate('BrandShootPlan', { campaignId, setId, ciId })} testID="plan-the-visit" />
         ) : null}

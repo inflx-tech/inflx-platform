@@ -18,6 +18,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
+// Item 12 — the door to the content step once the shoot is done.
+import { C12 } from '../../components/content/copy12';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -213,6 +215,13 @@ export default function RemoteShootScreen({ navigation, route }) {
 
       {/* ── the one action, at the bottom, whatever it is ─────────────────── */}
       <View style={s.bar} testID="remote-actions">
+        {/* Item 12: the shoot is done — her content step is open. The return keeps its own main
+            button when it has one (its own lane), so the content door steps aside then. */}
+        {stage === 'shot' && sh.aim === 'engagement' ? (
+          can.bookReturn || can.markSelfSent
+            ? <SecondaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
+            : <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
+        ) : null}
         {can.sendAddress ? (
           <PrimaryButton label={C11.creator.cardTitle} icon="map-marker-outline"
             onPress={() => navigation.navigate('RemoteAddress', { ciId })} testID="send-address" />

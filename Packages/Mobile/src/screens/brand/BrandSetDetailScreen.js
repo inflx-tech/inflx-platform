@@ -113,6 +113,8 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   // so a row with no shoot row yet still reaches the right screen — which matters on Remote,
   // where the brand arrives before anything has been created.
   const openRemote = (row) => navigation.navigate('BrandRemote', { campaignId, setId, ciId: row.id });
+  // Item 12: once the shoot is done on a Pay for Content row, the content step is the live thing.
+  const openContent = (row) => navigation.navigate('BrandContent', { campaignId, setId, ciId: row.id });
   const isRemote = (row) => !!row.remote || (set && set.shootMode && set.shootMode !== 'visit' && !!row.contract);
   async function doConfirm() {
     const { kind, row } = confirm;
@@ -124,6 +126,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
   }
   function creatorActions(row) {
     const a = [
+      ...(row.content ? [{ label: 'Open the content', onPress: () => openContent(row) }] : []),
       ...(row.shoot ? [{ label: 'Open the store visit', onPress: () => openShoot(row) }] : []),
       ...(isRemote(row) ? [{ label: 'Open the Remote shoot', onPress: () => openRemote(row) }] : []),
       ...(row.actions && row.actions.thread ? [{ label: 'Open the conversation', onPress: () => openThread(row) }] : []),
@@ -204,7 +207,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
                     // Item 10: a signed Store Visit opens the visit — that is the live thing on
                     // that row. Item 6: a thread or an unanswered move request opens the
                     // conversation; the rest open the ⋯ menu.
-                    onPress={() => (row.shoot ? openShoot(row)
+                    onPress={() => (row.content ? openContent(row) : row.shoot ? openShoot(row)
                       : row.actions && row.actions.thread ? openThread(row)
                         : row.group === 'deferred' ? openProfile(row) : setCreatorMenu(row))}
                     onMore={() => setCreatorMenu(row)}
@@ -212,7 +215,8 @@ export default function BrandSetDetailScreen({ navigation, route }) {
                     // send the agreement, or sign the one she has already signed.
                     // Item 10: or confirm the shoot she says she has been to.
                     onChip={
-                      row.shoot && row.shoot.stage === 'attended' ? () => openShoot(row)
+                      row.content && row.content.yourMove ? () => openContent(row)
+                        : row.shoot && row.shoot.stage === 'attended' ? () => openShoot(row)
                         : row.actions && row.actions.sendAgreement ? () => openAgreement(row, true)
                         : row.actions && row.actions.signAgreement ? () => openAgreement(row, false)
                         : row.actions && row.actions.thread ? () => openThread(row)

@@ -17,6 +17,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
+// Item 12 — the door to the content step once the shoot is done.
+import { C12 } from '../../components/content/copy12';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -180,6 +182,10 @@ export default function BrandRemoteScreen({ navigation, route }) {
       </ScrollView>
 
       <View style={s.bar} testID="brand-remote-actions">
+        {/* Item 12: the shoot is done — the content step is where the brand goes next. */}
+        {stage === 'shot' && sh.aim === 'engagement' ? (
+          <SecondaryButton label={C12.openContentBrand} onPress={() => navigation.navigate('BrandContent', { campaignId, setId, ciId })} testID="open-content" />
+        ) : null}
         {stage === 'not_sent' ? (
           <>
             <PrimaryButton label={C11.brand.pick} disabled testID="pick-disabled" />

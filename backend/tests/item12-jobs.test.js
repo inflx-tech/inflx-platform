@@ -33,11 +33,11 @@ describe('item 12 · the final 50% at the stamped due (checks 18, 19, 33)', () =
     await w12.toPosted(w); await w12.confirmLive(w);
     const due = new Date((await t3Row(w)).release_due_at);
 
-    expect((await tranche3.run({ now: new Date(due.getTime() - 60000) })).released).toBe(0);
+    await tranche3.run({ now: new Date(due.getTime() - 60000) });                  // (other files' rows may be due; this one is not)
     expect((await t3Row(w)).status).toBe('queued');
 
     const out = await tranche3.run({ now: new Date(due.getTime() + 60000) });
-    expect(out.released).toBe(1);
+    expect(out.released).toBeGreaterThanOrEqual(1);
     expect((await t3Row(w)).status).toBe('released');
     const c = await cc(w);
     expect(c.completed_at).toBeTruthy(); expect(c.t3_released_at).toBeTruthy();
@@ -48,7 +48,7 @@ describe('item 12 · the final 50% at the stamped due (checks 18, 19, 33)', () =
     const s = await w12.state(w, 'brand');
     expect(s).toMatchObject({ stage: 'complete', money: { stillLocked: 0, t3: { status: 'released' } } });
 
-    expect((await tranche3.run({ now: new Date(due.getTime() + 2 * DAY) })).released).toBe(0);   // idempotent
+    await tranche3.run({ now: new Date(due.getTime() + 2 * DAY) });               // idempotent: nothing more for THIS world
     expect(await notes(w.cr.userId, 'content.final_paid')).toHaveLength(1);
   });
 
@@ -58,7 +58,8 @@ describe('item 12 · the final 50% at the stamped due (checks 18, 19, 33)', () =
     const stampedA = new Date((await t3Row(a)).release_due_at).getTime();
     await setSetting('final_payment_wait_days', 30);
     expect(new Date((await t3Row(a)).release_due_at).getTime()).toBe(stampedA);
-    expect((await tranche3.run({ now: new Date(stampedA + 60000) })).released).toBe(1);            // paid on the ORIGINAL date
+    await tranche3.run({ now: new Date(stampedA + 60000) });
+    expect((await t3Row(a)).status).toBe('released');                                    // paid on the ORIGINAL date
 
     const b = await w12.shotDone('engagement');
     await w12.toPosted(b); await w12.confirmLive(b);
@@ -73,7 +74,7 @@ describe('item 12 · the final 50% at the stamped due (checks 18, 19, 33)', () =
     await w12.toPosted(w); await w12.confirmLive(w);
     const at = new Date(new Date((await t3Row(w)).release_due_at).getTime() + 60000);
     const [x, y] = await Promise.all([tranche3.run({ now: at }), tranche3.run({ now: at })]);
-    expect(x.released + y.released).toBe(1);
+    expect(x.released + y.released).toBeGreaterThanOrEqual(1);                        // (the ledger below is this world's proof)
     const { rows } = await query(`SELECT count(*)::int n FROM influencer_ledger WHERE influencer_id = $1 AND note = 'Tranche 3 released'`, [w.cr.influencerId]);
     expect(rows[0].n).toBe(1);
   });

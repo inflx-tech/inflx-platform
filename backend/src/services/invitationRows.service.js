@@ -153,6 +153,8 @@ const ROW_SELECT = `
          -- Item 10 walk fix: the shoot's stage inputs, so the row can say where the visit is.
          pe.shoot_id, pe.pe_shoot_mode, pe.shoot_status, pe.visit_scheduled_at,
          pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+         -- Item 12: the content move (contentFlow.CONTENT_MOVE_SQL), so the row can open the content step.
+         ${require('./contentFlow.service').CONTENT_MOVE_SQL('ci')} AS content_move,
          neg.*
     FROM campaign_influencers ci
     JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
@@ -258,6 +260,9 @@ function brandRow(r, goal) {
       stage: remoteLineStage(r),
       line: remoteBrandLineFor(r),
     } : null,
+    // Item 12: once the shoot is done on a Pay for Content collaboration, the row opens the content
+    // step and its chip is the brand's move there (review the content; confirm it is live).
+    content: contentRowOf(r, 'brand'),
   };
 }
 
@@ -306,6 +311,8 @@ const CREATOR_SELECT = `
          -- Item 10: the shoot's stage inputs (the lateral below); the projection is explicit, so name them.
          pe.shoot_id, pe.pe_shoot_mode, pe.shoot_status, pe.visit_scheduled_at,
          pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
+         -- Item 12: the content move (contentFlow.CONTENT_MOVE_SQL), so the row can open the content step.
+         ${require('./contentFlow.service').CONTENT_MOVE_SQL('ci')} AS content_move,
          neg.*,
          pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
          ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms,
@@ -443,6 +450,38 @@ function creatorState(r, today) {
   return { group, endedAt, postingDate, cutoff, daysLeft, canAnswer, canCounter, counterHiddenReason, canMoveRequest, closedByCutoff, threadOpen };
 }
 
+/**
+ * Item 12 — the content step on a row or a card: the move (one rule, contentFlow), whether it is
+ * this side's, and one line. null until a Pay for Content shoot is done.
+ */
+const CONTENT_LINES = {
+  creator: {
+    send_content: () => 'Upload your content and send it.',
+    make_changes: (r) => `${r.brand_name} asked for changes.`,
+    review_content: (r) => `With ${r.brand_name} for review.`,
+    post_and_link: () => 'Approved. Post it and add the links.',
+    confirm_live: (r) => `Waiting for ${r.brand_name} to confirm it is live.`,
+    live: (r) => (r.status === 'completed' ? 'Paid in full.' : 'Live. The final payment is on its way.'),
+    reported: () => 'INFLX is looking at this.',
+  },
+  brand: {
+    send_content: (r) => `${String(r.name || 'She').split(' ')[0]} is working on the content.`,
+    make_changes: (r) => `With ${String(r.name || 'her').split(' ')[0]} for changes.`,
+    review_content: () => 'Your move. Review her content.',
+    post_and_link: () => 'Approved. She is posting it.',
+    confirm_live: () => 'Your move. Confirm it is live.',
+    live: (r) => (r.status === 'completed' ? 'Completed.' : 'Live. The final payment follows.'),
+    reported: () => 'Reported to INFLX.',
+  },
+};
+const CONTENT_MINE = { creator: ['send_content', 'make_changes', 'post_and_link'], brand: ['review_content', 'confirm_live'] };
+function contentRowOf(r, side) {
+  const move = r.content_move;
+  if (!move) return null;
+  const line = CONTENT_LINES[side][move];
+  return { move, yourMove: CONTENT_MINE[side].includes(move), line: line ? line(r) : null, delayed: !!r.delayed_at };
+}
+
 function creatorCard(r, today) {
   const st = creatorState(r, today);
   const last = jsonObj(r.neg_last_terms);
@@ -478,6 +517,8 @@ function creatorCard(r, today) {
       line: remoteLineFor(r),
       delayed: !!r.delayed_at,
     } : null,
+    // Item 12: her content step, once the shoot is done — the card opens it and says her move.
+    content: contentRowOf(r, 'creator'),
     // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).
     fromPool: r.pool_entry_id ? {
       agreedAt: r.pool_sent_agreed_at,

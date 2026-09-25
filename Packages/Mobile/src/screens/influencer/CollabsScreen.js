@@ -77,8 +77,10 @@ export default function CollabsScreen({ navigation, route }) {
             // Item 11: a Remote collaboration opens the Remote screen, and it does so from the
             // moment it is signed — on Remote SHE moves first, so "Send your delivery address"
             // has to be reachable before anything exists to describe.
+            // Item 12: once the shoot is done, the content step is the live thing on the card.
             <InvitationCard5 card={item} onPress={() => navigation.navigate(
-              item.shoot ? 'Shoot'
+              item.content ? 'Content'
+              : item.shoot ? 'Shoot'
                 : item.remote ? 'MyRemote'
                   : item.agreement ? 'Agreement'
                     : (item.negotiation || (item.moveRequest && !item.moveRequest.answer)) ? 'Thread'

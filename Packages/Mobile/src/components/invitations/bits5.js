@@ -126,7 +126,11 @@ export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
     // repeating the signature date for ever — and chips "Your move" when he owes the
     // confirmation, so the brand can see it without opening the agreement.
     case 'signed':
-      if (row.shoot && row.shoot.line) {
+      // Item 12: after the shoot, the row says where the content is, and chips the brand's move.
+      if (row.content && row.content.line) {
+        meta = row.content.line;
+        if (row.content.yourMove) chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+      } else if (row.shoot && row.shoot.line) {
         meta = row.shoot.line;
         if (row.shoot.stage === 'attended') chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
       } else {
@@ -205,7 +209,8 @@ export function InvitationCard5({ card, onPress, testID }) {
       {card.group === 'invited' && card.cutoff ? <Text style={b.meta}>{C5.creator.replyBy(card.cutoff, card.daysLeft)}</Text> : null}
       {sentence ? <View style={[b.sentence, { backgroundColor: (T.state[tone] || T.state.ended).bg }]}><Text style={[b.sentenceText, { color: (T.state[tone] || T.state.ended).fg }]}>{sentence}</Text></View> : null}
       {/* Item 10 (V4): under Active, one line says the only thing that matters yet — where and when. */}
-      {card.shoot && card.shoot.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`shoot-line-${card.id}`}>{card.shoot.line}</Text> : null}
+      {card.content && card.content.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`content-line-${card.id}`}>{card.content.line}</Text>
+        : card.shoot && card.shoot.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`shoot-line-${card.id}`}>{card.shoot.line}</Text> : null}
     </TouchableOpacity>
   );
 }

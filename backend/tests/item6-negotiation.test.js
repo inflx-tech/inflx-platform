@@ -655,10 +655,14 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     // ASSERTION DRIFT, item 11 (R17): remote_return_autoconfirm_days is the one new number —
     // how long a brand has to confirm a Remote return before it confirms itself. The list is
     // asserted exactly on purpose, so a number appearing on this screen is never a surprise.
+    //
+    // ASSERTION DRIFT, item 12 (C17, approval Q4): three more — content_change_rounds and
+    // content_report_silence_days (new), and final_payment_wait_days (moved here from the Payments
+    // page, with its audit).
     expect(r.body.data.settings.map(x => x.key)).toEqual(
       ['subscriptions_enforced', 'negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts',
         'campaign_fee_pct', 'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days',
-        'shoot_auto_confirm_days', 'remote_return_autoconfirm_days']
+        'shoot_auto_confirm_days', 'remote_return_autoconfirm_days', 'content_change_rounds', 'content_report_silence_days', 'final_payment_wait_days']
     );
     const rounds = r.body.data.settings.find(x => x.key === 'negotiation_rounds');
     expect(rounds).toMatchObject({ value: 2, min: 1, max: 5, unit: 'rounds' });

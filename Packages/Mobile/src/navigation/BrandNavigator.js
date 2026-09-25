@@ -71,6 +71,8 @@ import BrandShootPlanScreen from '../screens/brand/BrandShootPlanScreen';
 import BrandRemoteScreen from '../screens/brand/BrandRemoteScreen';
 import BrandRemoteProductsScreen from '../screens/brand/BrandRemoteProductsScreen';
 import BrandRemoteBookScreen from '../screens/brand/BrandRemoteBookScreen';
+// Item 12 — the brand's content step. Contract: features/item12-content
+import BrandContentScreen from '../screens/brand/BrandContentScreen';
 import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
 import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 
@@ -128,6 +130,8 @@ function CampaignsStackScreen() {
       <CampaignsStack.Screen name="BrandRemote" component={BrandRemoteScreen} />
       <CampaignsStack.Screen name="BrandRemoteProducts" component={BrandRemoteProductsScreen} />
       <CampaignsStack.Screen name="BrandRemoteBook" component={BrandRemoteBookScreen} />
+      {/* Item 12 — the content step. */}
+      <CampaignsStack.Screen name="BrandContent" component={BrandContentScreen} />
     </CampaignsStack.Navigator>
   );
 }

@@ -138,10 +138,11 @@ async function read(ciId, scope) {
   const cc = g.shootDone ? await content.contentRow(ciId) : null;
   const s = await snapshot(db, ciId, cc);
   const settingRounds = await platformSettings.get('content_change_rounds');
-  return shape(g, cc, s, scope.side, settingRounds);
+  const settingWait = await platformSettings.get('final_payment_wait_days');
+  return shape(g, cc, s, scope.side, settingRounds, settingWait);
 }
 
-function shape(g, cc, s, side, settingRounds) {
+function shape(g, cc, s, side, settingRounds, settingWait = 7) {
   const r = g.r;
   const terms = r.terms_json || {};
   const money = terms.money || {};
@@ -191,6 +192,8 @@ function shape(g, cc, s, side, settingRounds) {
     fee: Number(money.fee || 0),
     t1: t(1, 25), t2: t(2, 25), t3: t(3, 50),
     stillLocked: contentMoney.stillLockedOf(s.escrow),
+    // "After {n} days · 50%": the number stamped at the confirmation, or today's setting before it.
+    waitDays: cc && cc.final_wait_days != null ? cc.final_wait_days : settingWait,
     // The campaign fee is the brand's alone (§3, v1.29) — it never reaches her screen.
     ...(side === 'brand' ? { campaignFee: Number(money.campaignFee || 0) } : {}),
   };

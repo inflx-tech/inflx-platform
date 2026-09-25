@@ -353,6 +353,11 @@ export const brandApi = {
   remoteConfirmReturn: (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/return/confirm`, body),
 
   // ── Item 12 · the content step, the brand's side. Contract: features/item12-content ──
+  content:           (c, s2, ciId) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content`),
+  contentApprove:    (c, s2, ciId, round) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/approve`, { round }),
+  contentChanges:    (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/changes`, body),
+  contentConfirmLive: (c, s2, ciId, amount) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/confirm-live`, { amount }),
+  contentReport:     (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/report`, body),
   contentFileUrl:    (c, s2, ciId, fileId) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/files/${fileId}/url`),
 
   // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
@@ -421,8 +426,8 @@ export const brandApi = {
   // an open-ended sales campaign; refuses while a creator is owed money or awaits review.
   endCampaign: (id) => api.post(`/campaigns/${id}/end`),
   deleteCampaign: (id) => api.delete(`/campaigns/${id}`),
-  reviewDeliverable: (id, data) => api.post(`/deliverables/${id}/review`, data),
-  confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
+  // Item 12 (approval Q2, Q3): the deliverable review / confirm-live wrappers and `complete` are
+  // gone with their retired routes. Content is reviewed and confirmed through content* below.
   getNegotiation: (id) => api.get(`/negotiations/${id}`),
   getNegotiationByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
@@ -445,7 +450,6 @@ export const brandApi = {
   // Action-Required inbox feeds (one summary + 5 list endpoints)
   getInboxSummary:       () => api.get('/brands/me/inbox-summary'),
   listInboxNegotiations: (status = 'awaiting_brand') => api.get(`/brands/me/negotiations?status=${status}`),
-  listInboxDeliverables: (status = 'submitted') => api.get(`/brands/me/deliverables?status=${status}`),
   listInboxFailures:     () => api.get('/brands/me/failures'),
   listInboxApplications: () => api.get('/brands/me/applications'),
   // Open-group application review (brand picks from applicants)
@@ -473,7 +477,6 @@ export const brandApi = {
   counterProposeProduction:    (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),
   flipProductionToRemote:      (eventId, data)   => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
   dispatchProduction:          (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
-  completeProduction:          (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
 
   // stage-4 — the parcel. Before this a shipment knew it was sent and had no idea what was
   // in it, so "3 sarees" lived in a free-text note and nothing could reconcile it with what
@@ -620,6 +623,13 @@ export const influencerApi = {
   // ── Item 12 · the content step, her side. Contract: features/item12-content ──
   // Files go STRAIGHT to storage (uploadContentFile below); these four only ask, confirm,
   // remove and view. Every one is behind the content gate on the server.
+  myContent:          (id) => api.get(`/influencers/me/invitations/${id}/content`),
+  contentCaption:     (id, rowKey, caption) => api.put(`/influencers/me/invitations/${id}/content/rows/${rowKey}/caption`, { caption }),
+  contentSubmit:      (id, round) => api.post(`/influencers/me/invitations/${id}/content/submit`, { round }),
+  contentSetProof:    (id, rowKey, slot, body) => api.put(`/influencers/me/invitations/${id}/content/proofs/${rowKey}/${slot}`, body),
+  contentClearProof:  (id, rowKey, slot) => api.delete(`/influencers/me/invitations/${id}/content/proofs/${rowKey}/${slot}`),
+  contentPosted:      (id) => api.post(`/influencers/me/invitations/${id}/content/posted`),
+  contentReport:      (id, body) => api.post(`/influencers/me/invitations/${id}/content/report`, body),
   contentUploadUrl:   (id, body) => api.post(`/influencers/me/invitations/${id}/content/files/upload-url`, body),
   contentConfirmFile: (id, fileId) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/confirm`),
   contentRemoveFile:  (id, fileId) => api.delete(`/influencers/me/invitations/${id}/content/files/${fileId}`),
@@ -651,14 +661,9 @@ export const influencerApi = {
   getNegotiation: (id) => api.get(`/negotiations/${id}`),
   getNegotiationByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
-  getDeliverable: (id) => api.get(`/deliverables/${id}`),
   getDeliverables: () => api.get('/campaigns'),  // via campaign list
-  getUploadUrl: (id, data) => api.post(`/deliverables/${id}/upload-url`, data),
-  getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
   refreshStats: (id) => api.post(`/deliverables/${id}/refresh-stats`),
   getContractWithDeliverables: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
-  submitDeliverable: (id, data) => api.post(`/deliverables/${id}/submit`, data),
-  submitLive: (id, data) => api.post(`/deliverables/${id}/submit-live`, data),
   getContract: (id) => api.get(`/contracts/${id}`),
   signContract: (id, data) => api.post(`/contracts/${id}/sign`, data),
   getContractPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
@@ -683,7 +688,6 @@ export const influencerApi = {
   acceptProduction:             (eventId)         => api.post(`/production-events/${eventId}/accept`),
   counterProposeProduction:     (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),
   confirmProductionReceived:    (eventId, data)   => api.post(`/production-events/${eventId}/confirm-received`, data),
-  completeProduction:           (eventId, data)   => api.post(`/production-events/${eventId}/complete`, data),
 
   // stage-4 — she reads the parcel so she can confirm it item by item. Read-only on her side:
   // what is in the box is the brand's statement, and her answer is a separate verb.

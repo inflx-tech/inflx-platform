@@ -62,6 +62,8 @@ import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 // Item 12 (Phase 2b) — the real-phone upload proof. Shown only while the server switch is on.
 // Contract: features/item12-content
 import UploadProbeScreen from '../screens/influencer/UploadProbeScreen';
+// Item 12 — her content step, after the shoot. Contract: features/item12-content
+import ContentScreen from '../screens/influencer/ContentScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -109,6 +111,8 @@ function CollabsStackScreen() {
       {/* Item 11 — the Remote shoot. Contract: features/item11-remote */}
       <CollabsStack.Screen name="MyRemote" component={RemoteShootScreen} />
       <CollabsStack.Screen name="RemoteAddress" component={RemoteAddressScreen} />
+      {/* Item 12 — the content step. */}
+      <CollabsStack.Screen name="Content" component={ContentScreen} />
     </CollabsStack.Navigator>
   );
 }

@@ -21,6 +21,7 @@ import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, TimeCard10, AddressCard10, AmberBox10, GreenBox10, DelayedChip10, WaitBox10, MoveBox10 } from '../../components/shoot/bits10';
 import { MoveTimeSheet10 } from '../../components/shoot/sheets10';
 import { C10, MSG10, whenShort10, day10 } from '../../components/shoot/copy10';
+import { C12 } from '../../components/content/copy12';
 
 export default function ShootScreen({ navigation, route }) {
   const { ciId } = route.params || {};
@@ -139,6 +140,10 @@ export default function ShootScreen({ navigation, route }) {
       </ScrollView>
 
       <View style={s.bar} testID="shoot-actions">
+        {/* Item 12: the visit is done — her content step is open. */}
+        {stage === 'complete' && sh.aim === 'engagement' ? (
+          <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
+        ) : null}
         {stage === 'sent' && !(thread && thread.negotiation && thread.negotiation.id) ? (
           <>
             <PrimaryButton label={C10.hers.thisTimeWorks} icon="check" onPress={acceptPlan} busy={busy} testID="this-time-works" />
