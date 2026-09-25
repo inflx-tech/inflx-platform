@@ -17,7 +17,9 @@ const idxOf = (k) => STAGES.findIndex((s) => s.key === k);
 
 /** Pure: campaign status + derived counts → { stageKey, prime:{label,kind,...} }. */
 export function deriveCampaignStage(status, c = {}) {
-  const { appliedCount = 0, pendingCount = 0, reviewQueue = 0, liveConfirmQueue = 0, id } = c;
+  // Item 12 (approval Q2): the "Review N deliverables" / "Confirm N live URLs" prime actions are
+  // gone — content is reviewed and confirmed in the app, and nothing on the website can do it.
+  const { appliedCount = 0, pendingCount = 0, id } = c;
 
   if (status === 'draft' || status === 'pending_wallet') {
     return { stageKey: 'fund', prime: { label: 'Fund wallet & publish', kind: 'publish' } };
@@ -30,12 +32,6 @@ export function deriveCampaignStage(status, c = {}) {
   }
   if (appliedCount > 0) {
     return { stageKey: 'roster', prime: { label: `Review ${appliedCount} application${appliedCount !== 1 ? 's' : ''}`, kind: 'href', href: `/dashboard/campaigns/${id}/influencers?status=applied` } };
-  }
-  if (reviewQueue > 0) {
-    return { stageKey: 'review', prime: { label: `Review ${reviewQueue} deliverable${reviewQueue !== 1 ? 's' : ''}`, kind: 'tab', tab: 'hier' } };
-  }
-  if (liveConfirmQueue > 0) {
-    return { stageKey: 'review', prime: { label: `Confirm ${liveConfirmQueue} live URL${liveConfirmQueue !== 1 ? 's' : ''}`, kind: 'tab', tab: 'hier' } };
   }
   const base = status === 'published' ? 'roster' : status === 'live' ? 'review' : 'production';
   return { stageKey: base, prime: { label: 'All caught up', kind: 'none' } };

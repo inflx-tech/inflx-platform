@@ -197,7 +197,10 @@ describe('item 11 · the retired doors answer a sentence, server-side (check 60)
     expect(flip.body.error.code).toBe('RETIRED_MODE_CHOICE');
   });
 
-  it('§2.9 · `complete` is NOT retired for a Store Visit — the website’s live caller still works', async () => {
+  // [RETIRED by item 12] — approval Q3 retires the Store Visit branch too; the website's button is
+  // a read-only card. Kept whole, not deleted. Replaced by item12-phase2a 'complete is retired for a
+  // Store Visit too (Q3)', which proves both parties meet RETIRED_12_COMPLETE_VISIT and the row is untouched.
+  it.skip('§2.9 · `complete` is NOT retired for a Store Visit — the website’s live caller still works [RETIRED by item 12]', async () => {
     const w = await w10.signedByBoth('conversion');   // a visit
     expect(w.pe.mode).toBe('visit');
 

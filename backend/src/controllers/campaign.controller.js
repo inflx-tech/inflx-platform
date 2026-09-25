@@ -1441,6 +1441,26 @@ const cancel = asyncHandler(async (req, res) => {
     );
   }
 
+  // Item 12 (approval Q14) — a GUARD, not the fix. It runs BEFORE the draft shortcut: item 4
+  // derives campaign states, so a campaign with signed, funded collaborations can still be stored
+  // as 'draft' (6 such campaigns in production, 25 Sep 2026) and would otherwise skip it.
+  // This path refunds only 'locked' rows, so a tranche 3 that item 12 has QUEUED (the brand confirmed the content live; the final 50% is
+  // waiting on its stamped date) would survive a cancel and still be paid by the job. Until the
+  // full refund fix lands as its own task, a campaign carrying a queued tranche cannot be
+  // cancelled this way, and says why.
+  const { rows: [queued] } = await db.query(
+    `SELECT count(*)::int AS n
+       FROM escrow_entries ee
+       JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+      WHERE cs.campaign_id = $1 AND ee.status = 'queued'`,
+    [campaign.id]
+  );
+  if (queued.n > 0) {
+    const { MSG: MSG12 } = require('../services/contentCopy');
+    throw new AppError('CANCEL_QUEUED_TRANCHE', MSG12.CANCEL_QUEUED_TRANCHE, 422, 'status');
+  }
+
   // For draft campaigns there is no locked escrow — just cancel directly
   if (campaign.status === 'draft') {
     await db.query(`UPDATE campaigns SET status = 'cancelled' WHERE id = $1`, [campaign.id]);

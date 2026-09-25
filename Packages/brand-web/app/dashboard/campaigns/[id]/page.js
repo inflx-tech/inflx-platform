@@ -4,7 +4,6 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { campaignApi, deliverableApi, contractApi, fmtRupees } from '../../../../lib/api';
 import { StageRail, PrimeBar, deriveCampaignStage } from './CommandRail';
-import { MediaPreview } from './reviewParts';
 import { contractLockAmount } from '../../../../lib/contracts';
 import PayoutSection from './PayoutSection';
 import ProductionSection from './ProductionSection';
@@ -91,7 +90,7 @@ function SalesStat({ v, k }) {
 
 /* ─── Inline media preview (signed R2 URL → <img>/<video>), copied from
    reviews/page.js so content can be reviewed without leaving this page. ── */
-/* MediaPreview moved to ./reviewParts (A2 — shared, was duplicated with /reviews). */
+/* Item 12: the content preview (reviewParts) is gone with the retired media-url door. */
 
 /* Per-creator stage tracker — Allocated → Approval → Contract → Content → Live.
    Derived purely from existing ci.status + deliverable statuses. */
@@ -153,7 +152,6 @@ export default function CampaignCommandCenterPage() {
   const [refreshingOne, setRefreshingOne] = useState(null);
   const [toast, setToast]             = useState('');
   const [busyId, setBusyId]           = useState(null);
-  const [openContent, setOpenContent] = useState({});
 
   const loadAll = useCallback((cancelledRef) => {
     return Promise.all([
@@ -216,16 +214,11 @@ export default function CampaignCommandCenterPage() {
   const totalInf  = allInfluencers.length;
   const activeInf = allInfluencers.filter(ci => ['active', 'live'].includes(ci.status)).length;
 
-  let totalDel = 0, liveDel = 0, reviewQueue = 0, liveConfirmQueue = 0;
-  for (const ci of allInfluencers) {
-    const dc = ci.deliverable_counts || {};
-    totalDel += dc.total || 0;
-    for (const d of (ci.deliverables || [])) {
-      if (d.status === 'live') liveDel++;
-      if (d.status === 'submitted' || d.status === 'under_review') reviewQueue++;
-      if (d.status === 'approved' && d.live_url) liveConfirmQueue++;
-    }
-  }
+  // Item 12 (approval Q2): no review or live-confirm queue is counted here any more — content is
+  // sent, reviewed and confirmed in the app, and the website shows it read-only. The live-post
+  // count stays: the AVG ER tile below reads it (engagement analytics, not review).
+  let liveDel = 0;
+  for (const ci of allInfluencers) for (const d of (ci.deliverables || [])) if (d.status === 'live') liveDel++;
 
   const totalBudget     = Number(campaign.total_budget) || 0;
   const allocatedBudget = allInfluencers.reduce((sum, ci) => sum + (Number(ci.agreed_fee) || 0), 0);
@@ -329,43 +322,12 @@ export default function CampaignCommandCenterPage() {
     setRefreshingAll('');
   }
 
-  /* ── Inline content-review actions (no navigation away) ─────────────────── */
   function showToast(msg) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   }
-
-  async function inlineReview(delId, action) {
-    let feedback = null;
-    if (action === 'request_revision') {
-      feedback = window.prompt('What needs to change?');
-      if (feedback == null) return;
-      feedback = feedback.trim();
-      if (!feedback) { alert('Feedback is required to request revision.'); return; }
-    }
-    setBusyId(delId);
-    const res = await deliverableApi.review(delId, { action, feedback });
-    if (res?.success) {
-      showToast(action === 'approve' ? 'Content approved.' : 'Sent for revision.');
-      await loadAll();
-    } else {
-      showToast(res?.error?.message || 'Action failed');
-    }
-    setBusyId(null);
-  }
-
-  async function inlineConfirmLive(delId) {
-    setBusyId(delId);
-    const res = await deliverableApi.confirmLive(delId);
-    if (res?.success) {
-      const amt = res.data?.t2_amount;
-      showToast(amt ? `Live confirmed. Tranche-2 of ${fmtRupees(amt)} released.` : 'Live confirmed.');
-      await loadAll();
-    } else {
-      showToast(res?.error?.message || 'Failed to confirm');
-    }
-    setBusyId(null);
-  }
+  // Item 12 (approval Q2): the inline Approve / Request revision / "Confirm live · release T2"
+  // actions are gone. Their endpoints are retired server-side; the website reads, the app acts.
 
   /* ── Date-change request decision (Phase 3) ─────────────────────────────── */
   async function decideDateChange(ciId, requestId, action) {
@@ -452,7 +414,7 @@ export default function CampaignCommandCenterPage() {
     }
   }
 
-  const stageInfo = deriveCampaignStage(campaign.status, { id, appliedCount, pendingCount, reviewQueue, liveConfirmQueue });
+  const stageInfo = deriveCampaignStage(campaign.status, { id, appliedCount, pendingCount });
 
   /* ════ Render ════ */
   return (
@@ -544,12 +506,8 @@ export default function CampaignCommandCenterPage() {
       <div className="bg-white border border-[#E4E4E7] rounded-[14px] px-5 py-4 mb-4 flex items-center flex-wrap gap-y-3">
         <div className="flex-1 min-w-[150px] px-4 first:pl-0 border-r border-[#F4F4F5]">
           <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">CONTENT</div>
-          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">
-            {reviewQueue}<span className="text-[11px] text-[#71717A] font-semibold"> to review</span>
-            {' · '}{liveConfirmQueue}<span className="text-[11px] text-[#71717A] font-semibold"> awaiting live</span>
-            {' · '}{liveDel}<span className="text-[11px] text-[#71717A] font-semibold"> live</span>
-          </div>
-          <div className="text-[10px] text-[#A1A1AA] mt-0.5">{totalDel} deliverable{totalDel !== 1 ? 's' : ''} total</div>
+          <div className="font-bold text-[13px] text-[#0A0A0A] mt-1">Reviewed in the app</div>
+          <div className="text-[10px] text-[#A1A1AA] mt-0.5">Content is sent, reviewed and confirmed there.</div>
         </div>
         <div className="flex-1 min-w-[120px] px-4 border-r border-[#F4F4F5]">
           <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">BUDGET</div>
@@ -661,9 +619,8 @@ export default function CampaignCommandCenterPage() {
                     {infs.map(ci => {
                       const ieng = engByInfId[ci.influencer_id] || {};
                       const handle = ci.instagram_handle || ci.handle || ieng.instagram_handle || ci.influencer_name || ci.name || '—';
-                      const dels = ci.deliverables || [];
                       const pendingDateChange = ci.pending_date_change || null;
-                      const hasAction = !!pendingDateChange || dels.some(d => ['submitted', 'under_review'].includes(d.status) || (d.status === 'approved' && d.live_url));
+                      const hasAction = !!pendingDateChange;
                       const iOpen = isInfOpen(ci.id, hasAction || infs.length === 1);
                       // Effective posting window: per-creator window (set via an
                       // approved date-change) overrides the set window.
@@ -673,11 +630,8 @@ export default function CampaignCommandCenterPage() {
                       const ciProducts = productsForCi(ci.id);
                       const ciConv = convByInf[ci.influencer_id];
                       const ciWantsSales = ['conversion', 'hybrid'].includes(set.goal) || (ciConv && ciConv.sales_count > 0);
-                      const reviewCount = dels.filter(d => ['submitted', 'under_review'].includes(d.status)).length;
-                      const statusPill = reviewCount > 0
-                        ? { cls: 'bg-[#FFF7CC] text-[#6B5A00]', label: `${reviewCount} TO REVIEW` }
-                        : (['active', 'live'].includes(ci.status) ? { cls: 'bg-[#D1FAE5] text-[#047857]', label: ci.status.toUpperCase() }
-                          : { cls: 'bg-[#F4F4F5] text-[#52525B]', label: (ci.status || '').replace('_', ' ').toUpperCase() });
+                      const statusPill = ['active', 'live'].includes(ci.status) ? { cls: 'bg-[#D1FAE5] text-[#047857]', label: ci.status.toUpperCase() }
+                        : { cls: 'bg-[#F4F4F5] text-[#52525B]', label: (ci.status || '').replace('_', ' ').toUpperCase() };
                       return (
                         <div key={ci.id} className="border-b border-[#F4F4F5] last:border-b-0 pl-9 pr-4">
                           <button onClick={() => setOpenInfs(o => ({ ...o, [ci.id]: !iOpen }))}
@@ -752,92 +706,11 @@ export default function CampaignCommandCenterPage() {
                                 </div>
                               )}
 
-                              {dels.map(d => {
-                                const pill = delPill(d);
-                                const stats = engByDelId[d.id] || {};
-                                const needsReview = ['submitted', 'under_review'].includes(d.status);
-                                const needsLiveConfirm = d.status === 'approved' && d.live_url;
-                                const isBusy = busyId === d.id;
-                                const contentOpen = !!openContent[d.id];
-                                return (
-                                  <div key={d.id} className="my-1.5 ml-[46px]">
-                                  <div
-                                    className={`flex items-center gap-3 rounded-[10px] border px-3.5 py-2.5 ${needsReview ? 'bg-[#FFFDEB] border-[#FFC107]' : 'bg-[#FAFAFA] border-[#F4F4F5]'}`}>
-                                    <span className="text-base">{DEL_ICON[d.type] || '🎬'}</span>
-                                    <span>
-                                      <span className="block text-[12.5px] font-bold text-[#0A0A0A] capitalize">{(d.type || '').replace('_', ' ')}</span>
-                                      <span className="block text-[10.5px] text-[#71717A]">
-                                        {d.status === 'live' && d.live_url && <a href={d.live_url} target="_blank" rel="noreferrer" className="text-[#6B5A00] font-bold no-underline">view post ↗</a>}
-                                        {needsReview && (d.submitted_at ? `submitted ${formatDate(d.submitted_at)}` : 'awaiting your review')}
-                                        {needsLiveConfirm && 'influencer says it’s posted'}
-                                        {d.status === 'pending' && 'not submitted yet'}
-                                        {d.status === 'revision_requested' && `revision ${d.revision_count || 1} requested`}
-                                      </span>
-                                    </span>
-                                    <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${pill.cls}`}>{pill.label}</span>
-                                    <span className="ml-auto flex gap-3.5 items-center">
-                                      {d.status === 'live' && (
-                                        <>
-                                          <MiniStat v={nf(stats.likes)} k="LIKES" />
-                                          <MiniStat v={nf(stats.comments)} k="COMMENTS" />
-                                          {stats.views != null && <MiniStat v={nf(stats.views)} k="VIEWS" />}
-                                          <MiniStat v={stats.engagement_rate != null ? `${stats.engagement_rate}%` : '—'} k="ER" />
-                                          <button
-                                            onClick={() => refreshDeliverable(d.id)}
-                                            disabled={refreshingOne === d.id}
-                                            title="Re-scrape this post now"
-                                            className="w-7 h-7 rounded-[8px] bg-white border border-[#E4E4E7] text-[13px] hover:bg-[#FFF7CC] hover:border-[#FFC107] disabled:opacity-50">
-                                            {refreshingOne === d.id ? '…' : '↻'}
-                                          </button>
-                                        </>
-                                      )}
-                                      {needsReview && (
-                                        <>
-                                          <button
-                                            onClick={() => setOpenContent(o => ({ ...o, [d.id]: !o[d.id] }))}
-                                            className="bg-white border border-[#E4E4E7] rounded-[8px] px-3 py-1.5 text-[11.5px] font-bold text-[#0A0A0A] hover:border-[#0A0A0A]">
-                                            {contentOpen ? 'Hide content' : 'View content'}
-                                          </button>
-                                          <button
-                                            onClick={() => inlineReview(d.id, 'approve')}
-                                            disabled={isBusy}
-                                            className="bg-[#0A0A0A] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#FFC107] hover:bg-[#1F1F22] disabled:opacity-50">
-                                            {isBusy ? 'Working…' : 'Approve'}
-                                          </button>
-                                          <button
-                                            onClick={() => inlineReview(d.id, 'request_revision')}
-                                            disabled={isBusy}
-                                            className="bg-white border border-[#E4E4E7] rounded-[8px] px-3 py-1.5 text-[11.5px] font-bold text-[#0A0A0A] hover:border-[#0A0A0A] disabled:opacity-50">
-                                            Request revision
-                                          </button>
-                                        </>
-                                      )}
-                                      {needsLiveConfirm && (
-                                        <>
-                                          <button
-                                            onClick={() => inlineConfirmLive(d.id)}
-                                            disabled={isBusy}
-                                            className="bg-[#FFC107] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#0A0A0A] hover:bg-[#E0A800] disabled:opacity-50">
-                                            {isBusy ? 'Confirming…' : 'Confirm live · release T2'}
-                                          </button>
-                                        </>
-                                      )}
-                                    </span>
-                                  </div>
-                                  {needsReview && contentOpen && (
-                                    <div className="mt-1.5 px-1">
-                                      {d.caption && (
-                                        <div className="mb-2 p-2.5 rounded-[10px] bg-white border border-[#E4E4E7] text-[12px] text-[#1F1F22] leading-relaxed whitespace-pre-wrap">
-                                          {d.caption}
-                                        </div>
-                                      )}
-                                      <MediaPreview deliverableId={d.id} mediaType={d.media_type || d.type} />
-                                    </div>
-                                  )}
-                                  </div>
-                                );
-                              })}
-                              {dels.length === 0 && <div className="ml-[46px] text-[11.5px] text-[#A1A1AA] my-1.5">No deliverables yet.</div>}
+                              {/* Item 12 (approval Q2) — content is sent, reviewed and confirmed in the app.
+                                  One read-only card per creator; nothing here can approve or release money. */}
+                              <div className="ml-[46px] my-1.5 rounded-[10px] border border-[#E5E4DE] bg-[#F6F6F3] px-3.5 py-2.5 text-[12px] text-[#5B5A53]">
+                                Content is reviewed and confirmed in the app.
+                              </div>
 
                               {ciProducts.length > 0 && (
                                 <div className="flex flex-wrap gap-1.5 ml-[46px] mt-2">

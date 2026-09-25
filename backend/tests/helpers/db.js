@@ -204,7 +204,11 @@ async function reseedReferenceData(client) {
       -- not exist" that says nothing about what is actually wrong. Every key the code knows
       -- about belongs in this list.
       ('subscriptions_enforced', 1, 0, 1, 'on/off', 'Subscription plans'),
-      ('remote_return_autoconfirm_days', 7, 1, 30, 'days', 'Remote return auto-confirm')
+      ('remote_return_autoconfirm_days', 7, 1, 30, 'days', 'Remote return auto-confirm'),
+      -- Item 12 (C17): the two new numbers, and the waiting period moved from payment_config (Q4).
+      ('content_change_rounds',       2, 1,  5, 'rounds', 'Content change requests'),
+      ('content_report_silence_days', 7, 1, 30, 'days',   'Brand silence before the Creator may report'),
+      ('final_payment_wait_days',     7, 1, 60, 'days',   'Final payment waiting period')
     ON CONFLICT (key) DO NOTHING
   `);
   // Item 7: the standard terms are seeded by migration 183 and are configuration

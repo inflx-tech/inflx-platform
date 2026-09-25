@@ -264,14 +264,8 @@ function ProductionPanel({ contractId }) {
     else setError(res.error?.message || 'Flip failed');
   }
 
-  async function markVisitDone() {
-    if (!event) return;
-    setSaving(true); setError(null);
-    const res = await productionApi.complete(event.id, {});
-    setSaving(false);
-    if (res.success) load();
-    else setError(res.error?.message || 'Complete failed');
-  }
+  // Item 12 (approval Q3): "Mark visit done" is retired server-side for a Store Visit too; the
+  // visit is marked and confirmed in the app. The website shows the read-only card below.
 
   if (loading) return <div className="p-5 border-t border-[#F4F4F5] text-[11px] text-[#71717A]">Loading production…</div>;
 
@@ -302,7 +296,7 @@ function ProductionPanel({ contractId }) {
   // server (production.controller, Phase 2d), so nothing here may pretend otherwise. Read-only.
   if (event.mode === 'visit') {
     const when = event.visit_scheduled_at ? new Date(event.visit_scheduled_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : null;
-    const stage = event.status === 'completed' || event.brand_completed_at || event.auto_confirmed_at ? 'Shoot done'
+    const stage = event.status === 'completed' ? 'Shoot done'
       : event.influencer_completed_at ? 'She marked the visit done — waiting for your confirmation in the app'
       : event.time_agreed_at ? `Store visit agreed for ${when}`
       : event.plan_sent_at ? `Plan sent for ${when} — time not agreed yet`
@@ -502,10 +496,6 @@ function ProductionPanel({ contractId }) {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={markVisitDone} disabled={saving}
-                    className="flex-1 py-2 bg-[#0A0A0A] text-[#FFC107] text-[12px] font-bold rounded-[10px] disabled:opacity-50">
-                    Mark visit done
-                  </button>
                   {!showReschedule && (
                     <button onClick={() => setShowReschedule(true)} disabled={saving}
                       className="py-2 px-3 text-[11px] text-[#71717A] underline">

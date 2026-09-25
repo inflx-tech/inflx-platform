@@ -15,6 +15,8 @@ const parcel = require('../services/parcel.service');
 // Item 10 — the §10 gate: signed by both, and funded where the aim carries fixed money.
 const shootGate = require('../services/shootGate.service');
 const { MSG: MSG10 } = require('../services/productionCopy');
+// Item 12 — the Store Visit branch of `complete` retires too (approval Q3).
+const { MSG: MSG12 } = require('../services/contentCopy');
 
 /**
  * Item 10, Phase 2d — RETIRED DOORS (approval Q12: "server-side, not by hiding the buttons").
@@ -619,49 +621,21 @@ const complete = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
   await ensureParty(contract, req, 'either');
-  // Item 11 (Phase 2a), approval §2.9 — RETIRED FOR REMOTE ONLY.
-  //
-  // The caller audit found a live Store Visit caller: the brand website's "Mark visit done"
-  // (Packages/brand-web/app/dashboard/campaigns/[id]/influencers/page.js:525 → markVisitDone
-  // :287), inside the visit branch. Retiring this route outright would break item 10's own
-  // path from the website, so the visit branch stays exactly as it was.
-  //
-  // For Remote, F14 replaces it and adds the rule this door has never had: she must have
-  // checked what arrived first (§11.2, "once she has checked what arrived").
+  // Item 11 (Phase 2a), approval §2.9 — retired for Remote: F14 replaces it and adds the rule this
+  // door never had, that she must have checked what arrived first.
   retired11ForRemote(event, 'RETIRED_COMPLETE_REMOTE', MSG10.RETIRED_COMPLETE_REMOTE);
 
-  // stage-4 — this used to refuse anything that was not a visit, which meant a REMOTE shoot
-  // had no way of being marked done at all. Who may mark it now depends on the mode, and the
-  // rule lives in parcel.service so the endpoint and the screen read one answer:
-  //   store visit       — either party (the brand was there)
-  //   remote / shipment — the creator alone (the brand cannot see whether she has shot)
-  // Founder, 2026-08-27. Enforced inside completeShoot; checked here to answer 403 not 422.
-  if (!parcel.canComplete(event.mode, req.user.role)) {
-    throw new AppError('FORBIDDEN',
-      'Only the creator can say the shoot is done — you cannot see whether it has happened yet. She submits the content next, and that is the proof.',
-      403);
-  }
-
-  let updated;
-  try {
-    updated = await productionService.completeShoot(event.id, req.body?.notes, actorFromReq(req));
-  } catch (err) {
-    throw new AppError('VALIDATION_ERROR', err.message, 422);
-  }
-
-  // Notify the OTHER party
-  const target = req.user.sub === contract.brand_user_id
-    ? { uid: contract.influencer_user_id, fcm: contract.influencer_fcm, phone: contract.influencer_phone }
-    : { uid: contract.brand_user_id, fcm: contract.brand_fcm, phone: contract.brand_phone };
-  notify(
-    target.uid, target.fcm, target.phone,
-    'production.completed',
-    'Shoot marked done',
-    `The shoot for "${contract.campaign_name}" was marked done. Time to start the content.`,
-    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
-  );
-
-  return success(res, { production_event: updated });
+  // Item 12 (Phase 2a), approval Q3 — AND RETIRED FOR A STORE VISIT.
+  //
+  // This door wrote only the caller's own mark and set status='completed' only when both had
+  // tapped. One brand tap from the website's "Mark visit done" therefore left a row with
+  // brand_completed_at set and status 'confirmed': item 10's screens read "Shoot done", item 10's
+  // attended and confirm both refused it, the shoot could never finish, and the content step —
+  // which opens on status='completed' alone — could never open. Item 10's own flow covers the
+  // visit in full (she marks attended → the brand confirms, or it confirms itself), and the
+  // website's button becomes a read-only card. No production row was in the stuck state when
+  // this was retired (read 25 Sep 2026). Data and columns are left exactly as they are.
+  throw new AppError('RETIRED_12_COMPLETE_VISIT', MSG12.RETIRED_12_COMPLETE_VISIT, 422, 'status');
 });
 
 // POST /v1/production-events/:id/cancel  (admin only)

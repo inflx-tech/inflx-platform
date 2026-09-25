@@ -4,6 +4,12 @@ const ITEM4_DAY = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10
 /**
  * Phase 3 — Block C: Deliverable submission + brand review
  * Block D: Submit live URL + brand confirms live + Tranche 2 release
+ *
+ * [RETIRED by item 12] — features/item12-content, approval Q2. All eight /v1/deliverables content
+ * doors are retired server-side for every Aim: confirm-live released tranche 2 with no signature,
+ * shoot or Aim check. These blocks are KEPT WHOLE, not deleted, inside describe.skip so the
+ * compare sees their names move; the executing replacement is tests/item12-phase2a.test.js
+ * (check 32: every door, one case per Aim, no money moves) and the item 12 flow suites.
  */
 
 const request = require('supertest');
@@ -116,7 +122,7 @@ async function setupActiveContract({ agreed_fee = 10000 } = {}) {
 // Block C — POST /v1/deliverables/:id/submit
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /v1/deliverables/:id/submit', () => {
+describe.skip('POST /v1/deliverables/:id/submit [RETIRED by item 12 — the door answers RETIRED_12_*; replaced by item12-phase2a check 32]', () => {
   it('influencer submits content URL — status becomes submitted', async () => {
     const { infToken, deliverableId } = await setupActiveContract();
 
@@ -206,7 +212,7 @@ describe('POST /v1/deliverables/:id/submit', () => {
 // Block C — POST /v1/deliverables/:id/review
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /v1/deliverables/:id/review', () => {
+describe.skip('POST /v1/deliverables/:id/review [RETIRED by item 12 — the door answers RETIRED_12_*; replaced by item12-phase2a check 32]', () => {
   async function setupSubmitted() {
     const scenario = await setupActiveContract();
     await request(app)
@@ -352,7 +358,7 @@ describe('POST /v1/deliverables/:id/review', () => {
 // Block D — POST /v1/deliverables/:id/submit-live
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /v1/deliverables/:id/submit-live', () => {
+describe.skip('POST /v1/deliverables/:id/submit-live [RETIRED by item 12 — the door answers RETIRED_12_*; replaced by item12-phase2a check 32]', () => {
   async function setupApproved() {
     const scenario = await setupActiveContract();
     // Submit
@@ -422,7 +428,7 @@ describe('POST /v1/deliverables/:id/submit-live', () => {
 // Block D — POST /v1/deliverables/:id/confirm-live
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /v1/deliverables/:id/confirm-live', () => {
+describe.skip('POST /v1/deliverables/:id/confirm-live [RETIRED by item 12 — the door answers RETIRED_12_*; replaced by item12-phase2a check 32]', () => {
   async function setupLiveUrlSubmitted() {
     const scenario = await setupActiveContract();
     // Submit content

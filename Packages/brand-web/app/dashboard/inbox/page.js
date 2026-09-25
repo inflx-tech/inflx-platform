@@ -9,7 +9,7 @@ import { brandInboxApi, applicationApi, fmtRupees, fmtNum } from '../../../lib/a
 const TABS = [
   { key: 'applications', label: 'Applications',     desc: 'Open-group applicants waiting on your approve / reject' },
   { key: 'negotiations', label: 'Negotiations',     desc: 'Counter-offers waiting for your response' },
-  { key: 'reviews',      label: 'Content reviews',  desc: 'Submitted deliverables to approve / revise' },
+  { key: 'reviews',      label: 'Content reviews',  desc: 'Content waiting for you. It is reviewed and confirmed in the app.' },
   { key: 'signatures',   label: 'Contract signs',   desc: 'Contracts the influencer signed; needs you to countersign' },
   { key: 'failures',     label: 'Failures',         desc: 'Contracts/PDFs that failed to generate; retry them' },
 ];
@@ -266,43 +266,13 @@ function NegotiationsTab({ onChange }) {
   );
 }
 
-function ReviewsTab({ onChange }) {
-  const router = useRouter();
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    brandInboxApi.deliverables('submitted').then(r => {
-      setLoading(false);
-      if (r.success) {
-        setRows(r.data?.deliverables || []);
-        onChange?.();
-      }
-    });
-    /* eslint-disable-next-line */
-  }, []);
-  if (loading) return <div className="spinner" />;
-  if (rows.length === 0) return <div className="empty-tab">No content awaiting review.</div>;
+// Item 12 (approval Q2): read-only. The content doors are retired server-side; content is sent,
+// reviewed and confirmed in the app. The count on this tab still says how much is waiting.
+function ReviewsTab() {
   return (
-    <div>
-      {rows.map(d => (
-        <div key={d.id} className="ic ic-clickable" onClick={() => router.push(`/dashboard/campaigns/${d.campaign_id}?tab=content&deliverable=${d.id}`)}>
-          <div className="ic-nav">
-            <div className="ic-nav-l">
-              <div className="ic-nav-name">
-                <span className="handle">@{d.influencer_handle}</span>
-                <span className="sep">·</span>
-                <span className="camp">{(d.type || '').replace(/_/g, ' ')}</span>
-                {d.revision_count > 0 && <span className="rev">REV {d.revision_count}</span>}
-              </div>
-              <div className="ic-nav-meta">
-                {d.campaign_name}<span> · submitted {fmtDateShort(d.submitted_at)}</span>
-              </div>
-            </div>
-            <div style={{ minWidth: 90 }}></div>
-            <div className="ic-nav-chev">›</div>
-          </div>
-        </div>
-      ))}
+    <div className="empty-tab">
+      Content is reviewed and confirmed in the app. Open the collaboration there to review what she sent
+      or confirm it is live.
     </div>
   );
 }

@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Pay for Content</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+
+.turn{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.turn.mine{background:var(--surface);border-color:transparent}
+.turn .hd{display:flex;gap:8px;align-items:center}
+.turn .hd b{font-size:12.5px}
+.turn .hd .when{font-size:11px;color:var(--ink3);margin-left:auto;white-space:nowrap}
+.chg{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+.chg>span:first-child{color:var(--ink2);flex:none;white-space:nowrap}
+.chg .v{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end;text-align:right;flex:1;min-width:0}
+.chg .old{color:var(--ink3);text-decoration:line-through;font-weight:600}
+.chg .ar{color:var(--ink3);font-weight:700}
+.chg .new{font-weight:800}
+.chg.same .new{font-weight:600;color:var(--ink2)}
+.qnote{font-size:12.5px;color:var(--ink2);font-style:italic;line-height:1.4}
+.rnd{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.05em;color:var(--ink2);background:var(--surface);padding:4px 9px;border-radius:999px;justify-self:start}
+.last{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--move-bg);color:var(--move-fg);display:flex;gap:8px;align-items:flex-start}
+.waitbox{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--wait-bg);color:var(--wait-fg);display:flex;gap:8px;align-items:flex-start}
+.okbox{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--active-bg);color:var(--active-fg);display:flex;gap:8px;align-items:flex-start}
+.greybox{border-radius:12px;padding:9px 11px;font-size:12.5px;background:var(--surface);color:var(--ink2)}
+.poolrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.poolrow:last-child{border-bottom:0}
+.poolrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.poolrow .t b{font-size:13px}
+.pgrp{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;padding-top:4px}
+.pgrp .n{font-weight:700;color:var(--ink2)}
+.entry{display:flex;gap:10px;align-items:center;border:1.5px solid var(--ink);border-radius:14px;padding:11px}
+.entry .t{flex:1;min-width:0;display:grid;gap:2px}
+.entry b{font-size:13.5px}
+.web{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff;width:560px;max-width:100%;align-self:flex-start}
+.web .wtop{background:var(--ink);color:#fff;padding:9px 14px;font-size:12px;font-weight:700;display:flex;gap:10px;align-items:center}
+.web .wtop .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35)}
+.web .wbody{padding:4px 14px 14px}
+.setrow{padding:13px 0;border-bottom:1px solid var(--border);display:grid;gap:5px}
+.setrow:last-child{border-bottom:0}
+.setrow .sh{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.setrow b{font-size:13.5px}
+.setrow .d{font-size:12px;color:var(--ink2);line-height:1.45}
+.setrow .val{display:flex;gap:7px;align-items:center;flex:none}
+.setrow .val .field{width:72px;justify-content:center;height:34px}
+.setrow .unit2{font-size:12px;color:var(--ink2)}
+.audit{font-size:11.5px;color:var(--ink3);padding-top:10px}
+.shot.wide{width:600px;max-width:100%}
+
+.sig{border:1.5px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.sig.done{border-color:transparent;background:var(--active-bg)}
+.sig .who{font-size:11px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.sig .nm{font-size:15px;font-weight:800}
+.sig .mt{font-size:11.5px;color:var(--ink2)}
+.tick{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.tick .bx{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--border);flex:none;display:grid;place-items:center;margin-top:1px}
+.tick .bx.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tick .bx .ico{width:12px;height:12px}
+.mrows{display:grid;gap:0}
+.mline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border)}
+.mline:last-child{border-bottom:0}
+.mline span{color:var(--ink2)}
+.mline b{font-variant-numeric:tabular-nums}
+.mline.tot{border-top:1.5px solid var(--ink);border-bottom:0;margin-top:2px;padding-top:8px;font-size:13.5px}
+.mline.tot span{color:var(--ink);font-weight:700}
+.mline.tot b{font-weight:800}
+.short{border-radius:12px;padding:10px 11px;background:var(--no-bg);color:var(--no-fg);font-size:12.5px;font-weight:600;display:grid;gap:2px}
+.short b{font-size:15px}
+.ref{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink3)}
+.numlist{display:grid;gap:7px;counter-reset:t}
+.numlist div{display:flex;gap:8px;font-size:12px;color:var(--ink2);line-height:1.45}
+.numlist div::before{counter-increment:t;content:counter(t);font-family:var(--mono);font-size:10px;color:var(--ink3);flex:none;width:14px;padding-top:2px}
+.dpage{border:1px solid var(--border);border-radius:14px;background:#fff;width:540px;max-width:100%;align-self:flex-start;padding:22px 24px;display:grid;gap:16px}
+.dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.dhead .ttl{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.dhead .sub{font-size:12px;color:var(--ink2)}
+.dsec{display:grid;gap:7px}
+.dsec h5{margin:0;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.dparties{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dparties div{display:grid;gap:2px;font-size:12.5px;color:var(--ink2)}
+.dparties b{font-size:13.5px;color:var(--ink)}
+.drow{display:flex;justify-content:space-between;gap:14px;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)}
+.drow:last-child{border-bottom:0}
+.drow span{color:var(--ink2)}
+.drow b{text-align:right}
+.dsigs{display:grid;grid-template-columns:1fr 1fr;gap:16px;border-top:1px solid var(--border);padding-top:14px}
+.dsig{display:grid;gap:2px}
+.dsig .n{font-size:15px;font-weight:800}
+.dsig .m{font-size:11px;color:var(--ink3)}
+.dsig .l{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.dfoot{font-size:11px;color:var(--ink3);border-top:1px solid var(--border);padding-top:10px;line-height:1.5}
+.shot.doc{width:560px;max-width:100%}
+
+.bcard2{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:9px}
+.bcard2 .top{display:flex;gap:10px;align-items:center}
+.bcard2 .nm{font-weight:800;font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcard2 .top .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bcard2 .chips{flex-wrap:wrap;gap:5px}
+.bcard2 .chip{flex:none}
+.pcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.pcard .top{display:flex;gap:10px;align-items:center}
+.pcard .top b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pcard .top .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cool{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--ended-bg);color:var(--ended-fg);display:flex;gap:8px;align-items:flex-start}
+.limit{font-size:11.5px;color:var(--ink3);text-align:right}
+.miniStat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.miniStat div{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid}
+.miniStat b{font-size:13px;font-variant-numeric:tabular-nums}
+.miniStat span{font-size:10.5px;color:var(--ink2)}
+.fromtag{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.04em;color:var(--done-fg);background:var(--done-bg);padding:3px 7px;border-radius:6px}
+
+.gate{border-radius:12px;padding:10px 11px;display:grid;gap:5px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px}
+.gate .g{display:flex;gap:8px;align-items:flex-start;font-weight:600}
+.gate .ico{flex:none;margin-top:1px}
+.gate.wait{background:var(--wait-bg);color:var(--wait-fg)}
+.addr{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.addr .street{font-size:13px;line-height:1.45}
+.addr .nm2{font-weight:800;font-size:14px}
+.addr .acts{display:flex;gap:7px;flex-wrap:wrap}
+.when{border-radius:14px;padding:12px;background:var(--ink);color:#fff;display:grid;gap:3px}
+.when .d{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.when .t2{font-size:13px;opacity:.75}
+.when.soft{background:var(--surface);color:var(--ink)}
+.when.soft .t2{color:var(--ink2);opacity:1}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stepline{display:grid;gap:0}
+.stepline .s{display:flex;gap:9px;align-items:flex-start;padding:7px 0;font-size:12.5px}
+.stepline .dot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center;margin-top:1px}
+.stepline .dot.on{background:var(--active-fg);border-color:var(--active-fg);color:#fff}
+.stepline .dot.now{border-color:var(--move-fg);background:var(--move-bg)}
+.stepline .dot .ico{width:9px;height:9px}
+.stepline .s b{font-size:12.5px}
+.stepline .s .mut2{color:var(--ink3)}
+.delay{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;background:var(--move-bg);color:var(--move-fg);display:flex;gap:8px;align-items:flex-start}
+
+/* item 12 additions */
+.item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.item:last-child{border-bottom:0}
+.item .t{flex:1;min-width:0;display:grid;gap:3px}
+.item .t b{font-size:13px;line-height:1.25}
+.lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.shot.wide{grid-column:1/-1;justify-items:start}
+.shot.wide .cap{max-width:560px}
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.dgrid .f{aspect-ratio:3/4;border-radius:10px;position:relative;overflow:hidden;display:grid;place-items:center}
+.dgrid .f .pl{position:absolute;right:5px;bottom:5px;background:rgba(26,26,23,.72);color:#fff;border-radius:6px;padding:2px 5px;font-size:9.5px;font-weight:700}
+.dgrid .add{border:1.5px dashed var(--border);color:var(--ink3);background:#fff}
+.drow2{display:grid;gap:7px;padding:11px 0;border-bottom:1px solid var(--border)}
+.drow2:last-child{border-bottom:0}
+.drow2 .hd{display:flex;align-items:center;gap:8px}
+.drow2 .hd b{font-size:13.5px;flex:1}
+.count{font-family:var(--mono);font-size:11px;color:var(--ink2);background:var(--surface);padding:3px 7px;border-radius:6px;white-space:nowrap}
+.count.ok{background:var(--active-bg);color:var(--active-fg)}
+.count.no{background:var(--no-bg);color:var(--no-fg)}
+.rounds{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;font-family:var(--mono);letter-spacing:.05em;color:var(--ink2);background:var(--surface);padding:4px 9px;border-radius:999px;justify-self:start}
+.pay{display:grid;gap:0}
+.payrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.payrow:last-child{border-bottom:0}
+.payrow .t{flex:1;display:grid;gap:1px}
+.payrow b{font-variant-numeric:tabular-nums}
+.dot2{width:9px;height:9px;border-radius:50%;flex:none;background:var(--border)}
+.dot2.on{background:var(--active-fg)}
+.dot2.now{background:var(--move-fg)}
+.linkrow{display:flex;gap:7px;align-items:center}
+.linkrow .field{flex:1;font-family:var(--mono);font-size:11.5px}
+.note{border-left:3px solid var(--move-fg);padding:7px 10px;background:var(--move-bg);color:var(--move-fg);border-radius:0 10px 10px 0;font-size:12.5px}
+.filenote{font-size:11.5px;color:var(--move-fg);display:flex;gap:5px;align-items:flex-start}
+</style>
+</head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+
+  <symbol id="i-doc" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 17l9.5-9.5a2.1 2.1 0 0 1 3 3L8 20H5z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0 4-4m-4 4-4-4M4 19h16"/></symbol>
+
+  <symbol id="i-nav" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3 20 20l-8-4-8 4z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h3l1.5 4-2 1.5a12 12 0 0 0 6 6L17 12.5 21 14v3a2 2 0 0 1-2.2 2A16 16 0 0 1 5 5.2 2 2 0 0 1 7 3"/></symbol>
+  <symbol id="i-hourglass" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/></symbol>
+
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6"/><circle cx="8.5" cy="9" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4 10 14M18 14v6H4V6h6"/></symbol>
+  <symbol id="i-rupee" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 4h12M6 9h12M15 4c0 4-3 5-6 5h-1l8 10"/></symbol>
+</svg>
+
+<div class="wrap">
+<header class="top">
+  <div class="eyebrow">INFLX rebuild · Item 12 of 21 · Stage 3: locked 25 Sep 2026</div>
+  <h1>Pay for Content: the work, and the money</h1>
+  <p class="lede">The first item where the creator hands over work and the brand judges it. She uploads what the agreement says she owes, as one complete package; the brand approves it or asks for changes, twice at most; she posts it and proves it; the brand confirms it is live, which releases the second 25%; a week later the final 50% completes the collaboration. Based on rules doc v1.28 (§12.2, plus §3, §9, §11, §19, §21, §22, §24, §25, §26, §27). Names, numbers and dates are example data.</p>
+  <span class="pill">Locked · build to these screens · rules doc v1.28 §12.2</span>
+</header>
+<section><header><div class="eyebrow">Both apps · The content step opens</div><h2>The shoot is done; the work starts</h2><p class="prose">Marking the shoot done opens this and nothing else does. What she owes is already on the agreement — rows of platform and count — so neither side is inventing the brief now.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">URBAN THREADS · SET A</div><div class="okbox"><svg class="ico" ><use href="#i-check"/></svg><span>Shoot done on 19 Oct. Now the content.</span></div><div class="stepline"><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Agreement signed</b><span class="xs mut2">14 Sep</span></div></div><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Shoot</b><span class="xs mut2">Done 19 Oct</span></div></div><div class="s"><span class="dot now"></span><div style="display:grid;gap:1px"><b>Content</b><span class="xs mut2">Upload what you agreed</span></div></div><div class="s"><span class="dot "></span><div style="display:grid;gap:1px"><b>Live and paid</b><span class="xs mut2">Posts 24 Oct</span></div></div></div><div class="tcard locked"><div class="sechd2">What you agreed</div><div class="tline"><span>Instagram reel</span><b>2</b></div><div class="tline"><span>Instagram post</span><b>1</b></div><div class="tline"><span>Instagram story</span><b>2</b></div><div class="tline"><span>Usage rights</span><b>Their social · 90 days</b></div></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>You post on 24 Oct · 5 days</span></div><div class="greybox">Upload everything here first. Urban Threads see it before it goes anywhere, and you post once they approve.</div></div><div class="savebar"><button class="btn block b-pri" type="button">Start uploading</button></div></div><div class="cap"><i>C1</i><b>Creator · what she owes</b><span>The deliverable rows from the agreement, locked, with the usage rights beside them. The posting countdown is the only clock.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="row between"><span class="xs mut">Pay for Content · Store Visit</span><span class="chip s-active">Active</span></div><div class="stepline"><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Agreement signed</b><span class="xs mut2">14 Sep</span></div></div><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Shoot plan</b><span class="xs mut2">Visited 19 Oct</span></div></div><div class="s"><span class="dot now"></span><div style="display:grid;gap:1px"><b>Content</b><span class="xs mut2">With Tanvi</span></div></div><div class="s"><span class="dot "></span><div style="display:grid;gap:1px"><b>Live and paid</b><span class="xs mut2">Posts 24 Oct</span></div></div></div><div class="waitbox"><svg class="ico" ><use href="#i-hourglass"/></svg><span>Tanvi is working on the content. You review it here before she posts anything.</span></div><div class="tcard"><div class="sechd2">Her fee · ₹12,000</div><div class="pay"><div class="payrow"><span class="dot2 on"></span><div class="t"><b style="font-weight:700">On signing · 25%</b><span class="xs mut">Paid 14 Sep</span></div><b>₹3,000</b></div><div class="payrow"><span class="dot2 now"></span><div class="t"><b style="font-weight:700">Content live · 25%</b><span class="xs mut">When they confirm</span></div><b>₹3,000</b></div><div class="payrow"><span class="dot2 "></span><div class="t"><b style="font-weight:700">After 7 days · 50%</b><span class="xs mut">Then it is complete</span></div><b>₹6,000</b></div></div><span class="xs mut">INFLX campaign fee ₹960 · charged to you at signing, never to her.</span></div><div class="cut"><svg class="ico" ><use href="#i-clock2"/></svg><span>She posts on 24 Oct · 5 days</span></div></div></div><div class="cap"><i>C2</i><b>Brand · waiting, and the money ahead</b><span>The brand has nothing to do yet. The fee card shows the 25% already paid and the two payments this item will release.</span></div></div></div></section><section><header><div class="eyebrow">Creator app · Uploading and sending</div><h2>One package, complete, or not at all</h2><p class="prose">A half-finished package is non-compliant under §22, so the app never lets her send one. Everything is free to change until she sends, and locked the moment she does.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="empty"><span class="c"><svg class="ico" ><use href="#i-image"/></svg></span><b>Nothing uploaded yet</b><span class="sm mut">Add the 2 reels, 1 post and 2 stories you agreed. Photos up to 10 MB, videos up to 200 MB.</span></div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count no">0 of 2</span></div><div class="dgrid"><div class="f add"><svg class="ico" ><use href="#i-plus"/></svg></div></div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count no">0 of 1</span></div><div class="dgrid"><div class="f add"><svg class="ico" ><use href="#i-plus"/></svg></div></div></div><div class="drow2"><div class="hd"><b>Instagram story</b><span class="count no">0 of 2</span></div><div class="dgrid"><div class="f add"><svg class="ico" ><use href="#i-plus"/></svg></div></div></div></div><div class="savebar"><button class="btn block b-dis" type="button">Send to Urban Threads</button><span class="hint" style="text-align:center">Every row has to be filled before you can send.</span></div></div><div class="cap"><i>C3</i><b>Creator · nothing yet</b><span>The rows come from the agreement and cannot be added to or removed. The empty state names the limits before she hits them.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"><span class="pl">0:28</span></div><div class="f" style="background:#E8D2B8"><span class="pl">0:35</span></div></div><div class="field ph" style="height:auto;padding:8px 11px;font-size:12px">Diwali in the new linen co-ord. Swipe for the fit 🪔</div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count ok">1 of 1</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div></div><div class="field ph" style="height:auto;padding:8px 11px;font-size:12px">Festive, but make it breathable.</div></div><div class="drow2"><div class="hd"><b>Instagram story</b><span class="count ">1 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div><div class="f add"><svg class="ico" ><use href="#i-plus"/></svg></div></div></div><span class="hint">Captions are what you suggest. Urban Threads can ask for changes to any of it.</span></div><div class="savebar"><button class="btn block b-dis" type="button">Send to Urban Threads</button><span class="hint" style="text-align:center">1 more story to add.</span></div></div><div class="cap"><i>C4</i><b>Creator · filling it</b><span>Counts turn green as each row is satisfied. The send button stays off, and says exactly what is missing.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="skel" style="height:280px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:16px">Send this to Urban Threads?</b><div class="tcard locked"><div class="tline"><span>Instagram reel</span><b>2 videos</b></div><div class="tline"><span>Instagram post</span><b>1 photo</b></div><div class="tline"><span>Instagram story</span><b>2 photos</b></div></div><div class="waitbox"><svg class="ico" ><use href="#i-lock"/></svg><span>You can't change anything while they are reviewing it.</span></div><span class="sm mut">Don't post any of this yet. They approve it first, then you post and they confirm it is live.</span><div class="btnrow"><button class="btn b-sec" type="button">Not yet</button><button class="btn b-pri" type="button">Send</button></div></div></div></div><div class="cap"><i>C5</i><b>Creator · sending locks it</b><span>The confirm sheet is the last look. It also says the one thing she must not do yet: post it.</span></div></div></div></section><section><header><div class="eyebrow">Both apps · The review</div><h2>One verdict, two rounds, then it is a dispute</h2><p class="prose">The brand judges the package whole. Two change requests are ordinary; the second says plainly what comes after it. Nothing here is a silent third round.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="last"><svg class="ico" ><use href="#i-doc"/></svg><span>Your move. Tanvi sent her content on 20 Oct.</span></div><span class="rounds">ROUND 1 OF 2</span><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"><span class="pl">0:28</span></div><div class="f" style="background:#E8D2B8"><span class="pl">0:35</span></div></div><div class="field ph" style="height:auto;padding:8px 11px;font-size:12px">Diwali in the new linen co-ord. Swipe for the fit 🪔</div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count ok">1 of 1</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div></div><div class="field ph" style="height:auto;padding:8px 11px;font-size:12px">Festive, but make it breathable.</div></div><div class="drow2"><div class="hd"><b>Instagram story</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div><div class="f" style="background:#E8D2B8"></div></div></div><div class="greybox">Approving locks this as the version she posts. Asking for changes sends it back with your reason.</div></div><div class="savebar"><button class="btn block b-pri" type="button">Approve the content</button><button class="btn block b-sec" type="button">Ask for changes</button></div></div><div class="cap"><i>C6</i><b>Brand · reviewing</b><span>Every file, every caption, and the round it is on. Two buttons and no third.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026</div><div class="skel" style="height:240px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:16px">Ask for changes</b><span class="rounds">ROUND 1 OF 2</span><div class="grp"><span class="lbl">What should change? <span class="req">*</span></span><div class="textarea">The second reel is too dark at the end. Can we have the kurta shown full length in the post?</div><span class="counter">96 / 500</span></div><div class="waitbox"><svg class="ico" ><use href="#i-info"/></svg><span>You have 2 rounds. After this one you can approve it or report it to INFLX.</span></div><div class="btnrow"><button class="btn b-sec" type="button">Back</button><button class="btn b-pri" type="button">Send</button></div></div></div></div><div class="cap"><i>C7</i><b>Brand · asking for changes</b><span>A reason is required, because "changes requested" with nothing said is how a collaboration stalls.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="last"><svg class="ico" ><use href="#i-undo"/></svg><span>Urban Threads asked for changes on 21 Oct.</span></div><span class="rounds">ROUND 1 OF 2</span><div class="note">"The second reel is too dark at the end. Can we have the kurta shown full length in the post?"</div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"><span class="pl">0:28</span></div><div class="f" style="background:#E8D2B8"><span class="pl">0:35</span></div></div><div class="filenote"><svg class="ico" ><use href="#i-alert"/></svg><span>Replace this one — too dark at the end.</span></div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count ok">1 of 1</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div></div><div class="filenote"><svg class="ico" ><use href="#i-alert"/></svg><span>Full length, please.</span></div></div><div class="drow2"><div class="hd"><b>Instagram story</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div><div class="f" style="background:#E8D2B8"></div></div></div></div><div class="savebar"><button class="btn block b-pri" type="button">Send the changes</button><span class="hint" style="text-align:center">Replace what they asked about. Everything else stays as it is.</span></div></div><div class="cap"><i>C8</i><b>Creator · changes requested</b><span>Their words at the top, pinned notes on the files they named, and the package open again.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="last"><svg class="ico" ><use href="#i-doc"/></svg><span>Your move. Tanvi sent her changes on 22 Oct.</span></div><span class="rounds">ROUND 2 OF 2 · LAST</span><div class="warn"><svg class="ico" ><use href="#i-alert"/></svg><span>This is the last round. If this still isn't right, you can approve it or report it to INFLX — there is no third round.</span></div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"><span class="pl">0:28</span></div><div class="f" style="background:#E8D2B8"><span class="pl">0:35</span></div></div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count ok">1 of 1</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div></div></div><div class="greybox">Round 1: "too dark at the end… full length in the post" · 21 Oct</div></div><div class="savebar"><button class="btn block b-pri" type="button">Approve the content</button><button class="btn block b-sec" type="button">Ask for changes</button></div></div><div class="cap"><i>C9</i><b>Brand · the last round</b><span>The warning arrives before the decision, not after it.</span></div></div></div></section><section><header><div class="eyebrow">Both apps · Posting it</div><h2>She posts what was approved, and proves it</h2><p class="prose">A link for each deliverable, opened by the brand before it confirms. Stories are the exception: they are gone within a day, so a screenshot stands in.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="okbox"><svg class="ico" ><use href="#i-check"/></svg><span>Approved on 22 Oct. Post it now — this is the version they approved.</span></div><div class="sechd">Add a link for each one</div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="linkrow"><div class="field">instagram.com/reel/C8xK2…</div><svg class="ico" ><use href="#i-check"/></svg></div><div class="linkrow"><div class="field ph">Paste the link</div></div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count">0 of 1</span></div><div class="linkrow"><div class="field ph">Paste the link</div></div></div><div class="drow2"><div class="hd"><b>Instagram story</b><span class="count">0 of 2</span></div><div class="upload"><svg class="ico" ><use href="#i-camera"/></svg><div style="display:grid;gap:2px"><b style="font-size:13px">Add a screenshot</b><span class="xs mut">Stories disappear in a day, so a screenshot is the proof.</span></div></div></div></div><div class="savebar"><button class="btn block b-dis" type="button">I've posted everything</button><span class="hint" style="text-align:center">3 links and 2 screenshots to go.</span></div></div><div class="cap"><i>C10</i><b>Creator · posting and linking</b><span>Approval is where the content locks. The links are hers to paste, one per deliverable.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="last"><svg class="ico" ><use href="#i-ext"/></svg><span>Your move. Tanvi posted everything on 23 Oct.</span></div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="listrow"><div class="t"><b>instagram.com/reel/C8xK2…</b></div><svg class="ico" ><use href="#i-ext"/></svg></div><div class="listrow"><div class="t"><b>instagram.com/reel/C8xM9…</b></div><svg class="ico" ><use href="#i-ext"/></svg></div></div><div class="drow2"><div class="hd"><b>Instagram post</b><span class="count ok">1 of 1</span></div><div class="listrow"><div class="t"><b>instagram.com/p/C8xN4…</b></div><svg class="ico" ><use href="#i-ext"/></svg></div></div><div class="drow2"><div class="hd"><b>Instagram story</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"></div><div class="f" style="background:#E8D2B8"></div></div></div><div class="prev"><b>Confirming releases ₹3,000</b><span>The second 25% of her ₹12,000 fee. The last ₹6,000 follows 7 days later.</span></div></div><div class="savebar"><button class="btn block b-pri" type="button">Confirm the content is live</button><button class="btn block b-sec" type="button">Something's wrong — tell INFLX</button></div></div><div class="cap"><i>C11</i><b>Brand · confirming it is live</b><span>Every link opens. The money that moves is named on the button, not discovered afterwards.</span></div></div></div></section><section><header><div class="eyebrow">Both apps · The money</div><h2>Two payments, one of them on a clock</h2><p class="prose">Confirming live releases the second 25% straight away. The final 50% follows an Admin waiting period stamped at that moment, and completing the collaboration is the last thing that happens.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">URBAN THREADS · SET A</div><div class="okbox"><svg class="ico" ><use href="#i-check"/></svg><span>Urban Threads confirmed your content is live on 23 Oct.</span></div><div class="tcard"><div class="sechd2">Her fee · ₹12,000</div><div class="pay"><div class="payrow"><span class="dot2 on"></span><div class="t"><b style="font-weight:700">On signing · 25%</b><span class="xs mut">Paid 14 Sep</span></div><b>₹3,000</b></div><div class="payrow"><span class="dot2 on"></span><div class="t"><b style="font-weight:700">Content live · 25%</b><span class="xs mut">Paid 23 Oct</span></div><b>₹3,000</b></div><div class="payrow"><span class="dot2 now"></span><div class="t"><b style="font-weight:700">After 7 days · 50%</b><span class="xs mut">Then it is complete</span></div><b>₹6,000</b></div></div></div><div class="waitbox"><svg class="ico" ><use href="#i-clock2"/></svg><span>₹3,000 is in your wallet. The last ₹6,000 arrives on 30 Oct — nothing for you to do.</span></div><div class="stepline"><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Agreement signed</b><span class="xs mut2">14 Sep</span></div></div><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Shoot</b><span class="xs mut2">19 Oct</span></div></div><div class="s"><span class="dot on"><svg class="ico" ><use href="#i-check"/></svg></span><div style="display:grid;gap:1px"><b>Content live</b><span class="xs mut2">23 Oct</span></div></div><div class="s"><span class="dot now"></span><div style="display:grid;gap:1px"><b>Final payment</b><span class="xs mut2">30 Oct</span></div></div></div></div></div><div class="cap"><i>C12</i><b>Creator · paid, and waiting</b><span>The waiting period is shown as a date, with nothing she has to do to earn it.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><div class="okbox"><svg class="ico" ><use href="#i-check"/></svg><span>Collaboration completed on 30 Oct.</span></div><div class="tcard"><div class="sechd2">Her fee · ₹12,000</div><div class="pay"><div class="payrow"><span class="dot2 on"></span><div class="t"><b style="font-weight:700">On signing · 25%</b><span class="xs mut">Paid 14 Sep</span></div><b>₹3,000</b></div><div class="payrow"><span class="dot2 on"></span><div class="t"><b style="font-weight:700">Content live · 25%</b><span class="xs mut">Paid 23 Oct</span></div><b>₹3,000</b></div><div class="payrow"><span class="dot2 on"></span><div class="t"><b style="font-weight:700">After 7 days · 50%</b><span class="xs mut">Paid 30 Oct</span></div><b>₹6,000</b></div></div><span class="xs mut">INFLX campaign fee ₹960 · charged at signing.</span></div><div class="tcard"><div class="sechd2">The record</div><div class="tline"><span>Shoot</span><b>Visited 19 Oct</b></div><div class="tline"><span>Content approved</span><b>22 Oct · 1 round of changes</b></div><div class="tline"><span>Posted</span><b>23 Oct · 5 links</b></div><div class="tline"><span>You confirmed live</span><b>23 Oct</b></div><div class="tline"><span>Paid in full</span><b>30 Oct</b></div></div><div class="greybox">Her posts stay up under the usage rights you agreed: your social, 90 days.</div></div></div><div class="cap"><i>C13</i><b>Brand · completed</b><span>Every payment, every date, and what the usage rights allow afterwards.</span></div></div></div></section><section><header><div class="eyebrow">Everything that goes sideways</div><h2>Two rounds, then people — not a third round</h2><p class="prose">The rounds run out, the brand goes quiet, the posting date passes. Each has one sentence of what happened, whose move it is, and what it means for the money.</p></header><div class="flow"><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">DIWALI EDIT 2026 · SET A</div><span class="rounds">ROUNDS USED</span><div class="warn"><svg class="ico" ><use href="#i-alert"/></svg><span>You've used both rounds. There is no third — approve what she sent, or report it to INFLX.</span></div><div class="drow2"><div class="hd"><b>Instagram reel</b><span class="count ok">2 of 2</span></div><div class="dgrid"><div class="f" style="background:#C9D3B4"><span class="pl">0:28</span></div><div class="f" style="background:#E8D2B8"><span class="pl">0:35</span></div></div></div><div class="greybox">Round 1 · 21 Oct — "too dark at the end…"<br>Round 2 · 24 Oct — "still not full length"</div></div><div class="savebar"><button class="btn block b-pri" type="button">Approve the content</button><button class="btn block b-dan" type="button">Report to INFLX</button></div></div><div class="cap"><i>C14</i><b>Brand · rounds used</b><span>Approve, or report it. The history of both rounds stays on the screen while the brand decides.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Your content</h3></div><div class="crumbs">EVERY OTHER STATE · CREATOR</div><div class="lab">Waiting for them to confirm</div><div class="waitbox"><svg class="ico" ><use href="#i-hourglass"/></svg><span>You posted on 23 Oct. Urban Threads haven't confirmed yet. From 30 Oct you can ask INFLX to look at it.</span></div><div class="lab">They told INFLX</div><div class="warn"><svg class="ico" ><use href="#i-alert"/></svg><span>Urban Threads reported a problem with what you posted. INFLX will contact you both. Your ₹3,000 from signing stays yours.</span></div><div class="lab">Delayed</div><div class="greybox">The 24 Oct posting date passed before your content went live. Nothing changes: carry on from wherever you are, and the money is untouched.</div><div class="lab">Shoot not done yet</div><div class="empty"><span class="c"><svg class="ico" ><use href="#i-image"/></svg></span><b>After the shoot</b><span class="sm mut">This opens once your visit is confirmed.</span></div></div></div><div class="cap"><i>C15</i><b>Creator · every other state</b><span>Including the one that protects her: seven days of silence and she can ask INFLX to look.</span></div></div><div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div><div class="scr"><div class="bar"><span class="ib"><svg class="ico" ><use href="#i-back"/></svg></span><h3>Tanvi Suresh</h3><span class="ib"><svg class="ico" ><use href="#i-more"/></svg></span></div><div class="crumbs">EVERY OTHER STATE · BRAND</div><div class="lab">Delayed</div><div class="row between"><span class="xs mut">Pay for Content · Store Visit</span><span class="chip s-move">Delayed</span></div><div class="delay"><svg class="ico" ><use href="#i-alert"/></svg><span>The 24 Oct posting date passed before the content went live. Where it stopped: in review with you.</span></div><div class="lab">Reported to INFLX</div><div class="warn"><svg class="ico" ><use href="#i-alert"/></svg><span>You reported this on 25 Oct. INFLX has it. ₹9,000 of her fee stays in escrow until it is settled.</span></div><div class="lab">She hasn't sent anything</div><div class="waitbox"><svg class="ico" ><use href="#i-hourglass"/></svg><span>Tanvi hasn't sent her content yet. She is being reminded every two days.</span></div><div class="lab">Couldn't load</div><div class="toast t-err"><svg class="ico" ><use href="#i-alert"/></svg><span>Couldn't load the content. Try again.</span></div></div></div><div class="cap"><i>C16</i><b>Brand · every other state</b><span>Delayed, reported, nothing received, and the couldn't-load state.</span></div></div></div></section><section><header><div class="eyebrow">Admin website</div><h2>Two new numbers</h2><p class="prose">Both join the same data-driven settings page, beside items 10 and 11.</p></header><div class="flow"><div class="shot wide"><div class="web"><div class="wtop"><span class="dot"></span><span class="dot"></span><span>INFLX Admin · Platform settings</span></div><div class="wbody"><div class="setrow"><div class="sh"><b>Content change requests</b><div class="val"><div class="field">2</div><span class="unit2">rounds</span></div></div><span class="d">New. How many times a Brand may ask for changes before a further rejection becomes a dispute. Stamped on the collaboration when the Creator first submits.</span></div><div class="setrow"><div class="sh"><b>Brand silence before the Creator may report</b><div class="val"><div class="field">7</div><span class="unit2">days</span></div></div><span class="d">New. How long after she confirms she has posted the Brand may stay silent before she can tell INFLX. Stamped when she confirms she posted.</span></div><div class="setrow"><div class="sh"><b>Final payment waiting period</b><div class="val"><div class="field">7</div><span class="unit2">days</span></div></div><span class="d">Existing. The delay before the final 50%, stamped when the Brand confirms the content is live.</span></div><div class="audit">Changes never move anything already stamped. Every change is recorded with who made it and when.</div></div></div><div class="cap"><i>C17</i><b>Admin · the new numbers</b><span>The rounds limit and the silence period. Each is stamped on the collaboration at the moment it starts to matter.</span></div></div></div></section>
+<section><header><div class="eyebrow">For lock and the gap prompt</div><h2>Rules behind these screens</h2></header><div class="tscroll"><table><thead><tr><th>Topic</th><th>Rule</th></tr></thead><tbody><tr><td>When it opens</td><td>The shoot is marked done — the Brand confirms a Store Visit, she marks a Remote shoot (§11). Pay for Content only; §12.1 is the Pay for Sale and Hybrid equivalent, in items 14 and 15.</td></tr><tr><td>What she owes</td><td>The deliverable rows on the agreement: a content type and a count. Each type names its platform (Instagram post, reel or story; YouTube video or short). The rows cannot be added to, removed or renegotiated after signing (§22).</td></tr><tr><td>What she uploads</td><td>Photos (JPG, PNG, ≤ 10 MB) and videos (MP4, ≤ 200 MB) from her phone, at most 10 files against a row, plus an optional caption of ≤ 500 characters per row. Free to change until she submits.</td></tr><tr><td>Submitting</td><td>One package covering every row. A row short of its count cannot be sent, because a partial package is non-compliant, never partial work (§22). Submitting locks it. Nothing is published anywhere before this.</td></tr><tr><td>The review</td><td>One verdict on the whole package: approve, or ask for changes with a required reason (≤ 500 characters) and optional notes pinned to individual files.</td></tr><tr><td>The rounds</td><td>An Admin number, two by default, stamped when she first submits. On the last allowed round the Brand is warned. Once used, the Brand may only approve or report to INFLX, which records a dispute (item 18). A third round never exists.</td></tr><tr><td>No deadlines</td><td>Neither side is on a clock in the review. Whoever must move is in Needs You and reminded every 48 hours, as in items 10 and 11.</td></tr><tr><td>Approval</td><td>Locks the content. What she posts is what was approved.</td></tr><tr><td>Posting</td><td>She posts on the platforms the rows name and gives a public link for each. A Story is proved by a screenshot instead, because it disappears within a day. She then confirms she has posted.</td></tr><tr><td>Confirming live</td><td>The Brand opens the links and confirms. That releases the second 25% and stamps the waiting period. There is no automatic confirmation here — the money is the Brand's and an unseen release would be wrong.</td></tr><tr><td>Brand silence</td><td>After an Admin number of days, seven by default, counted from her confirmation that she posted, she may tell INFLX. That records a dispute and moves no money by itself.</td></tr><tr><td>Posted something else</td><td>The Brand does not confirm; it reports, which is a dispute. There is no third answer.</td></tr><tr><td>The final 50%</td><td>A job releases it after the Admin waiting period stamped at the Brand's confirmation. Nothing is re-checked in that week; whether the content stays up is the agreement's usage terms, not a second confirmation.</td></tr><tr><td>Completion</td><td>The collaboration is Completed when the final 50% is released (§19).</td></tr><tr><td>Money</td><td>Item 12 releases the second 25% and the final 50% <b>of the creator's fee</b> from the amount locked at signing, and nothing else. The INFLX campaign fee was charged to the brand once at signing and is never part of her split, never deducted from her payments (§3). "Still locked" means her fee still in escrow.</td></tr><tr><td>Past the posting date</td><td>Delayed, as in items 10 and 11, with the stage: nothing submitted, in review, changes requested, approved but not posted, posted but not confirmed. Both told once; nothing moves.</td></tr><tr><td>Needs You</td><td>Creator: send your content; make the changes; post it and add the links. Brand: review the content; confirm it is live. Reminded at 48 hours.</td></tr><tr><td>Privacy</td><td>The files belong to that collaboration: only that Brand and that Creator see them, and Admin only when a dispute is raised. They never appear in the shopper app and are never reused elsewhere.</td></tr><tr><td>Admin numbers</td><td>New: content change requests (2) stamped at her first submission; Brand silence before she may report (7 days) stamped when she confirms she posted. Existing: the final-payment waiting period (7 days) stamped at the Brand's confirmation.</td></tr><tr><td>Out of scope</td><td>Shoppable posts and follower commerce (items 13–16), Hybrid's version of this step (item 15), dispute handling itself (item 18). Item 12 records a dispute and stops there.</td></tr><tr><td>States on lists</td><td>Loading, empty and couldn't load, as in items 2–11.</td></tr></tbody></table></div></section>
+<footer>INFLX rebuild · item 12 · opens on item 10 and 11's completed shoot, pays from item 9's locked funds, reuses item 10's Delayed flag, reminder lane and notification wrapper. Item 14 does the same step for Pay for Sale, item 15 for Hybrid, and item 18 handles the disputes this item records.</footer></div>
+</body></html>

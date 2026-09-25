@@ -237,6 +237,10 @@ const DELAYED_STAGE_LABEL = {
   in_transit: 'On the way',
   not_checked: 'Delivered, not checked',
   shoot_not_marked: 'Checked, shoot not marked',
+  // Item 12 (rules v1.29 §12.2) — the five content stages, widened into the CHECK by migration
+  // 192. The words live in contentCopy; they are repeated into this map so every reader of a
+  // delayed stage — shoot screens, content screens, lists — resolves any stage from one place.
+  ...require('./contentCopy').DELAYED_STAGE_LABEL,
 };
 
 /**

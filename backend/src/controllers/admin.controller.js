@@ -430,39 +430,46 @@ const getEscrowOverview = asyncHandler(async (req, res) => {
 // POST /admin/escrow/:id/release
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Item 12 (approval Q13) — kept for item 18, which will settle disputes with it, but no longer a
+// console-only door: the reason is REQUIRED and STORED (escrow_manual_releases, migration 192)
+// in the same transaction as the release, and a disputed or refunded row is refused — nothing
+// that has been taken out of the ordinary path is paid by hand.
 const adminReleaseEscrow = asyncHandler(async (req, res) => {
-  const { override_reason } = req.body;
-  if (!override_reason || !override_reason.trim()) {
-    throw new AppError('VALIDATION_ERROR', 'override_reason is required', 422, 'override_reason');
-  }
-
-  const { rows: entryRows } = await db.query(
-    `SELECT ee.*, ci.influencer_id, cs.campaign_id, c.brand_id
-     FROM escrow_entries ee
-     JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
-     JOIN campaign_sets cs ON cs.id = ci.set_id
-     JOIN campaigns c ON c.id = cs.campaign_id
-     WHERE ee.id = $1`,
-    [req.params.id]
-  );
-  if (!entryRows[0]) throw new AppError('NOT_FOUND', 'Escrow entry not found', 404);
-  const entry = entryRows[0];
-
-  if (entry.status === 'released') {
-    throw new AppError('CONFLICT', 'Escrow entry already released', 409);
+  const { MSG: MSG12 } = require('../services/contentCopy');
+  const reason = String((req.body && req.body.override_reason) || '').trim();
+  if (reason.length < 5 || reason.length > 500) {
+    throw new AppError('VALIDATION_ERROR', MSG12.RELEASE_REASON_REQUIRED, 422, 'override_reason');
   }
 
   const escrowService = require('../services/escrow.service');
-  await escrowService.processTrancheReleaseStandalone(entry.id);
+  const out = await db.withTransaction(async (client) => {
+    const { rows: [entry] } = await client.query(
+      `SELECT ee.*, ci.influencer_id, cs.campaign_id, c.brand_id
+         FROM escrow_entries ee
+         JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
+         JOIN campaign_sets cs ON cs.id = ci.set_id
+         JOIN campaigns c ON c.id = cs.campaign_id
+        WHERE ee.id = $1
+        FOR UPDATE OF ee`,
+      [req.params.id]
+    );
+    if (!entry) throw new AppError('NOT_FOUND', 'Escrow entry not found', 404);
+    if (entry.status === 'released') throw new AppError('CONFLICT', 'Escrow entry already released', 409);
+    if (entry.status === 'disputed' || entry.status === 'refunded') {
+      throw new AppError('RELEASE_NOT_ALLOWED', MSG12.RELEASE_NOT_ALLOWED(entry.status), 422, 'status');
+    }
 
-  console.log(`[ADMIN] Manual escrow release: entry ${entry.id} by admin ${req.user.sub}. Reason: ${override_reason}`);
+    await escrowService.processTrancheRelease(client, entry.id, entry.influencer_id, entry.brand_id, entry.campaign_id);
+    await client.query(
+      `INSERT INTO escrow_manual_releases (escrow_entry_id, tranche_number, amount, admin_user_id, reason)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [entry.id, entry.tranche_number, entry.amount, req.user.sub, reason]
+    );
+    const { rows: [updated] } = await client.query(`SELECT * FROM escrow_entries WHERE id = $1`, [entry.id]);
+    return updated;
+  });
 
-  const { rows: updated } = await db.query(
-    `SELECT * FROM escrow_entries WHERE id = $1`,
-    [entry.id]
-  );
-
-  return success(res, { escrow_entry: updated[0], override_reason });
+  return success(res, { escrow_entry: out, override_reason: reason });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -443,7 +443,7 @@ export const productionApi = {
   // Influencer: package received
   confirmReceived: (eventId, data) => api.post(`/production-events/${eventId}/confirm-received`, data),
   // Mark visit done (either party)
-  complete: (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
+  // Item 12 (approval Q3): `complete` is retired for both modes; the shoot is marked in the app.
   // Mutual flip to remote — either side requests, the other confirms
   flipToRemote: (eventId, data) => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
 };
@@ -566,11 +566,9 @@ export async function uploadAdminStockImage(file, presignFn) {
   return { public_url };
 }
 
+// Item 12 (approval Q2): the content doors — read, media, review, confirm-live — are retired
+// server-side. Content is sent, reviewed and confirmed in the app. Only the stats refresh stays.
 export const deliverableApi = {
-  get: (id) => api.get(`/deliverables/${id}`),
-  getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
-  review: (id, data) => api.post(`/deliverables/${id}/review`, data),
-  confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
   refreshStats: (id) => api.post(`/deliverables/${id}/refresh-stats`),
 };
 
@@ -598,7 +596,6 @@ export const contractApi = {
 export const brandInboxApi = {
   summary:        ()      => api.get('/brands/me/inbox-summary'),
   negotiations:   (status = 'awaiting_brand') => api.get(`/brands/me/negotiations?status=${status}`),
-  deliverables:   (status = 'submitted')      => api.get(`/brands/me/deliverables?status=${status}`),
   applications:   ()      => api.get('/brands/me/applications'),
 };
 
