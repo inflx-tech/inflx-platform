@@ -56,6 +56,10 @@ app.use(cors({
 // ─── Static file serving for mock uploads ────────────────────────────────────
 if (env.R2_MOCK) {
   app.use('/uploads', express.static(storageService.getUploadDir()));
+  // Item 12 — the mock stand-in for R2's presigned PUT/GET of creator content: HMAC-signed,
+  // expiring, exact length and type, streamed to a PRIVATE folder that is NOT the public /uploads.
+  // Mounted before any parser or router so nothing buffers or re-authenticates the stream.
+  app.use('/v1/content-mock', require('./services/contentStorage.service').mockRouter());
 }
 
 // ─── Request parsing ─────────────────────────────────────────────────────────

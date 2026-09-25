@@ -178,6 +178,10 @@ router.use('/', item10Routes);
 const item11Routes = require('./item11.routes');
 router.use('/', item11Routes);
 
+// Contract: features/item12-content
+const item12Routes = require('./item12.routes');
+router.use('/', item12Routes);
+
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);

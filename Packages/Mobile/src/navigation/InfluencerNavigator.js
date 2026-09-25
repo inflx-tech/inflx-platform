@@ -59,6 +59,9 @@ import RemoteShootScreen from '../screens/influencer/RemoteShootScreen';
 import RemoteAddressScreen from '../screens/influencer/RemoteAddressScreen';
 import ShootThreadScreen from '../screens/shared/ShootThreadScreen';
 import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
+// Item 12 (Phase 2b) — the real-phone upload proof. Shown only while the server switch is on.
+// Contract: features/item12-content
+import UploadProbeScreen from '../screens/influencer/UploadProbeScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -125,6 +128,8 @@ function ProfileStackScreen() {
       {/* Legal — creators get the creator document set. */}
       <ProfileStack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'creator' }} />
       <ProfileStack.Screen name="LegalDocument" component={LegalDocumentScreen} />
+      {/* Item 12 (Phase 2b) — the upload test. */}
+      <ProfileStack.Screen name="UploadProbe" component={UploadProbeScreen} />
     </ProfileStack.Navigator>
   );
 }

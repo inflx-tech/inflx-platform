@@ -35,3 +35,20 @@ Plain English, per surface. Screens are added to this file as each phase lands.
 **Server side (why the buttons could not simply be hidden)**
 All eight `/v1/deliverables` content routes answer `RETIRED_12_*` for every Aim, and
 `POST /production-events/:id/complete` answers `RETIRED_12_COMPLETE_VISIT` for a Store Visit.
+
+## Phase 2b — the upload test (a harness, not a product screen)
+
+**Creator app → Profile**
+- *Before:* no such row.
+- *After:* an **"Upload test"** row — "Checks a large video reaches INFLX from this phone" — that
+  appears **only while the server's `CONTENT_UPLOAD_PROBE` switch is on**. Off (the default), the
+  row is not drawn and every probe route answers 404. It exists for one job: the real-phone
+  200 MB proof the approval asks for before any content screen is written (item 11's "Test
+  parcels" is the precedent).
+
+**Upload test screen**
+- "Pick a video" (the system photo picker, already in the app) → the file's name, size, type and
+  length → **Upload it** (a progress bar, "Keep the app open until it finishes") → a result card:
+  *passed* ("Arrived byte for byte: N bytes, video/mp4 · time · deleted") or *FAILED* with the
+  reason. **Check the size lock** asks for a URL signed one byte short of the real file; storage
+  must refuse it. Nothing is kept either way — the server measures what landed and deletes it.

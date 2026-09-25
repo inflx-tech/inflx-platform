@@ -352,6 +352,9 @@ export const brandApi = {
   remoteGift:        (c, s2, ciId, lineId) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/lines/${lineId}/gift`),
   remoteConfirmReturn: (c, s2, ciId, body) => api.post(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/remote/return/confirm`, body),
 
+  // ── Item 12 · the content step, the brand's side. Contract: features/item12-content ──
+  contentFileUrl:    (c, s2, ciId, fileId) => api.get(`/campaigns/${c}/sets/${s2}/invitations/${ciId}/content/files/${fileId}/url`),
+
   // ── Item 8 · the pitches a brand receives. Contract: features/item8-pitch ─
   // Accepting creates a pool entry and nothing else, which is why there is no
   // campaign or set in any of these paths.
@@ -614,6 +617,18 @@ export const influencerApi = {
   myRemoteBookReturn: (id, body) => api.post(`/influencers/me/invitations/${id}/remote/return/book`, body),
   myRemoteSelfSent:   (id, body) => api.post(`/influencers/me/invitations/${id}/remote/return/sent`, body),
 
+  // ── Item 12 · the content step, her side. Contract: features/item12-content ──
+  // Files go STRAIGHT to storage (uploadContentFile below); these four only ask, confirm,
+  // remove and view. Every one is behind the content gate on the server.
+  contentUploadUrl:   (id, body) => api.post(`/influencers/me/invitations/${id}/content/files/upload-url`, body),
+  contentConfirmFile: (id, fileId) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/confirm`),
+  contentRemoveFile:  (id, fileId) => api.delete(`/influencers/me/invitations/${id}/content/files/${fileId}`),
+  contentFileUrl:     (id, fileId) => api.get(`/influencers/me/invitations/${id}/content/files/${fileId}/url`),
+  // Phase 2b — the device proof. 404 unless the server's CONTENT_UPLOAD_PROBE switch is on.
+  uploadProbeStatus:  () => api.get('/influencers/me/upload-probe'),
+  uploadProbeUrl:     (body) => api.post('/influencers/me/upload-probe/url', body),
+  uploadProbeConfirm: (body) => api.post('/influencers/me/upload-probe/confirm', body),
+
   // ── Item 8 · her pitch. Contract: features/item8-pitch ────────────────────
   // The thread is item 6's engine on a different anchor, so these four mirror
   // the invitation ones exactly.
@@ -788,6 +803,42 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
   });
 }
 
+
+/**
+ * Item 12 (Phase 2b) — send one file STRAIGHT to storage with the URL the server signed.
+ * Contract: features/item12-content · gap report §6 · approval §3.8, check 45
+ *
+ * Why not uploadFile above: it reads the whole file into memory as a Blob before sending, which
+ * at 200 MB is an out-of-memory crash, and it stops at 5 minutes. Here the body is `{ uri }`:
+ * React Native's own networking STREAMS it from disk (RequestBodyUtil → Okio), sends the file's
+ * real length as Content-Length, and reports progress. No native module — OTA-safe.
+ *
+ * The URL signs Content-Length and Content-Type, so storage refuses anything but the exact file
+ * the server approved. No Authorization header: the signature is the permission.
+ *
+ * @param {{url:string, method?:string, headers:Object}} upload — from contentUploadUrl
+ * @param {string} fileUri — the picker's file:// copy
+ * @returns {Promise<{ok:true}>} — rejects with .code UPLOAD_REJECTED | UPLOAD_NETWORK | UPLOAD_TIMEOUT
+ */
+export function uploadContentFile(upload, fileUri, { onProgress, timeoutMs = 45 * 60 * 1000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const fail = (code, extra = {}) => reject(Object.assign(new Error(code), { code, ...extra }));
+    const xhr = new XMLHttpRequest();
+    xhr.open(upload.method || 'PUT', upload.url);
+    const headers = upload.headers || {};
+    Object.keys(headers).forEach((k) => xhr.setRequestHeader(k, headers[k]));
+    xhr.timeout = timeoutMs;
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => { if (e && e.lengthComputable && e.total) onProgress(e.loaded / e.total); };
+    }
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300
+      ? resolve({ ok: true })
+      : fail('UPLOAD_REJECTED', { status: xhr.status, body: String(xhr.responseText || '').slice(0, 500) }));
+    xhr.onerror = () => fail('UPLOAD_NETWORK');
+    xhr.ontimeout = () => fail('UPLOAD_TIMEOUT');
+    xhr.send({ uri: fileUri, type: headers['Content-Type'], name: 'upload' });
+  });
+}
 
 // Item 2 — reference lists every picker reads (any signed-in role).
 const q = (params = {}) => { const p = Object.entries(params).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0)).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(Array.isArray(v) ? v.join(',') : v)}`); return p.length ? `?${p.join('&')}` : ''; };

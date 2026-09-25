@@ -53,6 +53,8 @@ export default function ProfileScreen({ navigation, route }) {
   const [invite, setInvite] = useState(null);
   const [social, setSocial] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  // Item 12 (Phase 2b): the upload test row appears only while the server switch is on.
+  const [probe, setProbe] = useState(false);
   const { toast, show } = useToast();
   useRouteToast(navigation, route, show);
 
@@ -64,6 +66,8 @@ export default function ProfileScreen({ navigation, route }) {
     setInvite(i.success ? i.data.summary || null : null);
     setSocial(so && so.success ? so.data : null);
     setStatus('ready');
+    const pr = influencerApi.uploadProbeStatus ? await influencerApi.uploadProbeStatus() : null;
+    setProbe(!!(pr && pr.success && pr.data && pr.data.enabled === true));
   }, []);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -121,6 +125,7 @@ export default function ProfileScreen({ navigation, route }) {
           <ProfileRow label={R.rows.niche} warn={needsNiche ? R.niche.warning : ''} dot={st !== 'approved' && rowNeeds(CREATOR_ROW_KEYS.niche, missing)} onPress={() => navigation.navigate('NicheLanguages')} testID="row-niche" />
           <ProfileRow label={R.rows.invitation} value={inviteValue} right={invite ? <StatusChip on={invite.labelState !== 'paused'} /> : null} onPress={() => navigation.navigate('InvitationSettings')} testID="row-invitation-settings" />
           <ProfileRow label={R.rows.legal} onPress={() => navigation.navigate('LegalList')} testID="row-legal" />
+          {probe ? <ProfileRow label="Upload test" sub="Checks a large video reaches INFLX from this phone" onPress={() => navigation.navigate('UploadProbe')} testID="row-upload-probe" /> : null}
           <TouchableOpacity style={s.logout} onPress={logout} testID="row-logout"><Text style={s.logoutText}>{R.logout}</Text></TouchableOpacity>
         </View>
         <SubmitForReviewBlock completeness={completeness} userStatus={st} submittedAt={meta.submitted_for_review_at} onSubmit={submitForReview} busy={submitting} />
