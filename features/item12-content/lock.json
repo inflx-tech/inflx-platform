@@ -18,5 +18,21 @@
     "released_at": null,
     "maestro_green": false,
     "walk_fixes": []
+  },
+  "deployed_to_production": {
+    "phase": "2a + 2b (the device proof pending)",
+    "at": "2026-09-25",
+    "by": "founder go (\"yes pls go step 1-3\")",
+    "commit": "c23d8634 (pushed 186ef852..c23d8634)",
+    "migration": "192 applied to production 2026-09-25 via run-192.js --apply after a clean --dry: 21 structural checks OK; 2 signed Pay for Content, 0 shoots done, 0 agreements with no rows (Q7); no backfill; final_payment_wait_days carried across = 7",
+    "render": "live, proved by route existence: GET /v1/influencers/me/upload-probe answered 404 then 401 while a made-up sibling stayed 404; the G2/G12/admin content routes answer 401; /v1/content-mock answers 404 (production is not in mock mode)",
+    "ota": {
+      "influencer": 218,
+      "brand": "unchanged (230)",
+      "native_runtime": "3 — unchanged; no native module"
+    },
+    "websites": "the push redeploys Vercel; not independently verified from outside (auth redirect)",
+    "money": "NO MONEY MOVED — identical before the migration, after it, and after Render + the OTA: 12 escrow rows / Rs 34,500 (T1 released x4, T2 locked x4, T3 locked x4), contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions",
+    "pending": "the founder sets CONTENT_UPLOAD_PROBE=on on Render, runs the 200 MB upload + size-lock test on a real phone (Profile -> Upload test), then removes the switch. Phase 2c does not start until that passes."
   }
 }
