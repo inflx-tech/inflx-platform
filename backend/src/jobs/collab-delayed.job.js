@@ -16,20 +16,24 @@ const shootPlan = require('../services/shootPlan.service');
 // modes derive their stage from entirely different timestamps, and a single query that tried
 // to do both would be readable by nobody.
 const remoteJobs = require('../services/remoteJobs.service');
+// Item 12 — the content arm, and Q9's silent stage refresh across phases.
+const contentJobs = require('../services/contentJobs.service');
 
 async function run({ today = null } = {}) {
   console.log('[CRON collab-delayed] Running...');
   try {
     const visit = await shootPlan.flagDelayed({ today });
     const remote = await remoteJobs.flagDelayedRemote({ today });
+    const contentArm = await contentJobs.flagDelayedContent({ today });
+    const refreshed = await contentJobs.refreshDelayedStages();
     const out = {
-      checked: visit.checked + remote.checked,
-      flagged: visit.flagged + remote.flagged,
-      skippedGate: visit.skippedGate + remote.skippedGate,
-      failed: visit.failed + remote.failed,
-      visit, remote,
+      checked: visit.checked + remote.checked + contentArm.checked,
+      flagged: visit.flagged + remote.flagged + contentArm.flagged,
+      skippedGate: visit.skippedGate + remote.skippedGate + contentArm.skippedGate,
+      failed: visit.failed + remote.failed + contentArm.failed + refreshed.failed,
+      visit, remote, content: contentArm, refreshed,
     };
-    console.log(`[CRON collab-delayed] Checked ${out.checked}, flagged ${out.flagged} (visit ${visit.flagged}, remote ${remote.flagged}), skipped (gate closed) ${out.skippedGate}, failed ${out.failed}.`);
+    console.log(`[CRON collab-delayed] Checked ${out.checked}, flagged ${out.flagged} (visit ${visit.flagged}, remote ${remote.flagged}, content ${contentArm.flagged}), stages refreshed ${refreshed.updated}, skipped (gate closed) ${out.skippedGate}, failed ${out.failed}.`);
     return out;
   } catch (e) {
     console.error('[CRON collab-delayed] Failed:', e.message);

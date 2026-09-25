@@ -1562,7 +1562,6 @@ const cancel = asyncHandler(async (req, res) => {
 const ESCROW_OWED_STATUSES = ['locked', 'queued', 'processing', 'disputed'];
 
 // Work the creator has handed over and the brand has not yet dealt with.
-const DELIVERABLE_AWAITING_BRAND = ['submitted', 'under_review'];
 
 const endCampaign = asyncHandler(async (req, res) => {
   const brand    = await getBrandOrThrow(req.user.sub);
@@ -1607,16 +1606,17 @@ const endCampaign = asyncHandler(async (req, res) => {
 
   // Work awaiting the brand's own review.
   const { rows: awaiting } = await db.query(
+    // Item 12: the content waiting for the brand's review, from collab_content — never the legacy
+    // deliverables rows (one of which, on an unsigned collaboration, would have blocked this forever).
     `SELECT COUNT(*)::int AS n,
             MIN(COALESCE(u.name, i.instagram_handle)) AS who
-       FROM deliverables d
-       JOIN campaign_influencers ci ON ci.id = d.campaign_influencer_id
+       FROM campaign_influencers ci
        JOIN campaign_sets cs        ON cs.id = ci.set_id
        JOIN influencers i           ON i.id  = ci.influencer_id
        LEFT JOIN users u            ON u.id  = i.user_id
       WHERE cs.campaign_id = $1
-        AND d.status = ANY($2::deliverable_status[])`,
-    [campaign.id, DELIVERABLE_AWAITING_BRAND]
+        AND ${require('../services/contentFlow.service').CONTENT_MOVE_SQL('ci')} = 'review_content'`,
+    [campaign.id]
   );
   if (awaiting[0].n > 0) {
     throw new AppError(

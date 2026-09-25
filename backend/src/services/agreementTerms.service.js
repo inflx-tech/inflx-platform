@@ -85,7 +85,11 @@ const CONTEXT_SQL = `
          -- The escrow rows are the ledger, so the running total is taken from them
          -- and nothing has to be kept in step by hand.
          (SELECT COALESCE(SUM(e.amount), 0) FROM escrow_entries e
-           WHERE e.campaign_influencer_id = ci.id AND e.status = 'released') AS released_so_far
+           WHERE e.campaign_influencer_id = ci.id AND e.status = 'released') AS released_so_far,
+         -- Item 12 (Q1, v1.29): what is STILL LOCKED is her fee still in escrow, from the rows —
+         -- never locked_amount − released, because locked_amount carries the campaign fee.
+         (SELECT COALESCE(SUM(e.amount), 0) FROM escrow_entries e
+           WHERE e.campaign_influencer_id = ci.id AND e.status NOT IN ('released', 'refunded')) AS fee_in_escrow
     FROM campaign_influencers ci
     JOIN campaign_sets cs ON cs.id = ci.set_id
     JOIN campaigns c ON c.id = cs.campaign_id

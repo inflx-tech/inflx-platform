@@ -269,7 +269,7 @@ async function getInfluencerCampaignEarnings(influencerId) {
       .filter(t => t.status === 'released')
       .reduce((s, t) => s + t.amount, 0);
     const tranchePending = tranches
-      .filter(t => t.status === 'locked')
+      .filter(t => t.status === 'locked' || t.status === 'queued')   // item 12: queued is still to come
       .reduce((s, t) => s + t.amount, 0);
 
     const commConfirmed = commissions
@@ -378,7 +378,7 @@ async function getCampaignCommissionDetail(campaignInfluencerId, influencerId) {
     created_at: t.created_at,
     label: t.tranche_number === 1 ? 'Contract Signed'
          : t.tranche_number === 2 ? 'Content Live'
-         : 'Day 30 Post-Live',
+         : 'Final payment',
   }));
 
   const commissionData = commissions.map(c => {
@@ -401,7 +401,7 @@ async function getCampaignCommissionDetail(campaignInfluencerId, influencerId) {
   });
 
   const trancheEarned = trancheData.filter(t => t.status === 'released').reduce((s, t) => s + t.amount, 0);
-  const tranchePending = trancheData.filter(t => t.status === 'locked').reduce((s, t) => s + t.amount, 0);
+  const tranchePending = trancheData.filter(t => t.status === 'locked' || t.status === 'queued').reduce((s, t) => s + t.amount, 0);
   const commConfirmed = commissionData.filter(c => c.status === 'confirmed').reduce((s, c) => s + c.commission_amount, 0);
   const commPending = commissionData.filter(c => c.status === 'pending').reduce((s, c) => s + c.commission_amount, 0);
 

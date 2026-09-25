@@ -21,12 +21,24 @@ const B = '/campaigns/:id/sets/:sid/invitations/:ciId/content';
 const C = '/influencers/me/invitations/:ciId/content';
 
 // ── Creator ──────────────────────────────────────────────────────────────────
+router.get   (`${C}`,                        ...creator, ctrl.creatorRead);     // G1
+router.put   (`${C}/rows/:rowKey/caption`,   ...creator, ctrl.caption);         // G4
+router.post  (`${C}/submit`,                 ...creator, ctrl.submit);          // G5
+router.put   (`${C}/proofs/:rowKey/:slot`,   ...creator, ctrl.setProof);        // G8
+router.delete(`${C}/proofs/:rowKey/:slot`,   ...creator, ctrl.clearProof);      // G8
+router.post  (`${C}/posted`,                 ...creator, ctrl.posted);          // G9
+router.post  (`${C}/report`,                 ...creator, ctrl.creatorReport);   // G11 — brand_silent
 router.post  (`${C}/files/upload-url`,      ...creator, ctrl.requestUpload);   // G2a
 router.post  (`${C}/files/:fileId/confirm`, ...creator, ctrl.confirmUpload);   // G2b
 router.delete(`${C}/files/:fileId`,         ...creator, ctrl.removeFile);      // G3
 router.get   (`${C}/files/:fileId/url`,     ...creator, ctrl.creatorFileUrl);  // G12
 
 // ── Brand ────────────────────────────────────────────────────────────────────
+router.get   (`${B}`,                        ...brand, ctrl.brandRead);         // G1
+router.post  (`${B}/approve`,                ...brand, ctrl.approve);           // G6
+router.post  (`${B}/changes`,                ...brand, ctrl.askChanges);        // G7
+router.post  (`${B}/confirm-live`,           ...brand, ctrl.confirmLive);       // G10 — releases the second 25%
+router.post  (`${B}/report`,                 ...brand, ctrl.brandReport);       // G11 — rounds_used | posted_wrong
 router.get   (`${B}/files/:fileId/url`,     ...brand, ctrl.brandFileUrl);      // G12
 
 // ── The device proof (Phase 2b) — 404 unless CONTENT_UPLOAD_PROBE=on ──────────

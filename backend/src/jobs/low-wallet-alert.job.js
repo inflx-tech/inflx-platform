@@ -22,6 +22,13 @@ async function run() {
      JOIN campaign_sets cs ON cs.campaign_id = c.id
      JOIN campaign_influencers ci ON ci.set_id = cs.id
      JOIN escrow_entries ee ON ee.campaign_influencer_id = ci.id AND ee.status = 'queued'
+     -- Item 12 (approval Q14): a tranche whose money was LOCKED at the brand's signature (item 9)
+     -- never needs the wallet again, so it is no reason to alarm the brand. Item 12 is the first
+     -- thing that queues a tranche 3 in production; without this the brand would get a false
+     -- "top up your wallet" SMS the morning after confirming her content live.
+     WHERE NOT EXISTS (SELECT 1 FROM contracts con
+                        WHERE con.campaign_influencer_id = ci.id AND con.money_at IS NOT NULL
+                          AND con.locked_amount > 0)
      GROUP BY b.id, b.wallet_balance, u.id, u.fcm_token, u.phone, u.name`
   );
 

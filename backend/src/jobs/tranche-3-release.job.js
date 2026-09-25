@@ -1,133 +1,93 @@
 'use strict';
 
+/**
+ * tranche-3-release — the final 50%, hourly at :00 (J1).
+ * Contract: features/item12-content · approval §3.5, Q4, Q5, Q10 · checks 18, 19, 20, 33, 36
+ *
+ * Item 12 rebuilt this job rather than adding a second one, so there is ONE place that pays a
+ * tranche 3:
+ *
+ *   · THE DUE IS STAMPED. A row carries `release_due_at`, written when the brand confirmed the
+ *     content live (contentMoney.releaseSecond). A later change to final_payment_wait_days never
+ *     moves it (finding 2). A row queued before item 12 with no stamp keeps the old rule —
+ *     triggered_at + the number, after the release time — and production had none queued.
+ *   · ONE TRANSACTION PER ROW, taken FOR UPDATE SKIP LOCKED (contentMoney.releaseFinal), with the
+ *     collaboration's completion INSIDE it. Notifications go after commit and can never lose it.
+ *   · A BRAND REPORT HOLDS IT (Q10): a row whose collaboration carries a brand's report is skipped.
+ *   · No SMS. Push and the in-app bell, as items 5–11 do it.
+ */
+
 const db = require('../config/db');
-const escrowService = require('../services/escrow.service');
+const contentMoney = require('../services/contentMoney.service');
 const notificationService = require('../services/notification.service');
 const taxService = require('../services/tax.service');
+const events = require('../services/collabEvents.service');
+const { NOTIFY12 } = require('../services/contentCopy');
 
-async function run() {
-  console.log('[CRON tranche-3] Running...');
+const rupees = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
-  // Wave 1 — read T3 timing from payment_config (admin-controllable).
-  // Defaults: 30 days after triggered_at, IST clock time 03:00:00.
-  // Cron schedule changed from daily-06:00-UTC to hourly so the configured
-  // time-of-day is honored within ~1h. Defensive: tax.service falls back
-  // to 30 days / 03:00 IST on read failure (pre-M074 columns missing).
+async function run({ now = new Date() } = {}) {
   const releaseAfterDays = await taxService.getTrancheReleaseAfterDays();
-  const releaseTimeIst   = await taxService.getTrancheReleaseTimeIst();
-  console.log(`[CRON tranche-3] Config: ${releaseAfterDays}d after content_live, release at ${releaseTimeIst} IST`);
+  const releaseTimeIst = await taxService.getTrancheReleaseTimeIst();
 
   const { rows: due } = await db.query(
-    `SELECT ee.id, ee.net_to_influencer, ee.campaign_influencer_id,
-            ci.influencer_id, ci.set_id,
-            cs.campaign_id,
-            c.brand_id,
-            i.user_id AS influencer_user_id,
-            u_inf.fcm_token AS inf_fcm_token,
-            u_inf.phone AS inf_phone,
-            u_inf.name AS inf_name,
-            u_brand.id AS brand_user_id,
-            u_brand.fcm_token AS brand_fcm_token
-     FROM escrow_entries ee
-     JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
-     JOIN campaign_sets cs ON cs.id = ci.set_id
-     JOIN campaigns c ON c.id = cs.campaign_id
-     JOIN influencers i ON i.id = ci.influencer_id
-     JOIN users u_inf ON u_inf.id = i.user_id
-     JOIN brands b ON b.id = c.brand_id
-     JOIN users u_brand ON u_brand.id = b.user_id
-     WHERE ee.trigger_event = 'day_30_post_live'
-       AND ee.status = 'queued'
-       -- (a) N days have elapsed since triggered_at (admin-configurable)
-       AND ee.triggered_at <= NOW() - ($1 || ' days')::interval
-       -- (b) AND the IST clock has crossed the configured release time
-       --     today. So if admin sets release_time='02:30:00 IST', the
-       --     row only fires at the first hourly cron tick at or after
-       --     02:30 IST on the boundary day.
-       AND (NOW() AT TIME ZONE 'Asia/Kolkata')::time >= $2::time`,
-    [String(releaseAfterDays), releaseTimeIst]
+    `SELECT ee.id
+       FROM escrow_entries ee
+      WHERE ee.trigger_event = 'day_30_post_live' AND ee.status = 'queued'
+        AND (
+          (ee.release_due_at IS NOT NULL AND ee.release_due_at <= $3)
+          OR (ee.release_due_at IS NULL
+              AND ee.triggered_at <= $3::timestamptz - ($1 || ' days')::interval
+              AND ($3::timestamptz AT TIME ZONE 'Asia/Kolkata')::time >= $2::time)
+        )
+      ORDER BY COALESCE(ee.release_due_at, ee.triggered_at)`,
+    [String(releaseAfterDays), releaseTimeIst, now]
   );
+  if (due.length === 0) return { released: 0, skipped: 0, failed: 0, total_due: 0, total_amount: 0 };
 
-  if (due.length === 0) {
-    console.log('[CRON tranche-3] No tranches due.');
-    return { released: 0, total_amount: 0 };
-  }
-
-  let totalAmount = 0;
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const entry of due) {
+  let released = 0; let skipped = 0; let failed = 0; let total = 0;
+  for (const { id } of due) {
+    let out = null;
     try {
-      await escrowService.processTrancheReleaseStandalone(entry.id);
+      out = await db.withTransaction((client) => contentMoney.releaseFinal(client, id, { now }));
+    } catch (err) {
+      failed += 1;
+      console.error(`[CRON tranche-3] release failed for ${id}:`, err.message);
+      continue;
+    }
+    if (!out) continue;                                   // taken by another runner, or already paid
+    if (out.skipped) { skipped += 1; console.log(`[CRON tranche-3] ${out.ciId} held: ${out.skipped}`); continue; }
+    released += 1; total += out.amount;
 
-      const netAmount = parseFloat(entry.net_to_influencer);
-      totalAmount += netAmount;
-      successCount++;
-
-      // Notify influencer (net_to_influencer already in rupees)
-      await notificationService.send({
-        userId: entry.influencer_user_id,
-        type: 'tranche.released',
-        title: 'Payment Released',
-        body: `\u20B9${netAmount.toFixed(2)} credited. Campaign complete!`,
-        data: { screen: 'earnings', campaign_id: entry.campaign_id },
-        fcmToken: entry.inf_fcm_token,
-        sendSms: true,
-        phone: entry.inf_phone,
-      });
-
-      // Notify brand
-      await notificationService.send({
-        userId: entry.brand_user_id,
-        type: 'tranche.released',
-        title: 'Tranche 3 Released',
-        body: `Tranche 3 released to ${entry.inf_name}`,
-        data: { screen: 'campaign_detail', campaign_id: entry.campaign_id },
-        fcmToken: entry.brand_fcm_token,
-        sendSms: false,
-      });
-
-      // Check if ALL escrow_entries for this campaign_influencer are released → mark completed
-      const { rows: ciEntries } = await db.query(
-        `SELECT status FROM escrow_entries WHERE campaign_influencer_id = $1`,
-        [entry.campaign_influencer_id]
-      );
-      const allReleased = ciEntries.every(e => e.status === 'released');
-      if (allReleased) {
-        await db.query(
-          `UPDATE campaign_influencers SET status = 'completed' WHERE id = $1 AND status != 'completed'`,
-          [entry.campaign_influencer_id]
-        );
-
-        // Check if ALL campaign_influencers for this campaign are completed → mark campaign completed
-        const { rows: allCIs } = await db.query(
-          `SELECT ci.status FROM campaign_influencers ci
-           JOIN campaign_sets cs ON cs.id = ci.set_id
-           WHERE cs.campaign_id = $1`,
-          [entry.campaign_id]
-        );
-        const allCIsCompleted = allCIs.length > 0 && allCIs.every(ci => ci.status === 'completed');
-        if (allCIsCompleted) {
-          await db.query(
-            `UPDATE campaigns SET status = 'completed', completed_at = NOW()
-             WHERE id = $1 AND status != 'completed'`,
-            [entry.campaign_id]
-          );
-          console.log(`[CRON tranche-3] Campaign ${entry.campaign_id} marked completed.`);
+    // After commit: the telling. Never able to undo or skip the completion above.
+    try {
+      const { rows: [p] } = await db.query(
+        `SELECT u.id AS creator_user_id, bu.id AS brand_user_id, COALESCE(i.full_name, u.name) AS creator_name,
+                cs.id AS set_id
+           FROM campaign_influencers ci
+           JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
+           JOIN campaign_sets cs ON cs.id = ci.set_id JOIN campaigns c ON c.id = cs.campaign_id
+           JOIN brands b ON b.id = c.brand_id JOIN users bu ON bu.id = b.user_id
+          WHERE ci.id = $1`, [out.ciId]);
+      if (p) {
+        const creatorData = { screen: out.hasContent ? 'my_content' : 'earnings', campaign_influencer_id: out.ciId };
+        const brandData = { screen: out.hasContent ? 'brand_content' : 'campaign_detail', campaign_influencer_id: out.ciId, campaign_id: out.campaignId, set_id: p.set_id };
+        await notificationService.send({ userId: p.creator_user_id, type: NOTIFY12.FINAL_PAID.type, title: NOTIFY12.FINAL_PAID.title,
+          body: `${rupees(out.amount)} is in your wallet.${out.completed ? ' The collaboration is complete.' : ''}`, data: creatorData, sendSms: false })
+          .catch((e) => console.error('[NOTIFICATION] final paid failed:', e.message));
+        if (out.completed) {
+          await notificationService.send({ userId: p.brand_user_id, type: NOTIFY12.COMPLETED.type, title: NOTIFY12.COMPLETED.title,
+            body: `${p.creator_name} has been paid in full. The collaboration is complete.`, data: brandData, sendSms: false })
+            .catch((e) => console.error('[NOTIFICATION] completed failed:', e.message));
+          await events.record({ campaignInfluencerId: out.ciId, step: events.STEP.COMPLETE, actorRole: 'system', action: 'completed', meta: { final_paid: out.amount } });
         }
       }
-    } catch (err) {
-      failCount++;
-      console.error(`[CRON tranche-3] Failed to release entry ${entry.id}:`, err.message);
+    } catch (e) {
+      console.error(`[CRON tranche-3] telling failed for ${out.ciId} (money and completion already committed):`, e.message);
     }
   }
-
-  if (failCount > 0) {
-    console.warn(`[CRON tranche-3] ${failCount} of ${due.length} tranches failed to release.`);
-  }
-  console.log(`[CRON tranche-3] Released ${successCount} tranches totalling \u20B9${totalAmount.toFixed(2)}`);
-  return { released: successCount, failed: failCount, total_due: due.length, total_amount: totalAmount };
+  console.log(`[CRON tranche-3] released ${released}, held ${skipped}, failed ${failed}, ${rupees(total)}`);
+  return { released, skipped, failed, total_due: due.length, total_amount: total };
 }
 
 module.exports = { run };

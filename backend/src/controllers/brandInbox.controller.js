@@ -146,11 +146,16 @@ const getSummary = asyncHandler(async (req, res) => {
           JOIN campaigns c ON c.id = cs.campaign_id
           WHERE c.brand_id = $1 AND n.outcome IS NULL AND n.current_turn = 'brand') AS pending_negotiations,
 
-       (SELECT COUNT(*)::int FROM deliverables d
-          JOIN campaign_influencers ci ON ci.id = d.campaign_influencer_id
+       -- Item 12: "review the content" and "confirm it is live" (§24), from collab_content. The
+       -- key name stays pending_reviews so a phone that has not updated keeps working.
+       (SELECT COUNT(*)::int FROM campaign_influencers ci
           JOIN campaign_sets cs ON cs.id = ci.set_id
           JOIN campaigns c ON c.id = cs.campaign_id
-          WHERE c.brand_id = $1 AND d.status IN ('submitted', 'under_review')) AS pending_reviews,
+          WHERE c.brand_id = $1 AND ${require('../services/contentFlow.service').CONTENT_MOVE_SQL('ci')} = 'review_content') AS pending_reviews,
+       (SELECT COUNT(*)::int FROM campaign_influencers ci
+          JOIN campaign_sets cs ON cs.id = ci.set_id
+          JOIN campaigns c ON c.id = cs.campaign_id
+          WHERE c.brand_id = $1 AND ${require('../services/contentFlow.service').CONTENT_MOVE_SQL('ci')} = 'confirm_live') AS pending_live_confirms,
 
        (SELECT COUNT(*)::int FROM contracts con
           JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id

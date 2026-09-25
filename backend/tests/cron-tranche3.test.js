@@ -66,6 +66,12 @@ describe('Cron: tranche-3-release', () => {
 
   test('does not release T3 when triggered_at is less than 30 days ago', async () => {
     const { ci } = await setupBrandAndInfluencer();
+    // ASSERTION DRIFT, item 12 (approval Q4): the waiting period is platform_settings.
+    // final_payment_wait_days now (7 in production since migration 186). This test only ever passed
+    // because its database had no payment_config row, so the old reader fell back to 30. The
+    // scenario is kept honest by SETTING the 30 it assumes, for a row queued with no stamped due.
+    await query(`UPDATE platform_settings SET value = 30 WHERE key = 'final_payment_wait_days'`);
+    require('../src/services/platformSettings.service')._resetCache();
 
     await query(
       `INSERT INTO escrow_entries
@@ -75,8 +81,13 @@ describe('Cron: tranche-3-release', () => {
       [ci.id]
     );
 
-    const result = await run();
-    expect(result.released).toBe(0);
+    try {
+      const result = await run();
+      expect(result.released).toBe(0);
+    } finally {
+      await query(`UPDATE platform_settings SET value = 7 WHERE key = 'final_payment_wait_days'`);
+      require('../src/services/platformSettings.service')._resetCache();
+    }
   });
 
   test('marks campaign_influencer and campaign as completed when all tranches released', async () => {

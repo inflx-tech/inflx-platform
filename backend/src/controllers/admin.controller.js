@@ -837,8 +837,9 @@ const updatePaymentConfig = asyncHandler(async (req, res) => {
     gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
     platform_gstin, platform_business_name, platform_business_address,
     platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
-    // Wave 1 — T3 release timing (migration 074)
-    tranche_3_release_after_days, tranche_3_release_time_ist,
+    // Wave 1 — T3 release timing (migration 074). Item 12 (Q4): the waiting period moved to
+    // platform_settings.final_payment_wait_days; tranche_3_release_after_days is no longer written here.
+    tranche_3_release_time_ist,
     // Way-4 — attribution window (migration 120)
     attribution_window_days,
     // Delivery ETA rule (migration 121)
@@ -852,7 +853,7 @@ const updatePaymentConfig = asyncHandler(async (req, res) => {
       gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
       platform_gstin, platform_business_name, platform_business_address,
       platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
-      tranche_3_release_after_days, tranche_3_release_time_ist,
+      tranche_3_release_time_ist,
       attribution_window_days,
       delivery_ref_km, delivery_ref_days,
     }, req.user.sub);

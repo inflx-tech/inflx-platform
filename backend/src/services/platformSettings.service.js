@@ -35,6 +35,11 @@ const DEFAULTS = Object.freeze({
   // delivered to the branch (or when she marks a no-courier return sent), never re-read.
   // The existing remote_return_days above is unchanged.
   remote_return_autoconfirm_days: { value: 7, min: 1, max: 30, unit: 'days', label: 'Remote return auto-confirm' },
+  // Item 12 (rules v1.29 §12.2, C17) — the two new numbers, then the waiting period MOVED here from
+  // payment_config (approval Q4). Each is stamped at the moment it starts to matter, never re-read.
+  content_change_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Content change requests' },
+  content_report_silence_days: { value: 7, min: 1, max: 30, unit: 'days', label: 'Brand silence before the Creator may report' },
+  final_payment_wait_days: { value: 7, min: 1, max: 60, unit: 'days', label: 'Final payment waiting period' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
 
@@ -49,6 +54,9 @@ const DESCRIPTION = Object.freeze({
   pitch_cooldown_days: 'How long a creator must wait before pitching the same brand again after a rejection. It is a pause, not a refusal: it never stops the brand inviting her and never stops her accepting. Counted per brand, not per Aim. Between 0 and 90 days. Stamped on the rejection when it is made. A brand that wants no further contact blocks her instead.',
   remote_return_autoconfirm_days: 'How long a brand has to confirm a Remote return after it reaches the branch. If the brand does nothing, the return confirms itself and the record says it was automatic — unless the brand has reported an item missing or damaged, in which case it waits. Between 1 and 30 days. Stamped on the return when it is delivered, so changing this never moves a date already promised. Where couriers cannot collect from her pincode and she posts the items back herself, it is stamped when she marks them sent.',
   shoot_auto_confirm_days: "How long a brand has to confirm a store visit after the creator marks that she attended. If the brand does nothing, the visit confirms itself and her content step opens — safe because completing a shoot moves no money. Between 1 and 30 days. Stamped on the visit when she marks it, so changing this never moves a date already promised.",
+  content_change_rounds: "How many times a Brand may ask for changes to a creator's content before a further rejection becomes a dispute. On the last allowed round the Brand is warned; after it they can only approve or report it to INFLX. Between 1 and 5. Stamped on the collaboration when the Creator first submits, so changing this never affects one already under way.",
+  content_report_silence_days: "How long after the Creator confirms she has posted the Brand may stay silent before she can tell INFLX. There is no automatic confirmation — the money is the Brand's — so this is her way to be heard. Telling INFLX records a dispute and moves no money. Between 1 and 30 days. Stamped when she confirms she posted.",
+  final_payment_wait_days: "The delay before the final 50% of a Pay for Content fee is released, counted from the Brand's confirmation that the content is live. Paid on that day at the release time. Between 1 and 60 days. Stamped on the payment at the Brand's confirmation, so changing this never moves a date already promised. This replaces the waiting period that used to sit on the Payments page.",
   subscriptions_enforced: 'When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan keep their plan and are still charged. A brand can go past its plan while this is off; when you switch it back on nothing is deleted and nothing stops working, she simply cannot add more.',
 });
 

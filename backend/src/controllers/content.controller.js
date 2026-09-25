@@ -33,6 +33,22 @@ const brandFileUrl = asyncHandler(async (req, res) =>
 const adminFileUrl = asyncHandler(async (req, res) =>
   success(res, { view: await content.fileUrl(req.params.ciId, adminScope(req), req.params.fileId) }));
 
+/* ── G1, G4–G11 — the flow (Phase 2c) ── */
+const flow = require('../services/contentFlow.service');
+const send = (res, data) => success(res, { content: data });
+const creatorRead  = asyncHandler(async (req, res) => send(res, await flow.read(req.params.ciId, creatorScope(req))));
+const brandRead    = asyncHandler(async (req, res) => send(res, await flow.read(req.params.ciId, brandScope(req))));
+const caption      = asyncHandler(async (req, res) => send(res, await flow.caption(req.params.ciId, creatorScope(req), req.params.rowKey, (req.body || {}).caption)));
+const submit       = asyncHandler(async (req, res) => send(res, await flow.submit(req.params.ciId, creatorScope(req), req.body || {})));
+const setProof     = asyncHandler(async (req, res) => send(res, await flow.setProof(req.params.ciId, creatorScope(req), req.params.rowKey, req.params.slot, req.body || {})));
+const clearProof   = asyncHandler(async (req, res) => send(res, await flow.clearProof(req.params.ciId, creatorScope(req), req.params.rowKey, req.params.slot)));
+const posted       = asyncHandler(async (req, res) => send(res, await flow.markPosted(req.params.ciId, creatorScope(req))));
+const creatorReport = asyncHandler(async (req, res) => send(res, await flow.report(req.params.ciId, creatorScope(req), req.body || {})));
+const approve      = asyncHandler(async (req, res) => send(res, await flow.approve(req.params.ciId, brandScope(req), req.body || {})));
+const askChanges   = asyncHandler(async (req, res) => send(res, await flow.askChanges(req.params.ciId, brandScope(req), req.body || {})));
+const confirmLive  = asyncHandler(async (req, res) => send(res, await flow.confirmLive(req.params.ciId, brandScope(req), req.body || {})));
+const brandReport  = asyncHandler(async (req, res) => send(res, await flow.report(req.params.ciId, brandScope(req), req.body || {})));
+
 /* ── The device proof (Phase 2b) ── */
 const probe = require('../services/uploadProbe.service');
 const probeStatus = asyncHandler(async (req, res) => success(res, probe.status()));
@@ -44,4 +60,6 @@ module.exports = {
   requestUpload, confirmUpload, removeFile,
   creatorFileUrl, brandFileUrl, adminFileUrl,
   probeStatus, probeUrl, probeConfirm,
+  creatorRead, brandRead, caption, submit, setProof, clearProof, posted, creatorReport,
+  approve, askChanges, confirmLive, brandReport,
 };

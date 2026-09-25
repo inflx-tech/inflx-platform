@@ -30,12 +30,9 @@ const FIELDS = [
     note: 'Auto-released N days after content live (configurable below).',
     type: 'number', min: 1, max: 98, step: 1, suffix: '%',
   },
-  // Wave 1 — T3 timing (was hardcoded 30 days)
-  {
-    key: 'tranche_3_release_after_days', label: 'T3 Release After (days)',
-    note: 'Number of days after content_live before T3 releases. Default 30.',
-    type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
-  },
+  // Item 12 (approval Q4): the T3 waiting period MOVED to Platform settings as
+  // final_payment_wait_days, with its audit, and is stamped on each payment when its clock starts.
+  // It is shown read-only below, with a pointer; this page no longer edits it.
   {
     key: 'tds_pct', label: 'TDS on Withdrawal (%)',
     note: 'Statutory — deducted at influencer withdrawal time (Section 194M). Per-influencer overrides apply.',
@@ -105,7 +102,6 @@ function cfgToForm(cfg) {
     platform_state_code:         cfg.platformStateCode || '',
     invoice_prefix_subscription: cfg.invoicePrefixSubscription || 'INF-SUB',
     invoice_prefix_commerce:     cfg.invoicePrefixCommerce || 'INF-COM',
-    tranche_3_release_after_days: cfg.tranche3ReleaseAfterDays,
     tranche_3_release_time_ist:   cfg.tranche3ReleaseTimeIst || '03:00:00',
   };
 }
@@ -361,6 +357,19 @@ export default function PaymentConfigPage() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Item 12 (approval Q4) — the waiting period lives on Platform settings now. Read-only here. */}
+          <div className="px-5 py-4 border-b border-border">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-t1">Final payment waiting period</span>
+                <div className="text-[11px] text-t3 mt-0.5">
+                  Moved to Platform settings, where every change is recorded. It is stamped on each payment when the brand confirms the content is live, so changing it never moves a date already promised.
+                </div>
+              </div>
+              <a href="/admin/settings/platform" className="text-xs font-bold text-navy underline whitespace-nowrap">Platform settings →</a>
+            </div>
           </div>
 
           {/* T3 release time-of-day */}

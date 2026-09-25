@@ -41,8 +41,12 @@ const MSG = {
   // Q8 — "both" when the stamped limit is 2, "all {n}" otherwise.
   ROUNDS_USED: (n) => `${Number(n) === 2 ? "You've used both rounds." : `You've used all ${n} rounds.`} Approve this, or report it to INFLX.`,
 
+  // Two devices, one package: a verdict on a round that has already moved on.
+  STALE: 'This has changed since you opened it. Look again.',
+
   // Posting (C10)
   NOT_APPROVED: (brand) => `${brand} haven't approved this yet.`,
+  UNKNOWN_SLOT: "That isn't one of the deliverables on your agreement.",
   LINK_INVALID: 'Paste the full link to the post.',
   PROOF_INCOMPLETE: 'Add a link for every deliverable first.',
   ALREADY_POSTED: "You've already told them.",
@@ -61,6 +65,9 @@ const MSG = {
   REPORT_NOT_OPEN: 'There is nothing to report at this point.',
   // Approval §2.7 — ONE guard, ONE sentence, called by every write in the content service.
   REPORTED_HOLD: 'INFLX is looking at this. Nothing can change until they get back to you.',
+  // What each side is told when a report is made (v1.29: "Both sides are told the same thing").
+  REPORTED_BY_BRAND: (brand) => `${brand} reported this to INFLX. INFLX is looking at this. Nothing can change until they get back to you, and nothing is lost.`,
+  REPORTED_BY_CREATOR: (name) => `${name} told INFLX you haven't confirmed her content is live yet. You can still confirm it.`,
 
   // Retired doors (Phase 2a, approval Q2, Q3) — server-side, whatever a client still shows.
   RETIRED_12_CONTENT: 'Content is sent, reviewed and confirmed in the app now.',

@@ -87,7 +87,7 @@ describe('item 12 · every file limit, on the server (check 3)', () => {
       expect(`${JSON.stringify(body)} → ${r.status} ${r.body.error && r.body.error.code}`).toBe(`${JSON.stringify(body)} → 422 ${code}`);
       expect(r.body.error.message).toBe(message);
     }
-    const { rows: [n] } = await query(`SELECT count(*)::int n FROM content_files`);
+    const { rows: [n] } = await query(`SELECT count(*)::int n FROM content_files f JOIN collab_content c ON c.id = f.content_id WHERE c.campaign_influencer_id = $1`, [w.ciId]);
     expect(n.n).toBe(0);
   });
 

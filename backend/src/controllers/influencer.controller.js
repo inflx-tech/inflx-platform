@@ -1156,7 +1156,9 @@ const getEarnings = asyncHandler(async (req, res) => {
      JOIN campaign_influencers ci ON ci.id  = ee.campaign_influencer_id
      JOIN campaign_sets        cs ON cs.id  = ci.set_id
      JOIN campaigns            c  ON c.id   = cs.campaign_id
-     WHERE ci.influencer_id = $1 AND ee.status = 'locked'
+     -- Item 12 (approval Q14): 'queued' is still to come — the final 50% waiting on its stamped
+     -- date. Counting only 'locked' made ₹6,000 vanish from "pending" for a week.
+     WHERE ci.influencer_id = $1 AND ee.status IN ('locked', 'queued')
      ORDER BY ee.tranche_number ASC`,
     [inf.id]
   );

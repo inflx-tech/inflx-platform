@@ -409,8 +409,12 @@ describe('the money (checks 14–19, 35–37)', () => {
     await brandSign(w);
 
     const afterSigning = await api.get(`${w.url}/invitations/${w.ciId}/agreement`, w.b.token);
+    // ASSERTION DRIFT, item 12 (features/item12-content, approval Q1, rules v1.29 §12.2): "still
+    // locked" is her fee still IN ESCROW, from the escrow rows — 9,000 − 2,250 = 6,750. It used to
+    // read locked − released = 9,720 − 2,250 = 7,470, which counted the ₹720 campaign fee (the
+    // brand's, charged once at signing, never hers) as locked forever.
     expect(afterSigning.body.data.agreement.money).toMatchObject({
-      locked: 9720, released: 2250, stillLocked: 7470,
+      locked: 9720, released: 2250, stillLocked: 6750,
     });
 
     // The second payment goes out. Released by the same call confirm-live makes.
@@ -421,7 +425,7 @@ describe('the money (checks 14–19, 35–37)', () => {
 
     const afterSecond = await api.get(`${w.url}/invitations/${w.ciId}/agreement`, w.b.token);
     expect(afterSecond.body.data.agreement.money.released).toBe(4500);
-    expect(afterSecond.body.data.agreement.money.stillLocked).toBe(5220);
+    expect(afterSecond.body.data.agreement.money.stillLocked).toBe(4500);   // item 12 Q1: 9,000 of her fee − 4,500 paid (not 9,720 − 4,500)
 
     // …and her card still reports what the SIGNATURE moved, not the running total.
     const row = await con(w.ciId);

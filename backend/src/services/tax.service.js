@@ -113,12 +113,15 @@ async function getTrancheReleaseTimeIst() {
   }
 }
 
+// Item 12 (approval Q4): the final-payment wait MOVED to platform_settings.final_payment_wait_days,
+// with its audit, and this is the only place it is read. payment_config.tranche_3_release_after_days
+// stays in the table, unread. The number is STAMPED on each tranche when its clock starts
+// (contentMoney.releaseSecond); the job reads it here only for a row queued before item 12.
 async function getTrancheReleaseAfterDays() {
   try {
-    const cfg = await paymentConfigSvc.getConfig();
-    return parseInt(cfg.tranche3ReleaseAfterDays ?? FALLBACK_T3_DAYS, 10);
+    return await require('./platformSettings.service').get('final_payment_wait_days');
   } catch {
-    return FALLBACK_T3_DAYS;
+    return 7;
   }
 }
 

@@ -711,9 +711,15 @@ describe('Delayed and the reminder lane (checks 30, 32, 59)', () => {
     await shot(w, [{ productId: p.id, quantity: 1, disposition: 'return' }]);
     await setPostingDate(w.s.id, addDays(todayInIndia(), -1));
 
-    await delayedJob.run({ today: todayInIndia() });
-    const { rows } = await query(`SELECT delayed_at FROM campaign_influencers WHERE id = $1`, [w.ciId]);
-    expect(rows[0].delayed_at).toBeNull();     // the shoot is DONE; only the return is outstanding
+    const out = await delayedJob.run({ today: todayInIndia() });
+    const { rows } = await query(`SELECT delayed_at, delayed_stage FROM campaign_influencers WHERE id = $1`, [w.ciId]);
+    // ASSERTION DRIFT, item 12 (rules v1.29 §12.2): this is a Pay for Content collaboration whose
+    // content is not live by the posting date, so item 12's CONTENT lane flags it — at
+    // `content_not_submitted`. What this test protects still holds exactly: the Remote/return lane
+    // flagged nothing, and no shoot or return stage was ever recorded.
+    expect(out.remote.flagged).toBe(0);
+    expect(rows[0].delayed_stage).toBe('content_not_submitted');
+    expect(['address_not_sent', 'not_booked', 'in_transit', 'not_checked', 'shoot_not_marked']).not.toContain(rows[0].delayed_stage);
   });
 
   it('32 · an unanswered move is reminded once at 48 hours and not again within 48', async () => {

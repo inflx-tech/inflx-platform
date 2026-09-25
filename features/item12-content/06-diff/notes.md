@@ -52,3 +52,19 @@ All eight `/v1/deliverables` content routes answer `RETIRED_12_*` for every Aim,
   *passed* ("Arrived byte for byte: N bytes, video/mp4 · time · deleted") or *FAILED* with the
   reason. **Check the size lock** asks for a URL signed one byte short of the real file; storage
   must refuse it. Nothing is kept either way — the server measures what landed and deletes it.
+
+## Phase 2c — the admin pages
+
+**Admin → Platform settings (C17)**
+- *Before:* ten numbers.
+- *After:* three more, drawn by the page from the server's list with no page change:
+  **Content change requests** (2 rounds, 1–5), **Brand silence before the Creator may report**
+  (7 days, 1–30) and **Final payment waiting period** (7 days, 1–60, moved here from Payments).
+  Each carries its description, its range and the audit line, like the others.
+
+**Admin → Payments**
+- *Before:* "T3 Release After (days)" was an editable number ("Default 30"), read live by the
+  tranche-3 job on every run.
+- *After:* a read-only row, **Final payment waiting period** — "Moved to Platform settings, where
+  every change is recorded…" — with a **Platform settings →** link. The server no longer accepts
+  the old field from this page. The T3 release *time* (03:00 IST) stays here, editable.

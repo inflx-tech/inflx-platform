@@ -26,6 +26,8 @@ const step = require('./collabStep.service');
 const shootPlan = require('./shootPlan.service');
 // Stage 3 — what is owed at a level that belongs to no creator, as a LIST.
 const owedItems = require('./collabOwedItems.service');
+// Item 12 — the content move, one rule shared with the reminders (contentFlow.openMove).
+const contentFlow = require('./contentFlow.service');
 
 /**
  * Everything owed to a BRAND, as a tree that reconciles at every level.
@@ -101,12 +103,8 @@ async function forBrand(brandId) {
             pe.mode                     AS shoot_mode,
             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
             (SELECT sn.current_turn FROM negotiations sn WHERE sn.production_event_id = pe.id AND sn.outcome IS NULL LIMIT 1) AS shoot_thread_turn,
-            (SELECT count(*)::int FROM deliverables d
-              WHERE d.campaign_influencer_id = ci.id
-                AND d.status IN ('submitted','under_review'))            AS deliverables_awaiting_brand,
-            (SELECT count(*)::int FROM deliverables d
-              WHERE d.campaign_influencer_id = ci.id
-                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm,
+            -- Item 12: the content move, from collab_content — never the legacy deliverables rows.
+            ${contentFlow.CONTENT_MOVE_SQL('ci')} AS content_move,
             (SELECT n.current_turn FROM negotiations n WHERE n.campaign_influencer_id = ci.id AND n.outcome IS NULL LIMIT 1) AS negotiation_turn
        FROM campaign_influencers ci
        JOIN campaign_sets cs   ON cs.id  = ci.set_id
@@ -155,8 +153,7 @@ async function forBrand(brandId) {
         shoot: a.shoot_id && a.shoot_mode === 'visit'
           ? { stage: shootPlan.stageOf({ id: a.shoot_id, status: a.shoot_status, plan_sent_at: a.plan_sent_at, time_agreed_at: a.time_agreed_at, influencer_completed_at: a.influencer_completed_at, brand_completed_at: a.brand_completed_at, auto_confirmed_at: a.auto_confirmed_at }), threadTurn: a.shoot_thread_turn || null }
           : null,
-        socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
-                   : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
+        socialState: contentFlow.SOCIAL_STATE_OF_MOVE[a.content_move] || 'none',
         negotiationTurn: a.negotiation_turn || null,
       }
     );
@@ -238,10 +235,15 @@ async function forCreator(influencerId) {
         WHERE ci2.influencer_id = $1 AND con.status = 'pending_influencer')           AS contracts_to_sign,
        (SELECT count(*)::int FROM creator_posts cp
          WHERE cp.influencer_id = $1 AND cp.status = 'rejected')                      AS posts_to_fix,
-       (SELECT count(*)::int FROM deliverables d
-         JOIN campaign_influencers ci3 ON ci3.id = d.campaign_influencer_id
-        WHERE ci3.influencer_id = $1
-          AND d.status IN ('pending','revision_requested'))                           AS deliverables_to_submit,
+       -- Item 12 (rules v1.29 §12.2, §24): her three content moves — send your content, make the
+       -- changes, post it and add the links — from collab_content. The legacy deliverables rows
+       -- are no longer read (they counted work before the shoot was even done).
+       (SELECT count(*)::int FROM campaign_influencers ci3
+         WHERE ci3.influencer_id = $1 AND ${contentFlow.CONTENT_MOVE_SQL('ci3')} = 'send_content')  AS content_to_send,
+       (SELECT count(*)::int FROM campaign_influencers ci3
+         WHERE ci3.influencer_id = $1 AND ${contentFlow.CONTENT_MOVE_SQL('ci3')} = 'make_changes')  AS content_changes,
+       (SELECT count(*)::int FROM campaign_influencers ci3
+         WHERE ci3.influencer_id = $1 AND ${contentFlow.CONTENT_MOVE_SQL('ci3')} = 'post_and_link') AS content_to_post,
        -- Item 10: a store visit waiting on HER — a sent plan she has not answered (no thread,
        -- no agreed time), or a time thread whose move is hers. Only on a signed, funded
        -- collaboration, which is the only kind that has a sent plan.
@@ -298,7 +300,9 @@ async function forCreator(influencerId) {
     counters_to_answer:     Number(r.counters_to_answer || 0),
     contracts_to_sign:      Number(r.contracts_to_sign || 0),
     posts_to_fix:           Number(r.posts_to_fix || 0),
-    deliverables_to_submit: Number(r.deliverables_to_submit || 0),
+    content_to_send:        Number(r.content_to_send || 0),
+    content_changes:        Number(r.content_changes || 0),
+    content_to_post:        Number(r.content_to_post || 0),
     shoot_to_answer:        Number(r.shoot_to_answer || 0),
     remote_to_answer:       Number(r.remote_to_answer || 0),
   };
@@ -338,12 +342,8 @@ async function stepsForCreator(influencerId) {
             pe.mode                     AS shoot_mode,
             pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
             (SELECT sn.current_turn FROM negotiations sn WHERE sn.production_event_id = pe.id AND sn.outcome IS NULL LIMIT 1) AS shoot_thread_turn,
-            (SELECT count(*)::int FROM deliverables d
-              WHERE d.campaign_influencer_id = ci.id
-                AND d.status IN ('submitted','under_review'))              AS deliverables_awaiting_brand,
-            (SELECT count(*)::int FROM deliverables d
-              WHERE d.campaign_influencer_id = ci.id
-                AND d.live_url IS NOT NULL AND d.live_confirmed_at IS NULL) AS deliverables_awaiting_confirm,
+            -- Item 12: the content move, from collab_content — never the legacy deliverables rows.
+            ${contentFlow.CONTENT_MOVE_SQL('ci')} AS content_move,
             (SELECT n.current_turn FROM negotiations n WHERE n.campaign_influencer_id = ci.id AND n.outcome IS NULL LIMIT 1) AS negotiation_turn
        FROM campaign_influencers ci
        JOIN campaign_sets cs   ON cs.id  = ci.set_id
@@ -375,8 +375,7 @@ async function stepsForCreator(influencerId) {
         shoot: a.shoot_id && a.shoot_mode === 'visit'
           ? { stage: shootPlan.stageOf({ id: a.shoot_id, status: a.shoot_status, plan_sent_at: a.plan_sent_at, time_agreed_at: a.time_agreed_at, influencer_completed_at: a.influencer_completed_at, brand_completed_at: a.brand_completed_at, auto_confirmed_at: a.auto_confirmed_at }), threadTurn: a.shoot_thread_turn || null }
           : null,
-        socialState: Number(a.deliverables_awaiting_confirm) > 0 ? 'posted'
-                   : Number(a.deliverables_awaiting_brand) > 0 ? 'submitted' : 'none',
+        socialState: contentFlow.SOCIAL_STATE_OF_MOVE[a.content_move] || 'none',
         negotiationTurn: a.negotiation_turn || null,
       }
     );

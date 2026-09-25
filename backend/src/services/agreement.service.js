@@ -194,7 +194,10 @@ function moneySummary(ctx, snapshot) {
     split: m.split || null,
     splitPct: m.splitPct || null,
     locked, released,
-    stillLocked: locked != null && released != null ? Math.round((locked - released) * 100) / 100 : null,
+    // Item 12 (Q1, v1.29): her fee still in escrow, from the escrow rows. locked − released would
+    // show the campaign fee (the brand's, charged once at signing) as locked forever.
+    stillLocked: ctx.fee_in_escrow != null ? Number(ctx.fee_in_escrow)
+      : (locked != null && released != null ? Math.round((locked - released) * 100) / 100 : null),
     at: ctx.money_at || null,
   };
 }

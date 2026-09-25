@@ -360,9 +360,16 @@ describe('Delayed (checks 22, 23, 24)', () => {
     //
     // The visit half is asserted separately below, so a future change to either half cannot
     // hide inside the total.
-    expect(out).toMatchObject({ flagged: 5, failed: 0 });
+    //
+    // ASSERTION DRIFT, item 12 (features/item12-content, rules v1.29 §12.2): SIX, not five. `done`
+    // is a Pay for Content collaboration whose shoot is complete but whose content is not live by
+    // the posting date — which §12.2 flags Delayed at `content_not_submitted`. Item 12's content
+    // arm runs in the same :05 job. Each half is still asserted on its own.
+    expect(out).toMatchObject({ flagged: 6, failed: 0 });
     expect(out.visit).toMatchObject({ flagged: 4, failed: 0 });
     expect(out.remote).toMatchObject({ flagged: 1, failed: 0 });
+    expect(out.content).toMatchObject({ flagged: 1, failed: 0 });
+    expect((await query(`SELECT delayed_stage FROM campaign_influencers WHERE id = $1`, [done.ciId])).rows[0].delayed_stage).toBe('content_not_submitted');
     const remoteRow = (await query(`SELECT delayed_at, delayed_stage FROM campaign_influencers WHERE id = $1`, [remote.ciId])).rows[0];
     expect(remoteRow.delayed_at).toBeTruthy();
     expect(remoteRow.delayed_stage).toBe('address_not_sent');   // she never sent one
@@ -371,7 +378,8 @@ describe('Delayed (checks 22, 23, 24)', () => {
     expect((await stage(sentOnly)).delayed_stage).toBe('time_not_agreed');
     expect((await stage(agreedW)).delayed_stage).toBe('not_attended');
     expect((await stage(attendedW)).delayed_stage).toBe('not_confirmed');
-    expect((await stage(done)).delayed_at).toBeNull();
+    // Item 12 (v1.29 §12.2): the shoot is done but the content is not live — the CONTENT lane's flag.
+    expect((await stage(done)).delayed_stage).toBe('content_not_submitted');
     expect((await stage(future)).delayed_at).toBeNull();
     expect(await notifs(agreedW.b.userId, NOTIFY.DELAYED.type)).toHaveLength(1);
     expect(await notifs(agreedW.cr.userId, NOTIFY.DELAYED.type)).toHaveLength(1);

@@ -206,7 +206,7 @@ describe('item 12 · the manual admin release (check 35)', () => {
       expect(r.body.error.message).toBe(MSG.RELEASE_NOT_ALLOWED(status));
       expect(await w10.moneySnapshot(w)).toBe(before);
     }
-    const { rows: [n] } = await query(`SELECT count(*)::int AS n FROM escrow_manual_releases`);
+    const { rows: [n] } = await query(`SELECT count(*)::int AS n FROM escrow_manual_releases WHERE escrow_entry_id = $1`, [t2.id]);
     expect(n.n).toBe(0);
   });
 
@@ -225,7 +225,7 @@ describe('item 12 · the manual admin release (check 35)', () => {
     const r = await release(admin, t2.id, '  Settled by INFLX after a call with both  ');
     expect(r.status).toBe(200);
     expect(r.body.data.escrow_entry.status).toBe('released');
-    const { rows } = await query(`SELECT * FROM escrow_manual_releases`);
+    const { rows } = await query(`SELECT * FROM escrow_manual_releases WHERE escrow_entry_id = $1`, [t2.id]);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ escrow_entry_id: t2.id, tranche_number: 2, admin_user_id: admin.user.id, reason: 'Settled by INFLX after a call with both' });
     expect(Number(rows[0].amount)).toBe(Number(t2.amount));
