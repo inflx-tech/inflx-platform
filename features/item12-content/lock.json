@@ -43,5 +43,14 @@
       "note": "the founder's earlier 14 MB / 18 MB results were WhatsApp-forwarded copies (WhatsApp recompresses video); INFLX uploaded exactly what it was given",
       "switch": "CONTENT_UPLOAD_PROBE to be removed from Render by the founder after the run"
     }
+  },
+  "build": {
+    "built_at": "2026-09-25T00:00:00+05:30",
+    "commits": "4255a6e1 (2a), e95c24d5 (2b), c23d8634 (2b follow-up), 1911c640 (2c), 0182686e (3), + the Phase 4 record",
+    "backend_tests": "full suite vs baseline_item12.json: suites 131->135, tests 1545->1620, passed 1323->1372, failed 220->220. 0 newly failing, 101 new all green, 26 gone = all renamed into skip blocks named for item 12 (24 deliverables + item11 §2.9 + stage4), 0 deleted. 3 item3b-pipeline failures are pre-existing date drift (in the baseline).",
+    "mobile_tests": "58 suites / 715 tests all passing; 35 item 12 (content12, contentScreens 19, duplicateScreens, uploadProbe 5)",
+    "governance_check": "OK",
+    "checks": "46 / 46 pass — features/item12-content/03-expected-outputs.md",
+    "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — pre-existing failures unchanged; certification is no-regression)."
   }
 }

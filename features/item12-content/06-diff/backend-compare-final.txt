@@ -1,0 +1,44 @@
+
+── Before ──
+  suites                 131 (46 failed)
+  tests                  1545  passed 1323  failed 220
+── After ──
+  suites                 135 (46 failed)
+  tests                  1620  passed 1372  failed 220
+── Moved ──
+  new tests              101 (101 passing, 0 failing)
+  gone                   26
+  newly failing          0
+  newly passing          0
+  still failing          220
+
+── GONE (renamed, moved or deleted — say which) ──
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit influencer submits content URL — status becomes submitted
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit returns 422 when submitted_url is empty
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit returns 422 when deliverable is already submitted (not pending or revision_requested)
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit returns 403 when brand tries to submit
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit returns 403 when a different influencer tries to submit
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit returns 401 without auth token
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review brand approves deliverable — status becomes approved
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review brand requests revision — status becomes revision_requested, revision_count incremented
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review influencer can re-submit after revision is requested
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review returns REVISION_LIMIT_EXCEEDED when revision_count reaches revision_limit (default 2)
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review returns 422 when deliverable is not in submitted status
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review returns 403 when influencer tries to review
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review returns 403 when a different brand tries to review
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/review returns 422 for invalid review action
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit-live influencer submits live URL — status stays approved (pending brand confirmation)
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit-live returns 422 when live_url is empty
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit-live returns 422 when deliverable is not in approved status
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/submit-live returns 403 when brand tries to submit-live
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/confirm-live brand confirms live — status becomes live, campaign_influencer status becomes active
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/confirm-live T2 tranche is released and influencer wallet is credited on confirm-live
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/confirm-live T2 escrow_entry is released
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/confirm-live sets t2_trigger_date on escrow_entry for T3 scheduling
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/confirm-live returns 422 when deliverable has no live_url yet
+  · tests/deliverables.test.js :: POST /v1/deliverables/:id/confirm-live returns 403 when influencer tries to confirm-live
+  · tests/item11-phase2a.test.js :: item 11 · the retired doors answer a sentence, server-side (check 60) §2.9 · `complete` is NOT retired for a Store Visit — the website’s live caller still works
+  · tests/stage4-parcel.test.js :: Stage 4 — B-1, as item 11 leaves it complete is retired for REMOTE ONLY — the Store Visit caller §2.9 found is untouched
+
+NO NEW FAILURES
+

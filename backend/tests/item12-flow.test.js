@@ -131,6 +131,17 @@ describe('item 12 · one complete package, locked while reviewed (checks 4, 5, 2
     expect(b.can).toMatchObject({ approve: true, askChanges: true, confirmLive: false });
   });
 
+  it('3 · a caption is optional and at most 500 characters, on the server', async () => {
+    const w = await w12.shotDone('engagement');
+    const long = await api.put(`${w12.C(w)}/rows/reel/caption`, w.cr.token, { caption: 'x'.repeat(501) });
+    expect(err(long)).toMatchObject({ code: 'CAPTION_TOO_LONG', message: MSG.CAPTION_TOO_LONG });
+    const ok = await api.put(`${w12.C(w)}/rows/reel/caption`, w.cr.token, { caption: 'x'.repeat(500) });
+    expect(ok.status).toBe(200);
+    expect(ok.body.data.content.rows[0].caption).toHaveLength(500);
+    const cleared = await api.put(`${w12.C(w)}/rows/reel/caption`, w.cr.token, { caption: '' });
+    expect(cleared.body.data.content.rows[0].caption).toBe('');
+  });
+
   it('20 · two taps, two devices: one submission', async () => {
     const w = await w12.shotDone('engagement');
     await w12.fillPackage(w);
