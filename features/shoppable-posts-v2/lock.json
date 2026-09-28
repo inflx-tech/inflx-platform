@@ -1,0 +1,20 @@
+{
+  "feature": "shoppable-posts-v2",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Level 3 of 4 of the offer -> terms -> posts programme. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §4. Mockups v1 drawn 2026-09-28 (P1-P17 creator app), derived from features/screen-atlas SC-21..SC-27 (locked 2026-09-01) and the item 5 creator parts; replaces SC-22..SC-24. Five open questions on the board. Depends on offer-builder-v2 and creator-terms-v2.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Shoppable Posts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+</svg>
+</head><body>
+<div class="wrap">
+<style>
+.lgd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;color:var(--ink2)}
+.tg{display:inline-flex;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.03em}
+.tg.new{background:var(--active-bg);color:var(--active-fg)}
+.tg.chg{background:var(--move-bg);color:var(--move-fg)}
+.tg.same{background:var(--ended-bg);color:var(--ended-fg)}
+.rulebox{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:grid;gap:6px;font-size:14px}
+.rulebox ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink2)}
+.nm{font-size:12.5px;color:var(--ink3)} .nm b{color:var(--ink2)}
+.stepline{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.bigopt{border:1.5px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:4px}
+.bigopt.sel{border-color:var(--ink);background:var(--surface)}
+.bigopt.dis{opacity:.5}
+.bigopt b{font-size:14px}
+.bigopt span{font-size:12px;color:var(--ink2)}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc{border:1.5px solid var(--border);border-radius:12px;overflow:hidden;position:relative;background:#fff}
+.pc.sel{border-color:var(--ink)}
+.pc .img{aspect-ratio:4/5;background:linear-gradient(135deg,#E9E8E2,#F6F6F3)}
+.pc .ck{position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:6px;background:#fff;border:1.5px solid var(--border);display:grid;place-items:center}
+.pc.sel .ck{background:var(--ink);border-color:var(--ink);color:#fff}
+.pc .ck .ico{width:12px;height:12px}
+.pc .cp{padding:6px 7px;display:grid;gap:1px}
+.pc .cp b{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .cp span{font-size:10.5px;color:var(--ink2)}
+.pc .cp s{color:var(--ink3)}
+.gift{border:1.5px dashed var(--active-fg);border-radius:12px;padding:9px 10px;background:var(--active-bg);color:var(--active-fg);font-size:12px;font-weight:700;display:flex;gap:8px;align-items:center}
+.gift i{width:30px;height:36px;border-radius:6px;background:#fff;display:block;flex:none}
+.tgrp{display:grid;gap:5px}
+.tgrp .h{display:flex;justify-content:space-between;font-size:12px;font-weight:700}
+.tgrp .h span{color:var(--ink3);font-weight:600}
+.facet{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)}
+.facet:last-child{border-bottom:0}
+.facet span{color:var(--ink2)}
+.facet b{text-align:right}
+.facet em{font-style:normal;font-size:10.5px;color:var(--ink3);display:block;font-weight:600}
+.media{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.media .m{aspect-ratio:4/5;border-radius:10px;background:linear-gradient(135deg,#E9E8E2,#F6F6F3);position:relative}
+.media .m.add{background:#fff;border:1.5px dashed var(--border);display:grid;place-items:center;color:var(--ink3);font-size:20px}
+.media .m .n{position:absolute;top:4px;left:4px;background:rgba(26,26,23,.75);color:#fff;font-size:9.5px;font-weight:800;border-radius:6px;padding:1px 5px}
+.photo{aspect-ratio:4/5;border-radius:14px;background:linear-gradient(160deg,#DCDAD2,#F1F0EB);position:relative;overflow:hidden}
+.pin{position:absolute;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.95);border-radius:999px;padding:4px 9px 4px 4px;font-size:10.5px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.pin::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid #fff;box-shadow:0 0 0 1px var(--ink)}
+.play{position:absolute;inset:0;display:grid;place-items:center}
+.play span{width:44px;height:44px;border-radius:50%;background:rgba(26,26,23,.7);color:#fff;display:grid;place-items:center;font-size:16px}
+.musicwarn{border-radius:12px;padding:9px 11px;font-size:12px;background:var(--move-bg);color:var(--move-fg);font-weight:600;display:flex;gap:8px}
+.qs{display:grid;gap:10px}
+.q{background:#fff;border:1px solid var(--border);border-left:4px solid var(--ink);border-radius:12px;padding:12px 14px;display:grid;gap:4px;font-size:14px}
+.q .rec{color:var(--active-fg);font-weight:700;font-size:13px}
+.st2{display:inline-flex;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.st2.live{background:var(--active-bg);color:var(--active-fg)}
+.st2.rev{background:var(--wait-bg);color:var(--wait-fg)}
+.st2.back{background:var(--no-bg);color:var(--no-fg)}
+.st2.gone{background:var(--ended-bg);color:var(--ended-fg)}
+.prow2{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.prow2 .th{width:40px;height:50px;border-radius:8px;background:linear-gradient(135deg,#E9E8E2,#F6F6F3);flex:none}
+.prow2 .t{flex:1;display:grid;gap:1px;min-width:0}
+.prow2 .t b{font-size:13px}
+</style>
+
+<header class="top">
+  <div class="eyebrow">Level 3 of 4 · Shoppable post creation · mockups v1 · 28 Sep 2026</div>
+  <h1>How a creator makes a shoppable post</h1>
+  <p class="lede">Drawn in the creator app's own parts (the same ones as the invitation and content screens). The flow follows your posts document: brand → collaboration → offer post or price post → products → theme → format → media → caption and review. The <b>Create tab, In review, Sent back and Your posts</b> screens come from the locked screen atlas (SC-21, SC-25 to SC-27), updated for the new model. Rules: <span style="font-family:var(--mono);font-size:13px">Docs/OFFER_TERMS_POSTS_RULES.md §4</span>.</p>
+  <div class="lgd"><span class="tg new">NEW</span> doesn't exist today <span class="tg chg">CHANGES</span> in the atlas, different after <span class="tg same">UNCHANGED</span> shown for context</div>
+  <div class="rulebox"><b>Rules built into these screens</b>
+    <ul>
+      <li>One post = one brand, one collaboration, one offer (or none). Multi-brand and "everything you have" posts are gone.</li>
+      <li>Offer post: pick the offer type first (only types she has, with counts; empty types hidden), then one offer, then products from its pool.</li>
+      <li>Price post: only her products without offers. Pick a price band (5 set by INFLX), then categories, then products.</li>
+      <li>Theme tags: at least 1, at most 1 per group (Season, Occasion, Style, Use). Fixed once the post is live.</li>
+      <li>Category, offer and price band are filled in automatically. INFLX approves every post. A warning about copyrighted music shows at upload.</li>
+      <li>Posting opens after both signatures and the shoot plan (shoot-plan rules to come from the founder).</li><li>A post is saved as a <b>draft</b> automatically at every step until she sends it (added 28 Sep).</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ============ START ============ -->
+<section><header><div class="eyebrow">Creator app · Create tab and the first choices</div><h2>Brand, collaboration, post type</h2><p class="prose">The Create tab keeps the atlas layout: collaborations still needing a post at the top, then "New shoppable post", then her posts. The old first question, "who is this post for: one brand, a few, everything", becomes <b>pick a brand</b>, then <b>pick a collaboration</b>.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><h3>Create</h3></div>
+<div class="card tint"><div class="sechd2">Needs a shoppable post · 2</div>
+<div class="listrow"><span class="logo" style="background:#FFE7A3">UT</span><div class="t"><b>Urban Threads · Set A</b><span class="xs mut">0 of 1 · before 10 Oct</span></div><span class="chip s-move">Start</span></div>
+<div class="listrow"><span class="logo" style="background:#DDE9FB">KS</span><div class="t"><b>Kaya Studio · Set B</b><span class="xs mut">0 of 2 · before 19 Oct</span></div><span class="chip s-move">Start</span></div>
+</div>
+<button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-plus"/></svg>New shoppable post</button><button class="btn block b-sec" type="button"><svg class="ico"><use href="#i-layers"/></svg>New collection</button>
+<div class="row between"><div class="sechd2">Your posts · 6</div><span class="xs mut">See all ›</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Weekend denim</b><span class="xs mut">20% off · 12 sales · ₹3,420 to you</span></div><span class="st2 live">Live</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Festive picks</b><span class="xs mut">With INFLX since 9 Oct</span></div><span class="st2 rev">In review</span></div><div class="prow2"><div class="th" style="background:var(--surface)"></div><div class="t"><b>Kurtis for work</b><span class="xs mut">Saved at step 6 · 14 Oct</span></div><span class="st2" style="background:var(--move-bg);color:var(--move-fg)">Draft</span></div>
+<div class="listrow"><svg class="ico"><use href="#i-layers"/></svg><div class="t"><b>Collections · 2</b><span class="xs mut">Group your posts or products</span></div><svg class="ico" style="color:var(--ink3)"><use href="#i-chev"/></svg></div>
+</div><nav class="tabbar" aria-label="Creator tabs"><span class="tab"><span class="p"><svg class="ico"><use href="#i-home"/></svg></span>Home</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-send"/></svg></span>Collabs</span><span class="tab on"><span class="plus"><svg class="ico"><use href="#i-plus"/></svg></span></span><span class="tab"><span class="p"><svg class="ico"><use href="#i-wallet"/></svg></span>Wallet</span><span class="tab"><span class="p"><svg class="ico"><use href="#i-user"/></svg></span>Profile</span></nav></div><div class="cap"><i>P1</i><b><span class="tg chg">CHANGES</span> Create tab (atlas SC-21)</b><span>"Needs a shoppable post" counts approved posts against each collaboration's minimum, before its posting date. "Start" jumps straight to step 4 with that brand and collaboration filled in.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-x"/></svg></span><h3>New shoppable post</h3></div>
+<div class="steps"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><span>Brand</span></div>
+<div class="lbl" style="font-size:15px">Which brand is this post for?</div>
+<div class="listrow"><span class="radio on"></span><span class="logo" style="background:#FFE7A3">UT</span><div class="t"><b>Urban Threads</b><span class="xs mut">2 collaborations you can post for</span></div></div>
+<div class="listrow"><span class="radio"></span><span class="logo" style="background:#DDE9FB">KS</span><div class="t"><b>Kaya Studio</b><span class="xs mut">1 collaboration</span></div></div>
+<div class="listrow" style="opacity:.5"><span class="radio"></span><span class="logo" style="background:#E6F4EA">LF</span><div class="t"><b>Label Fern</b><span class="xs mut">Opens after your shoot plan</span></div><svg class="ico"><use href="#i-lock"/></svg></div>
+<div class="hint">One brand per post. To show several brands together, make a collection.</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next</button></div></div><div class="cap"><i>P2</i><b><span class="tg chg">CHANGES</span> Step 1 · Brand (replaces SC-22)</b><span>Only brands where she has a signed Pay for Sale or Hybrid collaboration. A brand whose shoot plan isn't done shows locked; the exact rule comes with your shoot-plan rules.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>New shoppable post</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><span>Collaboration</span></div>
+<div class="lbl" style="font-size:15px">Which collaboration?</div>
+<div class="xs mut">Urban Threads</div>
+<div class="optbox sel"><span class="radio on"></span><div class="t"><b>Diwali Denim · Set A</b><span>2 offers + 12 products · posts on 10 Oct</span><span>0 of 1 posts done · earning 10%</span></div></div>
+<div class="optbox"><span class="radio"></span><div class="t"><b>Campus Fits · Set B</b><span>1 offer · posts on 18 Oct</span><span>0 of 1 posts done · earning 8% + ₹5,000</span></div></div>
+<div class="hint">The post can only use what this collaboration lets you sell.</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next</button></div></div><div class="cap"><i>P3</i><b><span class="tg chg">CHANGES</span> Step 2 · Collaboration (replaces SC-23)</b><span>Each row says what she can sell, her posting date and how many posts are done. Sales from this post are credited to this collaboration.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>New shoppable post</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><span>Post type</span></div>
+<div class="lbl" style="font-size:15px">What kind of post?</div>
+<div class="bigopt sel"><div class="row between"><b>Offer post</b><span class="radio on"></span></div><span>Show one of your offers, like "Any 2 jeans for ₹2,999". Your post appears in offer rails.</span><span class="xs" style="color:var(--active-fg);font-weight:700">2 offers in this collaboration</span></div>
+<div class="bigopt"><div class="row between"><b>Price post</b><span class="radio"></span></div><span>Show products at their normal price, grouped by price, like "Under ₹999".</span><span class="xs" style="color:var(--active-fg);font-weight:700">12 products without offers</span></div>
+<div class="bigopt dis"><div class="row between"><b>Price post</b><span class="radio"></span></div><span>Not available in Campus Fits: every product you have there is in an offer.</span></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next</button></div></div><div class="cap"><i>P4</i><b><span class="tg new">NEW</span> Step 3 · Offer post or price post</b><span>The two real choices. If the collaboration has no offers or no products without offers, that option shows greyed with the reason (third card, for comparison).</span></div></div>
+
+</div></section>
+
+<!-- ============ OFFER POST ============ -->
+<section><header><div class="eyebrow">Creator app · Offer post</div><h2>Offer type, one offer, then products</h2><p class="prose">She picks the <b>offer type</b> first. Only types she has in this collaboration show, with a count, and empty types are hidden. Then <b>one offer</b> of that type. Then products from that offer's pool, following each offer's picking rule.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Offer post</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><span>Offer</span></div>
+<div class="lbl" style="font-size:15px">Which kind of offer?</div>
+<div class="chips"><span class="opt">Discount (1)</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Bundle (2)</span><span class="opt">Free gift (1)</span></div>
+<div class="hint">BOGO and Volume aren't shown because this collaboration has none.</div>
+<div class="lbl" style="margin-top:4px">Pick one bundle offer</div>
+<div class="optbox sel"><span class="radio on"></span><div class="t"><b>Any 2 Jeans for ₹2,999</b><span>Pick-any · 15 products · till 10 Nov</span></div></div>
+<div class="optbox"><span class="radio"></span><div class="t"><b>Shirt + Trouser + Belt ₹2,499</b><span>Fixed bundle · 3 products · till 14 Oct</span></div></div>
+<div class="warn"><svg class="ico"><use href="#i-alert"/></svg><span>"Shirt + Trouser + Belt" ends 14 Oct, 4 days after posting. The post leaves the shop when it ends.</span></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next</button></div></div><div class="cap"><i>P5</i><b><span class="tg new">NEW</span> Step 4 · Offer type, then one offer</b><span>Type chips with counts, then one offer with its deal, product count and end date. An offer ending within 7 days of posting gets the same warning the brand saw.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pick products</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><span>Products</span></div>
+<div class="row between"><div class="xs mut">Any 2 Jeans for ₹2,999 · 15 products</div><span class="chip s-active">3 picked ✓</span></div>
+<div class="hint">Pick at least 2 so a shopper can complete the bundle from this post.</div>
+<div class="pgrid">
+<div class="pc sel"><div class="img"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Levi's 511 Slim</b><span>₹2,299</span></div></div>
+<div class="pc sel"><div class="img"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Wrangler Regular</b><span>₹1,999</span></div></div>
+<div class="pc sel"><div class="img"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Levi's 512 Taper</b><span>₹2,499</span></div></div>
+<div class="pc"><div class="img"></div><span class="ck"></span><div class="cp"><b>Pepe Straight</b><span>₹1,799</span></div></div>
+</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next · 3 products</button></div></div><div class="cap"><i>P6</i><b><span class="tg new">NEW</span> Step 5 · Products for a pick-any bundle</b><span>Next stays off until the pick count is met. The other offer kinds follow their own rule (P7).</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Pick products</h3></div>
+<div class="stepline">If Discount · BOGO · Volume</div>
+<div class="pgrid">
+<div class="pc sel"><div class="img" style="aspect-ratio:1"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Levi's 511 Slim</b><span>₹1,899 <s>₹2,299</s></span></div></div>
+<div class="pc"><div class="img" style="aspect-ratio:1"></div><span class="ck"></span><div class="cp"><b>Levi's 501 Original</b><span>₹2,099 <s>₹2,499</s></span></div></div>
+</div>
+<div class="hint">Any products from the pool, at least 1. Discount prices are shown as shoppers will pay them.</div>
+<div class="stepline" style="margin-top:4px">If Fixed bundle</div>
+<div class="card tint" style="gap:3px"><b class="sm">All 3 products are added for you</b><span class="xs mut">Oxford shirt + Chino trouser + Leather belt, ₹2,499 together. Nothing to pick.</span></div>
+<div class="stepline" style="margin-top:4px">If Free gift</div>
+<div class="xs mut">Pick from the buy pool (8 jackets). The gift shows by itself:</div>
+<div class="gift"><i></i><span>Free with this: Leather cap, Canvas belt or Silver coin. The shopper chooses one when spending ₹3,000.</span></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next</button></div></div><div class="cap"><i>P7</i><b><span class="tg new">NEW</span> Step 5 · How the other offers pick</b><span>Discount/BOGO/Volume: any products, at least 1. Fixed bundle: nothing to pick. Free gift: buy-pool products, with the gift shown automatically as "Free with this".</span></div></div>
+
+</div></section>
+
+<!-- ============ PRICE POST ============ -->
+<section><header><div class="eyebrow">Creator app · Price post</div><h2>Price band, category, then products</h2><p class="prose">Only her <b>products without offers</b> in this collaboration. She picks one of the five price bands set by INFLX, then one or more categories at any level, then products from the filtered list.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Price post</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><span>Price band</span></div>
+<div class="lbl">Price band</div>
+<div class="chips"><span class="opt">Under ₹499</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Under ₹999</span><span class="opt">Under ₹1,999</span><span class="opt">Under ₹2,999</span><span class="opt">₹3,000+</span></div>
+<div class="hint">Shows your products up to ₹999, including cheaper ones.</div>
+<div class="lbl">Category</div>
+<div class="search"><svg class="ico"><use href="#i-search"/></svg>Men › Topwear</div>
+<div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Shirts</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>T-shirts</span><span class="opt">Polos</span></div>
+<div class="pgrid">
+<div class="pc sel"><div class="img" style="aspect-ratio:1"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Linen shirt · Sage</b><span>₹849</span></div></div>
+<div class="pc sel"><div class="img" style="aspect-ratio:1"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Crew tee · Black</b><span>₹699</span></div></div>
+</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next · 2 products</button></div></div><div class="cap"><i>P8</i><b><span class="tg new">NEW</span> Steps 4–5 · Price post</b><span>Band → category → products, on one screen. The chosen band only filters the list. The post's real band is worked out from its products (P11).</span></div></div>
+
+</div></section>
+
+<!-- ============ THEME / FORMAT / MEDIA ============ -->
+<section><header><div class="eyebrow">Creator app · Theme, format, media</div><h2>The same for both kinds of post</h2><p class="prose">Theme tags come after products, so she knows what she's styling. Then the format, the upload (with product tags on photos, which are kept), and the music warning.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Theme</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><span>Theme</span></div>
+<div class="hint">Pick at least 1 tag, and at most 1 from each group. Tags can't be changed once the post is live.</div>
+<div class="tgrp"><div class="h">Season <span>1 picked</span></div><div class="chips"><span class="opt">Summer</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Winter</span><span class="opt">Monsoon</span><span class="opt">Spring</span></div></div>
+<div class="tgrp"><div class="h">Occasion <span>1 picked</span></div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Office</span><span class="opt">Party</span><span class="opt">Wedding</span><span class="opt">Festive</span><span class="opt">College</span><span class="opt">Airport</span><span class="opt">Vacation</span><span class="opt">Date Night</span><span class="opt">Weekend</span></div></div>
+<div class="tgrp"><div class="h">Style <span>1 picked</span></div><div class="chips"><span class="opt">Minimal</span><span class="opt">Casual</span><span class="opt">Elegant</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Classic</span><span class="opt">Trendy</span><span class="opt">Street Style</span><span class="opt">Korean Style</span><span class="opt">Boho</span><span class="opt">Vintage</span></div></div>
+<div class="tgrp"><div class="h">Use <span>optional</span></div><div class="chips"><span class="opt">Everyday</span><span class="opt">Travel</span><span class="opt">Gym</span><span class="opt">Workwear</span><span class="opt">Lounge</span></div></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next · 3 tags</button></div></div><div class="cap"><i>P9</i><b><span class="tg new">NEW</span> Step 6 · Theme tags</b><span>The 27 tags in 4 groups. Tapping another tag in the same group swaps it. The tags belong to this post only.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Format and media</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><span>Media</span></div>
+<div class="two"><div class="grp"><div class="lbl">Type</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Photo</span><span class="opt">Video</span></div></div><div class="grp"><div class="lbl">Layout</div><div class="chips"><span class="opt">Single</span><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Carousel</span></div></div></div>
+<div class="media"><div class="m"><span class="n">1</span></div><div class="m"><span class="n">2</span></div><div class="m add">+</div></div>
+<div class="hint">Up to 10 in a carousel. Tap a photo to tag products on it.</div>
+<div class="musicwarn"><svg class="ico"><use href="#i-alert"/></svg><span>No copyrighted music. INFLX checks every post, and one with copyrighted music is sent back.</span></div>
+<div class="grp"><div class="lbl">Product tags look</div><div class="chips"><span class="opt sel"><svg class="ico"><use href="#i-check"/></svg>Soft editorial</span><span class="opt">Minimal</span><span class="opt">Hidden</span></div></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Next</button></div></div><div class="cap"><i>P10</i><b><span class="tg new">NEW</span> Step 7 · Format and upload</b><span>Photo or video, single or carousel. The music warning sits right where she uploads. Video works the same way and plays automatically in feeds.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Tag products · photo 1</h3></div>
+<div class="photo"><span class="pin" style="top:30%;left:12%">Levi's 511 Slim</span><span class="pin" style="top:62%;left:40%">Wrangler Regular</span></div>
+<div class="xs mut">Tap the photo where a product is, then pick it. 2 of 3 products tagged on this photo.</div>
+<div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Levi's 511 Slim</b><span class="xs mut">on photo 1</span></div></div>
+<div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Wrangler Regular</b><span class="xs mut">on photo 1</span></div></div>
+<div class="listrow"><span class="check"></span><div class="t"><b>Levi's 512 Taper</b><span class="xs mut">not tagged on a photo yet, still in the post</span></div></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Done</button></div></div><div class="cap"><i>P11a</i><b><span class="tg same">KEPT</span> Tagging products on a photo</b><span>The tap-points already built on the server. Tagging is optional: every picked product is in the post's product list either way. Videos get the list only.</span></div></div>
+
+</div></section>
+
+<!-- ============ REVIEW ============ -->
+<section><header><div class="eyebrow">Creator app · Caption, review, send</div><h2>What the post carries, then INFLX checks it</h2><p class="prose">The review shows the four things shoppers will filter by. Three are automatic: category, offer and price band. Theme is hers. Sending goes to INFLX, not the brand.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Review</h3></div>
+<div class="steps"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><span>Review</span></div>
+<div class="media"><div class="m"><span class="n">1</span></div><div class="m"><span class="n">2</span></div><div class="m" style="background:var(--surface)"></div></div>
+<div class="grp"><div class="lbl">Caption</div><div class="textarea">Office-ready denim that works past 6 pm. Pick any 2 for ₹2,999 👖</div></div>
+<div class="tcard"><div class="sechd2">How shoppers will find it</div>
+<div class="facet"><span>Category</span><b>Men › Bottomwear › Jeans<em>from your products</em></b></div>
+<div class="facet"><span>Offer</span><b>Bundle · Any 2 for ₹2,999<em>from your offer</em></b></div>
+<div class="facet"><span>Price</span><b>Under ₹2,999<em>costliest item ₹2,499</em></b></div>
+<div class="facet"><span>Theme</span><b>Winter · Office · Classic</b></div>
+</div>
+<div class="tline"><span>For</span><b>Urban Threads · Diwali Denim · Set A</b></div>
+<div class="tline"><span>Products</span><b>3</b></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button"><svg class="ico"><use href="#i-send"/></svg>Send to INFLX for review</button></div></div><div class="cap"><i>P11</i><b><span class="tg new">NEW</span> Step 8 · Caption and review (replaces SC-24's checklist)</b><span>The price band for offer posts: discount offers use the discounted price; BOGO, volume, bundle and free gift use the item's normal price. It's always the highest one item costs.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>With INFLX</h3></div>
+<div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">WEEKEND DENIM</div>
+<div class="card" style="background:var(--wait-bg);border-color:transparent;gap:3px"><b style="color:var(--wait-fg)">In review since 8 Oct</b><span class="xs" style="color:var(--wait-fg)">Usually within a day.</span></div>
+<div class="media"><div class="m"></div><div class="m"></div></div>
+<div class="card tint" style="gap:3px"><div class="sechd2">Who checks it</div><span class="xs mut"><b>INFLX, not the brand.</b> We check the products and offer match your collaboration, and that there's no copyrighted music.</span></div>
+<div class="card tint" style="gap:3px"><div class="sechd2">Goes live</div><span class="xs mut">On <b>10 Oct</b>, your posting date, once approved.</span></div>
+</div></div><div class="cap"><i>P12</i><b><span class="tg chg">CHANGES</span> In review (atlas SC-25)</b><span>Same screen. The "what INFLX checks" line now names the offer and the music check.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Sent back</h3></div>
+<div class="xs mut" style="font-family:var(--mono);letter-spacing:.06em">FESTIVE PICKS</div>
+<div class="card" style="background:var(--no-bg);border-color:transparent;gap:3px"><b style="color:var(--no-fg)">What INFLX said</b><span class="xs" style="color:var(--no-fg)">"The video on slide 2 has copyrighted music. Replace it with original audio or no music."</span></div>
+<div class="sechd2">What you can change</div>
+<div class="xs mut">Photos and videos, caption, products, theme tags. <b>Not</b> the brand, collaboration, post type or offer. For those, start a new post.</div>
+<button class="btn block b-pri" type="button">Fix and send again</button>
+<button class="btn block b-sec" type="button">Start over</button>
+<div class="card tint" style="gap:3px"><div class="sechd2">Your posting date hasn't moved</div><span class="xs mut">Still <b>10 Oct</b>. You have 2 days.</span></div>
+</div></div><div class="cap"><i>P13</i><b><span class="tg chg">CHANGES</span> Sent back (atlas SC-26)</b><span>Same screen, with what can and can't change when fixing. Prices are never typed, so the old "price doesn't match" reason no longer happens.</span></div></div>
+
+</div></section>
+
+<!-- ============ AFTER LIVE ============ -->
+<section><header><div class="eyebrow">Creator app · After a post goes live</div><h2>Her posts, and when one leaves the shop</h2><p class="prose">"Your posts" gains a fourth state, <b>Removed</b>: the offer ended, the brand took the products out, or everything sold out. A removed post can't come back, because its media promised an offer that's gone.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Your posts</h3></div>
+<div class="chips"><span class="opt sel">Live 4</span><span class="opt">In review 1</span><span class="opt">Sent back 1</span><span class="opt">Removed 2</span><span class="opt">Drafts 1</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Weekend denim</b><span class="xs mut">Bundle · Any 2 for ₹2,999 · till 10 Nov</span><span class="xs mut">12 sales · ₹3,420 to you</span></div><span class="st2 live">Live</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Office shirts under ₹999</b><span class="xs mut">Price post · normal price</span><span class="xs mut">3 sales · ₹240 to you</span></div><span class="st2 live">Live</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>T-shirt stack</b><span class="xs mut">Offer ended 15 Oct</span><span class="xs mut">7 sales · ₹610 to you</span></div><span class="st2 gone">Removed</span></div>
+</div></div><div class="cap"><i>P14</i><b><span class="tg chg">CHANGES</span> Your posts (atlas SC-27)</b><span>Each row carries its offer (or "Price post") and what it earned. Removed posts keep their earnings history. <b>Drafts</b> (added 28 Sep): a post is saved automatically at every step; tapping a draft carries on where she stopped. A draft can be deleted.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>T-shirt stack</h3></div>
+<div class="card" style="background:var(--ended-bg);border-color:transparent;gap:3px"><b>Removed from the shop on 15 Oct</b><span class="xs mut">The offer "Buy 2 T-shirts → 30%" ended. Your post promised it, so it can't stay up at full price.</span></div>
+<div class="tline"><span>Sales while live</span><b>7</b></div>
+<div class="tline"><span>You earned</span><b>₹610</b></div>
+<div class="hint">Other reasons you might see: "The brand removed all its products from the offer" or "Every product sold out".</div>
+<div class="hint">Commission on its sales still follows the usual return window before you can withdraw it.</div>
+</div></div><div class="cap"><i>P15</i><b><span class="tg new">NEW</span> A removed post</b><span>Says plainly why it left the shop and what it earned. Nothing to fix. Her notification (Level 2, C5) links here.</span></div></div>
+
+</div></section>
+
+<!-- ============ COLLECTIONS ============ -->
+<section><header><div class="eyebrow">Creator app · Collections</div><h2>Collections: create, see, edit</h2><p class="prose">A collection is made from the Create tab, like a post. Exactly as you described: a name, then either her posts or her products, and nothing more. A collection can mix brands. No INFLX approval is needed. A product in a collection sells like a one-product post from the collaboration she picked it from.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><h3>Create</h3></div><div style="height:200px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span><b style="font-size:15px">What do you want to make?</b>
+<div class="optlist">
+<div class="optbox"><span class="radio"></span><div class="t"><b>Shoppable post</b><span>Photos or a video with products, for one brand. INFLX checks it before it goes live.</span></div></div>
+<div class="optbox sel"><span class="radio on"></span><div class="t"><b>Collection</b><span>Group posts or products you already have under one name. Any brands. Live straight away.</span></div></div>
+</div>
+<button class="btn block b-pri" type="button">Next</button></div></div></div><div class="cap"><i>P16</i><b><span class="tg new">NEW</span> The "+" button: post or collection</b><span>Tapping the middle "+" tab asks which one. The Create tab also has a "New collection" button under "New shoppable post" (P1).</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Collections</h3><span class="ib"><svg class="ico"><use href="#i-plus"/></svg></span></div>
+<div class="xs mut">Shoppers see these in your store.</div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Goa trip edit</b><span class="xs mut">4 posts · Urban Threads, Kaya Studio</span><span class="xs mut">6 sales · ₹1,240 to you</span></div><span class="st2 live">Live</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Under ₹1,000 office</b><span class="xs mut">9 products · 2 brands</span><span class="xs mut">2 sales · ₹160 to you</span></div><span class="st2 live">Live</span></div>
+<div class="prow2"><div class="th"></div><div class="t"><b>Summer whites</b><span class="xs mut">0 of 3 posts still in the shop</span><span class="xs mut">Hidden from shoppers</span></div><span class="st2 gone">Hidden</span></div>
+<div class="hint">A collection is hidden when nothing in it is still in the shop. Add something new and it shows again.</div>
+</div></div><div class="cap"><i>P17</i><b><span class="tg new">NEW</span> Her collections</b><span>Each row shows posts or products, which brands, and what it earned. Sales from a collection are credited to her through each item's own collaboration.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>New collection</h3></div>
+<div class="grp"><div class="lbl">Name <span class="req">*</span></div><div class="field">Goa trip edit</div></div>
+<div class="grp"><div class="lbl">What goes in</div><div class="segc"><span class="on">My posts</span><span>Products</span></div></div>
+<div class="pgrid">
+<div class="pc sel"><div class="img"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Weekend denim</b><span>Urban Threads</span></div></div>
+<div class="pc sel"><div class="img"></div><span class="ck"><svg class="ico"><use href="#i-check"/></svg></span><div class="cp"><b>Linen days</b><span>Kaya Studio</span></div></div>
+</div>
+<div class="hint">Only your live posts. Posts that leave the shop drop out of the collection by themselves.</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Create collection · 2 posts</button></div></div><div class="cap"><i>P18</i><b><span class="tg new">NEW</span> New collection of posts</b><span>Pick from her live posts, any brand.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>New collection</h3></div>
+<div class="grp"><div class="lbl">Name <span class="req">*</span></div><div class="field">Under ₹1,000 office</div></div>
+<div class="grp"><div class="lbl">What goes in</div><div class="segc"><span>My posts</span><span class="on">Products</span></div></div>
+<div class="search"><svg class="ico"><use href="#i-search"/></svg>Search your products</div>
+<div class="sechd2">Urban Threads · Diwali Denim · Set A</div>
+<div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Linen shirt · Sage</b><span class="xs mut">₹849 · normal price</span></div></div>
+<div class="listrow"><span class="check on"><svg class="ico"><use href="#i-check"/></svg></span><div class="t"><b>Levi's 511 Slim</b><span class="xs mut">₹1,899 with 20% off</span></div></div>
+<div class="sechd2">Kaya Studio · Set B</div>
+<div class="listrow"><span class="check"></span><div class="t"><b>Cotton kurta · Ivory</b><span class="xs mut">₹999 · normal price</span></div></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Create collection · 2 products</button></div></div><div class="cap"><i>P19</i><b><span class="tg new">NEW</span> New collection of products</b><span>Grouped by collaboration, because the collaboration decides the offer and her commission on each product.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr"><div class="bar"><span class="ib"><svg class="ico"><use href="#i-back"/></svg></span><h3>Goa trip edit</h3><span class="ib"><svg class="ico"><use href="#i-edit"/></svg></span></div>
+<div class="row between"><span class="xs mut">4 posts · 2 brands · live</span><span class="st2 live">Live</span></div>
+<div class="pgrid">
+<div class="pc"><div class="img"></div><div class="cp"><b>Weekend denim</b><span>Urban Threads · Bundle</span></div></div>
+<div class="pc"><div class="img"></div><div class="cp"><b>Linen days</b><span>Kaya Studio · Under ₹999</span></div></div>
+<div class="pc"><div class="img"></div><div class="cp"><b>Beach whites</b><span>Kaya Studio · 20% off</span></div></div>
+<div class="pc" style="opacity:.5"><div class="img"></div><div class="cp"><b>T-shirt stack</b><span>Left the shop 15 Oct</span></div></div>
+</div>
+<button class="btn block b-sec" type="button"><svg class="ico"><use href="#i-plus"/></svg>Add posts</button>
+<div class="row" style="gap:8px"><button class="btn b-sec sm2" type="button" style="flex:1"><svg class="ico"><use href="#i-edit"/></svg>Rename</button><button class="btn b-dan sm2" type="button" style="flex:1"><svg class="ico"><use href="#i-trash"/></svg>Delete</button></div>
+<div class="hint">A post that leaves the shop drops out for shoppers but stays greyed here, so you can see what happened. Deleting a collection never touches the posts in it.</div>
+</div></div><div class="cap"><i>P20</i><b><span class="tg new">NEW</span> One collection: see and edit</b><span>Rename, add or remove items, or delete, at any time. A collection of posts stays posts-only, and one of products stays products-only.</span></div></div>
+
+</div></section>
+
+<section><header><div class="eyebrow">Before you lock this board</div><h2>Five questions these screens raised</h2><p class="prose">Each has my recommendation, and the screens follow it. Reply "agree all" or name the ones to change. The post link and code screens come separately, from your screens.</p></header>
+<div class="qs">
+<div class="q"><b>1 · Can she edit or take down a live post?</b><span>Tags are fixed once live (your rule). What about the caption, or removing the post herself?</span><span class="rec">Rec: no edits once live, since INFLX approved exactly what's there. She can take a post down herself; it leaves the shop and keeps its earnings history.</span></div>
+<div class="q"><b>2 · What can she change when a post is sent back?</b><span></span><span class="rec">Rec: media, caption, products and theme tags. Not the brand, collaboration, post type or offer; for those she starts a new post (P13).</span></div>
+<div class="q"><b>3 · Limits</b><span>Today's server allows 1–10 photos and up to 30 products per post.</span><span class="rec">Rec: keep 10 slides and 30 products. Video up to 90 seconds per clip.</span></div>
+<div class="q"><b>4 · Product tags on photos: required or optional?</b><span></span><span class="rec">Rec: optional. Every picked product is in the post's product list anyway (P11a).</span></div>
+<div class="q"><b>5 · Collections: editing, hiding, deleting</b><span>See P16–P20.</span><span class="rec">Rec: she can rename, add or remove items, or delete a collection any time. A collection stays either posts-only or products-only. It hides itself from shoppers when nothing in it is still in the shop, and deleting it never touches her posts.</span></div>
+</div>
+</section>
+
+<footer>INFLX · Level 3 of 4 (shoppable post creation) · mockups v1 · derived from features/screen-atlas SC-21 to SC-27 (locked) and the item 5 creator parts · next: Level 4, post link and code (founder to provide) · rules in Docs/OFFER_TERMS_POSTS_RULES.md</footer>
+</div>
+</body></html>

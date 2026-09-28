@@ -1,0 +1,20 @@
+{
+  "feature": "post-performance",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Level 5 of the offer -> terms -> posts programme: INFLX post engagement (views/likes/comments/shares/saves, comments new) + social numbers scraped from links added at going live (Pay for Sale/Hybrid new step; Pay for Content reuses item 12 content_proofs). Survey 2026-09-28: apify.service scrapePostEngagement (IG only) + apify-engagement.job read only legacy deliverables.live_url, never content_proofs; post_events write-only; creatorPosts hydratePosts drops like_count/save_count; no comments table. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §4.15-4.16. Mockups v1 E1-E7, six open questions.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Offer Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Web boards use the brand website's own palette (OffersLibrary .ofl scope: ink + yellow).
+   Phone boards use the mono rule (white/black, colour only for action + status). Light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --white:#fff; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --ink:#0A0A0A; --ink2:#1F1F22; --muted:#52525B; --muted2:#71717A; --muted3:#A1A1AA; --border:#E4E4E7;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ok-fg:#047857; --ok-bg:#D1FAE5;
+  --warn-fg:#C2410C; --warn-bg:#FFF7ED;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --disp:"Outfit","Plus Jakarta Sans",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:16px;color:var(--muted);max-width:74ch}
+header.top{padding-block:34px 10px;display:grid;gap:10px}
+section.board{padding-block:34px 6px;display:grid;gap:14px}
+section.board > header{display:grid;gap:6px}
+.prose{color:var(--muted);max-width:78ch;font-size:14.5px}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.03em;width:max-content}
+.tag.new{background:var(--ok-bg);color:var(--ok-fg)}
+.tag.chg{background:var(--warn-bg);color:var(--warn-fg)}
+.tag.gone{background:var(--no-bg);color:var(--no-fg)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.note{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:grid;gap:6px;font-size:14px}
+.note ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--muted)}
+.note b{color:var(--ink)}
+.cap{display:grid;gap:2px}
+.cap b{font-size:14px}
+.cap span{font-size:13px;color:var(--muted)}
+.notmoving{font-size:12.5px;color:var(--muted2)}
+.notmoving b{color:var(--muted)}
+
+/* ---------- web frame ---------- */
+.web{background:var(--bg);border:1px solid #D4D4D8;border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.03);font-size:13px;line-height:1.45}
+.web .chrome{height:30px;background:#F4F4F5;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding-inline:12px}
+.web .chrome i{width:9px;height:9px;border-radius:50%;background:#D4D4D8;display:block}
+.web .chrome span{margin-left:12px;font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.web .body{display:grid;grid-template-columns:168px 1fr;min-height:420px}
+.side{background:#fff;border-right:1px solid var(--border);padding:14px 10px;display:grid;align-content:start;gap:2px}
+.side .logo{font-family:var(--disp);font-weight:800;font-size:18px;padding:0 8px 12px}
+.side a{display:flex;gap:8px;align-items:center;padding:7px 8px;border-radius:8px;color:var(--muted);font-weight:600;text-decoration:none;font-size:12.5px}
+.side a.act{background:var(--ink);color:var(--yellow)}
+.main{padding:18px 22px;display:grid;gap:14px;align-content:start;min-width:0}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.hdr h3{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.4px}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;border:0;font-family:inherit;white-space:nowrap}
+.btn-ink{background:var(--ink);color:var(--yellow)}
+.btn-yellow{background:var(--yellow);color:var(--ink)}
+.btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink)}
+.btn-danger{background:#fff;border:1px solid #F3C7C7;color:var(--no-fg)}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn[disabled]{opacity:.45}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border)}
+.tabs span{padding:8px 12px;font-weight:700;font-size:12.5px;color:var(--muted2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span.act{color:var(--ink);border-color:var(--ink)}
+.tabs span .mono{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-left:4px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.inp{border:1px solid var(--border);background:#fff;border-radius:9px;padding:7px 10px;font-size:12.5px;color:var(--muted2);font-family:inherit;min-width:0}
+.inp.fill{color:var(--ink)}
+.inp.w{flex:1;min-width:180px}
+.chip{padding:5px 11px;border-radius:99px;background:#fff;border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;display:inline-flex;gap:5px;align-items:center}
+.chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.chip.soft{background:var(--bg2);border-color:transparent}
+.tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted2);text-align:left;padding:8px 10px;background:var(--bg2);font-weight:700}
+.tbl td{padding:9px 10px;border-top:1px solid var(--border);vertical-align:middle}
+.tbl td b{font-size:12.5px}
+.tbl .r{text-align:right}
+.st{display:inline-flex;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.st.live{background:var(--ok-bg);color:var(--ok-fg)}
+.st.sched{background:var(--wait-bg);color:var(--wait-fg)}
+.st.draft{background:var(--warn-bg);color:var(--warn-fg)}
+.st.ended{background:var(--ended-bg);color:var(--ended-fg)}
+.st.lock{background:var(--bg2);color:var(--muted)}
+.mono{font-family:var(--mono)}
+.mut{color:var(--muted)} .mut2{color:var(--muted2)}
+.xs{font-size:11px} .sm{font-size:12px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.wrapx{flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:grid;gap:8px;align-content:start}
+.card.sel{border:2px solid var(--ink);padding:11px 13px}
+.card.tint{background:var(--bg2);border-color:transparent}
+.card.warnbox{background:var(--warn-bg);border-color:#FED7AA}
+.card.nobox{background:var(--no-bg);border-color:#F3C7C7}
+.card.okbox{background:#F0FDF4;border-color:#BBF7D0}
+.card h4{margin:0;font-size:13.5px}
+.lbl{font-weight:700;font-size:12px}
+.hint{font-size:11.5px;color:var(--muted2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:700}
+.okt{font-size:11.5px;color:var(--ok-fg);font-weight:700}
+.wrn{font-size:11.5px;color:var(--warn-fg);font-weight:700}
+.field{display:grid;gap:4px}
+.big{font-family:var(--disp);font-size:20px;font-weight:800}
+.ico{font-size:18px;width:34px;height:34px;border-radius:10px;background:var(--bg2);display:grid;place-items:center;flex:none}
+.radio{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted3);flex:none;display:inline-block}
+.radio.on{border:4px solid var(--ink)}
+.cb{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--muted3);flex:none;display:inline-grid;place-items:center;font-size:10px;line-height:1;background:#fff}
+.cb.on{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.cb.dis{background:var(--bg2);border-color:var(--border)}
+.sw{width:34px;height:20px;border-radius:99px;background:#D4D4D8;position:relative;flex:none;display:inline-block}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+.sw.on{background:var(--ink)} .sw.on::after{left:17px;background:var(--yellow)}
+/* stepper */
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.steps span{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted3);padding:5px 10px 5px 5px;border-radius:99px;background:#fff;border:1px solid var(--border)}
+.steps span i{font-style:normal;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:var(--bg2);font-size:10.5px}
+.steps span.done{color:var(--muted)} .steps span.done i{background:var(--ok-bg);color:var(--ok-fg)}
+.steps span.now{color:var(--ink);border-color:var(--ink)} .steps span.now i{background:var(--ink);color:var(--yellow)}
+.foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px}
+/* pool builder */
+.pool{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;align-items:start}
+.method{display:grid;gap:8px}
+.mtabs{display:flex;gap:4px;background:var(--bg2);padding:3px;border-radius:10px;width:max-content;max-width:100%;flex-wrap:wrap}
+.mtabs span{padding:5px 11px;border-radius:8px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.mtabs span.act{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.crumb{font-size:12px;color:var(--muted)} .crumb b{color:var(--ink)}
+.plist{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.prow{display:flex;align-items:center;gap:9px;padding:8px 10px;border-top:1px solid var(--border);font-size:12px}
+.prow:first-child{border-top:0}
+.prow .th{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#E4E4E7,#F4F4F5);flex:none}
+.prow .t{flex:1;min-width:0;display:grid}
+.prow .t b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow.locked{background:#FAFAFA}
+.prow.locked b{color:var(--muted2)}
+.tray{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;display:grid;gap:10px;position:relative}
+.tray .n{font-family:var(--disp);font-size:28px;font-weight:800;line-height:1}
+.srcrow{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;padding:8px 10px;background:var(--bg2);border-radius:9px;font-size:12px}
+.srcrow .x{color:var(--muted3);font-weight:800}
+.or{font-family:var(--mono);font-size:10.5px;color:var(--muted2);text-align:center;letter-spacing:.1em}
+.andpill{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--muted2);padding:0 2px}
+.tiers{display:grid;gap:6px}
+.tier{display:grid;grid-template-columns:auto 1fr auto 1fr auto;gap:6px;align-items:center;font-size:12px}
+.chk{display:grid;gap:5px;font-size:12px}
+.chk div{display:flex;gap:7px;align-items:flex-start}
+.dot-ok::before{content:"✓";color:var(--ok-fg);font-weight:800}
+.dot-no::before{content:"✕";color:var(--no-fg);font-weight:800}
+.dot-w::before{content:"!";color:var(--warn-fg);font-weight:800;width:10px;text-align:center}
+.overlay{position:relative}
+.dlg{background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.18);border:1px solid var(--border);padding:16px 18px;display:grid;gap:10px;max-width:520px;margin:10px auto}
+.dimbg{background:rgba(10,10,10,.35);padding:26px 16px;border-radius:0 0 14px 0}
+
+/* ---------- phone frame (mono) ---------- */
+.phones{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:24px 20px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.shot .cap{max-width:300px;width:100%}
+.phone{width:290px;max-width:100%;background:#fff;border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:580px;font-size:13px}
+.phone .sb{height:24px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:10.5px;font-weight:700}
+.phone .scr{flex:1;padding:4px 13px 13px;display:flex;flex-direction:column;gap:10px}
+.phone .bar{display:flex;align-items:center;gap:8px;min-height:36px;border-bottom:1px solid var(--border);margin-inline:-13px;padding:0 13px 6px}
+.phone .bar h5{margin:0;font-size:15px;font-weight:800;flex:1}
+.phone .ib{width:28px;height:28px;border-radius:9px;border:1px solid var(--border);display:grid;place-items:center;font-size:13px}
+.phone .pbtn{background:#1A1A17;color:#fff;border-radius:12px;padding:11px;text-align:center;font-weight:800;font-size:13px;margin-top:auto}
+.phone .pbtn.ghost{background:#fff;color:#1A1A17;border:1.5px solid #1A1A17}
+.phone .opt{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:99px;border:1.5px solid var(--border);color:var(--muted);background:#fff;white-space:nowrap}
+.phone .opt.sel{background:#1A1A17;border-color:#1A1A17;color:#fff}
+.phone .lrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.phone .lrow .t{flex:1;display:grid;min-width:0}
+.phone .cb.on{background:#1A1A17;border-color:#1A1A17;color:#fff}
+.phone .sheet{margin-inline:-13px;margin-bottom:-13px;margin-top:auto;border-radius:18px 18px 0 0;border:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.08);padding:12px 13px;display:grid;gap:8px;background:#fff}
+.phone .count{background:#1A1A17;color:#fff;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:12.5px}
+.phone .count span{background:#fff;color:#1A1A17;border-radius:8px;padding:3px 8px;font-size:11.5px}
+
+.qs{display:grid;gap:10px}
+.q{background:#fff;border:1px solid var(--border);border-left:4px solid var(--ink);border-radius:12px;padding:12px 14px;display:grid;gap:4px;font-size:14px}
+.q b{font-size:14px}
+.q .rec{color:var(--ok-fg);font-weight:700;font-size:13px}
+footer{padding-block:34px 60px;color:var(--muted2);font-size:13px}
+@media (max-width:860px){
+  .web .body{grid-template-columns:1fr}
+  .side{display:none}
+  .pool,.grid2,.grid3{grid-template-columns:1fr}
+  .main{padding:14px}
+  .tbl{display:block;overflow-x:auto}
+}
+</style></head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Level 1 of 4 · Offer creation · web LOCKED 28 Sep 2026 · includes the Gift items change</div>
+  <h1>How a brand builds an offer</h1>
+  <p class="lede">Drawn from your offer document and the answers you gave on 28 September. The brand website screens keep today's look (black and yellow). The last board shows the product picker on the phone so you can judge whether offers can also be built there.</p>
+  <div class="legend"><span class="tag new">NEW</span> doesn't exist today <span class="tag chg">CHANGES</span> exists today, different after <span class="tag gone">REMOVED</span> taken away</div>
+  <div class="note">
+    <b>Rules already built into these screens</b>
+    <ul>
+      <li>Six steps, always in the same order: type → sub-type → name &amp; dates → products → numbers → review &amp; publish. Dates come before products because locking depends on dates.</li>
+      <li>One product can be in only one offer at a time. A product that is in another offer with overlapping dates shows a 🔒 and can't be added.</li>
+      <li>No whole-store offers. Every offer is built from a list of products (a "pool").</li>
+      <li>Offers are for creators only. <b>"Publish to store" is removed.</b> "Pay at store / Online / Pre-book" is removed from the builder too; pay at store gets its own discussion.</li>
+      <li>No margin floor for now. The price checks that remain are the bundle checks and the free-gift check.</li>
+      <li>"Price" everywhere means the product's one price (MRP was retired in July).</li>
+    </ul>
+  </div>
+</header>
+
+<!-- ============ O1 OFFERS LIST ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag chg">CHANGES</span><span class="eyebrow">O1 · Listings → Offers</span></div>
+    <h2>The offer list</h2>
+    <p class="prose">Same place as today (Listings → Offers). New: filter by dates, a status for where the offer is in its life (Draft, Scheduled, Live, Ended), the number of products in its pool, and how many creators have been given it. A second tab lists the products that aren't in any offer.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/products/listing?tab=offers</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>📦 Fulfillment</a><a>↩ Returns</a><a>₹ Conversions</a><a>◫ Wallet</a><a>⚙ Settings</a></nav>
+      <div class="main">
+        <div class="tabs"><span>Products</span><span class="act">Offers</span><span>Products without offers <span class="mono">40</span></span><span>Gift items <span class="mono">3</span></span></div>
+        <div class="hdr">
+          <div><h3>Offers</h3><div class="sub">Build offers on your products, then give them to creators when you set their terms.</div></div>
+          <span class="btn btn-ink">+ New offer</span>
+        </div>
+        <div class="toolbar">
+          <span class="inp w">Search offers by name…</span>
+          <span class="chip act">All types</span><span class="chip">Discount</span><span class="chip">BOGO</span><span class="chip">Volume</span><span class="chip">Bundle</span><span class="chip">Free gift</span>
+        </div>
+        <div class="toolbar">
+          <span class="chip act">All</span><span class="chip">Live <span class="mono">3</span></span><span class="chip">Scheduled <span class="mono">1</span></span><span class="chip">Draft <span class="mono">1</span></span><span class="chip">Ended <span class="mono">2</span></span>
+          <span style="flex:1"></span>
+          <span class="inp">📅 Dates: any time ▾</span>
+        </div>
+        <table class="tbl">
+          <tr><th>Offer</th><th>Type</th><th class="r">Products</th><th>Dates</th><th>Status</th><th class="r">Creators</th><th></th></tr>
+          <tr><td><b>20% off Levi's Jeans</b><div class="xs mut2">20% off, max ₹400 per item</div></td><td>Discount · %</td><td class="r mono">24</td><td class="sm">1 Oct – 31 Oct</td><td><span class="st live">Live</span></td><td class="r mono">6</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+          <tr><td><b>Any 2 Jeans for ₹2,999</b><div class="xs mut2">Pick any 2 from 15</div></td><td>Bundle · Pick-any</td><td class="r mono">15</td><td class="sm">10 Oct – 10 Nov</td><td><span class="st sched">Scheduled</span></td><td class="r mono">2</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+          <tr><td><b>Buy 2 T-shirts → 30%</b><div class="xs mut2">Buy 2 → 20% · Buy 3 → 30%</div></td><td>Volume · Qty</td><td class="r mono">10</td><td class="sm">5 Oct – 20 Oct</td><td><span class="st live">Live</span></td><td class="r mono">0</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+          <tr><td><b>Spend ₹3,000 → free cap</b><div class="xs mut2">Spend ₹3,000 on jackets · 1 gift</div></td><td>Free gift · Spend</td><td class="r mono">8 + 1 gift</td><td class="sm">1 Oct – 25 Oct</td><td><span class="st live">Live</span></td><td class="r mono">1</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+          <tr><td><b>Kurta BOGO</b><div class="xs mut2">Not published yet</div></td><td>BOGO</td><td class="r mono">6</td><td class="sm">12 Oct – 30 Oct</td><td><span class="st draft">Draft</span></td><td class="r mono">—</td><td class="r"><span class="btn btn-ghost btn-sm">Continue</span></td></tr>
+          <tr><td><b>Summer shirts ₹200 off</b><div class="xs mut2">₹200 off per item</div></td><td>Discount · Flat</td><td class="r mono">18</td><td class="sm">1 Aug – 31 Aug</td><td><span class="st ended">Ended</span></td><td class="r mono">4</td><td class="r"><span class="btn btn-ghost btn-sm">Open</span></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <p class="notmoving"><b>Not moving:</b> where Offers lives (inside Listings), the search box, the type chips. <b>Taken away:</b> the "In store" badge and the "Publish to store" switch on each row.</p>
+</section>
+
+<!-- ============ O2 STEP 1 TYPE ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag chg">CHANGES</span><span class="eyebrow">O2 · Step 1 of 6</span></div>
+    <h2>Choose the offer type</h2>
+    <p class="prose">Today the builder is a pop-up that asks for the name first. It becomes a full page with a step bar. Picking a type is the first thing the brand does.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/new</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a>⌂ Dashboard</a><a>⊟ Campaigns</a><a>★ Influencers</a><a class="act">▤ Listings</a><a>▢ Gallery</a><a>⚙ Settings</a></nav>
+      <div class="main">
+        <div class="row between"><span class="sm mut">← Offers</span><span class="xs mut2">Draft saved automatically</span></div>
+        <div class="steps"><span class="now"><i>1</i>Type</span><span><i>2</i>Sub-type</span><span><i>3</i>Name &amp; dates</span><span><i>4</i>Products</span><span><i>5</i>Numbers</span><span><i>6</i>Review</span></div>
+        <h3 style="font-family:var(--disp);font-size:20px">What kind of offer?</h3>
+        <div class="grid3">
+          <div class="card sel"><div class="row"><div class="ico">%</div><h4>Discount</h4></div><div class="hint">A % or ₹ off each item.<br>e.g. Levi's jeans 20% off</div></div>
+          <div class="card"><div class="row"><div class="ico">⇆</div><h4>BOGO</h4></div><div class="hint">Buy one, get the same product free in any size or colour.</div></div>
+          <div class="card"><div class="row"><div class="ico">▤</div><h4>Volume</h4></div><div class="hint">Buy more, save more. Tiers by quantity or by spend.</div></div>
+          <div class="card"><div class="row"><div class="ico">⊞</div><h4>Bundle</h4></div><div class="hint">Pick any 2 for ₹2,999, mix &amp; match, or a fixed set.</div></div>
+          <div class="card"><div class="row"><div class="ico">🎁</div><h4>Free gift</h4></div><div class="hint">Spend or buy enough, get a gift.</div></div>
+        </div>
+        <div class="foot"><span class="btn btn-ghost">Cancel</span><span class="btn btn-ink">Next: sub-type →</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O3 STEP 2 SUB-TYPE ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O3 · Step 2 of 6</span></div>
+    <h2>Choose the sub-type</h2>
+    <p class="prose">Each type shows its own choices. BOGO has only one kind, so this step is ticked off automatically and skipped. All four types that have sub-types are drawn side by side below.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/new</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="steps"><span class="done"><i>✓</i>Type</span><span class="now"><i>2</i>Sub-type</span><span><i>3</i>Name &amp; dates</span><span><i>4</i>Products</span><span><i>5</i>Numbers</span><span><i>6</i>Review</span></div>
+        <div class="grid2">
+          <div class="card tint"><div class="lbl">If Discount</div>
+            <div class="card sel"><div class="row"><span class="radio on"></span><b>Percentage</b></div><div class="hint">20% off, with an optional max ₹ per item</div></div>
+            <div class="card"><div class="row"><span class="radio"></span><b>Flat</b></div><div class="hint">₹200 off each item</div></div>
+          </div>
+          <div class="card tint"><div class="lbl">If Volume</div>
+            <div class="card"><div class="row"><span class="radio"></span><b>By quantity</b></div><div class="hint">Buy 2 → 20%, Buy 3 → 30%</div></div>
+            <div class="card"><div class="row"><span class="radio"></span><b>By value</b></div><div class="hint">Spend ₹2,000 → 10%, ₹3,000 → 20%</div></div>
+          </div>
+          <div class="card tint"><div class="lbl">If Bundle</div>
+            <div class="card"><div class="row"><span class="radio"></span><b>Pick-any</b></div><div class="hint">Products from one category. Any 2 jeans for ₹2,999</div></div>
+            <div class="card"><div class="row"><span class="radio"></span><b>Mix &amp; match</b></div><div class="hint">Several categories. Any 3 of shirts, trousers, jeans for ₹3,499</div></div>
+            <div class="card"><div class="row"><span class="radio"></span><b>Fixed</b></div><div class="hint">Exact products. Shirt + trouser + belt for ₹2,499</div></div>
+          </div>
+          <div class="card tint"><div class="lbl">If Free gift</div>
+            <div class="card"><div class="row"><span class="radio"></span><b>Spend threshold</b></div><div class="hint">Spend ₹3,000 on jackets → 1 free gift</div></div>
+            <div class="card"><div class="row"><span class="radio"></span><b>Buy X get Y</b></div><div class="hint">Buy any 2 Pattu sarees → 1 free gift</div></div>
+          </div>
+        </div>
+        <div class="foot"><span class="btn btn-ghost">← Back</span><span class="btn btn-ink">Next: name &amp; dates →</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O4 STEP 3 NAME & DATES ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag chg">CHANGES</span><span class="eyebrow">O4 · Step 3 of 6</span></div>
+    <h2>Name and dates</h2>
+    <p class="prose">Today dates are optional and only appear if the offer is published to the store. Now <b>both dates are required</b> and come before products. The note explains why: these dates decide which products are locked.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/new</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="steps"><span class="done"><i>✓</i>Type</span><span class="done"><i>✓</i>Sub-type</span><span class="now"><i>3</i>Name &amp; dates</span><span><i>4</i>Products</span><span><i>5</i>Numbers</span><span><i>6</i>Review</span></div>
+        <div class="card" style="max-width:560px">
+          <div class="field"><span class="lbl">Offer name</span><span class="inp fill">20% off Levi's Jeans</span><span class="hint">Creators and shoppers see this name.</span></div>
+          <div class="grid2">
+            <div class="field"><span class="lbl">Starts</span><span class="inp fill">📅 1 Oct 2026</span></div>
+            <div class="field"><span class="lbl">Ends</span><span class="inp fill">📅 31 Oct 2026</span></div>
+          </div>
+          <div class="card tint"><span class="sm">🔒 <b>Why dates come first:</b> a product can be in only one offer at a time. On the next step, products already in another offer between <b>1 Oct and 31 Oct</b> will be shown but can't be added.</span></div>
+          <div class="err">Example error: "The end date must be after the start date."</div>
+        </div>
+        <div class="foot"><span class="btn btn-ghost">← Back</span><span class="btn btn-ink">Next: products →</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O5 STEP 4 POOL BUILDER ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O5 · Step 4 of 6 · the pool builder</span></div>
+    <h2>Build the product pool</h2>
+    <p class="prose">On the left the brand adds products four ways. On the right is the pool: everything added so far, with each source listed. In this example the brand has added <b>Jeans, filtered to Slim + Levi's + ₹1,500–₹2,500</b> (filters combine with AND), plus <b>2 shirts found by search</b> (sources add together, OR). One product came in twice and was counted once. Two jeans are locked in another offer.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/new</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="steps"><span class="done"><i>✓</i>Type</span><span class="done"><i>✓</i>Sub-type</span><span class="done"><i>✓</i>Name &amp; dates</span><span class="now"><i>4</i>Products</span><span><i>5</i>Numbers</span><span><i>6</i>Review</span></div>
+        <div class="pool">
+          <div class="method">
+            <div class="mtabs"><span class="act">Browse by category</span><span>Search products</span></div>
+            <div class="crumb">Men › Bottomwear › <b>Jeans</b> <span class="mut2">· 50 products</span></div>
+            <div class="row wrapx" style="gap:6px">
+              <span class="chip">All 50 products</span><span class="chip">Tick specific products</span><span class="chip act">Use filters</span>
+            </div>
+            <div class="card tint">
+              <div class="row wrapx" style="gap:6px"><span class="lbl">Filters</span><span class="hint">all must match</span></div>
+              <div class="row wrapx" style="gap:6px">
+                <span class="chip act">Fit: Slim ✕</span><span class="andpill">AND</span>
+                <span class="chip act">Brand: Levi's ✕</span><span class="andpill">AND</span>
+                <span class="chip act">Price ₹1,500 – ₹2,500 ✕</span>
+                <span class="chip">+ Sub-category</span><span class="chip">+ Brand</span><span class="chip">+ Price range</span>
+              </div>
+            </div>
+            <div class="plist">
+              <div class="prow"><span class="cb on">✓</span><span class="th"></span><div class="t"><b>Levi's 511 Slim · Dark Indigo</b><span class="xs mut2">₹2,299 · 6 sizes · 2 colours</span></div></div>
+              <div class="prow"><span class="cb on">✓</span><span class="th"></span><div class="t"><b>Levi's 512 Slim Taper · Stone</b><span class="xs mut2">₹2,499 · 5 sizes</span></div></div>
+              <div class="prow"><span class="cb on">✓</span><span class="th"></span><div class="t"><b>Levi's 511 Slim · Black</b><span class="xs mut2">₹2,199 · 6 sizes</span></div></div>
+              <div class="prow locked"><span class="cb dis"></span><span class="th"></span><div class="t"><b>Levi's 511 Slim · Light Wash</b><span class="xs mut2">₹1,899</span></div><span class="st lock">🔒 In "Denim Days" until 15 Oct</span></div>
+              <div class="prow locked"><span class="cb dis"></span><span class="th"></span><div class="t"><b>Levi's 65504 Skinny Slim</b><span class="xs mut2">₹1,999</span></div><span class="st lock">🔒 In "Denim Days" until 15 Oct</span></div>
+              <div class="prow"><span class="xs mut2">+ 7 more matching</span></div>
+            </div>
+            <div class="row between"><span class="hint">10 match · 2 locked and skipped</span><span class="btn btn-ink btn-sm">Add 10 to pool</span></div>
+            <div class="row" style="gap:8px;margin-top:4px"><span class="cb"></span><span class="sm"><b>Auto-add new products</b> that match these filters in future <span class="mut2">(off by default · locked products are skipped)</span></span></div>
+          </div>
+          <div class="tray">
+            <div class="row between"><span class="lbl">Your pool</span><span class="xs mut2">frozen when you publish</span></div>
+            <div class="row" style="gap:10px;align-items:flex-end"><span class="n">12</span><span class="sm mut">products · every size and colour included</span></div>
+            <div class="srcrow"><div><b>Jeans · filters</b><div class="xs mut2">Slim + Levi's + ₹1,500–₹2,500 · 10 products</div></div><span class="x">✕</span></div>
+            <div class="or">— OR —</div>
+            <div class="srcrow"><div><b>Search: "Cotton shirt"</b><div class="xs mut2">2 products ticked</div></div><span class="x">✕</span></div>
+            <div class="or">— OR —</div>
+            <div class="srcrow"><div><b>Search: "Levi's 511"</b><div class="xs mut2">1 product · already in pool, counted once</div></div><span class="x">✕</span></div>
+            <div class="card tint" style="gap:4px"><span class="xs"><b>1 duplicate removed.</b> 2 locked products skipped.</span><span class="xs mut2">Price range uses each product's price.</span></div>
+            <span class="btn btn-ghost btn-sm" style="justify-self:start">See all 12 products</span>
+          </div>
+        </div>
+        <div class="foot"><span class="btn btn-ghost">← Back</span><span class="btn btn-ink">Next: numbers →</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h4>The "Search products" tab</h4><div class="hint">Type a product name or SKU ("Levi's 511", "Cotton shirt") and tick results. Locked products show the same 🔒 line and can't be ticked. Each search you add becomes its own line in the pool.</div></div>
+    <div class="card"><h4>Tick specific products</h4><div class="hint">The same list as above without filters: the brand ticks the 12 they want out of the 50 jeans. "All 50 products" adds the whole category, minus anything locked.</div></div>
+  </div>
+</section>
+
+<!-- ============ O5b SPECIAL POOLS ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O5b · Step 4 · three offers whose pool looks different</span></div>
+    <h2>Free gift pools, fixed bundles, and pick-any bundles</h2>
+    <p class="prose"><b>Free gift</b> has two pools: what the shopper buys, and the gifts. Gifts can be <b>store products</b> (something you also sell, like a cap) or <b>gift items</b> from Listings → Gift items (something you never sell, like a silver coin, see O13). <b>Fixed bundle</b> takes exact products, each with a quantity. <b>Pick-any bundle</b> must come from one category.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/new · Free gift</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="steps"><span class="done"><i>✓</i>Type</span><span class="done"><i>✓</i>Sub-type</span><span class="done"><i>✓</i>Name &amp; dates</span><span class="now"><i>4</i>Products</span><span><i>5</i>Numbers</span><span><i>6</i>Review</span></div>
+        <div class="tabs"><span>① Buy pool <span class="mono">8</span></span><span class="act">② Gift pool <span class="mono">3</span></span></div>
+        <div class="pool">
+          <div class="method">
+            <div class="mtabs"><span>Browse by category</span><span>Search products</span><span class="act">Gift items</span></div>
+            <div class="row between"><span class="hint">Your gift items from Listings → Gift items. Never sold, only given.</span><span class="btn btn-ghost btn-sm">+ New gift item</span></div>
+            <div class="plist">
+              <div class="prow"><span class="cb on">✓</span><span class="th"></span><div class="t"><b>Silver coin 5g</b><span class="xs mut2">Value ₹650 · 50 in stock</span></div><span class="st sched">Gift item</span></div>
+              <div class="prow"><span class="cb"></span><span class="th"></span><div class="t"><b>Steel water bottle</b><span class="xs mut2">Value ₹349 · 120 in stock</span></div><span class="st sched">Gift item</span></div>
+              <div class="prow locked"><span class="cb dis"></span><span class="th"></span><div class="t"><b>Tote bag</b><span class="xs mut2">Value ₹299 · 80 in stock</span></div><span class="st lock">🔒 In "Festive Gift" until 20 Oct</span></div>
+            </div>
+            <div class="card tint" style="gap:3px"><span class="xs"><b>"+ New gift item"</b> opens the same 4-field form as the Gift items tab (name, photo, value, stock). The item is saved there, so it can be restocked and reused in later offers.</span></div>
+            <div class="card tint" style="gap:3px"><span class="xs"><b>Store products as gifts</b> (Browse / Search tabs): a leather cap you also sell. While this offer runs it's locked here as a gift, so no creator can sell it. It sells normally again after the offer ends.</span></div>
+          </div>
+          <div class="tray">
+            <div class="lbl">Gift pool</div>
+            <div class="row" style="gap:10px;align-items:flex-end"><span class="n">3</span><span class="sm mut">gifts · the shopper chooses</span></div>
+            <div class="srcrow"><div><b>Leather cap</b><div class="xs mut2">Store product · ₹599 · stock limit 40</div></div><span class="x">✕</span></div>
+            <div class="srcrow"><div><b>Canvas belt</b><div class="xs mut2">Store product · ₹499 · stock limit 40</div></div><span class="x">✕</span></div>
+            <div class="srcrow"><div><b>Silver coin 5g</b> <span class="st sched">Gift-only</span><div class="xs mut2">₹650 · stock 50</div></div><span class="x">✕</span></div>
+            <div class="card tint" style="gap:3px"><span class="xs"><b>Store products used as gifts need a gift stock limit too.</b></span><span class="xs mut2">A product can't be in both the buy pool and the gift pool. Gift products are locked too.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="row between"><h4>Fixed bundle: exact products with quantities</h4><span class="st sched">Bundle · Fixed</span></div>
+      <div class="plist">
+        <div class="prow"><span class="th"></span><div class="t"><b>Oxford shirt · White</b><span class="xs mut2">₹1,299</span></div><span class="inp fill" style="width:70px">Qty 1</span></div>
+        <div class="prow"><span class="th"></span><div class="t"><b>Chino trouser · Khaki</b><span class="xs mut2">₹1,499</span></div><span class="inp fill" style="width:70px">Qty 1</span></div>
+        <div class="prow"><span class="th"></span><div class="t"><b>Leather belt · Brown</b><span class="xs mut2">₹399</span></div><span class="inp fill" style="width:70px">Qty 1</span></div>
+      </div>
+      <div class="row between"><span class="sm">Total price of the items</span><b class="mono">₹3,197</b></div>
+      <div class="hint">Added by search only. The shopper only picks size and colour.</div>
+    </div>
+    <div class="card">
+      <div class="row between"><h4>Pick-any bundle: one category only</h4><span class="st sched">Bundle · Pick-any</span></div>
+      <div class="crumb">Men › Bottomwear › <b>Jeans</b> · 15 products picked</div>
+      <div class="card warnbox"><span class="wrn">Only products from one category can be added.</span><span class="xs">You tried to add "Oxford shirt". Pick-any bundles stay in one category (Jeans). For several categories, go back and choose <b>Mix &amp; match</b>.</span></div>
+      <div class="hint">Mix &amp; match looks the same but allows several categories: shirts + trousers + jeans.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O6 STEP 5 NUMBERS ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag chg">CHANGES</span><span class="eyebrow">O6 · Step 5 of 6 · one panel per offer kind</span></div>
+    <h2>Set the numbers</h2>
+    <p class="prose">Each kind asks only for its own numbers, and checks them as the brand types, using the pool from step 4. New compared with today: the max ₹ on percentage discounts, ₹ rewards and the 1–4 tier limit on volume, pick-any bundles with a suggested safe price, and free gifts with a spend threshold or quantity.</p>
+  </header>
+  <div class="grid3">
+    <div class="card"><div class="row between"><h4>Discount · %</h4><span class="st live">OK</span></div>
+      <div class="field"><span class="lbl">Discount</span><span class="inp fill">20 %</span></div>
+      <div class="field"><span class="lbl">Max ₹ off per item <span class="mut2">(optional)</span></span><span class="inp fill">₹400</span></div>
+      <div class="hint">Levi's 511 ₹2,299 → shopper pays ₹1,899 (₹400 cap reached)</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Discount · Flat</h4><span class="st draft">Fix</span></div>
+      <div class="field"><span class="lbl">₹ off each item</span><span class="inp fill">₹900</span></div>
+      <div class="err">Must be less than your cheapest item in the pool (Linen shirt, ₹849).</div>
+    </div>
+    <div class="card"><div class="row between"><h4>BOGO</h4><span class="st live">OK</span></div>
+      <div class="hint">Buy any product in the pool → get <b>the same product</b> free in any size or colour.</div>
+      <div class="field"><span class="lbl">Max free items per order <span class="mut2">(optional)</span></span><span class="inp fill">2</span></div>
+      <div class="hint">Buy 511 Blue 32 → 511 Black 34 free ✓ · Buy 511 → 501 free ✕. No price checks.</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Volume · by quantity</h4><span class="st live">OK</span></div>
+      <div class="row" style="gap:6px"><span class="lbl">Reward</span><span class="chip act">%</span><span class="chip">₹</span></div>
+      <div class="tiers">
+        <div class="tier"><span>Buy</span><span class="inp fill">2</span><span>→</span><span class="inp fill">20 %</span><span class="xs mut2">✕</span></div>
+        <div class="tier"><span>Buy</span><span class="inp fill">3</span><span>→</span><span class="inp fill">30 %</span><span class="xs mut2">✕</span></div>
+      </div>
+      <span class="btn btn-ghost btn-sm" style="justify-self:start">+ Add tier (2 of 4)</span>
+      <div class="hint">Tiers replace each other, they never add up. Each tier must be higher than the one before.</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Volume · by value</h4><span class="st draft">Fix</span></div>
+      <div class="row" style="gap:6px"><span class="lbl">Reward</span><span class="chip">%</span><span class="chip act">₹</span></div>
+      <div class="tiers">
+        <div class="tier"><span>Spend</span><span class="inp fill">₹2,000</span><span>→</span><span class="inp fill">₹300 off</span><span class="xs mut2">✕</span></div>
+        <div class="tier"><span>Spend</span><span class="inp fill">₹3,000</span><span>→</span><span class="inp fill">₹250 off</span><span class="xs mut2">✕</span></div>
+      </div>
+      <div class="err">Tier 2's reward must be bigger than tier 1's.</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Bundle · Pick-any</h4><span class="st live">OK</span></div>
+      <div class="grid2"><div class="field"><span class="lbl">Pick</span><span class="inp fill">2</span></div><div class="field"><span class="lbl">For</span><span class="inp fill">₹2,999</span></div></div>
+      <div class="card tint" style="gap:3px">
+        <span class="xs"><b>Suggested safe price: ₹2,700 – ₹3,100</b></span>
+        <span class="xs dot-ok"> Price band: costliest ₹2,499 ≤ 1.5 × cheapest ₹1,699</span>
+        <span class="xs dot-ok"> Cheapest pair ₹3,448 → ₹2,999 saves 13% (needs 10%)</span>
+      </div>
+      <div class="hint">At ₹3,200 it would fail: "The cheapest pair must save at least 10%. Try ₹3,100 or less."</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Bundle · Fixed</h4><span class="st live">OK</span></div>
+      <div class="row between"><span class="sm">Total price of items</span><b class="mono">₹3,197</b></div>
+      <div class="field"><span class="lbl">Bundle price</span><span class="inp fill">₹2,499</span></div>
+      <div class="okt">Shopper saves ₹698 (22%). The bundle price must be below the total.</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Free gift · Spend</h4><span class="st live">OK</span></div>
+      <div class="field"><span class="lbl">Minimum spend on the buy pool</span><span class="inp fill">₹3,000</span></div>
+      <div class="field"><span class="lbl">Gifts the shopper gets</span><span class="inp fill">1 of 3</span></div>
+      <div class="okt">Costliest gift (₹650) is below the minimum spend (₹3,000) ✓</div>
+    </div>
+    <div class="card"><div class="row between"><h4>Free gift · Buy X get Y</h4><span class="st live">OK</span></div>
+      <div class="field"><span class="lbl">Buy</span><span class="inp fill">2 sarees</span></div>
+      <div class="field"><span class="lbl">Gifts the shopper gets</span><span class="inp fill">1 of 2</span></div>
+      <div class="hint">If the gift pool has 1 item, the shopper simply gets it. With several, they choose.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O7 STEP 6 REVIEW ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O7 · Step 6 of 6</span></div>
+    <h2>Review and publish</h2>
+    <p class="prose">One summary and every publish check with a tick or a cross. Publish stays switched off until every check passes. "Save as draft" doesn't lock any products (see question 2 below).</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/new</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="steps"><span class="done"><i>✓</i>Type</span><span class="done"><i>✓</i>Sub-type</span><span class="done"><i>✓</i>Name &amp; dates</span><span class="done"><i>✓</i>Products</span><span class="done"><i>✓</i>Numbers</span><span class="now"><i>6</i>Review</span></div>
+        <div class="grid2">
+          <div class="card">
+            <div class="row between"><h4>Any 2 Jeans for ₹2,999</h4><span class="st draft">Not published</span></div>
+            <table class="tbl" style="border:0">
+              <tr><td class="mut">Type</td><td><b>Bundle · Pick-any</b></td><td class="r"><span class="xs mut2">Edit</span></td></tr>
+              <tr><td class="mut">Dates</td><td><b>10 Oct – 10 Nov 2026</b></td><td class="r"><span class="xs mut2">Edit</span></td></tr>
+              <tr><td class="mut">Pool</td><td><b>15 products</b> · Men › Bottomwear › Jeans</td><td class="r"><span class="xs mut2">Edit</span></td></tr>
+              <tr><td class="mut">Deal</td><td><b>Any 2 for ₹2,999</b></td><td class="r"><span class="xs mut2">Edit</span></td></tr>
+              <tr><td class="mut">New products</td><td>Not added automatically</td><td></td></tr>
+            </table>
+            <div class="hint">After you publish, these 15 products are locked to this offer from 10 Oct to 10 Nov. You can then give the offer to creators when you set their terms.</div>
+          </div>
+          <div class="card">
+            <h4>Publish checks</h4>
+            <div class="chk">
+              <div class="dot-ok"> End date is after start date</div>
+              <div class="dot-ok"> No product is in another offer on these dates</div>
+              <div class="dot-ok"> Price band: costliest ₹2,499 ≤ 1.5 × cheapest ₹1,699</div>
+              <div class="dot-ok"> Cheapest pair saves at least 10% (₹3,448 → ₹2,999 saves 13%)</div>
+              <div class="dot-ok"> Pool has at least 2 products for "pick 2"</div>
+            </div>
+            <div class="card nobox" style="gap:3px"><span class="err">Example of a blocked publish</span><span class="xs">✕ "Levi's 512" was added to "Denim Days" by a colleague a minute ago. Remove it from this pool or change the dates.</span></div>
+          </div>
+        </div>
+        <div class="foot"><span class="btn btn-ghost">← Back</span><div class="row"><span class="btn btn-ghost">Save as draft</span><span class="btn btn-ink">Publish offer</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="note"><b>Every publish check, by offer kind</b>
+    <ul>
+      <li><b>All kinds:</b> end date after start date · one product, one offer (buy pool and gift pool both locked).</li>
+      <li><b>Volume:</b> quantity or spend increases tier by tier, and so does the reward. 1 to 4 tiers.</li>
+      <li><b>Pick-any and Mix &amp; match bundles:</b> costliest item ≤ 1.5 × cheapest · cheapest combination saves at least 10%.</li>
+      <li><b>Fixed bundle:</b> bundle price below the total price of its items.</li>
+      <li><b>Free gift:</b> costliest gift combination below the minimum qualifying purchase · buy pool and gift pool share no product · every gift has a stock limit.</li>
+      <li><b>Flat discount:</b> ₹ off less than the cheapest item in the pool. <b>BOGO:</b> no price checks.</li>
+      <li><b>Margin floor:</b> not checked (decided 28 Sep, discuss later).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ O8 PRODUCTS WITHOUT OFFERS ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O8 · Listings → Products without offers</span></div>
+    <h2>Products that are free to use</h2>
+    <p class="prose">Lists every published product that isn't in any offer on the chosen date. This is the list the brand later draws from in creator terms (Part 2, "products without offers"). The date picker lets the brand check a future day, such as a set's posting date.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/products/listing?tab=free</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="tabs"><span>Products</span><span>Offers</span><span class="act">Products without offers <span class="mono">40</span></span><span>Gift items <span class="mono">3</span></span></div>
+        <div class="toolbar"><span class="inp w">Search products…</span><span class="inp fill">📅 Free on: 10 Oct 2026 ▾</span><span class="chip">Category ▾</span><span class="chip">Price ▾</span></div>
+        <table class="tbl">
+          <tr><th></th><th>Product</th><th>Category</th><th class="r">Price</th><th>Next offer</th><th></th></tr>
+          <tr><td><span class="cb"></span></td><td><b>Oxford shirt · White</b></td><td class="sm">Men › Topwear › Shirts</td><td class="r mono">₹1,299</td><td class="sm mut2">None</td><td class="r"><span class="btn btn-ghost btn-sm">Put in offer</span></td></tr>
+          <tr><td><span class="cb"></span></td><td><b>Chino trouser · Khaki</b></td><td class="sm">Men › Bottomwear › Trousers</td><td class="r mono">₹1,499</td><td class="sm mut2">None</td><td class="r"><span class="btn btn-ghost btn-sm">Put in offer</span></td></tr>
+          <tr><td><span class="cb"></span></td><td><b>Wrangler Straight · Grey</b></td><td class="sm">Men › Bottomwear › Jeans</td><td class="r mono">₹1,799</td><td class="sm"><span class="st ended">Was in "Summer Denim", ended 5 Oct</span></td><td class="r"><span class="btn btn-ghost btn-sm">Put in offer</span></td></tr>
+          <tr><td><span class="cb"></span></td><td><b>Linen shirt · Sage</b></td><td class="sm">Men › Topwear › Shirts</td><td class="r mono">₹849</td><td class="sm"><span class="st sched">Joins "Linen Week" on 20 Oct</span></td><td class="r"><span class="btn btn-ghost btn-sm">Put in offer</span></td></tr>
+        </table>
+        <div class="hint">"Put in offer" starts a new offer with the ticked products already in its pool.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O9 PRODUCT VIEW ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag chg">CHANGES</span><span class="eyebrow">O9 · Listings → Products</span></div>
+    <h2>Which offer a product is in, and until when</h2>
+    <p class="prose">The product list gets an <b>Offer</b> column, and each product's panel shows its current and next offer. Today there's no way to see this. <b>Taken away:</b> the bulk "Attach offer" action, because products now join offers only through the pool builder, where the checks run.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/products/listing</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="tabs"><span class="act">Products</span><span>Offers</span><span>Products without offers <span class="mono">40</span></span><span>Gift items <span class="mono">3</span></span></div>
+        <div class="grid2" style="grid-template-columns:1.4fr 1fr">
+          <table class="tbl">
+            <tr><th>Product</th><th class="r">Price</th><th class="r">Stock</th><th>Offer</th></tr>
+            <tr><td><b>Levi's 511 Slim · Dark Indigo</b></td><td class="r mono">₹2,299</td><td class="r mono">34</td><td><span class="st live">20% off Levi's Jeans</span><div class="xs mut2">until 31 Oct</div></td></tr>
+            <tr><td><b>Classic crew tee · Black</b></td><td class="r mono">₹699</td><td class="r mono">120</td><td><span class="st live">Buy 2 T-shirts → 30%</span><div class="xs mut2">until 20 Oct</div></td></tr>
+            <tr><td><b>Oxford shirt · White</b></td><td class="r mono">₹1,299</td><td class="r mono">18</td><td><span class="xs mut2">No offer</span></td></tr>
+            <tr><td><b>Linen shirt · Sage</b></td><td class="r mono">₹849</td><td class="r mono">22</td><td><span class="st sched">Linen Week</span><div class="xs mut2">from 20 Oct</div></td></tr>
+          </table>
+          <div class="card">
+            <h4>Levi's 511 Slim · Dark Indigo</h4>
+            <div class="card tint" style="gap:4px"><span class="lbl">Offer now</span><span class="sm"><b>20% off Levi's Jeans</b> · 1 Oct – 31 Oct</span><span class="xs mut2">Given to 6 creators · in 9 of their posts</span><span class="btn btn-ghost btn-sm" style="justify-self:start">Open offer</span></div>
+            <div class="card tint" style="gap:4px"><span class="lbl">Next offer</span><span class="sm mut2">None. Free from 1 Nov.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O13 GIFT ITEMS TAB ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O13 · Listings → Gift items (added 28 Sep, in the listing engine)</span></div>
+    <h2>Gift items: things a brand gives away but never sells</h2>
+    <p class="prose">A silver coin, a water bottle, a tote. They live in their own tab in Listings, apart from normal products. Only 4 fields: name, photo, value, stock. No category, no sizes, no price. They never appear in the shop, in the pool builder's buy side, in "products without offers", or in creator terms. The only place they can be picked is a free gift offer's gift pool. <b>Things the brand also sells (like a cap) are not gift items.</b> They stay normal products and can be picked into a gift pool from the Browse/Search tabs.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/products/listing?tab=gifts</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="tabs"><span>Products</span><span>Offers</span><span>Products without offers <span class="mono">40</span></span><span class="act">Gift items <span class="mono">3</span></span></div>
+        <div class="hdr"><div><h3>Gift items</h3><div class="sub">Things you give away with a free gift offer. Never sold on their own.</div></div><span class="btn btn-ink">+ New gift item</span></div>
+        <div class="grid2" style="grid-template-columns:1.4fr 1fr">
+          <table class="tbl">
+            <tr><th>Gift item</th><th class="r">Value</th><th class="r">Stock</th><th>Used in</th></tr>
+            <tr><td><b>Silver coin 5g</b></td><td class="r mono">₹650</td><td class="r mono">50</td><td><span class="st live">Pattu Saree Gift</span><div class="xs mut2">until 31 Oct</div></td></tr>
+            <tr><td><b>Steel water bottle</b></td><td class="r mono">₹349</td><td class="r mono">120</td><td><span class="xs mut2">Not in any offer</span></td></tr>
+            <tr><td><b>Tote bag</b></td><td class="r mono">₹299</td><td class="r mono">80</td><td><span class="st live">Festive Gift</span><div class="xs mut2">until 20 Oct</div></td></tr>
+          </table>
+          <div class="card">
+            <h4>New gift item</h4>
+            <div class="field"><span class="lbl">Name</span><span class="inp fill">Silver coin 5g</span></div>
+            <div class="field"><span class="lbl">Photo</span><span class="inp">Upload…</span></div>
+            <div class="grid2">
+              <div class="field"><span class="lbl">Value (₹)</span><span class="inp fill">₹650</span><span class="hint">Shown to shoppers as "worth ₹650". Used in the gift check.</span></div>
+              <div class="field"><span class="lbl">Stock</span><span class="inp fill">50</span><span class="hint">Each gift given takes one. Restock here any time.</span></div>
+            </div>
+            <span class="btn btn-ink btn-sm" style="justify-self:start">Save gift item</span>
+          </div>
+        </div>
+        <div class="hint">A gift item follows the same one-offer rule: it can be in only one live offer's gift pool at a time.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O10 OFFER DETAIL (LIVE) ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag chg">CHANGES</span><span class="eyebrow">O10 · Opening a live offer</span></div>
+    <h2>A live offer: what it's doing, and what the brand can still change</h2>
+    <p class="prose">Today this pop-up only lists which creators use the offer. It becomes a page: the deal, the pool, the creators and their posts, and the only two changes allowed on a live offer (see question 1): <b>remove products</b> and <b>end the offer now</b>.</p>
+  </header>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><span>brand.inflx.in/dashboard/offers/…</span></div>
+    <div class="body">
+      <nav class="side"><div class="logo">INFLX</div><a class="act">▤ Listings</a></nav>
+      <div class="main">
+        <div class="row between"><span class="sm mut">← Offers</span><div class="row"><span class="btn btn-ghost btn-sm">Remove products</span><span class="btn btn-danger btn-sm">End offer now</span></div></div>
+        <div class="hdr"><div><h3>20% off Levi's Jeans</h3><div class="sub">Discount · 20% off, max ₹400 per item · 1 Oct – 31 Oct 2026</div></div><span class="st live">Live · 23 days left</span></div>
+        <div class="grid3">
+          <div class="card"><span class="lbl">Pool</span><span class="big">24</span><span class="xs mut2">products · frozen</span></div>
+          <div class="card"><span class="lbl">Creators given this offer</span><span class="big">6</span><span class="xs mut2">in 4 sets</span></div>
+          <div class="card"><span class="lbl">Live posts using it</span><span class="big">9</span><span class="xs mut2">approved by INFLX</span></div>
+        </div>
+        <table class="tbl">
+          <tr><th>Creator</th><th>Set</th><th class="r">Posts</th><th class="r">Sales</th></tr>
+          <tr><td><b>Asha R.</b></td><td class="sm">Diwali Denim · Set A</td><td class="r mono">3</td><td class="r mono">₹18,400</td></tr>
+          <tr><td><b>Kabir M.</b></td><td class="sm">Diwali Denim · Set A</td><td class="r mono">2</td><td class="r mono">₹6,900</td></tr>
+          <tr><td><b>Meera S.</b></td><td class="sm">Campus Fits · Set B</td><td class="r mono">1</td><td class="r mono">₹0</td></tr>
+        </table>
+        <div class="hint">Name, type, numbers and pool can't be edited once published. Creators' posts already promise this deal.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O11 REMOVE / END CONFIRM ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O11 · Removing products / ending early</span></div>
+    <h2>The brand sees exactly what happens to creators' posts</h2>
+    <p class="prose">This follows your 28 September rule: a removed product leaves every post using it, a post left with no products is taken out of the shop, the creators are told, and shoppers who have already started paying keep the old price.</p>
+  </header>
+  <div class="grid2">
+    <div class="web"><div class="dimbg">
+      <div class="dlg">
+        <h4 style="margin:0;font-size:16px">Remove 2 products from this offer?</h4>
+        <div class="sm">Levi's 511 Black · Levi's 512 Stone</div>
+        <div class="card warnbox" style="gap:4px">
+          <span class="sm"><b>They leave 4 live posts</b> by 3 creators (Asha, Kabir, Meera).</span>
+          <span class="sm"><b>1 post will be removed from the shop</b>. Meera's post had only these two products.</span>
+          <span class="xs">Each creator gets a notification. Shoppers already paying keep the offer price.</span>
+        </div>
+        <div class="hint">The 2 products become free right away and can go into another offer.</div>
+        <div class="row" style="justify-content:flex-end"><span class="btn btn-ghost">Cancel</span><span class="btn btn-ink">Remove products</span></div>
+      </div>
+    </div></div>
+    <div class="web"><div class="dimbg">
+      <div class="dlg">
+        <h4 style="margin:0;font-size:16px">End "20% off Levi's Jeans" now?</h4>
+        <div class="card nobox" style="gap:4px">
+          <span class="sm"><b>All 9 posts using this offer leave the shop.</b></span>
+          <span class="xs">Their photos and videos promise 20% off, so they can't stay up at full price. The 6 creators are told.</span>
+        </div>
+        <div class="hint">All 24 products become free right away.</div>
+        <div class="row" style="justify-content:flex-end"><span class="btn btn-ghost">Keep it running</span><span class="btn btn-danger">End offer now</span></div>
+      </div>
+    </div></div>
+  </div>
+</section>
+
+<!-- ============ O12 PRICE CHANGE WARNING ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW</span><span class="eyebrow">O12 · Editing a product's price in Listings</span></div>
+    <h2>Warning before a price change on a live product</h2>
+    <p class="prose">This is the approach agreed on 28 September: warn before saving, then tell creators, then recalculate the post's price band. Nothing is blocked, but if the new price breaks a bundle rule the brand is told plainly.</p>
+  </header>
+  <div class="web"><div class="dimbg">
+    <div class="dlg" style="max-width:600px">
+      <h4 style="margin:0;font-size:16px">Change Wrangler Regular · Blue from ₹1,999 to ₹2,799?</h4>
+      <div class="card warnbox" style="gap:5px">
+        <span class="sm"><b>This product is live</b> in the offer "Any 2 Jeans for ₹2,999" and in <b>5 posts by 3 creators</b>.</span>
+        <span class="sm">• The bundle price stays ₹2,999 for any 2, so shoppers who pick this pair save more.</span>
+        <span class="sm">• Those posts move from <b>Under ₹1,999</b> to <b>Under ₹2,999</b>.</span>
+        <span class="sm">• The 3 creators will be told the old and new price.</span>
+      </div>
+      <div class="card nobox" style="gap:3px"><span class="err">Also breaks a bundle rule</span><span class="xs">The costliest item would be more than 1.5 × the cheapest (₹2,799 vs ₹1,699). The bundle keeps running; please review it.</span></div>
+      <div class="hint">Shoppers already paying keep the old price.</div>
+      <div class="row" style="justify-content:flex-end"><span class="btn btn-ghost">Cancel</span><span class="btn btn-ink">Change price</span></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ PHONE BOARD ============ -->
+<section class="board">
+  <header>
+    <div class="row wrapx"><span class="tag new">NEW · for judging</span><span class="eyebrow">P1–P4 · the same pool builder on the brand phone app</span></div>
+    <h2>Could a brand build an offer on the phone?</h2>
+    <p class="prose">You said we'd do the phone too if it isn't too hard. The type, sub-type, dates, numbers and review steps are simple forms and fit a phone easily. The only hard part is the product pool, so that's what is drawn here: drilling into a category, filters in a bottom sheet, and a running count you can open. <b>My view: it works</b>, with one limit: ticking dozens of products one by one is slow on a phone, so filters do most of the work. You decide.</p>
+  </header>
+  <div class="phones">
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="bar"><span class="ib">←</span><h5>Products · step 4 of 6</h5></div>
+        <div class="row" style="gap:6px"><span class="opt sel">Categories</span><span class="opt">Search</span></div>
+        <div class="xs mut">Men › Bottomwear</div>
+        <div class="lrow"><div class="t"><b>Jeans</b><span class="xs mut2">50 products · 2 locked</span></div><span>›</span></div>
+        <div class="lrow"><div class="t"><b>Trousers</b><span class="xs mut2">22 products</span></div><span>›</span></div>
+        <div class="lrow"><div class="t"><b>Shorts</b><span class="xs mut2">14 products</span></div><span>›</span></div>
+        <div class="lrow"><div class="t"><b>Joggers</b><span class="xs mut2">9 products</span></div><span>›</span></div>
+        <div class="count" style="margin-top:auto">Your pool <span>0 products</span></div>
+      </div></div>
+      <div class="cap"><b>P1 · Drill into a category</b><span>Segment › category › leaf, the same tree as listing.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="bar"><span class="ib">←</span><h5>Jeans</h5><span class="ib">⚲</span></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap"><span class="opt">All 50</span><span class="opt">Tick some</span><span class="opt sel">Filters · 3</span></div>
+        <div class="lrow"><span class="cb on">✓</span><div class="t"><b>Levi's 511 · Indigo</b><span class="xs mut2">₹2,299</span></div></div>
+        <div class="lrow"><span class="cb on">✓</span><div class="t"><b>Levi's 512 · Stone</b><span class="xs mut2">₹2,499</span></div></div>
+        <div class="lrow" style="opacity:.55"><span class="cb dis"></span><div class="t"><b>Levi's 511 · Light</b><span class="xs mut2">🔒 Denim Days · till 15 Oct</span></div></div>
+        <div class="sheet">
+          <b class="sm">Filters · all must match</b>
+          <div class="row" style="gap:5px;flex-wrap:wrap"><span class="opt sel">Slim ✕</span><span class="opt sel">Levi's ✕</span><span class="opt sel">₹1,500–2,500 ✕</span></div>
+          <div class="pbtn">Add 10 to pool</div>
+        </div>
+      </div></div>
+      <div class="cap"><b>P2 · Filters in a bottom sheet</b><span>Locked products are greyed with the offer name and date.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="bar"><span class="ib">←</span><h5>Search</h5></div>
+        <span class="inp fill" style="width:100%">⚲ cotton shirt</span>
+        <div class="lrow"><span class="cb on">✓</span><div class="t"><b>Cotton Oxford · White</b><span class="xs mut2">₹1,299</span></div></div>
+        <div class="lrow"><span class="cb on">✓</span><div class="t"><b>Cotton Oxford · Blue</b><span class="xs mut2">₹1,299</span></div></div>
+        <div class="lrow"><span class="cb"></span><div class="t"><b>Cotton Kurta Shirt</b><span class="xs mut2">₹999</span></div></div>
+        <div class="count" style="margin-top:auto">Your pool <span>12 products</span></div>
+      </div></div>
+      <div class="cap"><b>P3 · Search and tick</b><span>The pool count stays at the bottom the whole time.</span></div>
+    </div>
+    <div class="shot">
+      <div class="phone"><div class="sb"><span>9:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="bar"><span class="ib">←</span><h5>Your pool · 12</h5></div>
+        <div class="card" style="gap:2px"><b class="sm">Jeans · filters</b><span class="xs mut2">Slim + Levi's + ₹1,500–2,500 · 10</span></div>
+        <div class="or">— OR —</div>
+        <div class="card" style="gap:2px"><b class="sm">Search "cotton shirt"</b><span class="xs mut2">2 ticked</span></div>
+        <div class="xs mut2">1 duplicate removed · 2 locked skipped</div>
+        <div class="lrow"><span class="cb"></span><span class="xs">Auto-add new matching products</span></div>
+        <div class="pbtn">Next: numbers</div>
+      </div></div>
+      <div class="cap"><b>P4 · Review the pool</b><span>The same pool summary as the website's right-hand panel.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUESTIONS ============ -->
+<section class="board">
+  <header>
+    <div class="eyebrow">Answered · board locked 28 Sep 2026</div>
+    <h2>Six questions these screens raised</h2>
+    <p class="prose">The founder locked the web board on 28 September ("mockups for web is locked and fine"), so every recommendation below stands as drawn. Offers are built on the website first; the phone pool builder (P1–P4) comes after.</p>
+  </header>
+  <div class="qs">
+    <div class="q"><b>1 · What can a brand change on a live offer?</b><span>Creators' posts already promise the deal, so changing it would make those posts untrue.</span><span class="rec">Rec: only "remove products" and "end offer now" (O10, O11). Name, numbers, pool additions and dates are locked once published. To change the deal, end it and build a new one.</span></div>
+    <div class="q"><b>2 · Does a draft lock its products?</b><span>If drafts locked, a forgotten draft could block products for months.</span><span class="rec">Rec: no. Products lock only when the offer is published (Scheduled or Live). The final lock check runs at the moment of publishing (O7 shows the blocked case).</span></div>
+    <div class="q"><b>3 · Deleting offers</b><span></span><span class="rec">Rec: drafts can be deleted. A published offer can't be deleted, only ended, so sales history and creators' records stay intact.</span></div>
+    <div class="q"><b>4 · Status names</b><span></span><span class="rec">Rec: Draft · Scheduled (published, start date not reached) · Live · Ended.</span></div>
+    <div class="q"><b>5 · "Auto-add new products"</b><span>Your doc makes it optional and off by default.</span><span class="rec">Rec: it works only for "Category → all" and "Category → filters" sources, and skips locked products. New products join the pool, and creators can pick them for <i>new</i> posts. Existing posts don't change.</span></div>
+    <div class="q"><b>6 · Phone or website?</b><span>See P1–P4.</span><span class="rec">Rec: build the website first (it's the bigger screen for pools), then the phone with the same six steps, since the drawings show it's workable. Your call.</span></div>
+  </div>
+</section>
+
+<footer>INFLX · Level 1 of 4 (offer creation) · mockups v1 · next: Level 2, creator terms in a collaboration · decisions recorded in Docs/OFFER_POSTS_PROGRAMME_DECISIONS.md</footer>
+</div>
+</body></html>

@@ -1,0 +1,20 @@
+{
+  "feature": "offer-builder-v2",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": true,
+  "impact_reviewed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 2026-09-28: \"mockups for web is locked and fine\"; Gift items tab added at founder request same day; six board questions stand as recommended)",
+  "mockup_locked_at": "2026-09-28T00:00:00+05:30",
+  "notes": "Level 1 of 4 of the offer -> terms -> posts programme (Docs/OFFER_POSTS_PROGRAMME_DECISIONS.md). Mockups v1 drawn 2026-09-28 (O1-O12 web + P1-P4 phone pool builder), six open questions on the board. No implementation until mockup_locked and approved. Web boards O1-O13 LOCKED 2026-09-28. Phone pool builder P1-P4 NOT locked (website first, phone after). Rules: Docs/OFFER_TERMS_POSTS_RULES.md.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "feature": "follower-app-v2",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Follower (shopper) app skeleton, from the founder's 'Followers app skeleton ideas' + 11 accepted recommendations (2026-09-28). Rules: Docs/OFFER_TERMS_POSTS_RULES.md §5. Mockups v1 F1-F13. Not drawn: Discover (founder to explain), bag/checkout/returns/addresses/pay at store (next discussion). Survey facts: follower_follows + follower_wishlist_items exist; wishlist item has NO post_id (must be added so saves credit the post); city = ref_cities 146 offered cities with lat/lng (mig 190).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

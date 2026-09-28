@@ -1,0 +1,20 @@
+{
+  "feature": "creator-terms-v2",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": true,
+  "impact_reviewed": false,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 2026-09-28: \"pls lock the screens\"; the three board questions stand as recommended)",
+  "mockup_locked_at": "2026-09-28T00:00:00+05:30",
+  "notes": "Level 2 of 4 of the offer -> terms -> posts programme. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §2. Mockups v1 drawn 2026-09-28 (T1-T7 brand app, C1-C5 creator app), derived from features/item5-invitations (locked) styles and parts; three open questions on the board. Depends on features/offer-builder-v2. LOCKED 2026-09-28 with Q1 (ending an offer drops it from unsigned invitations; empty invitation auto-withdrawn), Q2 (All products without offers frozen at sending), Q3 (show example earnings per offer).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
