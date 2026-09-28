@@ -12,6 +12,8 @@ export const shortDate7 = (d) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || ''));
   return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}` : String(d || '');
 };
+/** creator-terms-v2 (C4): an offer's dates on the agreement, "1 Oct – 31 Oct". */
+export const offerDates7 = (o) => `${shortDate7(o.starts_on)} – ${shortDate7(o.ends_on)}`;
 /** '2026-10-17' → '17 Oct 2026'. The document, and dates that must be unambiguous. */
 export const longDate7 = (d) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || ''));

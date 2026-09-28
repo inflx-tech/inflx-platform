@@ -73,7 +73,8 @@ async function evaluate(campaignId, brandId, conn = null) {
   const setIds = sets.map(s => s.id);
   const { rows: cis } = await conn.query(
     `SELECT ci.id, ci.set_id, ci.status, ci.influencer_id, ci.agreement_id,
-            ci.alloc_scope, ci.alloc_product_ids, ci.alloc_category_node_id,
+            ci.alloc_scope, ci.alloc_product_ids, ci.alloc_category_node_id, ci.sell_v2,
+            (SELECT count(*)::int FROM collab_offers co WHERE co.campaign_influencer_id = ci.id AND co.dropped_at IS NULL) AS sell_offer_count,
             ci.offer_type, ci.offer_config_json, ci.brand_offer_id, ci.offer_valid_until,
             u.name AS influencer_name,
             a.status AS agreement_status, a.expires_at AS agreement_expires_at
@@ -104,6 +105,8 @@ async function evaluate(campaignId, brandId, conn = null) {
   for (const ci of cis) {
     const set = setById.get(ci.set_id);
     if (!set || !SELLING_GOALS.includes(set.goal)) continue;
+    // creator-terms-v2: new terms carry offers or products (refused at sending otherwise).
+    if (ci.sell_v2) continue;
     if (!ci.alloc_scope) {
       blockers.push(blocker(
         'NO_ALLOCATION',
@@ -145,7 +148,7 @@ async function evaluate(campaignId, brandId, conn = null) {
     if (!members.length) continue;                       // emptiness is its own warning below
     // Per creator, which is where an offer actually lives. A brand who gives ONE creator an
     // offer has answered the question for that set.
-    const someoneHasOwn = members.some(ci => ci.offer_type || ci.brand_offer_id);
+    const someoneHasOwn = members.some(ci => ci.offer_type || ci.brand_offer_id || Number(ci.sell_offer_count) > 0);
     if (!someoneHasOwn && liveGlobalOffers.length === 0) {
       warnings.push({
         code: 'NO_SHOPPER_OFFER',

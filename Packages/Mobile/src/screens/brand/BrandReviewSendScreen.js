@@ -16,7 +16,7 @@ import { COPY } from '../../components/settings/copy';
 import { Header, s as base } from './BrandPitchSettingsScreen';
 import { Stepper5, LockedSetCard5, ReviewRow5 } from '../../components/invitations/bits5';
 import { C5, MSG5 } from '../../components/invitations/copy5';
-import { getDraft, clearDraft, clearBasket, removeCreators, toServer, summaryLine, validateLocal } from '../../components/invitations/draft5';
+import { getDraft, clearDraft, clearBasket, removeCreators, toServer, summaryLine, validateLocal, endsSoonDays } from '../../components/invitations/draft5';
 
 const R = C5.review;
 
@@ -98,6 +98,9 @@ export default function BrandReviewSendScreen({ navigation, route }) {
     await send();
   }
 
+  const soonList = draft.creators.map(c => endsSoonDays(draft.terms[c.id] || {})).filter(d => d != null);
+  const soonCount = soonList.length;
+  const soonDays = soonCount ? Math.min(...soonList) : 0;
   return (
     <View style={base.screen} testID="review-send">
       <Header title={R.title} onBack={() => navigation.goBack()} />
@@ -106,9 +109,11 @@ export default function BrandReviewSendScreen({ navigation, route }) {
         <LockedSetCard5 set={draft.set} showCutoff />
         {failedIds.length ? <View testID="failed-banner"><Banner title={R.failedTitle(failedIds.length)} body={R.failedBody} /></View>
           : belowCount ? <View style={s.warn} testID="below-banner"><Text style={s.warnText}>{R.belowMany(belowCount)}</Text></View> : null}
+        {/* creator-terms-v2 (T7): an offer ending within 7 days after posting */}
+        {!failedIds.length && soonCount ? <View style={s.warn} testID="ends-soon-banner"><Text style={s.warnText}>⚠ {R.endsSoonMany(soonCount, soonDays)}</Text></View> : null}
         {draft.creators.map((c, i) => (
           <ReviewRow5 key={c.id} name={c.name} avatarUrl={c.avatarUrl} line={summaryLine(goal, draft.terms[c.id] || {})}
-            source={c.sourceGroupName || null} below={(warnings[c.id] || []).length > 0} error={failures[c.id]}
+            source={c.sourceGroupName || null} below={(warnings[c.id] || []).length > 0} endsSoon={endsSoonDays(draft.terms[c.id] || {}) != null} error={failures[c.id]}
             onPress={() => navigation.navigate('BrandCreatorTerms', { campaignId, setId, index: i })} testID={`review-row-${c.id}`} />
         ))}
         <Text style={s.hint}>{R.hint(draft.set.cutoff)}</Text>

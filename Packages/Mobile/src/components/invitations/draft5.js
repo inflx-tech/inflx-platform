@@ -24,7 +24,7 @@
  * A creator carries the group she arrived from. One send can now mix sources, so "where this
  * came from" is per creator and no longer one label for the whole batch.
  */
-import { MSG5, DELIVERABLE_TYPES, USAGE_PLACES, deliverablesShort, rupees5, fmtPct5, SCOPE_LABEL } from './copy5';
+import { MSG5, DELIVERABLE_TYPES, USAGE_PLACES, deliverablesShort, rupees5, fmtPct5 } from './copy5';
 
 const drafts = new Map();
 /** setId → Map(creatorId → creator). The picker's selection, survives leaving the picker. */
@@ -108,10 +108,12 @@ export function copyTermsToAll(setId, fromId) {
     d.terms[c.id] = {
       ...mine,
       commissionPct: src.commissionPct, fee: src.fee,
-      scope: src.scope, categoryNodeId: src.categoryNodeId, categoryName: src.categoryName, productIds: [...(src.productIds || [])], products: [...(src.products || [])],
+      // creator-terms-v2 (rules 2.5): copies the offer selection and the product list too.
+      sellOffers: (src.sellOffers || []).map(o => ({ ...o })),
+      sellMode: src.sellMode || 'none', sellProductIds: [...(src.sellProductIds || [])],
+      sellProducts: [...(src.sellProducts || [])], sellAllCount: src.sellAllCount || 0,
       deliverables: (src.deliverables || []).map(r => ({ ...r })),
       usage: { ...src.usage, places: [...(src.usage.places || [])] },
-      offer: src.offer && src.offer.kind === 'library' ? { ...src.offer } : (src.offer && src.offer.kind === 'special' ? mine.offer : src.offer),
     };
   }
 }
@@ -130,12 +132,13 @@ export function fromPoolTerms(goal, s) {
 export function defaultTerms(goal) {
   return {
     commissionPct: '', fee: '',
-    scope: 'store', categoryNodeId: null, categoryName: null, productIds: [], products: [],
+    // creator-terms-v2 (rules §2): what she can sell = her offers + products without offers.
+    //   sellOffers: [{ id, name, products, deal, type_label, ends_on, ends_soon }] — linked, not copied
+    //   sellMode: 'none' | 'all' | 'chosen'  ·  sellProductIds / sellProducts (chosen)  ·  sellAllCount (all)
+    sellOffers: [], sellMode: 'none', sellProductIds: [], sellProducts: [], sellAllCount: 0,
     deliverables: goal === 'engagement' ? [{ type: 'reel', count: 1 }] : [],
     note: '',
     usage: { on: false, durationDays: 30, places: [] },
-    offer: null, // null | { kind:'library', brandOfferId, name, line } | { kind:'special', offerType, offerConfigJson, name, saveToLibrary, validFrom, validUntil, line }
-    offerValidFrom: null, offerValidUntil: null,
   };
 }
 
@@ -149,8 +152,9 @@ export function validateLocal(goal, t) {
     const c = num(t.commissionPct);
     if (c == null || Number.isNaN(c)) e.commissionPct = MSG5.COMMISSION_REQUIRED;
     else if (c <= 0 || c > 100) e.commissionPct = MSG5.COMMISSION_RANGE;
-    if (t.scope === 'category' && !t.categoryNodeId) e.scope = MSG5.SCOPE_CATEGORIES;
-    if (t.scope === 'products' && !(t.productIds || []).length) e.scope = MSG5.SCOPE_PRODUCTS;
+    // creator-terms-v2 (rules 2.2): at least one offer or one product without an offer. The screen
+    // words it with her first name (MSG5.SELL_NOTHING).
+    if (!sellProductCount(t) && !(t.sellOffers || []).length) e.sell = 'SELL_NOTHING';
   }
   if (goal === 'engagement') {
     const f = num(t.fee);
@@ -182,15 +186,11 @@ export function toServer(goal, t) {
   const out = {};
   if (selling(goal)) {
     out.commissionPct = num(t.commissionPct);
-    out.scope = t.scope || 'store';
-    if (t.scope === 'category') { out.categoryNodeId = t.categoryNodeId; out.category = t.categoryName; }
-    if (t.scope === 'products') out.productIds = t.productIds || [];
-    if (t.offer && t.offer.kind === 'library') out.offer = { brandOfferId: t.offer.brandOfferId };
-    if (t.offer && t.offer.kind === 'special') {
-      out.offer = { offerType: t.offer.offerType, offerConfigJson: t.offer.offerConfigJson, name: t.offer.name || null, saveToLibrary: !!t.offer.saveToLibrary };
-      if (t.offer.validFrom) out.offerValidFrom = t.offer.validFrom;
-      if (t.offer.validUntil) out.offerValidUntil = t.offer.validUntil;
-    }
+    // creator-terms-v2: offers are linked by id; the product list is frozen by the server at sending.
+    out.offers = (t.sellOffers || []).map(o => o.id);
+    out.productsWithoutOffers = t.sellMode === 'chosen'
+      ? { mode: 'chosen', productIds: [...(t.sellProductIds || [])] }
+      : { mode: t.sellMode === 'all' ? 'all' : 'none' };
   }
   if (goal !== 'conversion') out.fee = num(t.fee);
   if (goal === 'engagement') {
@@ -201,20 +201,34 @@ export function toServer(goal, t) {
   return out;
 }
 
-/** "10% · whole store · Festive 15%" / "₹8,000 · 1 reel, 2 stories" / "₹5,000 + 10% · Sarees · special offer" */
+/** How many products without offers she gets (chosen → the ticked ones; all → the list's size). */
+export function sellProductCount(t) {
+  if (t.sellMode === 'chosen') return (t.sellProductIds || []).length;
+  if (t.sellMode === 'all') return t.sellAllCount || 0;
+  return 0;
+}
+
+/** "2 offers + 12 products" · "1 offer · no other products" · "40 products at normal price" (T7) */
+export function sellWords(t) {
+  const o = (t.sellOffers || []).length, p = sellProductCount(t);
+  const off = `${o} ${o === 1 ? 'offer' : 'offers'}`, pr = `${p} ${p === 1 ? 'product' : 'products'}`;
+  if (o && p) return `${off} + ${pr}`;
+  if (o) return `${off} · no other products`;
+  if (p) return `${pr} at normal price`;
+  return 'nothing to sell yet';
+}
+
+/** Days after posting of the soonest-ending offer that "ends soon" (T7 chip), or null. */
+export function endsSoonDays(t) {
+  const soon = (t.sellOffers || []).filter(o => o.ends_soon).map(o => o.ends_soon.days_after_posting);
+  return soon.length ? Math.min(...soon) : null;
+}
+
+/** "10% · 2 offers + 12 products" / "₹8,000 · 1 reel, 2 stories" / "₹5,000 + 8% · 1 offer · no other products" */
 export function summaryLine(goal, t) {
   if (goal === 'engagement') return [t.fee !== '' && t.fee != null ? rupees5(t.fee) : null, deliverablesShort(t.deliverables)].filter(Boolean).join(' · ');
   const money = goal === 'hybrid' ? [t.fee !== '' && t.fee != null ? rupees5(t.fee) : null, fmtPct5(t.commissionPct)].filter(Boolean).join(' + ') : fmtPct5(t.commissionPct);
-  const scope = t.scope === 'category' ? (t.categoryName || 'a category') : t.scope === 'products' ? `${(t.productIds || []).length} ${(t.productIds || []).length === 1 ? 'product' : 'products'}` : 'whole store';
-  const offer = t.offer ? (t.offer.name || (t.offer.kind === 'special' ? 'special offer' : 'saved offer')) : 'no offer';
-  return [money, scope, offer].filter(Boolean).join(' · ');
-}
-
-/** The value shown on the "What she can sell" row. */
-export function scopeValue(t) {
-  if (t.scope === 'category') return t.categoryName || SCOPE_LABEL.category;
-  if (t.scope === 'products') return (t.productIds || []).length ? `${t.productIds.length} ${t.productIds.length === 1 ? 'product' : 'products'}` : SCOPE_LABEL.products;
-  return SCOPE_LABEL.store;
+  return [money, sellWords(t)].filter(Boolean).join(' · ');
 }
 
 export const usagePlaceLabel = (code) => (USAGE_PLACES.find(p => p[0] === code) || [])[1] || code;

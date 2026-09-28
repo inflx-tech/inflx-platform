@@ -1,12 +1,12 @@
 {
   "feature": "creator-terms-v2",
-  "spec_version": "0.1.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 2026-09-28: \"Can we move to level 2 ..creator terms? ... pls go through those and start building\" — contract written from the locked boards T1-T7, C1-C5 and rules v1.4 §2; build decisions D1-D14 in 01-spec.md delegated under standing autonomy)",
+  "approved_at": "2026-09-28T00:00:00+05:30",
   "preview_reviewed": true,
-  "impact_reviewed": false,
+  "impact_reviewed": true,
   "mockup_locked": true,
   "mockup_locked_by": "founder (chat 2026-09-28: \"pls lock the screens\"; the three board questions stand as recommended)",
   "mockup_locked_at": "2026-09-28T00:00:00+05:30",
@@ -15,6 +15,17 @@
     "qa_all_green": false,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-09-28T00:00:00+05:30",
+    "backend_tests": "full serial suite vs the Level 1 record: tests 1695->1713, passed 1447->1465, failed 220->220. 20 new all passing; 0 newly failing; 2 gone = renamed in place to the new rules (06-diff/backend-compare-final.txt); stale fixtures converted with assertions unchanged.",
+    "phone_tests": "full phone suite 59/59 suites, 723/723 tests (was 698 + a failing offerParity suite): offerParity rewritten against a frozen record of the retired web builder (business-rule drift, rules 1.13), 5 new creator checks, item5Brand terms/review blocks rewritten to T1-T7",
+    "web": "next build clean; End offer warning walked in the in-app browser on the scratch database (06-diff/notes.md)",
+    "migration_rehearsal": "run-194.js --dry then --apply twice on inflx_preview (at 193): all 9 structural checks OK, no money moved, no collaboration changed",
+    "found_in_passing": "an invitation still linked to an already-ended offer was not withdrawn when its last live offer ended — fixed (check 15b)",
+    "note": "released stays false per GOVERNANCE.md §5. Not deployed.",
+    "checks": "21 / 21 pass (incl. 15b) — 03-expected-outputs.md"
   }
 }

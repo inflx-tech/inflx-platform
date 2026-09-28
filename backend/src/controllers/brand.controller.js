@@ -731,7 +731,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: existing } = await db.query(
-    `SELECT id, price FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, name, price, stock, is_active, pushed_to_store FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.pid, brand.id]
   );
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -783,6 +783,9 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (req.body.price !== undefined) {
     await offerLife.afterPriceChange(brand.id, req.params.pid, existing[0].price, rows[0].price);
   }
+  // creator-terms-v2 (rules 2.8, 2.11): out of stock, taken off sale, or a new price on a product
+  // she sells at normal price — the creators who can sell it are told. Never fails the save.
+  await require('../services/creatorTerms.service').afterProductChange(req.params.pid, existing[0], rows[0]);
 
   return success(res, { product: rows[0], affected_offers });
 });

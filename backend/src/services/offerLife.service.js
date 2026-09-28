@@ -252,6 +252,8 @@ async function view(brandId, offerId, { today = todayInIndia() } = {}) {
     checks,
     creators: creators.map((c) => ({ campaign_influencer_id: c.campaign_influencer_id, name: c.creator_name, handle: c.instagram_handle, set_name: c.set_name, campaign_name: c.campaign_name, status: c.status, posts: 0, sales: null })),
     posts: { live: 0, note: 'Shoppable posts come next. Posts using this offer will show here.' },
+    // creator-terms-v2 (founder Q1): the warning before ending it.
+    unsigned_invitations: offer.status === 'draft' ? 0 : await require('./creatorTerms.service').unsignedWith(offer.id),
   };
 }
 
@@ -381,8 +383,11 @@ async function endNow(brandId, offerId, { today = todayInIndia() } = {}) {
     return { offer, freed: rowCount };
   });
   const brand = await brandName(brandId);
+  // creator-terms-v2 (rules 2.8, founder Q1): first it drops out of UNSIGNED invitations (those
+  // creators are told, an invitation left empty is withdrawn); then every signed creator is told.
+  const drop = await require('./creatorTerms.service').dropEndedOffer(res.offer.id, { offerName: res.offer.name, brandName: brand });
   const told = await tellCreators(res.offer.id, NOTIFY.ended(res.offer.name, brand));
-  return { ended: true, freed: res.freed, creators_told: told };
+  return { ended: true, freed: res.freed, creators_told: told + drop.dropped, invitations_dropped: drop.dropped, invitations_withdrawn: drop.withdrawn };
 }
 
 // ── removing products (rules 1.10; guards: spec D8) ──────────────────────────

@@ -64,6 +64,10 @@ import ShootCounterScreen from '../screens/shared/ShootCounterScreen';
 import UploadProbeScreen from '../screens/influencer/UploadProbeScreen';
 // Item 12 — her content step, after the shoot. Contract: features/item12-content
 import ContentScreen from '../screens/influencer/ContentScreen';
+// creator-terms-v2 — what she can sell (C2), one offer (C3), her notices (C5).
+import CreatorSellScreen from '../screens/influencer/CreatorSellScreen';
+import CreatorOfferScreen from '../screens/influencer/CreatorOfferScreen';
+import CreatorNotificationsScreen from '../screens/influencer/CreatorNotificationsScreen';
 import { tabScreenOptions } from './BrandNavigator';
 
 const Tab = createBottomTabNavigator();
@@ -113,6 +117,10 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="RemoteAddress" component={RemoteAddressScreen} />
       {/* Item 12 — the content step. */}
       <CollabsStack.Screen name="Content" component={ContentScreen} />
+      {/* creator-terms-v2 — Contract: features/creator-terms-v2 */}
+      <CollabsStack.Screen name="CreatorSell" component={CreatorSellScreen} />
+      <CollabsStack.Screen name="CreatorOffer" component={CreatorOfferScreen} />
+      <CollabsStack.Screen name="CreatorNotifications" component={CreatorNotificationsScreen} />
     </CollabsStack.Navigator>
   );
 }

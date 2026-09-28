@@ -757,6 +757,8 @@ async function thread(ctx, side) {
   const goal = ctx.goal;
   const turns = await turnsOf(ctx.neg_id);
   const zero = termsOf(ctx);
+  const sellBlock = ctx.sell_v2 && goal !== 'engagement'
+    ? (await require('./creatorTerms.service').sellFor([ctx])).get(ctx.id) : null;
   let prev = zero;
   const shaped = [];
   for (const t of turns) {
@@ -825,7 +827,10 @@ async function thread(ctx, side) {
     } : { id: null, open: false, whoseMove: null, roundLimit, countersUsed: 0, isLastRound: roundLimit === 1, noRoundsLeft: false, outcome: null, endedAt: null, startedAt: null },
     current, currentLine: termsLine(goal, current),
     turns: shaped.reverse(),
-    invitation: { terms: zero, termsLine: termsLine(goal, zero), sentAt: ctx.invited_at || ctx.created_at, scopeWords: goal !== 'engagement' ? scopeWords(ctx) : null, offerName: goal !== 'engagement' ? offerName(ctx) : null },
+    // creator-terms-v2: the new terms read "2 offers + 12 products"; offers can't be countered (2.6).
+    invitation: { terms: zero, termsLine: termsLine(goal, zero), sentAt: ctx.invited_at || ctx.created_at,
+      scopeWords: goal !== 'engagement' ? (sellBlock ? sellBlock.words : scopeWords(ctx)) : null,
+      offerName: goal !== 'engagement' && !sellBlock ? offerName(ctx) : null },
     moveRequest: ctx.move_requested_at ? { goLiveDate: ctx.deferred_go_live_date ? calendarDay(ctx.deferred_go_live_date) : null, shootMode: ctx.deferred_shoot_mode || null, note: ctx.deferred_note || null, requestedAt: ctx.move_requested_at, answer: ctx.move_answer || null, answeredAt: ctx.move_answered_at || null } : null,
     pool: ctx.pool_id ? { entryId: ctx.pool_id, state: ctx.pool_state, expiresAt: ctx.pool_expires_at } : null,
     can,

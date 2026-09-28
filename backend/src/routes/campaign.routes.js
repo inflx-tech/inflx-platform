@@ -63,6 +63,9 @@ router.get ('/:id/sets/:sid/group-check/:groupId',            ...brandAuth, invC
 router.post('/:id/sets/:sid/eligibility',                     ...brandAuth, invCtrl.checkEligibility);
 router.post('/:id/sets/:sid/invitations',                     ...brandAuth, checkQuota('inviteInfluencer'), invCtrl.sendInvitations);
 router.get ('/:id/sets/:sid/invitations/:ciId',               ...brandAuth, invCtrl.invitationDetail);
+// creator-terms-v2 — what the brand can give for this set (T2, T3, T4)
+router.get ('/:id/sets/:sid/offer-choices',                   ...brandAuth, invCtrl.offerChoices);
+router.get ('/:id/sets/:sid/products-without-offers',         ...brandAuth, invCtrl.productsWithoutOffers);
 router.post('/:id/sets/:sid/invitations/:ciId/withdraw',      ...brandAuth, invCtrl.withdraw);
 router.post('/:id/sets/:sid/invitations/:ciId/remove',        ...brandAuth, invCtrl.remove);
 

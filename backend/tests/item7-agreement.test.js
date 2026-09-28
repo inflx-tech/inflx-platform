@@ -48,7 +48,7 @@ async function world(goal = 'engagement', { terms = null, setOver = {}, accept =
   const s = await set(b, c.id, { goal, ...setOver });
   const cr = await creator({ name: 'Tanvi Suresh' });
   const t = terms || (goal === 'engagement' ? CONTENT : goal === 'hybrid' ? HYBRID : SALE);
-  const r = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms: t }] });
+  const r = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, t) }] });
   if (r.status !== 201) throw new Error(`invite: ${JSON.stringify(r.body)}`);
   const ciId = r.body.data.rows[0].id;
   if (accept) await api.post(`/influencers/me/invitations/${ciId}/accept`, cr.token);
@@ -113,7 +113,10 @@ describe('the preview and sending (checks 1–9)', () => {
     expect(t.money.commissionPct).toBe(12);
     expect(t.money.fee).toBeNull();
     expect(t.money.split).toBeNull();
-    expect(t.sell.words).toBe('Anything in the store');
+    // creator-terms-v2 (rules 2.7): offers + products without offers, not "Anything in the store".
+    // The fixture gives all products without offers (helpers/sell.js), one product here.
+    expect(t.sell.words).toBe('1 product at normal price');
+    expect(t.sell.offers).toEqual([]);
     expect(t.work.minShoppablePosts).toBe(1);
     expect(t.work.deliverables).toBeNull();
     expect(t.work.usageRights).toBeNull();
@@ -150,11 +153,16 @@ describe('the preview and sending (checks 1–9)', () => {
     expect((await preview(b)).body.data.agreement.terms.note).toBeNull();
   });
 
-  it('the follower offer, the campaign description and the street address never appear (check 5)', async () => {
+  // creator-terms-v2 (rules 2.7) replaced "the follower offer never appears": the agreement now
+  // lists HER OFFERS as of signing (proved in creator-terms-v2.test.js). What still never appears:
+  // the retired follower/special offer, the campaign description and the street address.
+  it('the retired follower offer, the campaign description and the street address never appear (check 5)', async () => {
     const w = await world('conversion', { terms: { ...SALE, offer: { offerType: 'discount', offerConfigJson: { sub_type: 'pct', value: 15, scope: 'store' }, name: 'Festive 15% off Sarees' } } });
     const r = await preview(w);
-    expect(JSON.stringify(r.body.data.agreement.terms)).not.toMatch(LEAK);
-    expect(JSON.stringify(r.body.data.agreement.terms)).not.toMatch(/offer/i);
+    const text = JSON.stringify(r.body.data.agreement.terms);
+    expect(text).not.toMatch(LEAK);
+    expect(text).not.toMatch(/Festive 15% off Sarees|follower offer|special offer|offer_config/i);
+    expect(r.body.data.agreement.terms.sell.offers).toEqual([]);
   });
 
   it('the three tranche amounts sum exactly to the fee, including odd amounts (checks 6, 34)', async () => {

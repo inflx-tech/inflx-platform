@@ -1,11 +1,13 @@
 /**
  * BrandCreatorTermsScreen — I3 (Pay for Sale), I4 (Pay for Content), I5 (Hybrid): one screen
  * keyed by the set's Aim, with the set's own terms locked at the top, the creator's minimums as
- * a warning that never blocks, "Use these terms for everyone", and the follower offer sheets.
+ * a warning that never blocks, "Use these terms for everyone", and what she can sell.
+ * creator-terms-v2 (T1, T5; rules §2): what she can sell is her OFFERS + PRODUCTS WITHOUT OFFERS —
+ * the whole-store / category / products chips and the follower / special offer sheets are retired.
  * The draft lives in the app (draft5) until Send.
  * Contract: features/item5-invitations · prompt §6.3–§6.5, §7
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
@@ -15,12 +17,13 @@ import { useToast } from '../../components/settings/feedback';
 import { Header, NumberField, s as base } from './BrandPitchSettingsScreen';
 import { TextField4 } from '../../components/campaigns/bits4';
 import { Stepper5, LockedSetCard5, MinBox5, DeliverablesEditor5 } from '../../components/invitations/bits5';
-import { OfferSheet5, SpecialOfferSheet5, ScopePickerSheet5, loadBrandProducts } from '../../components/invitations/sheets5';
-import { C5, MSG5, USAGE_DURATIONS, USAGE_PLACES, SCOPE_LABEL, first, rupees5, fmtPct5, MIN_SHOPPABLE_POSTS } from '../../components/invitations/copy5';
+import { OffersSheet, ProductsSheet, ChooseProductsModal } from '../../components/invitations/sellSheets';
+import { C5, MSG5, USAGE_DURATIONS, USAGE_PLACES, first, rupees5, fmtPct5, MIN_SHOPPABLE_POSTS } from '../../components/invitations/copy5';
 import { C6 } from '../../components/negotiation/copy6';
-import { getDraft, setTerms, setMinimums, copyTermsToAll, defaultTerms, validateLocal, scopeValue, markOver50Confirmed } from '../../components/invitations/draft5';
+import { getDraft, setTerms, setMinimums, copyTermsToAll, defaultTerms, validateLocal, sellProductCount, markOver50Confirmed } from '../../components/invitations/draft5';
 
 const TT = C5.terms;
+const SL = C5.sell;
 
 export default function BrandCreatorTermsScreen({ navigation, route }) {
   const { campaignId, setId, index = 0 } = route?.params || {};
@@ -30,14 +33,12 @@ export default function BrandCreatorTermsScreen({ navigation, route }) {
   const [t, setT] = useState(() => (draft && creator ? (draft.terms[creator.id] || defaultTerms(goal)) : defaultTerms(goal)));
   const [errs, setErrs] = useState({});
   const [everyone, setEveryone] = useState(false);
-  const [sheet, setSheet] = useState(null); // 'offer' | 'special' | 'category' | 'products' | 'over50'
-  const [products, setProducts] = useState([]);
-  const { toast, show } = useToast();
+  const [sheet, setSheet] = useState(null); // 'offers' | 'products' | 'choose' | 'over50'
+  const { toast } = useToast();
 
-  // Products for the pickers and the preview's example; minimums for the warning (once per draft).
+  // The creators' own minimums, for the warning (once per draft).
   useEffect(() => {
     let alive = true;
-    loadBrandProducts().then(r => { if (alive) setProducts(r.rows || []); }).catch(() => {});
     if (draft && !Object.keys(draft.minimums || {}).length) {
       brandApi.checkEligibility(campaignId, setId, draft.creators.map(c => ({ influencerId: c.id })))
         .then(r => { if (!alive || !r.success) return; const by = {}; for (const x of r.data.results || []) by[x.influencerId] = x.minimums || {}; setMinimums(setId, by); setTick(x => x + 1); })
@@ -55,9 +56,11 @@ export default function BrandCreatorTermsScreen({ navigation, route }) {
   const f = first(creator.name);
   const mins = (draft.minimums || {})[creator.id] || {};
   const selling = goal === 'conversion' || goal === 'hybrid';
-  const example = products.find(p => (t.productIds || []).includes(p.id)) || products[0] || null;
+  const offersN = (t.sellOffers || []).length;
+  const offerProducts = (t.sellOffers || []).reduce((a, o) => a + (o.products || 0), 0);
+  const productsN = sellProductCount(t);
 
-  const update = (patch) => { setT(prev => ({ ...prev, ...patch })); setErrs(prev => { const e = { ...prev }; for (const k of Object.keys(patch)) delete e[k]; if (patch.scope || patch.categoryNodeId || patch.productIds) delete e.scope; return e; }); };
+  const update = (patch) => { setT(prev => ({ ...prev, ...patch })); setErrs(prev => { const e = { ...prev }; for (const k of Object.keys(patch)) delete e[k]; if (patch.sellOffers || patch.sellMode) delete e.sell; return e; }); };
 
   const belowCommission = mins.commissionPct != null && t.commissionPct !== '' && Number(t.commissionPct) < Number(mins.commissionPct);
   const belowFee = mins.fee != null && t.fee !== '' && Number(t.fee) < Number(mins.fee);
@@ -100,20 +103,19 @@ export default function BrandCreatorTermsScreen({ navigation, route }) {
               {mins.commissionPct != null ? <Text style={s.hint}>{TT.minCommission(f, fmtPct5(mins.commissionPct))}</Text> : null}
               {belowCommission ? <MinBox5 text={MSG5.BELOW_MIN(f, fmtPct5(mins.commissionPct))} testID="min-commission" /> : null}
             </Field>
-            <Field label={TT.sell} error={errs.scope}>
-              <View style={s.chips}>
-                {['store', 'category', 'products'].map(k => (
-                  <Chip key={k} label={SCOPE_LABEL[k]} selected={t.scope === k} onPress={() => { update({ scope: k }); if (k !== 'store') setSheet(k); }} testID={`scope-${k}`} />
-                ))}
+            {/* creator-terms-v2 (T1, T5): two rows replace the scope chips and the follower offer. */}
+            <Text style={s.label}>{TT.sell}<Text style={{ color: T.danger }}> *</Text></Text>
+            <SellRow title={SL.offers} set={offersN > 0} testID="sell-offers" onPress={() => setSheet('offers')}
+              sub={offersN ? SL.offersValue(offersN, offerProducts) : SL.offersNone} />
+            <SellRow title={SL.productsWithout} set={productsN > 0} testID="sell-products" onPress={() => setSheet('products')}
+              sub={productsN ? SL.productsValue(productsN) : SL.productsNone} />
+            {errs.sell ? <View style={s.errBox} testID="sell-error"><Text style={s.errText}>⚠ {MSG5.SELL_NOTHING(f)}</Text></View> : null}
+            {offersN || productsN ? (
+              <View style={s.sum} testID="sell-summary">
+                <Text style={s.sumMain}>{SL.summary(offersN, offerProducts, productsN)}</Text>
+                {t.commissionPct !== '' ? <Text style={s.sumSub}>{SL.summaryMoney(fmtPct5(t.commissionPct))}</Text> : null}
               </View>
-              {t.scope !== 'store' ? (
-                <View style={s.tagRow}>
-                  <Text style={s.tagText} testID="scope-value">{scopeValue(t)}</Text>
-                  <TouchableOpacity onPress={() => setSheet(t.scope)} testID="scope-change"><Text style={s.link}>{TT.change}</Text></TouchableOpacity>
-                </View>
-              ) : null}
-            </Field>
-            <SettingRow label={TT.offer} value={t.offer ? (t.offer.name || C5.offer.specialLine) : TT.none} onPress={() => setSheet('offer')} testID="offer-row" />
+            ) : null}
             <SettingRow label={TT.shoppable} value={`🔒 ${TT.shoppableValue(MIN_SHOPPABLE_POSTS)}`} testID="shoppable-row" />
           </>
         ) : null}
@@ -139,23 +141,36 @@ export default function BrandCreatorTermsScreen({ navigation, route }) {
           </>
         ) : null}
 
-        {n > 1 ? <SwitchRow label={TT.everyone} hint={TT.everyoneHint} value={everyone} onValueChange={setEveryone} testID="everyone-switch" /> : null}
+        {n > 1 ? <SwitchRow label={TT.everyone} hint={selling ? SL.everyoneHint : TT.everyoneHint} value={everyone} onValueChange={setEveryone} testID="everyone-switch" /> : null}
       </ScrollView>
       <View style={s.footer}>
         <PrimaryButton label={last ? TT.review : TT.next} onPress={next} testID="terms-next" />
       </View>
       {toast}
 
-      <ScopePickerSheet5 visible={sheet === 'category' || sheet === 'products'} kind={sheet === 'category' ? 'category' : 'products'} products={products}
-        value={{ categoryNodeId: t.categoryNodeId, productIds: t.productIds }}
-        onApply={(v) => { update(v); setSheet(null); }} onClose={() => { if ((t.scope === 'category' && !t.categoryNodeId) || (t.scope === 'products' && !t.productIds.length)) update({ scope: 'store' }); setSheet(null); }} />
-      <OfferSheet5 visible={sheet === 'offer'} creatorName={creator.name} value={t.offer} commissionPct={t.commissionPct} example={example}
-        onUse={(v) => { update({ offer: v }); setSheet(null); }} onSpecial={() => setSheet('special')} onClose={() => setSheet(null)} />
-      <SpecialOfferSheet5 visible={sheet === 'special'} creatorName={creator.name} products={products} postingDate={draft.set.postingDate} commissionPct={t.commissionPct} example={example} value={t.offer}
-        onUse={(v) => { update({ offer: v }); setSheet(null); }} onClose={() => setSheet('offer')} />
+      <OffersSheet visible={sheet === 'offers'} campaignId={campaignId} setId={setId} postingDate={draft.set.postingDate} creatorName={creator.name}
+        value={t.sellOffers} onUse={(list) => { update({ sellOffers: list }); setSheet(null); }} onClose={() => setSheet(null)} />
+      <ProductsSheet visible={sheet === 'products'} campaignId={campaignId} setId={setId} postingDate={draft.set.postingDate}
+        value={{ mode: t.sellMode, ids: t.sellProductIds, products: t.sellProducts, allCount: t.sellAllCount }}
+        onUse={(v) => { update({ sellMode: v.mode, sellProductIds: v.ids || [], sellProducts: v.products || [], sellAllCount: v.allCount || 0 }); setSheet(null); }}
+        onChoose={() => setSheet('choose')} onClose={() => setSheet(null)} />
+      <ChooseProductsModal visible={sheet === 'choose'} campaignId={campaignId} setId={setId}
+        value={{ ids: t.sellProductIds, products: t.sellProducts }}
+        onUse={(ids, prods) => { update({ sellMode: ids.length ? 'chosen' : 'none', sellProductIds: ids, sellProducts: prods, sellAllCount: 0 }); setSheet('products'); }}
+        onClose={() => setSheet('products')} />
       <ConfirmSheet visible={sheet === 'over50'} title={TT.over50Title} body={TT.over50Body} confirmLabel={TT.over50Yes} cancelLabel={TT.over50No}
         onConfirm={() => { markOver50Confirmed(setId); setSheet(null); proceed(); }} onCancel={() => setSheet(null)} />
     </View>
+  );
+}
+
+/** T1 — one of the two "what she can sell" rows. */
+function SellRow({ title, sub, set, onPress, testID }) {
+  return (
+    <TouchableOpacity style={[s.sellRow, set && s.sellRowSet]} onPress={onPress} testID={testID} accessibilityRole="button">
+      <View style={{ flex: 1 }}><Text style={s.sellTitle}>{title}</Text><Text style={s.sellSub}>{sub}</Text></View>
+      <Text style={s.chev}>›</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -177,8 +192,16 @@ const s = StyleSheet.create({
   label: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink, marginBottom: 6 },
   hint: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, marginTop: 6, lineHeight: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
-  tagRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: T.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginTop: 4 },
-  tagText: { fontFamily: fonts.sansSemiBold, fontSize: 13, color: T.ink, flex: 1 },
   link: { fontFamily: fonts.sansBold, fontSize: 12.5, color: T.ink },
+  sellRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: T.border, borderRadius: 12, paddingHorizontal: 11, paddingVertical: 10, marginBottom: 8 },
+  sellRowSet: { borderColor: T.ink },
+  sellTitle: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
+  sellSub: { fontFamily: fonts.sansRegular, fontSize: 11.5, color: T.ink2, marginTop: 1 },
+  chev: { fontSize: 18, color: T.ink3, marginLeft: 8 },
+  errBox: { borderRadius: 12, padding: 10, backgroundColor: T.dangerSoft, marginBottom: 8 },
+  errText: { fontFamily: fonts.sansSemiBold, fontSize: 12.5, color: T.danger },
+  sum: { borderRadius: 12, padding: 11, backgroundColor: T.surface, marginBottom: 10 },
+  sumMain: { fontFamily: fonts.sansBold, fontSize: 13, color: T.ink },
+  sumSub: { fontFamily: fonts.sansRegular, fontSize: 12.5, color: T.ink2, marginTop: 2 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 14, paddingBottom: 22, backgroundColor: T.bg, borderTopWidth: 1, borderTopColor: T.border },
 });

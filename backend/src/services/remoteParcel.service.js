@@ -50,7 +50,7 @@ async function products(ciId, scope, { q = null, limit = 60, cursor = null } = {
   }
 
   const selling = SALE_AIMS.includes(r.goal);
-  if (selling && !r.alloc_scope) {
+  if (selling && !r.alloc_scope && !r.sell_v2) {
     throw new AppError('SCOPE_NOT_SET', MSG.SCOPE_NOT_SET(shoot.first(r.creator_name)), 422, 'scope');
   }
 
@@ -102,6 +102,8 @@ async function products(ciId, scope, { q = null, limit = 60, cursor = null } = {
 /** "Her selling scope · Whole store / N categories / N products", or "Your catalogue" (R5). */
 function scopeLabel(r, n) {
   if (!SALE_AIMS.includes(r.goal)) return { kind: 'catalogue', label: 'Your catalogue' };
+  // creator-terms-v2: her offers + products without offers (rules §2).
+  if (r.sell_v2) return { kind: 'offers', label: n === 1 ? '1 product she can sell' : `${n} products she can sell` };
   if (r.alloc_scope === 'store') return { kind: 'store', label: 'Whole store' };
   if (r.alloc_scope === 'category') return { kind: 'category', label: r.alloc_category || 'One category' };
   return { kind: 'products', label: n === 1 ? '1 product' : `${n} products` };
@@ -116,6 +118,8 @@ function scopeLabel(r, n) {
  * she may be sent, exactly as it removes it from what she may sell.
  */
 async function allowedProductIds(r, conn = db) {
+  // creator-terms-v2: what she can sell = her offers' live pools + her normal-price list, live.
+  if (r.sell_v2) return require('./creatorTerms.service').sellableProductIds(r.ci_id, conn);
   const base = `SELECT id FROM brand_products
                  WHERE brand_id = $1 AND is_active = true AND pushed_to_store = true`;
   if (r.alloc_scope === 'store') {
@@ -166,7 +170,7 @@ async function saveLines(ciId, scope, body = {}, conn = db) {
   if (lines.length > shoot.MAX_LINES) throw new AppError('TOO_MANY_LINES', MSG.TOO_MANY_LINES, 422, 'lines');
 
   const selling = SALE_AIMS.includes(r.goal);
-  if (selling && !r.alloc_scope) {
+  if (selling && !r.alloc_scope && !r.sell_v2) {
     throw new AppError('SCOPE_NOT_SET', MSG.SCOPE_NOT_SET(shoot.first(r.creator_name)), 422, 'scope');
   }
   const allowed = selling ? new Set(await allowedProductIds(r, conn)) : null;

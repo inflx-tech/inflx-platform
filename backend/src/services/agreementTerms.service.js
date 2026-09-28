@@ -52,6 +52,7 @@ const CONTEXT_SQL = `
   SELECT ci.id, ci.status, ci.influencer_id, ci.agreed_fee, ci.commission_pct,
          ci.formats_json, ci.usage_rights_json, ci.brand_note, ci.min_shoppable_posts,
          ci.alloc_scope, ci.alloc_category, ci.alloc_category_node_id, ci.alloc_product_ids,
+         ci.sell_v2, ci.sell_mode, ci.sell_product_ids,
          ci.answered_at,
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode, cs.go_live_date, cs.branch_id,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id,
@@ -224,6 +225,10 @@ async function buildSnapshot(ctx, client = db) {
   const money = moneyFor(goal, ctx.agreed_fee, campaignFeePct, tranchePcts);
 
   const products = ctx.alloc_scope === 'products' ? await productNames(ctx.alloc_product_ids, client) : [];
+  // creator-terms-v2 (rules 2.7): her offers as of signing + her products without offers.
+  const sellV2 = selling && ctx.sell_v2
+    ? await require('./creatorTerms.service').agreementSell({ id: ctx.id, sell_v2: true, sell_mode: ctx.sell_mode, sell_product_ids: ctx.sell_product_ids })
+    : null;
   const usage = jsonObj(ctx.usage_rights_json);
   const deliverables = jsonArr(ctx.formats_json).map(d => ({ type: d.type, count: Number(d.count) || 1 }));
   const cutoff = campaignState.cutoffFor(ctx.go_live_date);
@@ -285,7 +290,7 @@ async function buildSnapshot(ctx, client = db) {
     },
 
     // ---- what she may sell (Pay for Sale and Hybrid) --------------------
-    sell: selling ? {
+    sell: sellV2 ? sellV2 : selling ? {
       scope: ctx.alloc_scope || 'store',
       categoryName: ctx.alloc_category || null,
       products,
@@ -308,6 +313,8 @@ async function buildSnapshot(ctx, client = db) {
     // address are DELIBERATELY absent. Rules §9: "The Follower Offer never
     // appears." They are excluded here, at snapshot time, so no renderer can
     // reintroduce them by accident.
+    // creator-terms-v2: for the NEW terms, rules 2.7 replaces that rule: the agreement lists her
+    // offers as of signing (sell.offers), with the "offers end" line. Old rows are unchanged.
   };
 }
 

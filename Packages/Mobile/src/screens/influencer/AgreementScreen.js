@@ -17,7 +17,7 @@ import { influencerApi } from '../../services/api';
 import { PrimaryButton, DangerButton, EmptyState } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { rupees5 } from '../../components/invitations/copy5';
-import { C7, MSG7, AIM_LABEL7, longDate7, shortDate7 } from '../../components/agreement/copy7';
+import { C7, MSG7, AIM_LABEL7, longDate7, shortDate7, offerDates7 } from '../../components/agreement/copy7';
 import {
   Reference7, Card7, MoneyRow7, TermRow7, TotalRow7, SignatureBlock7,
   StandardTermsRow7, StateBox7,
@@ -140,6 +140,15 @@ export default function AgreementScreen({ navigation, route }) {
             ? <TermRow7 label={C7.creator.shoppablePosts} value={C7.creator.atLeast(work.minShoppablePosts)} testID="shoppable-row" />
             : null}
         </Card7>
+
+        {/* creator-terms-v2 (C4, rules 2.7): her offers as of signing, with their dates, and the end rule. */}
+        {t.sell && Array.isArray(t.sell.offers) && (t.sell.offers.length || t.sell.products_count) ? (
+          <Card7 title={C7.creator.youCanSell} testID="sell-offers">
+            {t.sell.offers.map((o, i) => <TermRow7 key={`${o.name}-${i}`} label={o.name} value={offerDates7(o)} testID={`sell-offer-${i}`} />)}
+            {t.sell.products_count ? <TermRow7 label="At normal price" value={`${t.sell.products_count} ${t.sell.products_count === 1 ? 'product' : 'products'}`} testID="sell-normal" /> : null}
+            {t.sell.offers_end_line && t.sell.offers.length ? <Text style={s.para}>{t.sell.offers_end_line}</Text> : null}
+          </Card7>
+        ) : null}
 
         {/* Remote: returning the products. */}
         {t.returnTerms ? (

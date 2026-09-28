@@ -424,7 +424,84 @@ function numbersHelp(offer, pool) {
   return out;
 }
 
+// ── What the CREATOR reads (Level 2, rules 2.11; creator-terms-v2 C2, C3) ──────
+const pctOff = (p) => `${pctText(p)} off`;
+
+/** The deal in her words: "20% off each item, up to ₹400" · "Shopper picks any 2 of 15". */
+function creatorDeal(offer, poolCount, giftCount) {
+  const c = normaliseConfig(offer.sub_type, offer.offer_config_json);
+  switch (offer.sub_type) {
+    case 'percentage': return c.max_off ? `${pctOff(c.pct)} each item, up to ${inr(c.max_off)}` : `${pctOff(c.pct)} each item`;
+    case 'flat': return `${inr(c.amount)} off each item`;
+    case 'bogo': return 'Buy one, get the same product free';
+    case 'quantity':
+    case 'value': return c.tiers.map((t) => (offer.sub_type === 'quantity' ? `Buy ${t.at}` : `Spend ${inr(t.at)}`)
+      + ` → ${c.reward === 'amount' ? `${inr(t.value)} off` : pctOff(t.value)}`).join(' · ');
+    case 'pick_any':
+    case 'mix_match': return `Shopper picks any ${c.pick} of ${poolCount} for ${inr(c.price)}`;
+    case 'fixed': return `The set of ${poolCount} for ${inr(c.price)}`;
+    case 'spend': return `Spend ${inr(c.min_spend)}, get ${c.gift_count || 1} free gift${(c.gift_count || 1) > 1 ? 's' : ''}${giftCount > 1 ? ` of ${giftCount}` : ''}`;
+    case 'buy_x': return `Buy ${c.buy_qty}, get ${c.gift_count || 1} free gift${(c.gift_count || 1) > 1 ? 's' : ''}${giftCount > 1 ? ` of ${giftCount}` : ''}`;
+    default: return dealLine(offer, poolCount, giftCount) || '';
+  }
+}
+
+/** "How it works for shoppers" (C3). Every offer applies within one post (rules M4). */
+function shopperHow(offer, pool) {
+  const c = normaliseConfig(offer.sub_type, offer.offer_config_json);
+  const n = ((pool && pool.buy) || []).length;
+  const g = ((pool && pool.gift) || []).length;
+  const tiers = () => c.tiers.map((t) => (offer.sub_type === 'quantity' ? `buy ${t.at}` : `spend ${inr(t.at)}`)
+    + ` → ${c.reward === 'amount' ? `${inr(t.value)} off` : pctOff(t.value)}`).join(', ');
+  switch (offer.sub_type) {
+    case 'percentage': return `Every product is ${pctText(c.pct)} off${c.max_off ? ` (at most ${inr(c.max_off)} off an item)` : ''} when bought from your post.`;
+    case 'flat': return `Every product is ${inr(c.amount)} off when bought from your post.`;
+    case 'bogo': return 'They buy a product from your post and get the same product free, in any size or colour.';
+    case 'quantity': return `The more they buy from your post, the more they save: ${tiers()}. Tiers replace each other; they never add up.`;
+    case 'value': return `The more they spend on your post's products, the more they save: ${tiers()}. Tiers replace each other; they never add up.`;
+    case 'pick_any':
+    case 'mix_match': return `They pick any ${c.pick} of these ${n} products from your post and pay ${inr(c.price)} together. All ${c.pick} must come from the same post.`;
+    case 'fixed': return `They buy the whole set from your post for ${inr(c.price)} and only choose size and colour.`;
+    case 'spend': return `They spend ${inr(c.min_spend)} on these products from your post and ${g > 1 ? `choose ${c.gift_count || 1} free gift${(c.gift_count || 1) > 1 ? 's' : ''} from ${g}` : 'get the gift free'}.`;
+    case 'buy_x': return `They buy ${c.buy_qty} of these products from your post and ${g > 1 ? `choose ${c.gift_count || 1} free gift${(c.gift_count || 1) > 1 ? 's' : ''} from ${g}` : 'get the gift free'}.`;
+    default: return '';
+  }
+}
+
+/**
+ * What she earns on one example purchase (founder Q3: "worked out on the offer's example price,
+ * labelled You earn"). Commission is on what the shopper pays (rules M3).
+ * @returns { pays, earns, line } or null when there's nothing to work it out on.
+ */
+function exampleEarning(offer, pool, commissionPct) {
+  const pct = Number(commissionPct);
+  if (!(pct > 0)) return null;
+  const c = normaliseConfig(offer.sub_type, offer.offer_config_json);
+  const prices = ((pool && pool.buy) || []).map((b) => Number(b.price)).filter((p) => p > 0);
+  if (!prices.length && !['pick_any', 'mix_match', 'fixed', 'spend', 'value'].includes(offer.sub_type)) return null;
+  const top = prices.length ? Math.max(...prices) : 0;
+  const low = prices.length ? Math.min(...prices) : 0;
+  const t1 = c.tiers && c.tiers[0];
+  let pays = null;
+  switch (offer.sub_type) {
+    case 'percentage':
+    case 'flat': { const d = discountedPrice(offer, top); pays = d ? d.pays : null; break; }
+    case 'bogo': pays = top; break;
+    case 'quantity': if (t1) { const base = t1.at * low; pays = c.reward === 'amount' ? base - t1.value : base * (1 - t1.value / 100); } break;
+    case 'value': if (t1) pays = c.reward === 'amount' ? t1.at - t1.value : t1.at * (1 - t1.value / 100); break;
+    case 'pick_any': case 'mix_match': case 'fixed': pays = c.price; break;
+    case 'spend': pays = c.min_spend; break;
+    case 'buy_x': pays = c.buy_qty && low ? c.buy_qty * low : null; break;
+    default: pays = null;
+  }
+  if (pays == null || !(pays > 0)) return null;
+  pays = round2(pays);
+  const earns = Math.round((pays * pct) / 100);
+  return { pays, earns, line: `${pctText(pct)} of ${inr(pays)} = ${inr(earns)}` };
+}
+
 module.exports = {
+  creatorDeal, shopperHow, exampleEarning,
   SUB_TYPES, TYPES, TYPE_LABEL, SUB_LABEL, MAX_TIERS,
   typeLabel, isValidSubType, normaliseConfig, numberProblems,
   dealLine, discountedPrice, displayStatus,

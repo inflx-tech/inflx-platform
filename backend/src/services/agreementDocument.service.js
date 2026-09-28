@@ -97,6 +97,12 @@ async function render(contract) {
   if (s.work.usageRights) row('Usage rights', s.work.usageRights.words);
   if (s.work.minShoppablePosts != null) row('Shoppable posts', `At least ${s.work.minShoppablePosts}`);
   if (s.sell) row('She may sell', s.sell.words);
+  // creator-terms-v2 (rules 2.7): each offer as of signing, with its dates, and the end rule.
+  if (s.sell && Array.isArray(s.sell.offers)) {
+    for (const o of s.sell.offers) row(o.name, `${o.deal} · ${longDate(o.starts_on)} to ${longDate(o.ends_on)}`);
+    if (s.sell.products_count) row('At normal price', `${s.sell.products_count} product${s.sell.products_count === 1 ? '' : 's'}`);
+    if (s.sell.offers_end_line) row('When an offer ends', s.sell.offers_end_line);
+  }
   row('Signatures due by', longDate(s.cutoff));
 
   // The money

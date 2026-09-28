@@ -21,5 +21,8 @@ router.get ('/influencers/me/invitations',              ...creator, ctrl.myInvit
 router.get ('/influencers/me/invitations/:ciId',        ...creator, ctrl.myInvitation);
 router.post('/influencers/me/invitations/:ciId/accept', ...creator, ctrl.accept);
 router.post('/influencers/me/invitations/:ciId/decline', ...creator, ctrl.decline);
+// creator-terms-v2 — what she can sell, read-only (C2) and one offer (C3). Her own only; else 404.
+router.get ('/influencers/me/invitations/:ciId/sell',              ...creator, ctrl.mySell);
+router.get ('/influencers/me/invitations/:ciId/offers/:offerId',   ...creator, ctrl.myOffer);
 
 module.exports = router;

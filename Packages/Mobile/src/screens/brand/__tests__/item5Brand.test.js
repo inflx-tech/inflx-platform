@@ -11,6 +11,8 @@ jest.mock('../../../services/api', () => ({
     setSummary: jest.fn(), pickable: jest.fn(), listGroups: jest.fn(), groupCheck: jest.fn(), checkEligibility: jest.fn(),
     sendInvitations: jest.fn(), invitationDetail: jest.fn(), withdrawInvitation: jest.fn(), removeInvitation: jest.fn(),
     getMe: jest.fn(), getBrandProducts: jest.fn(), getOffers: jest.fn(), previewBasket: jest.fn(),
+    // creator-terms-v2
+    offerChoices: jest.fn(), productsWithoutOffersForSet: jest.fn(), getListingTree: jest.fn(),
     updateCampaignSet: jest.fn(), deleteCampaignSet: jest.fn(), duplicateSet: jest.fn(), listBranches: jest.fn(),
   },
   influencerApi: {},
@@ -41,14 +43,14 @@ const RULES = { today: `${yr}-09-12`, earliestPostingDate: `${yr}-09-19`, minDay
 const SET = { id: 'sA', campaignId: 'c1', name: 'Set A · Ethnic wear', state: 'live', datePassed: false, locked: true, lockedFields: ['goal'], goal: 'conversion', shootMode: 'visit',
   branch: { id: 'b1', name: 'Banjara Hills', cityName: 'Hyderabad' }, postingDate: `${yr}-10-20`, cutoff: `${yr}-10-17`, daysToCutoff: 4, cutoffPassed: false, expiredAt: null,
   counts: { invited: 8, signed: 3, waiting: 2, declined: 3 }, canInvite: { ok: true }, isPast: false };
-const row = (o) => ({ id: o.id, influencerId: `i-${o.id}`, name: o.name, avatarUrl: null, status: o.status || 'invited', group: o.group || 'waiting', termsLine: o.termsLine || '10% · whole store · no offer',
+const row = (o) => ({ id: o.id, influencerId: `i-${o.id}`, name: o.name, avatarUrl: null, status: o.status || 'invited', group: o.group || 'waiting', termsLine: o.termsLine || '10% · 2 offers + 12 products',
   sentAt: `${yr}-09-12T10:00:00Z`, answeredAt: o.answeredAt || null, signedAt: null, declineReasonLabel: o.declineReasonLabel || null, deferredGoLiveDate: o.deferredGoLiveDate || null,
   actions: { withdraw: (o.status || 'invited') === 'invited', remove: !['withdrawn', 'removed', 'declined', 'expired'].includes(o.status || 'invited'), viewTerms: true, sendAgreement: o.group === 'yourMove' && (o.status || 'invited') === 'accepted' }, ...o });
 const GROUPS = {
   // Item 7 (P1): an accepted creator with a draft agreement is the brand's move.
   order: ['yourMove', 'waiting', 'negotiating', 'accepted', 'signed', 'deferred', 'declined', 'expired', 'withdrawn'],
   groups: {
-    waiting: { key: 'waiting', count: 2, more: 0, rows: [row({ id: 'r1', name: 'Priya Sharma' }), row({ id: 'r2', name: 'Tanvi S.', termsLine: '12% · whole store · no offer' })] },
+    waiting: { key: 'waiting', count: 2, more: 0, rows: [row({ id: 'r1', name: 'Priya Sharma' }), row({ id: 'r2', name: 'Tanvi S.', termsLine: '12% · 40 products at normal price' })] },
     negotiating: { key: 'negotiating', count: 0, more: 0, rows: [] },
     yourMove: { key: 'yourMove', title: 'Your move', count: 1, more: 0, rows: [row({ id: 'r3', name: 'Sneha N.', status: 'accepted', group: 'yourMove', answeredAt: `${yr}-09-13T10:00:00Z` })] },
     accepted: { key: 'accepted', count: 0, more: 0, rows: [] },
@@ -78,6 +80,19 @@ beforeEach(() => {
   brandApi.getBrandProducts.mockResolvedValue(ok({ total: 1, page: 1, rows: [{ id: 'pr1', name: 'Silk saree', price: 2400, categoryNodeId: 'cn1', categoryName: 'Sarees' }] }));
   brandApi.getOffers.mockResolvedValue(ok({ offers: [{ id: 'o1', name: 'Festive 15% off Sarees', offer_type: 'discount', offer_config_json: { sub_type: 'pct', value: 15, scope: 'category', category: 'Sarees' }, status: 'active' }] }));
   brandApi.previewBasket.mockResolvedValue(ok({ shopper_pays: 2040, creator_earns: 204, commission_pct: 10 }));
+  // creator-terms-v2 — posting 20 Oct: two valid offers (one ends 25 Oct), two left out; three products without offers.
+  brandApi.offerChoices.mockResolvedValue(ok({ posting_date: `${yr}-10-20`,
+    offers: [
+      { id: 'o1', name: "20% off Levi's Jeans", type_label: 'Discount · %', products: 24, gifts: 0, starts_on: `${yr}-10-01`, ends_on: `${yr}-10-31`, ends_soon: null },
+      { id: 'o2', name: 'Buy 2 T-shirts → 30%', type_label: 'Volume · Qty', products: 15, gifts: 0, starts_on: `${yr}-10-05`, ends_on: `${yr}-10-25`, ends_soon: { days_after_posting: 5 } },
+    ],
+    hidden: [{ name: 'Late', why: 'starts', date: `${yr}-10-30` }, { name: 'Gone', why: 'ended', date: `${yr}-10-05` }] }));
+  brandApi.productsWithoutOffersForSet.mockResolvedValue(ok({ posting_date: `${yr}-10-20`, products: [
+    { id: 'f1', name: 'Oxford white', price: 1299, leaf_name: 'Shirts', next_offer: null, last_offer: { name: 'Summer', until: `${yr}-10-05` } },
+    { id: 'f2', name: 'Oxford blue', price: 1299, leaf_name: 'Shirts', next_offer: null, last_offer: null },
+    { id: 'f3', name: 'Chino', price: 1499, leaf_name: 'Trousers', next_offer: null, last_offer: null },
+  ] }));
+  brandApi.getListingTree.mockResolvedValue(ok({ tree: [] }));
 });
 
 describe('I9 · I10 — the set after invitations go out', () => {
@@ -89,7 +104,7 @@ describe('I9 · I10 — the set after invitations go out', () => {
     // Item 7 (P1): the accepted creator moved to "Your move" — the brand owes her an agreement.
     getByText('Waiting to answer'); getByText('Your move'); getByText('Asked for another date'); getByText('Declined');
     expect(queryByTestId('group-negotiating')).toBeNull(); expect(queryByTestId('group-signed')).toBeNull();
-    getByText('10% · whole store · no offer · sent 12 Sep'); getByText('Accepted 13 Sep'); getByText('Fee too low');
+    getByText('10% · 2 offers + 12 products · sent 12 Sep'); getByText('Accepted 13 Sep'); getByText('Fee too low');
     getByText('Wants 27 Oct'); getByText('Another set'); getByText('Send agreement');
     fireEvent.press(getAllByTestId('add-creators')[0]);
     expect(n.navigate).toHaveBeenCalledWith('BrandSetPickCreators', expect.objectContaining({ campaignId: 'c1', setId: 'sA' }));
@@ -262,16 +277,19 @@ describe('I2 — the group check adds to the basket', () => {
   });
 });
 
-describe('I3 · I4 · I5 — terms, creator by creator', () => {
+describe('I3 · I4 · I5 — terms, creator by creator (creator-terms-v2: offers + products without offers)', () => {
   const start = (goal, creators = [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }]) =>
     draft.startDraft('sA', { set: { ...SET, goal }, campaignName: 'Diwali Edit 2026', creators, sourceGroupId: null });
 
-  it('Pay for Sale: the locked set card, commission required, the minimum warning that never blocks, shoppable posts read-only (checks 6, 10)', async () => {
+  it('Pay for Sale: the locked set card, commission required, the minimum warning that never blocks, something to sell required, shoppable posts read-only (checks 6, 10; T1, T2, T5)', async () => {
     start('conversion');
     const n = nav();
     const { getByText, getByTestId, queryByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
     getByText('Creator 1 of 2'); getByText('🔒 Set terms, same for everyone'); getByText('Pay for Sale'); getByText(`20 Oct ${yr}`); getByText('Store Visit · Banjara Hills');
     getByText('1 post · set by INFLX', { exact: false });
+    // the retired pieces are gone: no scope chips, no follower offer row
+    expect(queryByTestId('scope-store')).toBeNull(); expect(queryByTestId('offer-row')).toBeNull();
+    getByText('Offers'); getByText('None given'); getByText('Products without offers');
     fireEvent.press(getByTestId('terms-next'));
     getByText(MSG5.COMMISSION_REQUIRED);
     expect(n.push).not.toHaveBeenCalled();
@@ -283,13 +301,34 @@ describe('I3 · I4 · I5 — terms, creator by creator', () => {
     getByText(MSG5.COMMISSION_RANGE);
     fireEvent.changeText(getByTestId('commission'), '10');
     expect(queryByTestId('min-commission')).toBeTruthy();
+    // T5: nothing to sell yet → Next is refused in her name
+    fireEvent.press(getByTestId('terms-next'));
+    getByText(`⚠ ${MSG5.SELL_NOTHING('Priya')}`);
+    expect(n.push).not.toHaveBeenCalled();
+    // T2: the offers checklist — only offers valid on the posting day or the day after; the ends-soon warning; the ones left out
+    fireEvent.press(getByTestId('sell-offers'));
+    await waitFor(() => getByText('Offers for Priya'));
+    getByText(`Your offers valid on the posting day (20 Oct) or the day after.`);
+    getByText('⚠ Ends 25 Oct, 5 days after posting. Her posts using it leave the shop then.');
+    getByText("2 offers aren't listed: one starts 30 Oct, one ended 5 Oct.");
+    fireEvent.press(getByTestId('offer-o1'));
+    fireEvent.press(getByTestId('offer-o2'));
+    getByText('2 of 2 picked');
+    fireEvent.press(getByTestId('offers-give'));
+    getByText('2 offers · 39 products');
+    getByText('She can sell: 2 offers (39 products)');
+    getByText('Commission: 10% on every sale');
     fireEvent.press(getByTestId('terms-next'));
     expect(n.push).toHaveBeenCalledWith('BrandCreatorTerms', { campaignId: 'c1', setId: 'sA', index: 1 });
-    expect(draft.getDraft('sA').terms.p.commissionPct).toBe('10');
+    const t = draft.getDraft('sA').terms.p;
+    expect(t.commissionPct).toBe('10');
+    expect(t.sellOffers.map(o => o.id)).toEqual(['o1', 'o2']);
+    expect(draft.toServer('conversion', t)).toEqual({ commissionPct: 10, offers: ['o1', 'o2'], productsWithoutOffers: { mode: 'none' } });
   });
 
   it('above 50% asks once and is then accepted (check 41)', async () => {
     start('conversion');
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), sellMode: 'all', sellAllCount: 3 });
     const n = nav();
     const { getByText, getByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
     fireEvent.changeText(getByTestId('commission'), '60');
@@ -303,8 +342,9 @@ describe('I3 · I4 · I5 — terms, creator by creator', () => {
   it('Pay for Content: fee, deliverables (empty / duplicate / count), usage rights need a place; "Use these terms for everyone" copies (checks 7, 9, 11)', async () => {
     start('engagement');
     const n = nav();
-    const { getByText, getByTestId, queryByText } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
+    const { getByText, getByTestId, queryByText, queryByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
     getByText('Paid 25% on signing, 25% when the content is live, 50% after it stays live.');
+    expect(queryByTestId('sell-offers')).toBeNull();   // Pay for Content terms don't change (rules 2.2)
     fireEvent.press(getByTestId('terms-next'));
     getByText(MSG5.FEE_REQUIRED);
     fireEvent.changeText(getByTestId('fee'), '8000');
@@ -336,7 +376,7 @@ describe('I3 · I4 · I5 — terms, creator by creator', () => {
     expect(d.terms.s.usage).toEqual({ on: true, durationDays: 60, places: ['ads'] });
   });
 
-  it('Hybrid refuses a ₹0 fixed fee; the follower offer sheet attaches a saved offer with a preview and never copies a special one (checks 8, 11, 12)', async () => {
+  it('Hybrid refuses a ₹0 fixed fee; "All products without offers" and "Use these terms for everyone" copy the product list (checks 8, 11; T3, rules 2.5)', async () => {
     start('hybrid');
     const n = nav();
     const { getByText, getByTestId, queryByText } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
@@ -346,47 +386,66 @@ describe('I3 · I4 · I5 — terms, creator by creator', () => {
     getByText(MSG5.HYBRID_FEE);
     expect(queryByText('What she delivers')).toBeNull();
     fireEvent.changeText(getByTestId('fee'), '5000');
-    fireEvent.press(getByTestId('offer-row'));
-    await waitFor(() => getByText('Follower offer for Priya'));
-    getByText('Shoppers pay the normal price');
-    fireEvent.press(getByTestId('offer-library'));
-    await waitFor(() => getByTestId('saved-offer-o1'));
-    fireEvent.press(getByTestId('saved-offer-o1'));
-    await waitFor(() => getByTestId('offer-preview'));
-    getByText('A ₹2,400 Silk saree costs ₹2,040');
-    getByText('Priya earns ₹204 at 10% on what shoppers actually pay.');
-    expect(brandApi.previewBasket).toHaveBeenCalledWith(expect.objectContaining({ brand_offer_id: 'o1', product_ids: ['pr1'] }));
-    fireEvent.press(getByTestId('offer-use'));
-    expect(draft.getDraft('sA').terms.p.offer).toBeNull(); // not saved until Next
+    fireEvent.press(getByTestId('sell-products'));
+    await waitFor(() => getByText('3 products, fixed when you send'));
+    getByText('Sold at normal price. Only products not in any offer on or after 20 Oct are shown.');
+    getByText("To give a product that's in an offer, give its offer.");
+    fireEvent.press(getByTestId('products-all'));
+    fireEvent.press(getByTestId('products-done'));
+    getByText('3 products · normal price');
+    getByText('She can sell: 3 products at normal price');
     fireEvent(getByTestId('everyone-switch'), 'valueChange', true);
     fireEvent.press(getByTestId('terms-next'));
     const d = draft.getDraft('sA');
-    expect(d.terms.p.offer).toMatchObject({ kind: 'library', brandOfferId: 'o1', name: 'Festive 15% off Sarees' });
-    expect(d.terms.s.offer).toMatchObject({ kind: 'library', brandOfferId: 'o1' });
-    // a special offer is never copied
-    draft.setTerms('sA', 'p', { ...d.terms.p, offer: { kind: 'special', offerType: 'discount', offerConfigJson: { sub_type: 'pct', value: 12, scope: 'store' }, name: null, line: '12% off' } });
-    draft.setTerms('sA', 's', { ...d.terms.s, offer: null });
-    draft.copyTermsToAll('sA', 'p');
-    expect(draft.getDraft('sA').terms.s.offer).toBeNull();
-    expect(draft.getDraft('sA').terms.s.fee).toBe('5000');
+    expect(d.terms.p).toMatchObject({ sellMode: 'all', sellAllCount: 3 });
+    expect(d.terms.s).toMatchObject({ sellMode: 'all', sellAllCount: 3, fee: '5000' });
+    expect(draft.toServer('hybrid', d.terms.s)).toEqual({ commissionPct: 10, fee: 5000, offers: [], productsWithoutOffers: { mode: 'all' } });
+  });
+
+  it('choosing products (T4): search, tick, "Use N products"; the chosen list is sent as chosen', async () => {
+    start('conversion');
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    const n = nav();
+    const { getByText, getByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
+    fireEvent.press(getByTestId('sell-products'));
+    await waitFor(() => getByTestId('products-choose'));
+    fireEvent.press(getByTestId('products-choose'));
+    await waitFor(() => getByTestId('choose-products'));
+    fireEvent.press(getByTestId('choose-tab-1'));
+    fireEvent.changeText(getByTestId('choose-search'), 'oxford');
+    await waitFor(() => getByTestId('choose-product-f1'));
+    getByText('₹1,299 · offer ended 5 Oct');
+    fireEvent.press(getByTestId('choose-product-f1'));
+    fireEvent.press(getByTestId('choose-use'));
+    await waitFor(() => getByText('1 picked · Shirts'));
+    fireEvent.press(getByTestId('products-done'));
+    getByText('1 product · normal price');
+    fireEvent.press(getByTestId('terms-next'));
+    expect(draft.toServer('conversion', draft.getDraft('sA').terms.p)).toEqual({ commissionPct: 10, offers: [], productsWithoutOffers: { mode: 'chosen', productIds: ['f1'] } });
+  });
+
+  it('no offer valid on the posting day (T6): says so, points to the website, and products can still be given', async () => {
+    start('conversion');
+    brandApi.offerChoices.mockResolvedValue(ok({ posting_date: `${yr}-10-20`, offers: [], hidden: [] }));
+    const n = nav();
+    const { getByText, getByTestId } = render(<BrandCreatorTermsScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA', index: 0 } }} />);
+    fireEvent.press(getByTestId('sell-offers'));
+    await waitFor(() => getByTestId('offers-empty'));
+    getByText('No offers valid on 20 Oct');
+    getByText('Offers are built on the INFLX website. Build one that runs on 20 Oct or 21 Oct, or give her products without offers instead.');
+    getByTestId('offers-build-web');
   });
 });
 
-describe('I8 — Review and send', () => {
-  /**
-   * features/one-basket-add-creators check 8. This asserts the PAYLOAD, not the screen. The
-   * source can render perfectly on the row and still be dropped before the request — that is a
-   * bug that looks exactly like a pass.
-   */
-  /**
-   * The basket outlives a single screen, which is the whole point of it — so it also has to be
-   * emptied at the right moments, or Add creators greets her with a dozen people the server
-   * would now refuse.
-   */
+describe('I8 — Review and send (creator-terms-v2)', () => {
+  const ALL = { sellMode: 'all', sellAllCount: 40 };
+  const O1 = { id: 'o1', name: '20% off Levi\'s Jeans', products: 24, ends_soon: null };
+  const SOON = { id: 'o3', name: 'Buy 2 T-shirts → 30%', products: 10, ends_soon: { days_after_posting: 5 } };
+
   it('a sent basket is a spent basket (one-basket check 13)', async () => {
     draft.addToBasket('sA', [{ id: 'p', name: 'Priya Sharma' }]);
     draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }], sourceGroupId: null });
-    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
     brandApi.sendInvitations.mockResolvedValue(ok({ sent: 1, rows: [] }));
     const { getByTestId } = render(<BrandReviewSendScreen navigation={nav()} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
     await waitFor(() => getByTestId('review-row-p'));
@@ -410,13 +469,12 @@ describe('I8 — Review and send', () => {
         { id: 't', name: 'Tanvi S.', sourceGroupId: 'g1', sourceGroupName: 'Diwali shortlist' },
       ],
     });
-    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
-    draft.setTerms('sA', 't', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
+    draft.setTerms('sA', 't', { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
     brandApi.sendInvitations.mockResolvedValue(ok({ sent: 2, rows: [] }));
     const n = nav();
     const { getByText, getByTestId } = render(<BrandReviewSendScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
     await waitFor(() => getByTestId('review-row-p'));
-    // where she came from, on her row
     getByText('from Diwali shortlist');
     fireEvent.press(getByTestId('send-invitations'));
     await waitFor(() => expect(brandApi.sendInvitations).toHaveBeenCalled());
@@ -424,38 +482,39 @@ describe('I8 — Review and send', () => {
     const byId = Object.fromEntries(body.creators.map(c => [c.influencerId, c]));
     expect(byId.t.sourceGroupId).toBe('g1');
     expect(byId.p.sourceGroupId).toBeUndefined();
-    // and no batch-level label claiming they all came from one place
     expect(body.sourceGroupId).toBeUndefined();
   });
 
-  it('rows with the terms line and OK / Below min; the warning; Send calls the API once with every creator and goes back with a toast (check 17)', async () => {
-    draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }], sourceGroupId: null });
-    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10', offer: { kind: 'library', brandOfferId: 'o1', name: 'Festive 15%' } });
-    draft.setTerms('sA', 's', { ...draft.defaultTerms('conversion'), commissionPct: '12' });
-    brandApi.sendInvitations.mockResolvedValue(ok({ sent: 2, rows: [] }));
+  it('rows read "commission · offers + products"; Below min, Ends soon and OK; the two warnings; Send carries offers + products (check 17, T7)', async () => {
+    draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }, { id: 's', name: 'Sneha N.' }, { id: 'd', name: 'Divya R.' }], sourceGroupId: null });
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10', sellOffers: [O1], sellMode: 'chosen', sellProductIds: ['f1'], sellProducts: [{ id: 'f1', name: 'Oxford white' }] });
+    draft.setTerms('sA', 's', { ...draft.defaultTerms('conversion'), commissionPct: '12', sellOffers: [SOON] });
+    draft.setTerms('sA', 'd', { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
+    brandApi.sendInvitations.mockResolvedValue(ok({ sent: 3, rows: [] }));
     const n = nav();
     const { getByText, getByTestId } = render(<BrandReviewSendScreen navigation={n} route={{ params: { campaignId: 'c1', setId: 'sA' } }} />);
-    getByText('All 2 creators'); getByText(`Replies close`); getByText(`17 Oct ${yr}`);
-    getByText('10% · whole store · Festive 15%'); getByText('12% · whole store · no offer');
+    getByText('All 3 creators'); getByText(`Replies close`); getByText(`17 Oct ${yr}`);
+    getByText('10% · 1 offer + 1 product'); getByText('12% · 1 offer · no other products'); getByText('10% · 40 products at normal price');
     await waitFor(() => getByText('Below min'));
-    getByText('OK');
+    getByText('Ends soon'); getByText('OK');
     getByText('1 creator is below their own minimum. They can still be invited and can counter.');
-    getByText('Each creator gets their own invitation. They can accept, counter or decline until 17 Oct.');
+    getByText('⚠ 1 creator was given an offer that ends 5 days after posting.');
     fireEvent.press(getByTestId('send-invitations'));
     await waitFor(() => expect(brandApi.sendInvitations).toHaveBeenCalledTimes(1));
     const body = brandApi.sendInvitations.mock.calls[0][2];
     expect(body.creators).toEqual([
-      { influencerId: 'p', terms: { commissionPct: 10, scope: 'store', offer: { brandOfferId: 'o1' } } },
-      { influencerId: 's', terms: { commissionPct: 12, scope: 'store' } },
+      { influencerId: 'p', terms: { commissionPct: 10, offers: ['o1'], productsWithoutOffers: { mode: 'chosen', productIds: ['f1'] } } },
+      { influencerId: 's', terms: { commissionPct: 12, offers: ['o3'], productsWithoutOffers: { mode: 'none' } } },
+      { influencerId: 'd', terms: { commissionPct: 10, offers: [], productsWithoutOffers: { mode: 'all' } } },
     ]);
-    expect(n.navigate).toHaveBeenCalledWith('BrandSetDetail', { campaignId: 'c1', setId: 'sA', toast: '2 invitations sent.' });
+    expect(n.navigate).toHaveBeenCalledWith('BrandSetDetail', { campaignId: 'c1', setId: 'sA', toast: '3 invitations sent.' });
     expect(draft.getDraft('sA')).toBeNull();
   });
 
   it('a failed batch names the creators, writes nothing, and "Remove {n} and send the rest" sends the others (check 38)', async () => {
     draft.startDraft('sA', { set: SET, campaignName: 'Diwali Edit 2026', creators: [{ id: 'p', name: 'Priya Sharma' }, { id: 'k', name: 'Kavya D.' }], sourceGroupId: null });
-    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
-    draft.setTerms('sA', 'k', { ...draft.defaultTerms('conversion'), commissionPct: '10' });
+    draft.setTerms('sA', 'p', { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
+    draft.setTerms('sA', 'k', { ...draft.defaultTerms('conversion'), commissionPct: '10', ...ALL });
     brandApi.checkEligibility.mockResolvedValue(ok({ results: [] }));
     brandApi.sendInvitations
       .mockResolvedValueOnce({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Kavya D. can no longer be invited to this set.', details: { sent: 0, failures: [{ influencerId: 'k', message: 'Kavya D. can no longer be invited to this set.' }] } } })

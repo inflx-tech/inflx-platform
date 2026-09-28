@@ -22,6 +22,8 @@
 
 const AppError = require('../utils/AppError');
 const { MSG, DELIVERABLE_TYPES, USAGE_PLACES, USAGE_DURATIONS } = require('./invitationCopy');
+// creator-terms-v2 (rules §2): Pay for Sale / Hybrid terms are offers + products without offers.
+const { readSellInput, MSG: SELL_MSG } = require('./creatorTerms.service');
 
 const SELLING = ['conversion', 'hybrid'];
 const TYPE_CODES = DELIVERABLE_TYPES.map(t => t.code);
@@ -79,7 +81,7 @@ const oneDecimal = (x) => Math.round(Number(x) * 10) / 10;
  * @param {object} [opts] { mode: 'strict' | 'legacy' }
  * @returns the normalised terms to store (camelCase), never mutating the input
  */
-function validateTerms(goal, raw, { mode = 'strict' } = {}) {
+function validateTerms(goal, raw, { mode = 'strict', sell: wantSell = false } = {}) {
   const strict = mode !== 'legacy';
   const t = normalizeTerms(raw);
   const selling = SELLING.includes(goal);
@@ -88,8 +90,8 @@ function validateTerms(goal, raw, { mode = 'strict' } = {}) {
     scope: null, categoryNodeId: null, category: null, productIds: null,
     deliverables: null, note: null, usageRights: null,
     offer: null, offerValidFrom: null, offerValidUntil: null,
+    sell: null,
   };
-
   // ── Money ────────────────────────────────────────────────────────────────
   if (selling) {
     const c = num(t.commissionPct);
@@ -111,8 +113,19 @@ function validateTerms(goal, raw, { mode = 'strict' } = {}) {
     else out.fee = f;
   }
 
-  // ── Selling scope (Pay for Sale, Hybrid) ────────────────────────────────
-  if (selling) {
+  // creator-terms-v2 — the item 5 send (strict) takes the new terms only. The whole-store /
+  // category / products scope and the copied or special follower offer are retired (rules 2.2);
+  // an app that still sends them is told to update. The legacy brief door keeps its old reading.
+  const sell = readSellInput(raw);
+  // Only the invitation send carries what she can sell; a counter or a pitch is money and work only.
+  const newTerms = selling && strict && wantSell;
+  if (newTerms) {
+    if (!sell) fail(SELL_MSG.OLD_TERMS, 'offers');
+    out.sell = sell;
+  }
+
+  // ── Selling scope (Pay for Sale, Hybrid) — the legacy door only (creator-terms-v2) ──
+  if (selling && !newTerms) {
     const scope = has(t.scope) ? String(t.scope).trim().toLowerCase() : (strict ? 'store' : null);
     if (scope) {
       if (!['store', 'category', 'products'].includes(scope)) fail(MSG.SCOPE_CATEGORIES, 'alloc_scope');
@@ -162,7 +175,7 @@ function validateTerms(goal, raw, { mode = 'strict' } = {}) {
   }
 
   // ── Follower offer (Pay for Sale, Hybrid) — shape only; the engine validates the config ──
-  if (selling && t.offer && (t.offer.brandOfferId || t.offer.offerType)) {
+  if (selling && !newTerms && t.offer && (t.offer.brandOfferId || t.offer.offerType)) {
     out.offer = {
       brandOfferId: t.offer.brandOfferId || null,
       offerType: t.offer.brandOfferId ? null : (t.offer.offerType || null),

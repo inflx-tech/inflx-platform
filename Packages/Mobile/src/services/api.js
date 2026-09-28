@@ -300,6 +300,9 @@ export const brandApi = {
   groupCheck:        (campaignId, setId, groupId) => api.get(`/campaigns/${campaignId}/sets/${setId}/group-check/${groupId}`),
   checkEligibility:  (campaignId, setId, creators) => api.post(`/campaigns/${campaignId}/sets/${setId}/eligibility`, { creators }),
   sendInvitations:   (campaignId, setId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations`, body),
+  // creator-terms-v2 — what the brand can give a creator for this set (T2, T3, T4)
+  offerChoices:      (campaignId, setId) => api.get(`/campaigns/${campaignId}/sets/${setId}/offer-choices`),
+  productsWithoutOffersForSet: (campaignId, setId, params) => api.get(`/campaigns/${campaignId}/sets/${setId}/products-without-offers${params && Object.keys(params).length ? '?' + Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : ''}`),
   invitationDetail:  (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}`),
   withdrawInvitation: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/withdraw`),
   removeInvitation:  (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/remove`),
@@ -584,6 +587,9 @@ export const influencerApi = {
   // ── Item 5 · my invitations (I11–I15). Contract: features/item5-invitations ──
   myInvitations:     (tab) => api.get(`/influencers/me/invitations${tab ? `?tab=${encodeURIComponent(tab)}` : ''}`),
   myInvitation:      (id) => api.get(`/influencers/me/invitations/${id}`),
+  // creator-terms-v2 — what she can sell, read-only (C2) and one offer (C3)
+  mySell:            (ciId) => api.get(`/influencers/me/invitations/${ciId}/sell`),
+  myOffer:           (ciId, offerId) => api.get(`/influencers/me/invitations/${ciId}/offers/${offerId}`),
   acceptInvitation:  (id) => api.post(`/influencers/me/invitations/${id}/accept`),
   declineInvitation: (id, body) => api.post(`/influencers/me/invitations/${id}/decline`, body),
   // ── Item 6 · countering, the move request and the pool. Contract: features/item6-negotiation ──

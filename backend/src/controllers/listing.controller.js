@@ -739,7 +739,7 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: prows } = await db.query(
-    `SELECT id, sku, category_node_id, price FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, sku, category_node_id, price, name, stock, is_active, pushed_to_store FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.id, brand.id]);
   const existing = prows[0];
   if (!existing) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -795,6 +795,8 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   // offer-builder-v2 (rules 1.11): a new price on a product in a live or scheduled offer tells
   // each creator given that offer, old -> new. The brand saw the warning before saving (O12).
   await offerLife.afterPriceChange(brand.id, existing.id, existing.price, rows[0].price);
+  // creator-terms-v2 (rules 2.8, 2.11): out of stock / a new normal price — her creators are told.
+  await require('../services/creatorTerms.service').afterProductChange(existing.id, existing, { ...rows[0], is_active: existing.is_active, pushed_to_store: existing.pushed_to_store });
   return success(res, { product: rows[0] });
 });
 

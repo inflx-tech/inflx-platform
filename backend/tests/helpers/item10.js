@@ -53,7 +53,8 @@ async function world(goal = 'engagement', { terms = null, setOver = {}, mode = '
   const c = await campaign(b);
   const s = await set(b, c.id, { goal, shoot_mode: mode, ...(mode === 'visit' ? { branch_id: br.id } : {}), ...setOver });
   const cr = await creator({ name: 'Tanvi Suresh' });
-  const t = terms || (goal === 'engagement' ? CONTENT : goal === 'hybrid' ? HYBRID : SALE);
+  // creator-terms-v2: selling terms are offers + products without offers (helpers/sell.js).
+  const t = await require('./sell').sellable(b.brandId, terms || (goal === 'engagement' ? CONTENT : goal === 'hybrid' ? HYBRID : SALE));
   const r = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms: t }] });
   if (r.status !== 201) throw new Error(`invite: ${JSON.stringify(r.body)}`);
   const ciId = r.body.data.rows[0].id;

@@ -39,6 +39,8 @@ const { MSG, NOTIFY, first } = require('./invitationCopy');
 // Item 6 — the pool hook and the stamped shoppable-post minimum. Contract: features/item6-negotiation
 const poolService = require('./pool.service');
 const platformRules = require('../config/platformRules');
+// creator-terms-v2 — offers linked + products without offers, frozen at sending (rules §2).
+const creatorTerms = require('./creatorTerms.service');
 const { MSG: MSG6 } = require('./negotiationCopy');
 
 /** A row in one of these statuses is IN the set; anything else never blocks a fresh invitation. */
@@ -133,7 +135,7 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
   if (body.formats_json !== undefined && goal !== 'engagement') inputs.assertValidFormats(body.formats_json);
 
   // ── Terms per Aim (§7). The legacy door validates what is present (see invitationTerms). ──
-  const terms = validateTerms(goal, body, { mode });
+  const terms = validateTerms(goal, body, { mode, sell: true });
 
   // ── The creator ─────────────────────────────────────────────────────────
   const inf = await creatorFacts(influencer_id);
@@ -176,8 +178,13 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
   const allocInput = terms.scope
     ? { alloc_scope: terms.scope, alloc_category_node_id: terms.categoryNodeId, alloc_category: terms.category, alloc_product_ids: terms.productIds }
     : { alloc_scope: body.alloc_scope, alloc_category_node_id: body.alloc_category_node_id, alloc_category: body.alloc_category, alloc_product_ids: body.alloc_product_ids };
-  const alloc = await inputs.resolveAllocation({ brandId: brand.id, ...allocInput });
-  if (SELLING_GOALS.includes(goal) && !alloc) {
+  // creator-terms-v2: what she can sell = her offers + products without offers (rules 2.3, 2.4).
+  // Validated against the set's posting date and FROZEN here; nothing of the old scope is written.
+  const sellPlan = terms.sell
+    ? await creatorTerms.resolveSell({ brandId: brand.id, postingDate: set.go_live_date, sell: terms.sell, creatorName: name })
+    : null;
+  const alloc = sellPlan ? null : await inputs.resolveAllocation({ brandId: brand.id, ...allocInput });
+  if (SELLING_GOALS.includes(goal) && !alloc && !sellPlan) {
     throw new AppError('VALIDATION_ERROR', strict ? MSG.SCOPE_CATEGORIES
       : 'Say what this creator may sell before adding her. On a selling set a creator with no allocation is contracted and invisible in the shopping app.', 422, 'alloc_scope');
   }
@@ -195,7 +202,9 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
   }
   let offer;
   try {
-    offer = await inputs.resolveOfferAttachment({ brandId: brand.id, goal, ...offerIn });
+    offer = sellPlan
+      ? { effType: null, effConfig: null, brandOfferId: null, allocation: 'commissioned' }
+      : await inputs.resolveOfferAttachment({ brandId: brand.id, goal, ...offerIn });
   } catch (e) {
     if (strict && e instanceof AppError && e.code === 'VALIDATION_ERROR' && offerIn.offer_type) throw new AppError('VALIDATION_ERROR', offerMessageFor(e), 422, 'offer_config_json');
     throw e;
@@ -209,7 +218,7 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     if (customCouponCode) throw new AppError('VALIDATION_ERROR', 'coupon_code must not be set for engagement (promotional) offers', 422, 'coupon_code');
     if (!strict && body.commission_pct) throw new AppError('VALIDATION_ERROR', 'commission_pct must not be set for engagement (promotional) offers', 422, 'commission_pct');
   }
-  if ((goal === 'conversion' || goal === 'hybrid') && !offer.effType && !alloc) {
+  if ((goal === 'conversion' || goal === 'hybrid') && !offer.effType && !alloc && !sellPlan) {
     throw new AppError('VALIDATION_ERROR', 'conversion and hybrid collaborations need either an allocation (alloc_scope) or an offer', 422, 'alloc_scope');
   }
 
@@ -249,8 +258,9 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
 
   // Coupon code handling — a label a shop can read off a bill, never how a sale finds the
   // creator (features/coupon-not-mandatory). With neither a code nor a prefix it stays null.
+  // creator-terms-v2 (rules 2.10): the per-creator offer code is retired — none for the new terms.
   let finalCouponCode = null;
-  if (goal === 'conversion' || goal === 'hybrid') {
+  if ((goal === 'conversion' || goal === 'hybrid') && !sellPlan) {
     if (customCouponCode) {
       const { rows: dup } = await db.query(`SELECT 1 FROM campaign_influencers WHERE coupon_code = $1`, [customCouponCode]);
       if (dup[0]) throw new AppError('CONFLICT', `Coupon code '${customCouponCode}' is already in use`, 409, 'coupon_code');
@@ -313,7 +323,9 @@ async function prepareOne({ brand, campaign, set, body, mode = 'strict', source,
     influencer_id, inf, name, terms, agreement, agreement_warnings, eligibility_warnings, minimums,
     source: poolEntry ? 'pool' : (source || (agreement ? 'pitch' : (strict ? 'brand_picker' : 'legacy'))),
     sourceGroupId: sourceGroupId || null, actorUserId, poolEntry,
+    sellPlan,
     values: {
+      sell_v2: !!sellPlan, sell_mode: sellPlan ? sellPlan.mode : null, sell_product_ids: sellPlan ? sellPlan.productIds : [],
       min_shoppable_posts: minShoppable, pool_entry_id: poolEntry ? poolEntry.id : null,
       agreed_fee: agreedFee, posting_date: postingDate, offer_expires_at: expiresAt,
       offer_type: offer.effType || null, offer_config_json: offer.effConfig ? JSON.stringify(offer.effConfig) : null,
@@ -343,10 +355,10 @@ async function insertOne(plan, { campaign, set, tx }) {
         alloc_scope, alloc_category_node_id, alloc_category, alloc_product_ids,
         offer_valid_until, offer_valid_from, agreement_id, channels_json, formats_json,
         invited_at, invited_by, source, source_group_id, brand_note, usage_rights_json,
-        min_shoppable_posts, pool_entry_id)
+        min_shoppable_posts, pool_entry_id, sell_v2, sell_mode, sell_product_ids)
      VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
              $17, $18, $19, $20::jsonb, $21, $22, $23, $24::jsonb, $25::jsonb,
-             now(), $26, $27, $28, $29, $30::jsonb, $31, $32)
+             now(), $26, $27, $28, $29, $30::jsonb, $31, $32, $33, $34, $35::uuid[])
      RETURNING *`,
     [
       set.id, plan.influencer_id, v.agreed_fee, v.posting_date, v.offer_expires_at,
@@ -357,9 +369,12 @@ async function insertOne(plan, { campaign, set, tx }) {
       v.offer_valid_until, v.offer_valid_from, plan.agreement ? plan.agreement.id : null, v.channels_json, v.formats_json,
       plan.actorUserId, plan.source, plan.sourceGroupId, v.brand_note, v.usage_rights_json,
       v.min_shoppable_posts || null, v.pool_entry_id || null,
+      !!v.sell_v2, v.sell_mode || null, v.sell_product_ids || [],
     ]
   );
   const ci = rows[0];
+  // creator-terms-v2: offers are LINKED, never copied (rules 2.3).
+  if (plan.sellPlan) await creatorTerms.linkOffers(ci.id, plan.sellPlan.offerIds, tx);
   if (plan.agreement) {
     await handshakeService.consumeAgreement({ agreementId: plan.agreement.id, campaignId: campaign.id, ciId: ci.id, tx });
   }

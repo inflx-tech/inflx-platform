@@ -19,7 +19,7 @@ import { brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, DangerButton, EmptyState } from '../../components/settings/primitives';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { rupees5 } from '../../components/invitations/copy5';
-import { C7, MSG7, AIM_LABEL7, longDate7, shortDate7 } from '../../components/agreement/copy7';
+import { C7, MSG7, AIM_LABEL7, longDate7, shortDate7, offerDates7 } from '../../components/agreement/copy7';
 import {
   Reference7, Card7, MoneyRow7, TermRow7, TotalRow7, SignatureBlock7,
   StandardTermsRow7, StateBox7, ShortfallCard7, MoneyMoved7,
@@ -156,6 +156,10 @@ export default function BrandAgreementScreen({ navigation, route }) {
             ? <TermRow7 label="Commission" value={`${money.commissionPct}% on what she sells`} testID="commission-row" />
             : null}
           {t.sell ? <TermRow7 label="She can sell" value={t.sell.words} testID="sell-row" /> : null}
+          {/* creator-terms-v2 (C4): the brand's copy lists the same offers, as of signing (rules 2.7). */}
+          {t.sell && Array.isArray(t.sell.offers)
+            ? t.sell.offers.map((o, i) => <TermRow7 key={`${o.name}-${i}`} label={o.name} value={offerDates7(o)} testID={`sell-offer-${i}`} />)
+            : null}
           {work.minShoppablePosts != null
             ? <TermRow7 label="Shoppable posts" value={C7.creator.atLeast(work.minShoppablePosts)} testID="shoppable-row" />
             : null}

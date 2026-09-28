@@ -5,7 +5,7 @@
  * Contract: features/item3-discovery-profiles-groups (F1) · features/item5-invitations (I11, I15)
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
@@ -51,7 +51,13 @@ export default function CollabsScreen({ navigation, route }) {
   return (
     <View style={base.screen} testID="collabs">
       <View style={{ paddingTop: 54, paddingHorizontal: 18 }}>
-        <Text style={s.title}>Collabs</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={s.title}>Collabs</Text>
+          {/* creator-terms-v2 (C5): the notices about her collaborations — offers ending, products leaving. */}
+          <TouchableOpacity onPress={() => navigation.navigate('CreatorNotifications')} accessibilityRole="button" accessibilityLabel="Notifications" testID="open-notifications">
+            <Text style={{ fontSize: 20 }}>🔔</Text>
+          </TouchableOpacity>
+        </View>
         <SegmentedControl segments={F.segments} value={segment} onChange={setSegment} testID="collabs-segments" />
       </View>
       {segment === 'Pitches' ? (

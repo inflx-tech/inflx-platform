@@ -35,6 +35,9 @@ async function product(brandId, name = 'Indigo Chanderi Saree', price = 2400) {
     `INSERT INTO brand_products (brand_id, name, price, sku, is_active, pushed_to_store)
      VALUES ($1, $2, $3, $4, true, true) RETURNING *`,
     [brandId, name, price, `SKU-${Math.random().toString(36).slice(2, 8).toUpperCase()}`]);
+  // creator-terms-v2: her products are frozen when the invitation is sent; this one counts as
+  // listed before it (tests/helpers/sell.js).
+  await require('./helpers/sell').listedBeforeSending(brandId, p.id);
   return p;
 }
 
@@ -197,16 +200,21 @@ describe('her address (R2–R4b, checks 4–8)', () => {
 /* ═══════════════════════════════════════════ products and booking (9–15, 53, 54) */
 
 describe('the products (R5, checks 9, 10, 53, 54)', () => {
-  it('9 · Pay for Sale shows only her scope; a product outside it is refused by the API', async () => {
-    const w = await world('conversion');          // helper sets scope 'store'
+  it('9 · Pay for Sale shows only what she can sell; a product outside it is refused by the API', async () => {
+    // creator-terms-v2: "her scope" is now her offers + products without offers (rules §2); the
+    // helper gives her all products without offers.
+    const w = await world('conversion');
     await sendAddress(w);
     const mine = await product(w.brandId, 'In scope');
     const other = await world('conversion');
     const theirs = await product(other.brandId, 'Not yours');
+    const { rows: [later] } = await query(
+      `INSERT INTO brand_products (brand_id, name, price, is_active, pushed_to_store) VALUES ($1, 'Listed after sending', 999, true, true) RETURNING id`, [w.brandId]);
 
     const list = await api.get(`${B(w)}/products`, w.b.token);
     expect(list.status).toBe(200);
-    expect(list.body.data.scope).toMatchObject({ kind: 'store', label: 'Whole store' });
+    expect(list.body.data.scope).toMatchObject({ kind: 'offers', label: `${list.body.data.products.length} products she can sell` });
+    expect(list.body.data.products.map((p) => p.id)).not.toContain(later.id);   // frozen at sending (Q2)
     expect(list.body.data.products.map((p) => p.id)).toContain(mine.id);
     expect(list.body.data.products.map((p) => p.id)).not.toContain(theirs.id);
 
@@ -216,10 +224,12 @@ describe('the products (R5, checks 9, 10, 53, 54)', () => {
   });
 
   it('53 · SCOPE_NOT_SET for a sale collaboration with no scope — never the catalogue', async () => {
+    // Only an old-kind collaboration can lack a scope: new terms refuse to send with nothing to
+    // sell. So this one is turned back into an old-kind row with no scope.
     const w = await world('conversion');
     await sendAddress(w);
     await product(w.brandId, 'Something');
-    await query(`UPDATE campaign_influencers SET alloc_scope = NULL WHERE id = $1`, [w.ciId]);
+    await query(`UPDATE campaign_influencers SET sell_v2 = false, sell_mode = NULL, sell_product_ids = '{}', alloc_scope = NULL WHERE id = $1`, [w.ciId]);
 
     const list = await api.get(`${B(w)}/products`, w.b.token);
     expect(list.status).toBe(422);

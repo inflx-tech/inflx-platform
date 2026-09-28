@@ -46,7 +46,7 @@ async function world(goal = 'conversion', { terms = null, campaignOver = {}, set
   const s = await set(b, c.id, { goal, ...setOver });
   const cr = await creator({ name: 'Priya Sharma' });
   const t = terms || (goal === 'engagement' ? CONTENT : goal === 'hybrid' ? { fee: 5000, commissionPct: 10, scope: 'store' } : SALE);
-  const r = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms: t }] });
+  const r = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, t) }] });
   if (r.status !== 201) throw new Error(`invite: ${JSON.stringify(r.body)}`);
   const ciId = r.body.data.rows[0].id;
   return { b, c, s, cr, ciId, url: `/campaigns/${c.id}/sets/${s.id}`, goal };
@@ -165,7 +165,7 @@ describe('rounds (checks 6–8)', () => {
     expect((await brandThread(w)).body.data.thread.negotiation.roundLimit).toBe(2);
     // a new negotiation, on another invitation, takes the new number
     const cr2 = await creator({ name: 'Tanvi S.' });
-    const inv = await api.post(`${w.url}/invitations`, w.b.token, { creators: [{ influencerId: cr2.influencerId, terms: SALE }] });
+    const inv = await api.post(`${w.url}/invitations`, w.b.token, { creators: [{ influencerId: cr2.influencerId, terms: await require('./helpers/sell').sellable(w.b.brandId, SALE) }] });
     const r = await api.post(`/influencers/me/invitations/${inv.body.data.rows[0].id}/counter`, cr2.token, { terms: { commissionPct: 14 } });
     expect(r.status).toBe(201);
     expect(r.body.data.thread.negotiation.roundLimit).toBe(3);
@@ -215,7 +215,7 @@ describe('accepting and declining (checks 9–11)', () => {
     const mine = (await myThread(w)).body.data.thread;
     expect(mine.ending.text).toContain('was told');
     // Re-invitable before the cutoff — the dead status is outside item 5's live unique index.
-    const again = await api.post(`${w.url}/invitations`, w.b.token, { creators: [{ influencerId: w.cr.influencerId, terms: { commissionPct: 11.5, scope: 'store' } }] });
+    const again = await api.post(`${w.url}/invitations`, w.b.token, { creators: [{ influencerId: w.cr.influencerId, terms: await require('./helpers/sell').sellable(w.b.brandId, { commissionPct: 11.5, scope: 'store' }) }] });
     expect(again.status).toBe(201);
   });
 
@@ -457,7 +457,7 @@ describe('the pool (checks 21–28, 39–41)', () => {
     for (const name of names) {
       if (!c || separateCampaign) { c = await campaign(b, { name: `Campaign ${out.length}` }); s = await set(b, c.id, { goal }); }
       const cr = await creator({ name });
-      const inv = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms }] });
+      const inv = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, terms) }] });
       const ciId = inv.body.data.rows[0].id;
       await api.post(`/influencers/me/invitations/${ciId}/move-request`, cr.token, { goLiveDate: wants });
       await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations/${ciId}/move-answer`, b.token, { answer: 'agreed' });
@@ -506,7 +506,7 @@ describe('the pool (checks 21–28, 39–41)', () => {
     // Build the set and send from the pool: she gets an ordinary invitation, marked.
     const c2 = await campaign(b, { name: 'New campaign' });
     const s2 = await set(b, c2.id, { goal: 'conversion', go_live_date: day(20) });
-    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: entry.terms, poolEntryId: entry.entryId }] });
+    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, entry.terms), poolEntryId: entry.entryId }] });
     expect(sent.status).toBe(201);
     const row = await ciRow(sent.body.data.rows[0].id);
     expect(row.source).toBe('pool');
@@ -526,7 +526,7 @@ describe('the pool (checks 21–28, 39–41)', () => {
     const entry = (await api.get('/brands/me/pool', b.token)).body.data.groups[0].rows[0];
     const c2 = await campaign(b, { name: 'Another' });
     const s2 = await set(b, c2.id, { goal: 'conversion', go_live_date: day(30) });   // not her date
-    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: entry.terms, poolEntryId: entry.entryId }] });
+    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, entry.terms), poolEntryId: entry.entryId }] });
     expect(sent.status).toBe(201);
     const mine = await api.get(`/influencers/me/invitations/${sent.body.data.rows[0].id}`, p.cr.token);
     expect(mine.body.data.invitation.fromPool).toMatchObject({ sameDate: false });
@@ -538,7 +538,7 @@ describe('the pool (checks 21–28, 39–41)', () => {
     const entry = (await api.get('/brands/me/pool', b.token)).body.data.groups[0].rows[0];
     const c2 = await campaign(b, { name: 'Another' });
     const s2 = await set(b, c2.id, { goal: 'conversion', go_live_date: day(20) });
-    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: entry.terms, poolEntryId: entry.entryId }] });
+    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, entry.terms), poolEntryId: entry.entryId }] });
     await api.post(`/influencers/me/invitations/${sent.body.data.rows[0].id}/decline`, p.cr.token, { reason: 'other' });
     expect((await poolRows(b.brandId))[0].state).toBe('used');
     expect((await api.get('/brands/me/pool', b.token)).body.data.total).toBe(0);
@@ -551,7 +551,7 @@ describe('the pool (checks 21–28, 39–41)', () => {
     await setCreatorInvite(p.cr.influencerId, { open: false });
     const c2 = await campaign(b, { name: 'Another' });
     const s2 = await set(b, c2.id, { goal: 'conversion', go_live_date: day(20) });
-    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: entry.terms, poolEntryId: entry.entryId }] });
+    const sent = await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, entry.terms), poolEntryId: entry.entryId }] });
     expect(sent.status).toBe(422);
     expect(sent.body.error.details.failures[0].message).toBe(MSG5.INELIGIBLE('Ritu V.'));
     expect((await poolRows(b.brandId))[0].state).toBe('waiting');
@@ -606,7 +606,7 @@ describe('the pool (checks 21–28, 39–41)', () => {
     // an entry never blocks a fresh invitation
     const c2 = await campaign(b, { name: 'Unrelated' });
     const s2 = await set(b, c2.id, { goal: 'conversion' });
-    expect((await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: SALE }] })).status).toBe(201);
+    expect((await api.post(`/campaigns/${c2.id}/sets/${s2.id}/invitations`, b.token, { creators: [{ influencerId: p.cr.influencerId, terms: await require('./helpers/sell').sellable(b.brandId, SALE) }] })).status).toBe(201);
     // she leaves
     const mine = await api.get('/influencers/me/pool', p.cr.token);
     expect(mine.body.data.entries[0].entryId).toBe(entry.entryId);
@@ -697,14 +697,15 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
     expect(mine.body.data.invitation.terms.shoppablePostsMin).toBe(1);
     // the next one takes the new number
     const cr2 = await creator({ name: 'Tanvi S.' });
-    const sent = await api.post(`${w.url}/invitations`, w.b.token, { creators: [{ influencerId: cr2.influencerId, terms: SALE }] });
+    const sent = await api.post(`${w.url}/invitations`, w.b.token, { creators: [{ influencerId: cr2.influencerId, terms: await require('./helpers/sell').sellable(w.b.brandId, SALE) }] });
     expect((await ciRow(sent.body.data.rows[0].id)).min_shoppable_posts).toBe(3);
   });
 
   it('the set groups creators with "Your move" first (check 30)', async () => {
     const w = await world('conversion');
     const [t, s2, d] = [await creator({ name: 'Tanvi S.' }), await creator({ name: 'Sneha N.' }), await creator({ name: 'Divya R.' })];
-    const more = await api.post(`${w.url}/invitations`, w.b.token, { creators: [t, s2, d].map(c => ({ influencerId: c.influencerId, terms: SALE })) });
+    const SALE_V2 = await require('./helpers/sell').sellable(w.b.brandId, SALE);
+    const more = await api.post(`${w.url}/invitations`, w.b.token, { creators: [t, s2, d].map(c => ({ influencerId: c.influencerId, terms: SALE_V2 })) });
     const ids = Object.fromEntries(more.body.data.rows.map(r => [r.name, r.id]));
     await counter(w, { commissionPct: 13 });                                              // her counter → the brand's move
     await api.post(`/influencers/me/invitations/${ids['Tanvi S.']}/counter`, t.token, { terms: { commissionPct: 12 } });

@@ -46,6 +46,7 @@ const MAX_PER_VARIANT = 5;
 const SELECT = `
   SELECT ci.id AS ci_id, ci.influencer_id, ci.delayed_at, ci.delayed_stage,
          ci.alloc_scope, ci.alloc_category_node_id, ci.alloc_category, ci.alloc_product_ids,
+         ci.sell_v2,
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode AS set_mode,
          cs.go_live_date, cs.branch_id AS set_branch_id,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id,

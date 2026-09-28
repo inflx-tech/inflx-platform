@@ -67,6 +67,7 @@ async function forSets(brandId, conn) {
               WHERE ci.set_id = cs.id
                 AND cs.goal <> 'engagement'
                 AND ci.alloc_scope IS NULL
+                AND NOT ci.sell_v2   -- creator-terms-v2: offers + products, not a scope
                 AND ci.status <> ALL($2::campaign_influencer_status[]))  AS without_allocation,
 
             -- Anyone at all in it.

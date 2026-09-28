@@ -1,0 +1,32 @@
+
+── Before ──
+  suites                 138 (46 failed)
+  tests                  1695  passed 1447  failed 220
+── After ──
+  suites                 139 (46 failed)
+  tests                  1713  passed 1465  failed 220
+── Moved ──
+  new tests              20 (20 passing, 0 failing)
+  gone                   2
+  newly failing          0
+  newly passing          0
+  still failing          220
+
+── GONE (renamed, moved or deleted — say which) ──
+  · tests/item7-agreement.test.js :: the preview and sending (checks 1–9) the follower offer, the campaign description and the street address never appear (check 5)
+  · tests/item11-remote-flow.test.js :: the products (R5, checks 9, 10, 53, 54) 9 · Pay for Sale shows only her scope; a product outside it is refused by the API
+
+NO NEW FAILURES
+
+
+── Classification (creator-terms-v2) ──
+Baseline = the Level 1 record (features/offer-builder-v2, final_offers_v2). Full suite serially, alone on the test DB.
+GONE (2) = renamed in place to the new rules, both passing:
+  · item7 check 5 → "the retired follower offer, the campaign description and the street address never appear (check 5)"
+  · item11 check 9 → "9 · Pay for Sale shows only what she can sell; a product outside it is refused by the API"
+    (asserts the new label and that a product listed after sending is not hers — founder Q2)
+Stale fixtures (assertions unchanged): old { scope: 'store' } sends → all products without offers (tests/helpers/sell.js
+  sellable); item11 products made after sending → listedBeforeSending. item11 check 53 now turns the row back into an
+  old-kind collaboration (only those can lack a scope).
+An earlier contaminated run (a stopped run's jest kept writing to the same DB) showed 62 failures; 58 passed in isolation
+and 4 were the item11 fixtures above. This clean run supersedes it.

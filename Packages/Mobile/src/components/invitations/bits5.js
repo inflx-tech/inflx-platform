@@ -68,7 +68,7 @@ export function GroupHeader5({ title, count, testID }) {
 }
 
 /** I8 — one creator on Review: name · terms line · OK / Below min. */
-export function ReviewRow5({ name, avatarUrl, line, source, below, error, onPress, testID }) {
+export function ReviewRow5({ name, avatarUrl, line, source, below, endsSoon, error, onPress, testID }) {
   return (
     <TouchableOpacity style={b.row} onPress={onPress} activeOpacity={0.7} testID={testID}>
       <Avatar name={name} url={avatarUrl} size={40} />
@@ -78,7 +78,9 @@ export function ReviewRow5({ name, avatarUrl, line, source, below, error, onPres
         {source ? <Text style={b.source} numberOfLines={1} testID="review-source">{C5.review.from(source)}</Text> : null}
         {error ? <Text style={b.rowError}>{error}</Text> : null}
       </View>
-      <Chip5 label={error ? C5.pick.cantInvite : below ? C5.review.below : C5.review.ok} tone={error ? 'declined' : below ? 'below' : 'ok'} />
+      {/* creator-terms-v2 (T7): "Ends soon" joins the below-minimum warning. */}
+      <Chip5 label={error ? C5.pick.cantInvite : below ? C5.review.below : endsSoon ? C5.review.endsSoon : C5.review.ok}
+        tone={error ? 'declined' : below ? 'below' : endsSoon ? 'yourMove' : 'ok'} testID={endsSoon && !error && !below ? 'chip-ends-soon' : undefined} />
     </TouchableOpacity>
   );
 }

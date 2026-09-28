@@ -6,7 +6,7 @@
  * Contract: features/item5-invitations · prompt §6.10, §6.11 · APPROVAL.md §3.4
  */
 import React, { useCallback, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
@@ -106,6 +106,12 @@ export default function InvitationScreen({ navigation, route }) {
         <View style={s.card} testID="terms-block">
           <Text style={s.blockTitle}>{D.yours}</Text>
           {t.commissionPct != null ? <KV5 k={D.commission} v={D.commissionValue(t.commissionPct)} /> : null}
+          {/* creator-terms-v2 (C1): one row — her offers + products — that opens "What you can sell". */}
+          {t.sell ? (
+            <TouchableOpacity onPress={() => navigation.navigate('CreatorSell', { ciId })} accessibilityRole="button" testID="sell-row">
+              <KV5 k={D.sell} v={`${t.sell.words} ›`} />
+            </TouchableOpacity>
+          ) : null}
           {t.scope ? <KV5 k={D.sell} v={t.scope.kind === 'store' ? D.sellStore : t.scope.words} /> : null}
           {t.offer && t.offer.kind !== 'none' ? <KV5 k={D.offer} v={t.offer.name || C5.offer.specialLine} /> : null}
           {t.shoppablePostsMin != null ? <KV5 k={D.posts} v={D.postsValue(t.shoppablePostsMin || MIN_SHOPPABLE_POSTS)} /> : null}

@@ -45,7 +45,9 @@ async function world(goal = 'conversion', setOver = {}) {
 }
 const SALE = { commissionPct: 10, scope: 'store' };
 const CONTENT = { fee: 8000, deliverables: [{ type: 'reel', count: 1 }, { type: 'story', count: 2 }] };
-const send = (w, creators, extra = {}) => api.post(`${w.url}/invitations`, w.b.token, { creators, ...extra });
+// creator-terms-v2: selling terms become offers + products without offers (helpers/sell.js).
+const send = async (w, creators, extra = {}) => api.post(`${w.url}/invitations`, w.b.token, {
+  creators: await Promise.all(creators.map(async (c) => ({ ...c, terms: await require('./helpers/sell').sellable(w.b.brandId, c.terms) }))), ...extra });
 const one = (cr, terms = SALE, extra = {}) => ({ influencerId: cr.influencerId, terms, ...extra });
 const notifs = async (userId) => (await query(`SELECT type, title, body FROM notifications WHERE user_id = $1 ORDER BY created_at`, [userId])).rows;
 const ciRow = async (id) => (await query(`SELECT * FROM campaign_influencers WHERE id = $1`, [id])).rows[0];
@@ -133,7 +135,9 @@ describe('sending — one action, all or nothing (checks 17, 18, 20, 38)', () =>
       expect(row.invited_by).toBe(w.b.userId);
       expect(row.source).toBe('brand_picker');
       expect(Number(row.commission_pct)).toBeGreaterThan(0);
-      expect(row.alloc_scope).toBe('store');
+      // creator-terms-v2 (rules 2.2): what she can sell is offers + products, never a store scope.
+      expect(row.sell_v2).toBe(true);
+      expect(row.alloc_scope).toBeNull();
     }
     expect(rows.find(x => x.influencer_id === d.influencerId).brand_note).toBe('Loved your Diwali reels.');
     for (const cr of [p, s2, d]) {
@@ -215,25 +219,19 @@ describe('sending — one action, all or nothing (checks 17, 18, 20, 38)', () =>
     expect(row.usage_rights_json).toEqual({ on: true, duration_days: 60, places: ['social', 'ads'] });
     expect(row.brand_note).toBe('See you at the store.');
 
+    // creator-terms-v2 (rules 1.13, 2.2): the special offer and "Also save to my offers" are retired.
+    // A Hybrid invitation sent with one alongside the new terms stores offers + products only: no
+    // library row is made and nothing is copied onto the invitation.
     const w2 = await world('hybrid');
     const pid = await product(w2.b.brandId, { price: 2400 });
-    r = await send(w2, [one(p, { fee: 5000, commissionPct: 10, scope: 'products', productIds: [pid],
-      offer: { offerType: 'discount', offerConfigJson: { sub_type: 'pct', value: 12, scope: 'store' }, name: 'Festive 12', saveToLibrary: true } })]);
+    const libBefore = (await query(`SELECT count(*)::int n FROM brand_offers WHERE brand_id = $1`, [w2.b.brandId])).rows[0].n;
+    r = await api.post(`${w2.url}/invitations`, w2.b.token, { creators: [{ influencerId: p.influencerId, terms: {
+      fee: 5000, commissionPct: 10, productsWithoutOffers: { mode: 'chosen', productIds: [pid] },
+      offer: { offerType: 'discount', offerConfigJson: { sub_type: 'pct', value: 12, scope: 'store' }, name: 'Festive 12', saveToLibrary: true } } }] });
     expect(r.status).toBe(201);
     const row2 = await ciRow(r.body.data.rows[0].id);
-    expect(row2.brand_offer_id).toBeTruthy();
-    expect(row2.offer_type).toBe('discount');
-    expect(row2.offer_config_json).toMatchObject({ sub_type: 'pct', value: 12 });
-    expect(row2.alloc_scope).toBe('products');
-    expect(row2.offer_valid_from).toBeTruthy(); // defaults to the posting day
-    const lib = (await query(`SELECT name, status FROM brand_offers WHERE id = $1`, [row2.brand_offer_id])).rows[0];
-    expect(lib).toMatchObject({ name: 'Festive 12', status: 'active' });
-    // editing the library offer afterwards changes nothing on the sent invitation
-    await query(`UPDATE brand_offers SET offer_config_json = '{"sub_type":"pct","value":50,"scope":"store"}' WHERE id = $1`, [row2.brand_offer_id]);
-    expect((await ciRow(row2.id)).offer_config_json.value).toBe(12);
-    // a special offer with no amount is refused in the §7 words
-    r = await send(w2, [one(await creator(), { fee: 5000, commissionPct: 10, offer: { offerType: 'discount', offerConfigJson: { sub_type: 'pct', value: 0 } } })]);
-    expect(r.status).toBe(422); expect(r.body.error.details.failures[0].message).toBe(MSG.OFFER_AMOUNT);
+    expect(row2).toMatchObject({ sell_v2: true, sell_mode: 'chosen', sell_product_ids: [pid], brand_offer_id: null, offer_type: null, alloc_scope: null });
+    expect((await query(`SELECT count(*)::int n FROM brand_offers WHERE brand_id = $1`, [w2.b.brandId])).rows[0].n).toBe(libBefore);
   });
 
   it('a group send remembers the group, never shown to the creator', async () => {
@@ -457,7 +455,8 @@ describe('after sending (checks 21–24, 36, 39)', () => {
     expect(g.signed.count).toBe(1); expect(g.deferred.count).toBe(1); expect(g.declined.count).toBe(1);
     expect(g.deferred.rows[0]).toMatchObject({ name: 'Ritu', deferredGoLiveDate: day(17), actions: { withdraw: false, remove: true } });
     expect(g.declined.rows[0]).toMatchObject({ declineReason: 'fee_too_low', declineReasonLabel: 'Fee too low' });
-    expect(g.waiting.rows[0].termsLine).toBe('10% · whole store · no offer');
+    // creator-terms-v2 (T7): "10% · N products at normal price" — the fixture gives all products without offers.
+    expect(g.waiting.rows[0].termsLine).toMatch(/^10% · \d+ products? at normal price$/);
     expect(summary.body.data.set.counts).toEqual({ invited: 6, signed: 1, waiting: 3, declined: 1 });
     // the cutoff passes with one signed: the set stays; the offer clock, not this job, handles the rest
     // and on a set nobody signed, deferred is never closed
@@ -501,7 +500,7 @@ describe('the creator (checks 25–33, 37, 42)', () => {
     await query(`UPDATE campaign_sets SET set_budget = 55555, per_influencer_budget = 4444, coupon_prefix = 'DIW' WHERE id = $1`, [w.s.id]);
     const p = await creator({ name: 'Priya Sharma' });
     const pid = await product(w.b.brandId, { name: 'Silk saree', price: 2400 });
-    const s1 = await send(w, [one(p, { commissionPct: 10, scope: 'products', productIds: [pid] }, { note: 'Loved your reels.' })]);
+    const s1 = await send(w, [one(p, { commissionPct: 10, productsWithoutOffers: { mode: 'chosen', productIds: [pid] } }, { note: 'Loved your reels.' })]);
     const ciId = s1.body.data.rows[0].id;
     const list = await api.get('/influencers/me/invitations', p.token);
     expect(list.status).toBe(200);
@@ -513,8 +512,9 @@ describe('the creator (checks 25–33, 37, 42)', () => {
     expect(d.status).toBe(200);
     const inv = d.body.data.invitation;
     expect(inv.set).toMatchObject({ goal: 'conversion', shootMode: 'shipment', postingDate: day(10), cutoff: day(7) });
-    expect(inv.terms).toMatchObject({ commissionPct: 10, shoppablePostsMin: MIN_SHOPPABLE_POSTS, scope: { kind: 'products', words: '1 product' }, offer: { kind: 'none' } });
-    expect(inv.terms.scope.products[0]).toMatchObject({ id: pid, name: 'Silk saree' });
+    // creator-terms-v2 (C1): one row, offers + products; no old scope, no shopper offer.
+    expect(inv.terms).toMatchObject({ commissionPct: 10, shoppablePostsMin: MIN_SHOPPABLE_POSTS,
+      sell: { offers: [], products: { mode: 'chosen', count: 1 }, words: '1 product at normal price' }, scope: null, offer: null });
     expect(inv.note).toBe('Loved your reels.');
     expect(JSON.stringify(d.body)).not.toMatch(LEAK);
     expect(JSON.stringify(d.body)).not.toContain('SECRET');
@@ -659,8 +659,16 @@ describe('offer fixes riding along (checks 15, 16)', () => {
     const p = await creator();
     const pid = await product(w.b.brandId, { price: 1000 });
     // The offer starts yesterday, not on the posting day, so it is live for this sale.
-    const s1 = await send(w, [one(p, { commissionPct: 10, scope: 'store', offerValidFrom: day(-1), offer: { offerType: 'discount', offerConfigJson: { sub_type: 'pct', value: 15, scope: 'store' }, saveToLibrary: true } })]);
-    const ciId = s1.body.data.rows[0].id;
+    // creator-terms-v2: the send no longer copies offers (rules 2.3), so this OLD-style collaboration
+    // — a library offer copied onto the row, as older invitations carry it — is written as it exists.
+    const { rows: [lib] } = await query(
+      `INSERT INTO brand_offers (brand_id, name, offer_type, offer_config_json, status, engine)
+       VALUES ($1, 'Old library 15%', 'discount', '{"sub_type":"pct","value":15,"scope":"store"}', 'active', 1) RETURNING id`, [w.b.brandId]);
+    const { rows: [old] } = await query(
+      `INSERT INTO campaign_influencers (set_id, influencer_id, status, commission_pct, alloc_scope, brand_offer_id, offer_type, offer_config_json, offer_valid_from, allocation)
+       VALUES ($1, $2, 'invited', 10, 'store', $3, 'discount', '{"sub_type":"pct","value":15,"scope":"store"}', $4, 'commissioned') RETURNING id`,
+      [w.s.id, p.influencerId, lib.id, new Date(Date.now() - 86400000).toISOString()]);
+    const ciId = old.id;
     const row = await ciRow(ciId);
     await query(`UPDATE campaigns SET status = 'active' WHERE id = $1`, [w.c.id]);
     await query(`UPDATE campaign_influencers SET status = 'active' WHERE id = $1`, [ciId]);

@@ -34,6 +34,8 @@ const campaignState = require('../services/campaignState.service');
 const { SET_SELECT, shapeSet } = require('./campaignSets.controller');
 const { resolveAvatars } = require('../utils/avatarResolver');
 const { SIGNED_CONTRACT_SQL } = require('../services/collabState');
+// creator-terms-v2 — the brand's choices for a set, and the creator's read-only views.
+const creatorTerms = require('../services/creatorTerms.service');
 
 /* ────────────────────────────────────────────────────────── ownership */
 
@@ -312,8 +314,43 @@ const decline = asyncHandler(async (req, res) => {
   return success(res, { invitation: inv });
 });
 
+/* ─────────────────────────────────── creator-terms-v2 (rules §2; T2, T3, T4, C2, C3) */
+
+/** GET /campaigns/:id/sets/:sid/offer-choices — offers valid on the posting date or the day after. */
+const offerChoices = asyncHandler(async (req, res) => {
+  const brand = await brandOf(req.user.sub);
+  const { set } = await ownedCampaignAndSet(req, brand.id);
+  if (!set.go_live_date) throw new AppError('INVITE_CLOSED', 'Set a posting date first.', 422, 'go_live_date');
+  return success(res, await creatorTerms.offerChoices(brand.id, set.go_live_date));
+});
+
+/** GET /campaigns/:id/sets/:sid/products-without-offers?q&node&price_min&price_max — free on or after posting. */
+const productsWithoutOffers = asyncHandler(async (req, res) => {
+  const brand = await brandOf(req.user.sub);
+  const { set } = await ownedCampaignAndSet(req, brand.id);
+  if (!set.go_live_date) throw new AppError('INVITE_CLOSED', 'Set a posting date first.', 422, 'go_live_date');
+  const products = await creatorTerms.freeProducts(brand.id, set.go_live_date, {
+    q: req.query.q ? String(req.query.q) : null, node: req.query.node || null,
+    price_min: req.query.price_min, price_max: req.query.price_max,
+  });
+  return success(res, { posting_date: String(set.go_live_date).slice(0, 10), products });
+});
+
+/** GET /influencers/me/invitations/:ciId/sell — C2, what she can sell (read-only). */
+const mySell = asyncHandler(async (req, res) => {
+  const influencerId = await influencerIdOf(req.user.sub);
+  return success(res, await creatorTerms.creatorSell(influencerId, req.params.ciId));
+});
+
+/** GET /influencers/me/invitations/:ciId/offers/:offerId — C3, one offer (read-only). */
+const myOffer = asyncHandler(async (req, res) => {
+  const influencerId = await influencerIdOf(req.user.sub);
+  return success(res, { offer: await creatorTerms.creatorOffer(influencerId, req.params.ciId, req.params.offerId) });
+});
+
 module.exports = {
   pickable, groupCheck, checkEligibility, sendInvitations, invitationDetail, withdraw, remove,
   myInvitations, myInvitation, accept, decline,
   workedWith, pickStates,
+  offerChoices, productsWithoutOffers, mySell, myOffer,
 };

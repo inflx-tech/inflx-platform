@@ -13,6 +13,8 @@ export const MSG5 = {
   DELIVERABLES_EMPTY: 'Add at least one thing she delivers.',
   DELIVERABLE_COUNT: 'Choose between 1 and 20.',
   DELIVERABLE_DUP: "You've already added that. Change the count instead.",
+  // creator-terms-v2 (rules 2.2): offers + products without offers; at least one of the two.
+  SELL_NOTHING: (f) => `Give ${f} at least one offer or one product without an offer.`,
   SCOPE_CATEGORIES: 'Pick at least one category.',
   SCOPE_PRODUCTS: 'Pick at least one product.',
   USAGE_PLACE: 'Choose where the brand can use the content.',
@@ -127,6 +129,47 @@ export const C5 = {
     pickCategory: 'Pick a category', pickProducts: 'Pick products', noProducts: 'No published products yet. Add them on the website first.',
     categories: (n) => plural(n, 'category', 'categories'), products: (n) => plural(n, 'product', 'products'),
   },
+  // creator-terms-v2 — T1–T7 (features/creator-terms-v2, locked 2026-09-28)
+  sell: {
+    offers: 'Offers', productsWithout: 'Products without offers',
+    offersNone: 'None given', productsNone: 'None',
+    offersValue: (n, p) => `${plural(n, 'offer', 'offers')} · ${plural(p, 'product', 'products')}`,
+    productsValue: (n) => `${plural(n, 'product', 'products')} · normal price`,
+    productsAll: (n) => `All ${plural(n, 'product', 'products')} · normal price`,
+    summary: (o, op, p) => {
+      const off = o ? `${plural(o, 'offer', 'offers')} (${plural(op, 'product', 'products')})` : null;
+      const pr = p ? `${plural(p, 'product', 'products')} at normal price` : null;
+      return `She can sell: ${[off, pr].filter(Boolean).join(' + ') || 'nothing yet'}`;
+    },
+    summaryMoney: (pct) => `Commission: ${pct} on every sale`,
+    everyoneHint: 'Copies commission, offers and products. You can still change any creator.',
+    // T2 / T6
+    offersTitle: (f) => `Offers for ${f}`,
+    offersHint: (d, d1) => `Your offers valid on the posting day (${d}) or the day after.`,
+    selectAll: 'Select all', picked: (k, n) => `${k} of ${n} picked`,
+    endsSoon: (end, days) => `⚠ Ends ${end}, ${plural(days, 'day', 'days')} after posting. Her posts using it leave the shop then.`,
+    hidden: (n, parts) => `${plural(n, 'offer', 'offers')} ${n === 1 ? "isn't" : "aren't"} listed: ${parts}.`,
+    hiddenStarts: (d) => `one starts ${d}`, hiddenEnded: (d) => `one ended ${d}`,
+    give: (n) => (n ? `Give ${plural(n, 'offer', 'offers')}` : 'Give no offers'),
+    noOffersTitle: (d) => `No offers valid on ${d}`,
+    noOffersBody: (d, d1) => `Offers are built on the INFLX website. Build one that runs on ${d} or ${d1}, or give her products without offers instead.`,
+    buildOnWeb: 'Build an offer on the website', close: 'Close',
+    // T3 / T4
+    productsTitle: 'Products without offers',
+    productsHint: (d) => `Sold at normal price. Only products not in any offer on or after ${d} are shown.`,
+    none: 'None', noneSub: 'She sells only her offers',
+    all: 'All products without offers', allSub: (n) => `${plural(n, 'product', 'products')}, fixed when you send`,
+    choose: 'Choose products', chooseSub: (n, cats) => (n ? `${n} picked${cats ? ` · ${cats}` : ''}` : 'Pick the ones she can sell'),
+    change: (n) => `Change the ${plural(n, 'product', 'products')}`,
+    giveTheOffer: "To give a product that's in an offer, give its offer.",
+    done: 'Done',
+    chooseTitle: 'Choose products', tabs: ['Categories', 'Search'], allIn: (n) => `All ${n}`, tickSome: 'Tick some',
+    searchPlaceholder: 'Product name or SKU',
+    notHere: 'Products in an offer on or after the posting date don\'t appear here at all.',
+    use: (n) => (n ? `Use ${plural(n, 'product', 'products')}` : 'Use no products'),
+    freeCount: (n, d) => `${n} WITHOUT OFFERS`,
+    loadFailed: "Couldn't load. Try again.",
+  },
   offer: {
     title: (f) => `Follower offer for ${f}`, header: 'FOLLOWER OFFER',
     none: 'No offer', noneSub: 'Shoppers pay the normal price',
@@ -151,7 +194,8 @@ export const C5 = {
   review: {
     title: 'Review and send', all: (n) => `All ${plural(n, 'creator', 'creators')}`,
     belowMany: (n) => `${n} ${n === 1 ? 'creator is' : 'creators are'} below their own minimum. They can still be invited and can counter.`,
-    ok: 'OK', below: 'Below min',
+    ok: 'OK', below: 'Below min', endsSoon: 'Ends soon',
+    endsSoonMany: (n, days) => `${n === 1 ? '1 creator was' : `${n} creators were`} given an offer that ends ${days} ${days === 1 ? 'day' : 'days'} after posting.`,
     from: (g) => `from ${g}`,
     hint: (date) => `Each creator gets their own invitation. They can accept, counter or decline until ${shortDate4(date)}.`,
     send: (n) => `Send ${plural(n, 'invitation', 'invitations')}`,

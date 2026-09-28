@@ -62,7 +62,8 @@ export default function OfferPage({ id }) {
     setBusy(false);
     if (!r.success) { setDlgErr(r.error?.message || 'Couldn\'t end the offer.'); return; }
     setDialog(null);
-    say(`Offer ended. Its products are free from today.${r.data.creators_told ? ` ${r.data.creators_told} creator${r.data.creators_told > 1 ? 's were' : ' was'} told.` : ''}`);
+    const d = r.data; const dropped = d.invitations_dropped || 0; const gone = d.invitations_withdrawn || 0;
+    say(`Offer ended. Its products are free from today.${d.creators_told ? ` ${d.creators_told} creator${d.creators_told > 1 ? 's were' : ' was'} told.` : ''}${dropped ? ` Taken out of ${dropped} unsigned invitation${dropped > 1 ? 's' : ''}${gone ? `; ${gone} withdrawn with nothing left to sell` : ''}.` : ''}`);
     load();
   }
 
@@ -181,6 +182,12 @@ export default function OfferPage({ id }) {
               <span className="sm"><b>Every post using this offer leaves the shop.</b></span>
               <span className="xs">Their photos and videos promise {o.deal ? o.deal.toLowerCase() : 'this deal'}, so they can&apos;t stay up at full price.{creators.length ? ` The ${creators.length} creator${creators.length > 1 ? 's are' : ' is'} told.` : ''}</span>
             </div>
+            {view.unsigned_invitations > 0 && (
+              <div className="card nobox" style={{ gap: 4 }} data-testid="end-unsigned">
+                <span className="sm"><b>It&apos;s in {view.unsigned_invitations} unsigned invitation{view.unsigned_invitations > 1 ? 's' : ''}.</b></span>
+                <span className="xs">It drops out of {view.unsigned_invitations > 1 ? 'them' : 'it'} and the creator{view.unsigned_invitations > 1 ? 's are' : ' is'} told. An invitation left with nothing to sell is withdrawn.</span>
+              </div>
+            )}
             <div className="hint">{view.pool.counts.buy === 1 ? 'Its 1 product becomes' : `All ${view.pool.counts.buy} products become`}{view.pool.counts.gift ? ' (and its gifts)' : ''} free right away. It stays in your list as Ended, with its dates ({span(o.starts_on, o.ends_on)}).</div>
             {dlgErr && <div className="err">{dlgErr}</div>}
             <div className="row" style={{ justifyContent: 'flex-end' }}>
