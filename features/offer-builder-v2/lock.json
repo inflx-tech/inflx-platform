@@ -27,5 +27,16 @@
     "found_in_passing": "PRODUCTION FAULT since 11 Sep (item 3): GET /brands/me/products answered 400 Invalid ID format because discovery /brands/:id/products matched first; brand website Inventory \"All products\" failed. Fixed by constraining :id to a uuid (check 43).",
     "migration_rehearsal": "run-193.js --dry then --apply against a local copy at 192: all 25 structural checks OK, no money moved; migration applied twice cleanly",
     "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — pre-existing failures unchanged; certification is no-regression). Not deployed."
+  },
+  "deployed_to_production": {
+    "at": "2026-09-28",
+    "by": "founder go (\"pls proceed with step 1 and 2\")",
+    "migration": "193 applied to production via run-193.js --apply after a clean --dry (Postgres 17.6; btree_gist available, now installed): 26 structural checks OK; the 3 old offers (all active, none on the store) archived; 1 old copy on a collaboration untouched; no new-engine offers, no pool items, collab_offers empty",
+    "commit": "76cd7610 (pushed 5cc4b345..76cd7610, carrying 7787dbb8 and c9028bde, both records/docs)",
+    "render": "live ~1.5 min after push, proved by route behaviour: GET /v1/brands/not-an-id/products answered 401 before and 404 after (the discovery :id is now a uuid) while /v1/brands/<uuid>/products stayed 401 (control)",
+    "vercel": "live: https://inflx.in/login Age 178493 -> 0 at 19:25 IST",
+    "ota": "none — no phone change",
+    "money": "NO MONEY MOVED — identical before the migration and after the deploy: 12 escrow rows / Rs 34,500, contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions, 16 follower_transactions",
+    "pending": "founder walk of the website builder on production (build one offer end to end); Level 2 (creator terms) gives offers to creators"
   }
 }
