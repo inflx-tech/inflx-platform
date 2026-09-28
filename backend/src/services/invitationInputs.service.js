@@ -71,12 +71,15 @@ async function resolveOfferAttachment({ brandId, goal, brand_offer_id, offer_typ
 
   if (brand_offer_id) {
     const { rows } = await db.query(
-      `SELECT id, offer_type, offer_config_json, status
+      `SELECT id, offer_type, offer_config_json, status, engine
          FROM brand_offers WHERE id = $1 AND brand_id = $2`,
       [brand_offer_id, brandId]
     );
     if (!rows[0]) throw new AppError('NOT_FOUND', 'Offer not found in your library', 404, 'brand_offer_id');
     if (rows[0].status === 'archived') throw new AppError('VALIDATION_ERROR', 'Cannot attach an archived offer', 422, 'brand_offer_id');
+    // offer-builder-v2 (rules 2.3): an offer from the new builder is LINKED to a collaboration,
+    // never copied onto it. Only the new terms screen (Level 2) gives one.
+    if (Number(rows[0].engine) === 2) throw new AppError('VALIDATION_ERROR', 'This offer is given to creators from the new terms screen.', 422, 'brand_offer_id');
     brandOfferId = rows[0].id;
     effType = rows[0].offer_type;            // snapshot — library is authoritative
     effConfig = rows[0].offer_config_json;   // jsonb → JS object
@@ -167,7 +170,7 @@ async function validatePromotedOffers(brandId, ids) {
   const uniq = [...new Set(ids.filter(Boolean))];
   if (uniq.length === 0) return null;
   const { rows } = await db.query(
-    `SELECT id FROM brand_offers WHERE id = ANY($1::uuid[]) AND brand_id = $2 AND status <> 'archived'`,
+    `SELECT id FROM brand_offers WHERE id = ANY($1::uuid[]) AND brand_id = $2 AND status <> 'archived' AND engine = 1`,
     [uniq, brandId]
   );
   if (rows.length !== uniq.length) {

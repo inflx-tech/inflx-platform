@@ -42,7 +42,9 @@ const listOffers = asyncHandler(async (req, res) => {
   const brandId = await getBrandIdByUserId(req.user.sub);
   if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  const where = ['brand_id = $1'];
+  // offer-builder-v2 (spec D14): this is the OLD builder's list, kept for old clients. Offers from
+  // the new builder are listed only through ?engine=2, so they can never reach the copy path.
+  const where = ['brand_id = $1', 'engine = 1'];
   const params = [brandId];
   if (req.query.status) { params.push(req.query.status); where.push(`status = $${params.length}`); }
   if (req.query.type)   { params.push(req.query.type);   where.push(`offer_type = $${params.length}`); }
@@ -61,7 +63,7 @@ const listOffers = asyncHandler(async (req, res) => {
 
   // Status counts (unfiltered by status, still brand-scoped) for the tab badges.
   const { rows: countRows } = await db.query(
-    `SELECT status, count(*)::int AS n FROM brand_offers WHERE brand_id = $1 GROUP BY status`,
+    `SELECT status, count(*)::int AS n FROM brand_offers WHERE brand_id = $1 AND engine = 1 GROUP BY status`,
     [brandId]
   );
   const counts = { all: 0, draft: 0, active: 0, archived: 0 };

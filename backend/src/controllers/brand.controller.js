@@ -25,6 +25,8 @@ const storageService = require('../services/storage.service');
 // registration-and-profile — what "complete" means, the encrypted bank entry.
 const completeness = require('../services/profileCompleteness.service');
 const { encrypt } = require('../utils/encrypt');
+// offer-builder-v2 — auto-add on create, creator notices on a price change.
+const offerLife = require('../services/offerLife.service');
 
 const LOGO_MSG = 'Upload a JPG or PNG under 5 MB.';
 const LOGO_MAX_BYTES = 5 * 1024 * 1024;
@@ -659,6 +661,10 @@ const createProduct = asyncHandler(async (req, res) => {
 
   const product = rows[0];
 
+  // offer-builder-v2 (rules 1.4, spec D9): a product listed after an offer was published joins
+  // it when the offer's auto-add line matches. Never fails the listing.
+  await offerLife.autoAddProduct(product.id);
+
   // Restaurant custom-dish flywheel: a dish typed without a canonical link
   // (master_dish_id null) is captured into the review queue. Best-effort —
   // a queue-capture failure must NEVER block the listing from going live.
@@ -725,7 +731,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: existing } = await db.query(
-    `SELECT id FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, price FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.pid, brand.id]
   );
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -770,6 +776,12 @@ const updateProduct = asyncHandler(async (req, res) => {
   let affected_offers = [];
   if (req.body.pushed_to_store === false) {
     affected_offers = await offersReferencingProduct(brand.id, req.params.pid);
+  }
+
+  // offer-builder-v2 (rules 1.11): a new price on a product in a live or scheduled offer tells
+  // each creator given that offer, old -> new. Never fails the save.
+  if (req.body.price !== undefined) {
+    await offerLife.afterPriceChange(brand.id, req.params.pid, existing[0].price, rows[0].price);
   }
 
   return success(res, { product: rows[0], affected_offers });
@@ -1381,6 +1393,9 @@ const bulkUploadProducts = asyncHandler(async (req, res) => {
       }
     }
   }
+
+  // offer-builder-v2 (spec D9) — auto-add, as on every other create path.
+  for (const p of created) await offerLife.autoAddProduct(p.id);
 
   return success(res, {
     created: created.length,

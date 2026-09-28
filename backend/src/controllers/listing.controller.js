@@ -26,6 +26,7 @@ const bulk = require('../services/listingBulk.service');
 const bulkActions = require('../services/listingBulkActions.service');
 const imageIngest = require('../services/imageIngest.service');
 const { resolveProductImage } = require('../utils/productImage');
+const offerLife = require('../services/offerLife.service');
 
 const INGEST_ERR_MSG = {
   bad_scheme: 'Only http/https links are allowed', private_ip: 'That address is not allowed',
@@ -150,6 +151,9 @@ async function insertProducts(brand, node, items) {
         [node.vertical, b]);
     }
   });
+  // offer-builder-v2 (rules 1.4, spec D9): newly listed products join published offers whose
+  // auto-add line matches. After the commit, one by one, never failing the listing.
+  for (const p of created) await offerLife.autoAddProduct(p.id);
   return created;
 }
 
@@ -735,7 +739,7 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { rows: prows } = await db.query(
-    `SELECT id, sku, category_node_id FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    `SELECT id, sku, category_node_id, price FROM brand_products WHERE id = $1 AND brand_id = $2`,
     [req.params.id, brand.id]);
   const existing = prows[0];
   if (!existing) throw new AppError('NOT_FOUND', 'Product not found', 404);
@@ -788,6 +792,9 @@ const updateListingProduct = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT id, name, price, description, sku, stock, image_url, variants_json, facets, category_node_id, tags
        FROM brand_products WHERE id = $1`, [existing.id]);
+  // offer-builder-v2 (rules 1.11): a new price on a product in a live or scheduled offer tells
+  // each creator given that offer, old -> new. The brand saw the warning before saving (O12).
+  await offerLife.afterPriceChange(brand.id, existing.id, existing.price, rows[0].price);
   return success(res, { product: rows[0] });
 });
 
