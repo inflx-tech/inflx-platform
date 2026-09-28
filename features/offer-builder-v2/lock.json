@@ -1,7 +1,7 @@
 {
   "feature": "offer-builder-v2",
   "spec_version": "1.0.0",
-  "status": "approved",
+  "status": "built",
   "approved": true,
   "approved_by": "founder (chat 2026-09-28: \"Pls, read them clearly start implementing first one offers building.\" — contract written from the locked web boards O1–O13 and rules v1.4 §1; build decisions D1–D16 in 01-spec.md delegated under standing autonomy)",
   "approved_at": "2026-09-28T00:00:00+05:30",
@@ -10,12 +10,22 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder (chat 2026-09-28: \"mockups for web is locked and fine\"; Gift items tab added at founder request same day; six board questions stand as recommended)",
   "mockup_locked_at": "2026-09-28T00:00:00+05:30",
-  "notes": "Level 1 of 4 of the offer -> terms -> posts programme (Docs/OFFER_POSTS_PROGRAMME_DECISIONS.md). Mockups v1 drawn 2026-09-28 (O1-O12 web + P1-P4 phone pool builder), six open questions on the board. No implementation until mockup_locked and approved. Web boards O1-O13 LOCKED 2026-09-28. Phone pool builder P1-P4 NOT locked (website first, phone after). Rules: Docs/OFFER_TERMS_POSTS_RULES.md.",
+  "notes": "Level 1 of the offer -> terms -> posts programme. Web boards O1-O13 LOCKED and BUILT 2026-09-28; phone pool builder P1-P4 NOT locked, not built. Rules: Docs/OFFER_TERMS_POSTS_RULES.md v1.4 §1. Decisions D1-D16 in 01-spec.md. Migration 193 (btree_gist; brand_offers v2 columns; gift_items, offer_pool_sources, offer_pool_items with the two EXCLUDE lock constraints, collab_offers created empty for Level 2; every old offer archived). Production-impacting: explicit go required before run-193 --apply, push.",
   "release": {
     "qa_all_green": false,
     "released": false,
     "released_by": null,
     "released_at": null,
     "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-09-28T00:00:00+05:30",
+    "commits": "7bc95170 (Phase 1: contract, migration 193, engine, 73 checks) + Phase 2 (website screens, test reclassification, the discovery route fix, the record)",
+    "backend_tests": "full serial suite vs baseline (git archive of c9028bde): tests 1620->1695, passed 1372->1447, failed 220->220. 82 new all passing; 0 newly failing; 7 gone = rewritten in place to the rules 1.13 replacement (listed in 06-diff/backend-compare-final.txt); 6 stale fixtures corrected with assertions unchanged.",
+    "web": "next build clean; every locked board O1-O13 walked in the in-app browser against a local backend on a private scratch database (inflx_preview) — 06-diff/notes.md",
+    "checks": "43 / 43 pass — 03-expected-outputs.md",
+    "found_in_passing": "PRODUCTION FAULT since 11 Sep (item 3): GET /brands/me/products answered 400 Invalid ID format because discovery /brands/:id/products matched first; brand website Inventory \"All products\" failed. Fixed by constraining :id to a uuid (check 43).",
+    "migration_rehearsal": "run-193.js --dry then --apply against a local copy at 192: all 25 structural checks OK, no money moved; migration applied twice cleanly",
+    "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — pre-existing failures unchanged; certification is no-regression). Not deployed."
   }
 }

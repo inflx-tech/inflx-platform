@@ -23,29 +23,36 @@ async function makeBrand() {
   return { token, brandId: brand.id };
 }
 
-async function makeOffer(token, { publish = false } = {}) {
-  const res = await request(app).post('/v1/brands/me/offers').set('Authorization', `Bearer ${token}`)
-    .send({ name: 'Store 15% Off', offer_type: 'discount', offer_config_json: { sub_type: 'pct', value: 15, scope: 'store', products: [] } });
-  const id = res.body.data.offer.id;
-  const patch = { status: 'active' };
-  if (publish) patch.published_to_store = true;
-  const up = await request(app).patch(`/v1/brands/me/offers/${id}`).set('Authorization', `Bearer ${token}`).send(patch);
-  return { id, offer: up.body.data.offer };
+// offer-builder-v2 (rules 1.13): the builder no longer makes store offers, so an OLD store offer —
+// the only kind the store-direct code still reads — is a row of the old engine, written as such.
+// (Migration 193 archives every one of them in production; the code path stays until its cut.)
+async function makeOffer(brandId, { publish = false } = {}) {
+  const { rows: [o] } = await query(
+    `INSERT INTO brand_offers (brand_id, name, offer_type, offer_config_json, status, published_to_store, engine)
+     VALUES ($1, 'Store 15% Off', 'discount', '{"sub_type":"pct","value":15,"scope":"store","products":[]}', 'active', $2, 1)
+     RETURNING id`, [brandId, publish]);
+  return { id: o.id };
 }
 
 describe('publish to store', () => {
-  it('PATCH published_to_store=true → persists', async () => {
+  // Was: "PATCH published_to_store=true → persists". Retired by rules 1.13 (offers are for creators
+  // only; "Publish to store" is removed) — the same request now publishes nothing to the store.
+  it('the builder can no longer publish an offer to the store (rules 1.13)', async () => {
     const { token } = await makeBrand();
-    const { offer } = await makeOffer(token, { publish: true });
-    expect(offer.published_to_store).toBe(true);
-    expect(offer.status).toBe('active');
+    const res = await request(app).post('/v1/brands/me/offers').set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Store 15% Off', offer_type: 'discount' });
+    const id = res.body.data.offer.id;
+    await request(app).patch(`/v1/brands/me/offers/${id}`).set('Authorization', `Bearer ${token}`)
+      .send({ status: 'active', published_to_store: true });
+    const { rows: [r] } = await query(`SELECT status, published_to_store FROM brand_offers WHERE id = $1`, [id]);
+    expect(r).toEqual({ status: 'draft', published_to_store: false });
   });
 });
 
 describe('store surfacing (resolveBusinessStore)', () => {
   it('published+active offer appears in store_offers (brand-direct, no influencer)', async () => {
     const { token, brandId } = await makeBrand();
-    const { id } = await makeOffer(token, { publish: true });
+    const { id } = await makeOffer(brandId, { publish: true });
 
     const res = await request(app).get(`/v1/business/${brandId}/store`);
     expect(res.status).toBe(200);
@@ -58,7 +65,7 @@ describe('store surfacing (resolveBusinessStore)', () => {
 
   it('unpublished offer is NOT surfaced', async () => {
     const { token, brandId } = await makeBrand();
-    await makeOffer(token, { publish: false });   // active but not published
+    await makeOffer(brandId, { publish: false });   // active but not published
     const res = await request(app).get(`/v1/business/${brandId}/store`);
     expect(res.status).toBe(200);
     expect(res.body.data.store_offers).toHaveLength(0);

@@ -17,36 +17,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { brandApi, listingApi } from '../../../../lib/api';
 import CategoryTree from './CategoryTree';
+import PriceChangeDialog, { priceImpacts } from '../../../../components/offers/PriceChangeDialog';
+import { dayMonth, span, addDays } from '../../../../components/offers/offerFormat';
 
-/**
- * Display-only mirror of listingBulkActions.offerAcceptsProducts (backend).
- * Used to sort the offer picker into "can take products" and "can't, because…"
- * so the brand isn't invited to attempt an attach the server will refuse. The
- * SERVER remains authoritative — it re-checks and refuses independently.
- */
-function offerEligibility(offer) {
-  const t = String(offer?.offer_type || '').toLowerCase().trim();
-  const type = t === 'volume discount' || t === 'volume_discount' ? 'volume'
-    : t === 'free gift' ? 'free_gift' : t;
-  if (type !== 'discount' && type !== 'volume') {
-    return { ok: false, reason: {
-      bundle: 'Bundle offers work on one fixed set of products.',
-      bogo: 'BOGO needs a specific buy-and-get pair.',
-      free_gift: 'Free-gift offers pair each product with its gift.',
-    }[type] || 'This offer type does not take a product list.' };
-  }
-  const cfg = offer?.offer_config_json || {};
-  if (cfg.scope && cfg.scope !== 'products') {
-    return { ok: false, reason: cfg.scope === 'category'
-      ? 'Applies to a whole category — attaching would have no effect.'
-      : 'Applies store-wide — attaching would have no effect.' };
-  }
-  const ids = Array.isArray(cfg.products) ? cfg.products.filter(Boolean) : [];
-  if (!cfg.scope && ids.length === 0) {
-    return { ok: false, reason: 'Applies store-wide today. Set its scope to specific products first.' };
-  }
-  return { ok: true };
-}
+const nextDay = (d) => addDays(d, 1);
 
 const money = (v) => (v == null || v === '' ? '—' : '₹' + Number(v).toLocaleString('en-IN'));
 
@@ -105,13 +79,15 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
   const [fStatus, setFStatus] = useState([]);      // [] = no stock filter
   const [fVis, setFVis] = useState([]);            // [] = live + hidden
   const [fBrands, setFBrands] = useState([]);
-  // Bulk move / attach (contract: listing-bulk-move-and-offer)
-  const [modal, setModal] = useState(null);        // 'move' | 'offer' | null
+  // Bulk move (contract: listing-bulk-move-and-offer). The bulk "Attach offer" is retired
+  // (offer-builder-v2, rules 1.13): products join offers only through the pool builder.
+  const [modal, setModal] = useState(null);        // 'move' | null
   const [moveTarget, setMoveTarget] = useState(null);
-  const [offers, setOffers] = useState(null);
-  const [offersLoading, setOffersLoading] = useState(false);
-  const [chosenOffer, setChosenOffer] = useState(null);
   const [modalBusy, setModalBusy] = useState(false);
+  // offer-builder-v2 (O9): the offer each product is in now / next, and one product's panel.
+  const [offerOf, setOfferOf] = useState({});
+  const [focus, setFocus] = useState(null);        // { product, panel }
+  const [priceWarn, setPriceWarn] = useState(null); // O12 before a bulk price change
 
   useEffect(() => {
     (async () => {
@@ -140,11 +116,23 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // offer-builder-v2 (O9): which offer each product is in now, and the next one booked.
+  const loadOffers = useCallback(async () => {
+    const r = await brandApi.productOffers();
+    if (r.success) setOfferOf(r.data.products || {});
+  }, []);
+  useEffect(() => { loadOffers(); }, [loadOffers]);
+  const openPanel = async (p) => {
+    setFocus({ product: p, panel: null });
+    const r = await brandApi.productOfferPanel(p.id);
+    setFocus((f) => (f && f.product.id === p.id ? { product: p, panel: r.success ? r.data : { now: null, next: null } } : f));
+  };
+
   const select = (node) => {
     setSel(node); setPicked([]); setMsg('');
     if (node) loadNode(node); else loadAll();
   };
-  const refresh = () => { if (sel) loadNode(sel); else loadAll(); };
+  const refresh = () => { if (sel) loadNode(sel); else loadAll(); loadOffers(); };
 
   // ── row actions (unchanged endpoints) ──────────────────────────────────────
   const doToggle = async (p) => {
@@ -188,28 +176,31 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     if (!window.confirm(`Remove ${n} product${n === 1 ? '' : 's'} from your listing? This can't be undone.`)) return;
     return runBulk('Removed', (p) => brandApi.deleteProduct(p.id));
   };
-  const bulkPrice = () => {
+  // offer-builder-v2 (O12, rules 1.11): products in a live or scheduled offer are warned about
+  // before the new price is saved. Nothing is blocked; their creators are told after the save.
+  const bulkPrice = async () => {
     const raw = window.prompt(`New price (₹) for ${picked.length} selected product(s):`);
     if (raw == null) return;
     const price = Number(String(raw).trim());
-    if (!Number.isFinite(price) || price < 0) { setErr('Enter a valid price.'); return; }
+    if (!Number.isFinite(price) || price <= 0) { setErr('Enter a price above ₹0.'); return; }
+    const targets = rows.filter((p) => picked.includes(p.id));
+    setBulkBusy(true);
+    const hits = await priceImpacts(targets.map((p) => ({ id: p.id, price, old: p.price })));
+    setBulkBusy(false);
+    if (hits.length) { setPriceWarn({ impacts: hits, price }); return; }
     return runBulk('Price updated', (p) => brandApi.updateProduct(p.id, { price }));
   };
+  const confirmBulkPrice = async () => {
+    const { price } = priceWarn;
+    setPriceWarn(null);
+    await runBulk('Price updated', (p) => brandApi.updateProduct(p.id, { price }));
+  };
 
-  // ── bulk move / attach ─────────────────────────────────────────────────────
+  // ── bulk move ─────────────────────────────────────────────────────
   // Both endpoints answer per product. We report exactly what the server said,
   // including which rows it refused and why — a bulk action that quietly drops
   // rows is worse than one that names them.
   const openMove = () => { setMoveTarget(null); setModal('move'); };
-  const openOffer = () => {
-    setChosenOffer(null); setModal('offer');
-    if (offers || offersLoading) return;
-    setOffersLoading(true);
-    brandApi.getOffers()
-      .then((r) => { setOffersLoading(false); if (r.success) setOffers(r.data?.offers || []); })
-      .catch(() => setOffersLoading(false));
-  };
-
   const doMove = async () => {
     if (!moveTarget) return;
     setModalBusy(true); setErr(''); setMsg('');
@@ -223,19 +214,6 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     const t = await brandApi.get('/brands/me/listing-tree');
     if (t.success) setTree(t.data.tree || []);
     refresh();
-  };
-
-  const doAttach = async () => {
-    if (!chosenOffer) return;
-    setModalBusy(true); setErr(''); setMsg('');
-    const r = await brandApi.attachOfferProducts(chosenOffer.id, picked);
-    setModalBusy(false);
-    if (!r.success) { setErr(r.error?.message || 'Attach failed'); return; }
-    const { attached_count: n, already_attached: already = [], skipped = [] } = r.data;
-    const base = `${n} product${n === 1 ? '' : 's'} added to "${chosenOffer.name}"`
-      + (already.length ? ` (${already.length} already on it)` : '');
-    setMsg(describeOutcome(base, skipped));
-    setModal(null); setPicked([]);
   };
 
   // ── derived ────────────────────────────────────────────────────────────────
@@ -275,11 +253,12 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
     );
   }
 
-  const eligibleOffers = (offers || []).filter(o => o.status !== 'archived')
-    .map(o => ({ ...o, elig: offerEligibility(o) }));
-
   return (
     <div className="ws">
+      {priceWarn && (
+        <PriceChangeDialog impacts={priceWarn.impacts} busy={bulkBusy}
+          onCancel={() => setPriceWarn(null)} onConfirm={confirmBulkPrice} />
+      )}
       {modal === 'move' && (
         <div className="modalwrap" onClick={() => !modalBusy && setModal(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -304,53 +283,6 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
               <button className="btn ghost" onClick={() => setModal(null)}>Cancel</button>
               <button className="btn yellow" disabled={!moveTarget || modalBusy} onClick={doMove}>
                 {modalBusy ? 'Moving…' : `Move ${picked.length}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {modal === 'offer' && (
-        <div className="modalwrap" onClick={() => !modalBusy && setModal(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="mhd">
-              <b>Attach {picked.length} product{picked.length === 1 ? '' : 's'} to an offer</b>
-              <button className="x" onClick={() => setModal(null)}>×</button>
-            </div>
-            <div className="msub">Adds these products to the offer&apos;s scope. Attaching twice changes nothing.</div>
-            <div className="mbody">
-              {offersLoading && <div className="sub">Loading your offers…</div>}
-              {!offersLoading && eligibleOffers.length === 0 && (
-                <div className="sub">No offers yet. Create one in the Offers tab first.</div>
-              )}
-              {eligibleOffers.filter(o => o.elig.ok).map(o => (
-                <button key={o.id}
-                  className={'offrow' + (chosenOffer?.id === o.id ? ' on' : '')}
-                  onClick={() => setChosenOffer(o)}>
-                  <span className="nm">{o.name}</span>
-                  <span className="ty">{o.offer_type}</span>
-                  <span className="st">{o.status}</span>
-                </button>
-              ))}
-              {eligibleOffers.some(o => !o.elig.ok) && (
-                <>
-                  <div className="sec">Can&apos;t take a product list</div>
-                  {eligibleOffers.filter(o => !o.elig.ok).map(o => (
-                    <div key={o.id} className="offrow dis">
-                      <span className="nm">{o.name}</span>
-                      <span className="why">{o.elig.reason}</span>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-            <div className="mfoot">
-              <span className="pickd">
-                {chosenOffer ? <>Attaching to <b>{chosenOffer.name}</b></> : 'Pick an offer to continue.'}
-              </span>
-              <button className="btn ghost" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn yellow" disabled={!chosenOffer || modalBusy} onClick={doAttach}>
-                {modalBusy ? 'Attaching…' : `Attach ${picked.length}`}
               </button>
             </div>
           </div>
@@ -398,7 +330,6 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
                 <button className="btn sm" disabled={bulkBusy} onClick={() => bulkActive(true)}>Show</button>
                 <button className="btn sm" disabled={bulkBusy} onClick={bulkPrice}>Edit price</button>
                 <button className="btn sm" disabled={bulkBusy} onClick={openMove}>Move category</button>
-                <button className="btn sm" disabled={bulkBusy} onClick={openOffer}>Attach offer</button>
                 <button className="btn sm danger" disabled={bulkBusy} onClick={bulkRemove}>Remove</button>
                 {bulkBusy && <span style={{ fontWeight: 700 }}>Working…</span>}
                 <button className="x" onClick={() => setPicked([])}>×</button>
@@ -425,6 +356,7 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
                 <th style={{ textAlign: 'right' }}>Price</th>
                 <th style={{ textAlign: 'right' }}>Stock</th>
                 <th>Status</th>
+                <th>Offer</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr></thead>
               <tbody>
@@ -472,6 +404,16 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
                         </span>
                       </td>
                       <td>
+                        {/* offer-builder-v2 (O9): the offer now (until when), or the next (from when) */}
+                        <button className="offcell" title="See this product's offers" onClick={() => openPanel(p)}>
+                          {offerOf[p.id]?.now
+                            ? <><span className="pill live">{offerOf[p.id].now.name}</span><span className="pm">until {dayMonth(offerOf[p.id].now.until)}</span></>
+                            : offerOf[p.id]?.next
+                              ? <><span className="pill sched">{offerOf[p.id].next.name}</span><span className="pm">from {dayMonth(offerOf[p.id].next.from)}</span></>
+                              : <span className="pm">No offer</span>}
+                        </button>
+                      </td>
+                      <td>
                         <span className="pact">
                           <button onClick={() => { window.location.href = `/dashboard/products/listing?edit=${p.id}`; }}>Edit</button>
                           <button disabled={busy === p.id} onClick={() => doToggle(p)}>{p.is_active ? 'Hide' : 'Show'}</button>
@@ -488,6 +430,33 @@ export default function InventoryBrowser({ vlabel, onAdd, onEditCategory, search
       </div>
 
       <div className="card rail">
+        {focus && (
+          /* offer-builder-v2 (O9): the product's offer now and its next offer */
+          <div className="offpanel">
+            <div className="railhd"><span className="t">{focus.product.name}</span>
+              <button className="x" onClick={() => setFocus(null)}>×</button></div>
+            {!focus.panel ? <div className="sub">Loading…</div> : (
+              <>
+                <div className="offbox">
+                  <div className="ft">Offer now</div>
+                  {focus.panel.now ? (
+                    <>
+                      <div><b>{focus.panel.now.name}</b> · {span(focus.panel.now.from, focus.panel.now.until)}</div>
+                      <div className="pm">Given to {focus.panel.now.creators} creator{focus.panel.now.creators === 1 ? '' : 's'} · in {focus.panel.now.posts} of their posts{focus.panel.now.pool === 'gift' ? ' · as a gift' : ''}</div>
+                      <a className="btn ghost sm" href={`/dashboard/products/offers/${focus.panel.now.offer_id}`}>Open offer</a>
+                    </>
+                  ) : <div className="pm">None.</div>}
+                </div>
+                <div className="offbox">
+                  <div className="ft">Next offer</div>
+                  {focus.panel.next
+                    ? <div><b>{focus.panel.next.name}</b> · {span(focus.panel.next.from, focus.panel.next.until)}</div>
+                    : <div className="pm">None.{focus.panel.now ? ` Free from ${dayMonth(nextDay(focus.panel.now.until))}.` : ''}</div>}
+                </div>
+              </>
+            )}
+          </div>
+        )}
         <div className="railhd"><span className="t">{sel ? sel.name : 'Whole catalogue'}</span></div>
         <div className="tiles">
           <div className="tile"><b>{products.length}</b><span>Products</span></div>

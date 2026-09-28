@@ -153,6 +153,17 @@ describe('price impact and the notice (checks 35, 36)', () => {
   });
 });
 
+describe('the brand\'s own product list (found while building: Inventory "All products")', () => {
+  test('GET /brands/me/products answers the brand, not the creator-side "brand by id" route', async () => {
+    const r = await api.get('/brands/me/products', B.token);
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.data.products)).toBe(true);
+    const byId = await api.get(`/brands/${B.brandId}/products`, B.token);
+    expect(byId.status).toBe(200);
+    expect((await api.get('/brands/not-an-id/products', B.token)).status).toBe(404);
+  });
+});
+
 describe('the offers list (check 37)', () => {
   test('v2 only, with counts, type, search, a valid-on date, product and creator counts', async () => {
     const X = await H.brand();

@@ -12,6 +12,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { listingApi, uploadFileToGallery, API_BASE, brandApi } from '../../../../lib/api';
 import OffersLibrary from '../components/OffersLibrary';
+import ProductsWithoutOffers from '../components/ProductsWithoutOffers';
+import GiftItems from '../components/GiftItems';
+import PriceChangeDialog, { priceImpacts } from '../../../../components/offers/PriceChangeDialog';
 import CategoryTree from '../components/CategoryTree';
 import InventoryBrowser from '../components/InventoryBrowser';
 import ImageCropModal from '../../../../components/ImageCropModal';
@@ -65,8 +68,10 @@ export default function DrilldownListingPage() {
     if (sp.has('edit')) return 'add';
     if (sp.get('tab') === 'add') return 'add';
     if (sp.get('tab') === 'offers') return 'offers';
+    if (sp.get('tab') === 'free') return 'free';
+    if (sp.get('tab') === 'gifts') return 'gifts';
     return 'browse';
-  });   // 'browse' (My listings) | 'add' (wizard) | 'offers' (offer engine)
+  });   // 'browse' (My listings) | 'add' (wizard) | 'offers' | 'free' (products without offers) | 'gifts' (gift items)
   const [vertical, setVertical] = useState('fashion');
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +104,16 @@ export default function DrilldownListingPage() {
   // the stepper; the final action saves via PATCH instead of batching.
   const [editMode] = useState(() => (typeof window !== 'undefined') && new URLSearchParams(window.location.search).has('edit'));
   const [editingId, setEditingId] = useState(null);
+  const [origPrice, setOrigPrice] = useState(null);   // offer-builder-v2 O12: the price before this edit
+  const [priceWarn, setPriceWarn] = useState(null);   // what a new price touches, before saving
+  const [tabCounts, setTabCounts] = useState({});     // Products without offers · Gift items
+  const setFreeCount = useCallback((n) => setTabCounts((c) => ({ ...c, free: n })), []);
+  const setGiftCount = useCallback((n) => setTabCounts((c) => ({ ...c, gifts: n })), []);
+  useEffect(() => {
+    if (editMode) return;
+    brandApi.productsWithoutOffers().then((r) => { if (r?.success) setFreeCount((r.data.products || []).length); }).catch(() => {});
+    brandApi.getGiftItems().then((r) => { if (r?.success) setGiftCount((r.data.gift_items || []).length); }).catch(() => {});
+  }, [editMode, setFreeCount, setGiftCount]);
 
   useEffect(() => {
     (async () => {
@@ -185,6 +200,7 @@ export default function DrilldownListingPage() {
         tags: Array.isArray(product.tags) ? product.tags : [],
       });
       setStep(1); setMode('one'); setEditingId(id);
+      setOrigPrice(product.price ?? null);
     })();
   }, [editMode]);
 
@@ -494,10 +510,20 @@ export default function DrilldownListingPage() {
   };
 
   // Edit-mode save — same validated item shape, PATCHed to the one product.
-  const saveEdit = async () => {
+  // offer-builder-v2 (O12, rules 1.11): a new price on a product in a live or scheduled offer is
+  // warned about first. Nothing is blocked; the server tells the creators after the save.
+  const saveEdit = async ({ confirmed = false } = {}) => {
     const e = draftErrors();
     if (e.length) { setErr('Required: ' + e.join(', ')); return; }
-    setErr(''); setSaving(true);
+    setErr('');
+    if (!confirmed && origPrice != null && Number(draft.price) !== Number(origPrice)) {
+      setSaving(true);
+      const hits = await priceImpacts([{ id: editingId, price: Number(draft.price), old: origPrice }]);
+      setSaving(false);
+      if (hits.length) { setPriceWarn(hits); return; }
+    }
+    setPriceWarn(null);
+    setSaving(true);
     const variants = selectedColors.map(color => ({
       color,
       images: arr(draft.variants[color]?.images),
@@ -589,7 +615,11 @@ export default function DrilldownListingPage() {
             : view === 'browse'
             ? 'Everything you have listed, organised by the categories you listed under.'
             : view === 'offers'
-            ? 'Reusable offers you can attach to products.'
+            ? 'Offers built on your products. You give them to creators when you set their terms.'
+            : view === 'free'
+            ? 'Products that are free to use: not in any offer on the day you pick.'
+            : view === 'gifts'
+            ? 'Gift items you give away with a free gift offer.'
             : 'Pick the exact item-type from the tree, then add every product of that type. SKU is generated automatically.'}</div>
         </div>
         <div className="grow" />
@@ -614,11 +644,23 @@ export default function DrilldownListingPage() {
           <button className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>Inventory</button>
           <button className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</button>
           <button className={'tab' + (view === 'offers' ? ' on' : '')} onClick={() => setView('offers')}>Offers</button>
+          <button className={'tab' + (view === 'free' ? ' on' : '')} onClick={() => setView('free')}>Products without offers{tabCounts.free != null ? <span className="muted2"> {tabCounts.free}</span> : null}</button>
+          <button className={'tab' + (view === 'gifts' ? ' on' : '')} onClick={() => setView('gifts')}>Gift items{tabCounts.gifts != null ? <span className="muted2"> {tabCounts.gifts}</span> : null}</button>
         </div>
       )}
 
       {!editMode && view === 'offers' && (
         <div className="ws solo"><div className="card"><div className="body"><OffersLibrary /></div></div></div>
+      )}
+      {!editMode && view === 'free' && (
+        <div className="ws solo"><div className="card"><div className="body"><ProductsWithoutOffers onCount={setFreeCount} /></div></div></div>
+      )}
+      {!editMode && view === 'gifts' && (
+        <div className="ws solo"><div className="card"><div className="body"><GiftItems onCount={setGiftCount} /></div></div></div>
+      )}
+      {priceWarn && (
+        <PriceChangeDialog impacts={priceWarn} busy={saving}
+          onCancel={() => setPriceWarn(null)} onConfirm={() => saveEdit({ confirmed: true })} />
       )}
 
       {!editMode && view === 'browse' && (
@@ -888,7 +930,7 @@ export default function DrilldownListingPage() {
             {step < 4
               ? <button className={'btn ink' + (stepBlocked.length ? ' dis' : '')} onClick={goNext}>Next ›</button>
               : (editingId
-                  ? <button className="btn yellow" disabled={saving} onClick={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</button>
+                  ? <button className="btn yellow" disabled={saving} onClick={() => saveEdit()}>{saving ? 'Saving…' : 'Save changes'}</button>
                   : <button className="btn yellow" onClick={addItem}>+ Add this item</button>)}
           </div>
           {step < 4 && stepBlocked.length > 0 && <div className="hint">Still needed: {stepBlocked.join(', ')}</div>}
@@ -1285,17 +1327,17 @@ const CSS = `
   background:var(--bg);flex-wrap:wrap}
 .lst .mfoot .pickd{flex:1;min-width:150px;font-size:11.5px;font-weight:700;color:var(--muted2)}
 .lst .mfoot .pickd b{color:var(--ink)}
-.lst .offrow{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:#fff;
-  border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:7px;cursor:pointer;
-  font-family:inherit;font-size:12.5px}
-.lst .offrow:hover{border-color:var(--yellow)}
-.lst .offrow.on{background:var(--yellow-pale);border-color:var(--yellow)}
-.lst .offrow .nm{font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lst .offrow .ty,.lst .offrow .st{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
-  background:var(--bg2);color:var(--muted2);border-radius:99px;padding:3px 9px;white-space:nowrap}
-.lst .offrow.dis{cursor:default;background:var(--bg);border-style:dashed;opacity:.85}
-.lst .offrow.dis .nm{font-weight:700;color:var(--muted2);flex:none;max-width:38%}
-.lst .offrow .why{font-size:11px;color:var(--muted3);font-weight:600;flex:1;text-align:right}
+/* offer-builder-v2 (O9): the Offer column and the product's offer panel. The bulk "Attach offer"
+ picker that used .offrow is retired (rules 1.13). */
+.lst .offcell{background:0;border:0;padding:0;font:inherit;cursor:pointer;text-align:left;display:grid;gap:2px}
+.lst .offcell{min-width:120px}
+.lst .offcell .pill{max-width:160px;white-space:normal;text-align:left;line-height:1.3;margin:0}
+.lst .tbl .pill.sched{background:var(--info-pale);color:var(--info)}
+.lst .offpanel{border-bottom:1px solid var(--border);background:var(--yellow-pale)}
+.lst .offpanel .railhd .t{color:var(--ink);text-transform:none;font-size:12.5px;letter-spacing:0}
+.lst .offpanel .x{margin-left:auto;background:0;border:0;font-size:16px;cursor:pointer;color:var(--muted2)}
+.lst .offbox{padding:10px 14px;display:grid;gap:5px;font-size:12px;border-top:1px solid var(--border)}
+.lst .offbox .btn{justify-self:start;text-decoration:none}
 
 @media (max-width:1400px){ .lst{--rail-l:236px;--rail-r:290px} }
 @media (max-width:1150px){

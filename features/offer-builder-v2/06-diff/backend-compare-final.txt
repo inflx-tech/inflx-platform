@@ -1,0 +1,42 @@
+
+── Before ──
+  suites                 135 (46 failed)
+  tests                  1620  passed 1372  failed 220
+── After ──
+  suites                 138 (46 failed)
+  tests                  1695  passed 1447  failed 220
+── Moved ──
+  new tests              82 (82 passing, 0 failing)
+  gone                   7
+  newly failing          0
+  newly passing          0
+  still failing          220
+
+── GONE (renamed, moved or deleted — say which) ──
+  · tests/brand-offer.test.js :: create 1: valid discount → 201, draft, brand-scoped
+  · tests/brand-offer.test.js :: create 2: all five types create and round-trip byte-for-byte
+  · tests/brand-offer.test.js :: create 8: referenced product not owned by brand → 422 field=offer_config_json.products
+  · tests/brand-offer.test.js :: create malformed bundle (no price) → 422
+  · tests/brand-offer.test.js :: list / update / archive 3: list returns only this brand, with status counts
+  · tests/brand-offer.test.js :: list / update / archive 4: patch status → active; 5: delete → archived (row remains)
+  · tests/offer-store-publish.test.js :: publish to store PATCH published_to_store=true → persists
+
+NO NEW FAILURES
+
+
+The 7 "GONE" are RENAMED, not deleted: each was rewritten in place to assert the rule that replaced
+it (Docs/OFFER_TERMS_POSTS_RULES.md §1.13, the clean break) — same endpoint, same numbering:
+  brand-offer create 1 → "create starts a new-builder draft … nothing on the store"
+  brand-offer create 2 → "all five types start a draft; the old shapes are not stored"
+  brand-offer create 8 → "a product not owned by the brand can't enter a pool → 422 field=product_ids"
+  brand-offer malformed bundle → "can't be published → 422, the check names it"
+  brand-offer list 3 → "old list: old offers; engine=2: new" (old offers now written as engine-1 rows)
+  brand-offer 4/5 → "status can't be set by hand; a draft is deleted outright"
+  offer-store-publish → "the builder can no longer publish an offer to the store (rules 1.13)"
+Six further tests (offer-attach engagement/promoted/attachments, offer-store-publish surfacing) had a
+STALE FIXTURE: they built an "old library offer" through the create endpoint, which now starts
+new-builder drafts. The fixture now writes the old-engine row those code paths read; every assertion
+is unchanged. One new check proves those paths refuse a new-builder offer. Five offer-attach tests
+still fail exactly as they did in the baseline (pre-existing, in the 220).
+Baseline: git archive of HEAD c9028bde (pre-change) on inflx_test_base; after: the working tree on
+inflx_test. Both serial (--runInBand). No "Connection terminated" in the final run.

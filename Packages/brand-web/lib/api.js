@@ -281,17 +281,29 @@ export const brandApi = {
   // Complete category list (whole vertical taxonomy) for the offer builder's
   // Category scope — not limited to categories that currently have products.
   getOfferCategories: () => api.get('/brands/me/offer-categories'),
-  // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────
-  getOffers:   (params) => api.get(`/brands/me/offers${params ? '?' + new URLSearchParams(params) : ''}`),
-  getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),
-  // Add products to an offer's scope from the Inventory bulk bar (contract:
-  // listing-bulk-move-and-offer). Only discount/volume offers scoped to
-  // products accept this; the server refuses the rest with a reason.
-  attachOfferProducts: (id, productIds) =>
-    api.post(`/brands/me/offers/${id}/products`, { product_ids: productIds }),
+  // ── Offers (contract: features/offer-builder-v2, rules v1.4 §1) ────────────
+  // Offers are built on product pools and locked by date. The bulk "Attach offer" is retired:
+  // products join offers only through the pool builder, where the checks run.
+  getOffers:   (params) => api.get(`/brands/me/offers?${new URLSearchParams({ engine: '2', ...(params || {}) })}`),
+  getOffer:    (id) => api.get(`/brands/me/offers/${id}`),
   createOffer: (data) => api.post('/brands/me/offers', data),
   updateOffer: (id, data) => api.patch(`/brands/me/offers/${id}`, data),
   deleteOffer: (id) => api.delete(`/brands/me/offers/${id}`),
+  addOfferSource:    (id, line) => api.post(`/brands/me/offers/${id}/sources`, line),
+  removeOfferSource: (id, sourceId) => api.delete(`/brands/me/offers/${id}/sources/${sourceId}`),
+  offerCandidates:   (id, params) => api.get(`/brands/me/offers/${id}/candidates?${new URLSearchParams(params || {})}`),
+  offerFilterOptions: (nodeId) => api.get(`/brands/me/offers/filter-options?node=${encodeURIComponent(nodeId)}`),
+  publishOffer:  (id, seenProductIds) => api.post(`/brands/me/offers/${id}/publish`, { seen_product_ids: seenProductIds }),
+  endOffer:      (id) => api.post(`/brands/me/offers/${id}/end`, {}),
+  offerRemovePreview: (id, productIds) => api.get(`/brands/me/offers/${id}/remove-preview?product_ids=${productIds.join(',')}`),
+  removeOfferProducts: (id, productIds) => api.post(`/brands/me/offers/${id}/remove-products`, { product_ids: productIds }),
+  productsWithoutOffers: (params) => api.get(`/brands/me/offers/products-without-offers?${new URLSearchParams(params || {})}`),
+  productOffers:   () => api.get('/brands/me/offers/product-offers'),
+  productOfferPanel: (productId) => api.get(`/brands/me/offers/product-offers/${productId}`),
+  priceImpact:     (productId, price) => api.get(`/brands/me/offers/price-impact?product_id=${productId}&price=${encodeURIComponent(price)}`),
+  getGiftItems:    () => api.get('/brands/me/gift-items'),
+  createGiftItem:  (data) => api.post('/brands/me/gift-items', data),
+  updateGiftItem:  (id, data) => api.patch(`/brands/me/gift-items/${id}`, data),
   // ── Subscription + billing (Phase A7-brand) ───────────────────────────────
   listSubscriptionTiers: () => api.get('/subscription-tiers'),
   getMySubscription:     () => api.get('/brands/me/subscription'),

@@ -40,8 +40,13 @@ router.delete('/brands/me/branches/:id',                    ...brandAny, ctrl.re
 router.get('/influencers/me/find-brands', ...creator, requireApproved, ctrl.findBrands);
 
 // A11 — a brand's published products (creator or the brand itself)
-router.get('/brands/:id/products',            authenticate, ctrl.listBrandProducts);
-router.get('/brands/:id/products/:productId', authenticate, ctrl.brandProductDetail);
+// The id must be a real id: this router is mounted before the brand routes, so without the
+// pattern it also caught the brand's own GET /brands/me/products ("me" as an id) and answered
+// 400 "Invalid ID format" — the website's Inventory "All products" failed from 11 Sep
+// (found while building features/offer-builder-v2).
+const UUID = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+router.get(`/brands/:id(${UUID})/products`,            authenticate, ctrl.listBrandProducts);
+router.get(`/brands/:id(${UUID})/products/:productId`, authenticate, ctrl.brandProductDetail);
 
 // registration-and-profile §9: POST /places/resolve is retired — Google place search has left
 // address entry in the brand and creator apps. (The follower app's location endpoints stay.)

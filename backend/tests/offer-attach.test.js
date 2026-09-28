@@ -43,18 +43,19 @@ async function makeInfluencer() {
   return inf.id;
 }
 
+// A saved offer from the OLD library — what these attach paths read. offer-builder-v2: the create
+// endpoint now starts new-builder drafts, which these paths refuse (rules 2.3: new offers are linked,
+// never copied), so an old library offer is written as the old-engine row it is.
 async function createOffer(token, { activate = true } = {}) {
-  const res = await request(app)
-    .post('/v1/brands/me/offers')
-    .set('Authorization', `Bearer ${token}`)
-    .send({ name: 'Lib 20% Off', offer_type: 'discount', offer_config_json: { sub_type: 'pct', value: 20, scope: 'store', products: [] } });
-  expect(res.status).toBe(201);
-  const id = res.body.data.offer.id;
-  if (activate) {
-    await request(app).patch(`/v1/brands/me/offers/${id}`).set('Authorization', `Bearer ${token}`).send({ status: 'active' });
-  }
-  return id;
+  const { rows: [b] } = await query(`SELECT b.id FROM brands b JOIN users u ON u.id = b.user_id
+    WHERE u.id = (SELECT id FROM users WHERE id = $1::uuid)`, [jwtSub(token)]);
+  const { rows: [o] } = await query(
+    `INSERT INTO brand_offers (brand_id, name, offer_type, offer_config_json, status, engine)
+     VALUES ($1, 'Lib 20% Off', 'discount', '{"sub_type":"pct","value":20,"scope":"store","products":[]}', $2, 1)
+     RETURNING id`, [b.id, activate ? 'active' : 'draft']);
+  return o.id;
 }
+const jwtSub = (token) => JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).sub;
 
 async function setup() {
   const { token, user } = await createBrandUser();
@@ -184,6 +185,20 @@ describe('engagement promoted-offers multi-select', () => {
     const res = await invite(a.token, a.cid, a.engSid, { influencer_id: await makeInfluencer(), promoted_brand_offer_ids: [a.offerId, foreign] });
     expect(res.status).toBe(422);
     expect(res.body.error.field).toBe('promoted_brand_offer_ids');
+  });
+});
+
+describe('a new-builder offer is never copied onto a collaboration (offer-builder-v2, rules 2.3)', () => {
+  it('attach and promoted paths refuse an engine-2 offer', async () => {
+    const { token, cid, engSid } = await setup();
+    const created = await request(app).post('/v1/brands/me/offers').set('Authorization', `Bearer ${token}`).send({ offer_type: 'bogo' });
+    expect(created.status).toBe(201);
+    const v2 = created.body.data.offer.id;
+    const one = await invite(token, cid, engSid, { influencer_id: await makeInfluencer(), brand_offer_id: v2 });
+    expect(one.status).toBe(422);
+    const many = await invite(token, cid, engSid, { influencer_id: await makeInfluencer(), promoted_brand_offer_ids: [v2] });
+    expect(many.status).toBe(422);
+    expect(many.body.error.field).toBe('promoted_brand_offer_ids');
   });
 });
 
