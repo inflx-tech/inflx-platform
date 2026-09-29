@@ -4,11 +4,9 @@
  * postEvents.service.js — the follower behaviour log for posts (Slice 0).
  * Contract: features/follower-event-log/
  *
- * Write-only for now. Nothing reads post_events yet: the feed ranker (slice 5),
- * per-post sales (slice 4) and the stats surfaces (slice 6) are its consumers,
- * and none of them can be built against history that was never written — hence
- * this ships first and starts accumulating while the feed is still "newest
- * first".
+ * follower-app-v2 (rules v1.7 §5.14): the shopper app records what she sees and
+ * does here. Readers: the feed's never-repeat rule and the learning feed
+ * (shopperFeed.service), and the hourly post_performance refresh.
  *
  * Two deliberate choices:
  *   · BATCH ONLY. One HTTP call per impression would be absurd; the client
@@ -19,18 +17,27 @@
  */
 
 const db = require('../config/db');
-const { followerIdForUser } = require('./followerPosts.service');
+
+async function followerIdForUser(userId) {
+  if (!userId) return null;
+  const { rows } = await db.query(`SELECT id FROM followers WHERE user_id = $1`, [userId]);
+  return rows[0] ? rows[0].id : null;
+}
 
 // Locked at v1. A typo must be LOUD in development, not silently swallowed —
 // an event vocabulary that quietly drifts produces stats nobody can trust.
 const EVENT_TYPES = new Set([
   'impression', 'view', 'complete', 'tap_shop', 'tap_product',
   'share', 'save', 'unsave', 'like', 'unlike', 'add_to_bag',
+  // follower-app-v2 (5.14): opening, time on a photo, watching, load pauses, taps, comments.
+  'open', 'dwell', 'watch', 'pause', 'sound_on', 'sound_off', 'replay', 'buffer',
+  'tap_creator', 'tap_brand', 'comment', 'save_product', 'unsave_product',
 ]);
 
 const SURFACES = new Set([
   'discover', 'posts_tab', 'videos_tab', 'concept', 'creator_store',
   'wishlist', 'search', 'share_link',
+  'home', 'play', 'post', 'brand_store', 'offers', 'saved', 'collection', 'link',
 ]);
 
 const MAX_BATCH = 100;

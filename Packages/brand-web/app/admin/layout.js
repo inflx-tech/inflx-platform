@@ -31,16 +31,11 @@ const NAV = [
   // visible. Food pages (Master Dishes, Meals) HIDDEN — vertical parked; the
   // backend routes stay mounted, pages return when food does.
   { href: '/admin/posts', label: 'Post Queue', icon: '📮', cap: 'approvals' },
-  { href: '/admin/concepts', label: 'Concepts', icon: '💡', cap: 'sections' },
-  { href: '/admin/collections', label: 'Collections', icon: '🧺', cap: 'sections' },
-  { href: '/admin/discover', label: 'Discover Builder', icon: '🧭', cap: 'sections' },
-  // Discover Builder supersedes this for fashion; kept because the CURRENT
-  // live Home tab still renders from its section stacks until B3 flips the
-  // opening surface — retire the nav entry when that lands.
-  { href: '/admin/sections', label: 'App Builder (legacy)', icon: '🧱', cap: 'sections' },
-  { href: '/admin/world-rules', label: 'World Settings', icon: '🌍', cap: 'sections' },
-  { href: '/admin/custom-pages', label: 'Custom Pages', icon: '📄', cap: 'sections' },
-  { href: '/admin/category-images', label: 'Category Images', icon: '🖼️', cap: 'sections' },
+  // follower-app-v2 (29 Sep 2026): the old shopper app's pages (Concepts, Collections, Discover
+  // Builder, App Builder, World Settings, Custom Pages, Category Images) went with the old app.
+  // The shopper app's own: shoppers' reported comments, and the feed's readiness and preview.
+  { href: '/admin/comments', label: 'Comment reports', icon: '💬', cap: 'approvals' },
+  { href: '/admin/feed', label: 'Feed', icon: '🧮', cap: 'settings' },
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
   { section: 'OUTREACH' },
   { href: '/admin/marketing/inbox',         label: 'Inbox',         icon: '📥', cap: 'marketing' },

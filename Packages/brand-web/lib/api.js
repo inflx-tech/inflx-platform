@@ -131,30 +131,9 @@ export const api = {
   delete: (p) => request('DELETE', p, null),
 };
 
-// Section Manager admin API (Creator Vibe Phase B — /admin/sections/*)
-export const sectionApi = {
-  getSections: (screen, scopeType = 'global', scopeValue = '') => {
-    const q = new URLSearchParams({ scope_type: scopeType });
-    if (scopeValue) q.set('scope_value', scopeValue);
-    return api.get(`/admin/sections/${screen}?${q.toString()}`);
-  },
-  saveSections: (screen, payload) => api.put(`/admin/sections/${screen}`, payload),
-  deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
-  // Section image presign — own endpoint under the 'sections' capability (was
-  // borrowing the food master-dishes presign → silent 403 for sections-admins).
-  // Category-images (P2) — set/clear a category node's image (meta.image_url).
-  setCategoryNodeImage: (node_id, image_url) => api.patch('/admin/sections/category-node-image', { node_id, image_url }),
-  categoryTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
-};
-
-// Custom-page registry admin API (App Builder — /admin/pages/*)
-// A page = a GLOBAL themed section-stack used as a section's tap-destination ③.
-export const pageApi = {
-  list: () => api.get('/admin/pages'),
-  create: (payload) => api.post('/admin/pages', payload),
-  update: (id, payload) => api.patch(`/admin/pages/${id}`, payload),
-  remove: (id) => api.delete(`/admin/pages/${id}`),
-};
+// The old shopper app's admin wrappers (sections, custom pages, concepts, Discover layouts, admin
+// collections, world rules, home verticals, the Section Library) went with the old app
+// (follower-app-v2, 29 Sep 2026).
 
 // Drill-down listing engine (contract: listing-drilldown-taxonomy-engine).
 // Tree + per-leaf facets (public read) + drill-once batch-add (brand).
@@ -708,21 +687,7 @@ export const adminApi = {
   // Creator Experience Engine (System B) wrappers REMOVED — Concept P0
   // (2026-07-23): backend routes deleted, pages deleted, tables ship empty.
 
-  // ─── Concept engine (Post/Concept P1, mig 139) ─────────────────────────────
-  listConceptTemplates:  (includeHidden) => api.get(`/admin/concept-templates${includeHidden ? '?include_hidden=1' : ''}`),
-  createConceptTemplate: (data) => api.post('/admin/concept-templates', data),
-  updateConceptTemplate: (id, data) => api.patch(`/admin/concept-templates/${encodeURIComponent(id)}`, data),
-  previewConcept:        (data) => api.post('/admin/concepts/preview', data),
-  conceptInspector:      () => api.get('/admin/concepts/inspector'),
-  // Stage B2 — the ONE Discover layout
-  getDiscoverLayout:     (scope) => api.get(`/admin/discover-layout?scope=${scope}`),
-  putDiscoverLayout:     (scope, rows) => api.put('/admin/discover-layout', { scope, rows_json: rows }),
-  conceptInspectorBreakdown: (params) => api.get(`/admin/concepts/inspector/breakdown?${new URLSearchParams(params)}`),
-  listCollectionsVocab:  (includeHidden) => api.get(`/admin/collections${includeHidden ? '?include_hidden=1' : ''}`),
-  createCollectionVocab: (data) => api.post('/admin/collections', data),
-  updateCollectionVocab: (id, data) => api.patch(`/admin/collections/${encodeURIComponent(id)}`, data),
-
-  // ─── Follower app config (Post/Concept P3 globals, mig 141) ────────────────
+  // ─── Shopper app config (video autoplay and sound, COD) ────────────────────
   getFollowerAppConfig:    () => api.get('/follower/app-config'),
   updateFollowerAppConfig: (patch) => api.patch('/admin/app-config', { config: patch }),
 
@@ -731,19 +696,11 @@ export const adminApi = {
   approvePost:   (id) => api.post(`/admin/posts/${encodeURIComponent(id)}/approve`, {}),
   rejectPost:    (id, reason) => api.post(`/admin/posts/${encodeURIComponent(id)}/reject`, { reason }),
 
-  // World Rules (Phase 3, mig 126) — per-world engine behaviour
-  listWorldRules:   () => api.get('/admin/world-rules'),
-  saveWorldRules:   (worldKey, data) => api.put(`/admin/world-rules/${encodeURIComponent(worldKey)}`, data),
-  deleteWorldRules: (worldKey) => api.delete(`/admin/world-rules/${encodeURIComponent(worldKey)}`),
-
-  // Follower v2 home builder — world verticals + their category rails
-  listHomeVerticals:   () => api.get('/admin/home-verticals'),
-  createHomeVertical:  (data) => api.post('/admin/home-verticals', data),
-  updateHomeVertical:  (id, data) => api.patch(`/admin/home-verticals/${id}`, data),
-  removeHomeVertical:  (id) => api.delete(`/admin/home-verticals/${id}`),
-  createHomeCategory:  (data) => api.post('/admin/home-vertical-categories', data),
-  updateHomeCategory:  (id, data) => api.patch(`/admin/home-vertical-categories/${id}`, data),
-  removeHomeCategory:  (id) => api.delete(`/admin/home-vertical-categories/${id}`),
+  // ─── Shopper app (follower-app-v2): comment reports, the feed's readiness and preview ──
+  listReportedComments: () => api.get('/admin/shopper/comments'),
+  decideComment:        (id, decision) => api.post(`/admin/shopper/comments/${encodeURIComponent(id)}/decide`, { decision }),
+  feedReadiness:        () => api.get('/admin/shopper/feed/readiness'),
+  feedPreview:          (phone) => api.get(`/admin/shopper/feed/preview?phone=${encodeURIComponent(phone || '')}`),
 
   // Dish Review Queue (flywheel) — custom names sellers typed
 
@@ -753,18 +710,6 @@ export const adminApi = {
   createTagVocab:    (data) => api.post('/admin/tag-vocabulary', data),
   updateTagVocab:    (id, data) => api.patch(`/admin/tag-vocabulary/${id}`, data),
   deleteTagVocab:    (id) => api.delete(`/admin/tag-vocabulary/${id}`),
-
-  // (follower-categories wrappers removed — retired stub page deleted, Concept
-  // P0 2026-07-23; worlds are managed via home-verticals in the App Builder.)
-
-  // Section Library (merch-engine Phase 3b) — reusable data-driven sections + live preview.
-  listSectionLibrary:    (businessType) => api.get(`/admin/section-library${businessType ? `?business_type=${encodeURIComponent(businessType)}` : ''}`),
-  createSectionLibrary:  (data) => api.post('/admin/section-library', data),
-  updateSectionLibrary:  (id, data) => api.patch(`/admin/section-library/${id}`, data),
-  previewSectionLibrary: (data) => api.post('/admin/section-library/preview', data),
-  searchLibraryProducts: (businessType, q) => api.get(`/admin/section-library/product-search?q=${encodeURIComponent(q)}${businessType ? `&business_type=${encodeURIComponent(businessType)}` : ''}`),
-  getSectionAnalytics:   (params) => api.get(`/admin/sections/analytics?${new URLSearchParams(params)}`),
-  getListingTree:        (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
 
   // Creator verification queue (claimed → verified / rejected / reset).
   // Backed by /v1/admin/creator-verifications/* — admin queue surfaces

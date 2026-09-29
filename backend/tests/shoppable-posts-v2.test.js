@@ -11,7 +11,7 @@ const app = require('../src/app');
 const { truncateAll } = require('./helpers/db');
 const H = require('./helpers/offersV2');
 const w10 = require('./helpers/item10');
-const { createAdminUser } = require('./helpers/factories');
+const { createAdminUser, createFollowerUser } = require('./helpers/factories');
 const posts = require('../src/services/shoppablePosts.service');
 const { MSG } = require('../src/services/postsCopy');
 const { api, query, day } = H;
@@ -517,12 +517,17 @@ describe('the old composer and the old readers (checks 28, 29)', () => {
     }
   });
 
-  test('an approved new post does not appear in the old follower feed', async () => {
+  // follower-app-v2 (29 Sep): the old follower feed this check guarded is gone with the old shopper
+  // app. What remains true: an approved post is not in the shop before its posting date.
+  test('the old follower feed is gone; an approved post before its posting date is not in the shop', async () => {
     const w = await world();
     const p = await readyBundlePost(w);
     await send(w, p.id); await approve(p.id);
-    const feed = await request(app).get('/v1/follower/posts');
-    expect((feed.body.data.posts || feed.body.data.items || []).map((x) => x.id)).not.toContain(p.id);
+    const shopper = await createFollowerUser();
+    expect((await request(app).get('/v1/follower/posts').set('Authorization', `Bearer ${shopper.token}`)).status).toBe(404);
+    const feed = await request(app).post('/v1/follower/feed').send({});
+    expect(feed.status).toBe(200);
+    expect(feed.body.data.posts.map((x) => x.id)).not.toContain(p.id);
     expect((await request(app).get(`/v1/follower/posts/${p.id}`)).status).toBe(404);
   });
 });

@@ -49,29 +49,6 @@ describe('publish to store', () => {
   });
 });
 
-describe('store surfacing (resolveBusinessStore)', () => {
-  it('published+active offer appears in store_offers (brand-direct, no influencer)', async () => {
-    const { token, brandId } = await makeBrand();
-    const { id } = await makeOffer(brandId, { publish: true });
-
-    const res = await request(app).get(`/v1/business/${brandId}/store`);
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data.store_offers)).toBe(true);
-    expect(res.body.data.store_offers).toHaveLength(1);
-    expect(res.body.data.store_offers[0].brand_offer_id).toBe(id);
-    expect(res.body.data.store_offers[0].offer_source).toBe('store');
-    expect(res.body.data.store_offers[0].offer_type).toBe('discount');
-  });
-
-  it('unpublished offer is NOT surfaced', async () => {
-    const { token, brandId } = await makeBrand();
-    await makeOffer(brandId, { publish: false });   // active but not published
-    const res = await request(app).get(`/v1/business/${brandId}/store`);
-    expect(res.status).toBe(200);
-    expect(res.body.data.store_offers).toHaveLength(0);
-  });
-});
-
 describe('migration 085 provenance columns', () => {
   it('follower_transactions has brand_offer_id + offer_source', async () => {
     const { rows } = await query(

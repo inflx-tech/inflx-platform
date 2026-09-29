@@ -6,12 +6,9 @@ const authRoutes        = require('./auth.routes');
 const brandRoutes       = require('./brand.routes');
 const influencerRoutes  = require('./influencer.routes');
 const adminRoutes       = require('./admin.routes');
-const adminSectionsRoutes = require('./adminSections.routes');
-const adminWorldRulesRoutes = require('./adminWorldRules.routes');
 // registration-and-profile — the Other niche queue (spec §9A.3)
 const adminNichesRoutes = require('./adminNiches.routes');
-const adminPagesRoutes = require('./adminPages.routes');
-const adminConceptsRoutes = require('./adminConcepts.routes');
+const adminShopperRoutes = require('./adminShopper.routes');
 const creatorPostsRoutes = require('./creatorPosts.routes');
 const shoppablePostsRoutes = require('./shoppablePosts.routes');
 const postLinksRoutes = require('./postLinks.routes');
@@ -37,8 +34,6 @@ const notificationRoutes    = require('./notification.routes');
 // date-change request/approve flow (contract: campaign-command-center)
 const dateChangeRoutes      = require('./dateChange.routes');
 
-// Follower App Redesign
-const savedRoutes           = require('./saved.routes');
 const productNoteRoutes     = require('./productNote.routes');
 
 // Production coordination (Phase P)
@@ -87,9 +82,6 @@ const collabDiaryRoutes = require('./collabDiary.routes');
 // Listing Engine — drill-down taxonomy (fashion/furniture): tree + facets + batch-add
 const listingRoutes         = require('./listing.routes');
 
-// Phase 4 — no-auth public store/category controllers
-const followerCtrl      = require('../controllers/follower.controller');
-const { authenticateOptional, authenticate } = require('../middleware/auth');
 
 const mediaAssetCtrl    = require('../controllers/mediaAsset.controller');
 
@@ -109,26 +101,18 @@ router.use('/admin/marketing', marketingAdminRoutes);
 
 // ── Referral admin API (JWT-authenticated, admin only) ───────────────────────
 
-// ── Section Manager admin API (Creator Vibe Phase B — admin only) ────────────
-router.use('/admin/sections', adminSectionsRoutes);
-
-// ── World Rules admin API (Phase 3, mig 126 — admin only) ────────────────────
-router.use('/admin/world-rules', adminWorldRulesRoutes);
+// ── The old shopper app's admin (App Builder sections, world rules, custom pages, concepts,
+// admin collections, Discover layouts) was removed with the old app on 29 Sep 2026 (follower-app-v2).
+router.use('/admin/shopper', adminShopperRoutes);   // follower-app-v2: comment reports, feed readiness + preview
 
 // ── Other-niche queue (registration-and-profile) ─────────────────────────────
 router.use('/admin/niches', adminNichesRoutes);
-
-// ── Custom-page registry admin API (App Builder — admin only) ────────────────
-router.use('/admin/pages', adminPagesRoutes);
 
 // ── Creator Experience Engine (System B) RETIRED — Concept P0 (2026-07-23).
 // design-system/themes/design-layouts/experience-preview/experience-templates/
 // creator-experience routes deleted; tables ship empty and are dropped in a
 // later phase. creatorImagery (brand-side creator-image approval) is KEPT —
 // it seeds the Phase-2 creator media pipeline.
-
-// ── Concept engine admin API (Post/Concept P1, mig 139) ──────────────────────
-router.use('/admin', adminConceptsRoutes);   // /admin/concept-templates + /admin/concepts/preview + /admin/collections
 
 // ── Creator posts (Post/Concept P2, mig 140) ─────────────────────────────────
 router.use('/links', postLinksRoutes);           // post-links-codes: what inflx.in/p, /s, /c open (public)
@@ -214,8 +198,7 @@ router.use('/follower', transactionRoutes);
 // ── Phase 4 — Commission tracker (influencer) ────────────────────────────────
 router.use('/influencers', commissionRoutes);
 
-// ── Follower App Redesign — Saved offers + Influencer product notes ──────────
-router.use('/follower', savedRoutes);
+// ── Influencer product notes ─────────────────────────────────────────────────
 router.use('/influencers', productNoteRoutes);
 
 // ── Phase 5 — Engagement analytics (brand) ───────────────────────────────────
@@ -233,24 +216,14 @@ router.use('/notifications', notificationRoutes);
 router.use('/listing',   listingRoutes.publicRouter);
 router.use('/brands/me', listingRoutes.brandRouter);
 
-// ── Phase 4 — Public store endpoints (no auth required) ──────────────────────
-router.get('/store/:influencer_handle/products', authenticateOptional, followerCtrl.getStoreProducts);
-// Library-offer detail (store-direct / showcase taps — no creator handle needed).
-// Contract: features/sprint1-offer-pipeline. Pairs with POST /follower/store-offer/pay.
-router.get('/follower/store-offer/:id', authenticateOptional, followerCtrl.getStoreOfferDetail);
-router.get('/store/:influencer_handle',           authenticateOptional, followerCtrl.getInfluencerStore);
-router.get('/business/:brand_id/store',            authenticateOptional, followerCtrl.getBusinessStore);
-router.get('/business/:brand_id',                 authenticateOptional, followerCtrl.getBusinessStore);
+// The old public store, business and category pages were removed with the old shopper app
+// (29 Sep 2026, follower-app-v2); stores are now /follower/creators/:id and /follower/brands/:id.
 
 // Public media re-sign endpoint — stable URLs for uploaded images (dish photos,
 // brand covers, admin stock). Re-signs the real R2 URL on each view; only brand
 // media assets are reachable (never contracts/KYC). See mediaAsset.controller.
 router.get('/media/assets/:id',                   mediaAssetCtrl.serveAsset);
 router.get('/media/stock/*',                      mediaAssetCtrl.serveStockImage);
-router.get('/category/:category_key',             authenticateOptional, followerCtrl.getCategoryStore);
-
-// ── Listing Engine — category stores with inline products ────────────────────
-router.get('/category/:super_category/stores',    authenticateOptional, followerCtrl.getCategoryStores);
 
 // ── Phase A6 — Subscription tier catalog (public read; admin edits via /admin/pricing/tiers in Phase A7)
 router.get('/subscription-tiers', subscriptionCtrl.listTiers);

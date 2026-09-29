@@ -14,10 +14,11 @@
  */
 
 const { truncateAll, query } = require('./helpers/db');
-const ttlCache = require('../src/utils/ttlCache');
 const rules = require('../src/services/sectionRules.service');
 
-beforeEach(async () => { await truncateAll(); ttlCache.clear(); });
+// The section engine's memo (utils/ttlCache) went with the old shopper app (follower-app-v2);
+// runRule itself never cached, so there is nothing left to clear.
+beforeEach(async () => { await truncateAll(); });
 
 async function seed() {
   const u = (await query(

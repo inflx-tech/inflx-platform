@@ -9,7 +9,7 @@ const masterDishCtrl = require('../controllers/adminMasterDish.controller');
 const dishQueueCtrl = require('../controllers/adminDishQueue.controller');
 const escrowFeeTiersCtrl = require('../controllers/escrowFeeTiers.controller');
 const adminOrdersCtrl = require('../controllers/adminOrders.controller');
-const followerPostsCtrl = require('../controllers/followerPosts.controller');
+const shopperCtrl = require('../controllers/shopper.controller');
 
 const router = Router();
 
@@ -26,9 +26,9 @@ router.get('/me',           authenticate, requireAnyAdminRole, ctrl.getMe);
 router.get('/capabilities', authenticate, requireAnyAdminRole, ctrl.getCapabilityCatalog);
 
 // Order Fulfillment Engine Unit 3 — platform-wide order oversight.
-// Follower app config (Post/Concept P3 globals) — global behaviour knobs
-// (video autoplay/sound defaults, future feed tuning) without an OTA.
-router.patch('/app-config',       authenticate, requireCapability('settings'), followerPostsCtrl.updateAppConfig);
+// Shopper app config — video autoplay/sound defaults and COD, read by the app at launch, changed
+// without an update (admin → Follower App). Kept through follower-app-v2.
+router.patch('/app-config',       authenticate, requireCapability('settings'), shopperCtrl.updateAppConfig);
 
 router.get('/orders',             authenticate, requireCapability('orders'), adminOrdersCtrl.listOrders);
 router.get('/commerce-summary',   authenticate, requireCapability('orders'), adminOrdersCtrl.getCommerceSummary);
@@ -209,31 +209,8 @@ router.post  ('/tag-vocabulary',     authenticate, requireCapability('categories
 router.patch ('/tag-vocabulary/:id', authenticate, requireCapability('categories'), tagVocabCtrl.updateTag);
 router.delete('/tag-vocabulary/:id', authenticate, requireCapability('categories'), tagVocabCtrl.deleteTag);
 
-// ── Follower category tiles (merch-engine Phase 1b) — 'categories' ───────────
-const followerCatCtrl = require('../controllers/adminFollowerCategories.controller');
-router.get   ('/follower-categories',     authenticate, requireCapability('categories'), followerCatCtrl.list);
-router.post  ('/follower-categories',     authenticate, requireCapability('categories'), followerCatCtrl.create);
-router.patch ('/follower-categories/:id', authenticate, requireCapability('categories'), followerCatCtrl.update);
-router.delete('/follower-categories/:id', authenticate, requireCapability('categories'), followerCatCtrl.remove);
-
-// ── Follower v2 home: world-switcher verticals + their category rails ────────
-const homeVertCtrl = require('../controllers/adminFollowerVerticals.controller');
-router.get   ('/home-verticals',                authenticate, requireCapability('categories'), homeVertCtrl.listVerticals);
-router.post  ('/home-verticals',                authenticate, requireCapability('categories'), homeVertCtrl.createVertical);
-router.patch ('/home-verticals/:id',            authenticate, requireCapability('categories'), homeVertCtrl.updateVertical);
-router.delete('/home-verticals/:id',            authenticate, requireCapability('categories'), homeVertCtrl.removeVertical);
-router.post  ('/home-vertical-categories',      authenticate, requireCapability('categories'), homeVertCtrl.createCategory);
-router.patch ('/home-vertical-categories/:id',  authenticate, requireCapability('categories'), homeVertCtrl.updateCategory);
-router.delete('/home-vertical-categories/:id',  authenticate, requireCapability('categories'), homeVertCtrl.removeCategory);
-
-// ── Section Library (merch-engine Phase 3b) — 'libraries' ────────────────────
-const sectionLibraryCtrl = require('../controllers/adminSectionLibrary.controller');
-router.get   ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.list);
-router.post  ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.create);
-router.post  ('/section-library/preview', authenticate, requireCapability('libraries'), sectionLibraryCtrl.preview);
-// P4 (rule-builder-depth): hand-pick search — gated products only.
-router.get   ('/section-library/product-search', authenticate, requireCapability('libraries'), sectionLibraryCtrl.productSearch);
-router.patch ('/section-library/:id',     authenticate, requireCapability('libraries'), sectionLibraryCtrl.update);
+// ── The old shopper app's admin (follower category tiles, home verticals, the Section Library)
+// was removed with the old app on 29 Sep 2026 (follower-app-v2).
 
 // Collection Library removed 2026-06-23 (dead/dormant — superseded by Section Library).
 

@@ -29,7 +29,8 @@ const productionReminderJob = require('./production-shipment-reminder.job');
 const subscriptionRenewalJob = require('./subscription-renewal.job');
 const settlementRetryJob     = require('./settlement-retry.job');
 const commerceSettlementJob  = require('./commerce-settlement.job');
-const postEligibilityJob     = require('./post-eligibility.job');
+// follower-app-v2 — each post's results across shoppers, for the learning feed (off by default).
+const postPerformanceJob     = require('./post-performance.job');
 const postsOfferEndedJob     = require('./posts-offer-ended.job');
 // Item 3b — creator social numbers (Instagram/YouTube through Apify). Contract: features/item3b-social-numbers
 const socialMeasureJob       = require('./social-measure.job');
@@ -118,9 +119,8 @@ function startAllJobs() {
   // same window boundary on the same tick.
   cron.schedule('5 0 * * *', commerceSettlementJob.run, { timezone: tz });
 
-  // post-eligibility (Post/Concept P4) — every 30 min at :13/:43; refreshes
-  // the approved-post eligibility cache + fires post.dark on transitions.
-  cron.schedule('13,43 * * * *', postEligibilityJob.run, { timezone: tz });
+  // post-performance (follower-app-v2) — hourly at :17; the learning feed's "how it performs" dial.
+  cron.schedule('17 * * * *', () => postPerformanceJob.run(), { timezone: tz });
   // shoppable-posts-v2 — an offer past its end date takes its posts out of the shop (4.9).
   cron.schedule('10 0 * * *', () => postsOfferEndedJob.run(), { timezone: tz });
 
@@ -169,7 +169,7 @@ module.exports = {
   subscriptionRenewalJob,
   settlementRetryJob,
   commerceSettlementJob,
-  postEligibilityJob,
+  postPerformanceJob,
   postsOfferEndedJob,
   socialMeasureJob,
   setExpiryJob,

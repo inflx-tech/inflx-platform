@@ -78,11 +78,17 @@ async function tryRefreshAccessToken() {
   return _refreshInFlight;
 }
 
+// follower-app-v2: the phone's anonymous id rides on every request, so a guest's reads and
+// visits are hers (rules 5.14). Set once by services/deviceId.js; never an identity for money.
+let _deviceId = null;
+export function setDeviceHeader(id) { _deviceId = id || null; }
+
 async function fetchOnce(method, path, body, token) {
   const headers = { 'Content-Type': 'application/json' };
   if (token && token.length > 0) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+  if (_deviceId) headers['x-device-id'] = _deviceId;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000); // 30s for Render cold starts
   try {
@@ -891,269 +897,64 @@ export const referenceApi = {
   states:          () => api.get('/reference/states'),
 };
 
+/**
+ * The shopper app (follower-app-v2 · boards F1–F13 · rules v1.7 §5). A guest is known by the
+ * phone's anonymous id, sent on every request (x-device-id); where she is travels with the feed
+ * request and is never stored. The old shopper app's ~85 methods went with it (29 Sep 2026).
+ */
 export const followerApi = {
-  // Profile
+  // Account
   getMe: () => api.get('/followers/me'),
   updateMe: (data) => api.patch('/followers/me', data),
+  profile: () => api.get('/follower/me/profile'),
+  setPreferences: (body) => api.patch('/follower/me/preferences', body),
+  merge: (body) => api.post('/follower/me/merge', body),
+  nearestCity: (lat, lng) => api.get(`/follower/reverse-geocode${q({ lat, lng })}`),
+  appConfig: () => api.get('/follower/app-config'),
+  postEvents: (batch) => api.post('/follower/events', batch),
 
-  // Stage B3 — resolved Discover payload (global | business | creator)
-  getDiscover: (params = {}) => {
-    const p = Object.entries(params).filter(([, v]) => v != null)
-      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`);
-    return api.get(`/follower/discover${p.length ? `?${p.join('&')}` : ''}`);
-  },
-  // Creator posts (Post/Concept Stage A) — the new source of truth
-  getPosts: (params = {}) => {
-    const p = Object.entries(params).filter(([, v]) => v != null)
-      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`);
-    return api.get(`/follower/posts${p.length ? `?${p.join('&')}` : ''}`);
-  },
-  getPost: (id) => api.get(`/follower/posts/${id}`),
-  likePost: (id) => api.post(`/follower/posts/${id}/like`),
-  unlikePost: (id) => api.delete(`/follower/posts/${id}/like`),
-  savePost: (id) => api.post(`/follower/posts/${id}/save`),
-  unsavePost: (id) => api.delete(`/follower/posts/${id}/save`),
-  // Slice 1 (features/follower-profile-repairs) — post_saves had no reader:
-  // a follower could save a post and never find it again.
-  getSavedPosts: () => api.get('/follower/posts/saved'),
-  // Slice 0 (features/follower-event-log) — batched behaviour log. Called only
-  // by services/events.js; never awaited on a render path.
-  postEvents: (body) => api.post('/follower/events', body),
-  getAppConfig: () => api.get('/follower/app-config'),
+  // F1 · F2 · F5
+  welcome: () => api.get('/follower/welcome'),
+  feed: (body) => api.post('/follower/feed', body),
+  circles: (params) => api.get(`/follower/circles${q(params)}`),
 
-  // P5 (section-analytics-city) — fire-and-forget engagement capture. Never
-  // awaited by callers, never throws: a dead endpoint can't affect the UX.
-  recordSectionEvent: (data) => { try { api.post('/follower/section-event', data).catch(() => {}); } catch (e) { /* never surfaces */ } },
+  // F3 · F4 · F6
+  post: (id) => api.get(`/follower/posts/${id}`),
+  more: (id, served) => api.get(`/follower/posts/${id}/more${q({ served })}`),
+  comments: (id, before) => api.get(`/follower/posts/${id}/comments${q({ before })}`),
+  addComment: (id, body) => api.post(`/follower/posts/${id}/comments`, { body }),
+  reportComment: (id) => api.post(`/follower/comments/${id}/report`, {}),
+  like: (id) => api.post(`/follower/posts/${id}/like`, {}),
+  unlike: (id) => api.delete(`/follower/posts/${id}/like`),
+  save: (id) => api.post(`/follower/posts/${id}/save`, {}),
+  unsave: (id) => api.delete(`/follower/posts/${id}/save`),
 
-  // Feed (legacy + new) — all accept optional lat/lng for distance
-  getFeed: () => api.get('/followers/feed'),
-  getHomeFeed: (page = 1, loc = null) => {
-    const p = [`page=${page}`];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    return api.get(`/follower/home-feed?${p.join('&')}`);
-  },
-  getDeals: (category = 'all', page = 1, loc = null) => {
-    const p = [`category=${category}`, `page=${page}`];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    return api.get(`/follower/deals?${p.join('&')}`);
-  },
+  // F11
+  saved: () => api.get('/follower/saved'),
+  resolveSaved: (body) => api.post('/follower/saved/resolve', body),
+  saveProduct: (body) => api.post('/follower/saved/products', body),
+  unsaveProduct: (productId) => api.delete(`/follower/saved/products/${productId}`),
 
-  // Section Engine — backend-driven { sections:[…] } feeds (Creator Vibe, Phase C).
-  // Consumed by <SectionRenderer>; gated by config/featureFlags SECTION_ENGINE_HOME.
-  getHomeSections: (loc = null) => {
-    const p = [];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    const qs = p.length ? `?${p.join('&')}` : '';
-    return api.get(`/follower/home${qs}`);
-  },
-  getCreatorSections: (handle) => api.get(`/follower/section/creator/${encodeURIComponent(handle)}`),
-  getCreatorCategorySections: (handle, cat) =>
-    api.get(`/follower/section/creator/${encodeURIComponent(handle)}/category/${encodeURIComponent(cat)}`),
-  getCategorySections: (key, loc = null) => {
-    const p = [];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    const qs = p.length ? `?${p.join('&')}` : '';
-    return api.get(`/follower/section/category/${encodeURIComponent(key)}${qs}`);
-  },
-  // App Builder Phase 4 — the business page's admin-composed section stack.
-  getBusinessSections: (brandId, loc = null) => {
-    const p = [];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    const qs = p.length ? `?${p.join('&')}` : '';
-    return api.get(`/follower/business/${encodeURIComponent(brandId)}/sections${qs}`);
-  },
-  getOffersSections: (loc = null) => {
-    const p = [];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    const qs = p.length ? `?${p.join('&')}` : '';
-    return api.get(`/follower/section/offers${qs}`);
-  },
-  // App Builder E — an admin-created GLOBAL custom page rendered as a section
-  // stack. Returns { page:{label,title,subtitle}|null, sections:[…] }.
-  getPageSections: (pageKey, loc = null) => {
-    const p = [];
-    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
-    const qs = p.length ? `?${p.join('&')}` : '';
-    return api.get(`/follower/page/${encodeURIComponent(pageKey)}/sections${qs}`);
-  },
-  // Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
-  getSectionResults: (opts = {}) => {
-    const p = [];
-    const add = (k, v) => { if (v != null && v !== '') p.push(`${k}=${encodeURIComponent(v)}`); };
-    add('rule', opts.rule);
-    add('item_type', opts.item_type);
-    add('library_section_id', opts.library_section_id);
-    if (opts.rule_json && typeof opts.rule_json === 'object') add('rule_json', JSON.stringify(opts.rule_json));
-    add('category_key', opts.category_key);
-    add('creator_handle', opts.creator_handle);
-    add('brand_id', opts.brand_id);
-    if (opts.lat != null) { add('lat', opts.lat); add('lng', opts.lng); }
-    add('limit', opts.limit);
-    return api.get(`/follower/section-results?${p.join('&')}`);
-  },
+  // F12
+  search: (text) => api.get(`/follower/search${q({ q: text })}`),
+  code: (code, ch) => api.get(`/follower/code/${encodeURIComponent(code)}${q({ ch })}`),
 
-  // Category browser (Type-1) — contract: listing-category-browser.
-  // children = the sidebar rail; products = the grid + aggregated filter values.
-  listingNodeChildren: (id) => api.get(`/listing/nodes/${encodeURIComponent(id)}/children`),
-  listingNodeProducts: (id, opts = {}) => {
-    const p = [];
-    const add = (k, v) => { if (v != null && v !== '') p.push(`${k}=${encodeURIComponent(v)}`); };
-    if (opts.filters) {
-      for (const [k, vals] of Object.entries(opts.filters)) {
-        if (Array.isArray(vals) && vals.length) add(`f_${k}`, vals.join(','));
-      }
-    }
-    add('price_min', opts.price_min); add('price_max', opts.price_max);
-    add('sort', opts.sort); add('page', opts.page); add('page_size', opts.page_size);
-    add('q', opts.q);
-    return api.get(`/listing/nodes/${encodeURIComponent(id)}/products${p.length ? `?${p.join('&')}` : ''}`);
-  },
-  listingTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
-  // "You might also like" at checkout — same-category cross-sell, excluding cart items.
-  getCartRecommendations: (productIds, limit = 8) =>
-    api.get(`/follower/cart-recommendations?product_ids=${encodeURIComponent((productIds || []).join(','))}&limit=${limit}`),
+  // Following
+  follow: (influencerId) => api.post('/follower/follows', { influencer_id: influencerId }),
+  unfollow: (influencerId) => api.delete(`/follower/follows/${influencerId}`),
+  following: (follows) => api.get(`/follower/following${q({ follows })}`),
 
-  // Listing Engine — new endpoints
-  getStories: () => api.get('/follower/stories'),
-  getCategories: () => api.get('/follower/categories'),
-  getVerticals: () => api.get('/follower/verticals'), // v2 home: world tabs + category rails
-  getCategoryStores: (superCategory, opts = {}) => {
-    const params = [];
-    if (opts.sub_category) params.push(`sub_category=${opts.sub_category}`);
-    if (opts.page) params.push(`page=${opts.page}`);
-    if (opts.sort) params.push(`sort=${opts.sort}`);
-    if (opts.lat) params.push(`lat=${opts.lat}`, `lng=${opts.lng}`);
-    const qs = params.length ? `?${params.join('&')}` : '';
-    return api.get(`/category/${superCategory}/stores${qs}`);
-  },
+  // F7 – F10
+  creatorStore: (idOrHandle, follows) => api.get(`/follower/creators/${encodeURIComponent(idOrHandle)}${q({ follows })}`),
+  creatorPosts: (idOrHandle, params) => api.get(`/follower/creators/${encodeURIComponent(idOrHandle)}/posts${q(params)}`),
+  creatorCollections: (idOrHandle) => api.get(`/follower/creators/${encodeURIComponent(idOrHandle)}/collections`),
+  collection: (idOrCode) => api.get(`/follower/collections/${encodeURIComponent(idOrCode)}`),
+  brandStore: (id) => api.get(`/follower/brands/${id}`),
+  brandPosts: (id, params) => api.get(`/follower/brands/${id}/posts${q(params)}`),
+  brandOffers: (id, params) => api.get(`/follower/brands/${id}/offers${q(params)}`),
+  filters: () => api.get('/follower/filters'),
 
-  // Store
-  getStore: (handle) => api.get(`/store/${handle}`),
-  getStoreProducts: (handle, scope) => {
-    // scope can be a string (legacy: treated as offerId) OR an object
-    // { offerId, ciId }. Either offerId or ciId is required by the backend;
-    // ciId is preferred for conversion campaigns which have no
-    // campaign_offers row.
-    const s = typeof scope === 'string' ? { offerId: scope } : (scope || {});
-    const qs = [];
-    if (s.offerId) qs.push(`offer_id=${s.offerId}`);
-    if (s.ciId)    qs.push(`ci_id=${s.ciId}`);
-    return api.get(`/store/${handle}/products${qs.length ? `?${qs.join('&')}` : ''}`);
-  },
-  // Library-offer detail (store-direct / showcase taps — no creator handle).
-  // Contract: features/sprint1-offer-pipeline.
-  getStoreOffer: (brandOfferId) => api.get(`/follower/store-offer/${brandOfferId}`),
-  // Full single-product detail for the PDP (description, facets, images, variants).
-  getProductDetail: (productId) => api.get(`/follower/products/${productId}`),
-
-  // Food World 3C-1 — dish-group discovery. Rail tiles + tap → nearby restaurants
-  // serving any dish in the group (mig 115; lat/lng optional → distance ranking).
-  // Cleanup 2026-06-22 — craving rail driven by Home-Builder category tiles.
-  // Restaurants serving a category tile (by name; reuses a same-named dish_group
-  // for precise matching server-side, else keyword match).
-  // Phase Salon-2 — accepts an optional viaInfluencerId so the response
-  // embeds a `creator` object the BrandStoreScreen sticky header renders.
-  getBrandStore: (brandId, viaInfluencerId = null) => {
-    const qs = viaInfluencerId ? `?via=${encodeURIComponent(viaInfluencerId)}` : '';
-    return api.get(`/business/${brandId}/store${qs}`);
-  },
-
-  // Location — store device/selected coords; returns reverse-geocoded { area_name }.
-  updateLocation: (lat, lng) => api.post('/follower/location', { lat, lng }),
-  // Public reverse-geocode for the location switcher's "current location" label.
-  reverseGeocode: (lat, lng) => api.get(`/follower/reverse-geocode?lat=${lat}&lng=${lng}`),
-  // Forward-geocode (verify/locate a typed address before saving it).
-  geocodeAddress: (q) => api.get(`/follower/geocode?q=${encodeURIComponent(q)}`),
-  // Places Autocomplete + Details (Swiggy-style area search).
-  placesAutocomplete: (q, { session, lat, lng } = {}) => {
-    const p = [`q=${encodeURIComponent(q)}`];
-    if (session) p.push(`session=${encodeURIComponent(session)}`);
-    if (lat != null && lng != null) p.push(`lat=${lat}`, `lng=${lng}`);
-    return api.get(`/follower/places/autocomplete?${p.join('&')}`);
-  },
-  placeDetails: (placeId, session) =>
-    api.get(`/follower/places/details?place_id=${encodeURIComponent(placeId)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
-
-  // Follow
-  follow: (id) => api.post('/followers/follows', { influencer_id: id }),
-  unfollow: (id) => api.delete(`/followers/follows/${id}`),
-  getFollowing: () => api.get('/follower/following'),
-
-  // Saved offers
-  saveOffer: (offer_id, influencer_id) => api.post('/follower/saved', { offer_id, influencer_id }),
-  unsaveOffer: (offer_id) => api.delete(`/follower/saved/${offer_id}`),
-  getSavedOffers: () => api.get('/follower/saved'),
-
-  // Fashion-1 — Returns workflow (customer side)
-  initiateReturn: (data) => api.post('/follower/returns', data),
-  listMyReturns: () => api.get('/follower/returns'),
-  getMyReturn: (id) => api.get(`/follower/returns/${id}`),
-
-
-  // Transactions
-  payAtStore: (data) => api.post('/follower/pay-at-store', data),
-  verifyPayAtStore: (data) => api.post('/follower/pay-at-store/verify', data),
-  // Offer Engine D3 — store-direct (brand-direct) buy: no influencer, no commission
-  storeOfferPay: (data) => api.post('/follower/store-offer/pay', data),
-  storeOfferVerify: (data) => api.post('/follower/store-offer/verify', data),
-  prebook: (data) => api.post('/follower/prebook', data),
-  prebookVerify: (data) => api.post('/follower/prebook/verify', data),
-  getSlots: (productId, date) => api.get(`/follower/slots?offer_id=${encodeURIComponent(productId)}&date=${encodeURIComponent(date)}`),
-  // Date-range pre-bookings (car_rental today; hotels/function_hall later).
-  // Body shape: { offer_id?, campaign_id, set_id, campaign_influencer_id,
-  //               pickup_date, return_date, duration_days, pickup_type }
-  prebookDateRange: (data) => api.post('/follower/prebook-daterange', data),
-  prebookDateRangeVerify: (data) => api.post('/follower/prebook-daterange/verify', data),
-  // follower-creator-attribution Slice 2 — resolve a creator coupon code →
-  // creator + allocated products (apply discount + attribution without a link).
-  resolveCoupon: (code) => api.post('/follower/resolve-coupon', { code }),
-  // Slice 5 (Way-4) — "click opens window": record an attribution touch when a
-  // follower lands in a creator store via a tracked link.
-  recordTouch: (data) => api.post('/follower/touch', data),
-  // Offer cart preview (Phase 2) — real discount + free-item adjustments for a
-  // cart BEFORE checkout (same engine as createOrder, no order created).
-  previewCartOffer: (data) => api.post('/follower/cart/price', data),
-  createOrder: (data) => api.post('/follower/orders', data),
-  verifyOrder: (data) => api.post('/follower/orders/verify', data),
-  getOrder: (id) => api.get(`/follower/orders/${id}`),
-  getOrders: () => api.get('/follower/orders'),
-  cancelOrder: (id) => api.post(`/follower/orders/${id}/cancel`),
-  getActivity: () => api.get('/follower/activity'),
-
-  // Addresses
-  getAddresses: () => api.get('/followers/addresses'),
-  addAddress: (data) => api.post('/followers/addresses', data),
-  // Slice 1 — soft delete server-side; past orders keep their address.
-  deleteAddress: (id) => api.delete(`/followers/addresses/${id}`),
-  // Wishlist + collections (Stage C2)
-  getWishlist: () => api.get('/followers/wishlist'),
-  wishlistAdd: (productId) => api.post('/followers/wishlist/items', { product_id: productId }),
-  wishlistRemove: (productId) => api.delete(`/followers/wishlist/items/${productId}`),
-  wishlistCreateCollection: (name) => api.post('/followers/wishlist/collections', { name }),
-  wishlistRenameCollection: (id, name) => api.patch(`/followers/wishlist/collections/${id}`, { name }),
-  wishlistDeleteCollection: (id) => api.delete(`/followers/wishlist/collections/${id}`),
-  wishlistAssign: (collectionId, productId) => api.post(`/followers/wishlist/collections/${collectionId}/items`, { product_id: productId }),
-  wishlistUnassign: (collectionId, productId) => api.delete(`/followers/wishlist/collections/${collectionId}/items/${productId}`),
-
-
-  // Wave 5 — Reviews + ratings
-  getBrandReviews: (brandId, opts = {}) => {
-    const q = [`brand_id=${encodeURIComponent(brandId)}`];
-    if (opts.creatorOnly) q.push('creator_only=true');
-    if (opts.page) q.push(`page=${opts.page}`);
-    return api.get(`/follower/reviews?${q.join('&')}`);
-  },
-  postReview: (data) => api.post('/follower/reviews', data),
-  getReviewable: () => api.get('/follower/me/reviewable'),
-
-  // Wave 5C — creators eating now (DiningHome social-proof strip)
-  getCreatorsEatingNow: () => api.get('/follower/creators-eating-now'),
-
-
-  // Path C-3 — working search
-  search: (q, opts = {}) => {
-    const p = [`q=${encodeURIComponent(q)}`, `super=${opts.super || 'eat'}`];
-    if (opts.veg) p.push('veg=1');
-    return api.get(`/follower/search?${p.join('&')}`);
-  },
+  // Store and collection links opened in the app (4.14): counted as a visit, like the website does.
+  linkVisitStore: (handle, ch) => api.get(`/links/s/${encodeURIComponent(handle)}${q({ ch })}`),
+  linkVisitCollection: (code) => api.get(`/links/c/${encodeURIComponent(code)}`),
 };

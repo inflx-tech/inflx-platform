@@ -1,39 +1,52 @@
 /**
- * follower-creator-attribution Slice 3 — parseDeepLink unit tests. Guards the
- * universal-link parser that powers the "link door" (Way 1).
+ * INFLX links opened in the shopper app (post-links-codes · follower-app-v2 · rules v1.7 §4.14).
+ * The old ?cid&sid&oid&iid tracking links and /b/ brand links went with the old shopper app
+ * (29 Sep 2026): a post link's code, a store link's handle, a collection's code, and the channel
+ * ending are what a link carries now.
  */
 jest.mock('../../navigation/navRef', () => ({ navigateWhenReady: jest.fn() }));
+jest.mock('../../services/api', () => ({
+  followerApi: { linkVisitStore: jest.fn(() => Promise.resolve({})), linkVisitCollection: jest.fn(() => Promise.resolve({})) },
+}));
 
-import { parseDeepLink } from '../deepLink';
+import { parseDeepLink, handleDeepLink } from '../deepLink';
+import { navigateWhenReady } from '../../navigation/navRef';
+import { followerApi } from '../../services/api';
 
-test('creator link with full tracking → handle + 4-id tracking', () => {
-  const t = parseDeepLink('https://inflx.in/s/sana_styles?cid=c1&sid=s1&oid=o1&iid=i1');
-  expect(t).toEqual({
-    type: 's',
-    id: 'sana_styles',
-    tracking: { campaign_id: 'c1', set_id: 's1', offer_id: 'o1', campaign_influencer_id: 'i1', source: 'link' },
-  });
+beforeEach(() => jest.clearAllMocks());
+
+test('a post link: the code and its channel ending', () => {
+  expect(parseDeepLink('https://inflx.in/p/K7M2F9/ig')).toEqual({ type: 'p', id: 'K7M2F9', channel: 'ig' });
+  expect(parseDeepLink('https://www.inflx.in/p/k7m2f9/wa?utm=x')).toEqual({ type: 'p', id: 'k7m2f9', channel: 'wa' });
 });
 
-test('creator link with no query → tracking null', () => {
-  const t = parseDeepLink('https://inflx.in/s/rohit');
-  expect(t).toEqual({ type: 's', id: 'rohit', tracking: null });
+test('no ending, or one INFLX does not know, counts as Other', () => {
+  expect(parseDeepLink('https://inflx.in/p/K7M2F9').channel).toBe('o');
+  expect(parseDeepLink('https://inflx.in/p/K7M2F9/tiktok').channel).toBe('o');
 });
 
-test('custom scheme inflx:// is parsed', () => {
-  const t = parseDeepLink('inflx://s/meera?iid=ci9');
-  expect(t.type).toBe('s');
-  expect(t.id).toBe('meera');
-  expect(t.tracking.campaign_influencer_id).toBe('ci9');
+test('a store link, a collection link, the inflx:// scheme', () => {
+  expect(parseDeepLink('https://inflx.in/s/priya/yt')).toEqual({ type: 's', id: 'priya', channel: 'yt' });
+  expect(parseDeepLink('https://inflx.in/c/DSR4K2')).toEqual({ type: 'c', id: 'DSR4K2', channel: 'o' });
+  expect(parseDeepLink('inflx://p/K7M2F9/fb')).toEqual({ type: 'p', id: 'K7M2F9', channel: 'fb' });
 });
 
-test('brand link → type b', () => {
-  expect(parseDeepLink('https://inflx.in/b/brand-123').type).toBe('b');
-});
-
-test('non-INFLX or junk url → null', () => {
-  expect(parseDeepLink('https://example.com/s/x')).toBeNull();
+test('the retired links and junk open nothing', () => {
+  expect(parseDeepLink('https://inflx.in/b/brand-123')).toBeNull();
+  expect(parseDeepLink('https://inflx.in/o/offer-1')).toBeNull();
+  expect(parseDeepLink('https://example.com/p/K7M2F9')).toBeNull();
   expect(parseDeepLink('garbage')).toBeNull();
   expect(parseDeepLink('')).toBeNull();
   expect(parseDeepLink(null)).toBeNull();
+});
+
+test('opening: a post by its code (visit counted when it loads), her store and a collection counted here', () => {
+  handleDeepLink('https://inflx.in/p/k7m2f9/ig');
+  expect(navigateWhenReady).toHaveBeenLastCalledWith('Post', { code: 'K7M2F9', ch: 'ig' });
+  handleDeepLink('https://inflx.in/s/@Priya/wa');
+  expect(followerApi.linkVisitStore).toHaveBeenCalledWith('@Priya', 'wa');
+  expect(navigateWhenReady).toHaveBeenLastCalledWith('CreatorStore', { id: 'priya' });
+  handleDeepLink('https://inflx.in/c/dsr4k2');
+  expect(followerApi.linkVisitCollection).toHaveBeenCalledWith('dsr4k2');
+  expect(navigateWhenReady).toHaveBeenLastCalledWith('Collection', { id: 'DSR4K2' });
 });

@@ -33,12 +33,7 @@ router.post('/me/profile-image/upload-url', authenticate, requireRole('influence
 
 // ── Offer inbox (Block B) ─────────────────────────────────────────────────────
 router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.getMyOffers);
-// Stage B2 — My Store arranger layout (creator-owned Discover rows)
-const discoverCtrl = require('../controllers/discover.controller');
-router.get('/me/discover-layout', authenticate, requireRole('influencer'), discoverCtrl.getCreatorLayout);
-router.put('/me/discover-layout', authenticate, requireRole('influencer'), discoverCtrl.putCreatorLayout);
-// B4 — the arranger's raw material: their qualifying concepts + posts
-router.get('/me/discover-options', authenticate, requireRole('influencer'), discoverCtrl.getCreatorOptions);
+// The creator's old Discover arranger (concept rows) went with the old shopper app (29 Sep 2026).
 
 // ── Earnings overview (Phase 3 — Block E) ─────────────────────────────────────
 router.get('/me/earnings', authenticate, requireRole('influencer'), ctrl.getEarnings);

@@ -16,9 +16,7 @@ import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
-import { LocationProvider } from './src/contexts/LocationContext';
-import { CartProvider } from './src/services/CartContext';
-import { FoodOrderProvider } from './src/services/FoodOrderContext';
+import { ensureDeviceHeader } from './src/components/shop/shopStore';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
@@ -66,13 +64,13 @@ export default function App() {
     });
   }, []);
 
-  // ── Deep links (follower-creator-attribution Slice 3, "link door") ───────
-  // A creator's inflx.in/s/{handle}?cid&sid&oid&iid link opens the app into
-  // their store carrying the tag (Way 1). Handles cold start (getInitialURL)
-  // + warm (the 'url' event). Follower flavor only; other flavors have no
-  // matching routes so navigateWhenReady is a no-op.
+  // ── Links (post-links-codes, follower-app-v2) ────────────────────────────
+  // inflx.in/p/<code>, /s/<handle>, /c/<code> open the post, her store or the collection.
+  // Cold start (getInitialURL) + warm (the 'url' event). Follower flavor only. The phone's
+  // anonymous id rides on every request from the start, so a guest's visits are hers (5.14).
   useEffect(() => {
     if (APP_ROLE !== 'follower') return undefined;
+    ensureDeviceHeader().catch(() => {});
     Linking.getInitialURL().then((url) => { if (url) handleDeepLink(url); }).catch(() => {});
     const sub = Linking.addEventListener('url', (e) => handleDeepLink(e?.url));
     return () => { try { sub.remove(); } catch (_) { /* older RN */ } };
@@ -169,22 +167,19 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ setRole }}>
-      <LocationProvider>
-        <CartProvider>
-          <FoodOrderProvider>
-            {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-            {!showSplash && (
-              <NavigationContainer ref={navigationRef}>
-                {role === 'brand' ? <BrandNavigator /> :
-                 role === 'influencer' ? <InfluencerNavigator /> :
-                 role === 'follower' ? <FollowerNavigator /> :
-                 isFollowerApp ? <FollowerNavigator /> :
-                 <AuthNavigator />}
-              </NavigationContainer>
-            )}
-          </FoodOrderProvider>
-        </CartProvider>
-      </LocationProvider>
+      {/* follower-app-v2: the old shopper app's location, cart and food-order providers went with
+          it. The location one asked every flavor for the phone's position on first launch;
+          now only the shopper app asks, at Welcome (rules v1.7 §5.3). */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {!showSplash && (
+        <NavigationContainer ref={navigationRef}>
+          {role === 'brand' ? <BrandNavigator /> :
+           role === 'influencer' ? <InfluencerNavigator /> :
+           role === 'follower' ? <FollowerNavigator /> :
+           isFollowerApp ? <FollowerNavigator /> :
+           <AuthNavigator />}
+        </NavigationContainer>
+      )}
     </AuthContext.Provider>
   );
 }

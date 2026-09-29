@@ -106,41 +106,6 @@ async function seedFood() {
   return { brand, productId, product2Id, portionGroup, accompGroup, fullItem, halfItem, cokeItem, followerToken, addressId };
 }
 
-describe('Food World P1 — getProductDetail addon_groups', () => {
-  it('returns nested variation + add-on groups with items', async () => {
-    const { productId } = await seedFood();
-    const res = await request(app).get(`/v1/follower/products/${productId}`);
-    expect(res.status).toBe(200);
-    const p = res.body.data.product;
-    expect(p.badge).toBe('Popular');
-    expect(Array.isArray(p.addon_groups)).toBe(true);
-    expect(p.addon_groups.length).toBe(2);
-
-    // sort_order: Accompaniment (0) before Portion (1)
-    const [accomp, portion] = p.addon_groups;
-    expect(accomp.name).toBe('Accompaniment');
-    expect(accomp.selection_type).toBe('multi');
-    expect(accomp.is_variation).toBe(false);
-    expect(accomp.max_select).toBe(2);
-    expect(accomp.items.map(i => i.name).sort()).toEqual(['Coke', 'Roti']);
-
-    expect(portion.name).toBe('Portion');
-    expect(portion.selection_type).toBe('single');
-    expect(portion.is_variation).toBe(true);
-    expect(portion.is_required).toBe(true);
-    const fullOpt = portion.items.find(i => i.name === 'Full');
-    expect(fullOpt.price).toBe(114);
-    expect(fullOpt.is_default).toBe(true);
-  });
-
-  it('returns empty addon_groups for an uncustomised dish', async () => {
-    const { product2Id } = await seedFood();
-    const res = await request(app).get(`/v1/follower/products/${product2Id}`);
-    expect(res.status).toBe(200);
-    expect(res.body.data.product.addon_groups).toEqual([]);
-  });
-});
-
 describe('Food World P1 — section payload enrichment', () => {
   it('carries rating, review_count, badge, has_addons', async () => {
     const { productId, product2Id } = await seedFood();

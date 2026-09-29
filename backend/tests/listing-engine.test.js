@@ -221,28 +221,6 @@ describe('Listing Engine — Integration Tests', () => {
 
   // ── Follower listing endpoints ───────────────────────────────────────────
 
-  test('GET /follower/stories returns stories array', async () => {
-    const res = await request(app)
-      .get('/v1/follower/stories')
-      .set('Authorization', `Bearer ${followerToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.stories).toBeInstanceOf(Array);
-  });
-
-  test('GET /follower/categories returns super-categories with deal counts', async () => {
-    const res = await request(app)
-      .get('/v1/follower/categories')
-      .set('Authorization', `Bearer ${followerToken}`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.categories).toBeInstanceOf(Array);
-    expect(res.body.data.categories.length).toBe(7);
-    expect(res.body.data.categories[0].key).toBe('eat');
-  });
-
   test('GET /category/:super_category/stores returns stores', async () => {
     const res = await request(app)
       .get('/v1/category/eat/stores')

@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.6 · 29 September 2026 · living document**
+**Version 1.7 · 29 September 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -373,7 +373,20 @@ sends it. Tapping a draft carries on where she stopped. A draft can be deleted. 
 
 ### 4.7 Format and media
 - Static or video; single or carousel. Video is just another kind of media.
-- A **video streaming service (Cloudflare)** is added so videos autoplay in feeds while scrolling or swiping.
+- **How videos are delivered (decided 29 Sep, v1.7).** At launch videos play from INFLX's own storage
+  (Cloudflare R2, which charges nothing for plays), made fast in four ways:
+  1. the creator's phone **shrinks the video before upload** (about 720p; a 30-second clip is about 7–8 MB
+     instead of 40–60 MB);
+  2. the file is arranged to **start playing from the first second**;
+  3. the shopper's phone **loads the next one or two videos** while she watches, and keeps recent ones;
+  4. video links are **cacheable**, so repeat plays load from the nearest server.
+  There is no limit on how many videos can play. What matters is each file's size against her network:
+  smooth on good 4G and Wi-Fi; on a weak signal a video may pause to load.
+- **Every pause to load is recorded** (5.14). A **video streaming service (Cloudflare Stream)**, which
+  lowers quality on a weak signal instead of pausing, is added when those pauses become frequent
+  (particularly in smaller cities). Roughly $5 per 1,000 minutes stored + $1 per 1,000 minutes watched.
+- Playing videos, shrinking them on upload and opening links in the app need the **next Play Store
+  build**. Until a phone has it, a video shows its product's photo with "Update INFLX to play videos".
 - Product tap-points on images and the three tag styles (soft editorial, minimal, hidden) are kept; they can be removed later if unused.
 - **No copyrighted music.** A warning shows when uploading. Admin checks it during approval.
 
@@ -522,6 +535,9 @@ search gets exactly that post, with its products and offer applied.
 
 ### 4.15 Engagement on INFLX posts
 Screens (pending lock): `features/post-performance/04-preview/mockups/`.
+- **Built in two halves (v1.7).** The **shopper side** comes with the shopper app: view, like, comment,
+  report a comment, save, share, and the counts on each post. The **creator's reply and hide** and the
+  **brand's view** come with the post-performance board (Level 5).
 - Followers can **view, like, comment on, share and save** a live INFLX post.
 - **Counts kept per post:** views (the post opened), likes, comments, shares (share taps inside INFLX), saves.
 - Liking and commenting need **sign-in**. Saving and following work for guests (kept on the phone until sign-in, 5.2). Sharing works for guests. Views count for everyone.
@@ -567,6 +583,9 @@ store come next, in their own discussion.
   one tap away; search is where a post code is typed.
 - **Profile:** orders, settings, policies, her city, sign in / out. (Returns and addresses: next discussion.)
 - **No shopper wallet.** Refunds go back to the original payment and show inside the order.
+- **Until checkout is designed (v1.7):** there is no Add and no bag. Shop this post shows the products
+  with the offer applied and a heart to save each one. The bag icon, Add and "Go to bag" arrive with the
+  checkout discussion (O8).
 
 ### 5.2 Guests and sign-in
 - Shoppers browse as guests until they order.
@@ -574,14 +593,19 @@ store come next, in their own discussion.
 - **Liking and commenting need sign-in** (they're public). Sharing works for guests. Views count for everyone.
   (This updates 4.15, which asked for sign-in to save.)
 
-### 5.3 Her city (no exact location)
-- The follower picks **her city** from the **146 offered cities** (each has a fixed centre point). INFLX never
-  asks for or stores her exact location.
-- "Near" means **within a range of her city's centre**. The range is set by INFLX admin.
-- She can change her city any time in Profile.
+### 5.3 Where she is (changed 29 Sep, v1.7)
+- **The shopper app asks for the phone's current location** to show posts near her and in her city.
+  Only the shopper app asks; the brand and creator apps never do.
+- **Used, never stored.** The phone sends its location with each feed request; the server uses it to order
+  that page and keeps nothing. Coordinates stored by the old app are cleared (none were held in production).
+- **If she says no, or location is off,** she picks her city from the **146 offered cities** and its fixed
+  centre point is used instead. She can change it any time in Profile.
+- **"Near"** = a creator's city centre, or any of the brand's store branches, within a **range** (km) of
+  where she is. The range is set by INFLX admin.
 
 ### 5.4 Welcome (first open, optional)
-- One screen: **Women · Men · Kids**, a few **styles** from the theme tags, and **her city**. It can be skipped.
+- One screen: **Women · Men · Kids**, a few **styles** from the theme tags, and **"Use my location"** or
+  **"Pick my city"** (5.3). It can be skipped.
 - It gives the feed something to go on from day one (the cold start).
 
 ### 5.5 Home
@@ -641,20 +665,76 @@ store come next, in their own discussion.
 - "Search or enter a post code". A post code shows exactly that post (4.14); otherwise results are creators,
   brands and posts.
 
-### 5.12 The feed (how posts are ordered)
-- **At launch (simple rules):** creators she follows first, then newest, filtered to her categories from the
-  welcome screen, with the fixed rules below.
-- **Later, "a feed that learns" (the last stage):** four dials, each weight set from **admin without an app
-  update**: **what she does** (likes, saves, watches, shops), **how recent**, **how near** (her city range,
-  5.3), **how well it performs**.
-- **Fixed rules (always on):** never the same creator twice in a row · never repeat what she has already
-  seen · drop sold-out and removed posts · **15% of slots kept for brand-new posts** so a new post can earn a
-  score.
-- The top circles (5.5) use the same signals.
-- The dials are switched on only after weeks of real follower behaviour; today almost none has been recorded.
+### 5.12 The feed (how posts are ordered), rewritten 29 Sep, v1.7
+
+**Where it applies.** The feed rules order **Home** and **Play**. A post never disappears anywhere else:
+the creator store, brand store, search, Saved, collections, its link and its code always show it.
+
+**What can appear.** Live posts only: approved, posting date reached, not removed, at least one product
+in stock and on sale. Filtered to her **Women / Men / Kids** choice (none chosen = everything). Play takes
+videos only.
+
+#### Stage A: the rules feed (on from launch)
+1. **Order:**
+   1. posts from **creators she follows**, newest first;
+   2. then posts **near her** (5.3), newest first;
+   3. then **everything else**, newest first.
+
+   Posts whose theme matches the **styles she picked** on Welcome move up a little within each group.
+2. **Fixed rules, always on:**
+   - **never the same creator twice in a row**;
+   - **15% of places go to brand-new posts** (live for under 48 hours), so a new post is seen and can earn a score;
+   - sold-out and removed posts drop out the moment they change;
+   - **never repeat** (below).
+3. **Never repeat.** A post she has **seen** (5.14) doesn't come back in the feed for **30 days**. Unseen
+   posts always come first. When she has seen everything, the feed says **"You're all caught up"** and
+   then shows seen posts again, **the one she saw longest ago first**. The feed is never empty.
+4. **Opening a post continues the feed:**
+   - a photo: **that creator's posts**, newest first, then **similar posts** (same brand or category);
+   - a video: full screen, then **all creators' videos** in Play order.
+5. **Home circles** (5.5): creators she follows, then creators she engaged with (liked, watched, saved,
+   shopped), then brands she visited or bought from, then popular creators near her. Ringed circles (new
+   posts since her last visit) come first.
+
+#### Stage B: the feed that learns (built now, switched OFF)
+Each live post gets a score for her. Four dials, each a weight INFLX admin sets **without an app update**:
+
+| Dial | What it measures |
+|---|---|
+| **What she does** | Her past actions on the post's creator, brand, category, theme, offer type and price band. A purchase counts most, then add to bag, save, like, a finished video, time spent, a plain view. Older actions fade: **half their weight every 14 days**. |
+| **How recent** | The post's age: **half its freshness every 3 days**. |
+| **How near** | Full marks within the admin range of where she is (5.3), falling with distance. |
+| **How it performs** | Across all shoppers: shop taps, saves, likes and finished videos per view, adjusted so a post with a few lucky views can't jump to the top. Recalculated every hour. |
+
+The fixed rules of Stage A still apply on top.
+
+**The switch (the cutoff).** Stage B stays off until INFLX switches it on. The cutoff is not a date:
+- **Recording starts on day one** (5.14), so data builds from the first shopper.
+- Admin sees a **readiness panel**: shoppers with 20+ actions, total actions, days of data.
+- Admin sees a **preview**: for any shopper, "feed today" beside "feed if learning were on".
+- When the numbers and the preview look right (guide: a few hundred active shoppers, 3–4 weeks), admin
+  switches it on. No app update, no new build. The dials can be changed the same way at any time.
 
 ### 5.13 Discover
 - Designed by admin. **OPEN**: the founder will explain how admin designs it (with the saved-filter rails, 4.12).
+- **Until then (v1.7) the Discover tab shows "Coming soon".**
+
+### 5.14 What the app records (from day one)
+The phone knows which post is on screen and for how long, and records it for the feed (5.12) and for
+reporting. **Recording never changes pay.** Nobody (creator, brand or admin) sees one person's viewing;
+only totals are shown.
+
+| What she does | What is recorded |
+|---|---|
+| Scrolls past in under 1 second | Nothing: **not seen** |
+| A post is **at least half on screen for 1 second** | **Seen** (it won't repeat for 30 days, 5.12) |
+| She stays on a photo | How long: 10 s, 30 s… |
+| She watches a video | Seconds watched, whether it reached the end, replays, pause, sound on and off, and **every pause to load** (4.7) |
+| She taps | Open, Shop this post, a product, like, comment, save, share, the creator, the brand |
+
+- The phone sends these in small batches every few seconds and when she leaves the app. If the phone is
+  switched off suddenly, the last few seconds may be lost.
+- **Guests** are recorded under the phone's anonymous ID; their records join her account when she signs in.
 
 ---
 
@@ -665,7 +745,7 @@ store come next, in their own discussion.
 | O1 | Shoot-plan rules that gate post creation (4.1) |
 | ~~O2~~ | ~~Post link and post code~~: answered 28 Sep (4.14); formats fixed at build 29 Sep (v1.6). |
 | O3 | Discover rails: detailed design (4.12) |
-| O4 | Shopper app screens: post page, filters, cart, gift choice, bundle completion |
+| O4 | Shopper app screens: ~~post page~~ (F1–F13 locked 29 Sep); filters, cart, gift choice and bundle completion come with checkout |
 | O5 | Pay at store (M10) |
 | O6 | Margin floor (1.8), deferred |
 | O7 | Offers on the phone: after the website (1.1) |
@@ -685,3 +765,4 @@ store come next, in their own discussion.
 | 2026-09-28 | 1.4 | New section 5, the follower app: navigation (bag and search on top, Saved tab, no wallet), guests, city range from the 146 cities (no exact location), welcome, Home circles and feed, opening posts, Play, Saved remembering the post, creator and brand stores, search, the feed rules. Guests may now save (4.15 updated). |
 | 2026-09-29 | 1.5 | Level 3 board locked with its five questions as recommended: no edits once approved, she can take a post down (4.8); what a sent-back post may change (4.8); limits 10 slides, 30 products, 90 s a clip (4.8); photo tags optional (4.8); collection editing and hiding (4.11). |
 | 2026-09-29 | 1.6 | Level 4 board locked and built: the code's characters, a bare or unknown ending counts as Other, link previews aren't visits (4.14). Until the shopper app, a link opens a plain INFLX page (post, store or collection) with no shopping. |
+| 2026-09-29 | 1.7 | Shopper app decisions: board F1–F13 locked; location is now the phone's current location, used and never stored, with the city as fallback (5.3, 5.4); no Add or bag until checkout (5.1); Discover shows "Coming soon" (5.13); video from INFLX storage at launch with four speed measures, Cloudflare Stream when load-pauses grow (4.7); engagement built in two halves (4.15); the feed written in full: Stage A on, Stage B built but off behind an admin switch with a readiness panel and a preview (5.12); what the app records (5.14). |

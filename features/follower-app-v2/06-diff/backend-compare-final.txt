@@ -1,0 +1,86 @@
+
+── Before ──
+  suites                 141 (47 failed)
+  tests                  1767  passed 1518  failed 221
+── After ──
+  suites                 134 (42 failed)
+  tests                  1733  passed 1511  failed 194
+── Moved ──
+  new tests              34 (34 passing, 0 failing)
+  gone                   68
+  newly failing          0
+  newly passing          0
+  still failing          194
+
+── GONE (renamed, moved or deleted — say which) ──
+  · tests/follower-store.test.js :: GET /v1/store/:influencer_handle returns influencer profile and active offers (no auth required)
+  · tests/follower-store.test.js :: GET /v1/store/:influencer_handle returns tracking_ids in response
+  · tests/follower-store.test.js :: GET /v1/store/:influencer_handle validates tracking params when provided
+  · tests/follower-store.test.js :: GET /v1/store/:influencer_handle returns 404 for unknown handle
+  · tests/follower-store.test.js :: GET /v1/store/:influencer_handle returns coupon_code and commission_pct on offers
+  · tests/follower-store.test.js :: GET /v1/business/:brand_id returns brand store with active offers grouped by influencer
+  · tests/follower-store.test.js :: GET /v1/business/:brand_id returns 404 for unknown brand
+  · tests/follower-store.test.js :: GET /v1/category/:category_key returns active offers for a category
+  · tests/follower-store.test.js :: GET /v1/category/:category_key filters by city when provided
+  · tests/follower-store.test.js :: GET /v1/category/:category_key returns empty when city does not match
+  · tests/section-engine.test.js :: GET /v1/follower/home returns config-driven sections in position order
+  · tests/section-engine.test.js :: GET /v1/follower/home renders the 7 nav verticals from config_json
+  · tests/section-engine.test.js :: GET /v1/follower/home omits disabled shelves (new_this_week, product rail)
+  · tests/section-engine.test.js :: GET /v1/follower/home biggest_discounts ranks the live offer with a full 4-ID tracking block
+  · tests/section-engine.test.js :: GET /v1/follower/home interpolates {city} into shelf titles
+  · tests/section-engine.test.js :: GET /v1/follower/home deals_ending_soon surfaces the offer expiring in 10 days
+  · tests/section-engine.test.js :: GET /v1/follower/section/category/:key returns the per-vertical template with a populated brand shelf
+  · tests/section-engine.test.js :: GET /v1/follower/section/offers returns the offers template incl all_offers
+  · tests/section-engine.test.js :: GET /v1/follower/section/creator/:handle returns the creator-store template populated for the creator
+  · tests/section-engine.test.js :: GET /v1/follower/section/creator/:handle 404s on an unknown creator handle
+  · tests/section-engine.test.js :: regression — existing feeds unaffected GET /v1/follower/home-feed still returns 200
+  · tests/online-order.test.js :: GET /v1/store/:handle/products returns products with discounted price
+  · tests/online-order.test.js :: GET /v1/store/:handle/products returns 422 when both offer_id and ci_id are missing
+  · tests/online-order.test.js :: GET /v1/store/:handle/products returns 404 for unknown handle (with valid-shaped offer_id)
+  · tests/food-addon-write.test.js :: Food World P2 — addon write API follower read (Phase 1) returns the same addon_groups
+  · tests/listing-engine.test.js :: Listing Engine — Integration Tests GET /follower/stories returns stories array
+  · tests/listing-engine.test.js :: Listing Engine — Integration Tests GET /follower/categories returns super-categories with deal counts
+  · tests/food-customisation.test.js :: Food World P1 — getProductDetail addon_groups returns nested variation + add-on groups with items
+  · tests/food-customisation.test.js :: Food World P1 — getProductDetail addon_groups returns empty addon_groups for an uncustomised dish
+  · tests/follower-feed.test.js :: GET /v1/follower/feed returns feed items for follower
+  · tests/follower-feed.test.js :: GET /v1/follower/feed shows followed influencers offers in feed
+  · tests/follower-feed.test.js :: GET /v1/follower/feed shows nearby offers (same city) in feed
+  · tests/follower-feed.test.js :: GET /v1/follower/feed feed items have required fields
+  · tests/follower-feed.test.js :: GET /v1/follower/feed is publicly accessible without auth and returns a location-based feed
+  · tests/food-discovery-3c1.test.js :: brand_products.mrp — struck price surfaced getProductDetail returns mrp
+  · tests/food-dish-groups.test.js :: Dish-group discovery — tap a tile → nearby restaurants returns restaurants serving the group (members OR keyword), nearest first, excludes others
+  · tests/food-dish-groups.test.js :: Dish-group discovery — tap a tile → nearby restaurants lists active dish-group tiles
+  · tests/food-dish-groups.test.js :: Dish-group discovery — tap a tile → nearby restaurants empty group (no members, no keyword) returns no restaurants
+  · tests/food-category-restaurants.test.js :: category-restaurants — craving tile → restaurants returns restaurants whose dishes match the tile name; excludes others
+  · tests/food-category-restaurants.test.js :: category-restaurants — craving tile → restaurants uses a same-named dish_group's members for precise matching
+  · tests/food-category-restaurants.test.js :: category-restaurants — craving tile → restaurants 422 when name is missing
+  · tests/shoppable-posts-v2.test.js :: the old composer and the old readers (checks 28, 29) an approved new post does not appear in the old follower feed
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) absent settings row → legacy rank_only: everything shows, nearest first
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) boundary + coords: hard radius drops the far shop and its products
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) boundary without coords: hard city match
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) empty area + show_nearest fallback: repopulates unbounded
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) empty area + show_empty fallback: honest empty shelf
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) empty area + widen fallback: one retry at 2x radius
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) curation surfaces immune: boundary never applies when brandId is set
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) Phase 4a — a section override beats the world default (and only for that section)
+  · tests/world-rules.test.js :: World Rules (Phase 3, mig 126) mode off: location ignored — no distance ranking, no city boost
+  · tests/admin-sections.test.js :: GET /v1/admin/sections/:screen 401s without an admin token
+  · tests/admin-sections.test.js :: GET /v1/admin/sections/:screen lists the home shelves in position order for an admin
+  · tests/admin-sections.test.js :: GET /v1/admin/sections/:screen 404s on an unknown screen
+  · tests/admin-sections.test.js :: PUT /v1/admin/sections/:screen toggles enabled, changes count, and reorders (upsert by id)
+  · tests/admin-sections.test.js :: PUT /v1/admin/sections/:screen changes a Top-in rail item_type + category
+  · tests/admin-sections.test.js :: PUT /v1/admin/sections/:screen 422s on a bad item_limit
+  · tests/admin-sections.test.js :: DELETE /v1/admin/sections/id/:id removes a shelf
+  · tests/admin-sections.test.js :: DELETE /v1/admin/sections/id/:id 404s on an unknown id
+  · tests/allocation-live.test.js :: Live allocation (Phase 4b) scope 'store': the whole live catalogue — new products auto-flow
+  · tests/allocation-live.test.js :: Live allocation (Phase 4b) scope 'category': live within the section only
+  · tests/allocation-live.test.js :: Live allocation (Phase 4b) scope 'products': hand-picked stays FROZEN (legacy)
+  · tests/allocation-live.test.js :: Live allocation (Phase 4b) resolve-coupon works again (was: 500 on non-existent cs.products_json) and is live
+  · tests/offer-store-publish.test.js :: store surfacing (resolveBusinessStore) published+active offer appears in store_offers (brand-direct, no influencer)
+  · tests/offer-store-publish.test.js :: store surfacing (resolveBusinessStore) unpublished offer is NOT surfaced
+  · tests/section-banner-gateway.test.js :: Banner-Gateway hide-when-empty (Phase 2) keeps a banner whose rule matches products; drops dry and unresolved ones
+  · tests/section-banner-gateway.test.js :: Banner-Gateway hide-when-empty (Phase 2) never drops a static image frame (rule=static, items empty by design)
+  · tests/section-banner-gateway.test.js :: Banner-Gateway hide-when-empty (Phase 2) hides an empty banner only in the context where it is dry (business scope)
+
+NO NEW FAILURES
+

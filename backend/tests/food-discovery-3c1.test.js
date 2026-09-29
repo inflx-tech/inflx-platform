@@ -100,14 +100,3 @@ describe('restaurants_with_featured — Type B rule', () => {
   });
 });
 
-describe('brand_products.mrp — struck price surfaced', () => {
-  it('getProductDetail returns mrp', async () => {
-    const a = await restaurant('Dabba & Co.', 16.50, 80.64, {});
-    const pid = await addDish(a.id, 'Masala Chicken & Roti', 99, { mrp: 169, veg: 'non_veg' });
-
-    const res = await request(app).get(`/v1/follower/products/${pid}`);
-    expect(res.status).toBe(200);
-    expect(Number(res.body.data.product.mrp)).toBe(169);
-    expect(Number(res.body.data.product.price)).toBe(99);
-  });
-});

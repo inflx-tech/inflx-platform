@@ -135,41 +135,6 @@ async function setupOrderScenario() {
 
 // ── GET /v1/store/:handle/products ───────────────────────────────────────────
 
-describe('GET /v1/store/:handle/products', () => {
-  it('returns products with discounted price', async () => {
-    const { oid } = await setupOrderScenario();
-
-    const res = await request(app)
-      .get(`/v1/store/bakerylover/products?offer_id=${oid}`);
-
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body.data.products)).toBe(true);
-    expect(res.body.data.products.length).toBe(1);
-    // price in paise: 50000 * 100 = 5000000 → 15% off = 4250000? No — price is 50000 rupees?
-    // Actually brand_products.price = 50000 means ₹500 (numeric(10,2))
-    // discounted_price = floor(50000*100 * (1 - 0.15)) = floor(5000000 * 0.85) = 4250000
-    // But for test purposes we just check discounted_price is defined
-    expect(res.body.data.products[0].discounted_price).toBeDefined();
-    expect(res.body.data.products[0].name).toBe('Chocolate Cake');
-  });
-
-  it('returns 422 when both offer_id and ci_id are missing', async () => {
-    // At least one scope is required to prevent the silent-wrong-brand bug
-    // (creator with multiple campaigns → arbitrary LIMIT 1 pick). Either
-    // offer_id (set-level campaign_offers row) or ci_id
-    // (per-influencer campaign_influencers row) is acceptable.
-    const res = await request(app).get('/v1/store/bakerylover/products');
-    expect(res.status).toBe(422);
-    expect(res.body.error?.field).toBe('offer_id');
-  });
-
-  it('returns 404 for unknown handle (with valid-shaped offer_id)', async () => {
-    const { oid } = await setupOrderScenario();
-    const res = await request(app).get(`/v1/store/unknownhandle_xyz/products?offer_id=${oid}`);
-    expect(res.status).toBe(404);
-  });
-});
-
 // ── POST /v1/follower/orders ──────────────────────────────────────────────────
 
 describe('POST /v1/follower/orders', () => {

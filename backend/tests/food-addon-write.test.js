@@ -98,20 +98,6 @@ describe('Food World P2 — addon write API', () => {
     expect(accomp.items).toHaveLength(2);
   });
 
-  it('follower read (Phase 1) returns the same addon_groups', async () => {
-    const { token, productId } = await seedRestaurant();
-    await request(app)
-      .post(`/v1/brands/me/products/${productId}/addon-groups`)
-      .set('Authorization', `Bearer ${token}`)
-      .send(fullPayload());
-
-    const pub = await request(app).get(`/v1/follower/products/${productId}`);
-    expect(pub.status).toBe(200);
-    const ag = pub.body.data.product.addon_groups;
-    expect(ag.map(g => g.name)).toEqual(['Accompaniment', 'Portion']);
-    expect(ag.find(g => g.name === 'Portion').items).toHaveLength(2);
-  });
-
   it('bulk-replace drops removed groups', async () => {
     const { token, productId } = await seedRestaurant();
     await request(app).post(`/v1/brands/me/products/${productId}/addon-groups`)

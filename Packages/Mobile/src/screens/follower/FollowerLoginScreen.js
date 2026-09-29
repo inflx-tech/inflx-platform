@@ -15,6 +15,7 @@ const darkColors = {
   purple: C.brown, purpleDim: C.soft, orange: C.brown, orangeDim: C.soft,
 };
 import { api } from '../../services/api';
+import { mergeAfterSignIn } from '../../components/shop/shopStore';
 
 /**
  * FollowerLoginScreen — quick OTP login for followers.
@@ -128,8 +129,11 @@ export default function FollowerLoginScreen({ navigation, route }) {
     finally { setLoading(false); }
   }
 
-  function finishLogin() {
+  async function finishLogin() {
     const onDone = route?.params?.onDone;
+    // follower-app-v2 (5.2): what she kept on the phone as a guest (follows, saves, Welcome
+    // choices) moves to her account now. A failure here never blocks signing in.
+    try { await mergeAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
     Alert.alert('Signed in', 'You are all set.', [
       {
         text: 'Continue',
@@ -146,16 +150,16 @@ export default function FollowerLoginScreen({ navigation, route }) {
   return (
     <View style={s.container}>
       <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-        <Text style={s.backText}>← Back to browsing</Text>
+        <Text style={s.backText}>← Back</Text>
       </TouchableOpacity>
 
       <View style={s.content}>
         {/* Title */}
         <Text style={s.title}>
-          {step === 'phone' ? 'Almost there' : step === 'otp' ? 'Enter OTP' : 'Your name'}
+          {step === 'phone' ? 'Sign in' : step === 'otp' ? 'Enter OTP' : 'Your name'}
         </Text>
         <Text style={s.subtitle}>
-          {step === 'phone' ? 'Confirm your phone number to place the order'
+          {step === 'phone' ? 'Sign in with your number to like and comment'
             : step === 'otp' ? `We sent a 6-digit code to +91 ${cleanedPhone.slice(-10)}`
             : 'Last step — tell us your name'}
         </Text>
@@ -240,7 +244,7 @@ export default function FollowerLoginScreen({ navigation, route }) {
         )}
       </View>
 
-      <Text style={s.note}>Browse and shop freely without signing in.{'\n'}We only ask for your number to place the order.</Text>
+      <Text style={s.note}>Browse, save and follow without signing in.{'\n'}Your saves and follows move to your account when you do.</Text>
     </View>
   );
 }

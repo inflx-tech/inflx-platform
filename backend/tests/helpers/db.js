@@ -208,7 +208,18 @@ async function reseedReferenceData(client) {
       -- Item 12 (C17): the two new numbers, and the waiting period moved from payment_config (Q4).
       ('content_change_rounds',       2, 1,  5, 'rounds', 'Content change requests'),
       ('content_report_silence_days', 7, 1, 30, 'days',   'Brand silence before the Creator may report'),
-      ('final_payment_wait_days',     7, 1, 60, 'days',   'Final payment waiting period')
+      ('final_payment_wait_days',     7, 1, 60, 'days',   'Final payment waiting period'),
+      -- post-links-codes (mig 196) and the shopper app's feed (follower-app-v2, mig 197).
+      ('link_channel_window_days', 30, 1, 90, 'days', 'Link channel window'),
+      ('feed_near_km',        50, 5, 500, 'km',      'Near range'),
+      ('feed_new_share_pct',  15, 0, 50,  'percent', 'Places for new posts'),
+      ('feed_new_hours',      48, 6, 168, 'hours',   'A post counts as new for'),
+      ('feed_repeat_days',    30, 1, 90,  'days',    'Seen posts stay out of the feed for'),
+      ('feed_learning_on',     0, 0, 1,   'on/off',  'Feed that learns'),
+      ('feed_w_does',         40, 0, 100, 'weight',  'Dial: what she does'),
+      ('feed_w_recent',       25, 0, 100, 'weight',  'Dial: how recent'),
+      ('feed_w_near',         15, 0, 100, 'weight',  'Dial: how near'),
+      ('feed_w_performs',     20, 0, 100, 'weight',  'Dial: how it performs')
     ON CONFLICT (key) DO NOTHING
   `);
   // Item 7: the standard terms are seeded by migration 183 and are configuration

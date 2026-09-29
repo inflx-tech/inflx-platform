@@ -40,7 +40,7 @@ const offerResolution = require('../services/offerResolution.service');
 const pricingService = require('../services/pricing.service');
 const settlementService = require('../services/settlement.service');
 const paymentConfigSvc = require('../services/paymentConfig.service');
-const followerPostsService = require('../services/followerPosts.service'); // app-config knobs (COD)
+const followerAppConfig = require('../services/followerAppConfig.service'); // app-config knobs (COD)
 
 // Way-4 — resolve the admin-configured attribution window length (days) as a
 // validated integer, safe to inline into `interval 'N days'`. Falls back to 30.
@@ -1565,7 +1565,7 @@ const placeOrder = asyncHandler(async (req, res) => {
   // truth), not just hidden in the UI; the fee comes from app-config and lands
   // once on the primary order row (platform revenue, outside brand_net math).
   if (String(req.body.payment_method || '') === 'cod') {
-    const appConfig = await followerPostsService.getAppConfig();
+    const appConfig = await followerAppConfig.get();
     if (!appConfig.cod_enabled) {
       throw new AppError('VALIDATION_ERROR', 'Cash on Delivery is not available right now', 422);
     }

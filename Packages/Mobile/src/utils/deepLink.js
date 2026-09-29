@@ -1,57 +1,51 @@
 import { navigateWhenReady } from '../navigation/navRef';
 
 /**
- * follower-creator-attribution Slice 3 — parse a universal INFLX link into a
- * navigation target + creator tracking. Mirrors utils/shareUrl.js:
- *   /s/:handle  → creator store   (Way 1: the creator's social link)
- *   /b/:brand_id→ brand store
- *   /p/:product_id, /o/:offer_id  → recognised, routed best-effort
- * Query: cid=campaign_id · sid=set_id · oid=offer_id · iid=campaign_influencer_id.
+ * INFLX links opened in the shopper app (post-links-codes · rules v1.7 §4.14):
+ *   inflx.in/p/<code>[/<ch>]    a post       → Post (by code; the ending is the channel)
+ *   inflx.in/s/<handle>[/<ch>]  her store    → Creator store (an old handle still works)
+ *   inflx.in/c/<code>           a collection → Collection
+ * The channel only says where the visit came from; every ending opens the same thing. The post
+ * link's visit is counted by the server when the post is fetched; store and collection links are
+ * counted here, like the website does.
+ *
+ * Opening links from outside the app needs the next Play Store build for /c/ (the /p/ and /s/
+ * link filters are already in the app); the parsing and routing here are ready for both.
  */
+const CHANNELS = ['ig', 'yt', 'wa', 'fb', 'o'];
+
 export function parseDeepLink(url) {
   if (typeof url !== 'string' || !url) return null;
-  // Strip the host (https://inflx.in, www, or the inflx:// custom scheme).
   const cleaned = url
     .replace(/^https?:\/\/(www\.)?inflx\.in/i, '')
     .replace(/^inflx:\/\//i, '/');
-  const m = cleaned.match(/^\/?([sbpo])\/([^/?#]+)(?:\?([^#]*))?/i);
+  const m = cleaned.match(/^\/?([psc])\/([^/?#]+)(?:\/([^/?#]+))?/i);
   if (!m) return null;
-  const [, typeLetter, rawId, qs] = m;
-
-  const q = {};
-  if (qs) {
-    for (const pair of qs.split('&')) {
-      const [k, v] = pair.split('=');
-      if (k) q[k] = decodeURIComponent((v || '').replace(/\+/g, ' '));
-    }
-  }
-  const tracking = (q.cid || q.iid) ? {
-    campaign_id: q.cid || null,
-    set_id: q.sid || null,
-    offer_id: q.oid || null,
-    campaign_influencer_id: q.iid || null,
-    source: 'link',
-  } : null;
-
-  return { type: typeLetter.toLowerCase(), id: decodeURIComponent(rawId), tracking };
+  const [, typeLetter, rawId, rawCh] = m;
+  const ch = String(rawCh || '').toLowerCase();
+  return {
+    type: typeLetter.toLowerCase(),
+    id: decodeURIComponent(rawId),
+    channel: CHANNELS.includes(ch) ? ch : 'o',
+  };
 }
 
-// Route an incoming link into the follower app (no-op on other flavors — the
-// route simply won't exist and navigateWhenReady swallows it).
 export function handleDeepLink(url) {
   const t = parseDeepLink(url);
   if (!t) return;
+  const { followerApi } = require('../services/api');
   switch (t.type) {
-    case 's':
-      navigateWhenReady('InfluencerStore', { handle: t.id, tracking: t.tracking, trackingParams: t.tracking });
-      break;
-    case 'b':
-      navigateWhenReady('BrandStore', { brandId: t.id, tracking: t.tracking });
-      break;
     case 'p':
-      navigateWhenReady('ProductDetail', { selectedProductId: t.id, tracking: t.tracking });
+      navigateWhenReady('Post', { code: t.id.toUpperCase(), ch: t.channel });
       break;
-    // 'o' (offer) deep link → deferred (needs the offer-detail param shape).
+    case 's':
+      followerApi.linkVisitStore(t.id, t.channel).catch(() => {});
+      navigateWhenReady('CreatorStore', { id: t.id.replace(/^@/, '').toLowerCase() });
+      break;
+    case 'c':
+      followerApi.linkVisitCollection(t.id).catch(() => {});
+      navigateWhenReady('Collection', { id: t.id.toUpperCase() });
+      break;
     default:
       break;
   }

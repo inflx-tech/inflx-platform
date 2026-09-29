@@ -1,136 +1,91 @@
 'use strict';
 
+/**
+ * follower.routes.js — the shopper app. Mounted at /followers and /follower.
+ * Contract: features/follower-app-v2 · rules v1.7 §5
+ *
+ * 29 Sep 2026: the old shopper app's routes (section engine, concepts and Discover layouts, deals,
+ * campaign feeds, v1 posts, food search, coupons, saved offers, the wallet, the product-only
+ * wishlist, stored location) were removed with the old app. Kept: the account, addresses (for
+ * checkout), reviews (after an order), app config and the event log.
+ */
+
 const { Router } = require('express');
 const { authenticate, requireRole, authenticateOptional } = require('../middleware/auth');
-const ctrl = require('../controllers/follower.controller');
+const acct = require('../controllers/followerAccount.controller');
+const shop = require('../controllers/shopper.controller');
 const reviewCtrl = require('../controllers/review.controller');
-const walletCtrl = require('../controllers/followerWallet.controller');
+const postEventsCtrl = require('../controllers/postEvents.controller');
 
 const router = Router();
 
 const followerAuth = [authenticate, requireRole('follower')];
+const anyone = [authenticateOptional];
 
-// ── Registration + profile ────────────────────────────────────────────────────
-router.post('/register', authenticate, requireRole('follower'), ctrl.register);
-router.get('/me',        authenticate, requireRole('follower'), ctrl.getMe);
-// Slice 1 (features/follower-profile-repairs): followers were the ONLY role
-// without a PATCH /me — brand, influencer and agency all have one. Name/email
-// live on users; phone is the login identity and is never editable here.
-router.patch('/me',      ...followerAuth, ctrl.updateMe);
+// ── Account ──────────────────────────────────────────────────────────────────
+router.post('/register', ...followerAuth, acct.register);
+router.get('/me', ...followerAuth, acct.getMe);
+router.patch('/me', ...followerAuth, acct.updateMe);
+router.get('/me/profile', ...followerAuth, shop.profile);               // F13
+router.patch('/me/preferences', ...followerAuth, shop.preferences);     // F1, F13: city, Women/Men/Kids, styles
+router.post('/me/merge', ...followerAuth, shop.merge);                  // sign-in: a guest's follows and saves move over
+// The nearest offered city for a point from the phone. Used, never stored (5.3).
+router.get('/reverse-geocode', ...anyone, acct.reverseGeocode);
 
-// ── Attribution touch (auth required) — click/store-entry opens the window ────
-router.post('/touch',                ...followerAuth, ctrl.recordTouch);
+// ── Addresses (kept for checkout) ────────────────────────────────────────────
+router.post('/addresses', ...followerAuth, acct.createAddress);
+router.get('/addresses', ...followerAuth, acct.listAddresses);
+router.patch('/addresses/:id', ...followerAuth, acct.updateAddress);
+router.delete('/addresses/:id', ...followerAuth, acct.deleteAddress);
 
-// ── Follow / unfollow (auth required) ────────────────────────────────────────
-router.post('/follows',              ...followerAuth, ctrl.followInfluencer);
-router.delete('/follows/:influencer_id', ...followerAuth, ctrl.unfollowInfluencer);
+// ── App config and what the app records (5.14) ───────────────────────────────
+router.get('/app-config', ...anyone, shop.appConfig);
+router.post('/events', ...anyone, postEventsCtrl.ingest);
 
-// ── Location (auth required) — device/selected coords + reverse-geocoded area ──
-router.post('/location', ...followerAuth, ctrl.updateLocation);
-// Public "where am I" → the nearest offered city (retire-google: no Google; the live follower
-// app calls this on cold start). /geocode and /places/* are retired.
-router.get('/reverse-geocode', authenticateOptional, ctrl.reverseGeocode);
+// ── Welcome, feed, circles (F1, F2, F5) ──────────────────────────────────────
+router.get('/welcome', ...anyone, shop.welcome);
+router.post('/feed', ...anyone, shop.feed);
+router.get('/circles', ...anyone, shop.circles);
 
-// ── Addresses (auth required) ────────────────────────────────────────────────
-router.post('/addresses',     ...followerAuth, ctrl.createAddress);
-router.get('/addresses',      ...followerAuth, ctrl.listAddresses);
-router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
-// Slice 1 — SOFT delete. follower_orders.address_id FKs this table, so a hard
-// delete would either fail or destroy a past order's shipping address.
-router.delete('/addresses/:id', ...followerAuth, ctrl.deleteAddress);
+// ── Posts (F3, F4, F6) ───────────────────────────────────────────────────────
+router.get('/posts/:id', ...anyone, shop.post);
+router.get('/posts/:id/more', ...anyone, shop.more);
+router.get('/posts/:id/comments', ...anyone, shop.comments);
+router.post('/posts/:id/comments', ...followerAuth, shop.addComment);
+router.post('/comments/:id/report', ...followerAuth, shop.report);
+router.post('/posts/:id/like', ...followerAuth, shop.like);
+router.delete('/posts/:id/like', ...followerAuth, shop.unlike);
+router.post('/posts/:id/save', ...followerAuth, shop.save);
+router.delete('/posts/:id/save', ...followerAuth, shop.unsave);
 
-// ── Wishlist + collections (Stage C2 — auth required; guests keep a device-
-// local wishlist that syncs here at the one login moment) ────────────────────
-const wishlistCtrl = require('../controllers/followerWishlist.controller');
-router.get   ('/wishlist',                                    ...followerAuth, wishlistCtrl.list);
-router.post  ('/wishlist/items',                              ...followerAuth, wishlistCtrl.addItem);
-router.delete('/wishlist/items/:product_id',                  ...followerAuth, wishlistCtrl.removeItem);
-router.post  ('/wishlist/collections',                        ...followerAuth, wishlistCtrl.createCollection);
-router.patch ('/wishlist/collections/:id',                    ...followerAuth, wishlistCtrl.renameCollection);
-router.delete('/wishlist/collections/:id',                    ...followerAuth, wishlistCtrl.deleteCollection);
-router.post  ('/wishlist/collections/:id/items',              ...followerAuth, wishlistCtrl.assignItem);
-router.delete('/wishlist/collections/:id/items/:product_id',  ...followerAuth, wishlistCtrl.unassignItem);
+// ── Search and codes (F12) ───────────────────────────────────────────────────
+router.get('/search', ...anyone, shop.search);
+router.get('/code/:code', ...anyone, shop.code);
 
-// ── Creator posts (Post/Concept P3) — the new source of truth ────────────────
-const followerPostsCtrl = require('../controllers/followerPosts.controller');
-// Stage B2 — resolved Discover payload (global | business | creator scopes)
-const discoverCtrl = require('../controllers/discover.controller');
-router.get('/discover',  authenticateOptional, discoverCtrl.followerDiscover);
-router.get('/posts',     authenticateOptional, followerPostsCtrl.feed);
-// Slice 1 — MUST stay above '/posts/:id' or Express matches 'saved' as an id.
-// post_saves (mig 141) has been written since P3 with no reader anywhere: a
-// follower could save a post and never find it again.
-router.get('/posts/saved', ...followerAuth, followerPostsCtrl.savedPosts);
-router.get('/posts/:id', authenticateOptional, followerPostsCtrl.detail);
-// P3 globals — app config (public, fetched at launch) + minimal like/save.
-router.get('/app-config', authenticateOptional, followerPostsCtrl.appConfig);
-router.post('/posts/:id/like',   ...followerAuth, followerPostsCtrl.like);
-router.delete('/posts/:id/like', ...followerAuth, followerPostsCtrl.unlike);
-router.post('/posts/:id/save',   ...followerAuth, followerPostsCtrl.save);
-router.delete('/posts/:id/save', ...followerAuth, followerPostsCtrl.unsave);
+// ── Saved (F11) ──────────────────────────────────────────────────────────────
+router.get('/saved', ...followerAuth, shop.saved);
+router.post('/saved/resolve', ...anyone, shop.resolveSaved);            // a guest's saves, kept on the phone
+router.post('/saved/products', ...followerAuth, shop.saveProduct);
+router.delete('/saved/products/:productId', ...followerAuth, shop.unsaveProduct);
 
-// ── Behaviour log (Slice 0 — features/follower-event-log) ────────────────────
-// authenticateOptional: guests must be able to log, or the feed would only ever
-// learn from signed-in followers while most browsing happens signed out.
-const postEventsCtrl = require('../controllers/postEvents.controller');
-router.post('/events', authenticateOptional, postEventsCtrl.ingest);
+// ── Following ────────────────────────────────────────────────────────────────
+router.post('/follows', ...followerAuth, shop.follow);
+router.delete('/follows/:influencer_id', ...followerAuth, shop.unfollow);
+router.get('/following', ...anyone, shop.following);
 
-// ── Feed & browse (public — auth optional for personalization) ───────────────
-router.get('/feed',      authenticateOptional, ctrl.getFeed);       // legacy
-router.get('/home-feed', authenticateOptional, ctrl.getHomeFeed);   // product-centric
-router.get('/deals',     authenticateOptional, ctrl.getDeals);      // category browse
-router.get('/following', ...followerAuth, ctrl.getFollowing);       // auth required (personal)
+// ── Stores and collections (F7–F10) ──────────────────────────────────────────
+router.get('/creators/:id', ...anyone, shop.creatorStore);
+router.get('/creators/:id/posts', ...anyone, shop.creatorPosts);
+router.get('/creators/:id/collections', ...anyone, shop.creatorCollections);
+router.get('/collections/:id', ...anyone, shop.collection);
+router.get('/brands/:id', ...anyone, shop.brandStore);
+router.get('/brands/:id/posts', ...anyone, shop.brandPosts);
+router.get('/brands/:id/offers', ...anyone, shop.brandOffers);
+router.get('/filters', ...anyone, shop.filters);
 
-// ── Listing Engine endpoints (public) ────────────────────────────────────────
-router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influencer story circles
-router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
-router.get('/verticals',  authenticateOptional, ctrl.getVerticals);  // v2 home: world tabs + category rails
-router.get('/cart-recommendations', authenticateOptional, ctrl.getCartRecommendations); // "You might also like" at checkout
-// Code door (follower-creator-attribution Slice 2): resolve a creator's coupon
-// code → creator + allocated products, so the cart can apply the discount +
-// attribute the sale without arriving via the creator's link.
-router.post('/resolve-coupon', ...followerAuth, ctrl.resolveCoupon);
-// Dish groups (food discovery tiles): list tiles + tap → nearby restaurants serving it.
-router.get('/dish-groups',                authenticateOptional, ctrl.getDishGroups);
-router.get('/dish-groups/:id/restaurants', authenticateOptional, ctrl.getDishGroupRestaurants);
-// Category-tile discovery (Home Builder follower_vertical_categories): the craving
-// rail taps here → restaurants serving that category. Cleanup 2026-06-22.
-router.get('/category-restaurants',        authenticateOptional, ctrl.getCategoryRestaurants);
-// Full single-product detail for the PDP (a shelf/Results tap carries only the
-// card fields; the PDP fetches description/facets/images/variants by id).
-router.get('/products/:product_id', authenticateOptional, ctrl.getProductDetail);
-
-// ── Section Engine feeds (Creator Vibe, Phase A — public, auth optional) ─────
-// Backend-driven { sections:[...] }; admin-controlled via section_config.
-// Contract: features/follower-section-engine/.
-router.get('/home',                                  authenticateOptional, ctrl.getHomeSections);
-router.get('/section/category/:key',                 authenticateOptional, ctrl.getCategorySections);
-router.get('/business/:brand_id/sections',           authenticateOptional, ctrl.getBusinessSections);
-router.get('/section/offers',                        authenticateOptional, ctrl.getOffersSections);
-router.get('/section/creator/:handle',               authenticateOptional, ctrl.getCreatorSections);
-router.get('/section/creator/:handle/category/:cat', authenticateOptional, ctrl.getCreatorCategorySections);
-// App Builder — an admin-created GLOBAL custom page rendered as a section stack.
-router.get('/page/:key/sections',                    authenticateOptional, ctrl.getPageSections);
-// Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
-router.get('/section-results',                        authenticateOptional, ctrl.getSectionResults);
-// P5 (section-analytics-city): fire-and-forget engagement capture — always 204.
-router.post('/section-event',                         authenticateOptional, ctrl.recordSectionEvent);
-
-// ── Wave 5 — Reviews + ratings ───────────────────────────────────────────────
-// List is public (followers read reviews before visiting); create +
-// reviewable require follower auth + a qualifying completed transaction.
-router.get ('/reviews',       authenticateOptional, reviewCtrl.listBrandReviews);
-router.post('/reviews',       ...followerAuth,      reviewCtrl.createReview);
-router.get ('/me/reviewable', ...followerAuth,      reviewCtrl.getReviewable);
-
-// ── Wave 5C — Creators eating now (public discovery social-proof) ────────────
-router.get('/creators-eating-now', authenticateOptional, ctrl.creatorsEatingNow);
-
-// ── Path C-3 — working search (public) ───────────────────────────────────────
-router.get('/search', authenticateOptional, ctrl.search);
-
-// ── Path C-2 — Follower wallet (auth required) ───────────────────────────────
-router.get('/wallet',              ...followerAuth, walletCtrl.getWallet);
-router.get('/wallet/transactions', ...followerAuth, walletCtrl.listWalletTransactions);
+// ── Reviews (after an order; kept for checkout) ──────────────────────────────
+router.get('/reviews', ...anyone, reviewCtrl.listBrandReviews);
+router.post('/reviews', ...followerAuth, reviewCtrl.createReview);
+router.get('/me/reviewable', ...followerAuth, reviewCtrl.getReviewable);
 
 module.exports = router;

@@ -42,6 +42,16 @@ const DEFAULTS = Object.freeze({
   final_payment_wait_days: { value: 7, min: 1, max: 60, unit: 'days', label: 'Final payment waiting period' },
   // post-links-codes (rules v1.5 §4.14) — stamped on each tap as the end of its window.
   link_channel_window_days: { value: 30, min: 1, max: 90, unit: 'days', label: 'Link channel window' },
+  // follower-app-v2 (rules v1.7 §5.12) — the feed's numbers, read on every feed request.
+  feed_near_km: { value: 50, min: 5, max: 500, unit: 'km', label: 'Near range' },
+  feed_new_share_pct: { value: 15, min: 0, max: 50, unit: 'percent', label: 'Places for new posts' },
+  feed_new_hours: { value: 48, min: 6, max: 168, unit: 'hours', label: 'A post counts as new for' },
+  feed_repeat_days: { value: 30, min: 1, max: 90, unit: 'days', label: 'Seen posts stay out of the feed for' },
+  feed_learning_on: { value: 0, min: 0, max: 1, unit: 'on/off', label: 'Feed that learns', kind: 'switch' },
+  feed_w_does: { value: 40, min: 0, max: 100, unit: 'weight', label: 'Dial: what she does' },
+  feed_w_recent: { value: 25, min: 0, max: 100, unit: 'weight', label: 'Dial: how recent' },
+  feed_w_near: { value: 15, min: 0, max: 100, unit: 'weight', label: 'Dial: how near' },
+  feed_w_performs: { value: 20, min: 0, max: 100, unit: 'weight', label: 'Dial: how it performs' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
 
@@ -60,6 +70,15 @@ const DESCRIPTION = Object.freeze({
   content_report_silence_days: "How long after the Creator confirms she has posted the Brand may stay silent before she can tell INFLX. There is no automatic confirmation — the money is the Brand's — so this is her way to be heard. Telling INFLX records a dispute and moves no money. Between 1 and 30 days. Stamped when she confirms she posted.",
   link_channel_window_days: "How long a tap on a creator's links decides which channel an order counts under (Instagram, YouTube, WhatsApp, Facebook, Other or Post code). With no tap in the window the order counts as 'In INFLX'. Reporting only: it never changes who is paid, the commission or the INFLX fee. Between 1 and 90 days. Stamped on each tap when it is made, so changing this applies to new taps only.",
   final_payment_wait_days: "The delay before the final 50% of a Pay for Content fee is released, counted from the Brand's confirmation that the content is live. Paid on that day at the release time. Between 1 and 60 days. Stamped on the payment at the Brand's confirmation, so changing this never moves a date already promised. This replaces the waiting period that used to sit on the Payments page.",
+  feed_near_km: "How far from where a shopper is (her phone's location, or her city's centre when location is off) a creator or a brand store still counts as near her. Near posts come right after the creators she follows. Between 5 and 500 km. Applies to the next feed she opens.",
+  feed_new_share_pct: 'The share of places in every feed kept for brand-new posts, so a new post is seen and can earn a score. Between 0 and 50 percent.',
+  feed_new_hours: 'How long after going live a post counts as new for those places. Between 6 and 168 hours.',
+  feed_repeat_days: 'How long a post a shopper has seen stays out of her Home and Play feeds. Seen means at least half on screen for one second. When she has seen everything, seen posts come back, the one she saw longest ago first, so the feed is never empty. It never hides a post from stores, search, Saved or its link. Between 1 and 90 days.',
+  feed_learning_on: 'When this is on, Home and Play are ordered by the feed that learns: each post gets a score from the four dials below. When it is off, the rules feed orders them: creators she follows, then near her, then everything else, newest first. The fixed rules (no creator twice in a row, places for new posts, never repeat) apply either way. Check the readiness panel and the preview on the Feed page before switching it on.',
+  feed_w_does: "How much a shopper's own actions count: purchases most, then add to bag, save, like, a finished video, time spent, a plain view, on the post's creator, brand, category, theme, offer type and price band. Older actions fade by half every 14 days. Between 0 and 100; only matters when the feed that learns is on.",
+  feed_w_recent: "How much a post's freshness counts. Freshness halves every 3 days. Between 0 and 100; only matters when the feed that learns is on.",
+  feed_w_near: 'How much being near her counts: full within the near range, falling with distance beyond it. Between 0 and 100; only matters when the feed that learns is on.',
+  feed_w_performs: "How much a post's results across all shoppers count: shop taps, saves, likes and finished videos per view, adjusted so a few lucky views cannot jump to the top. Recalculated every hour. Between 0 and 100; only matters when the feed that learns is on.",
   subscriptions_enforced: 'When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan keep their plan and are still charged. A brand can go past its plan while this is off; when you switch it back on nothing is deleted and nothing stops working, she simply cannot add more.',
 });
 

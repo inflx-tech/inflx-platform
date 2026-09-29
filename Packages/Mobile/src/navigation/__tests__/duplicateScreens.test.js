@@ -17,7 +17,7 @@ function screensByStack(file) {
   return out;
 }
 
-describe.each(['BrandNavigator.js', 'InfluencerNavigator.js'])('%s', (file) => {
+describe.each(['BrandNavigator.js', 'InfluencerNavigator.js', 'FollowerNavigator.js'])('%s', (file) => {
   it('registers every screen name once per stack', () => {
     const stacks = screensByStack(file);
     expect(Object.keys(stacks).length).toBeGreaterThan(0);
@@ -31,4 +31,17 @@ describe.each(['BrandNavigator.js', 'InfluencerNavigator.js'])('%s', (file) => {
 it('item 12\'s two screens are registered where their doors lead', () => {
   expect(screensByStack('InfluencerNavigator.js').CollabsStack).toContain('Content');
   expect(screensByStack('BrandNavigator.js').CampaignsStack).toContain('BrandContent');
+});
+
+// follower-app-v2: every screen a shopper can be sent to is registered, and imported.
+it('the shopper app registers its five tabs and every screen its taps lead to', () => {
+  const stacks = screensByStack('FollowerNavigator.js');
+  expect(stacks.Tab).toEqual(['HomeTab', 'DiscoverTab', 'PlayTab', 'SavedTab', 'ProfileTab']);
+  for (const name of ['Tabs', 'Welcome', 'Post', 'Comments', 'CreatorStore', 'Collection', 'BrandStore', 'BrandOffers', 'OfferPosts', 'Search', 'EditProfile', 'FollowerLogin', 'LegalList', 'LegalDocument']) {
+    expect(stacks.Stack).toContain(name);
+  }
+  const src = fs.readFileSync(path.join(__dirname, '..', 'FollowerNavigator.js'), 'utf8');
+  const used = [...src.matchAll(/component=\{(\w+)\}/g)].map((m) => m[1]);
+  expect(used.length).toBeGreaterThanOrEqual(19);
+  for (const name of used) expect(src).toMatch(new RegExp(`(import ${name} from|function ${name}\\()`));
 });
