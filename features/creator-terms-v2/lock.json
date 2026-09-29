@@ -27,5 +27,16 @@
     "found_in_passing": "an invitation still linked to an already-ended offer was not withdrawn when its last live offer ended — fixed (check 15b)",
     "note": "released stays false per GOVERNANCE.md §5. Not deployed.",
     "checks": "21 / 21 pass (incl. 15b) — 03-expected-outputs.md"
+  },
+  "deployed_to_production": {
+    "at": "2026-09-29",
+    "by": "founder go (\"Yes pls continue all three steps\")",
+    "migration": "194 applied to production via run-194.js --apply after a clean --dry (Postgres 17.6): 10 structural checks OK; 22 collaborations, none changed, none moved to the new terms",
+    "commit": "2d04321f (pushed 0205d3ab..2d04321f)",
+    "render": "live ~75 s after push, proved by route existence: /influencers/me/invitations/:id/sell and /campaigns/:id/sets/:sid/offer-choices answered 404 before, 401 after (also products-without-offers, offers/:offerId); /brands/me/offers 401 both (control)",
+    "vercel": "https://inflx.in/login re-rendered at 01:08 GMT 29 Sep (Age 0, then counting) after the push",
+    "ota": "brand 232, influencer 220 (runtime 3); both manifests serve the new versions",
+    "money": "NO MONEY MOVED — identical before and after: 12 escrow rows / Rs 34,500, contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions, 16 follower_transactions",
+    "pending": "founder phone walk of T1-T7 and C1-C5 (needs a published offer from the website builder and a Pay for Sale set)"
   }
 }
