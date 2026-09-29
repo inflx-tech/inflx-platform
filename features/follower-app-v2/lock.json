@@ -33,5 +33,15 @@
     "regression": "full backend serially vs l4_run1: 0 newly failing, 34 new, 68 retired with the old app (27 already failing), 194 pre-existing; phone 767/767; app bundle and website build",
     "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.7",
     "at": "2026-09-29"
+  },
+  "deployed_to_production": {
+    "at": "2026-09-29",
+    "go": "founder (chat): \"pls go and continue three steps\"",
+    "migration": "197 applied (26 checks OK; 0 stored locations; learning OFF; no money moved: escrow 12 rows / ₹34,500, contracts locked ₹36,260, released ₹8,625, creator wallets ₹8,625)",
+    "commit": "29d09f18 (pushed; gov-check OK, 160 governed changes)",
+    "render": "live ~90 s after push: /v1/follower/welcome 401→200, /follower/filters 401→200, old /follower/home 200→401; guest feed stage A, 0 posts; welcome 8 styles, 146 cities",
+    "vercel": "admin.inflx.in /admin/comments and /admin/feed 404→200, /admin/sections and /admin/concepts 200→404 (~45 s)",
+    "ota": "follower 230 (manifest serves 230; influencer 222 and brand 233 unchanged)",
+    "pending": "phone walk once a post is approved in production; Play Store build (video player, compression, /c/ link filter) needs its own go"
   }
 }
