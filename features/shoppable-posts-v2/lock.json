@@ -1,20 +1,31 @@
 {
   "feature": "shoppable-posts-v2",
-  "spec_version": "0.1.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "mockup_locked": false,
-  "mockup_locked_by": null,
-  "mockup_locked_at": null,
-  "notes": "Level 3 of 4 of the offer -> terms -> posts programme. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §4. Mockups v1 drawn 2026-09-28 (P1-P17 creator app), derived from features/screen-atlas SC-21..SC-27 (locked 2026-09-01) and the item 5 creator parts; replaces SC-22..SC-24. Five open questions on the board. Depends on offer-builder-v2 and creator-terms-v2.",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 2026-09-29: \"Next our goal is to build shoppable post creation, Given all mockups and rules doc. pls check both and start analyse and check what exists and not ..start implementation.\" — the five board questions stand as recommended); build decisions D1-D19 in 01-spec.md delegated under standing autonomy",
+  "approved_at": "2026-09-29T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 2026-09-29: \"Next our goal is to build shoppable post creation, Given all mockups and rules doc. pls check both and start analyse and check what exists and not ..start implementation.\" — the five board questions stand as recommended)",
+  "mockup_locked_at": "2026-09-29T00:00:00+05:30",
+  "notes": "Level 3 of 4 of the offer -> terms -> posts programme. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §4. Mockups v1 drawn 2026-09-28 (P1-P17 creator app), derived from features/screen-atlas SC-21..SC-27 (locked 2026-09-01) and the item 5 creator parts; replaces SC-22..SC-24. Five open questions on the board. Depends on offer-builder-v2 and creator-terms-v2. LOCKED 2026-09-29 by the founder instruction to build from the board; Q1-Q5 as recommended.",
   "release": {
     "qa_all_green": false,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-09-29T00:00:00+05:30",
+    "backend_tests": "full serial suite vs the Level 2 record: tests 1713->1748, passed 1465->1500, failed 220->220; 35 new all passing, 0 newly failing, 0 gone; +1 check after (product delete) 36/36 (06-diff/backend-compare-final.txt)",
+    "phone_tests": "full phone suite 60/60 suites, 745/745 tests (22 new Create-tab checks); react-native bundle builds",
+    "web": "next build clean (admin Posts page); not walked — it needs a sent post, which needs a signed new-terms collaboration",
+    "migration_rehearsal": "run-195.js --dry then --apply twice on a copy built to 194 with one old post: 39 checks OK both times, old post untouched, no money moved",
+    "checks": "37 / 37 pass (incl. 24b) — 03-expected-outputs.md",
+    "found_in_passing": "a deleted product never left posts or told creators (fixed, check 24b); the offer page post counts were placeholders since Level 1 (now real)",
+    "note": "released stays false per GOVERNANCE.md §5. Not deployed."
   }
 }

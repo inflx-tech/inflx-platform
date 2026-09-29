@@ -1,0 +1,25 @@
+
+── Before ──
+  suites                 139 (46 failed)
+  tests                  1713  passed 1465  failed 220
+── After ──
+  suites                 140 (46 failed)
+  tests                  1748  passed 1500  failed 220
+── Moved ──
+  new tests              35 (35 passing, 0 failing)
+  gone                   0
+  newly failing          0
+  newly passing          0
+  still failing          220
+
+NO NEW FAILURES
+
+
+── Classification (shoppable-posts-v2) ──
+Baseline = the Level 2 record (features/creator-terms-v2, l2_run3). Full suite serially, alone on the test DB.
+35 new checks, all passing; 0 newly failing; 0 gone. One assertion updated in place before this run:
+  · offers-v2-flow check 26 — the remove-products reply gained `posts_removed` (0 there); the exact-reply
+    assertion now names it. Nothing else changed.
+After this run: a product deleted by the brand now also leaves posts (check 24b, +1 test); the only suite
+that deletes products through the API is shoppable-posts-v2 (36/36).
+Pre-existing, unchanged: collection-library.test.js cannot load (module removed long before; in the 220).

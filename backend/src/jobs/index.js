@@ -30,6 +30,7 @@ const subscriptionRenewalJob = require('./subscription-renewal.job');
 const settlementRetryJob     = require('./settlement-retry.job');
 const commerceSettlementJob  = require('./commerce-settlement.job');
 const postEligibilityJob     = require('./post-eligibility.job');
+const postsOfferEndedJob     = require('./posts-offer-ended.job');
 // Item 3b — creator social numbers (Instagram/YouTube through Apify). Contract: features/item3b-social-numbers
 const socialMeasureJob       = require('./social-measure.job');
 // Item 4 — a set whose cutoff passed with nobody signed expires. Contract: features/item4-campaigns-sets
@@ -120,6 +121,8 @@ function startAllJobs() {
   // post-eligibility (Post/Concept P4) — every 30 min at :13/:43; refreshes
   // the approved-post eligibility cache + fires post.dark on transitions.
   cron.schedule('13,43 * * * *', postEligibilityJob.run, { timezone: tz });
+  // shoppable-posts-v2 — an offer past its end date takes its posts out of the shop (4.9).
+  cron.schedule('10 0 * * *', () => postsOfferEndedJob.run(), { timezone: tz });
 
   // social-measure (item 3b) — hourly at :25; picks due accounts with row locking, honours
   // the monthly Apify budget, retries failures the next day.
@@ -167,6 +170,7 @@ module.exports = {
   settlementRetryJob,
   commerceSettlementJob,
   postEligibilityJob,
+  postsOfferEndedJob,
   socialMeasureJob,
   setExpiryJob,
   pitchHousekeepingJob,

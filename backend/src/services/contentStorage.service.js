@@ -76,7 +76,8 @@ function mockUrl(method, key, { exp, len = '', type = '' }) {
 /** Verify a mock URL the way R2 verifies a presigned one. Returns the key, or throws a status. */
 function mockVerify(method, key, q) {
   const exp = Number(q.e);
-  if (!key || key.includes('..') || !key.startsWith(`${PREFIX}/`)) throw Object.assign(new Error('bad key'), { status: 404 });
+  // shoppable-posts-v2: a shoppable post's photos and videos use the same signed upload (posts/…).
+  if (!key || key.includes('..') || !(key.startsWith(`${PREFIX}/`) || key.startsWith('posts/'))) throw Object.assign(new Error('bad key'), { status: 404 });
   const want = mockSig([method, key, q.e, q.l || '', q.t || '']);
   const got = String(q.s || '');
   if (got.length !== want.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want))) {

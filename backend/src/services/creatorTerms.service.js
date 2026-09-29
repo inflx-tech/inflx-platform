@@ -432,6 +432,9 @@ async function tell(people, message, data) {
 async function afterProductChange(productId, before, after) {
   try {
     if (!before || !after) return 0;
+    // shoppable-posts-v2 (rules 4.9): the posts it is in — off sale leaves them, sold out removes them,
+    // a new price recalculates their band. Never throws.
+    await require('./shoppablePosts.service').afterProductChange(productId, before, after);
     const name = after.name || before.name || 'A product';
     let told = 0;
     const wasOn = before.is_active !== false && before.pushed_to_store !== false;

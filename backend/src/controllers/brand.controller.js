@@ -844,6 +844,14 @@ const deleteProduct = asyncHandler(async (req, res) => {
     [req.params.pid]
   );
 
+  // creator-terms-v2 / shoppable-posts-v2 (rules 2.8, 4.9): a deleted product is no longer on sale —
+  // the creators who could sell it are told, and it leaves their posts. Never fails the delete.
+  const { rows: [gone] } = await db.query(`SELECT name, price, stock, pushed_to_store FROM brand_products WHERE id = $1`, [req.params.pid]);
+  if (gone) {
+    await require('../services/creatorTerms.service').afterProductChange(req.params.pid,
+      { ...gone, is_active: true }, { ...gone, is_active: false });
+  }
+
   return success(res, { message: 'Product removed', soft_deleted: true });
 });
 

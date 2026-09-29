@@ -24,7 +24,8 @@
 
 const db = require('../config/db');
 
-const VISIBLE = `cp.status = 'approved'
+// shoppable-posts-v2: new (v2) posts reach shoppers with the shopper app, not through these old readers.
+const VISIBLE = `cp.status = 'approved' AND NOT cp.v2
   AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0)`;
 
 // ── layout store ─────────────────────────────────────────────────────────────

@@ -20,6 +20,7 @@
  */
 
 const db = require('../config/db');
+const AppError = require('../utils/AppError');
 const events = require('./collabEvents.service');
 const concepts = require('./concepts.service');
 const sectionLibrary = require('./sectionLibrary.service');
@@ -299,7 +300,7 @@ async function listMyPosts(influencerId, { status, limit = 20, offset = 0 } = {}
             (SELECT COUNT(*)::int FROM post_likes pl WHERE pl.post_id = cp.id) AS like_count,
             (SELECT COUNT(*)::int FROM post_saves ps WHERE ps.post_id = cp.id) AS save_count
        FROM creator_posts cp
-      WHERE cp.influencer_id = $1${statusClause ? statusClause.replace(' AND status', ' AND cp.status') : ''}
+      WHERE cp.influencer_id = $1 AND NOT cp.v2${statusClause ? statusClause.replace(' AND status', ' AND cp.status') : ''}
       ORDER BY cp.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params);
   return hydratePosts(rows);
@@ -308,7 +309,7 @@ async function listMyPosts(influencerId, { status, limit = 20, offset = 0 } = {}
 // ── moderation (admin) ───────────────────────────────────────────────────────
 
 async function listQueue({ status = 'submitted', limit = 30, offset = 0 } = {}) {
-  if (!['draft', 'submitted', 'approved', 'rejected'].includes(status)) {
+  if (!['draft', 'submitted', 'approved', 'rejected', 'removed'].includes(status)) {
     throw new Error('bad status');
   }
   const { rows } = await db.query(
@@ -322,13 +323,26 @@ async function listQueue({ status = 'submitted', limit = 30, offset = 0 } = {}) 
     [status, Math.min(Number(limit) || 30, 100), Math.max(Number(offset) || 0, 0)]);
   const counts = await db.query(
     `SELECT status, count(*)::int AS n FROM creator_posts GROUP BY status`);
+  // shoppable-posts-v2: a new post also carries its collaboration, post type, offer and facets.
+  const posts = await hydratePosts(rows);
+  const v2 = await require('./shoppablePosts.service').adminShape(rows);
+  for (const p of posts) if (v2.has(p.id)) p.v2 = v2.get(p.id);
   return {
-    posts: await hydratePosts(rows),
+    posts,
     counts: Object.fromEntries(counts.rows.map(r => [r.status, r.n])),
   };
 }
 
 async function decidePost(postId, adminUserId, approve, reason) {
+  // shoppable-posts-v2 (D14): a new post is approved only while it is still true — its offer running,
+  // its products still hers to sell. Sending back is always allowed.
+  const shoppable = require('./shoppablePosts.service');
+  const { rows: kind } = await db.query(`SELECT v2 FROM creator_posts WHERE id = $1 AND status = 'submitted'`, [postId]);
+  const isV2 = !!(kind[0] && kind[0].v2);
+  if (isV2 && approve) {
+    const problem = await shoppable.approveCheck(postId);
+    if (problem) throw new AppError('POST_STALE', require('./postsCopy').MSG.STALE(problem), 422);
+  }
   const { rows } = await db.query(
     `UPDATE creator_posts
         SET status = $2, reject_reason = $3, approved_by = $4,
@@ -351,6 +365,8 @@ async function decidePost(postId, adminUserId, approve, reason) {
     action: approve ? 'approved' : 'sent_back',
     note: approve ? null : (String(reason || '').trim() || 'Not specified'),
   });
+
+  if (isV2) { await shoppable.afterDecision(post.id, approve, reason); return post; }
 
   // notify the creator (in-app + push; never blocks the decision)
   try {

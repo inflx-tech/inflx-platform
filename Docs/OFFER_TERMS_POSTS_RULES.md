@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.4 · 28 September 2026 · living document**
+**Version 1.5 · 29 September 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -382,6 +382,11 @@ sends it. Tapping a draft carries on where she stopped. A draft can be deleted. 
 - **One offer per post.**
 - Offer posts show only that collaboration's offers. Price posts show only that collaboration's products without offers.
 - Tags are fixed once published.
+- **Limits:** up to 10 photos or clips in a carousel, up to 30 products, a video clip up to 90 seconds.
+- **Product tags on photos are optional.** Every picked product is in the post's product list anyway.
+- **After sending:** nothing changes while INFLX checks it. **Sent back:** she may change photos and videos,
+  caption, products and theme tags — not the brand, collaboration, post type or offer (for those, a new post).
+- **Once approved, no edits.** She can **take a post down** herself: it leaves the shop and keeps its earnings history.
 
 ### 4.9 A post's life after it goes live
 
@@ -406,6 +411,9 @@ sends it. Tapping a draft carries on where she stopped. A draft can be deleted. 
 - Collections need **no admin approval**. They only hold approved posts and her allocated products.
 - A product in a collection works like a one-product post (M6).
 - Admin "theme collections" are retired; theme tags do that job now.
+- She can **rename, add or remove items, or delete** a collection any time. A collection stays posts-only or
+  products-only. It **hides itself** from shoppers when nothing in it is still in the shop. Deleting a collection
+  never touches her posts.
 
 ### 4.12 Discovery
 - Every post carries four facets: **Category · Offer · Price band · Theme**.
@@ -671,3 +679,4 @@ store come next, in their own discussion.
 | 2026-09-28 | 1.2 | Store links, post links, post codes, collection links (4.14) from the founder's "Post Code and Links" document plus 11 agreed points: five channels, code at approval, handle-change redirect, channel labelled per creator, removed-post page, brand "copy all codes", admin-only real source. Old offer code retired (2.10). Post drafts added (4.2). |
 | 2026-09-28 | 1.3 | Follower link/code screens removed from the board; the code-search rule recorded (4.14). New: engagement on INFLX posts (views, likes, comments, shares, saves; comment rules) (4.15), and social media numbers scraped from the links the creator adds at going live (4.16). Rules marked as recommendations await the founder's lock of the Level 5 board. |
 | 2026-09-28 | 1.4 | New section 5, the follower app: navigation (bag and search on top, Saved tab, no wallet), guests, city range from the 146 cities (no exact location), welcome, Home circles and feed, opening posts, Play, Saved remembering the post, creator and brand stores, search, the feed rules. Guests may now save (4.15 updated). |
+| 2026-09-29 | 1.5 | Level 3 board locked with its five questions as recommended: no edits once approved, she can take a post down (4.8); what a sent-back post may change (4.8); limits 10 slides, 30 products, 90 s a clip (4.8); photo tags optional (4.8); collection editing and hiding (4.11). |

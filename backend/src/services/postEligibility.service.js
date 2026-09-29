@@ -109,7 +109,7 @@ async function recomputePost(postId) {
  * post never stops the sweep. */
 async function sweep() {
   const { rows } = await db.query(
-    `SELECT id FROM creator_posts WHERE status = 'approved' ORDER BY eligibility_checked_at ASC NULLS FIRST`);
+    `SELECT id FROM creator_posts WHERE status = 'approved' AND NOT v2 ORDER BY eligibility_checked_at ASC NULLS FIRST`);
   let dark = 0, ok = 0, failed = 0;
   for (const r of rows) {
     try {

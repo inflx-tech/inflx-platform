@@ -83,7 +83,11 @@ const listMine = asyncHandler(async (req, res) => {
 const servePostMedia = asyncHandler(async (req, res) => {
   const key = await creatorPosts.mediaR2Key(req.params.id);
   if (!key) throw new AppError('NOT_FOUND', 'media not found', 404);
-  const url = await storage.generateDownloadUrl(key);
+  // shoppable-posts-v2: new posts upload through the signed, size-locked path (posts/<creator>/<post>/<file>),
+  // so they are read back through it too.
+  const url = /^posts\/[^/]+\/[0-9a-f-]{36}\//i.test(key)
+    ? (await require('../services/contentStorage.service').viewUrl(key)).url
+    : await storage.generateDownloadUrl(key);
   if (!url) throw new AppError('NOT_FOUND', 'media unavailable', 404);
   res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   return res.redirect(302, url);

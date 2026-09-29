@@ -12,7 +12,6 @@ import BlockedBrandsScreen from '../screens/influencer/BlockedBrandsScreen';
 import BrandOverviewScreen from '../screens/influencer/BrandOverviewScreen';
 // Item 3 — the five-tab shell, Collabs, Find brands and the profile screens.
 // Contract: features/item3-discovery-profiles-groups
-import ComingSoonScreen from '../components/shell/ComingSoonScreen';
 // features/registration-and-profile — a pending creator is inside the app now: the Home tab is
 // the pending home until approval, the sheet host shows ACCOUNT_PENDING on any gated action,
 // and Payment & tax left the profile for the Wallet tab (UPI / bank / PAN).
@@ -69,11 +68,29 @@ import CreatorSellScreen from '../screens/influencer/CreatorSellScreen';
 import CreatorOfferScreen from '../screens/influencer/CreatorOfferScreen';
 import CreatorNotificationsScreen from '../screens/influencer/CreatorNotificationsScreen';
 import { tabScreenOptions } from './BrandNavigator';
+// shoppable-posts-v2 — the Create tab. Contract: features/shoppable-posts-v2
+import CreateHomeScreen from '../screens/create/CreateHomeScreen';
+import PostBrandScreen from '../screens/create/PostBrandScreen';
+import PostCollabScreen from '../screens/create/PostCollabScreen';
+import PostTypeScreen from '../screens/create/PostTypeScreen';
+import PostOfferScreen from '../screens/create/PostOfferScreen';
+import PostProductsScreen from '../screens/create/PostProductsScreen';
+import PostPriceScreen from '../screens/create/PostPriceScreen';
+import PostThemeScreen from '../screens/create/PostThemeScreen';
+import PostMediaScreen from '../screens/create/PostMediaScreen';
+import PostTagScreen from '../screens/create/PostTagScreen';
+import PostReviewScreen from '../screens/create/PostReviewScreen';
+import PostStatusScreen from '../screens/create/PostStatusScreen';
+import MyPostsScreen from '../screens/create/MyPostsScreen';
+import CollectionsScreen from '../screens/create/CollectionsScreen';
+import NewCollectionScreen from '../screens/create/NewCollectionScreen';
+import CollectionScreen from '../screens/create/CollectionScreen';
 
 const Tab = createBottomTabNavigator();
 const CollabsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const WalletStack = createNativeStackNavigator();
+const CreateStack = createNativeStackNavigator();
 const noHeader = { headerShown: false };
 
 // features/registration-and-profile C7 — the Wallet tab is a stack now, so a payout detail
@@ -84,6 +101,30 @@ function WalletStackScreen() {
       <WalletStack.Screen name="CreatorWallet" component={CreatorWalletScreen} />
       <WalletStack.Screen name="PayoutDetail" component={PayoutDetailScreen} />
     </WalletStack.Navigator>
+  );
+}
+
+// shoppable-posts-v2 (P1–P20): shoppable posts for one collaboration, and collections.
+function CreateStackScreen() {
+  return (
+    <CreateStack.Navigator screenOptions={noHeader}>
+      <CreateStack.Screen name="CreateHome" component={CreateHomeScreen} />
+      <CreateStack.Screen name="PostBrand" component={PostBrandScreen} />
+      <CreateStack.Screen name="PostCollab" component={PostCollabScreen} />
+      <CreateStack.Screen name="PostType" component={PostTypeScreen} />
+      <CreateStack.Screen name="PostOffer" component={PostOfferScreen} />
+      <CreateStack.Screen name="PostProducts" component={PostProductsScreen} />
+      <CreateStack.Screen name="PostPrice" component={PostPriceScreen} />
+      <CreateStack.Screen name="PostTheme" component={PostThemeScreen} />
+      <CreateStack.Screen name="PostMedia" component={PostMediaScreen} />
+      <CreateStack.Screen name="PostTag" component={PostTagScreen} />
+      <CreateStack.Screen name="PostReview" component={PostReviewScreen} />
+      <CreateStack.Screen name="PostStatus" component={PostStatusScreen} />
+      <CreateStack.Screen name="MyPosts" component={MyPostsScreen} />
+      <CreateStack.Screen name="Collections" component={CollectionsScreen} />
+      <CreateStack.Screen name="NewCollection" component={NewCollectionScreen} />
+      <CreateStack.Screen name="Collection" component={CollectionScreen} />
+    </CreateStack.Navigator>
   );
 }
 
@@ -155,7 +196,7 @@ export default function InfluencerNavigator() {
       <Tab.Navigator initialRouteName={initialRouteName} screenOptions={tabScreenOptions}>
         <Tab.Screen name="HomeTab" component={PendingHomeScreen} initialParams={{ kind: 'creatorHome', tabTitle: 'Home' }} options={{ title: 'Home' }} />
         <Tab.Screen name="CollabsTab" component={CollabsStackScreen} options={{ title: 'Collabs' }} listeners={lockedTabListeners()} />
-        <Tab.Screen name="CreateTab" component={ComingSoonScreen} initialParams={{ kind: 'creatorCreate', tabTitle: 'Create' }} options={{ title: 'Create' }} listeners={lockedTabListeners()} />
+        <Tab.Screen name="CreateTab" component={CreateStackScreen} options={{ title: 'Create' }} listeners={lockedTabListeners()} />
         <Tab.Screen name="WalletTab" component={WalletStackScreen} options={{ title: 'Wallet' }} />
         <Tab.Screen name="ProfileTab" component={ProfileStackScreen} options={{ title: 'Profile' }} />
       </Tab.Navigator>

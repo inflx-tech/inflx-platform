@@ -234,6 +234,7 @@ async function view(brandId, offerId, { today = todayInIndia() } = {}) {
   const creators = offer.status === 'draft' ? [] : await creatorsOf(offer.id);
   const checks = offer.status === 'draft' ? rules.publishChecks(offer, p, today) : null;
   const giftCount = p.gift.length;
+  const postStats = offer.status === 'draft' ? { live: 0, byCi: new Map() } : await require('./shoppablePosts.service').offerPostStats(offer.id, { today });
   return {
     offer: {
       ...offer,
@@ -250,8 +251,9 @@ async function view(brandId, offerId, { today = todayInIndia() } = {}) {
     },
     numbers: { problems: offer.status === 'draft' ? rules.numberProblems(offer.sub_type, offer.offer_config_json) : [], help: rules.numbersHelp(offer, p) },
     checks,
-    creators: creators.map((c) => ({ campaign_influencer_id: c.campaign_influencer_id, name: c.creator_name, handle: c.instagram_handle, set_name: c.set_name, campaign_name: c.campaign_name, status: c.status, posts: 0, sales: null })),
-    posts: { live: 0, note: 'Shoppable posts come next. Posts using this offer will show here.' },
+    creators: creators.map((c) => ({ campaign_influencer_id: c.campaign_influencer_id, name: c.creator_name, handle: c.instagram_handle, set_name: c.set_name, campaign_name: c.campaign_name, status: c.status, posts: postStats.byCi.get(c.campaign_influencer_id) || 0, sales: null })),
+    // shoppable-posts-v2: real posts now. Sales through them arrive with the shopper app.
+    posts: { live: postStats.live, note: postStats.live ? null : 'Posts using this offer show here once INFLX approves them.' },
     // creator-terms-v2 (founder Q1): the warning before ending it.
     unsigned_invitations: offer.status === 'draft' ? 0 : await require('./creatorTerms.service').unsignedWith(offer.id),
   };
@@ -387,7 +389,9 @@ async function endNow(brandId, offerId, { today = todayInIndia() } = {}) {
   // creators are told, an invitation left empty is withdrawn); then every signed creator is told.
   const drop = await require('./creatorTerms.service').dropEndedOffer(res.offer.id, { offerName: res.offer.name, brandName: brand });
   const told = await tellCreators(res.offer.id, NOTIFY.ended(res.offer.name, brand));
-  return { ended: true, freed: res.freed, creators_told: told + drop.dropped, invitations_dropped: drop.dropped, invitations_withdrawn: drop.withdrawn };
+  // shoppable-posts-v2 (rules 1.10, 4.9): every post using it leaves the shop.
+  const postsRemoved = await require('./shoppablePosts.service').afterOfferEnded(res.offer.id);
+  return { ended: true, freed: res.freed, creators_told: told + drop.dropped, invitations_dropped: drop.dropped, invitations_withdrawn: drop.withdrawn, posts_removed: postsRemoved };
 }
 
 // ── removing products (rules 1.10; guards: spec D8) ──────────────────────────
@@ -423,10 +427,11 @@ async function removePreview(brandId, offerId, productIds, { today = todayInIndi
   if (offer.status === 'draft' || rules.displayStatus(offer, today) === 'ended') throw new AppError('OFFER_LOCKED', 'Only a scheduled or live offer can lose products.', 409);
   const plan = await removalPlan(offer, productIds);
   const creators = await creatorsOf(offer.id);
+  const stats = await require('./shoppablePosts.service').offerPostStats(offer.id, { productIds: plan.targets.map((t) => t.id), today });
   return {
     products: plan.targets.map((t) => ({ id: t.id, name: t.name })),
     creators: [...new Set(creators.map((c) => c.creator_name))],
-    posts: { live: 0, emptied: 0 },
+    posts: { live: stats.touched, emptied: stats.emptied },
     products_left: plan.buyLeft,
   };
 }
@@ -442,11 +447,13 @@ async function removeProducts(brandId, offerId, productIds, { today = todayInInd
         WHERE offer_id = $1 AND removed_at IS NULL AND (product_id = ANY($2::uuid[]) OR gift_item_id = ANY($2::uuid[]))`,
       [offer.id, ids]);
     await tx.query(`UPDATE brand_offers SET updated_at = now() WHERE id = $1`, [offer.id]);
-    return { offer, names: plan.targets.map((t) => t.name) };
+    return { offer, names: plan.targets.map((t) => t.name), ids };
   });
   const brand = await brandName(brandId);
   const told = await tellCreators(res.offer.id, NOTIFY.productsRemoved(res.offer.name, brand, res.names), { removed: res.names });
-  return { removed: res.names.length, creators_told: told };
+  // shoppable-posts-v2 (rules 1.10, 4.9): the products leave its posts; a post left empty is removed.
+  const postsRemoved = await require('./shoppablePosts.service').afterProductsLeftOffer(res.offer.id, res.ids);
+  return { removed: res.names.length, creators_told: told, posts_removed: postsRemoved };
 }
 
 // ── a product's price changes (rules 1.11) ───────────────────────────────────

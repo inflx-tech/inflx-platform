@@ -309,7 +309,8 @@ describe('removing products and ending early (checks 26, 27, 28)', () => {
     expect(pv.body.data).toMatchObject({ creators: ['Priya Sharma'], posts: { live: 0, emptied: 0 }, products_left: 1 });
     const r = await api.post(`/brands/me/offers/${id}/remove-products`, B.token, { product_ids: [a, b] });
     expect(r.status).toBe(200);
-    expect(r.body.data).toEqual({ removed: 2, creators_told: 1 });
+    // shoppable-posts-v2: the reply also says how many posts the removal emptied (none here).
+    expect(r.body.data).toEqual({ removed: 2, creators_told: 1, posts_removed: 0 });
     // Free the same day: another offer takes them for today.
     expect((await H.publish(B.token, await H.ready(B.token, { ids: [a, b], from: T(), to: day(3), publishIt: false }))).status).toBe(200);
     const n = await H.notices(C.userId, 'offer_products_removed');

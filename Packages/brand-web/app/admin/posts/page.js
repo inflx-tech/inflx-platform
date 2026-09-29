@@ -10,12 +10,17 @@ import { adminApi } from '../../../lib/api';
  * founder lock, brands are not in this path) approves or rejects with a
  * reason. Approved posts become visible to follower surfaces in P3/P4;
  * a rejected creator is notified with the reason.
+ *
+ * shoppable-posts-v2 (Level 3): a new post also shows what it is for — the collaboration, offer post or
+ * price post, the offer, and the facets shoppers will filter by. Approving re-checks it on the server
+ * (an offer that ended meanwhile is refused with the reason). Videos play here.
  */
 
 const TABS = [
   { key: 'submitted', label: 'Awaiting review' },
   { key: 'approved', label: 'Approved' },
-  { key: 'rejected', label: 'Rejected' },
+  { key: 'rejected', label: 'Sent back' },
+  { key: 'removed', label: 'Left the shop' },
 ];
 
 export default function PostQueuePage() {
@@ -50,7 +55,7 @@ export default function PostQueuePage() {
     setBusy(rejecting.post.id);
     const res = await adminApi.rejectPost(rejecting.post.id, rejecting.reason);
     setBusy(null);
-    if (res.success) { setRejecting(null); showToast('Rejected — the creator has been notified.'); load(); }
+    if (res.success) { setRejecting(null); showToast('Sent back — the creator has been notified.'); load(); }
     else alert(res.error?.message || 'Reject failed.');
   }
 
@@ -88,12 +93,31 @@ export default function PostQueuePage() {
                     @{p.influencer?.handle || '—'}
                     <span className="font-normal text-t3"> · {p.influencer?.name || ''}</span>
                   </div>
-                  <div className="text-xs text-navy font-bold mt-0.5">
-                    {p.concept ? `${p.concept.name} · family ${p.concept.family}` : `Collection: ${p.collection?.name || '—'}`}
-                  </div>
-                  <div className="text-[10px] text-t3 mt-0.5">
-                    {p.scope} scope · {p.post_type} · tags: {p.tag_style} · {new Date(p.created_at).toLocaleString()}
-                  </div>
+                  {p.v2 ? (
+                    <>
+                      <div className="text-xs text-navy font-bold mt-0.5">
+                        {p.v2.kind === 'offer' && p.v2.offer ? `Offer post · ${p.v2.offer.type} · ${p.v2.offer.deal}` : 'Price post · normal price'}
+                      </div>
+                      <div className="text-[11px] text-t2 mt-0.5">
+                        For {p.v2.collaboration.brand_name} · {p.v2.collaboration.campaign_name} · {p.v2.collaboration.set_name}
+                        {p.v2.collaboration.posting_date ? ` · posts on ${p.v2.collaboration.posting_date}` : ''}
+                      </div>
+                      <div className="text-[10px] text-t3 mt-0.5">
+                        {[p.v2.facets.category && p.v2.facets.category.join(', '), p.v2.facets.price_band, p.v2.facets.theme].filter(Boolean).join(' · ')}
+                        {p.v2.sent_back && p.v2.sent_back.count ? ` · sent back ${p.v2.sent_back.count}×` : ''}
+                        {p.v2.removed ? ` · ${p.v2.removed.why}` : ''}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-xs text-navy font-bold mt-0.5">
+                        {p.concept ? `${p.concept.name} · family ${p.concept.family}` : `Collection: ${p.collection?.name || '—'}`}
+                      </div>
+                      <div className="text-[10px] text-t3 mt-0.5">
+                        {p.scope} scope · {p.post_type} · tags: {p.tag_style} · {new Date(p.created_at).toLocaleString()}
+                      </div>
+                    </>
+                  )}
                 </div>
                 {tab === 'submitted' && (
                   <div className="flex gap-2">
@@ -103,11 +127,11 @@ export default function PostQueuePage() {
                     </button>
                     <button onClick={() => setRejecting({ post: p, reason: '' })} disabled={busy === p.id}
                       className="px-4 py-2 bg-white text-red border border-red/30 text-xs font-bold rounded-xl">
-                      ✕ Reject
+                      ✕ Send back
                     </button>
                   </div>
                 )}
-                {tab === 'rejected' && p.reject_reason && (
+                {(tab === 'rejected' || tab === 'removed') && p.reject_reason && (
                   <div className="text-[11px] text-red bg-red-pale rounded-lg px-3 py-1.5 max-w-[240px]">{p.reject_reason}</div>
                 )}
               </div>
@@ -115,7 +139,9 @@ export default function PostQueuePage() {
               <div className="flex gap-3 overflow-x-auto pb-1">
                 {(p.media || []).map(m => (
                   <div key={m.id} className="relative shrink-0">
-                    <img src={m.url} alt="" className="h-44 rounded-xl object-cover" />
+                    {p.media_kind === 'video' || (p.v2 && p.v2.media_kind === 'video')
+                      ? <video src={m.url} controls className="h-44 rounded-xl" />
+                      : <img src={m.url} alt="" className="h-44 rounded-xl object-cover" />}
                     {(p.products || []).filter(t => t.media_id === m.id && t.x_pct != null).map(t => (
                       <div key={t.id}
                         className="absolute w-2.5 h-2.5 bg-white border-2 border-navy rounded-full -translate-x-1/2 -translate-y-1/2"
@@ -154,19 +180,19 @@ export default function PostQueuePage() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRejecting(null)}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="border-b border-border px-5 py-3 font-display text-base font-bold text-t1">
-              Reject @{rejecting.post.influencer?.handle}’s post
+              Send back @{rejecting.post.influencer?.handle}’s post
             </div>
             <div className="px-5 py-4">
               <label className="block text-[11px] font-bold text-t2 mb-1">Reason <span className="font-normal text-t3">(sent to the creator)</span></label>
               <textarea value={rejecting.reason} onChange={e => setRejecting({ ...rejecting, reason: e.target.value })}
-                rows={3} placeholder="e.g. blurry images / wrong products tagged / off-concept"
+                rows={3} placeholder="e.g. The video on slide 2 has copyrighted music."
                 className="w-full border border-border rounded-lg px-3 py-2 text-xs" autoFocus />
             </div>
             <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
               <button onClick={() => setRejecting(null)} className="px-4 py-2 bg-surface2 text-t2 text-xs font-semibold rounded-xl">Cancel</button>
               <button onClick={confirmReject} disabled={busy === rejecting.post.id}
                 className="px-5 py-2 bg-red text-white text-xs font-bold rounded-xl disabled:opacity-50">
-                {busy === rejecting.post.id ? 'Rejecting…' : 'Reject post'}
+                {busy === rejecting.post.id ? 'Sending back…' : 'Send back'}
               </button>
             </div>
           </div>

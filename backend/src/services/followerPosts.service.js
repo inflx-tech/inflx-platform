@@ -78,7 +78,7 @@ async function updateAppConfig(patch) {
 async function setEngagement(kind, postId, followerId, on) {
   const table = kind === 'like' ? 'post_likes' : 'post_saves';
   const { rows } = await db.query(
-    `SELECT 1 FROM creator_posts WHERE id = $1 AND status = 'approved'`, [postId]);
+    `SELECT 1 FROM creator_posts WHERE id = $1 AND status = 'approved' AND NOT v2`, [postId]);
   if (!rows[0]) return null;
   if (on) {
     await db.query(
@@ -113,6 +113,8 @@ async function listFeed({ userId, conceptId, collectionId, handle, brandId, save
   // checked → visible until the first sweep — never punish a fresh post).
   const where = [
     `cp.status = 'approved'`,
+    // shoppable-posts-v2: new posts reach shoppers with the shopper app, not this old feed.
+    'NOT cp.v2',
     `(cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0)`,
   ];
   if (conceptId) { params.push(conceptId); where.push(`cp.concept_id = $${params.length}`); }
@@ -248,7 +250,7 @@ async function getPostDetail(postId, { userId } = {}) {
        JOIN influencers i ON i.id = cp.influencer_id
        JOIN users u ON u.id = i.user_id
        ${CONCEPT_JOIN}
-      WHERE cp.id = $1 AND cp.status = 'approved'`,
+      WHERE cp.id = $1 AND cp.status = 'approved' AND NOT cp.v2`,
     [postId]);
   const post = rows[0];
   if (!post) return null;

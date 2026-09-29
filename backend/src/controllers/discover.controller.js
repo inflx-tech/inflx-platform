@@ -65,7 +65,7 @@ const getCreatorOptions = asyncHandler(async (req, res) => {
   const { conceptName, familyOf } = require('../services/concepts.service');
   const { mediaUrl } = require('../services/creatorPosts.service');
 
-  const VISIBLE = `cp.status = 'approved'
+  const VISIBLE = `cp.status = 'approved' AND NOT cp.v2
     AND (cp.eligible_product_count IS NULL OR cp.eligible_product_count > 0)`;
 
   const { rows } = await db.query(
