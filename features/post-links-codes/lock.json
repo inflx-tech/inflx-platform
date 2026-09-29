@@ -27,5 +27,16 @@
     "checks": "21 / 21 pass — 03-expected-outputs.md",
     "found_in_passing": "order-channel lookup compared clocks of different precision (fixed); store lookup now prefers a current handle over an old one",
     "note": "released stays false per GOVERNANCE.md §5. Not deployed."
+  },
+  "deployed_to_production": {
+    "at": "2026-09-29",
+    "by": "founder go (\"yes pls continue with all three\")",
+    "migration": "196 applied to production via run-196.js --apply after a clean --dry (Postgres 17.6): 17 checks OK; 27 creator handles recorded (none shared); no approved new posts or collections yet, so no codes issued",
+    "commit": "6cc501ef (pushed ab8cc435..6cc501ef, carrying 349a3881, the Level 3 deployment record)",
+    "render": "live ~90 s after push, proved by route existence: /v1/links/p|s|c answered 404 before, 200 after (unknown code -> state unknown); /influencers/me/links and /campaigns/:id/sets/:sid/posts 404 before, 401 after",
+    "vercel": "live ~10 s after the API: inflx.in/p/ZZZZZZ/ig, /s/nobody_here, /c/BBBBBB answered 404 before, 200 after; the post page reads \"We couldn't find this post\"",
+    "ota": "influencer 222 and brand 233 (runtime 3), published one at a time; both manifests serve the new versions",
+    "money": "NO MONEY MOVED — identical before and after: 12 escrow rows / Rs 34,500, contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions, 16 follower_transactions",
+    "pending": "founder phone walk of L1-L8 once a post is approved in production (a code exists from then)"
   }
 }
