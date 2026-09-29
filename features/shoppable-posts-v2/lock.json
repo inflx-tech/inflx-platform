@@ -27,5 +27,16 @@
     "checks": "37 / 37 pass (incl. 24b) — 03-expected-outputs.md",
     "found_in_passing": "a deleted product never left posts or told creators (fixed, check 24b); the offer page post counts were placeholders since Level 1 (now real)",
     "note": "released stays false per GOVERNANCE.md §5. Not deployed."
+  },
+  "deployed_to_production": {
+    "at": "2026-09-29",
+    "by": "founder go (\"yes pls continue with all three steps\")",
+    "migration": "195 applied to production via run-195.js --apply after a clean --dry (Postgres 17.6): 39 checks OK; the 3 old July-composer posts (1 rejected, 2 submitted) untouched; the old concept check (creator_posts_check) replaced by one that spares new posts",
+    "commit": "ab8cc435 (pushed 2d04321f..ab8cc435, carrying c4e79605, the Level 2 deployment record)",
+    "render": "live ~90 s after push, proved by route existence: /influencers/me/create, /me/shoppable-posts/brands, /me/collections answered 404 before, 401 after (plus /me/shoppable-posts/:id/options, /me/collections/options); /me/post-scope 401 both (control)",
+    "vercel": "https://inflx.in/login re-rendered at 03:34 GMT 29 Sep (Age 0) after the push",
+    "ota": "influencer 221 (runtime 3); manifest serves 221. No brand app change.",
+    "money": "NO MONEY MOVED — identical before and after: 12 escrow rows / Rs 34,500, contracts locked Rs 36,260, released Rs 8,625, brand wallets Rs 0.00, creator wallets Rs 8,625, 4 ledger rows, 18 wallet_transactions, 16 follower_transactions",
+    "pending": "founder phone walk of P1-P20 once a collaboration on the new terms is signed and its shoot is done; the admin Posts page walk with the first sent post"
   }
 }
