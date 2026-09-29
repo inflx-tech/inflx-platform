@@ -66,6 +66,9 @@ router.get ('/:id/sets/:sid/invitations/:ciId',               ...brandAuth, invC
 // creator-terms-v2 — what the brand can give for this set (T2, T3, T4)
 router.get ('/:id/sets/:sid/offer-choices',                   ...brandAuth, invCtrl.offerChoices);
 router.get ('/:id/sets/:sid/products-without-offers',         ...brandAuth, invCtrl.productsWithoutOffers);
+// post-links-codes (L7, L8): the posts made for this set, their codes and numbers.
+router.get ('/:id/sets/:sid/posts',                            ...brandAuth, require('../controllers/postLinks.controller').setPosts);
+router.get ('/:id/sets/:sid/posts/:postId/stats',              ...brandAuth, require('../controllers/postLinks.controller').setPostStats);
 router.post('/:id/sets/:sid/invitations/:ciId/withdraw',      ...brandAuth, invCtrl.withdraw);
 router.post('/:id/sets/:sid/invitations/:ciId/remove',        ...brandAuth, invCtrl.remove);
 

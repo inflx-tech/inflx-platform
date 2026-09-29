@@ -302,6 +302,9 @@ export const brandApi = {
   sendInvitations:   (campaignId, setId, body) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations`, body),
   // creator-terms-v2 — what the brand can give a creator for this set (T2, T3, T4)
   offerChoices:      (campaignId, setId) => api.get(`/campaigns/${campaignId}/sets/${setId}/offer-choices`),
+  // post-links-codes (L7, L8) — the posts made for a set, their codes and numbers.
+  setPosts:          (campaignId, setId) => api.get(`/campaigns/${campaignId}/sets/${setId}/posts`),
+  setPostStats:      (campaignId, setId, postId) => api.get(`/campaigns/${campaignId}/sets/${setId}/posts/${postId}/stats`),
   productsWithoutOffersForSet: (campaignId, setId, params) => api.get(`/campaigns/${campaignId}/sets/${setId}/products-without-offers${params && Object.keys(params).length ? '?' + Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : ''}`),
   invitationDetail:  (campaignId, setId, ciId) => api.get(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}`),
   withdrawInvitation: (campaignId, setId, ciId) => api.post(`/campaigns/${campaignId}/sets/${setId}/invitations/${ciId}/withdraw`),
@@ -609,6 +612,10 @@ export const influencerApi = {
   getCollection:     (id) => api.get(`/influencers/me/collections/${id}`),
   updateCollection:  (id, body) => api.patch(`/influencers/me/collections/${id}`, body),
   deleteCollection:  (id) => api.delete(`/influencers/me/collections/${id}`),
+  // post-links-codes — a post's code and links, its stats, her store and collection links. Contract: features/post-links-codes
+  postShare:         (id) => api.get(`/influencers/me/shoppable-posts/${id}/share`),
+  postStats:         (id) => api.get(`/influencers/me/shoppable-posts/${id}/stats`),
+  myLinks:           () => api.get('/influencers/me/links'),
   acceptInvitation:  (id) => api.post(`/influencers/me/invitations/${id}/accept`),
   declineInvitation: (id, body) => api.post(`/influencers/me/invitations/${id}/decline`, body),
   // ── Item 6 · countering, the move request and the pool. Contract: features/item6-negotiation ──

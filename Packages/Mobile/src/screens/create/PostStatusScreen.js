@@ -13,6 +13,7 @@ import { PrimaryButton, SecondaryButton, DangerButton } from '../../components/s
 import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { CP, rupeesP, dayMonthP } from '../../components/create/copyCreate';
+import { CL } from '../../components/create/copyLinks';
 import { StateChip, useDraft, routeFor, s as b } from '../../components/create/bitsCreate';
 
 /** Whole days from today to 'YYYY-MM-DD' (phone's calendar). */
@@ -104,6 +105,11 @@ export default function PostStatusScreen({ navigation, route }) {
             <Block title={post.state === 'approved' ? CP.approvedTitle : CP.liveBody} testID="approved">
               {post.state === 'approved' ? <Text style={b.hint}>{CP.approvedBody(posting)}</Text> : <Text style={b.hint}>{post.sales_words}</Text>}
             </Block>
+            {/* post-links-codes (L1): the code and links from approval, the stats once live. */}
+            {post.code ? <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+              <View style={{ flex: 1, marginRight: post.state === 'live' ? 8 : 0 }}><SecondaryButton label={`${CL.share} · ${post.code}`} onPress={() => navigation.navigate('PostShare', { postId })} testID="share" /></View>
+              {post.state === 'live' ? <View style={{ flex: 1 }}><SecondaryButton label={CL.stats} onPress={() => navigation.navigate('PostStats', { postId })} testID="stats" /></View> : null}
+            </View> : null}
             <Text style={b.hint}>{CP.noEdits}</Text>
             <DangerButton label={CP.takeDown} busy={busy} onPress={() => confirm(CP.takeDownQ, CP.takeDownBody, CP.takeDown, takeDown)} testID="take-down" />
           </>

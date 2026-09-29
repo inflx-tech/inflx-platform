@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, Banner } from '../../components/settings/primitives';
+import { CL } from '../../components/create/copyLinks';
 import { ActionSheet, ConfirmSheet } from '../../components/settings/sheets';
 import { useToast, Skeleton, LoadError } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
@@ -233,6 +234,10 @@ export default function BrandSetDetailScreen({ navigation, route }) {
               </View>
             ) : null}
           </View>
+        ) : null}
+        {/* post-links-codes (L7): the posts made for this set, their codes and numbers. Selling sets only. */}
+        {(live || past) && set.goal !== 'engagement' ? (
+          <View style={{ marginTop: 12 }}><SecondaryButton label={CL.posts} onPress={() => navigation.navigate('BrandSetPosts', { campaignId, setId, setName: set.name })} testID="set-posts" /></View>
         ) : null}
         {set.state === 'expired' ? <View style={{ marginTop: 12 }}><SecondaryButton label={SD.duplicateNewDate} onPress={() => setDup(set)} testID="duplicate-new-date" /></View> : null}
         {set.state === 'completed' ? <Text style={[s.muted, { marginTop: 12 }]} testID="completed-line">{SD.completedLine(set.counts.signed)}</Text> : null}

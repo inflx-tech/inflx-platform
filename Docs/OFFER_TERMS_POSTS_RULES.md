@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.5 · 29 September 2026 · living document**
+**Version 1.6 · 29 September 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -462,6 +462,10 @@ channel the visit came from. (Replaces the August list of seven; X and LinkedIn 
 - Letters and numbers only · no vowels (a code never spells a word) · no look-alike characters (0/O, 1/I and
   similar) · capitals don't matter (`k7m2f9` works) · one code per post, never changes.
 - Created with the post links, at approval.
+- **Characters used:** B C D F G H J K M N P Q R S T V W X Y Z and 2–9 (no vowels; no 0, O, 1, I or L). A
+  collection link uses the same characters.
+- A link with no ending, or an ending INFLX doesn't know, counts as **Other**. Link previews (WhatsApp, Facebook,
+  X and similar) are not counted as visits.
 - It comes with a ready caption line: *"Shop this look on INFLX: search code K7M2F9"*.
 - A follower can use it three ways: type it in INFLX search ("Search or enter a post code"), type it in the
   "Have a post code?" box (bag and home screen), or open `inflx.in/p/K7M2F9`.
@@ -659,7 +663,7 @@ store come next, in their own discussion.
 | # | Item |
 |---|---|
 | O1 | Shoot-plan rules that gate post creation (4.1) |
-| ~~O2~~ | ~~Post link and post code~~: answered 28 Sep (4.14). Exact address format fixed at build. |
+| ~~O2~~ | ~~Post link and post code~~: answered 28 Sep (4.14); formats fixed at build 29 Sep (v1.6). |
 | O3 | Discover rails: detailed design (4.12) |
 | O4 | Shopper app screens: post page, filters, cart, gift choice, bundle completion |
 | O5 | Pay at store (M10) |
@@ -680,3 +684,4 @@ store come next, in their own discussion.
 | 2026-09-28 | 1.3 | Follower link/code screens removed from the board; the code-search rule recorded (4.14). New: engagement on INFLX posts (views, likes, comments, shares, saves; comment rules) (4.15), and social media numbers scraped from the links the creator adds at going live (4.16). Rules marked as recommendations await the founder's lock of the Level 5 board. |
 | 2026-09-28 | 1.4 | New section 5, the follower app: navigation (bag and search on top, Saved tab, no wallet), guests, city range from the 146 cities (no exact location), welcome, Home circles and feed, opening posts, Play, Saved remembering the post, creator and brand stores, search, the feed rules. Guests may now save (4.15 updated). |
 | 2026-09-29 | 1.5 | Level 3 board locked with its five questions as recommended: no edits once approved, she can take a post down (4.8); what a sent-back post may change (4.8); limits 10 slides, 30 products, 90 s a clip (4.8); photo tags optional (4.8); collection editing and hiding (4.11). |
+| 2026-09-29 | 1.6 | Level 4 board locked and built: the code's characters, a bare or unknown ending counts as Other, link previews aren't visits (4.14). Until the shopper app, a link opens a plain INFLX page (post, store or collection) with no shopping. |

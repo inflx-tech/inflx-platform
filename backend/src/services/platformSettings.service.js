@@ -40,6 +40,8 @@ const DEFAULTS = Object.freeze({
   content_change_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Content change requests' },
   content_report_silence_days: { value: 7, min: 1, max: 30, unit: 'days', label: 'Brand silence before the Creator may report' },
   final_payment_wait_days: { value: 7, min: 1, max: 60, unit: 'days', label: 'Final payment waiting period' },
+  // post-links-codes (rules v1.5 §4.14) — stamped on each tap as the end of its window.
+  link_channel_window_days: { value: 30, min: 1, max: 90, unit: 'days', label: 'Link channel window' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
 
@@ -56,6 +58,7 @@ const DESCRIPTION = Object.freeze({
   shoot_auto_confirm_days: "How long a brand has to confirm a store visit after the creator marks that she attended. If the brand does nothing, the visit confirms itself and her content step opens — safe because completing a shoot moves no money. Between 1 and 30 days. Stamped on the visit when she marks it, so changing this never moves a date already promised.",
   content_change_rounds: "How many times a Brand may ask for changes to a creator's content before a further rejection becomes a dispute. On the last allowed round the Brand is warned; after it they can only approve or report it to INFLX. Between 1 and 5. Stamped on the collaboration when the Creator first submits, so changing this never affects one already under way.",
   content_report_silence_days: "How long after the Creator confirms she has posted the Brand may stay silent before she can tell INFLX. There is no automatic confirmation — the money is the Brand's — so this is her way to be heard. Telling INFLX records a dispute and moves no money. Between 1 and 30 days. Stamped when she confirms she posted.",
+  link_channel_window_days: "How long a tap on a creator's links decides which channel an order counts under (Instagram, YouTube, WhatsApp, Facebook, Other or Post code). With no tap in the window the order counts as 'In INFLX'. Reporting only: it never changes who is paid, the commission or the INFLX fee. Between 1 and 90 days. Stamped on each tap when it is made, so changing this applies to new taps only.",
   final_payment_wait_days: "The delay before the final 50% of a Pay for Content fee is released, counted from the Brand's confirmation that the content is live. Paid on that day at the release time. Between 1 and 60 days. Stamped on the payment at the Brand's confirmation, so changing this never moves a date already promised. This replaces the waiting period that used to sit on the Payments page.",
   subscriptions_enforced: 'When this is off, no plan limit applies to any brand: every quota is unlimited and every feature is included. Your tiers, prices and per-brand overrides are kept exactly as they are and apply again the moment you switch it back on. Billing is not affected — brands on a paid plan keep their plan and are still charged. A brand can go past its plan while this is off; when you switch it back on nothing is deleted and nothing stops working, she simply cannot add more.',
 });

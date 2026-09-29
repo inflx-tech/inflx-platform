@@ -85,6 +85,11 @@ import MyPostsScreen from '../screens/create/MyPostsScreen';
 import CollectionsScreen from '../screens/create/CollectionsScreen';
 import NewCollectionScreen from '../screens/create/NewCollectionScreen';
 import CollectionScreen from '../screens/create/CollectionScreen';
+// post-links-codes — Share, Where to share what, Store and collection links, Stats (L2–L6).
+import PostShareScreen from '../screens/create/PostShareScreen';
+import WhereToShareScreen from '../screens/create/WhereToShareScreen';
+import StoreLinksScreen from '../screens/create/StoreLinksScreen';
+import PostStatsScreen from '../screens/create/PostStatsScreen';
 
 const Tab = createBottomTabNavigator();
 const CollabsStack = createNativeStackNavigator();
@@ -124,6 +129,10 @@ function CreateStackScreen() {
       <CreateStack.Screen name="Collections" component={CollectionsScreen} />
       <CreateStack.Screen name="NewCollection" component={NewCollectionScreen} />
       <CreateStack.Screen name="Collection" component={CollectionScreen} />
+      <CreateStack.Screen name="PostShare" component={PostShareScreen} />
+      <CreateStack.Screen name="WhereToShare" component={WhereToShareScreen} />
+      <CreateStack.Screen name="StoreLinks" component={StoreLinksScreen} />
+      <CreateStack.Screen name="PostStats" component={PostStatsScreen} />
     </CreateStack.Navigator>
   );
 }

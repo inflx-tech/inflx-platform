@@ -1,20 +1,31 @@
 {
   "feature": "post-links-codes",
-  "spec_version": "0.1.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "mockup_locked": false,
-  "mockup_locked_by": null,
-  "mockup_locked_at": null,
-  "notes": "Level 4 of 4 of the offer -> terms -> posts programme: store links, post links, post codes, collection links, stats, brand code list, follower code search / web page (follower parts built with the shopper app + next Play Store build). Founder source: ref/founder-post-code-and-links.html (5 screens, unpacked templates in ref/). 11 points agreed 2026-09-28. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §4.14. Mockups v1 L1-L12.",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 2026-09-29: \"These are mockups, you already has business rules for it....pls read and check mockups and start implementaion\"); build decisions D1-D11 in 01-spec.md delegated under standing autonomy",
+  "approved_at": "2026-09-29T00:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 2026-09-29: \"These are mockups, you already has business rules for it....pls read and check mockups and start implementaion\")",
+  "mockup_locked_at": "2026-09-29T00:00:00+05:30",
+  "notes": "Level 4 of 4 of the offer -> terms -> posts programme: store links, post links, post codes, collection links, stats, brand code list, follower code search / web page (follower parts built with the shopper app + next Play Store build). Founder source: ref/founder-post-code-and-links.html (5 screens, unpacked templates in ref/). 11 points agreed 2026-09-28. Rules: Docs/OFFER_TERMS_POSTS_RULES.md §4.14. Mockups v1 L1-L12. LOCKED 2026-09-29 by the founder instruction to build from the board (L1-L8 drawn).",
   "release": {
     "qa_all_green": false,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "built_at": "2026-09-29T00:00:00+05:30",
+    "backend_tests": "full serial suite vs the Level 3 record: tests 1748->1767, passed 1500->1518; 19 new all passing; 1 newly failing = assertion drift (item6 check 29 exact settings list gains link_channel_window_days), updated in place, 42/42 (06-diff/backend-compare-final.txt)",
+    "phone_tests": "61/61 suites, 753/753 tests (8 new link checks; the Create-tab check rewritten to the L1 board); react-native bundle builds",
+    "web": "next build clean; /p, /s, /c walked at 375x812 against a local server on the test database: live, goes-live-on, removed, unknown, store, empty collection; one visit counted per tap",
+    "migration_rehearsal": "run-196.js --dry then --apply three times on a copy built to 195 with an old post and a collection: 17 checks OK every time, the collection got its link, no money moved",
+    "checks": "21 / 21 pass — 03-expected-outputs.md",
+    "found_in_passing": "order-channel lookup compared clocks of different precision (fixed); store lookup now prefers a current handle over an old one",
+    "note": "released stays false per GOVERNANCE.md §5. Not deployed."
   }
 }

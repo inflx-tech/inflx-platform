@@ -8,6 +8,7 @@
 const { Router } = require('express');
 const { authenticate, requireApproved, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/shoppablePosts.controller');
+const links = require('../controllers/postLinks.controller');
 
 const router = Router();
 const creator = [authenticate, requireRole('influencer')];
@@ -20,6 +21,10 @@ router.get('/me/shoppable-posts', ...creator, ctrl.list);
 router.post('/me/shoppable-posts', ...acting, ctrl.create);
 router.get('/me/shoppable-posts/:postId', ...creator, ctrl.get);
 router.get('/me/shoppable-posts/:postId/options', ...creator, ctrl.options);
+// post-links-codes (L2–L6): a post's code and links, its stats; her store and collection links.
+router.get('/me/shoppable-posts/:postId/share', ...creator, links.share);
+router.get('/me/shoppable-posts/:postId/stats', ...creator, links.stats);
+router.get('/me/links', ...creator, links.myLinks);
 router.patch('/me/shoppable-posts/:postId', ...acting, ctrl.update);
 router.post('/me/shoppable-posts/:postId/upload-url', ...acting, ctrl.uploadUrl);
 router.post('/me/shoppable-posts/:postId/submit', ...acting, ctrl.submit);

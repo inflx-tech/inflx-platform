@@ -36,6 +36,7 @@ function shortDiscount(offer) {
   return null;
 }
 
+const linkHost = () => (process.env.PUBLIC_LINK_HOST || 'inflx.in').replace(/^https?:\/\//, '').replace(/\/+$/, '');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const bad = (m, field = null) => new AppError('VALIDATION_ERROR', m, 422, field);
 const notFound = () => new AppError('NOT_FOUND', 'Not found', 404);
@@ -136,6 +137,8 @@ async function create(influencerId, { name, kind, items } = {}) {
   const id = await db.withTransaction(async (tx) => {
     const { rows } = await tx.query(`INSERT INTO creator_collections (influencer_id, name, kind) VALUES ($1, $2, $3) RETURNING id`, [influencerId, n, kind]);
     await insertItems(tx, rows[0].id, list, 0);
+    // post-links-codes (4.14): a collection has one link from the moment it is made.
+    await require('./postLinks.service').issueCollectionCode(rows[0].id, tx);
     return rows[0].id;
   });
   return get(influencerId, id);
@@ -180,6 +183,7 @@ async function shapeOne(c, { postsById, productsLive, sales }) {
   const s = sales.get(c.id) || { orders: 0, commission: 0 };
   return {
     id: c.id, name: c.name, kind: c.kind, items: shaped, count: shaped.length, in_shop: inShop,
+    link: c.link_code ? { code: c.link_code, url: `https://${linkHost()}/c/${c.link_code}`, display: `${linkHost()}/c/${c.link_code}` } : null,
     brands, hidden: inShop === 0,
     line: c.kind === 'posts'
       ? `${shaped.length} post${shaped.length === 1 ? '' : 's'} · ${brands.join(', ') || '—'}`

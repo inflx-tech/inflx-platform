@@ -1,0 +1,27 @@
+
+── Before ──
+  suites                 140 (46 failed)
+  tests                  1748  passed 1500  failed 220
+── After ──
+  suites                 141 (47 failed)
+  tests                  1767  passed 1518  failed 221
+── Moved ──
+  new tests              19 (19 passing, 0 failing)
+  gone                   0
+  newly failing          1
+  newly passing          0
+  still failing          220
+
+── NEWLY FAILING ──
+  ✗ tests/item6-negotiation.test.js :: admin settings, Needs You, privacy and access (checks 29–35, 42, 44) the settings read with their ranges; a change is audited; out of range is refused (check 29)   (was: passed)
+
+NEW FAILURES
+
+
+── Classification (post-links-codes) ──
+Baseline = the Level 3 record (features/shoppable-posts-v2, l3_run1). Full suite serially, alone on the test DB.
+19 new checks (18 post-links-codes + 1 shoppable-posts-v2 product delete, carried from Level 3's last commit), all passing.
+1 newly failing, classified ASSERTION DRIFT and updated in place:
+  · item6-negotiation check 29 lists the admin platform settings EXACTLY on purpose; Level 4 adds one,
+    link_channel_window_days. Added to the list with a note (same pattern as items 11 and 12). 42/42 after.
+Nothing else changed.

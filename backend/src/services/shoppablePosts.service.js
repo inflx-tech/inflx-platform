@@ -378,6 +378,8 @@ async function shape(p, { media, products, sales, tags, paths, today = todayInIn
   const removedReason = p.status === 'removed' ? p.removed_reason : (state === 'removed' ? 'offer_ended' : null);
   return {
     id: p.id, state, status: p.status, title: titleOf(p), caption: p.caption,
+    // post-links-codes: the code given at approval (4.14); null for drafts and posts in review.
+    code: p.post_code || null, influencer_id: p.influencer_id, set_id: p.set_id,
     collaboration: { id: p.campaign_influencer_id, brand_id: p.brand_id, brand_name: p.brand_name, brand_logo: p.brand_logo,
       campaign_name: p.campaign_name, set_name: p.set_name, posting_date: calendarDay(p.go_live_date) },
     kind: p.post_kind, offer_id: p.offer_id, offer,
@@ -428,6 +430,16 @@ async function loadOwn(influencerId, postId, conn = db) {
   if (!rows[0]) throw notFound();
   return rows[0];
 }
+
+/** post-links-codes: any new post by id (links and brand screens check ownership themselves). */
+async function getMany(ids) {
+  const clean = (ids || []).filter((x) => UUID.test(String(x)));
+  if (!clean.length) return [];
+  const { rows } = await db.query(`${POST_SQL} WHERE cp.id = ANY($1::uuid[]) AND cp.v2`, [clean]);
+  const byId = new Map((await hydrate(rows)).map((x) => [x.id, x]));
+  return clean.map((id) => byId.get(id)).filter(Boolean);
+}
+async function getAny(id) { return (await getMany([id]))[0] || null; }
 
 async function getPost(influencerId, postId) {
   const p = await loadOwn(influencerId, postId);
@@ -842,7 +854,11 @@ async function createHome(influencerId) {
   }).filter((n) => n.done < n.min && (!n.posting_date || today <= n.posting_date));
   const mine = await listMine(influencerId);
   const { rows: [col] } = await db.query(`SELECT count(*)::int AS n FROM creator_collections WHERE influencer_id = $1`, [influencerId]);
-  return { needs, counts: mine.counts, total: mine.posts.length, recent: mine.posts.slice(0, 3), collections: col.n, can_post: collabs.length > 0 };
+  // post-links-codes (L1): her store link on the Create tab.
+  const { rows: [me] } = await db.query(`SELECT lower(regexp_replace(COALESCE(instagram_handle, ''), '^@', '')) AS h FROM influencers WHERE id = $1`, [influencerId]);
+  const host = (process.env.PUBLIC_LINK_HOST || 'inflx.in').replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  return { needs, counts: mine.counts, total: mine.posts.length, recent: mine.posts.slice(0, 3), collections: col.n, can_post: collabs.length > 0,
+    store_link: me && me.h ? `${host}/s/${me.h}` : null };
 }
 
 /* ───────────────────────────────────────────── INFLX review (admin; D14) */
@@ -861,6 +877,8 @@ async function afterDecision(postId, approve, reason) {
   const p = rows[0];
   if (!p) return;
   if (!approve) await db.query(`UPDATE creator_posts SET sent_back_count = sent_back_count + 1 WHERE id = $1`, [p.id]);
+  // post-links-codes (4.14): the code and links appear the moment INFLX approves.
+  if (approve) await require('./postLinks.service').issuePostCode(p.id);
   const posting = calendarDay(p.go_live_date);
   const today = todayInIndia();
   const m = approve
@@ -1014,7 +1032,7 @@ async function sweepEndedOffers(today = todayInIndia()) {
 module.exports = {
   MAX_SLIDES, MAX_PRODUCTS, MAX_VIDEO_S, GROUPS,
   postable, brands, collaborations, createDraft, options, update, uploadUrl, submit, takeDown, remove,
-  getPost, listMine, createHome, stateOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,
+  getPost, getMany, getAny, listMine, createHome, stateOf, titleOf, bandFor, shopperPrice, priceBands, themeTags,
   approveCheck, afterDecision, adminShape,
   afterOfferEnded, afterProductsLeftOffer, afterProductChange, sweepEndedOffers, refreshFacets, offerPostStats,
   doneCounts, myCollabs,

@@ -14,6 +14,7 @@ const adminPagesRoutes = require('./adminPages.routes');
 const adminConceptsRoutes = require('./adminConcepts.routes');
 const creatorPostsRoutes = require('./creatorPosts.routes');
 const shoppablePostsRoutes = require('./shoppablePosts.routes');
+const postLinksRoutes = require('./postLinks.routes');
 const adminPostsRoutes = require('./adminPosts.routes');
 const creatorPostsController = require('../controllers/creatorPosts.controller');
 const brandCreatorImagesRoutes = require('./brandCreatorImages.routes');
@@ -130,6 +131,7 @@ router.use('/admin/pages', adminPagesRoutes);
 router.use('/admin', adminConceptsRoutes);   // /admin/concept-templates + /admin/concepts/preview + /admin/collections
 
 // ── Creator posts (Post/Concept P2, mig 140) ─────────────────────────────────
+router.use('/links', postLinksRoutes);           // post-links-codes: what inflx.in/p, /s, /c open (public)
 router.use('/influencers', shoppablePostsRoutes); // shoppable-posts-v2: Create tab, posts, collections
 router.use('/influencers', creatorPostsRoutes);   // /me/post-scope + /me/posts*
 router.use('/admin/posts', adminPostsRoutes);     // moderation queue

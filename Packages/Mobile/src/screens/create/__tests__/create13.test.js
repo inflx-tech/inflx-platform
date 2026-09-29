@@ -101,7 +101,8 @@ describe('P1 · P16 — the Create tab', () => {
     influencerApi.createHome.mockResolvedValue(ok({
       needs: [{ campaign_influencer_id: 'ci1', brand_id: 'b1', brand_name: 'Urban Threads', set_name: 'Set A', posting_date: `${yr}-10-10`, done: 0, min: 1 }],
       counts: { live: 1, in_review: 0 }, total: 1, collections: 2, can_post: true,
-      recent: [POST({ id: 'p9', state: 'live', status: 'approved', title: 'Weekend denim', sales_words: '12 sales · ₹3,420 to you' })],
+      recent: [POST({ id: 'p9', state: 'live', status: 'approved', title: 'Weekend denim', code: 'K7M2F9', sales_words: '12 sales · ₹3,420 to you' })],
+      store_link: 'inflx.in/s/priya',
     }));
     influencerApi.createPost.mockResolvedValue(ok({ post: POST({ id: 'p2' }) }));
     const n = nav();
@@ -110,8 +111,11 @@ describe('P1 · P16 — the Create tab', () => {
     getByText('Needs a shoppable post · 1');
     getByText('Urban Threads · Set A');
     getByText('0 of 1 · before 10 Oct');
-    getByText('Your posts · 1');
-    getByText('Bundle · Any 2 for ₹2,999 · till 10 Nov · 12 sales · ₹3,420 to you');
+    // post-links-codes (L1) changes P1: three cards, "My posts", each row with its code, Share and Stats.
+    getByText('Create shoppable post'); getByText('Create collection'); getByText('My store and collection links'); getByText('inflx.in/s/priya');
+    getByText('My posts');
+    getByText(`Urban Threads · Code K7M2F9 · live since 10 Oct`);
+    getByTestId('share-p9'); getByTestId('stats-p9');
     getByText('Collections · 2');
     fireEvent.press(getByTestId('start-ci1'));
     await waitFor(() => expect(n.navigate).toHaveBeenCalledWith('PostType', { postId: 'p2' }));

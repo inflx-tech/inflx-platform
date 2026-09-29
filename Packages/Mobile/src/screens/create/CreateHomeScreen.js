@@ -2,7 +2,9 @@
  * CreateHomeScreen — P1, the Create tab: collaborations still needing a shoppable post (counted
  * against each one's minimum, before its posting date), "New shoppable post" / "New collection",
  * her latest posts and her collections. The "+" asks post or collection (P16).
- * Contract: features/shoppable-posts-v2 · rules §4.1, §4.10
+ * post-links-codes (L1): three cards — Create shoppable post, Create collection, My store and
+ * collection links — and each post row carries its code, with Share from approval and Stats once live.
+ * Contract: features/shoppable-posts-v2 · features/post-links-codes · rules §4.1, §4.10, §4.14
  */
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet } from 'react-native';
@@ -10,7 +12,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
-import { PrimaryButton, SecondaryButton } from '../../components/settings/primitives';
+import { PrimaryButton } from '../../components/settings/primitives';
+import { CL } from '../../components/create/copyLinks';
 import { CP } from '../../components/create/copyCreate';
 import { StateChip, ChoiceCard, initialsOf, routeFor, s as b } from '../../components/create/bitsCreate';
 
@@ -28,6 +31,46 @@ export function PostRow({ post, onPress, testID }) {
         <Text style={h.postLine} numberOfLines={2}>{line}{post.state === 'draft' || post.state === 'in_review' ? '' : ` · ${post.sales_words}`}</Text>
       </View>
       <StateChip state={post.state} />
+    </TouchableOpacity>
+  );
+}
+
+/** L1 — a post on the Create tab: its code and what it can do now (Share from approval, Stats once live). */
+export function LinkPostRow({ post, onOpen, onShare, onStats }) {
+  const line = post.state === 'live' ? CL.codeLive(post.collaboration.brand_name, post.code, post.collaboration.posting_date)
+    : post.state === 'approved' ? CL.codeApproved(post.collaboration.posting_date, post.code)
+    : post.state === 'in_review' ? CL.noCodeYet
+    : post.state === 'draft' ? CP.savedAt(post.draft_step || 3, String(post.updated_at || '').slice(0, 10))
+    : post.state === 'removed' && post.removed && post.removed.reason === 'offer_ended' ? CP.offerEndedRow(post.removed.offer_ended_on)
+    : post.sent_back ? post.sent_back.reason : '';
+  const canShare = (post.state === 'approved' || post.state === 'live') && !!post.code;
+  return (
+    <TouchableOpacity style={h.post} onPress={onOpen} testID={`post-${post.id}`}>
+      <View style={h.cover} />
+      <View style={{ flex: 1 }}>
+        <Text style={h.postTitle} numberOfLines={1}>{post.title}</Text>
+        <Text style={h.postLine} numberOfLines={2}>{line}</Text>
+        {canShare ? (
+          <View style={h.mini}>
+            <TouchableOpacity style={h.miniBtn} onPress={onShare} testID={`share-${post.id}`}><Text style={h.miniText}>{CL.share}</Text></TouchableOpacity>
+            {post.state === 'live' ? <TouchableOpacity style={h.miniBtn} onPress={onStats} testID={`stats-${post.id}`}><Text style={h.miniText}>{CL.stats}</Text></TouchableOpacity> : null}
+          </View>
+        ) : null}
+      </View>
+      <StateChip state={post.state} />
+    </TouchableOpacity>
+  );
+}
+
+function BigCard({ icon, title, sub, mono, onPress, disabled, testID }) {
+  return (
+    <TouchableOpacity style={[h.big, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled} testID={testID} accessibilityState={{ disabled: !!disabled }}>
+      <View style={h.bigIc}><Text style={h.bigIcText}>{icon}</Text></View>
+      <View style={{ flex: 1 }}>
+        <Text style={h.postTitle}>{title}</Text>
+        {sub ? <Text style={[h.postLine, mono && h.mono]}>{sub}</Text> : null}
+      </View>
+      <Text style={h.chev}>›</Text>
     </TouchableOpacity>
   );
 }
@@ -86,17 +129,19 @@ export default function CreateHomeScreen({ navigation }) {
           </View>
         ) : null}
 
-        <PrimaryButton label={CP.newPost} onPress={() => navigation.navigate('PostBrand')} disabled={!d.can_post} testID="new-post" />
+        <Text style={[b.hint, { marginTop: 0 }]}>Shoppable posts and collections for your store</Text>
+        <BigCard icon="+" title={CL.createPost} sub={CL.createPostSub} disabled={!d.can_post} onPress={() => navigation.navigate('PostBrand')} testID="new-post" />
         {!d.can_post ? <Text style={b.hint}>{CP.cantPostYet}</Text> : null}
-        <View style={{ height: 8 }} />
-        <SecondaryButton label={CP.newCollection} onPress={() => navigation.navigate('NewCollection')} testID="new-collection" />
+        <BigCard icon="≡" title={CL.createCollection} sub={CL.createCollectionSub} onPress={() => navigation.navigate('NewCollection')} testID="new-collection" />
+        <BigCard icon="🔗" title={CL.myLinks} sub={d.store_link} mono onPress={() => navigation.navigate('StoreLinks')} testID="my-links" />
 
         <View style={h.sectionHead}>
-          <Text style={b.label}>{CP.yourPosts(d.total)}</Text>
+          <Text style={b.label}>{CL.myPosts}</Text>
           {d.total ? <TouchableOpacity onPress={() => navigation.navigate('MyPosts')} testID="see-all"><Text style={h.link}>{CP.seeAll}</Text></TouchableOpacity> : null}
         </View>
         {d.recent.length ? d.recent.map(p => (
-          <PostRow key={p.id} post={p} onPress={() => { const r = routeFor(p); navigation.navigate(r.name, r.params); }} />
+          <LinkPostRow key={p.id} post={p} onOpen={() => { const r = routeFor(p); navigation.navigate(r.name, r.params); }}
+            onShare={() => navigation.navigate('PostShare', { postId: p.id })} onStats={() => navigation.navigate('PostStats', { postId: p.id })} />
         )) : <Text style={b.hint}>{CP.nothingYet}</Text>}
 
         <TouchableOpacity style={h.collections} onPress={() => navigation.navigate('Collections')} testID="collections">
@@ -142,6 +187,13 @@ const h = StyleSheet.create({
   postLine: { fontFamily: fonts.sansRegular, fontSize: 12, color: T.ink2, marginTop: 2, marginRight: 8 },
   collections: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 12, marginTop: 16 },
   chev: { fontSize: 18, color: T.ink3 },
+  big: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: T.border, borderRadius: 14, padding: 12, marginBottom: 10 },
+  bigIc: { width: 34, height: 34, borderRadius: 10, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  bigIcText: { fontFamily: fonts.sansBold, fontSize: 16, color: T.ink },
+  mono: { fontFamily: fonts.mono || fonts.sansRegular },
+  mini: { flexDirection: 'row', marginTop: 5 },
+  miniBtn: { borderWidth: 1.5, borderColor: T.border, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, marginRight: 6 },
+  miniText: { fontFamily: fonts.sansBold, fontSize: 11, color: T.ink },
   dim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 18, paddingBottom: 30 },
 });
