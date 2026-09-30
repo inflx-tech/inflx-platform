@@ -161,7 +161,7 @@ async function read(ciId, scope) {
 function shapeSale(g, cc, s, side, base, x) {
   const r = g.r;
   if (!x) {
-    return { ...base, aim: 'sale', stage: 'old_terms', rows: [], money: null, move: null, yourMove: false, can: {}, path1: null, steps: [] };
+    return { ...base, aim: 'sale', hybrid: !!g.hybrid, stage: 'old_terms', rows: [], money: null, move: null, yourMove: false, can: {}, path1: null, steps: [] };
   }
   const stage = x.stage;
   const frozen = !!(cc && cc.brand_reported_at);
@@ -178,7 +178,9 @@ function shapeSale(g, cc, s, side, base, x) {
   const sentKeys = new Set(((lastRound && lastRound.package_json && lastRound.package_json.rows) || []).map((z) => z.key));
   const visibleRows = side === 'brand' ? rows.filter((row) => row.outside || sentKeys.has(row.key)) : rows;
   const slots = slotsOf(pkgRows(g.rows), s);
-  const move = g.shootDone ? sale().saleMove(stage, cc, s.rounds, g.shootDoneAt) : null;
+  let move = g.shootDone ? sale().saleMove(stage, cc, s.rounds, g.shootDoneAt) : null;
+  // Confirmed and the minimum met: nobody owes a move (Hybrid waits for its final payment).
+  if (stage === 'live' && x.p1.met) move = null;
   const liveStage = g.shootDone ? sale().delayedStageForSale(stage, x.p1) : null;
   const delayed = r.delayed_at ? {
     at: r.delayed_at,
@@ -197,7 +199,8 @@ function shapeSale(g, cc, s, side, base, x) {
     addProof: !frozen && stage === 'approved',
     markPosted: !frozen && stage === 'approved' && slots.every((z) => z.filled),
     addOutside: x.outsideOpen,
-    report: false,
+    // Item 15: on Hybrid she may tell INFLX about brand silence (item 12's rule); never on Pay for Sale.
+    report: g.hybrid ? !!base.can.report : false,
   } : {
     approve: !frozen && inReview,
     askChanges: !frozen && inReview && round.current <= round.allowed,
@@ -213,7 +216,10 @@ function shapeSale(g, cc, s, side, base, x) {
     stage, frozen, rows: visibleRows,
     missing: side === 'creator' && editing ? missingOf(g.rows, s) : [],
     proofsLeft: side === 'creator' && stage === 'approved' ? slots.filter((z) => !z.filled).map(({ rowKey, slot, isStory }) => ({ rowKey, slot, isStory })) : [],
-    money: null,
+    // Item 15: Hybrid's fixed amount — item 12's money block (25/25/50 of the fixed amount alone).
+    money: g.hybrid ? base.money : null,
+    hybrid: !!g.hybrid,
+    paidInFull: !!(g.hybrid && s.escrow.length && s.escrow.every((e) => e.status === 'released')),
     path1: {
       min: x.p1.min, approved: x.p1.approved, short: x.p1.short, met: x.p1.met, late: x.p1.late,
       inReview: x.p1.inReview, sentBack: x.p1.sentBack, open: x.p1.open,
@@ -621,8 +627,9 @@ async function markPosted(ciId, scope) {
     if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
     if (slotsOf(pkgRows(g.rows), s).some((x) => !x.filled)) refuse('PROOF_INCOMPLETE', MSG.PROOF_INCOMPLETE, 422, 'proofs');
     const now = new Date();
-    if (isSale(g)) {
+    if (isSale(g) && !g.hybrid) {
       // D3: Pay for Sale confirms itself after the Admin days, stamped now and never re-read.
+      // Item 15: never Hybrid — its confirmation pays money; it stamps item 12's silence date below.
       // There is no "tell INFLX about silence" on Pay for Sale — the silence ends by itself.
       const stamp = await sale().autoconfirmStamp(now);
       const { rowCount } = await client.query(
@@ -644,7 +651,8 @@ async function markPosted(ciId, scope) {
     diary(g.r, 'creator', scope.userId, 'posted', { proofs: out.links, autoconfirm_at: out.sale.at });
     return read(ciId, scope);
   }
-  notifyBrand(g.r, NOTIFY12.POSTED, `${first(g.r.creator_name)} posted everything. Open the links and confirm the content is live.`);
+  if (g.hybrid) sale().tell(g.r, 'brand', NOTIFY14.POSTED, `${first(g.r.creator_name)} has posted. Open the links and confirm it's live — that pays her second instalment.`);
+  else notifyBrand(g.r, NOTIFY12.POSTED, `${first(g.r.creator_name)} posted everything. Open the links and confirm the content is live.`);
   diary(g.r, 'creator', scope.userId, 'posted', { proofs: out.links });
   return read(ciId, scope);
 }
@@ -671,7 +679,7 @@ async function confirmLive(ciId, scope, { amount } = {}) {
     }
     if (cc.live_confirmed_at) refuse('ALREADY_CONFIRMED', MSG.ALREADY_CONFIRMED, 422, 'status');
     if (!cc.posted_at) refuse('NOT_POSTED', MSG.NOT_POSTED(first(g.r.creator_name)), 422, 'status');
-    if (isSale(g)) {
+    if (isSale(g) && !g.hybrid) {
       // Item 14: NO MONEY on Pay for Sale (§21). Confirmed once for the collaboration (D2), then
       // Completed if Path 1's minimum is already met — otherwise when it is (§19, S19).
       const { rowCount } = await client.query(
@@ -708,6 +716,13 @@ async function confirmLive(ciId, scope, { amount } = {}) {
     diary(g.r, 'brand', scope.userId, 'confirmed_live', { completed: out.completed });
     return read(ciId, scope);
   }
+  if (g.hybrid) {
+    // Item 15: the second 25% of her fixed amount is in; the final 50% has its date.
+    sale().tell(g.r, 'creator', NOTIFY14.LIVE_CONFIRMED,
+      `${g.r.brand_name} confirmed it's live. ${rupees(out.secondAmount)} is in your wallet. The last ${rupees(out.finalAmount)} arrives on ${shortDay(out.dueAt)}.`);
+    diary(g.r, 'brand', scope.userId, 'confirmed_live', { second: out.secondAmount, final_due_at: out.dueAt });
+    return read(ciId, scope);
+  }
   notifyCreator(g.r, NOTIFY12.LIVE_CONFIRMED,
     `${g.r.brand_name} confirmed your content is live. ${rupees(out.secondAmount)} is in your wallet. The last ${rupees(out.finalAmount)} arrives on ${shortDay(out.dueAt)}.`);
   diary(g.r, 'brand', scope.userId, 'confirmed_live', { second: out.secondAmount, final_due_at: out.dueAt });
@@ -730,7 +745,7 @@ async function report(ciId, scope, { kind, note } = {}) {
     const cc = await content.ensureContent(client, g);
     const s = await snapshot(client, ciId, cc);
     const stage = content.stageOf(cc, s.rounds);
-    if (isSale(g) && scope.side !== 'brand') refuse('REPORT_NOT_OPEN', MSG.REPORT_NOT_OPEN, 422, 'kind');
+    if (isSale(g) && !g.hybrid && scope.side !== 'brand') refuse('REPORT_NOT_OPEN', MSG.REPORT_NOT_OPEN, 422, 'kind');
     if (scope.side === 'brand') {
       if (cc.brand_reported_at) refuse('ALREADY_REPORTED', MSG.ALREADY_REPORTED, 422, 'status');
       const roundsUsed = kind === 'rounds_used' && stage === 'in_review' && cc.rounds_allowed != null && cc.current_round > cc.rounds_allowed;
@@ -769,6 +784,8 @@ async function report(ciId, scope, { kind, note } = {}) {
     const body = MSG.REPORTED_BY_BRAND(g.r.brand_name);
     notifyCreator(g.r, NOTIFY12.REPORTED, body);
     notifyBrand(g.r, NOTIFY12.REPORTED, body);
+  } else if (g.hybrid) {
+    sale().tell(g.r, 'brand', NOTIFY14.REPORTED, `${first(g.r.creator_name)} told INFLX you haven't confirmed it's live yet. You can still confirm it.`);
   } else {
     notifyBrand(g.r, NOTIFY12.REPORTED, MSG.REPORTED_BY_CREATOR(first(g.r.creator_name)));
   }

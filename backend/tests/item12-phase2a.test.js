@@ -58,14 +58,10 @@ describe('item 12 · the content gate — every case (check 1)', () => {
   // ASSERTION DRIFT, item 14 (rules v1.30 §12.1): a new-terms Pay for Sale collaboration now
   // reaches this step as its Path 2 (the social media post) — proved in item14-sale.test.js.
   // Hybrid stays refused until item 15. Pay for Content's own gate is unchanged.
-  it('Hybrid never reaches it, shoot done or not — 404, with the sentence; Pay for Sale reaches it as Path 2 (item 14)', async () => {
-    for (const goal of ['hybrid']) {
-      const w = await w12.shotDone(goal);
-      expect(`${goal} ${await ask(w, w12.brandScope(w))}`).toBe(`${goal} 404:NOT_PAY_FOR_CONTENT`);
-      expect(`${goal} ${await ask(w, w12.creatorScope(w))}`).toBe(`${goal} 404:NOT_PAY_FOR_CONTENT`);
-    }
+  // ASSERTION DRIFT, item 15: Hybrid reaches it as Path 2 too (the Pay for Sale arm, with its money).
+  it('Pay for Sale (item 14) and Hybrid (item 15) reach it as Path 2', async () => {
     const w = await w12.shotDone('hybrid');
-    await expect(contentGate.assertContentOpen(w.ciId, w12.creatorScope(w))).rejects.toMatchObject({ message: MSG.NOT_PAY_FOR_CONTENT });
+    await expect(contentGate.assertContentOpen(w.ciId, w12.creatorScope(w))).resolves.toMatchObject({ aim: 'sale', hybrid: true });
     const sale = await w12.shotDone('conversion');
     await expect(contentGate.assertContentOpen(sale.ciId, w12.creatorScope(sale))).resolves.toMatchObject({ aim: 'sale' });
   });

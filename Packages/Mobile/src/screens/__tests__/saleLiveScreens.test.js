@@ -17,7 +17,7 @@ jest.mock('../../services/api', () => ({
     myContent: jest.fn(), contentCaption: jest.fn(), contentSubmit: jest.fn(), contentSetProof: jest.fn(),
     contentClearProof: jest.fn(), contentPosted: jest.fn(), contentUploadUrl: jest.fn(), contentConfirmFile: jest.fn(),
     contentRemoveFile: jest.fn(), contentFileUrl: jest.fn(() => Promise.resolve({ success: true, data: { view: { url: 'https://x/y' } } })),
-    createPost: jest.fn(), saleAddRows: jest.fn(), saleRemoveRow: jest.fn(), saleAddOutside: jest.fn(),
+    createPost: jest.fn(), saleAddRows: jest.fn(), saleRemoveRow: jest.fn(), saleAddOutside: jest.fn(), contentReport: jest.fn(),
   },
   brandApi: {
     content: jest.fn(), contentApprove: jest.fn(), contentChanges: jest.fn(), contentConfirmLive: jest.fn(),
@@ -203,5 +203,56 @@ describe('BrandSaleLiveScreen', () => {
     await waitFor(() => r.getByTestId('sales'));
     expect(r.getByText('14 · ₹21,300')).toBeTruthy();
     expect(r.getByText('₹18,105')).toBeTruthy();
+  });
+});
+
+/* ───────────────────────────── item 15 · Hybrid (board S1–S9) */
+
+const money = (over = {}) => ({ fee: 8500, waitDays: 7, stillLocked: 6375, campaignFee: 0,
+  t1: { amount: 2125, pct: 25, status: 'released', paidAt: D(2) }, t2: { amount: 2125, pct: 25, status: 'locked', paidAt: null }, t3: { amount: 4250, pct: 50, status: 'locked', paidAt: null, dueAt: null }, ...over });
+const hyb = (over = {}) => sale({ hybrid: true, money: money(), path1: { ...sale().path1, ...opened, approved: 1, min: 1, short: 0, met: true }, ...over });
+
+describe('item 15 · Hybrid on both screens', () => {
+  it('S1, S5 · her payments card; posted names what confirming pays; she may ask INFLX to look', async () => {
+    api.influencerApi.contentReport.mockReturnValue(ok(hyb({ stage: 'posted', postedAt: D(23), reported: { brand: null, creator: { at: D(31) } } })));
+    const r = her(hyb({ stage: 'posted', postedAt: D(23), reportFrom: D(30), can: { report: true } }));
+    await waitFor(() => r.getByTestId('payments'));
+    expect(r.getByText("Urban Threads confirms it's live, and that pays your second ₹2,125.")).toBeTruthy();
+    expect(r.getByText('No answer by 30 Oct? You can ask INFLX to look. It never stops them paying you.')).toBeTruthy();
+    expect(r.queryByTestId('autoconfirm-date')).toBeNull();
+    fireEvent.press(r.getByTestId('ask-inflx'));
+    await waitFor(() => r.getByTestId('report-sheet'));
+    fireEvent.press(r.getByTestId('report-confirm'));
+    await waitFor(() => expect(api.influencerApi.contentReport).toHaveBeenCalledWith('ci1', { kind: 'brand_silent', note: null }));
+  });
+
+  it('S6, S7 · second payment in with the date of the last; paid in full while waiting on posts', async () => {
+    const r = her(hyb({ stage: 'live', liveConfirmedAt: D(24), finalDueAt: D(31), money: money({ t2: { amount: 2125, status: 'released', paidAt: D(24) } }) }));
+    await waitFor(() => r.getByTestId('second-in'));
+    expect(r.getByText("Urban Threads confirmed it's live on 24 Oct. ₹2,125 is in your wallet.")).toBeTruthy();
+    expect(r.getByText('The last ₹4,250 arrives on 31 Oct.')).toBeTruthy();
+    const p = her(hyb({ stage: 'live', paidInFull: true, liveConfirmedAt: D(24), path1: { ...sale().path1, ...opened, approved: 1, min: 2, short: 1, met: false } }));
+    await waitFor(() => p.getByTestId('paid-in-full'));
+    expect(p.getByText('Completes by itself when 1 more post is approved.')).toBeTruthy();
+  });
+
+  it("S3 · the brand's button names the money and sends it with the tap", async () => {
+    api.brandApi.contentConfirmLive.mockReturnValue(ok(hyb({ stage: 'live', liveConfirmedAt: D(24) })));
+    const r = brand(hyb({ stage: 'posted', postedAt: D(23), rows: [row('s1', 'reel', 'Instagram reel', { proofs: [{ slot: 1, url: 'https://www.instagram.com/reel/C9xK2/', filled: true }] })], can: { confirmLive: true, reportPosted: true } }));
+    await waitFor(() => r.getByTestId('confirm-preview'));
+    expect(r.getByText('Confirming releases ₹2,125')).toBeTruthy();
+    expect(r.getByText('The second 25% of her ₹8,500. The last ₹4,250 follows 7 days later. Her sales and commission run separately.')).toBeTruthy();
+    expect(r.getByText("Confirm it's live · ₹2,125")).toBeTruthy();
+    fireEvent.press(r.getByTestId('confirm-live'));
+    await waitFor(() => expect(api.brandApi.contentConfirmLive).toHaveBeenCalledWith('c1', 's1', 'ci1', 2125));
+  });
+
+  it('S9 · reported: the locked money stays locked; she told INFLX, and the brand can still confirm', async () => {
+    const r = brand(hyb({ stage: 'posted', frozen: true, reported: { brand: { at: D(26), kind: 'posted_wrong' }, creator: null } }));
+    await waitFor(() => r.getByTestId('reported-card'));
+    expect(r.getByText('Nothing moves until INFLX settles it. ₹6,375 of her fixed amount stays locked. Her posts stay in the shop.')).toBeTruthy();
+    const t = brand(hyb({ stage: 'posted', postedAt: D(23), reported: { brand: null, creator: { at: D(31) } }, can: { confirmLive: true } }));
+    await waitFor(() => t.getByTestId('she-told-inflx'));
+    expect(t.getByTestId('confirm-live')).toBeTruthy();
   });
 });

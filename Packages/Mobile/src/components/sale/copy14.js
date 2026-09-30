@@ -151,6 +151,21 @@ export const C14 = {
   tellInflx: 'Tell INFLX',
   back: 'Back',
 
+  // Item 15 — Hybrid: the fixed amount (board S1–S9).
+  payingHers: (brand, amt) => `${brand} confirms it's live, and that pays your second ${rupees(amt)}.`,
+  secondIn: (brand, d, amt) => `${brand} confirmed it's live on ${day10(d)}. ${rupees(amt)} is in your wallet.`,
+  lastOn: (amt, d) => `The last ${rupees(amt)} arrives on ${day10(d)}.`,
+  paidInFull: (fee) => `Paid in full — ${rupees(fee)}.`,
+  askInflx: 'Ask INFLX to look',
+  canAskFrom: (d) => `No answer by ${day10(d)}? You can ask INFLX to look. It never stops them paying you.`,
+  youAsked: (d) => `You asked INFLX to look on ${day10(d)}. They can still confirm and pay you.`,
+  confirmPays: (amt) => `Confirm it's live · ${rupees(amt)}`,
+  confirmReleases: (amt) => `Confirming releases ${rupees(amt)}`,
+  confirmReleasesSub: (fee, last, days) => `The second 25% of her ${rupees(fee)}. The last ${rupees(last)} follows ${days} days later. Her sales and commission run separately.`,
+  youConfirmedPaid: (d, amt, name) => `You confirmed it's live on ${day10(d)}. ${rupees(amt)} went to ${first(name)}.`,
+  lockedStays: (amt) => `Nothing moves until INFLX settles it. ${rupees(amt)} of her fixed amount stays locked. Her posts stay in the shop.`,
+  sheToldInflx: (name, d) => `${first(name)} told INFLX on ${day10(d)} that you haven't confirmed. You can still confirm it.`,
+
   // Toasts
   sent: 'Sent',
   approved: 'Approved',

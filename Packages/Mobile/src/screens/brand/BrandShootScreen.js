@@ -192,7 +192,7 @@ export default function BrandShootScreen({ navigation, route }) {
           <PrimaryButton label={C12.openContentBrand} onPress={() => navigation.navigate('BrandContent', { campaignId, setId, ciId })} testID="open-content" />
         ) : null}
         {/* Item 14: Pay for Sale — going live is where the brand goes next. */}
-        {stage === 'complete' && sh.aim === 'conversion' ? (
+        {stage === 'complete' && (sh.aim === 'conversion' || sh.aim === 'hybrid') ? (
           <PrimaryButton label={C14.openGoingLive} onPress={() => navigation.navigate('BrandSaleLive', { campaignId, setId, ciId })} testID="open-going-live" />
         ) : null}
         {stage === 'not_sent' && sh.can.send ? (

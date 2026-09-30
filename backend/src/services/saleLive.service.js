@@ -148,6 +148,9 @@ const SALE_MOVE_SQL = (ci) => `(
   SELECT CASE
            WHEN cc.completed_at IS NOT NULL THEN 'completed'
            WHEN cc.brand_reported_at IS NOT NULL THEN 'reported'
+           -- Item 15: a confirmed Hybrid collaboration still waiting for its final 50%.
+           WHEN cc.live_confirmed_at IS NOT NULL AND css.goal = 'hybrid' AND EXISTS (SELECT 1 FROM escrow_entries ex
+                         WHERE ex.campaign_influencer_id = ${ci}.id AND ex.status <> 'released') THEN 'final_payment'
            WHEN cc.live_confirmed_at IS NOT NULL THEN 'waiting_posts'
            WHEN cc.posted_at IS NOT NULL THEN 'confirm_live'
            WHEN cc.approved_at IS NOT NULL THEN 'post_and_link'
@@ -160,7 +163,7 @@ const SALE_MOVE_SQL = (ci) => `(
          END
     FROM contracts cn
     JOIN production_events pee ON pee.contract_id = cn.id AND pee.status = 'completed'
-    JOIN campaign_sets css ON css.id = ${ci}.set_id AND css.goal = 'conversion'
+    JOIN campaign_sets css ON css.id = ${ci}.set_id AND css.goal IN ('conversion', 'hybrid')
     LEFT JOIN collab_content cc ON cc.campaign_influencer_id = ${ci}.id
    WHERE cn.campaign_influencer_id = ${ci}.id AND ${ci}.sell_v2
      AND cn.influencer_signed_at IS NOT NULL AND cn.brand_signed_at IS NOT NULL
@@ -309,10 +312,15 @@ async function completeIfDue(client, ciId) {
        FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id
        LEFT JOIN collab_content cc ON cc.campaign_influencer_id = ci.id
       WHERE ci.id = $1 FOR UPDATE OF ci`, [ciId]);
-  if (!x || x.goal !== 'conversion' || !x.sell_v2 || !x.cc_id || !x.live_confirmed_at || x.completed_at || x.brand_reported_at) return null;
+  if (!x || !['conversion', 'hybrid'].includes(x.goal) || !x.sell_v2 || !x.cc_id || !x.live_confirmed_at || x.completed_at || x.brand_reported_at) return null;
   if (['removed', 'withdrawn', 'declined', 'expired', 'rejected_by_brand'].includes(x.status)) return null;
   const min = x.min_shoppable_posts != null ? Number(x.min_shoppable_posts) : Number(await platformSettings.get('min_shoppable_posts'));
   if ((await approvedCount(ciId, client)) < min) return null;
+  // Item 15: Hybrid also needs its fixed amount paid in full — all three payments released (§19).
+  if (x.goal === 'hybrid') {
+    const { rows: esc } = await client.query(`SELECT status FROM escrow_entries WHERE campaign_influencer_id = $1`, [ciId]);
+    if (!esc.length || esc.some((e) => e.status !== 'released')) return null;
+  }
   const { rowCount } = await client.query(
     `UPDATE collab_content SET completed_at = now(), updated_at = now() WHERE id = $1 AND completed_at IS NULL`, [x.cc_id]);
   if (rowCount !== 1) return null;
@@ -471,7 +479,7 @@ async function completeSweep() {
   const { rows } = await db.query(
     `SELECT cc.campaign_influencer_id AS ci_id FROM collab_content cc
        JOIN campaign_influencers ci ON ci.id = cc.campaign_influencer_id JOIN campaign_sets cs ON cs.id = ci.set_id
-      WHERE cs.goal = 'conversion' AND cc.live_confirmed_at IS NOT NULL AND cc.completed_at IS NULL AND cc.brand_reported_at IS NULL`);
+      WHERE cs.goal IN ('conversion', 'hybrid') AND cc.live_confirmed_at IS NOT NULL AND cc.completed_at IS NULL AND cc.brand_reported_at IS NULL`);
   let completed = 0;
   for (const row of rows) {
     // eslint-disable-next-line no-await-in-loop
@@ -506,7 +514,7 @@ async function flagDelayedSale({ today = null } = {}) {
        JOIN contracts con ON con.campaign_influencer_id = ci.id
        JOIN production_events pe ON pe.contract_id = con.id
        LEFT JOIN collab_content cc ON cc.campaign_influencer_id = ci.id
-      WHERE ci.delayed_at IS NULL AND cs.goal = 'conversion' AND ci.sell_v2
+      WHERE ci.delayed_at IS NULL AND cs.goal IN ('conversion', 'hybrid') AND ci.sell_v2
         AND cs.go_live_date IS NOT NULL AND cs.go_live_date < $1::date
         AND con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL
         AND pe.status = 'completed'
@@ -574,7 +582,7 @@ async function remindSale({ now = new Date() } = {}) {
        JOIN contracts con ON con.campaign_influencer_id = ci.id
        JOIN production_events pe ON pe.contract_id = con.id
        LEFT JOIN collab_content cc ON cc.campaign_influencer_id = ci.id
-      WHERE cs.goal = 'conversion' AND ci.sell_v2 AND pe.status = 'completed'
+      WHERE cs.goal IN ('conversion', 'hybrid') AND ci.sell_v2 AND pe.status = 'completed'
         AND con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL
         AND (cc.id IS NULL OR (cc.completed_at IS NULL AND cc.brand_reported_at IS NULL))`);
   const sends = [];

@@ -514,6 +514,8 @@ const SALE_LINES = {
     post_and_link: () => 'Approved. Post it and add the links.',
     confirm_live: (r) => `Waiting for ${r.brand_name} to confirm it's live.`,
     waiting_posts: () => 'Live. Completes when your posts are approved.',
+    // Item 15: Hybrid, confirmed, the final 50% on its date.
+    final_payment: () => 'Live. Your last payment is on its way.',
     reported: () => 'INFLX is looking at this.',
     completed: () => 'Completed · selling',
   },
@@ -525,6 +527,7 @@ const SALE_LINES = {
     post_and_link: () => 'Approved. She is posting it.',
     confirm_live: () => "Your move. Confirm it's live.",
     waiting_posts: () => 'Live · waiting on posts.',
+    final_payment: () => 'Live. The final payment follows.',
     reported: () => 'Reported to INFLX.',
     completed: () => 'Completed · selling',
   },

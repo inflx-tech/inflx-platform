@@ -99,6 +99,19 @@ async function releaseFinal(client, escrowId, { now = new Date() } = {}) {
   const out = await escrowService.processTrancheRelease(client, e.id, e.influencer_id, e.brand_id, e.campaign_id);
   if (out.alreadyReleased) return null;
 
+  // Item 15 (rules v1.30, H2): Hybrid's final 50% is paid on its date whatever Path 1 shows;
+  // Completed waits for the minimum of approved posts too — saleLive decides, in this transaction.
+  const { rows: [gx] } = await client.query(
+    `SELECT cs.goal FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id WHERE ci.id = $1`, [e.ci_id]);
+  if (gx && gx.goal === 'hybrid') {
+    if (cc) await client.query(`UPDATE collab_content SET t3_released_at = now(), updated_at = now() WHERE id = $1`, [cc.id]);
+    const done = await require('./saleLive.service').completeIfDue(client, e.ci_id);
+    return {
+      ciId: e.ci_id, amount: Number(e.net_to_influencer), completed: !!(done && done.completed), completedCampaign: !!(done && done.completedCampaign),
+      campaignId: e.campaign_id, brandId: e.brand_id, influencerId: e.influencer_id, hasContent: !!cc, hybrid: true,
+    };
+  }
+
   // Completion, in the same transaction as the money (approval §3.5, check 36).
   const { rows: all } = await client.query(`SELECT status FROM escrow_entries WHERE campaign_influencer_id = $1`, [e.ci_id]);
   const allReleased = all.length > 0 && all.every((x) => x.status === 'released');

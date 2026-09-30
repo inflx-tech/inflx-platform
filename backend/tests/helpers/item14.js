@@ -27,7 +27,7 @@ function resetTree() { T = null; }
  * A brand with a percentage discount on four shirts; a Pay for Sale set posting in `posting`
  * days (Remote); a creator given the offer, signed by both, the shoot done (unless shootDone:false).
  */
-async function world({ shootDone = true, posting = 12, min = null, name = 'Tanvi Suresh' } = {}) {
+async function world({ shootDone = true, posting = 12, min = null, name = 'Tanvi Suresh', goal = 'conversion', fee = 8500 } = {}) {
   const t = await tree();
   const b = await H.brand();
   const shirts = [];
@@ -37,9 +37,11 @@ async function world({ shootDone = true, posting = 12, min = null, name = 'Tanvi
   }
   const discount = await H.ready(b.token, { type: 'discount', sub: 'percentage', name: '20% off shirts', cfg: { pct: 20 }, ids: shirts, from: day(1), to: day(60) });
   const c = await w10.campaign(b);
-  const s = await w10.set(b, c.id, { goal: 'conversion', shoot_mode: 'shipment', go_live_date: day(posting) });
+  const s = await w10.set(b, c.id, { goal, shoot_mode: 'shipment', go_live_date: day(posting) });
   const cr = await H.creator({ name });
-  const terms = { commissionPct: 10, offers: [discount], productsWithoutOffers: { mode: 'none' } };
+  // Item 15: a Hybrid world carries a fixed amount; the brand's wallet must hold it at signing.
+  const terms = { commissionPct: 10, offers: [discount], productsWithoutOffers: { mode: 'none' }, ...(goal === 'hybrid' ? { fee } : {}) };
+  if (goal === 'hybrid') await query(`UPDATE brands SET wallet_balance = 500000 WHERE id = $1`, [b.brandId]);
   const inv = await api.post(`/campaigns/${c.id}/sets/${s.id}/invitations`, b.token, { creators: [{ influencerId: cr.influencerId, terms }] });
   if (inv.status !== 201) throw new Error(`invite: ${JSON.stringify(inv.body)}`);
   const ciId = inv.body.data.rows[0].id;
@@ -113,7 +115,7 @@ const approve = async (w) => api.post(`${B(w)}/approve`, w.b.token, { round: (aw
 const changes = async (w, reason = 'Show the price in the first seconds.') => api.post(`${B(w)}/changes`, w.b.token, { round: (await state(w)).round.current, reason });
 const setLink = (w, rowKey, url) => api.put(`${C(w)}/proofs/${rowKey}/1`, w.cr.token, { url });
 const posted = (w) => api.post(`${C(w)}/posted`, w.cr.token, {});
-const confirmLive = (w) => api.post(`${B(w)}/confirm-live`, w.b.token, {});
+const confirmLive = (w, body = {}) => api.post(`${B(w)}/confirm-live`, w.b.token, body);
 const report = (w, kind, note = null) => api.post(`${B(w)}/report`, w.b.token, { kind, note });
 
 const LINKS = {

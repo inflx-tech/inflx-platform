@@ -224,7 +224,7 @@ export default function RemoteShootScreen({ navigation, route }) {
             : <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
         ) : null}
         {/* Item 14 (S1): Pay for Sale — the shoot is done; going live is next (the return keeps its own lane). */}
-        {stage === 'shot' && sh.aim === 'conversion' ? (
+        {stage === 'shot' && (sh.aim === 'conversion' || sh.aim === 'hybrid') ? (
           can.bookReturn || can.markSelfSent
             ? <SecondaryButton label={C14.goLive} onPress={() => navigation.navigate('SaleLive', { ciId })} testID="go-live" />
             : <PrimaryButton label={C14.goLive} onPress={() => navigation.navigate('SaleLive', { ciId })} testID="go-live" />

@@ -63,9 +63,11 @@ describe('item 14 · the step opens at shoot done, for Pay for Sale on the new t
     expect(err(r)).toMatchObject({ code: 'OLD_TERMS', message: MSG.SALE_OLD_TERMS });
   });
 
-  it('Hybrid is still refused until item 15', async () => {
+  // ASSERTION DRIFT, item 15 (rules v1.30 §12.1): Hybrid now runs these same two paths
+  // (item15-hybrid.test.js proves its money). It was refused here until item 15.
+  it('Hybrid reaches the same two paths (item 15)', async () => {
     const w = await w12.shotDone('hybrid');
-    expect(err(await W.read(w)).code).toBe('NOT_PAY_FOR_CONTENT');
+    expect(await W.state(w)).toMatchObject({ aim: 'sale', hybrid: true, stage: 'posts' });
   });
 
   it('2 · the shoot-done notice names the step that opens for each Aim', () => {

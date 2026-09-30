@@ -42,13 +42,13 @@ describe('item 12 · every content route asks the gate (checks 1, 26)', () => {
 
   // ASSERTION DRIFT, item 14 (rules v1.30 §12.1): Pay for Sale now uses these routes as its Path 2
   // (item14-sale.test.js proves it). Hybrid stays 404 on every route until item 15.
-  it('Hybrid: 404 on every route, for both parties', async () => {
-    for (const goal of ['hybrid']) {
-      const w = await w12.shotDone(goal);
-      for (const r of routes(w)) {
-        const res = await hit(w, r, w[r[2]].token);
-        expect(`${goal} ${r[0]} ${r[1]} → ${res.status} ${err(res).code}`).toBe(`${goal} ${r[0]} ${r[1]} → 404 NOT_PAY_FOR_CONTENT`);
-      }
+  // ASSERTION DRIFT, item 15: Hybrid now uses these routes too, as Path 2 (item15-hybrid.test.js).
+  // No Aim is refused by the Aim any more; each route still answers for Hybrid through the gate.
+  it('Hybrid: no route refuses it for its Aim, for either party (item 15)', async () => {
+    const w = await w12.shotDone('hybrid');
+    for (const r of routes(w)) {
+      const res = await hit(w, r, w[r[2]].token);
+      expect(`${r[0]} ${r[1]} → ${err(res).code || 'ok'}`).not.toMatch(/NOT_PAY_FOR_CONTENT$/);
     }
   });
 

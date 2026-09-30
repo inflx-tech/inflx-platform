@@ -1,0 +1,30 @@
+{
+  "feature": "item15-hybrid",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 30 Sep 2026: \"Lock it and start building\")",
+  "approved_at": "2026-09-30T13:42:17.345Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 30 Sep 2026)",
+  "mockup_locked_at": "2026-09-30T13:42:17.345Z",
+  "notes": "Item 15 of 21 — Hybrid. Rules v1.30 §12.1 Hybrid lines + founder decisions 30 Sep: H1 old-terms Hybrid (2 test collabs, ₹9,375) — build nothing; H2 final 50% paid on its date even if the minimum is short (only Completed waits); H3 shared final_payment_wait_days. Mockups v1 drawn (S1–S9, A1), awaiting lock. LOCKED 2026-09-30 (board v1, S1–S9 + A1).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "mockup_final": "04-preview/mockups/item15-hybrid-mockups-v1.html",
+  "build": {
+    "at": "2026-09-30",
+    "backend": "item15-hybrid 9/9; compare 0 newly failing (12 new, 3 renamed by drift)",
+    "mobile": "62/804 green",
+    "migration": "none",
+    "rules": "v1.30 Hybrid section updated (H1–H3)"
+  }
+}

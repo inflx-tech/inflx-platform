@@ -26,8 +26,8 @@ import { Header, s as base } from '../brand/BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12 } from '../../components/content/bits12';
-import { SendSheet12 } from '../../components/content/sheets12';
+import { FileTile12, AddTile12, NoteLine12, RoundPill12, QuoteBox12, Line12, CountChip12, FeeCard12 } from '../../components/content/bits12';
+import { SendSheet12, ReportSheet12 } from '../../components/content/sheets12';
 import { MSG12, LIMITS12 } from '../../components/content/copy12';
 import { DestinationSheet14 } from '../../components/sale/sheets14';
 import { C14, day10, rupees } from '../../components/sale/copy14';
@@ -223,6 +223,8 @@ export default function SaleLiveScreen({ navigation, route }) {
   const removeRow = (row) => act(() => influencerApi.saleRemoveRow(ciId, row.key));
   const submit = () => act(() => influencerApi.contentSubmit(ciId, c.round.current), C14.sent);
   const posted = () => act(() => influencerApi.contentPosted(ciId), C14.postedDone);
+  // Item 15 (S5): on Hybrid she may ask INFLX to look after the stamped days of silence.
+  const askInflx = (note) => act(() => influencerApi.contentReport(ciId, { kind: 'brand_silent', note }), C14.reportedDone);
 
   if (status === 'loading') return <View style={base.screen}><Header title={C14.titleHers} onBack={() => navigation.goBack()} /><Skeleton rows={6} /></View>;
   if (status === 'error') return <View style={base.screen}><Header title={C14.titleHers} onBack={() => navigation.goBack()} /><LoadErrorList what={C14.couldntLoad} onRetry={load} /></View>;
@@ -384,7 +386,9 @@ export default function SaleLiveScreen({ navigation, route }) {
         {/* S15 — posted: the day it confirms itself, shown from the start. */}
         {stage === 'posted' && !c.frozen ? (
           <View style={s.pathCard} testID="path2-posted">
-            <WaitBox10 text={C14.postedWaiting(c.postedAt, brand)} testID="posted-waiting" />
+            <WaitBox10 text={c.hybrid && c.money ? C14.payingHers(brand, c.money.t2.amount) : C14.postedWaiting(c.postedAt, brand)} testID="posted-waiting" />
+            {c.hybrid && c.reported && c.reported.creator ? <Text style={s.small} testID="you-asked">{C14.youAsked(c.reported.creator.at)}</Text>
+              : c.hybrid && c.reportFrom ? <Text style={s.small} testID="can-ask">{C14.canAskFrom(c.reportFrom)}</Text> : null}
             {c.autoconfirmAt ? (
               <View style={s.when} testID="autoconfirm-date"><Text style={s.whenSub}>{C14.confirmsItselfOn}</Text><Text style={s.whenDay}>{day10(c.autoconfirmAt)}</Text></View>
             ) : null}
@@ -393,10 +397,17 @@ export default function SaleLiveScreen({ navigation, route }) {
 
         {stage === 'live' ? (
           <View style={s.pathCard} testID="path2-live">
-            <GreenBox10 text={C14.theyConfirmed(brand, c.liveConfirmedAt)} testID="live-box" />
-            <Text style={s.small}>{C14.completesWhen(p1 ? p1.short : 0)}</Text>
+            {c.hybrid && c.money ? (
+              c.paidInFull
+                ? <GreenBox10 text={C14.paidInFull(c.money.fee)} testID="paid-in-full" />
+                : <><GreenBox10 text={C14.secondIn(brand, c.liveConfirmedAt, c.money.t2.amount)} testID="second-in" /><WaitBox10 text={C14.lastOn(c.money.t3.amount, c.finalDueAt)} testID="last-on" /></>
+            ) : <GreenBox10 text={C14.theyConfirmed(brand, c.liveConfirmedAt)} testID="live-box" />}
+            {p1 && p1.short ? <Text style={s.small}>{C14.completesWhen(p1.short)}</Text> : null}
           </View>
         ) : null}
+
+        {/* Item 15 (S1, S6): Hybrid's fixed amount — paid, next, and the last part. */}
+        {c.money && !['old_terms', 'shoot_not_done'].includes(stage) ? <FeeCard12 money={c.money} side="creator" testID="payments" /> : null}
 
         {/* S16 — posts outside the package: a link only, no approval. */}
         {c.can.addOutside && (notShared.length || outsideRows.length) ? (
@@ -450,8 +461,13 @@ export default function SaleLiveScreen({ navigation, route }) {
             {left.length ? <Text style={s.hint} testID="to-go">{C14.toGo(left.filter((x) => !x.isStory).length, left.filter((x) => x.isStory).length)}</Text> : null}
           </>
         ) : null}
+        {stage === 'posted' && c.can.report ? (
+          <SecondaryButton label={C14.askInflx} onPress={() => { setSheetError(null); setSheet('report'); }} testID="ask-inflx" />
+        ) : null}
       </View>
 
+      <ReportSheet12 visible={sheet === 'report'} kind="brand_silent" brandName={brand} busy={busy} serverError={sheetError}
+        onReport={askInflx} onClose={() => setSheet(null)} />
       <SendSheet12 visible={sheet === 'send'} brandName={brand} rows={pkg.map((r) => ({ ...r, label: rowTitle(r) }))} busy={busy} serverError={sheetError}
         resend={stage === 'changes'} onSend={submit} onClose={() => setSheet(null)} />
       <DestinationSheet14 visible={!!(sheet && sheet.dest)} post={sheet && sheet.dest} destinations={c.destinations}

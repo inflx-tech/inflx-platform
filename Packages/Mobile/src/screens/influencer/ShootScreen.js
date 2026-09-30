@@ -146,7 +146,7 @@ export default function ShootScreen({ navigation, route }) {
           <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
         ) : null}
         {/* Item 14 (S1): Pay for Sale — the visit is done; going live is next. */}
-        {stage === 'complete' && sh.aim === 'conversion' ? (
+        {stage === 'complete' && (sh.aim === 'conversion' || sh.aim === 'hybrid') ? (
           <PrimaryButton label={C14.goLive} onPress={() => navigation.navigate('SaleLive', { ciId })} testID="go-live" />
         ) : null}
         {stage === 'sent' && !(thread && thread.negotiation && thread.negotiation.id) ? (

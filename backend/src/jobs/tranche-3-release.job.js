@@ -70,8 +70,8 @@ async function run({ now = new Date() } = {}) {
            JOIN brands b ON b.id = c.brand_id JOIN users bu ON bu.id = b.user_id
           WHERE ci.id = $1`, [out.ciId]);
       if (p) {
-        const creatorData = { screen: out.hasContent ? 'my_content' : 'earnings', campaign_influencer_id: out.ciId };
-        const brandData = { screen: out.hasContent ? 'brand_content' : 'campaign_detail', campaign_influencer_id: out.ciId, campaign_id: out.campaignId, set_id: p.set_id };
+        const creatorData = { screen: out.hybrid ? 'my_going_live' : out.hasContent ? 'my_content' : 'earnings', campaign_influencer_id: out.ciId };
+        const brandData = { screen: out.hybrid ? 'brand_going_live' : out.hasContent ? 'brand_content' : 'campaign_detail', campaign_influencer_id: out.ciId, campaign_id: out.campaignId, set_id: p.set_id };
         await notificationService.send({ userId: p.creator_user_id, type: NOTIFY12.FINAL_PAID.type, title: NOTIFY12.FINAL_PAID.title,
           body: `${rupees(out.amount)} is in your wallet.${out.completed ? ' The collaboration is complete.' : ''}`, data: creatorData, sendSms: false })
           .catch((e) => console.error('[NOTIFICATION] final paid failed:', e.message));

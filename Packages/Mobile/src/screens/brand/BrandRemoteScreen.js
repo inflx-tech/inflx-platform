@@ -106,7 +106,7 @@ export default function BrandRemoteScreen({ navigation, route }) {
 
         {/* R1 · waiting for her address. The brand has nothing to do, and is told so plainly. */}
         {/* Item 14: Pay for Sale — going live is where the brand goes next. */}
-        {stage === 'shot' && sh.aim === 'conversion' ? (
+        {stage === 'shot' && (sh.aim === 'conversion' || sh.aim === 'hybrid') ? (
           <SecondaryButton label={C14.openGoingLive} onPress={() => navigation.navigate('BrandSaleLive', { campaignId, setId, ciId })} testID="open-going-live" />
         ) : null}
         {stage === 'not_sent' ? (

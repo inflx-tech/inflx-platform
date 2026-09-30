@@ -21,7 +21,7 @@ import { Header, s as base } from './BrandPitchSettingsScreen';
 import useRouteToast from '../../hooks/useRouteToast';
 import { Card7 } from '../../components/agreement/bits7';
 import { StepLine10, AmberBox10, GreenBox10, WaitBox10, MoveBox10, DelayedChip10 } from '../../components/shoot/bits10';
-import { FileTile12, RoundPill12, History12, LinkLine12, Line12 } from '../../components/content/bits12';
+import { FileTile12, RoundPill12, History12, LinkLine12, Line12, FeeCard12 } from '../../components/content/bits12';
 import { ChangesSheet12 } from '../../components/content/sheets12';
 import { ReportSheet14 } from '../../components/sale/sheets14';
 import { C14, day10, rupees } from '../../components/sale/copy14';
@@ -87,7 +87,8 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
   }
   const approve = () => act(() => brandApi.contentApprove(campaignId, setId, ciId, c.round.current), C14.approved);
   const askChanges = (reason) => act(() => brandApi.contentChanges(campaignId, setId, ciId, { round: c.round.current, reason, notes: [] }), C14.changesSent);
-  const confirmLive = () => act(() => brandApi.contentConfirmLive(campaignId, setId, ciId, undefined), C14.confirmedDone);
+  // Item 15: on Hybrid the tap is a payment — the amount the button names travels with it (item 12's G10).
+  const confirmLive = () => act(() => brandApi.contentConfirmLive(campaignId, setId, ciId, c.hybrid && c.money ? c.money.t2.amount : undefined), C14.confirmedDone);
   const report = (kind, note) => act(() => brandApi.contentReport(campaignId, setId, ciId, { kind, note }), C14.reportedDone);
 
   const title = c ? c.creator.name : '';
@@ -131,9 +132,10 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
 
         {/* S21/S22 — reported: nothing moves, her shop posts keep selling. */}
         {c.frozen && c.reported && c.reported.brand ? (
-          <Card7 title={C14.toldInflxBrand(c.reported.brand.at)} testID="reported-card"><Text style={s.para}>{C14.toldInflxBrandBody}</Text></Card7>
+          <Card7 title={C14.toldInflxBrand(c.reported.brand.at)} testID="reported-card"><Text style={s.para}>{c.hybrid && c.money ? C14.lockedStays(c.money.stillLocked) : C14.toldInflxBrandBody}</Text></Card7>
         ) : null}
         {c.delayed && !c.frozen ? <AmberBox10 text={C14.delayed(c.postingDate, c.delayed.label)} testID="delayed-box" /> : null}
+        {c.hybrid && c.reported && c.reported.creator && !c.frozen && stage === 'posted' ? <AmberBox10 text={C14.sheToldInflx(name, c.reported.creator.at)} testID="she-told-inflx" /> : null}
 
         {/* S20 — completed, and the collaboration's sales. */}
         {stage === 'complete' ? (
@@ -213,8 +215,17 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
               </View>
             ))}
             <View style={[s.preview, { backgroundColor: T.state.active.bg }]} testID="confirm-preview">
-              <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{p1 && p1.met ? C14.confirmCompletes : C14.confirmWaits}</Text>
-              <Text style={[s.previewSub, { color: T.state.active.fg }]}>{p1 && p1.met ? C14.confirmCompletesSub(c.autoconfirmAt) : C14.confirmWaitsSub(p1 ? p1.short : 0, c.autoconfirmAt)}</Text>
+              {c.hybrid && c.money ? (
+                <>
+                  <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{C14.confirmReleases(c.money.t2.amount)}</Text>
+                  <Text style={[s.previewSub, { color: T.state.active.fg }]}>{C14.confirmReleasesSub(c.money.fee, c.money.t3.amount, c.money.waitDays)}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{p1 && p1.met ? C14.confirmCompletes : C14.confirmWaits}</Text>
+                  <Text style={[s.previewSub, { color: T.state.active.fg }]}>{p1 && p1.met ? C14.confirmCompletesSub(c.autoconfirmAt) : C14.confirmWaitsSub(p1 ? p1.short : 0, c.autoconfirmAt)}</Text>
+                </>
+              )}
             </View>
           </View>
         ) : null}
@@ -222,10 +233,14 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
         {/* S18 — live, waiting on posts. */}
         {stage === 'live' ? (
           <View style={s.pathCard} testID="waiting-posts">
-            <GreenBox10 text={c.liveConfirmedAuto ? C14.confirmedItself(c.liveConfirmedAt) : C14.youConfirmed(c.liveConfirmedAt)} testID="you-confirmed" />
-            <Text style={s.para}>{C14.completesWhen(p1 ? p1.short : 0)}</Text>
+            <GreenBox10 text={c.liveConfirmedAuto ? C14.confirmedItself(c.liveConfirmedAt)
+              : c.hybrid && c.money ? C14.youConfirmedPaid(c.liveConfirmedAt, c.money.t2.amount, name) : C14.youConfirmed(c.liveConfirmedAt)} testID="you-confirmed" />
+            {p1 && p1.short ? <Text style={s.para}>{C14.completesWhen(p1.short)}</Text> : null}
           </View>
         ) : null}
+
+        {/* Item 15 (S2, S4, S8): Hybrid's fixed amount — what she has had and what is still locked. No campaign fee on Hybrid. */}
+        {c.money && !['old_terms', 'shoot_not_done'].includes(stage) ? <FeeCard12 money={c.money} side="brand" testID="payments" /> : null}
 
         {/* Her links for posts outside the package (reporting; S16's other side). */}
         {outsideRows.length ? (
@@ -249,7 +264,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
           </>
         ) : null}
         {stage === 'posted' && !c.frozen ? (
-          <PrimaryButton label={C14.confirmLive} icon="check" onPress={confirmLive} busy={busy} busyLabel="Confirming" testID="confirm-live" />
+          <PrimaryButton label={c.hybrid && c.money ? C14.confirmPays(c.money.t2.amount) : C14.confirmLive} icon="check" onPress={confirmLive} busy={busy} busyLabel="Confirming" testID="confirm-live" />
         ) : null}
         {reportKinds.length ? (
           <TextButton label={C14.somethingWrong} onPress={() => { if (!busy) { setSheetError(null); setSheet('report'); } }} testID="something-wrong" />

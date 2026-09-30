@@ -37,6 +37,7 @@ const { MSG, PLATFORM_OF_TYPE, TYPE_LABEL, SALE_TYPES } = require('./contentCopy
 
 const PAY_FOR_CONTENT = 'engagement';
 const PAY_FOR_SALE = 'conversion';
+const HYBRID = 'hybrid';
 
 const SELECT = `
   SELECT ci.id AS ci_id, ci.status AS ci_status, ci.influencer_id, ci.delayed_at, ci.delayed_stage, ci.sell_v2,
@@ -143,7 +144,8 @@ async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = f
   if (!gate.signed.at) throw new AppError('NOT_SIGNED', MSG10.NOT_SIGNED, 422, 'status');
   if (!gate.open) throw new AppError('NOT_FUNDED', MSG10.NOT_FUNDED, 422, 'status');
 
-  if (r.goal === PAY_FOR_SALE) return saleGate(ciId, r, gate, conn, { allowShootNotDone, allowOldTerms });
+  // Item 15: Hybrid runs the same two paths as Pay for Sale (rules v1.30 §12.1).
+  if (r.goal === PAY_FOR_SALE || r.goal === HYBRID) return saleGate(ciId, r, gate, conn, { allowShootNotDone, allowOldTerms });
   if (r.goal !== PAY_FOR_CONTENT) throw new AppError('NOT_PAY_FOR_CONTENT', MSG.NOT_PAY_FOR_CONTENT, 404);
 
   const shootDone = r.pe_status === 'completed';
@@ -164,11 +166,11 @@ async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = f
 async function saleGate(ciId, r, gate, conn, { allowShootNotDone, allowOldTerms }) {
   if (!r.sell_v2) {
     if (!allowOldTerms) throw new AppError('OLD_TERMS', MSG.SALE_OLD_TERMS, 422, 'status');
-    return { r, gate, rows: [], shootDone: r.pe_status === 'completed', shootDoneAt: shootDoneAt(r), aim: 'sale', oldTerms: true };
+    return { r, gate, rows: [], shootDone: r.pe_status === 'completed', shootDoneAt: shootDoneAt(r), aim: 'sale', hybrid: r.goal === HYBRID, oldTerms: true };
   }
   const shootDone = r.pe_status === 'completed';
   if (!shootDone && !allowShootNotDone) throw new AppError('SHOOT_NOT_DONE', MSG.SHOOT_NOT_DONE, 422, 'status');
-  return { r, gate, rows: shootDone ? await saleRowsOf(ciId, conn) : [], shootDone, shootDoneAt: shootDoneAt(r), aim: 'sale', oldTerms: false };
+  return { r, gate, rows: shootDone ? await saleRowsOf(ciId, conn) : [], shootDone, shootDoneAt: shootDoneAt(r), aim: 'sale', hybrid: r.goal === HYBRID, oldTerms: false };
 }
 
-module.exports = { assertContentOpen, load, rowsOf, saleRowsOf, shootDoneAt, PAY_FOR_CONTENT, PAY_FOR_SALE, SELECT };
+module.exports = { assertContentOpen, load, rowsOf, saleRowsOf, shootDoneAt, PAY_FOR_CONTENT, PAY_FOR_SALE, HYBRID, SELECT };
