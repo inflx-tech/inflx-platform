@@ -1,7 +1,7 @@
 {
   "feature": "shopper-ordering",
   "spec_version": "1.0.0",
-  "status": "built",
+  "status": "deployed",
   "approved": true,
   "approved_by": "founder (chat, 30 Sep 2026: \"start implement\")",
   "approved_at": "2026-09-30",
@@ -58,5 +58,28 @@
     "O16",
     "O17"
   ],
-  "rules_version": "Docs/OFFER_TERMS_POSTS_RULES.md section 6, v1.12"
+  "rules_version": "Docs/OFFER_TERMS_POSTS_RULES.md section 6, v1.12",
+  "deployed_to_production": {
+    "by": "founder go (chat, 30 Sep 2026: \"Yes go with three steps\")",
+    "at": "2026-09-30",
+    "migration": {
+      "file": "198_shopper_ordering.sql",
+      "applied": "2026-09-30 via scripts/run-198.js --apply; 17/17 checks OK; no money moved"
+    },
+    "commit": "ef62da62",
+    "render": "proved by route existence 07:39 UTC: GET /v1/follower/posts/<uuid>/deal 401 -> 404 \"This post is no longer in the shop\"",
+    "vercel": "inflx.in/login Age: 0 after push",
+    "ota": {
+      "follower": {
+        "version": 232,
+        "runtime": "3",
+        "published_at": "2026-09-30T07:42:46.226Z"
+      }
+    },
+    "pending": [
+      "founder phone walk C39 (needs an approved creator post live)",
+      "Razorpay dashboard: enable payment.captured webhook event",
+      "Maestro not run (release.released stays false until the walk)"
+    ]
+  }
 }
