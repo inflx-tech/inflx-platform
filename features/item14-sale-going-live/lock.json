@@ -36,5 +36,18 @@
     "mobile": "62 suites / 800 tests green (saleLiveScreens 13/13)",
     "migration": "199 rehearsed on a 198-level DB: 15/15 checks, idempotent, no money moved",
     "rules": "master rules v1.30 written (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.30.docx)"
+  },
+  "deployed_to_production": {
+    "at": "2026-09-30",
+    "by": "founder go (chat: \"yes pls go three deployed steps\")",
+    "migration": "199 applied via scripts/run-199.js --apply after a clean --dry (Postgres 17.6): 15/15 checks; 7 signed Pay for Sale collaborations, 0 on the new terms, so none changed state; no money moved (escrow 34,500 / released 8,625 / contracts locked 36,260 / creator wallets 8,625 identical)",
+    "commit": "b5b87ebd (pushed ef62da62..b5b87ebd, carrying 9e63ea7a shopper-ordering deploy record)",
+    "render": "proved by route existence 18:35 IST: POST /v1/influencers/me/invitations/:id/content/social-rows 404 → 401",
+    "ota": {
+      "influencer": 225,
+      "brand": 235,
+      "native_runtime": "3"
+    },
+    "walk": "waits on a production Pay for Sale collaboration on the new terms with its shoot done"
   }
 }

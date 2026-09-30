@@ -22,8 +22,8 @@ The 21 items (plus the 3b insert). Each runs: rules → mockups → lock → gap
 | 11 | Shoot plan: Remote (§11.2) | Built | `features/item11-remote` (mig 191) | 22 Sep |
 | 12 | Pay for Content: content to payment (§12.2) | Built | `features/item12-content` (mig 192) | 25 Sep |
 | 13 | Shoppable post creation (§13, 16A) | Built as Levels 1–4 of the offer → terms → posts programme | `features/offer-builder-v2` (193), `creator-terms-v2` (194), `shoppable-posts-v2` (195), `post-links-codes` (196) | 28–29 Sep |
-| **14** | **Pay for Sale: going live, completion and selling (§12.1, 19)** | **Now — rules, mockups, lock** | `features/item14-sale-going-live` (to create) | — |
-| 15 | Hybrid (§21, 23) | Next after 14 | — | — |
+| 14 | Pay for Sale: going live, completion and selling (§12.1, 19; rules v1.30) | Built | `features/item14-sale-going-live` (mig 199, b5b87ebd, OTA influencer 225 / brand 235) | 30 Sep |
+| **15** | **Hybrid (§21, 23)** | **Now — rules, mockups, lock** | — | — |
 | 16 | Shopper app (§14–16A) | Built as Levels 6–7 | `features/follower-app-v2` (197), `features/shopper-ordering` (198) | 29–30 Sep |
 | 17 | Wallet, complete (§17, 18, 21) | Later | — | — |
 | 18 | Disputes (§22, 26) | Later | — | — |
