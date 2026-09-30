@@ -90,7 +90,7 @@ export default function ProfileScreen({ navigation }) {
         <Row title={CS.followingRow} sub={me ? me.rows.following : `${(local && local.follows.length) || 0} creators`} testID="row-following" />
         <Row title={CS.myCityRow} sub={cityName} onPress={() => navigation.navigate('Welcome', { fromProfile: true })} testID="row-city" />
         <Row title={CS.shopForRow} sub={shopFor} onPress={() => navigation.navigate('Welcome', { fromProfile: true })} testID="row-shop-for" />
-        <Row title={CS.videoSound} sub={CS.settingsSub} right={<Switch value={sound} onValueChange={toggleSound} testID="video-sound" />} />
+        <Row title={CS.videoSound} sub={CS.videoSoundSub} right={<Switch value={sound} onValueChange={toggleSound} testID="video-sound" />} />
         <Row title={CS.policies} sub={CS.policiesSub} onPress={() => navigation.navigate('LegalList', { audience: 'shopper' })} testID="row-policies" />
         <Row title={CS.returnsAddresses} sub={CS.returnsAddressesSub} dim />
         {!guest ? (

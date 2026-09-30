@@ -16,6 +16,8 @@ import { followerApi } from '../../services/api';
 import { track } from '../../services/events';
 import { CS, inr, initialsOf, fmtCount } from './copyShop';
 import { shopStore, isSignedIn, toggleSavePostLocal, toggleSaveProductLocal } from './shopStore';
+import ShopVideo from './ShopVideo';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export const C = { ...T, ink: '#1A1A17', dark: '#111111' };
 const W = Dimensions.get('window').width;
@@ -27,14 +29,14 @@ export function TopBar({ title, onBack, onSearch, dark, right }) {
     <View style={[s.top, dark && { backgroundColor: C.dark }]}>
       {onBack ? (
         <TouchableOpacity onPress={onBack} style={[s.ic, dark && s.icDark]} accessibilityLabel="Back" testID="back">
-          <Text style={[s.icText, dark && { color: '#fff' }]}>‹</Text>
+          <Icon name="chevron-left" size={22} color={dark ? '#fff' : C.ink} />
         </TouchableOpacity>
       ) : null}
       <Text style={[title ? s.title : s.wordmark, dark && { color: '#fff' }]} numberOfLines={1}>{title || CS.wordmark}</Text>
       {right}
       {onSearch ? (
         <TouchableOpacity onPress={onSearch} style={[s.ic, dark && s.icDark]} accessibilityLabel="Search or enter a post code" testID="open-search">
-          <Text style={[s.icText, dark && { color: '#fff' }]}>⌕</Text>
+          <Icon name="magnify" size={19} color={dark ? '#fff' : C.ink} />
         </TouchableOpacity>
       ) : null}
     </View>
@@ -81,29 +83,17 @@ export function CircleRow({ label, items, square, onPress, testIDPrefix }) {
 /* ───────────────────────────────────────────── media */
 
 /**
- * A video until the Play Store build brings the player (4.7): the post's product photo, dimmed,
- * with a play mark and "Update INFLX to play videos". The player drops in here, and only here.
+ * A post's video (4.7): the player on phones with the new app build, otherwise the product photo
+ * with "Update INFLX to play videos" — see ShopVideo.
  */
-export function VideoView({ post, height, compact }) {
-  const poster = (post.products && post.products[0] && post.products[0].image_url) || null;
-  return (
-    <View style={[{ height, backgroundColor: '#3B3A35' }, s.center]} testID="video-placeholder">
-      {poster ? <Image source={{ uri: poster }} style={[StyleSheet.absoluteFill, { opacity: 0.45 }]} resizeMode="cover" /> : null}
-      <View style={s.playMark}><Text style={{ color: '#fff', fontSize: 16 }}>▶</Text></View>
-      {!compact ? (
-        <View style={{ alignItems: 'center', marginTop: 10, paddingHorizontal: 24 }}>
-          <Text style={s.vidTitle}>{CS.videoNeedsUpdate}</Text>
-          <Text style={s.vidSub}>{CS.videoNeedsUpdateSub}</Text>
-        </View>
-      ) : null}
-    </View>
-  );
+export function VideoView(props) {
+  return <ShopVideo {...props} />;
 }
 
-function Slides({ post, width, height }) {
+function Slides({ post, width, height, active, surface }) {
   const [i, setI] = useState(0);
   const media = post.media || [];
-  if (post.media_kind === 'video') return <VideoView post={post} height={height} />;
+  if (post.media_kind === 'video') return <VideoView post={post} height={height} active={active} surface={surface} muted />;
   if (media.length <= 1) {
     return media[0] ? <Image source={{ uri: media[0].url }} style={{ width, height, backgroundColor: '#E9E8E2' }} resizeMode="cover" />
       : <View style={{ width, height, backgroundColor: '#E9E8E2' }} />;
@@ -174,7 +164,7 @@ export function usePostActions(post, { surface, onNeedSignIn }) {
 
 /* ───────────────────────────────────────────── the post card (F2, F4) */
 
-export function PostCard({ post, surface, position, onOpen, onShop, onComments, onCreator, onBrand, onNeedSignIn, width = W - 28 }) {
+export function PostCard({ post, surface, position, onOpen, onShop, onComments, onCreator, onBrand, onNeedSignIn, active = false, width = W - 28 }) {
   const a = usePostActions(post, { surface, onNeedSignIn });
   const height = Math.round(width * 1.25);
   const n = post.products ? post.products.length : 0;
@@ -191,7 +181,7 @@ export function PostCard({ post, surface, position, onOpen, onShop, onComments, 
         </View>
       </View>
       <Pressable onPress={() => { track('open', post.id, surface, { position }); onOpen(post); }} testID={`post-open-${post.id}`}>
-        <Slides post={post} width={width} height={height} />
+        <Slides post={post} width={width} height={height} active={active} surface={surface} />
         {post.offer && post.offer.badge ? <View style={s.badge}><Text style={s.badgeText}>{post.offer.badge}</Text></View> : null}
         <TouchableOpacity style={s.shopBtn} onPress={() => { track('tap_shop', post.id, surface, { position }); onShop(post); }} testID={`post-shop-${post.id}`}>
           <Text style={s.shopText}>{post.media_kind === 'video' ? CS.shopThisVideo : CS.shopThisPost} · {CS.items(n)}</Text>
@@ -200,17 +190,17 @@ export function PostCard({ post, surface, position, onOpen, onShop, onComments, 
       </Pressable>
       <View style={s.acts}>
         <TouchableOpacity onPress={a.like} testID={`post-like-${post.id}`} accessibilityState={{ selected: !!a.liked }}>
-          <Text style={s.act}>{a.liked ? '♥' : '♡'} {fmtCount(a.likes)}</Text>
+          <View style={s.actRow}><Icon name={a.liked ? 'heart' : 'heart-outline'} size={19} color={a.liked ? '#C42B2B' : C.ink} /><Text style={s.act}>{fmtCount(a.likes)}</Text></View>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => onComments(post)} testID={`post-comments-${post.id}`}>
-          <Text style={s.act}>💬 {fmtCount(post.counts ? post.counts.comments : 0)}</Text>
+          <View style={s.actRow}><Icon name="comment-outline" size={18} color={C.ink} /><Text style={s.act}>{fmtCount(post.counts ? post.counts.comments : 0)}</Text></View>
         </TouchableOpacity>
         <TouchableOpacity onPress={a.share} testID={`post-share-${post.id}`}>
-          <Text style={s.act}>↗ {fmtCount(post.counts ? post.counts.shares : 0)}</Text>
+          <View style={s.actRow}><Icon name="share-outline" size={20} color={C.ink} /><Text style={s.act}>{fmtCount(post.counts ? post.counts.shares : 0)}</Text></View>
         </TouchableOpacity>
         <View style={{ flex: 1 }} />
         <TouchableOpacity onPress={a.save} testID={`post-save-${post.id}`} accessibilityState={{ selected: !!a.saved }} accessibilityLabel={a.saved ? 'Saved' : 'Save'}>
-          <Text style={[s.act, a.saved && { color: C.ink }]}>{a.saved ? '🔖 Saved' : '🔖'}</Text>
+          <View style={s.actRow}><Icon name={a.saved ? 'bookmark' : 'bookmark-outline'} size={20} color={C.ink} />{a.saved ? <Text style={[s.act, { color: C.ink }]}>Saved</Text> : null}</View>
         </TouchableOpacity>
       </View>
       {post.caption ? (
@@ -275,12 +265,12 @@ export function ShopSheet({ post, visible, onClose, surface }) {
                   {!p.in_stock ? <Text style={s.oos}>{CS.outOfStock}</Text> : null}
                 </View>
                 <TouchableOpacity onPress={() => heart(p)} style={s.heartBtn} testID={`shop-heart-${p.id}`} accessibilityState={{ selected: !!hearts[p.id] }} accessibilityLabel={hearts[p.id] ? 'Saved with this post' : 'Save with this post'}>
-                  <Text style={[s.heart, hearts[p.id] && { color: '#C42B2B' }]}>{hearts[p.id] ? '♥' : '♡'}</Text>
+                  <Icon name={hearts[p.id] ? 'heart' : 'heart-outline'} size={22} color={hearts[p.id] ? '#C42B2B' : C.ink} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
           </ScrollView>
-          {post.gift_line ? <Text style={s.giftLine}>🎁 {post.gift_line}</Text> : null}
+          {post.gift_line ? <Text style={s.giftLine}>{post.gift_line}</Text> : null}
           {post.offer && post.offer.how ? <Text style={s.hint}>{post.offer.how}</Text> : null}
           <Text style={s.hint}>{CS.noCodeNeeded(first)} {CS.heartKeepsOffer}</Text>
           <View style={s.soon}><Text style={s.soonText}>{CS.checkoutSoon}</Text></View>
@@ -323,7 +313,7 @@ export function Tile({ post, onPress, testID }) {
   return (
     <TouchableOpacity style={s.tile} onPress={onPress} testID={testID}>
       {img ? <Image source={{ uri: img }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : null}
-      {post.media_kind === 'video' ? <View style={s.tileVid}><Text style={s.tileVidText}>▶</Text></View> : null}
+      {post.media_kind === 'video' ? <View style={s.tileVid}><Icon name="play" size={12} color="#fff" /></View> : null}
       {post.offer && post.offer.badge ? <View style={s.tileBadge}><Text style={s.tileBadgeText} numberOfLines={1}>{post.offer.badge}</Text></View>
         : post.facets && post.facets.price_band ? <View style={s.tileBadge}><Text style={s.tileBadgeText} numberOfLines={1}>{post.facets.price_band}</Text></View> : null}
     </TouchableOpacity>
@@ -347,15 +337,15 @@ export function TileGrid({ posts, onOpen, testIDPrefix = 'tile' }) {
 
 /* ───────────────────────────────────────────── small states */
 
-export function Loading() {
-  return <View style={[s.center, { padding: 40 }]}><ActivityIndicator color={C.ink} /></View>;
+export function Loading({ dark }) {
+  return <View style={[s.center, { padding: 40 }]}><ActivityIndicator color={dark ? '#fff' : C.ink} /></View>;
 }
 
-export function Empty({ title, sub, action, onAction, testID }) {
+export function Empty({ title, sub, action, onAction, testID, dark }) {
   return (
-    <View style={s.empty} testID={testID}>
-      <Text style={s.emptyTitle}>{title}</Text>
-      {sub ? <Text style={[s.mut, { textAlign: 'center' }]}>{sub}</Text> : null}
+    <View style={[s.empty, dark && { borderColor: '#333' }]} testID={testID}>
+      <Text style={[s.emptyTitle, dark && { color: '#fff' }]}>{title}</Text>
+      {sub ? <Text style={[s.mut, { textAlign: 'center' }, dark && { color: '#aaa' }]}>{sub}</Text> : null}
       {action ? <PrimaryBtn label={action} onPress={onAction} secondary /> : null}
     </View>
   );
@@ -391,6 +381,7 @@ export const s = StyleSheet.create({
   shopBtn: { position: 'absolute', bottom: 8, left: 8, right: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', justifyContent: 'space-between' },
   shopText: { fontFamily: fonts.sansBold, fontSize: 12, color: C.ink },
   acts: { flexDirection: 'row', gap: 14, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 2, alignItems: 'center' },
+  actRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   act: { fontFamily: fonts.sansBold, fontSize: 12, color: C.ink2 },
   caption: { paddingHorizontal: 10, paddingBottom: 10, fontFamily: fonts.sansRegular, fontSize: 12, color: C.ink2 },
   dots: { position: 'absolute', bottom: 48, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 4 },

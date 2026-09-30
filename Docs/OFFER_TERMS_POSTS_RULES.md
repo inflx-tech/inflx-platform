@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.7 · 29 September 2026 · living document**
+**Version 1.8 · 30 September 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -385,8 +385,15 @@ sends it. Tapping a draft carries on where she stopped. A draft can be deleted. 
 - **Every pause to load is recorded** (5.14). A **video streaming service (Cloudflare Stream)**, which
   lowers quality on a weak signal instead of pausing, is added when those pauses become frequent
   (particularly in smaller cities). Roughly $5 per 1,000 minutes stored + $1 per 1,000 minutes watched.
-- Playing videos, shrinking them on upload and opening links in the app need the **next Play Store
-  build**. Until a phone has it, a video shows its product's photo with "Update INFLX to play videos".
+- Playing videos, shrinking them on upload and opening collection links in the app need the **new app
+  build** (APK of 30 Sep 2026, v1.8). Until a phone has it, a video shows its product's photo with
+  "Update INFLX to play videos"; everything else works on the older build.
+- **How the player behaves (v1.8):** a video plays only while it is on screen and the screen is in front;
+  muted in feeds, with her own sound setting in Play (a sound button there); the next videos load while
+  she watches; the phone keeps up to 200 MB of recent videos. An approved post's video link stays the same
+  for 6 hours and may be cached; drafts and posts in review keep a 5-minute private link.
+- **Shrinking (v1.8):** the creator app makes a video about 720p at 2 Mbps before upload. If the phone
+  can't, or the result isn't smaller, the original is uploaded — a post is never lost.
 - Product tap-points on images and the three tag styles (soft editorial, minimal, hidden) are kept; they can be removed later if unused.
 - **No copyrighted music.** A warning shows when uploading. Admin checks it during approval.
 
@@ -507,8 +514,11 @@ channel the visit came from. (Replaces the August list of seven; X and LinkedIn 
 - At checkout the offer applies automatically. No code is needed, and the creator gets her agreed commission.
 - **A removed post, or a hidden or deleted collection:** the link shows "This post is no longer available"
   (or the collection equivalent) plus her store. No old link is a dead end.
-- Opening the app from a link, and opening the right post after install, need the **next Play Store
-  build** (not an over-the-air update). The web page and search are built with the shopper app.
+- **Opening the app from a link (v1.8):** `inflx.in/p/…`, `/s/…` and `/c/…` open in the shopper app only
+  (the brand and creator apps no longer offer to open them). Until INFLX publishes its app-link file with the
+  production signing key, Android asks "open with INFLX or the browser" the first time.
+- **Opening the right post after installing from a link** needs the app on the **Play Store** (Google passes
+  the link to a new install). The apps are shared as APK files today, so this waits for the Play Store listing.
 
 **Tracking (reporting only)**
 - **Visit:** every tap on one of her links counts as a visit for that link's channel. A typed code counts as a
@@ -766,3 +776,4 @@ only totals are shown.
 | 2026-09-29 | 1.5 | Level 3 board locked with its five questions as recommended: no edits once approved, she can take a post down (4.8); what a sent-back post may change (4.8); limits 10 slides, 30 products, 90 s a clip (4.8); photo tags optional (4.8); collection editing and hiding (4.11). |
 | 2026-09-29 | 1.6 | Level 4 board locked and built: the code's characters, a bare or unknown ending counts as Other, link previews aren't visits (4.14). Until the shopper app, a link opens a plain INFLX page (post, store or collection) with no shopping. |
 | 2026-09-29 | 1.7 | Shopper app decisions: board F1–F13 locked; location is now the phone's current location, used and never stored, with the city as fallback (5.3, 5.4); no Add or bag until checkout (5.1); Discover shows "Coming soon" (5.13); video from INFLX storage at launch with four speed measures, Cloudflare Stream when load-pauses grow (4.7); engagement built in two halves (4.15); the feed written in full: Stage A on, Stage B built but off behind an admin switch with a readiness panel and a preview (5.12); what the app records (5.14). |
+| 2026-09-30 | 1.8 | The new app build: the video player (plays only on screen; muted in feeds, sound setting in Play; preloads; 200 MB phone cache; stable, cacheable links for approved posts), video shrinking before upload with a safe fallback, links open in the shopper app only (incl. /c/), and what waits for the Play Store listing (app-link verification, the right post after install) (4.7, 4.14). |

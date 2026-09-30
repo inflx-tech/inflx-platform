@@ -86,7 +86,8 @@ describe('F2 Home', () => {
     getByTestId('circle-creator-c-priya'); getByTestId('circle-brand-b-ut');
     getByText('20% OFF'); getByText('Shop this post · 2 items');
     getByText('ANY 2 FOR ₹2,999'); getByText('Shop this video · 3 items');
-    getByText('♡ 418'); getByText('💬 36'); getByText('↗ 54');
+    // counts sit beside plain icons (heart, comment, share, bookmark) — no emoji (mono rule)
+    getByText('418'); getByText('36'); getByText('54');
     getByText('Sri Lakshmi Silks · Vijayawada');
     expect(getAllByText(/Festive sarees in Mangalagiri cotton/).length).toBe(1);
     // the phone sends what it has shown and her choices; nothing stored about where she is

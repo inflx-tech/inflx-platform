@@ -11,20 +11,20 @@ import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
 import { TopBar, PostCard, ShopSheet, SignInSheet, Loading, Empty, C } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
-import { useSeen } from '../../components/shop/useSeen';
+import { useAutoplay } from '../../components/shop/useAutoplay';
 import { track } from '../../services/events';
 import { fonts } from '../../theme/tokens';
 
 export default function PostScreen({ navigation, route }) {
   const { postId, code, ch } = route.params || {};
   const nav = useShopNav(navigation);
-  const seenProps = useSeen('post');
   const [post, setPost] = useState(route.params && route.params.post ? route.params.post : null);
   const [rest, setRest] = useState([]);
   const [status, setStatus] = useState(post ? 'ready' : 'loading');
   const [gone, setGone] = useState(null);
   const [more, setMore] = useState(false);
   const served = useRef([]);
+  const { seenProps, playingId } = useAutoplay('post', rest);
 
   const loadMore = useCallback(async (id) => {
     const res = await followerApi.more(id, served.current);
@@ -91,7 +91,7 @@ export default function PostScreen({ navigation, route }) {
         renderItem={({ item, index }) => (
           <View style={{ marginBottom: 12 }}>
             {label(item, index) ? <Text style={st.section}>{label(item, index)}</Text> : null}
-            <PostCard post={item} surface="post" position={index + 1} onOpen={nav.openPost} onShop={nav.openShop} onComments={nav.openComments}
+            <PostCard post={item} surface="post" position={index + 1} active={playingId === item.id} onOpen={nav.openPost} onShop={nav.openShop} onComments={nav.openComments}
               onCreator={nav.openCreator} onBrand={nav.openBrand} onNeedSignIn={nav.needSignIn} />
           </View>
         )}

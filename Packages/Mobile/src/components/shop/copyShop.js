@@ -29,6 +29,8 @@ export const CS = {
   caughtUpSub: 'Here are posts you saw before, the oldest first.',
   emptyFeed: 'No posts yet',
   emptyFeedSub: 'When creators you like go live, their posts show up here.',
+  noVideos: 'No videos yet',
+  noVideosSub: 'Creators’ videos play here, one after another.',
   retry: 'Try again',
   loadError: "Couldn't load. Check your connection.",
   // F3 Shop this post
@@ -77,8 +79,8 @@ export const CS = {
   savedPosts: (n) => `Posts · ${n}`,
   savedProducts: (n) => `Products · ${n}`,
   savedGuest: 'Not signed in? Your saves stay on this phone and move to your account when you sign in.',
-  noSavedPosts: 'Tap 🔖 on a post to keep it here.',
-  noSavedProducts: 'Tap ♡ on a product in Shop this post to keep it here, with its offer.',
+  noSavedPosts: 'Tap the bookmark on a post to keep it here.',
+  noSavedProducts: 'Tap the heart on a product in Shop this post to keep it here, with its offer.',
   otherPosts: (line) => `${line} →`,
   // F12 Search
   searchPlaceholder: 'Search or enter a post code',
@@ -107,6 +109,7 @@ export const CS = {
   edit: 'Edit',
   notSet: 'Not set',
   videoSound: 'Start videos with sound',
+  videoSoundSub: 'In Play. Feeds always start muted.',
   // Discover
   discoverSoon: 'Discover is coming soon',
   discoverSoonSub: 'INFLX is designing it. Until then, Home and Play show everything live.',

@@ -8,6 +8,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { prepareVideo } from '../../utils/videoPrep';
 import { influencerApi, uploadContentFile } from '../../services/api';
 import { Skeleton, LoadError } from '../../components/settings/feedback';
 import { Chip } from '../../components/settings/primitives';
@@ -28,10 +29,12 @@ export async function pickAndUpload(postId, kind, room, onStep) {
     const a = r.assets[i];
     if (kind === 'video' && Number(a.duration) > MAX_VIDEO_S) throw new Error(CP.tooLong);
     onStep && onStep(i + 1, r.assets.length);
-    const mime = a.type || (kind === 'video' ? 'video/mp4' : 'image/jpeg');
-    const u = await influencerApi.postUploadUrl(postId, { content_type: mime, size_bytes: a.fileSize, filename: a.fileName });
+    // rules v1.7 §4.7: a video is made smaller on her phone first (new app build; else as picked).
+    const file = kind === 'video' ? await prepareVideo(a) : { uri: a.uri, size: a.fileSize, mime: a.type || 'image/jpeg' };
+    const mime = file.mime || (kind === 'video' ? 'video/mp4' : 'image/jpeg');
+    const u = await influencerApi.postUploadUrl(postId, { content_type: mime, size_bytes: file.size, filename: a.fileName });
     if (!u.success) throw new Error(u.error?.message || CP.uploadFailed);
-    await uploadContentFile(u.data, a.uri);
+    await uploadContentFile(u.data, file.uri);
     out.push({ r2_key: u.data.key, mime, width: a.width || null, height: a.height || null, duration_s: kind === 'video' ? Number(a.duration) || null : null, local: a.uri });
   }
   return out;

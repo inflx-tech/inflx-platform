@@ -1,0 +1,28 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- follower-app-v2 · rules v1.7 §4.14: INFLX links open in the shopper app only.
+           inflx.in/p/<code>[/<ch>]   a post
+           inflx.in/s/<handle>[/<ch>] her store
+           inflx.in/c/<code>          a collection
+         The old /b/ (brand) and /o/ (offer) links were retired with the old shopper app.
+         Opening without the "open with" chooser (autoVerify) also needs inflx.in to publish
+         /.well-known/assetlinks.json for the app's signing key — added with the production key.
+         JS handler: src/utils/deepLink.js. -->
+    <application>
+        <activity android:name=".MainActivity">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="inflx.in" android:pathPrefix="/p/" />
+                <data android:scheme="https" android:host="inflx.in" android:pathPrefix="/s/" />
+                <data android:scheme="https" android:host="inflx.in" android:pathPrefix="/c/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="inflx" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

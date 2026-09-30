@@ -12,9 +12,11 @@ import { track } from '../../services/events';
 
 export const SEEN_CONFIG = { itemVisiblePercentThreshold: 50, minimumViewTime: 1000 };
 
-export function useSeen(surface) {
+export function useSeen(surface, onVisibleChange) {
   const since = useRef(new Map());     // post id → when it became visible
   const seen = useRef(new Set());
+  const report = useRef(onVisibleChange);
+  report.current = onVisibleChange;
 
   const onViewableItemsChanged = useRef(({ changed }) => {
     const now = Date.now();
@@ -30,6 +32,7 @@ export function useSeen(surface) {
         if (ms >= 1000) track('dwell', id, surface, { dwell_ms: ms, position: c.index });
       }
     }
+    if (report.current) report.current(new Set(since.current.keys()));
   }).current;
 
   useEffect(() => () => {

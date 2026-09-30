@@ -291,6 +291,26 @@ describe('a post as the shopper sees it (checks 12–14)', () => {
     expect(b.offer.how).toMatch(/pick any 2/);
   });
 
+  test('an approved post\'s media link is the same every time and cacheable; a draft\'s stays private (4.7)', async () => {
+    const d = (await get(`/follower/posts/${dp}`)).body.data;
+    const path = d.media[0].url.replace(/^https?:\/\/[^/]+/, '');   // the host is empty in tests
+    const a = await request(app).get(path);
+    const b = await request(app).get(path);
+    expect(a.status).toBe(302);
+    expect(a.headers.location).toBe(b.headers.location);
+    expect(a.headers['cache-control']).toBe('public, max-age=10800');
+    const { body } = await api.post(P, D.cr.token, { campaign_influencer_id: D.ciId });
+    const draft = body.data.post.id;
+    await patch(D, draft, { post_kind: 'offer' });
+    await patch(D, draft, { offer_id: D.deal });
+    await patch(D, draft, { product_ids: D.jeans.slice(0, 1), media_kind: 'image', media_layout: 'single' });
+    await patch(D, draft, { media: [await upload(D, draft)] });
+    const { rows: [m] } = await query(`SELECT id FROM post_media WHERE post_id = $1`, [draft]);
+    const c = await request(app).get(`/v1/media/post/${m.id}`);
+    expect(c.status).toBe(302);
+    expect(c.headers['cache-control']).toBe('private, no-store');
+  });
+
   test('a photo opened: that creator first, then similar posts, then the rest — it never dead-ends', async () => {
     const x = await post(W, { caption: 'Second from Sneha' });
     const m = (await get(`/follower/posts/${bp}/more`)).body.data;

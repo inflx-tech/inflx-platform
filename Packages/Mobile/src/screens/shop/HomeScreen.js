@@ -14,14 +14,14 @@ import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
 import { TopBar, CircleRow, PostCard, ShopSheet, SignInSheet, Loading, Empty, C } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
-import { useSeen } from '../../components/shop/useSeen';
+import { useAutoplay } from '../../components/shop/useAutoplay';
 import { shopStore, whoParams, ensureDeviceHeader, isSignedIn } from '../../components/shop/shopStore';
 import { fonts } from '../../theme/tokens';
 
 export default function HomeScreen({ navigation }) {
   const nav = useShopNav(navigation);
-  const seenProps = useSeen('home');
   const [posts, setPosts] = useState([]);
+  const { seenProps, playingId } = useAutoplay('home', posts);
   const [circles, setCircles] = useState(null);
   const [status, setStatus] = useState('loading');
   const [more, setMore] = useState(true);
@@ -86,7 +86,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={st.caughtSub}>{CS.caughtUpSub}</Text>
         </View>
       ) : null}
-      <PostCard post={item} surface="home" position={index}
+      <PostCard post={item} surface="home" position={index} active={playingId === item.id}
         onOpen={nav.openPost} onShop={nav.openShop} onComments={nav.openComments}
         onCreator={nav.openCreator} onBrand={nav.openBrand} onNeedSignIn={nav.needSignIn} />
     </View>

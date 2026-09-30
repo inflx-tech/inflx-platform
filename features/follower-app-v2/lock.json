@@ -43,5 +43,11 @@
     "vercel": "admin.inflx.in /admin/comments and /admin/feed 404→200, /admin/sections and /admin/concepts 200→404 (~45 s)",
     "ota": "follower 230 (manifest serves 230; influencer 222 and brand 233 unchanged)",
     "pending": "phone walk once a post is approved in production; Play Store build (video player, compression, /c/ link filter) needs its own go"
+  },
+  "app_build_2026_09_30": {
+    "what": "new APKs (follower, influencer, brand; runtime 3 kept): react-native-video 6.4.5 (ShopVideo: plays only on screen, muted in feeds, sound setting in Play, preload via neighbours, 200 MB cache, watch/complete/replay/pause/sound/buffer recorded), react-native-compressor 1.8.25 (creator videos ~720p/2 Mbps before upload, original on failure), link filters moved to the follower flavor only (+ /c/, - /b/ /o/); server: approved post media get a 6-hour stable signed link + public caching; plain icons replace emoji; Play dark states; location wait capped at 3 s",
+    "checks": "phone 774/774; backend shopper-app-v2 34/34 + Level 3/4 54/54; emulator (Pixel 6, prod server): follower launches, Welcome → Home → Play/Saved/Profile, no crash; inflx://p link opens the Post screen; influencer and brand launch; the player (RCTVideo) and compressor native names confirmed; a real video not yet played (no video post in production)",
+    "apks": "APKs/INFLX-Follower.apk, INFLX-Influencer.apk, INFLX-Brand.apk (debug-signed like before; install over the old ones)",
+    "waits_for_play_store": "app-link verification (assetlinks.json with the production key), the right post after install (Play install referrer), Play Store listing"
   }
 }

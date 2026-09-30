@@ -24,6 +24,7 @@
     "@react-navigation/native-stack": "^6.9.26",
     "react": "18.2.0",
     "react-native": "0.73.6",
+    "react-native-compressor": "1.8.25",
     "react-native-image-picker": "^7.1.2",
     "react-native-maps": "1.14.0",
     "react-native-onesignal": "^5.2.17",
@@ -32,6 +33,7 @@
     "react-native-screens": "^3.31.1",
     "react-native-svg": "^14.1.0",
     "react-native-vector-icons": "^10.0.3",
+    "react-native-video": "6.4.5",
     "react-native-webview": "^13.8.7"
   },
   "devDependencies": {

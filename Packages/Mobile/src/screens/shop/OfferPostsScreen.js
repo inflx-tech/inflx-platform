@@ -9,13 +9,13 @@ import { followerApi } from '../../services/api';
 import { CS } from '../../components/shop/copyShop';
 import { TopBar, PostCard, ShopSheet, SignInSheet, Loading, Empty } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
-import { useSeen } from '../../components/shop/useSeen';
+import { useAutoplay } from '../../components/shop/useAutoplay';
 
 export default function OfferPostsScreen({ navigation, route }) {
   const { brandId, offerId, title } = route.params || {};
   const nav = useShopNav(navigation);
-  const seenProps = useSeen('offers');
   const [posts, setPosts] = useState(null);
+  const { seenProps, playingId } = useAutoplay('offers', posts);
 
   useEffect(() => {
     (async () => {
@@ -32,7 +32,7 @@ export default function OfferPostsScreen({ navigation, route }) {
           data={posts}
           keyExtractor={(p) => p.id}
           renderItem={({ item, index }) => (
-            <PostCard post={item} surface="offers" position={index} onOpen={nav.openPost} onShop={nav.openShop} onComments={nav.openComments}
+            <PostCard post={item} surface="offers" position={index} active={playingId === item.id} onOpen={nav.openPost} onShop={nav.openShop} onComments={nav.openComments}
               onCreator={nav.openCreator} onBrand={nav.openBrand} onNeedSignIn={nav.needSignIn} />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}

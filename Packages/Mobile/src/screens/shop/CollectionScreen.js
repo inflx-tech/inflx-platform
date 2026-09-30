@@ -14,6 +14,7 @@ import { TopBar, TileGrid, Loading, Empty, C, s as bs } from '../../components/s
 import { useShopNav } from '../../components/shop/useShopNav';
 import { shopStore, isSignedIn, toggleSaveProductLocal } from '../../components/shop/shopStore';
 import { fonts } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function CollectionScreen({ navigation, route }) {
   const { id } = route.params || {};
@@ -75,7 +76,7 @@ export default function CollectionScreen({ navigation, route }) {
                   <Text style={bs.hint}>{p.brand ? p.brand.name : ''}</Text>
                 </View>
                 <TouchableOpacity onPress={() => heart(p)} style={bs.heartBtn} testID={`collection-heart-${p.id}`} accessibilityState={{ selected: !!hearts[p.collection_item_id] }}>
-                  <Text style={[bs.heart, hearts[p.collection_item_id] && { color: '#C42B2B' }]}>{hearts[p.collection_item_id] ? '♥' : '♡'}</Text>
+                  <Icon name={hearts[p.collection_item_id] ? 'heart' : 'heart-outline'} size={22} color={hearts[p.collection_item_id] ? '#C42B2B' : C.ink} />
                 </TouchableOpacity>
               </View>
             ))}

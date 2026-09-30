@@ -154,6 +154,30 @@ async function viewUrl(key, mime) {
   return { url: await getSignedUrl(r2(), cmd, { expiresIn: VIEW_EXPIRES_S }), expiresAt: new Date(exp * 1000).toISOString() };
 }
 
+/**
+ * follower-app-v2 (rules v1.7 §4.7): the view link of a post that is in the shop, made CACHEABLE.
+ * Every request in the same 6-hour window gets the very same signed link (signed as at the start of
+ * the window, valid 12 hours), and the file is served "public, max-age=6h", so a phone or the network
+ * reuses what it already downloaded instead of fetching a new link and file every time.
+ * Only for approved posts' media; everything else keeps the 5-minute private link above.
+ */
+const SHARED_WINDOW_S = 6 * 3600;
+async function sharedViewUrl(key, mime) {
+  const start = Math.floor(Date.now() / 1000 / SHARED_WINDOW_S) * SHARED_WINDOW_S;
+  const expiresIn = SHARED_WINDOW_S * 2;
+  if (env.R2_MOCK) return { url: mockUrl('GET', key, { exp: start + expiresIn }), expiresAt: new Date((start + expiresIn) * 1000).toISOString(), maxAge: SHARED_WINDOW_S };
+  const { GetObjectCommand } = require('@aws-sdk/client-s3');
+  const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+  const cmd = new GetObjectCommand({
+    Bucket: env.R2_BUCKET, Key: key,
+    ResponseContentType: mime || undefined,
+    ResponseContentDisposition: 'inline',
+    ResponseCacheControl: `public, max-age=${SHARED_WINDOW_S}`,
+  });
+  const url = await getSignedUrl(r2(), cmd, { expiresIn, signingDate: new Date(start * 1000) });
+  return { url, expiresAt: new Date((start + expiresIn) * 1000).toISOString(), maxAge: SHARED_WINDOW_S };
+}
+
 /* ───────────────────────────────────────────────────────────── the mock routes */
 
 /**
@@ -207,5 +231,5 @@ function mockRouter() {
 
 module.exports = {
   PREFIX, UPLOAD_EXPIRES_S, VIEW_EXPIRES_S, EXT,
-  keyFor, keyBelongsTo, uploadUrl, head, remove, viewUrl, mockRouter, MOCK_DIR,
+  keyFor, keyBelongsTo, uploadUrl, head, remove, viewUrl, sharedViewUrl, SHARED_WINDOW_S, mockRouter, MOCK_DIR,
 };

@@ -95,7 +95,10 @@ export async function mergeAfterSignIn() {
 /* ───────────────────────────────────────────── where she is (5.3) */
 
 let lastFix = null;              // { lat, lng, at } — memory only
+let noFixUntil = 0;              // no fix recently: don't make her wait again for a while
 const FIX_FRESH_MS = 5 * 60 * 1000;
+const FIX_WAIT_MS = 3000;        // never hold the feed longer than this for a location
+const NO_FIX_PAUSE_MS = 2 * 60 * 1000;
 
 export async function askLocationPermission() {
   if (Platform.OS !== 'android') return true;
@@ -117,13 +120,19 @@ export async function currentPosition() {
   const s = await load();
   if (!s.useLocation) return null;
   if (lastFix && Date.now() - lastFix.at < FIX_FRESH_MS) return { lat: lastFix.lat, lng: lastFix.lng };
+  if (Date.now() < noFixUntil) return null;       // her city is used meanwhile (5.3)
   if (!(await hasLocationPermission())) return null;
   let Geo;
   try { Geo = require('@react-native-community/geolocation'); Geo = Geo.default || Geo; } catch { return null; }
   return new Promise((resolve) => {
     let done = false;
-    const finish = (v) => { if (!done) { done = true; resolve(v); } };
-    setTimeout(() => finish(null), 8000);
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      if (!v) noFixUntil = Date.now() + NO_FIX_PAUSE_MS;
+      resolve(v);
+    };
+    setTimeout(() => finish(null), FIX_WAIT_MS);
     try {
       Geo.getCurrentPosition(
         (p) => {
@@ -131,7 +140,7 @@ export async function currentPosition() {
           finish({ lat: lastFix.lat, lng: lastFix.lng });
         },
         () => finish(null),
-        { enableHighAccuracy: false, timeout: 7000, maximumAge: FIX_FRESH_MS },
+        { enableHighAccuracy: false, timeout: FIX_WAIT_MS, maximumAge: 10 * 60 * 1000 },
       );
     } catch {
       finish(null);

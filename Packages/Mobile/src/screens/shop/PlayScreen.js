@@ -15,22 +15,24 @@ import { followerApi } from '../../services/api';
 import { CS, fmtCount } from '../../components/shop/copyShop';
 import { VideoView, ShopSheet, SignInSheet, Loading, Empty, usePostActions, C } from '../../components/shop/bitsShop';
 import { useShopNav } from '../../components/shop/useShopNav';
-import { useSeen } from '../../components/shop/useSeen';
+import { useAutoplay } from '../../components/shop/useAutoplay';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { whoParams, ensureDeviceHeader } from '../../components/shop/shopStore';
 import { track } from '../../services/events';
 import { fonts } from '../../theme/tokens';
 
-function Reel({ post, height, nav, index }) {
+function Reel({ post, height, nav, index, active, sound, onSound }) {
   const a = usePostActions(post, { surface: 'play', onNeedSignIn: nav.needSignIn });
   const n = post.products ? post.products.length : 0;
   return (
     <View style={{ height, backgroundColor: C.dark }} testID={`reel-${post.id}`}>
-      <VideoView post={post} height={height} />
+      <VideoView post={post} height={height} active={active} muted={!sound} surface="play" soundToggle onSoundChange={onSound} />
       <View style={st.rail}>
-        <TouchableOpacity onPress={a.like} style={st.railBtn} testID={`reel-like-${post.id}`}><Text style={st.railIc}>{a.liked ? '♥' : '♡'}</Text><Text style={st.railN}>{fmtCount(a.likes)}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={() => nav.openComments(post)} style={st.railBtn}><Text style={st.railIc}>💬</Text><Text style={st.railN}>{fmtCount(post.counts ? post.counts.comments : 0)}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={a.share} style={st.railBtn}><Text style={st.railIc}>↗</Text><Text style={st.railN}>{fmtCount(post.counts ? post.counts.shares : 0)}</Text></TouchableOpacity>
-        <TouchableOpacity onPress={a.save} style={st.railBtn} testID={`reel-save-${post.id}`}><Text style={st.railIc}>🔖</Text><Text style={st.railN}>{a.saved ? 'Saved' : 'Save'}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={a.like} style={st.railBtn} testID={`reel-like-${post.id}`}><View style={st.railIc}><Icon name={a.liked ? 'heart' : 'heart-outline'} size={22} color={a.liked ? '#FF5A5A' : '#fff'} /></View><Text style={st.railN}>{fmtCount(a.likes)}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => nav.openComments(post)} style={st.railBtn}><View style={st.railIc}><Icon name="comment-outline" size={21} color="#fff" /></View><Text style={st.railN}>{fmtCount(post.counts ? post.counts.comments : 0)}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={a.share} style={st.railBtn}><View style={st.railIc}><Icon name="share-outline" size={22} color="#fff" /></View><Text style={st.railN}>{fmtCount(post.counts ? post.counts.shares : 0)}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={a.save} style={st.railBtn} testID={`reel-save-${post.id}`}><View style={st.railIc}><Icon name={a.saved ? 'bookmark' : 'bookmark-outline'} size={21} color="#fff" /></View><Text style={st.railN}>{a.saved ? 'Saved' : 'Save'}</Text></TouchableOpacity>
       </View>
       <View style={st.who}>
         <Text style={st.whoName}>
@@ -51,9 +53,14 @@ function Reel({ post, height, nav, index }) {
 
 export default function PlayScreen({ navigation, route }) {
   const nav = useShopNav(navigation);
-  const seenProps = useSeen('play');
   const [height, setHeight] = useState(Dimensions.get('window').height - 120);
   const [posts, setPosts] = useState([]);
+  const { seenProps, playingId } = useAutoplay('play', posts);
+  const [sound, setSound] = useState(false);
+  useFocusEffect(useCallback(() => {
+    AsyncStorage.getItem('inflx_video_sound').then((v) => setSound(v === '1')).catch(() => {});
+  }, []));
+  const onSound = useCallback((on) => { setSound(on); AsyncStorage.setItem('inflx_video_sound', on ? '1' : '0').catch(() => {}); }, []);
   const [status, setStatus] = useState('loading');
   const [more, setMore] = useState(true);
   const served = useRef([]);
@@ -91,20 +98,22 @@ export default function PlayScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={st.safe} edges={['top']} onLayout={(e) => setHeight(Math.max(300, e.nativeEvent.layout.height))}>
-      {status === 'loading' ? <Loading /> : status === 'error' ? (
-        <Empty title={CS.loadError} action={CS.retry} onAction={() => load(true)} />
+      {status === 'loading' ? <Loading dark /> : status === 'error' ? (
+        <Empty dark title={CS.loadError} action={CS.retry} onAction={() => load(true)} />
       ) : (
         <FlatList
           ref={listRef}
           data={posts}
           keyExtractor={(p) => p.id}
-          renderItem={({ item, index }) => <Reel post={item} height={height} nav={nav} index={index} />}
+          renderItem={({ item, index }) => <Reel post={item} height={height} nav={nav} index={index} active={playingId === item.id} sound={sound} onSound={onSound} />}
+          windowSize={3}
+          initialNumToRender={2}
           pagingEnabled
           showsVerticalScrollIndicator={false}
           getItemLayout={(_, i) => ({ length: height, offset: height * i, index: i })}
           onEndReached={() => { if (more) load(false); }}
           onEndReachedThreshold={1.5}
-          ListEmptyComponent={<View style={{ height }}><Empty title={CS.emptyFeed} sub={CS.emptyFeedSub} testID="play-empty" /></View>}
+          ListEmptyComponent={<View style={{ height }}><Empty dark title={CS.noVideos} sub={CS.noVideosSub} testID="play-empty" /></View>}
           testID="play-feed"
           {...seenProps}
         />
@@ -119,7 +128,7 @@ const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.dark },
   rail: { position: 'absolute', right: 10, bottom: 130, gap: 14, alignItems: 'center' },
   railBtn: { alignItems: 'center', gap: 2 },
-  railIc: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.14)', textAlign: 'center', textAlignVertical: 'center', lineHeight: 38, color: '#fff', fontSize: 16 },
+  railIc: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' },
   railN: { color: '#fff', fontFamily: fonts.sansBold, fontSize: 10.5 },
   who: { position: 'absolute', left: 12, right: 64, bottom: 70, gap: 4 },
   whoName: { color: '#fff', fontFamily: fonts.sansBold, fontSize: 13 },

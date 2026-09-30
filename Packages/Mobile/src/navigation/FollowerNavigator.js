@@ -1,7 +1,9 @@
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigationState } from '@react-navigation/native';
 import { settingsTokens as T, fonts } from '../theme/tokens';
 import { CS } from '../components/shop/copyShop';
 
@@ -33,13 +35,19 @@ import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const ICON = { HomeTab: '⌂', DiscoverTab: '◎', PlayTab: '▶', SavedTab: '🔖', ProfileTab: '☺' };
+// Plain icons, black and white (mono rule): outline when not selected, filled when selected.
+const ICON = {
+  HomeTab: ['home-outline', 'home'], DiscoverTab: ['compass-outline', 'compass'],
+  SavedTab: ['bookmark-outline', 'bookmark'], ProfileTab: ['account-outline', 'account'],
+};
 
-function TabIcon({ name, focused, dark }) {
+// The bar is dark while Play is the open tab, so every icon follows the OPEN tab (not its own name).
+function TabIcon({ name, focused }) {
+  const dark = useNavigationState((st2) => (st2 && st2.routes ? st2.routes[st2.index].name === 'PlayTab' : false));
   if (name === 'PlayTab') {
-    return <View style={[st.play, dark && { backgroundColor: '#fff' }]}><Text style={[st.playText, dark && { color: '#111' }]}>▶</Text></View>;
+    return <View style={[st.play, dark && { backgroundColor: '#fff' }]}><Icon name="play" size={20} color={dark ? '#111' : '#fff'} /></View>;
   }
-  return <Text style={[st.icon, { color: focused ? (dark ? '#fff' : T.ink) : (dark ? '#888' : T.ink3) }]}>{ICON[name]}</Text>;
+  return <Icon name={ICON[name][focused ? 1 : 0]} size={22} color={focused ? (dark ? '#fff' : T.ink) : (dark ? '#888' : T.ink3)} />;
 }
 
 function Tabs() {
@@ -53,7 +61,7 @@ function Tabs() {
           tabBarInactiveTintColor: dark ? '#888' : T.ink3,
           tabBarStyle: dark ? st.barDark : st.bar,
           tabBarLabelStyle: st.label,
-          tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} dark={dark} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
           tabBarTestID: `tab-${route.name}`,
         };
       }}>
@@ -92,7 +100,5 @@ const st = StyleSheet.create({
   bar: { backgroundColor: '#fff', borderTopColor: T.border, height: 60, paddingBottom: 8, paddingTop: 6 },
   barDark: { backgroundColor: '#111', borderTopColor: '#222', height: 60, paddingBottom: 8, paddingTop: 6 },
   label: { fontFamily: fonts.sansBold, fontSize: 10 },
-  icon: { fontSize: 17, lineHeight: 20 },
-  play: { width: 34, height: 34, borderRadius: 17, backgroundColor: T.ink, alignItems: 'center', justifyContent: 'center', marginTop: -8 },
-  playText: { color: '#fff', fontSize: 13 },
+  play: { width: 36, height: 36, borderRadius: 18, backgroundColor: T.ink, alignItems: 'center', justifyContent: 'center', marginTop: -6 },
 });

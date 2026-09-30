@@ -85,9 +85,25 @@ const servePostMedia = asyncHandler(async (req, res) => {
   if (!key) throw new AppError('NOT_FOUND', 'media not found', 404);
   // shoppable-posts-v2: new posts upload through the signed, size-locked path (posts/<creator>/<post>/<file>),
   // so they are read back through it too.
-  const url = /^posts\/[^/]+\/[0-9a-f-]{36}\//i.test(key)
-    ? (await require('../services/contentStorage.service').viewUrl(key)).url
-    : await storage.generateDownloadUrl(key);
+  const content = require('../services/contentStorage.service');
+  let url;
+  if (/^posts\/[^/]+\/[0-9a-f-]{36}\//i.test(key)) {
+    // follower-app-v2 (rules 4.7): an approved post's media gets the same link for hours and may be
+    // cached; drafts and posts in review keep the short private link.
+    const { rows } = await db.query(
+      `SELECT pm.mime FROM post_media pm JOIN creator_posts cp ON cp.id = pm.post_id
+        WHERE pm.id = $1 AND cp.v2 AND cp.status = 'approved' AND cp.post_code IS NOT NULL`, [req.params.id]);
+    if (rows[0]) {
+      const v = await content.sharedViewUrl(key, rows[0].mime);
+      url = v.url;
+      res.set('Cache-Control', `public, max-age=${Math.floor(v.maxAge / 2)}`);
+    } else {
+      url = (await content.viewUrl(key)).url;
+      res.set('Cache-Control', 'private, no-store');
+    }
+  } else {
+    url = await storage.generateDownloadUrl(key);
+  }
   if (!url) throw new AppError('NOT_FOUND', 'media unavailable', 404);
   res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   return res.redirect(302, url);
