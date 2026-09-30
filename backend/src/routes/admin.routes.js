@@ -3,6 +3,7 @@
 const { Router } = require('express');
 const { authenticate, requireAdminRole, requireAnyAdminRole, requireCapability } = require('../middleware/auth');
 const ctrl = require('../controllers/admin.controller');
+const orderCtrl = require('../controllers/shopperOrders.controller');
 const verificationCtrl = require('../controllers/creatorVerification.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
 const masterDishCtrl = require('../controllers/adminMasterDish.controller');
@@ -32,7 +33,8 @@ router.patch('/app-config',       authenticate, requireCapability('settings'), s
 
 router.get('/orders',             authenticate, requireCapability('orders'), adminOrdersCtrl.listOrders);
 router.get('/commerce-summary',   authenticate, requireCapability('orders'), adminOrdersCtrl.getCommerceSummary);
-router.patch('/orders/:id/status', authenticate, requireCapability('orders'), adminOrdersCtrl.updateStatus);
+router.patch('/orders/:id/status', authenticate, requireCapability('orders'), orderCtrl.adminStatus);   // shopper-ordering: forward only
+router.post('/orders/lines/:id/cancel', authenticate, requireCapability('orders'), orderCtrl.adminCancel);
 
 // All admin routes require a valid admin JWT
 // Section access is specified per-route via requireCapability (B-2).

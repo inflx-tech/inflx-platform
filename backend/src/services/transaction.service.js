@@ -116,6 +116,23 @@ async function consumePendingOrder(client, orderId) {
 }
 
 /**
+ * Refund part or all of a captured payment to the original method (shopper-ordering 6.12).
+ * RUPEES in; paise only at the Razorpay boundary. Returns the refund id.
+ */
+async function refundPayment(paymentId, amountRupees, notes = {}) {
+  if (!paymentId) throw new AppError('VALIDATION_ERROR', 'No payment to refund', 400);
+  if (env.RAZORPAY_MOCK) {
+    const id = `rfnd_mock_${crypto.randomBytes(8).toString('hex')}`;
+    console.log(`[RAZORPAY MOCK] Refund ${id} ₹${Number(amountRupees).toFixed(2)} on ${paymentId}`);
+    return id;
+  }
+  const rzp = getRzp();
+  if (!rzp) throw new AppError('INTERNAL_ERROR', 'Razorpay not configured', 500);
+  const r = await rzp.payments.refund(paymentId, { amount: toPaise(amountRupees), speed: 'normal', notes });
+  return r.id;
+}
+
+/**
  * Verify Razorpay payment signature (production only).
  */
 function verifyPaymentSignature(orderId, paymentId, signature) {
@@ -251,6 +268,7 @@ module.exports = {
   getPendingOrder,
   consumePendingOrder,
   verifyPaymentSignature,
+  refundPayment,
   validateTracking,
   calcPayAtStore,
   calcOnlineOrder,

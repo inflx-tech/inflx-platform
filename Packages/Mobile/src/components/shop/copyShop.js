@@ -37,7 +37,9 @@ export const CS = {
   shopTitle: 'Shop this post',
   noCodeNeeded: (name) => `No code needed. Buying here pays ${name} her commission.`,
   heartKeepsOffer: 'The ♡ saves the product with this post, so it keeps this offer.',
-  checkoutSoon: 'Adding to the bag comes with checkout. Save what you like for now.',
+  // shopper-ordering: buying happens from a post (Shop this post → Add). A product collection keeps the
+  // saves; buying straight from a collection is not in this step.
+  checkoutSoon: "To buy one, open it from a creator's post. Save what you like here for now.",
   outOfStock: 'Out of stock',
   // F4 / F5
   moreFrom: (name) => `More from ${name}`,
@@ -103,8 +105,10 @@ export const CS = {
   settingsSub: 'Notifications, video sound',
   policies: 'Policies and help',
   policiesSub: 'Returns, privacy, terms',
-  returnsAddresses: 'Returns · Addresses',
-  returnsAddressesSub: 'Designed with checkout, next',
+  addressesRow: 'Addresses',
+  addressesRowSub: 'Where your orders go',
+  returnsRow: 'Returns',
+  returnsRowSub: 'Coming next',
   logOut: 'Log out',
   edit: 'Edit',
   notSet: 'Not set',

@@ -77,53 +77,74 @@ const getMe = asyncHandler(async (req, res) => {
 
 // ── Addresses ────────────────────────────────────────────────────────────────
 
+// Addresses are entered by hand (shopper-ordering, rules 6.7): name, 10-digit phone, house, area,
+// landmark (optional), 6-digit pincode, city, state from the list, Home / Work / Other. Up to 10.
+// Any 6-digit pincode is accepted; there is no courier coverage check yet. A past order keeps its
+// own copy of the address, so editing or deleting one never changes an order.
+const MAX_ADDRESSES = 10;
+const LABELS = ['Home', 'Work', 'Other'];
+
+async function addressFields(body, { partial = false } = {}) {
+  const b = body || {};
+  const out = {};
+  const txt = (v, max) => (v === undefined ? undefined : v === null ? null : String(v).trim().slice(0, max) || null);
+  const need = (k, v, msg) => { if (!partial && !v) throw new AppError('VALIDATION_ERROR', msg, 422, k); };
+  const name = txt(b.receiver_name ?? b.name, 80);
+  const phone = b.receiver_phone ?? b.phone;
+  const house = txt(b.house ?? b.line1, 200);
+  const area = txt(b.area ?? b.line2, 200);
+  const city = txt(b.city, 60);
+  const state = txt(b.state, 60);
+  const pin = b.pincode === undefined ? undefined : String(b.pincode || '').trim();
+  need('receiver_name', name, 'Enter the name');
+  need('house', house, 'Enter the house, flat or building');
+  need('area', area, 'Enter the area or street');
+  need('city', city, 'Enter the city');
+  need('state', state, 'Choose the state');
+  if (!partial || phone !== undefined) {
+    const digits = String(phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+    if (!/^[6-9]\d{9}$/.test(digits)) throw new AppError('VALIDATION_ERROR', 'Enter a 10-digit mobile number', 422, 'receiver_phone');
+    out.receiver_phone = digits;
+  }
+  if (!partial || pin !== undefined) {
+    if (!/^[1-9]\d{5}$/.test(pin || '')) throw new AppError('VALIDATION_ERROR', 'Enter a 6-digit pincode', 422, 'pincode');
+    out.pincode = pin;
+  }
+  if (state) {
+    const { rows } = await db.query(`SELECT name FROM ref_states WHERE lower(name) = lower($1)`, [state]).catch(() => ({ rows: [{ name: state }] }));
+    const known = await db.query(`SELECT count(*)::int AS n FROM ref_states`).then((r) => r.rows[0].n).catch(() => 0);
+    if (known && !rows[0]) throw new AppError('VALIDATION_ERROR', 'Choose the state from the list', 422, 'state');
+    out.state = rows[0] ? rows[0].name : state;
+  }
+  const label = b.label === undefined ? undefined : LABELS.find((l) => l.toLowerCase() === String(b.label || '').toLowerCase()) || 'Other';
+  Object.assign(out, { receiver_name: name, house, area, line1: house, line2: area, city, landmark: txt(b.landmark, 120), label });
+  for (const k of Object.keys(out)) if (out[k] === undefined) delete out[k];
+  return out;
+}
+
 const createAddress = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
-
-  const { label, line1, line2, city, pincode, is_default,
-          receiver_name, receiver_phone, landmark } = req.body;
-  if (!line1) throw new AppError('VALIDATION_ERROR', 'line1 is required', 422, 'line1');
-
-  if (is_default) {
-    await db.query(
-      `UPDATE follower_addresses SET is_default = false WHERE follower_id = $1`,
-      [follower.id]
-    );
-  }
-
-  // retire-google: prefer client-sent coords ("use current location"); otherwise the typed
-  // city's centre from our own list. No Google. An address with neither is refused.
-  let lat = Number.isFinite(parseFloat(req.body.lat)) ? parseFloat(req.body.lat) : null;
-  let lng = Number.isFinite(parseFloat(req.body.lng)) ? parseFloat(req.body.lng) : null;
-  if (lat == null || lng == null) {
-    const centre = await ref.cityCentreForName(city);
-    if (centre) { lat = centre.lat; lng = centre.lng; }
-  }
-  if (lat == null || lng == null) {
-    throw new AppError('VALIDATION_ERROR',
-      "We couldn't place that address. Pick your city from the list, or use 'Current location'.",
-      422, 'city');
-  }
-
-  const { rows } = await db.query(
-    `INSERT INTO follower_addresses
-       (follower_id, label, line1, line2, city, pincode, is_default, lat, lng,
-        receiver_name, receiver_phone, landmark)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-     RETURNING *`,
-    [follower.id, label || null, line1, line2 || null, city || null, pincode || null, !!is_default, lat, lng,
-     receiver_name || null, receiver_phone || null, landmark || null]
-  );
-
-  if (is_default) {
-    await db.query(
-      `UPDATE followers SET default_address_id = $1 WHERE id = $2`,
-      [rows[0].id, follower.id]
-    );
-  }
-
-  return success(res, { address: rows[0] }, 201);
+  const a = await addressFields(req.body);
+  const { rows: [{ n }] } = await db.query(
+    `SELECT count(*)::int AS n FROM follower_addresses WHERE follower_id = $1 AND deleted_at IS NULL`, [follower.id]);
+  if (n >= MAX_ADDRESSES) throw new AppError('VALIDATION_ERROR', `You can keep up to ${MAX_ADDRESSES} addresses. Delete one to add another.`, 422);
+  const makeDefault = !!req.body.is_default || n === 0;
+  // The city's centre, when we know the city, helps the arrival estimate; never required (6.7).
+  const centre = await ref.cityCentreForName(a.city).catch(() => null);
+  const row = await db.withTransaction(async (conn) => {
+    if (makeDefault) await conn.query(`UPDATE follower_addresses SET is_default = false WHERE follower_id = $1`, [follower.id]);
+    const { rows } = await conn.query(
+      `INSERT INTO follower_addresses
+         (follower_id, label, line1, line2, house, area, city, state, pincode, is_default, lat, lng,
+          receiver_name, receiver_phone, landmark)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+      [follower.id, a.label || 'Home', a.line1, a.line2, a.house, a.area, a.city, a.state, a.pincode, makeDefault,
+        centre ? centre.lat : null, centre ? centre.lng : null, a.receiver_name, a.receiver_phone, a.landmark || null]);
+    if (makeDefault) await conn.query(`UPDATE followers SET default_address_id = $1 WHERE id = $2`, [rows[0].id, follower.id]);
+    return rows[0];
+  });
+  return success(res, { address: row }, 201);
 });
 
 const listAddresses = asyncHandler(async (req, res) => {
@@ -143,44 +164,28 @@ const listAddresses = asyncHandler(async (req, res) => {
 const updateAddress = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
-
   const { id } = req.params;
-
   const { rows: existing } = await db.query(
-    `SELECT * FROM follower_addresses
-      WHERE id = $1 AND follower_id = $2 AND deleted_at IS NULL`,
-    [id, follower.id]
-  );
+    `SELECT * FROM follower_addresses WHERE id = $1 AND follower_id = $2 AND deleted_at IS NULL`, [id, follower.id]);
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Address not found', 404);
-
-  const { label, line1, line2, city, pincode, is_default } = req.body;
-
-  if (is_default) {
-    await db.query(
-      `UPDATE follower_addresses SET is_default = false WHERE follower_id = $1`,
-      [follower.id]
-    );
-  }
-
-  const { rows } = await db.query(
-    `UPDATE follower_addresses SET
-       label      = COALESCE($1, label),
-       line1      = COALESCE($2, line1),
-       line2      = COALESCE($3, line2),
-       city       = COALESCE($4, city),
-       pincode    = COALESCE($5, pincode),
-       is_default = COALESCE($6, is_default)
-     WHERE id = $7
-     RETURNING *`,
-    [label || null, line1 || null, line2 || null, city || null, pincode || null,
-      is_default !== undefined ? is_default : null, id]
-  );
-
-  if (is_default) {
-    await db.query(`UPDATE followers SET default_address_id = $1 WHERE id = $2`, [id, follower.id]);
-  }
-
-  return success(res, { address: rows[0] });
+  const a = await addressFields(req.body, { partial: true });
+  const cols = ['label', 'line1', 'line2', 'house', 'area', 'city', 'state', 'pincode', 'receiver_name', 'receiver_phone', 'landmark'];
+  const sets = [];
+  const vals = [];
+  for (const c of cols) if (a[c] !== undefined) { vals.push(a[c]); sets.push(`${c} = $${vals.length}`); }
+  const makeDefault = req.body.is_default === true;
+  const row = await db.withTransaction(async (conn) => {
+    if (makeDefault) {
+      await conn.query(`UPDATE follower_addresses SET is_default = false WHERE follower_id = $1`, [follower.id]);
+      sets.push('is_default = true');
+      await conn.query(`UPDATE followers SET default_address_id = $1 WHERE id = $2`, [id, follower.id]);
+    }
+    if (!sets.length) return existing[0];
+    vals.push(id);
+    const { rows } = await conn.query(`UPDATE follower_addresses SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals);
+    return rows[0];
+  });
+  return success(res, { address: row });
 });
 
 // SOFT delete. follower_orders.address_id references this table with no ON DELETE clause, so a

@@ -17,31 +17,39 @@ const KNOBS = [
   { key: 'show_product_ratings', label: 'Show product ratings', sub: 'Ratings render only when real review data exists AND this is on — never fake.' },
 ];
 
-// Stage C3 — checkout knobs (contract: features/concept-stagec3-checkout/).
+// Checkout (shopper-ordering, rules 6.8 and 6.10). Cash on delivery is ON unless switched off here,
+// which is how the server reads it, so the switch shows it the same way.
 const CHECKOUT_KNOBS = [
-  { key: 'cod_enabled', label: 'Cash on Delivery', sub: 'Show COD as a payment option at checkout. Enforced server-side, not just hidden.' },
+  { key: 'cod_enabled', label: 'Cash on Delivery', sub: 'Offer cash on delivery at checkout, up to the limit below. Enforced by the server.', defaultOn: true },
 ];
+const CHECKOUT_NUMBERS = [
+  { key: 'cod_max_amount', label: 'Cash on delivery limit (₹)', sub: 'Cash on delivery is offered only up to this total per checkout.', fallback: 5000 },
+  { key: 'cod_fee', label: 'COD fee (₹)', sub: 'Added once per checkout when she pays on delivery · 0 = free. Goes to the brand.', fallback: 0 },
+  { key: 'delivery_fee', label: 'Delivery fee per parcel (₹)', sub: '0 = free delivery (launch). Goes to the brand, which ships.', fallback: 0 },
+  { key: 'delivery_free_above', label: 'Free delivery above (₹)', sub: 'A parcel at or above this is delivered free · 0 = the fee always applies.', fallback: 0 },
+];
+const isOn = (config, k) => (k.defaultOn ? config[k.key] !== false : !!config[k.key]);
 
 export default function AppSettingsPage() {
   const [config, setConfig] = useState(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
-  const [feeDraft, setFeeDraft] = useState('');
+  const [drafts, setDrafts] = useState({});
 
   useEffect(() => {
     adminApi.getFollowerAppConfig().then(res => {
       if (res.success) {
         const cfg = res.data?.config || {};
         setConfig(cfg);
-        setFeeDraft(cfg.cod_fee != null ? String(cfg.cod_fee) : '0');
+        setDrafts(Object.fromEntries(CHECKOUT_NUMBERS.map((n) => [n.key, String(cfg[n.key] != null ? cfg[n.key] : n.fallback)])));
       }
     });
   }, []);
 
-  async function saveFee() {
-    const fee = Math.max(0, parseFloat(feeDraft) || 0);
-    setFeeDraft(String(fee)); setSaving(true);
-    const res = await adminApi.updateFollowerAppConfig({ cod_fee: fee });
+  async function saveNumber(key) {
+    const val = Math.max(0, parseFloat(drafts[key]) || 0);
+    setDrafts((d) => ({ ...d, [key]: String(val) })); setSaving(true);
+    const res = await adminApi.updateFollowerAppConfig({ [key]: val });
     setSaving(false);
     if (res.success) {
       setConfig(res.data.config);
@@ -53,7 +61,8 @@ export default function AppSettingsPage() {
   }
 
   async function toggle(key) {
-    const next = { ...config, [key]: !config[key] };
+    const k = [...KNOBS, ...CHECKOUT_KNOBS].find((x) => x.key === key) || { key };
+    const next = { ...config, [key]: !isOn(config, k) };
     setConfig(next); setSaving(true);
     const res = await adminApi.updateFollowerAppConfig({ [key]: next[key] });
     setSaving(false);
@@ -109,22 +118,27 @@ export default function AppSettingsPage() {
                   <div className="text-[11px] text-t3 mt-0.5">{k.sub}</div>
                 </div>
                 <button onClick={() => toggle(k.key)} disabled={saving}
-                  className={`w-12 h-7 rounded-full transition-colors shrink-0 ${config[k.key] ? 'bg-navy' : 'bg-surface2 border border-border'}`}>
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-1 ${config[k.key] ? 'translate-x-5' : ''}`} />
+                  className={`w-12 h-7 rounded-full transition-colors shrink-0 ${isOn(config, k) ? 'bg-navy' : 'bg-surface2 border border-border'}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-1 ${isOn(config, k) ? 'translate-x-5' : ''}`} />
                 </button>
               </div>
             ))}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-border">
-              <div className="pr-4">
-                <div className="text-sm font-bold text-t1">COD fee (₹)</div>
-                <div className="text-[11px] text-t3 mt-0.5">Added to the bill on COD orders · 0 = free. Applied once per order.</div>
+            {CHECKOUT_NUMBERS.map((n) => (
+              <div key={n.key} className="flex items-center justify-between px-5 py-4 border-t border-border">
+                <div className="pr-4">
+                  <div className="text-sm font-bold text-t1">{n.label}</div>
+                  <div className="text-[11px] text-t3 mt-0.5">{n.sub}</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <input value={drafts[n.key] ?? ''} onChange={e => setDrafts((d) => ({ ...d, [n.key]: e.target.value }))} inputMode="decimal"
+                    className="w-24 text-right text-sm font-bold text-t1 border border-border rounded-lg px-3 py-1.5" />
+                  <button onClick={() => saveNumber(n.key)} disabled={saving}
+                    className="text-xs font-bold text-white bg-navy rounded-lg px-3 py-2">Save</button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <input value={feeDraft} onChange={e => setFeeDraft(e.target.value)} inputMode="decimal"
-                  className="w-24 text-right text-sm font-bold text-t1 border border-border rounded-lg px-3 py-1.5" />
-                <button onClick={saveFee} disabled={saving}
-                  className="text-xs font-bold text-white bg-navy rounded-lg px-3 py-2">Save</button>
-              </div>
+            ))}
+            <div className="px-5 py-3 border-t border-border text-[11px] text-t3">
+              How every rupee of a sale splits (creator&apos;s share at her collaboration %, INFLX&apos;s share at the Path B rate in Pricing → Categories, the brand the rest) is set elsewhere; these are only the checkout charges.
             </div>
           </div>
         </div>

@@ -7,7 +7,6 @@ const ctrl = require('../controllers/transaction.controller');
 const router = Router();
 
 const followerAuth = [authenticate, requireRole('follower')];
-const brandAuth    = [authenticate, requireRole('brand')];
 
 // ── Pay-at-store ──────────────────────────────────────────────────────────────
 router.post('/pay-at-store',        ...followerAuth, ctrl.initiatePayAtStore);
@@ -28,19 +27,12 @@ router.post('/prebook/verify', ...followerAuth, ctrl.verifyPrebook);
 router.post('/prebook-daterange',        ...followerAuth, ctrl.initiatePrebookDateRange);
 router.post('/prebook-daterange/verify', ...followerAuth, ctrl.verifyPrebookDateRange);
 
-// ── Cart offer preview (Phase 2) — discount + free items before checkout ──────
-router.post('/cart/price',    ...followerAuth, ctrl.previewCartOffer);
-
-// ── Online orders ─────────────────────────────────────────────────────────────
-router.post('/orders',        ...followerAuth, ctrl.placeOrder);
-router.post('/orders/verify', ...followerAuth, ctrl.verifyOrder);
-router.get('/orders',         ...followerAuth, ctrl.listOrders);
+// ── Activity ──────────────────────────────────────────────────────────────────
 router.get('/activity',       ...followerAuth, ctrl.listActivity);
-router.get('/orders/:id',     ...followerAuth, ctrl.getOrder);
-// Stage C4 — follower cancel, allowed until 'dispatched' (server-enforced 409 after)
-router.post('/orders/:id/cancel', ...followerAuth, ctrl.cancelOrder);
 
-// Brand-side order status update
-router.patch('/orders/:id/status', ...brandAuth, ctrl.updateOrderStatus);
+// The old online checkout (cart/price, orders, orders/verify, order list/detail/cancel, and the
+// brand's status route on this path) was retired on 30 Sep 2026 with shopper-ordering: it priced
+// with the retired offer engine and moved no stock or money on cancel. Ordering now lives in
+// follower.routes.js (/follower/bag, /checkout/*, /orders) — contract features/shopper-ordering.
 
 module.exports = router;

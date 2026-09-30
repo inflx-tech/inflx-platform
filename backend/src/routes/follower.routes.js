@@ -16,6 +16,7 @@ const acct = require('../controllers/followerAccount.controller');
 const shop = require('../controllers/shopper.controller');
 const reviewCtrl = require('../controllers/review.controller');
 const postEventsCtrl = require('../controllers/postEvents.controller');
+const orderCtrl = require('../controllers/shopperOrders.controller');
 
 const router = Router();
 
@@ -82,6 +83,22 @@ router.get('/brands/:id', ...anyone, shop.brandStore);
 router.get('/brands/:id/posts', ...anyone, shop.brandPosts);
 router.get('/brands/:id/offers', ...anyone, shop.brandOffers);
 router.get('/filters', ...anyone, shop.filters);
+
+// ── Ordering (shopper-ordering, rules §6) ────────────────────────────────────
+router.get('/posts/:id/deal', ...anyone, orderCtrl.deal);                   // D1, P, B, V, K, G
+router.post('/posts/:id/deal/price', ...anyone, orderCtrl.dealPrice);       // the sticky bar, the review (D4)
+router.post('/bag/price', ...anyone, orderCtrl.bagPrice);                   // a guest's bag, kept on the phone
+router.get('/bag', ...followerAuth, orderCtrl.getBag);                      // O6, O7, D11
+router.put('/bag', ...followerAuth, orderCtrl.putBag);
+router.post('/bag/merge', ...followerAuth, orderCtrl.mergeBag);             // O8: the phone bag joins her account
+router.post('/checkout/review', ...followerAuth, orderCtrl.review);         // O11, O12
+router.post('/checkout/place', ...followerAuth, orderCtrl.place);           // Place order
+router.post('/checkout/verify', ...followerAuth, orderCtrl.verify);         // Razorpay's answer
+router.get('/checkouts/:id', ...followerAuth, orderCtrl.checkoutDetail);    // O13
+router.get('/orders', ...followerAuth, orderCtrl.listOrders);               // O14
+router.get('/orders/lines/:id', ...followerAuth, orderCtrl.lineDetail);     // O15
+router.get('/orders/lines/:id/cancel', ...followerAuth, orderCtrl.cancelPreview); // O16
+router.post('/orders/lines/:id/cancel', ...followerAuth, orderCtrl.cancel); // O16 → O17
 
 // ── Reviews (after an order; kept for checkout) ──────────────────────────────
 router.get('/reviews', ...anyone, reviewCtrl.listBrandReviews);

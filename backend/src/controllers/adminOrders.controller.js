@@ -50,8 +50,13 @@ const listOrders = asyncHandler(async (req, res) => {
     `SELECT fo.id, fo.order_status, fo.courier_name, fo.tracking_number,
             fo.created_at, fo.packed_at, fo.dispatched_at, fo.out_for_delivery_at,
             fo.delivered_at, fo.cancelled_at, fo.items_json,
-            ft.net_amount, ft.influencer_commission, ft.platform_fee,
-            ft.gross_amount, ft.discount_amount, ft.brand_net, ft.offer_source,
+            -- shopper-ordering: a parcel can hold several posts (one money row each); its money is the
+            -- sum of its active items. Older orders (no items) keep their single money row. The fee column
+            -- is marketplace_fee_amount since migration 059 ('platform_fee' no longer exists).
+            COALESCE(m.net, ft.net_amount) AS net_amount, COALESCE(m.comm, ft.influencer_commission) AS influencer_commission,
+            COALESCE(m.fee, ft.marketplace_fee_amount) AS platform_fee, COALESCE(m.gross, ft.gross_amount) AS gross_amount,
+            COALESCE(m.gross - m.net, ft.discount_amount) AS discount_amount, COALESCE(m.bn, ft.brand_net) AS brand_net, ft.offer_source,
+            fo.payment_method, m.items AS item_count,
             ft.brand_settlement_status, ft.brand_settled_at,
             ft.commission_confirmed_at, ft.status AS tx_status, ft.return_window_ends_at,
             b.business_name AS brand_name,
@@ -65,6 +70,11 @@ const listOrders = asyncHandler(async (req, res) => {
        JOIN followers f ON f.id = ft.follower_id
        JOIN users u_f ON u_f.id = f.user_id
        LEFT JOIN follower_addresses a ON a.id = fo.address_id
+       LEFT JOIN LATERAL (
+         SELECT sum(l.paid_total) FILTER (WHERE l.status = 'active') AS net, sum(l.commission) FILTER (WHERE l.status = 'active') AS comm,
+                sum(l.platform_fee) FILTER (WHERE l.status = 'active') AS fee, sum(l.brand_net) FILTER (WHERE l.status = 'active') AS bn,
+                sum(l.normal_total) FILTER (WHERE l.status = 'active') AS gross, count(*)::int AS items
+           FROM order_lines l WHERE l.order_id = fo.id HAVING count(*) > 0) m ON true
        LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
        LEFT JOIN influencers inf ON inf.id = ci.influencer_id
       WHERE ${where}

@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.8 · 30 September 2026 · living document**
+**Version 1.13 · 30 September 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -416,6 +416,7 @@ sends it. Tapping a draft carries on where she stopped. A draft can be deleted. 
 | Brand removes some of the post's products from the offer | Those products leave the post. If none are left, the post is removed. |
 | A product becomes unavailable | It leaves the post. If none are left, the post is removed. |
 | All the post's products are out of stock | Removed from the shop. |
+| Every gift in its free-gift offer's pool is gone (6.4, v1.9) | Removed from the shop: it can no longer keep its promise. |
 | A product's price changes | The post's price band recalculates. The creator is told. |
 | A price post (no offer) | Ends only when all its products are out of stock or unavailable. |
 
@@ -593,9 +594,9 @@ store come next, in their own discussion.
   one tap away; search is where a post code is typed.
 - **Profile:** orders, settings, policies, her city, sign in / out. (Returns and addresses: next discussion.)
 - **No shopper wallet.** Refunds go back to the original payment and show inside the order.
-- **Until checkout is designed (v1.7):** there is no Add and no bag. Shop this post shows the products
-  with the offer applied and a heart to save each one. The bag icon, Add and "Go to bag" arrive with the
-  checkout discussion (O8).
+- **Until ordering is built (v1.7):** there is no Add and no bag. Shop this post shows the products
+  with the offer applied and a heart to save each one. **With ordering (section 6, v1.9)** the bag icon with its
+  count joins the top bar, and Shop this post gets Add and Go to bag (6.3).
 
 ### 5.2 Guests and sign-in
 - Shoppers browse as guests until they order.
@@ -748,23 +749,288 @@ only totals are shown.
 
 ---
 
-## 6. Open items (owed by the founder)
+## 6. Ordering: bag, buy now, checkout, orders, cancelling
+
+Agreed with the founder on 30 Sep 2026: all ten points of the ordering discussion, as recommended, from the
+founder's reference screens (Myntra) and the rules above. Screens: `features/shopper-ordering/04-preview/mockups/`
+(**LOCKED 30 Sep 2026**, final board `shopper-ordering-mockups-final.html`: O1, O2, D1, P1–P3, B1–B4, V1–V4,
+K1–K5, G1–G5, D4, D11, O6–O17; 38 screens). **Returns and exchanges come next, in their own discussion; pay at store stays O5.**
+
+### 6.1 The principles
+| # | Principle |
+|---|---|
+| R1 | **Every item in the bag remembers the post it came from** (or the collection item, M6). That post fixes its offer, its price and which creator earns the commission (M1, M5). An item can never be bought outside a post (P1). |
+| R2 | **Offers work only inside one post (M4).** The bag is grouped by post. A bundle, a volume tier, a BOGO or a free gift counts only the items added from that same post. |
+| R3 | **One bag for everything.** A bag can hold items from many creators and many brands. |
+| R4 | **One checkout, one payment, one order per brand.** Each brand packs and ships its own parcel. |
+| R5 | **The server works out every price.** The phone only shows it. The amount on "Place order" is exactly what she pays (M8). |
+| R6 | **Stock is real (M7).** It goes down when an order is placed and back up when an item is cancelled (or later returned). |
+
+### 6.2 Two kinds of item
+**A. Simple items:** a price post (normal price), or an offer post with a **Discount** (% off, with its optional
+maximum per item, or ₹ off). Each item stands alone. Choose size → **Buy now** or **Add to bag** → address → pay.
+
+**B. Deal items:** BOGO, Volume (buy more save more), Bundle (pick any, mix & match, fixed) and Free gift. Each
+needs one extra step from the shopper, and the app guides it (6.4).
+
+### 6.3 Choosing size and colour (O1)
+- On a **simple post** (normal price or a discount), tapping **Add** on a product in Shop this post (F3) opens the
+  **size and colour sheet**: its colours, its sizes with stock, sold-out sizes crossed out, and "Only 2 left" when 3
+  or fewer remain. On a **deal post**, Shop this post leads to the **deal page** instead (6.5), where each product
+  she taps opens the **product pop-up** (P2) rather than this sheet.
+- A **size chart** link shows only when the brand has given one.
+- The sheet shows the price she pays for one (after a discount) with the normal price struck, and the post's
+  offer line ("20% off applied", "Any 2 for ₹2,999", "Buy one, get the same free").
+- Two buttons: **Add to bag** and **Buy now**. Quantity starts at 1.
+- Shop this post (F3) now shows **Add** on each product and **Go to bag** with the count, and the bag icon with its
+  count joins the top bar on every screen (5.1). The ♡ still saves the product with its post (5.8).
+
+### 6.4 How each offer works in the bag (all within one post, R2)
+| Offer | What she is guided to do | How the price is worked out |
+|---|---|---|
+| **Discount** (% or ₹ off) | Nothing extra | Each item at its discounted price (a % discount stops at its maximum ₹ off per item). |
+| **BOGO** | On the deal page (B1–B4): tap a product; its pop-up asks the paid one's colour and size, then the free one's (the same product, any colour or size); the pair is listed | Every paid unit can take one free unit of the same product, up to the offer's maximum free items per order. The free unit costs ₹0 whatever that variant costs. |
+| **Volume by quantity** | On the deal page (V1–V3): the tier ladder at the top, quantity chosen in each product's pop-up, "1 more → 30% off" | Count every unit from the post. The highest tier reached applies; tiers replace each other and never add up. A % reward comes off every unit; a ₹ reward comes off the post's items once. |
+| **Volume by value** | The same deal page (V4), the ladder in ₹: "Spend ₹550 more → 20% off" | The same, counting the normal-price total of the post's items. |
+| **Bundle, pick any / mix & match** | On the deal page (K1–K3): the set's empty slots at the top, every product below (mix & match: one tab per category), "2 of 3 picked" | Every full set of N units costs the bundle price. The costliest units go into sets first (the best saving for her). Units left over pay their normal price, with "Add 1 more to complete another set". |
+| **Bundle, fixed** | On the deal page (K4, K5): every item of the set, each chosen in its own pop-up | Sold only as the whole set, at the bundle price. Removing one item removes the set; quantity changes whole sets. |
+| **Free gift, spend** | On the deal page in two steps (G1, G3, G4, then the review D4): **1 · choose what you buy**, with the progress to the gift; **2 · choose your gift** from all the gifts, shown clearly; then review | When the normal-price total of the post's buy-pool items reaches the minimum, she gets the offer's number of gifts, **once per order**. One gift in the pool is added by itself. |
+| **Free gift, buy X** | The same two steps, counting items (G2); one gift in the pool is added by itself (G5) | The same, counting units. |
+
+- **Rounding:** a % comes off **each unit and is rounded to the nearest rupee** (₹999 at 20% off → ₹799). When a
+  price is shared across items (6.13), the parts are rounded and any leftover rupee goes to the costliest item, so
+  the parts always add up to the deal price.
+- **Progress and nudges** show on the post's group in the bag, with **"Edit deal"** and **"Add more from this post"**,
+  which reopen that post's deal page with her picks already in it.
+- **Gifts are limited.** A gift goes only while its stock and the offer's gift limit last; each gift given counts
+  against both. **When every gift in an offer's pool is gone, the offer can no longer keep its promise:** the posts
+  carrying it leave the shop (as when all products sell out, 4.9), and bags show "No longer available with this
+  offer" (6.6).
+- A **gift item** (never sold, 1.7) shows its value ("worth ₹650"). A **store product given as a gift** shows ₹0 "Free".
+
+### 6.5 The deal page (one for each kind of offer) and Buy now (D1, P1–P3, B1–B4, V1–V4, K1–K5, G1–G5, D4, D11)
+A deal post can carry 20 products and 10 gifts, so a deal is never built in a small pop-up. **Every deal post opens
+a full-screen deal page** where she sees everything clearly, one step at a time.
+
+**Opening it.** On a deal post, Shop this post (F3) shows the offer, how it works, how many products (and gifts)
+there are, and **Build your deal** (D1). The deal page also opens from **Add** on any of the post's products (that
+product arrives already picked), and from **Edit deal** or **Add more from this post** in the bag (her picks are
+already in it).
+
+**What every deal page has**
+- **The deal at the top:** creator, brand, the deal line, a one-line "how it works", and the end date.
+- **Every product of the post in a 2-column grid** (P1), each with its photo, name, price (a discount already applied)
+  and how many colours and sizes it has. **Sold-out products are shown greyed** at the end, never hidden.
+- **When there are more than 8 products:** category chips (with counts) and **Sort: price low to high / high to low**.
+- **Tapping a product opens the product pop-up** (P2) right there on the deal page (v1.11): its photos (swipe),
+  name, brand, price (with the deal's effect shown, e.g. "Counts toward Buy 3 → 30% off"), its details
+  (fabric, fit, care, what the brand wrote), its **colours** as swatches, its **sizes** with stock (sold-out
+  crossed out, "Only 2 left"), the size chart when the brand gave one, and any other choice the product has.
+  She chooses, taps **Pick** (or **Add**, or **Choose gift**), the pop-up closes, and the card shows
+  "✓ Picked · Blue · M" (P3). Tapping a picked card reopens its pop-up to change the colour or size, or **Remove**.
+  Then she taps the next product. Nothing is picked without its colour and size chosen.
+- **Her picks show where she picked them:** on the cards ("✓ Picked · Ivory · M", "×2"), in the bundle's slots, or
+  in the BOGO pair list; the review (D4) lists them all with Change and Remove.
+- **A sticky bar** at the bottom: the progress ("2 of 3 picked", "₹550 more to unlock your gift", "1 more for 30%
+  off"), what she pays and saves, and the main button.
+- **A review before the bag (D4):** every item with its size, the gift if any, the deal price, the normal price struck
+  and "You save ₹X", then **Add to bag** and **Buy now**.
+
+**One page for each kind of offer**
+| Offer | How the page guides her |
+|---|---|
+| **Free gift** (spend or buy X) | **Two steps, shown at the top: 1 · Choose what you buy → 2 · Choose your gift.** Step 1 is the product grid with a progress bar to the gift ("₹2,450 of ₹3,000, spend ₹550 more"). Step 2 unlocks when she reaches it: **every gift in a grid** with its photo, name and "worth ₹650", "3 left" when few remain, and "All given" greyed. She picks the offer's number of gifts ("Choose 1 of 10"). If she goes below the threshold, the gift step locks again and her gift is removed. |
+| **Bundle, pick any** | **The set's empty slots at the top** ("Pick 3: ☐ ☐ ☐"), filled with the photo of each pick. The grid below. When the set is full: "Set complete · ₹2,999 · you save ₹1,299", with **Add another set** or **Review**. The main button works only on full sets. |
+| **Bundle, mix & match** | The same slots, and **one tab per category** of the pool with its count ("Shirts 8 · Trousers 6 · Jeans 6"), so she can see each category clearly. Any mix fills the set. |
+| **Bundle, fixed** | **The whole set as a list**: every item with its own size and colour choice, the total at normal price struck and the set price. The button works when every item has its size. Quantity changes whole sets. |
+| **Volume** (quantity or value) | **The tier ladder at the top** ("Buy 2 · 20% off → Buy 3 · 30% off"), her tier filled and the next dashed. **The pop-up says what picking does** ("This makes 3 items → 30% off all three: this one ₹1,259") and lets her choose a quantity; picked cards show the price after the tier and "×2". The sticky bar: "3 items · 30% off · you pay ₹2,097, save ₹900". Tiers replace each other. |
+| **BOGO** | **Tap a product** (B1). **Its pop-up has two parts:** 1 · the one she pays for (colour, size) → **Next: your free one** → 2 · the free one, the same product in any colour and size → **Pick this pair** (B2, B3). The pair is listed with Change and Remove (B4); **another pair** until the offer's maximum free items per order. |
+| **Discount** and **price posts** | No deal page: each product is added on its own (6.3). |
+
+**The four deal types and their sub-types, as the shopper meets them (final board: `shopper-ordering-mockups-final.html`)**
+| Type | Sub-type | What the shopper sees and does |
+|---|---|---|
+| **BOGO** | One kind only: buy one, get the **same product** free | Choose a product → the pop-up asks the paid one's colour and size, then the free one's (any colour or size of that product) → the pair. More pairs up to the offer's maximum free items per order. |
+| **Volume** | **By quantity**, reward in **%** | Ladder "Buy 2 · 20% → Buy 3 · 30%". Every unit from the post counts; the % comes off every unit. |
+| | **By quantity**, reward in **₹** | Ladder "Buy 2 · ₹200 off → Buy 3 · ₹400 off". The ₹ comes off her total for this post once. |
+| | **By value**, reward in % or ₹ | Ladder in ₹ spent: "Spend ₹2,000 · 10% → Spend ₹3,000 · 20%", counted at normal prices. |
+| **Bundle** | **Pick any** (one category) | Slots "Pick 2", one grid of the category's products; every full set costs the bundle price. |
+| | **Mix & match** (several categories) | The same slots with one tab per category; any mix fills a set. |
+| | **Fixed** (exact products) | The set as a list; each item's pop-up asks its colour and size; the set is sold whole. |
+| **Free gift** | **Spend threshold** | Step 1 buy (progress in ₹ to the minimum) → step 2 choose the gift(s) from all the gifts, each gift in its own pop-up (a store product given as a gift asks its size too). |
+| | **Buy X get Y** | The same two steps, progress in items ("1 of 2 bought"). |
+| | **One gift in the pool** | No choosing: "Your gift: Silver coin" is added by itself when she reaches it. |
+
+**Buy now**
+- **Simple item:** straight to checkout with that one item.
+- **Deal:** from the deal page's review, straight to checkout with that deal only. A volume or free-gift deal below its
+  threshold can still be bought at what it costs then, with the nudge shown.
+- **Buy now never changes the bag.** What is in the bag stays there.
+
+### 6.6 The bag (O6, O7)
+- **Grouped by post:** each group shows the creator (avatar, name), the brand and the offer, then its items, then its
+  progress or nudge. A deal group shows its sets and gift together (D11) with **Edit deal**, which reopens the deal
+  page.
+- Each item: photo, name, size and colour, quantity, the price she pays with the normal price struck, and **Change**
+  (size, colour, quantity), **Remove**, **Move to Saved** (it keeps its post, 5.8).
+- **Quantity:** 1 to 5 of one size per item.
+- **Tick boxes:** every item starts ticked. Only ticked items go to checkout, and deals are worked out on the ticked
+  items. Unticked items stay in the bag.
+- **When something changes after she added it:**
+  - the **price** changed: the new price shows with the old one ("Price changed from ₹1,200");
+  - her **size sold out**: "Sold out in this size. Change size", and the item can't go to checkout;
+  - the **offer ended or the post left the shop**: "No longer available with this offer", with the other live
+    posts that carry the product (like Saved, 5.8); it can't be bought outside a post;
+  - the **product is no longer sold**: "No longer available", with Remove.
+- **Price details** at the bottom: items at normal price, offer savings, delivery (free, 6.10), cash on delivery fee
+  when chosen, and the total. Then **Continue**.
+- **Guests** fill a bag without signing in; it is kept on the phone (5.2). **"Continue" asks a guest to sign in**
+  with her number (O8), and her bag, saves and follows move to her account.
+
+### 6.7 Addresses (O9, O10)
+- **Entered by hand for now.** No map or Google location lookup.
+- Fields: **name, phone (10 digits), house/flat/building, area/street, landmark (optional), pincode (6 digits),
+  city, state** (from the list), and **Home / Work / Other**.
+- She can keep up to **10 addresses**, choose a **default**, edit and delete them. Deleting never changes a past
+  order's address.
+- **Any 6-digit pincode is accepted.** There is no courier coverage check until courier booking arrives.
+- The checkout opens on her default address with **Change**.
+
+### 6.8 Review and pay (O11, O12)
+- **One card per brand parcel:** the brand, its items (with their creators), and **"Arrives by <date>"**, worked out
+  from the brand's distance to the address (the existing estimate).
+- **Price details:** items at normal price · offer savings · delivery · cash on delivery fee · **total**, and "You're
+  saving ₹X".
+- **Payment:** **UPI, cards, net banking** through Razorpay, or **Cash on delivery**.
+  - Cash on delivery is offered only up to **₹5,000** per checkout; above that it is shown greyed with the reason.
+    The limit and the fee are INFLX admin settings.
+  - There is **no shopper wallet** (5.1).
+- **Place order ₹X:** the prices are fixed from this moment (M8). An online payment has **15 minutes** to finish;
+  meanwhile the items (and gifts) are held for her. If it doesn't finish, the hold ends and nothing is ordered.
+- If a price, offer or stock changed since the bag, the review shows the change **before** she pays.
+
+### 6.9 Order placed (O13)
+- "Order placed" with each brand's parcel and its arrival date, the total, and the payment method.
+- **Notifications:** the shopper gets order placed, shipped, out for delivery, delivered, cancelled and refund issued.
+  The **brand** gets each new order. The **creator** gets "A sale through your post" (never who bought, 4.14).
+
+### 6.10 Delivery
+- **Free delivery at launch;** the brand bears it. A delivery fee (₹X below ₹Y per brand parcel) is an INFLX admin
+  setting, **off** at launch.
+- **The brand ships** and marks each parcel **Packed** and **Shipped** (with the courier name and tracking number),
+  then **Out for delivery** and **Delivered**, as today. Courier booking (Shiprocket) comes later.
+
+### 6.11 My orders and tracking (O14, O15)
+- **My orders:** each item with its status, arrival date and **Track · Cancel · Need help**, newest first, with search
+  and filters (status, time).
+- **Statuses:** Confirmed → Packed → Shipped → Out for delivery → Delivered; or Cancelled.
+- **Order detail:** the timeline with dates, the courier and tracking number once shipped, the address, the price
+  paid for this item, the payment method, and the post it came from.
+
+### 6.12 Cancelling (O16, O17)
+- **She can cancel any item until the brand marks it Shipped.**
+- **Reasons:** Incorrect size ordered · Not needed any more · Ordered by mistake · Want a different style or colour ·
+  Delivery is taking too long · Found a better price · Other (write a note). A reason is required.
+- **Deal items cancel together.** Cancelling one item of a BOGO pair, a bundle set or a volume deal cancels the other
+  items of that deal too, after the warning: "This is part of Any 2 for ₹2,999. Cancelling cancels both."
+- **A free gift follows what earned it.** If the cancel leaves the post's items below the gift's threshold, the gift
+  is cancelled too.
+- **The brand can cancel** an item it can't send (for example, out of stock), with a reason; the shopper is told and
+  refunded the same way.
+- **Refunds:**
+  - **online payment:** refunded **automatically to the original payment method**, for the item's paid share (and the
+    parcel's delivery fee if the whole parcel is cancelled). "Refund of ₹X to your UPI in 5–7 working days" shows in
+    the order;
+  - **cash on delivery:** nothing to refund ("A refund is not needed; this was pay on delivery").
+- **Stock** of cancelled items (and gifts) goes back.
+- **Money:** the creator's commission on cancelled items is taken back from her pending earnings, and the brand is not
+  paid for them.
+- **After Shipped**, cancelling is closed; she returns it once delivered (returns: next discussion).
+
+### 6.13 Money for each item
+- **Every item is its own money record:** the post, the creator's collaboration, the offer, the price paid, the
+  creator's commission, the INFLX fee and what the brand receives.
+- **Deal prices are shared out in proportion to each item's normal price.** Example: "Any 2 for ₹2,999" with items of
+  ₹2,000 and ₹1,500 → ₹1,714 and ₹1,285. **BOGO:** the paid one carries the price and the free one ₹0, as she sees it (the pair cancels together). A volume ₹ reward is
+  shared across the post's items the same way. **Gifts** carry no price and earn no commission.
+- **Commission** = her collaboration's commission % × the item's paid share (M3), for each item (M2).
+- **The INFLX fee** is worked out on the paid share, per category, as today. **What the brand receives** = paid share −
+  commission − INFLX fee.
+- **Channel:** each item records the channel of the last tap on that creator's links (4.14). Reporting only.
+
+**How every rupee the shopper pays is split (founder, 30 Sep 2026: "divided clearly")**
+
+What she pays for the items (after the deal) is split three ways, **for every item, at the moment she places the
+order**, and each share is stored on the item with the rate that made it:
+
+| Share | Who decides the rate | Worked on |
+|---|---|---|
+| **Creator's share** (commission) | **The collaboration** the creator signed with the brand (`commission_pct`, 2.x) | the item's paid share |
+| **INFLX's share** (platform fee) | **INFLX admin**: the rate for the brand's business category for a sale through a creator's post (Admin → Pricing → Categories, the **Path B "via influencer"** column), or the brand's own rate when admin set one for that brand | the item's paid share |
+| **Brand's share** | what is left | paid share − creator's share − INFLX's share |
+
+Example, with today's settings: a fashion brand, a creator on 10%, the fashion Path B rate 5%. She pays
+**₹1,000** for a kurta.
+
+| | ₹ |
+|---|---|
+| Shopper pays for the item | **1,000.00** |
+| Creator's share · 10% (her collaboration) | **100.00** |
+| INFLX's share · 5% (admin, fashion Path B) | **50.00** |
+| Brand's share | **850.00** |
+
+- **The three always add up to what she paid**, to the paisa. Shares are worked in paise and rounded; any leftover
+  paisa goes to the brand's share.
+- **Rates are frozen on the item.** If admin changes the fashion rate tomorrow, or the brand and creator change terms,
+  orders already placed keep the rates they were placed with.
+- **Gifts and free items** (BOGO's free one) have a paid share of ₹0, so all three shares are ₹0.
+- **Not part of the split:** the delivery fee (off at launch) and the cash-on-delivery fee go to the brand, which ships
+  and collects. They earn no commission and no INFLX fee.
+- **When each share is paid:** the creator's share waits in her pending earnings until the return window closes, then
+  becomes withdrawable (TDS as set by admin is deducted when she withdraws: ₹100 → ₹90 at 10%). The brand's share is
+  paid after the return window closes, less TCS when admin switches TCS on (1%: ₹8.50 of ₹850). INFLX keeps its share;
+  the GST on INFLX's share is recorded for INFLX's own filing, as today.
+- **Cash on delivery:** the brand's courier collects the cash, so the money is with the brand. The brand then **owes
+  INFLX the creator's share + INFLX's share** (₹150 in the example). INFLX pays the creator from it as above, and the
+  amount the brand owes is **taken from the brand's next online payouts**; what is still owed shows to the brand and
+  to INFLX admin.
+- **Cancelled (and later returned) items:** all three shares of that item are reversed: the creator's share leaves her
+  pending earnings, INFLX takes no fee, the brand is not paid for it, and the shopper gets back what she paid for it.
+- **Everyone sees their line:** the brand sees each item's paid amount, creator's share, INFLX's share and its own
+  share; the creator sees her share per item (never who bought); INFLX admin sees all three for every item.
+- **Payouts are unchanged (M9):** the commission waits in her pending earnings until the return window closes, then
+  becomes withdrawable. The brand is paid after the return window closes (G-3), never for cancelled items.
+
+### 6.14 Who sees what
+- **Shopper:** her orders, statuses, refunds.
+- **Brand:** each order for its products, with the items, sizes, the post and creator each came from, the address to
+  ship to; it marks Packed, Shipped (courier, tracking), Out for delivery, Delivered, and can cancel with a reason.
+- **Creator:** the sales through each of her posts (items, amounts, her commission, channel), **never who bought**.
+- **INFLX admin:** everything, including the settings (COD limit, COD fee, delivery fee) and every order's money.
+
+### 6.15 Not in this step
+Returns and exchanges (next discussion) · pay at store (O5) · courier booking and live tracking (Shiprocket) ·
+invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses.
+
+---
+
+## 7. Open items (owed by the founder)
 
 | # | Item |
 |---|---|
 | O1 | Shoot-plan rules that gate post creation (4.1) |
 | ~~O2~~ | ~~Post link and post code~~: answered 28 Sep (4.14); formats fixed at build 29 Sep (v1.6). |
 | O3 | Discover rails: detailed design (4.12) |
-| O4 | Shopper app screens: ~~post page~~ (F1–F13 locked 29 Sep); filters, cart, gift choice and bundle completion come with checkout |
+| O4 | Shopper app screens: ~~post page~~ (F1–F13 locked 29 Sep); ~~cart, gift choice, bundle completion~~ (section 6, **locked 30 Sep**); filters remain with Discover (O9) |
 | O5 | Pay at store (M10) |
 | O6 | Margin floor (1.8), deferred |
 | O7 | Offers on the phone: after the website (1.1) |
-| O8 | Checkout path, returns, addresses in the follower app (5.1): next discussion |
+| O8 | ~~Checkout path, addresses~~: agreed 30 Sep (section 6). **Returns and exchanges**: next discussion |
 | O9 | Discover: how admin designs it (5.13) |
 
 ---
 
-## 7. Change log
+## 8. Change log
 
 | Date | Version | Change |
 |---|---|---|
@@ -777,3 +1043,8 @@ only totals are shown.
 | 2026-09-29 | 1.6 | Level 4 board locked and built: the code's characters, a bare or unknown ending counts as Other, link previews aren't visits (4.14). Until the shopper app, a link opens a plain INFLX page (post, store or collection) with no shopping. |
 | 2026-09-29 | 1.7 | Shopper app decisions: board F1–F13 locked; location is now the phone's current location, used and never stored, with the city as fallback (5.3, 5.4); no Add or bag until checkout (5.1); Discover shows "Coming soon" (5.13); video from INFLX storage at launch with four speed measures, Cloudflare Stream when load-pauses grow (4.7); engagement built in two halves (4.15); the feed written in full: Stage A on, Stage B built but off behind an admin switch with a readiness panel and a preview (5.12); what the app records (5.14). |
 | 2026-09-30 | 1.8 | The new app build: the video player (plays only on screen; muted in feeds, sound setting in Play; preloads; 200 MB phone cache; stable, cacheable links for approved posts), video shrinking before upload with a safe fallback, links open in the shopper app only (incl. /c/), and what waits for the Play Store listing (app-link verification, the right post after install) (4.7, 4.14). |
+| 2026-09-30 | 1.9 | New section 6, ordering, from the founder's ten agreed points and reference screens: every item remembers its post; bag grouped by post; one bag, one payment, one order per brand; size sheet; how each offer works in the bag (BOGO free choice, volume tiers, bundle sets with costliest first, fixed sets, gifts once per order, gifts run out → posts leave the shop); Buy now; bag states and tick boxes; guests sign in at Continue; manual addresses; review and pay (Razorpay, COD up to ₹5,000); price fixed at Place order with a 15-minute hold; free delivery at launch; statuses; cancelling until Shipped with deal items together and gifts following; automatic refunds; stock back; per-item money with deal prices shared by normal price; who sees what. Open items renumbered to 7, change log to 8. |
+| 2026-09-30 | 1.10 | Founder's concern: a deal with 20 products and 10 gifts can't be built in a pop-up. **Every deal post now opens a full-screen deal page (6.5)**: the deal at the top, every product in a grid (filters and sort above 8), the size sheet per pick, a "Your picks" tray, a sticky progress bar, and a review. One page per kind of offer: free gift in two steps (buy, then choose from all gifts), bundle slots (mix & match with category tabs), fixed set as a list, volume tier ladder with steppers, BOGO product then pair. Bag deal groups get Edit deal. Screens D1–D11 replace O3–O5. |
+| 2026-09-30 | 1.11 | Founder: concentrate on the deals. Tapping a product on a deal page opens the **product pop-up** there (photos, details, colours, sizes with stock, size chart, other choices) → Pick → closes → the card shows it picked; reopen to change or remove (6.5). The four deal types and every sub-type written as the shopper meets them (BOGO; volume by quantity % / ₹ and by value; bundle pick any / mix & match / fixed; free gift spend / buy X / one gift). Board: `features/shopper-ordering/04-preview/mockups/shopper-deals-mockups-v1.html`. |
+| 2026-09-30 | 1.12 | **Final, locked by the founder.** One board for ordering and deals: `features/shopper-ordering/04-preview/mockups/shopper-ordering-mockups-final.html` (38 screens: O1, O2, D1, P1–P3, B1–B4, V1–V4, K1–K5, G1–G5, D4, D11, O6–O17); the deals board's screens replace D2, D3 and D5–D10. One-time check against the screens: screen references in 6.3–6.5 brought to the final names; the "Your picks" tray dropped (picks show on the cards, slots and pair list, and in the review); volume quantity is chosen in the pop-up, not a stepper on the card; BOGO is one pop-up in two parts; the volume example corrected to "save ₹900"; **rounding written down**: a % comes off each unit, rounded to the rupee; shared prices put any leftover rupee on the costliest item. |
+| 2026-09-30 | 1.13 | Founder: every order's money divided clearly. 6.13 now shows how each rupee splits: creator's share at her collaboration's %, INFLX's share at the admin rate (category via creator, or the brand's own rate), the brand the rest; worked per item at Place order, frozen on the item, adding up to the paisa. Example ₹1,000 → ₹100 / ₹50 / ₹850 (fashion Path B 5%). BOGO wording aligned: the free one is ₹0 in the money too. Delivery and COD fees go to the brand. Cash on delivery: the brand owes creator's share + INFLX's share, taken from its next online payouts. |

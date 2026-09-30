@@ -16,6 +16,7 @@ const darkColors = {
 };
 import { api } from '../../services/api';
 import { mergeAfterSignIn } from '../../components/shop/shopStore';
+import { mergeBagAfterSignIn } from '../../components/shop/bag';
 
 /**
  * FollowerLoginScreen — quick OTP login for followers.
@@ -134,6 +135,8 @@ export default function FollowerLoginScreen({ navigation, route }) {
     // follower-app-v2 (5.2): what she kept on the phone as a guest (follows, saves, Welcome
     // choices) moves to her account now. A failure here never blocks signing in.
     try { await mergeAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
+    // shopper-ordering (O8): the bag she filled as a guest joins her account.
+    try { await mergeBagAfterSignIn(); } catch (_) { /* kept on the phone; merged next time */ }
     Alert.alert('Signed in', 'You are all set.', [
       {
         text: 'Continue',

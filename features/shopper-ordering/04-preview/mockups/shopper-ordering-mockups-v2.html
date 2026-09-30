@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>INFLX Shopper Ordering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* INFLX app palette (Color System page), light-only by design. */
+:root{
+  color-scheme: light;
+  --page:#EEEEEA; --bg:#FFFFFF; --surface:#F6F6F3; --border:#E5E4DE;
+  --ink:#1A1A17; --ink2:#5B5A53; --ink3:#77766E;
+  --primary:#FFC700; --primary-pressed:#F0B400; --primary-soft:#FFF3C4;
+  --move-fg:#B04600; --move-bg:#FFEBDD;
+  --wait-fg:#1D5FBF; --wait-bg:#E6EFFC;
+  --active-fg:#1A7A3D; --active-bg:#E4F5EA;
+  --done-fg:#6A3FC6; --done-bg:#EFE8FC;
+  --no-fg:#C42B2B; --no-bg:#FDE8E8;
+  --ended-fg:#55544D; --ended-bg:#EFEFEA;
+  --sans:"Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:18px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.015em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.06}
+h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.lede{font-size:16px;color:var(--ink2);max-width:68ch}
+.prose{color:var(--ink2);max-width:70ch}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+header.top{padding-block:34px 14px;display:grid;gap:10px}
+section{padding-block:30px 6px;display:grid;gap:14px}
+section > header{display:grid;gap:6px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--move-bg);color:var(--move-fg);width:max-content}
+
+/* screens grid */
+.flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:26px 22px;align-items:start}
+.shot{display:grid;gap:8px;justify-items:center;align-content:start}
+.cap{display:grid;gap:2px;width:100%;max-width:320px}
+.cap b{font-size:13.5px}
+.cap span{font-size:12.5px;color:var(--ink2)}
+.cap i{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.phone{width:300px;max-width:100%;background:var(--bg);border:7px solid #1A1A17;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;min-height:600px;position:relative;font-size:13.5px}
+.sb{height:26px;display:flex;justify-content:space-between;align-items:center;padding-inline:18px;font-size:11px;font-weight:700}
+.scr{flex:1;padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.bar{display:flex;align-items:center;gap:10px;min-height:38px}
+.bar h3{font-size:16px;font-weight:800;flex:1}
+.ib{width:32px;height:32px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;flex:none;color:var(--ink)}
+.ico{width:16px;height:16px;flex:none}
+.mut{color:var(--ink2)}
+.xs{font-size:11.5px}
+.sm{font-size:12.5px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.grp{display:grid;gap:8px}
+.lbl{font-weight:700;font-size:13px}
+.hint{font-size:11.5px;color:var(--ink2)}
+.err{font-size:11.5px;color:var(--no-fg);font-weight:600}
+.divider{height:1px;background:var(--border)}
+.card{border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;gap:8px}
+.card.tint{background:var(--surface);border-color:transparent}
+.card .row.between b{white-space:nowrap}
+.card .row.between .xs{text-align:right}
+.listrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.listrow:last-child{border-bottom:0}
+.listrow .t{flex:1;display:grid;gap:1px}
+.listrow .t b{font-size:13.5px}
+.chev{color:var(--ink3)}
+/* controls */
+.sw{width:40px;height:24px;border-radius:999px;background:#D9D8D1;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--ink)}
+.sw.on::after{left:19px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.opt.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.opt.sel .ico{width:12px;height:12px}
+.opt.bad{border-color:var(--no-fg)}
+.field{height:42px;border-radius:12px;border:1.5px solid var(--border);padding-inline:11px;display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink)}
+.field.ph{color:var(--ink3)}
+.field.focus{border-color:var(--ink);box-shadow:0 0 0 3px var(--primary-soft)}
+.field.error{border-color:var(--no-fg)}
+.field .unit{margin-left:auto;color:var(--ink3);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.anyrow{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;font-size:13px}
+.anyrow b{font-weight:700}
+.btn{font:inherit;font-weight:700;font-size:13.5px;height:42px;padding-inline:14px;border-radius:12px;border:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.block{width:100%}
+.btn.sm2{height:32px;font-size:12.5px;padding-inline:10px;border-radius:9px}
+.b-pri{background:var(--primary);color:var(--ink)}
+.b-sec{background:#fff;color:var(--ink);border:1.5px solid var(--ink)}
+.b-txt{background:transparent;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding-inline:2px}
+.b-dan{background:#fff;color:var(--no-fg);border:1.5px solid #F2B8B8}
+.b-dis{background:var(--ended-bg);color:#A3A29B}
+.savebar{border-top:1px solid var(--border);padding:10px 14px 14px;display:grid;gap:6px;background:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;line-height:1;padding:5px 8px;border-radius:999px;white-space:nowrap}
+.s-active{color:var(--active-fg);background:var(--active-bg)}
+.s-ended{color:var(--ended-fg);background:var(--ended-bg)}
+.s-move{color:var(--move-fg);background:var(--move-bg)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid var(--border);color:var(--ink2);background:#fff;white-space:nowrap}
+.toast{border-radius:12px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;font-size:12.5px;font-weight:600}
+.t-ok{background:var(--active-bg);color:var(--active-fg)}
+.t-err{background:var(--no-bg);color:var(--no-fg)}
+.t-warn{background:var(--move-bg);color:var(--move-fg)}
+.t-info{background:var(--wait-bg);color:var(--wait-fg)}
+.banner{border-radius:12px;padding:10px 11px;background:var(--ended-bg);color:var(--ended-fg);font-size:12.5px;display:grid;gap:2px}
+.banner b{color:var(--ink)}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.av-s{width:34px;height:34px;font-size:12px}
+.spinner{width:14px;height:14px;border-radius:50%;border:2.5px solid rgba(26,26,23,.25);border-top-color:var(--ink);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skel{background:linear-gradient(90deg,#EFEFEA 0%,#F7F7F4 50%,#EFEFEA 100%);background-size:200% 100%;border-radius:8px;animation:sh 1.4s ease-in-out infinite}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media (prefers-reduced-motion: reduce){.spinner,.skel{animation:none}}
+/* bottom sheet */
+.dim{position:absolute;inset:0;background:rgba(26,26,23,.45);display:flex;align-items:flex-end}
+.sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;padding:10px 14px 16px;display:grid;gap:10px}
+.grab{width:36px;height:4px;border-radius:4px;background:#D9D8D1;justify-self:center}
+.check{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);display:grid;place-items:center;flex:none}
+.check.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.check .ico{width:12px;height:12px}
+.tabbar{border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(5,1fr);padding:7px 4px 10px;background:#fff}
+.tab{display:grid;justify-items:center;gap:2px;font-size:10px;color:var(--ink3);font-weight:600}
+.tab .p{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.tab.on{color:var(--ink)}
+.tab.on .p{background:var(--primary-soft)}
+.tab .plus{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin-top:-4px}
+.empty{border:1.5px dashed var(--border);border-radius:14px;padding:18px 14px;display:grid;gap:8px;justify-items:center;text-align:center}
+.empty .c{width:44px;height:44px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+
+/* spec tables */
+.tscroll{overflow-x:auto;background:var(--bg);border-radius:16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);padding:11px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2);min-width:120px}
+td:first-child{color:var(--ink);font-weight:700;min-width:150px}
+tr:last-child td{border-bottom:0}
+.checks{background:var(--bg);border-radius:16px;padding:8px 18px}
+.checks li{padding:9px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--ink2);list-style:none;display:grid;grid-template-columns:22px 1fr;gap:8px}
+.checks li:last-child{border-bottom:0}
+.checks ul{margin:0;padding:0}
+.box{width:15px;height:15px;border:1.5px solid var(--ink3);border-radius:4px;margin-top:3px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+footer{padding-block:32px 52px;font-size:13px;color:var(--ink2)}
+
+.s-no{color:var(--no-fg);background:var(--no-bg)}
+.s-done{color:var(--done-fg);background:var(--done-bg)}
+.segc{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-radius:12px;padding:3px;gap:2px}
+.segc span{font-size:12px;font-weight:700;text-align:center;padding:7px 4px;border-radius:9px;color:var(--ink2)}
+.segc span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(26,26,23,.12)}
+.search{height:40px;border-radius:12px;background:var(--surface);display:flex;align-items:center;gap:8px;padding-inline:11px;color:var(--ink3);font-size:13px}
+.frow2{display:flex;gap:6px;overflow:hidden;flex-wrap:nowrap}
+.fchip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:6px 9px;border-radius:999px;border:1.5px solid var(--border);white-space:nowrap;color:var(--ink2);background:#fff}
+.fchip .ico{width:12px;height:12px}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ccard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.ccard .top{display:flex;gap:10px;align-items:center}
+.ccard .nm{font-weight:800;font-size:14px;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stat{background:var(--surface);border-radius:10px;padding:6px 8px;display:grid;gap:0}
+.stat b{font-size:13.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:10.5px;color:var(--ink2)}
+.statbig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.statbig .stat{padding:9px 10px}
+.statbig .stat b{font-size:16px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.prod{display:grid;gap:4px}
+.pimg{aspect-ratio:1/1.1;border-radius:12px;position:relative;overflow:hidden;max-width:100%}
+.pimg .oos{position:absolute;left:6px;top:6px}
+.prod b{font-size:12.5px;line-height:1.25}
+.prod span{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.bcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.logo.lg{width:60px;height:60px;border-radius:16px;font-size:18px}
+.upload{border:1.5px dashed var(--border);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.req{color:var(--no-fg)}
+.secth{font-weight:800;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.secth span{font-size:12px;color:var(--ink2);font-weight:600}
+.textarea{min-height:70px;border-radius:12px;border:1.5px solid var(--border);padding:10px 11px;font-size:13px;color:var(--ink)}
+.counter{font-size:11px;color:var(--ink3);text-align:right}
+.result{padding:9px 0;border-bottom:1px solid var(--border);display:grid;gap:1px}
+.result b{font-size:13px}
+.result span{font-size:11.5px;color:var(--ink2)}
+.radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.radio.on{border-color:var(--ink)}
+.radio.on::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.soon{flex:1;display:grid;place-items:center;text-align:center;align-content:center;gap:10px;padding:20px}
+.soon .c{width:56px;height:56px;border-radius:50%;background:var(--primary-soft);display:grid;place-items:center}
+.carousel{aspect-ratio:1/1;border-radius:14px;position:relative;max-width:100%}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.6)}
+.dots i.on{background:#fff}
+.size{min-width:38px;height:32px;border-radius:9px;border:1.5px solid var(--border);display:grid;place-items:center;font-size:12px;font-weight:700;padding-inline:8px}
+.size.na{color:#B9B8B1;text-decoration:line-through;background:var(--surface)}
+.postgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.postgrid div{aspect-ratio:4/5;border-radius:8px}
+.segc.four{grid-auto-columns:auto;gap:0}
+.segc.four span{font-size:11px;padding:7px 3px;white-space:nowrap;letter-spacing:-.01em}
+.ccard .ib{width:30px;height:30px}
+.ccard .ib .ico{width:16px;height:16px}
+.stack{display:flex;padding-left:8px}
+.stack .avatar{width:28px;height:28px;font-size:9px;border:2px solid #fff;margin-left:-6px}
+.stack .more{background:var(--surface);color:var(--ink2)}
+.gcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.gcard .nm{font-weight:800;font-size:14px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:0}
+.mrow .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow .t b{font-size:13px}
+.mrow .t .xs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow .ic2{color:var(--ink3);flex:none}
+.check.dis{background:var(--surface);border-color:var(--surface);color:var(--ink3)}
+.btnrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.btnrow .btn{padding-inline:6px}
+.sechd{font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px}
+.sechd .n{font-weight:700;color:var(--ink2)}
+.preview{align-self:flex-start;display:inline-flex;font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;background:var(--wait-bg);color:var(--wait-fg);justify-self:start}
+
+.cut{border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:600;display:flex;gap:7px;align-items:center;background:var(--wait-bg);color:var(--wait-fg)}
+.bar2{height:6px;border-radius:99px;background:var(--surface);overflow:hidden;display:flex}
+.bar2 i{display:block;height:100%}
+.crumbs{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.05em}
+.steps{display:flex;gap:4px;align-items:center}
+.steps i{width:7px;height:7px;border-radius:50%;background:var(--border);display:block}
+.steps i.on{background:var(--ink)}
+.steps span{font-size:11px;color:var(--ink2);margin-left:4px}
+.mrow2{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.mrow2:last-child{border-bottom:0}
+.mrow2 .t{flex:1;min-width:0;display:grid;gap:2px}
+.mrow2 .t b{font-size:13px}
+.money{display:flex;align-items:center;gap:8px}
+.money .field{flex:1}
+.pre{color:var(--ink3);font-weight:700}
+.delrow{display:flex;gap:6px;align-items:center}
+.delrow .field{flex:1}
+.delrow .qty{width:62px;justify-content:center}
+.optlist{display:grid;gap:8px}
+.optbox{border:1.5px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:9px;align-items:flex-start}
+.optbox.sel{border-color:var(--ink);background:var(--surface)}
+.optbox .t{display:grid;gap:2px;flex:1}
+.optbox b{font-size:13px}
+.optbox span{font-size:11.5px;color:var(--ink2)}
+.tcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:7px}
+.tcard.locked{background:var(--surface);border-color:transparent}
+.tline{display:flex;justify-content:space-between;gap:10px;font-size:12.5px}
+.tline span:first-child{color:var(--ink2)}
+.tline b{text-align:right}
+.sechd2{font-size:11px;font-family:var(--mono);letter-spacing:.06em;color:var(--ink3);text-transform:uppercase}
+.invcard{border:1px solid var(--border);border-radius:14px;padding:11px;display:grid;gap:8px}
+.invcard .top{display:flex;gap:10px;align-items:center}
+.newdot{width:8px;height:8px;border-radius:50%;background:var(--move-fg);flex:none}
+.warn{border-radius:12px;padding:9px 11px;font-size:12.5px;display:flex;gap:8px;background:var(--move-bg);color:var(--move-fg);font-weight:600}
+.prev{border-radius:12px;padding:10px 11px;background:var(--active-bg);color:var(--active-fg);font-size:12.5px;display:grid;gap:2px}
+.prev b{color:var(--active-fg);font-size:13.5px}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 18 9 12l6-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16m10 2-4.3-4.3"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20m0-6v-4m0-4h.01"/></symbol>
+  <symbol id="i-ban" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M5 5l14 14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m12 2 10 5-10 5L2 7zm-10 10 10 5 10-5M2 17l10 5 10-5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m13 10v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6m15 8h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12m0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/></symbol>
+
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 9 5.5 4h13L20 9M4 9v11h16V9M4 9h16M9 20v-6h6v6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></symbol>
+  <symbol id="i-uadd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M15 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+
+  <symbol id="i-cal2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 9h16M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-clock2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11V5a1 1 0 0 1 1-1h6l8 8-7 7z"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 8h10a5 5 0 0 1 0 10h-4M4 8l4-4M4 8l4 4"/></symbol>
+</svg>
+</head><body>
+<div class="wrap">
+<style>
+.lgd{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px;color:var(--ink2)}
+.tg{display:inline-flex;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.03em}
+.tg.new{background:var(--active-bg);color:var(--active-fg)}
+.rulebox{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:grid;gap:6px;font-size:14px}
+.rulebox ul{margin:0;padding-left:18px;display:grid;gap:3px;color:var(--ink2)}
+.scr > *{flex-shrink:0}
+.ftop{display:flex;align-items:center;gap:8px;min-height:36px}
+.ftop .wm{font-weight:800;font-size:18px;letter-spacing:-.02em;flex:1}
+.ftop .ic{width:30px;height:30px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;position:relative}
+.ftop .ic .n{position:absolute;top:-5px;right:-5px;background:var(--primary);color:var(--ink);font-size:9px;font-weight:800;border-radius:99px;padding:0 5px;line-height:15px;border:1.5px solid #fff}
+.circles{display:flex;gap:10px;overflow:hidden}
+.cir{display:grid;justify-items:center;gap:3px;width:52px;flex:none}
+.cir .av{width:48px;height:48px;border-radius:50%;background:#E9E8E2;display:grid;place-items:center;font-weight:800;font-size:13px;border:2px solid #fff;box-shadow:0 0 0 2px var(--border)}
+.cir .av.ring{box-shadow:0 0 0 2.5px var(--primary)}
+.cir .av.sq{border-radius:14px}
+.cir span{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px}
+.rowlbl{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.post{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff}
+.post .ph{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.post .ph .a{width:28px;height:28px;border-radius:50%;background:#FFE7A3;display:grid;place-items:center;font-size:11px;font-weight:800}
+.post .ph .t{flex:1;display:grid;line-height:1.25}
+.post .ph .t b{font-size:12.5px}
+.post .ph .t span{font-size:10.5px;color:var(--ink2)}
+.post .img{aspect-ratio:4/5;background:linear-gradient(160deg,#DCDAD2,#F1F0EB);position:relative}
+.post .img.vid{background:linear-gradient(160deg,#3B3A35,#6B6960)}
+.badge{position:absolute;top:8px;left:8px;background:var(--ink);color:#fff;font-size:10.5px;font-weight:800;border-radius:8px;padding:3px 8px}
+.shopbtn{position:absolute;bottom:8px;left:8px;right:8px;background:rgba(255,255,255,.96);border-radius:12px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800}
+.acts{display:flex;gap:14px;padding:8px 10px 2px;font-size:12px;font-weight:700;align-items:center}
+.acts span{display:inline-flex;align-items:center;gap:4px}
+.acts .sp{flex:1}
+.cap2{padding:0 10px 10px;font-size:12px;color:var(--ink2)}
+.play{position:absolute;inset:0;display:grid;place-items:center}
+.play i{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-style:normal}
+.dark{background:#111;color:#fff}
+.full{flex:1;position:relative;background:linear-gradient(170deg,#2E2D29,#57554D);border-radius:0;margin:0 -13px -13px}
+.full .rail{position:absolute;right:10px;bottom:120px;display:grid;gap:14px;justify-items:center;font-size:10.5px;font-weight:700;color:#fff}
+.full .rail i{font-style:normal;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center;font-size:15px}
+.full .who{position:absolute;left:12px;right:60px;bottom:64px;display:grid;gap:4px;color:#fff;font-size:12px}
+.full .shop{position:absolute;left:12px;right:12px;bottom:14px;background:#fff;color:var(--ink);border-radius:12px;padding:10px 12px;font-weight:800;font-size:12.5px;display:flex;justify-content:space-between}
+.g22{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.g22 .tile{aspect-ratio:4/5;border-radius:12px;background:linear-gradient(160deg,#DCDAD2,#F1F0EB);position:relative}
+.g22 .tile.v{background:linear-gradient(160deg,#3B3A35,#6B6960)}
+.g22 .tile b{position:absolute;left:6px;bottom:6px;font-size:9.5px;background:rgba(255,255,255,.95);border-radius:6px;padding:2px 6px}
+.g22 .tile u{position:absolute;right:6px;top:6px;text-decoration:none;font-size:10px;color:#fff;background:rgba(0,0,0,.45);border-radius:6px;padding:1px 5px}
+.tabs3{display:flex;border-bottom:1px solid var(--border)}
+.tabs3 span{flex:1;text-align:center;padding:8px 0;font-size:12.5px;font-weight:700;color:var(--ink3);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs3 span.on{color:var(--ink);border-color:var(--ink)}
+.fab{position:absolute;right:14px;bottom:72px;background:var(--ink);color:#fff;border-radius:99px;padding:10px 16px;font-weight:800;font-size:12.5px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.pline{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.pline .th{width:40px;height:50px;border-radius:8px;background:linear-gradient(135deg,#E9E8E2,#F6F6F3);flex:none}
+.pline .t{flex:1;display:grid;gap:1px;min-width:0}
+.pline s{color:var(--ink3);font-size:11px}
+.heart{font-size:15px}
+.addb{font-size:11px;font-weight:800;border:1.5px solid var(--ink);border-radius:9px;padding:5px 9px}
+.cmt{display:flex;gap:8px;padding:7px 0;font-size:12.5px}
+.cmt .t{flex:1;display:grid;gap:1px}
+.cmt .m{font-size:10.5px;color:var(--ink3)}
+.offrow{border:1px solid var(--border);border-radius:12px;padding:10px 11px;display:flex;gap:10px;align-items:center}
+.offrow .t{flex:1;display:grid;gap:1px}
+.offrow .t b{font-size:13px}
+.unav{border-radius:12px;padding:9px 10px;background:var(--surface);display:grid;gap:4px;font-size:12px}
+.qs{display:grid;gap:10px}
+.nm{font-size:12.5px;color:var(--ink3)} .nm b{color:var(--ink2)}
+.ftab{display:flex;border-top:1px solid var(--border);background:#fff;padding:6px 4px 8px}
+.ftab span{flex:1;display:grid;justify-items:center;gap:2px;font-size:9.5px;font-weight:700;color:var(--ink3)}
+.ftab span i{font-style:normal;font-size:15px;line-height:1}
+.ftab span.on{color:var(--ink)}
+.ftab span.pl i{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:13px;margin-top:-10px}
+.ftab.dk{background:#111;border-color:#222}
+.ftab.dk span{color:#888} .ftab.dk span.on{color:#fff} .ftab.dk span.pl i{background:#fff;color:#111}
+</style>
+
+<style>
+.grp{border:1px solid var(--border);border-radius:14px;padding:10px;display:grid;gap:6px}
+.grp .gh{display:flex;align-items:center;gap:8px}
+.grp .gh .a{width:26px;height:26px;border-radius:50%;background:#FFE7A3;display:grid;place-items:center;font-size:10px;font-weight:800;flex:none}
+.grp .gh .t{flex:1;display:grid;line-height:1.2}
+.grp .gh .t b{font-size:12.5px}
+.grp .gh .t span{font-size:10.5px;color:var(--ink2)}
+.bi{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--border)}
+.bi .th{width:44px;height:56px;border-radius:8px;background:linear-gradient(135deg,#E9E8E2,#F6F6F3);flex:none}
+.bi .t{flex:1;display:grid;gap:1px;min-width:0;font-size:12px}
+.bi .t b{font-size:12.5px}
+.bi s{color:var(--ink3);font-size:11px}
+.bi .ops{font-size:10.5px;font-weight:700;color:var(--ink);display:flex;gap:10px;margin-top:2px}
+.bi .ops u{text-underline-offset:2px}
+.tick{width:16px;height:16px;border-radius:5px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:10px;flex:none;margin-top:2px}
+.tick.off{background:#fff;border:1.5px solid var(--border)}
+.prog{display:grid;gap:4px;background:var(--primary-soft);border-radius:10px;padding:7px 9px;font-size:11.5px;font-weight:600}
+.prog .pbar{height:5px;border-radius:9px;background:#fff;overflow:hidden}
+.prog .pbar i{display:block;height:100%;background:var(--ink);border-radius:9px}
+.more{font-size:11.5px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.pd{display:grid;gap:4px;font-size:12px}
+.pd .l{display:flex;justify-content:space-between}
+.pd .l span:first-child{color:var(--ink2)}
+.pd .tot{border-top:1px solid var(--border);padding-top:6px;font-weight:800;font-size:13px}
+.save{color:var(--active-fg);font-weight:700}
+.sizes{display:flex;gap:6px;flex-wrap:wrap}
+.qtybox{display:inline-flex;align-items:center;border:1.5px solid var(--border);border-radius:9px;font-size:12px;font-weight:700}
+.qtybox span{padding:3px 8px}
+.slot{border:1.5px dashed var(--border);border-radius:10px;padding:8px;font-size:11.5px;color:var(--ink3);text-align:center}
+.addr{border:1.5px solid var(--border);border-radius:12px;padding:10px;display:grid;gap:3px;font-size:12px}
+.addr.sel{border-color:var(--ink)}
+.addr b{font-size:13px}
+.pill2{display:inline-flex;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--surface);color:var(--ink2);width:max-content}
+.parcel{border:1px solid var(--border);border-radius:14px;padding:10px;display:grid;gap:6px}
+.parcel .h{display:flex;justify-content:space-between;font-size:12px}
+.parcel .h b{font-size:12.5px}
+.mini{display:flex;gap:8px;align-items:center;font-size:11.5px}
+.mini .th{width:30px;height:38px;border-radius:6px;background:linear-gradient(135deg,#E9E8E2,#F6F6F3);flex:none}
+.pay{display:flex;align-items:center;gap:10px;border:1.5px solid var(--border);border-radius:12px;padding:10px;font-size:12.5px}
+.pay.sel{border-color:var(--ink)}
+.pay.off{background:var(--surface);color:#A3A29B}
+.pay .t{flex:1;display:grid;gap:1px}
+.tl{display:grid;gap:0;font-size:12px}
+.tl .st{display:grid;grid-template-columns:18px 1fr;gap:8px;position:relative;padding-bottom:12px}
+.tl .st:before{content:"";position:absolute;left:8px;top:14px;bottom:0;width:2px;background:var(--border)}
+.tl .st:last-child:before{display:none}
+.tl .st.done:before{background:var(--active-fg)}
+.tl .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:#fff}
+.tl .st.done .dot{background:var(--active-fg);border-color:var(--active-fg)}
+.tl .st .t{display:grid;gap:1px}
+.tl .st .t span{font-size:11px;color:var(--ink2)}
+.ordercard{border:1px solid var(--border);border-radius:14px;padding:10px;display:grid;gap:7px}
+.ordercard .top{display:flex;gap:8px;align-items:center}
+.ordercard .acts3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ordercard .acts3 span{border:1.5px solid var(--border);border-radius:10px;padding:6px 4px;text-align:center;font-size:11px;font-weight:700}
+.bigok{width:56px;height:56px;border-radius:50%;background:var(--active-fg);color:#fff;display:grid;place-items:center;font-size:26px;justify-self:center}
+.colors{display:flex;gap:8px}
+.colors i{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--border);display:block}
+.colors i.on{box-shadow:0 0 0 2px var(--ink)}
+</style>
+
+<header class="top">
+  <div class="eyebrow">Shopper app · ordering · mockups v2 · 30 Sep 2026</div>
+  <h1>Ordering: size, deal pages, bag, address, pay, orders, cancelling</h1>
+  <p class="lede">Drawn from the ten points you agreed on 30 September and your reference screens, in the same look as the shopper app (black, white, INFLX yellow). Rules: <span style="font-family:var(--mono);font-size:13px">Docs/OFFER_TERMS_POSTS_RULES.md §6 (v1.10)</span>. <b>v2:</b> every deal now opens a full deal page (D1–D11), one for each kind of offer, replacing the small pop-ups O3–O5. <b>Not drawn:</b> returns and exchanges (next discussion) and pay at store.</p>
+  <div class="lgd"><span class="tg new">NEW</span> every screen here is new · <b>O</b> = ordering screens · <b>D</b> = deal pages (v2)</div>
+  <div class="rulebox"><b>The example on every screen</b>
+    <ul>
+      <li><b>Priya · Sri Lakshmi Silks · 20% off</b>: Mangalagiri cotton saree ₹960 (was ₹1,200), Chanderi saree ₹1,440 (was ₹1,800).</li>
+      <li><b>Sneha · Urban Threads · Any 2 for ₹2,999</b>: Levi's 511 ₹2,299, Wrangler ₹1,999, Pepe ₹1,799. The two costliest make the set (₹2,999); Pepe is at its normal price.</li>
+      <li><b>Divya · Kaya Studio · Buy 2 → 30% off</b>: one cotton kurta ₹999, so 1 more is needed for 30% off.</li>
+      <li>Items at normal price ₹10,096 · offer savings ₹1,899 · delivery free · <b>total ₹8,197</b>. Above ₹5,000, so cash on delivery is greyed.</li>
+    </ul>
+  </div>
+</header>
+
+<style>
+.dhead{border-radius:14px;background:var(--primary-soft);padding:10px;display:grid;gap:3px}
+.dhead .row b{font-size:14px}
+.dhead .xs{color:var(--ink2)}
+.stepper{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stepper span{font-size:11.5px;font-weight:800;text-align:center;padding:7px 4px;border-radius:10px;background:var(--surface);color:var(--ink3)}
+.stepper span.on{background:var(--ink);color:#fff}
+.stepper span.done{background:var(--active-bg);color:var(--active-fg)}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dc{border:1px solid var(--border);border-radius:12px;overflow:hidden;display:grid;background:#fff;position:relative}
+.dc .im{aspect-ratio:1/1;background:linear-gradient(160deg,#DCDAD2,#F1F0EB)}
+.dc .t{padding:6px 7px;display:grid;gap:1px;font-size:11px}
+.dc .t b{font-size:11.5px;line-height:1.2}
+.dc .t s{color:var(--ink3);font-size:10px}
+.dc .ad{margin:0 7px 7px;border:1.5px solid var(--ink);border-radius:8px;text-align:center;font-size:11px;font-weight:800;padding:4px}
+.dc.pk{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink)}
+.dc.pk .ad{background:var(--ink);color:#fff}
+.dc.gone{opacity:.45}
+.dc .tag{position:absolute;top:6px;left:6px;font-size:9.5px;font-weight:800;background:#fff;border-radius:6px;padding:2px 6px}
+.dc .qs2{margin:0 7px 7px;display:flex;justify-content:space-between;align-items:center;border:1.5px solid var(--ink);border-radius:8px;font-size:12px;font-weight:800;padding:2px 8px}
+.chipsrow{display:flex;gap:6px;overflow:hidden}
+.chipsrow .fchip{font-size:11px;padding:5px 8px}
+.stick{border-top:1px solid var(--border);padding:9px 14px 12px;display:grid;gap:6px;background:#fff}
+.stick .ln{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.stick .ln b{font-size:13px}
+.tray{display:flex;gap:5px;align-items:center}
+.tray i{width:26px;height:32px;border-radius:6px;background:linear-gradient(135deg,#DCDAD2,#F1F0EB);display:block;position:relative;font-style:normal}
+.tray i em{position:absolute;bottom:-3px;right:-3px;font-size:8px;font-style:normal;font-weight:800;background:var(--ink);color:#fff;border-radius:5px;padding:0 3px}
+.tray span{font-size:11px;font-weight:700;margin-left:4px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.slots div{aspect-ratio:1/1.15;border:1.5px dashed var(--border);border-radius:10px;display:grid;place-items:center;font-size:10.5px;color:var(--ink3);text-align:center;padding:4px}
+.slots div.f{border:1.5px solid var(--ink);background:linear-gradient(160deg,#DCDAD2,#F1F0EB);color:var(--ink);font-weight:800;align-content:end}
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.ladder div{border-radius:10px;padding:6px;text-align:center;font-size:10.5px;background:var(--surface);color:var(--ink2);display:grid;gap:1px}
+.ladder div b{font-size:12px;color:var(--ink)}
+.ladder div.on{background:var(--ink);color:#fff}
+.ladder div.on b{color:#fff}
+.ladder div.next{outline:1.5px dashed var(--ink)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pair .pc{border:1.5px solid var(--border);border-radius:12px;padding:8px;display:grid;gap:5px;font-size:11px}
+.pair .pc.free{border-color:var(--active-fg);background:var(--active-bg)}
+.pair .pc .im{aspect-ratio:1/1;border-radius:8px;background:linear-gradient(160deg,#DCDAD2,#F1F0EB)}
+.pair .sz{display:flex;gap:4px;flex-wrap:wrap}
+.pair .sz span{border:1.5px solid var(--border);border-radius:7px;font-size:10.5px;font-weight:700;padding:2px 6px;background:#fff}
+.pair .sz span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.fset{display:grid;gap:6px}
+.fset .it{display:flex;gap:8px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:8px}
+.fset .it .im{width:44px;height:54px;border-radius:8px;background:linear-gradient(160deg,#DCDAD2,#F1F0EB);flex:none}
+.fset .it .t{flex:1;display:grid;gap:3px;font-size:11.5px}
+.fset .it .sz{display:flex;gap:4px}
+.fset .it .sz span{border:1.5px solid var(--border);border-radius:7px;font-size:10.5px;font-weight:700;padding:2px 6px}
+.fset .it .sz span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lock{border-radius:12px;background:var(--surface);padding:10px;font-size:12px;display:flex;gap:8px;align-items:center}
+.phone.tall{min-height:780px}
+.phone.tall .scr{gap:9px}
+</style>
+
+<!-- ============ SIMPLE ============ -->
+<section><header><div class="eyebrow">Simple posts</div><h2>Normal price and discounts: one product at a time</h2><p class="prose">A price post or a discount post needs no deal page. Add opens the size sheet, and the product goes to the bag or straight to Buy now.</p></header><div class="flow">
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="ftop"><span class="wm">INFLX</span></div><div style="height:120px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span>
+<div class="row between"><b style="font-size:15px">Mangalagiri cotton saree</b><span class="chip s-active">20% off applied</span></div>
+<div class="row" style="gap:6px"><b style="font-size:16px">₹960</b><s class="xs mut">₹1,200</s><span class="xs mut">· from Priya's post</span></div>
+<div class="lbl">Colour: Maroon</div>
+<div class="colors"><i class="on" style="background:#7A1F2B"></i><i style="background:#C9A227"></i><i style="background:#1F4E5A"></i></div>
+<div class="row between"><span class="lbl">Size</span><span class="xs" style="font-weight:700;text-decoration:underline">Size chart ›</span></div>
+<div class="sizes"><span class="size">XS</span><span class="size" style="border-color:var(--ink);background:var(--ink);color:#fff">S</span><span class="size">M</span><span class="size">L</span><span class="size na">XL</span></div>
+<div class="err" style="color:var(--move-fg)">Only 2 left in M</div>
+<div class="btnrow"><button class="btn b-sec" type="button">Buy now</button><button class="btn b-pri" type="button">Add to bag</button></div>
+</div></div></div><div class="cap"><i>O1</i><b>Size and colour</b><span>Colours, sizes with stock, sold-out sizes crossed out, "Only 2 left" at 3 or fewer. The price after the offer with the normal price struck. Size chart only when the brand gave one.</span></div></div>
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="ftop"><span class="wm">INFLX</span><span class="ic">⌕</span><span class="ic">👜<span class="n">3</span></span></div><div style="height:110px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span>
+<div class="row between"><b style="font-size:15px">Shop this post</b><span class="chip s-active">20% off applied</span></div>
+<div class="xs mut">Priya · Sri Lakshmi Silks</div>
+<div class="pline"><div class="th"></div><div class="t"><b>Mangalagiri cotton saree</b><span><b>₹960</b> <s>₹1,200</s></span><span class="xs" style="color:var(--active-fg);font-weight:700">✓ In your bag · S</span></div><span class="heart">♡</span><span class="addb">Add</span></div>
+<div class="pline"><div class="th"></div><div class="t"><b>Chanderi saree</b><span><b>₹1,440</b> <s>₹1,800</s></span></div><span class="heart">♥</span><span class="addb">Add</span></div>
+<div class="hint">No code needed. Buying here pays Priya her commission. The ♡ saves the product with this post, so it keeps this offer.</div>
+<button class="btn block b-pri" type="button">Go to bag · 3</button></div></div></div><div class="cap"><i>O2</i><b>Shop this post, with Add</b><span>F3 gains Add on each product and Go to bag; the bag icon with its count joins the top bar on every screen. The ♡ still saves the product with its post.</span></div></div>
+</div></section>
+
+<!-- ============ DEAL ENTRY ============ -->
+<section><header><div class="eyebrow">Deals · how they open</div><h2>A deal post opens a full deal page</h2><p class="prose">A deal can carry 20 products and 10 gifts, so it is never built in a pop-up. Shop this post says what the deal is and how it works, then Build your deal opens a full page for that kind of offer. Every deal page has the deal at the top, every product in a grid, a size sheet for each pick, a "Your picks" tray, a sticky progress bar, and a review before the bag.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="ftop"><span class="wm">INFLX</span></div><div style="height:130px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span>
+<div class="row between"><b style="font-size:15px">Shop this post</b><span class="chip s-active">Free gift</span></div>
+<div class="xs mut">Rama · Urban Threads</div>
+<div class="dhead"><b>Spend ₹3,000 → 1 free gift</b><span class="xs">Buy any of the 20 jackets and shirts in this post. At ₹3,000 you choose 1 free gift out of 10. Till 25 Oct.</span></div>
+<div class="row" style="gap:10px"><span class="tag">20 products</span><span class="tag">10 gifts</span></div>
+<div class="hint">No code needed. Buying here pays Rama her commission.</div>
+<button class="btn block b-pri" type="button">Build your deal</button>
+</div></div></div><div class="cap"><i>D1</i><b>Shop this post, on a deal post</b><span>The deal, how it works in one line, how many products and gifts, and Build your deal. Add on any product opens the deal page with that product already picked.</span></div></div>
+
+</div></section>
+
+<!-- ============ FREE GIFT ============ -->
+<section><header><div class="eyebrow">Deal page · free gift</div><h2>Step 1: choose what you buy. Step 2: choose your gift. Then review.</h2><p class="prose">The two steps show at the top. Step 1 is every product of the post with a progress bar to the gift. Step 2 unlocks at the amount (or number) and shows every gift clearly: its photo, what it's worth, how many are left. The review shows the whole deal before the bag.</p></header><div class="flow">
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="dhead"><div class="row between"><b>Spend ₹3,000 → 1 free gift</b><span class="xs">till 25 Oct</span></div><span class="xs">Rama · Urban Threads · 20 products · 10 gifts</span></div>
+<div class="stepper"><span class="on">1 · Choose what you buy</span><span>2 · Choose your gift 🔒</span></div>
+<div class="chipsrow"><span class="fchip on">All 20</span><span class="fchip">Jackets 12</span><span class="fchip">Shirts 8</span><span class="fchip">Sort: price ▾</span></div>
+<div class="dg">
+<div class="dc pk"><div class="im"></div><div class="t"><b>Denim jacket</b><span>₹1,650 · 4 sizes</span></div><div class="ad">✓ Picked · L</div></div>
+<div class="dc pk"><div class="im"></div><div class="t"><b>Bomber jacket</b><span>₹800 · 3 sizes</span></div><div class="ad">✓ Picked · M</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Linen shirt · Sage</b><span>₹800 · 5 sizes</span></div><div class="ad">Pick</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Corduroy jacket</b><span>₹2,100 · 2 sizes</span></div><div class="ad">Pick</div></div>
+</div>
+<div class="xs mut" style="text-align:center">16 more below · sold-out ones greyed at the end</div>
+</div>
+<div class="stick"><div class="prog"><span>₹2,450 of ₹3,000 · spend ₹550 more to unlock your gift</span><div class="pbar"><i style="width:82%"></i></div></div>
+<div class="ln"><div class="tray"><i><em>L</em></i><i><em>M</em></i><span>2 picked</span></div><b>₹2,450</b></div>
+<button class="btn block b-dis" type="button">Next: choose your gift</button></div>
+</div><div class="cap"><i>D2</i><b>Free gift · step 1: choose what you buy</b><span>All the post's products in a grid, with category chips and sort (over 8 products). Pick opens the size sheet. The tray shows her picks; the bar shows how far she is from the gift.</span></div></div>
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="stepper"><span class="done">✓ 1 · 3 items · ₹3,250</span><span class="on">2 · Choose your gift</span></div>
+<div class="toast t-ok">🎁 Gift unlocked. Choose 1 of 10.</div>
+<div class="dg">
+<div class="dc pk"><div class="im"></div><div class="t"><b>Silver coin</b><span>worth ₹650</span></div><div class="ad">✓ Chosen</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Leather cap</b><span>worth ₹499 · 3 left</span></div><div class="ad">Choose</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Sunglasses</b><span>worth ₹799</span></div><div class="ad">Choose</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Leather wallet</b><span>worth ₹599</span></div><div class="ad">Choose</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Canvas tote</b><span>worth ₹399</span></div><div class="ad">Choose</div></div>
+<div class="dc gone"><div class="im"></div><div class="t"><b>Canvas belt</b><span>All given</span></div><div class="ad" style="border-color:var(--border)">—</div></div>
+</div>
+<div class="xs mut" style="text-align:center">4 more gifts below</div>
+</div>
+<div class="stick"><div class="ln"><span>3 items + <b>Silver coin</b> free</span><b>₹3,250</b></div>
+<button class="btn block b-pri" type="button">Review your deal</button></div>
+</div><div class="cap"><i>D3</i><b>Free gift · step 2: choose your gift</b><span>Unlocks at the amount. Every gift in a grid with its photo, name, "worth ₹650", "3 left" when few remain, "All given" greyed. She chooses the offer's number of gifts. Dropping below the amount locks it again.</span></div></div>
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Your deal</h3></div>
+<div class="dhead"><b>Spend ₹3,000 → 1 free gift</b><span class="xs">Rama · Urban Threads</span></div>
+<div class="bi" style="border-top:0"><div class="th"></div><div class="t"><b>Denim jacket · Blue · L</b><span>₹1,650</span><div class="ops"><u>Change</u><u>Remove</u></div></div></div>
+<div class="bi"><div class="th"></div><div class="t"><b>Bomber jacket · Olive · M</b><span>₹800</span><div class="ops"><u>Change</u><u>Remove</u></div></div></div>
+<div class="bi"><div class="th"></div><div class="t"><b>Linen shirt · Sage · M</b><span>₹800</span><div class="ops"><u>Change</u><u>Remove</u></div></div></div>
+<div class="bi"><div class="th" style="background:var(--active-bg)"></div><div class="t"><b>Free gift: Silver coin</b><span class="save">₹0 · worth ₹650</span><div class="ops"><u>Change gift</u></div></div></div>
+<div class="pd"><div class="l"><span>3 items</span><span>₹3,250</span></div><div class="l"><span>Gift</span><span class="save">Free (worth ₹650)</span></div><div class="l tot"><span>You pay</span><span>₹3,250</span></div></div>
+</div>
+<div class="stick"><div class="btnrow"><button class="btn b-sec" type="button">Buy now</button><button class="btn b-pri" type="button">Add to bag</button></div></div>
+</div><div class="cap"><i>D4</i><b>Review your deal (every offer)</b><span>Each item with its size, Change and Remove, the gift, what she pays and saves, then Add to bag or Buy now. Every deal page ends on this review.</span></div></div>
+
+</div></section>
+
+<!-- ============ BUNDLES ============ -->
+<section><header><div class="eyebrow">Deal page · bundles</div><h2>Mix &amp; match and pick any: fill the slots. Fixed: choose each size.</h2><p class="prose">The set's slots sit at the top and fill with each pick's photo. Mix &amp; match has one tab per category so each group is easy to see; pick any is the same page without tabs. When a set is full she can start another or review. A fixed set is a list with a size for each item.</p></header><div class="flow">
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="dhead"><div class="row between"><b>Any 3 for ₹3,499</b><span class="xs">till 31 Oct</span></div><span class="xs">Sneha · Urban Threads · mix shirts, trousers and jeans</span></div>
+<div class="slots"><div class="f">Oxford shirt · M</div><div class="f">Chinos · 32</div><div>Pick 1 more</div></div>
+<div class="tabs3"><span>Shirts 8</span><span class="on">Trousers 6</span><span>Jeans 6</span></div>
+<div class="dg">
+<div class="dc pk"><div class="im"></div><div class="t"><b>Slim chinos · Khaki</b><span>₹1,499 · 5 sizes</span></div><div class="ad">✓ Picked · 32</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Linen trousers</b><span>₹1,599 · 4 sizes</span></div><div class="ad">Pick</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Pleated trousers</b><span>₹1,799 · 3 sizes</span></div><div class="ad">Pick</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Cargo trousers</b><span>₹1,399 · 5 sizes</span></div><div class="ad">Pick</div></div>
+</div>
+</div>
+<div class="stick"><div class="ln"><span><b>2 of 3</b> picked</span><span class="xs mut">normal ₹2,798 so far</span></div>
+<button class="btn block b-dis" type="button">Pick 1 more to complete the set</button></div>
+</div><div class="cap"><i>D5</i><b>Mix &amp; match: fill the slots</b><span>Slots at the top fill with each pick. One tab per category with its count. Pick opens the size sheet. The button works only on full sets. "Pick any" is the same page without category tabs.</span></div></div>
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="dhead"><b>Any 3 for ₹3,499</b><span class="xs">Sneha · Urban Threads</span></div>
+<div class="toast t-ok">✓ Set complete · ₹3,499 · you save ₹1,298</div>
+<div class="slots"><div class="f">Oxford shirt · M</div><div class="f">Chinos · 32</div><div class="f">Slim jeans · 32</div></div>
+<div class="card tint"><b style="font-size:12.5px">Want another set?</b><span class="xs mut">Another 3 for ₹3,499. Items outside a full set are at their normal price.</span><button class="btn sm2 b-sec" type="button">+ Add another set</button></div>
+<div class="tabs3"><span>Shirts 8</span><span>Trousers 6</span><span class="on">Jeans 6</span></div>
+<div class="dg">
+<div class="dc pk"><div class="im"></div><div class="t"><b>Slim jeans · Indigo</b><span>₹1,999</span></div><div class="ad">✓ Picked · 32</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Straight jeans</b><span>₹1,799</span></div><div class="ad">Pick</div></div>
+</div>
+</div>
+<div class="stick"><div class="ln"><span>1 set · 3 items</span><span><b>₹3,499</b> <s class="xs mut">₹4,797</s></span></div>
+<button class="btn block b-pri" type="button">Review your deal</button></div>
+</div><div class="cap"><i>D6</i><b>Set complete</b><span>"Set complete · you save ₹1,298", with Add another set or Review. The costliest picks fill sets first; a leftover pick is at its normal price and the bar says so.</span></div></div>
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="dhead"><div class="row between"><b>Wedding set · ₹4,999</b><span class="xs">till 20 Oct</span></div><span class="xs">Priya · Sri Lakshmi Silks · 3 items sold together</span></div>
+<div class="fset">
+<div class="it"><div class="im"></div><div class="t"><b>Kanjeevaram silk saree</b><span class="mut">₹3,999 · Free size</span><span class="save xs">✓ Ready</span></div></div>
+<div class="it"><div class="im"></div><div class="t"><b>Silk blouse · Gold</b><span class="mut">₹1,299 · choose size</span><div class="sz"><span>32</span><span class="on">34</span><span>36</span><span>38</span></div></div></div>
+<div class="it"><div class="im"></div><div class="t"><b>Potli bag</b><span class="mut">₹999 · one size</span><span class="save xs">✓ Ready</span></div></div>
+</div>
+<div class="row between sm"><span>Sets</span><span class="qtybox"><span>−</span><span>1</span><span>+</span></span></div>
+<div class="hint">Sold only as the whole set. Removing one item removes the set.</div>
+</div>
+<div class="stick"><div class="ln"><span>1 set · 3 items</span><span><b>₹4,999</b> <s class="xs mut">₹6,297</s></span></div>
+<button class="btn block b-pri" type="button">Review your deal</button></div>
+</div><div class="cap"><i>D7</i><b>Fixed bundle: the whole set</b><span>Every item of the set listed, each with its own size (and colour) choice; the button works when all are chosen. The set price with the total at normal price struck. Quantity changes whole sets.</span></div></div>
+
+</div></section>
+
+<!-- ============ VOLUME + BOGO ============ -->
+<section><header><div class="eyebrow">Deal page · volume and BOGO</div><h2>Volume: the tier ladder and a stepper on every product. BOGO: choose the product, then the pair.</h2><p class="prose">For buy more save more, the ladder at the top shows every tier and where she is; each product card has its own quantity stepper, so she can add several without leaving the page. For BOGO she chooses the product first, then sees the paid one and the free one side by side, each with its own colour and size.</p></header><div class="flow">
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="dhead"><div class="row between"><b>Buy more, save more</b><span class="xs">till 20 Oct</span></div><span class="xs">Divya · Kaya Studio · 12 kurtas · tiers replace each other</span></div>
+<div class="ladder"><div><b>Buy 1</b>normal</div><div class="on"><b>Buy 2</b>20% off</div><div class="next"><b>Buy 3</b>30% off</div></div>
+<div class="chipsrow"><span class="fchip on">All 12</span><span class="fchip">Cotton 7</span><span class="fchip">Silk 5</span><span class="fchip">Sort: price ▾</span></div>
+<div class="dg">
+<div class="dc pk"><div class="im"></div><div class="t"><b>Cotton kurta · Ivory</b><span>₹999 · M</span></div><div class="qs2"><span>−</span><span>1</span><span>+</span></div></div>
+<div class="dc pk"><div class="im"></div><div class="t"><b>Block-print kurta</b><span>₹1,199 · L</span></div><div class="qs2"><span>−</span><span>1</span><span>+</span></div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Silk kurta · Rust</b><span>₹1,799 · 4 sizes</span></div><div class="ad">Add</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Linen kurta · Sky</b><span>₹1,099 · 5 sizes</span></div><div class="ad">Add</div></div>
+</div>
+</div>
+<div class="stick"><div class="prog"><span>2 items · 20% off. Add 1 more item for 30% off all three</span><div class="pbar"><i style="width:66%"></i></div></div>
+<div class="ln"><span>2 items</span><span><b>₹1,758</b> <s class="xs mut">₹2,198</s> <span class="save xs">save ₹440</span></span></div>
+<button class="btn block b-pri" type="button">Review your deal</button></div>
+</div><div class="cap"><i>D8</i><b>Volume: ladder and steppers</b><span>Every tier on the ladder, her tier filled, the next one dashed. A stepper on each picked card (a size sheet first for a new product). The bar says what one more item gives. Volume by value is the same page with the ladder in ₹ ("Spend ₹2,000 · 10% off").</span></div></div>
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="dhead"><div class="row between"><b>Buy 1, get the same free</b><span class="xs">till 15 Oct</span></div><span class="xs">Arjun · Denim Co · 6 jeans · up to 2 free per order</span></div>
+<div class="stepper"><span class="on">1 · Choose the product</span><span>2 · Your pair</span></div>
+<div class="dg">
+<div class="dc pk"><div class="im"></div><div class="t"><b>Levi's 511 Slim</b><span>₹2,299 · 6 sizes</span></div><div class="ad">✓ Chosen</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Levi's 501 Original</b><span>₹2,499 · 5 sizes</span></div><div class="ad">Choose</div></div>
+<div class="dc"><div class="im"></div><div class="t"><b>Levi's 505 Regular</b><span>₹2,199 · 4 sizes</span></div><div class="ad">Choose</div></div>
+<div class="dc gone"><div class="im"></div><div class="t"><b>Levi's 502 Taper</b><span>Sold out</span></div><div class="ad" style="border-color:var(--border)">—</div></div>
+</div>
+<div class="hint">You pay for one and get the same product free, in any colour or size.</div>
+</div>
+<div class="stick"><button class="btn block b-pri" type="button">Next: your pair</button></div>
+</div><div class="cap"><i>D9</i><b>BOGO · step 1: choose the product</b><span>The pool's products in the grid, sold-out greyed. The free one is always the same product as the paid one.</span></div></div>
+
+<div class="shot"><div class="phone tall"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Build your deal</h3></div>
+<div class="stepper"><span class="done">✓ 1 · Levi's 511 Slim</span><span class="on">2 · Your pair</span></div>
+<div class="lbl">Pair 1</div>
+<div class="pair">
+<div class="pc"><b>You pay for</b><div class="im"></div><span>Colour: Blue</span><div class="colors"><i class="on" style="background:#2B4C7E;width:20px;height:20px"></i><i style="background:#1A1A17;width:20px;height:20px"></i><i style="background:#8A8F98;width:20px;height:20px"></i></div><div class="sz"><span>30</span><span class="on">32</span><span>34</span><span>36</span></div><b>₹2,299</b></div>
+<div class="pc free"><b style="color:var(--active-fg)">Free</b><div class="im"></div><span>Colour: Black</span><div class="colors"><i style="background:#2B4C7E;width:20px;height:20px"></i><i class="on" style="background:#1A1A17;width:20px;height:20px"></i><i style="background:#8A8F98;width:20px;height:20px"></i></div><div class="sz"><span>30</span><span>32</span><span class="on">34</span><span style="text-decoration:line-through;color:#B9B8B1">36</span></div><b class="save">₹0</b></div>
+</div>
+<button class="btn block b-sec" type="button">+ Add another pair</button>
+<div class="hint" style="text-align:center">1 more free pair allowed in this order</div>
+</div>
+<div class="stick"><div class="ln"><span>1 pair · 2 jeans</span><span><b>₹2,299</b> <span class="save xs">save ₹2,299</span></span></div>
+<button class="btn block b-pri" type="button">Review your deal</button></div>
+</div><div class="cap"><i>D10</i><b>BOGO · step 2: your pair</b><span>"You pay for" and "Free" side by side, each with its own colour and size (sold-out sizes crossed out). Add another pair up to the offer's maximum free items per order.</span></div></div>
+
+</div></section>
+
+<!-- ============ BAG DEAL GROUP ============ -->
+<section><header><div class="eyebrow">Deals in the bag</div><h2>A deal stays together in the bag</h2><p class="prose">In the bag a deal shows as one group: its sets, its gift, what it costs and saves, and Edit deal, which reopens the deal page with her picks already in it.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Bag · 7 items</h3></div>
+<div class="grp"><div class="gh"><span class="a">RA</span><div class="t"><b>Rama · Urban Threads</b><span>Spend ₹3,000 → 1 free gift</span></div><span class="xs" style="font-weight:800;text-decoration:underline">Edit deal</span></div>
+<div class="tray"><i><em>L</em></i><i><em>M</em></i><i><em>M</em></i><i style="background:var(--active-bg)"><em>🎁</em></i><span>3 items + Silver coin free</span></div>
+<div class="row between sm"><span class="save">Gift unlocked</span><b>₹3,250</b></div>
+</div>
+<div class="grp"><div class="gh"><span class="a">SN</span><div class="t"><b>Sneha · Urban Threads</b><span>Any 3 for ₹3,499</span></div><span class="xs" style="font-weight:800;text-decoration:underline">Edit deal</span></div>
+<div class="tray"><i><em>M</em></i><i><em>32</em></i><i><em>32</em></i><span>1 set · 3 items</span></div>
+<div class="row between sm"><span class="save">Save ₹1,298</span><span><b>₹3,499</b> <s class="xs mut">₹4,797</s></span></div>
+</div>
+<div class="grp"><div class="gh"><span class="a">DV</span><div class="t"><b>Divya · Kaya Studio</b><span>Buy more, save more</span></div><span class="xs" style="font-weight:800;text-decoration:underline">Edit deal</span></div>
+<div class="tray"><i><em>M</em></i><i><em>L</em></i><span>2 items · 20% off</span></div>
+<div class="prog"><span>Add 1 more for 30% off</span><div class="pbar"><i style="width:66%"></i></div></div>
+<div class="row between sm"><span class="save">Save ₹440</span><b>₹1,758</b></div>
+</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Continue · ₹8,507</button></div></div><div class="cap"><i>D11</i><b>Deal groups in the bag</b><span>Each deal as one group: photos with sizes, the gift, the set count, what it costs and saves, the next nudge, and Edit deal (reopens the deal page). Tapping the group lists every item with Change and Remove.</span></div></div>
+
+</div></section>
+
+<!-- ============ BAG ============ -->
+<section><header><div class="eyebrow">The bag</div><h2>Grouped by post, with each deal's progress</h2><p class="prose">Each group is one post: its creator, brand and offer, its items, and what's left to complete its deal, with Add more from this post. Items can be unticked to leave them for later. When something changes after she added it, the bag says so before she pays.</p></header><div class="flow">
+
+<div class="shot"><div class="phone" style="min-height:760px"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Bag · 6 items</h3><span class="xs" style="font-weight:700">♡</span></div>
+<div class="row between xs"><span class="mut">Deliver to <b style="color:var(--ink)">Aveen, 521108</b></span><span style="font-weight:800;text-decoration:underline">Change</span></div>
+<div class="grp"><div class="gh"><span class="a">PR</span><div class="t"><b>Priya · Sri Lakshmi Silks</b><span>20% off</span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Mangalagiri cotton saree</b><span>Maroon · S · <span class="qtybox"><span>−</span><span>1</span><span>+</span></span></span><span><b>₹960</b> <s>₹1,200</s></span><div class="ops"><u>Change</u><u>Remove</u><u>Move to Saved</u></div></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Chanderi saree</b><span>Green · Free size · 1</span><span><b>₹1,440</b> <s>₹1,800</s></span></div></div>
+</div>
+<div class="grp"><div class="gh"><span class="a">SN</span><div class="t"><b>Sneha · Urban Threads</b><span>Any 2 for ₹2,999</span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Levi's 511 Slim · 32</b><span class="xs mut">In the set</span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Wrangler Regular · 32</b><span class="xs mut">In the set · 2 for <b style="color:var(--ink)">₹2,999</b> <s>₹4,298</s></span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Pepe Straight · 30</b><span><b>₹1,799</b> · normal price</span></div></div>
+<div class="prog"><span>Add 1 more to complete another set of 2 for ₹2,999</span><div class="pbar"><i style="width:50%"></i></div></div>
+<span class="more">+ Add more from this post</span>
+</div>
+<div class="grp"><div class="gh"><span class="a">DV</span><div class="t"><b>Divya · Kaya Studio</b><span>Buy 2 → 30% off</span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Cotton kurta · Ivory · M</b><span><b>₹999</b></span></div></div>
+<div class="prog"><span>Add 1 more from this post for 30% off both</span><div class="pbar"><i style="width:50%"></i></div></div>
+<span class="more">+ Add more from this post</span>
+</div>
+<div class="pd"><div class="l"><span>Items (normal price)</span><span>₹10,096</span></div><div class="l"><span>Offer savings</span><span class="save">− ₹1,899</span></div><div class="l"><span>Delivery</span><span class="save">Free</span></div><div class="l tot"><span>Total</span><span>₹8,197</span></div></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Continue · ₹8,197</button></div></div><div class="cap"><i>O6</i><b>The bag</b><span>Grouped by post. Each item: size, colour, quantity (1–5), price after the offer, Change · Remove · Move to Saved (keeps its post). The costliest items make the bundle set first. Progress bars and Add more from this post.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Bag · 4 items</h3></div>
+<div class="grp"><div class="gh"><span class="a">RA</span><div class="t"><b>Rama · Urban Threads</b><span>Spend ₹3,000 → 1 free gift</span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th"></div><div class="t"><b>Denim jacket · L</b><span><b>₹3,200</b></span><span class="xs" style="color:var(--move-fg);font-weight:700">Price changed from ₹3,000</span></div></div>
+<div class="bi"><span class="tick">✓</span><div class="th" style="background:var(--primary-soft)"></div><div class="t"><b>Free: Silver coin</b><span class="xs mut">worth ₹650 · <u style="font-weight:700;color:var(--ink)">Change gift</u></span></div></div>
+</div>
+<div class="grp"><div class="gh"><span class="a">PR</span><div class="t"><b>Priya · Sri Lakshmi Silks</b><span>20% off</span></div></div>
+<div class="bi"><span class="tick off"></span><div class="th"></div><div class="t"><b>Chanderi saree · M</b><span class="err">Sold out in this size. Change size</span></div></div>
+</div>
+<div class="grp"><div class="gh"><span class="a">DV</span><div class="t"><b>Divya · Kaya Studio</b><span>Buy 2 → 30% off</span></div></div>
+<div class="bi"><span class="tick off"></span><div class="th"></div><div class="t"><b>Classic crew tee · Black</b><div class="unav"><span>No longer available with this offer. Divya's post ended on 15 Oct.</span><b>Live in 2 other posts →</b></div></div></div>
+</div>
+<div class="hint">Unticked items stay in the bag and don't go to checkout. Deals are worked out on the ticked items.</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Continue · ₹3,200</button></div></div><div class="cap"><i>O7</i><b>When something changed</b><span>A new price shows with the old one; a sold-out size or a post that left the shop can't go to checkout ("No longer available with this offer" + other live posts). A free gift shows ₹0 with Change gift.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><h3>Bag · 6 items</h3></div><div style="height:240px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span>
+<b style="font-size:15px">Sign in to place your order</b>
+<div class="sm mut">Your bag, saves and follows move to your account.</div>
+<div class="field"><span class="pre">+91</span>98765 43210</div>
+<button class="btn block b-pri" type="button">Get OTP</button>
+<div class="hint">We only use your number for your orders and your account.</div>
+</div></div></div><div class="cap"><i>O8</i><b>Guests: sign in at Continue</b><span>A guest fills a bag without signing in (kept on the phone). Continue asks for her number; after the OTP, checkout carries on with everything she had.</span></div></div>
+
+</div></section>
+
+<!-- ============ ADDRESS + PAY ============ -->
+<section><header><div class="eyebrow">Address and paying</div><h2>Where it goes, what it costs, how she pays</h2><p class="prose">Addresses are typed in by hand (no map for now). The review shows one card per brand parcel with its arrival date, the full price details, and the payment method. The price is fixed at Place order.</p></header><div class="flow">
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Deliver to</h3></div>
+<div class="addr sel"><div class="row between"><span class="pill2">DEFAULT · HOME</span><span class="radio on"></span></div><b>Aveen · 98765 43210</b><span class="mut">Bi123, Enikepadu Main Road, near Water Tank</span><span class="mut">Vijayawada, Andhra Pradesh 521108</span><div class="row" style="gap:14px;margin-top:4px"><span class="xs" style="font-weight:800">Deliver here</span><span class="xs" style="font-weight:700;text-decoration:underline">Edit</span></div></div>
+<div class="addr"><div class="row between"><span class="pill2">WORK</span><span class="radio"></span></div><b>Aveen · 98765 43210</b><span class="mut">4th floor, Sai Towers, MG Road</span><span class="mut">Vijayawada, Andhra Pradesh 520010</span></div>
+<button class="btn block b-sec" type="button">+ Add new address</button>
+<div class="hint">Up to 10 addresses. Deleting one never changes a past order.</div>
+</div></div><div class="cap"><i>O9</i><b>Choose an address</b><span>Her saved addresses, default first, with Deliver here and Edit. Checkout opens on the default with Change.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Add address</h3></div>
+<div class="grp" style="border:0;padding:0;gap:7px">
+<div class="field">Aveen</div>
+<div class="field"><span class="pre">+91</span>98765 43210</div>
+<div class="field">House / flat / building: Bi123</div>
+<div class="field">Area / street: Enikepadu Main Road</div>
+<div class="field ph">Landmark (optional)</div>
+<div class="two"><div class="field">521108</div><div class="field">Vijayawada</div></div>
+<div class="field">Andhra Pradesh <span class="unit">▾</span></div>
+<div class="chips"><span class="opt sel">Home</span><span class="opt">Work</span><span class="opt">Other</span></div>
+<div class="row between sm"><span>Make this my default</span><span class="sw on"></span></div>
+</div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Save address</button></div></div><div class="cap"><i>O10</i><b>Add an address (by hand)</b><span>Name, 10-digit phone, house, area, landmark (optional), 6-digit pincode, city, state from the list, Home / Work / Other, default. Any 6-digit pincode is accepted for now.</span></div></div>
+
+<div class="shot"><div class="phone" style="min-height:720px"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><div style="flex:1;display:grid"><h3 style="flex:none">Review order</h3><span class="xs save">You're saving ₹1,899</span></div></div>
+<div class="row between xs"><span class="mut">Deliver to <b style="color:var(--ink)">Aveen, Bi123 … 521108</b></span><span style="font-weight:800;text-decoration:underline">Change</span></div>
+<div class="parcel"><div class="h"><b>Sri Lakshmi Silks</b><span class="mut">Arrives by Mon, 6 Oct</span></div><div class="mini"><span class="th"></span><span>2 sarees · from Priya's post</span></div></div>
+<div class="parcel"><div class="h"><b>Urban Threads</b><span class="mut">Arrives by Wed, 8 Oct</span></div><div class="mini"><span class="th"></span><span>3 jeans · from Sneha's post</span></div></div>
+<div class="parcel"><div class="h"><b>Kaya Studio</b><span class="mut">Arrives by Tue, 7 Oct</span></div><div class="mini"><span class="th"></span><span>1 kurta · from Divya's post</span></div></div>
+<div class="pd"><div class="l"><span>Items (normal price)</span><span>₹10,096</span></div><div class="l"><span>Offer savings</span><span class="save">− ₹1,899</span></div><div class="l"><span>Delivery</span><span class="save">Free</span></div><div class="l tot"><span>Total</span><span>₹8,197</span></div></div>
+<div class="pay sel"><span>⚡</span><div class="t"><b>UPI</b><span class="xs mut">Google Pay, PhonePe, Paytm…</span></div><span style="font-weight:800;font-size:12px">Change</span></div>
+</div><div class="savebar"><button class="btn block b-pri" type="button">Place order · ₹8,197</button><span class="hint" style="text-align:center">3 parcels, one payment. Prices are fixed when you place the order.</span></div></div><div class="cap"><i>O11</i><b>Review and pay</b><span>One card per brand parcel with its arrival date and where its items came from; price details; the payment method. If anything changed since the bag, it shows here before she pays.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="opacity:.35"><div class="bar"><h3>Review order</h3></div><div style="height:160px"></div></div><div class="dim"><div class="sheet"><span class="grab"></span>
+<b style="font-size:15px">Pay with</b>
+<div class="pay sel"><span>⚡</span><div class="t"><b>UPI</b><span class="xs mut">Google Pay, PhonePe, Paytm, any UPI app</span></div><span class="radio on"></span></div>
+<div class="pay"><span>💳</span><div class="t"><b>Credit or debit card</b></div><span class="radio"></span></div>
+<div class="pay"><span>🏦</span><div class="t"><b>Net banking</b></div><span class="radio"></span></div>
+<div class="pay off"><span>₹</span><div class="t"><b>Cash on delivery</b><span class="xs">Not available above ₹5,000</span></div><span class="radio"></span></div>
+<div class="hint">Payments go through Razorpay. INFLX never sees your card or UPI PIN. No wallet: refunds go back to the way you paid.</div>
+</div></div></div><div class="cap"><i>O12</i><b>Payment method</b><span>UPI, cards and net banking through Razorpay, or cash on delivery (with its fee) up to ₹5,000 per checkout. Above that it is greyed with the reason. An online payment has 15 minutes; the items are held meanwhile.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="justify-content:center;gap:14px">
+<span class="bigok">✓</span>
+<h3 style="text-align:center;font-size:18px">Order placed</h3>
+<div class="sm mut" style="text-align:center">₹8,197 paid by UPI · 3 parcels</div>
+<div class="parcel"><div class="h"><b>Sri Lakshmi Silks</b><span class="mut">by Mon, 6 Oct</span></div></div>
+<div class="parcel"><div class="h"><b>Urban Threads</b><span class="mut">by Wed, 8 Oct</span></div></div>
+<div class="parcel"><div class="h"><b>Kaya Studio</b><span class="mut">by Tue, 7 Oct</span></div></div>
+<div class="hint" style="text-align:center">We'll tell you when each parcel ships.</div>
+<div class="btnrow"><button class="btn b-sec" type="button">My orders</button><button class="btn b-pri" type="button">Keep shopping</button></div>
+</div></div><div class="cap"><i>O13</i><b>Order placed</b><span>Each brand's parcel and its date, the total and how she paid. The brand is told of its new order; each creator gets "A sale through your post" (never who bought).</span></div></div>
+
+</div></section>
+
+<!-- ============ ORDERS ============ -->
+<section><header><div class="eyebrow">Orders and cancelling</div><h2>My orders, tracking, cancelling</h2><p class="prose">Each item shows its status with Track, Cancel and Need help. Cancelling is open until the brand marks it Shipped. Deal items cancel together, a gift follows what earned it, and an online payment is refunded to where it came from.</p></header><div class="flow">
+
+<div class="shot"><div class="phone" style="min-height:720px"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>My orders</h3></div>
+<div class="row" style="gap:6px"><div class="search" style="flex:1">⌕ Search</div><span class="fchip">Filters</span></div>
+<div class="ordercard"><div class="top"><span class="chip s-active">Confirmed</span><span class="xs mut">Arriving by Wed, 8 Oct</span></div><div class="mini"><span class="th"></span><div style="display:grid"><b>Wrangler Regular · 32</b><span class="xs mut">Urban Threads · from Sneha's post</span></div></div><div class="acts3"><span>Track</span><span>Cancel</span><span>Need help</span></div></div>
+<div class="ordercard"><div class="top"><span class="chip s-wait">Shipped</span><span class="xs mut">Arriving by Tue, 7 Oct</span></div><div class="mini"><span class="th"></span><div style="display:grid"><b>Cotton kurta · Ivory · M</b><span class="xs mut">Kaya Studio · from Divya's post</span></div></div><div class="acts3"><span>Track</span><span style="color:#A3A29B">Cancel</span><span>Need help</span></div><span class="hint">Shipped: it can't be cancelled now. Return it once delivered.</span></div>
+<div class="ordercard"><div class="top"><span class="chip s-ended">Cancelled</span><span class="xs mut">on Sun, 28 Sep · refund issued</span></div><div class="mini"><span class="th"></span><div style="display:grid"><b>Classic crew tee · Black</b><span class="xs mut">Kaya Studio</span></div></div></div>
+</div></div><div class="cap"><i>O14</i><b>My orders</b><span>Every item with its status and arrival date, newest first, with search and filters. Cancel is greyed once Shipped.</span></div></div>
+
+<div class="shot"><div class="phone" style="min-height:720px"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Order details</h3></div>
+<div class="mini"><span class="th" style="width:44px;height:56px"></span><div style="display:grid"><b>Cotton kurta · Ivory · M</b><span class="xs mut">Kaya Studio · from Divya's post</span><span class="xs">₹999 paid by UPI</span></div></div>
+<div class="tl">
+<div class="st done"><span class="dot"></span><div class="t"><b>Confirmed</b><span>Sat, 4 Oct, 10:12 AM</span></div></div>
+<div class="st done"><span class="dot"></span><div class="t"><b>Packed</b><span>Sat, 4 Oct, 6:40 PM</span></div></div>
+<div class="st done"><span class="dot"></span><div class="t"><b>Shipped</b><span>Sun, 5 Oct · Delhivery · 1234 5678 9012</span></div></div>
+<div class="st"><span class="dot"></span><div class="t"><b>Out for delivery</b><span>Expected Tue, 7 Oct</span></div></div>
+<div class="st"><span class="dot"></span><div class="t"><b>Delivered</b></div></div>
+</div>
+<div class="card tint"><span class="xs mut">Delivering to</span><b style="font-size:12.5px">Aveen · Bi123, Enikepadu, Vijayawada 521108</b></div>
+<span class="more">View the post it came from</span>
+</div></div><div class="cap"><i>O15</i><b>Order details and tracking</b><span>Confirmed → Packed → Shipped → Out for delivery → Delivered, with dates, the courier and tracking number once shipped, the address, what she paid, and the post.</span></div></div>
+
+<div class="shot"><div class="phone" style="min-height:720px"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr">
+<div class="bar"><span class="ib">‹</span><h3>Cancel item</h3></div>
+<div class="mini"><span class="th"></span><div style="display:grid"><b>Wrangler Regular · 32</b><span class="xs mut">Urban Threads · Any 2 for ₹2,999</span></div></div>
+<div class="warn">⚠ This is part of Any 2 for ₹2,999. Cancelling cancels both: Wrangler Regular and Levi's 511 Slim.</div>
+<div class="lbl">Why are you cancelling?</div>
+<div class="grp" style="border:0;padding:0;gap:5px;font-size:12.5px">
+<div class="row"><span class="radio on"></span>Incorrect size ordered</div>
+<div class="row"><span class="radio"></span>Not needed any more</div>
+<div class="row"><span class="radio"></span>Ordered by mistake</div>
+<div class="row"><span class="radio"></span>Want a different style or colour</div>
+<div class="row"><span class="radio"></span>Delivery is taking too long</div>
+<div class="row"><span class="radio"></span>Found a better price</div>
+<div class="row"><span class="radio"></span>Other (write a note)</div>
+</div>
+<div class="card tint"><span class="xs mut">REFUND</span><b style="font-size:13px">₹2,999 to your UPI</b><span class="xs mut">In 5–7 working days, to the way you paid</span></div>
+</div><div class="savebar"><button class="btn block b-dan" type="button">Cancel both items</button></div></div><div class="cap"><i>O16</i><b>Cancel</b><span>Open until Shipped. A reason is required. Deal items cancel together (warned); a free gift is cancelled too if the post's items fall below its threshold. Online: refund to the original payment. Cash on delivery: nothing to refund.</span></div></div>
+
+<div class="shot"><div class="phone"><div class="sb"><span>9:41</span><span>●●● 5G</span></div>
+<div class="scr" style="gap:14px">
+<div class="bar"><span class="ib">‹</span><h3>Cancelled</h3></div>
+<span class="bigok">✓</span>
+<h3 style="text-align:center;font-size:17px">2 items cancelled</h3>
+<div class="mini"><span class="th"></span><b>Wrangler Regular · 32</b></div>
+<div class="mini"><span class="th"></span><b>Levi's 511 Slim · 32</b></div>
+<div class="card tint"><span class="xs mut">REFUND</span><b style="font-size:12.5px">₹2,999 will reach your UPI in 5–7 working days.</b><span class="xs mut">For a cash on delivery order: "A refund is not needed; this was pay on delivery."</span></div>
+<div class="hint">You'll get an SMS when the refund is issued.</div>
+<button class="btn block b-pri" type="button">Done</button>
+</div></div><div class="cap"><i>O17</i><b>Cancelled</b><span>The items cancelled and what happens to the money. The stock goes back, the creator's commission on them is taken back, and the brand is not paid for them.</span></div></div>
+
+</div></section>
+
+<footer>INFLX · Shopper app · ordering · mockups v2 · rules in Docs/OFFER_TERMS_POSTS_RULES.md §6 (v1.10) · reference: the founder's Myntra screens</footer>
+</div>
+</body></html>

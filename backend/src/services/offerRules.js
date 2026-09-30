@@ -145,7 +145,8 @@ function discountedPrice(offer, price) {
     let off = (p * c.pct) / 100;
     const capped = c.max_off != null && off > c.max_off;
     if (capped) off = c.max_off;
-    return { pays: round2(Math.max(0, p - off)), capped };
+    // Rounded to the rupee, per unit (rules 6.4): 20% off ₹999 → ₹799.
+    return { pays: Math.max(0, Math.round(p - off)), capped };
   }
   if (offer.sub_type === 'flat' && c.amount != null) return { pays: round2(Math.max(0, p - c.amount)), capped: false };
   return null;

@@ -278,7 +278,8 @@ describe('a post as the shopper sees it (checks 12–14)', () => {
   test('the offer badge, the applied line, prices after the offer; creator, brand, code and link; never who bought', async () => {
     const d = (await get(`/follower/posts/${dp}`)).body.data;
     expect(d.offer).toMatchObject({ badge: '20% OFF', line: '20% off applied' });
-    expect(d.products[0]).toMatchObject({ price: 2299, shopper_price: 1839.2, struck: true, in_stock: true });
+    // Rules v1.12 (6.4): a % comes off each unit, rounded to the rupee: 20% off ₹2,299 → ₹1,839.
+    expect(d.products[0]).toMatchObject({ price: 2299, shopper_price: 1839, struck: true, in_stock: true });
     expect(d.creator).toMatchObject({ name: 'Priya Rao' });
     expect(d.brand).toMatchObject({ name: 'Sri Lakshmi Silks' });
     expect(d.code).toMatch(/^[BCDFGHJKMNPQRSTVWXYZ2-9]{6}$/);
@@ -423,7 +424,7 @@ describe('saved posts and products (checks 18–20)', () => {
     await api.post(`/follower/posts/${p}/save`, s.token);
     const r = (await api.get('/follower/saved', s.token)).body.data;
     expect(r.posts.map((x) => x.id)).toEqual([p]);
-    expect(r.products[0]).toMatchObject({ product_id: W.jeans[0], post_id: p, available: true, shopper_price: 1839.2, struck: true });
+    expect(r.products[0]).toMatchObject({ product_id: W.jeans[0], post_id: p, available: true, shopper_price: 1839, struck: true });
     expect(r.products[0].from).toMatch(/^From Priya Rao's post · 20% off till \d+ [A-Z][a-z]{2}$/);
     expect((await get(`/follower/posts/${p}`, { token: s.token })).body.data.mine).toMatchObject({ saved: true, saved_products: [W.jeans[0]] });
   });
@@ -511,7 +512,7 @@ describe('stores, offers and collections (checks 23–26)', () => {
     const list = (await get(`/follower/creators/${A.cr.influencerId}/collections`)).body.data.collections;
     expect(list).toEqual([expect.objectContaining({ id, name: 'My Dasara picks', kind: 'products', count: 2 })]);
     const o = (await get(`/follower/collections/${id}`)).body.data;
-    expect(o.products.map((p) => [p.name.replace(/ \d+$/, ''), p.shopper_price, p.struck])).toEqual([["Levi's 511 Slim", 1839.2, true], ['Linen shirt', 849, false]]);
+    expect(o.products.map((p) => [p.name.replace(/ \d+$/, ''), p.shopper_price, p.struck])).toEqual([["Levi's 511 Slim", 1839, true], ['Linen shirt', 849, false]]);
     await query(`UPDATE brand_products SET is_active = false WHERE id = ANY($1::uuid[])`, [[A.jeans[0], A.free[0]]]);
     expect((await get(`/follower/creators/${A.cr.influencerId}/collections`)).body.data.collections).toEqual([]);
     await query(`UPDATE brand_products SET is_active = true WHERE id = ANY($1::uuid[])`, [[A.jeans[0], A.free[0]]]);

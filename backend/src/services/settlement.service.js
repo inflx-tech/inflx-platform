@@ -57,10 +57,13 @@ async function settleCommerceTransaction(runner, transactionId) {
 
   const { rows } = await runner.query(
     `SELECT ft.id, ft.brand_id, ft.brand_net, ft.brand_net_reversed, ft.marketplace_fee_amount,
-            ft.razorpay_payment_id, ft.tcs_amount,
+            ft.razorpay_payment_id, ft.tcs_amount, ft.net_amount, ft.commission_reversed,
+            COALESCE(ft.platform_fee_reversed, 0) AS platform_fee_reversed,
+            fo.payment_method,
             b.tcs_applicable, b.razorpay_linked_account_id
        FROM follower_transactions ft
        JOIN brands b ON b.id = ft.brand_id
+       LEFT JOIN follower_orders fo ON fo.id = ft.order_id
       WHERE ft.id = $1`,
     [transactionId]
   );
@@ -76,10 +79,43 @@ async function settleCommerceTransaction(runner, transactionId) {
   const grossBrandNet  = _round2(t.brand_net);
   const reversed       = _round2(t.brand_net_reversed);
   const brandNet       = _round2(Math.max(0, grossBrandNet - reversed));
-  const fee            = _round2(t.marketplace_fee_amount);
+  // Shopper ordering (6.13): a cancelled item takes no INFLX fee.
+  const fee            = _round2(Math.max(0, _round2(t.marketplace_fee_amount) - _round2(t.platform_fee_reversed)));
   const tcs            = t.tcs_applicable ? await taxService.tcsOn(brandNet) : 0;
   const commissionGst  = await taxService.gstOn(fee);
-  const transferAmount = _round2(brandNet - tcs);
+
+  // Cash on delivery (6.13): the brand's courier collected the cash, so nothing is transferred.
+  // The brand owes INFLX the creator's share + INFLX's share (+ TCS when on) of what it kept;
+  // that becomes a due, taken from its next online payouts.
+  if (t.payment_method === 'cod') {
+    const kept = _round2(Math.max(0, _round2(t.net_amount) - _round2(t.commission_reversed) - _round2(t.brand_net_reversed) - _round2(t.platform_fee_reversed)));
+    const owed = _round2(Math.max(0, kept - brandNet) + tcs);
+    if (owed > 0) {
+      await runner.query(
+        `INSERT INTO brand_dues (brand_id, amount, reason, source_kind, source_id, note)
+         VALUES ($1, $2, 'cod_order_shares', 'order', $3, 'Cash on delivery: creator''s share and INFLX''s share')`,
+        [t.brand_id, owed, transactionId]);
+    }
+    await runner.query(
+      `UPDATE follower_transactions SET tcs_amount = $1, commission_gst_amount = $2 WHERE id = $3`,
+      [tcs, commissionGst, transactionId]);
+    return { tcs, commission_gst: commissionGst, transfer_id: null, transfer_amount: 0, cod_due: owed };
+  }
+
+  // What the brand owes from earlier cash-on-delivery orders comes off this payout, oldest first,
+  // whole dues only, as far as this payout reaches (6.13).
+  let transferAmount = _round2(brandNet - tcs);
+  const { rows: dues } = await runner.query(
+    `SELECT id, amount FROM brand_dues WHERE brand_id = $1 AND source_kind = 'order' AND settled_at IS NULL
+      ORDER BY created_at, id FOR UPDATE`, [t.brand_id]);
+  let duesTaken = 0;
+  for (const d of dues) {
+    const amt = _round2(d.amount);
+    if (amt > transferAmount) continue;
+    transferAmount = _round2(transferAmount - amt);
+    duesTaken = _round2(duesTaken + amt);
+    await runner.query(`UPDATE brand_dues SET settled_at = now(), settled_by_transaction_id = $2 WHERE id = $1`, [d.id, transactionId]);
+  }
 
   let transferId = null;
   if (t.razorpay_linked_account_id && transferAmount > 0) {
@@ -117,22 +153,25 @@ async function settleCommerceTransaction(runner, transactionId) {
 async function retryTransfer(runner, transactionId) {
   const { rows } = await runner.query(
     `SELECT ft.id, ft.brand_net, ft.brand_net_reversed, ft.tcs_amount,
-            ft.razorpay_payment_id, ft.razorpay_transfer_id,
-            b.razorpay_linked_account_id
+            ft.razorpay_payment_id, ft.razorpay_transfer_id, fo.payment_method,
+            b.razorpay_linked_account_id,
+            (SELECT COALESCE(sum(d.amount), 0) FROM brand_dues d WHERE d.settled_by_transaction_id = ft.id) AS dues_taken
        FROM follower_transactions ft
        JOIN brands b ON b.id = ft.brand_id
+       LEFT JOIN follower_orders fo ON fo.id = ft.order_id
       WHERE ft.id = $1`,
     [transactionId]
   );
   const t = rows[0];
   if (!t) return { skipped: 'not_found' };
   if (t.razorpay_transfer_id) return { skipped: 'already_transferred' };
+  if (t.payment_method === 'cod') return { skipped: 'cash_on_delivery' };   // the brand holds the cash (6.13)
   if (!t.razorpay_linked_account_id) return { skipped: 'no_linked_account' };
 
   const tcs            = parseFloat(t.tcs_amount) || 0;
-  // Net-of-returns, matching settleCommerceTransaction.
+  // Net-of-returns, matching settleCommerceTransaction, less the dues this payout already settled.
   const netBrand       = Math.max(0, (parseFloat(t.brand_net) || 0) - (parseFloat(t.brand_net_reversed) || 0));
-  const transferAmount = _round2(netBrand - tcs);
+  const transferAmount = _round2(netBrand - tcs - (parseFloat(t.dues_taken) || 0));
   if (transferAmount <= 0) return { skipped: 'zero_amount' };
 
   const tr = await routeService.createTransfer({

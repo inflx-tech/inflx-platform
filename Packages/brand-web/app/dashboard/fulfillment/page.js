@@ -21,6 +21,11 @@ const FILTERS = [
   { key: 'cancelled', label: 'Cancelled' },
 ];
 
+// The three shares of a sale are worked to the paisa (rules 6.13) and must visibly add up, so they
+// show paise when there are any (₹139.50 + ₹69.75 + ₹1,185.75 = ₹1,395), unlike fmtMoney's whole rupees.
+const fmtShare = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR',
+  minimumFractionDigits: Math.round((Number(n) || 0) * 100) % 100 ? 2 : 0, maximumFractionDigits: 2 }).format(Number(n) || 0);
+
 const COURIERS = ['Delhivery', 'DTDC', 'Blue Dart', 'India Post', 'XpressBees', 'Ekart', 'Other'];
 
 // Best-effort deep links; fallback = Google search for the AWB.
@@ -103,6 +108,19 @@ font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:var(--ink);f
 .ful .msg{padding:9px 13px;border-radius:9px;font-size:12px;font-weight:600;margin-bottom:12px}
 .ful .msg.err{background:var(--danger-pale);color:var(--danger-text)}
 .ful .msg.ok{background:var(--success-pale);color:var(--success-text)}
+.ful .items{background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.ful .it{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border-soft);align-items:center}
+.ful .it:last-child{border-bottom:0}
+.ful .it.x{opacity:.55}
+.ful .it-n{font-weight:700;font-size:12.5px}
+.ful .it-m{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted-2);margin-top:2px}
+.ful .it-r{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px}
+.ful .it-r b{font-size:12.5px}
+.ful .split{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.ful .split div{background:var(--white);border:1px solid var(--border);border-radius:9px;padding:9px 10px}
+.ful .split .v{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;margin-top:3px}
+.ful .split .you{border-color:var(--ink)}
+.ful .xbtn{font-size:11px;font-weight:700;color:var(--danger-text);background:none;border:none;cursor:pointer;padding:0;margin-top:4px}
 `;
 
 export default function FulfillmentPage() {
@@ -117,8 +135,9 @@ export default function FulfillmentPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await orderApi.list(filter ? { status: filter } : undefined);
-      if (res.success || res.data) setOrders(res.data?.orders || []);
+      // shopper-ordering: parcels with their items and each item's three shares (rules 6.13, 6.14).
+      const res = await orderApi.parcels(filter ? { status: filter } : undefined);
+      if (res.success || res.data) setOrders(res.data?.parcels || []);
     } catch (e) { console.error('fulfillment load', e); }
     finally { setLoading(false); }
   }, [filter]);
@@ -128,7 +147,7 @@ export default function FulfillmentPage() {
   async function advance(o, next, extra = {}) {
     setBusy(o.id); setMsg(null);
     try {
-      const res = await orderApi.updateStatus(o.id, { order_status: next, ...extra });
+      const res = await orderApi.updateStatus(o.id, { status: next, ...extra });
       if (res.success || res.data) {
         setMsg({ kind: 'ok', text: `Order marked ${next.replace(/_/g, ' ')}. Customer notified.` });
         await load();
@@ -146,9 +165,22 @@ export default function FulfillmentPage() {
     advance(o, 'dispatched', { courier_name: s.courier, tracking_number: s.tracking.trim() });
   }
 
-  function cancel(o) {
-    if (!confirm(`Cancel this order for ${o.follower_name || 'the customer'}? This notifies them.`)) return;
-    advance(o, 'cancelled');
+  // An item is cancelled with a reason (rules 6.12): the shopper is refunded (online), the stock goes
+  // back, the creator's share is taken back and you are not paid for it. Deal items go together.
+  async function cancelItem(o, it) {
+    const what = it.size ? `${it.name} (${it.size})` : it.name;
+    const reason = prompt(`Why can't you send ${what}? The shopper sees this.`, 'Out of stock');
+    if (!reason || !reason.trim()) return;
+    setBusy(o.id); setMsg(null);
+    try {
+      const res = await orderApi.cancelLine(it.id, { reason: reason.trim() });
+      if (res.success || res.data) {
+        const n = res.data?.cancelled?.length || 1;
+        setMsg({ kind: 'ok', text: `Cancelled ${n} item${n > 1 ? 's' : ''}. The shopper is told${res.data?.refund?.status === 'issued' ? ' and refunded' : ''}.` });
+        await load();
+      } else setMsg({ kind: 'err', text: res.error?.message || 'Could not cancel' });
+    } catch (e) { setMsg({ kind: 'err', text: e.message || 'Could not cancel' }); }
+    finally { setBusy(null); }
   }
 
   return (
@@ -158,7 +190,7 @@ export default function FulfillmentPage() {
         <span className="cnt-chip">{orders.length} order{orders.length === 1 ? '' : 's'}</span>
         <h1>Order Fulfillment</h1>
         <div className="rule" />
-        <div className="sub">Pack, ship, and track online orders. Your customer &amp; admin see each step. Commission stays held until the return window closes.</div>
+        <div className="sub">Pack, ship and track orders from creators&apos; posts. Each item shows the post it came from and how its money splits. You&apos;re paid your share after the return window closes.</div>
       </div>
 
       <div className="chip-row">
@@ -174,31 +206,62 @@ export default function FulfillmentPage() {
         <div className="empty"><div className="em">📦</div><div className="h">No orders in this view</div></div>
       ) : orders.map(o => {
         const isOpen = openId === o.id;
-        const idx = STEP_IDX[o.order_status] ?? 0;
-        const cancelled = o.order_status === 'cancelled';
-        const items = Array.isArray(o.items_json) ? o.items_json : [];
+        const idx = STEP_IDX[o.status] ?? 0;
+        const cancelled = o.status === 'cancelled';
+        const items = Array.isArray(o.items) ? o.items : [];
+        const live = items.filter((it) => it.status === 'active');
         const itemLabel = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : '—';
         const s = ship[o.id] || {};
-        const tUrl = trackUrl(o.courier_name, o.tracking_number);
+        const to = o.ship_to || {};
+        const tUrl = trackUrl(o.courier?.name, o.courier?.tracking);
+        const canCancel = ['confirmed', 'packed'].includes(o.status);
         return (
           <div key={o.id} className={`oc${isOpen ? ' open' : ''}`}>
             <button className="oc-row" onClick={() => setOpenId(isOpen ? null : o.id)}>
               <span className="oc-badge">📦 ORDER</span>
               <div style={{ minWidth: 0 }}>
-                <div className="oc-name">{o.follower_name || 'Customer'}</div>
-                <div className="oc-meta">{itemLabel} · {fmtRel(o.created_at)}{o.tracking_number ? ` · AWB ${o.tracking_number}` : ''}</div>
+                <div className="oc-name">{to.name || 'Customer'}{o.payment_method === 'cod' ? ' · Cash on delivery' : ''}</div>
+                <div className="oc-meta">{itemLabel} · {fmtRel(o.placed_at)}{o.courier?.tracking ? ` · AWB ${o.courier.tracking}` : ''}</div>
               </div>
-              <div className="oc-amt">{fmtMoney(o.net_amount ?? 0)}</div>
-              <span className={`pill ${o.order_status}`}>● {String(o.order_status || '').replace(/_/g, ' ')}</span>
+              <div className="oc-amt">{fmtMoney(o.money?.paid ?? 0)}</div>
+              <span className={`pill ${o.status}`}>● {o.status_word || String(o.status || '').replace(/_/g, ' ')}</span>
             </button>
 
             {isOpen && (
               <div className="oc-exp">
                 <div className="exp-grid">
-                  <div><div className="kv-l">Customer</div><div className="kv-v">{o.follower_name || '—'}{o.follower_phone ? ` · ${o.follower_phone}` : ''}</div></div>
-                  <div><div className="kv-l">Ship to</div><div className="kv-v">{o.delivery_address || '—'}</div></div>
-                  <div><div className="kv-l">Courier / AWB</div><div className="kv-v">{o.courier_name ? `${o.courier_name} · ${o.tracking_number || '—'}` : '—'}{tUrl ? <> · <a href={tUrl} target="_blank" rel="noreferrer">Track ↗</a></> : null}</div></div>
+                  <div><div className="kv-l">Customer</div><div className="kv-v">{to.name || '—'}{to.phone ? ` · ${to.phone}` : ''}</div></div>
+                  <div><div className="kv-l">Ship to</div><div className="kv-v">{[to.house, to.area, to.landmark, to.city, to.state, to.pincode].filter(Boolean).join(', ') || '—'}</div></div>
+                  <div><div className="kv-l">Courier / AWB</div><div className="kv-v">{o.courier ? `${o.courier.name} · ${o.courier.tracking || '—'}` : '—'}{tUrl ? <> · <a href={tUrl} target="_blank" rel="noreferrer">Track ↗</a></> : null}</div></div>
                 </div>
+
+                <div className="items">
+                  {items.map((it) => (
+                    <div key={it.id} className={`it${it.status === 'cancelled' ? ' x' : ''}`}>
+                      <div>
+                        <div className="it-n">{it.name}{it.role === 'gift' ? ' · free gift' : it.role === 'free' ? ' · free (BOGO)' : ''}</div>
+                        <div className="it-m">{[it.colour, it.size, `×${it.qty}`].filter(Boolean).join(' · ')} · from {it.creator}'s post {it.post?.code || ''}{it.status === 'cancelled' ? ` · cancelled by ${it.cancelled_by}: ${it.cancel_reason}` : ''}</div>
+                        {it.status === 'active' && canCancel && <button className="xbtn" disabled={busy === o.id} onClick={() => cancelItem(o, it)}>Can&apos;t send this · cancel</button>}
+                      </div>
+                      <div className="it-r">
+                        <b>{fmtShare(it.money.paid)}</b>
+                        {it.money.paid > 0 && <div>creator {fmtShare(it.money.creator_share)} ({it.money.creator_pct}%) · INFLX {fmtShare(it.money.inflx_share)} ({it.money.inflx_pct}%) · you {fmtShare(it.money.brand_share)}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {live.length > 0 && (
+                  <div className="split">
+                    <div><div className="kv-l">Shopper paid</div><div className="v">{fmtShare(o.money.paid)}</div></div>
+                    <div><div className="kv-l">Creator&apos;s share</div><div className="v">{fmtShare(o.money.creator_share)}</div></div>
+                    <div><div className="kv-l">INFLX&apos;s share</div><div className="v">{fmtShare(o.money.inflx_share)}</div></div>
+                    <div className="you"><div className="kv-l">Your share</div><div className="v">{fmtShare(o.money.brand_share)}</div></div>
+                  </div>
+                )}
+                {o.payment_method === 'cod' && live.length > 0 && (
+                  <div className="note" style={{ marginTop: -6, marginBottom: 12 }}>Cash on delivery: you collect {fmtShare(o.money.paid)}. The creator&apos;s and INFLX&apos;s shares are taken from your next online payout.</div>
+                )}
 
                 {!cancelled ? (
                   <div className="stepper">
@@ -213,7 +276,7 @@ export default function FulfillmentPage() {
                 ) : <div className="term" style={{ marginBottom: 14, color: 'var(--danger-text)' }}>This order was cancelled.</div>}
 
                 {/* Ship form — shown when the next action is to ship (status = packed). */}
-                {o.order_status === 'packed' && (
+                {o.status === 'packed' && (
                   <div className="shipbox">
                     <h4>Ship this order</h4>
                     <div className="two">
@@ -232,27 +295,26 @@ export default function FulfillmentPage() {
                 )}
 
                 {/* Actions per current status */}
-                {!cancelled && o.order_status !== 'delivered' && (
+                {!cancelled && o.status !== 'delivered' && (
                   <div className="acts">
-                    {o.order_status === 'confirmed' && (
+                    {o.status === 'confirmed' && (
                       <button className="btn" disabled={busy === o.id} onClick={() => advance(o, 'packed')}>Mark Packed →</button>
                     )}
-                    {o.order_status === 'packed' && (
+                    {o.status === 'packed' && (
                       <button className="btn" disabled={busy === o.id} onClick={() => onShip(o)}>Mark Shipped →</button>
                     )}
-                    {o.order_status === 'dispatched' && (
+                    {o.status === 'dispatched' && (
                       <>
                         <button className="btn gh" disabled={busy === o.id} onClick={() => advance(o, 'out_for_delivery')}>Mark Out for Delivery</button>
                         <button className="btn" disabled={busy === o.id} onClick={() => advance(o, 'delivered')}>Mark Delivered ✓</button>
                       </>
                     )}
-                    {o.order_status === 'out_for_delivery' && (
+                    {o.status === 'out_for_delivery' && (
                       <button className="btn" disabled={busy === o.id} onClick={() => advance(o, 'delivered')}>Mark Delivered ✓</button>
                     )}
-                    <button className="cancel" disabled={busy === o.id} onClick={() => cancel(o)}>Cancel order</button>
                   </div>
                 )}
-                {o.order_status === 'delivered' && <div className="term">✓ Delivered{o.delivered_at ? ` · ${fmtRel(o.delivered_at)}` : ''}. Commission releases after the return window.</div>}
+                {o.status === 'delivered' && <div className="term">✓ Delivered. Commission releases after the return window.</div>}
               </div>
             )}
           </div>

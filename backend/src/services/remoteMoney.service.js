@@ -53,7 +53,7 @@ const available = async (brandId, conn = db) =>
 /** What this brand owes, oldest first. Shown on the wallet; never a blocker. */
 async function openDues(brandId, conn = db) {
   const { rows } = await conn.query(
-    `SELECT id, amount, reason, note, source_id, created_at FROM brand_dues
+    `SELECT id, amount, reason, note, source_id, source_kind, created_at FROM brand_dues
       WHERE brand_id = $1 AND settled_at IS NULL ORDER BY created_at, id`, [brandId]);
   return rows.map((r) => ({ ...r, amount: money(r.amount) }));
 }
@@ -132,6 +132,9 @@ async function settleDuesFromCredit(conn, brandId, creditAmount) {
   let room = money(creditAmount);
   const settled = [];
   for (const d of dues) {
+    // Cash-on-delivery dues (source_kind 'order', shopper-ordering) are taken from sales payouts,
+    // never from the wallet.
+    if (d.source_kind && d.source_kind !== 'shipment') continue;
     if (d.amount > room) continue;              // not enough left for THIS one; try the next
     const out = await debit(conn, {
       brandId, amount: d.amount, type: 'courier_charge',

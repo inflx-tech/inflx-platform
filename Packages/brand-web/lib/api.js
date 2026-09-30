@@ -225,6 +225,9 @@ export { tryRefreshToken };
 export const orderApi = {
   list: (params) => api.get(`/brands/me/orders${params ? '?' + new URLSearchParams(params) : ''}`),
   updateStatus: (id, data) => api.patch(`/brands/me/orders/${id}/status`, data),
+  // shopper-ordering: parcels with items and each item's three shares; cancel an item with a reason.
+  parcels: (params) => api.get(`/brands/me/parcels${params ? '?' + new URLSearchParams(params) : ''}`),
+  cancelLine: (lineId, data) => api.post(`/brands/me/orders/lines/${lineId}/cancel`, data),
 };
 
 export const brandApi = {

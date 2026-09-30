@@ -75,6 +75,20 @@ async function handlePaymentAuthorized(payload) {
   // This event is a safety fallback — log only.
 }
 
+/**
+ * shopper-ordering (rules 6.8): a shopper's payment was captured. If the app closed before it
+ * could verify, this writes her order (or refunds her when the stock is gone). Idempotent: an order
+ * already written by the app's verify is left alone. Other payments are not ours and are ignored.
+ */
+async function handlePaymentCaptured(payload) {
+  const payment = payload?.payment?.entity;
+  if (!payment || !payment.order_id) return;
+  const { rows } = await require('../config/db').query(`SELECT 1 FROM checkouts WHERE razorpay_order_id = $1`, [payment.order_id]);
+  if (!rows[0]) return;
+  const out = await require('../services/shopperCheckout.service').paymentArrived({ razorpayOrderId: payment.order_id, paymentId: payment.id });
+  console.log(`[WEBHOOK] payment.captured — shopper checkout ${out.checkout_id}: ${out.status}${out.already ? ' (already)' : ''}`);
+}
+
 async function handlePaymentFailed(payload) {
   const payment = payload?.payment?.entity;
   console.warn(`[WEBHOOK] payment.failed — payment_id: ${payment?.id} reason: ${payment?.error_description}`);
@@ -584,6 +598,7 @@ async function handleWebhook(req, res) {
   try {
     switch (eventType) {
       case 'payment.authorized':         await handlePaymentAuthorized(event.payload);        break;
+      case 'payment.captured':           await handlePaymentCaptured(event.payload);          break;
       case 'payment.failed':             await handlePaymentFailed(event.payload);            break;
       case 'payout.processed':           await handlePayoutProcessed(event.payload);          break;
       case 'payout.reversed':            await handlePayoutReversed(event.payload);           break;

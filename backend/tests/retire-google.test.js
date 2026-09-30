@@ -63,15 +63,21 @@ describe('where am I, from our own coordinates', () => {
     expect(near).toMatchObject({ name: 'Bengaluru', stateName: 'Karnataka' });
   });
 
-  it('a follower address typed with a listed city gets that city\'s centre; an unknown city with no pin is refused', async () => {
+  // shopper-ordering (30 Sep 2026, rules 6.7) replaced "an unknown city is refused": addresses are entered by
+  // hand, any town and any 6-digit pincode, with no location lookup. A listed city still gives its centre (used
+  // for the arrival estimate); an unlisted town is kept without one. Still no Google.
+  it('a follower address typed with a listed city gets that city\'s centre; an unlisted town is kept by hand, without one', async () => {
     const f = await createFollowerUser();
-    let r = await api.post('/follower/addresses', f.token, { label: 'Home', line1: '12 MG Road', city: 'Guntur', pincode: '522001' });
+    const who = { receiver_name: 'Anusha K', receiver_phone: '9876543210', area: 'Brodipet', state: 'Andhra Pradesh' };
+    let r = await api.post('/follower/addresses', f.token, { ...who, label: 'Home', line1: '12 MG Road', city: 'Guntur', pincode: '522001' });
     expect(r.status).toBe(201);
     const { rows: [a] } = await query(`SELECT lat, lng FROM follower_addresses WHERE line1 = '12 MG Road'`);
     expect(Number(a.lat)).toBeCloseTo(16.3067, 2); expect(Number(a.lng)).toBeCloseTo(80.4365, 2);
-    r = await api.post('/follower/addresses', f.token, { label: 'Work', line1: '1 Nowhere St', city: 'Atlantis', pincode: '000000' });
-    expect(r.status).toBe(422); expect(r.body.error.field).toBe('city');
-    r = await api.post('/follower/addresses', f.token, { label: 'Pin', line1: '1 Pin St', city: 'Atlantis', pincode: '000000', lat: 16.5, lng: 80.6 });
+    r = await api.post('/follower/addresses', f.token, { ...who, label: 'Work', line1: '1 Temple St', city: 'Chilakaluripet', pincode: '522616' });
     expect(r.status).toBe(201);
+    const { rows: [b] } = await query(`SELECT lat, lng FROM follower_addresses WHERE line1 = '1 Temple St'`);
+    expect(b.lat).toBeNull();
+    r = await api.post('/follower/addresses', f.token, { ...who, label: 'Bad', line1: '1 Pin St', city: 'Guntur', pincode: '000000' });
+    expect(r.status).toBe(422); expect(r.body.error.field).toBe('pincode');
   });
 });

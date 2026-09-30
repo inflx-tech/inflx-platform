@@ -140,7 +140,9 @@ describe('F2 Home', () => {
 });
 
 describe('F3 Shop this post', () => {
-  it('products with the offer applied; the heart saves the product with its post; no Add until checkout', async () => {
+  // shopper-ordering (30 Sep, rules v1.9+): Shop this post now has Add on every product (O2); the
+  // old 'no Add until checkout' line is gone. The ordering screens have their own checks (order17).
+  it('products with the offer applied; the heart saves the product with its post; Add on each product', async () => {
     followerApi.circles.mockResolvedValue(ok({ creators: [], brands: [] }));
     followerApi.feed.mockResolvedValue(ok({ posts: [POST()], more: false }));
     const { getByTestId, getByText, queryByText } = render(<Home navigation={nav()} />);
@@ -151,9 +153,8 @@ describe('F3 Shop this post', () => {
     getByText('Mangalagiri cotton saree'); getByText('₹960'); getByText('  ₹1,200');
     getByText('Chanderi saree'); getByText('₹1,440');
     getByText('No code needed. Buying here pays Priya her commission. The ♡ saves the product with this post, so it keeps this offer.');
-    getByText('Adding to the bag comes with checkout. Save what you like for now.');
-    expect(queryByText('Add')).toBeNull();
-    expect(queryByText(/Go to bag/)).toBeNull();
+    getByTestId('shop-add-pr1'); getByTestId('shop-add-pr2');
+    expect(queryByText(/Go to bag/)).toBeNull();                         // nothing in the bag yet
     await act(async () => { fireEvent.press(getByTestId('shop-heart-pr2')); });
     expect((await shopStore.get()).savedProducts).toEqual([{ product_id: 'pr2', post_id: 'p1', collection_item_id: null }]);
     expect(track).toHaveBeenCalledWith('save_product', 'p1', 'home', { product_id: 'pr2' });
@@ -358,13 +359,14 @@ describe('F11 · F12 · F13 · Discover', () => {
     expect(n.navigate).toHaveBeenCalledWith('Post', expect.objectContaining({ postId: 'p1' }));
   });
 
-  it('F13 Profile (guest): sign in first; following, city, what she shops for; returns and addresses greyed', async () => {
+  it('F13 Profile (guest): sign in first; following, city, what she shops for; returns greyed (coming next)', async () => {
     await shopStore.set({ follows: ['a', 'b'], cityName: 'Vijayawada', shopFor: ['women'] });
     const n = nav();
     const { getByText, getByTestId, queryByTestId } = render(<Profile navigation={n} />);
     await waitFor(() => getByTestId('profile-guest'));
     getByText('Browsing as guest'); getByText('2 creators'); getByText('Vijayawada'); getByText('Women');
-    getByText('Returns · Addresses'); getByText('Designed with checkout, next');
+    getByText('Returns'); getByText('Coming next');
+    expect(queryByTestId('row-addresses')).toBeNull();                  // addresses are hers once signed in
     expect(queryByTestId('log-out')).toBeNull();
     expect(queryByTestId('row-orders')).toBeNull();
     fireEvent.press(getByTestId('profile-sign-in'));

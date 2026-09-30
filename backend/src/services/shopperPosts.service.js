@@ -113,6 +113,12 @@ async function livePool({ segments = [], videosOnly = false, influencerId = null
       WHERE cp.v2 AND cp.status = 'approved' AND cp.approved_at IS NOT NULL AND cp.post_code IS NOT NULL
         AND (cs.go_live_date IS NULL OR cs.go_live_date <= $1::date)
         AND (cp.post_kind <> 'offer' OR (o.status = 'published' AND o.ends_on >= $1::date))
+        -- Gifts run out → the offer can't keep its promise → its posts leave the shop (4.9, 6.4).
+        AND (o.offer_type IS DISTINCT FROM 'free_gift' OR EXISTS (
+              SELECT 1 FROM offer_pool_items gp LEFT JOIN gift_items gi ON gi.id = gp.gift_item_id
+               WHERE gp.offer_id = o.id AND gp.pool = 'gift' AND gp.removed_at IS NULL
+                 AND (gp.gift_item_id IS NULL OR gi.stock > 0)
+                 AND (gp.gift_limit IS NULL OR gp.gifts_given < gp.gift_limit)))
         AND EXISTS (SELECT 1 FROM post_products pp JOIN brand_products bp ON bp.id = pp.product_id
                      WHERE pp.post_id = cp.id AND bp.is_active AND bp.pushed_to_store AND (bp.stock IS NULL OR bp.stock > 0))
         ${where.length ? `AND ${where.join(' AND ')}` : ''}

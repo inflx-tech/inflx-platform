@@ -28,6 +28,8 @@ async function run() {
         AND ft.tcs_amount IS NOT NULL
         AND ft.brand_net > 0
         AND b.razorpay_linked_account_id IS NOT NULL
+        -- Cash on delivery is never transferred: the brand holds the cash (shopper-ordering 6.13).
+        AND NOT EXISTS (SELECT 1 FROM follower_orders fo WHERE fo.id = ft.order_id AND fo.payment_method = 'cod')
       ORDER BY ft.created_at ASC
       LIMIT 200`
   );

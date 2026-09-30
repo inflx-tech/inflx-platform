@@ -10,7 +10,7 @@ const subCtrl = require('../controllers/subscription.controller');
 const walletRoutes = require('./wallet.routes');
 const { getBrandEscrow, getCampaignEscrow } = require('../controllers/escrow.controller');
 const commissionCtrl = require('../controllers/commission.controller');
-const transactionCtrl = require('../controllers/transaction.controller');
+const orderCtrl = require('../controllers/shopperOrders.controller');
 const inboxCtrl = require('../controllers/brandInbox.controller');
 const bookingsCtrl = require('../controllers/brandBookings.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
@@ -71,7 +71,11 @@ router.post('/me/bookings/:id/reject',   authenticate, requireRole('brand'), req
 router.get('/me/orders',                       authenticate, requireRole('brand'), ctrl.listBrandOrders);
 // All transactions (pay_at_store + prebook + online_order) with filters
 router.get('/me/transactions',                 authenticate, requireRole('brand'), ctrl.listAllTransactions);
-router.patch('/me/orders/:id/status',          authenticate, requireRole('brand'), transactionCtrl.updateOrderStatus);
+// shopper-ordering (rules 6.10–6.14): parcels with their items and each item's three shares; status
+// moves forward only; an item is cancelled with a reason (refund, stock back, commission back).
+router.get('/me/parcels',                      authenticate, requireRole('brand'), orderCtrl.brandParcels);
+router.patch('/me/orders/:id/status',          authenticate, requireRole('brand'), orderCtrl.brandStatus);
+router.post('/me/orders/lines/:id/cancel',     authenticate, requireRole('brand'), orderCtrl.brandCancel);
 
 // Phase 4 — Brand conversion analytics
 router.get('/me/campaigns/:campaign_id/conversions', authenticate, requireRole('brand'), commissionCtrl.getConversions);

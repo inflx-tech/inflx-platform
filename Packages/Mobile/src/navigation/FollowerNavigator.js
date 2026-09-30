@@ -25,11 +25,21 @@ import EditProfileScreen from '../screens/follower/EditProfileScreen';
 import FollowerLoginScreen from '../screens/follower/FollowerLoginScreen';
 import LegalListScreen from '../screens/legal/LegalListScreen';
 import LegalDocumentScreen from '../screens/legal/LegalDocumentScreen';
+import DealScreen from '../screens/shop/order/DealScreen';
+import DealReviewScreen from '../screens/shop/order/DealReviewScreen';
+import BagScreen from '../screens/shop/order/BagScreen';
+import AddressesScreen from '../screens/shop/order/AddressesScreen';
+import AddressFormScreen from '../screens/shop/order/AddressFormScreen';
+import CheckoutScreen from '../screens/shop/order/CheckoutScreen';
+import OrderPlacedScreen from '../screens/shop/order/OrderPlacedScreen';
+import OrdersScreen from '../screens/shop/order/OrdersScreen';
+import OrderDetailScreen from '../screens/shop/order/OrderDetailScreen';
+import CancelScreen from '../screens/shop/order/CancelScreen';
 
 /**
  * The shopper app (follower-app-v2 · boards F1–F13 · rules v1.7 §5.1).
  * Bottom bar: Home · Discover · ▶ Play · Saved · Profile. Search sits top-right on every screen.
- * The bag joins the top bar with checkout (5.1); Discover shows "Coming soon" (5.13).
+ * The bag sits in the top bar next to search (shopper-ordering, 6.6); Discover shows "Coming soon" (5.13).
  * Replaces the profile-only navigator of 10 Sep (features/profile-only-apps).
  */
 const Stack = createNativeStackNavigator();
@@ -92,6 +102,17 @@ export default function FollowerNavigator() {
       {/* Legal — shoppers get the shopper document set. */}
       <Stack.Screen name="LegalList" component={LegalListScreen} initialParams={{ audience: 'shopper' }} />
       <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} />
+      {/* Ordering (shopper-ordering · board O1–O17, D1, P/B/V/K/G, D4, D11) */}
+      <Stack.Screen name="Deal" component={DealScreen} />
+      <Stack.Screen name="DealReview" component={DealReviewScreen} />
+      <Stack.Screen name="Bag" component={BagScreen} />
+      <Stack.Screen name="Addresses" component={AddressesScreen} />
+      <Stack.Screen name="AddressForm" component={AddressFormScreen} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} />
+      <Stack.Screen name="OrderPlaced" component={OrderPlacedScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="Orders" component={OrdersScreen} />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+      <Stack.Screen name="CancelItem" component={CancelScreen} />
     </Stack.Navigator>
   );
 }

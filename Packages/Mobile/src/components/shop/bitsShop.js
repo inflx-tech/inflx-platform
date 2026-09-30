@@ -4,7 +4,8 @@
  *
  * Every purchase goes through a post (P1), so every post carries Shop this post. Liking and
  * commenting need sign-in; saving and following work for guests and stay on the phone (5.2).
- * There is no Add and no bag until checkout is designed (5.1, v1.7).
+ * Ordering (shopper-ordering, v1.13 §6): Shop this post has Add (a simple post → the size sheet,
+ * O1/O2) or Build your deal (a deal post → its deal page, D1); the bag sits in the top bar.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -17,6 +18,9 @@ import { track } from '../../services/events';
 import { CS, inr, initialsOf, fmtCount } from './copyShop';
 import { shopStore, isSignedIn, toggleSavePostLocal, toggleSaveProductLocal } from './shopStore';
 import ShopVideo from './ShopVideo';
+import { BagButton, SizeSheet, useNavSafe } from './orderBits';
+import { CO } from './copyOrder';
+import { addToBag, subscribeBagCount } from './bag';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export const C = { ...T, ink: '#1A1A17', dark: '#111111' };
@@ -34,6 +38,7 @@ export function TopBar({ title, onBack, onSearch, dark, right }) {
       ) : null}
       <Text style={[title ? s.title : s.wordmark, dark && { color: '#fff' }]} numberOfLines={1}>{title || CS.wordmark}</Text>
       {right}
+      {onSearch ? <BagButton dark={dark} /> : null}
       {onSearch ? (
         <TouchableOpacity onPress={onSearch} style={[s.ic, dark && s.icDark]} accessibilityLabel="Search or enter a post code" testID="open-search">
           <Icon name="magnify" size={19} color={dark ? '#fff' : C.ink} />
@@ -213,10 +218,18 @@ export function PostCard({ post, surface, position, onOpen, onShop, onComments, 
 /* ───────────────────────────────────────────── F3 Shop this post */
 
 export function ShopSheet({ post, visible, onClose, surface }) {
+  const nav = useNavSafe();
   const [hearts, setHearts] = useState({});
+  const [deal, setDeal] = useState(null);           // the deal page's data: colours, sizes, stock (D1, O1)
+  const [sizing, setSizing] = useState(null);       // the product in the size sheet (O1)
+  const [inBag, setInBag] = useState({});           // product id → size just added (O2)
+  const [count, setCount] = useState(0);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => subscribeBagCount(setCount), []);
   useEffect(() => {
     if (!post) return;
     let alive = true;
+    setDeal(null); setInBag({});
     (async () => {
       const on = {};
       if (await isSignedIn()) for (const id of (post.mine && post.mine.saved_products) || []) on[id] = true;
@@ -226,8 +239,11 @@ export function ShopSheet({ post, visible, onClose, surface }) {
       }
       if (alive) setHearts(on);
     })();
+    if (visible && followerApi.deal) {
+      followerApi.deal(post.id).then((r) => { if (alive && r && r.success) setDeal(r.data); }).catch(() => {});
+    }
     return () => { alive = false; };
-  }, [post]);
+  }, [post, visible]);
 
   if (!post) return null;
   async function heart(p) {
@@ -242,41 +258,81 @@ export function ShopSheet({ post, visible, onClose, surface }) {
     }
   }
   const first = post.creator ? post.creator.name.split(' ')[0] : '';
+  const isDeal = !!(deal ? deal.deal_page : (post.offer && post.offer.type && post.offer.type !== 'discount'));
+  const full = (p) => (deal && deal.products.find((x) => x.id === p.id)) || { ...p, colours: [], images: [p.image_url] };
+  function openDeal(startProductId) {
+    onClose();
+    if (nav) nav.navigate('Deal', { postId: post.id, start: startProductId || null });
+  }
+  function add(p) {
+    track('tap_product', post.id, surface, { product_id: p.id });
+    if (isDeal) openDeal(p.id); else setSizing(full(p));
+  }
+  async function addSized(sel) {
+    setBusy(true);
+    try {
+      await addToBag([{ post_id: post.id, product_id: sizing.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sizing.price }]);
+      track('add_to_bag', post.id, surface, { product_id: sizing.id });
+      setInBag((m) => ({ ...m, [sizing.id]: sel.size || '' }));
+      setSizing(null);
+    } finally { setBusy(false); }
+  }
+  async function buyNow(sel) {
+    const lines = [{ post_id: post.id, product_id: sizing.id, colour: sel.colour, size: sel.size, qty: 1, price_seen: sizing.price }];
+    setSizing(null); onClose();
+    if (!nav) return;
+    const go = () => nav.navigate('Checkout', { lines, buyNow: true });
+    if (await isSignedIn()) go(); else nav.navigate('FollowerLogin', { onDone: go });
+  }
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={s.dim} onPress={onClose} testID="shop-sheet-dim">
-        <Pressable style={s.sheet} onPress={() => {}} testID="shop-sheet">
-          <View style={s.grab} />
-          <View style={[s.rowBetween]}>
-            <Text style={s.sheetTitle}>{CS.shopTitle}</Text>
-            {post.offer && post.offer.line ? <View style={s.chipOk}><Text style={s.chipOkText}>{post.offer.line}</Text></View> : null}
-          </View>
-          <Text style={s.mut}>{[post.creator && post.creator.name, post.brand && post.brand.name].filter(Boolean).join(' · ')}</Text>
-          <ScrollView style={{ maxHeight: 360 }}>
-            {post.products.map((p) => (
-              <TouchableOpacity key={p.id} style={s.pline} onPress={() => track('tap_product', post.id, surface, { product_id: p.id })} activeOpacity={0.9} testID={`shop-product-${p.id}`}>
-                {p.image_url ? <Image source={{ uri: p.image_url }} style={s.pthumb} /> : <View style={s.pthumb} />}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={s.pname} numberOfLines={2}>{p.name}</Text>
-                  <Text style={s.pprice}>
-                    <Text style={{ fontFamily: fonts.sansBold, color: C.ink }}>{inr(p.shopper_price)}</Text>
-                    {p.struck ? <Text style={s.struck}>  {inr(p.price)}</Text> : null}
-                  </Text>
-                  {!p.in_stock ? <Text style={s.oos}>{CS.outOfStock}</Text> : null}
-                </View>
-                <TouchableOpacity onPress={() => heart(p)} style={s.heartBtn} testID={`shop-heart-${p.id}`} accessibilityState={{ selected: !!hearts[p.id] }} accessibilityLabel={hearts[p.id] ? 'Saved with this post' : 'Save with this post'}>
-                  <Icon name={hearts[p.id] ? 'heart' : 'heart-outline'} size={22} color={hearts[p.id] ? '#C42B2B' : C.ink} />
+    <>
+      <Modal visible={visible && !sizing} transparent animationType="slide" onRequestClose={onClose}>
+        <Pressable style={s.dim} onPress={onClose} testID="shop-sheet-dim">
+          <Pressable style={s.sheet} onPress={() => {}} testID="shop-sheet">
+            <View style={s.grab} />
+            <View style={[s.rowBetween]}>
+              <Text style={s.sheetTitle}>{CS.shopTitle}</Text>
+              {post.offer && post.offer.line ? <View style={s.chipOk}><Text style={s.chipOkText}>{post.offer.line}</Text></View> : null}
+            </View>
+            <Text style={s.mut}>{[post.creator && post.creator.name, post.brand && post.brand.name].filter(Boolean).join(' · ')}</Text>
+            {isDeal && deal ? (
+              <View style={s.dealBox} testID="deal-intro">
+                {deal.offer && deal.offer.how ? <Text style={s.dealHow}>{deal.offer.how}</Text> : null}
+                <Text style={s.mut}>{CO.dealCounts(deal.products.length, deal.gifts.length)}</Text>
+              </View>
+            ) : null}
+            <ScrollView style={{ maxHeight: 340 }}>
+              {post.products.map((p) => (
+                <TouchableOpacity key={p.id} style={s.pline} onPress={() => add(p)} activeOpacity={0.9} testID={`shop-product-${p.id}`}>
+                  {p.image_url ? <Image source={{ uri: p.image_url }} style={s.pthumb} /> : <View style={s.pthumb} />}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.pname} numberOfLines={2}>{p.name}</Text>
+                    <Text style={s.pprice}>
+                      <Text style={{ fontFamily: fonts.sansBold, color: C.ink }}>{inr(p.shopper_price)}</Text>
+                      {p.struck ? <Text style={s.struck}>  {inr(p.price)}</Text> : null}
+                    </Text>
+                    {!p.in_stock ? <Text style={s.oos}>{CS.outOfStock}</Text> : null}
+                    {inBag[p.id] !== undefined ? <Text style={s.inBag} testID={`in-bag-${p.id}`}>{CO.inYourBag(inBag[p.id])}</Text> : null}
+                  </View>
+                  <TouchableOpacity onPress={() => heart(p)} style={s.heartBtn} testID={`shop-heart-${p.id}`} accessibilityState={{ selected: !!hearts[p.id] }} accessibilityLabel={hearts[p.id] ? 'Saved with this post' : 'Save with this post'}>
+                    <Icon name={hearts[p.id] ? 'heart' : 'heart-outline'} size={22} color={hearts[p.id] ? '#C42B2B' : C.ink} />
+                  </TouchableOpacity>
+                  {p.in_stock ? (
+                    <TouchableOpacity onPress={() => add(p)} style={s.addBtn} testID={`shop-add-${p.id}`}><Text style={s.addText}>{CO.add}</Text></TouchableOpacity>
+                  ) : null}
                 </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {post.gift_line ? <Text style={s.giftLine}>{post.gift_line}</Text> : null}
-          {post.offer && post.offer.how ? <Text style={s.hint}>{post.offer.how}</Text> : null}
-          <Text style={s.hint}>{CS.noCodeNeeded(first)} {CS.heartKeepsOffer}</Text>
-          <View style={s.soon}><Text style={s.soonText}>{CS.checkoutSoon}</Text></View>
+              ))}
+            </ScrollView>
+            {post.gift_line ? <Text style={s.giftLine}>{post.gift_line}</Text> : null}
+            {!isDeal && post.offer && post.offer.how ? <Text style={s.hint}>{post.offer.how}</Text> : null}
+            <Text style={s.hint}>{CS.noCodeNeeded(first)} {CS.heartKeepsOffer}</Text>
+            {isDeal ? <PrimaryBtn label={CO.buildDeal} onPress={() => openDeal(null)} testID="build-deal" />
+              : count > 0 ? <PrimaryBtn label={CO.goToBag(count)} onPress={() => { onClose(); if (nav) nav.navigate('Bag'); }} testID="go-to-bag" secondary /> : null}
+          </Pressable>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </Modal>
+      <SizeSheet post={post} product={sizing} visible={!!sizing} onClose={() => setSizing(null)} onAdd={addSized} onBuyNow={buyNow} busy={busy} />
+    </>
   );
 }
 
@@ -360,6 +416,11 @@ export function Chip({ label, on, onPress, testID }) {
 }
 
 export const s = StyleSheet.create({
+  dealBox: { backgroundColor: '#FFF3C4', borderRadius: 12, padding: 10, marginTop: 8, marginBottom: 4 },
+  dealHow: { fontFamily: fonts.sansBold, fontSize: 12.5, color: '#6B5A00', marginBottom: 2 },
+  addBtn: { borderWidth: 1.5, borderColor: '#1A1A17', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, marginLeft: 4 },
+  addText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: '#1A1A17' },
+  inBag: { fontFamily: fonts.sansBold, fontSize: 11.5, color: '#1A7A3D', marginTop: 3 },
   center: { alignItems: 'center', justifyContent: 'center' },
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 14, backgroundColor: '#fff' },
   wordmark: { flex: 1, fontFamily: fonts.sansBold, fontSize: 18, letterSpacing: -0.4, color: C.ink },

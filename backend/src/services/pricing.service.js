@@ -393,6 +393,26 @@ async function classifyPath(client, { followerId, brandId, campaignInfluencerId,
  *   influencer_id // uuid|null — for attribution-commission downstream
  * }
  */
+/**
+ * INFLX's share on a sale through a creator's post (shopper-ordering, rules v1.13 §6.13): the
+ * brand's own rate when admin set one, else its category's Path B ("via influencer"), else the
+ * legacy brand rate — the same order computeL3OnFollowerTxn uses, with the path fixed to B
+ * because every shopper purchase comes through a creator's post (P1).
+ * @returns {{ fee_pct: number, source: string }}
+ */
+async function feeRateForPostSale(client, brandId) {
+  const { rows } = await client.query(
+    `SELECT category, COALESCE(platform_fee_pct, 8.00) AS legacy_pct, commerce_commission_override_pct AS override_pct
+       FROM brands WHERE id = $1`, [brandId]);
+  const b = rows[0] || {};
+  if (b.override_pct != null) return { fee_pct: parseFloat(b.override_pct), source: 'brand_override' };
+  const key = _normalizeCategoryKey(b.category);
+  const cat = key ? (await _loadCategories()).get(key) : null;
+  if (cat && cat.active) return { fee_pct: cat.path_b_pct, source: `category:${key}:path_b` };
+  console.warn(`[pricing] NO RATE for business type "${b.category}" (brand ${brandId}) — post sale charged the fallback ${b.legacy_pct}%.`);
+  return { fee_pct: parseFloat(b.legacy_pct || 8), source: 'brand_legacy_fallback' };
+}
+
 async function computeL3OnFollowerTxn(args) {
   const { client, brandId, followerId, campaignInfluencerId, brandCategory, netAmount,
           storeInfluencerId = null, productId = null } = args;
@@ -510,6 +530,7 @@ module.exports = {
   // L3 — marketplace fee per category × path
   classifyPath,
   computeL3OnFollowerTxn,
+  feeRateForPostSale,
   bustCategoryCache,
   // Exposed for tests
   _normalizeCategoryKey,

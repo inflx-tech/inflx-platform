@@ -954,6 +954,27 @@ export const followerApi = {
   brandOffers: (id, params) => api.get(`/follower/brands/${id}/offers${q(params)}`),
   filters: () => api.get('/follower/filters'),
 
+  // Ordering (shopper-ordering · rules §6). Every price comes from the server (R5).
+  deal: (postId) => api.get(`/follower/posts/${postId}/deal`),
+  dealPrice: (postId, lines) => api.post(`/follower/posts/${postId}/deal/price`, { lines }),
+  bagPrice: (lines) => api.post('/follower/bag/price', { lines }),
+  getBag: () => api.get('/follower/bag'),
+  putBag: (lines) => api.put('/follower/bag', { lines }),
+  mergeBag: (lines) => api.post('/follower/bag/merge', { lines }),
+  checkoutReview: (body) => api.post('/follower/checkout/review', body),
+  placeOrder: (body) => api.post('/follower/checkout/place', body),
+  verifyPayment: (body) => api.post('/follower/checkout/verify', body),
+  checkout: (id) => api.get(`/follower/checkouts/${id}`),
+  orders: (params) => api.get(`/follower/orders${q(params)}`),
+  orderLine: (id) => api.get(`/follower/orders/lines/${id}`),
+  cancelPreview: (id) => api.get(`/follower/orders/lines/${id}/cancel`),
+  cancelLine: (id, body) => api.post(`/follower/orders/lines/${id}/cancel`, body),
+  addresses: () => api.get('/follower/addresses'),
+  addAddress: (body) => api.post('/follower/addresses', body),
+  updateAddress: (id, body) => api.patch(`/follower/addresses/${id}`, body),
+  deleteAddress: (id) => api.delete(`/follower/addresses/${id}`),
+  states: () => api.get('/reference/states'),
+
   // Store and collection links opened in the app (4.14): counted as a visit, like the website does.
   linkVisitStore: (handle, ch) => api.get(`/links/s/${encodeURIComponent(handle)}${q({ ch })}`),
   linkVisitCollection: (code) => api.get(`/links/c/${encodeURIComponent(code)}`),

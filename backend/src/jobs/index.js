@@ -32,6 +32,7 @@ const commerceSettlementJob  = require('./commerce-settlement.job');
 // follower-app-v2 — each post's results across shoppers, for the learning feed (off by default).
 const postPerformanceJob     = require('./post-performance.job');
 const postsOfferEndedJob     = require('./posts-offer-ended.job');
+const checkoutExpiryJob      = require('./checkout-expiry.job');
 // Item 3b — creator social numbers (Instagram/YouTube through Apify). Contract: features/item3b-social-numbers
 const socialMeasureJob       = require('./social-measure.job');
 // Item 4 — a set whose cutoff passed with nobody signed expires. Contract: features/item4-campaigns-sets
@@ -123,6 +124,8 @@ function startAllJobs() {
   cron.schedule('17 * * * *', () => postPerformanceJob.run(), { timezone: tz });
   // shoppable-posts-v2 — an offer past its end date takes its posts out of the shop (4.9).
   cron.schedule('10 0 * * *', () => postsOfferEndedJob.run(), { timezone: tz });
+  // checkout-expiry (shopper-ordering) — every 5 minutes; an online payment's 15-minute hold ends (6.8).
+  cron.schedule('*/5 * * * *', () => checkoutExpiryJob.run(), { timezone: tz });
 
   // social-measure (item 3b) — hourly at :25; picks due accounts with row locking, honours
   // the monthly Apify budget, retries failures the next day.
@@ -171,6 +174,7 @@ module.exports = {
   commerceSettlementJob,
   postPerformanceJob,
   postsOfferEndedJob,
+  checkoutExpiryJob,
   socialMeasureJob,
   setExpiryJob,
   pitchHousekeepingJob,

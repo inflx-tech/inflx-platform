@@ -86,13 +86,14 @@ export default function ProfileScreen({ navigation }) {
             <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} testID="profile-edit"><Text style={st.edit}>{CS.edit}</Text></TouchableOpacity>
           </View>
         ) : <Loading />}
-        {!guest && me ? <Row title={CS.orders} sub={me.rows.orders} testID="row-orders" /> : null}
+        {!guest && me ? <Row title={CS.orders} sub={me.rows.orders} onPress={() => navigation.navigate('Orders')} testID="row-orders" /> : null}
         <Row title={CS.followingRow} sub={me ? me.rows.following : `${(local && local.follows.length) || 0} creators`} testID="row-following" />
         <Row title={CS.myCityRow} sub={cityName} onPress={() => navigation.navigate('Welcome', { fromProfile: true })} testID="row-city" />
         <Row title={CS.shopForRow} sub={shopFor} onPress={() => navigation.navigate('Welcome', { fromProfile: true })} testID="row-shop-for" />
         <Row title={CS.videoSound} sub={CS.videoSoundSub} right={<Switch value={sound} onValueChange={toggleSound} testID="video-sound" />} />
         <Row title={CS.policies} sub={CS.policiesSub} onPress={() => navigation.navigate('LegalList', { audience: 'shopper' })} testID="row-policies" />
-        <Row title={CS.returnsAddresses} sub={CS.returnsAddressesSub} dim />
+        {!guest ? <Row title={CS.addressesRow} sub={CS.addressesRowSub} onPress={() => navigation.navigate('Addresses')} testID="row-addresses" /> : null}
+        <Row title={CS.returnsRow} sub={CS.returnsRowSub} dim />
         {!guest ? (
           <TouchableOpacity onPress={logOut} style={st.logout} testID="log-out"><Text style={st.logoutText}>{CS.logOut}</Text></TouchableOpacity>
         ) : null}

@@ -299,6 +299,8 @@ describe('DELETE /v1/follower/follows/:influencer_id', () => {
 
 // ── Follower Addresses ────────────────────────────────────────────────────────
 
+// shopper-ordering (30 Sep 2026, rules 6.7): an address is entered by hand with name, 10-digit phone,
+// house, area, city, state from the list and a 6-digit pincode; the payloads carry them now.
 describe('Follower address management', () => {
   it('POST /v1/follower/addresses creates an address', async () => {
     const { token } = await createFollowerUser();
@@ -307,7 +309,7 @@ describe('Follower address management', () => {
     const res = await request(app)
       .post('/v1/follower/addresses')
       .set('Authorization', `Bearer ${token}`)
-      .send({ label: 'Home', line1: '10 MG Road', city: 'Vijayawada', pincode: '520001', is_default: true });
+      .send({ receiver_name: 'Anusha K', receiver_phone: '9876543210', area: 'Labbipet', state: 'Andhra Pradesh', label: 'Home', line1: '10 MG Road', city: 'Vijayawada', pincode: '520001', is_default: true });
 
     expect(res.status).toBe(201);
     expect(res.body.data.address.id).toBeDefined();
@@ -321,7 +323,7 @@ describe('Follower address management', () => {
     await request(app)
       .post('/v1/follower/addresses')
       .set('Authorization', `Bearer ${token}`)
-      .send({ label: 'Home', line1: '10 MG Road', city: 'Vijayawada', pincode: '520001', is_default: true });
+      .send({ receiver_name: 'Anusha K', receiver_phone: '9876543210', area: 'Labbipet', state: 'Andhra Pradesh', label: 'Home', line1: '10 MG Road', city: 'Vijayawada', pincode: '520001', is_default: true });
 
     const res = await request(app)
       .get('/v1/follower/addresses')
@@ -338,12 +340,12 @@ describe('Follower address management', () => {
     await request(app)
       .post('/v1/follower/addresses')
       .set('Authorization', `Bearer ${token}`)
-      .send({ label: 'Home', line1: 'Address 1', city: 'Vijayawada', pincode: '520001', is_default: true });
+      .send({ receiver_name: 'Anusha K', receiver_phone: '9876543210', area: 'Labbipet', state: 'Andhra Pradesh', label: 'Home', line1: 'Address 1', city: 'Vijayawada', pincode: '520001', is_default: true });
 
     await request(app)
       .post('/v1/follower/addresses')
       .set('Authorization', `Bearer ${token}`)
-      .send({ label: 'Work', line1: 'Address 2', city: 'Vijayawada', pincode: '520002', is_default: true });
+      .send({ receiver_name: 'Anusha K', receiver_phone: '9876543210', area: 'Labbipet', state: 'Andhra Pradesh', label: 'Work', line1: 'Address 2', city: 'Vijayawada', pincode: '520002', is_default: true });
 
     const res = await request(app)
       .get('/v1/follower/addresses')
@@ -361,7 +363,7 @@ describe('Follower address management', () => {
     const addRes = await request(app)
       .post('/v1/follower/addresses')
       .set('Authorization', `Bearer ${token}`)
-      .send({ label: 'Home', line1: '10 MG Road', city: 'Vijayawada', pincode: '520001' });
+      .send({ receiver_name: 'Anusha K', receiver_phone: '9876543210', area: 'Labbipet', state: 'Andhra Pradesh', label: 'Home', line1: '10 MG Road', city: 'Vijayawada', pincode: '520001' });
 
     const addrId = addRes.body.data.address.id;
 
