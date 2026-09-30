@@ -167,6 +167,8 @@ const ROW_SELECT = `
          pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
          -- Item 12: the content move (contentFlow.CONTENT_MOVE_SQL), so the row can open the content step.
          ${require('./contentFlow.service').CONTENT_MOVE_SQL('ci')} AS content_move,
+         -- Item 14: the Pay for Sale move (saleLive.SALE_MOVE_SQL), so the row can open Going live.
+         ${require('./saleLive.service').SALE_MOVE_SQL('ci')} AS sale_move,
          neg.*
     FROM campaign_influencers ci
     JOIN influencers i ON i.id = ci.influencer_id JOIN users u ON u.id = i.user_id
@@ -275,6 +277,7 @@ function brandRow(r, goal) {
     // Item 12: once the shoot is done on a Pay for Content collaboration, the row opens the content
     // step and its chip is the brand's move there (review the content; confirm it is live).
     content: contentRowOf(r, 'brand'),
+    goingLive: goingLiveRowOf(r, 'brand'),
   };
 }
 
@@ -327,6 +330,8 @@ const CREATOR_SELECT = `
          pe.plan_sent_at, pe.time_agreed_at, pe.influencer_completed_at, pe.brand_completed_at, pe.auto_confirmed_at,
          -- Item 12: the content move (contentFlow.CONTENT_MOVE_SQL), so the row can open the content step.
          ${require('./contentFlow.service').CONTENT_MOVE_SQL('ci')} AS content_move,
+         -- Item 14: the Pay for Sale move (saleLive.SALE_MOVE_SQL), so the row can open Going live.
+         ${require('./saleLive.service').SALE_MOVE_SQL('ci')} AS sale_move,
          neg.*,
          pf.state AS pool_from_state, pf.expires_at AS pool_from_expires_at, pf.lifetime_days AS pool_from_lifetime, pf.id AS pool_from_id,
          ps.agreed_at AS pool_sent_agreed_at, ps.wants_go_live_date AS pool_sent_wants_date, ps.agreed_terms_json AS pool_sent_terms,
@@ -496,6 +501,42 @@ function contentRowOf(r, side) {
   return { move, yourMove: CONTENT_MINE[side].includes(move), line: line ? line(r) : null, delayed: !!r.delayed_at };
 }
 
+/**
+ * Item 14 — Going live on a row or a card (board S2): the move, whether it is this side's, one
+ * line. null until a new-terms Pay for Sale shoot is done. One rule with the screen (saleLive).
+ */
+const SALE_LINES = {
+  creator: {
+    make_posts: () => 'Create your shoppable posts.',
+    send_social: (r) => `Send ${r.brand_name} what you'll share.`,
+    make_changes: (r) => `${r.brand_name} asked for changes.`,
+    review_social: (r) => `With ${r.brand_name} for review.`,
+    post_and_link: () => 'Approved. Post it and add the links.',
+    confirm_live: (r) => `Waiting for ${r.brand_name} to confirm it's live.`,
+    waiting_posts: () => 'Live. Completes when your posts are approved.',
+    reported: () => 'INFLX is looking at this.',
+    completed: () => 'Completed · selling',
+  },
+  brand: {
+    make_posts: (r) => `${String(r.name || 'She').split(' ')[0]} is making her shoppable posts.`,
+    send_social: (r) => `${String(r.name || 'She').split(' ')[0]} is preparing what she'll share.`,
+    make_changes: (r) => `With ${String(r.name || 'her').split(' ')[0]} for changes.`,
+    review_social: () => 'Your move. Review what she will share.',
+    post_and_link: () => 'Approved. She is posting it.',
+    confirm_live: () => "Your move. Confirm it's live.",
+    waiting_posts: () => 'Live · waiting on posts.',
+    reported: () => 'Reported to INFLX.',
+    completed: () => 'Completed · selling',
+  },
+};
+const SALE_MINE = { creator: ['make_posts', 'send_social', 'make_changes', 'post_and_link'], brand: ['review_social', 'confirm_live'] };
+function goingLiveRowOf(r, side) {
+  const move = r.sale_move;
+  if (!move) return null;
+  const line = SALE_LINES[side][move];
+  return { move, yourMove: SALE_MINE[side].includes(move), line: line ? line(r) : null, delayed: !!r.delayed_at, completed: move === 'completed' };
+}
+
 function creatorCard(r, today) {
   const st = creatorState(r, today);
   const last = jsonObj(r.neg_last_terms);
@@ -533,6 +574,7 @@ function creatorCard(r, today) {
     } : null,
     // Item 12: her content step, once the shoot is done — the card opens it and says her move.
     content: contentRowOf(r, 'creator'),
+    goingLive: goingLiveRowOf(r, 'creator'),
     // N17: sent from the pool — the terms she agreed, and whether this set's date is the one she asked for (APPROVAL §3.3).
     fromPool: r.pool_entry_id ? {
       agreedAt: r.pool_sent_agreed_at,
@@ -587,7 +629,9 @@ async function invitationsForCreator(influencerId, tab = 'invites', today = null
   // Invites the moment both names are on the agreement — that signature is
   // what moves it, not any status.
   if (tab === 'active') {
-    const live = all.filter(c => c.group === 'signed' && c.status !== 'completed');
+    // Item 14 (rules v1.30 §19, S20): a completed Pay for Sale collaboration keeps selling, so it
+    // stays where she can reach it — its sales are on it. Other completed collaborations leave.
+    const live = all.filter(c => c.group === 'signed' && (c.status !== 'completed' || (c.goingLive && c.goingLive.completed)));
     return { tab: 'active', rows: live, total: live.length };
   }
   const cards = all.filter(c => c.group !== 'signed');

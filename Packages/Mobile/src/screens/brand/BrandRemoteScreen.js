@@ -19,6 +19,7 @@ import { brandApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
 // Item 12 — the door to the content step once the shoot is done.
 import { C12 } from '../../components/content/copy12';
+import { C14 } from '../../components/sale/copy14';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -104,6 +105,10 @@ export default function BrandRemoteScreen({ navigation, route }) {
         ) : null}
 
         {/* R1 · waiting for her address. The brand has nothing to do, and is told so plainly. */}
+        {/* Item 14: Pay for Sale — going live is where the brand goes next. */}
+        {stage === 'shot' && sh.aim === 'conversion' ? (
+          <SecondaryButton label={C14.openGoingLive} onPress={() => navigation.navigate('BrandSaleLive', { campaignId, setId, ciId })} testID="open-going-live" />
+        ) : null}
         {stage === 'not_sent' ? (
           <>
             <WaitBox10 text={C11.brand.waiting(who)} testID="waiting-address" />

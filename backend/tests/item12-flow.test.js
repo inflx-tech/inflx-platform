@@ -40,8 +40,10 @@ describe('item 12 · every content route asks the gate (checks 1, 26)', () => {
   ];
   const hit = (w, [m, p, who, body], token) => (m === 'get' ? api.get(p, token) : m === 'put' ? api.put(p, token, body || {}) : api.post(p, token, body || {}));
 
-  it('Pay for Sale and Hybrid: 404 on every route, for both parties', async () => {
-    for (const goal of ['conversion', 'hybrid']) {
+  // ASSERTION DRIFT, item 14 (rules v1.30 §12.1): Pay for Sale now uses these routes as its Path 2
+  // (item14-sale.test.js proves it). Hybrid stays 404 on every route until item 15.
+  it('Hybrid: 404 on every route, for both parties', async () => {
+    for (const goal of ['hybrid']) {
       const w = await w12.shotDone(goal);
       for (const r of routes(w)) {
         const res = await hit(w, r, w[r[2]].token);
@@ -402,7 +404,12 @@ describe('item 12 · nothing confirms "live" on its own (check 15)', () => {
     const hits = [];
     const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (p.endsWith('.js') && /live_confirmed_at\s*=/.test(fs.readFileSync(p, 'utf8'))) hits.push(path.basename(p)); } };
     walk(path.join(__dirname, '../src'));
-    expect(hits.sort()).toEqual(['contentFlow.service.js']);
+    // ASSERTION DRIFT, item 14 (decision D3): Pay for Sale confirms itself after the stamped Admin
+    // days — saleLive.autoConfirmDue, which selects goal = 'conversion' only and moves no money.
+    // Pay for Content still has no automatic confirmation: the next test runs every job on one.
+    expect(hits.sort()).toEqual(['contentFlow.service.js', 'saleLive.service.js']);
+    expect(require('fs').readFileSync(path.join(__dirname, '../src/services/saleLive.service.js'), 'utf8'))
+      .toMatch(/WHERE cs.goal = 'conversion' AND cc.posted_at IS NOT NULL AND cc.live_confirmed_at IS NULL/);
   });
 
   it('and every job, run long after she posted, leaves it unconfirmed', async () => {

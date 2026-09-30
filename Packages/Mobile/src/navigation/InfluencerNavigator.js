@@ -81,6 +81,7 @@ import PostMediaScreen from '../screens/create/PostMediaScreen';
 import PostTagScreen from '../screens/create/PostTagScreen';
 import PostReviewScreen from '../screens/create/PostReviewScreen';
 import PostStatusScreen from '../screens/create/PostStatusScreen';
+import SaleLiveScreen from '../screens/influencer/SaleLiveScreen';
 import MyPostsScreen from '../screens/create/MyPostsScreen';
 import CollectionsScreen from '../screens/create/CollectionsScreen';
 import NewCollectionScreen from '../screens/create/NewCollectionScreen';
@@ -167,6 +168,8 @@ function CollabsStackScreen() {
       <CollabsStack.Screen name="RemoteAddress" component={RemoteAddressScreen} />
       {/* Item 12 — the content step. */}
       <CollabsStack.Screen name="Content" component={ContentScreen} />
+      {/* Item 14 — Pay for Sale going live: the two paths. Contract: features/item14-sale-going-live */}
+      <CollabsStack.Screen name="SaleLive" component={SaleLiveScreen} />
       {/* creator-terms-v2 — Contract: features/creator-terms-v2 */}
       <CollabsStack.Screen name="CreatorSell" component={CreatorSellScreen} />
       <CollabsStack.Screen name="CreatorOffer" component={CreatorOfferScreen} />

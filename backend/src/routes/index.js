@@ -170,6 +170,11 @@ router.use('/', item11Routes);
 const item12Routes = require('./item12.routes');
 router.use('/', item12Routes);
 
+// Item 14 — Pay for Sale going live: the rows she names on item 12's step.
+// Contract: features/item14-sale-going-live
+const item14Routes = require('./item14.routes');
+router.use('/', item14Routes);
+
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);

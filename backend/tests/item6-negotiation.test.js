@@ -666,6 +666,9 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
       ['subscriptions_enforced', 'negotiation_rounds', 'pool_lifetime_days', 'min_shoppable_posts',
         'campaign_fee_pct', 'remote_return_days', 'pitch_response_days', 'pitch_cooldown_days',
         'shoot_auto_confirm_days', 'remote_return_autoconfirm_days', 'content_change_rounds', 'content_report_silence_days', 'final_payment_wait_days',
+        // ASSERTION DRIFT, item 14 (rules v1.30 §12.1, A1): how long a Pay for Sale live
+        // confirmation waits before it confirms itself.
+        'sale_live_autoconfirm_days',
         'link_channel_window_days']
     );
     const rounds = r.body.data.settings.find(x => x.key === 'negotiation_rounds');

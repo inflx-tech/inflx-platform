@@ -22,6 +22,7 @@ import { StepLine10, TimeCard10, AddressCard10, AmberBox10, GreenBox10, DelayedC
 import { MoveTimeSheet10 } from '../../components/shoot/sheets10';
 import { C10, MSG10, whenShort10, day10 } from '../../components/shoot/copy10';
 import { C12 } from '../../components/content/copy12';
+import { C14 } from '../../components/sale/copy14';
 
 export default function ShootScreen({ navigation, route }) {
   const { ciId } = route.params || {};
@@ -143,6 +144,10 @@ export default function ShootScreen({ navigation, route }) {
         {/* Item 12: the visit is done — her content step is open. */}
         {stage === 'complete' && sh.aim === 'engagement' ? (
           <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
+        ) : null}
+        {/* Item 14 (S1): Pay for Sale — the visit is done; going live is next. */}
+        {stage === 'complete' && sh.aim === 'conversion' ? (
+          <PrimaryButton label={C14.goLive} onPress={() => navigation.navigate('SaleLive', { ciId })} testID="go-live" />
         ) : null}
         {stage === 'sent' && !(thread && thread.negotiation && thread.negotiation.id) ? (
           <>

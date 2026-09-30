@@ -91,15 +91,17 @@ async function ownCollab(influencerId, ciId) {
   return rows[0];
 }
 
-/** Approved posts counted against the minimum: approved on or before the posting date (4.10). */
+/**
+ * Approved posts counted against the minimum. Item 14 (rules v1.30 §12.1, board S7): a post INFLX
+ * approves after the posting date STILL COUNTS — it is shown to the brand as late, never refused.
+ * One number with saleLive.approvedCount, which completion reads.
+ */
 async function doneCounts(ciIds) {
   if (!ciIds.length) return new Map();
   const { rows } = await db.query(
     `SELECT cp.campaign_influencer_id AS ci_id, count(*)::int AS n
-       FROM creator_posts cp JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
-       JOIN campaign_sets cs ON cs.id = ci.set_id
+       FROM creator_posts cp
       WHERE cp.v2 AND cp.campaign_influencer_id = ANY($1::uuid[]) AND cp.approved_at IS NOT NULL
-        AND (cs.go_live_date IS NULL OR (cp.approved_at AT TIME ZONE 'Asia/Kolkata')::date <= cs.go_live_date)
       GROUP BY 1`, [ciIds]);
   return new Map(rows.map((r) => [r.ci_id, r.n]));
 }
@@ -885,6 +887,9 @@ async function afterDecision(postId, approve, reason) {
     ? NOTIFY.approved(titleOf(p), posting && today < posting ? rules.dayMonth(posting) : null)
     : NOTIFY.sentBack(titleOf(p), String(reason || '').trim() || 'Not specified');
   await tellCreator(p.influencer_id, m, { screen: 'post', post_id: p.id });
+  // Item 14 (rules v1.30 §19): an approval can be what reaches the minimum on a collaboration the
+  // brand already confirmed live — then it completes now. Never throws into the approval.
+  if (approve) await require('./saleLive.service').afterPostApproved(p.id);
 }
 
 async function tellCreator(influencerId, m, data) {

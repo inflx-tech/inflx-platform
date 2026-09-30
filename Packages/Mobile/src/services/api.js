@@ -672,6 +672,10 @@ export const influencerApi = {
   contentConfirmFile: (id, fileId) => api.post(`/influencers/me/invitations/${id}/content/files/${fileId}/confirm`),
   contentRemoveFile:  (id, fileId) => api.delete(`/influencers/me/invitations/${id}/content/files/${fileId}`),
   contentFileUrl:     (id, fileId) => api.get(`/influencers/me/invitations/${id}/content/files/${fileId}/url`),
+  // ── Item 14 · Pay for Sale going live: the rows she names on item 12's step. Contract: features/item14-sale-going-live ──
+  saleAddRows:        (id, postId, types) => api.post(`/influencers/me/invitations/${id}/content/social-rows`, { postId, types }),
+  saleRemoveRow:      (id, rowKey) => api.delete(`/influencers/me/invitations/${id}/content/social-rows/${rowKey}`),
+  saleAddOutside:     (id, postId, type) => api.post(`/influencers/me/invitations/${id}/content/outside-rows`, { postId, type }),
   // Phase 2b — the device proof. 404 unless the server's CONTENT_UPLOAD_PROBE switch is on.
   uploadProbeStatus:  () => api.get('/influencers/me/upload-probe'),
   uploadProbeUrl:     (body) => api.post('/influencers/me/upload-probe/url', body),

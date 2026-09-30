@@ -19,18 +19,28 @@
  *
  * `allowShootNotDone` is for the read (G1) alone: C15 and C2 draw "Shoot not done yet", and a
  * read that refused could not draw it (item 10/11's F1 precedent). Every write refuses.
+ *
+ * Item 14 (rules v1.30 §12.1, board v2) — Pay for Sale reaches the SAME step as Path 2, the social
+ * media post the brand approves. Two differences, and only for `conversion`:
+ *   · the collaboration must be on the new creator terms (`sell_v2`) — old-terms collaborations
+ *     have no shoppable posts (S24); the read draws that, every write refuses;
+ *   · the rows are the ones SHE named (content_social_rows), not the agreement's. There may be
+ *     none yet: Path 2 opens only once INFLX has approved one of her posts (saleLive.addRows).
+ * Pay for Content is unchanged, line for line (check 18). Hybrid stays refused until item 15.
  */
 
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
 const shootGate = require('./shootGate.service');
 const { MSG: MSG10 } = require('./productionCopy');
-const { MSG, PLATFORM_OF_TYPE, TYPE_LABEL } = require('./contentCopy');
+const { MSG, PLATFORM_OF_TYPE, TYPE_LABEL, SALE_TYPES } = require('./contentCopy');
 
 const PAY_FOR_CONTENT = 'engagement';
+const PAY_FOR_SALE = 'conversion';
 
 const SELECT = `
-  SELECT ci.id AS ci_id, ci.status AS ci_status, ci.influencer_id, ci.delayed_at, ci.delayed_stage,
+  SELECT ci.id AS ci_id, ci.status AS ci_status, ci.influencer_id, ci.delayed_at, ci.delayed_stage, ci.sell_v2,
+         ci.min_shoppable_posts,
          cs.id AS set_id, cs.name AS set_name, cs.goal, cs.shoot_mode AS set_mode, cs.go_live_date,
          c.id AS campaign_id, c.name AS campaign_name, c.brand_id, c.status AS campaign_status,
          b.business_name AS brand_name, bu.id AS brand_user_id,
@@ -94,6 +104,23 @@ function rowsOf(terms) {
   return rows;
 }
 
+/**
+ * Item 14 — the rows she named, still standing, oldest first. Each is one social post: count 1,
+ * one link (or a Story screenshot). `outside` rows are links only and never go in a package.
+ */
+async function saleRowsOf(ciId, conn = db) {
+  const { rows } = await conn.query(
+    `SELECT sr.row_key, sr.type, sr.post_id, sr.outside, sr.added_round
+       FROM content_social_rows sr JOIN collab_content cc ON cc.id = sr.content_id
+      WHERE cc.campaign_influencer_id = $1 AND sr.removed_round IS NULL
+      ORDER BY sr.created_at, sr.row_key`, [ciId]);
+  return rows.map((x) => ({
+    key: x.row_key, type: x.type, count: 1,
+    label: SALE_TYPES[x.type].label, platform: SALE_TYPES[x.type].platform, isStory: x.type === 'story',
+    postId: x.post_id, outside: !!x.outside, addedRound: x.added_round,
+  }));
+}
+
 /** When the shoot was done — "Shoot done on {date}" (C1). One vocabulary for both modes. */
 function shootDoneAt(r) {
   if (!r || r.pe_status !== 'completed') return null;
@@ -107,7 +134,7 @@ function shootDoneAt(r) {
  * Refuse unless the content step is open for this caller. Returns what every path needs next.
  * `conn` lets a transaction ask before it writes.
  */
-async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = false } = {}) {
+async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = false, allowOldTerms = false } = {}) {
   const r = await load(ciId, scope, conn);
   if (!r) throw new AppError('NOT_FOUND', 'Not found', 404);
 
@@ -116,6 +143,7 @@ async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = f
   if (!gate.signed.at) throw new AppError('NOT_SIGNED', MSG10.NOT_SIGNED, 422, 'status');
   if (!gate.open) throw new AppError('NOT_FUNDED', MSG10.NOT_FUNDED, 422, 'status');
 
+  if (r.goal === PAY_FOR_SALE) return saleGate(ciId, r, gate, conn, { allowShootNotDone, allowOldTerms });
   if (r.goal !== PAY_FOR_CONTENT) throw new AppError('NOT_PAY_FOR_CONTENT', MSG.NOT_PAY_FOR_CONTENT, 404);
 
   const shootDone = r.pe_status === 'completed';
@@ -129,4 +157,18 @@ async function assertContentOpen(ciId, scope, conn = db, { allowShootNotDone = f
   return { r, gate, rows, shootDone: true, shootDoneAt: shootDoneAt(r) };
 }
 
-module.exports = { assertContentOpen, load, rowsOf, shootDoneAt, PAY_FOR_CONTENT, SELECT };
+/**
+ * Item 14 — the Pay for Sale arm of the gate. `aim: 'sale'` travels with the answer so every
+ * caller can branch on it without re-reading the set.
+ */
+async function saleGate(ciId, r, gate, conn, { allowShootNotDone, allowOldTerms }) {
+  if (!r.sell_v2) {
+    if (!allowOldTerms) throw new AppError('OLD_TERMS', MSG.SALE_OLD_TERMS, 422, 'status');
+    return { r, gate, rows: [], shootDone: r.pe_status === 'completed', shootDoneAt: shootDoneAt(r), aim: 'sale', oldTerms: true };
+  }
+  const shootDone = r.pe_status === 'completed';
+  if (!shootDone && !allowShootNotDone) throw new AppError('SHOOT_NOT_DONE', MSG.SHOOT_NOT_DONE, 422, 'status');
+  return { r, gate, rows: shootDone ? await saleRowsOf(ciId, conn) : [], shootDone, shootDoneAt: shootDoneAt(r), aim: 'sale', oldTerms: false };
+}
+
+module.exports = { assertContentOpen, load, rowsOf, saleRowsOf, shootDoneAt, PAY_FOR_CONTENT, PAY_FOR_SALE, SELECT };

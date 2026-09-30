@@ -40,6 +40,8 @@ const DEFAULTS = Object.freeze({
   content_change_rounds: { value: 2, min: 1, max: 5, unit: 'rounds', label: 'Content change requests' },
   content_report_silence_days: { value: 7, min: 1, max: 30, unit: 'days', label: 'Brand silence before the Creator may report' },
   final_payment_wait_days: { value: 7, min: 1, max: 60, unit: 'days', label: 'Final payment waiting period' },
+  // Item 14 (rules v1.30 §12.1, A1) — stamped when she marks her social posts posted, never re-read.
+  sale_live_autoconfirm_days: { value: 7, min: 1, max: 30, unit: 'days', label: 'Pay for Sale confirms itself after' },
   // post-links-codes (rules v1.5 §4.14) — stamped on each tap as the end of its window.
   link_channel_window_days: { value: 30, min: 1, max: 90, unit: 'days', label: 'Link channel window' },
   // follower-app-v2 (rules v1.7 §5.12) — the feed's numbers, read on every feed request.
@@ -70,6 +72,7 @@ const DESCRIPTION = Object.freeze({
   content_report_silence_days: "How long after the Creator confirms she has posted the Brand may stay silent before she can tell INFLX. There is no automatic confirmation — the money is the Brand's — so this is her way to be heard. Telling INFLX records a dispute and moves no money. Between 1 and 30 days. Stamped when she confirms she posted.",
   link_channel_window_days: "How long a tap on a creator's links decides which channel an order counts under (Instagram, YouTube, WhatsApp, Facebook, Other or Post code). With no tap in the window the order counts as 'In INFLX'. Reporting only: it never changes who is paid, the commission or the INFLX fee. Between 1 and 90 days. Stamped on each tap when it is made, so changing this applies to new taps only.",
   final_payment_wait_days: "The delay before the final 50% of a Pay for Content fee is released, counted from the Brand's confirmation that the content is live. Paid on that day at the release time. Between 1 and 60 days. Stamped on the payment at the Brand's confirmation, so changing this never moves a date already promised. This replaces the waiting period that used to sit on the Payments page.",
+  sale_live_autoconfirm_days: "After a Pay for Sale creator marks her social posts posted, how long the Brand has to confirm they are live or tell INFLX something is wrong. If it does neither, the collaboration is confirmed live by itself — safe because nothing is paid at that moment on Pay for Sale. Never applies to Hybrid, where confirming releases money. Between 1 and 30 days. Stamped when she marks them posted, so changing this never moves a date already promised.",
   feed_near_km: "How far from where a shopper is (her phone's location, or her city's centre when location is off) a creator or a brand store still counts as near her. Near posts come right after the creators she follows. Between 5 and 500 km. Applies to the next feed she opens.",
   feed_new_share_pct: 'The share of places in every feed kept for brand-new posts, so a new post is seen and can earn a score. Between 0 and 50 percent.',
   feed_new_hours: 'How long after going live a post counts as new for those places. Between 6 and 168 hours.',

@@ -149,7 +149,9 @@ async function refreshDelayedStages() {
 async function currentDelayedStage(row) {
   const { rows: [pe] } = await db.query(`SELECT * FROM production_events WHERE contract_id = $1`, [row.contract_id]);
   if (pe && pe.status === 'completed') {
-    if (row.goal !== 'engagement') return null;                     // items 14/15 own the post-shoot stages
+    // Item 14: a Pay for Sale collaboration's stage follows it through the two paths.
+    if (row.goal === 'conversion') return require('./saleLive.service').currentDelayedStageSale(row.ci_id);
+    if (row.goal !== 'engagement') return null;                     // item 15 owns Hybrid's post-shoot stages
     const { stage } = await contentStageOf(row.ci_id);
     return flow.delayedStageFor(stage);                              // null once live: keep the last
   }

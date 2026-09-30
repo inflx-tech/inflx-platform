@@ -1,0 +1,40 @@
+{
+  "feature": "item14-sale-going-live",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 30 Sep 2026: \"ok pls lock it and start implementing\")",
+  "approved_at": "2026-09-30T12:17:26.670Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 30 Sep 2026)",
+  "mockup_locked_at": "2026-09-30T12:17:26.670Z",
+  "notes": "Item 14 of 21 — Pay for Sale going live, completion and selling (master rules v1.29 §12.1/§19 → v1.30, items 14+15 only; OFFER_TERMS_POSTS_RULES.md is reference, not edited). Contract opened 2026-09-30 on the founder's go. Founder decisions D1–D5 30 Sep: keep brand approval of the social version (item 12 package + rounds); confirm live once per collaboration; Pay for Sale confirms itself after an Admin number of days (Hybrid never — item 15); links now, social numbers later (Level 5); return window already Admin-controlled. Next: mockup board. No governed code until approved + mockup_locked. 2026-09-30: mockups v1 drawn — 04-preview/mockups/item14-sale-going-live-mockups-v1.html (S1–S23 + A1; four points for the lock); awaiting founder lock. 2026-09-30: founder — the shoppable-post path was missing; v2 board draws two separate paths (Path 1 shoppable post checked by INFLX, P1–P8, item 13 screens; Path 2 social post checked by the brand, S8–S21) with Path 2 locked until INFLX approves at least one post. v1 kept for history. LOCKED 2026-09-30: board v2 (S1–S24, P1–P8, A1) and its five points as recommended.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "mockup_final": "04-preview/mockups/item14-sale-going-live-mockups-v2.html",
+  "build": {
+    "at": "2026-09-30",
+    "backend": {
+      "suite": "tests/item14-sale.test.js",
+      "tests": "20/20",
+      "compare": {
+        "before": "133/1757/1548 passed/181 failed",
+        "after": "134/1777/1568 passed/181 failed",
+        "newly_failing": 0,
+        "new": 22,
+        "gone_renamed": 2
+      }
+    },
+    "mobile": "62 suites / 800 tests green (saleLiveScreens 13/13)",
+    "migration": "199 rehearsed on a 198-level DB: 15/15 checks, idempotent, no money moved",
+    "rules": "master rules v1.30 written (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.30.docx)"
+  }
+}

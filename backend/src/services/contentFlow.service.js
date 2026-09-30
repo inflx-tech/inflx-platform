@@ -22,7 +22,7 @@ const contentMoney = require('./contentMoney.service');
 const platformSettings = require('./platformSettings.service');
 const notificationService = require('./notification.service');
 const events = require('./collabEvents.service');
-const { MSG, NOTIFY12, HOSTS, DELAYED_STAGE_LABEL } = require('./contentCopy');
+const { MSG, NOTIFY12, NOTIFY14, HOSTS, DELAYED_STAGE_LABEL, SALE_TYPES } = require('./contentCopy');
 const { DELAYED_STAGE_LABEL: ALL_DELAYED_LABELS, shortDay } = require('./productionCopy');
 const { istDayOf, addDays, startOfIndiaDay, todayInIndia, daysBetween, calendarDay } = require('../utils/indiaDay');
 
@@ -52,9 +52,18 @@ async function snapshot(conn, ciId, cc) {
 const draftFiles = (s, rowKey) => s.files.filter((f) => f.purpose === 'content' && f.row_key === rowKey
   && f.removed_round == null && f.verified_at);
 
+/**
+ * Item 14: the rows that make up the package. A Pay for Sale `outside` row (a post shared after
+ * the package was first sent) is links only and never part of it. Item 12's rows have no
+ * `outside`, so for Pay for Content this is every row, exactly as before.
+ */
+const pkgRows = (rows) => rows.filter((r) => !r.outside);
+const isSale = (g) => g && g.aim === 'sale';
+const sale = () => require('./saleLive.service');
+
 /** What is still missing before the package can be sent — per row, the count short. */
 function missingOf(rows, s) {
-  return rows.map((r) => ({ key: r.key, label: r.label, need: r.count, have: draftFiles(s, r.key).length }))
+  return pkgRows(rows).map((r) => ({ key: r.key, label: r.label, need: r.count, have: draftFiles(s, r.key).length }))
     .filter((x) => x.have < x.need).map((x) => ({ ...x, short: x.need - x.have }));
 }
 
@@ -134,12 +143,101 @@ function delayedStageFor(stage) {
  * round — what was sent, the verdict, the reason, the notes (approval §2.2, check 37).
  */
 async function read(ciId, scope) {
-  const g = await contentGate.assertContentOpen(ciId, scope, db, { allowShootNotDone: true });
-  const cc = g.shootDone ? await content.contentRow(ciId) : null;
+  const g = await contentGate.assertContentOpen(ciId, scope, db, { allowShootNotDone: true, allowOldTerms: true });
+  const cc = g.shootDone && !g.oldTerms ? await content.contentRow(ciId) : null;
   const s = await snapshot(db, ciId, cc);
   const settingRounds = await platformSettings.get('content_change_rounds');
   const settingWait = await platformSettings.get('final_payment_wait_days');
-  return shape(g, cc, s, scope.side, settingRounds, settingWait);
+  const base = shape(g, cc, s, scope.side, settingRounds, settingWait);
+  if (!isSale(g)) return base;
+  return shapeSale(g, cc, s, scope.side, base, g.oldTerms ? null : await sale().saleExtra(g, cc, s, scope.side));
+}
+
+/**
+ * Item 14 — the same step, as a Pay for Sale collaboration reads it (board v2, S4–S24). Item 12's
+ * shape is kept for what is shared (rows, files, rounds, proofs, reports) and the rest is Pay for
+ * Sale's own: the two paths, no money, the self-confirmation date, completion, the sales.
+ */
+function shapeSale(g, cc, s, side, base, x) {
+  const r = g.r;
+  if (!x) {
+    return { ...base, aim: 'sale', stage: 'old_terms', rows: [], money: null, move: null, yourMove: false, can: {}, path1: null, steps: [] };
+  }
+  const stage = x.stage;
+  const frozen = !!(cc && cc.brand_reported_at);
+  const rows = base.rows.map((row) => {
+    const p = x.byId.get(row.postId) || null;
+    // An outside row's link is reporting: the brand sees it as soon as she adds it (S21).
+    const proofs = row.outside && side === 'brand'
+      ? slotsOf([row], s).map(({ slot, url, screenshotFileId, filled }) => ({ slot, url, screenshotFileId, filled })) : row.proofs;
+    return { ...row, proofs, post: p ? { id: p.id, title: p.title, code: p.code, cover: p.cover, state: p.state } : null };
+  });
+  const pkg = pkgRows(rows);
+  // The brand reads what she SENT (item 12's rule): the last package's rows, and her outside links.
+  const lastRound = s.rounds[s.rounds.length - 1] || null;
+  const sentKeys = new Set(((lastRound && lastRound.package_json && lastRound.package_json.rows) || []).map((z) => z.key));
+  const visibleRows = side === 'brand' ? rows.filter((row) => row.outside || sentKeys.has(row.key)) : rows;
+  const slots = slotsOf(pkgRows(g.rows), s);
+  const move = g.shootDone ? sale().saleMove(stage, cc, s.rounds, g.shootDoneAt) : null;
+  const liveStage = g.shootDone ? sale().delayedStageForSale(stage, x.p1) : null;
+  const delayed = r.delayed_at ? {
+    at: r.delayed_at,
+    stage: liveStage || r.delayed_stage,
+    label: ALL_DELAYED_LABELS[liveStage || r.delayed_stage] || null,
+  } : null;
+  const editing = !frozen && ['draft', 'changes'].includes(stage);
+  const inReview = stage === 'in_review';
+  const round = base.round;
+  const postingPassed = x.postingDate ? todayInIndia() > x.postingDate : false;
+  const can = side === 'creator' ? {
+    addRows: editing && x.p1.open,
+    removeRow: editing,
+    upload: editing,
+    submit: editing && pkg.length > 0 && missingOf(g.rows, s).length === 0,
+    addProof: !frozen && stage === 'approved',
+    markPosted: !frozen && stage === 'approved' && slots.every((z) => z.filled),
+    addOutside: x.outsideOpen,
+    report: false,
+  } : {
+    approve: !frozen && inReview,
+    askChanges: !frozen && inReview && round.current <= round.allowed,
+    confirmLive: !frozen && stage === 'posted',
+    reportRoundsUsed: !frozen && inReview && round.current > round.allowed,
+    reportPosted: !frozen && stage === 'posted',
+    reportNotPosted: !frozen && (stage === 'posted' || (stage === 'approved' && postingPassed)),
+  };
+  const confirmed = !!(cc && cc.live_confirmed_at);
+  return {
+    ...base,
+    aim: 'sale',
+    stage, frozen, rows: visibleRows,
+    missing: side === 'creator' && editing ? missingOf(g.rows, s) : [],
+    proofsLeft: side === 'creator' && stage === 'approved' ? slots.filter((z) => !z.filled).map(({ rowKey, slot, isStory }) => ({ rowKey, slot, isStory })) : [],
+    money: null,
+    path1: {
+      min: x.p1.min, approved: x.p1.approved, short: x.p1.short, met: x.p1.met, late: x.p1.late,
+      inReview: x.p1.inReview, sentBack: x.p1.sentBack, open: x.p1.open,
+      posts: x.p1.posts.map((p) => ({ ...p, inPackage: pkg.some((row) => row.postId === p.id) })),
+    },
+    notShared: side === 'brand' ? x.notShared.filter((n) => n.overdue) : x.notShared,
+    sales: x.sales,
+    autoconfirmAt: cc ? cc.autoconfirm_at : null,
+    liveConfirmedAuto: !!(cc && cc.live_confirmed_auto),
+    waitingOnPosts: confirmed && !(cc && cc.completed_at),
+    postingDate: x.postingDate, daysToPosting: x.daysToPosting,
+    delayed,
+    yourMove: !!(move && move.side === side),
+    move: move ? { key: move.key, side: move.side, since: move.since } : null,
+    can,
+    destinations: Object.keys(SALE_TYPES).map((k) => ({ type: k, label: SALE_TYPES[k].label, platform: SALE_TYPES[k].platform, isStory: k === 'story' })),
+    steps: [
+      { key: 'signed', label: 'Agreement signed', state: 'done', at: g.gate.signed.at },
+      { key: 'shoot', label: 'Shoot', state: g.shootDone ? 'done' : 'now', at: g.shootDoneAt },
+      { key: 'posts', label: 'Shoppable posts', state: x.p1.met ? 'done' : g.shootDone ? 'now' : 'later', detail: `${x.p1.approved} of ${x.p1.min}` },
+      { key: 'social', label: 'Social media', state: confirmed ? 'done' : x.p1.open && g.shootDone ? 'now' : 'later', at: cc ? cc.live_confirmed_at : null },
+      { key: 'complete', label: 'Completed', state: stage === 'complete' ? 'done' : 'later', at: cc ? cc.completed_at : null, postingDate: x.postingDate },
+    ],
+  };
 }
 
 function shape(g, cc, s, side, settingRounds, settingWait = 7) {
@@ -301,7 +399,7 @@ async function caption(ciId, scope, rowKey, text) {
   creatorOnly(scope);
   const g = await contentGate.assertContentOpen(ciId, scope);
   const row = g.rows.find((x) => x.key === rowKey);
-  if (!row) refuse('UNKNOWN_ROW', MSG.UNKNOWN_ROW, 422, 'rowKey');
+  if (!row || row.outside) refuse('UNKNOWN_ROW', MSG.UNKNOWN_ROW, 422, 'rowKey');
   const value = String(text == null ? '' : text);
   if (value.length > 500) refuse('CAPTION_TOO_LONG', MSG.CAPTION_TOO_LONG, 422, 'caption');
   await db.withTransaction(async (client) => {
@@ -331,10 +429,15 @@ async function submit(ciId, scope, { round } = {}) {
     if (stage === 'in_review') refuse('ALREADY_SUBMITTED', MSG.ALREADY_SUBMITTED(g.r.brand_name), 422, 'status');
     if (!['draft', 'changes'].includes(stage)) refuse('ALREADY_APPROVED', MSG.ALREADY_APPROVED, 422, 'status');
     if (round != null && Number(round) !== cc.current_round) refuse('ALREADY_SUBMITTED', MSG.ALREADY_SUBMITTED(g.r.brand_name), 422, 'round');
+    // Item 14: at least one post and place (§12.1: she names at least one social deliverable).
+    if (isSale(g) && !pkgRows(g.rows).length) refuse('NO_SOCIAL_ROWS', MSG.SALE_NO_ROWS, 422, 'rows');
     if (missingOf(g.rows, s).length) refuse('PACKAGE_INCOMPLETE', MSG.PACKAGE_INCOMPLETE, 422, 'rows');
 
     const captions = Object.fromEntries(s.captions.map((c) => [c.row_key, c.caption]));
-    const pkg = { rows: g.rows.map((row) => ({ key: row.key, type: row.type, count: row.count, caption: captions[row.key] || '', fileIds: draftFiles(s, row.key).map((f) => f.id) })) };
+    const pkg = { rows: pkgRows(g.rows).map((row) => ({
+      key: row.key, type: row.type, count: row.count, caption: captions[row.key] || '', fileIds: draftFiles(s, row.key).map((f) => f.id),
+      ...(isSale(g) ? { postId: row.postId } : {}),
+    })) };
     try {
       await client.query(
         `INSERT INTO content_rounds (content_id, round_no, submitted_by, package_json) VALUES ($1,$2,$3,$4)`,
@@ -352,6 +455,13 @@ async function submit(ciId, scope, { round } = {}) {
     }
     return { round: cc.current_round };
   });
+  if (isSale(g)) {
+    sale().tell(g.r, 'brand', out.round === 1 ? NOTIFY14.SUBMITTED : NOTIFY14.RESUBMITTED, out.round === 1
+      ? `${first(g.r.creator_name)} sent what she'll share on social media. Approve it before she posts.`
+      : `${first(g.r.creator_name)} sent her changes. Round ${out.round} is with you.`);
+    diary(g.r, 'creator', scope.userId, out.round === 1 ? 'social_submitted' : 'social_resubmitted', { round: out.round });
+    return read(ciId, scope);
+  }
   const key = out.round === 1 ? NOTIFY12.SUBMITTED : NOTIFY12.RESUBMITTED;
   notifyBrand(g.r, key, out.round === 1
     ? `${first(g.r.creator_name)} sent her content. Review it before she posts anything.`
@@ -383,7 +493,8 @@ async function approve(ciId, scope, { round } = {}) {
         WHERE id = $1 AND approved_at IS NULL`, [cc.id, scope.userId, cc.current_round]);
     return { round: cc.current_round };
   });
-  notifyCreator(g.r, NOTIFY12.APPROVED, `${g.r.brand_name} approved your content. Post it now — this is the version they approved.`);
+  if (isSale(g)) sale().tell(g.r, 'creator', NOTIFY14.APPROVED, `${g.r.brand_name} approved what you'll share. Post it now and add the links.`);
+  else notifyCreator(g.r, NOTIFY12.APPROVED, `${g.r.brand_name} approved your content. Post it now — this is the version they approved.`);
   diary(g.r, 'brand', scope.userId, 'approved', { round: out.round });
   return read(ciId, scope);
 }
@@ -428,7 +539,9 @@ async function askChanges(ciId, scope, { round, reason, notes } = {}) {
     if (moved !== 1) refuse('STALE', MSG.STALE, 422, 'round');
     return { round: cc.current_round, allowed };
   });
-  notifyCreator(g.r, NOTIFY12.CHANGES, `${g.r.brand_name} asked for changes: "${why.length > 120 ? `${why.slice(0, 117)}…` : why}"`);
+  const asked = `${g.r.brand_name} asked for changes: "${why.length > 120 ? `${why.slice(0, 117)}…` : why}"`;
+  if (isSale(g)) sale().tell(g.r, 'creator', NOTIFY14.CHANGES, asked);
+  else notifyCreator(g.r, NOTIFY12.CHANGES, asked);
   diary(g.r, 'brand', scope.userId, 'changes_asked', { round: out.round, reason: why, notes: pins.length });
   return read(ciId, scope);
 }
@@ -454,8 +567,11 @@ async function setProof(ciId, scope, rowKey, slotRaw, { url, screenshotFileId } 
   if (!row || !Number.isInteger(slot) || slot < 1 || slot > row.count) refuse('UNKNOWN_SLOT', MSG.UNKNOWN_SLOT, 422, 'slot');
   await db.withTransaction(async (client) => {
     const { cc } = await lockedOpen(client, g);
-    if (!cc.approved_at) refuse('NOT_APPROVED', MSG.NOT_APPROVED(g.r.brand_name), 422, 'status');
-    if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+    // Item 14: an outside row (a post shared after the package) takes its link at any time (S17).
+    if (!row.outside) {
+      if (!cc.approved_at) refuse('NOT_APPROVED', MSG.NOT_APPROVED(g.r.brand_name), 422, 'status');
+      if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+    }
     let link = null; let shot = null;
     if (row.isStory) {
       if (!screenshotFileId) refuse('SCREENSHOT_ONLY', MSG.SCREENSHOT_ONLY, 422, 'screenshotFileId');
@@ -488,7 +604,7 @@ async function clearProof(ciId, scope, rowKey, slotRaw) {
   if (!row) refuse('UNKNOWN_SLOT', MSG.UNKNOWN_SLOT, 422, 'slot');
   await db.withTransaction(async (client) => {
     const { cc } = await lockedOpen(client, g);
-    if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+    if (cc.posted_at && !row.outside) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
     await client.query(`DELETE FROM content_proofs WHERE content_id = $1 AND row_key = $2 AND slot = $3`, [cc.id, row.key, Number(slotRaw)]);
   });
   return read(ciId, scope);
@@ -503,8 +619,18 @@ async function markPosted(ciId, scope) {
     const { cc, s } = await lockedOpen(client, g);
     if (!cc.approved_at) refuse('NOT_APPROVED', MSG.NOT_APPROVED(g.r.brand_name), 422, 'status');
     if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
-    if (slotsOf(g.rows, s).some((x) => !x.filled)) refuse('PROOF_INCOMPLETE', MSG.PROOF_INCOMPLETE, 422, 'proofs');
+    if (slotsOf(pkgRows(g.rows), s).some((x) => !x.filled)) refuse('PROOF_INCOMPLETE', MSG.PROOF_INCOMPLETE, 422, 'proofs');
     const now = new Date();
+    if (isSale(g)) {
+      // D3: Pay for Sale confirms itself after the Admin days, stamped now and never re-read.
+      // There is no "tell INFLX about silence" on Pay for Sale — the silence ends by itself.
+      const stamp = await sale().autoconfirmStamp(now);
+      const { rowCount } = await client.query(
+        `UPDATE collab_content SET posted_at = $2, posted_by = $3, autoconfirm_days = $4, autoconfirm_at = $5, updated_at = now()
+          WHERE id = $1 AND posted_at IS NULL`, [cc.id, now, scope.userId, stamp.days, stamp.at]);
+      if (rowCount !== 1) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+      return { links: s.proofs.length, sale: stamp };
+    }
     const after = startOfIndiaDay(addDays(istDayOf(now), days));
     const { rowCount } = await client.query(
       `UPDATE collab_content SET posted_at = $2, posted_by = $3, report_silence_days = $4, report_after_at = $5, updated_at = now()
@@ -512,6 +638,12 @@ async function markPosted(ciId, scope) {
     if (rowCount !== 1) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
     return { links: s.proofs.length };
   });
+  if (out.sale) {
+    sale().tell(g.r, 'brand', NOTIFY14.POSTED,
+      `${first(g.r.creator_name)} has posted. Open the links and confirm it's live. If you don't answer, it confirms itself on ${shortDay(out.sale.at)}.`);
+    diary(g.r, 'creator', scope.userId, 'posted', { proofs: out.links, autoconfirm_at: out.sale.at });
+    return read(ciId, scope);
+  }
   notifyBrand(g.r, NOTIFY12.POSTED, `${first(g.r.creator_name)} posted everything. Open the links and confirm the content is live.`);
   diary(g.r, 'creator', scope.userId, 'posted', { proofs: out.links });
   return read(ciId, scope);
@@ -539,6 +671,17 @@ async function confirmLive(ciId, scope, { amount } = {}) {
     }
     if (cc.live_confirmed_at) refuse('ALREADY_CONFIRMED', MSG.ALREADY_CONFIRMED, 422, 'status');
     if (!cc.posted_at) refuse('NOT_POSTED', MSG.NOT_POSTED(first(g.r.creator_name)), 422, 'status');
+    if (isSale(g)) {
+      // Item 14: NO MONEY on Pay for Sale (§21). Confirmed once for the collaboration (D2), then
+      // Completed if Path 1's minimum is already met — otherwise when it is (§19, S19).
+      const { rowCount } = await client.query(
+        `UPDATE collab_content SET live_confirmed_at = $2, live_confirmed_by = $3, updated_at = now()
+          WHERE id = $1 AND live_confirmed_at IS NULL AND posted_at IS NOT NULL AND brand_reported_at IS NULL`,
+        [cc.id, at, scope.userId]);
+      if (rowCount !== 1) refuse('ALREADY_CONFIRMED', MSG.ALREADY_CONFIRMED, 422, 'status');
+      const done = await sale().completeIfDue(client, ciId);
+      return { sale: true, completed: !!(done && done.completed) };
+    }
     const { rows: [t2] } = await client.query(
       `SELECT amount FROM escrow_entries WHERE campaign_influencer_id = $1 AND tranche_number = 2`, [ciId]);
     if (amount != null && (!t2 || Math.round(Number(amount) * 100) !== Math.round(Number(t2.amount) * 100))) {
@@ -557,6 +700,14 @@ async function confirmLive(ciId, scope, { amount } = {}) {
       [cc.id, at, m.waitDays, m.dueAt]);
     return m;
   });
+  if (out.sale) {
+    sale().tell(g.r, 'creator', NOTIFY14.LIVE_CONFIRMED, out.completed
+      ? `${g.r.brand_name} confirmed it's live. Your collaboration is complete, and your posts keep selling.`
+      : `${g.r.brand_name} confirmed it's live. It completes when INFLX has approved your minimum number of shoppable posts.`);
+    if (out.completed) sale().tell(g.r, 'brand', NOTIFY14.COMPLETED, `Your collaboration with ${first(g.r.creator_name)} is complete. Her posts keep selling.`);
+    diary(g.r, 'brand', scope.userId, 'confirmed_live', { completed: out.completed });
+    return read(ciId, scope);
+  }
   notifyCreator(g.r, NOTIFY12.LIVE_CONFIRMED,
     `${g.r.brand_name} confirmed your content is live. ${rupees(out.secondAmount)} is in your wallet. The last ${rupees(out.finalAmount)} arrives on ${shortDay(out.dueAt)}.`);
   diary(g.r, 'brand', scope.userId, 'confirmed_live', { second: out.secondAmount, final_due_at: out.dueAt });
@@ -579,10 +730,17 @@ async function report(ciId, scope, { kind, note } = {}) {
     const cc = await content.ensureContent(client, g);
     const s = await snapshot(client, ciId, cc);
     const stage = content.stageOf(cc, s.rounds);
+    if (isSale(g) && scope.side !== 'brand') refuse('REPORT_NOT_OPEN', MSG.REPORT_NOT_OPEN, 422, 'kind');
     if (scope.side === 'brand') {
       if (cc.brand_reported_at) refuse('ALREADY_REPORTED', MSG.ALREADY_REPORTED, 422, 'status');
-      const ok = (kind === 'rounds_used' && stage === 'in_review' && cc.rounds_allowed != null && cc.current_round > cc.rounds_allowed)
-        || (kind === 'posted_wrong' && stage === 'posted');
+      const roundsUsed = kind === 'rounds_used' && stage === 'in_review' && cc.rounds_allowed != null && cc.current_round > cc.rounds_allowed;
+      const postingPassed = !!(g.r.go_live_date && todayInIndia() > calendarDay(g.r.go_live_date));
+      // Item 14 (S23): three reasons once she has posted; "she hasn't posted" also once she was
+      // approved and the posting date has passed. Pay for Content keeps its two, unchanged.
+      const ok = isSale(g)
+        ? roundsUsed || (['posted_wrong', 'missing', 'not_posted'].includes(kind) && stage === 'posted')
+          || (kind === 'not_posted' && stage === 'approved' && postingPassed)
+        : roundsUsed || (kind === 'posted_wrong' && stage === 'posted');
       if (!ok) refuse('REPORT_NOT_OPEN', MSG.REPORT_NOT_OPEN, 422, 'kind');
       const { rowCount } = await client.query(
         `UPDATE collab_content SET brand_reported_at = now(), brand_reported_by = $2, brand_report_kind = $3, brand_report_note = $4, updated_at = now()
@@ -602,7 +760,12 @@ async function report(ciId, scope, { kind, note } = {}) {
     if (rowCount !== 1) refuse('ALREADY_REPORTED', MSG.ALREADY_REPORTED, 422, 'status');
     return { side: 'creator', kind: 'brand_silent' };
   });
-  if (out.side === 'brand') {
+  if (out.side === 'brand' && isSale(g)) {
+    // S23/S24: the step stops; her shop posts do not (§13 — the two are separate).
+    const body = `${g.r.brand_name} reported this to INFLX. INFLX will contact you. Your shop posts keep selling.`;
+    sale().tell(g.r, 'creator', NOTIFY14.REPORTED, body);
+    sale().tell(g.r, 'brand', NOTIFY14.REPORTED, 'You told INFLX. Nothing moves here until INFLX settles it. Her posts stay in the shop.');
+  } else if (out.side === 'brand') {
     const body = MSG.REPORTED_BY_BRAND(g.r.brand_name);
     notifyCreator(g.r, NOTIFY12.REPORTED, body);
     notifyBrand(g.r, NOTIFY12.REPORTED, body);

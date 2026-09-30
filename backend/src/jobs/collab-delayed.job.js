@@ -18,6 +18,9 @@ const shootPlan = require('../services/shootPlan.service');
 const remoteJobs = require('../services/remoteJobs.service');
 // Item 12 — the content arm, and Q9's silent stage refresh across phases.
 const contentJobs = require('../services/contentJobs.service');
+// Item 14 — the Pay for Sale arm, the self-confirmation (D3) and the completion safety sweep.
+// Self-confirmation rides this hourly lane because, like Delayed, it is a date passing.
+const saleLive = require('../services/saleLive.service');
 
 async function run({ today = null } = {}) {
   console.log('[CRON collab-delayed] Running...');
@@ -25,15 +28,18 @@ async function run({ today = null } = {}) {
     const visit = await shootPlan.flagDelayed({ today });
     const remote = await remoteJobs.flagDelayedRemote({ today });
     const contentArm = await contentJobs.flagDelayedContent({ today });
+    const saleArm = await saleLive.flagDelayedSale({ today });
     const refreshed = await contentJobs.refreshDelayedStages();
+    const autoconfirm = await saleLive.autoConfirmDue();
+    const swept = await saleLive.completeSweep();
     const out = {
       checked: visit.checked + remote.checked + contentArm.checked,
-      flagged: visit.flagged + remote.flagged + contentArm.flagged,
+      flagged: visit.flagged + remote.flagged + contentArm.flagged + saleArm.flagged,
       skippedGate: visit.skippedGate + remote.skippedGate + contentArm.skippedGate,
-      failed: visit.failed + remote.failed + contentArm.failed + refreshed.failed,
-      visit, remote, content: contentArm, refreshed,
+      failed: visit.failed + remote.failed + contentArm.failed + refreshed.failed + saleArm.failed + autoconfirm.failed,
+      visit, remote, content: contentArm, refreshed, sale: saleArm, autoconfirm, completedSweep: swept,
     };
-    console.log(`[CRON collab-delayed] Checked ${out.checked}, flagged ${out.flagged} (visit ${visit.flagged}, remote ${remote.flagged}, content ${contentArm.flagged}), stages refreshed ${refreshed.updated}, skipped (gate closed) ${out.skippedGate}, failed ${out.failed}.`);
+    console.log(`[CRON collab-delayed] Checked ${out.checked}, flagged ${out.flagged} (visit ${visit.flagged}, remote ${remote.flagged}, content ${contentArm.flagged}, sale ${saleArm.flagged}), sale confirmed by itself ${autoconfirm.confirmed}, completed ${autoconfirm.completed + swept.completed}, stages refreshed ${refreshed.updated}, skipped (gate closed) ${out.skippedGate}, failed ${out.failed}.`);
     return out;
   } catch (e) {
     console.error('[CRON collab-delayed] Failed:', e.message);

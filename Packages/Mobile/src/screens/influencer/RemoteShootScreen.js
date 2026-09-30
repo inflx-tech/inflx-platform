@@ -20,6 +20,7 @@ import { influencerApi } from '../../services/api';
 import { PrimaryButton, SecondaryButton, TextButton, EmptyState } from '../../components/settings/primitives';
 // Item 12 — the door to the content step once the shoot is done.
 import { C12 } from '../../components/content/copy12';
+import { C14 } from '../../components/sale/copy14';
 import { Skeleton, LoadError, useToast } from '../../components/settings/feedback';
 import { COPY } from '../../components/settings/copy';
 import useRouteToast from '../../hooks/useRouteToast';
@@ -221,6 +222,12 @@ export default function RemoteShootScreen({ navigation, route }) {
           can.bookReturn || can.markSelfSent
             ? <SecondaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
             : <PrimaryButton label={C12.openContentHers} onPress={() => navigation.navigate('Content', { ciId })} testID="open-content" />
+        ) : null}
+        {/* Item 14 (S1): Pay for Sale — the shoot is done; going live is next (the return keeps its own lane). */}
+        {stage === 'shot' && sh.aim === 'conversion' ? (
+          can.bookReturn || can.markSelfSent
+            ? <SecondaryButton label={C14.goLive} onPress={() => navigation.navigate('SaleLive', { ciId })} testID="go-live" />
+            : <PrimaryButton label={C14.goLive} onPress={() => navigation.navigate('SaleLive', { ciId })} testID="go-live" />
         ) : null}
         {can.sendAddress ? (
           <PrimaryButton label={C11.creator.cardTitle} icon="map-marker-outline"

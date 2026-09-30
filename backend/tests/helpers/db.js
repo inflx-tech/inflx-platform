@@ -209,6 +209,8 @@ async function reseedReferenceData(client) {
       ('content_change_rounds',       2, 1,  5, 'rounds', 'Content change requests'),
       ('content_report_silence_days', 7, 1, 30, 'days',   'Brand silence before the Creator may report'),
       ('final_payment_wait_days',     7, 1, 60, 'days',   'Final payment waiting period'),
+      -- Item 14 (A1).
+      ('sale_live_autoconfirm_days',  7, 1, 30, 'days',   'Pay for Sale confirms itself after'),
       -- post-links-codes (mig 196) and the shopper app's feed (follower-app-v2, mig 197).
       ('link_channel_window_days', 30, 1, 90, 'days', 'Link channel window'),
       ('feed_near_km',        50, 5, 500, 'km',      'Near range'),

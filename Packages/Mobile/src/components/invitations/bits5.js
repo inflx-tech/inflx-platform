@@ -132,6 +132,11 @@ export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
       if (row.content && row.content.line) {
         meta = row.content.line;
         if (row.content.yourMove) chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+      } else if (row.goingLive && row.goingLive.line) {
+        // Item 14 (S2): a Pay for Sale row after the shoot says where going live stands.
+        meta = row.goingLive.line;
+        if (row.goingLive.yourMove) chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+        else if (row.goingLive.completed) chip = { label: 'Completed · selling', tone: 'completed' };
       } else if (row.shoot && row.shoot.line) {
         meta = row.shoot.line;
         if (row.shoot.stage === 'attended') chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
@@ -212,6 +217,7 @@ export function InvitationCard5({ card, onPress, testID }) {
       {sentence ? <View style={[b.sentence, { backgroundColor: (T.state[tone] || T.state.ended).bg }]}><Text style={[b.sentenceText, { color: (T.state[tone] || T.state.ended).fg }]}>{sentence}</Text></View> : null}
       {/* Item 10 (V4): under Active, one line says the only thing that matters yet — where and when. */}
       {card.content && card.content.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`content-line-${card.id}`}>{card.content.line}</Text>
+        : card.goingLive && card.goingLive.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`going-live-line-${card.id}`}>{card.goingLive.line}</Text>
         : card.shoot && card.shoot.line ? <Text style={[b.meta, { marginTop: 8, color: T.ink }]} testID={`shoot-line-${card.id}`}>{card.shoot.line}</Text> : null}
     </TouchableOpacity>
   );

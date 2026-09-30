@@ -145,12 +145,17 @@ async function requestUpload(ciId, scope, body = {}) {
     assertNotFrozen(cc);
     const rounds = await roundsOf(cc.id, client);
     if (purpose === 'content') {
+      // Item 14: an outside row is links only — nothing to review, so no content files.
+      if (row.outside) refuse('LINK_ONLY', MSG.LINK_ONLY, 422, 'rowKey');
       assertDraftOpen(cc, rounds, g.r.brand_name);
     } else {
       // A Story screenshot is posting proof: after approval, before she says she has posted.
+      // Item 14: an outside row's screenshot is reporting and may be added at any time (S17).
       if (!row.isStory) refuse('LINK_ONLY', MSG.LINK_ONLY, 422, 'rowKey');
-      if (!cc.approved_at) refuse('NOT_APPROVED', MSG.NOT_APPROVED(g.r.brand_name), 422, 'status');
-      if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+      if (!row.outside) {
+        if (!cc.approved_at) refuse('NOT_APPROVED', MSG.NOT_APPROVED(g.r.brand_name), 422, 'status');
+        if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+      }
     }
     const existing = await liveFilesOfRow(client, cc.id, row.key, purpose);
     const cap = purpose === 'content' ? MAX_FILES_PER_ROW : row.count;
@@ -229,8 +234,9 @@ async function removeFile(ciId, scope, fileId) {
       [fileId, cc.id]);
     if (!f) refuse('FILE_NOT_FOUND', MSG.FILE_NOT_FOUND, 404);
     if (f.purpose === 'story_proof') {
-      // A screenshot is proof, changeable until she says she has posted.
-      if (cc.posted_at) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
+      // A screenshot is proof, changeable until she says she has posted (an outside row's, always).
+      const outside = (g.rows || []).some((x) => x.key === f.row_key && x.outside);
+      if (cc.posted_at && !outside) refuse('ALREADY_POSTED', MSG.ALREADY_POSTED, 422, 'status');
       await client.query(`DELETE FROM content_proofs WHERE content_id = $1 AND screenshot_file_id = $2`, [cc.id, f.id]);
     } else {
       assertDraftOpen(cc, rounds, g.r.brand_name);
@@ -256,13 +262,14 @@ async function removeFile(ciId, scope, fileId) {
  */
 async function fileUrl(ciId, scope, fileId) {
   let cc;
+  let g = null;
   if (scope.side === 'admin') {
     const r = await contentGate.load(ciId, scope);
     if (!r) refuse('NOT_FOUND', 'Not found', 404);
     cc = await contentRow(ciId);
     if (!cc || (!cc.brand_reported_at && !cc.creator_reported_at)) refuse('NOT_FOUND', 'Not found', 404);
   } else {
-    await contentGate.assertContentOpen(ciId, scope);
+    g = await contentGate.assertContentOpen(ciId, scope);
     cc = await contentRow(ciId);
     if (!cc) refuse('NOT_FOUND', 'Not found', 404);
   }
@@ -271,8 +278,9 @@ async function fileUrl(ciId, scope, fileId) {
     [fileId, cc.id]);
   if (!f) refuse('NOT_FOUND', 'Not found', 404);
   if (scope.side === 'brand') {
+    const outside = !!(g && (g.rows || []).some((x) => x.key === f.row_key && x.outside));
     const sent = f.purpose === 'story_proof'
-      ? !!cc.posted_at
+      ? !!cc.posted_at || outside
       : referencedFileIds(await roundsOf(cc.id)).has(f.id);
     if (!sent) refuse('NOT_FOUND', 'Not found', 404);
   }

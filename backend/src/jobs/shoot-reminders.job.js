@@ -17,6 +17,8 @@ const remoteJobs = require('../services/remoteJobs.service');
 // 24-hour sweep of uploads never confirmed (approval §2.1).
 const contentJobs = require('../services/contentJobs.service');
 const content = require('../services/content.service');
+// Item 14 — the Pay for Sale moves on the same 48-hour rule (the posts, the social version, links, confirming).
+const saleLive = require('../services/saleLive.service');
 
 async function run({ now = new Date() } = {}) {
   console.log('[CRON shoot-reminders] Running...');
@@ -24,9 +26,10 @@ async function run({ now = new Date() } = {}) {
     const visit = await shootPlan.remind({ now });
     const remote = await remoteJobs.remindRemote({ now });
     const contentArm = await contentJobs.remindContent({ now });
+    const saleArm = await saleLive.remindSale({ now });
     const swept = await content.sweep();
-    const out = { checked: visit.checked + remote.checked + contentArm.checked, sent: visit.sent + remote.sent + contentArm.sent, visit, remote, content: contentArm, swept };
-    console.log(`[CRON shoot-reminders] Checked ${out.checked}, sent ${out.sent} (visit ${visit.sent}, remote ${remote.sent}, content ${contentArm.sent}); uploads swept ${swept.deleted}.`);
+    const out = { checked: visit.checked + remote.checked + contentArm.checked + saleArm.checked, sent: visit.sent + remote.sent + contentArm.sent + saleArm.sent, visit, remote, content: contentArm, sale: saleArm, swept };
+    console.log(`[CRON shoot-reminders] Checked ${out.checked}, sent ${out.sent} (visit ${visit.sent}, remote ${remote.sent}, content ${contentArm.sent}, sale ${saleArm.sent}); uploads swept ${swept.deleted}.`);
     return out;
   } catch (e) {
     console.error('[CRON shoot-reminders] Failed:', e.message);

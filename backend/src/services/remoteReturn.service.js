@@ -24,7 +24,7 @@ const money = require('./remoteMoney.service');
 const shoot = require('./remoteShoot.service');
 const address = require('./remoteAddress.service');
 const platformSettings = require('./platformSettings.service');
-const { MSG, NOTIFY11 } = require('./productionCopy');
+const { MSG, NOTIFY11, nextStepWords } = require('./productionCopy');
 const { longDate } = require('./campaignCopy');
 const { logAction } = require('./production.service');
 const { todayInIndia, calendarDay, addDays, daysBetween, istDayOf } = require('../utils/indiaDay');
@@ -181,7 +181,7 @@ async function markDone(ciId, scope, conn = db) {
 
   const state = shoot.returnStateOf({ ...r, influencer_completed_at: new Date() }, null, lines);
   await shoot.notifyBrand(r, NOTIFY11.SHOOT_DONE,
-    `${shoot.first(r.creator_name)} has finished the shoot. Her content step is open.`
+    `${shoot.first(r.creator_name)} has finished the shoot. ${nextStepWords(r.goal, 'her')}`
     + (state.expected.length
       ? ` ${state.expected.length} item${state.expected.length === 1 ? '' : 's'} come back by ${longDate(state.dueDate)}.`
       : ''));

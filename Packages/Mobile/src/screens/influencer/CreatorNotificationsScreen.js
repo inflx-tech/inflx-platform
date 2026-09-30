@@ -22,6 +22,8 @@ export function targetOf(n) {
   if (d.screen === 'creator_offer' && d.offer_id) return { name: 'CreatorSell', params: { ciId: ci } };
   if (d.screen === 'creator_sell') return { name: 'CreatorSell', params: { ciId: ci } };
   if (d.screen === 'invitation') return { name: 'Invitation', params: { ciId: ci } };
+  // Item 14: Pay for Sale going live.
+  if (d.screen === 'my_going_live') return { name: 'SaleLive', params: { ciId: ci } };
   return null;
 }
 

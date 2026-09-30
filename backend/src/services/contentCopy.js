@@ -74,6 +74,19 @@ const MSG = {
   RETIRED_12_CONFIRM_LIVE: 'Content is confirmed live in the app now, after she has posted it.',
   RETIRED_12_COMPLETE_VISIT: 'She marks the visit in the app, and you confirm it there.',
 
+  // Item 14 — Pay for Sale, Path 2 (rules v1.30 §12.1, board v2).
+  SALE_OLD_TERMS: 'Signed under the old terms. Shoppable posts need the new terms — a new collaboration.',
+  SALE_PATH1_FIRST: 'Share on social media opens when INFLX approves your first shoppable post.',
+  SALE_POST_NOT_APPROVED: 'Only posts INFLX has approved can be shared here.',
+  SALE_UNKNOWN_TYPE: "That isn't one of the places you can share to.",
+  SALE_ROW_EXISTS: "You've already added that post there.",
+  SALE_NO_ROWS: 'Add at least one post and where you will share it.',
+  SALE_ROW_SENT: 'That one was sent to them. Change it after they reply.',
+  SALE_TOO_MANY_ROWS: 'You can add up to 20.',
+  SALE_OUTSIDE_NOT_OPEN: 'Add this post to what you send them.',
+  SALE_IN_PACKAGE: 'This post is already in what you sent them.',
+  SALE_NOTHING_TO_REPORT: 'There is nothing to report at this point.',
+
   // Admin (Q13, Q14)
   RELEASE_REASON_REQUIRED: 'Give a reason of at least 5 characters.',
   RELEASE_NOT_ALLOWED: (status) => `A ${status} payment can't be released by hand.`,
@@ -87,6 +100,38 @@ const DELAYED_STAGE_LABEL = {
   content_changes_requested: 'Changes requested',
   content_not_posted: 'Approved, not posted',
   content_not_confirmed: 'Posted, not confirmed',
+  // Item 14 (rules v1.30 §12.1, §25) — the six Pay for Sale stages, widened into the CHECK by migration 199.
+  posts_not_approved: 'Shoppable posts not approved',
+  social_not_sent: 'Social version not sent',
+  social_in_review: 'Social version in review',
+  social_changes_requested: 'Changes asked',
+  social_not_posted: 'Approved, not posted',
+  social_not_confirmed: 'Posted, not confirmed',
+};
+
+/** Item 14 — where she can share a post (§12.1: platform + kind), and what each is called. */
+const SALE_TYPES = {
+  reel:          { label: 'Instagram reel',  platform: 'instagram' },
+  post:          { label: 'Instagram post',  platform: 'instagram' },
+  story:         { label: 'Instagram story', platform: 'instagram' },
+  youtube_video: { label: 'YouTube video',   platform: 'youtube' },
+  youtube_short: { label: 'YouTube Short',   platform: 'youtube' },
+  facebook_post: { label: 'Facebook post',   platform: 'facebook' },
+};
+
+/** Item 14 — notification keys. Push and the bell, never SMS. */
+const NOTIFY14 = {
+  SUBMITTED:      { type: 'sale.social_submitted',  title: 'What she will share is here' },
+  RESUBMITTED:    { type: 'sale.social_resubmitted', title: 'Her changes are here' },
+  CHANGES:        { type: 'sale.social_changes',    title: 'Changes were asked for' },
+  APPROVED:       { type: 'sale.social_approved',   title: 'Approved — post it now' },
+  POSTED:         { type: 'sale.social_posted',     title: 'She has posted' },
+  LIVE_CONFIRMED: { type: 'sale.live_confirmed',    title: 'Confirmed live' },
+  COMPLETED:      { type: 'collab.completed',       title: 'Collaboration completed' },
+  REPORTED:       { type: 'sale.reported',          title: 'This was reported to INFLX' },
+  DELAYED:        { type: 'collab.delayed',         title: 'This collaboration is delayed' },
+  REMINDER:       { type: 'sale.reminder',          title: 'Going live is waiting on you' },
+  OPEN:           { type: 'sale.going_live_open',   title: 'Shoot done — time to go live' },
 };
 
 /**
@@ -124,6 +169,8 @@ const TYPE_LABEL = {
 const HOSTS = {
   instagram: ['instagram.com', 'www.instagram.com', 'm.instagram.com'],
   youtube: ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'],
+  // Item 14: a Facebook post is one of the places (board point 4). Shape only, like the others.
+  facebook: ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'web.facebook.com', 'fb.watch'],
 };
 
-module.exports = { MSG, NOTIFY12, DELAYED_STAGE_LABEL, PLATFORM_OF_TYPE, TYPE_LABEL, HOSTS };
+module.exports = { MSG, NOTIFY12, NOTIFY14, DELAYED_STAGE_LABEL, PLATFORM_OF_TYPE, TYPE_LABEL, HOSTS, SALE_TYPES };

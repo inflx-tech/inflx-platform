@@ -264,7 +264,20 @@ function assertRemoteMode(mode, brandName) {
   }
 }
 
+/**
+ * Item 14 — what opens after the shoot, in the words of the collaboration's Aim. Pay for Content
+ * keeps item 12's line; Pay for Sale and Hybrid go live (rules v1.30 §12.1): Path 1, her
+ * shoppable posts, then Path 2, the social media post. Before item 14 every Aim was told
+ * "Your content step is open", which does not exist on Pay for Sale.
+ */
+function nextStepWords(goal, who = 'her') {
+  const selling = goal === 'conversion' || goal === 'hybrid';
+  if (who === 'you') return selling ? 'Time to go live: create your shoppable posts.' : 'Your content step is open.';
+  return selling ? 'Next she creates her shoppable posts and goes live.' : 'Her content step is open.';
+}
+
 module.exports = {
+  nextStepWords,
   MSG, NOTIFY, NOTIFY11, STAGE_LABEL, DELAYED_STAGE_LABEL, REMOTE_STAGE_LABEL, RETURN_STAGE_LABEL,
   whenLine, shortDay, assertRemoteMode,
 };

@@ -86,6 +86,8 @@ export default function CollabsScreen({ navigation, route }) {
             // Item 12: once the shoot is done, the content step is the live thing on the card.
             <InvitationCard5 card={item} onPress={() => navigation.navigate(
               item.content ? 'Content'
+              // Item 14: a Pay for Sale card after the shoot opens Going live, the two paths.
+              : item.goingLive ? 'SaleLive'
               : item.shoot ? 'Shoot'
                 : item.remote ? 'MyRemote'
                   : item.agreement ? 'Agreement'

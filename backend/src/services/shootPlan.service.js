@@ -24,7 +24,7 @@ const shootGate = require('./shootGate.service');
 const negotiation = require('./negotiation.service');
 const platformSettings = require('./platformSettings.service');
 const notificationService = require('./notification.service');
-const { MSG, NOTIFY, STAGE_LABEL, DELAYED_STAGE_LABEL, whenLine, shortDay } = require('./productionCopy');
+const { MSG, NOTIFY, STAGE_LABEL, DELAYED_STAGE_LABEL, whenLine, shortDay, nextStepWords } = require('./productionCopy');
 const { longDate } = require('./campaignCopy');
 const { calendarDay, todayInIndia, istDayOf, daysBetween, startOfIndiaDay, endOfIndiaDay } = require('../utils/indiaDay');
 const { logAction } = require('./production.service');
@@ -404,7 +404,7 @@ async function confirm(ciId, { userId, campaignId = null, setId = null }) {
       WHERE id = $1 AND influencer_completed_at IS NOT NULL AND brand_completed_at IS NULL AND auto_confirmed_at IS NULL`, [r.id, userId]);
   if (rowCount === 0) throw new AppError('ALREADY_MARKED', MSG.ALREADY_MARKED, 422, 'status');
   await logAction(db, r.id, userId, 'brand', 'confirmed', 'The brand confirmed the shoot is done', null);
-  await notifyCreator(r, NOTIFY.CONFIRMED, `${r.brand_name} confirmed the shoot is done. Your content step is open.`);
+  await notifyCreator(r, NOTIFY.CONFIRMED, `${r.brand_name} confirmed the shoot is done. ${nextStepWords(r.goal, 'you')}`);
   return read(ciId, { side: 'brand', userId, campaignId, setId });
 }
 
@@ -445,8 +445,8 @@ async function autoConfirmDue({ now = new Date() } = {}) {
   for (const ciId of told) {
     const r = await loadAny(ciId);
     if (!r) continue;
-    await notifyBrand(r, NOTIFY.AUTO_CONFIRMED, `You didn't confirm ${first(r.creator_name)}'s store visit by the date, so it was marked done. Her content step is open.`);
-    await notifyCreator(r, NOTIFY.AUTO_CONFIRMED, `${r.brand_name} didn't confirm by the date, so the visit was marked done and your content step is open.`);
+    await notifyBrand(r, NOTIFY.AUTO_CONFIRMED, `You didn't confirm ${first(r.creator_name)}'s store visit by the date, so it was marked done. ${nextStepWords(r.goal, 'her')}`);
+    await notifyCreator(r, NOTIFY.AUTO_CONFIRMED, `${r.brand_name} didn't confirm by the date, so the visit was marked done${r.goal === 'engagement' ? ' and your content step is open.' : `. ${nextStepWords(r.goal, 'you')}`}`);
   }
   return out;
 }
