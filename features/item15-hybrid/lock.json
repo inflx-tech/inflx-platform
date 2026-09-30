@@ -26,5 +26,19 @@
     "mobile": "62/804 green",
     "migration": "none",
     "rules": "v1.30 Hybrid section updated (H1–H3)"
+  },
+  "deployed_to_production": {
+    "at": "2026-09-30",
+    "by": "founder go (chat: \"pls go and deploy\")",
+    "migration": "none",
+    "commit": "30e962f4 (pushed b5b87ebd..30e962f4, carrying 454e7a1f item 14 deploy record)",
+    "render": "no new route to prove by existence; OTA published after the build window, server answering; behaviour proved by tests",
+    "ota": {
+      "influencer": 226,
+      "brand": 236,
+      "native_runtime": "3"
+    },
+    "money_after": "unchanged — escrow 34,500 / released 8,625 / contracts locked 36,260 / creator wallets 8,625 (the 2 old-terms test Hybrid collaborations untouched, H1)",
+    "walk": "waits on a production Hybrid collaboration on the new terms with its shoot done"
   }
 }
