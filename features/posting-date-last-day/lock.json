@@ -26,5 +26,16 @@
     "mobile": "840/840",
     "migration": "none",
     "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.15 (2.1, 2.3, 2.4, 4.1, 4.14, 5.12, change log)"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-01",
+    "by": "founder go (\"Yes pls deploy\")",
+    "migration": "none",
+    "commit": "50457635 (pushed b5f7f3bb..50457635 at 18:25 IST; gov-check OK: contract-backed, mockup_locked, 06-diff/notes.md present)",
+    "ota": { "brand": 240, "influencer": 229, "native_runtime": "3", "note": "published one at a time before the push, from the committed tree (phone tree clean, otaUpdater untouched); both manifests read back. The shopper app needed no update." },
+    "render": "live at 18:27 IST, about two minutes after the push — proved from outside by a public answer that changed: GET /v1/links/p/KNTZXR said state 'upcoming', goes_live_on 2026-10-08 before the push and at 18:25–18:27, then state 'live', goes_live_on null (polled every 20 s with a crawler user-agent, so no visit was counted)",
+    "shop": "the guest feed (POST /v1/follower/feed) returns 1 post — KNTZXR, \"Outfits and accessories\" — where it returned none before",
+    "money": "none moved — nothing here touches escrow, wallets or checkout",
+    "pending": "founder's look at the shopper app; the next invitation exercises the two terms rules"
   }
 }
