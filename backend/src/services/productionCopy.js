@@ -38,7 +38,6 @@ const MSG = {
   NO_DECLINE: "There is no declining a time. If it can't work, suggest a different one.",
   // Marking it done
   TIME_NOT_AGREED: "The time hasn't been agreed yet.",
-  TOO_EARLY: (day) => `You can mark this from ${longDate(day)}, the day of the visit.`,
   ALREADY_MARKED: 'This is already marked.',
   NOT_MARKED_YET: (name) => `${name} hasn't said she visited yet.`,
   SHOOT_COMPLETE: 'This visit is already confirmed.',
@@ -156,7 +155,6 @@ const NOTIFY = {
   MOVED:          { type: 'shoot.time_moved',     title: 'The visit is being moved' },
   ATTENDED:       { type: 'shoot.attended',       title: 'She has been to the store' },
   CONFIRMED:      { type: 'shoot.confirmed',      title: 'Shoot confirmed' },
-  AUTO_CONFIRMED: { type: 'shoot.auto_confirmed', title: 'Shoot confirmed itself' },
   DELAYED:        { type: 'collab.delayed',       title: 'This collaboration is delayed' },
   REMINDER:       { type: 'shoot.reminder',       title: 'A store visit is waiting on you' },
 };

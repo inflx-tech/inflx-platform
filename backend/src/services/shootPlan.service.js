@@ -22,7 +22,6 @@ const db = require('../config/db');
 const AppError = require('../utils/AppError');
 const shootGate = require('./shootGate.service');
 const negotiation = require('./negotiation.service');
-const platformSettings = require('./platformSettings.service');
 const notificationService = require('./notification.service');
 const { MSG, NOTIFY, STAGE_LABEL, DELAYED_STAGE_LABEL, whenLine, shortDay, nextStepWords } = require('./productionCopy');
 const { longDate } = require('./campaignCopy');
@@ -194,7 +193,9 @@ async function read(ciId, { side, userId, campaignId = null, setId = null }) {
     accept: side === 'creator' && gate.open && stage === 'sent' && (!thread || !thread.negotiation.id || myTurn),
     counter: gate.open && stage === 'sent' && !!thread && !!thread.can && thread.can.counter,
     move: gate.open && !!thread && !!thread.can && thread.can.move,
-    markAttended: side === 'creator' && gate.open && stage === 'agreed' && !!visitDay && daysBetween(visitDay, today) >= 0,
+    // Founder, 1 Oct 2026 (overrides Q9): once the time is agreed they meet when it suits them,
+    // so she may mark the visit from that moment, not only from the agreed day.
+    markAttended: side === 'creator' && gate.open && stage === 'agreed',
     confirm: side === 'brand' && gate.open && stage === 'attended',
   };
 
@@ -371,21 +372,19 @@ async function attended(ciId, { userId }) {
   const stage = stageOf(r);
   if (stage === 'attended' || stage === 'complete') throw new AppError('ALREADY_MARKED', MSG.ALREADY_MARKED, 422, 'status');
   if (stage !== 'agreed') throw new AppError('TIME_NOT_AGREED', MSG.TIME_NOT_AGREED, 422, 'status');
-  const visitDay = istDayOf(r.visit_scheduled_at);
-  const today = todayInIndia();
-  if (daysBetween(visitDay, today) < 0) throw new AppError('TOO_EARLY', MSG.TOO_EARLY(visitDay), 422, 'status');
+  // No "not before the agreed day" (Q9 retired, founder 1 Oct 2026): the agreed time is theirs to
+  // keep or not. What opens the next step is the confirmation below, never the calendar.
 
-  // The admin number, copied onto the row NOW and never re-read (rules §7B last paragraph).
-  const days = Number(await platformSettings.get('shoot_auto_confirm_days'));
+  // No due date is stamped (founder, 1 Oct 2026): a store visit never confirms itself. Only the
+  // brand's confirmation completes it, and until then the next step stays shut.
   const { rows } = await db.query(
     `UPDATE production_events
-        SET influencer_completed_at = now(), auto_confirm_days = $2::int,
-            auto_confirm_due_at = now() + make_interval(days => $2::int), updated_at = now()
+        SET influencer_completed_at = now(), updated_at = now()
       WHERE id = $1 AND influencer_completed_at IS NULL AND status <> 'completed'
-      RETURNING auto_confirm_due_at`, [r.id, days]);
+      RETURNING id`, [r.id]);
   if (!rows[0]) throw new AppError('ALREADY_MARKED', MSG.ALREADY_MARKED, 422, 'status');
-  await logAction(db, r.id, userId, 'influencer', 'attended', `She marked the visit done; confirms itself on ${longDate(istDayOf(rows[0].auto_confirm_due_at))}`, { autoConfirmDays: days });
-  await notifyBrand(r, NOTIFY.ATTENDED, `${first(r.creator_name)} says she visited on ${shortDay(new Date())}. Confirm the shoot is done — if you do nothing it confirms itself on ${longDate(istDayOf(rows[0].auto_confirm_due_at))}.`);
+  await logAction(db, r.id, userId, 'influencer', 'attended', 'She marked the visit done; waiting for the brand to confirm', null);
+  await notifyBrand(r, NOTIFY.ATTENDED, `${first(r.creator_name)} says she visited on ${shortDay(new Date())}. Confirm the shoot is done — her next step stays closed until you do.`);
   return read(ciId, { side: 'creator', userId });
 }
 
@@ -410,46 +409,8 @@ async function confirm(ciId, { userId, campaignId = null, setId = null }) {
 
 /* ───────────────────────────────────────────────────────────── the jobs */
 
-/**
- * The brand did nothing for the stamped number of days: the visit confirms itself. Reads ONLY
- * auto_confirm_due_at (stamped at F7) — never the live setting. Idempotent: the selection needs
- * auto_confirmed_at IS NULL and brand_completed_at IS NULL; the update is a compare-and-swap.
- */
-async function autoConfirmDue({ now = new Date() } = {}) {
-  const out = { checked: 0, confirmed: 0, skippedGate: 0, failed: 0 };
-  const { rows } = await db.query(
-    `SELECT pe.id, pe.contract_id FROM production_events pe
-      WHERE pe.mode = 'visit' AND pe.status <> 'completed'
-        AND pe.influencer_completed_at IS NOT NULL AND pe.brand_completed_at IS NULL
-        AND pe.auto_confirmed_at IS NULL AND pe.auto_confirm_due_at IS NOT NULL AND pe.auto_confirm_due_at <= $1`, [now]);
-  const told = [];
-  for (const row of rows) {
-    out.checked += 1;
-    try {
-      await db.withTransaction(async (tx) => {
-        const { rows: locked } = await tx.query(`SELECT id, contract_id FROM production_events WHERE id = $1 AND auto_confirmed_at IS NULL AND brand_completed_at IS NULL FOR UPDATE SKIP LOCKED`, [row.id]);
-        if (!locked[0]) return;
-        const gate = await shootGate.assertShootOpen(locked[0].contract_id, tx).catch(() => null);
-        if (!gate) { out.skippedGate += 1; return; }
-        const { rowCount } = await tx.query(
-          `UPDATE production_events SET auto_confirmed_at = $2, visit_completed_at = COALESCE(visit_completed_at, $2), status = 'completed', updated_at = now()
-            WHERE id = $1 AND auto_confirmed_at IS NULL AND brand_completed_at IS NULL`, [row.id, now]);
-        if (rowCount === 0) return;
-        await logAction(tx, row.id, null, 'system', 'auto_confirmed', 'The brand did not confirm in time; the shoot confirmed itself', null);
-        out.confirmed += 1;
-        told.push(gate.ciId);
-      });
-    } catch (e) { out.failed += 1; console.error('[shoot-auto-confirm] failed for', row.id, e.message); }
-  }
-  // After commit: both sides, once each.
-  for (const ciId of told) {
-    const r = await loadAny(ciId);
-    if (!r) continue;
-    await notifyBrand(r, NOTIFY.AUTO_CONFIRMED, `You didn't confirm ${first(r.creator_name)}'s store visit by the date, so it was marked done. ${nextStepWords(r.goal, 'her')}`);
-    await notifyCreator(r, NOTIFY.AUTO_CONFIRMED, `${r.brand_name} didn't confirm by the date, so the visit was marked done${r.goal === 'engagement' ? ' and your content step is open.' : `. ${nextStepWords(r.goal, 'you')}`}`);
-  }
-  return out;
-}
+// The store visit's auto-confirm job is retired (founder, 1 Oct 2026): nothing confirms a visit but
+// the brand. The `auto_confirm_*` columns stay for the record; production never used them.
 
 /**
  * The day after the posting date, a collaboration whose shoot is not complete is flagged
@@ -504,6 +465,9 @@ async function flagDelayed({ today = null } = {}) {
  * Reminders (approval §2.5, rules §25): one nudge to whoever's turn it is when a sent plan or a
  * thread turn has sat 48 hours; not more than once per 48 hours; nothing after the posting date;
  * nothing whose gate is closed. Pitch threads are NOT covered here — their own piece of work.
+ *
+ * Founder, 1 Oct 2026: a visit she has marked and the brand has not confirmed keeps asking him —
+ * every 48 hours, posting date or not — because nothing else will ever confirm it.
  */
 async function remind({ now = new Date() } = {}) {
   const today = todayInIndia();
@@ -517,26 +481,31 @@ async function remind({ now = new Date() } = {}) {
        JOIN campaign_sets cs ON cs.id = ci.set_id
        LEFT JOIN negotiations n ON n.production_event_id = pe.id
       WHERE pe.mode = 'visit' AND pe.status <> 'completed' AND pe.plan_sent_at IS NOT NULL
-        AND pe.influencer_completed_at IS NULL AND pe.auto_confirmed_at IS NULL`);
+        AND pe.brand_completed_at IS NULL AND pe.auto_confirmed_at IS NULL`);
   for (const row of rows) {
     out.checked += 1;
-    if (row.go_live_date && calendarDay(row.go_live_date) < today) continue;             // the Delayed flag takes over
+    const toConfirm = !!row.influencer_completed_at;          // she marked it; the confirmation is his
+    if (!toConfirm && row.go_live_date && calendarDay(row.go_live_date) < today) continue;   // the Delayed flag takes over
     let side = null, since = null;
-    if (row.neg_id && !row.outcome && row.current_turn) { side = row.current_turn; since = row.turn_changed_at; }
+    if (toConfirm) { side = 'brand'; since = row.influencer_completed_at; }
+    else if (row.neg_id && !row.outcome && row.current_turn) { side = row.current_turn; since = row.turn_changed_at; }
     else if (!row.time_agreed_at && !row.neg_id) { side = 'influencer'; since = row.plan_sent_at; }   // she owes an answer on the plan
     if (!side || !since) continue;
-    const last = row.neg_id ? row.reminder_48h_sent_at : row.reminder_sent_at;
+    const onThread = !!row.neg_id && !toConfirm;
+    const last = onThread ? row.reminder_48h_sent_at : row.reminder_sent_at;
     const anchor = last && new Date(last).getTime() > new Date(since).getTime() ? last : since;
     if (now.getTime() - new Date(anchor).getTime() < 48 * 3600000) continue;
     const gate = await shootGate.assertShootOpen(row.contract_id).catch(() => null);
     if (!gate) continue;
     const r = await loadAny(gate.ciId);
     if (!r) continue;
-    const body = side === 'brand'
-      ? `${first(r.creator_name)} is waiting for your answer on the store visit time. Nothing happens until you reply.`
-      : `${r.brand_name} is waiting for your answer on the store visit time. Accept it or ask for another.`;
+    const body = toConfirm
+      ? `${first(r.creator_name)} says she visited on ${shortDay(row.influencer_completed_at)}. Confirm the shoot is done, or send a new time if she didn't come. Her next step stays closed until you do.`
+      : side === 'brand'
+        ? `${first(r.creator_name)} is waiting for your answer on the store visit time. Nothing happens until you reply.`
+        : `${r.brand_name} is waiting for your answer on the store visit time. Accept it or ask for another.`;
     if (side === 'brand') await notifyBrand(r, NOTIFY.REMINDER, body); else await notifyCreator(r, NOTIFY.REMINDER, body);
-    if (row.neg_id) await db.query(`UPDATE negotiations SET reminder_48h_sent_at = $2 WHERE id = $1`, [row.neg_id, now]);
+    if (onThread) await db.query(`UPDATE negotiations SET reminder_48h_sent_at = $2 WHERE id = $1`, [row.neg_id, now]);
     else await db.query(`UPDATE production_events SET reminder_sent_at = $2 WHERE id = $1`, [row.id, now]);
     out.sent += 1;
   }
@@ -590,6 +559,6 @@ function lineFor(pe) {
 
 module.exports = {
   read, send, acceptTime, counterTime, acceptCounter, move, attended, confirm,
-  autoConfirmDue, flagDelayed, remind,
+  flagDelayed, remind,
   stageOf, passedOf, delayedStageOf, lineFor, brandLineFor, validateVisitAt, normalisePhone,
 };

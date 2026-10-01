@@ -115,25 +115,25 @@ export default function ShootScreen({ navigation, route }) {
             <TimeCard10 iso={plan.visitAt} sub={plan.isToday ? [C10.hers.today, about && about.toLowerCase()].filter(Boolean).join(' · ') : about} live={!sh.passed} />
             <AddressCard10 branch={plan.branch} contact={plan.contact} />
             {plan.notes ? <Card7 title={C10.hers.beforeYouGo} tone="tint" testID="before-you-go"><Text style={s.para}>{plan.notes}</Text></Card7> : null}
-            {sh.can.markAttended ? <Text style={s.para} testID="been-hint">{C10.hers.beenHint(brand)}</Text>
-              : !sh.passed ? <Text style={s.para} testID="not-yet-day">{C10.hers.notYetTheDay(plan.visitAt)}</Text> : null}
+            {/* Founder, 1 Oct: she may mark the visit from the moment the time is agreed (Q9 retired). */}
+            {sh.can.markAttended ? <Text style={s.para} testID="been-hint">{C10.hers.beenHint(brand)}</Text> : null}
           </>
         ) : null}
 
-        {/* V9 — marked, waiting: the auto-confirm promised up front, and the payment sentence. */}
+        {/* V9 — marked, waiting: her next step opens on the brand's confirmation, nothing else. */}
         {stage === 'attended' ? (
           <>
             <WaitBox10 text={C10.hers.markedWaiting(plan.attendedAt, brand)} testID="marked-box" />
             <TimeCard10 iso={plan.visitAt} sub={C10.hers.visited} live={false} />
-            <Text style={s.para} testID="auto-confirm">{C10.hers.autoConfirm(plan.autoConfirmDueAt)}</Text>
+            <Text style={s.para} testID="waits-for-confirm">{C10.hers.waitsForConfirm(brand)}</Text>
             <StepLine10 steps={stepsHers} />
           </>
         ) : null}
 
-        {/* V15 — done, by them or by itself. */}
+        {/* V15 — done: the brand confirmed. */}
         {stage === 'complete' ? (
           <>
-            <GreenBox10 text={plan.autoConfirmedAt ? C10.hers.confirmedItself(brand, plan.autoConfirmDueAt || plan.autoConfirmedAt) : C10.hers.confirmed(brand, plan.confirmedAt)} testID="done-box" />
+            <GreenBox10 text={C10.hers.confirmed(brand, plan.confirmedAt)} testID="done-box" />
             <TimeCard10 iso={plan.visitAt} sub={C10.hers.visited} live={false} />
             <StepLine10 steps={stepsHers} />
           </>

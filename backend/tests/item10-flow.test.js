@@ -12,7 +12,6 @@ const w10 = require('./helpers/item10');
 const settings = require('../src/services/platformSettings.service');
 const standardTerms = require('../src/services/standardTerms.service');
 const shootPlan = require('../src/services/shootPlan.service');
-const autoConfirmJob = require('../src/jobs/shoot-auto-confirm.job');
 const delayedJob = require('../src/jobs/collab-delayed.job');
 const remindersJob = require('../src/jobs/shoot-reminders.job');
 const setExpiryJob = require('../src/jobs/set-expiry.job');
@@ -220,31 +219,37 @@ describe('passed, attended, confirmed (checks 15–20, 43)', () => {
     expect((await bMove(w, { visitAt: at(w10.day(6)) })).status).toBe(200);
   });
 
-  it('16 · she marks attended: only from the day, the due date is stamped from the admin number and shown to both', async () => {
+  // Founder, 1 Oct 2026 (overrides Q9 "only from the agreed day"): once the time is agreed they
+  // meet when it suits them, so she may mark the visit straight away. This check used to expect
+  // TOO_EARLY before the day, and a due date stamped from the admin number. Both are gone: what
+  // opens the next step is the brand's confirmation — never her mark, never a date.
+  it('16 · she marks attended any time once the time is agreed; nothing is stamped that could confirm it later', async () => {
+    const sent = await w10.signedByBoth('engagement');
+    await bSend(sent);
+    expect(code(await hAttend(sent))).toBe('TIME_NOT_AGREED');         // a plan she has not answered is not a visit
     const w = await agreed(await w10.signedByBoth('engagement'));      // visit is day+3
-    const early = await hAttend(w);
-    expect(early.status).toBe(422); expect(code(early)).toBe('TOO_EARLY');
     expect((await bShoot(w)).body.data.shoot.can.markAttended).toBe(false);     // never the brand's
-    await timePassed(w);
-    expect((await hShoot(w)).body.data.shoot.can.markAttended).toBe(true);
+    expect((await hShoot(w)).body.data.shoot.can.markAttended).toBe(true);      // three days before the agreed time
     const a = await hAttend(w);
     expect(a.status).toBe(200);
     const pe = await peRow(w);
-    expect(pe.auto_confirm_days).toBe(3);
-    expect(Math.round((new Date(pe.auto_confirm_due_at) - new Date(pe.influencer_completed_at)) / 86400000)).toBe(3);
-    expect(a.body.data.shoot).toMatchObject({ stage: 'attended', plan: { autoConfirmDays: 3 } });
-    expect((await bShoot(w)).body.data.shoot.plan.autoConfirmDueAt).toBeTruthy();
-    expect(await notifs(w.b.userId, NOTIFY.ATTENDED.type)).toHaveLength(1);
+    expect(pe.status).not.toBe('completed');                           // her mark alone opens nothing
+    expect(pe.auto_confirm_days).toBeNull(); expect(pe.auto_confirm_due_at).toBeNull();
+    expect(a.body.data.shoot).toMatchObject({ stage: 'attended', plan: { autoConfirmDays: null, autoConfirmDueAt: null } });
+    expect((await bShoot(w)).body.data.shoot).toMatchObject({ stage: 'attended', can: { confirm: true }, plan: { autoConfirmDueAt: null } });
+    const told = await notifs(w.b.userId, NOTIFY.ATTENDED.type);
+    expect(told).toHaveLength(1);
+    expect(told[0].body).toMatch(/^Tanvi says she visited on .+\. Confirm the shoot is done — her next step stays closed until you do\.$/);
     expect(code(await bMove(w, { visitAt: at(w10.day(6)) }))).not.toBe('SHOOT_COMPLETE');   // the brand may still move (Q3)
   });
 
-  it('19 · changing the admin number afterwards moves no due date already stamped, and applies to the next', async () => {
-    const w = await attended(await w10.signedByBoth('engagement'));
-    const due1 = (await peRow(w)).auto_confirm_due_at;
-    await query(`UPDATE platform_settings SET value = 10 WHERE key = 'shoot_auto_confirm_days'`); settings._resetCache();
-    expect((await peRow(w)).auto_confirm_due_at.toISOString()).toBe(due1.toISOString());
-    const w2 = await attended(await w10.signedByBoth('hybrid'));
-    expect((await peRow(w2)).auto_confirm_days).toBe(10);
+  // Was: "19 · changing the admin number afterwards moves no due date already stamped". There is
+  // no number and no due date any more (founder, 1 Oct 2026).
+  it('19 · the old admin number decides nothing: whatever it says, a marked visit carries no due date', async () => {
+    await query(`UPDATE platform_settings SET value = 1 WHERE key = 'shoot_auto_confirm_days'`); settings._resetCache();
+    const w = await attended(await w10.signedByBoth('hybrid'));
+    const pe = await peRow(w);
+    expect(pe.auto_confirm_days).toBeNull(); expect(pe.auto_confirm_due_at).toBeNull(); expect(pe.status).not.toBe('completed');
   });
 
   it('17 / 20 · the brand confirms once; before she marks it is refused; twice, or two at once, produce exactly one', async () => {
@@ -276,43 +281,58 @@ describe('passed, attended, confirmed (checks 15–20, 43)', () => {
     const cleared = (await log(w)).find(l => l.action === 'attended_cleared');
     expect(cleared).toBeTruthy();
     expect(new Date(cleared.metadata.influencer_completed_at).toISOString()).toBe(before.influencer_completed_at.toISOString());
-    expect(new Date(cleared.metadata.auto_confirm_due_at).toISOString()).toBe(before.auto_confirm_due_at.toISOString());
-    expect(cleared.metadata.auto_confirm_days).toBe(3);
     expect(m.body.data.shoot).toMatchObject({ stage: 'sent', thread: expect.objectContaining({ negotiation: expect.objectContaining({ open: true, whoseMove: 'influencer' }) }) });
     expect(await notifs(w.cr.userId, NOTIFY.MOVED.type)).toHaveLength(1);
-    // the auto-confirm job now has nothing to confirm here
-    expect((await autoConfirmJob.run({ now: new Date(Date.now() + 30 * 86400000) })).confirmed).toBe(0);
     // she cannot move after marking; only the brand can
     const w2 = await attended(await w10.signedByBoth('engagement'));
     expect(code(await hMove(w2, { visitAt: at(w10.day(6)) }))).toBe('ALREADY_MARKED');
   });
 });
 
-/* ───────────────────────────────────────────── the auto-confirm job (18, 21) */
+/* ───────────────────────────────────────────── only the brand confirms (18, 21) */
 
-describe('the auto-confirm job and the money (checks 18, 21)', () => {
-  it('18 · the brand does nothing: at the due date it confirms itself, records that, tells both once, and a re-run is a no-op', async () => {
+// Founder, 1 Oct 2026: "if it is store visit then brand should confirm store visit is done… dont
+// let next step open unless brand confirm the shoot is done." Check 18 used to prove the visit
+// confirmed itself at a due date; that job and its admin number are retired. It now proves the
+// opposite, and that the brand keeps being asked.
+describe('only the brand confirms a store visit, and the money (checks 18, 21)', () => {
+  const contentStage = async (w) => (await api.get(`/influencers/me/invitations/${w.ciId}/content`, w.cr.token)).body.data.content.stage;
+
+  it('18 · the brand does nothing: nothing ever confirms it — the next step stays shut and he is asked every 48 hours until he confirms', async () => {
     const w = await attended(await w10.signedByBoth('engagement'));
-    const notYet = await autoConfirmJob.run({ now: new Date(Date.now() + 2 * 86400000) });
-    expect(notYet.confirmed).toBe(0);
-    const due = new Date(Date.now() + 3 * 86400000 + 60000);
-    const out = await autoConfirmJob.run({ now: due });
-    expect(out).toMatchObject({ checked: 1, confirmed: 1, skippedGate: 0, failed: 0 });
+    const markedAt = (await peRow(w)).influencer_completed_at;
+    const later = (hours) => new Date(markedAt.getTime() + hours * 3600000);
+    expect(require('fs').existsSync(require('path').join(__dirname, '../src/jobs/shoot-auto-confirm.job.js'))).toBe(false);
+    expect(require('../src/jobs').shootAutoConfirmJob).toBeUndefined();
+
+    // 47 hours: not yet. 49: asked once. 60: not again. 98: asked again.
+    expect((await remindersJob.run({ now: later(47) })).visit.sent).toBe(0);
+    expect((await remindersJob.run({ now: later(49) })).visit.sent).toBe(1);
+    expect((await remindersJob.run({ now: later(60) })).visit.sent).toBe(0);
+    expect((await remindersJob.run({ now: later(98) })).visit.sent).toBe(1);
+    const asked = await notifs(w.b.userId, NOTIFY.REMINDER.type);
+    expect(asked).toHaveLength(2);
+    expect(asked[0].body).toMatch(/^Tanvi says she visited on .+\. Confirm the shoot is done, or send a new time if she didn't come\. Her next step stays closed until you do\.$/);
+    expect(await notifs(w.cr.userId, NOTIFY.REMINDER.type)).toHaveLength(0);          // never her
+
+    // Thirty days on, and past the posting date: every hourly job has run and nothing confirmed it.
+    await query(`UPDATE campaign_sets SET go_live_date = $2, invites_close_at = $2 WHERE id = $1`, [w.s.id, addDays(todayInIndia(), -1)]);
+    await delayedJob.run();
+    expect((await remindersJob.run({ now: later(30 * 24) })).visit.sent).toBe(1);      // still asking, posting date or not
     const pe = await peRow(w);
-    expect(pe.status).toBe('completed'); expect(pe.auto_confirmed_at).toBeTruthy(); expect(pe.brand_completed_at).toBeNull();
-    expect((await hShoot(w)).body.data.shoot).toMatchObject({ stage: 'complete', plan: { autoConfirmedAt: expect.any(String), confirmedAt: null } });
-    expect(await notifs(w.b.userId, NOTIFY.AUTO_CONFIRMED.type)).toHaveLength(1);
-    expect(await notifs(w.cr.userId, NOTIFY.AUTO_CONFIRMED.type)).toHaveLength(1);
-    expect((await autoConfirmJob.run({ now: due })).confirmed).toBe(0);
-    expect(await notifs(w.cr.userId, NOTIFY.AUTO_CONFIRMED.type)).toHaveLength(1);
-    // a row whose gate has since closed is skipped, not confirmed
-    const w2 = await attended(await w10.signedByBoth('engagement'));
-    await query(`UPDATE escrow_entries SET status = 'locked', released_at = NULL WHERE campaign_influencer_id = $1 AND tranche_number = 1`, [w2.ciId]);
-    const o2 = await autoConfirmJob.run({ now: due });
-    expect(o2).toMatchObject({ confirmed: 0, skippedGate: 1 });
+    expect(pe.status).not.toBe('completed'); expect(pe.auto_confirmed_at).toBeNull(); expect(pe.brand_completed_at).toBeNull();
+    expect((await hShoot(w)).body.data.shoot.stage).toBe('attended');
+    expect((await bShoot(w)).body.data.shoot.can.confirm).toBe(true);
+    expect(await contentStage(w)).toBe('shoot_not_done');
+
+    // He confirms: it completes, her next step opens, and the asking stops.
+    expect((await bConfirm(w)).status).toBe(200);
+    expect((await peRow(w)).status).toBe('completed');
+    expect(await contentStage(w)).not.toBe('shoot_not_done');
+    expect((await remindersJob.run({ now: later(40 * 24) })).visit.sent).toBe(0);
   });
 
-  it('21 · NO MONEY MOVES anywhere in item 10 — balances, escrow and ledgers byte-equal before the plan and after auto-confirm', async () => {
+  it('21 · NO MONEY MOVES anywhere in item 10 — balances, escrow and ledgers byte-equal before the plan and after the confirmation', async () => {
     const w = await w10.signedByBoth('hybrid');
     const before = await w10.moneySnapshot(w);
     await bSend(w);
@@ -323,7 +343,9 @@ describe('the auto-confirm job and the money (checks 18, 21)', () => {
     await hAcceptC(w);
     await timePassed(w);
     await hAttend(w);
-    await autoConfirmJob.run({ now: new Date(Date.now() + 4 * 86400000) });
+    await remindersJob.run({ now: new Date(Date.now() + 4 * 86400000) });
+    expect(await w10.moneySnapshot(w)).toBe(before);              // asked, not confirmed: still nothing
+    await bConfirm(w);
     expect((await peRow(w)).status).toBe('completed');
     expect(await w10.moneySnapshot(w)).toBe(before);
     const w2 = await attended(await w10.signedByBoth('engagement'));
@@ -520,15 +542,15 @@ describe('Needs You and reminders (checks 28, 47)', () => {
 /* ───────────────────────────────────────────── the admin number (F10) and the lists */
 
 describe('the admin number and the lists', () => {
-  it('shoot_auto_confirm_days is on the settings page, 3 by default, 1–30', async () => {
+  // Was: "shoot_auto_confirm_days is on the settings page, 3 by default, 1–30". The number is
+  // retired with the auto-confirm (founder, 1 Oct 2026): its row stays in the table, unlisted.
+  it('shoot_auto_confirm_days is gone from the settings page and can no longer be changed', async () => {
     const { createAdminUser } = require('./helpers/factories');
     const admin = await createAdminUser();
     const r = await api.get('/admin/platform-settings', admin.token);
-    const row = r.body.data.settings.find(s => s.key === 'shoot_auto_confirm_days');
-    expect(row).toMatchObject({ value: 3, min: 1, max: 30, unit: 'days' });
-    expect(row.description).toMatch(/moves no money/);
-    const bad = await api.patch('/admin/platform-settings', admin.token, { shoot_auto_confirm_days: 31 });
-    expect(bad.status).toBe(422);
+    expect(r.body.data.settings.find(s => s.key === 'shoot_auto_confirm_days')).toBeUndefined();
+    await api.patch('/admin/platform-settings', admin.token, { shoot_auto_confirm_days: 9 });
+    expect((await query(`SELECT value::int AS v FROM platform_settings WHERE key = 'shoot_auto_confirm_days'`)).rows[0].v).toBe(3);
   });
 
   it('the brand list and the admin queue carry the stage and the Delayed flag', async () => {

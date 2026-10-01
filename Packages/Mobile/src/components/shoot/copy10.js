@@ -138,14 +138,13 @@ export const C10 = {
     beenToStore: "I've been to the store",
     beenHint: (brand) => `Tap this after your visit. ${brand} confirm it, and then you shoot and upload.`,
     askToMove: 'Ask to move this',
-    notYetTheDay: (iso) => `You can mark this from ${day10(iso)}, the day of the visit.`,
     markedWaiting: (date, brand) => `You marked this done on ${day10(date)}. Waiting for ${brand} to confirm.`,
     visited: 'Visited',
     passed: 'Passed',
-    autoConfirm: (due) => `If they don't confirm by ${day10(due)} it confirms itself and you can start uploading. Nothing about your payment depends on this step.`,
+    // Founder, 1 Oct 2026: a store visit never confirms itself. Only the brand's confirmation opens her next step.
+    waitsForConfirm: (brand) => `Your next step opens when ${brand} confirm the visit. We keep reminding them until they do.`,
     timePassedHers: (brand) => `The visit time came and went. ${brand} will send a new time.`,
     /* V15 */
-    confirmedItself: (brand, due) => `${brand} didn't confirm by ${day10(due)}, so the visit was marked done and your content step is open.`,
     confirmed: (brand, date) => `${brand} confirmed the shoot on ${day10(date)}. Your content step is open.`,
     delayed: (day, brand, paid) => `The ${day10(day)} posting date passed before the visit happened. ${brand} will send a new time.${paid > 0 ? ` The ${rupees5(paid)} you were paid at signing stays yours.` : ''}`,
     notYetTitle: 'No visit planned yet',
@@ -186,14 +185,14 @@ export const C10 = {
   brand: {
     crumb: 'SHOOT PLAN',
     yourMoveVisited: (name, date) => `Your move. ${first(name)} says she visited on ${day10(date)}.`,
-    confirmOpens: (due) => `Confirming opens her content step. If you do nothing, this confirms itself on ${day10(due)}.`,
+    confirmOpens: 'Confirming opens her next step. It stays closed until you confirm.',
     confirmDone: 'Confirm the shoot is done',
     sheDidntCome: "She didn't come — send a new time",
     confirmed: 'Shoot confirmed.',
     /* V11 */
     done: (date, name) => `Shoot done on ${day10(date)}. ${first(name)} is working on the content.`,
     theVisit: 'The visit',
-    rows: { branch: 'Branch', when: 'When', sheMarked: 'She marked it', youConfirmed: 'You confirmed', confirmedItself: 'Confirmed itself' },
+    rows: { branch: 'Branch', when: 'When', sheMarked: 'She marked it', youConfirmed: 'You confirmed' },
     withHer: (name) => `With ${first(name)}`,
     visited: (date) => `Visited ${day10(date)}`,
     /* waiting states */

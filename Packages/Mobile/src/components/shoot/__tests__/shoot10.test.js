@@ -143,8 +143,10 @@ describe('the brand\'s set row before the plan is sent', () => {
 
 describe('the copy carries the mockups\' sentences', () => {
   it('V9, V10, V13, V14 sentences', () => {
-    expect(C10.hers.autoConfirm('2026-10-22T05:00:00Z')).toMatch(/confirms itself and you can start uploading\. Nothing about your payment depends on this step\./);
-    expect(C10.brand.confirmOpens('2026-10-22T05:00:00Z')).toBe('Confirming opens her content step. If you do nothing, this confirms itself on 22 Oct.');
+    // Founder, 1 Oct 2026: a store visit never confirms itself; these two used to promise a date.
+    expect(C10.hers.waitsForConfirm('Urban Threads')).toBe('Your next step opens when Urban Threads confirm the visit. We keep reminding them until they do.');
+    expect(C10.brand.confirmOpens).toBe('Confirming opens her next step. It stays closed until you confirm.');
+    expect(JSON.stringify(C10)).not.toMatch(/confirms itself/);
     expect(C10.brand.passedBody('Tanvi Suresh', 5)).toMatch(/Nobody is blamed for this\..*there are 5 days before she posts\./);
     expect(C10.brand.delayedMoney(9720 - 2250, 2250, 'Tanvi Suresh')).toMatch(/₹7,470 is still locked and Tanvi keeps the ₹2,250 she was paid at signing/);
     expect(C10.thread.noDecline).toBe("There is no declining a time. If it can't work, suggest a different one.");

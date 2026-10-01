@@ -61,10 +61,16 @@ Hybrid funded, locked and the first 25% out — on every path into the shoot.
 - A passed time is derived, records nothing against anyone, and the brand sends a new time.
 
 ### Marking it done (§11.1, §25)
-- She marks attended from 00:00 IST on the agreed day (Q9). The stamp copies
-  `shoot_auto_confirm_days` onto the row and sets the due date. The brand confirms, recording who.
-  A job confirms it at the due date and records that it was automatic. Nothing here locks,
-  releases or refunds money.
+- She marks attended **any time once the time is agreed** (founder, 1 Oct 2026 — "let them have
+  shoot in their respective timing"; this retires Q9's "from 00:00 IST on the agreed day"). What
+  opens the next step is the confirmation, never her mark and never the calendar.
+- **Only the brand confirms a store visit** (founder, 1 Oct 2026 — "dont let next step open unless
+  brand confirm the shoot is done"). The three-day auto-confirm, its hourly job and the admin
+  number `shoot_auto_confirm_days` are retired; nothing is stamped when she marks. While a marked
+  visit is unconfirmed the brand's row chips Your move, the visit shows "Confirm the shoot is done"
+  (or "She didn't come — send a new time"), and the brand is reminded every 48 hours, past the
+  posting date too. Shoppable posts, the content step and Going live stay shut until he confirms.
+  Nothing here locks, releases or refunds money.
 
 ### Delayed (§11.1, §25 v1.24)
 - The day after the posting date, a job flags `campaign_influencers.delayed_at/_stage` when the

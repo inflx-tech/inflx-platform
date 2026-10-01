@@ -40,10 +40,10 @@ const setExpiryJob           = require('./set-expiry.job');
 // Item 8 — the pitch lane: the two reminders, the unanswered close, and the early
 // close when her date nears. Contract: features/item8-pitch
 const pitchHousekeepingJob   = require('./pitch-housekeeping.job');
-// Item 10 — the store visit's three lanes: auto-confirm, Delayed, reminders.
+// Item 10 — the store visit's two lanes: Delayed and reminders. The auto-confirm lane was
+// retired on 1 Oct 2026 (founder): only the brand confirms a store visit.
 // Contract: features/item10-store-visit
-const shootAutoConfirmJob    = require('./shoot-auto-confirm.job');
-const collabDelayedJob       = require('./collab-delayed.job');
+const collabDelayedJob      = require('./collab-delayed.job');
 const shootRemindersJob      = require('./shoot-reminders.job');
 // Item 11 — the Remote return confirms itself at the stamped due.
 // Contract: features/item11-remote
@@ -140,12 +140,11 @@ function startAllJobs() {
   // guarded, so a second run in the same hour changes nothing.
   cron.schedule('35 * * * *', () => pitchHousekeepingJob.run(), { timezone: tz });
 
-  // Item 10 — three lanes on the free minutes, so no two touch a shoot at once:
+  // Item 10 — two lanes on the free minutes, so no two touch a shoot at once:
   //   :05 Delayed flag (before set-expiry at :40 has run for the hour — independent anyway),
-  //   :45 auto-confirm (after set-expiry, so a set that just expired is settled first),
   //   :55 reminders. Every write is guarded; a second run in the same hour changes nothing.
+  //   (:45 was the store visit's auto-confirm, retired 1 Oct 2026.)
   cron.schedule('5 * * * *',  () => collabDelayedJob.run(), { timezone: tz });
-  cron.schedule('45 * * * *', () => shootAutoConfirmJob.run(), { timezone: tz });
   cron.schedule('55 * * * *', () => shootRemindersJob.run(), { timezone: tz });
 
   // Item 11 — :15, the only free minute left, so no two lanes touch a shoot at once. The
@@ -178,7 +177,6 @@ module.exports = {
   socialMeasureJob,
   setExpiryJob,
   pitchHousekeepingJob,
-  shootAutoConfirmJob,
   collabDelayedJob,
   shootRemindersJob,
   remoteReturnAutoConfirmJob,

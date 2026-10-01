@@ -124,3 +124,48 @@ fix 2 established. No rule changes (§11.1 untouched).
 Tests: `item10-flow` — the row before the plan is sent now carries `{ stage: 'not_sent', line:
 'Signed — plan the store visit' }` (it asserted null; the assertion changed with the behaviour);
 `shoot10` +2 (the line, the chip and its press; no chip while waiting on her).
+
+## Walk fix 4 — she can mark the visit any time once the time is agreed (founder, 1 Oct)
+
+Founder, same collaboration, time agreed for Sat 3 Oct, looking on 1 Oct: *"confirmation is not show
+as we designed… 'She marks it, they confirm, nobody is stranded'… let them have shoot in their
+respective timing… but finally next shoppable post and content upload to social media steps open
+only when they confirm shoot is done."*
+
+**Before:** V8–V10 were built as drawn, but her "I've been to the store" appeared only from the
+agreed day (Q9). Two days early, her screen said "You can mark this from 3 Oct, the day of the
+visit" and the brand's said "Kartikeya marks the visit once she has been, and then you confirm it" —
+nothing for either of them to tap.
+
+**After:** her button is there from the moment the time is agreed. She marks → the brand's screen
+turns to "Confirm the shoot is done" (V10) → the next step opens. Q9 is retired by the founder's
+decision.
+
+**Unchanged, and checked:** shoppable posts, the content step and Going live open only on a
+confirmed shoot — never on her mark alone.
+
+## Walk fix 5 — only the brand confirms a store visit (founder, 1 Oct)
+
+Founder, on reading that an unconfirmed visit confirms itself after three days: *"if it is store
+visit then brand should confirm store visit is done… if it doesnt confirm then we keep showing that
+confirm the store visit is done or not… dont let next step open unless brand confirm the shoot is
+done."*
+
+**Before (as drawn, V9/V10):** she marks → the brand confirms → and if the brand does nothing, the
+visit confirmed itself after an admin number of days (3), opening her next step.
+
+**After:** nothing confirms a store visit but the brand. The hourly auto-confirm job and the admin
+number are gone. While a marked visit waits, the brand's set row chips **Your move**, the visit
+screen shows **Confirm the shoot is done** (with "She didn't come — send a new time" beside it),
+and the brand gets a reminder every 48 hours until he answers — past the posting date too. Her
+screen reads "Your next step opens when {brand} confirm the visit. We keep reminding them until
+they do." Every sentence that promised a self-confirm date is removed from both apps.
+
+**Departure from the locked mockup, by the founder's decision:** V9's "auto-confirm promised up
+front, with the date" and V10's "with the deadline stated" no longer exist.
+
+**Left open, told to the founder:** if a brand never answers, she is stuck with no button of her
+own. Recommended later: let her tell INFLX after some days, as the content step already does.
+
+Production before the change (read-only): 7 store visits, none waiting on the timer, none ever
+confirmed by itself — nothing in flight is affected.

@@ -29,8 +29,7 @@ const DEFAULTS = Object.freeze({
   // Item 8 (rules v1.21 §8) — both stamped when they are applied.
   pitch_response_days: { value: 30, min: 7, max: 90, unit: 'days', label: 'Pitch response period' },
   pitch_cooldown_days: { value: 30, min: 0, max: 90, unit: 'days', label: 'Pitch rejection cooldown' },
-  // Item 10 (rules v1.24 §11.1, §7B) — stamped onto the shoot row when she marks attended.
-  shoot_auto_confirm_days: { value: 3, min: 1, max: 30, unit: 'days', label: 'Store visit auto-confirm' },
+  // Item 10's shoot_auto_confirm_days is RETIRED (see below): only the brand confirms a store visit.
   // Item 11 (rules v1.27 §11.2, §25) — the ONE new number. Stamped on the RETURN when it is
   // delivered to the branch (or when she marks a no-courier return sent), never re-read.
   // The existing remote_return_days above is unchanged.
@@ -58,6 +57,10 @@ const DEFAULTS = Object.freeze({
   feed_w_performs: { value: 20, min: 0, max: 100, unit: 'weight', label: 'Dial: how it performs' },
 });
 const KEYS = Object.freeze(Object.keys(DEFAULTS));
+// Numbers that no longer decide anything. Their rows stay in platform_settings (no migration), but
+// they are never listed, read or changed. shoot_auto_confirm_days: a store visit used to confirm
+// itself after this many days; since 1 Oct 2026 (founder) only the brand confirms it.
+const RETIRED = new Set(['shoot_auto_confirm_days']);
 
 /** N22 — the plain description under each setting, with its range and the never-retroactive fact. */
 const DESCRIPTION = Object.freeze({
@@ -69,7 +72,6 @@ const DESCRIPTION = Object.freeze({
   pitch_response_days: "How long a brand has to give a creator its first answer on a pitch. She is told the date when she sends it, and the brand is reminded after seven days and again after twenty-one. Between 7 and 90 days. Stamped on each pitch when it is sent, so changing this never moves one already waiting. Once the brand has answered, this clock has done its job and the conversation runs until her proposed date comes too close for a set to be built.",
   pitch_cooldown_days: 'How long a creator must wait before pitching the same brand again after a rejection. It is a pause, not a refusal: it never stops the brand inviting her and never stops her accepting. Counted per brand, not per Aim. Between 0 and 90 days. Stamped on the rejection when it is made. A brand that wants no further contact blocks her instead.',
   remote_return_autoconfirm_days: 'How long a brand has to confirm a Remote return after it reaches the branch. If the brand does nothing, the return confirms itself and the record says it was automatic — unless the brand has reported an item missing or damaged, in which case it waits. Between 1 and 30 days. Stamped on the return when it is delivered, so changing this never moves a date already promised. Where couriers cannot collect from her pincode and she posts the items back herself, it is stamped when she marks them sent.',
-  shoot_auto_confirm_days: "How long a brand has to confirm a store visit after the creator marks that she attended. If the brand does nothing, the visit confirms itself and her content step opens — safe because completing a shoot moves no money. Between 1 and 30 days. Stamped on the visit when she marks it, so changing this never moves a date already promised.",
   content_change_rounds: "How many times a Brand may ask for changes to a creator's content before a further rejection becomes a dispute. On the last allowed round the Brand is warned; after it they can only approve or report it to INFLX. Between 1 and 5. Stamped on the collaboration when the Creator first submits, so changing this never affects one already under way.",
   content_report_silence_days: "Pay for Content and Hybrid: how long after the Creator confirms she has posted the Brand may stay silent before she can tell INFLX. There is no automatic confirmation where confirming pays money — the money is the Brand's — so this is her way to be heard. Telling INFLX records a dispute and moves no money. Between 1 and 30 days. Stamped when she confirms she posted.",
   link_channel_window_days: "How long a tap on a creator's links decides which channel an order counts under (Instagram, YouTube, WhatsApp, Facebook, Other or Post code). With no tap in the window the order counts as 'In INFLX'. Reporting only: it never changes who is paid, the commission or the INFLX fee. Between 1 and 90 days. Stamped on each tap when it is made, so changing this applies to new taps only.",
@@ -102,6 +104,7 @@ async function getAll({ fresh = false } = {}) {
   try {
     const { rows } = await db.query(`SELECT key, value, min_value, max_value, unit, label, updated_at, updated_by FROM platform_settings`);
     for (const r of rows) {
+      if (RETIRED.has(r.key)) continue;
       out[r.key] = { key: r.key, value: Number(r.value), min: Number(r.min_value), max: Number(r.max_value), unit: r.unit, label: r.label, kind: (DEFAULTS[r.key] || {}).kind || 'number', description: DESCRIPTION[r.key] || '', updatedAt: r.updated_at, updatedBy: r.updated_by || null };
     }
   } catch (e) {

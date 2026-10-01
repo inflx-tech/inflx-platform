@@ -6,6 +6,9 @@
  * 48 hours; never more than once per 48 hours; nothing after the posting date (the Delayed flag
  * takes over); nothing whose gate is closed.
  *
+ * Walk fix 5 (founder, 1 Oct 2026): a store visit she has marked and the brand has not confirmed
+ * keeps asking the brand every 48 hours, past the posting date too — nothing else confirms it.
+ *
  * Deliberately NOT extended to pitch threads in this item — recorded as its own piece of work.
  * Contract: features/item10-store-visit
  */

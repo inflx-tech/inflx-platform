@@ -158,27 +158,26 @@ export default function BrandShootScreen({ navigation, route }) {
           )
         ) : null}
 
-        {/* V10 — attended: one tap, the deadline stated, a new time as the quiet alternative. */}
+        {/* V10 — attended: one tap, and a new time as the quiet alternative. No deadline: nothing
+            confirms a store visit but the brand (founder, 1 Oct). */}
         {stage === 'attended' ? (
           <>
             <MoveBox10 text={C10.brand.yourMoveVisited(name, plan.attendedAt)} testID="she-visited" />
             <TimeCard10 iso={plan.visitAt} sub={[plan.branch && plan.branch.name, plan.contact && plan.contact.name].filter(Boolean).join(' · ')} live />
-            <Text style={s.para} testID="confirm-opens">{C10.brand.confirmOpens(plan.autoConfirmDueAt)}</Text>
+            <Text style={s.para} testID="confirm-opens">{C10.brand.confirmOpens}</Text>
           </>
         ) : null}
 
         {/* V11 — done: two timestamps, the step line advanced, the countdown. */}
         {stage === 'complete' ? (
           <>
-            <GreenBox10 text={C10.brand.done(plan.confirmedAt || plan.autoConfirmedAt, name)} testID="done-box" />
+            <GreenBox10 text={C10.brand.done(plan.confirmedAt, name)} testID="done-box" />
             <StepLine10 steps={sh.steps} />
             <Card7 title={C10.brand.theVisit} testID="record-card">
               <Row10 label={C10.brand.rows.branch} value={plan.branch && plan.branch.name} />
               <Row10 label={C10.brand.rows.when} value={whenShort10(plan.visitAt)} />
               <Row10 label={C10.brand.rows.sheMarked} value={stamp10(plan.attendedAt)} />
-              {plan.autoConfirmedAt
-                ? <Row10 label={C10.brand.rows.confirmedItself} value={stamp10(plan.autoConfirmedAt)} />
-                : <Row10 label={C10.brand.rows.youConfirmed} value={stamp10(plan.confirmedAt)} />}
+              <Row10 label={C10.brand.rows.youConfirmed} value={stamp10(plan.confirmedAt)} />
             </Card7>
             {sh.postingDate ? <Text style={s.countdown} testID="countdown">{C10.countdown(sh.postingDate, sh.daysToPosting)}</Text> : null}
           </>
