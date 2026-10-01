@@ -21,5 +21,15 @@
     "production_before": "the live feed answered 0 posts for shop_for=['women'] and for ['kids'], 1 for ['men'] and for no choice; circles answered 0 creators and 0 brands for ['women']",
     "migration": "none",
     "mobile": "none"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-01",
+    "by": "founder go (\"yes pls go\")",
+    "migration": "none",
+    "commit": "02e11a5a (pushed 5215c6c4..02e11a5a at 18:49 IST; gov-check OK)",
+    "render": "live at 18:51 IST, two minutes after the push — proved from outside: the guest feed for shop_for=['women'] answered 0 posts before the push and until 18:51:19, then the post KNTZXR; it now answers KNTZXR for women, kids, men and no choice; circles for a Women-only shopper went from 0 creators / 0 brands to 1 / 1",
+    "ota": "none — no phone change",
+    "money": "none moved",
+    "pending": "founder's look at the shopper app (pull down on Home to refresh)"
   }
 }
