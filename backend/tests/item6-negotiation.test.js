@@ -669,6 +669,8 @@ describe('admin settings, Needs You, privacy and access (checks 29–35, 42, 44)
         // ASSERTION DRIFT, item 14 (rules v1.30 §12.1, A1): how long a Pay for Sale live
         // confirmation waits before it confirms itself.
         'sale_live_autoconfirm_days',
+        // ASSERTION DRIFT, item 17 (rules v1.31 §17A, AM12): what a person is told when she asks to withdraw.
+        'withdrawal_process_hours',
         'link_channel_window_days']
     );
     const rounds = r.body.data.settings.find(x => x.key === 'negotiation_rounds');

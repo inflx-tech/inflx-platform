@@ -11,6 +11,9 @@ const { toPaise, fromPaise } = require('../utils/money');
 // Item 11 — money in settles what is owed (v1.27 §11.2, approval Q4).
 const remoteMoney = require('../services/remoteMoney.service');
 const paymentConfigSvc = require('../services/paymentConfig.service');
+// Item 17 — the wallet's reads, and the one withdrawal model.
+const walletRead = require('../services/walletRead.service');
+const withdrawals = require('../services/withdrawalRequest.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Razorpay client (lazy — only initialised when RAZORPAY_MOCK=false)
@@ -25,12 +28,6 @@ function getRzp() {
   }
   return _rzp;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// In-memory store for pending orders (mock mode only)
-// Maps order_id → { amount, brandId }
-// ─────────────────────────────────────────────────────────────────────────────
-const pendingOrders = new Map();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private helpers
@@ -82,17 +79,27 @@ const getWallet = asyncHandler(async (req, res) => {
   const settledBalance   = parseFloat(r.payout_debits);
   const availableBalance = parseFloat(brand.wallet_balance);
 
+  // Item 17 (rules v1.31 §17A, BW1): the four figures, each from its own source.
+  const figures = await walletRead.brandSummary(brand.id);
+  const open = (await withdrawals.options('brand', req.user.sub)).open;
+  // The older "reserved" figure (the website's home page and older phone builds read it) is now the
+  // same number: what is locked in escrow rows. Worked out from ledger rows, it could never come
+  // down when INFLX returned locked money to the brand.
+  const reservedNow = figures.locked;
+
   return success(res, {
+    figures,                      // { available, onHold, locked, lockedCount, salesComing, salesComingCount }
+    withdrawal_waiting: open,     // the request on hold, or null (BW2)
     wallet: {
       brand_id:          brand.id,
       // Wave 2 — three-state breakdown (named fields)
       total_loaded:      totalLoaded,
       available_balance: availableBalance,
-      reserved_balance:  reservedBalance,
+      reserved_balance:  reservedNow,
       settled_balance:   settledBalance,
       // Backward-compatible legacy fields (pre-Wave-2 consumers)
       wallet_balance:    availableBalance,
-      escrow_locked:     reservedBalance,
+      escrow_locked:     reservedNow,
       total_deposited:   parseFloat(r.total_topup),
     },
   });
@@ -118,8 +125,8 @@ const createTopup = asyncHandler(async (req, res) => {
 
   if (env.RAZORPAY_MOCK) {
     const orderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
-    // Mock pending order keeps RUPEES internally; paise only for the API response.
-    pendingOrders.set(orderId, { amountRupees, brandId: brand.id });
+    // Item 17: the order is a ROW now (the in-memory map was emptied by every restart).
+    await db.query(`INSERT INTO wallet_topup_orders (order_id, brand_id, amount) VALUES ($1, $2, $3)`, [orderId, brand.id, amountRupees]);
     console.log(`[RAZORPAY MOCK] Created order ${orderId} for \u20B9${amountRupees}`);
 
     return success(res, {
@@ -144,6 +151,10 @@ const createTopup = asyncHandler(async (req, res) => {
     console.error('[RAZORPAY] orders.create failed:', err?.error || err.message);
     throw new AppError('INTERNAL_ERROR', `Razorpay order creation failed: ${err?.error?.description || err.message}`, 500);
   }
+
+  await db.query(
+    `INSERT INTO wallet_topup_orders (order_id, brand_id, amount) VALUES ($1, $2, $3) ON CONFLICT (order_id) DO NOTHING`,
+    [order.id, brand.id, amountRupees]);
 
   return success(res, {
     order_id: order.id,
@@ -171,12 +182,12 @@ const verifyTopup = asyncHandler(async (req, res) => {
   let amountRupees;
 
   if (env.RAZORPAY_MOCK) {
-    const pending = pendingOrders.get(razorpay_order_id);
-    if (!pending) {
-      throw new AppError('NOT_FOUND', 'Order not found or already processed', 404);
+    const { rows: [pending] } = await db.query(
+      `SELECT amount, brand_id FROM wallet_topup_orders WHERE order_id = $1`, [razorpay_order_id]);
+    if (!pending || pending.brand_id !== brand.id) {
+      throw new AppError('NOT_FOUND', 'Order not found', 404);
     }
-    amountRupees = pending.amountRupees;
-    pendingOrders.delete(razorpay_order_id);
+    amountRupees = parseFloat(pending.amount);
     console.log(`[RAZORPAY MOCK] Verified payment ${razorpay_payment_id} — \u20B9${amountRupees}`);
   } else {
     // ── Verify HMAC signature ──────────────────────────────────────────────
@@ -206,16 +217,54 @@ const verifyTopup = asyncHandler(async (req, res) => {
     if (rzpOrder.status !== 'paid') {
       throw new AppError('VALIDATION_ERROR', `Order status is "${rzpOrder.status}", expected "paid"`, 422);
     }
+    // Item 17 (review): every Razorpay order on this account shares one key — a shopper's order or
+    // a plan upgrade verifies with the same signature. Only an order createTopup made for THIS
+    // brand (it stamps both notes) may become wallet money.
+    const orderNotes = rzpOrder.notes || {};
+    if (orderNotes.type !== 'wallet_topup' || orderNotes.brand_id !== brand.id) {
+      throw new AppError('NOT_FOUND', 'Order not found', 404);
+    }
 
     amountRupees = fromPaise(rzpOrder.amount);
   }
 
   // ── Credit wallet atomically (rupees everywhere inside our DB) ──────────
+  const credited = await creditTopup({ brandId: brand.id, orderId: razorpay_order_id, paymentId: razorpay_payment_id, amountRupees, how: 'verify' });
+  return success(res, credited);
+});
+
+/**
+ * Item 17 (rules v1.31 §17A, check 1) — ONE credit per payment, however often verify is called
+ * and whoever calls it (the phone, a retry, or Admin's repair, AM9). The order row is taken
+ * FOR UPDATE and its status is the compare-and-swap; the unique index on the payment id is the
+ * backstop. A second call returns the same balance and moves nothing.
+ */
+async function creditTopup({ brandId, orderId, paymentId, amountRupees, how, adminUserId = null }) {
   let newBalance;
   let transaction;
   let duesSettled = [];
+  let already = false;
+  const brand = { id: brandId };
+  const razorpay_payment_id = paymentId;
 
   await db.withTransaction(async (client) => {
+    await client.query(
+      `INSERT INTO wallet_topup_orders (order_id, brand_id, amount) VALUES ($1, $2, $3) ON CONFLICT (order_id) DO NOTHING`,
+      [orderId, brandId, amountRupees]);
+    const { rows: [ord] } = await client.query(`SELECT * FROM wallet_topup_orders WHERE order_id = $1 FOR UPDATE`, [orderId]);
+    if (ord.brand_id !== brandId) throw new AppError('NOT_FOUND', 'Order not found', 404);
+    const { rows: [dup] } = await client.query(
+      `SELECT * FROM wallet_transactions WHERE type = 'topup' AND razorpay_payment_id = $1`, [paymentId]);
+    if (ord.status === 'credited' || dup) {
+      already = true;
+      transaction = dup || null;
+      const { rows: [b] } = await client.query(`SELECT wallet_balance FROM brands WHERE id = $1`, [brandId]);
+      newBalance = parseFloat(b.wallet_balance);
+      if (ord.status !== 'credited') {
+        await client.query(`UPDATE wallet_topup_orders SET status = 'credited', payment_id = $2, credited_at = now(), credited_how = $3 WHERE order_id = $1`, [orderId, paymentId, how]);
+      }
+      return;
+    }
     const { rows: brandRows } = await client.query(
       `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
       [brand.id]
@@ -246,14 +295,13 @@ const verifyTopup = asyncHandler(async (req, res) => {
     if (duesSettled.length) {
       newBalance = await remoteMoney.available(brand.id, client);
     }
+    await client.query(
+      `UPDATE wallet_topup_orders SET status = 'credited', payment_id = $2, credited_at = now(), credited_how = $3, credited_by = $4 WHERE order_id = $1`,
+      [orderId, paymentId, how, adminUserId]);
   });
 
-  return success(res, {
-    wallet_balance: newBalance,
-    transaction,
-    dues_settled: duesSettled,
-  });
-});
+  return { wallet_balance: newBalance, transaction, dues_settled: duesSettled, already_credited: already };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /brands/me/wallet/transactions
@@ -285,128 +333,60 @@ const getTransactions = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /brands/me/wallet/withdraw  { amount, method }   (Wave 2 commit 2)
+// Item 17 — withdrawals, the one model (rules v1.31 §17A; BW7–BW9).
 //
-// Admin-gated brand payout. This endpoint validates + reserves funds only:
-// it debits the wallet immediately (so the brand can't double-spend the same
-// balance) and writes a 'pending' brand_withdrawals row. The RazorpayX payout
-// fires later, when an admin approves it in /admin/payouts.
-//
-// SECURITY: the payout destination is read SERVER-SIDE from
-// brands.listing_data.bank_details. The client supplies only { amount, method }
-// — it can never redirect funds to an arbitrary account.
+// A request puts the amount ON HOLD at once; INFLX pays it from its bank and marks it processed,
+// and only then does the brand's total go down. No approval step and no automatic payout — the
+// Wave 2 flow (debit at request, admin approve → RazorpayX) is retired; `brand_withdrawals` keeps
+// its history and is no longer written. The destination is the brand's own saved bank account
+// (brands.bank_account_no + bank_ifsc, the ONE place it is stored), read on the server.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** GET /brands/me/wallet/withdraw — what the Withdraw screen needs (available, minimum, where to, what blocks it). */
+const withdrawOptions = asyncHandler(async (req, res) => success(res, await withdrawals.options('brand', req.user.sub)));
+
+/** POST /brands/me/wallet/withdraw { amount } */
 const requestWithdrawal = asyncHandler(async (req, res) => {
-  const { amount, method } = req.body;
-  const amountRupees = parseFloat(amount);
-
-  if (!amountRupees || isNaN(amountRupees) || amountRupees <= 0) {
-    throw new AppError('VALIDATION_ERROR', 'amount is required and must be a positive number', 422, 'amount');
-  }
-  if (!['upi', 'bank_transfer'].includes(method)) {
-    throw new AppError('VALIDATION_ERROR', 'method must be upi or bank_transfer', 422, 'method');
-  }
-
-  const { rows: brandRows } = await db.query(
-    `SELECT b.id, b.business_name, b.wallet_balance, b.listing_data
-       FROM brands b
-      WHERE b.user_id = $1`,
-    [req.user.sub]
-  );
-  if (!brandRows[0]) throw new AppError('NOT_FOUND', 'Brand profile not found. Please register first.', 404);
-  const brand = brandRows[0];
-
-  // Resolve payout destination from listing_data.bank_details (server-side).
-  const bank = (brand.listing_data && brand.listing_data.bank_details) || {};
-  let upiId = null, bankAccountNo = null, bankIfsc = null, accountHolder = null;
-  if (method === 'upi') {
-    if (!bank.upi_id) {
-      throw new AppError('PAYMENT_METHOD_MISSING', 'No UPI ID on file. Add one in your wallet bank details first.', 422);
-    }
-    upiId = bank.upi_id;
-  } else {
-    if (!bank.account_number || !bank.ifsc_code) {
-      throw new AppError('PAYMENT_METHOD_MISSING', 'No bank account on file. Add account number + IFSC in your wallet bank details first.', 422);
-    }
-    bankAccountNo = bank.account_number;
-    bankIfsc      = bank.ifsc_code;
-    accountHolder = bank.account_holder_name || brand.business_name;
-  }
-
-  const cfg = await paymentConfigSvc.getConfig();
-  const minWithdrawal = parseFloat(cfg.minWithdrawalInr);
-  if (amountRupees < minWithdrawal) {
-    throw new AppError('WITHDRAWAL_TOO_SMALL', `Minimum withdrawal amount is ₹${minWithdrawal}`, 422);
-  }
-  if (amountRupees > parseFloat(brand.wallet_balance)) {
-    throw new AppError('INSUFFICIENT_BALANCE', 'Insufficient wallet balance', 422);
-  }
-
-  let withdrawal;
-  await db.withTransaction(async (client) => {
-    const { rows: lockRows } = await client.query(
-      `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
-      [brand.id]
-    );
-    const liveBalance = parseFloat(lockRows[0].wallet_balance);
-    if (amountRupees > liveBalance) {
-      throw new AppError('INSUFFICIENT_BALANCE', 'Insufficient wallet balance', 422);
-    }
-    const newBalance = parseFloat((liveBalance - amountRupees).toFixed(2));
-
-    await client.query(
-      `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
-      [newBalance, brand.id]
-    );
-
-    const { rows: wRows } = await client.query(
-      `INSERT INTO brand_withdrawals
-         (brand_id, amount_requested, method, upi_id, bank_account_no, bank_ifsc, account_holder_name, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
-       RETURNING *`,
-      [brand.id, amountRupees, method, upiId, bankAccountNo, bankIfsc, accountHolder]
-    );
-    withdrawal = wRows[0];
-
-    // Audit ledger row. type='withdrawal' is intentionally distinct from
-    // 'payout' (which getWallet attributes to influencer settlements), so the
-    // Available/Reserved/Settled breakdown is unaffected.
-    await client.query(
-      `INSERT INTO wallet_transactions
-         (brand_id, type, amount, direction, balance_after, notes)
-       VALUES ($1, 'withdrawal', $2, 'debit', $3, $4)`,
-      [brand.id, amountRupees, newBalance, 'Withdrawal requested — pending admin approval']
-    );
-  });
-
-  return success(res, {
-    withdrawal_id:    withdrawal.id,
-    amount_requested: parseFloat(withdrawal.amount_requested),
-    method:           withdrawal.method,
-    status:           withdrawal.status,
-  }, 201);
+  const w = await withdrawals.request('brand', req.user.sub, { amount: (req.body || {}).amount, method: 'bank' });
+  return success(res, { withdrawal: w, withdrawal_id: w.id, amount_requested: w.amount, status: w.status }, 201);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /brands/me/wallet/withdrawals
-// ─────────────────────────────────────────────────────────────────────────────
+/** GET /brands/me/wallet/withdrawals */
+const listWithdrawals = asyncHandler(async (req, res) => success(res, { withdrawals: await withdrawals.listMine('brand', req.user.sub) }));
 
-const listWithdrawals = asyncHandler(async (req, res) => {
+// ── Item 17 — the reads behind BW3–BW6 and BW10 ─────────────────────────────
+
+/** GET /brands/me/wallet/locked — locked money, collaboration by collaboration (BW3, BW4). */
+const getLocked = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
-  const { rows } = await db.query(
-    `SELECT id AS withdrawal_id, amount_requested, method, status,
-            failure_reason, created_at, completed_at
-       FROM brand_withdrawals
-      WHERE brand_id = $1
-      ORDER BY created_at DESC`,
-    [brand.id]
-  );
-  return success(res, { withdrawals: rows });
+  return success(res, await walletRead.brandLocked(brand.id));
+});
+
+/** GET /brands/me/wallet/sales?filter=all|coming|added|cancelled — every sale and its three shares (BW5). */
+const getSales = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  return success(res, await walletRead.brandSales(brand.id, { filter: req.query.filter, limit: req.query.limit, offset: req.query.offset }));
+});
+
+/** GET /brands/me/wallet/sales/:lineId — one sale (BW6). */
+const getSale = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  const sale = /^[0-9a-f-]{36}$/i.test(req.params.lineId) ? await walletRead.brandSale(brand.id, req.params.lineId) : null;
+  if (!sale) throw new AppError('NOT_FOUND', 'Not found', 404);
+  return success(res, { sale });
+});
+
+/** GET /brands/me/wallet/history?filter=all|added|collaborations|sales|withdrawals|courier — in plain words (BW10). */
+const getHistory = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  return success(res, { rows: await walletRead.brandHistory(brand.id, { filter: req.query.filter, limit: req.query.limit, offset: req.query.offset }) });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { getWallet, createTopup, verifyTopup, getTransactions, requestWithdrawal, listWithdrawals };
+module.exports = {
+  getWallet, createTopup, verifyTopup, creditTopup, getTransactions,
+  withdrawOptions, requestWithdrawal, listWithdrawals, getLocked, getSales, getSale, getHistory,
+};

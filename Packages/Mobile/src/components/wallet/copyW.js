@@ -13,21 +13,7 @@
 const rupees = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
 export const WALLET = {
-  tab: {
-    title: 'Wallet',
-    available: 'Available to spend',
-    availableHint: 'Money you can commit to an agreement.',
-    add: 'Add money',
-    locked: 'Locked',
-    lockedSub: 'in agreements',
-    paidOut: 'Paid out',
-    paidOutSub: 'to creators',
-    activity: 'Recent activity',
-    emptyTitle: 'Nothing yet',
-    emptyBody: 'Your top-ups and payments appear here.',
-    loadWhat: 'your wallet',
-  },
-
+  // Item 17: the Wallet tab's own words moved to copy17.js with the rebuilt tab (board BW1, BW2).
   add: {
     title: 'Add money',
     howMuch: 'How much',
@@ -78,19 +64,6 @@ export const WALLET = {
   },
 };
 
-/** "Money added", "Locked for Asha M." — a ledger row in her words, not the ledger's. */
-export function txLabel(t) {
-  const notes = t.notes || '';
-  switch (t.type) {
-    case 'topup':          return 'Money added';
-    case 'refund':         return 'Refunded';
-    case 'escrow_lock':    return notes.replace(/^Locked for /, 'Locked for ') || 'Locked for a creator';
-    case 'platform_fee':   return 'Campaign fee';
-    case 'escrow_release': return 'Released back to you';
-    case 'payout':         return notes.replace(/^Paid to /, 'Paid to ') || 'Paid to a creator';
-    default:               return notes || t.type;
-  }
-}
-
-export const txAmount = (t) => `${t.direction === 'credit' ? '+' : '−'}${rupees(t.amount)}`;
+// Item 17: the ledger-row labels (txLabel / txAmount) went with the tab's activity list — History
+// (BW10) gets its words from the server now.
 export const rupeesW = rupees;

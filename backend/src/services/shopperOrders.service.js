@@ -280,6 +280,13 @@ async function cancel({ actor, followerId = null, brandId = null, lineId, reason
 
     // Money (6.13): the three shares of these items are undone.
     const { rows: [tx] } = await conn.query(`SELECT * FROM follower_transactions WHERE id = $1 FOR UPDATE`, [line.transaction_id]);
+    // Item 17: once a sale's shares are in the wallets they may already be locked, on hold or
+    // withdrawn — a refund here would leave INFLX out of pocket. The money jobs never add a sale
+    // while its parcel is still Confirmed/Packed (the only states this function allows), so this is
+    // the backstop for the two running at the same instant: everything above rolls back.
+    if (tx.brand_settlement_status === 'settled' || tx.commission_confirmed_at) {
+      throw new AppError('CONFLICT', 'This order has already been settled. Please contact INFLX and we will sort it out.', 409, 'status');
+    }
     const c = sum('commission'); const f = sum('platform_fee'); const b = sum('brand_net');
     await conn.query(
       `UPDATE follower_transactions SET commission_reversed = COALESCE(commission_reversed,0) + $2,

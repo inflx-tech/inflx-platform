@@ -567,6 +567,9 @@ export default function InfluencerProfilePage() {
           when the influencer has filed a TDS exemption certificate. */}
       <div className="bg-white rounded-xl border border-border p-5 mb-4">
         <h3 className="font-display text-sm font-bold text-t1 mb-1">TDS Controls</h3>
+        {/* Item 17 (rules v1.31 §17A): tax at withdrawal is paused — the full amount is paid. These
+            settings are kept for the tax round and change nothing until then. */}
+        <p className="text-[11px] font-semibold text-orange-deep bg-orange-pale rounded-lg px-2.5 py-1.5 mb-2">Paused: nothing is deducted at withdrawal now. These settings are kept for the tax round.</p>
         <p className="text-xs text-t3 mb-4">
           {influencer.tds_exempt
             ? '🛡️ Currently exempt — no TDS deducted on withdrawals.'

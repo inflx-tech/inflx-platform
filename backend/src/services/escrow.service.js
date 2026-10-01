@@ -224,15 +224,18 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
   );
 
   await client.query(
+    // Item 17: source_ref_id names the escrow row this payment IS, so the wallet's History can say
+    // "Paid to Meera Rao · Second 25%" instead of a ledger note.
     `INSERT INTO wallet_transactions
-       (brand_id, type, amount, direction, balance_after, campaign_id, notes)
-     VALUES ($1, 'payout', $2, 'debit', $3, $4, $5)`,
+       (brand_id, type, amount, direction, balance_after, campaign_id, notes, source_ref_id)
+     VALUES ($1, 'payout', $2, 'debit', $3, $4, $5, $6)`,
     [
       brandId,
       parseFloat(entry.amount),
       brandBalance,
       campaignId,
       `Tranche ${entry.tranche_number} released — payout ${payoutId}`,
+      escrowEntryId,
     ]
   );
 

@@ -45,9 +45,20 @@ const NAV = [
   // programme and agency accounts, both removed. Production held zero referral codes,
   // zero earnings and zero agencies, so no staff member loses a queue that had
   // anything in it.
+  // Item 17 (features/item17-wallet; rules v1.31 §17A): ALL the money in one section. It replaces
+  // the Escrow page (→ Collaboration money) and the Payouts page (→ Withdrawals), whose old
+  // addresses now lead here. `exact` keeps Overview from lighting up on every Money page.
+  { section: 'MONEY' },
+  { href: '/admin/money', label: 'Overview', icon: '💰', cap: 'payouts', exact: true },
+  { href: '/admin/money/withdrawals', label: 'Withdrawals', icon: '💸', cap: 'payouts', badge: 'withdrawals' },
+  { href: '/admin/money/balances', label: 'Balances', icon: '👛', cap: 'payouts' },
+  { href: '/admin/money/sales', label: 'Sales', icon: '🛍️', cap: 'payouts' },
+  { href: '/admin/money/collaborations', label: 'Collaboration money', icon: '🔒', cap: 'payouts' },
+  { href: '/admin/money/added', label: 'Money added', icon: '➕', cap: 'payouts' },
+  { href: '/admin/money/movements', label: 'All movements', icon: '📒', cap: 'payouts' },
+  { href: '/admin/money/corrections', label: 'Disputes & corrections', icon: '⚖️', cap: 'payouts' },
+  { href: '/admin/money/settings', label: 'Money settings', icon: '🎚️', cap: 'payouts' },
   { section: 'FINANCE' },
-  { href: '/admin/escrow', label: 'Escrow', icon: '🔒', cap: 'escrow' },
-  { href: '/admin/payouts', label: 'Payouts', icon: '💸', cap: 'payouts' },
   { href: '/admin/returns', label: 'Returns', icon: '↩️', cap: 'returns' },
   { href: '/admin/subscriptions',         label: 'Active Subs',     icon: '🔁', cap: 'subscriptions' },
   { href: '/admin/billing/invoices',      label: 'Sub Invoices',    icon: '🧾', cap: 'subscriptions' },
@@ -87,6 +98,8 @@ export default function DashboardLayout({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [verificationCount, setVerificationCount] = useState(0);
   const [invitationCount, setInvitationCount] = useState(0);
+  // Item 17 — what is waiting in Money: withdrawals to pay, added payments not credited.
+  const [moneyCounts, setMoneyCounts] = useState({ withdrawals: 0, notCredited: 0 });
   // B-2 capability scoping. null = not yet loaded (show full nav to avoid a
   // sidebar flash; server still enforces every route). isSuperadmin bypasses.
   const [capabilities, setCapabilities] = useState(null);
@@ -130,7 +143,15 @@ export default function DashboardLayout({ children }) {
       } catch {}
     }
     fetchPending();
-  }, []);
+    // Item 17: the Money badges. Quietly skipped for an admin without the Money capability (403).
+    (async () => {
+      try {
+        const { moneyApi } = await import('../../lib/api');
+        const res = await moneyApi.overview();
+        if (res.success) setMoneyCounts({ withdrawals: res.data.withdrawalsWaiting?.count || 0, notCredited: res.data.moneyAdded?.notCredited || 0 });
+      } catch {}
+    })();
+  }, [pathname]);
 
   // B-2 — fetch the caller's own capabilities to scope the nav. Runs after the
   // proactive refresh above has had a chance to seat a fresh token. superadmin
@@ -184,7 +205,7 @@ export default function DashboardLayout({ children }) {
             if (item.section) return (
               <div key={i} className="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">{item.section}</div>
             );
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+            const isActive = pathname === item.href || (!item.exact && item.href !== '/admin' && pathname.startsWith(item.href));
             return (
               <Link key={item.href} href={item.href} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold font-semibold' : 'text-white/55 hover:bg-white/7 hover:text-white/85'}`}>
                 <span className="text-xs w-4 text-center flex-shrink-0">{item.icon}</span>
@@ -197,6 +218,9 @@ export default function DashboardLayout({ children }) {
                 )}
                 {item.badge === 'invitations' && invitationCount > 0 && (
                   <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{invitationCount}</span>
+                )}
+                {(item.badge === 'withdrawals' || item.badge === 'notCredited') && moneyCounts[item.badge] > 0 && (
+                  <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{moneyCounts[item.badge]}</span>
                 )}
               </Link>
             );
@@ -217,7 +241,7 @@ export default function DashboardLayout({ children }) {
         {/* Top bar */}
         <div className="h-11 bg-white border-b border-border flex items-center justify-between px-4 flex-shrink-0">
           <div className="font-display text-sm font-bold text-t1">
-            {NAV.find(n => n.href && (pathname === n.href || (n.href !== '/admin' && pathname.startsWith(n.href))))?.label || 'Dashboard'}
+            {NAV.find(n => n.href && (pathname === n.href || (!n.exact && n.href !== '/admin' && pathname.startsWith(n.href))))?.label || 'Dashboard'}
           </div>
           <div className="flex items-center gap-2">
             {user && (

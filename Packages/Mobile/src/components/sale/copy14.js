@@ -154,6 +154,13 @@ export const C14 = {
   // Item 15 — Hybrid: the fixed amount (board S1–S9).
   payingHers: (brand, amt) => `${brand} confirms it's live, and that pays your second ${rupees(amt)}.`,
   secondIn: (brand, d, amt) => `${brand} confirmed it's live on ${day10(d)}. ${rupees(amt)} is in your wallet.`,
+  // Item 17: INFLX stood in for a brand that stayed silent (liveConfirmedBy === 'inflx').
+  settledForCreator: 'INFLX has settled this payment and will settle the rest of this collaboration with you.',
+  settledForBrand: 'INFLX has settled this payment and will settle the rest of this collaboration.',
+  inflxSecondIn: (d, amt) => `INFLX confirmed it's live on ${day10(d)}. ${rupees(amt)} is in your wallet.`,
+  inflxConfirmedPaid: (d, amt, name) => `INFLX confirmed it's live on ${day10(d)} and released ${rupees(amt)} to ${first(name)}.`,
+  returnedToBrand: (amt) => `INFLX returned the locked ${rupees(amt)} to the brand. No more payments are to come for this collaboration.`,
+  returnedToYou: (amt) => `INFLX returned the locked ${rupees(amt)} to your wallet. No more payments will be made for this collaboration.`,
   lastOn: (amt, d) => `The last ${rupees(amt)} arrives on ${day10(d)}.`,
   paidInFull: (fee) => `Paid in full — ${rupees(fee)}.`,
   askInflx: 'Ask INFLX to look',

@@ -204,7 +204,7 @@ function shapeSale(g, cc, s, side, base, x) {
   } : {
     approve: !frozen && inReview,
     askChanges: !frozen && inReview && round.current <= round.allowed,
-    confirmLive: !frozen && stage === 'posted',
+    confirmLive: !frozen && stage === 'posted' && !base.settledByInflx,
     reportRoundsUsed: !frozen && inReview && round.current > round.allowed,
     reportPosted: !frozen && stage === 'posted',
     reportNotPosted: !frozen && (stage === 'posted' || (stage === 'approved' && postingPassed)),
@@ -290,12 +290,20 @@ function shape(g, cc, s, side, settingRounds, settingWait = 7) {
   const t = (n, pct) => {
     const e = esc(n);
     const split = money.split || {};
-    return { amount: e ? Number(e.amount) : Number(split[`t${n}`] || 0), pct, status: e ? e.status : null, paidAt: e && e.status === 'released' ? e.released_at : null, dueAt: e ? e.release_due_at : null };
+    // A date is promised only for a payment that is actually QUEUED — never for one INFLX returned to the brand.
+    return { amount: e ? Number(e.amount) : Number(split[`t${n}`] || 0), pct, status: e ? e.status : null, paidAt: e && e.status === 'released' ? e.released_at : null, dueAt: e && e.status === 'queued' ? e.release_due_at : null };
   };
+  // Item 17: what INFLX returned to the brand when it settled a dispute (those payments will never be made).
+  const returned = Math.round(s.escrow.filter((e) => e.status === 'refunded').reduce((a, e) => a + Number(e.amount || 0), 0) * 100) / 100;
+  // She has posted, the brand never confirmed, and INFLX has since released or returned a payment by
+  // hand: the brand's Confirm has nothing left to pay (confirmLive refuses it), so the screens must
+  // not offer it or promise what it would pay.
+  const settledByInflx = stage === 'posted' && !!(esc(2) && esc(3) && (esc(2).status !== 'locked' || esc(3).status !== 'locked'));
   const moneyOut = {
     fee: Number(money.fee || 0),
     t1: t(1, 25), t2: t(2, 25), t3: t(3, 50),
     stillLocked: contentMoney.stillLockedOf(s.escrow),
+    returned,
     // "After {n} days · 50%": the number stamped at the confirmation, or today's setting before it.
     waitDays: cc && cc.final_wait_days != null ? cc.final_wait_days : settingWait,
     // The campaign fee is the brand's alone (§3, v1.29) — it never reaches her screen.
@@ -323,7 +331,7 @@ function shape(g, cc, s, side, settingRounds, settingWait = 7) {
   } : {
     approve: !frozen && inReview,
     askChanges: !frozen && inReview && current <= allowed,
-    confirmLive: !frozen && stage === 'posted',
+    confirmLive: !frozen && stage === 'posted' && !settledByInflx,
     reportRoundsUsed: !frozen && inReview && current > allowed,
     reportPostedWrong: !frozen && stage === 'posted',
   };
@@ -347,8 +355,12 @@ function shape(g, cc, s, side, settingRounds, settingWait = 7) {
     approvedAt: cc ? cc.approved_at : null,
     postedAt: cc ? cc.posted_at : null,
     reportFrom,
+    settledByInflx,
     liveConfirmedAt: cc ? cc.live_confirmed_at : null,
-    finalDueAt: (esc(3) && esc(3).release_due_at) || (cc ? cc.final_due_at : null),
+    // Who confirmed: the brand; nobody (Pay for Sale confirms itself after the stamped days); or INFLX,
+    // standing in for a brand that stayed silent (item 17) — the screens must not say "You confirmed".
+    liveConfirmedBy: cc && cc.live_confirmed_at ? (cc.live_confirmed_auto ? 'auto' : cc.live_confirmed_by ? 'brand' : 'inflx') : null,
+    finalDueAt: esc(3) && esc(3).status === 'refunded' ? null : ((esc(3) && esc(3).release_due_at) || (cc ? cc.final_due_at : null)),
     completedAt: cc ? cc.completed_at : null,
     proofCount: s.proofs.length,
     money: moneyOut,
@@ -690,8 +702,16 @@ async function confirmLive(ciId, scope, { amount } = {}) {
       const done = await sale().completeIfDue(client, ciId);
       return { sale: true, completed: !!(done && done.completed) };
     }
-    const { rows: [t2] } = await client.query(
-      `SELECT amount FROM escrow_entries WHERE campaign_influencer_id = $1 AND tranche_number = 2`, [ciId]);
+    const { rows: esc } = await client.query(
+      `SELECT tranche_number, amount, status FROM escrow_entries WHERE campaign_influencer_id = $1 AND tranche_number IN (2, 3)`, [ciId]);
+    const t2 = esc.find((e) => e.tranche_number === 2);
+    const t3 = esc.find((e) => e.tranche_number === 3);
+    // Item 17: INFLX can settle a dispute by hand — release the second 25% itself, or return what
+    // is locked to the brand. After either, there is nothing for this confirmation to pay, and
+    // contentMoney.releaseSecond would throw. Say so plainly instead.
+    if (t2 && t3 && (t2.status !== 'locked' || t3.status !== 'locked')) {
+      refuse('SETTLED_BY_INFLX', 'INFLX has already settled this payment, and will settle the rest of this collaboration. If something looks wrong, tell INFLX.', 422, 'status');
+    }
     if (amount != null && (!t2 || Math.round(Number(amount) * 100) !== Math.round(Number(t2.amount) * 100))) {
       refuse('AMOUNT_CHANGED', MSG.AMOUNT_CHANGED, 422, 'amount');
     }

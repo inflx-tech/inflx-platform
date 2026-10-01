@@ -45,6 +45,13 @@ import BrandSetEditScreen from '../screens/brand/BrandSetEditScreen';
 import BrandWalletScreen from '../screens/brand/BrandWalletScreen';
 import BrandAddMoneyScreen from '../screens/brand/BrandAddMoneyScreen';
 import BrandPayoutDetailScreen from '../screens/brand/BrandPayoutDetailScreen';
+// Item 17 — the Wallet: locked money, sales money, withdraw, withdrawals, history, details.
+import BrandWalletLockedScreen, { BrandWalletCollabScreen } from '../screens/brand/BrandWalletLockedScreen';
+import BrandWalletSalesScreen, { BrandWalletSaleScreen } from '../screens/brand/BrandWalletSalesScreen';
+import WithdrawScreen from '../screens/wallet/WithdrawScreen';
+import WithdrawalsScreen from '../screens/wallet/WithdrawalsScreen';
+import WalletHistoryScreen from '../screens/wallet/WalletHistoryScreen';
+import WalletDetailsScreen from '../screens/wallet/WalletDetailsScreen';
 import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScreen';
 import BrandSetDetailScreen from '../screens/brand/BrandSetDetailScreen';
 // post-links-codes (L7, L8): the posts made for a set, and one post's channel breakdown (L6).
@@ -103,6 +110,15 @@ function WalletStackScreen() {
       <WalletStack.Screen name="BrandAddMoney" component={BrandAddMoneyScreen} />
       {/* features/registration-and-profile B8 — GST number and bank account live on the Wallet tab. */}
       <WalletStack.Screen name="BrandPayoutDetail" component={BrandPayoutDetailScreen} />
+      {/* Item 17 — features/item17-wallet (board BW3–BW10). */}
+      <WalletStack.Screen name="BrandWalletLocked" component={BrandWalletLockedScreen} />
+      <WalletStack.Screen name="BrandWalletCollab" component={BrandWalletCollabScreen} />
+      <WalletStack.Screen name="BrandWalletSales" component={BrandWalletSalesScreen} />
+      <WalletStack.Screen name="BrandWalletSale" component={BrandWalletSaleScreen} />
+      <WalletStack.Screen name="BrandWithdraw" component={WithdrawScreen} initialParams={{ side: 'brand' }} />
+      <WalletStack.Screen name="BrandWithdrawals" component={WithdrawalsScreen} initialParams={{ side: 'brand' }} />
+      <WalletStack.Screen name="BrandWalletHistory" component={WalletHistoryScreen} initialParams={{ side: 'brand' }} />
+      <WalletStack.Screen name="BrandWalletDetails" component={WalletDetailsScreen} initialParams={{ side: 'brand' }} />
     </WalletStack.Navigator>
   );
 }

@@ -16,38 +16,11 @@
 const db = require('../config/db');
 const settlementService = require('../services/settlement.service');
 
+// Item 17 (rules v1.31 §17A, W3): RETIRED. A sale's share is added to the brand's wallet when its
+// return window closes; nothing is transferred to a bank account, so there is nothing to retry.
+// The job stays registered and does nothing, so the schedule and its callers need no change.
 async function run() {
-  console.log('[CRON settlement-retry] Running...');
-
-  const { rows } = await db.query(
-    `SELECT ft.id
-       FROM follower_transactions ft
-       JOIN brands b ON b.id = ft.brand_id
-      WHERE ft.status = 'completed'
-        AND ft.razorpay_transfer_id IS NULL
-        AND ft.tcs_amount IS NOT NULL
-        AND ft.brand_net > 0
-        AND b.razorpay_linked_account_id IS NOT NULL
-        -- Cash on delivery is never transferred: the brand holds the cash (shopper-ordering 6.13).
-        AND NOT EXISTS (SELECT 1 FROM follower_orders fo WHERE fo.id = ft.order_id AND fo.payment_method = 'cod')
-      ORDER BY ft.created_at ASC
-      LIMIT 200`
-  );
-
-  let succeeded = 0;
-  let failed = 0;
-  for (const r of rows) {
-    try {
-      const res = await settlementService.retryTransfer(db, r.id);
-      if (res.transfer_id) succeeded += 1;
-    } catch (err) {
-      failed += 1;
-      console.error(`[CRON settlement-retry] txn ${r.id} failed: ${err.message}`);
-    }
-  }
-
-  console.log(`[CRON settlement-retry] eligible ${rows.length} — ${succeeded} transferred, ${failed} failed`);
-  return { retried: rows.length, succeeded, failed };
+  return { retried: 0, succeeded: 0, failed: 0, retired: true };
 }
 
 module.exports = { run };

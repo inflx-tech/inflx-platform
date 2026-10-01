@@ -1,0 +1,45 @@
+{
+  "feature": "item17-wallet",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chat 1 Oct 2026)",
+  "approved_at": "2026-10-01T02:55:19.783Z",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (chat 1 Oct 2026)",
+  "mockup_locked_at": "2026-10-01T02:55:19.783Z",
+  "notes": "Item 17 of 21 — Wallet. Rules v1.31 section 17A written 1 Oct 2026 (Downloads/INFLX_Master_Business_Rules_Phase_1_v1.31.docx). Founder decisions W1-W10 in 01-spec.md. Apps board v1 drawn (BW1-BW10, CW1-CW7), awaiting lock; the Admin Money board follows. Apps board LOCKED 1 Oct 2026. Admin Money board next; contract approval and mockup_locked are set when both boards are locked. BOTH BOARDS LOCKED 1 Oct 2026 (apps BW1-BW10/CW1-CW7; admin AM1-AM12 incl. \"return locked money\" and the 24-hour setting). BUILT 1 Oct 2026 — awaiting the founder's deploy go (migrate 200 → push → OTA influencer, brand).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "walk_fixes": []
+  },
+  "boards": {
+    "apps": {
+      "file": "04-preview/mockups/item17-wallet-apps-v1.html",
+      "screens": "BW1-BW10, CW1-CW7",
+      "locked_by": "founder (chat 1 Oct 2026: \"Yes pls lock the screens, next draw the admin web screens\")",
+      "locked_at": "2026-10-01T02:30:37.200Z"
+    },
+    "admin": {
+      "file": "04-preview/mockups/item17-wallet-admin-v1.html",
+      "screens": "AM1-AM12",
+      "locked_by": "founder (chat 1 Oct 2026: \"ok lock it, then start implementation\")",
+      "locked_at": "2026-10-01T02:55:19.783Z"
+    }
+  },
+  "build": {
+    "at": "2026-10-01",
+    "backend": "item17-wallet 31/31; compare vs baseline_item17.json 0 newly failing (67 new, 22 gone: 20 renamed by recorded drift + 2 from another window's offers work; 181 → 178 failing)",
+    "mobile": "63 suites / 838 tests green",
+    "web": "brand Wallet page + admin Money (9 pages) walked twice on a local server against the local database",
+    "migration": "200 — rehearsed on inflx_test_base (17/17 checks, no money moved, idempotent); production dry run clean",
+    "review": "three independent pre-deploy review passes after the founder's go; confirmed findings fixed before deploy (06-diff/notes.md)",
+    "rules": "master v1.31 §17A"
+  }
+}

@@ -99,25 +99,37 @@ async function releaseFinal(client, escrowId, { now = new Date() } = {}) {
   const out = await escrowService.processTrancheRelease(client, e.id, e.influencer_id, e.brand_id, e.campaign_id);
   if (out.alreadyReleased) return null;
 
+  const done = await afterFinalPaid(client, { ciId: e.ci_id, campaignId: e.campaign_id }, cc || null);
+  return {
+    ciId: e.ci_id, amount: Number(e.net_to_influencer), completed: done.completed, completedCampaign: done.completedCampaign,
+    campaignId: e.campaign_id, brandId: e.brand_id, influencerId: e.influencer_id, hasContent: !!cc,
+    ...(done.hybrid ? { hybrid: true } : {}),
+  };
+}
+
+/**
+ * What follows a final 50% being released, in the SAME transaction as the money — whoever
+ * released it: the job on its date (releaseFinal, above) or INFLX settling a dispute by hand
+ * (item 17, adminMoney.releasePayment). `cc` is the collaboration's content row, already locked
+ * by the caller, or null when it has none.
+ */
+async function afterFinalPaid(client, { ciId, campaignId }, cc) {
   // Item 15 (rules v1.30, H2): Hybrid's final 50% is paid on its date whatever Path 1 shows;
   // Completed waits for the minimum of approved posts too — saleLive decides, in this transaction.
   const { rows: [gx] } = await client.query(
-    `SELECT cs.goal FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id WHERE ci.id = $1`, [e.ci_id]);
+    `SELECT cs.goal FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id WHERE ci.id = $1`, [ciId]);
   if (gx && gx.goal === 'hybrid') {
     if (cc) await client.query(`UPDATE collab_content SET t3_released_at = now(), updated_at = now() WHERE id = $1`, [cc.id]);
-    const done = await require('./saleLive.service').completeIfDue(client, e.ci_id);
-    return {
-      ciId: e.ci_id, amount: Number(e.net_to_influencer), completed: !!(done && done.completed), completedCampaign: !!(done && done.completedCampaign),
-      campaignId: e.campaign_id, brandId: e.brand_id, influencerId: e.influencer_id, hasContent: !!cc, hybrid: true,
-    };
+    const done = await require('./saleLive.service').completeIfDue(client, ciId);
+    return { completed: !!(done && done.completed), completedCampaign: !!(done && done.completedCampaign), hybrid: true };
   }
 
   // Completion, in the same transaction as the money (approval §3.5, check 36).
-  const { rows: all } = await client.query(`SELECT status FROM escrow_entries WHERE campaign_influencer_id = $1`, [e.ci_id]);
+  const { rows: all } = await client.query(`SELECT status FROM escrow_entries WHERE campaign_influencer_id = $1`, [ciId]);
   const allReleased = all.length > 0 && all.every((x) => x.status === 'released');
   let completedCampaign = false;
   if (allReleased) {
-    await client.query(`UPDATE campaign_influencers SET status = 'completed' WHERE id = $1 AND status <> 'completed'`, [e.ci_id]);
+    await client.query(`UPDATE campaign_influencers SET status = 'completed' WHERE id = $1 AND status <> 'completed'`, [ciId]);
     if (cc) {
       await client.query(
         `UPDATE collab_content SET t3_released_at = now(), completed_at = now(), updated_at = now()
@@ -125,17 +137,14 @@ async function releaseFinal(client, escrowId, { now = new Date() } = {}) {
     }
     const { rows: cis } = await client.query(
       `SELECT ci.status FROM campaign_influencers ci JOIN campaign_sets cs ON cs.id = ci.set_id WHERE cs.campaign_id = $1`,
-      [e.campaign_id]);
+      [campaignId]);
     if (cis.length > 0 && cis.every((x) => x.status === 'completed')) {
       const { rowCount } = await client.query(
-        `UPDATE campaigns SET status = 'completed', completed_at = now() WHERE id = $1 AND status <> 'completed'`, [e.campaign_id]);
+        `UPDATE campaigns SET status = 'completed', completed_at = now() WHERE id = $1 AND status <> 'completed'`, [campaignId]);
       completedCampaign = rowCount === 1;
     }
   }
-  return {
-    ciId: e.ci_id, amount: Number(e.net_to_influencer), completed: allReleased, completedCampaign,
-    campaignId: e.campaign_id, brandId: e.brand_id, influencerId: e.influencer_id, hasContent: !!cc,
-  };
+  return { completed: allReleased, completedCampaign, hybrid: false };
 }
 
 /**
@@ -149,4 +158,4 @@ function stillLockedOf(escrowRows) {
     .reduce((s, e) => s + Number(e.amount || 0), 0) * 100) / 100;
 }
 
-module.exports = { dueAtFor, lockEscrow, releaseSecond, releaseFinal, stillLockedOf };
+module.exports = { dueAtFor, lockEscrow, releaseSecond, releaseFinal, stillLockedOf, afterFinalPaid };

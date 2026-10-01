@@ -395,6 +395,14 @@ export const brandApi = {
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
   verifyTopup: (data) => api.post('/brands/me/wallet/topup/verify', data),
   getWalletTransactions: () => api.get('/brands/me/wallet/transactions'),
+  // ── Item 17 · the Wallet (features/item17-wallet; rules v1.31 §17A) ─────────
+  getWalletLocked: () => api.get('/brands/me/wallet/locked'),
+  getWalletSales: (filter, offset) => api.get(`/brands/me/wallet/sales?limit=50&offset=${offset || 0}${filter && filter !== 'all' ? `&filter=${filter}` : ''}`),
+  getWalletSale: (lineId) => api.get(`/brands/me/wallet/sales/${lineId}`),
+  getWalletHistory: (filter, offset) => api.get(`/brands/me/wallet/history?limit=50&offset=${offset || 0}${filter && filter !== 'all' ? `&filter=${filter}` : ''}`),
+  getWithdrawOptions: () => api.get('/brands/me/wallet/withdraw'),
+  requestWithdrawal: (amount) => api.post('/brands/me/wallet/withdraw', { amount }),
+  getWalletWithdrawals: () => api.get('/brands/me/wallet/withdrawals'),
   // ── Item 4 · the Campaigns tab (campaigns and sets) ────────────────────────
   // Contract: features/item4-campaigns-sets. Read endpoints are new (another brand's campaign
   // is 404); create/update/delete/duplicate are the existing routes with the item 4 rules.
@@ -714,9 +722,15 @@ export const influencerApi = {
   getCommissions: () => api.get('/influencers/me/commissions'),
   getCampaignEarnings: () => api.get('/influencers/me/commissions/by-campaign'),
   getCampaignCommissionDetail: (ciId) => api.get(`/influencers/me/commissions/campaign/${ciId}`),
-  withdraw: (data) => api.post('/influencers/me/withdraw', data),
-  getWithdrawals: () => api.get('/influencers/me/withdrawals'),
-  retryWithdrawal: (id) => api.post(`/influencers/me/withdrawals/${id}/retry`),
+  // ── Item 17 · the Wallet (features/item17-wallet; rules v1.31 §17A). The old withdraw / retry
+  // calls are gone with the automatic payout: a withdrawal is a request INFLX pays.
+  getWallet: () => api.get('/influencers/me/wallet'),
+  getWalletPayments: () => api.get('/influencers/me/wallet/payments'),
+  getWalletCommission: (filter, offset) => api.get(`/influencers/me/wallet/commission?limit=50&offset=${offset || 0}${filter && filter !== 'all' ? `&filter=${filter}` : ''}`),
+  getWalletHistory: (filter, offset) => api.get(`/influencers/me/wallet/history?limit=50&offset=${offset || 0}${filter && filter !== 'all' ? `&filter=${filter}` : ''}`),
+  getWithdrawOptions: () => api.get('/influencers/me/wallet/withdraw'),
+  requestWithdrawal: (amount, method) => api.post('/influencers/me/wallet/withdraw', { amount, method }),
+  getWalletWithdrawals: () => api.get('/influencers/me/wallet/withdrawals'),
   getTdsCertificateUrl: (fy) => `${API_BASE_URL}/influencers/me/tds-certificate${fy ? `?fy=${fy}` : ''}`,
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),

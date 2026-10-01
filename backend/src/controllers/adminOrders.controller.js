@@ -140,7 +140,9 @@ const getCommerceSummary = asyncHandler(async (req, res) => {
     `SELECT
        COUNT(*)::int                              AS online_order_count,
        COALESCE(SUM(ft.net_amount), 0)            AS gmv,
-       COALESCE(SUM(ft.platform_fee), 0)          AS platform_fees,
+       -- Item 17: the column is marketplace_fee_amount; "ft.platform_fee" never existed and this
+       -- endpoint answered 500 on every call.
+       COALESCE(SUM(ft.marketplace_fee_amount), 0) AS platform_fees,
        COALESCE(SUM(ft.influencer_commission), 0) AS influencer_commission,
        COALESCE(SUM(ft.brand_net), 0)             AS brand_net,
        COALESCE(SUM(CASE WHEN ft.brand_settlement_status IS DISTINCT FROM 'settled'

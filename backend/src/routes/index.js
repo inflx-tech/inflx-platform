@@ -175,6 +175,11 @@ router.use('/', item12Routes);
 const item14Routes = require('./item14.routes');
 router.use('/', item14Routes);
 
+// Item 17 — the Wallet: the creator's wallet and Admin's Money section.
+// Contract: features/item17-wallet
+const item17Routes = require('./item17.routes');
+router.use('/', item17Routes);
+
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);

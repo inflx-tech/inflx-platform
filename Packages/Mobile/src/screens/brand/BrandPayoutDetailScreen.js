@@ -55,7 +55,9 @@ export default function BrandPayoutDetailScreen({ navigation, route }) {
       else show(r.error?.message || COPY.saveFailed);
       return;
     }
-    navigation.navigate('BrandWallet', { toast: 'Saved.' });
+    // Item 17: back to wherever she came from (the details list, or Withdraw), with the toast.
+    if (route?.params?.returnTo) navigation.navigate({ name: route.params.returnTo, params: { toast: 'Saved.' }, merge: true });
+    else navigation.navigate('BrandWallet', { toast: 'Saved.' });
   }
 
   return (

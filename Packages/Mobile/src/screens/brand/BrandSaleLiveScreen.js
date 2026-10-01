@@ -215,7 +215,9 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
               </View>
             ))}
             <View style={[s.preview, { backgroundColor: T.state.active.bg }]} testID="confirm-preview">
-              {c.hybrid && c.money ? (
+              {c.hybrid && c.money && c.settledByInflx ? (
+                <Text style={[s.previewSub, { color: T.state.active.fg }]} testID="settled-box">{c.money.returned > 0 ? C14.returnedToYou(c.money.returned) : C14.settledForBrand}</Text>
+              ) : c.hybrid && c.money ? (
                 <>
                   <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{C14.confirmReleases(c.money.t2.amount)}</Text>
                   <Text style={[s.previewSub, { color: T.state.active.fg }]}>{C14.confirmReleasesSub(c.money.fee, c.money.t3.amount, c.money.waitDays)}</Text>
@@ -234,7 +236,10 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
         {stage === 'live' ? (
           <View style={s.pathCard} testID="waiting-posts">
             <GreenBox10 text={c.liveConfirmedAuto ? C14.confirmedItself(c.liveConfirmedAt)
-              : c.hybrid && c.money ? C14.youConfirmedPaid(c.liveConfirmedAt, c.money.t2.amount, name) : C14.youConfirmed(c.liveConfirmedAt)} testID="you-confirmed" />
+              : c.hybrid && c.money
+                ? (c.liveConfirmedBy === 'inflx' ? C14.inflxConfirmedPaid(c.liveConfirmedAt, c.money.t2.amount, name) : C14.youConfirmedPaid(c.liveConfirmedAt, c.money.t2.amount, name))
+                : C14.youConfirmed(c.liveConfirmedAt)} testID="you-confirmed" />
+            {c.hybrid && c.money && c.money.returned > 0 ? <WaitBox10 text={C14.returnedToYou(c.money.returned)} testID="returned-box" /> : null}
             {p1 && p1.short ? <Text style={s.para}>{C14.completesWhen(p1.short)}</Text> : null}
           </View>
         ) : null}
@@ -263,7 +268,7 @@ export default function BrandSaleLiveScreen({ navigation, route }) {
             {c.can.askChanges ? <SecondaryButton label={c.round.isLast ? C14.askChangesLast : C14.askChanges} onPress={() => { if (!busy) { setSheetError(null); setSheet('changes'); } }} testID="ask-changes" /> : null}
           </>
         ) : null}
-        {stage === 'posted' && !c.frozen ? (
+        {stage === 'posted' && !c.frozen && !c.settledByInflx ? (
           <PrimaryButton label={c.hybrid && c.money ? C14.confirmPays(c.money.t2.amount) : C14.confirmLive} icon="check" onPress={confirmLive} busy={busy} busyLabel="Confirming" testID="confirm-live" />
         ) : null}
         {reportKinds.length ? (

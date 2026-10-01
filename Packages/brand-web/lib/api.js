@@ -319,8 +319,35 @@ export const walletApi = {
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
   verifyTopup: (data) => api.post('/brands/me/wallet/topup/verify', data),
   getTransactions: (params) => api.get(`/brands/me/wallet/transactions${params ? '?' + new URLSearchParams(params) : ''}`),
-  requestWithdrawal: (data) => api.post('/brands/me/wallet/withdraw', data),
+  // Item 17 (features/item17-wallet; rules v1.31 §17A): a withdrawal is a request INFLX pays. It is
+  // sent to the brand's one saved bank account; the body carries the amount and nothing else.
+  requestWithdrawal: (amount) => api.post('/brands/me/wallet/withdraw', { amount }),
   getWithdrawals: () => api.get('/brands/me/wallet/withdrawals'),
+  getWithdrawOptions: () => api.get('/brands/me/wallet/withdraw'),
+  getLocked: () => api.get('/brands/me/wallet/locked'),
+  getSales: (filter, offset) => api.get(`/brands/me/wallet/sales?limit=100&offset=${offset || 0}${filter && filter !== 'all' ? `&filter=${filter}` : ''}`),
+  getHistory: (filter, offset) => api.get(`/brands/me/wallet/history?limit=50&offset=${offset || 0}${filter && filter !== 'all' ? `&filter=${filter}` : ''}`),
+};
+
+// Item 17 — Admin · Money, one section (board AM1–AM12). Every call needs the 'payouts' capability.
+const qs = (o) => { const p = new URLSearchParams(); Object.entries(o || {}).forEach(([k, v]) => { if (v != null && v !== '' && v !== 'all') p.set(k, v); }); const s = p.toString(); return s ? `?${s}` : ''; };
+export const moneyApi = {
+  overview: () => api.get('/admin/money/overview'),
+  withdrawals: (status) => api.get(`/admin/money/withdrawals${qs({ status })}`),
+  withdrawal: (id) => api.get(`/admin/money/withdrawals/${id}`),
+  markProcessed: (id, body) => api.post(`/admin/money/withdrawals/${id}/processed`, body),
+  couldNotProcess: (id, body) => api.post(`/admin/money/withdrawals/${id}/could-not-process`, body),
+  balances: (kind, q) => api.get(`/admin/money/balances${qs({ kind, q })}`),
+  person: (kind, id, tab) => api.get(`/admin/money/balances/${kind}/${id}${qs({ tab })}`),
+  sales: (filter) => api.get(`/admin/money/sales${qs({ filter, limit: 100 })}`),
+  collaborations: (tab) => api.get(`/admin/money/collaborations${qs({ tab })}`),
+  added: () => api.get('/admin/money/added?limit=100'),
+  creditTopup: (orderId, body) => api.post(`/admin/money/added/${encodeURIComponent(orderId)}/credit`, body),
+  movements: (q, group) => api.get(`/admin/money/movements${qs({ q, group, limit: 200 })}`),
+  corrections: () => api.get('/admin/money/corrections'),
+  releasePayment: (body) => api.post('/admin/money/corrections/release-payment', body),
+  returnLocked: (body) => api.post('/admin/money/corrections/return-locked', body),
+  correctBalance: (body) => api.post('/admin/money/corrections/correct-balance', body),
 };
 
 export const campaignApi = {

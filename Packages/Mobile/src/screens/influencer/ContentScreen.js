@@ -197,7 +197,7 @@ export default function ContentScreen({ navigation, route }) {
         </View>
 
         {/* C15 — a brand's report holds everything; the sentence says nothing is lost. */}
-        {c.frozen ? (
+        {c.frozen && stage !== 'complete' ? (
           <Card7 title={C12.toldInflxTitle} testID="told-inflx"><Text style={s.para}>{C12.toldInflxBody(brand, c.money.t1.amount)}</Text></Card7>
         ) : null}
         {c.delayed && !c.frozen ? <AmberBox10 text={C12.delayedHers(c.postingDate)} testID="delayed-box" /> : null}
@@ -309,7 +309,11 @@ export default function ContentScreen({ navigation, route }) {
         ) : null}
 
         {/* C15 — posted, waiting; after the stamped days she may ask INFLX to look. */}
-        {stage === 'posted' && !c.frozen ? (
+        {/* Item 17: INFLX settled a payment by hand — nothing is waiting on the brand's confirmation. */}
+        {stage === 'posted' && !c.frozen && c.settledByInflx ? (
+          <WaitBox10 text={c.money.returned > 0 ? C12.returnedToBrand(c.money.returned) : C12.settledForCreator} testID="settled-box" />
+        ) : null}
+        {stage === 'posted' && !c.frozen && !c.settledByInflx ? (
           <Card7 title={C12.waitingTitle} testID="waiting-confirm">
             <Text style={s.para}>{C12.waitingBody(c.postedAt, brand, c.reportFrom)}</Text>
             {c.reported.creator ? <Text style={s.para} testID="you-told-inflx">{C12.youToldInflx(c.reported.creator.at)}</Text> : null}
@@ -319,9 +323,10 @@ export default function ContentScreen({ navigation, route }) {
         {/* C12 — the second payment in, the last on a date. */}
         {['live', 'complete'].includes(stage) ? (
           <>
-            <GreenBox10 text={C12.theyConfirmed(brand, c.liveConfirmedAt)} testID="confirmed-box" />
+            <GreenBox10 text={!c.liveConfirmedAt ? C12.inflxSettled : c.liveConfirmedBy === 'inflx' ? C12.inflxConfirmed(c.liveConfirmedAt) : C12.theyConfirmed(brand, c.liveConfirmedAt)} testID="confirmed-box" />
             <FeeCard12 money={c.money} side="creator" />
-            {stage === 'live' ? <WaitBox10 text={C12.inWallet(c.money.t2.amount, c.money.t3.amount, c.finalDueAt)} testID="in-wallet" /> : null}
+            {stage === 'live' && c.money.returned > 0 ? <WaitBox10 text={C12.returnedToBrand(c.money.returned)} testID="returned-box" /> : null}
+            {stage === 'live' && !(c.money.returned > 0) ? <WaitBox10 text={C12.inWallet(c.money.t2.amount, c.money.t3.amount, c.finalDueAt)} testID="in-wallet" /> : null}
             <StepLine10 steps={paidSteps} />
           </>
         ) : null}

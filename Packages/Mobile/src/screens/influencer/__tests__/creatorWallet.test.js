@@ -7,11 +7,11 @@
  * the screen, so the screen invented a zero.
  */
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
 
 jest.mock('../../../services/api', () => ({
   // features/registration-and-profile C7 — the UPI / bank / PAN rows read her own record.
-  influencerApi: { getEarnings: jest.fn(), getMe: jest.fn().mockResolvedValue({ success: true, data: { influencer: { has_upi: false, has_bank_account: false, has_pan: false } } }) },
+  influencerApi: { getEarnings: jest.fn(), getWallet: jest.fn(), getMe: jest.fn().mockResolvedValue({ success: true, data: { influencer: { has_upi: false, has_bank_account: false, has_pan: false } } }) },
   brandApi: {}, referenceApi: {}, clearSession: jest.fn(), uploadFile: jest.fn(),
 }));
 jest.mock('../../../../App', () => ({ AuthContext: require('react').createContext({ setRole: () => {} }) }));
@@ -26,64 +26,56 @@ const ok = (data) => ({ success: true, data });
 beforeEach(() => jest.clearAllMocks());
 
 // ── The wallet ───────────────────────────────────────────────────────────────
+//
+// ASSERTION DRIFT — item 17 (features/item17-wallet; board CW1, locked 1 Oct 2026; rules v1.31 §17A).
+// These three tests described the STAND-IN wallet ("a simple view while the full wallet is being
+// designed"): Yours now / Still to come / Earned so far, read from GET /influencers/me/earnings.
+// Item 17 is that full wallet: Available, Still to come and its two kinds, read from
+// GET /influencers/me/wallet. Each test asserts the new rule for the same situation; none was
+// skipped or removed. The full board is covered in screens/__tests__/wallet17.test.js.
+
+const FIG = { available: 3000, onHold: 0, stillToCome: 9000, payments: 9000, paymentsCount: 1, nextPaymentAt: null, commission: 0, commissionCount: 0 };
+const nav = () => ({ navigate: jest.fn(), goBack: jest.fn(), setParams: jest.fn() });
 
 describe('the creator wallet', () => {
-  it('shows the money that is already hers, what is still held, and why', async () => {
-    influencerApi.getEarnings.mockResolvedValue(ok({
-      wallet_balance: '3000.00', pending_balance: '0.00', total_earned: '3000.00',
-      available_to_withdraw: '3000.00', pending_amount: '9000.00',
-      // These rows are shaped EXACTLY as GET /influencers/me/earnings returns them —
-      // `SELECT ee.*` from escrow_entries, so the column is `tranche_number`.
-      //
-      // This fixture used to say `tranche`, which is the field the screen happened to
-      // read, so the test proved the screen agreed with itself and nothing more. In
-      // production every row got undefined and read "On signing", which told a creator
-      // three quarters of her fee was due at signature. Copy the server's shape, never
-      // the reader's.
-      locked_entries: [
-        { id: 'e2', tranche_number: 2, amount: '3000.00', campaign_name: 'Diwali Edit 2026' },
-        { id: 'e3', tranche_number: 3, amount: '6000.00', campaign_name: 'Diwali Edit 2026' },
-      ],
-      commission_summary: { pending: 0, confirmed: 0, total: 0 },
-    }));
-    const r = render(<CreatorWalletScreen />);
+  it('shows the money that is already hers, what is still to come, and where it comes from', async () => {
+    // Shaped EXACTLY as GET /influencers/me/wallet returns it (item17.routes + walletRead.creatorSummary).
+    // Copy the server's shape, never the reader's.
+    influencerApi.getWallet.mockResolvedValue(ok({ figures: FIG, withdrawal_waiting: null, details: { has_upi: false, has_bank_account: false } }));
+    const n = nav();
+    const r = render(<CreatorWalletScreen navigation={n} route={{ params: {} }} />);
     await waitFor(() => r.getByTestId('creator-wallet'));
 
-    // Asserted inside their own tiles: the fixture has ₹3,000 twice (her balance, and the
-    // second tranche held for her), and a loose text match cannot tell them apart.
-    expect(r.getByTestId('wallet-balance').props.children).toBe('₹3,000');
-    expect(r.getByTestId('wallet-held').props.children.some((c) => c && c.props && c.props.children === '₹9,000')).toBe(true);
-    r.getByText('Money that has been released to you.');
+    expect(r.getByTestId('wallet-balance-amount').props.children).toBe('₹3,000');
+    expect(r.getByTestId('wallet-still-to-come-value').props.children).toBe('₹9,000');
+    expect(r.getByTestId('wallet-payments-value').props.children).toBe('₹9,000');
+    r.getByText('1 collaboration');
 
-    // what is held, and the honest condition on each
-    r.getByText('When your post goes live and the brand confirms it');
-    r.getByText('After your post has stayed live');
-    r.getByText('₹6,000');
+    // what is still to come, and the honest condition on each payment, is one tap in (CW3)
+    fireEvent.press(r.getByTestId('wallet-payments'));
+    expect(n.navigate).toHaveBeenCalledWith('CreatorWalletPayments', {});
 
-    // it admits what it is
-    r.getByText(/simple view while the full wallet is being designed/);
+    // it no longer calls itself a stand-in
+    expect(r.queryByText(/simple view while the full wallet is being designed/)).toBeNull();
   });
 
-  it('an empty wallet explains how money will arrive rather than showing a blank', async () => {
-    influencerApi.getEarnings.mockResolvedValue(ok({
-      wallet_balance: '0.00', total_earned: '0.00', pending_amount: '0.00',
-      locked_entries: [], commission_summary: { pending: 0, confirmed: 0 },
-    }));
-    const r = render(<CreatorWalletScreen />);
+  it('an empty wallet says there is nothing waiting rather than showing a blank', async () => {
+    influencerApi.getWallet.mockResolvedValue(ok({ withdrawal_waiting: null, details: {},
+      figures: { available: 0, onHold: 0, stillToCome: 0, payments: 0, paymentsCount: 0, nextPaymentAt: null, commission: 0, commissionCount: 0 } }));
+    const r = render(<CreatorWalletScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => r.getByTestId('creator-wallet'));
-    r.getByText('Nothing held right now');
-    r.getByText('When a brand signs an agreement with you, the money is locked here and released in three parts.');
+    expect(r.getByTestId('wallet-balance-amount').props.children).toBe('₹0');
+    r.getByText('Nothing waiting');
+    r.getByText('No sales in a return window');
   });
 
-  it('commission on the way is shown with the reason it is not hers yet', async () => {
-    influencerApi.getEarnings.mockResolvedValue(ok({
-      wallet_balance: '500.00', total_earned: '500.00', pending_amount: '0.00',
-      locked_entries: [], commission_summary: { pending: 1250, confirmed: 0 },
-    }));
-    const r = render(<CreatorWalletScreen />);
+  it('commission on the way is its own figure, counted by the sales still in their return window', async () => {
+    influencerApi.getWallet.mockResolvedValue(ok({ withdrawal_waiting: null, details: {},
+      figures: { available: 500, onHold: 0, stillToCome: 1250, payments: 0, paymentsCount: 0, nextPaymentAt: null, commission: 1250, commissionCount: 4 } }));
+    const r = render(<CreatorWalletScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => r.getByTestId('wallet-commission'));
-    r.getByText('₹1,250 commission on the way');
-    r.getByText('Commission is confirmed after the return window closes, then it moves into your wallet.');
+    expect(r.getByTestId('wallet-commission-value').props.children).toBe('₹1,250');
+    r.getByText('4 sales in their return window');
   });
 });
 

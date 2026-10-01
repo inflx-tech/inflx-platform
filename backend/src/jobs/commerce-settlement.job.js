@@ -35,10 +35,22 @@ async function run() {
   const { rows } = await db.query(
     `SELECT ft.id
        FROM follower_transactions ft
+       LEFT JOIN follower_orders fo ON fo.id = ft.order_id
       WHERE ft.status = 'completed'
         AND ft.brand_settlement_status = 'pending'
+        -- Item 17 (review): only sales that came through the shopper checkout become wallet money,
+        -- and never while the parcel is still Confirmed/Packed — it can still be cancelled and
+        -- refunded in full, and a share already in a wallet could not be taken back.
+        AND ft.checkout_id IS NOT NULL
+        AND fo.order_status IS DISTINCT FROM 'confirmed'
+        AND fo.order_status IS DISTINCT FROM 'packed'
         AND ft.return_window_ends_at IS NOT NULL
         AND ft.return_window_ends_at <= NOW()
+        -- Item 17 (W4): a cash-on-delivery sale counts once it is DELIVERED, and its return window
+        -- then runs from the delivery, the same length as an online sale's.
+        AND (fo.payment_method IS DISTINCT FROM 'cod'
+             OR (fo.order_status = 'delivered' AND fo.delivered_at IS NOT NULL
+                 AND fo.delivered_at + (ft.return_window_ends_at - ft.created_at) <= NOW()))
         AND NOT EXISTS (
           SELECT 1 FROM follower_returns fr
            WHERE fr.transaction_id = ft.id
@@ -51,16 +63,19 @@ async function run() {
   let failed = 0;
   for (const r of rows) {
     try {
+      // Item 17: the service credits the brand's WALLET and flips the status in one transaction.
       const res = await settlementService.settleCommerceTransaction(db, r.id);
-      // settleCommerceTransaction is idempotent (tcs_amount guard). Whether it
-      // performed the settle or skipped an already-settled row, flip the status
-      // marker so this row leaves the 'pending' pool exactly once.
-      await db.query(
-        `UPDATE follower_transactions
-            SET brand_settlement_status = 'settled', brand_settled_at = NOW()
-          WHERE id = $1 AND brand_settlement_status = 'pending'`,
-        [r.id]
-      );
+      // A legacy row the old path had already marked (tcs_amount set) is skipped by the service;
+      // flip its status here so it leaves the 'pending' pool exactly once. No money moves here.
+      // ONLY that case: a row the service refused for another reason stays pending.
+      if (res && res.skipped === true) {
+        await db.query(
+          `UPDATE follower_transactions
+              SET brand_settlement_status = 'settled', brand_settled_at = NOW()
+            WHERE id = $1 AND brand_settlement_status = 'pending' AND tcs_amount IS NOT NULL`,
+          [r.id]
+        );
+      }
       if (res && !res.skipped) settled += 1;
     } catch (err) {
       failed += 1;

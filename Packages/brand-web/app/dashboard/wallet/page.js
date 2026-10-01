@@ -1,48 +1,60 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
-import { walletApi, brandApi, fmtMoney } from '../../../lib/api';
+/**
+ * Brand website · Wallet — item 17 (features/item17-wallet; master rules v1.31 §17A).
+ *
+ * The same wallet the phone shows (board BW1–BW10), laid out for a wide screen:
+ *   Available · On hold · Locked in collaborations · Sales money coming — each figure from its own
+ *   source on the server; nothing is added up or subtracted here.
+ *   Add money (unchanged) · Withdraw (a REQUEST: on hold at once, paid by INFLX from its bank,
+ *   then marked processed) · Locked, collaboration by collaboration · every sale and its three
+ *   shares · history in plain words.
+ * The bank account is saved in ONE place — the brand's own record (PATCH /brands/me) — and that is
+ * where a withdrawal is sent. The old copy kept in listing_data is no longer read or written.
+ */
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { walletApi, brandApi } from '../../../lib/api';
 
-// ─── Transaction type config (locked palette) ───────────────────────────────
-// Each tx type gets an icon glyph + an icon tone (credit / debit / escrow).
-// The icon tone drives the background of the round icon tile.
-const TX_TYPE = {
-  topup:           { label: 'Top-up',           icon: '↑',   tone: 'credit' },
-  escrow_lock:     { label: 'Escrow lock',      icon: '🔒', tone: 'escrow' },
-  escrow_release:  { label: 'Escrow release',   icon: '🔓', tone: 'credit' },
-  payout:          { label: 'Payout',           icon: '→',   tone: 'debit' },
-  refund:          { label: 'Refund',           icon: '↩',   tone: 'credit' },
-  platform_fee:    { label: 'Platform fee',     icon: '%',         tone: 'debit' },
-  withdrawal:      { label: 'Withdrawal',        icon: '↑',   tone: 'debit' },
-};
-
-// Credit-direction tx types — show '+' prefix in success-green.
-const CREDIT_TYPES = new Set(['topup', 'escrow_release', 'refund']);
-
-// Filter chips for transaction list (client-side filter on already-loaded array).
-const FILTERS = [
-  { key: 'all',        label: 'All',       types: null },
-  { key: 'topup',      label: 'Top-ups',   types: new Set(['topup']) },
-  { key: 'escrow',     label: 'Escrow',    types: new Set(['escrow_lock']) },
-  { key: 'release',    label: 'Releases',  types: new Set(['escrow_release']) },
-  { key: 'refund',     label: 'Refunds',   types: new Set(['refund']) },
-  { key: 'fee',        label: 'Fees',      types: new Set(['platform_fee']) },
-  { key: 'payout',     label: 'Payouts',   types: new Set(['payout']) },
-];
-
-const EMPTY_BANK = {
-  account_holder_name: '',
-  bank_name: '',
-  account_number: '',
-  ifsc_code: '',
-  upi_id: '',
-};
-
-// Quick-pick amount chips (rupees). Same 4 amounts as OLD wizard.
+// Quick-pick amount chips (rupees).
 const QUICK_PICKS = [5000, 10000, 25000, 50000];
 
-// Low-balance threshold (rupees-era — adjacent-fix from stale 1000000 paise-era constant).
-// ₹10K covers a small handpick campaign (3-4 micro-influencers + 8% platform fee).
-const LOW_BAL_THRESHOLD = 10000;
+const SALE_FILTERS = [['all', 'All'], ['coming', 'Coming'], ['added', 'Added'], ['cancelled', 'Cancelled']];
+const HISTORY_FILTERS = [['all', 'All'], ['added', 'Added'], ['collaborations', 'Collaborations'], ['sales', 'Sales'], ['withdrawals', 'Withdrawals'], ['courier', 'Courier']];
+const W_CHIP = { requested: ['pending', 'Waiting'], processed: ['completed', 'Processed'], could_not_process: ['failed', 'Could not process'] };
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** "12 Oct" — from a calendar day (YYYY-MM-DD) or a moment, read in India's day. */
+function dayMon(v) {
+  if (!v) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
+  if (m) return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]}`;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '';
+  const ist = new Date(d.getTime() + 330 * 60000);
+  return `${ist.getUTCDate()} ${MONTHS[ist.getUTCMonth()]}`;
+}
+const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+const firstName = (n) => String(n || '').trim().split(/\s+/)[0] || 'Creator';
+
+function nextLine(p) {
+  if (!p) return null;
+  if (p.dueAt) return `Next: ${inr(p.amount)} on ${dayMon(p.dueAt)}`;
+  if (p.kind === 'confirm_live') return `Next: ${inr(p.amount)} when you confirm it's live`;
+  return `Next: ${inr(p.amount)} after it's confirmed live`;
+}
+function saleLine(s) {
+  const post = `${firstName(s.creatorName)}'s post ${s.post?.code || ''}`.trim();
+  if (s.state === 'cancelled') return `${post} · cancelled`;
+  if (s.state === 'added') return `${post} · added ${dayMon(s.at)}`;
+  if (s.state === 'cod_waiting') return `${post} · cash on delivery · waiting for delivery`;
+  if (s.state === 'not_shipped') return `${post} · not shipped yet`;
+  const cod = s.cashOnDelivery ? ` · cash on delivery · delivered ${dayMon(s.deliveredAt)}` : '';
+  return `${post}${cod} · ${s.cashOnDelivery ? 'until' : 'return window until'} ${dayMon(s.windowUntil)}`;
+}
+function withdrawalLine(w) {
+  if (w.status === 'processed') return `Requested ${dayMon(w.requestedAt)} · paid ${dayMon(w.paidOn || w.processedAt)} to ${w.sendTo}`;
+  if (w.status === 'could_not_process') return `Requested ${dayMon(w.requestedAt)}`;
+  return `Requested ${dayMon(w.requestedAt)} · to ${w.sendTo} · within ${w.processHours} hours`;
+}
 
 // ─── Locked palette CSS (wave2) ────────────────────────────────────────────
 const CSS = `
@@ -206,275 +218,233 @@ const CSS = `
 .w .wd-pill.queued,.w .wd-pill.processing{background:var(--bg2);color:var(--muted)}
 .w .wd-pill.completed{background:var(--success-pale);color:var(--success-text)}
 .w .wd-pill.failed,.w .wd-pill.cancelled{background:var(--danger-pale);color:var(--danger-text)}
+
+/* item 17 — the four figures, the hold, locked, shares */
+.w .kpis.four{grid-template-columns:repeat(4,1fr)}
+@media (max-width:900px){.w .kpis.four{grid-template-columns:repeat(2,1fr)}}
+.w .hero-cta.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink);margin-left:8px}
+.w .hero-cta.ghost:hover{background:var(--white);color:var(--ink)}
+.w .hero-cta:disabled{opacity:.4;cursor:not-allowed}
+.w .hold-card{background:#E6EFFC;border-radius:12px;padding:13px 16px;display:flex;align-items:flex-start;gap:12px;color:#1D5FBF}
+.w .hold-card .ic{font-size:16px;line-height:1.3}
+.w .hold-card .t{flex:1;font-size:12.5px;line-height:1.5}
+.w .hold-card .t b{font-weight:800}
+.w .hold-card.plain{margin-bottom:4px}
+.w .ferr{font-size:11.5px;color:var(--danger-text);font-weight:600;margin:-4px 0 8px}
+.w .sec-lbl{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.w .wd-note{font-size:11.5px;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px 10px;margin-top:6px;line-height:1.5}
+.w .wd-dt b{color:var(--ink)}
+.w .lk{padding:13px 0;border-top:1px solid var(--border-soft)}
+.w .lk:first-of-type{border-top:0}
+.w .lk-top{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.w .lk-top b{font-size:13px}
+.w .lk-nums{display:flex;gap:16px;font-size:11.5px;color:var(--muted)}
+.w .lk-nums b{font-family:'JetBrains Mono';color:var(--ink);margin-left:4px}
+.w .lk-pays{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.w .lk-pay{font-size:11px;padding:4px 9px;border-radius:99px;border:1px solid var(--border);color:var(--muted)}
+.w .lk-pay.on{background:var(--ink);border-color:var(--ink);color:var(--white)}
+.w .lk-next{font-size:12px;font-weight:700;color:var(--ink);margin-top:8px}
+.w .tx.click{cursor:pointer}
+.w .shares{display:flex;flex-wrap:wrap;gap:6px 18px;background:var(--bg);border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:11.5px;color:var(--muted)}
+.w .shares b{font-family:'JetBrains Mono';color:var(--ink);margin-left:5px}
+.w .shares .tot{color:var(--ink);font-weight:700}
+.w .wd-pill{text-transform:none}
+.w .bank-on{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:var(--bg);border-radius:10px;padding:12px 14px}
+.w .bank-on b{font-size:13px}
+.w .link{background:transparent;border:0;font-size:11.5px;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
 `;
 
 export default function WalletPage() {
-  const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [topupAmount, setTopupAmount] = useState('');
-  const [toppingUp, setToppingUp] = useState(false);
-  const [toast, setToast] = useState('');
-  const [toastType, setToastType] = useState('success');
-  const [transactions, setTransactions] = useState([]);
-  const [txLoading, setTxLoading] = useState(false);
-  const [txFilter, setTxFilter] = useState('all');
-
-  // Bank details state (preserved verbatim)
-  const [bankDetails, setBankDetails] = useState({ ...EMPTY_BANK });
-  const [savingBank, setSavingBank] = useState(false);
-  const [bankLoaded, setBankLoaded] = useState(false);
-  const [showBankForm, setShowBankForm] = useState(false);
-
-  // Withdraw state (Wave 2 commit 2)
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawMethod, setWithdrawMethod] = useState('');
-  const [withdrawing, setWithdrawing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [fig, setFig] = useState(null);
+  const [waiting, setWaiting] = useState(null);
+  const [opts, setOpts] = useState(null);
+  const [locked, setLocked] = useState(null);
+  const [sales, setSales] = useState(null);
+  const [saleFilter, setSaleFilter] = useState('all');
+  const [salesMore, setSalesMore] = useState(false);
+  const [openSale, setOpenSale] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyFilter, setHistoryFilter] = useState('all');
+  const [historyMore, setHistoryMore] = useState(false);
   const [withdrawals, setWithdrawals] = useState([]);
 
-  async function load() {
-    const res = await walletApi.getBalance();
+  const [topupAmount, setTopupAmount] = useState('');
+  const [toppingUp, setToppingUp] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawError, setWithdrawError] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  const [gst, setGst] = useState(null);
+  const [bankForm, setBankForm] = useState(false);
+  const [bank, setBank] = useState({ bank_account_no: '', bank_ifsc: '' });
+  const [bankError, setBankError] = useState('');
+  const [savingBank, setSavingBank] = useState(false);
+
+  const [toast, setToast] = useState('');
+  const [toastType, setToastType] = useState('success');
+  function showToast(msg, type = 'success') {
+    setToast(msg); setToastType(type);
+    setTimeout(() => setToast(''), 3500);
+  }
+
+  const loadMoney = useCallback(async () => {
+    const [w, o, l, wd] = await Promise.all([walletApi.getBalance(), walletApi.getWithdrawOptions(), walletApi.getLocked(), walletApi.getWithdrawals()]);
     setLoading(false);
-    if (res.success) setWallet(res.data?.wallet || res.data);
-  }
+    if (!w.success || !w.data?.figures) { setLoadError(true); return; }
+    setLoadError(false);
+    setFig(w.data.figures);
+    setWaiting(w.data.withdrawal_waiting || null);
+    if (o.success) setOpts(o.data);
+    if (l.success) setLocked(l.data);
+    if (wd.success) setWithdrawals(wd.data?.withdrawals || []);
+  }, []);
+  // One page at a time: "Show more" is ignored while a load is on its way, and a first-page load
+  // (a filter change, a refresh) supersedes anything older — so rows are never doubled or skipped.
+  const salesSeq = useRef(0); const salesBusy = useRef(false);
+  const historySeq = useRef(0); const historyBusy = useRef(false);
+  const loadSales = useCallback(async (f, offset) => {
+    if (offset && salesBusy.current) return;
+    const mine = ++salesSeq.current; salesBusy.current = true;
+    const r = await walletApi.getSales(f, offset);
+    if (mine !== salesSeq.current) return;
+    salesBusy.current = false;
+    if (!r.success) return;
+    const got = r.data?.sales || [];
+    setSales((old) => (offset && old ? { totals: r.data.totals, sales: [...old.sales, ...got] } : r.data));
+    setSalesMore(got.length === 100);
+  }, []);
+  const loadHistory = useCallback(async (f, offset) => {
+    if (offset && historyBusy.current) return;
+    const mine = ++historySeq.current; historyBusy.current = true;
+    const r = await walletApi.getHistory(f, offset);
+    if (mine !== historySeq.current) return;
+    historyBusy.current = false;
+    if (!r.success) return;
+    const got = r.data?.rows || [];
+    setHistory((old) => (offset ? [...old, ...got] : got));
+    setHistoryMore(got.length === 50);
+  }, []);
+  const refresh = useCallback(() => { loadMoney(); loadSales(saleFilter); loadHistory(historyFilter, 0); }, [loadMoney, loadSales, loadHistory, saleFilter, historyFilter]);
 
-  async function loadBrandData() {
-    const res = await brandApi.getMe();
-    if (res.success) {
-      const b = res.data?.brand || res.data;
-      const ld = b.listing_data || {};
-      if (ld.bank_details) {
-        setBankDetails({
-          account_holder_name: ld.bank_details.account_holder_name || '',
-          bank_name:           ld.bank_details.bank_name || '',
-          account_number:      ld.bank_details.account_number || '',
-          ifsc_code:           ld.bank_details.ifsc_code || '',
-          upi_id:              ld.bank_details.upi_id || '',
-        });
-        setShowBankForm(true);
-      }
-      setBankLoaded(true);
-      return b;
-    }
-    setBankLoaded(true);
-    return null;
-  }
-
+  useEffect(() => { loadMoney(); }, [loadMoney]);
+  useEffect(() => { loadSales(saleFilter); }, [saleFilter, loadSales]);
+  useEffect(() => { loadHistory(historyFilter, 0); }, [historyFilter, loadHistory]);
   useEffect(() => {
-    load();
-    loadTransactions();
-    loadBrandData();
-    loadWithdrawals();
+    brandApi.getMe().then((res) => { if (res.success) setGst(!!(res.data?.brand || res.data)?.gstin); });
   }, []);
 
-  async function loadTransactions() {
-    setTxLoading(true);
-    const res = await walletApi.getTransactions({ limit: 20 });
-    setTxLoading(false);
-    if (res.success) setTransactions(res.data?.transactions || []);
-  }
-
-  async function loadWithdrawals() {
-    const res = await walletApi.getWithdrawals();
-    if (res.success) setWithdrawals(res.data?.withdrawals || []);
-  }
-
+  /* ── Add money (unchanged: Razorpay; the wallet is credited once, however often it is verified) ── */
   async function handleTopup(e) {
     if (e) e.preventDefault();
     const amountRupees = parseFloat(topupAmount);
-    if (!amountRupees || amountRupees < 1) { showToast('Minimum top-up is ₹1', 'error'); return; }
+    if (!amountRupees || amountRupees < 1) { showToast('Enter at least ₹1.', 'error'); return; }
     setToppingUp(true);
-
-    // Backend accepts rupees and converts to paise only at the Razorpay API call.
     const orderRes = await walletApi.createTopup(amountRupees);
     if (!orderRes.success) {
-      showToast(orderRes.error?.message || 'Failed to create order', 'error');
+      showToast(orderRes.error?.message || 'We could not start the payment. Try again.', 'error');
       setToppingUp(false);
       return;
     }
-
     const { order_id, amount, key_id } = orderRes.data;
-
     if (typeof window !== 'undefined' && window.Razorpay) {
-      const options = {
+      const rzp = new window.Razorpay({
         key: key_id || 'rzp_test_placeholder',
         amount,
         currency: 'INR',
         name: 'INFLX',
-        description: 'Wallet Top-up',
-        order_id: order_id,
-        handler: async function(response) {
+        description: 'Add money to your wallet',
+        order_id,
+        handler: async (response) => {
           const verifyRes = await walletApi.verifyTopup({
-            razorpay_order_id:   response.razorpay_order_id,
+            razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature:  response.razorpay_signature,
+            razorpay_signature: response.razorpay_signature,
           });
           setToppingUp(false);
           if (verifyRes.success) {
-            showToast('Top-up successful!');
+            showToast(`${inr(amountRupees)} added.`);
             setTopupAmount('');
-            load();
-            loadTransactions();
+            refresh();
           } else {
-            showToast('Payment verification failed', 'error');
+            // Paid, but not confirmed: never claim either outcome.
+            showToast("We couldn't confirm the payment. If money left your account it will be credited — check your wallet before trying again.", 'error');
           }
         },
+        modal: { ondismiss: () => setToppingUp(false) },
         prefill: { contact: '' },
-        // Locked palette: Razorpay checkout theme = wave2 yellow.
         theme: { color: '#FFC107' },
-      };
-      const rzp = new window.Razorpay(options);
+      });
       rzp.open();
     } else {
-      showToast('Razorpay not loaded — in dev use API directly', 'error');
+      showToast('The payment window could not open. Reload the page and try again.', 'error');
       setToppingUp(false);
     }
   }
 
-  function showToast(msg, type = 'success') {
-    setToast(msg);
-    setToastType(type);
-    setTimeout(() => setToast(''), 3000);
-  }
-
-  function handleBankChange(field, value) {
-    setBankDetails(prev => ({ ...prev, [field]: value }));
-  }
-
-  function maskAccountNumber(num) {
-    if (!num || num.length <= 4) return num;
-    return '•'.repeat(num.length - 4) + num.slice(-4);
-  }
-
-  async function handleSaveBank(e) {
-    e.preventDefault();
-    if (!bankDetails.account_holder_name.trim() || !bankDetails.account_number.trim() || !bankDetails.ifsc_code.trim()) {
-      showToast('Account holder name, account number, and IFSC are required', 'error');
-      return;
-    }
-
-    setSavingBank(true);
-
-    // Fetch current listing_data to merge (don't clobber other fields)
-    const brandRes = await brandApi.getMe();
-    const currentBrand = brandRes.success ? (brandRes.data?.brand || brandRes.data) : null;
-    const existingLd = currentBrand?.listing_data || {};
-
-    const payload = {
-      listing_data: {
-        ...existingLd,
-        bank_details: {
-          account_holder_name: bankDetails.account_holder_name.trim(),
-          bank_name:           bankDetails.bank_name.trim(),
-          account_number:      bankDetails.account_number.trim(),
-          ifsc_code:           bankDetails.ifsc_code.trim().toUpperCase(),
-          upi_id:              bankDetails.upi_id.trim(),
-        },
-      },
-    };
-
-    const res = await brandApi.updateMe(payload);
-    setSavingBank(false);
-
-    if (res.success) {
-      showToast('Bank details saved');
-      setShowBankForm(true);
-    } else {
-      showToast(res.error?.message || 'Failed to save bank details', 'error');
-    }
-  }
-
+  /* ── Withdraw: a request (BW7, BW9) ── */
   async function handleWithdraw(e) {
     if (e) e.preventDefault();
     const amt = parseFloat(withdrawAmount);
-    const avail = Number(wallet?.available_balance ?? wallet?.wallet_balance ?? 0);
-    const hasUpi = !!bankDetails.upi_id;
-    const hasBank = !!(bankDetails.account_number && bankDetails.ifsc_code);
-    const method = withdrawMethod || (hasUpi ? 'upi' : 'bank_transfer');
-
-    if (!hasUpi && !hasBank) { showToast('Add bank details before withdrawing', 'error'); return; }
-    if (!amt || amt <= 0) { showToast('Enter a valid amount', 'error'); return; }
-    if (amt > avail) { showToast('Amount exceeds available balance', 'error'); return; }
-    if (method === 'upi' && !hasUpi) { showToast('No UPI ID on file', 'error'); return; }
-    if (method === 'bank_transfer' && !hasBank) { showToast('No bank account on file', 'error'); return; }
-
+    if (!amt || amt < opts.minimum) { setWithdrawError(`The minimum is ${inr(opts.minimum)}.`); return; }
+    if (amt > opts.available) { setWithdrawError(`That's more than your ${inr(opts.available)} available.`); return; }
+    setWithdrawError('');
     setWithdrawing(true);
-    const res = await walletApi.requestWithdrawal({ amount: amt, method });
+    const res = await walletApi.requestWithdrawal(amt);
     setWithdrawing(false);
     if (res.success) {
-      showToast('Withdrawal requested — pending admin approval');
+      showToast(`${inr(amt)} requested. It is on hold until INFLX pays it.`);
       setWithdrawAmount('');
-      load();
-      loadTransactions();
-      loadWithdrawals();
+      refresh();
     } else {
-      showToast(res.error?.message || 'Withdrawal failed', 'error');
+      setWithdrawError(res.error?.message || 'Something went wrong. Try again.');
+      loadMoney();
     }
   }
 
-  // Derived — Wave 2 three-state breakdown (with legacy fallbacks so the
-  // page renders correctly before/after the backend redeploys).
-  const balance        = wallet?.available_balance ?? wallet?.wallet_balance ?? 0;
-  const reserved       = wallet?.reserved_balance  ?? wallet?.escrow_locked  ?? 0;
-  const settled        = wallet?.settled_balance   ?? 0;
-  const totalLoaded    = wallet?.total_loaded      ?? wallet?.total_deposited ?? 0;
-  // Legacy aliases kept for any references further down the component.
-  const escrowLocked   = reserved;
-  const totalDeposited = totalLoaded;
-  // Adjacent-fix: was `balance < 1000000` with a stale paise-era comment.
-  // brands.wallet_balance has been rupees since migration 021. ₹10K is the
-  // practical floor to publish a small handpick campaign (3-4 micro-
-  // influencers + 8% platform fee headroom).
-  const isLowBalance = balance < LOW_BAL_THRESHOLD;
-
-  // Withdraw — destination availability from saved bank details.
-  const hasUpi      = !!bankDetails.upi_id;
-  const hasBank     = !!(bankDetails.account_number && bankDetails.ifsc_code);
-  const canWithdraw = hasUpi || hasBank;
-  const effMethod   = withdrawMethod || (hasUpi ? 'upi' : 'bank_transfer');
-
-  // Derived: last top-up date for the hero sub-line.
-  const lastTopup = useMemo(() => {
-    const t = transactions.find(tx => tx.type === 'topup');
-    if (!t) return null;
-    return { date: t.created_at, amount: t.amount };
-  }, [transactions]);
-
-  // Per-filter counts (mono digits in chip)
-  const filterCounts = useMemo(() => {
-    const counts = { all: transactions.length };
-    for (const f of FILTERS) {
-      if (f.key === 'all') continue;
-      counts[f.key] = transactions.filter(tx => f.types && f.types.has(tx.type)).length;
+  /* ── The bank account: one place (PATCH /brands/me) ── */
+  async function handleSaveBank(e) {
+    e.preventDefault();
+    const acct = bank.bank_account_no.replace(/\s+/g, '');
+    const ifsc = bank.bank_ifsc.trim().toUpperCase();
+    if (!acct || !ifsc) { setBankError('Enter the account number and the IFSC together.'); return; }
+    setBankError('');
+    setSavingBank(true);
+    const res = await brandApi.updateMe({ bank_account_no: acct, bank_ifsc: ifsc });
+    setSavingBank(false);
+    if (res.success) {
+      showToast('Bank account saved.');
+      setBankForm(false);
+      setBank({ bank_account_no: '', bank_ifsc: '' });
+      loadMoney();
+    } else {
+      setBankError(res.error?.message || 'We could not save that. Check the details and try again.');
     }
-    return counts;
-  }, [transactions]);
-
-  const filtered = useMemo(() => {
-    const f = FILTERS.find(x => x.key === txFilter);
-    if (!f || !f.types) return transactions;
-    return transactions.filter(tx => f.types.has(tx.type));
-  }, [transactions, txFilter]);
-
-  function fmtTxDate(iso) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
   }
 
-  function fmtShortDate(iso) {
-    if (!iso) return '';
-    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  }
-
-  function scrollToTopup() {
-    const el = document.getElementById('topup-section');
+  function scrollTo(id) {
+    const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
+
+  if (loading) return <div className="w"><style dangerouslySetInnerHTML={{ __html: CSS }} /><div className="tx-empty">Loading your wallet…</div></div>;
+  if (loadError) {
+    return (
+      <div className="w"><style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <div className="tx-empty">We couldn&apos;t load your wallet. <button className="load-more" onClick={() => { setLoading(true); loadMoney(); }}>Try again</button></div>
+      </div>
+    );
+  }
+
+  const sendTo = opts?.sendTo?.[0] || null;
+  const blocked = opts?.blocked || null;
+  const collabs = locked?.collaborations || [];
+  const paidInFull = locked?.paidInFull || [];
 
   return (
     <div className="w">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      {/* Razorpay script */}
       <script src="https://checkout.razorpay.com/v1/checkout.js" async />
 
       <div className="crumb">/dashboard <span className="sep">/</span> <b>wallet</b></div>
@@ -482,212 +452,233 @@ export default function WalletPage() {
       <div className="rule" />
 
       <div className="wcols">
-        {/* ── Main column ── */}
         <div className="wmain">
 
-          {/* Hero card */}
+          {/* Available (BW1) */}
           <div className="hero">
-            <div className="hero-eb">Available balance</div>
-            <div className="hero-bal"><span className="cur">₹</span>{fmtN(balance)}</div>
-            {isLowBalance ? (
-              <div className="hero-sub warn">Below the ₹{fmtN(LOW_BAL_THRESHOLD)} floor to publish a new campaign.</div>
-            ) : lastTopup ? (
-              <div className="hero-sub">
-                Last topped up <span className="last">{fmtShortDate(lastTopup.date)} · ₹{fmtN(lastTopup.amount)}</span>
-              </div>
-            ) : (
-              <div className="hero-sub">Top up to fund your campaigns.</div>
-            )}
-            <button className="hero-cta" onClick={scrollToTopup}>+ Top up wallet</button>
+            <div className="hero-eb">Available</div>
+            <div className="hero-bal" data-testid="wallet-available"><span className="cur">₹</span>{fmtN(fig.available)}</div>
+            <div className="hero-sub">Money you can use now: for an agreement, a parcel, or a withdrawal.</div>
+            <button className="hero-cta" onClick={() => scrollTo('topup-section')}>+ Add money</button>
+            <button className="hero-cta ghost" onClick={() => scrollTo('withdraw-section')} disabled={!!waiting}>Withdraw</button>
           </div>
 
-          {/* Low-balance warning card */}
-          {isLowBalance && (
-            <div className="warn-card">
-              <div className="ic">!</div>
-              <div className="t"><b>Below ₹{fmtN(LOW_BAL_THRESHOLD)}</b> — you can&apos;t publish a new campaign at this level. Existing campaigns continue normally.</div>
-              <button className="cta" onClick={scrollToTopup}>Top up now →</button>
+          {/* On hold (BW2) */}
+          {waiting && (
+            <div className="hold-card" data-testid="hold-box">
+              <div className="ic">⏳</div>
+              <div className="t"><b>You requested {inr(waiting.amount)} on {dayMon(waiting.requestedAt)}.</b> It will be processed within {waiting.processHours} hours. This amount is on hold until then.</div>
             </div>
           )}
 
-          {/* KPI strip — Wave 2 Available / Reserved / Settled / Total loaded */}
-          <div className="kpis">
+          {/* The four figures, each from its own source */}
+          <div className="kpis four">
             <div className="kpi">
               <div className="kpi-lbl">Available</div>
-              <div className={`kpi-v ${isLowBalance ? 'warn' : ''}`}>₹{fmtN(balance)}</div>
-              <div className="kpi-sub">{isLowBalance ? 'below publish floor' : 'spendable / withdrawable'}</div>
+              <div className="kpi-v">{inr(fig.available)}</div>
+              <div className="kpi-sub">to use or withdraw</div>
             </div>
             <div className="kpi">
-              <div className="kpi-lbl">Reserved</div>
-              <div className="kpi-v warn">₹{fmtN(reserved)}</div>
-              <div className="kpi-sub">locked in active campaigns</div>
+              <div className="kpi-lbl">On hold</div>
+              <div className="kpi-v">{inr(fig.onHold)}</div>
+              <div className="kpi-sub">{waiting ? `your withdrawal · to ${waiting.sendTo}` : 'no withdrawal waiting'}</div>
             </div>
             <div className="kpi">
-              <div className="kpi-lbl">Settled</div>
-              <div className="kpi-v">₹{fmtN(settled)}</div>
-              <div className="kpi-sub">paid out to influencers</div>
+              <div className="kpi-lbl">Locked in collaborations</div>
+              <div className="kpi-v">{inr(fig.locked)}</div>
+              <div className="kpi-sub">{fig.lockedCount ? `${fig.lockedCount} collaboration${fig.lockedCount === 1 ? '' : 's'}` : 'nothing locked'}</div>
             </div>
             <div className="kpi">
-              <div className="kpi-lbl">Total loaded</div>
-              <div className="kpi-v">₹{fmtN(totalLoaded)}</div>
-              <div className="kpi-sub">all-time top-ups</div>
+              <div className="kpi-lbl">Sales money coming</div>
+              <div className="kpi-v">{inr(fig.salesComing)}</div>
+              <div className="kpi-sub">{fig.salesComingCount ? `${fig.salesComingCount} sale${fig.salesComingCount === 1 ? '' : 's'} in ${fig.salesComingCount === 1 ? 'its' : 'their'} return window` : 'no sales in a return window'}</div>
             </div>
           </div>
 
-          {/* Top-up section */}
+          {/* Add money */}
           <div className="card" id="topup-section">
             <div className="card-head">
-              <h3>Top up wallet</h3>
-              <span className="count">via Razorpay</span>
+              <h3>Add money</h3>
+              <span className="count">UPI · card · net banking</span>
             </div>
             <form className="tu" onSubmit={handleTopup}>
               <div className="tu-row">
                 <label className="tu-input">
                   <span className="cur">₹</span>
-                  <input
-                    type="number"
-                    placeholder="Amount in rupees"
-                    value={topupAmount}
-                    onChange={e => setTopupAmount(e.target.value)}
-                    min="1"
-                  />
+                  <input type="number" placeholder="Amount in rupees" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)} min="1" />
                 </label>
-                <button type="submit" className="tu-cta" disabled={toppingUp || !topupAmount}>
-                  {toppingUp ? 'Processing…' : 'Top up'}
-                </button>
+                <button type="submit" className="tu-cta" disabled={toppingUp || !topupAmount}>{toppingUp ? 'Processing…' : 'Add money'}</button>
               </div>
             </form>
             <div className="tu-picks">
-              {QUICK_PICKS.map(amt => (
-                <button
-                  key={amt}
-                  className={`tu-pick ${String(amt) === topupAmount ? 'act' : ''}`}
-                  onClick={() => setTopupAmount(String(amt))}
-                >
-                  ₹{(amt).toLocaleString('en-IN')}
-                </button>
+              {QUICK_PICKS.map((amt) => (
+                <button key={amt} className={`tu-pick ${String(amt) === topupAmount ? 'act' : ''}`} onClick={() => setTopupAmount(String(amt))}>₹{amt.toLocaleString('en-IN')}</button>
               ))}
             </div>
-            <div className="tu-hint">
-              Funds appear <b>instantly</b> after payment. Razorpay handles UPI · cards · netbanking. Minimum <b>₹1</b>.
-            </div>
+            <div className="tu-hint">This money sits in your wallet until you sign an agreement. <b>Nothing is committed to anyone until then.</b></div>
           </div>
 
-          {/* Withdraw section */}
+          {/* Withdraw (BW7–BW9) */}
           <div className="card" id="withdraw-section">
             <div className="card-head">
-              <h3>Withdraw funds</h3>
-              <span className="count">to your saved bank / UPI</span>
+              <h3>Withdraw</h3>
+              <span className="count">a request · paid by INFLX within {opts?.processHours || 24} hours</span>
             </div>
 
-            {!canWithdraw ? (
+            {!opts ? (
+              <div className="tx-empty">Loading…</div>
+            ) : blocked && blocked.code === 'NO_DETAILS' ? (
               <div className="bank-empty">
-                <div className="bank-empty-ic">🏦</div>
-                <div className="bank-empty-t">Add a bank account or UPI ID below before you can withdraw.</div>
-                <button className="bank-cta" style={{ float: 'none', marginTop: 0 }} onClick={() => setShowBankForm(true)}>+ Add bank details</button>
+                <div className="bank-empty-t"><b>Add your bank account first.</b><br />We need it to send your money.</div>
+                <button className="bank-cta" style={{ float: 'none', marginTop: 0 }} onClick={() => { setBankForm(true); scrollTo('bank-section'); }}>Add bank account</button>
               </div>
+            ) : blocked ? (
+              <div className="hold-card plain" data-testid={`withdraw-blocked-${blocked.code}`}><div className="t">{blocked.message}</div></div>
             ) : (
               <>
-                {hasUpi && hasBank && (
-                  <div className="wd-methods">
-                    <button type="button" className={`wd-method ${effMethod === 'upi' ? 'act' : ''}`} onClick={() => setWithdrawMethod('upi')}>UPI</button>
-                    <button type="button" className={`wd-method ${effMethod === 'bank_transfer' ? 'act' : ''}`} onClick={() => setWithdrawMethod('bank_transfer')}>Bank transfer</button>
-                  </div>
-                )}
                 <form className="tu" onSubmit={handleWithdraw}>
                   <div className="tu-row">
                     <label className="tu-input">
                       <span className="cur">₹</span>
-                      <input
-                        type="number"
-                        placeholder="Amount to withdraw"
-                        value={withdrawAmount}
-                        onChange={e => setWithdrawAmount(e.target.value)}
-                        min="1"
-                        max={balance}
-                      />
+                      <input type="number" placeholder="How much?" value={withdrawAmount} onChange={(e) => { setWithdrawAmount(e.target.value); setWithdrawError(''); }} min={opts.minimum} max={opts.available} />
                     </label>
-                    <button type="submit" className="tu-cta" disabled={withdrawing || !withdrawAmount}>
-                      {withdrawing ? 'Requesting…' : 'Withdraw'}
-                    </button>
+                    <button type="button" className="tu-pick" style={{ padding: '0 14px' }} onClick={() => { setWithdrawAmount(String(Math.floor(opts.available))); setWithdrawError(''); }}>All · {inr(Math.floor(opts.available))}</button>
+                    <button type="submit" className="tu-cta" disabled={withdrawing || !withdrawAmount}>{withdrawing ? 'Requesting…' : `Request${withdrawAmount ? ` ${inr(withdrawAmount)}` : ''}`}</button>
                   </div>
                 </form>
-                <div className="wd-dest">
-                  To {effMethod === 'upi'
-                    ? <>UPI <b>{bankDetails.upi_id}</b></>
-                    : <>A/C <b>{maskAccountNumber(bankDetails.account_number)}</b> · {bankDetails.ifsc_code}</>}
-                </div>
-                <div className="tu-hint">
-                  Withdrawals are <b>reviewed by our team</b> before payout. Funds are held from your available balance once requested. Available: <b>₹{fmtN(balance)}</b>.
-                </div>
-
-                {withdrawals.length > 0 && (
-                  <div className="wd-list" style={{ marginTop: 16 }}>
-                    {withdrawals.slice(0, 5).map(w => (
-                      <div key={w.withdrawal_id} className="wd-row">
-                        <div className="wd-meta">
-                          <div className="wd-amt">₹{fmtN(w.amount_requested)}</div>
-                          <div className="wd-dt">{fmtTxDate(w.created_at)} · {w.method === 'upi' ? 'UPI' : 'Bank'}</div>
-                        </div>
-                        <span className={`wd-pill ${w.status}`}>{w.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {withdrawError && <div className="ferr">{withdrawError}</div>}
+                <div className="wd-dest">Available <b>{inr(opts.available)}</b> · minimum <b>{inr(opts.minimum)}</b> · sent to <b>{sendTo?.label}</b> ({sendTo?.masked})</div>
+                <div className="tu-hint">INFLX pays this from its bank within <b>{opts.processHours} hours</b>. Until then the amount is on hold: it can&apos;t be used for an agreement or requested again.</div>
               </>
+            )}
+
+            {withdrawals.length > 0 && (
+              <div className="wd-list" style={{ marginTop: 16 }}>
+                <div className="sec-lbl">Your withdrawals</div>
+                {withdrawals.slice(0, 8).map((w) => {
+                  const [cls, word] = W_CHIP[w.status] || W_CHIP.requested;
+                  return (
+                    <div key={w.id} className="wd-row">
+                      <div className="wd-meta">
+                        <div className="wd-amt">{inr(w.amount)}</div>
+                        <div className="wd-dt">{withdrawalLine(w)}</div>
+                        {w.status === 'processed' && w.reference && <div className="wd-dt">Reference <b>{w.reference}</b></div>}
+                        {w.status === 'could_not_process' && <div className="wd-note">{w.reason} Your {inr(w.amount)} is back in Available.</div>}
+                      </div>
+                      <span className={`wd-pill ${cls}`}>{word}</span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 
-          {/* Transaction history */}
+          {/* Locked in collaborations (BW3, BW4) */}
+          <div className="card" id="locked-section">
+            <div className="card-head">
+              <div>
+                <h3>Locked in collaborations</h3>
+                <div className="sh">Money locks when you sign a Pay for Content or Hybrid agreement, and is paid to the creator in three parts.</div>
+              </div>
+              <span className="count">{inr(locked?.stillLocked)} locked · {inr(locked?.paidSoFar)} paid so far</span>
+            </div>
+            {!collabs.length && !paidInFull.length ? (
+              <div className="tx-empty">Nothing is locked.</div>
+            ) : (
+              [...collabs, ...paidInFull].map((c) => (
+                <div key={c.ciId} className="lk">
+                  <div className="lk-top">
+                    <div><b>{c.creatorName}</b> <span className="wd-pill queued">{c.aimLabel}</span><div className="wd-dt">{[c.campaignName, c.setName].filter(Boolean).join(' · ')}</div></div>
+                    <div className="lk-nums">
+                      <span>{c.aim === 'hybrid' ? 'Fixed amount' : 'Fee'} <b>{inr(c.amount)}</b></span>
+                      <span>Paid <b>{inr(c.paid)}</b></span>
+                      <span>Still locked <b>{inr(c.locked)}</b></span>
+                    </div>
+                  </div>
+                  <div className="lk-pays">
+                    {c.payments.map((p) => (
+                      <span key={p.n} className={`lk-pay ${p.paid ? 'on' : ''}`}>
+                        {p.label} · {inr(p.amount)} · {p.status === 'refunded' ? 'returned to you by INFLX' : p.paid ? `paid ${dayMon(p.paidAt)}` : p.dueAt ? `on ${dayMon(p.dueAt)}` : p.n === 2 ? "when you confirm it's live" : "after it's confirmed live"}
+                      </span>
+                    ))}
+                  </div>
+                  {c.next && <div className="lk-next">{nextLine(c.next)}</div>}
+                  {c.campaignFee > 0 && <div className="wd-dt">INFLX campaign fee {inr(c.campaignFee)} · charged to you at signing, never to her.</div>}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Sales money (BW5, BW6) */}
+          <div className="card" id="sales-section">
+            <div className="card-head">
+              <div>
+                <h3>Sales money</h3>
+                <div className="sh">Each item sold through a creator&apos;s post, split three ways. Your share is added to Available when its return window closes.</div>
+              </div>
+              <span className="count">{inr(sales?.totals?.coming)} coming · {inr(sales?.totals?.addedThisMonth)} added this month · {sales?.totals?.sales || 0} sales</span>
+            </div>
+            <div className="fchips">
+              {SALE_FILTERS.map(([k, l]) => (
+                <button key={k} className={`fchip ${saleFilter === k ? 'act' : ''}`} onClick={() => setSaleFilter(k)}>{l}</button>
+              ))}
+            </div>
+            {!sales ? (
+              <div className="tx-empty">Loading…</div>
+            ) : sales.sales.length === 0 ? (
+              <div className="tx-empty">{saleFilter === 'all' ? 'No sales yet.' : 'No sales match this filter.'}</div>
+            ) : (
+              sales.sales.map((s) => (
+                <div key={s.id}>
+                  <div className="tx click" onClick={() => setOpenSale(openSale === s.id ? null : s.id)}>
+                    <div className="tx-meta">
+                      <div className="tx-t">{s.item}</div>
+                      <div className="tx-d">{saleLine(s)}</div>
+                    </div>
+                    <div className={`tx-amt ${s.state === 'added' ? 'credit' : 'debit'}`}>{s.state === 'added' ? '+ ' : ''}{inr(s.brandShare)}</div>
+                  </div>
+                  {openSale === s.id && (
+                    <div className="shares">
+                      <span>Shopper paid <b>{inr(s.paid)}</b></span>
+                      <span>Creator&apos;s share · {s.commissionPct}% <b>{inr(s.creatorShare)}</b></span>
+                      <span>INFLX&apos;s share · {s.feePct}% <b>{inr(s.inflxShare)}</b></span>
+                      <span className="tot">Your share <b>{inr(s.brandShare)}</b></span>
+                      <span>{s.cashOnDelivery ? 'Cash on delivery' : 'Paid online'}{s.offerName ? ` · ${s.offerName}` : ''}</span>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+            {sales && salesMore ? <button className="load-more" onClick={() => loadSales(saleFilter, sales.sales.length)}>Show more</button> : null}
+          </div>
+
+          {/* History (BW10) */}
           <div className="card">
             <div className="card-head">
               <div>
-                <h3>Transaction history</h3>
-                <div className="sh">Most recent 20 entries</div>
+                <h3>History</h3>
+                <div className="sh">Everything in and out, newest first.</div>
               </div>
-              <span className="count">{filtered.length} of {transactions.length} shown</span>
             </div>
-
             <div className="fchips">
-              {FILTERS.map(f => {
-                const ct = filterCounts[f.key] ?? 0;
-                return (
-                  <button
-                    key={f.key}
-                    className={`fchip ${txFilter === f.key ? 'act' : ''}`}
-                    onClick={() => setTxFilter(f.key)}
-                  >
-                    {f.label}<span className="ct">{ct}</span>
-                  </button>
-                );
-              })}
+              {HISTORY_FILTERS.map(([k, l]) => (
+                <button key={k} className={`fchip ${historyFilter === k ? 'act' : ''}`} onClick={() => setHistoryFilter(k)}>{l}</button>
+              ))}
             </div>
-
-            {txLoading ? (
-              <div className="tx-empty">Loading transactions…</div>
-            ) : transactions.length === 0 ? (
-              <div className="tx-empty">No transactions yet. Top up to get started.</div>
-            ) : filtered.length === 0 ? (
-              <div className="tx-empty">No transactions match this filter.</div>
+            {history.length === 0 ? (
+              <div className="tx-empty">Nothing yet. Every rupee that moves appears here.</div>
             ) : (
-              filtered.map((tx, i) => {
-                const cfg = TX_TYPE[tx.type] || { label: tx.type, icon: '•', tone: 'debit' };
-                const isCredit = CREDIT_TYPES.has(tx.type);
-                return (
-                  <div key={tx.id || i} className="tx">
-                    <div className={`tx-ic ${cfg.tone}`}>{cfg.icon}</div>
-                    <div className="tx-meta">
-                      <div className="tx-t">{cfg.label}</div>
-                      {tx.description && <div className="tx-d">{tx.description}</div>}
-                      {tx.created_at && <div className="tx-dt">{fmtTxDate(tx.created_at)}</div>}
-                    </div>
-                    <div className={`tx-amt ${isCredit ? 'credit' : 'debit'}`}>
-                      {isCredit ? '+' : '−'} ₹{fmtN(Math.abs(tx.amount || 0))}
-                    </div>
+              history.map((r) => (
+                <div key={r.id} className="tx">
+                  <div className="tx-meta">
+                    <div className="tx-t">{r.label}</div>
+                    <div className="tx-d">{[r.sub, dayMon(r.at)].filter(Boolean).join(' · ')}</div>
                   </div>
-                );
-              })
+                  <div className={`tx-amt ${r.moneyIn ? 'credit' : 'debit'}`}>{r.sign ? `${r.sign} ` : ''}{inr(r.amount)}</div>
+                </div>
+              ))
             )}
+            {historyMore && <button className="load-more" onClick={() => loadHistory(historyFilter, history.length)}>Show more</button>}
           </div>
 
         </div>
@@ -695,90 +686,50 @@ export default function WalletPage() {
         {/* ── Right rail ── */}
         <aside className="wrail">
 
-          {/* Bank account form / empty state */}
-          <div className="card">
+          <div className="card" id="bank-section">
             <div className="card-head" style={{ marginBottom: 6 }}>
-              <h3>Bank account</h3>
+              <h3>Bank and business details</h3>
             </div>
-            <div className="sh" style={{ marginBottom: 14 }}>For follower-payment settlements after our commission deduction.</div>
+            <div className="sh" style={{ marginBottom: 14 }}>Your withdrawals are sent to this bank account.</div>
 
-            {!bankLoaded ? (
-              <div className="tx-empty" style={{ padding: 18 }}>Loading…</div>
-            ) : !showBankForm && !bankDetails.account_holder_name ? (
+            {sendTo && !bankForm ? (
+              <div className="bank-on">
+                <div><b>{sendTo.label}</b><div className="wd-dt">{sendTo.masked}</div></div>
+                <button className="link" onClick={() => setBankForm(true)}>Change</button>
+              </div>
+            ) : !bankForm ? (
               <div className="bank-empty">
-                <div className="bank-empty-ic">🏦</div>
-                <div className="bank-empty-t">No bank account on file yet.<br />Add one to receive settlements.</div>
-                <button className="bank-cta" style={{ float: 'none', marginTop: 0 }} onClick={() => setShowBankForm(true)}>+ Add bank account</button>
+                <div className="bank-empty-t">No bank account yet.<br />Add one before you withdraw.</div>
+                <button className="bank-cta" style={{ float: 'none', marginTop: 0 }} onClick={() => setBankForm(true)}>Add bank account</button>
               </div>
             ) : (
               <form onSubmit={handleSaveBank}>
                 <div className="f">
-                  <label className="flbl">Account holder name <span className="req">*</span></label>
-                  <input
-                    className="inp"
-                    value={bankDetails.account_holder_name}
-                    onChange={e => handleBankChange('account_holder_name', e.target.value)}
-                    placeholder="Name as on bank account"
-                  />
-                </div>
-                <div className="f">
-                  <label className="flbl">Bank name</label>
-                  <input
-                    className="inp"
-                    value={bankDetails.bank_name}
-                    onChange={e => handleBankChange('bank_name', e.target.value)}
-                    placeholder="e.g. State Bank of India"
-                  />
-                </div>
-                <div className="f">
                   <label className="flbl">Account number <span className="req">*</span></label>
-                  <input
-                    className="inp mono"
-                    value={bankDetails.account_number}
-                    onChange={e => handleBankChange('account_number', e.target.value.replace(/\D/g, ''))}
-                    placeholder="1234567890"
-                  />
-                  {bankDetails.account_number.length > 4 && (
-                    <div className="fhint">Displayed as {maskAccountNumber(bankDetails.account_number)}</div>
-                  )}
+                  <input className="inp mono" value={bank.bank_account_no} onChange={(e) => setBank((b) => ({ ...b, bank_account_no: e.target.value.replace(/\D/g, '') }))} placeholder="1234567890" />
                 </div>
                 <div className="f">
                   <label className="flbl">IFSC <span className="req">*</span></label>
-                  <input
-                    className="inp mono"
-                    value={bankDetails.ifsc_code}
-                    onChange={e => handleBankChange('ifsc_code', e.target.value.toUpperCase())}
-                    maxLength={11}
-                    placeholder="SBIN0001234"
-                  />
+                  <input className="inp mono" value={bank.bank_ifsc} onChange={(e) => setBank((b) => ({ ...b, bank_ifsc: e.target.value.toUpperCase() }))} maxLength={11} placeholder="SBIN0001234" />
                 </div>
-                <div className="f">
-                  <label className="flbl">UPI ID <span className="opt">optional · faster settlements</span></label>
-                  <input
-                    className="inp"
-                    value={bankDetails.upi_id}
-                    onChange={e => handleBankChange('upi_id', e.target.value)}
-                    placeholder="yourname@upi"
-                  />
-                </div>
-                <button type="submit" className="bank-cta" disabled={savingBank}>
-                  {savingBank ? 'Saving…' : 'Save bank details'}
-                </button>
+                {bankError && <div className="ferr">{bankError}</div>}
+                <button type="submit" className="bank-cta" disabled={savingBank}>{savingBank ? 'Saving…' : 'Save bank account'}</button>
+                <button type="button" className="link" style={{ marginTop: 14 }} onClick={() => { setBankForm(false); setBankError(''); }}>Cancel</button>
                 <div style={{ clear: 'both' }} />
               </form>
             )}
+            <div className="wd-dt" style={{ marginTop: 12 }}>GST number: <b>{gst == null ? '—' : gst ? 'Added' : 'Not added'}</b> · set in Settings. Our team checks these by hand.</div>
           </div>
 
-          {/* How wallet works card */}
           <div className="card">
             <div className="card-head" style={{ marginBottom: 10 }}>
-              <h3>How wallet works</h3>
+              <h3>How your wallet works</h3>
             </div>
             <ul className="howr">
-              <li><b>Top-ups</b> · instant via Razorpay (UPI · card · netbanking). Min ₹1.</li>
-              <li><b>Escrow lock</b> · happens automatically at publish. T1 = 25% of each influencer&apos;s agreed fee.</li>
-              <li><b>Escrow release</b> · T2 fires when you confirm a live URL. T3 auto-releases 30 days after content goes live.</li>
-              <li><b>Bank account</b> · used only for follower-payment settlements (separate from campaign escrow).</li>
+              <li><b>Add money</b> · it stays in Available until you sign an agreement.</li>
+              <li><b>Locked</b> · signing a Pay for Content or Hybrid agreement locks the amount. It is paid to the creator in three parts: at signing, when you confirm it&apos;s live, and the final 50% on its date.</li>
+              <li><b>Sales money</b> · a shopper&apos;s payment comes to INFLX. Your share is added to Available when the return window closes. Cash-on-delivery orders count once delivered.</li>
+              <li><b>Withdraw</b> · a request. The amount is on hold until INFLX pays it from its bank, within {opts?.processHours || 24} hours. One request at a time.</li>
             </ul>
           </div>
 
@@ -790,7 +741,7 @@ export default function WalletPage() {
   );
 }
 
-// Compact rupee formatter — preserves fmtMoney semantics but tighter for inline use
+// Compact rupee number for the large Available figure.
 function fmtN(n) {
   const num = Number(n || 0);
   if (!Number.isFinite(num)) return '0';

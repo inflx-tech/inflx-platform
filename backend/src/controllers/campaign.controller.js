@@ -1441,104 +1441,30 @@ const cancel = asyncHandler(async (req, res) => {
     );
   }
 
-  // Item 12 (approval Q14) — a GUARD, not the fix. It runs BEFORE the draft shortcut: item 4
-  // derives campaign states, so a campaign with signed, funded collaborations can still be stored
-  // as 'draft' (6 such campaigns in production, 25 Sep 2026) and would otherwise skip it.
-  // This path refunds only 'locked' rows, so a tranche 3 that item 12 has QUEUED (the brand confirmed the content live; the final 50% is
-  // waiting on its stamped date) would survive a cancel and still be paid by the job. Until the
-  // full refund fix lands as its own task, a campaign carrying a queued tranche cannot be
-  // cancelled this way, and says why.
-  const { rows: [queued] } = await db.query(
+  // Item 17 (master rules v1.31 §17A, §9, §26 — founder, 1 Oct 2026): THERE IS NO CANCELLATION AFTER
+  // BOTH HAVE SIGNED. The first 25% has been paid and the terms bind both sides; if either stops,
+  // it is a dispute INFLX handles, and locked money moves only by the agreed payments or by
+  // INFLX's dispute tools (adminMoney.releasePayment / returnLocked). This path used to refund
+  // locked escrow to the brand — after a creator had signed and been paid — and wrote an escrow
+  // status the database does not have. That refund is gone: a campaign with ANY collaboration
+  // signed by both cannot be cancelled. It runs before the draft shortcut, because item 4 derives
+  // campaign states and a campaign with signed collaborations can still be stored as 'draft'.
+  const { rows: [signed] } = await db.query(
     `SELECT count(*)::int AS n
-       FROM escrow_entries ee
-       JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
+       FROM contracts con
+       JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
        JOIN campaign_sets cs ON cs.id = ci.set_id
-      WHERE cs.campaign_id = $1 AND ee.status = 'queued'`,
+      WHERE cs.campaign_id = $1 AND con.influencer_signed_at IS NOT NULL AND con.brand_signed_at IS NOT NULL`,
     [campaign.id]
   );
-  if (queued.n > 0) {
-    const { MSG: MSG12 } = require('../services/contentCopy');
-    throw new AppError('CANCEL_QUEUED_TRANCHE', MSG12.CANCEL_QUEUED_TRANCHE, 422, 'status');
+  if (signed.n > 0) {
+    throw new AppError('SIGNED_NO_CANCEL',
+      'This campaign has a signed collaboration, so it can\'t be cancelled. If something has gone wrong, tell INFLX.', 422, 'status');
   }
 
-  // For draft campaigns there is no locked escrow — just cancel directly
-  if (campaign.status === 'draft') {
-    await db.query(`UPDATE campaigns SET status = 'cancelled' WHERE id = $1`, [campaign.id]);
-    return success(res, { campaign_id: campaign.id, status: 'cancelled', refund_amount: 0 });
-  }
-
-  // Refund = sum of LOCKED escrow_entries across all influencers in this
-  // campaign + the platform-fee portion that was locked alongside them.
-  // All figures in RUPEES (migration 021).
-  const { rows: lockedRows } = await db.query(
-    `SELECT COALESCE(SUM(ee.amount), 0) AS locked_amount,
-            COALESCE(SUM(ee.escrow_fee_amount), 0) AS locked_platform_fee
-     FROM escrow_entries ee
-     JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
-     JOIN campaign_sets cs ON cs.id = ci.set_id
-     WHERE cs.campaign_id = $1 AND ee.status = 'locked'`,
-    [campaign.id]
-  );
-  const lockedAmount   = parseFloat(lockedRows[0].locked_amount || 0);
-  const lockedPlatform = parseFloat(lockedRows[0].locked_platform_fee || 0);
-  const refundAmount   = parseFloat((lockedAmount + lockedPlatform).toFixed(2));
-
-  await db.withTransaction(async (client) => {
-    await client.query(
-      `UPDATE escrow_entries ee
-       SET status = 'cancelled'
-       FROM campaign_influencers ci
-       JOIN campaign_sets cs ON cs.id = ci.set_id
-       WHERE ee.campaign_influencer_id = ci.id
-         AND cs.campaign_id = $1
-         AND ee.status = 'locked'`,
-      [campaign.id]
-    );
-
-    if (refundAmount > 0) {
-      const { rows: brandRows } = await client.query(
-        `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
-        [brand.id]
-      );
-      const newBalance = parseFloat((parseFloat(brandRows[0].wallet_balance) + refundAmount).toFixed(2));
-
-      await client.query(
-        `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
-        [newBalance, brand.id]
-      );
-
-      await client.query(
-        `INSERT INTO wallet_transactions
-           (brand_id, type, amount, direction, balance_after, campaign_id, notes)
-         VALUES ($1, 'refund', $2, 'credit', $3, $4, $5)`,
-        [
-          brand.id,
-          refundAmount,
-          newBalance,
-          campaign.id,
-          `Campaign cancelled — escrow refund for: ${campaign.name}`,
-        ]
-      );
-
-      // Item 11 (v1.27 §11.2, approval Q4) — money in settles what is owed. "Next money in"
-      // is EVERY credit that reaches brands.wallet_balance, not only a top-up: an escrow
-      // refund is money the brand can spend, so an outstanding courier charge comes off it
-      // first, oldest-first, in this same transaction.
-      await require('../services/remoteMoney.service')
-        .settleDuesFromCredit(client, brand.id, refundAmount);
-    }
-
-    await client.query(
-      `UPDATE campaigns SET status = 'cancelled' WHERE id = $1`,
-      [campaign.id]
-    );
-  });
-
-  return success(res, {
-    campaign_id:   campaign.id,
-    status:        'cancelled',
-    refund_amount: refundAmount,
-  });
+  // Nothing is signed, so nothing is locked: cancelling moves no money.
+  await db.query(`UPDATE campaigns SET status = 'cancelled' WHERE id = $1`, [campaign.id]);
+  return success(res, { campaign_id: campaign.id, status: 'cancelled', refund_amount: 0 });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

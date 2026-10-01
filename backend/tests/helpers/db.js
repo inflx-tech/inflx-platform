@@ -211,6 +211,8 @@ async function reseedReferenceData(client) {
       ('final_payment_wait_days',     7, 1, 60, 'days',   'Final payment waiting period'),
       -- Item 14 (A1).
       ('sale_live_autoconfirm_days',  7, 1, 30, 'days',   'Pay for Sale confirms itself after'),
+      -- Item 17 (AM12).
+      ('withdrawal_process_hours',   24, 1, 168, 'hours', 'Withdrawals processed within'),
       -- post-links-codes (mig 196) and the shopper app's feed (follower-app-v2, mig 197).
       ('link_channel_window_days', 30, 1, 90, 'days', 'Link channel window'),
       ('feed_near_km',        50, 5, 500, 'km',      'Near range'),

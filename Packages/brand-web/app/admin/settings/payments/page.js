@@ -34,8 +34,8 @@ const FIELDS = [
   // final_payment_wait_days, with its audit, and is stamped on each payment when its clock starts.
   // It is shown read-only below, with a pointer; this page no longer edits it.
   {
-    key: 'tds_pct', label: 'TDS on Withdrawal (%)',
-    note: 'Statutory — deducted at influencer withdrawal time (Section 194M). Per-influencer overrides apply.',
+    key: 'tds_pct', label: 'TDS on Withdrawal (%) — paused',
+    note: 'Paused since item 17 (rules v1.31): nothing is deducted at withdrawal — the full amount is paid. The rate is kept here for the tax round.',
     type: 'number', min: 0, max: 30, step: 0.5, suffix: '%',
   },
   // Wave 1 — TCS rate (Sec 52 CGST). Toggle is below in the Tax & Identity section.
@@ -304,7 +304,7 @@ export default function PaymentConfigPage() {
       {/* TDS note */}
       {editing && (
         <div className="mt-2 text-[11px] text-t3 px-1">
-          ⚠️ TDS % is a statutory rate (Indian Income Tax Act, Section 194M). Confirm with your CA before changing the global rate. Per-influencer overrides + exemption available on each influencer&apos;s admin page.
+          ⚠️ Tax at withdrawal is paused (rules v1.31): the TDS % is stored but not deducted. It is decided again in the tax round — confirm with your CA before then.
         </div>
       )}
 

@@ -600,26 +600,52 @@ describe('orders, cancelling, the brand, the money jobs (C28–C35)', () => {
     const { rows: [tx] } = await query(`SELECT * FROM follower_transactions WHERE checkout_id = $1`, [checkoutId]);
     const kept = lines[0];
     await query(`UPDATE follower_transactions SET return_window_ends_at = now() - interval '1 minute' WHERE id = $1`, [tx.id]);
+    // Item 17 (pre-deploy review): a sale's shares are added only once its parcel has shipped — while
+    // it is Confirmed/Packed it can still be cancelled and refunded in full.
+    for (const body of [{ status: 'packed' }, { status: 'dispatched', courier_name: 'Delhivery', tracking_number: 'DL32' }]) {
+      expect((await api.patch(`/brands/me/orders/${tx.order_id}/status`, w.b.token, body)).status).toBe(200);
+    }
     const wallet0 = Number((await query(`SELECT wallet_balance FROM influencers WHERE id = $1`, [w.cr.influencerId])).rows[0].wallet_balance);
     await commissionConfirm.run();
     const wallet1 = Number((await query(`SELECT wallet_balance FROM influencers WHERE id = $1`, [w.cr.influencerId])).rows[0].wallet_balance);
     expect(Math.round((wallet1 - wallet0) * 100) / 100).toBe(money(kept.commission));
+    // ASSERTION DRIFT — item 17 (rules v1.31 §17A, W2–W3; 1 Oct 2026): the brand's kept share is added
+    // to its WALLET, not transferred to a bank. Same amount, same rule about what was kept.
+    const brand0 = Number((await query(`SELECT wallet_balance FROM brands WHERE id = $1`, [w.brandId])).rows[0].wallet_balance);
     const s = await settlement.settleCommerceTransaction(require('../src/config/db'), tx.id);
-    expect(s.transfer_amount).toBe(money(kept.brand_net) - s.tcs);
+    expect(s.credited).toBe(money(kept.brand_net) - s.tcs);
+    expect(s.transfer_id).toBeNull();
+    const brand1 = Number((await query(`SELECT wallet_balance FROM brands WHERE id = $1`, [w.brandId])).rows[0].wallet_balance);
+    expect(Math.round((brand1 - brand0) * 100) / 100).toBe(money(kept.brand_net) - s.tcs);
   });
 
-  test('6.13 cash on delivery: the brand owes both shares; they come off its next online payout', async () => {
+  // ASSERTION DRIFT — item 17 (rules v1.31 §17A, W4; founder, 1 Oct 2026). This test asserted that a
+  // cash order left the brand OWING INFLX the commission and the fee (a brand_dues row taken off its
+  // next online payout). The rule changed: INFLX collects the cash through the delivery partner, so a
+  // DELIVERED cash order settles exactly like an online one — the brand's share is added to its
+  // wallet, it owes nothing, and an undelivered cash order adds nothing. Same scenario, new rule.
+  test('6.13 cash on delivery: once delivered it settles like an online order; the brand owes INFLX nothing', async () => {
     const cod = await placed('discount', (w) => [line(w, 0, { colour: 'Blue', size: '32' })]);
     const { rows: [ctx] } = await query(`SELECT * FROM follower_transactions WHERE checkout_id = $1`, [cod.checkoutId]);
     await query(`UPDATE follower_transactions SET return_window_ends_at = now() - interval '1 minute' WHERE id = $1`, [ctx.id]);
     const dbm = require('../src/config/db');
-    const s1 = await settlement.settleCommerceTransaction(dbm, ctx.id);
-    expect(s1.transfer_amount).toBe(0);
-    const owed = Math.round((money(cod.lines[0].commission) + money(cod.lines[0].platform_fee)) * 100) / 100;
-    expect(s1.cod_due).toBe(owed);
-    const { rows: [due] } = await query(`SELECT * FROM brand_dues WHERE source_id = $1`, [ctx.id]);
-    expect(money(due.amount)).toBe(owed);
-    // The same brand's next online sale: the due comes off its payout.
+    const walletOf = async () => Number((await query(`SELECT wallet_balance FROM brands WHERE id = $1`, [cod.w.brandId])).rows[0].wallet_balance);
+    const commerceSettlement = require('../src/jobs/commerce-settlement.job');
+    const w0 = await walletOf();
+    await commerceSettlement.run();                                                   // not delivered yet: nothing is added
+    expect(await walletOf()).toBe(w0);
+    const { rows: [parcel] } = await query(`SELECT id FROM follower_orders WHERE checkout_id = $1`, [cod.checkoutId]);
+    for (const body of [{ status: 'packed' }, { status: 'dispatched', courier_name: 'Delhivery', tracking_number: 'DL613' }, { status: 'delivered' }]) {
+      expect((await api.patch(`/brands/me/orders/${parcel.id}/status`, cod.w.b.token, body)).status).toBe(200);
+    }
+    await query(`UPDATE follower_orders SET delivered_at = now() - interval '40 days' WHERE id = $1`, [parcel.id]);
+    await query(`UPDATE follower_transactions SET created_at = now() - interval '31 days' WHERE id = $1`, [ctx.id]);
+    const run = await commerceSettlement.run();
+    expect(run.settled).toBe(1);
+    expect(Math.round((await walletOf() - w0) * 100) / 100).toBe(money(cod.lines[0].brand_net));
+    expect((await query(`SELECT count(*)::int AS n FROM brand_dues WHERE brand_id = $1`, [cod.w.brandId])).rows[0].n).toBe(0);
+    const w1 = await walletOf();
+    // The same brand's next online sale settles in full: nothing is taken off it.
     const sh = await shopper();
     const addr = await addressOf(sh);
     const ls = [line(cod.w, 1, { colour: 'Blue', size: '32' })];
@@ -627,9 +653,15 @@ describe('orders, cancelling, the brand, the money jobs (C28–C35)', () => {
     const p = await api.post('/follower/checkout/place', sh.token, { address_id: addr, lines: ls, payment_method: 'online', expected_total: rv.body.data.total });
     await api.post('/follower/checkout/verify', sh.token, { razorpay_order_id: p.body.data.razorpay.order_id, razorpay_payment_id: 'pay_after_cod', razorpay_signature: 'x' });
     const { rows: [tx2] } = await query(`SELECT * FROM follower_transactions WHERE checkout_id = $1`, [p.body.data.checkout_id]);
+    expect(await settlement.settleCommerceTransaction(dbm, tx2.id)).toEqual({ skipped: 'not_shipped' });
+    // Item 17 (pre-deploy review): a sale's shares are added only once its parcel has shipped — while
+    // it is Confirmed/Packed it can still be cancelled and refunded in full.
+    for (const body of [{ status: 'packed' }, { status: 'dispatched', courier_name: 'Delhivery', tracking_number: 'DL32' }]) {
+      expect((await api.patch(`/brands/me/orders/${tx2.order_id}/status`, cod.w.b.token, body)).status).toBe(200);
+    }
     const s2 = await settlement.settleCommerceTransaction(dbm, tx2.id);
-    expect(s2.transfer_amount).toBe(Math.round((money(tx2.brand_net) - s2.tcs - owed) * 100) / 100);
-    expect((await query(`SELECT settled_by_transaction_id FROM brand_dues WHERE id = $1`, [due.id])).rows[0].settled_by_transaction_id).toBe(tx2.id);
+    expect(s2.credited).toBe(Math.round((money(tx2.brand_net) - s2.tcs) * 100) / 100);
+    expect(Math.round((await walletOf() - w1) * 100) / 100).toBe(s2.credited);
   });
 
   test('C33 the brand cancels an item with a reason; the shopper is told', async () => {

@@ -59,9 +59,12 @@ router.get('/me/campaigns/:campaign_influencer_id',  authenticate, requireRole('
 // registration-and-profile §6.3: a pending creator now reaches the app, so every creator
 // action here answers ACCOUNT_PENDING until admin approves — the same middleware the brand
 // side has used all along.
-router.post('/me/withdraw',              authenticate, requireRole('influencer'), requireApproved, withdrawalCtrl.initiateWithdrawal);
-router.get('/me/withdrawals',            authenticate, requireRole('influencer'), withdrawalCtrl.listWithdrawals);
-router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer'), requireApproved, withdrawalCtrl.retryWithdrawal);
+// Item 17 (rules v1.31 §17A, W5): a withdrawal is a REQUEST now — on hold, paid by INFLX from its
+// bank, then marked processed. The automatic RazorpayX payout and its retry are retired; these three
+// old addresses answer through the one model so an older app build cannot reach the old path.
+router.post('/me/withdraw',              authenticate, requireRole('influencer'), requireApproved, withdrawalCtrl.requestV17);
+router.get('/me/withdrawals',            authenticate, requireRole('influencer'), withdrawalCtrl.listV17);
+router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer'), requireApproved, withdrawalCtrl.retiredRetry);
 
 // ── TDS Certificate (Phase F) ─────────────────────────────────────────────────
 router.get('/me/tds-certificate', authenticate, requireRole('influencer'), ctrl.getTdsCertificate);

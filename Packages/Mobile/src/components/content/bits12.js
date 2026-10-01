@@ -24,12 +24,15 @@ import { C12, rupees5, duration12, day10 } from './copy12';
 
 export function FeeCard12({ money, side, testID }) {
   if (!money) return null;
+  // Item 17: a payment INFLX returned to the brand (status 'refunded') will never be made — it is
+  // shown as returned, and is never the "next" one.
+  const gone = (t) => !!(t && t.status === 'refunded');
   const rows = [
     { key: 't1', label: C12.fee.onSigning, t: money.t1, when: money.t1 && money.t1.paidAt ? C12.fee.paid(money.t1.paidAt) : '' },
-    { key: 't2', label: C12.fee.contentLive, t: money.t2, when: money.t2 && money.t2.paidAt ? C12.fee.paid(money.t2.paidAt) : C12.fee.whenTheyConfirm },
-    { key: 't3', label: C12.fee.afterDays(money.waitDays || 7), t: money.t3, when: money.t3 && money.t3.paidAt ? C12.fee.paid(money.t3.paidAt) : C12.fee.thenComplete },
+    { key: 't2', label: C12.fee.contentLive, t: money.t2, when: gone(money.t2) ? C12.fee.returned : money.t2 && money.t2.paidAt ? C12.fee.paid(money.t2.paidAt) : C12.fee.whenTheyConfirm },
+    { key: 't3', label: C12.fee.afterDays(money.waitDays || 7), t: money.t3, when: gone(money.t3) ? C12.fee.returned : money.t3 && money.t3.paidAt ? C12.fee.paid(money.t3.paidAt) : C12.fee.thenComplete },
   ];
-  const nextKey = (rows.find((r) => !(r.t && r.t.paidAt)) || {}).key;
+  const nextKey = (rows.find((r) => !(r.t && (r.t.paidAt || gone(r.t)))) || {}).key;
   const allPaid = !nextKey;
   return (
     <View style={f.card} testID={testID || 'fee-card'}>

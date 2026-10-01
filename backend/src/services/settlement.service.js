@@ -25,8 +25,6 @@
 
 const taxService     = require('./tax.service');
 const pricingService = require('./pricing.service');
-const routeService   = require('./razorpayRoute.service');
-const { toPaise }    = require('../utils/money');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 function _round2(n) { return parseFloat((parseFloat(n) || 0).toFixed(2)); }
@@ -48,143 +46,86 @@ async function resolveReturnWindowEndsAt(runner, brandId) {
 }
 
 /**
- * Settle one completed commerce transaction. Reads everything it needs from the
- * row + brand, so it's uniform across all purchase paths. Best-effort.
+ * Item 17 (rules v1.31 §17A, W2–W4) — a sale's return window has closed: the Brand's share is
+ * ADDED TO THE BRAND'S WALLET. Nothing is transferred to a bank (Razorpay Route is retired from
+ * this path); the Brand withdraws by request, or funds its next collaboration with it.
+ *
+ * One transaction per sale: the row is taken FOR UPDATE, its settlement status is the
+ * compare-and-swap, and the wallet credit and its ledger row commit with it — so a crash can
+ * never credit twice or mark a sale settled without the money (the old path fired a transfer
+ * and wrote its marker in a separate statement).
+ *
+ * Cash on delivery (W4): INFLX collects the cash through the delivery partner, so a delivered
+ * cash order settles exactly as an online one. The Brand owes INFLX nothing for it — no
+ * brand_dues row is created any more.
+ *
+ * TCS and the GST on INFLX's fee are still RECORDED on the row when their switches are on (tax is
+ * a later round, W8); with the switches off both are 0 and the whole kept share is credited.
+ *
+ * `runner` is kept for the old signature; the work always runs in its own transaction.
  * @returns {Promise<object|null>}
  */
 async function settleCommerceTransaction(runner, transactionId) {
   if (!transactionId) return null;
+  const db = require('../config/db');
+  return db.withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT ft.id, ft.brand_id, ft.brand_net, ft.brand_net_reversed, ft.marketplace_fee_amount,
+              ft.tcs_amount, ft.brand_settlement_status, ft.status, ft.checkout_id,
+              COALESCE(ft.platform_fee_reversed, 0) AS platform_fee_reversed,
+              b.tcs_applicable, fo.order_status
+         FROM follower_transactions ft
+         JOIN brands b ON b.id = ft.brand_id
+         LEFT JOIN follower_orders fo ON fo.id = ft.order_id
+        WHERE ft.id = $1
+        FOR UPDATE OF ft`,
+      [transactionId]
+    );
+    const t = rows[0];
+    if (!t) return null;
+    // Idempotent: settled once, by its status (and the legacy tcs_amount marker).
+    if (t.brand_settlement_status !== 'pending' || t.tcs_amount != null) return { skipped: true };
+    // Wallet money is real money (it can be withdrawn), so only a sale that came through the
+    // shopper checkout — the one path that verifies its payment — is ever credited. The older
+    // pay-at-store / prebook rows have no checkout and were never paid out; they stay as they are.
+    if (!t.checkout_id) return { skipped: 'not_a_checkout_sale' };
+    // A parcel that is still Confirmed or Packed can still be cancelled and refunded in full, so its
+    // share is not added yet. (cancel() takes this same row FOR UPDATE, so the two cannot interleave.)
+    if (['confirmed', 'packed'].includes(t.order_status)) return { skipped: 'not_shipped' };
 
-  const { rows } = await runner.query(
-    `SELECT ft.id, ft.brand_id, ft.brand_net, ft.brand_net_reversed, ft.marketplace_fee_amount,
-            ft.razorpay_payment_id, ft.tcs_amount, ft.net_amount, ft.commission_reversed,
-            COALESCE(ft.platform_fee_reversed, 0) AS platform_fee_reversed,
-            fo.payment_method,
-            b.tcs_applicable, b.razorpay_linked_account_id
-       FROM follower_transactions ft
-       JOIN brands b ON b.id = ft.brand_id
-       LEFT JOIN follower_orders fo ON fo.id = ft.order_id
-      WHERE ft.id = $1`,
-    [transactionId]
-  );
-  const t = rows[0];
-  if (!t) return null;
-  // Idempotent: tcs_amount populated (0 or positive) means already settled.
-  if (t.tcs_amount != null) return { skipped: true };
+    // The Brand's NET-OF-CANCELS-AND-RETURNS share (a reversed item is never credited).
+    const brandNet      = _round2(Math.max(0, _round2(t.brand_net) - _round2(t.brand_net_reversed)));
+    const fee           = _round2(Math.max(0, _round2(t.marketplace_fee_amount) - _round2(t.platform_fee_reversed)));
+    const tcs           = t.tcs_applicable ? await taxService.tcsOn(brandNet) : 0;
+    const commissionGst = await taxService.gstOn(fee);
+    const credit        = _round2(Math.max(0, brandNet - tcs));
 
-  // Money G-3: settle the brand's NET-OF-RETURNS share. Partial returns have
-  // already accumulated brand_net_reversed via the claw-back; the brand is paid
-  // only on the kept portion. (Whole-order returns are excluded upstream by the
-  // job's brand_settlement_status filter, so brandNet here is always >= 0.)
-  const grossBrandNet  = _round2(t.brand_net);
-  const reversed       = _round2(t.brand_net_reversed);
-  const brandNet       = _round2(Math.max(0, grossBrandNet - reversed));
-  // Shopper ordering (6.13): a cancelled item takes no INFLX fee.
-  const fee            = _round2(Math.max(0, _round2(t.marketplace_fee_amount) - _round2(t.platform_fee_reversed)));
-  const tcs            = t.tcs_applicable ? await taxService.tcsOn(brandNet) : 0;
-  const commissionGst  = await taxService.gstOn(fee);
-
-  // Cash on delivery (6.13): the brand's courier collected the cash, so nothing is transferred.
-  // The brand owes INFLX the creator's share + INFLX's share (+ TCS when on) of what it kept;
-  // that becomes a due, taken from its next online payouts.
-  if (t.payment_method === 'cod') {
-    const kept = _round2(Math.max(0, _round2(t.net_amount) - _round2(t.commission_reversed) - _round2(t.brand_net_reversed) - _round2(t.platform_fee_reversed)));
-    const owed = _round2(Math.max(0, kept - brandNet) + tcs);
-    if (owed > 0) {
-      await runner.query(
-        `INSERT INTO brand_dues (brand_id, amount, reason, source_kind, source_id, note)
-         VALUES ($1, $2, 'cod_order_shares', 'order', $3, 'Cash on delivery: creator''s share and INFLX''s share')`,
-        [t.brand_id, owed, transactionId]);
-    }
-    await runner.query(
-      `UPDATE follower_transactions SET tcs_amount = $1, commission_gst_amount = $2 WHERE id = $3`,
+    const { rowCount } = await client.query(
+      `UPDATE follower_transactions
+          SET tcs_amount = $1, commission_gst_amount = $2, brand_settlement_status = 'settled', brand_settled_at = now()
+        WHERE id = $3 AND brand_settlement_status = 'pending'`,
       [tcs, commissionGst, transactionId]);
-    return { tcs, commission_gst: commissionGst, transfer_id: null, transfer_amount: 0, cod_due: owed };
-  }
+    if (rowCount !== 1) return { skipped: true };
 
-  // What the brand owes from earlier cash-on-delivery orders comes off this payout, oldest first,
-  // whole dues only, as far as this payout reaches (6.13).
-  let transferAmount = _round2(brandNet - tcs);
-  const { rows: dues } = await runner.query(
-    `SELECT id, amount FROM brand_dues WHERE brand_id = $1 AND source_kind = 'order' AND settled_at IS NULL
-      ORDER BY created_at, id FOR UPDATE`, [t.brand_id]);
-  let duesTaken = 0;
-  for (const d of dues) {
-    const amt = _round2(d.amount);
-    if (amt > transferAmount) continue;
-    transferAmount = _round2(transferAmount - amt);
-    duesTaken = _round2(duesTaken + amt);
-    await runner.query(`UPDATE brand_dues SET settled_at = now(), settled_by_transaction_id = $2 WHERE id = $1`, [d.id, transactionId]);
-  }
-
-  let transferId = null;
-  if (t.razorpay_linked_account_id && transferAmount > 0) {
-    try {
-      const tr = await routeService.createTransfer({
-        paymentId:   t.razorpay_payment_id,
-        accountId:   t.razorpay_linked_account_id,
-        amountPaise: toPaise(transferAmount),
-        notes:       { transaction_id: transactionId, type: 'commerce_settlement' },
-      });
-      transferId = tr.id || null;
-    } catch (err) {
-      // Best-effort: leave transfer_id null for a retry; never break the purchase.
-      console.error(`[settlement] transfer failed for txn ${transactionId}: ${err.message}`);
+    let balanceAfter = null;
+    if (credit > 0) {
+      const { rows: [br] } = await client.query(
+        `UPDATE brands SET wallet_balance = wallet_balance + $2 WHERE id = $1 RETURNING wallet_balance`, [t.brand_id, credit]);
+      balanceAfter = _round2(br.wallet_balance);
+      await client.query(
+        `INSERT INTO wallet_transactions (brand_id, type, amount, direction, balance_after, notes, source_ref_id)
+         VALUES ($1, 'sale_settlement', $2, 'credit', $3, 'Sales money added', $4)`,
+        [t.brand_id, credit, balanceAfter, transactionId]);
+      // Item 11: money in settles a courier charge still owed, oldest first, in this transaction.
+      await require('./remoteMoney.service').settleDuesFromCredit(client, t.brand_id, credit);
     }
-  }
-
-  await runner.query(
-    `UPDATE follower_transactions
-        SET tcs_amount = $1, commission_gst_amount = $2, razorpay_transfer_id = $3
-      WHERE id = $4`,
-    [tcs, commissionGst, transferId, transactionId]
-  );
-
-  return { tcs, commission_gst: commissionGst, transfer_id: transferId, transfer_amount: transferAmount };
+    return { tcs, commission_gst: commissionGst, credited: credit, balance_after: balanceAfter, transfer_id: null };
+  });
 }
 
-/**
- * Retry the Route transfer for an already-settled transaction whose transfer is
- * still null — e.g. the brand onboarded a payout account AFTER the sale, or a
- * transient Route failure. Uses the already-recorded tcs_amount. Throws on a
- * Route failure so the caller (cron) can count + log it.
- * @returns {Promise<object>}
- */
-async function retryTransfer(runner, transactionId) {
-  const { rows } = await runner.query(
-    `SELECT ft.id, ft.brand_net, ft.brand_net_reversed, ft.tcs_amount,
-            ft.razorpay_payment_id, ft.razorpay_transfer_id, fo.payment_method,
-            b.razorpay_linked_account_id,
-            (SELECT COALESCE(sum(d.amount), 0) FROM brand_dues d WHERE d.settled_by_transaction_id = ft.id) AS dues_taken
-       FROM follower_transactions ft
-       JOIN brands b ON b.id = ft.brand_id
-       LEFT JOIN follower_orders fo ON fo.id = ft.order_id
-      WHERE ft.id = $1`,
-    [transactionId]
-  );
-  const t = rows[0];
-  if (!t) return { skipped: 'not_found' };
-  if (t.razorpay_transfer_id) return { skipped: 'already_transferred' };
-  if (t.payment_method === 'cod') return { skipped: 'cash_on_delivery' };   // the brand holds the cash (6.13)
-  if (!t.razorpay_linked_account_id) return { skipped: 'no_linked_account' };
-
-  const tcs            = parseFloat(t.tcs_amount) || 0;
-  // Net-of-returns, matching settleCommerceTransaction, less the dues this payout already settled.
-  const netBrand       = Math.max(0, (parseFloat(t.brand_net) || 0) - (parseFloat(t.brand_net_reversed) || 0));
-  const transferAmount = _round2(netBrand - tcs - (parseFloat(t.dues_taken) || 0));
-  if (transferAmount <= 0) return { skipped: 'zero_amount' };
-
-  const tr = await routeService.createTransfer({
-    paymentId:   t.razorpay_payment_id,
-    accountId:   t.razorpay_linked_account_id,
-    amountPaise: toPaise(transferAmount),
-    notes:       { transaction_id: transactionId, type: 'commerce_settlement_retry' },
-  });
-  await runner.query(
-    `UPDATE follower_transactions SET razorpay_transfer_id = $1 WHERE id = $2`,
-    [tr.id || null, transactionId]
-  );
-  return { transfer_id: tr.id || null, transfer_amount: transferAmount };
+/** Item 17 — retired: nothing is transferred to a bank any more, so there is nothing to retry. */
+async function retryTransfer() {
+  return { skipped: 'retired' };
 }
 
 module.exports = { resolveReturnWindowEndsAt, settleCommerceTransaction, retryTransfer };

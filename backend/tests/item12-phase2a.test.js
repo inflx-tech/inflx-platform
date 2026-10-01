@@ -242,7 +242,12 @@ describe('item 12 · a queued tranche cannot be cancelled away (check 34)', () =
     const before = await w10.moneySnapshot(w);
     const r = await api.post(`/campaigns/${w.c.id}/cancel`, w.b.token, {});
     expect(r.status).toBe(422);
-    expect(r.body.error).toMatchObject({ code: 'CANCEL_QUEUED_TRANCHE', message: MSG.CANCEL_QUEUED_TRANCHE });
+    // ASSERTION DRIFT — item 17 (features/item17-wallet; master rules v1.31 §17A, decision W1; 1 Oct 2026).
+    // Item 12 refused this cancel only while a payment was QUEUED ("a guard, not the fix"). Item 17 is the
+    // fix: a campaign with ANY collaboration signed by both can never be cancelled, queued or not, so the
+    // refusal now carries that reason. What the test protects is unchanged: no money moves, nothing is cancelled.
+    expect(r.body.error).toMatchObject({ code: 'SIGNED_NO_CANCEL' });
+    expect(r.body.error.message).toMatch(/signed collaboration/);
     expect(await w10.moneySnapshot(w)).toBe(before);
     const { rows: [c] } = await query(`SELECT status FROM campaigns WHERE id = $1`, [w.c.id]);
     expect(c.status).not.toBe('cancelled');

@@ -188,18 +188,24 @@ export default function BrandContentScreen({ navigation, route }) {
                 ) : row.proofs.map((p) => <LinkLine12 key={p.slot} url={p.url} testID={`link-${row.key}-${p.slot}`} />)}
               </View>
             ))}
-            <View style={[s.preview, { backgroundColor: T.state.active.bg }]} testID="confirm-preview">
-              <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{C12.confirmReleases(c.money.t2.amount)}</Text>
-              <Text style={[s.previewSub, { color: T.state.active.fg }]}>{C12.confirmReleasesSub(c.money.fee, c.money.t3.amount, c.money.waitDays)}</Text>
-            </View>
+            {c.settledByInflx ? (
+              <WaitBox10 text={c.money.returned > 0 ? C12.returnedToYou(c.money.returned) : C12.settledForBrand} testID="settled-box" />
+            ) : (
+              <View style={[s.preview, { backgroundColor: T.state.active.bg }]} testID="confirm-preview">
+                <Text style={[s.previewTitle, { color: T.state.active.fg }]}>{C12.confirmReleases(c.money.t2.amount)}</Text>
+                <Text style={[s.previewSub, { color: T.state.active.fg }]}>{C12.confirmReleasesSub(c.money.fee, c.money.t3.amount, c.money.waitDays)}</Text>
+              </View>
+            )}
           </>
         ) : null}
 
         {stage === 'live' ? (
           <>
-            <GreenBox10 text={C12.youConfirmed(c.liveConfirmedAt)} testID="you-confirmed" />
+            <GreenBox10 text={c.liveConfirmedBy === 'inflx' ? C12.inflxConfirmedForBrand(c.liveConfirmedAt) : C12.youConfirmed(c.liveConfirmedAt)} testID="you-confirmed" />
             <FeeCard12 money={c.money} side="brand" />
-            <WaitBox10 text={C12.lastFollows(c.money.t3.amount, c.finalDueAt)} testID="last-follows" />
+            {c.money.returned > 0
+              ? <WaitBox10 text={C12.returnedToYou(c.money.returned)} testID="returned-box" />
+              : <WaitBox10 text={C12.lastFollows(c.money.t3.amount, c.finalDueAt)} testID="last-follows" />}
           </>
         ) : null}
 
@@ -222,7 +228,7 @@ export default function BrandContentScreen({ navigation, route }) {
             {c.can.reportRoundsUsed ? <SecondaryButton label={C12.reportToInflx} onPress={() => { if (!busy) { setSheetError(null); setSheet('report_rounds'); } }} testID="report-rounds" /> : null}
           </>
         ) : null}
-        {stage === 'posted' && !c.frozen ? (
+        {stage === 'posted' && !c.frozen && !c.settledByInflx ? (
           <>
             <PrimaryButton label={C12.confirmLive} icon="check" onPress={confirmLive} busy={busy} busyLabel="Confirming" testID="confirm-live" />
             {c.can.reportPostedWrong ? <TextButton label={C12.somethingWrong} onPress={() => { if (!busy) { setSheetError(null); setSheet('report_posted'); } }} testID="something-wrong" /> : null}

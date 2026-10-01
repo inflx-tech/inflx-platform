@@ -448,6 +448,12 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   if (!razorpay_order_id || !razorpay_payment_id) {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
+  // Item 17 (review): these older flows wrote a COMPLETED sale (and a creator's pending commission)
+  // on the caller's word alone. The payment's signature is checked now, as the shopper checkout
+  // does. (In test mode the check passes, as every payment check does.)
+  if (!txService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, req.body.razorpay_signature)) {
+    throw new AppError('VALIDATION_ERROR', 'Payment could not be verified', 400, 'razorpay_signature');
+  }
 
   // Peek the pending order — returns the rupees amount plus meta we stashed.
   // (Claimed atomically inside the withTransaction below.)
@@ -686,6 +692,12 @@ const verifyStoreOfferPay = asyncHandler(async (req, res) => {
   if (!razorpay_order_id || !razorpay_payment_id) {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
+  // Item 17 (review): these older flows wrote a COMPLETED sale (and a creator's pending commission)
+  // on the caller's word alone. The payment's signature is checked now, as the shopper checkout
+  // does. (In test mode the check passes, as every payment check does.)
+  if (!txService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, req.body.razorpay_signature)) {
+    throw new AppError('VALIDATION_ERROR', 'Payment could not be verified', 400, 'razorpay_signature');
+  }
 
   const { amountRupees: netAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
   const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
@@ -819,6 +831,12 @@ const verifyPrebook = asyncHandler(async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, booking_type, stylist_id, notes } = req.body;
   if (!razorpay_order_id || !razorpay_payment_id) {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
+  }
+  // Item 17 (review): these older flows wrote a COMPLETED sale (and a creator's pending commission)
+  // on the caller's word alone. The payment's signature is checked now, as the shopper checkout
+  // does. (In test mode the check passes, as every payment check does.)
+  if (!txService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, req.body.razorpay_signature)) {
+    throw new AppError('VALIDATION_ERROR', 'Payment could not be verified', 400, 'razorpay_signature');
   }
 
   // booking_type: client may declare 'table' | 'slot' | 'appointment'.
@@ -1071,6 +1089,12 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id } = req.body;
   if (!razorpay_order_id || !razorpay_payment_id) {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
+  }
+  // Item 17 (review): these older flows wrote a COMPLETED sale (and a creator's pending commission)
+  // on the caller's word alone. The payment's signature is checked now, as the shopper checkout
+  // does. (In test mode the check passes, as every payment check does.)
+  if (!txService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, req.body.razorpay_signature)) {
+    throw new AppError('VALIDATION_ERROR', 'Payment could not be verified', 400, 'razorpay_signature');
   }
 
   const { amountRupees: advanceAmount, meta } = await txService.getPendingOrder(razorpay_order_id);

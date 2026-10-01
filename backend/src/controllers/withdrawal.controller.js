@@ -104,4 +104,26 @@ const retryWithdrawal = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { initiateWithdrawal, listWithdrawals, retryWithdrawal };
+// ─────────────────────────────────────────────────────────────────────────────
+// Item 17 (rules v1.31 §17A, W5, W6) — the one withdrawal model, behind the old addresses.
+// A request goes ON HOLD; INFLX pays it from its bank and marks it processed. The full amount is
+// paid — TDS is paused. The automatic payout above (initiateWithdrawal) and its retry are no
+// longer routed; they are kept only so the old tests that describe them still compile.
+// ─────────────────────────────────────────────────────────────────────────────
+const withdrawalsV17 = require('../services/withdrawalRequest.service');
+
+const requestV17 = asyncHandler(async (req, res) => {
+  const b = req.body || {};
+  const method = b.method === 'bank_transfer' ? 'bank' : b.method;          // an older app build says bank_transfer
+  const w = await withdrawalsV17.request('creator', req.user.sub, { amount: b.amount != null ? b.amount : b.amount_requested, method });
+  return success(res, { withdrawal: w, withdrawal_id: w.id, amount_requested: w.amount, status: w.status }, 201);
+});
+
+const listV17 = asyncHandler(async (req, res) => success(res, { withdrawals: await withdrawalsV17.listMine('creator', req.user.sub) }));
+
+const retiredRetry = asyncHandler(async () => {
+  throw new AppError('RETIRED_17_RETRY', 'Withdrawals are paid by INFLX now. If one could not be processed, request it again.', 410);
+});
+
+module.exports = {
+  requestV17, listV17, retiredRetry, initiateWithdrawal, listWithdrawals, retryWithdrawal };

@@ -407,7 +407,13 @@ describe('item 12 · nothing confirms "live" on its own (check 15)', () => {
     // ASSERTION DRIFT, item 14 (decision D3): Pay for Sale confirms itself after the stamped Admin
     // days — saleLive.autoConfirmDue, which selects goal = 'conversion' only and moves no money.
     // Pay for Content still has no automatic confirmation: the next test runs every job on one.
-    expect(hits.sort()).toEqual(['contentFlow.service.js', 'saleLive.service.js']);
+    // ASSERTION DRIFT, item 17 (rules v1.31 §17A; board AM11): INFLX settling a dispute may stand in
+    // for a brand that stayed silent — adminMoney.releasePayment, by an admin's hand with a written
+    // reason, ONLY when she had posted and the brand had neither confirmed nor reported. Still no JOB
+    // confirms Pay for Content: the next test runs every job on one.
+    expect(hits.sort()).toEqual(['adminMoney.service.js', 'contentFlow.service.js', 'saleLive.service.js']);
+    expect(require('fs').readFileSync(path.join(__dirname, '../src/services/adminMoney.service.js'), 'utf8'))
+      .toMatch(/WHERE id = \$1 AND live_confirmed_at IS NULL AND posted_at IS NOT NULL AND brand_reported_at IS NULL/);
     expect(require('fs').readFileSync(path.join(__dirname, '../src/services/saleLive.service.js'), 'utf8'))
       .toMatch(/WHERE cs.goal = 'conversion' AND cc.posted_at IS NOT NULL AND cc.live_confirmed_at IS NULL/);
   });

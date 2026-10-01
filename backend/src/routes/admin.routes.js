@@ -112,11 +112,15 @@ router.patch('/influencers/:id/tax-controls', authenticate, requireCapability('t
 
 // Withdrawal / payout management — 'payouts'
 router.get('/withdrawals',             authenticate, requireCapability('payouts'), ctrl.getWithdrawals);
-router.post('/withdrawals/:id/process', authenticate, requireCapability('payouts'), ctrl.processWithdrawal);
+// Item 17 (rules v1.31 §17A): ONE withdrawal model. A request is paid by INFLX from its bank and
+// marked processed in Money (POST /admin/money/withdrawals/:id/processed). The automatic RazorpayX
+// approve/reject below is retired; the two lists stay readable as history.
+const retired17 = (req, res, next) => next(new (require('../utils/AppError'))('RETIRED_17_WITHDRAWALS', 'Withdrawals are handled in Money now.', 410));
+router.post('/withdrawals/:id/process', authenticate, requireCapability('payouts'), retired17);
 
 // Brand wallet withdrawals (Wave 2 commit 2) — 'payouts'
 router.get('/brand-withdrawals',             authenticate, requireCapability('payouts'), ctrl.getBrandWithdrawals);
-router.post('/brand-withdrawals/:id/process', authenticate, requireCapability('payouts'), ctrl.processBrandWithdrawal);
+router.post('/brand-withdrawals/:id/process', authenticate, requireCapability('payouts'), retired17);
 
 // Monthly tax summary (Wave 4 — compliance reporting) — 'tax'
 router.get('/tax-summary', authenticate, requireCapability('tax'), ctrl.getTaxSummary);

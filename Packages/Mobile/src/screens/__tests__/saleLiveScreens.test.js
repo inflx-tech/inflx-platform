@@ -256,3 +256,45 @@ describe('item 15 · Hybrid on both screens', () => {
     expect(t.getByTestId('confirm-live')).toBeTruthy();
   });
 });
+
+/* ───────────────────────────── item 17 · INFLX settled it by hand (features/item17-wallet) */
+
+describe('item 17 · Hybrid, when INFLX settles a payment by hand', () => {
+  const paid2 = { t2: { amount: 2125, pct: 25, status: 'released', paidAt: D(24) } };
+
+  it('INFLX stood in for a silent brand: the wording says INFLX, on both screens', async () => {
+    const r = her(hyb({ stage: 'live', liveConfirmedAt: D(24), liveConfirmedBy: 'inflx', finalDueAt: D(31), money: money({ ...paid2, returned: 0 }) }));
+    await waitFor(() => r.getByTestId('second-in'));
+    expect(r.getByText("INFLX confirmed it's live on 24 Oct. ₹2,125 is in your wallet.")).toBeTruthy();
+    expect(r.getByText('The last ₹4,250 arrives on 31 Oct.')).toBeTruthy();
+    const b = brand(hyb({ stage: 'live', liveConfirmedAt: D(24), liveConfirmedBy: 'inflx', money: money({ ...paid2, returned: 0 }), path1: { ...sale().path1, ...opened, approved: 0, min: 1, short: 1, met: false } }));
+    await waitFor(() => b.getByTestId('you-confirmed'));
+    expect(b.getByText("INFLX confirmed it's live on 24 Oct and released ₹2,125 to Tanvi.")).toBeTruthy();
+    expect(b.queryByText(/You confirmed/)).toBeNull();
+  });
+
+  it('INFLX returned the locked final payment: no date is promised to her, and the brand is told it is back in its wallet', async () => {
+    const back = money({ ...paid2, stillLocked: 0, returned: 4250, t3: { amount: 4250, pct: 50, status: 'refunded', paidAt: null, dueAt: null } });
+    const r = her(hyb({ stage: 'live', liveConfirmedAt: D(24), liveConfirmedBy: 'brand', finalDueAt: null, money: back }));
+    await waitFor(() => r.getByTestId('returned-box'));
+    expect(r.getByText('INFLX returned the locked ₹4,250 to the brand. No more payments are to come for this collaboration.')).toBeTruthy();
+    expect(r.queryByTestId('last-on')).toBeNull();
+    const b = brand(hyb({ stage: 'live', liveConfirmedAt: D(24), liveConfirmedBy: 'brand', money: back, path1: { ...sale().path1, ...opened, approved: 0, min: 1, short: 1, met: false } }));
+    await waitFor(() => b.getByTestId('returned-box'));
+    expect(b.getByText('INFLX returned the locked ₹4,250 to your wallet. No more payments will be made for this collaboration.')).toBeTruthy();
+  });
+});
+
+describe('item 17 · Hybrid, posted, and INFLX settled the payment before the brand confirmed', () => {
+  it("her screen does not say the brand's confirmation will pay her; the brand is not offered Confirm", async () => {
+    const m = money({ t2: { amount: 2125, pct: 25, status: 'released', paidAt: D(25) }, returned: 0 });
+    const r = her(hyb({ stage: 'posted', postedAt: D(22), settledByInflx: true, money: m }));
+    await waitFor(() => r.getByTestId('settled-box'));
+    expect(r.getByText('INFLX has settled this payment and will settle the rest of this collaboration with you.')).toBeTruthy();
+    expect(r.queryByTestId('posted-waiting')).toBeNull();
+    const b = brand(hyb({ stage: 'posted', postedAt: D(22), settledByInflx: true, can: { confirmLive: false }, money: m }));
+    await waitFor(() => b.getByTestId('settled-box'));
+    expect(b.getByText('INFLX has settled this payment and will settle the rest of this collaboration.')).toBeTruthy();
+    expect(b.queryByTestId('confirm-live')).toBeNull();
+  });
+});

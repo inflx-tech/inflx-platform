@@ -386,7 +386,9 @@ export default function SaleLiveScreen({ navigation, route }) {
         {/* S15 — posted: the day it confirms itself, shown from the start. */}
         {stage === 'posted' && !c.frozen ? (
           <View style={s.pathCard} testID="path2-posted">
-            <WaitBox10 text={c.hybrid && c.money ? C14.payingHers(brand, c.money.t2.amount) : C14.postedWaiting(c.postedAt, brand)} testID="posted-waiting" />
+            {c.hybrid && c.money && c.settledByInflx
+              ? <WaitBox10 text={c.money.returned > 0 ? C14.returnedToBrand(c.money.returned) : C14.settledForCreator} testID="settled-box" />
+              : <WaitBox10 text={c.hybrid && c.money ? C14.payingHers(brand, c.money.t2.amount) : C14.postedWaiting(c.postedAt, brand)} testID="posted-waiting" />}
             {c.hybrid && c.reported && c.reported.creator ? <Text style={s.small} testID="you-asked">{C14.youAsked(c.reported.creator.at)}</Text>
               : c.hybrid && c.reportFrom ? <Text style={s.small} testID="can-ask">{C14.canAskFrom(c.reportFrom)}</Text> : null}
             {c.autoconfirmAt ? (
@@ -400,7 +402,12 @@ export default function SaleLiveScreen({ navigation, route }) {
             {c.hybrid && c.money ? (
               c.paidInFull
                 ? <GreenBox10 text={C14.paidInFull(c.money.fee)} testID="paid-in-full" />
-                : <><GreenBox10 text={C14.secondIn(brand, c.liveConfirmedAt, c.money.t2.amount)} testID="second-in" /><WaitBox10 text={C14.lastOn(c.money.t3.amount, c.finalDueAt)} testID="last-on" /></>
+                : <>
+                  <GreenBox10 text={c.liveConfirmedBy === 'inflx' ? C14.inflxSecondIn(c.liveConfirmedAt, c.money.t2.amount) : C14.secondIn(brand, c.liveConfirmedAt, c.money.t2.amount)} testID="second-in" />
+                  {c.money.returned > 0
+                    ? <WaitBox10 text={C14.returnedToBrand(c.money.returned)} testID="returned-box" />
+                    : <WaitBox10 text={C14.lastOn(c.money.t3.amount, c.finalDueAt)} testID="last-on" />}
+                </>
             ) : <GreenBox10 text={C14.theyConfirmed(brand, c.liveConfirmedAt)} testID="live-box" />}
             {p1 && p1.short ? <Text style={s.small}>{C14.completesWhen(p1.short)}</Text> : null}
           </View>

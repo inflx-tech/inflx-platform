@@ -24,6 +24,12 @@ import { getAccountStatus } from '../services/accountStatus';
 // features/creator-wallet-and-first-payment — a stand-in wallet, so money that already exists is visible.
 import CreatorWalletScreen from '../screens/influencer/CreatorWalletScreen';
 import PayoutDetailScreen from '../screens/influencer/PayoutDetailScreen';
+// Item 17 — the Wallet: collaboration payments, commission, withdraw, withdrawals, history, details.
+import { CreatorWalletPaymentsScreen, CreatorWalletCommissionScreen } from '../screens/influencer/CreatorWalletMoneyScreens';
+import WithdrawScreen from '../screens/wallet/WithdrawScreen';
+import WithdrawalsScreen from '../screens/wallet/WithdrawalsScreen';
+import WalletHistoryScreen from '../screens/wallet/WalletHistoryScreen';
+import WalletDetailsScreen from '../screens/wallet/WalletDetailsScreen';
 import CollabsScreen from '../screens/influencer/CollabsScreen';
 import FindBrandsScreen from '../screens/influencer/FindBrandsScreen';
 import ProfileInfoScreen from '../screens/influencer/ProfileInfoScreen';
@@ -106,6 +112,13 @@ function WalletStackScreen() {
     <WalletStack.Navigator screenOptions={noHeader}>
       <WalletStack.Screen name="CreatorWallet" component={CreatorWalletScreen} />
       <WalletStack.Screen name="PayoutDetail" component={PayoutDetailScreen} />
+      {/* Item 17 — features/item17-wallet (board CW3–CW7). */}
+      <WalletStack.Screen name="CreatorWalletPayments" component={CreatorWalletPaymentsScreen} />
+      <WalletStack.Screen name="CreatorWalletCommission" component={CreatorWalletCommissionScreen} />
+      <WalletStack.Screen name="CreatorWithdraw" component={WithdrawScreen} initialParams={{ side: 'creator' }} />
+      <WalletStack.Screen name="CreatorWithdrawals" component={WithdrawalsScreen} initialParams={{ side: 'creator' }} />
+      <WalletStack.Screen name="CreatorWalletHistory" component={WalletHistoryScreen} initialParams={{ side: 'creator' }} />
+      <WalletStack.Screen name="CreatorWalletDetails" component={WalletDetailsScreen} initialParams={{ side: 'creator' }} />
     </WalletStack.Navigator>
   );
 }

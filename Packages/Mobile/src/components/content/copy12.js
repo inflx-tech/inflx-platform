@@ -95,6 +95,8 @@ export const C12 = {
     afterDays: (n) => `After ${n} days · 50%`,
     paid: (d) => `Paid ${day10(d)}`,
     whenTheyConfirm: 'When they confirm',
+    // Item 17: INFLX settled a dispute by returning what was locked — these payments will not be made.
+    returned: 'Returned to the brand by INFLX',
     thenComplete: 'Then it is complete',
     campaignFeeWaiting: (n) => `INFLX campaign fee ${rupees5(n)} · charged to you at signing, never to her.`,
     campaignFeeDone: (n) => `INFLX campaign fee ${rupees5(n)} · charged at signing.`,
@@ -173,6 +175,15 @@ export const C12 = {
 
   /* ── C12 ── */
   theyConfirmed: (brand, d) => `${brand} confirmed your content is live on ${day10(d)}.`,
+  // Item 17: INFLX stood in for a brand that stayed silent (liveConfirmedBy === 'inflx').
+  inflxConfirmed: (d) => `INFLX confirmed your content is live on ${day10(d)}.`,
+  // No confirmation at all: INFLX settled the payments by hand (a dispute).
+  inflxSettled: 'INFLX settled this collaboration and released your payments.',
+  settledForCreator: 'INFLX has settled this payment and will settle the rest of this collaboration with you.',
+  settledForBrand: 'INFLX has settled this payment and will settle the rest of this collaboration.',
+  inflxConfirmedForBrand: (d) => `INFLX confirmed the content is live on ${day10(d)} and released the second payment.`,
+  returnedToBrand: (n) => `INFLX returned the locked ${rupees5(n)} to the brand. No more payments are to come for this collaboration.`,
+  returnedToYou: (n) => `INFLX returned the locked ${rupees5(n)} to your wallet. No more payments will be made for this collaboration.`,
   inWallet: (n, last, d) => `${rupees5(n)} is in your wallet. The last ${rupees5(last)} arrives on ${day10(d)} — nothing for you to do.`,
 
   /* ── C13 ── */

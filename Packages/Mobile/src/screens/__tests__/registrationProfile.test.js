@@ -52,6 +52,7 @@ const PendingSheetHost = require('../../components/shell/PendingSheetHost').defa
 const ProfileScreen = require('../influencer/ProfileScreen').default;
 const CreatorWalletScreen = require('../influencer/CreatorWalletScreen').default;
 const BrandWalletScreen = require('../brand/BrandWalletScreen').default;
+const WalletDetailsScreen = require('../wallet/WalletDetailsScreen').default;
 const BrandBranchEditScreen = require('../brand/BrandBranchEditScreen').default;
 const RejectedScreen = require('../auth/RejectedScreen').default;
 const PendingHomeScreen = require('../../components/shell/PendingHomeScreen').default;
@@ -322,37 +323,41 @@ describe('C4 — Profile main', () => {
 });
 
 // ── C7 · B8 — the wallets ────────────────────────────────────────────────────
+//
+// ASSERTION DRIFT — item 17 (features/item17-wallet; board BW1 / CW1, locked 1 Oct 2026). These rows
+// sat on the Wallet tab itself. The tab now carries the money figures, and the rows are one tap in
+// ("Bank and business details" / "Payment details" → WalletDetailsScreen). Same rows, same words,
+// same detail screens — except the PAN line "For your TDS certificate", which is gone: no tax is
+// deducted at withdrawal (rules v1.31 §17A) and the wallet no longer mentions it.
 
 describe('C7 · B8 — payout and business details on the wallets', () => {
   it('the creator wallet shows UPI / Bank account / PAN with Added or Not added, and opens the detail screen', async () => {
-    influencerApi.getEarnings.mockResolvedValue(ok({ wallet_balance: '8625.00', pending_amount: '2400.00', total_earned: '11025.00', locked_entries: [] }));
     influencerApi.getMe.mockResolvedValue(ok({ influencer: { has_upi: true, has_bank_account: false, has_pan: false } }));
     const n = nav();
-    const r = render(<CreatorWalletScreen navigation={n} route={{ params: {} }} />);
+    const r = render(<WalletDetailsScreen navigation={n} route={{ params: { side: 'creator' } }} />);
     await waitFor(() => r.getByTestId('payment-details'));
-    r.getByText('Payment details'); r.getByText('Add these to get paid'); r.getByText('Not needed for approval — only before your first withdrawal.');
-    r.getByText('UPI'); r.getByText('Bank account'); r.getByText('Account number + IFSC'); r.getByText('PAN'); r.getByText('For your TDS certificate');
+    r.getAllByText('Payment details'); r.getByText('Add these to get paid'); r.getByText('Not needed for approval — only before your first withdrawal.');
+    r.getByText('UPI'); r.getByText('Bank account'); r.getByText('Account number + IFSC'); r.getByText('PAN');
+    expect(r.queryByText('For your TDS certificate')).toBeNull();
     expect(r.getByTestId('row-upi-value').props.children).toBe('Added');
     expect(r.getByTestId('row-bank-value').props.children).toBe('Not added');
     expect(r.getByTestId('row-pan-value').props.children).toBe('Not added');
     r.getByText('Our team checks these by hand, usually the same day.');
     fireEvent.press(r.getByTestId('row-bank'));
-    expect(n.navigate).toHaveBeenCalledWith('PayoutDetail', { kind: 'bank' });
+    expect(n.navigate).toHaveBeenCalledWith('PayoutDetail', { kind: 'bank', returnTo: 'CreatorWalletDetails' });
   });
 
   it('the brand wallet shows GST number / Bank account and opens the detail screen', async () => {
-    brandApi.getWallet.mockResolvedValue(ok({ wallet: { available_balance: 0, reserved_balance: 25875, settled_balance: 0 } }));
-    brandApi.getWalletTransactions.mockResolvedValue(ok({ transactions: [] }));
     brandApi.getMe.mockResolvedValue(ok({ brand: { gstin: '36ABCDE1234F1Z5', has_bank_account: false } }));
     const n = nav();
-    const r = render(<BrandWalletScreen navigation={n} route={{ params: {} }} />);
+    const r = render(<WalletDetailsScreen navigation={n} route={{ params: { side: 'brand' } }} />);
     await waitFor(() => r.getByTestId('business-details'));
     r.getByText('Business & payment details'); r.getByText('Needed before money moves'); r.getByText('Not needed for approval. Our team verifies these by hand.');
     r.getByText('GST number'); r.getByText('Appears on your agreements'); r.getByText('Bank account');
     expect(r.getByTestId('row-gst-value').props.children).toBe('Added');
     expect(r.getByTestId('row-bank-value').props.children).toBe('Not added');
     fireEvent.press(r.getByTestId('row-gst'));
-    expect(n.navigate).toHaveBeenCalledWith('BrandPayoutDetail', { kind: 'gst' });
+    expect(n.navigate).toHaveBeenCalledWith('BrandPayoutDetail', { kind: 'gst', returnTo: 'BrandWalletDetails' });
   });
 });
 

@@ -41,45 +41,55 @@ const TX = [
 
 beforeEach(() => {
   jest.clearAllMocks();
-  brandApi.getWallet.mockResolvedValue(ok({ wallet: WALLET }));
+  // Item 17: the tab reads the server's four figures (walletRead.brandSummary), beside the old block.
+  brandApi.getWallet.mockResolvedValue(ok({ wallet: WALLET, withdrawal_waiting: null,
+    figures: { available: 37040, onHold: 0, locked: 9000, lockedCount: 1, salesComing: 2719, salesComingCount: 1 } }));
+  brandApi.getMe.mockResolvedValue(ok({ brand: { gstin: null, has_bank_account: false } }));
   brandApi.getWalletTransactions.mockResolvedValue(ok({ transactions: TX }));
 });
 
 // ── W1 · W2 ──────────────────────────────────────────────────────────────────
+//
+// ASSERTION DRIFT — item 17 (features/item17-wallet; board BW1, locked 1 Oct 2026; rules v1.31 §17A).
+// The Wallet tab these four tests described showed Available / Locked / Paid out and the ledger
+// underneath. The locked board changed it: Available, Locked in collaborations and Sales money
+// coming, each from its own server figure; the ledger moved to its own History screen (BW10), and
+// "Paid out" is on the Locked screen (BW3). Each test asserts the new rule for the same situation;
+// none was skipped or removed. The full board is covered in screens/__tests__/wallet17.test.js.
 
 describe('W1 · W2 — the Wallet tab', () => {
-  it('shows what she can spend, what is locked, what has been paid out, and the ledger', async () => {
-    const r = render(<BrandWalletScreen navigation={nav()} route={{ params: {} }} />);
+  it('shows what she can spend, what is locked, and the sales money coming; the ledger is one tap away', async () => {
+    const n = nav();
+    const r = render(<BrandWalletScreen navigation={n} route={{ params: {} }} />);
     await waitFor(() => r.getByTestId('brand-wallet'));
 
     r.getByText('₹37,040');            // available
-    r.getByText('₹9,000');             // locked in agreements
-    r.getByText('₹3,000');             // paid out to creators
-    r.getByText('Money you can commit to an agreement.');
+    r.getByText('₹9,000');             // locked in collaborations
+    r.getByText('1 collaboration');
+    r.getByText('₹2,719');             // sales money coming
+    r.getByText('1 sale in its return window');
 
-    // the ledger, in her words rather than the ledger's
-    r.getByText('Paid to Asha M.');
-    r.getByText('Campaign fee');
-    r.getByText('Locked for Asha M. (Diwali Edit 2026)');
-    r.getByText('Money added');
-    r.getByText('+₹50,000');
-    r.getByText('−₹12,000');
+    // the ledger is no longer printed on the tab: it is History, in her words
+    expect(r.queryByText('Paid to Asha M.')).toBeNull();
+    fireEvent.press(r.getByTestId('wallet-history'));
+    expect(n.navigate).toHaveBeenCalledWith('BrandWalletHistory', {});
   });
 
   it('an empty wallet says so rather than showing a blank', async () => {
-    brandApi.getWallet.mockResolvedValue(ok({ wallet: { available_balance: 0, reserved_balance: 0, settled_balance: 0 } }));
-    brandApi.getWalletTransactions.mockResolvedValue(ok({ transactions: [] }));
+    brandApi.getWallet.mockResolvedValue(ok({ wallet: {}, withdrawal_waiting: null, figures: { available: 0, onHold: 0, locked: 0, lockedCount: 0, salesComing: 0, salesComingCount: 0 } }));
     const r = render(<BrandWalletScreen navigation={nav()} route={{ params: {} }} />);
-    await waitFor(() => r.getByTestId('wallet-empty'));
-    r.getByText('Nothing yet');
-    r.getByText('Your top-ups and payments appear here.');
+    await waitFor(() => r.getByTestId('brand-wallet'));
+    expect(r.getByTestId('wallet-available-amount').props.children).toBe('₹0');
+    r.getByText('Nothing locked');
+    r.getByText('No sales in a return window');
   });
 
-  it('still loads when the ledger fails — a wallet without its history is still a wallet', async () => {
-    brandApi.getWalletTransactions.mockResolvedValue({ success: false, error: { message: 'nope' } });
+  it('still loads when her details fail — a wallet without that line is still a wallet', async () => {
+    brandApi.getMe.mockResolvedValue({ success: false, error: { message: 'nope' } });
     const r = render(<BrandWalletScreen navigation={nav()} route={{ params: {} }} />);
     await waitFor(() => r.getByTestId('brand-wallet'));
     r.getByText('₹37,040');
+    r.getByText('Bank and business details');
   });
 
   it('Add money opens the add screen', async () => {

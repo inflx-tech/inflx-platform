@@ -305,3 +305,70 @@ describe('BrandContentScreen', () => {
     await waitFor(() => n.getByText("Tanvi hasn't sent her content yet. She is being reminded every two days."));
   });
 });
+
+/* ───────────────────────────── item 17 · INFLX settled it by hand (features/item17-wallet) */
+
+describe('item 17 · when INFLX settles a payment by hand, the content screens say what happened', () => {
+  const live = (over = {}) => content({
+    stage: 'live', liveConfirmedAt: D(23), liveConfirmedBy: 'inflx', finalDueAt: D(30),
+    money: { ...content().money, stillLocked: 6000, returned: 0, t2: { amount: 3000, paidAt: D(23), status: 'released' }, t3: { amount: 6000, paidAt: null, status: 'queued' } },
+    ...over,
+  });
+
+  it('INFLX stood in for a silent brand: neither side is told the brand confirmed', async () => {
+    const r = her(live());
+    await waitFor(() => r.getByText('INFLX confirmed your content is live on 23 Oct.'));
+    expect(r.queryByText(/Urban Threads confirmed/)).toBeNull();
+    expect(r.getByText('₹3,000 is in your wallet. The last ₹6,000 arrives on 30 Oct — nothing for you to do.')).toBeTruthy();
+    const b = brand(live());
+    await waitFor(() => b.getByText('INFLX confirmed the content is live on 23 Oct and released the second payment.'));
+    expect(b.queryByText(/You confirmed/)).toBeNull();
+  });
+
+  it('INFLX returned the locked money: the card shows it as returned, and no date is promised', async () => {
+    const back = { money: { ...content().money, stillLocked: 0, returned: 6000, t2: { amount: 3000, paidAt: D(23), status: 'released' }, t3: { amount: 6000, paidAt: null, status: 'refunded', dueAt: null } }, finalDueAt: null };
+    const r = her(live({ liveConfirmedBy: 'brand', ...back }));
+    await waitFor(() => r.getByTestId('returned-box'));
+    expect(r.getByText('INFLX returned the locked ₹6,000 to the brand. No more payments are to come for this collaboration.')).toBeTruthy();
+    expect(r.getByText('Returned to the brand by INFLX')).toBeTruthy();
+    expect(r.queryByTestId('in-wallet')).toBeNull();
+    expect(r.queryByTestId('fee-t3-next')).toBeNull();                    // a returned payment is never "next"
+    const b = brand(live({ liveConfirmedBy: 'brand', ...back }));
+    await waitFor(() => b.getByTestId('returned-box'));
+    expect(b.getByText('INFLX returned the locked ₹6,000 to your wallet. No more payments will be made for this collaboration.')).toBeTruthy();
+    expect(b.queryByTestId('last-follows')).toBeNull();
+  });
+});
+
+describe('item 17 · she posted, and INFLX settled the payment before the brand confirmed', () => {
+  const posted = (over = {}) => content({
+    stage: 'posted', postedAt: D(22), settledByInflx: true, can: { confirmLive: false },
+    money: { ...content().money, stillLocked: 6000, returned: 0, t2: { amount: 3000, paidAt: D(25), status: 'released' }, t3: { amount: 6000, paidAt: null, status: 'locked' } },
+    ...over,
+  });
+
+  it("neither screen promises what the brand's Confirm would pay, and the brand is not offered the button", async () => {
+    const r = her(posted());
+    await waitFor(() => r.getByTestId('settled-box'));
+    expect(r.getByText('INFLX has settled this payment and will settle the rest of this collaboration with you.')).toBeTruthy();
+    expect(r.queryByTestId('waiting-confirm')).toBeNull();
+    const b = brand(posted());
+    await waitFor(() => b.getByTestId('settled-box'));
+    expect(b.getByText('INFLX has settled this payment and will settle the rest of this collaboration.')).toBeTruthy();
+    expect(b.queryByTestId('confirm-preview')).toBeNull();
+    expect(b.queryByTestId('confirm-live')).toBeNull();
+  });
+
+  it('returned money says so at the posted stage too; a collaboration INFLX completed by hand never claims a confirmation', async () => {
+    const back = { money: { ...content().money, stillLocked: 0, returned: 9000, t2: { amount: 3000, paidAt: null, status: 'refunded' }, t3: { amount: 6000, paidAt: null, status: 'refunded' } } };
+    const b = brand(posted(back));
+    await waitFor(() => b.getByText('INFLX returned the locked ₹9,000 to your wallet. No more payments will be made for this collaboration.'));
+    const done = her(content({
+      stage: 'complete', liveConfirmedAt: null, liveConfirmedBy: null, completedAt: D(28), frozen: true,
+      money: { ...content().money, stillLocked: 0, returned: 0, t2: { amount: 3000, paidAt: D(25), status: 'released' }, t3: { amount: 6000, paidAt: D(28), status: 'released' } },
+    }));
+    await waitFor(() => done.getByText('INFLX settled this collaboration and released your payments.'));
+    expect(done.queryByText(/confirmed your content is live on/)).toBeNull();
+    expect(done.queryByTestId('told-inflx')).toBeNull();                  // the report card does not sit beside a completed collaboration
+  });
+});
