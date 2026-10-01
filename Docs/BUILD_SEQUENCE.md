@@ -25,7 +25,7 @@ The 21 items (plus the 3b insert). Each runs: rules → mockups → lock → gap
 | 14 | Pay for Sale: going live, completion and selling (§12.1, 19; rules v1.30) | Built | `features/item14-sale-going-live` (mig 199, b5b87ebd, OTA influencer 225 / brand 235) | 30 Sep |
 | 15 | Hybrid (§21, 23; rules v1.30) | Built | `features/item15-hybrid` (30e962f4, OTA influencer 226 / brand 236; no migration) | 30 Sep |
 | 16 | Shopper app (§14–16A) | Built as Levels 6–7 | `features/follower-app-v2` (197), `features/shopper-ordering` (198) | 29–30 Sep |
-| 17 | Wallet, complete (§17, 18, 21) | Later | — | — |
+| 17 | Wallet, complete (§17, 18, 21; rules v1.31 §17A) | Built | `features/item17-wallet` (mig 200, a5c77aab, OTA influencer 227 / brand 237) | 1 Oct |
 | 18 | Disputes (§22, 26) | Later | — | — |
 | 19 | Home and Needs You, finished (§24) | Later | — | — |
 | 20 | Creator who owns a brand (§2) | Later | — | — |

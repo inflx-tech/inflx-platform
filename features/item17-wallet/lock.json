@@ -41,5 +41,28 @@
     "migration": "200 — rehearsed on inflx_test_base (17/17 checks, no money moved, idempotent); production dry run clean",
     "review": "three independent pre-deploy review passes after the founder's go; confirmed findings fixed before deploy (06-diff/notes.md)",
     "rules": "master v1.31 §17A"
+  },
+  "deployed_to_production": {
+    "at": "2026-10-01",
+    "by": "founder go (chat: \"pls deploy\")",
+    "migration": "200 applied via scripts/run-200.js --apply after a clean --dry (Postgres 17.6): 17/17 checks; additive only; no money moved (brand wallets 0 / creator wallets 8,625 / escrow 34,500 / released 8,625 / contracts locked 36,260 / 18 brand ledger rows / 4 creator ledger rows identical before and after)",
+    "commit": "a5c77aab (pushed 30e962f4..a5c77aab, carrying c5b4af51 item 15 deploy record); 95 files, staged by path — another window's offers work left out, including its one line in Packages/brand-web/lib/api.js",
+    "render": "proved by route existence 13:20 IST: GET /v1/influencers/me/wallet/history 404 → 401, with the fake sibling /influencers/me/wallet/not-a-real-route still 404",
+    "vercel": "admin.inflx.in/admin/money, /withdrawals and /corrections answer 200; the fake sibling /admin/money/not-a-real-page answers 404",
+    "ota": {
+      "influencer": 227,
+      "brand": 237,
+      "native_runtime": "3"
+    },
+    "money_after": "unchanged — read again after the server, website and both phone updates were live: brand wallets 0 / creator wallets 8,625 / escrow 34,500 / released 8,625 / contracts locked 36,260",
+    "payments_mode": "TEST MODE in production (RAZORPAY_MOCK=true, rzp_test key): money added to a wallet and shopper payments are simulated. Admin → Money shows a red banner. A withdrawal must not be paid from the bank against simulated money.",
+    "open_after_deploy": [
+      "one creator holds 8,625 with no payment details saved",
+      "admins who had only the old Escrow capability need Payouts to open Admin → Money",
+      "16 old test orders without a checkout are never settled by the new job (left as they are)",
+      "a Hybrid collaboration settled by hand outside the plain brand-silent case does not complete by itself — item 18 Disputes",
+      "the public Creator Agreement text still mentions tax at withdrawal — the tax round"
+    ],
+    "walk": "founder walk of the 17 checks on both phones and Admin → Money"
   }
 }
