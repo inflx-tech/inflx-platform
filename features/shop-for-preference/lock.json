@@ -1,0 +1,25 @@
+{
+  "feature": "shop-for-preference",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 1 Oct 2026: \"ask is for algorithm feed preference… only men means if no posts available then show what exists but after getting more data about customer then we first give priority to this\") — decisions P1–P3 in 01-spec.md under standing autonomy",
+  "approved_at": "2026-10-01T19:30:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "The shopper's Women / Men / Kids choice orders her feed and never hides a post (rules v1.16 §5.12). Server only: shopperPosts.livePool marks `preferred`, shopperFeed.feed and shopperPosts.more put preferred first, circles see the whole pool. No migration, no phone change, no OTA, no money. Production-impacting: explicit go before push.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "at": "2026-10-01",
+    "backend": "shopper-app-v2 37/37 (one check rewritten: 'choice orders the feed and never hides a post'), shopper-ordering 36/36, post-links-codes 18/18",
+    "production_before": "the live feed answered 0 posts for shop_for=['women'] and for ['kids'], 1 for ['men'] and for no choice; circles answered 0 creators and 0 brands for ['women']",
+    "migration": "none",
+    "mobile": "none"
+  }
+}

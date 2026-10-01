@@ -84,18 +84,23 @@ function km(a, b) {
 /* ───────────────────────────────────────────── the live pool */
 
 /**
- * Live posts with what the feed needs to order them. Filters: segments (her Women/Men/Kids),
- * videos only (Play), one creator, one brand, one offer, one category leaf, or a list of ids.
+ * Live posts with what the feed needs to order them. Filters: videos only (Play), one creator, one
+ * brand, one offer, one category leaf, or a list of ids.
+ *
+ * `segments` (her Women / Men / Kids) is a PREFERENCE, never a filter (founder, 1 Oct 2026; rules
+ * v1.16 §5.12): no post is hidden for it. Each post comes back with `preferred` — true when she
+ * chose nothing, when the post has no category, or when one of its categories is one she shops for
+ * (Unisex always is) — and the feed puts the preferred ones first.
  */
 async function livePool({ segments = [], videosOnly = false, influencerId = null, brandId = null, offerId = null,
   leafId = null, ids = null, limit = 1500, today = todayInIndia() } = {}) {
   const params = [today];
   const where = [];
   const add = (v) => { params.push(v); return `$${params.length}`; };
-  if (segments.length) {
-    where.push(`(cardinality(cp.category_node_ids) = 0 OR EXISTS (SELECT 1 FROM category_nodes n
-       WHERE n.id = ANY(cp.category_node_ids) AND n.segment = ANY(${add([...segments.map((s) => SEGMENTS[s]), 'Unisex'])}::text[])))`);
-  }
+  const preferred = segments.length
+    ? `(cardinality(cp.category_node_ids) = 0 OR EXISTS (SELECT 1 FROM category_nodes n
+       WHERE n.id = ANY(cp.category_node_ids) AND n.segment = ANY(${add([...segments.map((s) => SEGMENTS[s]), 'Unisex'])}::text[])))`
+    : 'true';
   if (videosOnly) where.push(`cp.media_kind = 'video'`);
   if (influencerId) where.push(`cp.influencer_id = ${add(influencerId)}`);
   if (brandId) where.push(`cp.brand_id = ${add(brandId)}`);
@@ -108,7 +113,7 @@ async function livePool({ segments = [], videosOnly = false, influencerId = null
   const liveDay = `CASE WHEN cp.post_kind = 'offer' THEN o.starts_on END`;
   const { rows } = await db.query(
     `SELECT cp.id, cp.influencer_id, cp.brand_id, cp.post_kind, cp.offer_id, o.offer_type, cp.media_kind,
-            cp.category_node_ids, cp.theme_tag_ids, cp.price_band_id,
+            cp.category_node_ids, cp.theme_tag_ids, cp.price_band_id, ${preferred} AS preferred,
             GREATEST(COALESCE(((${liveDay})::timestamp AT TIME ZONE 'Asia/Kolkata'), cp.approved_at), cp.approved_at) AS live_at
        FROM creator_posts cp
        JOIN campaign_influencers ci ON ci.id = cp.campaign_influencer_id
@@ -424,7 +429,8 @@ async function more(postId, who, { served = [], size = 12 } = {}) {
   const leaves = new Set(base.category_node_ids || []);
   const tier = (p) => (p.influencer_id === base.influencer_id ? 0
     : (p.brand_id === base.brand_id || (p.category_node_ids || []).some((l) => leaves.has(l))) ? 1 : 2);
-  const ordered = pool.sort((a, b) => tier(a) - tier(b) || b.live_at - a.live_at);
+  // Within a tier, what she shops for comes first; nothing is left out for it (rules v1.16 §5.12).
+  const ordered = pool.sort((a, b) => tier(a) - tier(b) || (b.preferred ? 1 : 0) - (a.preferred ? 1 : 0) || b.live_at - a.live_at);
   const page = ordered.slice(0, size);
   const list = await cards(page.map((p) => p.id), who);
   const tierOf = new Map(page.map((p) => [p.id, tier(p)]));

@@ -200,15 +200,18 @@ async function feed(who, { mode = 'home', served = [], start = null, size = PAGE
   const isNew = (p) => Date.now() - p.live_at.getTime() < n.newHours * HOUR;
 
   const unseen = pool.filter((p) => !seen.has(p.id));
+  // Her Women / Men / Kids choice is a preference, never a filter (founder, 1 Oct 2026; rules v1.16
+  // §5.12): every live post is in the feed; the ones she shops for come first, the rest follow.
+  const pref = (p) => (p.preferred ? 0 : 1);
   let ordered;
   let scored = null;
   if (stage === 'B') {
     scored = await scores(unseen, who, n, dist);
-    ordered = [...unseen].sort((a, b) => scored.get(b.id).score - scored.get(a.id).score || b.live_at - a.live_at);
+    ordered = [...unseen].sort((a, b) => pref(a) - pref(b) || scored.get(b.id).score - scored.get(a.id).score || b.live_at - a.live_at);
   } else {
     const group = (p) => (followed.has(p.influencer_id) ? 0 : (dist.get(p.id) != null && dist.get(p.id) <= n.nearKm) ? 1 : 2);
     const t = (p) => p.live_at.getTime() + ((p.theme_tag_ids || []).some((x) => styles.has(x)) ? STYLE_LIFT_MS : 0);
-    ordered = [...unseen].sort((a, b) => group(a) - group(b) || t(b) - t(a) || (a.id < b.id ? -1 : 1));
+    ordered = [...unseen].sort((a, b) => pref(a) - pref(b) || group(a) - group(b) || t(b) - t(a) || (a.id < b.id ? -1 : 1));
   }
   ordered = withNewPlaces(ordered, isNew, n.newPct, followed);
   // Caught up: what she has seen comes back, the one she saw longest ago first.

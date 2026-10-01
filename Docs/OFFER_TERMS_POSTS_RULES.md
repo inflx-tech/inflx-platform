@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.15 · 1 October 2026 · living document**
+**Version 1.16 · 1 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -712,8 +712,13 @@ the creator store, brand store, search, Saved, collections, its link and its cod
 
 **What can appear.** Live posts only: approved (the posting date is not asked, v1.15), its offer active
 if it has one, not removed, at least one product
-in stock and on sale. Filtered to her **Women / Men / Kids** choice (none chosen = everything). Play takes
-videos only.
+in stock and on sale. Play takes videos only.
+
+**Her Women / Men / Kids choice is a preference, never a filter** (changed 1 Oct, v1.16). Every live
+post is in her feed. The posts she shops for come first (Unisex counts for everyone; so does a post
+with no category); the rest follow in the usual order. A shopper who chose only Men still sees
+what exists when there is nothing for men. The choice is one of the signals the feed that learns
+(Stage B) will weigh once there is enough to learn from about a shopper.
 
 #### Stage A: the rules feed (on from launch)
 1. **Order:**
@@ -1080,3 +1085,4 @@ invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses
 | 2026-09-30 | 1.13 | Founder: every order's money divided clearly. 6.13 now shows how each rupee splits: creator's share at her collaboration's %, INFLX's share at the admin rate (category via creator, or the brand's own rate), the brand the rest; worked per item at Place order, frozen on the item, adding up to the paisa. Example ₹1,000 → ₹100 / ₹50 / ₹850 (fashion Path B 5%). BOGO wording aligned: the free one is ₹0 in the money too. Delivery and COD fees go to the brand. Cash on delivery: the brand owes creator's share + INFLX's share, taken from its next online payouts. |
 | 2026-10-01 | 1.14 | Founder: a published offer needs "Add products", and products may change only while no creator has the offer. 1.10 rewritten: add and remove are allowed until the offer is given to a creator (an unsigned invitation counts), then both are greyed out with the reason; End offer now unchanged. This **reverses** v1.0's "a removed product leaves her posts": removal from an offer a creator has is no longer possible (2.8 row replaced). 1.4 and 1.12 aligned. Contract `features/offer-add-products`. |
 | 2026-10-01 | 1.15 | Founder: **the posting date is the last day to go live, not the day itself.** A post is in the shop as soon as INFLX approves it; an offer post is visible only while its offer is active (it waits for the offer's start, leaves at its end) (2.1, 4.1, 4.14, 5.12). Offers a brand may give: start on or before the posting date and end at least one day after it — an offer ending on the posting date, or starting the day after it, is no longer given (2.3). Products without offers: free of offers from the day the terms are sent, not from the posting date (2.4). Unchanged: invitations close 3 days before the date; the date is at least 7 days ahead; the minimum is counted by the date; late and Delayed after it. Contract `features/posting-date-last-day`. |
+| 2026-10-01 | 1.16 | Founder: the shopper's **Women / Men / Kids choice is a preference for ordering, never a filter** (5.12). Every live post is in her feed; the ones she shops for come first. Before, a shopper who chose only Women saw nothing while the one live post was a men's watch. Home circles and "more posts" follow the same rule. Contract `features/shop-for-preference`. |

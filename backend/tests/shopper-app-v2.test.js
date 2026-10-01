@@ -135,14 +135,27 @@ describe('what can appear in the feed (checks 1–3)', () => {
     expect(ids(await feed())).not.toContain(c);
   });
 
-  test('her Women / Men / Kids choice filters the feed (Unisex always passes); Play is videos only', async () => {
+  // BUSINESS-RULE DRIFT, shop-for-preference (founder, 1 Oct 2026; rules v1.16 §5.12): this check
+  // was "her Women / Men / Kids choice FILTERS the feed" and expected a men's post to be missing
+  // for a shopper who chose Women. The choice is now a preference: nothing is hidden for it; the
+  // posts she shops for come first.
+  test('her Women / Men / Kids choice orders the feed and never hides a post (Unisex counts for everyone); Play is videos only', async () => {
     const w = await world({ name: 'Divya M' });
-    const a = await post(w); await goLive(w);
-    expect(ids(await feed({ shop_for: ['men'] }))).toContain(a);
-    expect(ids(await feed({ shop_for: ['women'] }))).not.toContain(a);
+    const a = await post(w); await goLive(w);                             // a men's post (jeans)
+    const w2 = await world({ name: 'Lata P' });
+    const b = await post(w2, { caption: 'For her' });
+    await query(`UPDATE category_nodes SET segment = 'Women' WHERE id = $1`, [t.shirts]);
+    await query(`UPDATE creator_posts SET category_node_ids = $2::uuid[] WHERE id = $1`, [b, [t.shirts]]);   // fixture: a women's post
+    const order = async (body) => ids(await feed(body)).filter((x) => x === a || x === b);
+    expect(await order({ shop_for: ['men'] })).toEqual([a, b]);           // hers first, the other still there
+    expect(await order({ shop_for: ['women'] })).toEqual([b, a]);
+    expect((await order({})).sort()).toEqual([a, b].sort());              // no choice: everything, by the usual rules
+    expect((await order({ shop_for: ['kids'] })).sort()).toEqual([a, b].sort());   // nothing for her: she still sees what exists
     await query(`UPDATE category_nodes SET segment = 'Unisex' WHERE id = $1`, [t.jeans]);
-    expect(ids(await feed({ shop_for: ['women'] }))).toContain(a);
-    await query(`UPDATE category_nodes SET segment = 'Men' WHERE id = $1`, [t.jeans]);
+    await query(`UPDATE creator_posts SET approved_at = now() + interval '1 minute' WHERE id = $1`, [a]);    // a is the newer one
+    expect(await order({ shop_for: ['women'] })).toEqual([a, b]);         // Unisex is hers too, so only time decides
+    await query(`UPDATE category_nodes SET segment = 'Men' WHERE id = ANY($1::uuid[])`, [[t.jeans, t.shirts]]);
+    await api.post(`${P}/${b}/take-down`, w2.cr.token);
     expect(ids(await feed({ mode: 'play' }))).not.toContain(a);
     await query(`UPDATE creator_posts SET media_kind = 'video' WHERE id = $1`, [a]);   // fixture: a video post
     expect(ids(await feed({ mode: 'play' }))).toContain(a);
