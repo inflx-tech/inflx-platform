@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>offer-add-products — the offer page, three states</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#EFEFEA;font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:#0A0A0A;font-size:13px;line-height:1.45;padding:22px}
+h1{font-size:18px;margin:0 0 4px} .lead{color:#52525B;margin:0 0 18px;max-width:860px}
+.board{background:#FAFAFA;border:1px solid #E4E4E7;border-radius:14px;padding:16px 18px;margin:0 0 22px;max-width:1180px}
+.tag{display:inline-block;font:700 11px 'JetBrains Mono',ui-monospace,monospace;background:#0A0A0A;color:#FFC107;border-radius:6px;padding:2px 7px;margin-right:8px}
+.cap{font-weight:700;margin:0 0 12px}
+.page{display:grid;gap:14px}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+.link{color:#52525B;font-size:12.5px}
+.btn{display:inline-flex;align-items:center;padding:5px 10px;border-radius:10px;font-size:11.5px;font-weight:700;border:1px solid #E4E4E7;background:#fff;color:#0A0A0A;white-space:nowrap}
+.btn.ink{background:#0A0A0A;color:#FFC107;border-color:#0A0A0A}
+.btn.danger{border-color:#F3C7C7;color:#C42B2B}
+.btn.off{opacity:.45}
+h3{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.4px;margin:0}
+.sub{color:#52525B;font-size:12.5px;margin-top:2px}
+.st{display:inline-flex;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;background:#D1FAE5;color:#047857}
+.st.lock{background:#F4F4F5;color:#52525B}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:12px 14px;display:grid;gap:8px}
+.card.tint{background:#F4F4F5;border-color:transparent}
+.lbl{font-weight:700;font-size:12px}.big{font-family:'Outfit',sans-serif;font-size:20px;font-weight:800}
+.xs{font-size:11px;color:#71717A}.sm{font-size:12px}.hint{font-size:11.5px;color:#71717A}
+.plist{background:#fff;border:1px solid #E4E4E7;border-radius:12px;overflow:hidden}
+.prow{display:flex;align-items:center;gap:9px;padding:8px 10px;border-top:1px solid #E4E4E7;font-size:12px}
+.prow:first-child{border-top:0}.prow .t{flex:1;display:grid}.prow.locked{background:#FAFAFA;color:#71717A}
+.th{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#E4E4E7,#F4F4F5);flex:none}
+.mtabs{display:flex;gap:4px;background:#F4F4F5;padding:3px;border-radius:10px;width:max-content}
+.mtabs span{padding:5px 11px;border-radius:8px;font-size:11.5px;font-weight:700;color:#52525B}
+.mtabs .act{background:#fff;color:#0A0A0A;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.toast{justify-self:end;background:#0A0A0A;color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;font-size:12.5px}
+.note{font-size:12px;color:#52525B;margin:10px 0 0}
+</style>
+</head>
+<body>
+<h1>Offer page — add products, and when products are frozen</h1>
+<p class="lead">Website · Listings → Offers → an offer. From the founder's instruction of 1 Oct 2026 (screenshot of "Salary day off"). Rule: products can be added or removed only while no creator has the offer. Rules doc v1.14 §1.10.</p>
+
+<div class="board">
+  <p class="cap"><span class="tag">A1</span>No creator has the offer — three buttons</p>
+  <div class="page">
+    <div class="row between"><span class="link">← Offers</span>
+      <div class="row"><span class="btn">Add products</span><span class="btn">Remove products</span><span class="btn danger">End offer now</span></div></div>
+    <div class="row between"><div><h3>Salary day off</h3><div class="sub">BOGO · Buy one, get the same product free · max 1 free per order · 1 Oct 2026 – 6 Oct 2026</div></div><span class="st">Live · 6 days left</span></div>
+    <div class="grid3">
+      <div class="card"><span class="lbl">Pool</span><span class="big">2</span><span class="xs">products · can change until a creator has it</span></div>
+      <div class="card"><span class="lbl">Creators given this offer</span><span class="big">0</span><span class="xs">You give offers to creators when you set their terms</span></div>
+      <div class="card"><span class="lbl">Live posts using it</span><span class="big">0</span><span class="xs">Posts using this offer show here once INFLX approves them.</span></div>
+    </div>
+    <div class="card"><span class="sm">The pool</span>
+      <div class="plist"><div class="prow"><div class="t"><b>Blue polo</b><span class="xs">₹899</span></div></div><div class="prow"><div class="t"><b>red t shirt</b><span class="xs">₹500</span></div></div></div></div>
+    <div class="hint">Name, type, numbers and dates can't be edited once published. You can add or remove products until you give this offer to a creator. To change the deal itself, end it and build a new one.</div>
+  </div>
+</div>
+
+<div class="board">
+  <p class="cap"><span class="tag">A2</span>Add products — browse or search, tick, add</p>
+  <div class="page">
+    <div class="row between"><span class="link">← Offers</span>
+      <div class="row"><span class="btn">Cancel adding</span><span class="btn">Remove products</span><span class="btn danger">End offer now</span></div></div>
+    <div class="card">
+      <div class="row between"><b class="sm">Tick the products to add to this offer</b><div class="row"><span class="btn">Cancel</span><span class="btn ink">Add 2 products</span></div></div>
+      <div class="mtabs"><span class="act">Browse by category</span><span>Search products</span></div>
+      <div class="sm" style="color:#52525B">All categories › <b style="color:#0A0A0A">Men</b> · 9 products</div>
+      <div class="plist">
+        <div class="prow"><input type="checkbox" checked><span class="th"></span><div class="t"><b>Black polo</b><span class="xs">₹949 · T-shirts</span></div></div>
+        <div class="prow"><input type="checkbox" checked disabled><span class="th"></span><div class="t"><b>Blue polo</b><span class="xs">₹899 · T-shirts</span></div><span class="st">In pool</span></div>
+        <div class="prow locked"><input type="checkbox" disabled><span class="th"></span><div class="t"><b>Levi's 511 Slim · Dark Indigo</b><span class="xs">₹2,299 · Jeans</span></div><span class="st lock">🔒 In "Denim Days" until 18 Oct</span></div>
+        <div class="prow"><input type="checkbox" checked><span class="th"></span><div class="t"><b>Linen shirt · Sage</b><span class="xs">₹849 · Shirts</span></div></div>
+      </div>
+      <div class="hint">Products you add are locked to this offer until 6 Oct. Locked products are in another offer on these dates and can't be ticked.</div>
+    </div>
+    <div class="toast">2 products added. They're locked to this offer until 6 Oct.</div>
+  </div>
+  <p class="note">Refused, with the reason shown in the panel: a product another offer holds on these days · a product that would break the deal (a bundle's price band or saving, a pick-any bundle's one category, a flat ₹ off above the product's price). A fixed bundle has no Add products button. Gifts can't be added here.</p>
+</div>
+
+<div class="board">
+  <p class="cap"><span class="tag">A3</span>Given to a creator — add and remove greyed out, with the reason</p>
+  <div class="page">
+    <div class="row between"><span class="link">← Offers</span>
+      <div class="row"><span class="btn off">Add products</span><span class="btn off">Remove products</span><span class="btn danger">End offer now</span></div></div>
+    <div class="row between"><div><h3>Denim Days</h3><div class="sub">Discount · Flat · ₹200 off per item · 28 Sep 2026 – 18 Oct 2026</div></div><span class="st">Live · 18 days left</span></div>
+    <div class="card tint"><span class="sm"><b>This offer has been given to 2 creators, so its products can't be added or removed.</b> Creators' terms and posts promise these products. To change the deal, end the offer and build a new one.</span></div>
+    <div class="grid3">
+      <div class="card"><span class="lbl">Pool</span><span class="big">2</span><span class="xs">products · frozen</span></div>
+      <div class="card"><span class="lbl">Creators given this offer</span><span class="big">2</span><span class="xs">in 1 set</span></div>
+      <div class="card"><span class="lbl">Live posts using it</span><span class="big">0</span><span class="xs">Posts using this offer show here once INFLX approves them.</span></div>
+    </div>
+    <div class="hint">Name, type, numbers and pool can't be edited once published. Creators' posts already promise this deal. To change the deal, end it and build a new one.</div>
+  </div>
+  <p class="note">"Given" includes an invitation she hasn't signed yet. A declined, expired or withdrawn invitation doesn't count.</p>
+</div>
+</body>
+</html>

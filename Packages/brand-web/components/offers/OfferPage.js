@@ -1,13 +1,15 @@
 'use client';
-// A published offer (O10) and its two allowed changes (O11). Contract: features/offer-builder-v2 · rules 1.9, 1.10
-// Name, type, numbers, dates and pool are frozen once published: the creators' posts promise this
-// deal. The brand can only take products out, or end the offer now.
+// A published offer (O10) and its allowed changes (O11). Contract: features/offer-builder-v2 · rules 1.9, 1.10
+// Name, type, numbers and dates are frozen once published. Products can be added or taken out only
+// while no creator has the offer (features/offer-add-products); after that the creators' terms and
+// posts promise this pool, and the brand can only end the offer.
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { brandApi } from '../../lib/api';
 import { OFX_CSS } from './offerCss';
-import { STATUS_LABEL, inr, longDay, span } from './offerFormat';
+import { STATUS_LABEL, dayMonth, inr, longDay, span } from './offerFormat';
+import AddProductsPanel from './AddProductsPanel';
 
 export default function OfferPage({ id }) {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function OfferPage({ id }) {
   const [err, setErr] = useState('');
   const [toast, setToast] = useState(null);
   const [removing, setRemoving] = useState(false);     // choosing products to remove
+  const [adding, setAdding] = useState(false);         // choosing products to add
   const [ticked, setTicked] = useState([]);
   const [dialog, setDialog] = useState(null);          // { kind: 'remove', preview } | { kind: 'end' }
   const [busy, setBusy] = useState(false);
@@ -38,10 +41,17 @@ export default function OfferPage({ id }) {
 
   const say = (msg, type) => { setToast({ msg, type }); setTimeout(() => setToast(null), 4000); };
 
+  // A creator was given the offer while this page was open: say so and show the frozen page.
+  function given(msg) {
+    setDialog(null); setAdding(false); setRemoving(false); setTicked([]);
+    say(msg, 'err');
+    load();
+  }
   async function openRemove() {
     if (!ticked.length) return;
     setDlgErr('');
     const r = await brandApi.offerRemovePreview(id, ticked);
+    if (!r.success && r.error?.code === 'OFFER_GIVEN') { given(r.error.message); return; }
     if (!r.success) { say(r.error?.message || 'Couldn\'t check those products.', 'err'); return; }
     setDialog({ kind: 'remove', preview: r.data });
   }
@@ -50,9 +60,15 @@ export default function OfferPage({ id }) {
     setBusy(true); setDlgErr('');
     const r = await brandApi.removeOfferProducts(id, ticked);
     setBusy(false);
+    if (!r.success && r.error?.code === 'OFFER_GIVEN') { given(r.error.message); return; }
     if (!r.success) { setDlgErr(r.error?.message || 'Couldn\'t remove them.'); return; }
     setDialog(null); setRemoving(false); setTicked([]);
-    say(`${r.data.removed} product${r.data.removed > 1 ? 's' : ''} removed and free again.${r.data.creators_told ? ` ${r.data.creators_told} creator${r.data.creators_told > 1 ? 's were' : ' was'} told.` : ''}`);
+    say(`${r.data.removed} product${r.data.removed > 1 ? 's' : ''} removed and free again.`);
+    load();
+  }
+  function added(d) {
+    setAdding(false);
+    say(`${d.added} product${d.added > 1 ? 's' : ''} added. ${d.added > 1 ? 'They\'re' : 'It\'s'} locked to this offer until ${dayMonth(d.locked_until)}.`);
     load();
   }
   async function confirmEnd() {
@@ -84,6 +100,9 @@ export default function OfferPage({ id }) {
     : STATUS_LABEL[ds];
   const items = [...view.pool.buy.map((p) => ({ ...p, pool: 'buy' })), ...view.pool.gift.map((g) => ({ ...g, pool: 'gift' }))];
   const creators = view.creators || [];
+  // Products can change only while no creator has the offer; a fixed bundle is exactly its products.
+  const poolOpen = view.pool_open !== undefined ? !!view.pool_open : running && creators.length === 0;
+  const canAdd = o.sub_type !== 'fixed';
   const pickedNames = items.filter((p) => ticked.includes(p.id)).map((p) => p.name);
 
   return (
@@ -94,7 +113,8 @@ export default function OfferPage({ id }) {
           <Link className="link" href="/dashboard/products/listing?tab=offers">← Offers</Link>
           {running && (
             <div className="row">
-              <button className="btn btn-ghost btn-sm" onClick={() => { setRemoving((v) => !v); setTicked([]); }}>{removing ? 'Cancel removing' : 'Remove products'}</button>
+              {canAdd && <button className="btn btn-ghost btn-sm" disabled={!poolOpen} onClick={() => { setAdding((v) => !v); setRemoving(false); setTicked([]); }}>{adding ? 'Cancel adding' : 'Add products'}</button>}
+              <button className="btn btn-ghost btn-sm" disabled={!poolOpen} onClick={() => { setRemoving((v) => !v); setAdding(false); setTicked([]); }}>{removing ? 'Cancel removing' : 'Remove products'}</button>
               <button className="btn btn-danger btn-sm" onClick={() => { setDlgErr(''); setDialog({ kind: 'end' }); }}>End offer now</button>
             </div>
           )}
@@ -103,13 +123,20 @@ export default function OfferPage({ id }) {
           <div><h3>{o.name}</h3><div className="sub">{o.type_label}{o.deal ? ` · ${o.deal}` : ''} · {o.starts_on && o.ends_on ? `${longDay(o.starts_on)} – ${longDay(o.ends_on)}` : ''}</div></div>
           <span className={'st ' + ds}>{statusText}</span>
         </div>
+        {running && !poolOpen && (
+          <div className="card tint" data-testid="pool-given">
+            <span className="sm"><b>This offer has been given to {creators.length} creator{creators.length > 1 ? 's' : ''}, so its products can&apos;t be added or removed.</b> Creators&apos; terms and posts promise these products. To change the deal, end the offer and build a new one.</span>
+          </div>
+        )}
         <div className="grid3">
-          <div className="card"><span className="lbl">Pool</span><span className="big">{view.pool.counts.buy}{view.pool.counts.gift ? ` + ${view.pool.counts.gift}` : ''}</span><span className="xs mut2">products{view.pool.counts.gift ? ' + gifts' : ''} · frozen</span></div>
+          <div className="card"><span className="lbl">Pool</span><span className="big">{view.pool.counts.buy}{view.pool.counts.gift ? ` + ${view.pool.counts.gift}` : ''}</span><span className="xs mut2">products{view.pool.counts.gift ? ' + gifts' : ''} · {poolOpen ? 'can change until a creator has it' : 'frozen'}</span></div>
           <div className="card"><span className="lbl">Creators given this offer</span><span className="big">{creators.length}</span><span className="xs mut2">{creators.length ? `in ${new Set(creators.map((c) => c.set_name + c.campaign_name)).size} set${new Set(creators.map((c) => c.set_name + c.campaign_name)).size > 1 ? 's' : ''}` : 'You give offers to creators when you set their terms'}</span></div>
           <div className="card"><span className="lbl">Live posts using it</span><span className="big">{view.posts.live}</span><span className="xs mut2">{view.posts.note}</span></div>
         </div>
 
-        {removing && (
+        {adding && poolOpen && <AddProductsPanel offer={o} onAdded={added} onGiven={given} onCancel={() => setAdding(false)} />}
+
+        {removing && poolOpen && (
           <div className="card warnbox">
             <div className="row between"><b className="sm">Tick the products to take out of this offer</b>
               <button className="btn btn-ink btn-sm" disabled={!ticked.length} onClick={openRemove}>Remove {ticked.length || ''} product{ticked.length === 1 ? '' : 's'}</button></div>
@@ -137,20 +164,22 @@ export default function OfferPage({ id }) {
           </div>
         )}
 
-        {!removing && (
+        {!(removing && poolOpen) && (
           <div className="card">
             <h4>The pool</h4>
             <div className="plist">
               {items.map((p) => (
                 <div key={p.pool + p.id} className="prow">
-                  <div className="t"><b>{p.name}</b><span className="xs mut2">{p.pool === 'gift' ? (p.kind === 'gift_item' ? `Gift item · worth ${inr(p.value)} · stock ${p.stock}` : `Gift · ${inr(p.value)} · limit ${p.gift_limit || '—'}`) : `${inr(p.price)}${p.quantity > 1 ? ` · qty ${p.quantity}` : ''}${p.added_by === 'auto_add' ? ` · added automatically from ${longDay(p.from_day)}` : ''}`}</span></div>
+                  <div className="t"><b>{p.name}</b><span className="xs mut2">{p.pool === 'gift' ? (p.kind === 'gift_item' ? `Gift item · worth ${inr(p.value)} · stock ${p.stock}` : `Gift · ${inr(p.value)} · limit ${p.gift_limit || '—'}`) : `${inr(p.price)}${p.quantity > 1 ? ` · qty ${p.quantity}` : ''}${p.added_by === 'auto_add' ? ` · added automatically from ${longDay(p.from_day)}` : (p.from_day > o.starts_on ? ` · added ${longDay(p.from_day)}` : '')}`}</span></div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="hint">Name, type, numbers and pool can&apos;t be edited once published. Creators&apos; posts already promise this deal. To change the deal, end it and build a new one.</div>
+        <div className="hint">{poolOpen
+          ? 'Name, type, numbers and dates can\'t be edited once published. You can add or remove products until you give this offer to a creator. To change the deal itself, end it and build a new one.'
+          : 'Name, type, numbers and pool can\'t be edited once published. Creators\' posts already promise this deal. To change the deal, end it and build a new one.'}</div>
       </div>
 
       {dialog && dialog.kind === 'remove' && (
@@ -158,13 +187,10 @@ export default function OfferPage({ id }) {
           <div className="dlg" onClick={(e) => e.stopPropagation()}>
             <h4>Remove {dialog.preview.products.length} product{dialog.preview.products.length > 1 ? 's' : ''} from this offer?</h4>
             <div className="sm">{pickedNames.join(' · ')}</div>
-            <div className="card warnbox" style={{ gap: 4 }}>
-              {dialog.preview.creators.length
-                ? <span className="sm"><b>{dialog.preview.creators.length} creator{dialog.preview.creators.length > 1 ? 's have' : ' has'} this offer</b> ({dialog.preview.creators.slice(0, 3).join(', ')}{dialog.preview.creators.length > 3 ? '…' : ''}). They&apos;ll leave any of their posts using it.</span>
-                : <span className="sm"><b>No creator has this offer yet.</b></span>}
-              <span className="xs">Each creator gets a notification. Shoppers already paying keep the offer price.</span>
+            <div className="card tint" style={{ gap: 4 }}>
+              <span className="sm"><b>No creator has this offer yet</b>, so nothing else changes.</span>
             </div>
-            <div className="hint">The {dialog.preview.products.length} product{dialog.preview.products.length > 1 ? 's' : ''} become free right away and can go into another offer. {dialog.preview.products_left} stay{dialog.preview.products_left === 1 ? 's' : ''} in this offer.</div>
+            <div className="hint">The {dialog.preview.products.length} product{dialog.preview.products.length > 1 ? 's become' : ' becomes'} free right away and can go into another offer. {dialog.preview.products_left} stay{dialog.preview.products_left === 1 ? 's' : ''} in this offer.</div>
             {dlgErr && <div className="err">{dlgErr}</div>}
             <div className="row" style={{ justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" disabled={busy} onClick={() => setDialog(null)}>Cancel</button>

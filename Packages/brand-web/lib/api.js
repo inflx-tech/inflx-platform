@@ -279,6 +279,7 @@ export const brandApi = {
   endOffer:      (id) => api.post(`/brands/me/offers/${id}/end`, {}),
   offerRemovePreview: (id, productIds) => api.get(`/brands/me/offers/${id}/remove-preview?product_ids=${productIds.join(',')}`),
   removeOfferProducts: (id, productIds) => api.post(`/brands/me/offers/${id}/remove-products`, { product_ids: productIds }),
+  addOfferProducts: (id, productIds) => api.post(`/brands/me/offers/${id}/add-products`, { product_ids: productIds }),
   productsWithoutOffers: (params) => api.get(`/brands/me/offers/products-without-offers?${new URLSearchParams(params || {})}`),
   productOffers:   () => api.get('/brands/me/offers/product-offers'),
   productOfferPanel: (productId) => api.get(`/brands/me/offers/product-offers/${productId}`),

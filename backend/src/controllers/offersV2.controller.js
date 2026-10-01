@@ -71,7 +71,10 @@ const candidates = asyncHandler(async (req, res) => {
     brands: listParam(req.query.brands),
     price_min: req.query.price_min, price_max: req.query.price_max,
   };
-  const products = await pool.candidates(offer, { node: req.query.node || null, filters, q: req.query.q ? String(req.query.q) : null });
+  const products = await pool.candidates(offer, {
+    node: req.query.node || null, filters, q: req.query.q ? String(req.query.q) : null,
+    from: offer.status === 'draft' ? null : life.joinsFrom(offer),
+  });
   return success(res, { products });
 });
 
@@ -110,6 +113,12 @@ const removeProducts = asyncHandler(async (req, res) => {
   const brandId = await brandOf(req);
   const ids = Array.isArray(req.body && req.body.product_ids) ? req.body.product_ids : [];
   return success(res, await life.removeProducts(brandId, req.params.id, ids));
+});
+
+const addProducts = asyncHandler(async (req, res) => {
+  const brandId = await brandOf(req);
+  const ids = Array.isArray(req.body && req.body.product_ids) ? req.body.product_ids : [];
+  return success(res, await life.addProducts(brandId, req.params.id, ids));
 });
 
 // ── Listings ─────────────────────────────────────────────────────────────────
@@ -160,7 +169,7 @@ const updateGiftItem = asyncHandler(async (req, res) => {
 
 module.exports = {
   list, create, getOne, update, remove, addSource, removeSource, candidates, filterOptions,
-  publish, endNow, removePreview, removeProducts,
+  publish, endNow, removePreview, removeProducts, addProducts,
   productsWithoutOffers, offersByProduct, productOfferPanel, priceImpact,
   listGiftItems, createGiftItem, updateGiftItem,
 };

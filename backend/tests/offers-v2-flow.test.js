@@ -299,23 +299,28 @@ describe('removing products and ending early (checks 26, 27, 28)', () => {
     ci = (await H.collab(B.brandId, C.influencerId, { status: 'active' })).campaignInfluencerId;
   });
 
-  test('removed products are free at once and the creator is told which (check 26)', async () => {
+  // offer-add-products (rules v1.14 §1.10, founder 1 Oct 2026): products can be taken out only
+  // while no creator has the offer. This check used to give the offer to a creator first and
+  // expect her to be told; that path is now refused (tests/offer-add-products.test.js).
+  test('removed products are free at once; once a creator has the offer nothing can be removed (check 26)', async () => {
     const a = await H.prod(B.brandId, t.jeans, 'Rm jeans A', 1800);
     const b = await H.prod(B.brandId, t.jeans, 'Rm jeans B', 1900);
     const c = await H.prod(B.brandId, t.jeans, 'Rm jeans C', 2000);
     const id = await H.ready(B.token, { name: 'Remove me', ids: [a, b, c], from: day(-2), to: day(10) });
-    await H.link(ci, id);
     const pv = await api.get(`/brands/me/offers/${id}/remove-preview?product_ids=${a},${b}`, B.token);
-    expect(pv.body.data).toMatchObject({ creators: ['Priya Sharma'], posts: { live: 0, emptied: 0 }, products_left: 1 });
+    expect(pv.body.data).toMatchObject({ creators: [], posts: { live: 0, emptied: 0 }, products_left: 1 });
     const r = await api.post(`/brands/me/offers/${id}/remove-products`, B.token, { product_ids: [a, b] });
     expect(r.status).toBe(200);
     // shoppable-posts-v2: the reply also says how many posts the removal emptied (none here).
-    expect(r.body.data).toEqual({ removed: 2, creators_told: 1, posts_removed: 0 });
+    expect(r.body.data).toEqual({ removed: 2, creators_told: 0, posts_removed: 0 });
     // Free the same day: another offer takes them for today.
     expect((await H.publish(B.token, await H.ready(B.token, { ids: [a, b], from: T(), to: day(3), publishIt: false }))).status).toBe(200);
-    const n = await H.notices(C.userId, 'offer_products_removed');
-    expect(n[0].title).toBe('2 products removed from "Remove me"');
-    expect(n[0].body).toMatch(/took Rm jeans A, Rm jeans B out of this offer/);
+
+    await H.link(ci, id);
+    const given = await api.post(`/brands/me/offers/${id}/remove-products`, B.token, { product_ids: [c] });
+    expect(given.status).toBe(409);
+    expect(given.body.error.code).toBe('OFFER_GIVEN');
+    expect((await H.notices(C.userId, 'offer_products_removed')).length).toBe(0);
   });
 
   test('refused when it would break the deal (check 27)', async () => {

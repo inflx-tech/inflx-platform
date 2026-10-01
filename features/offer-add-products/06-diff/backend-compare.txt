@@ -1,0 +1,40 @@
+offer-add-products — full backend run vs backend/baseline_item17.json (1 Oct 2026, private database inflx_test_offeradd)
+The working tree also holds item 17 (wallet), uncommitted: its new and rewritten tests appear below and are not this change's.
+
+baseline: suites 135 tests 1786 passed 1577 failed 181
+after:    suites 138 tests 1831 passed 1625 failed 178
+passed before, failing now: 0
+new tests failing: 0
+failed before, passing now: 0
+tests gone: 22
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) UPI withdrawal request: deducts wallet, writes a pending row + ledger debit [was passed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) admin approve (mock) marks completed and leaves wallet debited [was failed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) admin reject refunds the wallet and cancels the withdrawal [was failed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) bank_transfer withdrawal snapshots account + IFSC [was passed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) rejects withdrawal below the minimum [was passed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) rejects withdrawal above available balance [was passed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) rejects when no payment method is on file [was passed]
+   brand-withdrawal.test.js :: Brand Wallet Withdrawal (admin-gated) cannot process an already-processed withdrawal [was failed]
+   shoppable-posts-v2.test.js :: a post's life after it is approved (4.9; checks 22–27) products removed from the offer leave the post; a post left empty is removed [was passed]
+   shopper-ordering.test.js :: orders, cancelling, the brand, the money jobs (C28–C35) 6.13 cash on delivery: the brand owes both shares; they come off its next online payout [was passed]
+   withdrawal.test.js :: Influencer Withdrawal successful withdrawal with TDS calculation [was passed]
+   withdrawal.test.js :: Influencer Withdrawal retry failed withdrawal succeeds [was passed]
+   withdrawal.test.js :: Influencer Withdrawal full E2E: commission confirm → withdraw → verify TDS on earnings [was passed]
+   settlement.test.js :: settlement.service.settleCommerceTransaction (RAZORPAY_MOCK) no linked account, tcs_applicable=false → tcs 0, commission GST recorded, no transfer [was passed]
+   settlement.test.js :: settlement.service.settleCommerceTransaction (RAZORPAY_MOCK) with linked account → Route transfer fires (mock) for the full brand_net (tcs gated off) [was passed]
+   settlement.test.js :: settlement.service.settleCommerceTransaction (RAZORPAY_MOCK) tcs_applicable=true but global tcs_active off → still 0 (both gates required) [was passed]
+   settlement.test.js :: settlement.service.settleCommerceTransaction (RAZORPAY_MOCK) idempotent — second settle is skipped [was passed]
+   settlement.test.js :: settlement.service.settleCommerceTransaction (RAZORPAY_MOCK) resolveReturnWindowEndsAt uses the per-category window [was passed]
+   offers-v2-flow.test.js :: removing products and ending early (checks 26, 27, 28) removed products are free at once and the creator is told which (check 26) [was passed]
+   settlement-retry.test.js :: settlement-retry.job (RAZORPAY_MOCK) brand onboards AFTER the sale → retry completes the transfer [was passed]
+   settlement-retry.test.js :: settlement-retry.job (RAZORPAY_MOCK) no linked account → not eligible, transfer stays null [was passed]
+   settlement-retry.test.js :: settlement-retry.job (RAZORPAY_MOCK) already-transferred txn is not retried again [was passed]
+new tests by suite: {"item17-wallet.test.js":{"passed":31,"failed":0},"shopper-ordering.test.js":{"passed":1,"failed":0},"shoppable-posts-v2.test.js":{"passed":2,"failed":0},"brand-withdrawal.test.js":{"passed":8,"failed":0},"withdrawal.test.js":{"passed":3,"failed":0},"settlement.test.js":{"passed":6,"failed":0},"settlement-retry.test.js":{"passed":3,"failed":0},"offers-v2-flow.test.js":{"passed":1,"failed":0},"offer-add-products.test.js":{"passed":12,"failed":0}}
+suites that failed to run: 2
+   zz-demo17.test.js —   ● Test suite failed to run
+   collection-library.test.js —   ● Test suite failed to run
+
+Notes
+- This change's own lines: offer-add-products.test.js (12 new), offers-v2-flow check 26 and shoppable-posts-v2 'products removed…' rewritten for the rule change (1 gone + 1 new, and 1 gone + 2 new).
+- collection-library.test.js fails to load in the baseline too (missing service; pre-existing).
+- zz-demo17.test.js: a temporary file another window created and removed while this run was going; not part of the repository.

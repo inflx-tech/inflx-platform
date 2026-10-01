@@ -22,8 +22,9 @@
  *   POST   /offers/:id/publish
  *   POST   /offers/:id/end
  *   GET    /offers/:id/remove-preview?product_ids=
- *   POST   /offers/:id/remove-products
- *   GET    /offers/:id/attachments      (old builder; kept for old clients)
+ *   POST   /offers/:id/remove-products  only while no creator has the offer (features/offer-add-products)
+ *   POST   /offers/:id/add-products     the same rule; held from today under the publish checks
+ *   GET    /offers/:id/attachments     (old builder; kept for old clients)
  *   GET/POST /gift-items · PATCH /gift-items/:id
  *
  * Retired here (rules 1.13): POST /offers/:id/products — the bulk "Attach offer" from Inventory.
@@ -59,6 +60,7 @@ router.post(  '/offers/:id/publish',            v2.publish);
 router.post(  '/offers/:id/end',                v2.endNow);
 router.get(   '/offers/:id/remove-preview',     v2.removePreview);
 router.post(  '/offers/:id/remove-products',    v2.removeProducts);
+router.post(  '/offers/:id/add-products',       v2.addProducts);
 router.get(   '/offers/:id',                    v2.getOne);
 router.patch( '/offers/:id',                    v2.update);
 router.delete('/offers/:id',                    v2.remove);

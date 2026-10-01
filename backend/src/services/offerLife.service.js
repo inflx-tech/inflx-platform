@@ -5,11 +5,12 @@
  * Rules: Docs/OFFER_TERMS_POSTS_RULES.md §1.2–§1.11.
  *
  *   draft ──publish──▶ published (Scheduled / Live / Ended from the dates, India time)
- *     │                    ├── remove products (freed at once; creators told)
+ *     │                    ├── add / remove products — only while no creator has the offer
  *   delete                 └── end now ──▶ ended (products free from today; creators told)
  *
- * Only a draft can change. A published offer's name, type, numbers, dates and pool are frozen
- * (rules 1.10); it can't be deleted, only ended (rules 1.9).
+ * Only a draft can change. A published offer's name, type, numbers and dates are frozen (rules
+ * 1.10); it can't be deleted, only ended (rules 1.9). Its products can still be added to or taken
+ * out until it is given to a creator (features/offer-add-products); after that the pool is frozen.
  */
 
 const db = require('../config/db');
@@ -236,6 +237,8 @@ async function view(brandId, offerId, { today = todayInIndia() } = {}) {
   const giftCount = p.gift.length;
   const postStats = offer.status === 'draft' ? { live: 0, byCi: new Map() } : await require('./shoppablePosts.service').offerPostStats(offer.id, { today });
   return {
+    // offer-add-products: products can be added or taken out only while no creator has the offer.
+    pool_open: (status === 'live' || status === 'scheduled') && creators.length === 0,
     offer: {
       ...offer,
       display_status: status,
@@ -394,6 +397,98 @@ async function endNow(brandId, offerId, { today = todayInIndia() } = {}) {
   return { ended: true, freed: res.freed, creators_told: told + drop.dropped, invitations_dropped: drop.dropped, invitations_withdrawn: drop.withdrawn, posts_removed: postsRemoved };
 }
 
+// ── changing the products of a published offer (rules 1.10; features/offer-add-products) ──
+/** Once a creator has the offer its products are frozen: her terms and posts promise this pool. */
+async function assertNotGiven(offerId, tx = db) {
+  const n = (await creatorsOf(offerId, tx)).length;
+  if (n) {
+    throw new AppError('OFFER_GIVEN',
+      `This offer has been given to ${n} creator${n === 1 ? '' : 's'}, so its products can't be changed. To change the deal, end it and build a new one.`, 409);
+  }
+}
+
+/** The day a product added now starts being held: today, or the start date of a Scheduled offer. */
+const joinsFrom = (offer, today = todayInIndia()) => (daysBetween(offer.starts_on, today) > 0 ? today : offer.starts_on);
+
+/** Why these products can't join, in the brand's words; the publish check's own text otherwise. */
+function addRefusal(check, offer, buy) {
+  const cfg = rules.normaliseConfig(offer.sub_type, offer.offer_config_json);
+  const byPrice = [...buy].sort((a, b) => Number(a.price) - Number(b.price));
+  const cheapest = byPrice[0], costliest = byPrice[byPrice.length - 1];
+  if (check.key === 'flat_below_cheapest') {
+    return `This offer takes ${rules.inr(cfg.amount)} off each item, so every product must cost more than that. "${cheapest.name}" costs ${rules.inr(cheapest.price)}.`;
+  }
+  if (check.key === 'band') {
+    return `In a bundle the costliest product can be at most 1.5 × the cheapest. With these it would be ${rules.inr(costliest.price)} against ${rules.inr(cheapest.price)}.`;
+  }
+  if (check.key === 'saving') {
+    const combo = byPrice.slice(0, cfg.pick).reduce((s, p) => s + Number(p.price), 0);
+    return `With these the cheapest ${cfg.pick} would cost ${rules.inr(combo)}, and the bundle price (${rules.inr(cfg.price)}) must save the shopper at least 10%.`;
+  }
+  return check.text;
+}
+
+/**
+ * Add products to the buy pool of a Scheduled or Live offer no creator has yet. They are held from
+ * today (or the start date) to the end date, under the same lock and the same checks as publishing:
+ * a product another offer holds on those days, or one that would break the deal, is refused and
+ * named. Gifts and a fixed bundle's products can't be added.
+ */
+async function addProducts(brandId, offerId, productIds, { today = todayInIndia() } = {}) {
+  try {
+    return await db.withTransaction(async (tx) => {
+      await tx.query(`SELECT pg_advisory_xact_lock(hashtext('offer-pool:' || $1::text))`, [brandId]);
+      const offer = await getOwn(brandId, offerId, { tx, forUpdate: true });
+      if (offer.status === 'draft' || rules.displayStatus(offer, today) === 'ended') throw new AppError('OFFER_LOCKED', 'Only a scheduled or live offer can take more products.', 409);
+      await assertNotGiven(offer.id, tx);
+      if (offer.sub_type === 'fixed') throw new AppError('ADD_REFUSED', 'A fixed bundle is exactly these products. To change it, end the offer and build a new one.', 422);
+
+      const ids = [...new Set((Array.isArray(productIds) ? productIds : []).filter((x) => /^[0-9a-f-]{36}$/i.test(String(x))))];
+      if (!ids.length) throw new AppError('VALIDATION_ERROR', 'Tick the products to add.', 422, 'product_ids');
+      const found = await pool.productsByIds(brandId, ids, tx);
+      if (found.length !== ids.length) throw new AppError('VALIDATION_ERROR', 'One or more products are not in your published listings.', 422, 'product_ids');
+
+      const frozen = await pool.frozenPool(offer.id, tx);
+      const inPool = new Set([...frozen.buy.map((b) => b.id), ...frozen.gift.filter((g) => g.kind === 'product').map((g) => g.id)]);
+      const already = found.find((p) => inPool.has(p.id));
+      if (already) throw new AppError('VALIDATION_ERROR', `"${already.name}" is already in this offer.`, 422, 'product_ids');
+
+      const from = joinsFrom(offer, today);
+      const locks = await pool.locksFor({ productIds: ids, startsOn: from, endsOn: offer.ends_on, exceptOfferId: offer.id }, tx);
+      const held = found.find((p) => locks.has(p.id));
+      if (held) {
+        const lk = locks.get(held.id);
+        throw new AppError('PRODUCT_LOCKED', `"${held.name}" is in "${lk.offer_name}" until ${rules.dayMonth(lk.until)} and can't be added.`, 409, 'product_ids');
+      }
+
+      // The deal must still hold with the new products. A check the pool already failed (a price
+      // changed since publishing, rules 1.11) isn't held against them.
+      const buy = [...frozen.buy, ...found];
+      const before = rules.publishChecks(offer, { buy: frozen.buy, gift: frozen.gift, conflicts: [] }, today);
+      const after = rules.publishChecks(offer, { buy, gift: frozen.gift, conflicts: [] }, today);
+      const failing = new Set(before.checks.filter((c) => !c.ok).map((c) => c.key));
+      const broke = after.checks.find((c) => !c.ok && !failing.has(c.key));
+      if (broke) throw new AppError('ADD_REFUSED', addRefusal(broke, offer, buy), 422);
+
+      const { rows: [src] } = await tx.query(
+        `INSERT INTO offer_pool_sources (offer_id, pool, method, product_ids) VALUES ($1, 'buy', 'picked', $2::uuid[]) RETURNING id`,
+        [offer.id, ids]);
+      for (const p of found) {
+        await tx.query(
+          `INSERT INTO offer_pool_items (offer_id, brand_id, pool, product_id, source_id, quantity, price_at_publish, lock_days)
+           VALUES ($1,$2,'buy',$3,$4,1,$5, daterange($6::date, $7::date, '[)'))`,
+          [offer.id, brandId, p.id, src.id, p.price, from, addDays(offer.ends_on, 1)]);
+      }
+      await tx.query(`UPDATE brand_offers SET updated_at = now() WHERE id = $1`, [offer.id]);
+      return { added: found.length, products: buy.length, locked_until: offer.ends_on };
+    });
+  } catch (e) {
+    // The database's lock refused a product another offer took in the same moment.
+    if (e && e.code === '23P01') throw new AppError('PRODUCT_LOCKED', 'One of those products was just put into another offer. Check the list again.', 409, 'product_ids');
+    throw e;
+  }
+}
+
 // ── removing products (rules 1.10; guards: spec D8) ──────────────────────────
 async function removalPlan(offer, productIds, tx = db) {
   const ids = [...new Set((productIds || []).filter(Boolean))];
@@ -425,6 +520,7 @@ async function removalPlan(offer, productIds, tx = db) {
 async function removePreview(brandId, offerId, productIds, { today = todayInIndia() } = {}) {
   const offer = await getOwn(brandId, offerId);
   if (offer.status === 'draft' || rules.displayStatus(offer, today) === 'ended') throw new AppError('OFFER_LOCKED', 'Only a scheduled or live offer can lose products.', 409);
+  await assertNotGiven(offer.id);
   const plan = await removalPlan(offer, productIds);
   const creators = await creatorsOf(offer.id);
   const stats = await require('./shoppablePosts.service').offerPostStats(offer.id, { productIds: plan.targets.map((t) => t.id), today });
@@ -440,6 +536,7 @@ async function removeProducts(brandId, offerId, productIds, { today = todayInInd
   const res = await db.withTransaction(async (tx) => {
     const offer = await getOwn(brandId, offerId, { tx, forUpdate: true });
     if (offer.status === 'draft' || rules.displayStatus(offer, today) === 'ended') throw new AppError('OFFER_LOCKED', 'Only a scheduled or live offer can lose products.', 409);
+    await assertNotGiven(offer.id, tx);
     const plan = await removalPlan(offer, productIds, tx);
     const ids = plan.targets.map((t) => t.id);
     await tx.query(
@@ -572,6 +669,6 @@ async function autoAddProduct(productId, { today = todayInIndia() } = {}) {
 
 module.exports = {
   brandIdFor, getOwn, createDraft, updateDraft, deleteDraft, addSource, removeSource,
-  creatorsOf, view, list, publish, endNow, removePreview, removeProducts,
+  creatorsOf, view, list, publish, endNow, removePreview, removeProducts, addProducts, joinsFrom,
   priceImpact, afterPriceChange, autoAddProduct, tellCreators,
 };

@@ -424,14 +424,16 @@ async function addSource(offer, body, tx = db) {
 // ── browsing (the left side of the pool builder) ────────────────────────────
 /**
  * Products a brand can see while building the pool, each marked locked (with the other offer and
- * its end) and in-pool. `node` + filters, or `q` for search.
+ * its end) and in-pool. `node` + filters, or `q` for search. `from`: the first day a product added
+ * now would be held — a published offer takes products from today, so an offer that held one
+ * earlier in its dates no longer locks it.
  */
-async function candidates(offer, { node, filters, q }, tx = db) {
+async function candidates(offer, { node, filters, q, from }, tx = db) {
   let products;
   if (q) products = await searchProducts(offer.brand_id, q, tx);
   else if (node) products = await productsUnder(offer.brand_id, node, filters || {}, tx);
   else products = [];
-  const locks = await locksFor({ productIds: products.map((p) => p.id), startsOn: calendarDay(offer.starts_on), endsOn: calendarDay(offer.ends_on), exceptOfferId: offer.id }, tx);
+  const locks = await locksFor({ productIds: products.map((p) => p.id), startsOn: from || calendarDay(offer.starts_on), endsOn: calendarDay(offer.ends_on), exceptOfferId: offer.id }, tx);
   const pool = offer.status === 'draft' ? await resolveDraftPool(offer, tx) : await frozenPool(offer.id, tx);
   const inBuy = new Set(pool.buy.map((p) => p.id));
   const inGift = new Set(pool.gift.filter((g) => g.kind === 'product').map((g) => g.id));

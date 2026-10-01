@@ -1,0 +1,32 @@
+{
+  "feature": "offer-add-products",
+  "spec_version": "1.0.0",
+  "status": "built",
+  "approved": true,
+  "approved_by": "founder (chat 1 Oct 2026, with a screenshot of the offer page: \"we need another option to add products into offer also… if offer not allocated to any creator then we can add and remove products… if allocated to any creator then both options should be disabled and show the text\") — decisions A1–A10 in 01-spec.md taken under standing autonomy",
+  "approved_at": "2026-10-01T11:00:00+05:30",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "delegated (standing autonomy): board A1–A3 drawn from the founder's screenshot and stated rule of 1 Oct 2026, alongside the build; the founder sees the real page before any deploy (06-diff/notes.md, \"Order of work\")",
+  "mockup_locked_at": "2026-10-01T11:00:00+05:30",
+  "mockup_final": "04-preview/mockups/offer-add-products-mockups-v1.html",
+  "notes": "Follow-up to offer-builder-v2 (Level 1). Rules v1.14 §1.10: a published offer's products can be added to or removed only while no creator has it (an unsigned invitation counts); then both are disabled with the reason. Reverses v1.0's 'a removed product leaves her posts'. Website + backend; no migration, no phone, no OTA, no money. Production-impacting: explicit go required before push.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  },
+  "build": {
+    "at": "2026-10-01",
+    "backend": "tests/offer-add-products.test.js 12/12; offer + terms + post suites 141/141; two checks rewritten for the rule change (03-expected-outputs.md)",
+    "backend_full_run": "vs backend/baseline_item17.json: 135 suites / 1786 tests / 1577 passed / 181 failed -> 138 / 1831 / 1625 / 178; 0 newly failing, 0 new tests failing (06-diff/backend-compare.txt). Certification is no-regression; qa_all_green stays false on the pre-existing failures.",
+    "web": "walked on a local preview against a private scratch database (06-diff/*.jpg)",
+    "migration": "none",
+    "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.14 (1.4, 1.10, 1.12, 2.8, change log)",
+    "web_build": "next build clean on an isolated copy of Packages/brand-web (91 pages; /dashboard/products/offers/[id] 4.74 kB)",
+    "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — pre-existing failures unchanged; certification is no-regression). The full run was taken while item 17 (wallet) sat uncommitted in the tree; item 17 was committed and deployed (a5c77aab) before this commit."
+  }
+}

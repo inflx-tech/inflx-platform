@@ -9,7 +9,7 @@ import { brandApi } from '../../lib/api';
 import { dayMonth, inr } from './offerFormat';
 import GiftItemForm from './GiftItemForm';
 
-function findPath(nodes, id, trail = []) {
+export function findPath(nodes, id, trail = []) {
   for (const n of nodes || []) {
     if (n.id === id) return [...trail, n];
     const hit = findPath(n.children, id, [...trail, n]);
@@ -22,7 +22,7 @@ function Locked({ l }) {
   return <span className="st lock">🔒 In &quot;{l.offer_name}&quot; until {dayMonth(l.until)}</span>;
 }
 
-function ProductRow({ p, checked, onToggle, disabledReason }) {
+export function ProductRow({ p, checked, onToggle, disabledReason }) {
   const locked = !!p.locked;
   const inPool = !!p.in_pool;
   return (

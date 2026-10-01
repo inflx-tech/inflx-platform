@@ -1,6 +1,6 @@
 # INFLX business rules — Offers, Creator terms, Shoppable posts
 
-**Version 1.13 · 30 September 2026 · living document**
+**Version 1.14 · 1 October 2026 · living document**
 
 This is the design of record for three linked parts of INFLX:
 
@@ -68,7 +68,8 @@ A pool is a list of products. The brand builds it with any mix of four methods:
 - The price filter uses the product's price. MRP was retired in July 2026; a product has one price.
 - **Locked products** (in another published offer with overlapping dates) are shown with the other
   offer's name and end date, and can't be added.
-- The pool is **frozen when the offer is published**.
+- The pool is **frozen once the offer is given to a creator**. Between publishing and that moment
+  the brand can still add or remove products (1.10).
 - Optional **"Auto-add new products"**, off by default. It works only for *Category → all* and
   *Category → filters* sources. New products that match join the pool unless they're locked. Creators
   can pick them for **new** posts; existing posts don't change.
@@ -146,16 +147,25 @@ There are two kinds of gift:
 - Drafts can be deleted. A published offer can't be deleted, only **ended**, so sales history and
   creators' records stay intact.
 
-### 1.10 Changing a live offer
-Creators' posts already promise the deal. So once published, **only two changes are allowed**:
+### 1.10 Changing a published offer (changed 1 Oct, v1.14)
+Name, type, numbers and dates can't be changed once published. What can change depends on whether
+the offer has been **given to a creator** (it is in an invitation or a collaboration that is not
+declined, expired or withdrawn; an unsigned invitation counts):
 
-| Change | What happens |
-|---|---|
-| **Remove products** | They leave every post using them. A post left with no products is **removed from the shop**. The same products leave creators' collections. Creators are notified. Products are freed immediately. |
-| **End offer now** | Every post using the offer is **removed from the shop**, creators are notified, and all products are freed. |
+| Change | Given to no creator | Given to one or more creators |
+|---|---|---|
+| **Add products** | ✅ Held from today (from the start date if the offer is Scheduled) to the end date. A product another offer holds on those days can't be added. The pool with the new products must still pass the checks at publish (1.8). Gifts and a fixed bundle's products can't be added. | ❌ |
+| **Remove products** | ✅ Freed immediately. Refused when it would break the deal (the last product, a fixed bundle's products, a pool below the pick count, the last gift). | ❌ |
+| **End offer now** | ✅ All products are freed. | ✅ Every post using the offer is **removed from the shop**, creators are notified, and all products are freed. |
 
-Name, type, numbers, pool additions and dates can't be changed. To change the deal, end the offer and
-build a new one. **Shoppers who have already started paying keep the old price.**
+Once a creator has the offer, the offer page shows Add products and Remove products greyed out with
+the reason: *"This offer has been given to 2 creators, so its products can't be added or removed."*
+Her terms and posts promise these products. To change the deal, end the offer and build a new one.
+To stop selling one product, take it off sale in Listings (2.8). **Shoppers who have already started
+paying keep the old price.**
+
+Auto-add (1.4) is separate: it was chosen while building and keeps working after creators have the
+offer.
 
 ### 1.11 A product's price changes while it's live
 1. Before saving, the brand sees a warning: which offer and posts the product is in, what the shopper
@@ -170,7 +180,7 @@ build a new one. **Shoppers who have already started paying keep the old price.*
 - **Products without offers:** every published product not in any offer on a chosen date, with its next offer if one is scheduled.
 - **Products:** an **Offer** column and a product panel showing the current offer (until when) and next offer.
 - **Gift items:** the gift-only list (1.7).
-- **Offer page:** the deal, pool, creators given it, their posts and sales, plus "Remove products" and "End offer now".
+- **Offer page:** the deal, pool, creators given it, their posts and sales, plus "Add products", "Remove products" and "End offer now". Add and Remove are greyed out, with the reason, once the offer is given to a creator (1.10).
 
 ### 1.13 Removed from the old offer engine
 Whole-store offers · "Publish to store" and the store-direct path · "Pay at store / Online / Pre-book"
@@ -250,7 +260,7 @@ can't be countered.**
 | Change | What happens to her collaboration |
 |---|---|
 | An offer ends (end date, or brand ends it early) | Her posts using it are **removed from the shop**. She is notified. |
-| Brand removes products from an offer | Those products leave her posts and collections. A post left empty is removed. She is notified. |
+| Brand wants to add or remove products in an offer she has | **Not allowed** (1.10, changed 1 Oct). The offer's products are frozen from the moment it is in her invitation. The brand can end the offer, or take a product off sale. |
 | A product without an offer she has is later put into an offer | It **stays sellable in her posts at normal price** (she wasn't given that offer). |
 | A product becomes unavailable (unpublished or deleted) | It's removed from her sellable list and her posts (existing rule). She is notified. |
 | A product runs out of stock | It can't be bought until restocked. A post whose products are **all** out of stock is removed from the shop. |
@@ -1048,3 +1058,4 @@ invoices · a "pay now" nudge for cash-on-delivery orders · map-based addresses
 | 2026-09-30 | 1.11 | Founder: concentrate on the deals. Tapping a product on a deal page opens the **product pop-up** there (photos, details, colours, sizes with stock, size chart, other choices) → Pick → closes → the card shows it picked; reopen to change or remove (6.5). The four deal types and every sub-type written as the shopper meets them (BOGO; volume by quantity % / ₹ and by value; bundle pick any / mix & match / fixed; free gift spend / buy X / one gift). Board: `features/shopper-ordering/04-preview/mockups/shopper-deals-mockups-v1.html`. |
 | 2026-09-30 | 1.12 | **Final, locked by the founder.** One board for ordering and deals: `features/shopper-ordering/04-preview/mockups/shopper-ordering-mockups-final.html` (38 screens: O1, O2, D1, P1–P3, B1–B4, V1–V4, K1–K5, G1–G5, D4, D11, O6–O17); the deals board's screens replace D2, D3 and D5–D10. One-time check against the screens: screen references in 6.3–6.5 brought to the final names; the "Your picks" tray dropped (picks show on the cards, slots and pair list, and in the review); volume quantity is chosen in the pop-up, not a stepper on the card; BOGO is one pop-up in two parts; the volume example corrected to "save ₹900"; **rounding written down**: a % comes off each unit, rounded to the rupee; shared prices put any leftover rupee on the costliest item. |
 | 2026-09-30 | 1.13 | Founder: every order's money divided clearly. 6.13 now shows how each rupee splits: creator's share at her collaboration's %, INFLX's share at the admin rate (category via creator, or the brand's own rate), the brand the rest; worked per item at Place order, frozen on the item, adding up to the paisa. Example ₹1,000 → ₹100 / ₹50 / ₹850 (fashion Path B 5%). BOGO wording aligned: the free one is ₹0 in the money too. Delivery and COD fees go to the brand. Cash on delivery: the brand owes creator's share + INFLX's share, taken from its next online payouts. |
+| 2026-10-01 | 1.14 | Founder: a published offer needs "Add products", and products may change only while no creator has the offer. 1.10 rewritten: add and remove are allowed until the offer is given to a creator (an unsigned invitation counts), then both are greyed out with the reason; End offer now unchanged. This **reverses** v1.0's "a removed product leaves her posts": removal from an offer a creator has is no longer possible (2.8 row replaced). 1.4 and 1.12 aligned. Contract `features/offer-add-products`. |

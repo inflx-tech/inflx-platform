@@ -431,15 +431,30 @@ describe("a post's life after it is approved (4.9; checks 22–27)", () => {
     expect(n[0].data_json).toMatchObject({ screen: 'post', post_id: p.id });
   });
 
-  test('products removed from the offer leave the post; a post left empty is removed', async () => {
+  // offer-add-products (rules v1.14 §1.10, founder 1 Oct 2026): this used to remove products from
+  // an offer a creator has and expect them to leave her posts. That removal is now refused, so her
+  // posts keep every product. The engine underneath is still proved directly, as the backstop.
+  test('an offer a creator has can\'t lose products: her posts stay whole', async () => {
+    const w = await world();
+    const keep = await approvedBundle(w, w.jeans.slice(0, 3));
+    const other = await approvedBundle(w, w.jeans.slice(2, 4));
+    const prev = await api.get(`/brands/me/offers/${w.bundle}/remove-preview?product_ids=${w.jeans[2]},${w.jeans[3]}`, w.b.token);
+    expect(prev.status).toBe(409);
+    expect(prev.body.error.code).toBe('OFFER_GIVEN');
+    const r = await api.post(`/brands/me/offers/${w.bundle}/remove-products`, w.b.token, { product_ids: [w.jeans[2], w.jeans[3]] });
+    expect(r.status).toBe(409);
+    expect(r.body.error.message).toBe("This offer has been given to 1 creator, so its products can't be changed. To change the deal, end it and build a new one.");
+    expect((await read(w, keep.id)).products.map((x) => x.id).sort()).toEqual(w.jeans.slice(0, 3).sort());
+    expect((await read(w, other.id)).removed).toBeFalsy();
+  });
+
+  test('products that leave an offer leave its posts; a post left empty is removed (the engine)', async () => {
     const w = await world();
     const keep = await approvedBundle(w, w.jeans.slice(0, 3));
     const empty = await approvedBundle(w, w.jeans.slice(2, 4));
-    const prev = await api.get(`/brands/me/offers/${w.bundle}/remove-preview?product_ids=${w.jeans[2]},${w.jeans[3]}`, w.b.token);
-    expect(prev.status).toBe(200);
-    expect(prev.body.data.posts).toEqual({ live: 2, emptied: 1 });
-    const r = await api.post(`/brands/me/offers/${w.bundle}/remove-products`, w.b.token, { product_ids: [w.jeans[2], w.jeans[3]] });
-    expect(r.status).toBe(200);
+    const gone = [w.jeans[2], w.jeans[3]];
+    await query(`UPDATE offer_pool_items SET removed_at = now() WHERE offer_id = $1 AND product_id = ANY($2::uuid[])`, [w.bundle, gone]);
+    expect(await posts.afterProductsLeftOffer(w.bundle, gone)).toBe(1);
     expect((await read(w, keep.id)).products.map((x) => x.id).sort()).toEqual(w.jeans.slice(0, 2).sort());
     expect((await read(w, empty.id)).removed).toMatchObject({ reason: 'products_removed' });
   });
