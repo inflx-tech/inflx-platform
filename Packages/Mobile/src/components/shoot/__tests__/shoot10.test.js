@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { GateCard10, StepLine10, TimeCard10, AddressCard10, TimePicker10 } from '../bits10';
 import { C10, whenLine10, whenShort10, day10, istToIso, istParts, istDay10 } from '../copy10';
+import { SetCreatorRow5 } from '../../invitations/bits5';
 
 /**
  * Item 10 — the pieces the store-visit screens are built from, and the clock they read.
@@ -119,6 +120,24 @@ describe('the walk fix — icons, the truthful button, the call link (20 Sep)', 
   it('the agreed stage says the confirm step is coming, and V13 offers her number', () => {
     expect(C10.brand.whatHappensNext('Tanvi Suresh')).toBe('Tanvi marks the visit once she has been, and then you confirm it. Nothing moves until she does.');
     expect(C10.brand.call('Tanvi Suresh')).toBe('Call Tanvi');
+  });
+});
+
+// Walk fix (1 Oct 2026): signed with no plan sent used to read "Signed by both …" with no chip and
+// no door; the brand could not get from the set to the plan.
+describe('the brand\'s set row before the plan is sent', () => {
+  const row = (shoot) => ({ id: 'ci1', name: 'Kartikeya K', group: 'signed', signedAt: '2026-10-01T07:06:00Z', shoot });
+  it('says the plan is his move and the chip opens the visit', () => {
+    const onChip = jest.fn();
+    const r = render(<SetCreatorRow5 row={row({ stage: 'not_sent', line: 'Signed — plan the store visit', visitAt: null })} onPress={() => {}} onChip={onChip} />);
+    r.getByText('Signed — plan the store visit');
+    r.getByText('Your move');
+    fireEvent.press(r.getByTestId('chip-ci1'));
+    expect(onChip).toHaveBeenCalledTimes(1);
+  });
+  it('a plan that is out and waiting on her carries no chip', () => {
+    const r = render(<SetCreatorRow5 row={row({ stage: 'sent', line: 'Plan sent for Sun 4 Oct, 11:00 am — waiting for Kartikeya to answer', visitAt: '2026-10-04T05:30:00Z' })} onPress={() => {}} />);
+    expect(r.queryByText('Your move')).toBeNull();
   });
 });
 

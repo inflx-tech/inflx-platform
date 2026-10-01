@@ -101,3 +101,26 @@ opens anything; its own job).
 Tests: `item10-flow` +2 (her number only when passed and never on her side; the row's line through
 all five stages), `shoot10` +3 (the phone and maps symbols, the truthful button labels, the two new
 sentences), gate-card assertions moved from text glyphs to the real icons. Mobile 636/636.
+
+## Walk fix 3 — the door to the plan before it is sent (founder, 1 Oct)
+
+Founder, on the brand phone, set "Men" in "Pay day sale" (Pay for Sale, Store Visit, signed by both
+that morning): *"now he has to go for shoot plan… it is not showing… link is missing."*
+
+**Before:** walk fix 2 gave the set row a door to the visit only once the plan had been sent. Until
+then the row read "Signed by both 1 Oct", had no chip, and opened a menu with View terms and Profile.
+The only door to "Plan the visit" was the button on the agreement screen straight after signing, and
+the set screen has no way back to a signed agreement — leave that screen and the plan was out of
+reach. Confirmed on the production row (read-only): both signed, the visit exists, no plan sent.
+
+**After:** from the moment both have signed, the row reads **"Signed — plan the store visit"**, chips
+**Your move**, and opens the visit (where "Plan the visit" is); the ⋯ menu lists "Open the store
+visit". The server change alone is enough for the installed app (it already opens the visit on any
+row that carries one); the phone change adds the Your move chip at this stage.
+
+Not drawn on a board: one sentence and one chip on a row that already has both, in the words walk
+fix 2 established. No rule changes (§11.1 untouched).
+
+Tests: `item10-flow` — the row before the plan is sent now carries `{ stage: 'not_sent', line:
+'Signed — plan the store visit' }` (it asserted null; the assertion changed with the behaviour);
+`shoot10` +2 (the line, the chip and its press; no chip while waiting on her).

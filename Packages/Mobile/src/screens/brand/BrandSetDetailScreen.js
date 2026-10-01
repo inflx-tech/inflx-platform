@@ -221,7 +221,7 @@ export default function BrandSetDetailScreen({ navigation, route }) {
                     onChip={
                       row.content && row.content.yourMove ? () => openContent(row)
                         : row.goingLive && row.goingLive.yourMove ? () => openGoingLive(row)
-                        : row.shoot && row.shoot.stage === 'attended' ? () => openShoot(row)
+                        : row.shoot && (row.shoot.stage === 'attended' || row.shoot.stage === 'not_sent') ? () => openShoot(row)
                         : row.actions && row.actions.sendAgreement ? () => openAgreement(row, true)
                         : row.actions && row.actions.signAgreement ? () => openAgreement(row, false)
                         : row.actions && row.actions.thread ? () => openThread(row)

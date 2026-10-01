@@ -261,7 +261,9 @@ function brandRow(r, goal) {
     // Item 10 walk fix: once the agreement is signed, the row says where the SHOOT has got to —
     // the mirror of the line her Active card already carries (V4). One sentence on a line this
     // row already has; the list of what is waiting across campaigns is Needs You's (§24), later.
-    shoot: r.shoot_id && r.pe_shoot_mode === 'visit' && r.plan_sent_at ? {
+    // Walk fix (1 Oct): present from the moment the visit exists (both signed), not only once the
+    // plan is sent — before that the row was a dead end and the brand could not reach the plan.
+    shoot: r.shoot_id && r.pe_shoot_mode === 'visit' ? {
       stage: shootPlan.stageOf({ id: r.shoot_id, status: r.shoot_status, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }),
       line: shootPlan.brandLineFor({ id: r.shoot_id, status: r.shoot_status, visit_scheduled_at: r.visit_scheduled_at, plan_sent_at: r.plan_sent_at, time_agreed_at: r.time_agreed_at, influencer_completed_at: r.influencer_completed_at, brand_completed_at: r.brand_completed_at, auto_confirmed_at: r.auto_confirmed_at }, r.name),
       visitAt: r.visit_scheduled_at || null,

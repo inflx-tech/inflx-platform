@@ -139,7 +139,8 @@ export function SetCreatorRow5({ row, onPress, onMore, onChip, testID }) {
         else if (row.goingLive.completed) chip = { label: 'Completed · selling', tone: 'completed' };
       } else if (row.shoot && row.shoot.line) {
         meta = row.shoot.line;
-        if (row.shoot.stage === 'attended') chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
+        // Walk fix (1 Oct): the plan not sent yet is his move too, not only the confirmation.
+        if (row.shoot.stage === 'attended' || row.shoot.stage === 'not_sent') chip = { label: C6.set.yourMoveChip, tone: 'yourMove' };
       } else {
         meta = C5.set.signedByBoth(row.signedAt);
       }

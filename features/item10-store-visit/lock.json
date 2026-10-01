@@ -45,6 +45,14 @@
           "money": "NO MONEY MOVED. 12 escrow rows, ₹25,875 still locked, 18 ledger rows, creator balances ₹8,625 — identical to 18 September.",
           "note": "The pre-push governance check BLOCKED the first attempt: governed UI paths changed with no contract in the changeset. Correct catch — the walk fixes were then recorded on this lock rather than overridden."
         }
+      },
+      {
+        "at": "2026-10-01",
+        "found_by": "founder, on the brand phone (set \"Men\" in \"Pay day sale\", a Pay for Sale Store Visit signed by both that morning)",
+        "problem": "\"both brand and creator done… now he has to go for shoot plan… it is not showing… link is missing.\" The set-detail row read \"Signed by both 1 Oct\" with no chip; tapping it opened the ⋯ menu with only View terms and Profile. The 20 Sep fix gave the row a door to the visit only once the plan had been SENT (`plan_sent_at`), so before that the one door was still the button on the agreement screen — and the set screen has no way back to a signed agreement. A brand that left the agreement after signing could never reach \"Plan the visit\".",
+        "audit": "Confirmed on the production row (read-only): contract active, both signatures, production_events row present, mode visit, plan_sent_at null. Not a missing shoot and not the gate — the row simply had nothing to open. `item10-flow` asserted `shoot` to be null before the plan was sent, so the gap was tested in.",
+        "fix": "The brand's row carries `shoot` from the moment the visit exists (both signed), stage `not_sent`, line \"Signed — plan the store visit\" (invitationRows.brandRow, shootPlan.brandLineFor). The installed app already opens the visit on a row with `shoot` and lists \"Open the store visit\" in the ⋯ menu, so the server change alone removes the dead end. Phone: the row chips Your move at `not_sent` as well as `attended`, and the chip opens the visit.",
+        "tests": "item10-flow: the row before the plan is sent now equals { stage: 'not_sent', line: 'Signed — plan the store visit', visitAt: null } (was null; assertion changed with the behaviour). shoot10 +2 (the line, the chip and its press; no chip while waiting on her). Server suites that read the set row or the shoot (items 5, 7, 10, 11, 12, 14, 15): 15 suites, 320 tests, 0 failed. Phone: shoot10, item5Brand, item7Brand 52/52."
       }
     ],
     "deployed_to_production": {

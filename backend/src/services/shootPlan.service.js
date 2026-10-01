@@ -573,7 +573,9 @@ function brandLineFor(pe, creatorName) {
   if (stage === 'attended') return `${who} says she visited — confirm the shoot is done`;
   if (stage === 'agreed') return passedOf(pe) ? `The ${shortDay(pe.visit_scheduled_at)} visit passed with nothing marked — send a new time` : `Store visit ${whenLine(pe.visit_scheduled_at)}`;
   if (stage === 'sent') return `Plan sent for ${whenLine(pe.visit_scheduled_at)} — waiting for ${who} to answer`;
-  return null;
+  // Walk fix (1 Oct): signed, nothing sent yet — the plan is the brand's move, and the row is his
+  // way to it. It used to say nothing here, which left the agreement screen as the only door.
+  return pe && pe.id ? 'Signed — plan the store visit' : null;
 }
 
 /** One line for her Active card (V4) and the brand's list. */
