@@ -28,5 +28,16 @@
     "rules": "Docs/OFFER_TERMS_POSTS_RULES.md v1.14 (1.4, 1.10, 1.12, 2.8, change log)",
     "web_build": "next build clean on an isolated copy of Packages/brand-web (91 pages; /dashboard/products/offers/[id] 4.74 kB)",
     "note": "released stays false per GOVERNANCE.md §5 (qa_all_green false — pre-existing failures unchanged; certification is no-regression). The full run was taken while item 17 (wallet) sat uncommitted in the tree; item 17 was committed and deployed (a5c77aab) before this commit."
+  },
+  "deployed_to_production": {
+    "at": "2026-10-01",
+    "by": "founder go (chat: \"pls deploy\")",
+    "migration": "none",
+    "commit": "87442520 (pushed d96d783a..87442520 at about 13:31 IST; gov-check OK: contract-backed, mockup_locked, 06-diff/notes.md present)",
+    "vercel": "live at 13:33 IST, proved by content: the shared chunk that carries lib/api.js changed (6657-8086adc3… -> 6657-a43b874c…) and now contains the new add-products call; the old build's chunks did not",
+    "render": "NOT provable from outside for this change: every path under /v1/brands/me answers 401 without a session, the new route and a made-up one alike (probed before the push), and no public response changes. /health 200. The proof is the first Add products click on a real offer: the old server would answer 'not found'.",
+    "ota": "none — no phone change",
+    "money": "none moved — nothing here touches checkout, wallets or escrow",
+    "pending": "founder's click-through on production: Add products on an offer no creator has; an offer given to a creator shows both buttons greyed out"
   }
 }
